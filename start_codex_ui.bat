@@ -1,6 +1,19 @@
 @echo off
 setlocal
 
+set "CODEX_LAUNCH_FILE=%~f0"
+set "CODEX_LAUNCH_DIR=%~dp0"
+set "CODEX_LAUNCH_ARGS=%*"
+powershell -NoProfile -ExecutionPolicy Bypass -Command ^
+  "$principal = New-Object Security.Principal.WindowsPrincipal([Security.Principal.WindowsIdentity]::GetCurrent()); if($principal.IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)){ exit 0 }; try { $startArgs = @{ FilePath = $env:CODEX_LAUNCH_FILE; WorkingDirectory = $env:CODEX_LAUNCH_DIR; Verb = 'RunAs' }; if($env:CODEX_LAUNCH_ARGS){ $startArgs.ArgumentList = $env:CODEX_LAUNCH_ARGS }; Start-Process @startArgs | Out-Null; exit 100 } catch { exit 1 }"
+set "ELEVATE_EXIT=%errorlevel%"
+if "%ELEVATE_EXIT%"=="100" exit /b 0
+if not "%ELEVATE_EXIT%"=="0" (
+  echo [ERROR] administrator elevation was cancelled or failed.
+  pause
+  exit /b %ELEVATE_EXIT%
+)
+
 cd /d "%~dp0"
 set "npm_config_userconfig=%~dp0.npmrc"
 set "npm_config_cache=%~dp0.npm-cache"

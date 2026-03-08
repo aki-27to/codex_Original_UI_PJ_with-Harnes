@@ -14,6 +14,7 @@ const HARNESS_CHECK_MODE_KEY="codex-harness-check-mode-v2";
 const HARNESS_CHECK_MODE_KEY_LEGACY="codex-harness-check-mode-v1";
 const HARNESS_CHECK_MODES={ADAPTIVE:"adaptive",STRICT:"strict",RELAXED:"relaxed"};
 const HARNESS_CHECK_DEFAULT_MODE=HARNESS_CHECK_MODES.ADAPTIVE;
+const RUNTIME_PENDING_SYNC_MS=5000;
 const s={runtime:null,diag:null,diagErr:null,chats:[],active:null,nextChat:1,nextMsg:1,req:new Map(),trace:[],last:null,ticker:null,perf:{sessionRef:"",turnsCompleted:0,baseTokens:0,baseProcessingMs:0,liveTurnId:"",liveTurnStartedAt:0,liveTokens:0,historyTokens:[],historyProcessingMs:[],historyAt:[],updatedAt:0}};
 const chatStateSave={timer:null};
 const settingsState={hasStoredModel:false,hasStoredModelReasoningEffort:false};
@@ -49,6 +50,10 @@ const automationState={
   schedulerDesired:null,
   lastError:"",
   status:null,
+};
+const runtimePendingSyncState={
+  timer:null,
+  inFlight:false,
 };
 function by(id){return document.getElementById(id)}
 function normalizeHarnessCheckMode(value){
@@ -348,6 +353,117 @@ function localPendingCountForChat(chatId){
     if(row&&row.cid===id)count+=1;
   });
   return count;
+}
+function runtimeAgentsFromPayload(runtime){
+  return runtime&&Array.isArray(runtime.agents)?runtime.agents:[];
+}
+function latestRuntimeTurn(runtime=s.runtime){
+  const source=runtime&&typeof runtime==="object"?runtime:{};
+  if(source.latestTurn&&typeof source.latestTurn==="object")return source.latestTurn;
+  return source.latest_turn&&typeof source.latest_turn==="object"?source.latest_turn:null;
+}
+function runtimeTurnStatusForUi(turn){
+  if(!turn||typeof turn!=="object")return"";
+  return lowerText(turn.terminal_status||turn.terminalStatus||turn.status);
+}
+function runtimeTurnThreadIdForUi(turn){
+  const raw=turn&&typeof turn==="object"
+    ?(typeof turn.thread_id==="string"&&turn.thread_id.trim()?turn.thread_id:turn.threadId)
+    :"";
+  return typeof raw==="string"?raw.trim():"";
+}
+function runtimeTurnIdForUi(turn){
+  const raw=turn&&typeof turn==="object"
+    ?(typeof turn.turn_id==="string"&&turn.turn_id.trim()?turn.turn_id:turn.turnId)
+    :"";
+  return typeof raw==="string"?raw.trim():"";
+}
+function runtimeTurnAgentForUi(turn){
+  const raw=turn&&typeof turn==="object"
+    ?(typeof turn.agent_name==="string"&&turn.agent_name.trim()?turn.agent_name:turn.agentName)
+    :"";
+  return normalizeAgentNameForUi(raw);
+}
+function runtimeTurnCompletedAtForUi(turn){
+  if(!turn||typeof turn!=="object")return 0;
+  return toPerfInt(turn.completed_at||turn.completedAt||turn.updated_at||turn.updatedAt);
+}
+function runtimeAgentHasActiveTurn(runtime,agentName){
+  const wanted=normalizeAgentNameForUi(agentName);
+  if(!wanted)return false;
+  return runtimeAgentsFromPayload(runtime).some((item)=>{
+    if(!item||typeof item!=="object")return false;
+    const runtimeAgent=normalizeAgentNameForUi(item.name);
+    const activeTurnId=typeof item.activeTurnId==="string"?item.activeTurnId.trim():"";
+    return runtimeAgent===wanted&&Boolean(activeTurnId);
+  });
+}
+function collectStalePendingRequestIds(runtime=s.runtime){
+  const latestTurn=latestRuntimeTurn(runtime);
+  const latestStatus=runtimeTurnStatusForUi(latestTurn);
+  if(!["completed","failed","interrupted"].includes(latestStatus))return[];
+  const latestAgent=runtimeTurnAgentForUi(latestTurn);
+  const latestThreadId=runtimeTurnThreadIdForUi(latestTurn);
+  const latestTurnId=runtimeTurnIdForUi(latestTurn);
+  const latestCompletedAt=runtimeTurnCompletedAtForUi(latestTurn);
+  const staleIds=[];
+  s.req.forEach((row,rid)=>{
+    if(!row||typeof row!=="object")return;
+    const c=chat(row.cid);
+    const chatAgent=normalizeAgentNameForUi(c&&c.agent?c.agent:row.agent);
+    if(!chatAgent||runtimeAgentHasActiveTurn(runtime,chatAgent))return;
+    const chatThread=typeof c?.h?.thread==="string"?c.h.thread.trim():"";
+    const sameThread=Boolean(chatThread&&latestThreadId&&chatThread===latestThreadId);
+    const sameAgent=Boolean(latestAgent&&chatAgent===latestAgent);
+    if(!sameThread&&!sameAgent)return;
+    const startedAt=toPerfInt(row.at);
+    if(startedAt&&latestCompletedAt&&latestCompletedAt<startedAt)return;
+    staleIds.push(rid);
+    if(c){
+      if(latestThreadId&&!c.h.thread)c.h.thread=latestThreadId;
+      if(latestTurnId&&!c.h.turn)c.h.turn=latestTurnId;
+      hset(c,latestStatus);
+    }
+  });
+  return staleIds;
+}
+function reconcilePendingRequestsWithRuntime(runtime=s.runtime,{refreshUi=true}={}){
+  const staleIds=collectStalePendingRequestIds(runtime);
+  if(!staleIds.length)return 0;
+  staleIds.forEach((rid)=>{
+    const row=s.req.get(rid);
+    if(!row)return;
+    const c=chat(row.cid);
+    if(c)c.pending=Math.max(0,toPerfInt(c.pending)-1);
+    s.req.delete(rid);
+  });
+  if(refreshUi)refresh();
+  return staleIds.length;
+}
+function startRuntimePendingSyncTicker(){
+  if(runtimePendingSyncState.timer!==null||s.req.size===0)return;
+  runtimePendingSyncState.timer=setInterval(()=>{
+    if(runtimePendingSyncState.inFlight||s.req.size===0)return;
+    runtimePendingSyncState.inFlight=true;
+    loadRuntime({reconcilePending:true}).catch(()=>{}).finally(()=>{
+      runtimePendingSyncState.inFlight=false;
+      if(s.req.size===0)stopRuntimePendingSyncTicker();
+    });
+  },RUNTIME_PENDING_SYNC_MS);
+}
+function stopRuntimePendingSyncTicker(){
+  if(runtimePendingSyncState.timer!==null){
+    clearInterval(runtimePendingSyncState.timer);
+    runtimePendingSyncState.timer=null;
+  }
+  runtimePendingSyncState.inFlight=false;
+}
+function syncRuntimePendingMonitor(){
+  if(s.req.size>0){
+    startRuntimePendingSyncTicker();
+    return;
+  }
+  stopRuntimePendingSyncTicker();
 }
 function pendingCountForChat(chatId){
   const id=typeof chatId==="string"?chatId:"";
@@ -1829,7 +1945,7 @@ function pending(){
     e.agentState.textContent=`Chat: ${c.title}${currentPending>0?` (${currentPending})`:""} / Agent: ${agentLabel}`;
   }
 }
-function refresh(){renderTimeline();renderChatList();renderHarness();inspect();pending();live();renderPerformanceIndicator();renderAutomationStatus()}
+function refresh(){renderTimeline();renderChatList();renderHarness();inspect();pending();live();renderPerformanceIndicator();renderAutomationStatus();syncRuntimePendingMonitor()}
 function profileSync(){const snap={approvalPolicy:e.approvalPolicy.value,sandboxMode:e.sandboxMode.value,webSearch:e.webSearch.checked};const id=Object.keys(PROFILES).find(k=>{const p=PROFILES[k];return p.approvalPolicy===snap.approvalPolicy&&p.sandboxMode===snap.sandboxMode&&p.webSearch===snap.webSearch});e.executionProfile.value=id||"custom"}
 function normalizeSavedMessage(raw,index){
   if(!raw||typeof raw!=="object")return null;
@@ -1990,10 +2106,11 @@ function renderDiagSummary(){
   e.diagSummaryText.textContent=`問題なし (${totalReady}/${rows.length})`;
   if(e.diagDetailsSummary)e.diagDetailsSummary.textContent="詳細を表示";
 }
-async function loadRuntime(){
+async function loadRuntime({reconcilePending=true}={}){
   const response=await fetch("/api/runtime",{cache:"no-store"});
   if(!response.ok)throw new Error(`Failed to load runtime: ${response.status}`);
   s.runtime=await response.json();
+  if(reconcilePending)reconcilePendingRequestsWithRuntime(s.runtime,{refreshUi:false});
   if(e.modelName){
     const currentModel=e.modelName.value&&typeof e.modelName.value==="string"?e.modelName.value.trim():"";
     const selectedModel=(!settingsState.hasStoredModel||!currentModel||isLegacyExecModelAlias(currentModel))
@@ -2348,6 +2465,7 @@ async function runPrompt(raw,cid=s.active,options={}){
   c.pending+=1;
   pending();
   live();
+  syncRuntimePendingMonitor();
   trace("dispatch",runAgent,dispatchDetail||"(empty)",c.id);
   let ttype="completed",tdetail="completed",finalApplied=false;
   try{
@@ -2393,7 +2511,7 @@ async function runPrompt(raw,cid=s.active,options={}){
     const flush=(chunk,force=false)=>{if(chunk)buf+=chunk;while(true){const i=buf.indexOf("\n");if(i<0)break;const line=buf.slice(0,i);buf=buf.slice(i+1);onLine(line)}if(force&&buf.length){onLine(buf);buf=""}};
     while(true){const{value,done}=await reader.read();if(done)break;flush(decoder.decode(value,{stream:true}))}
     flush(decoder.decode(),true)
-  }catch(err){if(err&&err.name==="AbortError"){ttype="aborted";tdetail="user interrupted";madd(out,"\n[user interrupted]\n");hset(c,"interrupted");hpush(c,"turn/interrupt","user interrupt","failed");renderHarness();return}ttype="failed";tdetail=err&&err.message?err.message:"runtime error";hset(c,"failed");hpush(c,"turn/error",t1(tdetail,180),"failed");renderHarness();throw err}finally{s.req.delete(rid);c.pending=Math.max(0,c.pending-1);if(ttype==="completed")hset(c,"completed");else if(ttype==="failed")hset(c,"failed");else if(ttype==="aborted")hset(c,"interrupted");hpush(c,"turn/end",t1(tdetail,180),ttype==="failed"?"failed":"info");s.last={type:ttype,detail:tdetail,at:Date.now(),agent:runAgent,chat:c.title,cid:c.id};trace(ttype,runAgent,tdetail,c.id);refresh();if(s.req.size===0){try{await loadRuntime()}catch(_e){e.connectionState.textContent="Disconnected";e.connectionState.classList.remove("connected");e.connectionState.classList.add("disconnected")}}scheduleSaveChatState();updateSearchDiag()}
+  }catch(err){if(err&&err.name==="AbortError"){ttype="aborted";tdetail="user interrupted";madd(out,"\n[user interrupted]\n");hset(c,"interrupted");hpush(c,"turn/interrupt","user interrupt","failed");renderHarness();return}ttype="failed";tdetail=err&&err.message?err.message:"runtime error";hset(c,"failed");hpush(c,"turn/error",t1(tdetail,180),"failed");renderHarness();throw err}finally{s.req.delete(rid);c.pending=Math.max(0,c.pending-1);syncRuntimePendingMonitor();if(ttype==="completed")hset(c,"completed");else if(ttype==="failed")hset(c,"failed");else if(ttype==="aborted")hset(c,"interrupted");hpush(c,"turn/end",t1(tdetail,180),ttype==="failed"?"failed":"info");s.last={type:ttype,detail:tdetail,at:Date.now(),agent:runAgent,chat:c.title,cid:c.id};trace(ttype,runAgent,tdetail,c.id);refresh();if(s.req.size===0){try{await loadRuntime()}catch(_e){e.connectionState.textContent="Disconnected";e.connectionState.classList.remove("connected");e.connectionState.classList.add("disconnected")}}scheduleSaveChatState();updateSearchDiag()}
 }
 function renderCommands(q=""){e.commandGrid.innerHTML="";const qq=q.trim().toLowerCase();const list=COMMANDS.filter(c=>!qq||c.toLowerCase().includes(qq));if(!list.length){e.commandGrid.innerHTML='<article class="command-empty">No matching commands.</article>';return}list.forEach(cmd=>{const f=e.commandTemplate.content.cloneNode(true);f.querySelector(".command-text").textContent=cmd;const b=f.querySelector(".command-badge");b.textContent="local";b.classList.add("local");f.querySelector(".command-desc").textContent="Quick insert/run command.";f.querySelector(".insert-btn").onclick=()=>{const cur=e.promptInput.value,p=cur&&!cur.endsWith("\n")?"\n":"";e.promptInput.value=`${cur}${p}${cmd} `;e.promptInput.focus()};f.querySelector(".run-btn").onclick=async()=>{e.promptInput.value=cmd;await runPrompt(e.promptInput.value,s.active).catch(er=>msg(s.active,"system","System",`Send failed: ${er&&er.message?er.message:"unknown"}`))};e.commandGrid.appendChild(f)})}
 function clearChat(){const c=active();if(!c)return;c.messages=[];c.h=createHarnessState();c.forceNewSession=true;s.trace=s.trace.filter((item)=>item&&item.cid!==c.id);if(s.last&&s.last.cid===c.id)s.last=null;scheduleSaveChatState();refresh()}
@@ -2550,7 +2668,7 @@ async function boot(){
     }
   }
 }
-window.addEventListener("beforeunload",()=>{if(s.ticker!==null){clearInterval(s.ticker);s.ticker=null}stopAgentTopographyTicker();stopAutomationStatusTicker();revokeAttachmentPreview();flushSaveChatState();});
+window.addEventListener("beforeunload",()=>{if(s.ticker!==null){clearInterval(s.ticker);s.ticker=null}stopRuntimePendingSyncTicker();stopAgentTopographyTicker();stopAutomationStatusTicker();revokeAttachmentPreview();flushSaveChatState();});
 boot();
 
 

@@ -19,6 +19,7 @@ This document is the active architecture spec for the Codex App Server integrati
   - `CODEX_REQUEST_USER_INPUT_POLICY=blocked`
   - `CODEX_PARENT_DISPATCH_GUARD_MODE=enforce`
   - `CODEX_PARENT_DISPATCH_GUARD_MAX_RETRIES=1`
+- `start_codex_ui.bat` now self-elevates to Windows Administrator via UAC before starting the harness process.
 - `start_codex_ui.bat` also enables turn-complete Git automation by default:
   - `CODEX_GIT_AUTOCOMMIT_ENABLED=1`
   - `CODEX_GIT_AUTOPUSH_ENABLED=1`
@@ -88,6 +89,7 @@ This document is the active architecture spec for the Codex App Server integrati
 - Static UI routes:
   - `/01.HarnesUI/*`
     - always served from bundled `web/01.HarnesUI/`
+    - polls `GET /api/runtime` while local requests are active so stale client-side pending rows can self-heal after the backend has already emitted a terminal turn
   - `/english-conversation-app/*`
     - served from external sibling/override root when present, otherwise bundled fallback
     - keeps the existing same-origin browser path so conversation/TTS APIs do not need CORS or alternate ports

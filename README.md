@@ -17,6 +17,7 @@
 1. `start_codex_ui.bat` を実行
 2. `http://127.0.0.1:57525` を開く
 3. プロンプトを入力して `Send`
+4. launcher は常に管理者権限へ self-elevate します。UAC を拒否した場合は起動しません
 
 ## English Conversation App
 
@@ -190,6 +191,7 @@ English Conversation App 連携:
 - Browser 自動起動を止めるには `CODEX_AUTO_OPEN_BROWSER=0`
 - Browser の起動先を変えるには `CODEX_AUTO_OPEN_PATH=/some/path`
 - English Conversation App の static root override は `CODEX_ENGLISH_CONVERSATION_APP_ROOT=/abs/path/to/english-conversation-app`
+- `start_codex_ui.bat` は起動時に管理者権限へ昇格します
 - Edge 優先起動。固定するなら `CODEX_EDGE_EXE`
 - `start_codex_ui.bat` は unset 時だけ以下を補います
   - `CODEX_DEFAULT_EXEC_AGENT=default`

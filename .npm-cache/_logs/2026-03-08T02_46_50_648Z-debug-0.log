@@ -1,0 +1,23 @@
+0 verbose cli C:\Program Files\nodejs\node.exe C:\Program Files\nodejs\node_modules\npm\bin\npm-cli.js
+1 info using npm@11.6.2
+2 info using node@v24.13.0
+3 silly config load:file:C:\Program Files\nodejs\node_modules\npm\npmrc
+4 silly config load:file:C:\Users\akima\Desktop\codex_Original_UI_PJ\.npmrc
+5 error config prefix cannot be changed from project config: C:\Users\akima\Desktop\codex_Original_UI_PJ\.npmrc.
+6 silly config load:file:C:\Users\akima\dev\codex_Original_UI_PJ_with-Harnes\.npmrc
+7 silly config load:file:C:\Users\akima\Desktop\codex_Original_UI_PJ\.npm-prefix\etc\npmrc
+8 verbose title npm exec playwright-cli list
+9 verbose argv "exec" "--yes" "--package" "@playwright/cli" "--" "playwright-cli" "list"
+10 verbose logfile logs-max:10 dir:C:\Users\akima\dev\codex_Original_UI_PJ_with-Harnes\.npm-cache\_logs\2026-03-08T02_46_50_648Z-
+11 verbose logfile C:\Users\akima\dev\codex_Original_UI_PJ_with-Harnes\.npm-cache\_logs\2026-03-08T02_46_50_648Z-debug-0.log
+12 silly logfile start cleaning logs, removing 1 files
+13 silly packumentCache heap:4496293888 maxSize:1124073472 maxEntrySize:562036736
+14 silly logfile done cleaning log files
+15 http fetch GET 200 https://registry.npmjs.org/@playwright%2fcli 93ms (cache revalidated)
+16 silly packumentCache heap:4496293888 maxSize:1124073472 maxEntrySize:562036736
+17 verbose cwd C:\Users\akima\Desktop\codex_Original_UI_PJ
+18 verbose os Windows_NT 10.0.26200
+19 verbose node v24.13.0
+20 verbose npm  v11.6.2
+21 verbose exit 0
+22 info ok

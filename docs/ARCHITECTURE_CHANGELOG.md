@@ -4291,3 +4291,50 @@ Residual risk:
 
 ### Residual Risk
 - Historical commits and proof/signoff bundles still contain snapshots of these files where they were previously committed; this change only stops future root-level tracking noise.
+
+## 108. Launcher Self-Elevation to Administrator (2026-03-08)
+
+### Intent
+- Ensure the primary Windows launcher always starts the harness with Administrator privileges.
+- Remove manual operator steps around right-click `Run as administrator`.
+
+### Implemented
+- Updated `start_codex_ui.bat`:
+  - checks whether the current process is already running as Administrator
+  - when not elevated, relaunches itself with `Start-Process -Verb RunAs`
+  - exits early in the non-elevated parent after spawning the elevated child
+  - reports an error and aborts when UAC elevation is cancelled or fails
+- Updated `README.md` and `docs/CURRENT_ARCHITECTURE.md` to document the always-elevated launcher behavior.
+
+### Verification Evidence
+1. Static launcher check confirms Administrator-role probe is present in `start_codex_ui.bat`
+2. Static launcher check confirms `Start-Process ... -Verb RunAs` relaunch path is present in `start_codex_ui.bat`
+
+### Residual Risk
+- This changes launcher UX: every direct `start_codex_ui.bat` run now triggers a UAC prompt when started from a non-elevated shell.
+
+## 109. Harness UI Stale Running Recovery (2026-03-08)
+
+### Intent
+- Stop `web/01.HarnesUI` from staying in `Running` after the backend has already completed the turn.
+- Let the operator page recover automatically instead of requiring a manual refresh or reconnect.
+
+### Implemented
+- Updated `web/01.HarnesUI/app.js`:
+  - added runtime-side stale-pending reconciliation keyed by the latest terminal turn snapshot
+  - updates the chat harness status/thread/turn when a stale local pending row is recovered
+  - starts a lightweight `/api/runtime` polling loop only while local requests are active
+  - stops that polling loop automatically when no local requests remain or the page unloads
+- Updated `docs/CURRENT_ARCHITECTURE.md`:
+  - documents the active-request runtime polling and stale-pending self-heal behavior for `/01.HarnesUI/*`
+
+### Verification Evidence
+1. `node --check web/01.HarnesUI/app.js` -> PASS
+2. Targeted VM-backed harness script evaluating `web/01.HarnesUI/app.js` reconciliation logic -> PASS
+   - stale local request cleared: `1`
+   - `s.req.size` after reconcile: `0`
+   - chat harness status after reconcile: `completed`
+   - reconciled turn id propagated: `turn-1`
+
+### Residual Risk
+- Real browser automation could not be executed in this environment because Playwright Chromium launch returned `spawn EPERM`, so verification here is limited to syntax plus targeted runtime-logic execution rather than a full headed browser pass.
