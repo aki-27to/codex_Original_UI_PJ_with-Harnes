@@ -1,0 +1,271 @@
+{
+  "schema": "harness-eval-suite.v1",
+  "suiteId": "core-harness-workflow.v4",
+  "description": "Regression suite covering live exec behavior plus deterministic workflow-policy probes for retired worker rejection, parent-dispatch guard enforcement, idempotency lifecycle bridges, task outcomes, and adversarial review.",
+  "outputSchema": {
+    "type": "object",
+    "required": ["status", "latencyMs", "passed", "score", "reason"],
+    "properties": {
+      "status": { "type": "string" },
+      "latencyMs": { "type": "number" },
+      "passed": { "type": "boolean" },
+      "score": { "type": "number" },
+      "reason": { "type": "string" }
+    }
+  },
+  "cases": [
+    {
+      "id": "exact_ack",
+      "title": "Exact ACK contract",
+      "driver": "exec",
+      "prompt": "Reply with exactly: ACK",
+      "weight": 1,
+      "expect": {
+        "mode": "exact",
+        "value": "ACK"
+      }
+    },
+    {
+      "id": "retired_worker_rejected",
+      "title": "Retired worker cannot be selected as runtime agent",
+      "driver": "agent_registry_probe",
+      "input": {
+        "agentName": "worker"
+      },
+      "weight": 2,
+      "expect": {
+        "mode": "json_fields",
+        "fields": {
+          "ok": false,
+          "reason": "agent_not_configured",
+          "agentName": "worker"
+        }
+      }
+    },
+    {
+      "id": "retired_worker_scoped_rejected",
+      "title": "Retired worker scoped alias cannot be selected as runtime agent",
+      "driver": "agent_registry_probe",
+      "input": {
+        "agentName": "worker@chat-legacy"
+      },
+      "weight": 1,
+      "expect": {
+        "mode": "json_fields",
+        "fields": {
+          "ok": false,
+          "reason": "agent_not_configured",
+          "agentName": "worker@chat-legacy"
+        }
+      }
+    },
+    {
+      "id": "requirement_rbj_parent_active",
+      "title": "Parent role activates requirement RBJ loop",
+      "driver": "requirement_rbj_probe",
+      "input": {
+        "prompt": "Implement the requested backend change.",
+        "options": {
+          "agentName": "default"
+        }
+      },
+      "weight": 2,
+      "expect": {
+        "mode": "json_fields",
+        "fields": {
+          "active": true,
+          "mode": "requirement_definition_loop",
+          "reason": "active"
+        }
+      }
+    },
+    {
+      "id": "parent_dispatch_guard_violation",
+      "title": "Parent completion without child dispatch is blocked",
+      "driver": "parent_dispatch_guard_probe",
+      "input": {
+        "mode": "enforce",
+        "agentName": "default",
+        "executionProfile": "full-runtime",
+        "finalStatus": "completed",
+        "fileChanges": 1,
+        "dispatchCount": 0,
+        "dispatchSuccessCount": 0,
+        "dispatchFailureCount": 0,
+        "collabCalls": 0,
+        "attempt": 0,
+        "maxRetries": 1
+      },
+      "weight": 2,
+      "expect": {
+        "mode": "json_fields",
+        "fields": {
+          "violation": 1,
+          "reason": "dispatch_not_attempted",
+          "retry": 1
+        }
+      }
+    },
+    {
+      "id": "idempotency_failed_outcome_bridge",
+      "title": "Idempotency duplicate bridge keeps lifecycle and failed outcome separate",
+      "driver": "idempotency_bridge_probe",
+      "input": {
+        "state": "failed",
+        "outcomeStatus": "failed",
+        "taskOutcomeStatus": "FAILED_VALIDATION",
+        "taskOutcomeReason": "parent_dispatch_guard_block",
+        "errorText": "probe failure"
+      },
+      "weight": 2,
+      "expect": {
+        "mode": "json_fields",
+        "fields": {
+          "lifecycleState": "failed",
+          "terminalStatus": "failed",
+          "outcomeStatus": "failed",
+          "duplicateOk": false,
+          "internalExecStatus": "failed"
+        }
+      }
+    },
+    {
+      "id": "needs_input_blocked_policy",
+      "title": "Non-interactive user input can be forced to blocked",
+      "driver": "request_user_input_probe",
+      "input": {
+        "policy": "blocked",
+        "params": {
+          "questions": [
+            {
+              "id": "approval_mode",
+              "options": [
+                { "label": "Safe (Recommended)", "value": "safe" },
+                { "label": "Fast", "value": "fast" }
+              ]
+            }
+          ]
+        }
+      },
+      "weight": 1,
+      "expect": {
+        "mode": "json_fields",
+        "fields": {
+          "decision": "blocked",
+          "reason": "blocked_non_interactive_user_input_policy"
+        }
+      }
+    },
+    {
+      "id": "failed_validation_missing_evidence",
+      "title": "Missing evidence maps to FAILED_VALIDATION",
+      "driver": "task_outcome_probe",
+      "input": {
+        "turnStatus": "failed",
+        "missingEvidence": true
+      },
+      "weight": 2,
+      "expect": {
+        "mode": "json_fields",
+        "fields": {
+          "status": "FAILED_VALIDATION",
+          "reason": "missing_required_evidence"
+        }
+      }
+    },
+    {
+      "id": "needs_input_from_approval",
+      "title": "Approval unavailability maps to NEEDS_INPUT",
+      "driver": "task_outcome_probe",
+      "input": {
+        "turnStatus": "failed",
+        "approvalReason": "interactive_approval_unavailable"
+      },
+      "weight": 1,
+      "expect": {
+        "mode": "json_fields",
+        "fields": {
+          "status": "NEEDS_INPUT",
+          "reason": "interactive_approval_unavailable"
+        }
+      }
+    },
+    {
+      "id": "turn_task_outcome_bridge_failed_validation",
+      "title": "Failed turn accepts FAILED_VALIDATION outcome",
+      "driver": "turn_task_outcome_probe",
+      "input": {
+        "turnStatus": "failed",
+        "taskOutcomeStatus": "FAILED_VALIDATION"
+      },
+      "weight": 1,
+      "expect": {
+        "mode": "json_fields",
+        "fields": {
+          "ok": true,
+          "reason": "ok"
+        }
+      }
+    },
+    {
+      "id": "turn_task_outcome_bridge_blocked",
+      "title": "Failed turn accepts BLOCKED outcome",
+      "driver": "turn_task_outcome_probe",
+      "input": {
+        "turnStatus": "failed",
+        "taskOutcomeStatus": "BLOCKED"
+      },
+      "weight": 1,
+      "expect": {
+        "mode": "json_fields",
+        "fields": {
+          "ok": true,
+          "reason": "ok"
+        }
+      }
+    },
+    {
+      "id": "adversarial_exact_contract_mismatch",
+      "title": "Adversarial shadow review catches exact reply mismatch",
+      "driver": "adversarial_shadow_probe",
+      "input": {
+        "prompt": "Reply with exactly: ACK",
+        "answer": "NOPE",
+        "status": "completed"
+      },
+      "weight": 1,
+      "expect": {
+        "mode": "json_fields",
+        "fields": {
+          "decision": "needs_improvement",
+          "judge.verdict": "needs_improvement",
+          "signals.exactReplyContract": true
+        }
+      }
+    },
+    {
+      "id": "adversarial_failed_validation_retry",
+      "title": "Adversarial loop retries FAILED_VALIDATION outcomes",
+      "driver": "adversarial_loop_probe",
+      "input": {
+        "enabled": true,
+        "finalStatus": "failed",
+        "taskOutcomeStatus": "FAILED_VALIDATION",
+        "decision": "needs_improvement",
+        "attempt": 0,
+        "maxRetries": 1,
+        "writable": true,
+        "clientClosed": false
+      },
+      "weight": 1,
+      "expect": {
+        "mode": "json_fields",
+        "fields": {
+          "retry": true,
+          "reason": "failed_validation_review_failed",
+          "nextAttempt": 1
+        }
+      }
+    }
+  ]
+}

@@ -1,0 +1,39 @@
+{
+  "schema": "harness-turn-contract.v1",
+  "turn": {
+    "states": [
+      "in_progress",
+      "completed",
+      "interrupted",
+      "failed"
+    ],
+    "terminalStates": [
+      "completed",
+      "interrupted",
+      "failed"
+    ],
+    "terminalEvent": "turn/completed",
+    "transitions": [
+      { "from": "in_progress", "to": "completed" },
+      { "from": "in_progress", "to": "interrupted" },
+      { "from": "in_progress", "to": "failed" }
+    ]
+  },
+  "taskOutcomeBridge": {
+    "allowedByTurnState": {
+      "completed": [
+        "COMPLETED",
+        "PARTIAL"
+      ],
+      "interrupted": [
+        "BLOCKED",
+        "NEEDS_INPUT"
+      ],
+      "failed": [
+        "FAILED_VALIDATION",
+        "BLOCKED",
+        "NEEDS_INPUT"
+      ]
+    }
+  }
+}

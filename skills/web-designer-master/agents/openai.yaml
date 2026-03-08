@@ -1,0 +1,7 @@
+interface:
+  display_name: "Web Designer Master"
+  short_description: "Create premium, non-generic websites with strong visual direction and production polish."
+  default_prompt: "Use $web-designer-master to design a client-ready website with a unique visual identity."
+
+policy:
+  allow_implicit_invocation: true

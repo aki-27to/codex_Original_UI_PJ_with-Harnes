@@ -1,0 +1,517 @@
+{
+  "schema": "skill-catalog.v1",
+  "version": "2026-03-07.r3",
+  "updatedAt": "2026-03-07",
+  "assignments": {
+    "default": [
+      "openai-docs",
+      "skill-creator-master",
+      "skill-creator",
+      "skill-installer",
+      "spec-sync-assistant",
+      "parent-dispatch-guard",
+      "feedback-promotion-governor",
+      "red-requirement-auditor"
+    ],
+    "intake": [
+      "openai-docs",
+      "parent-dispatch-guard",
+      "feedback-promotion-governor",
+      "red-requirement-auditor"
+    ],
+    "release_manager": [
+      "openai-docs",
+      "spreadsheet",
+      "turn-log-auditor",
+      "release-evidence-gate",
+      "spec-sync-assistant",
+      "parent-dispatch-guard",
+      "feedback-promotion-governor",
+      "red-requirement-auditor"
+    ],
+    "frontend_worker": [
+      "playwright",
+      "screenshot",
+      "ui-regression-diff"
+    ],
+    "backend_worker": [
+      "openai-docs",
+      "pdf",
+      "spreadsheet",
+      "appserver-protocol-debugger",
+      "api-contract-testgen"
+    ],
+    "infra_worker": [
+      "openai-docs",
+      "skill-installer",
+      "windows-runtime-ops"
+    ],
+    "tester": [
+      "playwright",
+      "screenshot",
+      "spreadsheet",
+      "pdf",
+      "appserver-protocol-debugger",
+      "ui-regression-diff",
+      "api-contract-testgen"
+    ],
+    "reviewer": [
+      "openai-docs",
+      "turn-log-auditor"
+    ],
+    "explorer": [
+      "openai-docs"
+    ]
+  },
+  "skills": {
+    "openai-docs": {
+      "class": "global",
+      "coverage": "generic",
+      "maturity": "stable",
+      "ownerRoles": [
+        "default",
+        "intake",
+        "release_manager",
+        "backend_worker",
+        "infra_worker",
+        "reviewer",
+        "explorer"
+      ],
+      "intent": "Use official OpenAI docs as the source of truth for API and platform behavior.",
+      "primaryMetric": {
+        "name": "citation_validity_rate",
+        "target": 0.98,
+        "direction": "higher_is_better"
+      },
+      "guardMetrics": [
+        {
+          "name": "unverified_claim_rate",
+          "limit": 0.02,
+          "direction": "lower_is_better"
+        }
+      ]
+    },
+    "skill-creator": {
+      "class": "role",
+      "coverage": "semi_generic",
+      "maturity": "stable",
+      "ownerRoles": [
+        "default"
+      ],
+      "intent": "Create or improve skill packages with repeatable prompts, references, and checks.",
+      "primaryMetric": {
+        "name": "skill_adoption_rate",
+        "target": 0.75,
+        "direction": "higher_is_better"
+      },
+      "guardMetrics": [
+        {
+          "name": "skill_rework_rate",
+          "limit": 0.25,
+          "direction": "lower_is_better"
+        }
+      ]
+    },
+    "skill-installer": {
+      "class": "role",
+      "coverage": "semi_generic",
+      "maturity": "stable",
+      "ownerRoles": [
+        "default",
+        "infra_worker"
+      ],
+      "intent": "Install and update skill packages safely from curated or repository sources.",
+      "primaryMetric": {
+        "name": "install_success_rate",
+        "target": 0.95,
+        "direction": "higher_is_better"
+      },
+      "guardMetrics": [
+        {
+          "name": "broken_install_rate",
+          "limit": 0.03,
+          "direction": "lower_is_better"
+        }
+      ]
+    },
+    "spec-sync-assistant": {
+      "class": "role",
+      "coverage": "semi_generic",
+      "maturity": "candidate",
+      "ownerRoles": [
+        "default",
+        "release_manager"
+      ],
+      "intent": "Synchronize implementation and verification evidence into architecture documents.",
+      "primaryMetric": {
+        "name": "spec_sync_completion_rate",
+        "target": 0.95,
+        "direction": "higher_is_better"
+      },
+      "guardMetrics": [
+        {
+          "name": "spec_code_mismatch_rate",
+          "limit": 0.05,
+          "direction": "lower_is_better"
+        }
+      ]
+    },
+    "release-evidence-gate": {
+      "class": "role",
+      "coverage": "semi_generic",
+      "maturity": "candidate",
+      "ownerRoles": [
+        "release_manager"
+      ],
+      "intent": "Produce deterministic PASS or FAIL or BLOCKED release verdicts from evidence matrices.",
+      "primaryMetric": {
+        "name": "gate_decision_precision",
+        "target": 0.93,
+        "direction": "higher_is_better"
+      },
+      "guardMetrics": [
+        {
+          "name": "false_pass_rate",
+          "limit": 0.02,
+          "direction": "lower_is_better"
+        }
+      ]
+    },
+    "parent-dispatch-guard": {
+      "class": "role",
+      "coverage": "semi_generic",
+      "maturity": "candidate",
+      "ownerRoles": [
+        "default",
+        "intake",
+        "release_manager"
+      ],
+      "intent": "Enforce reliable parent-to-child collab dispatch before parent completion.",
+      "primaryMetric": {
+        "name": "dispatch_success_before_completion_rate",
+        "target": 0.95,
+        "direction": "higher_is_better"
+      },
+      "guardMetrics": [
+        {
+          "name": "silent_parent_no_dispatch_rate",
+          "limit": 0.02,
+          "direction": "lower_is_better"
+        }
+      ]
+    },
+    "feedback-promotion-governor": {
+      "class": "role",
+      "coverage": "semi_generic",
+      "maturity": "candidate",
+      "ownerRoles": [
+        "default",
+        "intake",
+        "release_manager"
+      ],
+      "intent": "Promote user-feedback-driven adjustments from turn to session/global scope only when repeat evidence supports root-level improvement.",
+      "primaryMetric": {
+        "name": "root_improvement_promotion_precision",
+        "target": 0.9,
+        "direction": "higher_is_better"
+      },
+      "guardMetrics": [
+        {
+          "name": "local_overfit_promotion_rate",
+          "limit": 0.08,
+          "direction": "lower_is_better"
+        }
+      ]
+    },
+    "red-requirement-auditor": {
+      "class": "role",
+      "coverage": "semi_generic",
+      "maturity": "candidate",
+      "ownerRoles": [
+        "default",
+        "intake",
+        "release_manager"
+      ],
+      "intent": "Audit requirement drafts to remove ambiguity and improve testability before implementation planning.",
+      "primaryMetric": {
+        "name": "requirement_clarity_gain",
+        "target": 0.88,
+        "direction": "higher_is_better"
+      },
+      "guardMetrics": [
+        {
+          "name": "untraceable_finding_rate",
+          "limit": 0.08,
+          "direction": "lower_is_better"
+        }
+      ]
+    },
+    "playwright": {
+      "class": "role",
+      "coverage": "semi_generic",
+      "maturity": "stable",
+      "ownerRoles": [
+        "frontend_worker",
+        "tester"
+      ],
+      "intent": "Automate browser workflows for UI behavior verification and reproducible evidence capture.",
+      "primaryMetric": {
+        "name": "ui_flow_repro_rate",
+        "target": 0.92,
+        "direction": "higher_is_better"
+      },
+      "guardMetrics": [
+        {
+          "name": "flaky_run_rate",
+          "limit": 0.1,
+          "direction": "lower_is_better"
+        }
+      ]
+    },
+    "turn-log-auditor": {
+      "class": "scenario",
+      "coverage": "partial",
+      "maturity": "candidate",
+      "ownerRoles": [
+        "release_manager",
+        "reviewer"
+      ],
+      "intent": "Audit turn artifacts and operation logs for protocol and governance defects.",
+      "primaryMetric": {
+        "name": "log_defect_detection_rate",
+        "target": 0.9,
+        "direction": "higher_is_better"
+      },
+      "guardMetrics": [
+        {
+          "name": "false_alarm_rate",
+          "limit": 0.1,
+          "direction": "lower_is_better"
+        }
+      ]
+    },
+    "screenshot": {
+      "class": "scenario",
+      "coverage": "partial",
+      "maturity": "stable",
+      "ownerRoles": [
+        "frontend_worker",
+        "tester"
+      ],
+      "intent": "Capture OS-level screenshots when browser-native capture is insufficient.",
+      "primaryMetric": {
+        "name": "evidence_capture_success_rate",
+        "target": 0.95,
+        "direction": "higher_is_better"
+      },
+      "guardMetrics": [
+        {
+          "name": "sensitive_data_capture_rate",
+          "limit": 0.01,
+          "direction": "lower_is_better"
+        }
+      ]
+    },
+    "ui-regression-diff": {
+      "class": "scenario",
+      "coverage": "partial",
+      "maturity": "candidate",
+      "ownerRoles": [
+        "frontend_worker",
+        "tester"
+      ],
+      "intent": "Detect and triage visual regressions across desktop and mobile capture matrices.",
+      "primaryMetric": {
+        "name": "regression_detection_recall",
+        "target": 0.9,
+        "direction": "higher_is_better"
+      },
+      "guardMetrics": [
+        {
+          "name": "false_regression_rate",
+          "limit": 0.12,
+          "direction": "lower_is_better"
+        }
+      ]
+    },
+    "pdf": {
+      "class": "scenario",
+      "coverage": "partial",
+      "maturity": "stable",
+      "ownerRoles": [
+        "backend_worker",
+        "tester"
+      ],
+      "intent": "Read or generate PDFs while preserving layout and extraction correctness.",
+      "primaryMetric": {
+        "name": "pdf_task_success_rate",
+        "target": 0.92,
+        "direction": "higher_is_better"
+      },
+      "guardMetrics": [
+        {
+          "name": "layout_regression_rate",
+          "limit": 0.08,
+          "direction": "lower_is_better"
+        }
+      ]
+    },
+    "spreadsheet": {
+      "class": "scenario",
+      "coverage": "partial",
+      "maturity": "stable",
+      "ownerRoles": [
+        "release_manager",
+        "backend_worker",
+        "tester"
+      ],
+      "intent": "Analyze or update structured spreadsheet artifacts with formula fidelity.",
+      "primaryMetric": {
+        "name": "sheet_transform_accuracy",
+        "target": 0.95,
+        "direction": "higher_is_better"
+      },
+      "guardMetrics": [
+        {
+          "name": "formula_breakage_rate",
+          "limit": 0.05,
+          "direction": "lower_is_better"
+        }
+      ]
+    },
+    "appserver-protocol-debugger": {
+      "class": "scenario",
+      "coverage": "partial",
+      "maturity": "candidate",
+      "ownerRoles": [
+        "backend_worker",
+        "tester"
+      ],
+      "intent": "Diagnose and recover app-server protocol lifecycle failures with evidence-driven checks.",
+      "primaryMetric": {
+        "name": "protocol_issue_resolution_rate",
+        "target": 0.9,
+        "direction": "higher_is_better"
+      },
+      "guardMetrics": [
+        {
+          "name": "regression_reopen_rate",
+          "limit": 0.07,
+          "direction": "lower_is_better"
+        }
+      ]
+    },
+    "windows-runtime-ops": {
+      "class": "scenario",
+      "coverage": "partial",
+      "maturity": "candidate",
+      "ownerRoles": [
+        "infra_worker"
+      ],
+      "intent": "Diagnose Windows-local launcher, process, port, path, and permission failures with bounded recovery steps.",
+      "primaryMetric": {
+        "name": "runtime_recovery_success_rate",
+        "target": 0.9,
+        "direction": "higher_is_better"
+      },
+      "guardMetrics": [
+        {
+          "name": "unintended_host_change_rate",
+          "limit": 0.03,
+          "direction": "lower_is_better"
+        }
+      ]
+    },
+    "api-contract-testgen": {
+      "class": "scenario",
+      "coverage": "partial",
+      "maturity": "candidate",
+      "ownerRoles": [
+        "backend_worker",
+        "tester"
+      ],
+      "intent": "Generate focused API contract tests from route definitions, validation logic, and status-schema behavior.",
+      "primaryMetric": {
+        "name": "contract_case_generation_accuracy",
+        "target": 0.9,
+        "direction": "higher_is_better"
+      },
+      "guardMetrics": [
+        {
+          "name": "brittle_contract_test_rate",
+          "limit": 0.08,
+          "direction": "lower_is_better"
+        }
+      ]
+    },
+    "web-designer-master": {
+      "class": "experiment",
+      "coverage": "partial",
+      "maturity": "experimental",
+      "ownerRoles": [
+        "frontend_worker"
+      ],
+      "intent": "Explore bold UI/UX directions while maintaining implementation quality constraints.",
+      "primaryMetric": {
+        "name": "design_acceptance_rate",
+        "target": 0.7,
+        "direction": "higher_is_better"
+      },
+      "guardMetrics": [
+        {
+          "name": "ux_regression_rate",
+          "limit": 0.15,
+          "direction": "lower_is_better"
+        }
+      ]
+    },
+    "skill-creator-master": {
+      "class": "experiment",
+      "coverage": "partial",
+      "maturity": "experimental",
+      "ownerRoles": [
+        "default"
+      ],
+      "intent": "Prototype alternate skill-authoring playbooks before promoting into stable skill-creator policy.",
+      "primaryMetric": {
+        "name": "prototype_to_adoption_rate",
+        "target": 0.5,
+        "direction": "higher_is_better"
+      },
+      "guardMetrics": [
+        {
+          "name": "operator_confusion_rate",
+          "limit": 0.2,
+          "direction": "lower_is_better"
+        }
+      ]
+    },
+    "blender-pro-character-pipeline": {
+      "class": "scenario",
+      "coverage": "partial",
+      "maturity": "candidate",
+      "ownerRoles": [
+        "frontend_worker"
+      ],
+      "intent": "Raise Blender character model and animation quality with strict gates, then validate export fidelity.",
+      "primaryMetric": {
+        "name": "character_quality_gate_pass_rate",
+        "target": 0.86,
+        "direction": "higher_is_better"
+      },
+      "guardMetrics": [
+        {
+          "name": "export_fidelity_regression_rate",
+          "limit": 0.08,
+          "direction": "lower_is_better"
+        },
+        {
+          "name": "robotic_motion_detection_rate",
+          "limit": 0.12,
+          "direction": "lower_is_better"
+        }
+      ]
+    }
+  },
+  "missingProposals": []
+}

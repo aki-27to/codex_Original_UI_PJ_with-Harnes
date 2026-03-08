@@ -1,0 +1,8 @@
+# Runtime evidence artifacts and local operation logs
+logs/turns/
+logs/codex_ops*.jsonl
+logs/archive/
+tools/piper/*
+!tools/piper/README.md
+tools/kokoro-fastapi/cache/
+tools/kokoro-fastapi/.env

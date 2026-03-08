@@ -1,0 +1,20 @@
+{
+  "turnStarted": {
+    "type": "turn",
+    "phase": "started",
+    "agentName": "default",
+    "threadId": "019cc806-da05-7f83-985a-808cbcfb49c0",
+    "turnId": "019cc806-dac9-7142-a7e0-8bdb3b723054"
+  },
+  "turnCompleted": {
+    "type": "turn",
+    "phase": "completed",
+    "agentName": "default",
+    "threadId": "019cc806-da05-7f83-985a-808cbcfb49c0",
+    "turnId": "019cc806-dac9-7142-a7e0-8bdb3b723054",
+    "status": "completed",
+    "taskOutcomeStatus": "COMPLETED",
+    "taskOutcomeReason": "completed_default"
+  },
+  "eventCount": 626
+}

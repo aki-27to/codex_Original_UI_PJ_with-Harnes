@@ -1,0 +1,112 @@
+﻿# AGENT_OPERATING_RULES
+
+Updated: 2026-03-07
+
+## 1) Scope
+This document contains tier-1 operating rules referenced by `AGENTS.md`.
+- It expands execution policy only; `AGENTS.md` remains the tier-0 constitution.
+- If this document and machine-readable config disagree on skill IDs or assignments, `scripts/config/skill_catalog.json` wins.
+
+## 2) Hierarchical Flow (5-Step)
+- System model: one Parent Orchestrator + specialist Children.
+- Parent duties:
+  - Step 1 `Requirement Understanding`: lock explicit goal + over-delivery scope.
+  - Step 2 `Planning and Dispatch`: split tasks, assign specialists, define acceptance checks.
+  - Step 4 `Parent Review`: validate child outcomes against baseline and over-delivery criteria.
+  - Step 5 `Final Report`: report baseline result + added value + residual risks.
+- Child duties:
+  - Step 3 `Specialist Execution`: execute assigned tasks with evidence.
+- Collaboration-first rule:
+  - end-to-end user execution defaults to `default`
+  - `intake` and `release_manager` are phase-scoped parent overlays, not interchangeable general-purpose parents
+
+## 3) Role Routing
+- `default` (Parent Orchestrator): default runtime entrypoint, end-to-end parent owner, and the only general-purpose parent role.
+- `intake` (Parent Planner): Step 1/2-only requirement contract + dispatch matrix; not a release gate or implementation fallback.
+- `release_manager` (Parent Gate): Step 4/5-only final review loop + release decision; not an intake planner or implementation fallback.
+- `frontend_worker` (Child): `web/` UI/UX and browser behavior.
+- `backend_worker` (Child): `server.js`, `scripts/`, protocol/API behavior.
+- `infra_worker` (Child): `.codex/`, launch/runtime/logging/operational reliability.
+- `tester` (Child): executable verification and user-journey checks.
+- `reviewer` (Child): independent defect/risk review.
+- `explorer` (Child, read-only): uncertainty reduction and repository fact-finding.
+- `worker` is no longer an active configured child role. It remains only as a legacy governance contract artifact for compatibility audits and must not appear in normal dispatch plans.
+
+## 4) Parent Runtime Posture
+- Config-backed parent defaults:
+  - `default`: `sandbox_mode = "workspace-write"`, `approval_policy = "never"`
+  - `intake`: `sandbox_mode = "read-only"`, `approval_policy = "never"`
+  - `release_manager`: `sandbox_mode = "read-only"`, `approval_policy = "never"`
+- Request-user-input posture:
+  - parent roles must not self-answer real user decisions just because a runtime offers `auto-*` request-user-input behavior
+  - AGENTS approval-boundary items must surface as `NEEDS_INPUT` or `BLOCKED`
+  - `intake` records unresolved questions, `release_manager` blocks on unresolved decisions, and `default` owns the final user-facing handoff
+
+## 5) Tool/MCP Assignment Policy
+- Browser-centric tooling (for example Playwright/screenshot) routes to `frontend_worker`.
+- Protocol/runtime/API checks route to `backend_worker`.
+- Config/runtime/logging diagnostics route to `infra_worker`.
+- `reviewer` and `explorer` are read-only roles.
+
+## 6) Skill Assignment Policy
+- `default` (Parent Orchestrator):
+  - `openai-docs`, `skill-creator-master`, `skill-creator`, `skill-installer`,
+  - `spec-sync-assistant`, `parent-dispatch-guard`, `feedback-promotion-governor`, `red-requirement-auditor`
+- `intake` (Parent Planner):
+  - `openai-docs`, `parent-dispatch-guard`, `feedback-promotion-governor`, `red-requirement-auditor`
+- `release_manager` (Parent Gate):
+  - `openai-docs`, `spreadsheet`, `turn-log-auditor`, `release-evidence-gate`,
+  - `spec-sync-assistant`, `parent-dispatch-guard`, `feedback-promotion-governor`, `red-requirement-auditor`
+- `frontend_worker` (Child): `playwright`, `screenshot`, `ui-regression-diff`
+- `backend_worker` (Child): `openai-docs`, `pdf`, `spreadsheet`, `appserver-protocol-debugger`, `api-contract-testgen`
+- `infra_worker` (Child): `openai-docs`, `skill-installer`, `windows-runtime-ops`
+- `tester` (Child): `playwright`, `screenshot`, `spreadsheet`, `pdf`, `appserver-protocol-debugger`, `ui-regression-diff`, `api-contract-testgen`
+- `reviewer` (Child, read-only): `openai-docs`, `turn-log-auditor`
+- `explorer` (Child, read-only): `openai-docs`
+
+## 7) Skill ID Consistency Rule
+- Source of truth for skill IDs is `scripts/config/skill_catalog.json`.
+- Use exact catalog IDs in prompts, dispatch, and policy checks.
+- Do not invent alternate spellings in execution paths.
+- Current canonical experiment ID is `skill-creator-master`.
+- Historical references to `skill-creater-maseter` are legacy pre-migration references only.
+
+## 8) Skill Routing Requirements
+- Parent roles (`default`, `intake`, `release_manager`) should not execute specialist skill workflows directly when delegation is possible.
+- Runtime agent selection must reject `worker`; it is retired from active routing and not configured in `.codex/config.toml`.
+- The machine-readable governance contract may still retain `worker` metadata for bounded legacy audit compatibility, but normal execution and eval baselines must not target it.
+- Parent delegation flow must invoke `$parent-dispatch-guard` before completing Step 2/4/5 when child dispatch is expected.
+- Skill package create/update requests must invoke `$skill-creator-master` first; use `$skill-creator` only as fallback when unavailable.
+- Feedback-driven tuning or self-improvement scope changes must invoke `$feedback-promotion-governor` before any session/global promotion.
+- Requirement definition must run RBJ before Step 2 dispatch:
+  - Blue draft -> Red audit (`$red-requirement-auditor`) -> Judge verdict.
+- Red findings without `requirement_ref` must be discarded by Judge.
+- Frontend verification requiring browser operation must use `playwright` (and optionally `screenshot`) through `frontend_worker` or `tester`.
+- OpenAI API/platform behavior checks must use `openai-docs`.
+- If an assigned skill is unavailable at runtime, report the gap explicitly and include a replacement plan.
+
+## 9) Explicit Skill Invocation Requirements
+- If a task matches an assigned skill, the parent must include the skill token explicitly in dispatch prompts.
+- Child agents must acknowledge the explicit skill token and follow that skill workflow before fallback heuristics.
+- Step 4 Parent Review treats missing explicit skill invocation as a process defect when relevant skills are available.
+- Final reports should include a skill-usage ledger (`role -> $skill-name -> evidence`).
+
+## 10) Missing-Skill Proposal Tracking
+- Maintain missing/desired skill proposals in `docs/AGENT_SKILL_MATRIX.md`.
+- If blocked by missing skill capability, include proposal ID and intended owner role in the final report.
+
+## 11) QA and Release Gates
+
+### 11.1 Dynamic QA Gate for Over-Delivery
+- If over-delivery adds logic (branches, timers, retries, fallback/error handling), Parent must dispatch `tester` to create/run dedicated automated tests.
+- Any over-delivery artifact without dedicated test evidence must be marked `FAIL` by `release_manager`.
+- Step 4 evidence is incomplete unless it includes dedicated test command and PASS output.
+
+### 11.2 Auto-Documentation Gate (Step 5 Sync)
+- Before Step 5 Final Report, update `docs/CURRENT_ARCHITECTURE.md` with baseline and over-delivery details, design intent, related tests, and current-state impact.
+- Append a matching change entry to `docs/ARCHITECTURE_CHANGELOG.md`.
+- Missing spec synchronization blocks `COMPLETED`.
+
+### 11.3 Performance/Intent Rule
+- Performance means maximizing user satisfaction, not only speed.
+- Never trade away intent alignment for speed.

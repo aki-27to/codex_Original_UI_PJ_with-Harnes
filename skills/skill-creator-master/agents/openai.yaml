@@ -1,0 +1,7 @@
+interface:
+  display_name: "Skill Creator Master"
+  short_description: "Create and refine Codex skills with strict trigger and validation rules."
+  default_prompt: "Use $skill-creator-master to design and validate a new Codex skill from scratch."
+
+policy:
+  allow_implicit_invocation: true

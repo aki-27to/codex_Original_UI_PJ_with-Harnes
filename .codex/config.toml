@@ -1,0 +1,42 @@
+﻿[features]
+multi_agent = true
+collaboration_modes = true
+
+[agents]
+max_threads = 12
+
+[agents.default]
+description = "Primary parent orchestrator and default entrypoint. Owns end-to-end collaboration flow, delegates implementation, and closes only after parent review."
+config_file = "agents/default.toml"
+
+[agents.intake]
+description = "Phase-scoped parent planner for Step 1/2 only. Locks requirements and dispatch criteria; no implementation or release verdict."
+config_file = "agents/intake.toml"
+
+[agents.explorer]
+description = "Read-only investigator. Resolves intent ambiguity and risk-critical facts with precise evidence."
+config_file = "agents/explorer.toml"
+
+[agents.frontend_worker]
+description = "Child specialist (frontend). Owns web UI, UX, and browser behavior."
+config_file = "agents/frontend-worker.toml"
+
+[agents.backend_worker]
+description = "Child specialist (backend). Owns server/app-server protocol and API behavior."
+config_file = "agents/backend-worker.toml"
+
+[agents.infra_worker]
+description = "Child specialist (infra). Owns runtime config, launch scripts, and operational reliability."
+config_file = "agents/infra-worker.toml"
+
+[agents.reviewer]
+description = "Child specialist (review). Performs independent defect/risk review."
+config_file = "agents/reviewer.toml"
+
+[agents.tester]
+description = "Child specialist (verification). Executes tests and user-journey checks with reproducible evidence."
+config_file = "agents/tester.toml"
+
+[agents.release_manager]
+description = "Phase-scoped parent gate for Step 4/5 only. Reviews evidence and release docs; no intake planning or direct implementation."
+config_file = "agents/release-manager.toml"

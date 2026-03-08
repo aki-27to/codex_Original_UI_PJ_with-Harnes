@@ -1,0 +1,109 @@
+{
+  "generatedAt": "2026-03-07T10:04:05.654Z",
+  "port": 57769,
+  "proofRoot": "C:\\Users\\akima\\Desktop\\codex_Original_UI_PJ\\logs\\proofs\\runtime-proof-2026-03-07T10-04-05-648Z-53982d",
+  "harnessMemoryPath": "C:\\Users\\akima\\Desktop\\codex_Original_UI_PJ\\logs\\proofs\\runtime-proof-2026-03-07T10-04-05-648Z-53982d\\harness_execution_memory.json",
+  "evalHistoryPath": "C:\\Users\\akima\\Desktop\\codex_Original_UI_PJ\\logs\\proofs\\runtime-proof-2026-03-07T10-04-05-648Z-53982d\\eval_runs.jsonl",
+  "turnArtifactsDir": "C:\\Users\\akima\\Desktop\\codex_Original_UI_PJ\\logs\\proofs\\runtime-proof-2026-03-07T10-04-05-648Z-53982d\\turns",
+  "runtime": {
+    "nonInteractiveUserInput": {
+      "policy": "blocked",
+      "envKey": "CODEX_REQUEST_USER_INPUT_POLICY"
+    },
+    "parentDispatchGuard": {
+      "enabled": 1,
+      "mode": "enforce",
+      "envKey": "CODEX_PARENT_DISPATCH_GUARD_MODE",
+      "maxRetries": 1,
+      "parentAgents": [
+        "default",
+        "intake",
+        "release_manager"
+      ]
+    },
+    "harnessMemory": {
+      "schema": "harness-execution-memory.v1",
+      "storage": "logs/proofs/runtime-proof-2026-03-07T10-04-05-648Z-53982d/harness_execution_memory.json",
+      "envKey": "CODEX_HARNESS_MEMORY_PATH",
+      "loaded": 1,
+      "retentionDays": 30,
+      "counts": {
+        "contract": 0,
+        "contractActive": 0,
+        "execution": 0,
+        "audit": 0,
+        "replay": 0,
+        "patterns": 0
+      },
+      "lastPersistedAt": 0
+    },
+    "evalHarness": {
+      "suite": {
+        "schema": "harness-eval-suite.v1",
+        "suiteId": "core-harness-workflow.v4",
+        "description": "Regression suite covering live exec behavior plus deterministic workflow-policy probes for retired worker rejection, parent-dispatch guard enforcement, idempotency lifecycle bridges, task outcomes, and adversarial review.",
+        "caseCount": 13,
+        "caseIds": [
+          "exact_ack",
+          "retired_worker_rejected",
+          "retired_worker_scoped_rejected",
+          "requirement_rbj_parent_active",
+          "parent_dispatch_guard_violation",
+          "idempotency_failed_outcome_bridge",
+          "needs_input_blocked_policy",
+          "failed_validation_missing_evidence",
+          "needs_input_from_approval",
+          "turn_task_outcome_bridge_failed_validation",
+          "turn_task_outcome_bridge_blocked",
+          "adversarial_exact_contract_mismatch",
+          "adversarial_failed_validation_retry"
+        ],
+        "outputSchema": {
+          "type": "object",
+          "required": [
+            "status",
+            "latencyMs",
+            "passed",
+            "score",
+            "reason"
+          ],
+          "properties": {
+            "status": {
+              "type": "string"
+            },
+            "latencyMs": {
+              "type": "number"
+            },
+            "passed": {
+              "type": "boolean"
+            },
+            "score": {
+              "type": "number"
+            },
+            "reason": {
+              "type": "string"
+            }
+          }
+        }
+      },
+      "configPath": "scripts/config/eval_suite_default.json",
+      "historyPath": "logs/proofs/runtime-proof-2026-03-07T10-04-05-648Z-53982d/eval_runs.jsonl",
+      "historyEnvKey": "CODEX_EVAL_HISTORY_PATH",
+      "maxCases": 12,
+      "maxVariants": 3,
+      "caseTimeoutMs": 180000
+    }
+  },
+  "liveExec": null,
+  "probePersistence": null,
+  "memory": null,
+  "error": "live exec memory should record fileChanges > 0",
+  "serverLogs": [
+    "(node:41416) [DEP0190] DeprecationWarning: Passing args to a child process with shell option true can lead to security vulnerabilities, as the arguments are not escaped, only concatenated.\n(Use `node --trace-deprecation ...` to show where the warning was created)\n",
+    "[turn-state] {\"event_type\":\"turn_started\",\"event_at\":\"2026-03-07T10:04:06.688Z\",\"turn_id\":\"019cc7c1-18a0-7aa3-9f65-cc6100ed306f\",\"thread_id\":\"019cc7c1-1760-7a90-95fe-0c60c52c14db\",\"agent_name\":\"default\",\"source\":\"runtime_proof_script\",\"execution_profile\":\"proof-runtime\",\"execution_intent\":\"proof-live-dispatch\",\"smoke_like_profile\":0,\"full_utilization_defaults_ready\":0,\"full_utilization_turn_ready\":0,\"full_utilization_observed\":0,\"parent_dispatch_guard\":null,\"observed_signals\":{\"commandExecutions\":0,\"commandFailures\":0,\"fileChanges\":0,\"changedFiles\":0,\"mcpCalls\":0,\"collabCalls\":0,\"collabFailures\":0,\"webSearches\":0,\"dispatchCount\":0,\"dispatchSuccessCount\":0,\"dispatchFailureCount\":0,\"dispatchChildren\":[],\"itemCounts\":{}},\"artifact_dir\":null,\"artifact_manifest_path\":null,\"artifact_manifest_sha256\":null,\"visibility\":{\"profile\":{\"runtime\":\"proof-runtime\",\"request\":\"proof-runtime\",\"effective\":\"proof-runtime\",\"envKey\":\"CODEX_EXECUTION_PROFILE\",\"smokeLike\":0,\"repro\":0},\"intent\":\"proof-live-dispatch\",\"recipe\":{\"schema\":\"harness-repro-recipe.v1\",\"apiVersion\":4,\"environment\":{\"node\":\"v24.13.0\",\"platform\":\"win32\",\"arch\":\"x64\"},\"model\":{\"id\":\"gpt-5.4\",\"reasoningEffort\":\"xhigh\"},\"runtime\":{\"executionProfile\":\"proof-runtime\",\"executionIntent\":\"proof-live-dispatch\",\"executionSource\":\"runtime_proof_script\"},\"controls\":{\"agentName\":\"default\",\"sandboxMode\":\"workspace-write\",\"approvalPolicy\":\"never\",\"cwd\":\"C:\\\\Users\\\\akima\\\\Desktop\\\\codex_Original_UI_PJ\",\"webSearch\":0,\"requestUserInputPolicy\":\"blocked\"},\"generatedAt\":1772877846184,\"hash\":\"6c2a2dae419d7a00fc2251709cb65f60578ebd9d4e34c7b338ac385c4b153ef0\"},\"defaults\":{\"expected\":{\"defaultExecAgent\":\"default\",\"requestUserInputPolicy\":\"blocked\",\"adversarialShadowEnabled\":1,\"adversarialLoopEnabled\":1},\"actual\":{\"defaultExecAgent\":\"default\",\"requestUserInputPolicy\":\"blocked\",\"adversarialShadowEnabled\":0,\"adversarialLoopEnabled\":0,\"adversarialLoopMaxRetries\":0},\"checks\":{\"defaultExecAgentIsDefault\":1,\"requestUserInputBlocked\":1,\"adversarialShadowEnabled\":0,\"adversarialLoopEnabled\":0},\"ready\":0},\"parentDispatchGuard\":{\"enabled\":1,\"mode\":\"enforce\",\"envKey\":\"CODEX_PARENT_DISPATCH_GUARD_MODE\",\"maxRetries\":1,\"parentAgents\":[\"default\",\"intake\",\"release_manager\"]},\"turn\":{\"agentName\":\"default\",\"requestUserInputPolicy\":\"blocked\",\"checks\":{\"agentIsDefault\":1,\"requestUserInputBlocked\":1,\"adversarialShadowEnabled\":0,\"adversarialLoopEnabled\":0},\"ready\":0}},\"status\":\"in_progress\",\"terminal_status\":null,\"task_outcome_status\":null,\"task_outcome_reason\":null,\"terminal_event\":null,\"started_at\":1772877846687,\"completed_at\":0,\"updated_at\":1772877846688}\n",
+    "[turn] completed: agent=default thread=019cc7c1-1760-7a90-95fe-0c60c52c14db turn=019cc7c1-18a0-7aa3-9f65-cc6100ed306f status=completed\n",
+    "[turn-state] {\"event_type\":\"turn_completed\",\"event_at\":\"2026-03-07T10:05:37.003Z\",\"turn_id\":\"019cc7c1-18a0-7aa3-9f65-cc6100ed306f\",\"thread_id\":\"019cc7c1-1760-7a90-95fe-0c60c52c14db\",\"agent_name\":\"default\",\"source\":\"runtime_proof_script\",\"execution_profile\":\"proof-runtime\",\"execution_intent\":\"proof-live-dispatch\",\"smoke_like_profile\":0,\"full_utilization_defaults_ready\":0,\"full_utilization_turn_ready\":0,\"full_utilization_observed\":0,\"parent_dispatch_guard\":null,\"observed_signals\":{\"commandExecutions\":0,\"commandFailures\":0,\"fileChanges\":0,\"changedFiles\":0,\"mcpCalls\":0,\"collabCalls\":0,\"collabFailures\":0,\"webSearches\":0,\"dispatchCount\":0,\"dispatchSuccessCount\":0,\"dispatchFailureCount\":0,\"dispatchChildren\":[],\"itemCounts\":{}},\"artifact_dir\":null,\"artifact_manifest_path\":null,\"artifact_manifest_sha256\":null,\"visibility\":{\"profile\":{\"runtime\":\"proof-runtime\",\"request\":\"proof-runtime\",\"effective\":\"proof-runtime\",\"envKey\":\"CODEX_EXECUTION_PROFILE\",\"smokeLike\":0,\"repro\":0},\"intent\":\"proof-live-dispatch\",\"recipe\":{\"schema\":\"harness-repro-recipe.v1\",\"apiVersion\":4,\"environment\":{\"node\":\"v24.13.0\",\"platform\":\"win32\",\"arch\":\"x64\"},\"model\":{\"id\":\"gpt-5.4\",\"reasoningEffort\":\"xhigh\"},\"runtime\":{\"executionProfile\":\"proof-runtime\",\"executionIntent\":\"proof-live-dispatch\",\"executionSource\":\"runtime_proof_script\"},\"controls\":{\"agentName\":\"default\",\"sandboxMode\":\"workspace-write\",\"approvalPolicy\":\"never\",\"cwd\":\"C:\\\\Users\\\\akima\\\\Desktop\\\\codex_Original_UI_PJ\",\"webSearch\":0,\"requestUserInputPolicy\":\"blocked\"},\"generatedAt\":1772877846184,\"hash\":\"6c2a2dae419d7a00fc2251709cb65f60578ebd9d4e34c7b338ac385c4b153ef0\"},\"defaults\":{\"expected\":{\"defaultExecAgent\":\"default\",\"requestUserInputPolicy\":\"blocked\",\"adversarialShadowEnabled\":1,\"adversarialLoopEnabled\":1},\"actual\":{\"defaultExecAgent\":\"default\",\"requestUserInputPolicy\":\"blocked\",\"adversarialShadowEnabled\":0,\"adversarialLoopEnabled\":0,\"adversarialLoopMaxRetries\":0},\"checks\":{\"defaultExecAgentIsDefault\":1,\"requestUserInputBlocked\":1,\"adversarialShadowEnabled\":0,\"adversarialLoopEnabled\":0},\"ready\":0},\"parentDispatchGuard\":{\"enabled\":1,\"mode\":\"enforce\",\"envKey\":\"CODEX_PARENT_DISPATCH_GUARD_MODE\",\"maxRetries\":1,\"parentAgents\":[\"default\",\"intake\",\"release_manager\"]},\"turn\":{\"agentName\":\"default\",\"requestUserInputPolicy\":\"blocked\",\"checks\":{\"agentIsDefault\":1,\"requestUserInputBlocked\":1,\"adversarialShadowEnabled\":0,\"adversarialLoopEnabled\":0},\"ready\":0}},\"status\":\"completed\",\"terminal_status\":\"completed\",\"task_outcome_status\":null,\"task_outcome_reason\":null,\"terminal_event\":\"turn/completed\",\"started_at\":1772877846687,\"completed_at\":1772877937003,\"updated_at\":1772877937003}\n",
+    "[turn-state] {\"event_type\":\"turn_completed_observed\",\"event_at\":\"2026-03-07T10:05:37.004Z\",\"turn_id\":\"019cc7c1-18a0-7aa3-9f65-cc6100ed306f\",\"thread_id\":\"019cc7c1-1760-7a90-95fe-0c60c52c14db\",\"agent_name\":\"default\",\"source\":\"runtime_proof_script\",\"execution_profile\":\"proof-runtime\",\"execution_intent\":\"proof-live-dispatch\",\"smoke_like_profile\":0,\"full_utilization_defaults_ready\":0,\"full_utilization_turn_ready\":0,\"full_utilization_observed\":1,\"parent_dispatch_guard\":{\"mode\":\"enforce\",\"enabled\":1,\"required\":0,\"satisfied\":1,\"violation\":0,\"reason\":\"\",\"retry\":0,\"attempt\":0,\"maxRetries\":1,\"nextAttempt\":0,\"parentAgent\":1,\"smokeLikeProfile\":0,\"finalStatus\":\"completed\",\"dispatch\":{\"attempts\":2,\"successes\":2,\"failures\":0,\"collabCalls\":4}},\"observed_signals\":{\"commandExecutions\":0,\"commandFailures\":0,\"fileChanges\":0,\"changedFiles\":0,\"mcpCalls\":0,\"collabCalls\":4,\"collabFailures\":0,\"webSearches\":0,\"dispatchCount\":2,\"dispatchSuccessCount\":2,\"dispatchFailureCount\":0,\"dispatchChildren\":[\"unknown\",\"019cc7c1-7ea8-7aa0-95b4-7776cbf8847a\",\"019cc7c2-2186-7692-bfb4-89aefb95046e\"],\"itemCounts\":{\"userMessage\":1,\"reasoning\":5,\"agentMessage\":3,\"collabAgentToolCall\":4}},\"artifact_dir\":null,\"artifact_manifest_path\":null,\"artifact_manifest_sha256\":null,\"visibility\":{\"profile\":{\"runtime\":\"proof-runtime\",\"request\":\"proof-runtime\",\"effective\":\"proof-runtime\",\"envKey\":\"CODEX_EXECUTION_PROFILE\",\"smokeLike\":0,\"repro\":0},\"intent\":\"proof-live-dispatch\",\"recipe\":{\"schema\":\"harness-repro-recipe.v1\",\"apiVersion\":4,\"environment\":{\"node\":\"v24.13.0\",\"platform\":\"win32\",\"arch\":\"x64\"},\"model\":{\"id\":\"gpt-5.4\",\"reasoningEffort\":\"xhigh\"},\"runtime\":{\"executionProfile\":\"proof-runtime\",\"executionIntent\":\"proof-live-dispatch\",\"executionSource\":\"runtime_proof_script\"},\"controls\":{\"agentName\":\"default\",\"sandboxMode\":\"workspace-write\",\"approvalPolicy\":\"never\",\"cwd\":\"C:\\\\Users\\\\akima\\\\Desktop\\\\codex_Original_UI_PJ\",\"webSearch\":0,\"requestUserInputPolicy\":\"blocked\"},\"generatedAt\":1772877846184,\"hash\":\"6c2a2dae419d7a00fc2251709cb65f60578ebd9d4e34c7b338ac385c4b153ef0\"},\"defaults\":{\"expected\":{\"defaultExecAgent\":\"default\",\"requestUserInputPolicy\":\"blocked\",\"adversarialShadowEnabled\":1,\"adversarialLoopEnabled\":1},\"actual\":{\"defaultExecAgent\":\"default\",\"requestUserInputPolicy\":\"blocked\",\"adversarialShadowEnabled\":0,\"adversarialLoopEnabled\":0,\"adversarialLoopMaxRetries\":0},\"checks\":{\"defaultExecAgentIsDefault\":1,\"requestUserInputBlocked\":1,\"adversarialShadowEnabled\":0,\"adversarialLoopEnabled\":0},\"ready\":0},\"parentDispatchGuard\":{\"enabled\":1,\"mode\":\"enforce\",\"envKey\":\"CODEX_PARENT_DISPATCH_GUARD_MODE\",\"maxRetries\":1,\"parentAgents\":[\"default\",\"intake\",\"release_manager\"]},\"turn\":{\"agentName\":\"default\",\"requestUserInputPolicy\":\"blocked\",\"checks\":{\"agentIsDefault\":1,\"requestUserInputBlocked\":1,\"adversarialShadowEnabled\":0,\"adversarialLoopEnabled\":0},\"ready\":0}},\"status\":\"completed\",\"terminal_status\":\"completed\",\"task_outcome_status\":\"COMPLETED\",\"task_outcome_reason\":\"completed_default\",\"terminal_event\":\"turn/completed\",\"started_at\":1772877846687,\"completed_at\":1772877937003,\"updated_at\":1772877937004}\n",
+    "[turn-state] {\"event_type\":\"turn_artifacts_finalized\",\"event_at\":\"2026-03-07T10:05:37.007Z\",\"turn_id\":\"019cc7c1-18a0-7aa3-9f65-cc6100ed306f\",\"thread_id\":\"019cc7c1-1760-7a90-95fe-0c60c52c14db\",\"agent_name\":\"default\",\"source\":\"runtime_proof_script\",\"execution_profile\":\"proof-runtime\",\"execution_intent\":\"proof-live-dispatch\",\"smoke_like_profile\":0,\"full_utilization_defaults_ready\":0,\"full_utilization_turn_ready\":0,\"full_utilization_observed\":1,\"parent_dispatch_guard\":{\"mode\":\"enforce\",\"enabled\":1,\"required\":0,\"satisfied\":1,\"violation\":0,\"reason\":\"\",\"retry\":0,\"attempt\":0,\"maxRetries\":1,\"nextAttempt\":0,\"parentAgent\":1,\"smokeLikeProfile\":0,\"finalStatus\":\"completed\",\"dispatch\":{\"attempts\":2,\"successes\":2,\"failures\":0,\"collabCalls\":4}},\"observed_signals\":{\"commandExecutions\":0,\"commandFailures\":0,\"fileChanges\":0,\"changedFiles\":0,\"mcpCalls\":0,\"collabCalls\":4,\"collabFailures\":0,\"webSearches\":0,\"dispatchCount\":2,\"dispatchSuccessCount\":2,\"dispatchFailureCount\":0,\"dispatchChildren\":[\"unknown\",\"019cc7c1-7ea8-7aa0-95b4-7776cbf8847a\",\"019cc7c2-2186-7692-bfb4-89aefb95046e\"],\"itemCounts\":{\"userMessage\":1,\"reasoning\":5,\"agentMessage\":3,\"collabAgentToolCall\":4}},\"artifact_dir\":\"logs/proofs/runtime-proof-2026-03-07T10-04-05-648Z-53982d/turns/2026-03-07/019cc7c1-1760-7a90-95fe-0c60c52c14db__019cc7c1-18a0-7aa3-9f65-cc6100ed306f\",\"artifact_manifest_path\":\"logs/proofs/runtime-proof-2026-03-07T10-04-05-648Z-53982d/turns/2026-03-07/019cc7c1-1760-7a90-95fe-0c60c52c14db__019cc7c1-18a0-7aa3-9f65-cc6100ed306f/manifest.json\",\"artifact_manifest_sha256\":\"5230e1e67681a62d085e679c0cc26a02da8519d477cbc24d6a2cd559f1cb9a7e\",\"visibility\":{\"profile\":{\"runtime\":\"proof-runtime\",\"request\":\"proof-runtime\",\"effective\":\"proof-runtime\",\"envKey\":\"CODEX_EXECUTION_PROFILE\",\"smokeLike\":0,\"repro\":0},\"intent\":\"proof-live-dispatch\",\"recipe\":{\"schema\":\"harness-repro-recipe.v1\",\"apiVersion\":4,\"environment\":{\"node\":\"v24.13.0\",\"platform\":\"win32\",\"arch\":\"x64\"},\"model\":{\"id\":\"gpt-5.4\",\"reasoningEffort\":\"xhigh\"},\"runtime\":{\"executionProfile\":\"proof-runtime\",\"executionIntent\":\"proof-live-dispatch\",\"executionSource\":\"runtime_proof_script\"},\"controls\":{\"agentName\":\"default\",\"sandboxMode\":\"workspace-write\",\"approvalPolicy\":\"never\",\"cwd\":\"C:\\\\Users\\\\akima\\\\Desktop\\\\codex_Original_UI_PJ\",\"webSearch\":0,\"requestUserInputPolicy\":\"blocked\"},\"generatedAt\":1772877846184,\"hash\":\"6c2a2dae419d7a00fc2251709cb65f60578ebd9d4e34c7b338ac385c4b153ef0\"},\"defaults\":{\"expected\":{\"defaultExecAgent\":\"default\",\"requestUserInputPolicy\":\"blocked\",\"adversarialShadowEnabled\":1,\"adversarialLoopEnabled\":1},\"actual\":{\"defaultExecAgent\":\"default\",\"requestUserInputPolicy\":\"blocked\",\"adversarialShadowEnabled\":0,\"adversarialLoopEnabled\":0,\"adversarialLoopMaxRetries\":0},\"checks\":{\"defaultExecAgentIsDefault\":1,\"requestUserInputBlocked\":1,\"adversarialShadowEnabled\":0,\"adversarialLoopEnabled\":0},\"ready\":0},\"parentDispatchGuard\":{\"enabled\":1,\"mode\":\"enforce\",\"envKey\":\"CODEX_PARENT_DISPATCH_GUARD_MODE\",\"maxRetries\":1,\"parentAgents\":[\"default\",\"intake\",\"release_manager\"]},\"turn\":{\"agentName\":\"default\",\"requestUserInputPolicy\":\"blocked\",\"checks\":{\"agentIsDefault\":1,\"requestUserInputBlocked\":1,\"adversarialShadowEnabled\":0,\"adversarialLoopEnabled\":0},\"ready\":0}},\"status\":\"completed\",\"terminal_status\":\"completed\",\"task_outcome_status\":\"COMPLETED\",\"task_outcome_reason\":\"completed_default\",\"terminal_event\":\"turn/completed\",\"started_at\":1772877846687,\"completed_at\":1772877937003,\"updated_at\":1772877937004}\n"
+  ]
+}

@@ -1,0 +1,8 @@
+interface:
+  display_name: "Feedback Promotion Governor"
+  short_description: "Promote feedback-driven changes safely from local to global scope."
+  default_prompt: "Use $feedback-promotion-governor to decide turn/session/global scope and prevent overfitting."
+
+policy:
+  allow_implicit_invocation: true
+

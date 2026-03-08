@@ -1,0 +1,68 @@
+{
+  "version": 1,
+  "users": {
+    "4c65403c-eb0f-4fea-9dc9-d0f60daa68eb": {
+      "turns": 15,
+      "updatedAt": 1772333736108,
+      "facts": [],
+      "topics": []
+    },
+    "9aba69ae-a917-4974-9af5-280e094d7a88": {
+      "turns": 2,
+      "updatedAt": 1771938113744,
+      "facts": [
+        "You live in Yokohama and my favorite hobby is surfing at Shona.",
+        "Your favorite coffee is flat white and I usually work at home."
+      ],
+      "topics": []
+    },
+    "local_user": {
+      "turns": 0,
+      "updatedAt": 0,
+      "facts": [],
+      "topics": []
+    },
+    "qa_user_1": {
+      "turns": 3,
+      "updatedAt": 1771938754484,
+      "facts": [
+        "You love surfing and I visited Okinawa last month."
+      ],
+      "topics": [
+        "travel"
+      ]
+    },
+    "9f395224-8ac6-4a36-8faa-97718b2501d5": {
+      "turns": 1,
+      "updatedAt": 1771938798021,
+      "facts": [],
+      "topics": []
+    },
+    "cd8da753-d8a3-4780-82d6-1cf5a875f4ac": {
+      "turns": 1,
+      "updatedAt": 1771938816194,
+      "facts": [],
+      "topics": []
+    },
+    "d78accda-396d-4938-b936-4aacbf17df8f": {
+      "turns": 1,
+      "updatedAt": 1771938838140,
+      "facts": [],
+      "topics": []
+    },
+    "qa_user_2": {
+      "turns": 1,
+      "updatedAt": 1771939062153,
+      "facts": [
+        "You want to practice speaking about traveling in English."
+      ],
+      "topics": []
+    },
+    "b6b74593-248a-4e80-8d33-c4f43fe6d918": {
+      "turns": 0,
+      "updatedAt": 0,
+      "facts": [],
+      "topics": []
+    }
+  }
+}

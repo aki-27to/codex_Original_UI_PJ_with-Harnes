@@ -1,0 +1,110 @@
+{
+  "schema": "skill-portfolio-policy.v1",
+  "version": "2026-03-07.r2",
+  "classes": [
+    "global",
+    "role",
+    "scenario",
+    "experiment"
+  ],
+  "coverageLabels": [
+    "generic",
+    "semi_generic",
+    "partial"
+  ],
+  "portfolio": {
+    "minClassDiversity": 3,
+    "minClassShare": {
+      "global": 0.12,
+      "role": 0.22,
+      "scenario": 0.25
+    },
+    "maxClassShare": {
+      "global": 0.45,
+      "role": 0.55,
+      "scenario": 0.70,
+      "experiment": 0.25
+    }
+  },
+  "roleRequirements": {
+    "default": {
+      "minSkills": 4,
+      "requiredClasses": [
+        "global",
+        "role"
+      ]
+    },
+    "intake": {
+      "minSkills": 1,
+      "requiredClasses": [
+        "global"
+      ]
+    },
+    "release_manager": {
+      "minSkills": 4,
+      "requiredClasses": [
+        "global",
+        "role",
+        "scenario"
+      ]
+    },
+    "frontend_worker": {
+      "minSkills": 3,
+      "requiredClasses": [
+        "role",
+        "scenario"
+      ]
+    },
+    "backend_worker": {
+      "minSkills": 4,
+      "requiredClasses": [
+        "global",
+        "scenario"
+      ]
+    },
+    "infra_worker": {
+      "minSkills": 2,
+      "requiredClasses": [
+        "global",
+        "role"
+      ]
+    },
+    "tester": {
+      "minSkills": 6,
+      "requiredClasses": [
+        "role",
+        "scenario"
+      ]
+    },
+    "reviewer": {
+      "minSkills": 2,
+      "requiredClasses": [
+        "global",
+        "scenario"
+      ]
+    },
+    "explorer": {
+      "minSkills": 1,
+      "requiredClasses": [
+        "global"
+      ]
+    }
+  },
+  "promotionRules": {
+    "scenarioToRole": {
+      "minRuns": 6,
+      "minSuccessRate": 0.84,
+      "minPrimaryScore": 0.80,
+      "maxGuardFailures": 0
+    },
+    "roleToGlobal": {
+      "minRuns": 12,
+      "minSuccessRate": 0.90,
+      "minPrimaryScore": 0.87,
+      "maxGuardFailures": 0
+    }
+  },
+  "guardrail": {
+    "blockPromotionOnGuardFailure": true
+  }
+}

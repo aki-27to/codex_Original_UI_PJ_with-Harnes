@@ -1,0 +1,7 @@
+interface:
+  display_name: "API Contract Testgen"
+  short_description: "Generate focused API contract tests from route behavior, validation logic, and status-schema expectations."
+  default_prompt: "Use $api-contract-testgen to extract the API contract from implementation, add focused tests, and verify the covered cases."
+
+policy:
+  allow_implicit_invocation: true

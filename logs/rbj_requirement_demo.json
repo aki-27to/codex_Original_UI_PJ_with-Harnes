@@ -1,0 +1,24 @@
+﻿{
+    "generatedAt":  "2026-02-23T19:14:57.7501697+09:00",
+    "prompt":  "WEB開発して！企業向けの！今回は要件定義フェーズだけで止めてください。出力順は 1) Blue 初回案 2) Red監査 3) Red反映後の改善案。実装作業はしないこと。",
+    "before":  {
+                   "label":  "before",
+                   "rbjEnabled":  false,
+                   "rbjRuntimeEnabled":  false,
+                   "output":  "",
+                   "eventCount":  0,
+                   "eventTypes":  [
+
+                                  ]
+               },
+    "after":  {
+                  "label":  "after",
+                  "rbjEnabled":  true,
+                  "rbjRuntimeEnabled":  true,
+                  "output":  "",
+                  "eventCount":  0,
+                  "eventTypes":  [
+
+                                 ]
+              }
+}

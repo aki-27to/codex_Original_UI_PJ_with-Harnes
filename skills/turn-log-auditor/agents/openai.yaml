@@ -1,0 +1,7 @@
+interface:
+  display_name: "Turn Log Auditor"
+  short_description: "Audit turn artifacts and operation logs for release-readiness and governance integrity."
+  default_prompt: "Use $turn-log-auditor to audit turn artifacts and produce a PASS or FAIL evidence verdict."
+
+policy:
+  allow_implicit_invocation: true

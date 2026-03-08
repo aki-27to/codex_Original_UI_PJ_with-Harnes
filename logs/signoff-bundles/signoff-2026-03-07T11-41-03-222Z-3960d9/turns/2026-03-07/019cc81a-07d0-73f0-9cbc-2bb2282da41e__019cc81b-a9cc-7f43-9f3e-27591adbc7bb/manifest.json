@@ -1,0 +1,171 @@
+{
+  "schema": "turn-artifact-manifest.v1",
+  "generatedAt": "2026-03-07T11:47:08.554Z",
+  "turn": {
+    "turnId": "019cc81b-a9cc-7f43-9f3e-27591adbc7bb",
+    "threadId": "019cc81a-07d0-73f0-9cbc-2bb2282da41e",
+    "agentName": "default",
+    "sandboxMode": "workspace-write",
+    "approvalPolicy": "never",
+    "cwd": "C:\\Users\\akima\\Desktop\\codex_Original_UI_PJ",
+    "idempotencyKey": "signoff-natural-1772883675021"
+  },
+  "prompt": {
+    "length": 4052,
+    "sha256": "7a0e91b4736bf6d07a2537de7826ddc5f1a76ffc13e788e37d7e0b9aabdaa89c"
+  },
+  "counters": {
+    "events": 3963,
+    "items": 52,
+    "diffUpdates": 0,
+    "latestDiffBytes": 0,
+    "stdoutChunks": 0,
+    "stderrChunks": 0
+  },
+  "terminal": {
+    "status": "completed",
+    "taskOutcomeStatus": "COMPLETED",
+    "taskOutcomeReason": "completed_default",
+    "error": "",
+    "completedAt": "2026-03-07T11:47:08.551Z"
+  },
+  "execution": {
+    "meta": {
+      "profile": {
+        "runtime": "full-runtime",
+        "request": "full-runtime",
+        "effective": "full-runtime",
+        "envKey": "CODEX_EXECUTION_PROFILE",
+        "smokeLike": 0,
+        "repro": 0
+      },
+      "intent": "signoff-natural-task",
+      "recipe": {
+        "schema": "harness-repro-recipe.v1",
+        "apiVersion": 4,
+        "environment": {
+          "node": "v24.13.0",
+          "platform": "win32",
+          "arch": "x64"
+        },
+        "model": {
+          "id": "gpt-5.4",
+          "reasoningEffort": "xhigh"
+        },
+        "runtime": {
+          "executionProfile": "full-runtime",
+          "executionIntent": "signoff-natural-task",
+          "executionSource": "signoff_evidence_script"
+        },
+        "controls": {
+          "agentName": "default",
+          "sandboxMode": "workspace-write",
+          "approvalPolicy": "never",
+          "cwd": "C:\\Users\\akima\\Desktop\\codex_Original_UI_PJ",
+          "webSearch": 0,
+          "requestUserInputPolicy": "blocked"
+        },
+        "generatedAt": 1772883782090,
+        "hash": "f7d3ae0f2183e09b0b8b88620fc5412b3522583e63e09977d638e0aa1c9c3361"
+      },
+      "defaults": {
+        "expected": {
+          "defaultExecAgent": "default",
+          "requestUserInputPolicy": "blocked",
+          "adversarialShadowEnabled": 1,
+          "adversarialLoopEnabled": 1
+        },
+        "actual": {
+          "defaultExecAgent": "default",
+          "requestUserInputPolicy": "blocked",
+          "adversarialShadowEnabled": 1,
+          "adversarialLoopEnabled": 1,
+          "adversarialLoopMaxRetries": 1
+        },
+        "checks": {
+          "defaultExecAgentIsDefault": 1,
+          "requestUserInputBlocked": 1,
+          "adversarialShadowEnabled": 1,
+          "adversarialLoopEnabled": 1
+        },
+        "ready": 1
+      },
+      "parentDispatchGuard": {
+        "enabled": 1,
+        "mode": "enforce",
+        "envKey": "CODEX_PARENT_DISPATCH_GUARD_MODE",
+        "maxRetries": 1,
+        "parentAgents": [
+          "default",
+          "intake",
+          "release_manager"
+        ]
+      },
+      "turn": {
+        "agentName": "default",
+        "requestUserInputPolicy": "blocked",
+        "checks": {
+          "agentIsDefault": 1,
+          "requestUserInputBlocked": 1,
+          "adversarialShadowEnabled": 1,
+          "adversarialLoopEnabled": 1
+        },
+        "ready": 1
+      }
+    },
+    "observed": {
+      "commandExecutions": 4,
+      "commandFailures": 0,
+      "fileChanges": 0,
+      "changedFiles": 0,
+      "sampleChangedPaths": [],
+      "mcpCalls": 0,
+      "collabCalls": 4,
+      "collabFailures": 0,
+      "webSearches": 0,
+      "dispatchCount": 2,
+      "dispatchSuccessCount": 2,
+      "dispatchFailureCount": 0,
+      "dispatchChildren": [
+        "unknown",
+        "019cc81c-c2fa-7301-9bce-ead88977c2b4",
+        "019cc81d-c307-79a1-af25-26369e4c9352"
+      ],
+      "itemCounts": {
+        "userMessage": 1,
+        "reasoning": 9,
+        "agentMessage": 8,
+        "commandExecution": 4,
+        "collabAgentToolCall": 4
+      }
+    }
+  },
+  "approvalDecisions": {
+    "riskRulesVersion": "2026-02-22.r1",
+    "count": 0,
+    "truncated": 0,
+    "records": []
+  },
+  "redaction": {
+    "enabled": 1,
+    "placeholder": "[REDACTED]",
+    "replacements": 0,
+    "byRule": {}
+  },
+  "retentionPolicy": {
+    "maxBytes": 268435456,
+    "maxDays": 14
+  },
+  "artifacts": [
+    {
+      "file": "events.ndjson",
+      "bytes": 713100,
+      "sha256": "164bcda8930eed67e244e4b5e6932f756ce830549f99b97ef6401359c575baa3"
+    },
+    {
+      "file": "items.ndjson",
+      "bytes": 68950,
+      "sha256": "89339be80dd9d32c43e5e0d30c124377077fb7bc283883ccd2c99aba2805b572"
+    }
+  ]
+}

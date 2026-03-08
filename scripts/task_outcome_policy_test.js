@@ -1,0 +1,122 @@
+#!/usr/bin/env node
+"use strict";
+
+const path = require("path");
+const {
+  defaultTaskOutcomeContractPath,
+  deriveTaskOutcome,
+  loadTaskOutcomeContract,
+  validateTaskOutcomeTurnCompatibility,
+  validateTaskOutcomeStatus,
+} = require("./lib/task_outcome_policy");
+
+function assert(condition, message) {
+  if (!condition) {
+    throw new Error(message);
+  }
+}
+
+function testLoadContract() {
+  const spec = loadTaskOutcomeContract(path.join(__dirname, "config", "task_outcome_contract.json"));
+  assert(spec && spec.schema === "task-outcome-contract.v1", "task outcome contract schema mismatch");
+  assert(Array.isArray(spec.statuses) && spec.statuses.some((entry) => entry.id === "NEEDS_INPUT"), "task outcome statuses missing NEEDS_INPUT");
+}
+
+function testValidateStatus() {
+  const spec = loadTaskOutcomeContract(defaultTaskOutcomeContractPath);
+  const allowed = validateTaskOutcomeStatus({ status: "failed_validation", spec });
+  assert(allowed.ok === true, "FAILED_VALIDATION should be allowed");
+  const denied = validateTaskOutcomeStatus({ status: "UNKNOWN_STATUS", spec });
+  assert(denied.ok === false, "unknown task outcome status should be rejected");
+}
+
+function testCompletedDefault() {
+  const verdict = deriveTaskOutcome({ turnStatus: "completed" });
+  assert(verdict.status === "COMPLETED", "completed turn should default to COMPLETED");
+}
+
+function testNeedsInputFromApprovalReason() {
+  const verdict = deriveTaskOutcome({
+    turnStatus: "failed",
+    approvalReason: "interactive_approval_unavailable",
+  });
+  assert(verdict.status === "NEEDS_INPUT", "interactive approval should map to NEEDS_INPUT");
+}
+
+function testBlockedFromGovernanceReason() {
+  const verdict = deriveTaskOutcome({
+    turnStatus: "failed",
+    governanceReason: "legacy_only_requires_parent_override",
+  });
+  assert(verdict.status === "BLOCKED", "legacy-only worker use should map to BLOCKED");
+}
+
+function testFailedValidationFromGuard() {
+  const verdict = deriveTaskOutcome({
+    turnStatus: "failed",
+    parentDispatchViolation: true,
+  });
+  assert(verdict.status === "FAILED_VALIDATION", "parent dispatch guard violation should map to FAILED_VALIDATION");
+}
+
+function testFailedDefaultBlocked() {
+  const verdict = deriveTaskOutcome({
+    turnStatus: "failed",
+  });
+  assert(verdict.status === "BLOCKED", "generic failed turn should default to BLOCKED");
+}
+
+function testPartialDelivery() {
+  const verdict = deriveTaskOutcome({
+    turnStatus: "completed",
+    partial: true,
+  });
+  assert(verdict.status === "PARTIAL", "partial flag should map to PARTIAL");
+}
+
+function testTurnCompatibility() {
+  const spec = loadTaskOutcomeContract(defaultTaskOutcomeContractPath);
+  const ok = validateTaskOutcomeTurnCompatibility({
+    turnStatus: "failed",
+    taskOutcomeStatus: "FAILED_VALIDATION",
+    spec,
+  });
+  assert(ok.ok === true, "failed turn should accept FAILED_VALIDATION");
+  const mismatch = validateTaskOutcomeTurnCompatibility({
+    turnStatus: "completed",
+    taskOutcomeStatus: "NEEDS_INPUT",
+    spec,
+  });
+  assert(mismatch.ok === false, "completed turn should reject NEEDS_INPUT");
+  assert(mismatch.reason === "task_outcome_turn_state_mismatch", "mismatch should report turn-state mismatch");
+}
+
+function run() {
+  const tests = [
+    ["load contract", testLoadContract],
+    ["validate status ids", testValidateStatus],
+    ["completed default", testCompletedDefault],
+    ["needs input from approval", testNeedsInputFromApprovalReason],
+    ["blocked from governance", testBlockedFromGovernanceReason],
+    ["failed validation from parent dispatch guard", testFailedValidationFromGuard],
+    ["failed default blocked", testFailedDefaultBlocked],
+    ["partial outcome derivation", testPartialDelivery],
+    ["turn compatibility", testTurnCompatibility],
+  ];
+  let passed = 0;
+  for (const [name, fn] of tests) {
+    fn();
+    passed += 1;
+    console.log(`[task-outcome-policy-test] PASS ${name}`);
+  }
+  console.log(`[task-outcome-policy-test] total=${tests.length} pass=${passed} fail=0`);
+  console.log("PASS");
+}
+
+try {
+  run();
+} catch (error) {
+  console.log(`[task-outcome-policy-test] FAIL ${error instanceof Error ? error.message : String(error)}`);
+  console.log("FAIL");
+  process.exitCode = 1;
+}

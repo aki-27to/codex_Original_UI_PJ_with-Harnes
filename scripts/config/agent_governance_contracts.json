@@ -1,0 +1,81 @@
+{
+  "schema": "agent-governance.v1",
+  "version": "2026-03-07.r1",
+  "parentAgents": [
+    "default",
+    "intake",
+    "release_manager"
+  ],
+  "contracts": {
+    "frontend_worker": {
+      "id": "frontend_worker",
+      "enforced": true,
+      "readOnly": false,
+      "verificationOnly": false,
+      "scopePaths": [
+        "web/"
+      ]
+    },
+    "backend_worker": {
+      "id": "backend_worker",
+      "enforced": true,
+      "readOnly": false,
+      "verificationOnly": false,
+      "scopePaths": [
+        "server.js",
+        "scripts/",
+        "docs/"
+      ]
+    },
+    "infra_worker": {
+      "id": "infra_worker",
+      "enforced": true,
+      "readOnly": false,
+      "verificationOnly": false,
+      "scopePaths": [
+        ".codex/",
+        "logs/",
+        "docs/",
+        "start_codex_ui.bat"
+      ]
+    },
+    "tester": {
+      "id": "tester",
+      "enforced": true,
+      "readOnly": false,
+      "verificationOnly": true,
+      "scopePaths": [
+        "scripts/"
+      ]
+    },
+    "reviewer": {
+      "id": "reviewer",
+      "enforced": true,
+      "readOnly": true,
+      "verificationOnly": true,
+      "scopePaths": []
+    },
+    "explorer": {
+      "id": "explorer",
+      "enforced": true,
+      "readOnly": true,
+      "verificationOnly": true,
+      "scopePaths": []
+    },
+    "worker": {
+      "id": "worker",
+      "enforced": true,
+      "readOnly": false,
+      "verificationOnly": false,
+      "legacyOnly": true,
+      "requiresParentOverride": true,
+      "scopePaths": []
+    }
+  },
+  "exceptions": {
+    "parentOverride": {
+      "enabled": true,
+      "reasonMinLength": 12
+    }
+  }
+}

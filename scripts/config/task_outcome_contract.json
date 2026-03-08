@@ -1,0 +1,63 @@
+{
+  "schema": "task-outcome-contract.v1",
+  "version": "2026-03-07.r2",
+  "statuses": [
+    {
+      "id": "COMPLETED",
+      "class": "success",
+      "terminal": true
+    },
+    {
+      "id": "BLOCKED",
+      "class": "blocked",
+      "terminal": true
+    },
+    {
+      "id": "NEEDS_INPUT",
+      "class": "needs_input",
+      "terminal": true
+    },
+    {
+      "id": "FAILED_VALIDATION",
+      "class": "validation_failure",
+      "terminal": true
+    },
+    {
+      "id": "PARTIAL",
+      "class": "partial",
+      "terminal": true
+    }
+  ],
+  "turnStateDefaults": {
+    "completed": "COMPLETED",
+    "interrupted": "BLOCKED",
+    "failed": "BLOCKED"
+  },
+  "turnStateHints": {
+    "completed": [
+      "COMPLETED",
+      "PARTIAL"
+    ],
+    "interrupted": [
+      "BLOCKED",
+      "NEEDS_INPUT"
+    ],
+    "failed": [
+      "FAILED_VALIDATION",
+      "BLOCKED",
+      "NEEDS_INPUT"
+    ]
+  },
+  "reasonMap": {
+    "interactive_approval_unavailable": "NEEDS_INPUT",
+    "high_risk_requires_request": "NEEDS_INPUT",
+    "danger_full_access_high_risk_guard": "NEEDS_INPUT",
+    "legacy_only_requires_parent_override": "BLOCKED",
+    "path_out_of_scope": "BLOCKED",
+    "verification_scope_violation": "BLOCKED",
+    "agent_read_only_role": "BLOCKED",
+    "parent_dispatch_guard_block": "FAILED_VALIDATION",
+    "missing_required_evidence": "FAILED_VALIDATION",
+    "partial_delivery": "PARTIAL"
+  }
+}

@@ -1,0 +1,7 @@
+interface:
+  display_name: "Spec Sync Assistant"
+  short_description: "Sync code and test evidence into architecture docs before final completion."
+  default_prompt: "Use $spec-sync-assistant to update docs/CURRENT_ARCHITECTURE.md and docs/ARCHITECTURE_CHANGELOG.md from recent implementation evidence."
+
+policy:
+  allow_implicit_invocation: true

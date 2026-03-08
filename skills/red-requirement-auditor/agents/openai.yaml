@@ -1,0 +1,8 @@
+interface:
+  display_name: "Red Requirement Auditor"
+  short_description: "Audit requirement drafts for ambiguity, contradictions, and untestable scope."
+  default_prompt: "Use $red-requirement-auditor to produce traceable requirement findings and blocking questions before implementation."
+
+policy:
+  allow_implicit_invocation: true
+

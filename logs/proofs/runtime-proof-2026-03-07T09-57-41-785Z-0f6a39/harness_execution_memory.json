@@ -1,0 +1,39 @@
+{
+  "schema": "harness-execution-memory.v1",
+  "updatedAt": 1772877462318,
+  "retentionDays": 30,
+  "contractMemory": [
+    {
+      "key": "runtime-proof-live-1772877462316",
+      "state": "running",
+      "createdAt": 1772877462318,
+      "updatedAt": 1772877462318,
+      "expiresAt": 1772879262318,
+      "requestHash": "e11049bb210ec6d0ddb8f310dacac1e5aa70065566a8eed3c60f089e52ef71c6",
+      "metadata": {
+        "path": "/api/exec",
+        "method": "POST",
+        "agent": "default",
+        "sandbox": "workspace-write",
+        "approval": "never",
+        "model": "gpt-5.4",
+        "modelReasoningEffort": "xhigh",
+        "cwd": "C:\\Users\\akima\\Desktop\\codex_Original_UI_PJ",
+        "requestHash": "e11049bb210ec6d0ddb8f310dacac1e5aa70065566a8eed3c60f089e52ef71c6",
+        "requestUserInputPolicy": "blocked",
+        "executionProfile": "proof-runtime",
+        "executionIntent": "proof-live-dispatch",
+        "executionSource": "runtime_proof_script"
+      },
+      "responseClosedAt": 0,
+      "responseCloseDisposition": "",
+      "outcome": null
+    }
+  ],
+  "executionMemory": [],
+  "auditMemory": [],
+  "replayMemory": [],
+  "abstractionMemory": {
+    "patterns": []
+  }
+}

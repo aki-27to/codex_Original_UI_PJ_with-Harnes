@@ -1,0 +1,10 @@
+diff --git a/C:/Users/akima/Desktop/codex_Original_UI_PJ/scripts/proofs/live_dispatch_proof.md b/C:/Users/akima/Desktop/codex_Original_UI_PJ/scripts/proofs/live_dispatch_proof.md
+index f85ec22d205bbd830cebdc8d09c1b377751b9e49..18f9d7617a17d2be0575dc702a983ebf374c1e02
+--- a/C:/Users/akima/Desktop/codex_Original_UI_PJ/scripts/proofs/live_dispatch_proof.md
++++ b/C:/Users/akima/Desktop/codex_Original_UI_PJ/scripts/proofs/live_dispatch_proof.md
+@@ -2,3 +2,5 @@
+ proof-run: 2026-03-07T10:04:05.649Z :: 8aa7f887
+ child-proof-run: 2026-03-07T10:06:19.687Z :: 3c15adaa
+ child-proof-run: 2026-03-07T10:06:18.922Z :: 1938199c
++parent-proof-review: 2026-03-07T10:06:19.687Z :: a7dcc8cd
++parent-proof-review: 2026-03-07T10:06:18.922Z :: 47762330

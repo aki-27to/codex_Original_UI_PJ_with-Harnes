@@ -1,0 +1,345 @@
+{
+  "schema": "harness-execution-memory.v1",
+  "updatedAt": 1772878053549,
+  "retentionDays": 30,
+  "contractMemory": [
+    {
+      "key": "runtime-proof-live-1772877979453",
+      "state": "completed",
+      "createdAt": 1772877979455,
+      "updatedAt": 1772878053545,
+      "expiresAt": 1772879853544,
+      "requestHash": "fa07a2e6ea89f10b95daab335f0def7b4eb50461a2432b65768ebd230d73f873",
+      "metadata": {
+        "path": "/api/exec",
+        "method": "POST",
+        "agent": "default",
+        "sandbox": "workspace-write",
+        "approval": "never",
+        "model": "gpt-5.4",
+        "modelReasoningEffort": "xhigh",
+        "cwd": "C:\\Users\\akima\\Desktop\\codex_Original_UI_PJ",
+        "requestHash": "fa07a2e6ea89f10b95daab335f0def7b4eb50461a2432b65768ebd230d73f873",
+        "requestUserInputPolicy": "blocked",
+        "executionProfile": "proof-runtime",
+        "executionIntent": "proof-live-dispatch",
+        "executionSource": "runtime_proof_script"
+      },
+      "responseClosedAt": 1772878053545,
+      "responseCloseDisposition": "post_terminal",
+      "outcome": {
+        "status": "completed",
+        "taskOutcomeStatus": "COMPLETED",
+        "taskOutcomeReason": "completed_default",
+        "error": "",
+        "threadId": "019cc7c3-2008-7a20-9716-496aef60a3e8",
+        "turnId": "019cc7c3-20c9-71a3-8456-2775faae2dbe",
+        "agentName": "default",
+        "executionProfile": "proof-runtime",
+        "executionIntent": "proof-live-dispatch",
+        "executionSource": "runtime_proof_script",
+        "artifactDir": "C:\\Users\\akima\\Desktop\\codex_Original_UI_PJ\\logs\\proofs\\runtime-proof-2026-03-07T10-06-18-921Z-01647b\\turns\\2026-03-07\\019cc7c3-2008-7a20-9716-496aef60a3e8__019cc7c3-20c9-71a3-8456-2775faae2dbe",
+        "artifactManifestPath": "C:\\Users\\akima\\Desktop\\codex_Original_UI_PJ\\logs\\proofs\\runtime-proof-2026-03-07T10-06-18-921Z-01647b\\turns\\2026-03-07\\019cc7c3-2008-7a20-9716-496aef60a3e8__019cc7c3-20c9-71a3-8456-2775faae2dbe\\manifest.json",
+        "artifactManifestSha256": "d40fb4ed58c79aecfddc5185815f9455cc8b610731dd23ec6bc20c8a29da53cf",
+        "completedAt": 1772878053544
+      }
+    }
+  ],
+  "executionMemory": [
+    {
+      "turnId": "019cc7c3-20c9-71a3-8456-2775faae2dbe",
+      "threadId": "019cc7c3-2008-7a20-9716-496aef60a3e8",
+      "agentName": "default",
+      "status": "completed",
+      "taskOutcomeStatus": "COMPLETED",
+      "taskOutcomeReason": "completed_default",
+      "terminalEvent": "turn/completed",
+      "errorText": "",
+      "executionProfile": "proof-runtime",
+      "executionIntent": "proof-live-dispatch",
+      "executionSource": "runtime_proof_script",
+      "startedAt": 1772877979849,
+      "completedAt": 1772878053536,
+      "updatedAt": 1772878053537,
+      "outputSha256": "b23211fafc234836c6f9eb58a1b5478b793766402202473c7346924249567d35",
+      "outputChars": 49,
+      "observedSignals": {
+        "commandExecutions": 2,
+        "commandFailures": 1,
+        "fileChanges": 1,
+        "changedFiles": 1,
+        "mcpCalls": 0,
+        "collabCalls": 2,
+        "collabFailures": 0,
+        "webSearches": 0,
+        "dispatchCount": 1,
+        "dispatchSuccessCount": 1,
+        "dispatchFailureCount": 0,
+        "dispatchChildren": [
+          "unknown",
+          "019cc7c3-8a88-7da3-809a-5a69c05ecb56"
+        ],
+        "itemCounts": {
+          "userMessage": 1,
+          "reasoning": 5,
+          "agentMessage": 5,
+          "collabAgentToolCall": 2,
+          "commandExecution": 2,
+          "fileChange": 1
+        }
+      },
+      "parentDispatchGuard": {
+        "mode": "enforce",
+        "reason": "",
+        "required": 1,
+        "satisfied": 1,
+        "violation": 0
+      }
+    },
+    {
+      "turnId": "eval-probe-eval-1772878053547-24f67836-proof-parent_dispatch_guard_violation",
+      "threadId": "eval-probe-eval-1772878053547-24f67836",
+      "agentName": "default",
+      "status": "failed",
+      "taskOutcomeStatus": "FAILED_VALIDATION",
+      "taskOutcomeReason": "parent_dispatch_guard_block",
+      "terminalEvent": "turn/completed",
+      "errorText": "parent dispatch guard blocked completion (dispatch_not_attempted)",
+      "executionProfile": "proof-runtime",
+      "executionIntent": "proof-eval",
+      "executionSource": "eval_harness_probe",
+      "startedAt": 1772878053548,
+      "completedAt": 1772878053548,
+      "updatedAt": 1772878053548,
+      "outputSha256": "edecaa2447a9d99c5ed270b8582c5e9b8ed134fdb622c9723753081dd7ae2eef",
+      "outputChars": 414,
+      "observedSignals": {
+        "commandExecutions": 0,
+        "commandFailures": 0,
+        "fileChanges": 1,
+        "changedFiles": 1,
+        "mcpCalls": 0,
+        "collabCalls": 0,
+        "collabFailures": 0,
+        "webSearches": 0,
+        "dispatchCount": 0,
+        "dispatchSuccessCount": 0,
+        "dispatchFailureCount": 0,
+        "dispatchChildren": [],
+        "itemCounts": {}
+      },
+      "parentDispatchGuard": {
+        "mode": "enforce",
+        "reason": "dispatch_not_attempted",
+        "required": 1,
+        "satisfied": 0,
+        "violation": 1
+      }
+    },
+    {
+      "turnId": "eval-probe-eval-1772878053547-24f67836-proof-explicit_needs_input",
+      "threadId": "eval-probe-eval-1772878053547-24f67836",
+      "agentName": "default",
+      "status": "failed",
+      "taskOutcomeStatus": "NEEDS_INPUT",
+      "taskOutcomeReason": "interactive_approval_unavailable",
+      "terminalEvent": "turn/completed",
+      "errorText": "eval probe resolved NEEDS_INPUT (interactive_approval_unavailable)",
+      "executionProfile": "proof-runtime",
+      "executionIntent": "proof-eval",
+      "executionSource": "eval_harness_probe",
+      "startedAt": 1772878053549,
+      "completedAt": 1772878053549,
+      "updatedAt": 1772878053549,
+      "outputSha256": "54d273797a0d117e91441d81f69cbcd50de8f85110ce39710d2a9a1048e2a913",
+      "outputChars": 111,
+      "observedSignals": {
+        "commandExecutions": 0,
+        "commandFailures": 0,
+        "fileChanges": 0,
+        "changedFiles": 0,
+        "mcpCalls": 0,
+        "collabCalls": 0,
+        "collabFailures": 0,
+        "webSearches": 0,
+        "dispatchCount": 0,
+        "dispatchSuccessCount": 0,
+        "dispatchFailureCount": 0,
+        "dispatchChildren": [],
+        "itemCounts": {}
+      },
+      "parentDispatchGuard": {
+        "mode": "off",
+        "reason": "",
+        "required": 0,
+        "satisfied": 0,
+        "violation": 0
+      }
+    },
+    {
+      "turnId": "eval-probe-eval-1772878053547-24f67836-proof-explicit_failed_validation",
+      "threadId": "eval-probe-eval-1772878053547-24f67836",
+      "agentName": "default",
+      "status": "failed",
+      "taskOutcomeStatus": "FAILED_VALIDATION",
+      "taskOutcomeReason": "missing_required_evidence",
+      "terminalEvent": "turn/completed",
+      "errorText": "eval probe resolved FAILED_VALIDATION (missing_required_evidence)",
+      "executionProfile": "proof-runtime",
+      "executionIntent": "proof-eval",
+      "executionSource": "eval_harness_probe",
+      "startedAt": 1772878053549,
+      "completedAt": 1772878053549,
+      "updatedAt": 1772878053549,
+      "outputSha256": "a0db0504fc8524b8cb86e517002944b173c45aec254184612608b84779ce3cac",
+      "outputChars": 110,
+      "observedSignals": {
+        "commandExecutions": 0,
+        "commandFailures": 0,
+        "fileChanges": 0,
+        "changedFiles": 0,
+        "mcpCalls": 0,
+        "collabCalls": 0,
+        "collabFailures": 0,
+        "webSearches": 0,
+        "dispatchCount": 0,
+        "dispatchSuccessCount": 0,
+        "dispatchFailureCount": 0,
+        "dispatchChildren": [],
+        "itemCounts": {}
+      },
+      "parentDispatchGuard": {
+        "mode": "off",
+        "reason": "",
+        "required": 0,
+        "satisfied": 0,
+        "violation": 0
+      }
+    }
+  ],
+  "auditMemory": [
+    {
+      "turnId": "019cc7c3-20c9-71a3-8456-2775faae2dbe",
+      "threadId": "019cc7c3-2008-7a20-9716-496aef60a3e8",
+      "artifactDir": "C:\\Users\\akima\\Desktop\\codex_Original_UI_PJ\\logs\\proofs\\runtime-proof-2026-03-07T10-06-18-921Z-01647b\\turns\\2026-03-07\\019cc7c3-2008-7a20-9716-496aef60a3e8__019cc7c3-20c9-71a3-8456-2775faae2dbe",
+      "manifestPath": "C:\\Users\\akima\\Desktop\\codex_Original_UI_PJ\\logs\\proofs\\runtime-proof-2026-03-07T10-06-18-921Z-01647b\\turns\\2026-03-07\\019cc7c3-2008-7a20-9716-496aef60a3e8__019cc7c3-20c9-71a3-8456-2775faae2dbe\\manifest.json",
+      "manifestSha256": "d40fb4ed58c79aecfddc5185815f9455cc8b610731dd23ec6bc20c8a29da53cf",
+      "promptSha256": "992786ca34004930454562ccc0134d58275333b86789de81d5356ac6bb52f1c3",
+      "generatedAt": 1772878053541,
+      "artifactCount": 3,
+      "status": "completed"
+    }
+  ],
+  "replayMemory": [
+    {
+      "turnId": "019cc7c3-20c9-71a3-8456-2775faae2dbe",
+      "threadId": "019cc7c3-2008-7a20-9716-496aef60a3e8",
+      "agentName": "default",
+      "status": "completed",
+      "taskOutcomeStatus": "COMPLETED",
+      "taskOutcomeReason": "completed_default",
+      "executionProfile": "proof-runtime",
+      "executionIntent": "proof-live-dispatch",
+      "executionSource": "runtime_proof_script",
+      "request": {
+        "prompt": "You are the default parent. This run must use native collab dispatch.\nRequired sequence: spawn backend_worker -> wait -> review -> parent append -> final answer.\nBackend worker task: append exactly one new line 'child-proof-run: 2026-03-07T10:06:18.922Z :: 1938199c' to scripts/proofs/live_dispatch_proof.md.\nAfter the child succeeds, the parent must append exactly one additional line 'parent-proof-review: 2026-03-07T10:06:18.922Z :: 47762330' to the same file.\nDo not modify any other file. Do not ask follow-up questions.\nAfter the child succeeds, reply with exactly: DISPATCH_OK scripts/proofs/live_dispatch_proof.md",
+        "promptSha256": "992786ca34004930454562ccc0134d58275333b86789de81d5356ac6bb52f1c3",
+        "sandboxMode": "workspace-write",
+        "approvalPolicy": "never",
+        "webSearch": 0,
+        "model": "gpt-5.4",
+        "modelReasoningEffort": "xhigh",
+        "agentName": "default",
+        "cwd": "C:\\Users\\akima\\Desktop\\codex_Original_UI_PJ",
+        "requestUserInputPolicy": "blocked",
+        "forceNewSession": 1,
+        "executionProfile": "proof-runtime",
+        "executionIntent": "proof-live-dispatch",
+        "executionSource": "runtime_proof_script",
+        "recipeHash": "05b0ec32014f872eeb0537f35103cd878c310132850093b12d27af045fe7535a"
+      },
+      "baseline": {
+        "outputSha256": "b23211fafc234836c6f9eb58a1b5478b793766402202473c7346924249567d35",
+        "outputLength": 49,
+        "outputSnapshot": "DISPATCH_OK scripts/proofs/live_dispatch_proof.md",
+        "artifactManifestPath": "C:\\Users\\akima\\Desktop\\codex_Original_UI_PJ\\logs\\proofs\\runtime-proof-2026-03-07T10-06-18-921Z-01647b\\turns\\2026-03-07\\019cc7c3-2008-7a20-9716-496aef60a3e8__019cc7c3-20c9-71a3-8456-2775faae2dbe\\manifest.json",
+        "artifactManifestSha256": "d40fb4ed58c79aecfddc5185815f9455cc8b610731dd23ec6bc20c8a29da53cf"
+      },
+      "replayStats": {
+        "replayCount": 0,
+        "lastReplayAt": 0,
+        "lastReplayStatus": "",
+        "lastReplayOutputSha256": "",
+        "lastReplayDiffRate": 0
+      },
+      "startedAt": 1772877979849,
+      "completedAt": 1772878053536,
+      "updatedAt": 1772878053542
+    }
+  ],
+  "abstractionMemory": {
+    "patterns": [
+      {
+        "signature": "ok.completed|completed|proof-live-dispatch|proof-runtime",
+        "code": "ok.completed",
+        "severity": "none",
+        "hint": "No correction needed.",
+        "status": "completed",
+        "executionIntent": "proof-live-dispatch",
+        "executionProfile": "proof-runtime",
+        "count": 1,
+        "firstSeenAt": 1772878053538,
+        "sampleTurnIds": [
+          "019cc7c3-20c9-71a3-8456-2775faae2dbe"
+        ],
+        "sampleAgents": [
+          "default"
+        ],
+        "lastSeenAt": 1772878053538,
+        "lastError": "",
+        "updatedAt": 1772878053538
+      },
+      {
+        "signature": "contract.failed_validation|failed|proof-eval|proof-runtime",
+        "code": "contract.failed_validation",
+        "severity": "high",
+        "hint": "Required validation or evidence gate did not pass; do not report completion.",
+        "status": "failed",
+        "executionIntent": "proof-eval",
+        "executionProfile": "proof-runtime",
+        "count": 2,
+        "firstSeenAt": 1772878053548,
+        "sampleTurnIds": [
+          "eval-probe-eval-1772878053547-24f67836-proof-parent_dispatch_guard_violation",
+          "eval-probe-eval-1772878053547-24f67836-proof-explicit_failed_validation"
+        ],
+        "sampleAgents": [
+          "default"
+        ],
+        "lastSeenAt": 1772878053549,
+        "lastError": "eval probe resolved FAILED_VALIDATION (missing_required_evidence)",
+        "updatedAt": 1772878053549
+      },
+      {
+        "signature": "contract.needs_input|failed|proof-eval|proof-runtime",
+        "code": "contract.needs_input",
+        "severity": "medium",
+        "hint": "Collect the missing approval or user decision before continuing.",
+        "status": "failed",
+        "executionIntent": "proof-eval",
+        "executionProfile": "proof-runtime",
+        "count": 1,
+        "firstSeenAt": 1772878053549,
+        "sampleTurnIds": [
+          "eval-probe-eval-1772878053547-24f67836-proof-explicit_needs_input"
+        ],
+        "sampleAgents": [
+          "default"
+        ],
+        "lastSeenAt": 1772878053549,
+        "lastError": "eval probe resolved NEEDS_INPUT (interactive_approval_unavailable)",
+        "updatedAt": 1772878053549
+      }
+    ]
+  }
+}

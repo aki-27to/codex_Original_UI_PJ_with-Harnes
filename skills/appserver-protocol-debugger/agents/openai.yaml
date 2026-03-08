@@ -1,0 +1,7 @@
+interface:
+  display_name: "Appserver Protocol Debugger"
+  short_description: "Diagnose and fix app-server JSONL or JSON-RPC lifecycle and handshake issues."
+  default_prompt: "Use $appserver-protocol-debugger to debug app-server handshake or turn lifecycle failures."
+
+policy:
+  allow_implicit_invocation: true

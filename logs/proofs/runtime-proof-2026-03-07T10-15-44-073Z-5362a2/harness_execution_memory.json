@@ -1,0 +1,184 @@
+{
+  "schema": "harness-execution-memory.v1",
+  "updatedAt": 1772878716780,
+  "retentionDays": 30,
+  "contractMemory": [
+    {
+      "key": "runtime-proof-live-1772878544609",
+      "state": "completed",
+      "createdAt": 1772878544610,
+      "updatedAt": 1772878716780,
+      "expiresAt": 1772880516778,
+      "requestHash": "5d234d31bacd1fac9da470d24919228583ec14dd0a4feeb7aa75aedb6b4f3193",
+      "metadata": {
+        "path": "/api/exec",
+        "method": "POST",
+        "agent": "default",
+        "sandbox": "workspace-write",
+        "approval": "never",
+        "model": "gpt-5.4",
+        "modelReasoningEffort": "xhigh",
+        "cwd": "C:\\Users\\akima\\Desktop\\codex_Original_UI_PJ",
+        "requestHash": "5d234d31bacd1fac9da470d24919228583ec14dd0a4feeb7aa75aedb6b4f3193",
+        "requestUserInputPolicy": "blocked",
+        "executionProfile": "proof-runtime",
+        "executionIntent": "proof-live-dispatch",
+        "executionSource": "runtime_proof_script"
+      },
+      "responseClosedAt": 1772878716780,
+      "responseCloseDisposition": "post_terminal",
+      "outcome": {
+        "status": "completed",
+        "taskOutcomeStatus": "COMPLETED",
+        "taskOutcomeReason": "completed_default",
+        "error": "",
+        "threadId": "019cc7cb-c7de-7332-8077-872f93054104",
+        "turnId": "019cc7cb-c889-75a1-baf2-19b558664bad",
+        "agentName": "default",
+        "executionProfile": "proof-runtime",
+        "executionIntent": "proof-live-dispatch",
+        "executionSource": "runtime_proof_script",
+        "artifactDir": "C:\\Users\\akima\\Desktop\\codex_Original_UI_PJ\\logs\\proofs\\runtime-proof-2026-03-07T10-15-44-073Z-5362a2\\turns\\2026-03-07\\019cc7cb-c7de-7332-8077-872f93054104__019cc7cb-c889-75a1-baf2-19b558664bad",
+        "artifactManifestPath": "C:\\Users\\akima\\Desktop\\codex_Original_UI_PJ\\logs\\proofs\\runtime-proof-2026-03-07T10-15-44-073Z-5362a2\\turns\\2026-03-07\\019cc7cb-c7de-7332-8077-872f93054104__019cc7cb-c889-75a1-baf2-19b558664bad\\manifest.json",
+        "artifactManifestSha256": "1dd8cd119c915bd8c92ed39add41a12ced49c9e2a24982291267d7283ab30eea",
+        "completedAt": 1772878716778
+      }
+    }
+  ],
+  "executionMemory": [
+    {
+      "turnId": "019cc7cb-c889-75a1-baf2-19b558664bad",
+      "threadId": "019cc7cb-c7de-7332-8077-872f93054104",
+      "agentName": "default",
+      "status": "completed",
+      "taskOutcomeStatus": "COMPLETED",
+      "taskOutcomeReason": "completed_default",
+      "terminalEvent": "turn/completed",
+      "errorText": "",
+      "executionProfile": "proof-runtime",
+      "executionIntent": "proof-live-dispatch",
+      "executionSource": "runtime_proof_script",
+      "startedAt": 1772878547081,
+      "completedAt": 1772878716771,
+      "updatedAt": 1772878716772,
+      "outputSha256": "d8dddfa84f27eb7a4ffcaa02679279e60f2c8eff4e8c20b167651d4060cd6adc",
+      "outputChars": 92,
+      "observedSignals": {
+        "commandExecutions": 2,
+        "commandFailures": 0,
+        "fileChanges": 0,
+        "changedFiles": 0,
+        "mcpCalls": 0,
+        "collabCalls": 4,
+        "collabFailures": 0,
+        "webSearches": 0,
+        "dispatchCount": 2,
+        "dispatchSuccessCount": 2,
+        "dispatchFailureCount": 0,
+        "dispatchChildren": [
+          "unknown",
+          "019cc7cc-2b8f-73b2-a332-84fdfa670d92",
+          "019cc7cc-e914-7f33-8368-603bc4b8555f"
+        ],
+        "itemCounts": {
+          "userMessage": 1,
+          "reasoning": 7,
+          "agentMessage": 5,
+          "collabAgentToolCall": 4,
+          "commandExecution": 2
+        }
+      },
+      "parentDispatchGuard": {
+        "mode": "enforce",
+        "reason": "",
+        "required": 1,
+        "satisfied": 1,
+        "violation": 0
+      }
+    }
+  ],
+  "auditMemory": [
+    {
+      "turnId": "019cc7cb-c889-75a1-baf2-19b558664bad",
+      "threadId": "019cc7cb-c7de-7332-8077-872f93054104",
+      "artifactDir": "C:\\Users\\akima\\Desktop\\codex_Original_UI_PJ\\logs\\proofs\\runtime-proof-2026-03-07T10-15-44-073Z-5362a2\\turns\\2026-03-07\\019cc7cb-c7de-7332-8077-872f93054104__019cc7cb-c889-75a1-baf2-19b558664bad",
+      "manifestPath": "C:\\Users\\akima\\Desktop\\codex_Original_UI_PJ\\logs\\proofs\\runtime-proof-2026-03-07T10-15-44-073Z-5362a2\\turns\\2026-03-07\\019cc7cb-c7de-7332-8077-872f93054104__019cc7cb-c889-75a1-baf2-19b558664bad\\manifest.json",
+      "manifestSha256": "1dd8cd119c915bd8c92ed39add41a12ced49c9e2a24982291267d7283ab30eea",
+      "promptSha256": "01beb75136bb9fa4232fa49c74ddd0dd7e0b9029dfe2f194b80dbd89a5231937",
+      "generatedAt": 1772878716776,
+      "artifactCount": 2,
+      "status": "completed"
+    }
+  ],
+  "replayMemory": [
+    {
+      "turnId": "019cc7cb-c889-75a1-baf2-19b558664bad",
+      "threadId": "019cc7cb-c7de-7332-8077-872f93054104",
+      "agentName": "default",
+      "status": "completed",
+      "taskOutcomeStatus": "COMPLETED",
+      "taskOutcomeReason": "completed_default",
+      "executionProfile": "proof-runtime",
+      "executionIntent": "proof-live-dispatch",
+      "executionSource": "runtime_proof_script",
+      "request": {
+        "prompt": "You are the default parent. This run must use native collab dispatch.\nRequired sequence: spawn infra_worker -> wait -> review -> parent append -> final answer.\nInfra worker task: append exactly one new line 'child-proof-run: 2026-03-07T10:15:44.074Z :: 110b95ba' to logs/proofs/runtime-proof-2026-03-07T10-15-44-073Z-5362a2/live_dispatch_proof.md.\nAfter the child succeeds, the parent must append exactly one additional line 'parent-proof-review: 2026-03-07T10:15:44.074Z :: 91c113dc' to the same file.\nDo not modify any other file. Do not ask follow-up questions.\nAfter the child succeeds, reply with exactly: DISPATCH_OK logs/proofs/runtime-proof-2026-03-07T10-15-44-073Z-5362a2/live_dispatch_proof.md",
+        "promptSha256": "01beb75136bb9fa4232fa49c74ddd0dd7e0b9029dfe2f194b80dbd89a5231937",
+        "sandboxMode": "workspace-write",
+        "approvalPolicy": "never",
+        "webSearch": 0,
+        "model": "gpt-5.4",
+        "modelReasoningEffort": "xhigh",
+        "agentName": "default",
+        "cwd": "C:\\Users\\akima\\Desktop\\codex_Original_UI_PJ",
+        "requestUserInputPolicy": "blocked",
+        "forceNewSession": 1,
+        "executionProfile": "proof-runtime",
+        "executionIntent": "proof-live-dispatch",
+        "executionSource": "runtime_proof_script",
+        "recipeHash": "69645e84c594e6cf5bbe9d94934707dc6242222d8201f47df3e3df92aab00c8b"
+      },
+      "baseline": {
+        "outputSha256": "d8dddfa84f27eb7a4ffcaa02679279e60f2c8eff4e8c20b167651d4060cd6adc",
+        "outputLength": 92,
+        "outputSnapshot": "DISPATCH_OK logs/proofs/runtime-proof-2026-03-07T10-15-44-073Z-5362a2/live_dispatch_proof.md",
+        "artifactManifestPath": "C:\\Users\\akima\\Desktop\\codex_Original_UI_PJ\\logs\\proofs\\runtime-proof-2026-03-07T10-15-44-073Z-5362a2\\turns\\2026-03-07\\019cc7cb-c7de-7332-8077-872f93054104__019cc7cb-c889-75a1-baf2-19b558664bad\\manifest.json",
+        "artifactManifestSha256": "1dd8cd119c915bd8c92ed39add41a12ced49c9e2a24982291267d7283ab30eea"
+      },
+      "replayStats": {
+        "replayCount": 0,
+        "lastReplayAt": 0,
+        "lastReplayStatus": "",
+        "lastReplayOutputSha256": "",
+        "lastReplayDiffRate": 0
+      },
+      "startedAt": 1772878547081,
+      "completedAt": 1772878716771,
+      "updatedAt": 1772878716777
+    }
+  ],
+  "abstractionMemory": {
+    "patterns": [
+      {
+        "signature": "ok.completed|completed|proof-live-dispatch|proof-runtime",
+        "code": "ok.completed",
+        "severity": "none",
+        "hint": "No correction needed.",
+        "status": "completed",
+        "executionIntent": "proof-live-dispatch",
+        "executionProfile": "proof-runtime",
+        "count": 1,
+        "firstSeenAt": 1772878716773,
+        "sampleTurnIds": [
+          "019cc7cb-c889-75a1-baf2-19b558664bad"
+        ],
+        "sampleAgents": [
+          "default"
+        ],
+        "lastSeenAt": 1772878716773,
+        "lastError": "",
+        "updatedAt": 1772878716773
+      }
+    ]
+  }
+}

@@ -1,0 +1,164 @@
+{
+  "schema": "turn-artifact-manifest.v1",
+  "generatedAt": "2026-03-07T10:23:00.753Z",
+  "turn": {
+    "turnId": "019cc7d2-3045-71c2-8b0d-dc22463e8a4b",
+    "threadId": "019cc7d2-2f6d-7461-b707-5db53eb2ad85",
+    "agentName": "default",
+    "sandboxMode": "workspace-write",
+    "approvalPolicy": "never",
+    "cwd": "C:\\Users\\akima\\Desktop\\codex_Original_UI_PJ",
+    "idempotencyKey": "eval-1772878965703-938121c0"
+  },
+  "prompt": {
+    "length": 23,
+    "sha256": "8979fb86fc83ac83d239dfcead90d3d1bafaa136725fa7af7a61391456aa0702"
+  },
+  "counters": {
+    "events": 22,
+    "items": 6,
+    "diffUpdates": 0,
+    "latestDiffBytes": 0,
+    "stdoutChunks": 0,
+    "stderrChunks": 0
+  },
+  "terminal": {
+    "status": "completed",
+    "taskOutcomeStatus": "COMPLETED",
+    "taskOutcomeReason": "completed_default",
+    "error": "",
+    "completedAt": "2026-03-07T10:23:00.750Z"
+  },
+  "execution": {
+    "meta": {
+      "profile": {
+        "runtime": "relaxed-ui",
+        "request": "eval-smoke",
+        "effective": "eval-smoke",
+        "envKey": "CODEX_EXECUTION_PROFILE",
+        "smokeLike": 1,
+        "repro": 0
+      },
+      "intent": "eval",
+      "recipe": {
+        "schema": "harness-repro-recipe.v1",
+        "apiVersion": 4,
+        "environment": {
+          "node": "v24.13.0",
+          "platform": "win32",
+          "arch": "x64"
+        },
+        "model": {
+          "id": "gpt-5.4",
+          "reasoningEffort": "xhigh"
+        },
+        "runtime": {
+          "executionProfile": "eval-smoke",
+          "executionIntent": "eval",
+          "executionSource": "eval_harness"
+        },
+        "controls": {
+          "agentName": "default",
+          "sandboxMode": "workspace-write",
+          "approvalPolicy": "never",
+          "cwd": "C:\\Users\\akima\\Desktop\\codex_Original_UI_PJ",
+          "webSearch": 0,
+          "requestUserInputPolicy": "blocked"
+        },
+        "generatedAt": 1772878965710,
+        "hash": "f59f8d873f5d7078bf2dbb743926d07bd79fc21349c26a29bc5ca22f94aaaaf1"
+      },
+      "defaults": {
+        "expected": {
+          "defaultExecAgent": "default",
+          "requestUserInputPolicy": "blocked",
+          "adversarialShadowEnabled": 1,
+          "adversarialLoopEnabled": 1
+        },
+        "actual": {
+          "defaultExecAgent": "default",
+          "requestUserInputPolicy": "blocked",
+          "adversarialShadowEnabled": 0,
+          "adversarialLoopEnabled": 0,
+          "adversarialLoopMaxRetries": 0
+        },
+        "checks": {
+          "defaultExecAgentIsDefault": 1,
+          "requestUserInputBlocked": 1,
+          "adversarialShadowEnabled": 0,
+          "adversarialLoopEnabled": 0
+        },
+        "ready": 0
+      },
+      "parentDispatchGuard": {
+        "enabled": 0,
+        "mode": "off",
+        "envKey": "CODEX_PARENT_DISPATCH_GUARD_MODE",
+        "maxRetries": 0,
+        "parentAgents": [
+          "default",
+          "intake",
+          "release_manager"
+        ]
+      },
+      "turn": {
+        "agentName": "default",
+        "requestUserInputPolicy": "blocked",
+        "checks": {
+          "agentIsDefault": 1,
+          "requestUserInputBlocked": 1,
+          "adversarialShadowEnabled": 0,
+          "adversarialLoopEnabled": 0
+        },
+        "ready": 0
+      }
+    },
+    "observed": {
+      "commandExecutions": 0,
+      "commandFailures": 0,
+      "fileChanges": 0,
+      "changedFiles": 0,
+      "mcpCalls": 0,
+      "collabCalls": 0,
+      "collabFailures": 0,
+      "webSearches": 0,
+      "dispatchCount": 0,
+      "dispatchSuccessCount": 0,
+      "dispatchFailureCount": 0,
+      "dispatchChildren": [],
+      "itemCounts": {
+        "userMessage": 1,
+        "reasoning": 1,
+        "agentMessage": 1
+      }
+    }
+  },
+  "approvalDecisions": {
+    "riskRulesVersion": "2026-02-22.r1",
+    "count": 0,
+    "truncated": 0,
+    "records": []
+  },
+  "redaction": {
+    "enabled": 1,
+    "placeholder": "[REDACTED]",
+    "replacements": 0,
+    "byRule": {}
+  },
+  "retentionPolicy": {
+    "maxBytes": 268435456,
+    "maxDays": 14
+  },
+  "artifacts": [
+    {
+      "file": "events.ndjson",
+      "bytes": 9393,
+      "sha256": "83a1b61b099e40e1aed1a4938a58b5bdb199bce1af19831df7d74e76be38db90"
+    },
+    {
+      "file": "items.ndjson",
+      "bytes": 1111,
+      "sha256": "468bb2ef8f5cd9b2fe1ebd6da74409489447670da55fdbc540e69b49598820a4"
+    }
+  ]
+}

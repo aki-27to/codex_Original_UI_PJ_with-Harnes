@@ -1,0 +1,13 @@
+name: kokoro-fastapi
+
+services:
+  kokoro-fastapi:
+    image: ${KOKORO_IMAGE:-ghcr.io/remsky/kokoro-fastapi-cpu:latest}
+    container_name: kokoro-fastapi
+    restart: unless-stopped
+    ports:
+      - "${KOKORO_PORT:-8880}:8880"
+    environment:
+      - PYTHONUNBUFFERED=1
+    volumes:
+      - ${KOKORO_CACHE_DIR:-./cache/huggingface}:/root/.cache/huggingface

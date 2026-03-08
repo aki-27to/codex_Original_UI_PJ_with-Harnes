@@ -1,0 +1,19 @@
+{
+  "generatedAt": "2026-03-07T11:40:29.664Z",
+  "bundleRoot": "C:\\Users\\akima\\Desktop\\codex_Original_UI_PJ\\logs\\signoff-bundles\\signoff-2026-03-07T11-40-29-658Z-65781d",
+  "paths": {
+    "runtimeSnapshot": "C:\\Users\\akima\\Desktop\\codex_Original_UI_PJ\\logs\\signoff-bundles\\signoff-2026-03-07T11-40-29-658Z-65781d\\runtime_snapshot.json",
+    "coreHarnessWorkflowRun": "C:\\Users\\akima\\Desktop\\codex_Original_UI_PJ\\logs\\signoff-bundles\\signoff-2026-03-07T11-40-29-658Z-65781d\\core_harness_workflow_run.json",
+    "naturalTaskTraceSummary": "C:\\Users\\akima\\Desktop\\codex_Original_UI_PJ\\logs\\signoff-bundles\\signoff-2026-03-07T11-40-29-658Z-65781d\\natural_task_trace_summary.json",
+    "harnessExecutionMemory": "C:\\Users\\akima\\Desktop\\codex_Original_UI_PJ\\logs\\signoff-bundles\\signoff-2026-03-07T11-40-29-658Z-65781d\\harness_execution_memory.json",
+    "evalRuns": "C:\\Users\\akima\\Desktop\\codex_Original_UI_PJ\\logs\\signoff-bundles\\signoff-2026-03-07T11-40-29-658Z-65781d\\eval_runs.jsonl",
+    "turnsDir": "C:\\Users\\akima\\Desktop\\codex_Original_UI_PJ\\logs\\signoff-bundles\\signoff-2026-03-07T11-40-29-658Z-65781d\\turns",
+    "signoffSummary": "C:\\Users\\akima\\Desktop\\codex_Original_UI_PJ\\logs\\signoff-bundles\\signoff-2026-03-07T11-40-29-658Z-65781d\\signoff_summary.json"
+  },
+  "runtime": null,
+  "coreHarnessWorkflow": null,
+  "naturalTask": null,
+  "assertions": null,
+  "error": "runtime posture assertion failed: {\"modeIsAppServer\":true,\"defaultExecAgentIsDefault\":true,\"requestUserInputBlocked\":true,\"parentDispatchGuardEnforced\":true,\"parentDispatchGuardMaxRetriesIsOne\":true,\"requirementGuardEnabled\":true,\"requirementLockEnabled\":false,\"rbjEnabled\":true,\"rbjMaxQuestionsIsThree\":true,\"rbjMaxRevisionsIsTwo\":true,\"adversarialShadowEnabled\":true,\"adversarialLoopEnabled\":true,\"adversarialLoopMaxRetriesIsOne\":true,\"isolatedHarnessMemoryPath\":true,\"isolatedEvalHistoryPath\":true,\"isolatedTurnArtifactsPath\":true,\"fullUtilizationReady\":true}",
+  "serverLogs": []
+}

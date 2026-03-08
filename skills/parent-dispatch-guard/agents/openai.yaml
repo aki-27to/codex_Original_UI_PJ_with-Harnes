@@ -1,0 +1,8 @@
+interface:
+  display_name: "Parent Dispatch Guard"
+  short_description: "Force reliable spawn_agent delegation before parent completion."
+  default_prompt: "Use $parent-dispatch-guard to enforce spawn_agent and wait before parent review or final report."
+
+policy:
+  allow_implicit_invocation: true
+

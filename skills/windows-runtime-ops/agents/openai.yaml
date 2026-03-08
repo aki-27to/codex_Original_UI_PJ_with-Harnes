@@ -1,0 +1,7 @@
+interface:
+  display_name: "Windows Runtime Ops"
+  short_description: "Diagnose Windows-local launcher, process, port, path, and permission issues with bounded recovery."
+  default_prompt: "Use $windows-runtime-ops to inspect launcher/runtime posture, isolate the Windows failure class, and verify a bounded fix."
+
+policy:
+  allow_implicit_invocation: true

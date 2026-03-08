@@ -1,0 +1,398 @@
+{
+  "ok": true,
+  "report": {
+    "runId": "eval-1772884368202-2b4cdbba",
+    "generatedAt": 1772884379397,
+    "suite": {
+      "schema": "harness-eval-suite.v1",
+      "suiteId": "core-harness-workflow.v4",
+      "description": "Regression suite covering live exec behavior plus deterministic workflow-policy probes for retired worker rejection, parent-dispatch guard enforcement, idempotency lifecycle bridges, task outcomes, and adversarial review.",
+      "caseCount": 13,
+      "caseIds": [
+        "exact_ack",
+        "retired_worker_rejected",
+        "retired_worker_scoped_rejected",
+        "requirement_rbj_parent_active",
+        "parent_dispatch_guard_violation",
+        "idempotency_failed_outcome_bridge",
+        "needs_input_blocked_policy",
+        "failed_validation_missing_evidence",
+        "needs_input_from_approval",
+        "turn_task_outcome_bridge_failed_validation",
+        "turn_task_outcome_bridge_blocked",
+        "adversarial_exact_contract_mismatch",
+        "adversarial_failed_validation_retry"
+      ],
+      "outputSchema": {
+        "type": "object",
+        "required": [
+          "status",
+          "latencyMs",
+          "passed",
+          "score",
+          "reason"
+        ],
+        "properties": {
+          "status": {
+            "type": "string"
+          },
+          "latencyMs": {
+            "type": "number"
+          },
+          "passed": {
+            "type": "boolean"
+          },
+          "score": {
+            "type": "number"
+          },
+          "reason": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "maxCases": 13,
+    "timeoutMs": 180000,
+    "runs": [
+      {
+        "suiteId": "core-harness-workflow.v4",
+        "variant": {
+          "label": "signoff",
+          "agentName": "default",
+          "model": "gpt-5.4",
+          "modelReasoningEffort": "xhigh",
+          "sandboxMode": "workspace-write",
+          "approvalPolicy": "never",
+          "webSearch": false,
+          "cwd": "C:\\Users\\akima\\Desktop\\codex_Original_UI_PJ",
+          "requestUserInputPolicy": "blocked",
+          "executionProfile": "full-runtime",
+          "executionIntent": "signoff-eval",
+          "executionSource": "signoff_evidence_script"
+        },
+        "startedAt": 1772884368203,
+        "completedAt": 1772884379397,
+        "durationMs": 11194,
+        "sampleSize": 13,
+        "passedCases": 13,
+        "failedCases": 0,
+        "passRate": 1,
+        "score": 18,
+        "maxScore": 18,
+        "scoreRate": 1,
+        "avgLatencyMs": 861.08,
+        "cases": [
+          {
+            "caseId": "exact_ack",
+            "title": "Exact ACK contract",
+            "driver": "exec",
+            "status": "completed",
+            "latencyMs": 11191,
+            "passed": true,
+            "score": 1,
+            "maxScore": 1,
+            "reason": "exact_match",
+            "details": {
+              "expected": "ACK",
+              "actual": "ACK"
+            },
+            "errorText": "",
+            "output": {
+              "chars": 3,
+              "preview": "ACK"
+            },
+            "taskOutcomeStatus": "COMPLETED",
+            "taskOutcomeReason": "completed_default",
+            "turnId": "019cc824-9e1c-72f3-92b9-c7ae942de347"
+          },
+          {
+            "caseId": "retired_worker_rejected",
+            "title": "Retired worker cannot be selected as runtime agent",
+            "driver": "agent_registry_probe",
+            "status": "completed",
+            "latencyMs": 1,
+            "passed": true,
+            "score": 2,
+            "maxScore": 2,
+            "reason": "json_fields_match",
+            "details": {
+              "checkedFields": 3,
+              "failedFields": []
+            },
+            "errorText": "",
+            "output": {
+              "chars": 201,
+              "preview": "{\"ok\":false,\"reason\":\"agent_not_configured\",\"agentName\":\"worker\",\"allowedAgents\":[\"backend_worker\",\"default\",\"explorer\",\"frontend_worker\",\"infra_worker\",\"intake\",\"release_manager\",\"reviewer\",\"tester\"]}"
+            },
+            "taskOutcomeStatus": "",
+            "taskOutcomeReason": "",
+            "turnId": ""
+          },
+          {
+            "caseId": "retired_worker_scoped_rejected",
+            "title": "Retired worker scoped alias cannot be selected as runtime agent",
+            "driver": "agent_registry_probe",
+            "status": "completed",
+            "latencyMs": 0,
+            "passed": true,
+            "score": 1,
+            "maxScore": 1,
+            "reason": "json_fields_match",
+            "details": {
+              "checkedFields": 3,
+              "failedFields": []
+            },
+            "errorText": "",
+            "output": {
+              "chars": 213,
+              "preview": "{\"ok\":false,\"reason\":\"agent_not_configured\",\"agentName\":\"worker@chat-legacy\",\"allowedAgents\":[\"backend_worker\",\"default\",\"explorer\",\"frontend_worker\",\"infra_worker\",\"intake\",\"release_manager\",\"reviewer\",\"tester\"]}"
+            },
+            "taskOutcomeStatus": "",
+            "taskOutcomeReason": "",
+            "turnId": ""
+          },
+          {
+            "caseId": "requirement_rbj_parent_active",
+            "title": "Parent role activates requirement RBJ loop",
+            "driver": "requirement_rbj_probe",
+            "status": "completed",
+            "latencyMs": 0,
+            "passed": true,
+            "score": 2,
+            "maxScore": 2,
+            "reason": "json_fields_match",
+            "details": {
+              "checkedFields": 3,
+              "failedFields": []
+            },
+            "errorText": "",
+            "output": {
+              "chars": 247,
+              "preview": "{\"mode\":\"requirement_definition_loop\",\"active\":true,\"reason\":\"active\",\"parent_agent\":true,\"agent_name\":\"default\",\"bypass\":false,\"confirmed\":false,\"max_questions\":3,\"max_revisions\":2,\"min_confidence\":80,\"red_skill_token\":\"$red-requirement-auditor\"}"
+            },
+            "taskOutcomeStatus": "",
+            "taskOutcomeReason": "",
+            "turnId": ""
+          },
+          {
+            "caseId": "parent_dispatch_guard_violation",
+            "title": "Parent completion without child dispatch is blocked",
+            "driver": "parent_dispatch_guard_probe",
+            "status": "completed",
+            "latencyMs": 0,
+            "passed": true,
+            "score": 2,
+            "maxScore": 2,
+            "reason": "json_fields_match",
+            "details": {
+              "checkedFields": 3,
+              "failedFields": []
+            },
+            "errorText": "",
+            "output": {
+              "chars": 414,
+              "preview": "{\"mode\":\"enforce\",\"enabled\":1,\"required\":1,\"satisfied\":0,\"violation\":1,\"reason\":\"dispatch_not_attempted\",\"parentAgent\":1,\"smokeLikeProfile\":0,\"implementationWorkObserved\":1,\"finalStatus\":\"completed\",\"work\":{\"observed\":true,\"fileChanges\":1,\"changedFiles\":0,\"commandExecutions\":0,\"mcpCalls\":0},\"dispatch\":{\"attempts\":0,\"successes\":0,\"failures\":0,\"collabCalls\":0},\"retry\":1,\"attempt\":0,\"maxRetries\":1,\"n"
+            },
+            "taskOutcomeStatus": "",
+            "taskOutcomeReason": "",
+            "turnId": ""
+          },
+          {
+            "caseId": "idempotency_failed_outcome_bridge",
+            "title": "Idempotency duplicate bridge keeps lifecycle and failed outcome separate",
+            "driver": "idempotency_bridge_probe",
+            "status": "completed",
+            "latencyMs": 1,
+            "passed": true,
+            "score": 2,
+            "maxScore": 2,
+            "reason": "json_fields_match",
+            "details": {
+              "checkedFields": 5,
+              "failedFields": []
+            },
+            "errorText": "",
+            "output": {
+              "chars": 218,
+              "preview": "{\"lifecycleState\":\"failed\",\"terminalStatus\":\"failed\",\"outcomeStatus\":\"failed\",\"duplicateOk\":false,\"internalExecStatus\":\"failed\",\"taskOutcomeStatus\":\"FAILED_VALIDATION\",\"taskOutcomeReason\":\"parent_dispatch_guard_block\"}"
+            },
+            "taskOutcomeStatus": "",
+            "taskOutcomeReason": "",
+            "turnId": ""
+          },
+          {
+            "caseId": "needs_input_blocked_policy",
+            "title": "Non-interactive user input can be forced to blocked",
+            "driver": "request_user_input_probe",
+            "status": "completed",
+            "latencyMs": 0,
+            "passed": true,
+            "score": 1,
+            "maxScore": 1,
+            "reason": "json_fields_match",
+            "details": {
+              "checkedFields": 2,
+              "failedFields": []
+            },
+            "errorText": "",
+            "output": {
+              "chars": 160,
+              "preview": "{\"policy\":\"blocked\",\"decision\":\"blocked\",\"reason\":\"blocked_non_interactive_user_input_policy\",\"answers\":{},\"assumptions\":[],\"questionCount\":1,\"answeredCount\":0}"
+            },
+            "taskOutcomeStatus": "",
+            "taskOutcomeReason": "",
+            "turnId": ""
+          },
+          {
+            "caseId": "failed_validation_missing_evidence",
+            "title": "Missing evidence maps to FAILED_VALIDATION",
+            "driver": "task_outcome_probe",
+            "status": "completed",
+            "latencyMs": 0,
+            "passed": true,
+            "score": 2,
+            "maxScore": 2,
+            "reason": "json_fields_match",
+            "details": {
+              "checkedFields": 2,
+              "failedFields": []
+            },
+            "errorText": "",
+            "output": {
+              "chars": 110,
+              "preview": "{\"status\":\"FAILED_VALIDATION\",\"reason\":\"missing_required_evidence\",\"source\":\"reason_map\",\"turnState\":\"failed\"}"
+            },
+            "taskOutcomeStatus": "",
+            "taskOutcomeReason": "",
+            "turnId": ""
+          },
+          {
+            "caseId": "needs_input_from_approval",
+            "title": "Approval unavailability maps to NEEDS_INPUT",
+            "driver": "task_outcome_probe",
+            "status": "completed",
+            "latencyMs": 0,
+            "passed": true,
+            "score": 1,
+            "maxScore": 1,
+            "reason": "json_fields_match",
+            "details": {
+              "checkedFields": 2,
+              "failedFields": []
+            },
+            "errorText": "",
+            "output": {
+              "chars": 111,
+              "preview": "{\"status\":\"NEEDS_INPUT\",\"reason\":\"interactive_approval_unavailable\",\"source\":\"reason_map\",\"turnState\":\"failed\"}"
+            },
+            "taskOutcomeStatus": "",
+            "taskOutcomeReason": "",
+            "turnId": ""
+          },
+          {
+            "caseId": "turn_task_outcome_bridge_failed_validation",
+            "title": "Failed turn accepts FAILED_VALIDATION outcome",
+            "driver": "turn_task_outcome_probe",
+            "status": "completed",
+            "latencyMs": 0,
+            "passed": true,
+            "score": 1,
+            "maxScore": 1,
+            "reason": "json_fields_match",
+            "details": {
+              "checkedFields": 2,
+              "failedFields": []
+            },
+            "errorText": "",
+            "output": {
+              "chars": 151,
+              "preview": "{\"ok\":true,\"reason\":\"ok\",\"turnStatus\":\"failed\",\"taskOutcomeStatus\":\"FAILED_VALIDATION\",\"allowedStatuses\":[\"FAILED_VALIDATION\",\"BLOCKED\",\"NEEDS_INPUT\"]}"
+            },
+            "taskOutcomeStatus": "",
+            "taskOutcomeReason": "",
+            "turnId": ""
+          },
+          {
+            "caseId": "turn_task_outcome_bridge_blocked",
+            "title": "Failed turn accepts BLOCKED outcome",
+            "driver": "turn_task_outcome_probe",
+            "status": "completed",
+            "latencyMs": 0,
+            "passed": true,
+            "score": 1,
+            "maxScore": 1,
+            "reason": "json_fields_match",
+            "details": {
+              "checkedFields": 2,
+              "failedFields": []
+            },
+            "errorText": "",
+            "output": {
+              "chars": 141,
+              "preview": "{\"ok\":true,\"reason\":\"ok\",\"turnStatus\":\"failed\",\"taskOutcomeStatus\":\"BLOCKED\",\"allowedStatuses\":[\"FAILED_VALIDATION\",\"BLOCKED\",\"NEEDS_INPUT\"]}"
+            },
+            "taskOutcomeStatus": "",
+            "taskOutcomeReason": "",
+            "turnId": ""
+          },
+          {
+            "caseId": "adversarial_exact_contract_mismatch",
+            "title": "Adversarial shadow review catches exact reply mismatch",
+            "driver": "adversarial_shadow_probe",
+            "status": "completed",
+            "latencyMs": 1,
+            "passed": true,
+            "score": 1,
+            "maxScore": 1,
+            "reason": "json_fields_match",
+            "details": {
+              "checkedFields": 3,
+              "failedFields": []
+            },
+            "errorText": "",
+            "output": {
+              "chars": 912,
+              "preview": "{\"version\":\"shadow-v1-rule\",\"status\":\"completed\",\"minScore\":72,\"score\":65,\"decision\":\"needs_improvement\",\"red\":{\"findingCount\":2,\"findings\":[{\"id\":\"exact_reply_contract_mismatch\",\"severity\":\"high\",\"category\":\"contract\",\"message\":\"answer violated explicit exact-reply contract\",\"evidence\":\"expected=ACK actual=NOPE\"},{\"id\":\"very_short_completed_answer\",\"severity\":\"low\",\"category\":\"quality\",\"message\":"
+            },
+            "taskOutcomeStatus": "",
+            "taskOutcomeReason": "",
+            "turnId": ""
+          },
+          {
+            "caseId": "adversarial_failed_validation_retry",
+            "title": "Adversarial loop retries FAILED_VALIDATION outcomes",
+            "driver": "adversarial_loop_probe",
+            "status": "completed",
+            "latencyMs": 0,
+            "passed": true,
+            "score": 1,
+            "maxScore": 1,
+            "reason": "json_fields_match",
+            "details": {
+              "checkedFields": 3,
+              "failedFields": []
+            },
+            "errorText": "",
+            "output": {
+              "chars": 73,
+              "preview": "{\"retry\":true,\"reason\":\"failed_validation_review_failed\",\"nextAttempt\":1}"
+            },
+            "taskOutcomeStatus": "",
+            "taskOutcomeReason": "",
+            "turnId": ""
+          }
+        ]
+      }
+    ],
+    "comparison": {
+      "winner": "single",
+      "reason": "single_variant"
+    },
+    "probePersistence": {
+      "requested": 0,
+      "persistedRecords": 0,
+      "storage": "logs/signoff-bundles/signoff-2026-03-07T11-52-47-658Z-d4e8ec/harness_execution_memory.json",
+      "records": []
+    }
+  }
+}

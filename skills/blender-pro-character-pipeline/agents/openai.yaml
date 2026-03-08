@@ -1,0 +1,7 @@
+interface:
+  display_name: "Blender Pro Character Pipeline"
+  short_description: "Raise Blender character quality with strict modeling, animation, and export gates."
+  default_prompt: "Use $blender-pro-character-pipeline to build or polish a character model to professional quality, then validate export."
+
+policy:
+  allow_implicit_invocation: true

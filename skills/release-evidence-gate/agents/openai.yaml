@@ -1,0 +1,7 @@
+interface:
+  display_name: "Release Evidence Gate"
+  short_description: "Issue PASS or FAIL or BLOCKED release verdicts from explicit implementation and test evidence."
+  default_prompt: "Use $release-evidence-gate to evaluate release readiness from baseline and over-delivery evidence."
+
+policy:
+  allow_implicit_invocation: true

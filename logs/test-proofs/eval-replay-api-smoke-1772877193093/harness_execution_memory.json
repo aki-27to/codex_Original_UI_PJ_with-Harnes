@@ -1,0 +1,481 @@
+{
+  "schema": "harness-execution-memory.v1",
+  "updatedAt": 1772877220429,
+  "retentionDays": 30,
+  "contractMemory": [
+    {
+      "key": "eval-1772877193517-85ffef8b",
+      "state": "completed",
+      "createdAt": 1772877193520,
+      "updatedAt": 1772877207294,
+      "expiresAt": 1772879007293,
+      "requestHash": "6c627ea5f5712382233fe1484f5583d6a45356fb5117eecc049127e3eaa6c67c",
+      "metadata": {
+        "path": "/api/exec",
+        "method": "POST",
+        "agent": "default",
+        "sandbox": "workspace-write",
+        "approval": "never",
+        "model": "gpt-5.4",
+        "modelReasoningEffort": "xhigh",
+        "cwd": "C:\\Users\\akima\\Desktop\\codex_Original_UI_PJ",
+        "requestHash": "6c627ea5f5712382233fe1484f5583d6a45356fb5117eecc049127e3eaa6c67c",
+        "requestUserInputPolicy": "blocked",
+        "executionProfile": "eval-smoke",
+        "executionIntent": "eval",
+        "executionSource": "eval_harness"
+      },
+      "responseClosedAt": 1772877207294,
+      "responseCloseDisposition": "post_terminal",
+      "outcome": {
+        "status": "completed",
+        "taskOutcomeStatus": "COMPLETED",
+        "taskOutcomeReason": "completed_default",
+        "error": "",
+        "threadId": "019cc7b7-21f0-7d93-9a67-fc9cb4df513e",
+        "turnId": "019cc7b7-22df-7151-8f88-b2cf870c34e2",
+        "agentName": "default",
+        "executionProfile": "eval-smoke",
+        "executionIntent": "eval",
+        "executionSource": "eval_harness",
+        "artifactDir": "C:\\Users\\akima\\Desktop\\codex_Original_UI_PJ\\logs\\test-proofs\\eval-replay-api-smoke-1772877193093\\turns\\2026-03-07\\019cc7b7-21f0-7d93-9a67-fc9cb4df513e__019cc7b7-22df-7151-8f88-b2cf870c34e2",
+        "artifactManifestPath": "C:\\Users\\akima\\Desktop\\codex_Original_UI_PJ\\logs\\test-proofs\\eval-replay-api-smoke-1772877193093\\turns\\2026-03-07\\019cc7b7-21f0-7d93-9a67-fc9cb4df513e__019cc7b7-22df-7151-8f88-b2cf870c34e2\\manifest.json",
+        "artifactManifestSha256": "d620360657c6b62e0c9f449a4ba4e093054717877e571a2582434fb9c9b5c336",
+        "completedAt": 1772877207293
+      }
+    },
+    {
+      "key": "replay-1772877207304-3e36e99d",
+      "state": "completed",
+      "createdAt": 1772877207306,
+      "updatedAt": 1772877220428,
+      "expiresAt": 1772879020426,
+      "requestHash": "11f304ba61d5ebe75677abdf235dca29552edf955431b30749b84ebbb4ee9717",
+      "metadata": {
+        "path": "/api/exec",
+        "method": "POST",
+        "agent": "default",
+        "sandbox": "workspace-write",
+        "approval": "never",
+        "model": "gpt-5.4",
+        "modelReasoningEffort": "xhigh",
+        "cwd": "C:\\Users\\akima\\Desktop\\codex_Original_UI_PJ",
+        "requestHash": "11f304ba61d5ebe75677abdf235dca29552edf955431b30749b84ebbb4ee9717",
+        "requestUserInputPolicy": "blocked",
+        "executionProfile": "eval-smoke",
+        "executionIntent": "eval",
+        "executionSource": "replay:019cc7b7-22df-7151-8f88-b2cf870c34e2"
+      },
+      "responseClosedAt": 1772877220428,
+      "responseCloseDisposition": "post_terminal",
+      "outcome": {
+        "status": "completed",
+        "taskOutcomeStatus": "COMPLETED",
+        "taskOutcomeReason": "completed_default",
+        "error": "",
+        "threadId": "019cc7b7-573a-7db0-a889-f65530d02915",
+        "turnId": "019cc7b7-57d8-7900-88bf-ce7d7bb68877",
+        "agentName": "default",
+        "executionProfile": "eval-smoke",
+        "executionIntent": "eval",
+        "executionSource": "replay:019cc7b7-22df-7151-8f88-b2cf870c34e2",
+        "artifactDir": "C:\\Users\\akima\\Desktop\\codex_Original_UI_PJ\\logs\\test-proofs\\eval-replay-api-smoke-1772877193093\\turns\\2026-03-07\\019cc7b7-573a-7db0-a889-f65530d02915__019cc7b7-57d8-7900-88bf-ce7d7bb68877",
+        "artifactManifestPath": "C:\\Users\\akima\\Desktop\\codex_Original_UI_PJ\\logs\\test-proofs\\eval-replay-api-smoke-1772877193093\\turns\\2026-03-07\\019cc7b7-573a-7db0-a889-f65530d02915__019cc7b7-57d8-7900-88bf-ce7d7bb68877\\manifest.json",
+        "artifactManifestSha256": "64fb73f50d603e50bcbcc5705fe7b5b7e438f8f5b2df3f8241cbee1a889dd63f",
+        "completedAt": 1772877220426
+      }
+    }
+  ],
+  "executionMemory": [
+    {
+      "turnId": "019cc7b7-22df-7151-8f88-b2cf870c34e2",
+      "threadId": "019cc7b7-21f0-7d93-9a67-fc9cb4df513e",
+      "agentName": "default",
+      "status": "completed",
+      "taskOutcomeStatus": "COMPLETED",
+      "taskOutcomeReason": "completed_default",
+      "terminalEvent": "turn/completed",
+      "errorText": "",
+      "executionProfile": "eval-smoke",
+      "executionIntent": "eval",
+      "executionSource": "eval_harness",
+      "startedAt": 1772877193951,
+      "completedAt": 1772877207286,
+      "updatedAt": 1772877207286,
+      "outputSha256": "a2f1a6d79bfb0fe6d2fe2f0f08c2f32ce53cc935520e9d8a9f8daa051b4f239b",
+      "outputChars": 3,
+      "observedSignals": {
+        "commandExecutions": 0,
+        "commandFailures": 0,
+        "fileChanges": 0,
+        "changedFiles": 0,
+        "mcpCalls": 0,
+        "collabCalls": 0,
+        "collabFailures": 0,
+        "webSearches": 0,
+        "dispatchCount": 0,
+        "dispatchSuccessCount": 0,
+        "dispatchFailureCount": 0,
+        "dispatchChildren": [],
+        "itemCounts": {
+          "userMessage": 1,
+          "reasoning": 1,
+          "agentMessage": 1
+        }
+      },
+      "parentDispatchGuard": {
+        "mode": "off",
+        "reason": "",
+        "required": 0,
+        "satisfied": 1,
+        "violation": 0
+      }
+    },
+    {
+      "turnId": "eval-probe-eval-1772877207300-4919c7c9-a-parent_dispatch_guard_violation_memory",
+      "threadId": "eval-probe-eval-1772877207300-4919c7c9",
+      "agentName": "default",
+      "status": "failed",
+      "taskOutcomeStatus": "FAILED_VALIDATION",
+      "taskOutcomeReason": "parent_dispatch_guard_block",
+      "terminalEvent": "turn/completed",
+      "errorText": "parent dispatch guard blocked completion (dispatch_not_attempted)",
+      "executionProfile": "eval-proof",
+      "executionIntent": "eval",
+      "executionSource": "eval_harness_probe",
+      "startedAt": 1772877207300,
+      "completedAt": 1772877207300,
+      "updatedAt": 1772877207300,
+      "outputSha256": "edecaa2447a9d99c5ed270b8582c5e9b8ed134fdb622c9723753081dd7ae2eef",
+      "outputChars": 414,
+      "observedSignals": {
+        "commandExecutions": 0,
+        "commandFailures": 0,
+        "fileChanges": 0,
+        "changedFiles": 0,
+        "mcpCalls": 0,
+        "collabCalls": 0,
+        "collabFailures": 0,
+        "webSearches": 0,
+        "dispatchCount": 0,
+        "dispatchSuccessCount": 0,
+        "dispatchFailureCount": 0,
+        "dispatchChildren": [],
+        "itemCounts": {}
+      },
+      "parentDispatchGuard": {
+        "mode": "enforce",
+        "reason": "dispatch_not_attempted",
+        "required": 1,
+        "satisfied": 0,
+        "violation": 1
+      }
+    },
+    {
+      "turnId": "eval-probe-eval-1772877207300-4919c7c9-a-explicit_needs_input_memory",
+      "threadId": "eval-probe-eval-1772877207300-4919c7c9",
+      "agentName": "default",
+      "status": "failed",
+      "taskOutcomeStatus": "NEEDS_INPUT",
+      "taskOutcomeReason": "interactive_approval_unavailable",
+      "terminalEvent": "turn/completed",
+      "errorText": "eval probe resolved NEEDS_INPUT (interactive_approval_unavailable)",
+      "executionProfile": "eval-proof",
+      "executionIntent": "eval",
+      "executionSource": "eval_harness_probe",
+      "startedAt": 1772877207301,
+      "completedAt": 1772877207301,
+      "updatedAt": 1772877207301,
+      "outputSha256": "54d273797a0d117e91441d81f69cbcd50de8f85110ce39710d2a9a1048e2a913",
+      "outputChars": 111,
+      "observedSignals": {
+        "commandExecutions": 0,
+        "commandFailures": 0,
+        "fileChanges": 0,
+        "changedFiles": 0,
+        "mcpCalls": 0,
+        "collabCalls": 0,
+        "collabFailures": 0,
+        "webSearches": 0,
+        "dispatchCount": 0,
+        "dispatchSuccessCount": 0,
+        "dispatchFailureCount": 0,
+        "dispatchChildren": [],
+        "itemCounts": {}
+      },
+      "parentDispatchGuard": {
+        "mode": "off",
+        "reason": "",
+        "required": 0,
+        "satisfied": 0,
+        "violation": 0
+      }
+    },
+    {
+      "turnId": "eval-probe-eval-1772877207300-4919c7c9-a-explicit_failed_validation_memory",
+      "threadId": "eval-probe-eval-1772877207300-4919c7c9",
+      "agentName": "default",
+      "status": "failed",
+      "taskOutcomeStatus": "FAILED_VALIDATION",
+      "taskOutcomeReason": "missing_required_evidence",
+      "terminalEvent": "turn/completed",
+      "errorText": "eval probe resolved FAILED_VALIDATION (missing_required_evidence)",
+      "executionProfile": "eval-proof",
+      "executionIntent": "eval",
+      "executionSource": "eval_harness_probe",
+      "startedAt": 1772877207301,
+      "completedAt": 1772877207301,
+      "updatedAt": 1772877207301,
+      "outputSha256": "a0db0504fc8524b8cb86e517002944b173c45aec254184612608b84779ce3cac",
+      "outputChars": 110,
+      "observedSignals": {
+        "commandExecutions": 0,
+        "commandFailures": 0,
+        "fileChanges": 0,
+        "changedFiles": 0,
+        "mcpCalls": 0,
+        "collabCalls": 0,
+        "collabFailures": 0,
+        "webSearches": 0,
+        "dispatchCount": 0,
+        "dispatchSuccessCount": 0,
+        "dispatchFailureCount": 0,
+        "dispatchChildren": [],
+        "itemCounts": {}
+      },
+      "parentDispatchGuard": {
+        "mode": "off",
+        "reason": "",
+        "required": 0,
+        "satisfied": 0,
+        "violation": 0
+      }
+    },
+    {
+      "turnId": "019cc7b7-57d8-7900-88bf-ce7d7bb68877",
+      "threadId": "019cc7b7-573a-7db0-a889-f65530d02915",
+      "agentName": "default",
+      "status": "completed",
+      "taskOutcomeStatus": "COMPLETED",
+      "taskOutcomeReason": "completed_default",
+      "terminalEvent": "turn/completed",
+      "errorText": "",
+      "executionProfile": "eval-smoke",
+      "executionIntent": "eval",
+      "executionSource": "replay:019cc7b7-22df-7151-8f88-b2cf870c34e2",
+      "startedAt": 1772877207513,
+      "completedAt": 1772877220421,
+      "updatedAt": 1772877220421,
+      "outputSha256": "a2f1a6d79bfb0fe6d2fe2f0f08c2f32ce53cc935520e9d8a9f8daa051b4f239b",
+      "outputChars": 3,
+      "observedSignals": {
+        "commandExecutions": 0,
+        "commandFailures": 0,
+        "fileChanges": 0,
+        "changedFiles": 0,
+        "mcpCalls": 0,
+        "collabCalls": 0,
+        "collabFailures": 0,
+        "webSearches": 0,
+        "dispatchCount": 0,
+        "dispatchSuccessCount": 0,
+        "dispatchFailureCount": 0,
+        "dispatchChildren": [],
+        "itemCounts": {
+          "userMessage": 1,
+          "reasoning": 1,
+          "agentMessage": 1
+        }
+      },
+      "parentDispatchGuard": {
+        "mode": "off",
+        "reason": "",
+        "required": 0,
+        "satisfied": 1,
+        "violation": 0
+      }
+    }
+  ],
+  "auditMemory": [
+    {
+      "turnId": "019cc7b7-22df-7151-8f88-b2cf870c34e2",
+      "threadId": "019cc7b7-21f0-7d93-9a67-fc9cb4df513e",
+      "artifactDir": "C:\\Users\\akima\\Desktop\\codex_Original_UI_PJ\\logs\\test-proofs\\eval-replay-api-smoke-1772877193093\\turns\\2026-03-07\\019cc7b7-21f0-7d93-9a67-fc9cb4df513e__019cc7b7-22df-7151-8f88-b2cf870c34e2",
+      "manifestPath": "C:\\Users\\akima\\Desktop\\codex_Original_UI_PJ\\logs\\test-proofs\\eval-replay-api-smoke-1772877193093\\turns\\2026-03-07\\019cc7b7-21f0-7d93-9a67-fc9cb4df513e__019cc7b7-22df-7151-8f88-b2cf870c34e2\\manifest.json",
+      "manifestSha256": "d620360657c6b62e0c9f449a4ba4e093054717877e571a2582434fb9c9b5c336",
+      "promptSha256": "8979fb86fc83ac83d239dfcead90d3d1bafaa136725fa7af7a61391456aa0702",
+      "generatedAt": 1772877207290,
+      "artifactCount": 2,
+      "status": "completed"
+    },
+    {
+      "turnId": "019cc7b7-57d8-7900-88bf-ce7d7bb68877",
+      "threadId": "019cc7b7-573a-7db0-a889-f65530d02915",
+      "artifactDir": "C:\\Users\\akima\\Desktop\\codex_Original_UI_PJ\\logs\\test-proofs\\eval-replay-api-smoke-1772877193093\\turns\\2026-03-07\\019cc7b7-573a-7db0-a889-f65530d02915__019cc7b7-57d8-7900-88bf-ce7d7bb68877",
+      "manifestPath": "C:\\Users\\akima\\Desktop\\codex_Original_UI_PJ\\logs\\test-proofs\\eval-replay-api-smoke-1772877193093\\turns\\2026-03-07\\019cc7b7-573a-7db0-a889-f65530d02915__019cc7b7-57d8-7900-88bf-ce7d7bb68877\\manifest.json",
+      "manifestSha256": "64fb73f50d603e50bcbcc5705fe7b5b7e438f8f5b2df3f8241cbee1a889dd63f",
+      "promptSha256": "8979fb86fc83ac83d239dfcead90d3d1bafaa136725fa7af7a61391456aa0702",
+      "generatedAt": 1772877220423,
+      "artifactCount": 2,
+      "status": "completed"
+    }
+  ],
+  "replayMemory": [
+    {
+      "turnId": "019cc7b7-22df-7151-8f88-b2cf870c34e2",
+      "threadId": "019cc7b7-21f0-7d93-9a67-fc9cb4df513e",
+      "agentName": "default",
+      "status": "completed",
+      "taskOutcomeStatus": "COMPLETED",
+      "taskOutcomeReason": "completed_default",
+      "executionProfile": "eval-smoke",
+      "executionIntent": "eval",
+      "executionSource": "eval_harness",
+      "request": {
+        "prompt": "Reply with exactly: ACK",
+        "promptSha256": "8979fb86fc83ac83d239dfcead90d3d1bafaa136725fa7af7a61391456aa0702",
+        "sandboxMode": "workspace-write",
+        "approvalPolicy": "never",
+        "webSearch": 0,
+        "model": "gpt-5.4",
+        "modelReasoningEffort": "xhigh",
+        "agentName": "default",
+        "cwd": "C:\\Users\\akima\\Desktop\\codex_Original_UI_PJ",
+        "requestUserInputPolicy": "blocked",
+        "forceNewSession": 1,
+        "executionProfile": "eval-smoke",
+        "executionIntent": "eval",
+        "executionSource": "eval_harness",
+        "recipeHash": "9b287d5e2850c0b9581e13dd72c9d54f360db88d06f17fad0aee843cbccb20c6"
+      },
+      "baseline": {
+        "outputSha256": "a2f1a6d79bfb0fe6d2fe2f0f08c2f32ce53cc935520e9d8a9f8daa051b4f239b",
+        "outputLength": 3,
+        "outputSnapshot": "ACK",
+        "artifactManifestPath": "C:\\Users\\akima\\Desktop\\codex_Original_UI_PJ\\logs\\test-proofs\\eval-replay-api-smoke-1772877193093\\turns\\2026-03-07\\019cc7b7-21f0-7d93-9a67-fc9cb4df513e__019cc7b7-22df-7151-8f88-b2cf870c34e2\\manifest.json",
+        "artifactManifestSha256": "d620360657c6b62e0c9f449a4ba4e093054717877e571a2582434fb9c9b5c336"
+      },
+      "replayStats": {
+        "replayCount": 1,
+        "lastReplayAt": 1772877220429,
+        "lastReplayStatus": "completed",
+        "lastReplayOutputSha256": "a2f1a6d79bfb0fe6d2fe2f0f08c2f32ce53cc935520e9d8a9f8daa051b4f239b",
+        "lastReplayDiffRate": 1
+      },
+      "startedAt": 1772877193951,
+      "completedAt": 1772877207286,
+      "updatedAt": 1772877220429
+    },
+    {
+      "turnId": "019cc7b7-57d8-7900-88bf-ce7d7bb68877",
+      "threadId": "019cc7b7-573a-7db0-a889-f65530d02915",
+      "agentName": "default",
+      "status": "completed",
+      "taskOutcomeStatus": "COMPLETED",
+      "taskOutcomeReason": "completed_default",
+      "executionProfile": "eval-smoke",
+      "executionIntent": "eval",
+      "executionSource": "replay:019cc7b7-22df-7151-8f88-b2cf870c34e2",
+      "request": {
+        "prompt": "Reply with exactly: ACK",
+        "promptSha256": "8979fb86fc83ac83d239dfcead90d3d1bafaa136725fa7af7a61391456aa0702",
+        "sandboxMode": "workspace-write",
+        "approvalPolicy": "never",
+        "webSearch": 0,
+        "model": "gpt-5.4",
+        "modelReasoningEffort": "xhigh",
+        "agentName": "default",
+        "cwd": "C:\\Users\\akima\\Desktop\\codex_Original_UI_PJ",
+        "requestUserInputPolicy": "blocked",
+        "forceNewSession": 1,
+        "executionProfile": "eval-smoke",
+        "executionIntent": "eval",
+        "executionSource": "replay:019cc7b7-22df-7151-8f88-b2cf870c34e2",
+        "recipeHash": "f885246dab3304b9b7e8714238eb436ee16aea47ec582b171df403ad79d63ab4"
+      },
+      "baseline": {
+        "outputSha256": "a2f1a6d79bfb0fe6d2fe2f0f08c2f32ce53cc935520e9d8a9f8daa051b4f239b",
+        "outputLength": 3,
+        "outputSnapshot": "ACK",
+        "artifactManifestPath": "C:\\Users\\akima\\Desktop\\codex_Original_UI_PJ\\logs\\test-proofs\\eval-replay-api-smoke-1772877193093\\turns\\2026-03-07\\019cc7b7-573a-7db0-a889-f65530d02915__019cc7b7-57d8-7900-88bf-ce7d7bb68877\\manifest.json",
+        "artifactManifestSha256": "64fb73f50d603e50bcbcc5705fe7b5b7e438f8f5b2df3f8241cbee1a889dd63f"
+      },
+      "replayStats": {
+        "replayCount": 0,
+        "lastReplayAt": 0,
+        "lastReplayStatus": "",
+        "lastReplayOutputSha256": "",
+        "lastReplayDiffRate": 0
+      },
+      "startedAt": 1772877207513,
+      "completedAt": 1772877220421,
+      "updatedAt": 1772877220425
+    }
+  ],
+  "abstractionMemory": {
+    "patterns": [
+      {
+        "signature": "ok.completed|completed|eval|eval-smoke",
+        "code": "ok.completed",
+        "severity": "none",
+        "hint": "No correction needed.",
+        "status": "completed",
+        "executionIntent": "eval",
+        "executionProfile": "eval-smoke",
+        "count": 2,
+        "firstSeenAt": 1772877207288,
+        "sampleTurnIds": [
+          "019cc7b7-22df-7151-8f88-b2cf870c34e2",
+          "019cc7b7-57d8-7900-88bf-ce7d7bb68877"
+        ],
+        "sampleAgents": [
+          "default"
+        ],
+        "lastSeenAt": 1772877220422,
+        "lastError": "",
+        "updatedAt": 1772877220422
+      },
+      {
+        "signature": "contract.failed_validation|failed|eval|eval-proof",
+        "code": "contract.failed_validation",
+        "severity": "high",
+        "hint": "Required validation or evidence gate did not pass; do not report completion.",
+        "status": "failed",
+        "executionIntent": "eval",
+        "executionProfile": "eval-proof",
+        "count": 2,
+        "firstSeenAt": 1772877207300,
+        "sampleTurnIds": [
+          "eval-probe-eval-1772877207300-4919c7c9-a-parent_dispatch_guard_violation_memory",
+          "eval-probe-eval-1772877207300-4919c7c9-a-explicit_failed_validation_memory"
+        ],
+        "sampleAgents": [
+          "default"
+        ],
+        "lastSeenAt": 1772877207301,
+        "lastError": "eval probe resolved FAILED_VALIDATION (missing_required_evidence)",
+        "updatedAt": 1772877207301
+      },
+      {
+        "signature": "contract.needs_input|failed|eval|eval-proof",
+        "code": "contract.needs_input",
+        "severity": "medium",
+        "hint": "Collect the missing approval or user decision before continuing.",
+        "status": "failed",
+        "executionIntent": "eval",
+        "executionProfile": "eval-proof",
+        "count": 1,
+        "firstSeenAt": 1772877207301,
+        "sampleTurnIds": [
+          "eval-probe-eval-1772877207300-4919c7c9-a-explicit_needs_input_memory"
+        ],
+        "sampleAgents": [
+          "default"
+        ],
+        "lastSeenAt": 1772877207301,
+        "lastError": "eval probe resolved NEEDS_INPUT (interactive_approval_unavailable)",
+        "updatedAt": 1772877207301
+      }
+    ]
+  }
+}

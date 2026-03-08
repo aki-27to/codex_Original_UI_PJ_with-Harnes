@@ -1,0 +1,7 @@
+interface:
+  display_name: "UI Regression Diff"
+  short_description: "Capture, compare, and triage visual diffs for desktop and mobile UI changes."
+  default_prompt: "Use $ui-regression-diff to generate and triage visual diffs for a recent UI change."
+
+policy:
+  allow_implicit_invocation: true
