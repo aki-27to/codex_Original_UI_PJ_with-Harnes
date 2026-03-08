@@ -139,6 +139,7 @@ This document is the active architecture spec for the Codex App Server integrati
 - `scripts/generate_signoff_evidence.js` resolves the natural-task proof turn from persisted execution memory on the shared thread, so post-completion adversarial retries do not replace the implementation-bearing trace.
 - Harness memory is stored in `logs/harness_execution_memory.json` by default and can be redirected with `CODEX_HARNESS_MEMORY_PATH`.
 - Eval run history is stored in `logs/eval_runs.jsonl` by default and can be redirected with `CODEX_EVAL_HISTORY_PATH`.
+- `logs/harness_execution_memory.json` and `logs/eval_runs.jsonl` are local runtime state files and are intentionally ignored from Git tracking at the repo root.
 - Replay memory, idempotency snapshots, and latest turn snapshots carry `taskOutcomeStatus` and `taskOutcomeReason`.
 - Latest turn snapshots now also carry `cwd` and a summarized `git_automation` result when turn-complete Git automation runs.
 - When the target repo is this harness repo, Git automation ignores harness-managed runtime files such as `logs/harness_execution_memory.json` and `logs/eval_runs.jsonl` so those files do not block the next clean-baseline publish.

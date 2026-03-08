@@ -4270,3 +4270,24 @@ Residual risk:
 
 ### Residual Risk
 - Because server-level defaults now enable autopush, running the harness against a clean repo with a configured remote will publish on successful turns even when the launcher is bypassed, unless env overrides disable it.
+
+## 107. Ignore Root Runtime Memory Files from Git (2026-03-08)
+
+### Intent
+- Stop commit noise from root runtime state files that change on nearly every harness run.
+- Keep `harness_execution_memory.json` and `eval_runs.jsonl` available locally without treating them as source artifacts.
+
+### Implemented
+- Updated `.gitignore`:
+  - added `logs/harness_execution_memory.json`
+  - added `logs/eval_runs.jsonl`
+- Root-level runtime state files are now intended to live only in the local working tree.
+- Updated `README.md` and `docs/CURRENT_ARCHITECTURE.md` to document that these files are local runtime state and intentionally excluded from Git tracking.
+
+### Verification Evidence
+1. `git rm --cached logs/harness_execution_memory.json logs/eval_runs.jsonl` removes the files from the index while keeping local copies on disk
+2. `git status --short` no longer reports the root runtime files after the index update
+3. `git check-ignore -v logs/harness_execution_memory.json logs/eval_runs.jsonl` confirms the root ignore rules
+
+### Residual Risk
+- Historical commits and proof/signoff bundles still contain snapshots of these files where they were previously committed; this change only stops future root-level tracking noise.

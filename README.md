@@ -209,6 +209,7 @@ English Conversation App 連携:
 - turn artifact は `manifest.json.execution.meta` と `manifest.json.execution.observed` を含みます
 - idempotency と turn memory は `logs/harness_execution_memory.json`
 - eval history は `logs/eval_runs.jsonl`
+- `logs/harness_execution_memory.json` と `logs/eval_runs.jsonl` はローカル runtime state として Git 追跡対象から外しています
 - `executionProfile=repro` は `webSearch=0`、`forceNewSession=1`、`requestUserInputPolicy=blocked`
 - operation log を日次分割する場合は `CODEX_OPERATION_LOG_DAILY_SPLIT=1`
 - Requirement Lock は既定で無効

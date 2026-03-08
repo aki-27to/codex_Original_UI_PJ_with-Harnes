@@ -1,4 +1,6 @@
 # Runtime evidence artifacts and local operation logs
+logs/harness_execution_memory.json
+logs/eval_runs.jsonl
 logs/turns/
 logs/codex_ops*.jsonl
 logs/archive/
