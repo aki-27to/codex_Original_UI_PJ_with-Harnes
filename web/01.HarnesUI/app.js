@@ -24,7 +24,7 @@ const TOPOGRAPHY_COLLAPSED_KEY="codex-agent-topography-collapsed-v1";
 const HIDDEN_AGENT_NAMES=new Set(["main"]);
 const PARENT_AGENT_NAMES=new Set(["default","intake","release_manager"]);
 const topographyState={agents:[],source:"",error:"",usingFallback:false,lastUpdated:0,loading:false,timer:null,reqId:0,collapsed:false};
-const e={connectionState:by("connectionState"),modeState:by("modeState"),agentState:by("agentState"),pendingState:by("pendingState"),simpleViewToggle:by("simpleViewToggle"),runtimeAgent:by("runtimeAgent"),runtimeSession:by("runtimeSession"),runtimeExperimental:by("runtimeExperimental"),runtimeAgentCount:by("runtimeAgentCount"),workspacePath:by("workspacePath"),modelName:by("modelName"),modelReasoningEffort:by("modelReasoningEffort"),approvalPolicy:by("approvalPolicy"),sandboxMode:by("sandboxMode"),executionProfile:by("executionProfile"),uiVisibility:by("uiVisibility"),webSearch:by("webSearch"),commandFilter:by("commandFilter"),commandGrid:by("commandGrid"),commandTemplate:by("commandTemplate"),messageTemplate:by("messageTemplate"),chatList:by("chatList"),newChatBtn:by("newChatBtn"),deleteChatBtn:by("deleteChatBtn"),timeline:by("timeline"),promptInput:by("promptInput"),imageInput:by("imageInput"),imageAttachBtn:by("imageAttachBtn"),imageError:by("imageError"),imagePreview:by("imagePreview"),imagePreviewThumb:by("imagePreviewThumb"),imagePreviewName:by("imagePreviewName"),imagePreviewMeta:by("imagePreviewMeta"),imageRemoveBtn:by("imageRemoveBtn"),sendBtn:by("sendBtn"),stopBtn:by("stopBtn"),reconnectBtn:by("reconnectBtn"),refreshDiagBtn:by("refreshDiagBtn"),newThreadBtn:by("newThreadBtn"),openCmdBtn:by("openCmdBtn"),liveStatus:by("liveStatus"),liveStatusLabel:by("liveStatusLabel"),liveStatusElapsed:by("liveStatusElapsed"),liveStatusDetail:by("liveStatusDetail"),performancePanel:by("performancePanel"),perfSessionRef:by("perfSessionRef"),perfUpdatedAt:by("perfUpdatedAt"),perfTokenValue:by("perfTokenValue"),perfTokenDetail:by("perfTokenDetail"),perfTokenSpark:by("perfTokenSpark"),perfTimeValue:by("perfTimeValue"),perfTimeDetail:by("perfTimeDetail"),perfTimeSpark:by("perfTimeSpark"),agentInspector:by("agentInspector"),agentFlowLane:by("agentFlowLane"),agentTraceList:by("agentTraceList"),clearAgentTraceBtn:by("clearAgentTraceBtn"),agentTopographyPanel:by("agentTopographyPanel"),agentTopographyMeta:by("agentTopographyMeta"),agentTopographyList:by("agentTopographyList"),agentTopographyRefreshBtn:by("agentTopographyRefreshBtn"),diagCodexState:by("diagCodexState"),diagCodexDetail:by("diagCodexDetail"),diagNodeState:by("diagNodeState"),diagNodeDetail:by("diagNodeDetail"),diagSearchState:by("diagSearchState"),diagSearchDetail:by("diagSearchDetail"),diagSummaryText:by("diagSummaryText"),diagDetails:by("diagDetails"),diagDetailsSummary:by("diagDetailsSummary"),harnessStatus:by("harnessStatus"),harnessThreadId:by("harnessThreadId"),harnessTurnId:by("harnessTurnId"),harnessUpdatedAt:by("harnessUpdatedAt"),harnessItemList:by("harnessItemList"),harnessPlanExplanation:by("harnessPlanExplanation"),harnessPlanList:by("harnessPlanList"),harnessTokenUsage:by("harnessTokenUsage"),harnessDiffPreview:by("harnessDiffPreview"),harnessPhaseList:by("harnessPhaseList"),harnessEvidenceTasks:by("harnessEvidenceTasks"),harnessEvidenceTests:by("harnessEvidenceTests"),harnessEvidenceReviews:by("harnessEvidenceReviews"),harnessEvidenceLogs:by("harnessEvidenceLogs")};
+const e={connectionState:by("connectionState"),modeState:by("modeState"),agentState:by("agentState"),pendingState:by("pendingState"),simpleViewToggle:by("simpleViewToggle"),runtimeAgent:by("runtimeAgent"),runtimeSession:by("runtimeSession"),runtimeExperimental:by("runtimeExperimental"),runtimeAgentCount:by("runtimeAgentCount"),workspacePath:by("workspacePath"),modelName:by("modelName"),modelReasoningEffort:by("modelReasoningEffort"),approvalPolicy:by("approvalPolicy"),sandboxMode:by("sandboxMode"),executionProfile:by("executionProfile"),uiVisibility:by("uiVisibility"),webSearch:by("webSearch"),commandFilter:by("commandFilter"),commandGrid:by("commandGrid"),commandTemplate:by("commandTemplate"),messageTemplate:by("messageTemplate"),chatList:by("chatList"),newChatBtn:by("newChatBtn"),deleteChatBtn:by("deleteChatBtn"),timeline:by("timeline"),promptInput:by("promptInput"),imageInput:by("imageInput"),imageAttachBtn:by("imageAttachBtn"),imageError:by("imageError"),imagePreview:by("imagePreview"),imagePreviewThumb:by("imagePreviewThumb"),imagePreviewName:by("imagePreviewName"),imagePreviewMeta:by("imagePreviewMeta"),imageRemoveBtn:by("imageRemoveBtn"),sendBtn:by("sendBtn"),stopBtn:by("stopBtn"),reconnectBtn:by("reconnectBtn"),refreshDiagBtn:by("refreshDiagBtn"),newThreadBtn:by("newThreadBtn"),openCmdBtn:by("openCmdBtn"),liveStatus:by("liveStatus"),liveStatusLabel:by("liveStatusLabel"),liveStatusElapsed:by("liveStatusElapsed"),liveStatusDetail:by("liveStatusDetail"),performancePanel:by("performancePanel"),perfSessionRef:by("perfSessionRef"),perfUpdatedAt:by("perfUpdatedAt"),perfTokenValue:by("perfTokenValue"),perfTokenDetail:by("perfTokenDetail"),perfTokenSpark:by("perfTokenSpark"),perfTimeValue:by("perfTimeValue"),perfTimeDetail:by("perfTimeDetail"),perfTimeSpark:by("perfTimeSpark"),agentInspector:by("agentInspector"),agentFlowLane:by("agentFlowLane"),agentTraceList:by("agentTraceList"),clearAgentTraceBtn:by("clearAgentTraceBtn"),agentTopographyPanel:by("agentTopographyPanel"),agentTopographyMeta:by("agentTopographyMeta"),agentTopographyList:by("agentTopographyList"),agentTopographyRefreshBtn:by("agentTopographyRefreshBtn"),diagCodexState:by("diagCodexState"),diagCodexDetail:by("diagCodexDetail"),diagNodeState:by("diagNodeState"),diagNodeDetail:by("diagNodeDetail"),diagSearchState:by("diagSearchState"),diagSearchDetail:by("diagSearchDetail"),diagSummaryText:by("diagSummaryText"),diagDetails:by("diagDetails"),diagDetailsSummary:by("diagDetailsSummary"),harnessStatus:by("harnessStatus"),harnessThreadId:by("harnessThreadId"),harnessTurnId:by("harnessTurnId"),harnessUpdatedAt:by("harnessUpdatedAt"),harnessItemList:by("harnessItemList"),harnessPlanMeta:by("harnessPlanMeta"),harnessPlanCurrentCard:by("harnessPlanCurrentCard"),harnessPlanCurrentStep:by("harnessPlanCurrentStep"),harnessPlanCurrentDetail:by("harnessPlanCurrentDetail"),harnessPlanExplanation:by("harnessPlanExplanation"),harnessPlanList:by("harnessPlanList"),harnessTokenUsage:by("harnessTokenUsage"),harnessDiffPreview:by("harnessDiffPreview"),harnessPhaseList:by("harnessPhaseList"),harnessEvidenceTasks:by("harnessEvidenceTasks"),harnessEvidenceTests:by("harnessEvidenceTests"),harnessEvidenceReviews:by("harnessEvidenceReviews"),harnessEvidenceLogs:by("harnessEvidenceLogs")};
 e.harnessCheckMode=by("harnessCheckMode");
 e.harnessCheckModeHint=by("harnessCheckModeHint");
 e.agentTopographyToggleBtn=by("agentTopographyToggleBtn");
@@ -1592,6 +1592,54 @@ function evaluateHarnessVerdict(h,mode=activeHarnessCheckMode()){
   }
   return{label:"WAIT",tone:"idle",detail:"No terminal turn yet."};
 }
+function normalizePlanStepStatusForUi(value){
+  const normalized=lowerText(value).replace(/[\s-]+/g,"_");
+  if(normalized==="in_progress"||normalized==="running"||normalized==="active"||normalized==="working")return"in_progress";
+  if(normalized==="completed"||normalized==="done"||normalized==="pass"||normalized==="ok"||normalized==="ready")return"completed";
+  if(normalized==="failed"||normalized==="error")return"failed";
+  if(normalized==="interrupted"||normalized==="aborted"||normalized==="cancelled"||normalized==="canceled")return"interrupted";
+  return"pending";
+}
+function planStepStatusLabelForUi(status){
+  if(status==="in_progress")return"進行中";
+  if(status==="completed")return"完了";
+  if(status==="failed")return"失敗";
+  if(status==="interrupted")return"中断";
+  return"待機";
+}
+function planFocusLabelForUi(mode){
+  if(mode==="current")return"Current Plan Step";
+  if(mode==="next")return"Next Planned Step";
+  if(mode==="blocked")return"Blocked Plan Step";
+  if(mode==="done")return"Last Completed Step";
+  return"Plan Focus";
+}
+function derivePlanFocusForUi(planSteps,statusText=""){
+  const steps=toArr(planSteps).map((step,index)=>{
+    const explicitIndex=Number.isFinite(Number(step&&step.index))?Math.max(0,Math.trunc(Number(step.index))):index;
+    const text=step&&typeof step.text==="string"
+      ?step.text.trim()
+      :(step&&typeof step.step==="string"?step.step.trim():"");
+    return{text,index:explicitIndex,status:normalizePlanStepStatusForUi(step&&step.status),raw:step};
+  }).filter((step)=>step.text);
+  if(!steps.length)return null;
+  const turnStatus=lowerText(statusText);
+  const currentStep=steps.find((step)=>step.status==="in_progress");
+  if(currentStep)return{...currentStep,mode:"current"};
+  const blockedStep=steps.find((step)=>step.status==="failed"||step.status==="interrupted");
+  if(blockedStep)return{...blockedStep,mode:"blocked"};
+  if(turnStatus==="running"||turnStatus==="starting"||turnStatus==="needs_input"){
+    const nextPending=steps.find((step)=>step.status==="pending");
+    if(nextPending)return{...nextPending,mode:"next"};
+    const lastCompletedWhileRunning=[...steps].reverse().find((step)=>step.status==="completed");
+    if(lastCompletedWhileRunning)return{...lastCompletedWhileRunning,mode:"done"};
+  }
+  if(turnStatus==="completed"){
+    const lastCompleted=[...steps].reverse().find((step)=>step.status==="completed");
+    if(lastCompleted)return{...lastCompleted,mode:"done"};
+  }
+  return{...steps[0],mode:"current"};
+}
 function renderTimeline(){e.timeline.innerHTML="";const c=active();if(!c)return;c.messages.forEach(m=>{const f=e.messageTemplate.content.cloneNode(true);f.querySelector(".message").classList.add(m.role);f.querySelector(".meta").textContent=`${m.title} ${m.time}`;f.querySelector(".content").textContent=m.content||"";e.timeline.appendChild(f)});e.timeline.scrollTop=e.timeline.scrollHeight}
 function renameChatTitle(chatId){
   const c=chat(chatId);
@@ -1705,6 +1753,71 @@ function renderHarness(){
   }
   if(complianceDetailEl){
     complianceDetailEl.textContent=verdict.detail;
+  }
+
+  const planSteps=toArr(h.plan).map((step,index)=>({
+    index,
+    text:step&&typeof step.step==="string"?step.step.trim():"",
+    status:normalizePlanStepStatusForUi(step&&step.status),
+  })).filter((step)=>step.text);
+  const planFocus=derivePlanFocusForUi(planSteps,status);
+  if(e.harnessPlanMeta){
+    const completedCount=planSteps.filter((step)=>step.status==="completed").length;
+    e.harnessPlanMeta.textContent=planSteps.length?`${completedCount}/${planSteps.length} completed`:"No plan";
+  }
+  if(e.harnessPlanCurrentCard){
+    const tone=planFocus?planFocus.status:"idle";
+    e.harnessPlanCurrentCard.className=`harness-plan-current ${tone}`;
+  }
+  if(e.harnessPlanCurrentStep){
+    e.harnessPlanCurrentStep.textContent=planFocus?planFocus.text:"Waiting for plan";
+  }
+  if(e.harnessPlanCurrentDetail){
+    if(planFocus){
+      e.harnessPlanCurrentDetail.textContent=`${planFocusLabelForUi(planFocus.mode)} / ${planStepStatusLabelForUi(planFocus.status)} / step ${planFocus.index+1}${planSteps.length?` of ${planSteps.length}`:""}`;
+    }else{
+      e.harnessPlanCurrentDetail.textContent="No plan has been emitted for this chat yet.";
+    }
+  }
+  if(e.harnessPlanExplanation){
+    if(String(h.planExp||"").trim()){
+      e.harnessPlanExplanation.textContent=h.planExp;
+    }else if(planSteps.length){
+      e.harnessPlanExplanation.textContent="Plan summary was not provided, but the latest plan steps are listed below.";
+    }else{
+      e.harnessPlanExplanation.textContent="Plan summary will appear here once the agent emits a plan/update event.";
+    }
+  }
+  if(e.harnessPlanList){
+    e.harnessPlanList.innerHTML="";
+    if(!planSteps.length){
+      const empty=document.createElement("li");
+      empty.className="harness-empty";
+      empty.textContent="Plan steps will appear here.";
+      e.harnessPlanList.appendChild(empty);
+    }else{
+      planSteps.forEach((step)=>{
+        const item=document.createElement("li");
+        const isFocus=Boolean(planFocus&&planFocus.index===step.index);
+        item.className=`harness-plan-step ${step.status}${isFocus?" focus":""}`;
+        const head=document.createElement("div");
+        head.className="harness-plan-step-head";
+        const indexBadge=document.createElement("span");
+        indexBadge.className="harness-plan-step-index";
+        indexBadge.textContent=String(step.index+1).padStart(2,"0");
+        const statusBadge=document.createElement("span");
+        statusBadge.className=`harness-plan-step-status ${step.status}`;
+        statusBadge.textContent=planStepStatusLabelForUi(step.status);
+        head.appendChild(indexBadge);
+        head.appendChild(statusBadge);
+        const text=document.createElement("p");
+        text.className="harness-plan-step-text";
+        text.textContent=step.text;
+        item.appendChild(head);
+        item.appendChild(text);
+        e.harnessPlanList.appendChild(item);
+      });
+    }
   }
 
   const evidence=h.evidence&&typeof h.evidence==="object"?h.evidence:{tasksDone:0,tasksTotal:0,tests:0,reviews:0,logs:0};

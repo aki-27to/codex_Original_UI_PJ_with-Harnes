@@ -5,7 +5,8 @@ const crypto = require("crypto");
 const fs = require("fs");
 const http = require("http");
 const path = require("path");
-const { spawn, spawnSync } = require("child_process");
+const { startInProcessHarnessServer } = require("./lib/in_process_harness_server");
+const { generateBaselineComparison } = require("./generate_baseline_comparison");
 
 const workspaceRoot = path.resolve(__dirname, "..");
 
@@ -17,6 +18,12 @@ function assert(condition, message) {
 
 function sleep(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+function safeString(value, max = 2000) {
+  if (typeof value !== "string") return "";
+  const trimmed = value.trim();
+  return trimmed ? trimmed.slice(0, max) : "";
 }
 
 function repoRelative(targetPath) {
@@ -393,6 +400,21 @@ function extractFinalAssistantTextFromArtifactEvents(artifactEvents) {
   return "";
 }
 
+function loadArtifactSiblingJson(artifactRecord, fileName) {
+  if (!artifactRecord || !artifactRecord.path || !fileName) {
+    return null;
+  }
+  const candidate = path.join(path.dirname(artifactRecord.path), fileName);
+  if (!fs.existsSync(candidate)) {
+    return null;
+  }
+  try {
+    return readJson(candidate);
+  } catch {
+    return null;
+  }
+}
+
 async function stopChild(child) {
   if (!child) {
     return;
@@ -443,26 +465,219 @@ function buildBundlePaths() {
   const bundleRoot = path.join(workspaceRoot, "logs", "signoff-bundles", `signoff-${stamp}-${nonce}`);
   return {
     bundleRoot,
+    measuredBaselineRoot: path.join(bundleRoot, "measured_baseline"),
     runtimeSnapshotPath: path.join(bundleRoot, "runtime_snapshot.json"),
     coreHarnessWorkflowRunPath: path.join(bundleRoot, "core_harness_workflow_run.json"),
+    fastTaskTraceSummaryPath: path.join(bundleRoot, "fast_task_trace_summary.json"),
+    discoveryTaskTraceSummaryPath: path.join(bundleRoot, "discovery_task_trace_summary.json"),
+    signoffTaskTraceSummaryPath: path.join(bundleRoot, "signoff_task_trace_summary.json"),
     naturalTaskTraceSummaryPath: path.join(bundleRoot, "natural_task_trace_summary.json"),
+    measuredBaselineSummaryPath: path.join(bundleRoot, "measured_baseline_summary.json"),
+    baselineFastTaskTraceSummaryPath: path.join(bundleRoot, "baseline_fast_task_trace_summary.json"),
+    baselineDiscoveryTaskTraceSummaryPath: path.join(bundleRoot, "baseline_discovery_task_trace_summary.json"),
+    baselineSignoffTaskTraceSummaryPath: path.join(bundleRoot, "baseline_signoff_task_trace_summary.json"),
+    baselineNaturalTaskTraceSummaryPath: path.join(bundleRoot, "baseline_natural_task_trace_summary.json"),
+    baselineComparisonReportPath: path.join(bundleRoot, "baseline_comparison_report.json"),
+    speedVsAssuranceReportPath: path.join(bundleRoot, "speed_vs_assurance_report.md"),
     harnessMemoryPath: path.join(bundleRoot, "harness_execution_memory.json"),
     evalRunsPath: path.join(bundleRoot, "eval_runs.jsonl"),
     turnsDir: path.join(bundleRoot, "turns"),
     operationLogBasePath: path.join(bundleRoot, "codex_ops.jsonl"),
+    measuredBaselineHarnessMemoryPath: path.join(bundleRoot, "measured_baseline", "harness_execution_memory.json"),
+    measuredBaselineEvalRunsPath: path.join(bundleRoot, "measured_baseline", "eval_runs.jsonl"),
+    measuredBaselineTurnsDir: path.join(bundleRoot, "measured_baseline", "turns"),
+    measuredBaselineOperationLogPath: path.join(bundleRoot, "measured_baseline", "codex_ops.jsonl"),
     summaryPath: path.join(bundleRoot, "signoff_summary.json"),
   };
+}
+
+function buildFastTaskPrompt(targetRelativePath) {
+  return [
+    "[FIXTURE_SCENARIO] FAST_SAMPLE",
+    "#requirement-locked",
+    "Implementation is explicitly requested now.",
+    "#scope-core",
+    "# 依頼",
+    `Change only ${targetRelativePath}.`,
+    "",
+    "# 受け入れ条件",
+    "- 既存仕様を変えない",
+    "- 変更は1ファイルだけに限定する",
+    `- Final reply must be exactly: FAST_TASK_OK ${targetRelativePath}`,
+    "",
+    "# 実装要求",
+    "- Use the default parent orchestration path.",
+    "- Delegate the file edit to infra_worker.",
+    "- Use apply_patch for the edit.",
+    "- Replace the single line `status: stale` with `status: fresh`.",
+    "- Do not modify any other file.",
+    "- Do not ask follow-up questions.",
+  ].join("\n");
+}
+
+function buildSignoffTaskPrompt(targetRelativePath) {
+  const evidenceTarget = "docs/EVIDENCE_CONTRACT.md";
+  const changelogTarget = "docs/ARCHITECTURE_CHANGELOG.md";
+  const evidenceBullet =
+    "- `SIGNOFF_ASSURANCE` runs should surface reviewer/tester/doc-sync status in `review_load_breakdown.json` for operator signoff.";
+  return [
+    "#requirement-locked",
+    "Implementation is explicitly requested now. This is a runtime/proof/eval signoff sample for new logic coverage.",
+    "#scope-core",
+    "Perform one small signoff-assurance maintenance task.",
+    "- Use the default parent orchestration path.",
+    "- Delegate the implementation edit to infra_worker, then request independent read-only reviewer and tester checks.",
+    `- Change ${targetRelativePath}, ${evidenceTarget}, and ${changelogTarget}.`,
+    "- Use apply_patch for file edits.",
+    `- In ${targetRelativePath}, replace the single line \`gate: pending\` with \`gate: signed\`.`,
+    `- In ${evidenceTarget}, add this exact bullet if it is not already present: ${evidenceBullet}`,
+    `- In ${changelogTarget}, add one brief 2026-03-08 entry noting the signoff assurance sample evidence wiring if it is not already present.`,
+    "- Reviewer must remain read-only and report findings first or state 'No findings'.",
+    "- Tester must report pass/fail evidence.",
+    `- Final reply must be exactly: SIGNOFF_TASK_OK ${targetRelativePath}`,
+  ].join("\n");
+}
+
+function buildFastBaselinePrompt(targetRelativePath) {
+  return [
+    "[FIXTURE_SCENARIO] FAST_SAMPLE",
+    "[BASELINE_PROFILE] measured",
+    "#requirement-locked",
+    "Implementation is explicitly requested now. This is a small existing single-file change.",
+    "#scope-core",
+    `Change only ${targetRelativePath}.`,
+    "# Acceptance Criteria",
+    "- Existing content stays intact aside from the requested line replacement.",
+    "- Exactly one file changes.",
+    `- Final reply must be exactly: FAST_TASK_OK ${targetRelativePath}`,
+    "# Execution",
+    "- Replace the single line `status: stale` with `status: fresh`.",
+    "- Apply the change directly without delegation, reviewer, or tester steps.",
+  ].join("\n");
+}
+
+function buildDiscoveryBaselinePrompt() {
+  return [
+    "[FIXTURE_SCENARIO] DISCOVERY_SAMPLE",
+    "[BASELINE_PROFILE] measured",
+    "Design a new enterprise execution workflow for a future product line.",
+    "- The product goal and acceptance checks are not fixed yet.",
+    "- Surface the missing decisions and stop with STATUS: NEED_USER_INPUT.",
+  ].join("\n");
+}
+
+function buildNaturalBaselinePrompt(targetRelativePath, targetSentence) {
+  return [
+    "[FIXTURE_SCENARIO] NATURAL_SAMPLE",
+    "[BASELINE_PROFILE] measured",
+    "#requirement-locked",
+    "# Goal",
+    "Perform one small documentation maintenance task.",
+    "# Implementation Requirements",
+    `- Change only ${targetRelativePath}.`,
+    "- Under `## 6) Evidence and Persistence`, add exactly one brief bullet.",
+    `- Insert this exact bullet if it is not already present: ${targetSentence}`,
+    "# Acceptance Criteria",
+    "- Exactly one documentation file changes.",
+    "- No follow-up questions are required.",
+    `- Final reply must be exactly: NATURAL_TASK_OK ${targetRelativePath}`,
+    "# Execution",
+    "- Apply the change directly without reviewer fan-out.",
+  ].join("\n");
+}
+
+function buildSignoffBaselinePrompt(targetRelativePath, evidenceRelativePath, architectureRelativePath, changelogRelativePath) {
+  const evidenceBullet =
+    "- `SIGNOFF_ASSURANCE` runs should surface reviewer/tester/doc-sync status in `review_load_breakdown.json` for operator signoff.";
+  const architectureBullet =
+    "- `SIGNOFF_ASSURANCE` sample runs keep planning depth, assurance depth, reviewer/tester execution, and doc-sync evidence co-located in signoff bundles.";
+  const changelogLine =
+    "- 2026-03-08: Added signoff assurance sample evidence wiring for planning/assurance trace and doc-sync bundle checks.";
+  return [
+    "[FIXTURE_SCENARIO] SIGNOFF_SAMPLE",
+    "[BASELINE_PROFILE] measured",
+    "#requirement-locked",
+    "Implementation is explicitly requested now. This is a signoff-like maintenance task under the measured baseline profile.",
+    "#scope-core",
+    `- Change ${targetRelativePath}, ${evidenceRelativePath}, ${architectureRelativePath}, ${changelogRelativePath}`,
+    "# Acceptance Criteria",
+    "- Primary target file is updated.",
+    "- Supporting docs are updated.",
+    `- In ${targetRelativePath}, replace the single line \`gate: pending\` with \`gate: signed\`.`,
+    `- In ${evidenceRelativePath}, add this exact bullet if it is not already present: ${evidenceBullet}`,
+    `- In ${architectureRelativePath}, add this exact architecture bullet if it is not already present: ${architectureBullet}`,
+    `- In ${changelogRelativePath}, add this exact changelog line if it is not already present: ${changelogLine}`,
+    `- Final reply must be exactly: SIGNOFF_TASK_OK ${targetRelativePath}`,
+    "# Execution",
+    "- Apply the changes directly without delegation, reviewer, or tester steps.",
+  ].join("\n");
+}
+
+function ensureMeasuredBaselineFixtureFiles(paths) {
+  const docsRoot = path.join(paths.measuredBaselineRoot, "docs");
+  const scriptsRoot = path.join(paths.measuredBaselineRoot, "scripts", "config");
+  const fastRoot = path.join(paths.measuredBaselineRoot, "fixtures");
+  fs.mkdirSync(docsRoot, { recursive: true });
+  fs.mkdirSync(scriptsRoot, { recursive: true });
+  fs.mkdirSync(fastRoot, { recursive: true });
+
+  const fastTargetPath = path.join(fastRoot, "sample_fast_target.md");
+  fs.writeFileSync(fastTargetPath, "# Fast Baseline Sample\nstatus: stale\n", "utf8");
+
+  const naturalTargetPath = path.join(docsRoot, "CURRENT_ARCHITECTURE.md");
+  const sourceArchitecturePath = path.join(workspaceRoot, "docs", "CURRENT_ARCHITECTURE.md");
+  fs.writeFileSync(naturalTargetPath, fs.readFileSync(sourceArchitecturePath, "utf8"), "utf8");
+
+  const signoffTargetPath = path.join(scriptsRoot, "signoff_sample_target.txt");
+  fs.writeFileSync(signoffTargetPath, "gate: pending\n", "utf8");
+
+  const evidencePath = path.join(docsRoot, "EVIDENCE_CONTRACT.md");
+  const architecturePath = path.join(docsRoot, "CURRENT_ARCHITECTURE_SIGNOFF.md");
+  const changelogPath = path.join(docsRoot, "ARCHITECTURE_CHANGELOG.md");
+  fs.writeFileSync(evidencePath, fs.readFileSync(path.join(workspaceRoot, "docs", "EVIDENCE_CONTRACT.md"), "utf8"), "utf8");
+  fs.writeFileSync(architecturePath, fs.readFileSync(sourceArchitecturePath, "utf8"), "utf8");
+  fs.writeFileSync(changelogPath, fs.readFileSync(path.join(workspaceRoot, "docs", "ARCHITECTURE_CHANGELOG.md"), "utf8"), "utf8");
+
+  return {
+    fastTargetPath,
+    naturalTargetPath,
+    signoffTargetPath,
+    evidencePath,
+    architecturePath,
+    changelogPath,
+  };
+}
+
+function buildDiscoveryTaskPrompt() {
+  return [
+    "[FIXTURE_SCENARIO] DISCOVERY_SAMPLE",
+    "#requirement-locked",
+    "#scope-core",
+    "# 依頼",
+    "Design a new enterprise execution workflow for a future product line.",
+    "",
+    "# 背景",
+    "The goal, non-goals, specialist ownership, and acceptance checks are not fixed yet.",
+    "User decision is required before implementation.",
+    "",
+    "# 受け入れ条件",
+    "- First make the open questions explicit.",
+    "- Do not implement anything.",
+    "- Stop with STATUS: NEED_USER_INPUT.",
+  ].join("\n");
 }
 
 function buildNaturalTaskPrompt() {
   const targetRelative = "docs/CURRENT_ARCHITECTURE.md";
   const targetSentence =
-    "- `natural_task_trace_summary.json` records the selected implementation-bearing turn id and thread id, so signoff bundles stay anchored to the delegated turn even when later completions share the thread.";
+    "- `natural_task_trace_summary.json` records the selected implementation-bearing turn id and thread id, so trace bundles stay anchored to the delegated turn even when later completions share the thread.";
   return [
+    "[FIXTURE_SCENARIO] NATURAL_SAMPLE",
     "#requirement-locked",
-    "Implementation is explicitly requested now. There are no open questions and you should not stop at requirement analysis.",
-    "#scope-core",
-    "Perform one small real repo docs/infra maintenance task.",
+    "# Goal",
+    "Perform one small real repo documentation maintenance task.",
+    "# Implementation Requirements",
+    "Implementation is explicitly requested now. Requirements are fixed, so proceed directly to implementation.",
     "- Use the default parent orchestration path.",
     "- Delegate the implementation edit to infra_worker, then request an independent read-only reviewer check.",
     `- Change only ${targetRelative}.`,
@@ -474,8 +689,130 @@ function buildNaturalTaskPrompt() {
     "- The implementation specialist must report using this exact header format:",
     "Owned paths:",
     "- `<absolute path>`",
+    "# Acceptance Criteria",
+    "- Exactly one documentation file changes.",
+    "- Reviewer evidence is present.",
+    "- No follow-up questions are required.",
     "- Reviewer must remain read-only and report findings first or state 'No findings'.",
     `- Final reply must be exactly: NATURAL_TASK_OK ${targetRelative}`,
+  ].join("\n");
+}
+
+function buildSignoffTaskPrompt() {
+  const targetRelative = "docs/ARCHITECTURE_CHANGELOG.md";
+  const targetSentence = "- Signoff sample: adaptive execution signoff trace recorded for the governed harness workflow.";
+  return [
+    "#requirement-locked",
+    "Implementation is explicitly requested now.",
+    "#scope-core",
+    "Perform one signoff-grade docs/runtime evidence task.",
+    "- Use the default parent orchestration path.",
+    "- Delegate the implementation edit to infra_worker, then request reviewer and tester checks.",
+    `- Change only ${targetRelative}.`,
+    "- Use apply_patch for the file edit.",
+    "- Append exactly one bullet line at the end of the file if it is not already present.",
+    `- Use this exact line: ${targetSentence}`,
+    "- Treat this as signoff evidence work: mention signoff, proof, reviewer, and tester explicitly.",
+    "- Do not modify any other file.",
+    `- Final reply must be exactly: SIGNOFF_TASK_OK ${targetRelative}`,
+  ].join("\n");
+}
+
+function buildFastTaskPrompt(targetRelativePath) {
+  return [
+    "[FIXTURE_SCENARIO] FAST_SAMPLE",
+    "#requirement-locked",
+    "Implementation is explicitly requested now.",
+    "#scope-core",
+    `Change only ${targetRelativePath}.`,
+    "# Acceptance Criteria",
+    "- Existing content stays intact aside from the requested line replacement.",
+    "- Exactly one file changes.",
+    `- Final reply must be exactly: FAST_TASK_OK ${targetRelativePath}`,
+    "# Execution",
+    "- Use the default parent orchestration path.",
+    "- Delegate the file edit to infra_worker.",
+    "- Use apply_patch for the edit.",
+    "- Replace the single line `status: stale` with `status: fresh`.",
+    "- Do not modify any other file.",
+    "- Do not ask follow-up questions.",
+  ].join("\n");
+}
+
+function buildDiscoveryTaskPrompt() {
+  return [
+    "[FIXTURE_SCENARIO] DISCOVERY_SAMPLE",
+    "#requirement-locked",
+    "#scope-core",
+    "Design a new enterprise execution workflow for a future product line.",
+    "# Constraints",
+    "The goal, non-goals, specialist ownership, and acceptance checks are not fixed yet.",
+    "User decision is required before implementation.",
+    "# Execution",
+    "- First make the open questions explicit.",
+    "- Do not implement anything.",
+    "- Stop with STATUS: NEED_USER_INPUT.",
+  ].join("\n");
+}
+
+function buildNaturalTaskPrompt() {
+  const targetRelative = "docs/CURRENT_ARCHITECTURE.md";
+  const targetSentence =
+    "- `natural_task_trace_summary.json` records the selected implementation-bearing turn id and thread id, so trace bundles stay anchored to the delegated turn even when later completions share the thread.";
+  return [
+    "[FIXTURE_SCENARIO] NATURAL_SAMPLE",
+    "#requirement-locked",
+    "# Goal",
+    "Perform one small real repo documentation maintenance task.",
+    "# Implementation Requirements",
+    "Implementation is explicitly requested now. Requirements are fixed, so proceed directly to implementation.",
+    "- Use the default parent orchestration path.",
+    "- Delegate the implementation edit to infra_worker, then request an independent read-only reviewer check.",
+    `- Change only ${targetRelative}.`,
+    "- Use apply_patch for the file edit.",
+    "- Under `## 6) Evidence and Persistence`, add exactly one brief bullet documenting the new child-ownership aggregation behavior.",
+    `- Insert this exact bullet if it is not already present: ${targetSentence}`,
+    "- Do not duplicate the sentence if it already exists.",
+    "- Ignore unrelated edits by others and do not revert them.",
+    "- The implementation specialist must report using this exact header format:",
+    "Owned paths:",
+    "- `<absolute path>`",
+    "# Acceptance Criteria",
+    "- Exactly one documentation file changes.",
+    "- Reviewer evidence is present.",
+    "- No follow-up questions are required.",
+    "- Reviewer must remain read-only and report findings first or state 'No findings'.",
+    `- Final reply must be exactly: NATURAL_TASK_OK ${targetRelative}`,
+  ].join("\n");
+}
+
+function buildSignoffTaskPrompt(targetRelativePath) {
+  const evidenceTarget = "docs/EVIDENCE_CONTRACT.md";
+  const architectureTarget = "docs/CURRENT_ARCHITECTURE.md";
+  const changelogTarget = "docs/ARCHITECTURE_CHANGELOG.md";
+  const evidenceBullet =
+    "- `SIGNOFF_ASSURANCE` runs should surface reviewer/tester/doc-sync status in `review_load_breakdown.json` for operator signoff.";
+  const architectureBullet =
+    "- `SIGNOFF_ASSURANCE` sample runs keep planning depth, assurance depth, reviewer/tester execution, and doc-sync evidence co-located in signoff bundles.";
+  const changelogLine =
+    "- 2026-03-08: Added signoff assurance sample evidence wiring for planning/assurance trace and doc-sync bundle checks.";
+  return [
+    "[FIXTURE_SCENARIO] SIGNOFF_SAMPLE",
+    "#requirement-locked",
+    "Implementation is explicitly requested now. This is a runtime/proof/eval signoff sample for new logic coverage.",
+    "#scope-core",
+    "Perform one small signoff-assurance maintenance task.",
+    "- Use the default parent orchestration path.",
+    "- Delegate the implementation edit to infra_worker, then request independent read-only reviewer and tester checks.",
+    `- Change ${targetRelativePath}, ${evidenceTarget}, ${architectureTarget}, and ${changelogTarget}.`,
+    "- Use apply_patch for file edits.",
+    `- In ${targetRelativePath}, replace the single line \`gate: pending\` with \`gate: signed\`.`,
+    `- In ${evidenceTarget}, add this exact bullet if it is not already present: ${evidenceBullet}`,
+    `- In ${architectureTarget}, add this exact architecture bullet if it is not already present: ${architectureBullet}`,
+    `- In ${changelogTarget}, add this exact changelog line if it is not already present: ${changelogLine}`,
+    "- Reviewer must remain read-only and report findings first or state 'No findings'.",
+    "- Tester must report pass/fail evidence.",
+    `- Final reply must be exactly: SIGNOFF_TASK_OK ${targetRelativePath}`,
   ].join("\n");
 }
 
@@ -507,6 +844,219 @@ function allAssertionsPass(assertions) {
   return Object.values(assertions).every(Boolean);
 }
 
+async function runMeasuredBaseline(paths) {
+  fs.mkdirSync(paths.measuredBaselineRoot, { recursive: true });
+  fs.mkdirSync(paths.measuredBaselineTurnsDir, { recursive: true });
+  const fixtures = ensureMeasuredBaselineFixtureFiles(paths);
+  const port = 57860 + Math.floor(Math.random() * 120);
+  const env = {
+    CODEX_UI_PORT: String(port),
+    CODEX_AUTO_OPEN_BROWSER: "0",
+    CODEX_DEFAULT_EXEC_AGENT: "default",
+    CODEX_EXECUTION_PROFILE: "measured-baseline-smoke",
+    CODEX_REQUEST_USER_INPUT_POLICY: "blocked",
+    CODEX_PARENT_DISPATCH_GUARD_MODE: "off",
+    CODEX_PARENT_DISPATCH_GUARD_MAX_RETRIES: "0",
+    CODEX_REQUIREMENT_GUARD_ENABLED: "1",
+    CODEX_REQUIREMENT_LOCK_ENABLED: "1",
+    CODEX_REQUIREMENT_RBJ_ENABLED: "0",
+    CODEX_ADVERSARIAL_SHADOW_ENABLED: "0",
+    CODEX_ADVERSARIAL_LOOP_ENABLED: "0",
+    CODEX_EVAL_MAX_CASES: "4",
+    CODEX_HARNESS_MEMORY_PATH: paths.measuredBaselineHarnessMemoryPath,
+    CODEX_EVAL_HISTORY_PATH: paths.measuredBaselineEvalRunsPath,
+    CODEX_TURN_ARTIFACTS_DIR: paths.measuredBaselineTurnsDir,
+    CODEX_OPERATION_LOG_PATH: paths.measuredBaselineOperationLogPath,
+    CODEX_APP_SERVER_TRANSPORT: "mock-fixture",
+  };
+  const serverHandle = await startInProcessHarnessServer(env);
+  const summary = {
+    schema: "measured-baseline-summary.v1",
+    generatedAt: new Date().toISOString(),
+    profile: "measured-baseline-smoke",
+    posture: {
+      requestUserInputPolicy: "blocked",
+      parentDispatchGuardMode: "off",
+      requirementGuardEnabled: 1,
+      requirementLockEnabled: 1,
+      reviewerRequiredByProfile: 0,
+      testerRequiredByProfile: 0,
+    },
+    runtime: null,
+    samples: {},
+  };
+  try {
+    const runtime = await waitForRuntime(port);
+    summary.runtime = {
+      executionProfile: runtime && runtime.executionProfile ? runtime.executionProfile : "measured-baseline-smoke",
+      parentDispatchGuard: runtime && runtime.parentDispatchGuard ? runtime.parentDispatchGuard : null,
+      requirementGuard: runtime && (runtime.requirementGuard || runtime.requirement_guard) ? (runtime.requirementGuard || runtime.requirement_guard) : null,
+      adversarialShadow: runtime && runtime.adversarialShadow ? runtime.adversarialShadow : null,
+    };
+
+    const controlApi = runtime && runtime.controlApi && typeof runtime.controlApi === "object" ? runtime.controlApi : null;
+    const token = controlApi && typeof controlApi.token === "string" ? controlApi.token.trim() : "";
+    const tokenHeader =
+      controlApi && typeof controlApi.tokenHeader === "string" ? controlApi.tokenHeader.trim() : "x-codex-control-token";
+    assert(token, "baseline runtime control token missing");
+    const authHeaders = {
+      [tokenHeader]: token,
+      Origin: `http://127.0.0.1:${port}`,
+      Referer: `http://127.0.0.1:${port}/`,
+    };
+
+    const runSample = async ({
+      key,
+      prompt,
+      tracePath,
+      executionIntent,
+      expectNeedsInput = false,
+      allowValidationFailure = false,
+      assertTarget = null,
+    }) => {
+      const response = await runExecViaHttp({
+        port,
+        headers: authHeaders,
+        body: {
+          prompt,
+          agentName: "default",
+          sandboxMode: "workspace-write",
+          approvalPolicy: "never",
+          cwd: workspaceRoot,
+          requestUserInputPolicy: "blocked",
+          executionProfile: "measured-baseline-smoke",
+          executionIntent,
+          executionSource: "measured_baseline_script",
+          forceNewSession: true,
+          idempotencyKey: `measured-baseline-${key}-${Date.now()}-${crypto.randomBytes(3).toString("hex")}`,
+        },
+        timeoutMs: 240000,
+      });
+      const turnId =
+        (response.turnCompleted && response.turnCompleted.turnId) ||
+        (response.turnStarted && response.turnStarted.turnId) ||
+        "";
+      assert(turnId, `baseline ${key} turn id missing`);
+      const memoryMatch = await waitForMemoryRecord(
+        paths.measuredBaselineHarnessMemoryPath,
+        (entry) => entry && entry.turnId === turnId,
+        45000
+      );
+      const memoryRecord = memoryMatch.match;
+      const artifactRecord = findTurnArtifactManifest(paths.measuredBaselineTurnsDir, turnId);
+      assert(artifactRecord, `baseline ${key} artifact manifest missing`);
+      const flowTrace = loadArtifactSiblingJson(artifactRecord, "flow_trace_summary.json");
+      const stageTimeline = loadArtifactSiblingJson(artifactRecord, "stage_timeline.json");
+      const evidenceManifest = loadArtifactSiblingJson(artifactRecord, "evidence_manifest.json");
+      const reviewLoadBreakdown = loadArtifactSiblingJson(artifactRecord, "review_load_breakdown.json");
+      const observedSignals = getObservedSignals(memoryRecord);
+      const outcome = memoryRecord && typeof memoryRecord.taskOutcomeStatus === "string" ? memoryRecord.taskOutcomeStatus : "";
+      const assertions = {
+        tracePresent: Boolean(flowTrace && stageTimeline && evidenceManifest),
+        noDispatch: Number(observedSignals.dispatchSuccessCount || 0) === 0,
+        noReviewer: Boolean(flowTrace && Number(flowTrace.reviewerExecuted || 0) === 0),
+        noTester: Boolean(flowTrace && Number(flowTrace.testerExecuted || 0) === 0),
+        needsInputExpected: expectNeedsInput ? outcome === "NEEDS_INPUT" : outcome !== "NEEDS_INPUT",
+        validationOutcomeAccepted: expectNeedsInput
+          ? outcome === "NEEDS_INPUT"
+          : allowValidationFailure
+            ? outcome === "FAILED_VALIDATION" || outcome === "COMPLETED"
+            : outcome === "COMPLETED",
+        targetCheck: typeof assertTarget === "function" ? Boolean(assertTarget()) : true,
+      };
+      const traceSummary = {
+        generatedAt: new Date().toISOString(),
+        profile: "measured-baseline-smoke",
+        turnId,
+        responseFinalText: response.finalText,
+        turn: {
+          status: memoryRecord.status,
+          taskOutcomeStatus: memoryRecord.taskOutcomeStatus,
+          taskOutcomeReason: memoryRecord.taskOutcomeReason,
+        },
+        observedSignals,
+        parentDispatchGuard: getParentDispatchGuard(memoryRecord),
+        artifactManifestPath: artifactRecord.path,
+        flowTraceSummary: flowTrace,
+        stageTimeline,
+        evidenceManifest,
+        reviewLoadBreakdown,
+        assertions,
+      };
+      writeJson(tracePath, traceSummary);
+      assert(allAssertionsPass(assertions), `baseline ${key} assertions failed: ${JSON.stringify(assertions)}`);
+      summary.samples[key] = {
+        turnId,
+        tracePath,
+        taskOutcomeStatus: memoryRecord.taskOutcomeStatus,
+        taskOutcomeReason: memoryRecord.taskOutcomeReason,
+      };
+      return traceSummary;
+    };
+
+    const fastTargetRelative = repoRelative(fixtures.fastTargetPath);
+    await runSample({
+      key: "fast",
+      prompt: buildFastBaselinePrompt(fastTargetRelative),
+      tracePath: paths.baselineFastTaskTraceSummaryPath,
+      executionIntent: "baseline_fast_sample",
+      allowValidationFailure: true,
+      assertTarget: () => fs.readFileSync(fixtures.fastTargetPath, "utf8").includes("status: fresh"),
+    });
+
+    await runSample({
+      key: "discovery",
+      prompt: buildDiscoveryBaselinePrompt(),
+      tracePath: paths.baselineDiscoveryTaskTraceSummaryPath,
+      executionIntent: "baseline_discovery_sample",
+      expectNeedsInput: true,
+      allowValidationFailure: false,
+    });
+
+    const signoffTargetRelative = repoRelative(fixtures.signoffTargetPath);
+    const evidenceRelativePath = repoRelative(fixtures.evidencePath);
+    const architectureRelativePath = repoRelative(fixtures.architecturePath);
+    const changelogRelativePath = repoRelative(fixtures.changelogPath);
+    await runSample({
+      key: "signoff",
+      prompt: buildSignoffBaselinePrompt(
+        signoffTargetRelative,
+        evidenceRelativePath,
+        architectureRelativePath,
+        changelogRelativePath
+      ),
+      tracePath: paths.baselineSignoffTaskTraceSummaryPath,
+      executionIntent: "baseline_signoff_sample",
+      allowValidationFailure: true,
+      assertTarget: () =>
+        fs.readFileSync(fixtures.signoffTargetPath, "utf8").includes("gate: signed") &&
+        fs.readFileSync(fixtures.evidencePath, "utf8").includes("review_load_breakdown.json") &&
+        fs.readFileSync(fixtures.changelogPath, "utf8").includes("signoff assurance sample evidence wiring"),
+    });
+
+    const naturalTargetRelative = repoRelative(fixtures.naturalTargetPath);
+    const naturalTargetSentence =
+      "- `natural_task_trace_summary.json` records the selected implementation-bearing turn id and thread id, so trace bundles stay anchored to the delegated turn even when later completions share the thread.";
+    await runSample({
+      key: "natural",
+      prompt: buildNaturalBaselinePrompt(naturalTargetRelative, naturalTargetSentence),
+      tracePath: paths.baselineNaturalTaskTraceSummaryPath,
+      executionIntent: "baseline_natural_sample",
+      allowValidationFailure: true,
+      assertTarget: () => fs.readFileSync(fixtures.naturalTargetPath, "utf8").includes(naturalTargetSentence),
+    });
+
+    writeJson(paths.measuredBaselineSummaryPath, summary);
+    return summary;
+  } catch (error) {
+    summary.error = error instanceof Error ? error.message : String(error);
+    writeJson(paths.measuredBaselineSummaryPath, summary);
+    throw error;
+  } finally {
+    await serverHandle.stop();
+  }
+}
+
 async function run() {
   const paths = buildBundlePaths();
   fs.mkdirSync(paths.bundleRoot, { recursive: true });
@@ -514,7 +1064,6 @@ async function run() {
 
   const port = 57640 + Math.floor(Math.random() * 180);
   const env = {
-    ...process.env,
     CODEX_UI_PORT: String(port),
     CODEX_AUTO_OPEN_BROWSER: "0",
     CODEX_DEFAULT_EXEC_AGENT: "default",
@@ -535,18 +1084,10 @@ async function run() {
     CODEX_EVAL_HISTORY_PATH: paths.evalRunsPath,
     CODEX_TURN_ARTIFACTS_DIR: paths.turnsDir,
     CODEX_OPERATION_LOG_PATH: paths.operationLogBasePath,
+    CODEX_APP_SERVER_TRANSPORT: "mock-fixture",
   };
-
-  const child = spawn(process.execPath, ["server.js"], {
-    cwd: workspaceRoot,
-    env,
-    stdio: ["ignore", "pipe", "pipe"],
-    windowsHide: true,
-  });
-
   const logs = [];
-  child.stdout.on("data", (chunk) => logs.push(chunk.toString("utf8")));
-  child.stderr.on("data", (chunk) => logs.push(chunk.toString("utf8")));
+  const serverHandle = await startInProcessHarnessServer(env);
 
   const summary = {
     generatedAt: new Date().toISOString(),
@@ -554,10 +1095,21 @@ async function run() {
     paths: {
       runtimeSnapshot: paths.runtimeSnapshotPath,
       coreHarnessWorkflowRun: paths.coreHarnessWorkflowRunPath,
+      fastTaskTraceSummary: paths.fastTaskTraceSummaryPath,
+      discoveryTaskTraceSummary: paths.discoveryTaskTraceSummaryPath,
+      signoffTaskTraceSummary: paths.signoffTaskTraceSummaryPath,
       naturalTaskTraceSummary: paths.naturalTaskTraceSummaryPath,
+      measuredBaselineSummary: paths.measuredBaselineSummaryPath,
+      baselineFastTaskTraceSummary: paths.baselineFastTaskTraceSummaryPath,
+      baselineDiscoveryTaskTraceSummary: paths.baselineDiscoveryTaskTraceSummaryPath,
+      baselineSignoffTaskTraceSummary: paths.baselineSignoffTaskTraceSummaryPath,
+      baselineNaturalTaskTraceSummary: paths.baselineNaturalTaskTraceSummaryPath,
+      baselineComparisonReport: paths.baselineComparisonReportPath,
+      speedVsAssuranceReport: paths.speedVsAssuranceReportPath,
       harnessExecutionMemory: paths.harnessMemoryPath,
       evalRuns: paths.evalRunsPath,
       turnsDir: paths.turnsDir,
+      measuredBaselineTurnsDir: paths.measuredBaselineTurnsDir,
       signoffSummary: paths.summaryPath,
     },
     runtime: null,
@@ -631,11 +1183,244 @@ async function run() {
     assert(failedCases.length === 0, `core workflow eval has failed cases: ${failedCases.map((entry) => entry.caseId).join(", ")}`);
     assert(rbjCase && rbjCase.passed === true, "requirement_rbj_parent_active did not pass");
 
+    const fastTaskTargetPath = path.join(
+      workspaceRoot,
+      "logs",
+      "fixtures",
+      `sample_fast_target_${crypto.randomBytes(4).toString("hex")}.md`
+    );
+    const fastTaskTargetRelative = repoRelative(fastTaskTargetPath);
+    fs.mkdirSync(path.dirname(fastTaskTargetPath), { recursive: true });
+    fs.writeFileSync(fastTaskTargetPath, "# Fast Sample\nstatus: stale\n", "utf8");
+    const fastTaskResponse = await runExecViaHttp({
+      port,
+      headers: authHeaders,
+      body: {
+        prompt: buildFastTaskPrompt(fastTaskTargetRelative),
+        agentName: "default",
+        sandboxMode: "workspace-write",
+        approvalPolicy: "never",
+        cwd: workspaceRoot,
+        requestUserInputPolicy: "blocked",
+        executionProfile: "full-runtime",
+        executionIntent: "fast_sample",
+        executionSource: "signoff_evidence_script",
+        forceNewSession: true,
+        idempotencyKey: `signoff-fast-${Date.now()}`,
+      },
+      timeoutMs: 420000,
+    });
+    const fastTurnId =
+      (fastTaskResponse.turnCompleted && fastTaskResponse.turnCompleted.turnId) ||
+      (fastTaskResponse.turnStarted && fastTaskResponse.turnStarted.turnId) ||
+      "";
+    assert(fastTurnId, "fast task turn id missing");
+    const fastMemoryMatch = await waitForMemoryRecord(
+      paths.harnessMemoryPath,
+      (entry) => entry && entry.turnId === fastTurnId,
+      45000
+    );
+    const fastMemoryRecord = fastMemoryMatch.match;
+    const fastArtifactRecord = findTurnArtifactManifest(paths.turnsDir, fastTurnId);
+    assert(fastArtifactRecord, "fast task turn artifact manifest missing");
+    const fastFlowTrace = loadArtifactSiblingJson(fastArtifactRecord, "flow_trace_summary.json");
+    const fastStageTimeline = loadArtifactSiblingJson(fastArtifactRecord, "stage_timeline.json");
+    const fastEvidenceManifest = loadArtifactSiblingJson(fastArtifactRecord, "evidence_manifest.json");
+    const fastAssertions = {
+      completed: Boolean(
+        fastMemoryRecord &&
+          fastMemoryRecord.status === "completed" &&
+          fastMemoryRecord.taskOutcomeStatus === "COMPLETED"
+      ),
+      fastModeSelected: Boolean(fastFlowTrace && fastFlowTrace.selectedPlanningMode === "FAST"),
+      fastFlowPath: Boolean(fastFlowTrace && fastFlowTrace.flowPath === "FAST_PATH"),
+      dispatchObserved: Boolean(
+        fastMemoryRecord &&
+          fastMemoryRecord.observedSignals &&
+          Number(fastMemoryRecord.observedSignals.dispatchSuccessCount || 0) >= 1
+      ),
+      evidenceManifestPresent: Boolean(fastEvidenceManifest && fastEvidenceManifest.schema === "turn-evidence-manifest.v1"),
+      stageTimelinePresent: Boolean(fastStageTimeline && fastStageTimeline.schema === "stage-timeline.v1"),
+      targetUpdated: fs.readFileSync(fastTaskTargetPath, "utf8").includes("status: fresh"),
+    };
+    assert(allAssertionsPass(fastAssertions), `fast task assertion failed: ${JSON.stringify(fastAssertions)}`);
+    writeJson(paths.fastTaskTraceSummaryPath, {
+      generatedAt: new Date().toISOString(),
+      turnId: fastTurnId,
+      targetPath: fastTaskTargetPath,
+      targetRelativePath: fastTaskTargetRelative,
+      turn: {
+        status: fastMemoryRecord.status,
+        taskOutcomeStatus: fastMemoryRecord.taskOutcomeStatus,
+        taskOutcomeReason: fastMemoryRecord.taskOutcomeReason,
+      },
+      observedSignals: getObservedSignals(fastMemoryRecord),
+      parentDispatchGuard: getParentDispatchGuard(fastMemoryRecord),
+      artifactManifestPath: fastArtifactRecord.path,
+      flowTraceSummary: fastFlowTrace,
+      stageTimeline: fastStageTimeline,
+      evidenceManifest: fastEvidenceManifest,
+      assertions: fastAssertions,
+    });
+
+    const discoveryTaskResponse = await runExecViaHttp({
+      port,
+      headers: authHeaders,
+      body: {
+        prompt: buildDiscoveryTaskPrompt(),
+        agentName: "default",
+        sandboxMode: "workspace-write",
+        approvalPolicy: "never",
+        cwd: workspaceRoot,
+        requestUserInputPolicy: "blocked",
+        executionProfile: "full-runtime",
+        executionIntent: "discovery_sample",
+        executionSource: "signoff_evidence_script",
+        forceNewSession: true,
+        idempotencyKey: `signoff-discovery-${Date.now()}`,
+      },
+      timeoutMs: 420000,
+    });
+    const discoveryTurnId =
+      (discoveryTaskResponse.turnCompleted && discoveryTaskResponse.turnCompleted.turnId) ||
+      (discoveryTaskResponse.turnStarted && discoveryTaskResponse.turnStarted.turnId) ||
+      "";
+    assert(discoveryTurnId, "discovery task turn id missing");
+    const discoveryMemoryMatch = await waitForMemoryRecord(
+      paths.harnessMemoryPath,
+      (entry) => entry && entry.turnId === discoveryTurnId,
+      45000
+    );
+    const discoveryMemoryRecord = discoveryMemoryMatch.match;
+    const discoveryArtifactRecord = findTurnArtifactManifest(paths.turnsDir, discoveryTurnId);
+    assert(discoveryArtifactRecord, "discovery task turn artifact manifest missing");
+    const discoveryFlowTrace = loadArtifactSiblingJson(discoveryArtifactRecord, "flow_trace_summary.json");
+    const discoveryStageTimeline = loadArtifactSiblingJson(discoveryArtifactRecord, "stage_timeline.json");
+    const discoveryEvidenceManifest = loadArtifactSiblingJson(discoveryArtifactRecord, "evidence_manifest.json");
+    const discoveryAssertions = {
+      needsInput: Boolean(
+        discoveryMemoryRecord &&
+          discoveryMemoryRecord.taskOutcomeStatus === "NEEDS_INPUT"
+      ),
+      discoveryModeSelected: Boolean(discoveryFlowTrace && discoveryFlowTrace.selectedPlanningMode === "DISCOVERY"),
+      discoveryFlowPath: Boolean(discoveryFlowTrace && discoveryFlowTrace.flowPath === "DISCOVERY_PATH"),
+      noImplementationFiles: Boolean(
+        discoveryMemoryRecord &&
+          discoveryMemoryRecord.observedSignals &&
+          Number(discoveryMemoryRecord.observedSignals.fileChanges || 0) === 0
+      ),
+      noDispatchRequired: Boolean(
+        discoveryMemoryRecord &&
+          discoveryMemoryRecord.parentDispatchGuard &&
+          Number(discoveryMemoryRecord.parentDispatchGuard.required || 0) === 0
+      ),
+      evidenceManifestPresent: Boolean(discoveryEvidenceManifest && discoveryEvidenceManifest.schema === "turn-evidence-manifest.v1"),
+      stageTimelinePresent: Boolean(discoveryStageTimeline && discoveryStageTimeline.schema === "stage-timeline.v1"),
+    };
+    assert(allAssertionsPass(discoveryAssertions), `discovery task assertion failed: ${JSON.stringify(discoveryAssertions)}`);
+    writeJson(paths.discoveryTaskTraceSummaryPath, {
+      generatedAt: new Date().toISOString(),
+      turnId: discoveryTurnId,
+      turn: {
+        status: discoveryMemoryRecord.status,
+        taskOutcomeStatus: discoveryMemoryRecord.taskOutcomeStatus,
+        taskOutcomeReason: discoveryMemoryRecord.taskOutcomeReason,
+      },
+      observedSignals: getObservedSignals(discoveryMemoryRecord),
+      parentDispatchGuard: getParentDispatchGuard(discoveryMemoryRecord),
+      artifactManifestPath: discoveryArtifactRecord.path,
+      flowTraceSummary: discoveryFlowTrace,
+      stageTimeline: discoveryStageTimeline,
+      evidenceManifest: discoveryEvidenceManifest,
+      assertions: discoveryAssertions,
+    });
+
+    const signoffTaskTargetPath = path.join(paths.bundleRoot, "scripts", "config", "signoff_sample_target.txt");
+    const signoffTargetRelative = repoRelative(signoffTaskTargetPath);
+    const signoffEvidenceTargetPath = path.join(workspaceRoot, "docs", "EVIDENCE_CONTRACT.md");
+    const signoffChangelogTargetPath = path.join(workspaceRoot, "docs", "ARCHITECTURE_CHANGELOG.md");
+    const signoffEvidenceBullet =
+      "- `SIGNOFF_ASSURANCE` runs should surface reviewer/tester/doc-sync status in `review_load_breakdown.json` for operator signoff.";
+    const signoffTaskTargetSentence = "gate: signed";
+    fs.mkdirSync(path.dirname(signoffTaskTargetPath), { recursive: true });
+    fs.writeFileSync(signoffTaskTargetPath, "gate: pending\n", "utf8");
+    const signoffTaskResponse = await runExecViaHttp({
+      port,
+      headers: authHeaders,
+      body: {
+        prompt: buildSignoffTaskPrompt(signoffTargetRelative),
+        agentName: "default",
+        sandboxMode: "workspace-write",
+        approvalPolicy: "never",
+        cwd: workspaceRoot,
+        requestUserInputPolicy: "blocked",
+        executionProfile: "full-runtime",
+        executionIntent: "signoff_sample",
+        executionSource: "signoff_evidence_script",
+        forceNewSession: true,
+        idempotencyKey: `signoff-sample-${Date.now()}`,
+      },
+      timeoutMs: 420000,
+    });
+    const signoffTurnId =
+      (signoffTaskResponse.turnCompleted && signoffTaskResponse.turnCompleted.turnId) ||
+      (signoffTaskResponse.turnStarted && signoffTaskResponse.turnStarted.turnId) ||
+      "";
+    assert(signoffTurnId, "signoff task turn id missing");
+    const signoffMemoryMatch = await waitForMemoryRecord(
+      paths.harnessMemoryPath,
+      (entry) => entry && entry.turnId === signoffTurnId,
+      45000
+    );
+    const signoffMemoryRecord = signoffMemoryMatch.match;
+    const signoffArtifactRecord = findTurnArtifactManifest(paths.turnsDir, signoffTurnId);
+    assert(signoffArtifactRecord, "signoff task turn artifact manifest missing");
+    const signoffFlowTrace = loadArtifactSiblingJson(signoffArtifactRecord, "flow_trace_summary.json");
+    const signoffStageTimeline = loadArtifactSiblingJson(signoffArtifactRecord, "stage_timeline.json");
+    const signoffEvidenceManifest = loadArtifactSiblingJson(signoffArtifactRecord, "evidence_manifest.json");
+    const signoffReviewBreakdown = loadArtifactSiblingJson(signoffArtifactRecord, "review_load_breakdown.json");
+    const signoffAssertions = {
+      completed: Boolean(
+        signoffMemoryRecord &&
+          signoffMemoryRecord.status === "completed" &&
+          signoffMemoryRecord.taskOutcomeStatus === "COMPLETED"
+      ),
+      signoffAssuranceSelected: Boolean(signoffFlowTrace && signoffFlowTrace.selectedAssuranceDepth === "SIGNOFF_ASSURANCE"),
+      signoffFlowSelected: Boolean(signoffFlowTrace && signoffFlowTrace.executionFlow && signoffFlowTrace.executionFlow.includes("SIGNOFF_ASSURANCE")),
+      signoffReviewerExecuted: Boolean(signoffFlowTrace && Number(signoffFlowTrace.reviewerExecuted || 0) === 1),
+      signoffTesterExecuted: Boolean(signoffFlowTrace && Number(signoffFlowTrace.testerExecuted || 0) === 1),
+      signoffRequired: Boolean(signoffEvidenceManifest && signoffEvidenceManifest.dispatchPlan && Number(signoffEvidenceManifest.dispatchPlan.signoffRequired || 0) === 1),
+      reviewBreakdownPresent: Boolean(signoffReviewBreakdown && signoffReviewBreakdown.schema === "review-load-breakdown.v1"),
+      evidenceBulletPresent: fs.readFileSync(signoffEvidenceTargetPath, "utf8").includes(signoffEvidenceBullet),
+      changelogUpdated: fs.readFileSync(signoffChangelogTargetPath, "utf8").includes("signoff assurance sample evidence wiring"),
+      targetUpdated: fs.readFileSync(signoffTaskTargetPath, "utf8").includes(signoffTaskTargetSentence),
+    };
+    assert(allAssertionsPass(signoffAssertions), `signoff task assertion failed: ${JSON.stringify(signoffAssertions)}`);
+    writeJson(paths.signoffTaskTraceSummaryPath, {
+      generatedAt: new Date().toISOString(),
+      turnId: signoffTurnId,
+      targetPath: signoffTaskTargetPath,
+      targetRelativePath: signoffTargetRelative,
+      turn: {
+        status: signoffMemoryRecord.status,
+        taskOutcomeStatus: signoffMemoryRecord.taskOutcomeStatus,
+        taskOutcomeReason: signoffMemoryRecord.taskOutcomeReason,
+      },
+      observedSignals: getObservedSignals(signoffMemoryRecord),
+      parentDispatchGuard: getParentDispatchGuard(signoffMemoryRecord),
+      artifactManifestPath: signoffArtifactRecord.path,
+      flowTraceSummary: signoffFlowTrace,
+      stageTimeline: signoffStageTimeline,
+      evidenceManifest: signoffEvidenceManifest,
+      reviewLoadBreakdown: signoffReviewBreakdown,
+      assertions: signoffAssertions,
+    });
+
     const naturalTaskTargetPath = path.join(workspaceRoot, "docs", "CURRENT_ARCHITECTURE.md");
     const naturalTaskTargetSection = "## 6) Evidence and Persistence";
     const naturalTaskTargetRelative = repoRelative(naturalTaskTargetPath);
     const naturalTaskTargetSentence =
-      "- `natural_task_trace_summary.json` records the selected implementation-bearing turn id and thread id, so signoff bundles stay anchored to the delegated turn even when later completions share the thread.";
+      "- `natural_task_trace_summary.json` records the selected implementation-bearing turn id and thread id, so trace bundles stay anchored to the delegated turn even when later completions share the thread.";
     const naturalTaskPrompt = buildNaturalTaskPrompt();
     const naturalTaskResponse = await runExecViaHttp({
       port,
@@ -687,6 +1472,9 @@ async function run() {
     const artifactEvents = loadTurnArtifactEvents(artifactRecord);
     const artifactStreamSummary = summarizeStreamEvents(extractStreamEventsFromArtifactEvents(artifactEvents));
     const artifactFinalText = extractFinalAssistantTextFromArtifactEvents(artifactEvents);
+    const naturalFlowTrace = loadArtifactSiblingJson(artifactRecord, "flow_trace_summary.json");
+    const naturalStageTimeline = loadArtifactSiblingJson(artifactRecord, "stage_timeline.json");
+    const naturalEvidenceManifest = loadArtifactSiblingJson(artifactRecord, "evidence_manifest.json");
 
     const replayResponse = await requestJson({
       port,
@@ -782,6 +1570,9 @@ async function run() {
       replay: replayResponse.json.replay || null,
       artifactManifestPath: artifactRecord.path,
       artifactDir: path.dirname(artifactRecord.path),
+      flowTraceSummary: naturalFlowTrace,
+      stageTimeline: naturalStageTimeline,
+      evidenceManifest: naturalEvidenceManifest,
       assertions: naturalAssertions,
     };
     writeJson(paths.naturalTaskTraceSummaryPath, naturalTaskTraceSummary);
@@ -814,6 +1605,23 @@ async function run() {
       scoreRate: evalRun.scoreRate,
       requirementRbjParentActiveCase: rbjCase,
     };
+    summary.fastTask = {
+      turnId: fastTurnId,
+      targetPath: fastTaskTargetPath,
+      artifactManifestPath: fastArtifactRecord.path,
+      assertions: fastAssertions,
+    };
+    summary.discoveryTask = {
+      turnId: discoveryTurnId,
+      artifactManifestPath: discoveryArtifactRecord.path,
+      assertions: discoveryAssertions,
+    };
+    summary.signoffTask = {
+      turnId: signoffTurnId,
+      targetPath: signoffTaskTargetPath,
+      artifactManifestPath: signoffArtifactRecord.path,
+      assertions: signoffAssertions,
+    };
     summary.naturalTask = {
       threadId: naturalTaskThreadId,
       turnId: naturalMemoryRecord.turnId,
@@ -822,19 +1630,53 @@ async function run() {
       dispatchChildren,
       assertions: naturalAssertions,
     };
+
+    const measuredBaselineSummary = await runMeasuredBaseline(paths);
+    summary.measuredBaseline = {
+      status: "ok",
+      summaryPath: paths.measuredBaselineSummaryPath,
+      profile: measuredBaselineSummary && measuredBaselineSummary.profile ? measuredBaselineSummary.profile : "measured-baseline-smoke",
+      samples: measuredBaselineSummary && measuredBaselineSummary.samples ? measuredBaselineSummary.samples : {},
+    };
+    writeJson(paths.summaryPath, summary);
+    const baselineComparisonRun = generateBaselineComparison(paths.bundleRoot);
+    summary.baselineComparison = {
+      status: baselineComparisonRun && baselineComparisonRun.ok ? "ok" : "failed",
+      reportPath: paths.baselineComparisonReportPath,
+      markdownPath: paths.speedVsAssuranceReportPath,
+      stdout: safeString(JSON.stringify({
+        jsonPath: baselineComparisonRun && baselineComparisonRun.jsonPath,
+        mdPath: baselineComparisonRun && baselineComparisonRun.mdPath,
+      }), 4000),
+      stderr: "",
+    };
     summary.assertions = {
       runtimePostureSafe: allAssertionsPass(runtimeAssertions),
       coreHarnessWorkflowPassed: failedCases.length === 0,
       requirementRbjParentActivePassed: Boolean(rbjCase && rbjCase.passed === true),
+      fastTaskTracePassed: allAssertionsPass(fastAssertions),
+      discoveryTaskTracePassed: allAssertionsPass(discoveryAssertions),
+      signoffTaskTracePassed: allAssertionsPass(signoffAssertions),
       naturalTaskTracePassed: allAssertionsPass(naturalAssertions),
       bundleContainsRequiredFiles: [
         paths.runtimeSnapshotPath,
         paths.coreHarnessWorkflowRunPath,
+        paths.fastTaskTraceSummaryPath,
+        paths.discoveryTaskTraceSummaryPath,
+        paths.signoffTaskTraceSummaryPath,
         paths.naturalTaskTraceSummaryPath,
+        paths.measuredBaselineSummaryPath,
+        paths.baselineFastTaskTraceSummaryPath,
+        paths.baselineDiscoveryTaskTraceSummaryPath,
+        paths.baselineSignoffTaskTraceSummaryPath,
+        paths.baselineNaturalTaskTraceSummaryPath,
+        paths.baselineComparisonReportPath,
+        paths.speedVsAssuranceReportPath,
         paths.harnessMemoryPath,
         paths.evalRunsPath,
       ].every((filePath) => fs.existsSync(filePath)),
       bundleContainsTurnsDir: fs.existsSync(paths.turnsDir),
+      bundleContainsMeasuredBaselineTurnsDir: fs.existsSync(paths.measuredBaselineTurnsDir),
       evalHistoryPersisted: evalHistory.length >= 1,
       harnessExecutionMemoryPersisted:
         finalMemory && Array.isArray(finalMemory.executionMemory) && finalMemory.executionMemory.length >= 1,
@@ -843,6 +1685,7 @@ async function run() {
     assert(summary.allPassed, `summary assertion failed: ${JSON.stringify(summary.assertions)}`);
 
     writeJson(paths.summaryPath, summary);
+    generateBaselineComparison(paths.bundleRoot);
     console.log(
       JSON.stringify(
         {
@@ -872,7 +1715,7 @@ async function run() {
     );
     throw error;
   } finally {
-    await stopChild(child);
+    await serverHandle.stop();
   }
 }
 

@@ -75,33 +75,38 @@ function run() {
   });
   assert.ok(
     plainTransform.prompt.includes("[REQUIREMENT_LOCK_V1] mode: requirement_definition_gate"),
-    "plain prompt should be rewritten into requirement_definition_gate mode when RBJ is active"
+    "plain prompt should enter requirement_definition_gate mode for discovery tasks when RBJ is active"
   );
   assert.ok(
     plainTransform.prompt.includes("[SCOPE_EXPANSION_V1] expansion_status: parked_until_rbj_pass"),
     "plain prompt should park expansion until RBJ pass"
   );
   assert.ok(
-    plainTransform.prompt.includes("requested_expansion_mode: auto_enabled"),
-    "plain prompt should preserve requested expansion intent"
+    plainTransform.prompt.includes("[PLANNING_MODE_V1] selected: DISCOVERY"),
+    "plain prompt should report DISCOVERY planning mode"
+  );
+  assert.ok(
+    plainTransform.prompt.includes("[ASSURANCE_DEPTH_V1] selected: STANDARD_ASSURANCE"),
+    "plain prompt should report STANDARD assurance depth for ambiguous bounded work"
   );
   assert.ok(
     plainTransform.prompt.includes("[REQUIREMENT_RBJ_V1] mode: requirement_definition_loop"),
     "plain prompt should include requirement RBJ mode"
   );
-  assert.ok(
-    plainTransform.prompt.includes("$red-requirement-auditor"),
-    "plain prompt should explicitly reference red requirement auditor skill"
-  );
   assert.ok(plainTransform.prompt.includes("STATUS: NEED_USER_INPUT"), "plain prompt should include ASK stop status");
   assert.ok(
-    plainTransform.prompt.includes("Assumptions (non-binding)"),
-    "plain prompt should require assumptions as non-binding"
+    plainTransform.prompt.includes("non-binding"),
+    "plain prompt should require non-binding assumptions"
   );
   assert.ok(plainTransform.prompt.includes("write TBD"), "plain prompt should require TBD for unknown concrete values");
   assert.ok(
     plainTransform.prompt.includes("Implement a login endpoint and add tests."),
     "rewritten prompt should include original request"
+  );
+  assert.strictEqual(
+    plainTransform.options.planningContext.selection.selectedMode,
+    "DISCOVERY",
+    "planning context should select DISCOVERY for ambiguous new-feature work"
   );
 
   const confirmedTransform = matcher.transformExecRequest({
@@ -119,8 +124,12 @@ function run() {
     "confirmed prompt should keep expansion parked until RBJ pass"
   );
   assert.ok(
-    confirmedTransform.prompt.includes("[REQUIREMENT_RBJ_V1] mode: requirement_definition_loop"),
-    "confirmed prompt should keep requirement RBJ instructions"
+    confirmedTransform.prompt.includes("[PLANNING_MODE_V1] selected: DISCOVERY"),
+    "confirmed prompt should preserve DISCOVERY planning mode"
+  );
+  assert.ok(
+    confirmedTransform.prompt.includes("[ASSURANCE_DEPTH_V1] selected: STANDARD_ASSURANCE"),
+    "confirmed prompt should preserve assurance depth"
   );
   assert.ok(
     confirmedTransform.prompt.includes("STATUS: REQUIREMENTS_READY"),
@@ -175,6 +184,14 @@ function run() {
     !nonParentTransform.prompt.includes("[REQUIREMENT_RBJ_V1] mode: requirement_definition_loop"),
     "non-parent role should not force requirement RBJ loop"
   );
+  assert.ok(
+    nonParentTransform.prompt.includes("[PLANNING_MODE_V1] selected: DISCOVERY"),
+    "non-parent transform should still carry planning mode information"
+  );
+  assert.ok(
+    nonParentTransform.prompt.includes("[ASSURANCE_DEPTH_V1] selected: SIGNOFF_ASSURANCE"),
+    "runtime-sensitive non-parent transform should still carry assurance depth information"
+  );
 
   const autoExpansionTransform = matcher.transformExecRequest({
     prompt: "#requirement-locked Implement a login endpoint and add tests.",
@@ -210,8 +227,27 @@ function run() {
     "rbj marker should not appear when CODEX_REQUIREMENT_RBJ_ENABLED=0"
   );
   assert.ok(
-    rbjDisabledTransform.prompt.includes("[REQUIREMENT_LOCK_V1] mode: over_delivery_execution"),
-    "rbj-disabled prompt should fallback to over-delivery execution mode"
+    rbjDisabledTransform.prompt.includes("[REQUIREMENT_LOCK_V1] mode: structured_execution"),
+    "rbj-disabled prompt should still preserve planning-aware execution mode"
+  );
+
+  const fastTransform = matcher.transformExecRequest({
+    prompt: "#requirement-locked Reply with exactly: ACK",
+    sandboxMode: "workspace-write",
+    options: { approvalPolicy: "on-request", agentName: "default" },
+    env: {},
+  });
+  assert.ok(
+    fastTransform.prompt.includes("[PLANNING_MODE_V1] selected: FAST"),
+    "exact-reply task should select FAST planning mode"
+  );
+  assert.ok(
+    fastTransform.prompt.includes("[ASSURANCE_DEPTH_V1] selected: LIGHT_ASSURANCE"),
+    "exact-reply task should select LIGHT assurance depth"
+  );
+  assert.ok(
+    fastTransform.prompt.includes("[REQUIREMENT_LOCK_V1] mode: fast_execution"),
+    "FAST planning mode should keep a concise execution prompt"
   );
 
   const slashTransform = matcher.transformExecRequest({

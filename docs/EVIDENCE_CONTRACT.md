@@ -1,6 +1,6 @@
 # EVIDENCE_CONTRACT
 
-Updated: 2026-03-07
+Updated: 2026-03-08
 
 ## 1) Purpose
 
@@ -20,6 +20,7 @@ Define the minimum verification and reporting artifacts required before a task c
   - API responses
   - protocol lifecycle results
   - terminal status or log summaries
+  - stage timeline and flow trace for the executed run
 - Documentation evidence:
   - updated `docs/CURRENT_ARCHITECTURE.md`
   - matching entry in `docs/ARCHITECTURE_CHANGELOG.md`
@@ -49,6 +50,28 @@ Define the minimum verification and reporting artifacts required before a task c
   - dedicated automated tests for the added logic
   - PASS output must be included in review evidence
 
+## 3.1) Structured Evidence Manifests
+
+- Each turn artifact bundle should aggregate evidence into machine-readable companion files:
+  - `requirement_contract.json`
+  - `dispatch_plan.json`
+  - `evidence_manifest.json`
+  - `stage_timeline.json`
+  - `flow_trace_summary.json`
+  - `review_load_breakdown.json`
+- `evidence_manifest.json` should summarize:
+  - acceptance check pass/fail status
+  - doc sync evidence
+  - child evidence ledger
+  - residual risks
+- `review_load_breakdown.json` should summarize:
+  - reviewer finding summary
+  - tester result summary
+  - doc sync status
+  - quality-gate duration hotspots
+- `stage_timeline.json` should make Step 1/2/3/4/5 timing legible enough for operator review.
+- `flow_trace_summary.json` should show which planning depth, assurance depth, agents, contracts, skills, and evidence sources were actually involved in the run.
+
 ## 4) Reporting Contract
 
 Every completion report should make the evidence legible by including:
@@ -58,6 +81,7 @@ Every completion report should make the evidence legible by including:
 - status as `PASS`, `FAIL`, or `SKIPPED`
 - the affected scope or file references
 - residual risk when evidence is missing or incomplete
+- the selected planning depth, assurance depth, and flow path when execution is task-dependent
 
 ## 5) Failure Semantics
 
@@ -72,3 +96,5 @@ Every completion report should make the evidence legible by including:
 - Prefer deterministic command output over narrative claims.
 - Prefer direct file references over vague descriptions.
 - If a check is skipped, say exactly why it was skipped and what risk remains.
+- Evidence aggregation should reduce reviewer load, not hide missing checks. A neat manifest without the underlying proof is still a failure.
+- `SIGNOFF_ASSURANCE` runs should surface reviewer/tester/doc-sync status in `review_load_breakdown.json` for operator signoff.

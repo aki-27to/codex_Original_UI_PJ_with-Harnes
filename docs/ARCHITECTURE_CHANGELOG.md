@@ -3,6 +3,8 @@
 譛邨ょ酔譛・ 2026-02-22  
 菴懈・譬ｹ諡: 繝ｪ繝昴ず繝医Μ螳溯｣・・騾・ｧ｣譫・+ 螳溷ロ繝・せ繝郁ｨｼ霍｡
 
+- 2026-03-08: Replaced the baseline comparison fallback with measured governance-light sample runs stored inside each signoff bundle, while keeping vanilla-like fallback only for older bundles missing baseline traces.
+
 ## 0. 騾・ｧ｣譫舌・蟇ｾ雎｡遽・峇
 
 縺薙・譁・嶌縺ｯ縲・*縺薙・繝ｪ繝昴ず繝医Μ縺ｧ螳滄圀縺ｫ蜍輔＞縺ｦ縺・ｋ莉慕ｵ・∩**繧呈律譛ｬ隱槭〒蝗ｺ螳壼喧縺励◆莉墓ｧ俶嶌縺ｧ縺吶・ 
@@ -4338,3 +4340,99 @@ Residual risk:
 
 ### Residual Risk
 - Real browser automation could not be executed in this environment because Playwright Chromium launch returned `spawn EPERM`, so verification here is limited to syntax plus targeted runtime-logic execution rather than a full headed browser pass.
+
+## 110. Main Harness Execution Plan Visibility (2026-03-08)
+
+### Intent
+- Let the operator see the latest emitted plan directly in the main harness console instead of inferring progress from trace highlights.
+- Make the currently executing plan step explicit while a turn is running.
+
+### Implemented
+- Updated `web/01.HarnesUI/index.html`:
+  - added an `Execution Plan` panel inside `Harness Status`
+  - placed it below the current stage/work/verdict cards and above the highlights list
+  - added mounts for:
+    - plan summary text
+    - current plan step card
+    - per-step ordered plan list
+- Updated `web/01.HarnesUI/app.js`:
+  - added plan-step status normalization for:
+    - `pending`
+    - `in_progress`
+    - `completed`
+    - `failed`
+    - `interrupted`
+  - added plan-focus selection logic that prefers:
+    - explicit `in_progress`
+    - blocked step
+    - next pending step while running
+    - last completed step
+  - renders plan summary, current-step card, completion count, and step list into the new panel during `renderHarness()`
+- Updated `web/01.HarnesUI/styles.css`:
+  - added panel, current-step card, step-list, and status-badge styling
+  - added responsive handling for the plan grid
+- Updated `scripts/harness_check_mode_test.js`:
+  - added browser assertions for:
+    - plan summary text
+    - current plan step card
+    - per-step localized status labels
+    - in-progress focus styling
+- Updated `docs/CURRENT_ARCHITECTURE.md`:
+  - documented the new `Execution Plan` panel behavior in the active execution-console architecture
+
+### Verification Evidence
+1. `node --check web/01.HarnesUI/app.js` -> PASS
+2. `node --check scripts/harness_check_mode_test.js` -> PASS
+3. `node scripts/harness_check_mode_test.js` -> PASS
+4. `GET http://127.0.0.1:57525/01.HarnesUI/index.html` -> `200`
+5. Live HTML probe confirms `Execution Plan` and `harnessPlanCurrentCard` are present on the served page
+
+### Residual Risk
+- If a turn never emits a `plan` event, the new panel cannot show a real step list and will remain in its empty-state messaging.
+
+## 2026-03-08 - Planning Mode Selector + Step 4 Observability
+
+### Summary
+- Added task-dependent Step 1/2 planning modes: `FAST`, `NORMAL`, `DISCOVERY`.
+- Added machine-readable Step 1/2 contract surfaces:
+  - `scripts/config/planning_mode_contract.json`
+  - `scripts/config/requirement_contract.schema.json`
+  - `scripts/config/dispatch_plan.schema.json`
+- Extended turn artifacts with:
+  - `requirement_contract.json`
+  - `dispatch_plan.json`
+  - `evidence_manifest.json`
+  - `stage_timeline.json`
+  - `flow_trace_summary.json`
+- Preserved task outcome semantics and kept the task outcome contract separate from the turn contract.
+
+### Runtime / Policy Changes
+- Updated `scripts/extensions/requirement_guard_hook.js` to select planning mode before execution and to keep `DISCOVERY` tasks proposal-only until ambiguity is resolved.
+- Updated `server.js` so turn runtime snapshots, execution memory, and latest-turn visibility include:
+  - planning mode
+  - flow path
+  - planning contract paths
+  - evidence-manifest / stage-timeline / flow-trace artifact paths
+- Added `planning_mode_probe` and `planning_contract_probe` eval drivers to support workflow-level probes.
+
+### Verification
+1. `node scripts/planning_mode_policy_test.js` -> PASS
+2. `node scripts/requirement_guard_validator_test.js` -> PASS
+3. `node scripts/eval_harness_policy_test.js` -> PASS
+
+### Environment-Limit Notes
+- `node scripts/app_server_smoke_test.js` -> blocked in this environment (`spawn EPERM` while the harness tries to launch the Codex app-server)
+- `node scripts/eval_replay_api_smoke_test.js` -> blocked in this environment (`spawn EPERM`)
+- `node scripts/harness_overview_test.js` static checks pass, but live integration is blocked by the same `spawn EPERM`
+
+### Residual Risk
+- Live proof/signoff generation depends on spawning the Codex app-server, so end-to-end artifact generation still needs to be re-run in an environment where child process launch is permitted.
+## 2026-03-08 - Adaptive Planning + Assurance Depth
+
+- Added independent `planning depth` and `assurance depth` selection so low-risk tasks can stay fast while runtime/protocol work stays signoff-heavy.
+- Extended requirement/dispatch contracts to record `selectedPlanningDepth`, `selectedAssuranceDepth`, `signoffRequired`, and `dedicatedTestsRequired`.
+- Added `review_load_breakdown.json` and surfaced planning/assurance depth through runtime snapshots, flow traces, and latest-turn summaries.
+- Expanded workflow eval coverage for `FAST_PLANNING + LIGHT_ASSURANCE`, `DISCOVERY_PLANNING`, approval-boundary signoff escalation, and dedicated-test requirements for new logic.
+- Added `scripts/generate_baseline_comparison.js` for vanilla-like baseline comparison output.
+- 2026-03-08: Runtime proof sample now records fixture-backed dispatch evidence plus doc-sync coverage for sandboxed proof generation.
+- 2026-03-08: Added signoff assurance sample evidence wiring for planning/assurance trace and doc-sync bundle checks.

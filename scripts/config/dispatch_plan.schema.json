@@ -1,0 +1,78 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "dispatch-plan.schema.json",
+  "title": "Dispatch Plan",
+  "type": "object",
+  "required": [
+    "schema",
+    "source",
+    "planningMode",
+    "planningDepth",
+    "assuranceDepth",
+    "flowPath",
+    "proposalOnly",
+    "reviewerRequired",
+    "testerRequired",
+    "signoffRequired",
+    "dedicatedTestsRequired",
+    "dispatches",
+    "sharedEscalationPoints",
+    "expectedEvidence",
+    "residualRisks"
+  ],
+  "properties": {
+    "schema": { "const": "dispatch-plan.v2" },
+    "source": { "type": "string", "minLength": 1 },
+    "promptHash": { "type": "string" },
+    "planningMode": { "type": "string", "enum": ["FAST", "NORMAL", "DISCOVERY"] },
+    "planningDepth": {
+      "type": "string",
+      "enum": ["FAST_PLANNING", "STANDARD_PLANNING", "DISCOVERY_PLANNING"]
+    },
+    "assuranceDepth": {
+      "type": "string",
+      "enum": ["LIGHT_ASSURANCE", "STANDARD_ASSURANCE", "SIGNOFF_ASSURANCE"]
+    },
+    "flowPath": { "type": "string", "enum": ["FAST_PATH", "NORMAL_PATH", "DISCOVERY_PATH"] },
+    "proposalOnly": { "type": "integer", "enum": [0, 1] },
+    "reviewerRequired": { "type": "integer", "enum": [0, 1] },
+    "testerRequired": { "type": "integer", "enum": [0, 1] },
+    "signoffRequired": { "type": "integer", "enum": [0, 1] },
+    "dedicatedTestsRequired": { "type": "integer", "enum": [0, 1] },
+    "dispatches": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "dispatchId",
+          "ownerAgent",
+          "ownedPaths",
+          "taskSummary",
+          "acceptanceChecks",
+          "toolsMcpRequirements",
+          "reviewerRequired",
+          "testerRequired",
+          "escalationPoint",
+          "expectedEvidence"
+        ],
+        "properties": {
+          "dispatchId": { "type": "string", "minLength": 1 },
+          "ownerAgent": { "type": "string", "minLength": 1 },
+          "ownedPaths": { "type": "array", "items": { "type": "string" } },
+          "taskSummary": { "type": "string", "minLength": 1 },
+          "acceptanceChecks": { "type": "array", "items": { "type": "string" } },
+          "toolsMcpRequirements": { "type": "array", "items": { "type": "string" } },
+          "reviewerRequired": { "type": "integer", "enum": [0, 1] },
+          "testerRequired": { "type": "integer", "enum": [0, 1] },
+          "escalationPoint": { "type": "string" },
+          "expectedEvidence": { "type": "array", "items": { "type": "string" } }
+        },
+        "additionalProperties": false
+      }
+    },
+    "sharedEscalationPoints": { "type": "array", "items": { "type": "string" } },
+    "expectedEvidence": { "type": "array", "items": { "type": "string" } },
+    "residualRisks": { "type": "array", "items": { "type": "string" } }
+  },
+  "additionalProperties": false
+}

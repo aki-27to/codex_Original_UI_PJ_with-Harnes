@@ -215,6 +215,28 @@
               <p id="harnessComplianceDetail" class="harness-compliance-detail">No terminal turn yet.</p>
             </article>
           </div>
+          <section class="harness-plan-panel" aria-live="polite">
+            <div class="harness-plan-head">
+              <div>
+                <h4>Execution Plan</h4>
+                <p>Latest plan summary and the step the agent is working on now.</p>
+              </div>
+              <span id="harnessPlanMeta" class="harness-plan-meta">No plan</span>
+            </div>
+            <div class="harness-plan-grid">
+              <article id="harnessPlanCurrentCard" class="harness-plan-current idle">
+                <span class="harness-plan-current-label">Current Plan Step</span>
+                <strong id="harnessPlanCurrentStep" class="harness-plan-current-step">Waiting for plan</strong>
+                <p id="harnessPlanCurrentDetail" class="harness-plan-current-detail">No plan has been emitted for this chat yet.</p>
+              </article>
+              <div class="harness-plan-column">
+                <p id="harnessPlanExplanation" class="harness-plan-explanation">Plan summary will appear here.</p>
+                <ol id="harnessPlanList" class="harness-plan-list">
+                  <li class="harness-empty">Plan steps will appear here.</li>
+                </ol>
+              </div>
+            </div>
+          </section>
           <ul id="harnessHighlights" class="harness-highlights">
             <li class="harness-empty">No additional highlights.</li>
           </ul>

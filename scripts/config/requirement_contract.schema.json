@@ -1,0 +1,70 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "requirement-contract.schema.json",
+  "title": "Requirement Contract",
+  "type": "object",
+  "required": [
+    "schema",
+    "source",
+    "explicitGoal",
+    "baselineScope",
+    "nonGoals",
+    "assumptions",
+    "openQuestions",
+    "approvalBoundaryItems",
+    "acceptanceChecks",
+    "selectedPlanningDepth",
+    "selectedAssuranceDepth",
+    "selectedPlanningMode",
+    "planningModeReasons",
+    "assuranceDepthReasons"
+  ],
+  "properties": {
+    "schema": { "const": "requirement-contract.v2" },
+    "source": { "type": "string", "minLength": 1 },
+    "promptHash": { "type": "string" },
+    "explicitGoal": { "type": "string", "minLength": 1 },
+    "implicitGoal": { "type": "string" },
+    "baselineScope": { "type": "array", "items": { "type": "string" } },
+    "overDeliveryScope": { "type": "array", "items": { "type": "string" } },
+    "nonGoals": { "type": "array", "items": { "type": "string" } },
+    "assumptions": { "type": "array", "items": { "type": "string" } },
+    "openQuestions": { "type": "array", "items": { "type": "string" } },
+    "approvalBoundaryItems": { "type": "array", "items": { "type": "string" } },
+    "acceptanceChecks": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id", "title", "source", "blocking"],
+        "properties": {
+          "id": { "type": "string", "minLength": 1 },
+          "title": { "type": "string", "minLength": 1 },
+          "source": { "type": "string", "minLength": 1 },
+          "blocking": { "type": "boolean" }
+        },
+        "additionalProperties": false
+      }
+    },
+    "selectedPlanningDepth": {
+      "type": "string",
+      "enum": ["FAST_PLANNING", "STANDARD_PLANNING", "DISCOVERY_PLANNING"]
+    },
+    "selectedAssuranceDepth": {
+      "type": "string",
+      "enum": ["LIGHT_ASSURANCE", "STANDARD_ASSURANCE", "SIGNOFF_ASSURANCE"]
+    },
+    "selectedPlanningMode": {
+      "type": "string",
+      "enum": ["FAST", "NORMAL", "DISCOVERY"]
+    },
+    "planningModeReasons": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "assuranceDepthReasons": {
+      "type": "array",
+      "items": { "type": "string" }
+    }
+  },
+  "additionalProperties": false
+}

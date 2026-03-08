@@ -7,6 +7,7 @@ const zlib=require("zlib");
 const {EventEmitter}=require("events");
 const {spawn,spawnSync}=require("child_process");
 const {runBatchJob,getRunnerCapabilities}=require("./scripts/poc_batch_runner");
+const {buildMockFixtureScenario}=require("./scripts/lib/mock_app_server_fixture");
 const {normalizeRequestUserInputPolicy,resolveNonInteractiveUserInput}=require("./scripts/lib/request_user_input_policy");
 const {
   evaluateAgentGovernance,
@@ -74,6 +75,19 @@ const {
   getRequirementRbjConfig,
   resolveRequirementRbjState,
 }=require("./scripts/lib/requirement_rbj_policy");
+const {
+  buildPlanningArtifacts,
+  defaultAssuranceModeContractPath,
+  defaultDispatchPlanSchemaPath,
+  defaultPlanningDecisionContractSchemaPath,
+  defaultPlanningModeContractPath,
+  defaultRequirementContractSchemaPath,
+  loadAssuranceModeContract,
+  loadPlanningModeContract,
+  normalizeAssuranceMode,
+  normalizePlanningModeContract,
+  sanitizePlanningArtifactsForRuntime,
+}=require("./scripts/lib/planning_mode_policy");
 const {
   defaultPiperModelId,
   preparePiperModel,
@@ -239,6 +253,11 @@ const sloFailureRateMax=Number(parseRateEnv("CODEX_SLO_FAILURE_RATE_MAX","0.25",
 const sloIdempotencyConflictRateMax=Number(parseRateEnv("CODEX_SLO_IDEMPOTENCY_CONFLICT_RATE_MAX","0.05",0,1).toFixed(4));
 const harnessTurnContractSpecPath=path.join(workspaceRoot,"scripts","config","harness_contract_spec.json");
 const taskOutcomeContractPath=path.join(workspaceRoot,"scripts","config","task_outcome_contract.json");
+const planningModeContractPath=path.join(workspaceRoot,"scripts","config","planning_mode_contract.json");
+const assuranceModeContractPath=path.join(workspaceRoot,"scripts","config","assurance_depth_contract.json");
+const planningDecisionContractSchemaPath=path.join(workspaceRoot,"scripts","config","planning_decision_contract.schema.json");
+const requirementContractSchemaPath=path.join(workspaceRoot,"scripts","config","requirement_contract.schema.json");
+const dispatchPlanSchemaPath=path.join(workspaceRoot,"scripts","config","dispatch_plan.schema.json");
 const pocBatchHistoryLimit=20;
 const pocSchedulerMinIntervalSec=15;
 const pocSchedulerDefaultIntervalSec=120;
@@ -252,6 +271,8 @@ const conversationPersonaMemoryContextTopics=3;
 const defaultEvalSuite=loadEvalSuiteSafely();
 const harnessTurnContractSpec=loadHarnessTurnContractSpecSafely();
 const taskOutcomeContract=loadTaskOutcomeContractSafely();
+const planningModeContract=loadPlanningModeContractSafely();
+const assuranceModeContract=loadAssuranceModeContractSafely();
 
 let webServer=null;
 let webPort=null;
@@ -398,6 +419,34 @@ function loadTaskOutcomeContractSafely(){
       return loadTaskOutcomeContract(defaultTaskOutcomeContractPath);
     }catch{
       return summarizeTaskOutcomeContract(null);
+    }
+  }
+}
+function loadPlanningModeContractSafely(){
+  try{
+    return loadPlanningModeContract(planningModeContractPath);
+  }catch(error){
+    console.warn(`[contract] failed to load planning mode spec from ${planningModeContractPath}: ${error&&error.message?error.message:String(error)}`);
+    try{
+      return loadPlanningModeContract(defaultPlanningModeContractPath);
+    }catch{
+      return normalizePlanningModeContract(null);
+    }
+  }
+}
+function loadAssuranceModeContractSafely(){
+  try{
+    return loadAssuranceModeContract(assuranceModeContractPath);
+  }catch(error){
+    console.warn(`[contract] failed to load assurance mode spec from ${assuranceModeContractPath}: ${error&&error.message?error.message:String(error)}`);
+    try{
+      return loadAssuranceModeContract(defaultAssuranceModeContractPath);
+    }catch{
+      return{
+        schema:"assurance-mode-contract.v1",
+        version:"",
+        modes:["LIGHT_ASSURANCE","STANDARD_ASSURANCE","SIGNOFF_ASSURANCE"],
+      };
     }
   }
 }
@@ -660,6 +709,10 @@ function normalizeExecutionMemoryRecord(record){
     status:normalizeExecutionState(record.status,{terminalFallback:true}),
     taskOutcomeStatus:safeString(record.taskOutcomeStatus,80).toUpperCase()||"",
     taskOutcomeReason:safeString(record.taskOutcomeReason,120)||"",
+    planningMode:safeString(record.planningMode,40)||"NORMAL",
+    planningDepth:safeString(record.planningDepth,60)||"STANDARD_PLANNING",
+    assuranceDepth:safeString(record.assuranceDepth,60)||"STANDARD_ASSURANCE",
+    flowPath:safeString(record.flowPath,80)||"NORMAL_PATH",
     terminalEvent:safeString(record.terminalEvent,120)||"turn/completed",
     errorText:safeString(record.errorText,2000)||"",
     executionProfile:normalizeExecutionProfile(record.executionProfile,runtimeExecutionProfile),
@@ -671,6 +724,11 @@ function normalizeExecutionMemoryRecord(record){
     outputSha256:safeString(record.outputSha256,80)||"",
     outputChars:Number.isFinite(Number(record.outputChars))?Math.max(0,Math.trunc(Number(record.outputChars))):0,
     observedSignals:normalizeObservedTurnSignals(record.observedSignals),
+    evidenceManifestPath:safeString(record.evidenceManifestPath,320)||"",
+    stageTimelinePath:safeString(record.stageTimelinePath,320)||"",
+    flowTraceSummaryPath:safeString(record.flowTraceSummaryPath,320)||"",
+    planningDecisionContractPath:safeString(record.planningDecisionContractPath,320)||"",
+    reviewLoadBreakdownPath:safeString(record.reviewLoadBreakdownPath,320)||"",
     parentDispatchGuard:record.parentDispatchGuard&&typeof record.parentDispatchGuard==="object"
       ?{
         mode:safeString(record.parentDispatchGuard.mode,20)||"off",
@@ -732,6 +790,10 @@ function normalizeReplayMemoryRecord(record){
       executionIntent:normalizeExecutionIntent(request.executionIntent,"interactive"),
       executionSource:safeString(request.executionSource,80)||"api_exec",
       recipeHash:safeString(request.recipeHash,80)||"",
+      planningMode:safeString(request.planningMode,40)||"NORMAL",
+      planningDepth:safeString(request.planningDepth,60)||"STANDARD_PLANNING",
+      assuranceDepth:safeString(request.assuranceDepth,60)||"STANDARD_ASSURANCE",
+      flowPath:safeString(request.flowPath,80)||"NORMAL_PATH",
     },
     baseline:{
       outputSha256:safeString(record.baseline&&record.baseline.outputSha256,80)||"",
@@ -1720,11 +1782,17 @@ function executeEvalProbeCase(evalCase,variant){
       spec:taskOutcomeContract,
     });
   case "turn_task_outcome_probe":
-    return validateTurnTaskOutcomeContract({
-      turnStatus:safeString(input.turnStatus,80),
-      taskOutcomeStatus:safeString(input.taskOutcomeStatus,80),
-      spec:harnessTurnContractSpec,
-    });
+    {
+      const result=validateTurnTaskOutcomeContract({
+        turnStatus:safeString(input.turnStatus,80),
+        taskOutcomeStatus:safeString(input.taskOutcomeStatus,80),
+        spec:harnessTurnContractSpec,
+      });
+      return{
+        ...result,
+        reason:result&&result.ok?"compatible":safeString(result&&result.reason,80)||"incompatible",
+      };
+    }
   case "parent_dispatch_guard_probe":
     return evaluateParentDispatchGuard({
       mode:safeString(input.mode,20)||"enforce",
@@ -1756,10 +1824,102 @@ function executeEvalProbeCase(evalCase,variant){
       options:input.options&&typeof input.options==="object"?input.options:{},
       config:getRequirementRbjConfig(process.env),
     });
+  case "planning_mode_probe":{
+    const planningProbe=sanitizePlanningArtifactsForRuntime(buildPlanningArtifacts({
+      prompt:safeString(input.prompt,24000)||evalCase.prompt||"",
+      options:input.options&&typeof input.options==="object"?input.options:variant,
+      contract:{planning:planningModeContract,assurance:assuranceModeContract},
+    }));
+    return{
+      selectedMode:safeString(planningProbe&&planningProbe.selection&&planningProbe.selection.selectedMode,40)||"NORMAL",
+      selectedPlanningDepth:safeString(planningProbe&&planningProbe.selection&&planningProbe.selection.selectedPlanningDepth,60)||"STANDARD_PLANNING",
+      selectedAssuranceDepth:safeString(planningProbe&&planningProbe.selection&&planningProbe.selection.selectedAssuranceDepth,60)||"STANDARD_ASSURANCE",
+      flowPath:safeString(planningProbe&&planningProbe.selection&&planningProbe.selection.flowPath,80)||"NORMAL_PATH",
+      executionFlow:safeString(planningProbe&&planningProbe.selection&&planningProbe.selection.executionFlow,120)||"",
+      needsInputRecommended:planningProbe&&planningProbe.selection&&planningProbe.selection.needsInputRecommended?1:0,
+      openQuestionsCount:Number.isFinite(Number(planningProbe&&planningProbe.selection&&planningProbe.selection.signals&&planningProbe.selection.signals.openQuestionsCount))
+        ?Math.max(0,Math.trunc(Number(planningProbe.selection.signals.openQuestionsCount)))
+        :0,
+      specialistBoundaryCount:Number.isFinite(Number(planningProbe&&planningProbe.selection&&planningProbe.selection.signals&&planningProbe.selection.signals.specialistBoundaryCount))
+        ?Math.max(0,Math.trunc(Number(planningProbe.selection.signals.specialistBoundaryCount)))
+        :0,
+      acceptanceClarity:safeString(planningProbe&&planningProbe.selection&&planningProbe.selection.signals&&planningProbe.selection.signals.acceptanceClarity,40)||"low",
+    };
+  }
+  case "planning_contract_probe":{
+    const planningProbe=sanitizePlanningArtifactsForRuntime(buildPlanningArtifacts({
+      prompt:safeString(input.prompt,24000)||evalCase.prompt||"",
+      options:input.options&&typeof input.options==="object"?input.options:variant,
+      contract:{planning:planningModeContract,assurance:assuranceModeContract},
+    }));
+    const dispatches=Array.isArray(planningProbe&&planningProbe.dispatchPlan&&planningProbe.dispatchPlan.dispatches)
+      ?planningProbe.dispatchPlan.dispatches
+      :[];
+    const ownerAgents=dispatches.map((entry)=>safeString(entry&&entry.ownerAgent,80)).filter(Boolean);
+    const ownedPaths=dispatches.flatMap((entry)=>Array.isArray(entry&&entry.ownedPaths)?entry.ownedPaths:[]);
+    const hasPathLeak=ownedPaths.some((entry)=>{
+      const normalized=normalizeMergePath(entry);
+      return normalized.startsWith("..")||normalized.includes("../");
+    });
+    return{
+      selectedMode:safeString(planningProbe&&planningProbe.selection&&planningProbe.selection.selectedMode,40)||"NORMAL",
+      selectedPlanningDepth:safeString(planningProbe&&planningProbe.selection&&planningProbe.selection.selectedPlanningDepth,60)||"STANDARD_PLANNING",
+      selectedAssuranceDepth:safeString(planningProbe&&planningProbe.selection&&planningProbe.selection.selectedAssuranceDepth,60)||"STANDARD_ASSURANCE",
+      flowPath:safeString(planningProbe&&planningProbe.selection&&planningProbe.selection.flowPath,80)||"NORMAL_PATH",
+      executionFlow:safeString(planningProbe&&planningProbe.selection&&planningProbe.selection.executionFlow,120)||"",
+      proposalOnly:planningProbe&&planningProbe.dispatchPlan&&planningProbe.dispatchPlan.proposalOnly?1:0,
+      reviewerRequired:planningProbe&&planningProbe.dispatchPlan&&planningProbe.dispatchPlan.reviewerRequired?1:0,
+      testerRequired:planningProbe&&planningProbe.dispatchPlan&&planningProbe.dispatchPlan.testerRequired?1:0,
+      signoffRequired:planningProbe&&planningProbe.dispatchPlan&&planningProbe.dispatchPlan.signoffRequired?1:0,
+      dedicatedTestsRequired:planningProbe&&planningProbe.dispatchPlan&&planningProbe.dispatchPlan.dedicatedTestsRequired?1:0,
+      dispatchCount:dispatches.length,
+      ownerAgents,
+      contextLeakageRisk:hasPathLeak?1:0,
+      requirementOpenQuestionsCount:Array.isArray(planningProbe&&planningProbe.requirementContract&&planningProbe.requirementContract.openQuestions)
+        ?planningProbe.requirementContract.openQuestions.length
+        :0,
+    };
+  }
   case "adversarial_shadow_probe":
-    return buildAdversarialShadowReview(input);
+    {
+      const review=buildAdversarialShadowReview({
+        prompt:safeString(input.request,12000)||safeString(input.prompt,12000),
+        answer:safeString(input.assistantResponse,16000)||safeString(input.answer,16000),
+        status:safeString(input.turnStatus,40)||(
+          safeString(input.taskOutcomeStatus,80).toUpperCase()==="COMPLETED"?"completed":"failed"
+        ),
+        minScore:input.minScore,
+        maxPromptChars:input.maxPromptChars,
+        maxAnswerChars:input.maxAnswerChars,
+      });
+      const finding=Array.isArray(review&&review.red&&review.red.findings)
+        ?review.red.findings.find((entry)=>safeString(entry&&entry.id,80)==="exact_reply_contract_mismatch")
+        :null;
+      return{
+        ...review,
+        decision:finding?"FAILED_VALIDATION":safeString(review&&review.decision,40)||"PASS",
+        reason:finding?"exact_reply_contract_mismatch":safeString(review&&review.decision,80)||"pass",
+      };
+    }
   case "adversarial_loop_probe":
-    return shouldRetryAdversarialLoop(input);
+    {
+      const loopResult=shouldRetryAdversarialLoop({
+        enabled:Boolean(input.enabled),
+        finalStatus:safeString(input.finalStatus,40)||(
+          safeString(input.decision,80).toUpperCase()==="FAILED_VALIDATION"?"failed":"completed"
+        ),
+        taskOutcomeStatus:safeString(input.taskOutcomeStatus,80)||safeString(input.decision,80),
+        decision:safeString(input.decision,80),
+        attempt:input.attempt,
+        maxRetries:input.maxRetries,
+        clientClosed:Boolean(input.clientClosed),
+        writable:input.writable===undefined?true:Boolean(input.writable),
+      });
+      if(loopResult&&loopResult.retry&&safeString(input.decision,80).toUpperCase()==="FAILED_VALIDATION"){
+        return{...loopResult,reason:"adversarial_failed_validation_retry"};
+      }
+      return loopResult;
+    }
   default:
     throw new Error(`unsupported eval driver: ${driver}`);
   }
@@ -2390,6 +2550,7 @@ function buildTurnVisibilitySnapshot(input={}){
   const reproProfile=isReproExecutionProfile(requestProfile);
   const defaultsSnapshot=buildFullUtilizationDefaultsSnapshot();
   const parentDispatchGuard=buildParentDispatchGuardDefaultsSnapshot();
+  const planningContext=sanitizePlanningArtifactsForRuntime(meta.planningContext&&typeof meta.planningContext==="object"?meta.planningContext:{});
   const turnChecks={
     agentIsDefault:turnAgentName==="default"?1:0,
     requestUserInputBlocked:requestUserInputPolicy==="blocked"?1:0,
@@ -2428,6 +2589,14 @@ function buildTurnVisibilitySnapshot(input={}){
     recipe,
     defaults:defaultsSnapshot,
     parentDispatchGuard,
+    planning:{
+      mode:safeString(planningContext&&planningContext.selection&&planningContext.selection.selectedMode,40)||"NORMAL",
+      depth:safeString(planningContext&&planningContext.selection&&planningContext.selection.selectedPlanningDepth,60)||"STANDARD_PLANNING",
+      assuranceDepth:safeString(planningContext&&planningContext.selection&&planningContext.selection.selectedAssuranceDepth,60)||"STANDARD_ASSURANCE",
+      flowPath:safeString(planningContext&&planningContext.selection&&planningContext.selection.flowPath,80)||"NORMAL_PATH",
+      executionFlow:safeString(planningContext&&planningContext.selection&&planningContext.selection.executionFlow,120)||"",
+      needsInputRecommended:planningContext&&planningContext.selection&&planningContext.selection.needsInputRecommended?1:0,
+    },
     turn:{
       agentName:turnAgentName,
       requestUserInputPolicy,
@@ -2740,6 +2909,7 @@ const operationLogArchiveDir=resolveOperationLogArchiveDir(operationLogPath);
 const operationLogArchiveCompress=parseBooleanEnv("CODEX_OPERATION_LOG_ARCHIVE_COMPRESS",operationLogDefaults.archive.compress);
 const operationLogArchiveMaxBytes=parsePositiveIntEnv("CODEX_OPERATION_LOG_ARCHIVE_MAX_BYTES",operationLogDefaults.archive.maxBytes,1024*1024,1024*1024*1024);
 const operationLogArchiveMaxFiles=parsePositiveIntEnv("CODEX_OPERATION_LOG_ARCHIVE_MAX_FILES",operationLogDefaults.archive.maxFiles,8,4000);
+const debugFinalizeSteps=parseBooleanEnv("CODEX_DEBUG_FINALIZE_STEPS",false);
 const operationLog=new CompactOperationLog({
   enabled:operationLogDefaults.enabled,
   filePath:operationLogPath,
@@ -3222,7 +3392,7 @@ class TurnArtifactRecorder{
       byRule:{},
     };
     this.dirPath="";
-    this.files={events:"",items:"",diff:"",stdout:"",stderr:"",manifest:""};
+    this.files={events:"",items:"",diff:"",stdout:"",stderr:"",manifest:"",planningDecisionContract:"",requirementContract:"",dispatchPlan:"",evidenceManifest:"",stageTimeline:"",flowTraceSummary:"",reviewLoadBreakdown:""};
     if(!this.enabled)return;
     const dayStamp=toIsoTimestamp(this.startedAt).slice(0,10);
     const baseName=`${normalizeArtifactFileSegment(this.threadId,64)}__${normalizeArtifactFileSegment(this.turnId,96)}`;
@@ -3246,6 +3416,13 @@ class TurnArtifactRecorder{
     this.files.stdout=path.join(targetDir,"command_stdout.txt");
     this.files.stderr=path.join(targetDir,"command_stderr.txt");
     this.files.manifest=path.join(targetDir,"manifest.json");
+    this.files.planningDecisionContract=path.join(targetDir,"planning_decision_contract.json");
+    this.files.requirementContract=path.join(targetDir,"requirement_contract.json");
+    this.files.dispatchPlan=path.join(targetDir,"dispatch_plan.json");
+    this.files.evidenceManifest=path.join(targetDir,"evidence_manifest.json");
+    this.files.stageTimeline=path.join(targetDir,"stage_timeline.json");
+    this.files.flowTraceSummary=path.join(targetDir,"flow_trace_summary.json");
+    this.files.reviewLoadBreakdown=path.join(targetDir,"review_load_breakdown.json");
     this.writeEvent("turn.started",{
       turnId:this.turnId,
       threadId:this.threadId,
@@ -3277,6 +3454,17 @@ class TurnArtifactRecorder{
       hardenFilePermissions(filePath);
     }catch{
     }
+  }
+  writeJsonArtifact(filePath,value){
+    if(!this.canWrite()||!filePath||!value||typeof value!=="object")return null;
+    const payload=this.sanitizeValue(value);
+    this.writeFile(filePath,`${JSON.stringify(payload,null,2)}\n`);
+    return{
+      file:path.basename(filePath),
+      path:filePath,
+      bytes:fileSizeBytes(filePath),
+      sha256:fileSha256Hex(filePath),
+    };
   }
   sanitizeValue(value){
     if(!turnArtifactsRedactionEnabled)return value;
@@ -3375,7 +3563,7 @@ class TurnArtifactRecorder{
       this.stderrChunks+=1;
     }
   }
-  finalize({status,errorText,completedAt,approvalAudits,observedSignals,taskOutcomeStatus,taskOutcomeReason}={}){
+  finalize({status,errorText,completedAt,approvalAudits,observedSignals,taskOutcomeStatus,taskOutcomeReason,planningContext,planningDecisionContract,requirementContract,dispatchPlan,evidenceManifest,stageTimeline,flowTraceSummary,reviewLoadBreakdown}={}){
     if(!this.canWrite())return null;
     this.writeEvent("turn.completed",{
       status:safeString(status,40)||"unknown",
@@ -3398,6 +3586,22 @@ class TurnArtifactRecorder{
         file:label,
         bytes,
         sha256,
+      });
+    }
+    const extraArtifacts=[
+      this.writeJsonArtifact(this.files.planningDecisionContract,planningDecisionContract&&typeof planningDecisionContract==="object"?planningDecisionContract:null),
+      this.writeJsonArtifact(this.files.requirementContract,requirementContract&&typeof requirementContract==="object"?requirementContract:null),
+      this.writeJsonArtifact(this.files.dispatchPlan,dispatchPlan&&typeof dispatchPlan==="object"?dispatchPlan:null),
+      this.writeJsonArtifact(this.files.evidenceManifest,evidenceManifest&&typeof evidenceManifest==="object"?evidenceManifest:null),
+      this.writeJsonArtifact(this.files.stageTimeline,stageTimeline&&typeof stageTimeline==="object"?stageTimeline:null),
+      this.writeJsonArtifact(this.files.flowTraceSummary,flowTraceSummary&&typeof flowTraceSummary==="object"?flowTraceSummary:null),
+      this.writeJsonArtifact(this.files.reviewLoadBreakdown,reviewLoadBreakdown&&typeof reviewLoadBreakdown==="object"?reviewLoadBreakdown:null),
+    ].filter(Boolean);
+    for(const entry of extraArtifacts){
+      artifactEntries.push({
+        file:safeString(entry.file,80)||path.basename(entry.path),
+        bytes:Number.isFinite(Number(entry.bytes))?Math.max(0,Math.trunc(Number(entry.bytes))):0,
+        sha256:safeString(entry.sha256,80)||"",
       });
     }
     const approvalRecords=Array.isArray(approvalAudits)
@@ -3444,6 +3648,7 @@ class TurnArtifactRecorder{
       execution:{
         meta:execution,
         observed,
+        planning:planningContext&&typeof planningContext==="object"?this.sanitizeValue(planningContext):null,
       },
       approvalDecisions:{
         riskRulesVersion,
@@ -3468,6 +3673,13 @@ class TurnArtifactRecorder{
     return{
       dir:this.dirPath,
       manifest:this.files.manifest,
+      planningDecisionContractPath:fs.existsSync(this.files.planningDecisionContract)?this.files.planningDecisionContract:"",
+      requirementContractPath:fs.existsSync(this.files.requirementContract)?this.files.requirementContract:"",
+      dispatchPlanPath:fs.existsSync(this.files.dispatchPlan)?this.files.dispatchPlan:"",
+      evidenceManifestPath:fs.existsSync(this.files.evidenceManifest)?this.files.evidenceManifest:"",
+      stageTimelinePath:fs.existsSync(this.files.stageTimeline)?this.files.stageTimeline:"",
+      flowTraceSummaryPath:fs.existsSync(this.files.flowTraceSummary)?this.files.flowTraceSummary:"",
+      reviewLoadBreakdownPath:fs.existsSync(this.files.reviewLoadBreakdown)?this.files.reviewLoadBreakdown:"",
       manifestSha256,
       promptSha256:manifest&&manifest.prompt?safeString(manifest.prompt.sha256,80):"",
       artifactCount:artifactEntries.length,
@@ -4787,6 +4999,15 @@ function getRequirementGuardMatcherSnapshot(){
 }
 function normalizeExecOptionsForRun(options){
   const source=options&&typeof options==="object"?options:{};
+  const planningContext=sanitizePlanningArtifactsForRuntime(
+    source.planningContext&&typeof source.planningContext==="object"
+      ?source.planningContext
+      :buildPlanningArtifacts({
+        prompt:typeof source.prompt==="string"?source.prompt:"",
+        options:source,
+        contract:{planning:planningModeContract,assurance:assuranceModeContract},
+      })
+  );
   return{
     approvalPolicy:normalizeApprovalPolicy(source.approvalPolicy),
     webSearch:normalizeBooleanFlag(source.webSearch),
@@ -4798,6 +5019,7 @@ function normalizeExecOptionsForRun(options){
     attemptedFreshFallback:Boolean(source.attemptedFreshFallback),
     images:Array.isArray(source.images)?source.images:[],
     requestUserInputPolicy:normalizeRequestUserInputPolicy(source.requestUserInputPolicy,nonInteractiveRequestUserInputPolicy),
+    planningContext,
   };
 }
 function applyRequirementGuardExecExtension(input){
@@ -4937,6 +5159,32 @@ function getRequirementGuardRbjSnapshot(moduleRef){
     return null;
   }
 }
+function getRequirementGuardPlanningModeSnapshot(moduleRef){
+  if(!moduleRef||typeof moduleRef.getPlanningModeConfig!=="function")return null;
+  try{
+    const config=moduleRef.getPlanningModeConfig();
+    const assuranceConfig=typeof moduleRef.getAssuranceModeConfig==="function"?moduleRef.getAssuranceModeConfig():null;
+    if(!config||typeof config!=="object")return null;
+    return{
+      schema:safeString(config.schema,80)||"planning-mode-contract.v1",
+      version:safeString(config.version,80)||"",
+      modes:Array.isArray(config.modes)?config.modes.map((entry)=>safeString(String(entry||""),40)).filter(Boolean).slice(0,8):[],
+      assuranceSchema:safeString(assuranceConfig&&assuranceConfig.schema,80)||"assurance-mode-contract.v1",
+      assuranceVersion:safeString(assuranceConfig&&assuranceConfig.version,80)||"",
+      assuranceModes:Array.isArray(assuranceConfig&&assuranceConfig.modes)?assuranceConfig.modes.map((entry)=>safeString(String(entry||""),60)).filter(Boolean).slice(0,8):[],
+      thresholds:config.thresholds&&typeof config.thresholds==="object"?config.thresholds:{},
+      paths:{
+        contract:summarizePathForOperationLog(planningModeContractPath,220),
+        assuranceContract:summarizePathForOperationLog(assuranceModeContractPath,220),
+        requirementSchema:summarizePathForOperationLog(requirementContractSchemaPath,220),
+        dispatchSchema:summarizePathForOperationLog(dispatchPlanSchemaPath,220),
+      },
+    };
+  }catch(error){
+    console.error(`[requirement-guard] getPlanningModeConfig failed: ${error&&error.message?error.message:String(error)}`);
+    return null;
+  }
+}
 function getRequirementGuardExtensionSnapshot(){
   const extensionEnabled=isRequirementGuardExtensionEnabled();
   const moduleRef=extensionEnabled?loadRequirementGuardExtensionModule():requirementGuardExtensionModule;
@@ -4946,6 +5194,7 @@ function getRequirementGuardExtensionSnapshot(){
   const requirementLock=getRequirementGuardRequirementLockSnapshot(moduleRef);
   const scopeExpansion=getRequirementGuardScopeExpansionSnapshot(moduleRef);
   const rbj=getRequirementGuardRbjSnapshot(moduleRef);
+  const planningMode=getRequirementGuardPlanningModeSnapshot(moduleRef);
   return{
     id:requirementGuardExtensionConfig.id,
     status:requirementGuardExtensionConfig.status,
@@ -4960,6 +5209,7 @@ function getRequirementGuardExtensionSnapshot(){
     requirementLock,
     scopeExpansion,
     rbj,
+    planningMode,
   };
 }
 function supportedImageRuleText(){return"PNG/JPEG/WEBP/GIF, max 10MB";}
@@ -5057,6 +5307,14 @@ function getDiagnosticsSnapshot(){
     },
     adversarialShadow:buildAdversarialShadowRuntimeSnapshot(),
   };
+}
+function normalizeAppServerTransportMode(value){
+  const raw=safeString(value,80).toLowerCase();
+  if(raw==="mock"||raw==="fixture"||raw==="mock-fixture")return"mock-fixture";
+  return"stdio";
+}
+function getAppServerTransportMode(){
+  return normalizeAppServerTransportMode(process.env.CODEX_APP_SERVER_TRANSPORT);
 }
 function resolveAppServerSpawnTarget(cwd){
   if(process.platform==="win32"){
@@ -5518,6 +5776,10 @@ class CodexAppServerClient{
     this.pending=new Map();
     this.turnWatchers=new Map();
     this.turnContexts=new Map();
+    this.transportMode=getAppServerTransportMode();
+    this.mockThreadSeq=1;
+    this.mockTurnSeq=1;
+    this.mockTurns=new Map();
   }
   shouldTraceRpcMethod(method){
     return method==="initialize"
@@ -5537,6 +5799,21 @@ class CodexAppServerClient{
   }
   async start(){
     this.stopping=false;
+    if(this.transportMode==="mock-fixture"){
+      this.child={
+        killed:false,
+        stdin:{destroyed:false,write(){}},
+        kill(){this.killed=true;},
+      };
+      this.stdoutBuffer="";
+      this.stderrBuffer="";
+      logOperation("appserver.start",{
+        cwd:summarizePathForOperationLog(this.cwd,220),
+        transport:this.transportMode,
+      });
+      logOperation("appserver.ready",{handshake:"mock_fixture"});
+      return;
+    }
     let child;
     try{
       const target=resolveAppServerSpawnTarget(this.cwd);
@@ -5561,7 +5838,12 @@ class CodexAppServerClient{
   }
   stop(){
     this.stopping=true;
-    logOperation("appserver.stop",{});
+    logOperation("appserver.stop",{transport:this.transportMode});
+    if(this.transportMode==="mock-fixture"){
+      this.mockTurns.clear();
+      this.child=null;
+      return;
+    }
     if(this.child&&!this.child.killed){
       try{
         this.child.kill();
@@ -5571,13 +5853,22 @@ class CodexAppServerClient{
     this.child=null;
   }
   sendRaw(msg){
+    if(this.transportMode==="mock-fixture"){
+      return;
+    }
     if(!this.child||!this.child.stdin||this.child.stdin.destroyed)throw new Error("app-server is not running");
     this.child.stdin.write(`${JSON.stringify(msg)}\n`);
   }
   sendNotificationRaw(method,params){
+    if(this.transportMode==="mock-fixture"){
+      return;
+    }
     this.sendRaw(params===undefined?{method}:{method,params});
   }
   sendRequestRaw(method,params,timeoutMs=120000){
+    if(this.transportMode==="mock-fixture"){
+      return this.sendMockRequest(method,params,timeoutMs);
+    }
     if(!this.child||this.stopping)throw new Error("app-server is not running");
     const id=String(this.requestSeq++);
     const startedAt=nowTs();
@@ -5630,6 +5921,9 @@ class CodexAppServerClient{
   watchTurn(threadId,turnId,handlers){
     const key=this.turnKey(threadId,turnId);
     this.turnWatchers.set(key,handlers||{});
+    if(this.transportMode==="mock-fixture"){
+      this.maybeRunMockTurn(threadId,turnId);
+    }
     return()=>{
       if(this.turnWatchers.get(key)===handlers)this.turnWatchers.delete(key);
       this.clearTurnContext(threadId,turnId);
@@ -5637,6 +5931,12 @@ class CodexAppServerClient{
   }
   async interruptTurn(threadId,turnId){
     if(!threadId||!turnId)return;
+    if(this.transportMode==="mock-fixture"){
+      const key=this.turnKey(threadId,turnId);
+      const turn=this.mockTurns.get(key);
+      if(turn)turn.interrupted=true;
+      return;
+    }
     try{
       await this.sendRequest("turn/interrupt",{threadId,turnId},15000);
     }catch{
@@ -5644,6 +5944,175 @@ class CodexAppServerClient{
   }
   turnKey(threadId,turnId){
     return`${threadId}::${turnId}`;
+  }
+  async sendMockRequest(method,params){
+    const traced=this.shouldTraceRpcMethod(method);
+    const id=String(this.requestSeq++);
+    const startedAt=nowTs();
+    if(traced){
+      logOperation("rpc.req",{
+        id,
+        method:safeString(method,80),
+        transport:this.transportMode,
+      });
+    }
+    try{
+      const result=this.resolveMockRequest(method,params);
+      if(traced){
+        logOperation("rpc.res",{
+          id,
+          method:safeString(method,80),
+          ms:Math.max(0,nowTs()-startedAt),
+          transport:this.transportMode,
+        });
+      }
+      return result;
+    }catch(error){
+      if(traced){
+        logOperation("rpc.err",{
+          id,
+          method:safeString(method,80),
+          ms:Math.max(0,nowTs()-startedAt),
+          err:safeString(error&&error.message?error.message:String(error),220),
+          transport:this.transportMode,
+        });
+      }
+      throw error;
+    }
+  }
+  resolveMockRequest(method,params){
+    if(method==="initialize"){
+      return{
+        serverInfo:{name:"codex-app-server-fixture",version:"fixture.v1"},
+        capabilities:{experimentalApi:true},
+      };
+    }
+    if(method==="thread/start"){
+      const threadId=`mock-thread-${this.mockThreadSeq++}`;
+      return{thread:{id:threadId}};
+    }
+    if(method==="thread/resume"){
+      const threadId=safeString(params&&params.threadId,160);
+      if(!threadId)return{thread:{id:""}};
+      return{thread:{id:threadId}};
+    }
+    if(method==="turn/start"){
+      const threadId=safeString(params&&params.threadId,160);
+      if(!threadId)throw new Error("turn/start missing thread id");
+      const turnId=`mock-turn-${this.mockTurnSeq++}`;
+      const key=this.turnKey(threadId,turnId);
+      this.mockTurns.set(key,{
+        threadId,
+        turnId,
+        input:params&&params.input,
+        cwd:params&&params.cwd?params.cwd:this.cwd,
+        started:false,
+        interrupted:false,
+      });
+      return{turn:{id:turnId,status:"in_progress"}};
+    }
+    if(method==="turn/interrupt"){
+      const threadId=safeString(params&&params.threadId,160);
+      const turnId=safeString(params&&params.turnId,160);
+      const turn=this.mockTurns.get(this.turnKey(threadId,turnId));
+      if(turn)turn.interrupted=true;
+      return{ok:true};
+    }
+    throw new Error(`unsupported mock-fixture request: ${method}`);
+  }
+  maybeRunMockTurn(threadId,turnId){
+    const key=this.turnKey(threadId,turnId);
+    const turn=this.mockTurns.get(key);
+    if(!turn||turn.started)return;
+    const watcher=this.turnWatchers.get(key);
+    if(!watcher)return;
+    turn.started=true;
+    Promise.resolve().then(async()=>{
+      const context=this.turnContexts.get(key)||{};
+      const scenario=buildMockFixtureScenario({
+        workspaceRoot,
+        cwd:safeString(context&&context.cwd,260)||safeString(turn.cwd,260)||this.cwd,
+        input:turn.input,
+        threadId,
+        turnId,
+      });
+      if(scenario&&scenario.plan&&Array.isArray(scenario.plan.plan)&&scenario.plan.plan.length){
+        this.emitMockNotification(watcher,"plan/update",{
+          threadId,
+          turnId,
+          explanation:safeString(scenario.plan.explanation,600),
+          plan:scenario.plan.plan,
+        });
+      }
+      for(const item of Array.isArray(scenario&&scenario.items)?scenario.items:[]){
+        if(turn.interrupted)break;
+        this.emitMockItemLifecycle(watcher,threadId,turnId,item);
+      }
+      const completedStatus=turn.interrupted?"interrupted":safeString(scenario&&scenario.turnStatus,40)||"completed";
+      this.emitMockNotification(watcher,"turn/completed",{
+        threadId,
+        turnId,
+        turn:{
+          id:turnId,
+          status:completedStatus,
+        },
+      });
+    }).catch((error)=>{
+      const currentWatcher=this.turnWatchers.get(key);
+      if(currentWatcher&&typeof currentWatcher.onFatal==="function"){
+        currentWatcher.onFatal(error);
+      }
+    }).finally(()=>{
+      this.mockTurns.delete(key);
+    });
+  }
+  emitMockItemLifecycle(watcher,threadId,turnId,item){
+    if(!watcher||!item||typeof item!=="object")return;
+    const startedItem={...item,status:"in_progress"};
+    this.emitMockNotification(watcher,"item/started",{threadId,turnId,item:startedItem});
+    if(item.type==="agentMessage"&&typeof item.text==="string"&&typeof watcher.onDelta==="function"){
+      try{
+        watcher.onDelta(item.text,{threadId,turnId,delta:item.text});
+      }catch{
+      }
+    }
+    this.emitMockNotification(watcher,"item/completed",{threadId,turnId,item});
+  }
+  emitMockNotification(watcher,method,params){
+    if(!watcher)return;
+    if(typeof watcher.onAny==="function"){
+      try{
+        watcher.onAny(method,params);
+      }catch{
+      }
+    }
+    if((method==="item/agentMessage/delta"||method==="agentMessage/delta")&&typeof watcher.onDelta==="function"){
+      try{
+        watcher.onDelta(typeof params&&params.delta==="string"?params.delta:"",params);
+      }catch{
+      }
+      return;
+    }
+    if((method==="item/started"||method==="itemStarted")&&params&&params.item&&typeof watcher.onItemStarted==="function"){
+      try{
+        watcher.onItemStarted(params.item,params);
+      }catch{
+      }
+      return;
+    }
+    if((method==="item/completed"||method==="itemCompleted")&&params&&params.item&&typeof watcher.onItemCompleted==="function"){
+      try{
+        watcher.onItemCompleted(params.item,params);
+      }catch{
+      }
+      return;
+    }
+    if((method==="turn/completed"||method==="turnCompleted")&&typeof watcher.onCompleted==="function"){
+      try{
+        watcher.onCompleted(params&&params.turn,params);
+      }catch{
+      }
+    }
   }
   flushStdout(){
     const lines=this.stdoutBuffer.split(/\r?\n/);
@@ -5679,6 +6148,7 @@ class CodexAppServerClient{
       this.turnWatchers.delete(key);
     }
     this.turnContexts.clear();
+    this.mockTurns.clear();
     this.child=null;
   }
   parseErrorMessage(payload){
@@ -6691,6 +7161,447 @@ function buildDispatchTraceKey(trace){
   ];
   return parts.join("|");
 }
+function extractSkillTokensFromText(text,max=12){
+  const source=safeString(text,12000);
+  if(!source)return[];
+  const matched=source.match(/\$[a-z0-9][a-z0-9._-]*/ig)||[];
+  const tokens=[];
+  for(const entry of matched){
+    const normalized=safeString(entry,80).toLowerCase();
+    if(!normalized||tokens.includes(normalized))continue;
+    tokens.push(normalized);
+    if(tokens.length>=max)break;
+  }
+  return tokens;
+}
+function uniquePathList(values,max=16){
+  const unique=[];
+  for(const value of Array.isArray(values)?values:[]){
+    const normalized=normalizeOwnedPathCandidate(value);
+    if(!normalized)continue;
+    const key=normalizeMergePath(normalized);
+    if(unique.some((entry)=>normalizeMergePath(entry)===key))continue;
+    unique.push(normalized);
+    if(unique.length>=max)break;
+  }
+  return unique;
+}
+function buildChildEvidenceLedger(itemRecords){
+  const ledger=new Map();
+  for(const record of Array.isArray(itemRecords)?itemRecords:[]){
+    const item=record&&record.item&&typeof record.item==="object"?record.item:null;
+    if(!item||!isCollabToolItemType(item.type))continue;
+    const trace=buildAgentDispatchTrace(item,"");
+    const child=safeString(trace&&trace.child?trace.child:"unknown",120)||"unknown";
+    if(!ledger.has(child)){
+      ledger.set(child,{
+        agent:child,
+        dispatchCount:0,
+        completedCount:0,
+        failedCount:0,
+        ownedPaths:[],
+        skills:[],
+        evidenceNotes:[],
+        reviewerObserved:0,
+        testerObserved:0,
+        firstSeenAt:record&&Number.isFinite(Number(record.ts))?Math.trunc(Number(record.ts)):0,
+        lastSeenAt:record&&Number.isFinite(Number(record.ts))?Math.trunc(Number(record.ts)):0,
+      });
+    }
+    const entry=ledger.get(child);
+    entry.dispatchCount+=1;
+    if(item.status==="completed")entry.completedCount+=1;
+    if(item.status==="failed"||item.status==="declined"||item.status==="interrupted")entry.failedCount+=1;
+    entry.lastSeenAt=record&&Number.isFinite(Number(record.ts))?Math.trunc(Number(record.ts)):entry.lastSeenAt;
+    const ownedPaths=extractCollabOwnedPaths(item,12);
+    entry.ownedPaths=uniquePathList([...entry.ownedPaths,...ownedPaths],16);
+    const stateMessages=extractCollabStateMessages(item,4);
+    const promptText=[
+      safeString(item.prompt,1200),
+      safeString(item.message,1200),
+      safeString(trace&&trace.task?trace.task:"",1200),
+      ...stateMessages,
+    ].filter(Boolean).join("\n");
+    const skillTokens=extractSkillTokensFromText(promptText,12);
+    entry.skills=Array.from(new Set([...entry.skills,...skillTokens])).slice(0,12);
+    for(const message of stateMessages){
+      const note=safeString(message,320);
+      if(!note)continue;
+      if(!entry.evidenceNotes.includes(note))entry.evidenceNotes.push(note);
+      if(entry.evidenceNotes.length>6)entry.evidenceNotes.length=6;
+      const lower=note.toLowerCase();
+      if(lower.includes("no findings")||lower.includes("finding"))entry.reviewerObserved=1;
+      if(lower.includes("pass")||lower.includes("fail")||lower.includes("test"))entry.testerObserved=1;
+    }
+    if(child.toLowerCase().includes("reviewer"))entry.reviewerObserved=1;
+    if(child.toLowerCase().includes("tester"))entry.testerObserved=1;
+  }
+  return Array.from(ledger.values()).map((entry)=>({
+    ...entry,
+    dispatchCount:Math.max(0,Math.trunc(Number(entry.dispatchCount))),
+    completedCount:Math.max(0,Math.trunc(Number(entry.completedCount))),
+    failedCount:Math.max(0,Math.trunc(Number(entry.failedCount))),
+    reviewerObserved:entry.reviewerObserved?1:0,
+    testerObserved:entry.testerObserved?1:0,
+    firstSeenAt:entry.firstSeenAt||0,
+    lastSeenAt:entry.lastSeenAt||0,
+  })).sort((left,right)=>left.agent.localeCompare(right.agent));
+}
+function buildDocSyncEvidence({prompt="",changedPaths=[],childEvidenceLedger=[],planningContext=null}={}){
+  const promptText=safeString(prompt,40000).toLowerCase();
+  const requirementContext=planningContext&&planningContext.requirementContract&&typeof planningContext.requirementContract==="object"
+    ? planningContext.requirementContract
+    : null;
+  const requirementSignalText=requirementContext?[
+    requirementContext.explicitGoal,
+    requirementContext.implicitGoal,
+    ...(Array.isArray(requirementContext.baselineScope)?requirementContext.baselineScope:[]),
+    ...(Array.isArray(requirementContext.nonGoals)?requirementContext.nonGoals:[]),
+    ...(Array.isArray(requirementContext.openQuestions)?requirementContext.openQuestions:[]),
+    ...(Array.isArray(requirementContext.approvalBoundaryItems)?requirementContext.approvalBoundaryItems:[]),
+    ...(Array.isArray(requirementContext.acceptanceChecks)?requirementContext.acceptanceChecks.map((entry)=>entry&&entry.title?entry.title:""):[]),
+  ].filter((entry)=>typeof entry==="string"&&entry.trim()).join("\n").toLowerCase():"";
+  const signalText=requirementSignalText||promptText;
+  const childPaths=Array.isArray(childEvidenceLedger)
+    ?childEvidenceLedger.flatMap((entry)=>Array.isArray(entry&&entry.ownedPaths)?entry.ownedPaths:[])
+    :[];
+  const allPaths=uniquePathList([...(Array.isArray(changedPaths)?changedPaths:[]),...childPaths],24);
+  const architectureUpdated=allPaths.some((entry)=>normalizeMergePath(entry).endsWith("docs/current_architecture.md"));
+  const changelogUpdated=allPaths.some((entry)=>normalizeMergePath(entry).endsWith("docs/architecture_changelog.md"));
+  const harnessMapUpdated=allPaths.some((entry)=>normalizeMergePath(entry).endsWith("harness_map.md"));
+  const docsOnly=allPaths.length>0&&allPaths.every((entry)=>{
+    const normalized=normalizeMergePath(entry);
+    return normalized.startsWith("docs/")||normalized.endsWith(".md");
+  });
+  const selectedAssuranceDepth=normalizeAssuranceMode(
+    planningContext&&planningContext.selection&&planningContext.selection.selectedAssuranceDepth
+      ||planningContext&&planningContext.dispatchPlan&&planningContext.dispatchPlan.assuranceDepth,
+    "STANDARD_ASSURANCE"
+  );
+  const explicitDocSyncRequested=
+    signalText.includes("architecture")
+    ||signalText.includes("changelog")
+    ||signalText.includes("docs sync")
+    ||signalText.includes("harness map");
+  const signoffSensitivePrompt=signalText.includes("signoff")||signalText.includes("proof");
+  const runtimeOrGovernanceChanged=allPaths.some((entry)=>{
+    const normalized=normalizeMergePath(entry);
+    return normalized==="server.js"
+      ||normalized.startsWith("scripts/")
+      ||normalized.startsWith(".codex/")
+      ||normalized.startsWith("web/");
+  });
+  const lightAssurance=selectedAssuranceDepth==="LIGHT_ASSURANCE";
+  const architectureReferenced=architectureUpdated||signalText.includes("current_architecture.md")||signalText.includes("architecture");
+  const changelogReferenced=changelogUpdated||signalText.includes("architecture_changelog.md")||signalText.includes("changelog");
+  const harnessMapReferenced=harnessMapUpdated||signalText.includes("harness_map.md")||signalText.includes("harness map");
+  const required=lightAssurance
+    ?explicitDocSyncRequested
+    :explicitDocSyncRequested
+      ||signoffSensitivePrompt
+      ||selectedAssuranceDepth==="SIGNOFF_ASSURANCE"
+      ||(!docsOnly&&runtimeOrGovernanceChanged);
+  const missing=[];
+  const strictBundleSync=signoffSensitivePrompt||selectedAssuranceDepth==="SIGNOFF_ASSURANCE"||(!docsOnly&&runtimeOrGovernanceChanged);
+  if(required){
+    if(strictBundleSync||architectureReferenced){
+      if(!architectureUpdated)missing.push("docs/CURRENT_ARCHITECTURE.md");
+    }
+    if(strictBundleSync||changelogReferenced){
+      if(!changelogUpdated)missing.push("docs/ARCHITECTURE_CHANGELOG.md");
+    }
+    if(harnessMapReferenced&&!harnessMapUpdated)missing.push("HARNESS_MAP.md");
+  }
+  return{
+    required:required?1:0,
+    status:!required?"SKIPPED":missing.length?"FAIL":"PASS",
+    updatedPaths:allPaths.filter((entry)=>{
+      const normalized=normalizeMergePath(entry);
+      return normalized.endsWith("docs/current_architecture.md")
+        ||normalized.endsWith("docs/architecture_changelog.md")
+        ||normalized.endsWith("harness_map.md");
+    }),
+    architectureUpdated:architectureUpdated?1:0,
+    changelogUpdated:changelogUpdated?1:0,
+    harnessMapUpdated:harnessMapUpdated?1:0,
+    missing,
+  };
+}
+function evaluateAcceptanceCheckStatus(check,input={}){
+  const source=check&&typeof check==="object"?check:{};
+  const title=safeString(source.title,240);
+  const lower=title.toLowerCase();
+  const changedPaths=Array.isArray(input.changedPaths)?input.changedPaths:[];
+  const childEvidenceLedger=Array.isArray(input.childEvidenceLedger)?input.childEvidenceLedger:[];
+  if(!title)return{status:"SKIPPED",reason:"missing_title",evidence:[]};
+  if(/needs[_ ]input|need[_ ]input|user decision|open question|曖昧|判断/.test(lower)){
+    const pass=input.taskOutcomeStatus==="NEEDS_INPUT"||Boolean(input.needsInputRecommended);
+    return{status:pass?"PASS":"FAIL",reason:pass?"needs_input_observed":"needs_input_missing",evidence:[safeString(input.taskOutcomeStatus,80)]};
+  }
+  if(/dispatch|specialist/.test(lower)){
+    const pass=Number(input.observedSignals&&input.observedSignals.dispatchSuccessCount||0)>0;
+    return{status:pass?"PASS":"FAIL",reason:pass?"dispatch_observed":"dispatch_missing",evidence:[String(Number(input.observedSignals&&input.observedSignals.dispatchSuccessCount||0))]};
+  }
+  if(/review|reviewer|findings/.test(lower)){
+    const pass=childEvidenceLedger.some((entry)=>entry&&entry.reviewerObserved);
+    return{status:pass?"PASS":"FAIL",reason:pass?"review_observed":"review_missing",evidence:childEvidenceLedger.filter((entry)=>entry&&entry.reviewerObserved).map((entry)=>entry.agent)};
+  }
+  if(/test|tester|eval|proof|verification|signoff/.test(lower)){
+    const pass=childEvidenceLedger.some((entry)=>entry&&entry.testerObserved)||Number(input.observedSignals&&input.observedSignals.commandExecutions||0)>0;
+    return{status:pass?"PASS":"FAIL",reason:pass?"verification_observed":"verification_missing",evidence:[String(Number(input.observedSignals&&input.observedSignals.commandExecutions||0))]};
+  }
+  if(/doc|architecture|changelog|harness_map|harness map/.test(lower)){
+    const pass=input.docSyncEvidence&&input.docSyncEvidence.status==="PASS";
+    return{status:pass?"PASS":"FAIL",reason:pass?"doc_sync_observed":"doc_sync_missing",evidence:Array.isArray(input.docSyncEvidence&&input.docSyncEvidence.updatedPaths)?input.docSyncEvidence.updatedPaths:[]};
+  }
+  if(/manifest|timeline|flow trace|evidence/.test(lower)){
+    return{status:"PASS",reason:"artifact_generated",evidence:["evidence_manifest.json","stage_timeline.json","flow_trace_summary.json"]};
+  }
+  const pass=Number(input.observedSignals&&input.observedSignals.fileChanges||0)>0||["COMPLETED","PARTIAL","NEEDS_INPUT"].includes(safeString(input.taskOutcomeStatus,80).toUpperCase());
+  return{status:pass?"PASS":"FAIL",reason:pass?"baseline_delivery_observed":"baseline_delivery_missing",evidence:changedPaths.slice(0,4)};
+}
+function buildAcceptanceCheckResults({requirementContract,observedSignals,taskOutcomeStatus,needsInputRecommended,docSyncEvidence,childEvidenceLedger}={}){
+  const checks=Array.isArray(requirementContract&&requirementContract.acceptanceChecks)?requirementContract.acceptanceChecks:[];
+  return checks.map((check)=>({
+    id:safeString(check&&check.id,60)||"",
+    title:safeString(check&&check.title,240)||"",
+    blocking:check&&check.blocking===false?0:1,
+    ...evaluateAcceptanceCheckStatus(check,{
+      observedSignals,
+      taskOutcomeStatus:safeString(taskOutcomeStatus,80).toUpperCase(),
+      needsInputRecommended:Boolean(needsInputRecommended),
+      docSyncEvidence,
+      childEvidenceLedger,
+      changedPaths:Array.isArray(observedSignals&&observedSignals.sampleChangedPaths)?observedSignals.sampleChangedPaths:[],
+    }),
+  }));
+}
+function firstObservedTimestamp(records,predicate){
+  for(const record of Array.isArray(records)?records:[]){
+    if(!record||typeof record!=="object")continue;
+    if(typeof predicate==="function"&&!predicate(record))continue;
+    const ts=Number(record.ts);
+    if(Number.isFinite(ts)&&ts>0)return Math.trunc(ts);
+  }
+  return 0;
+}
+function minPositiveTimestamp(...values){
+  const filtered=values.map((value)=>Number(value)).filter((value)=>Number.isFinite(value)&&value>0);
+  if(!filtered.length)return 0;
+  return Math.min(...filtered.map((value)=>Math.trunc(value)));
+}
+function stageEntry(name,startAt,endAt){
+  const start=Number.isFinite(Number(startAt))&&Number(startAt)>0?Math.trunc(Number(startAt)):0;
+  const end=Number.isFinite(Number(endAt))&&Number(endAt)>0?Math.trunc(Number(endAt)):0;
+  if(!start&&!end){
+    return{name,status:"SKIPPED",startedAt:0,endedAt:0,durationMs:0};
+  }
+  const normalizedEnd=end&&end>=start?end:start;
+  return{
+    name,
+    status:start&&normalizedEnd>=start?"OBSERVED":"SKIPPED",
+    startedAt:start,
+    endedAt:normalizedEnd,
+    durationMs:start&&normalizedEnd>=start?Math.max(0,normalizedEnd-start):0,
+  };
+}
+function buildStageTimeline({startedAt,completedAt,streamEvents,itemRecords,planningContext,docSyncEvidence,childEvidenceLedger}={}){
+  const items=Array.isArray(itemRecords)?itemRecords:[];
+  const events=Array.isArray(streamEvents)?streamEvents:[];
+  const firstPlanAt=firstObservedTimestamp(events,(entry)=>entry.type==="plan");
+  const firstDispatchAt=firstObservedTimestamp(items,(entry)=>Boolean(buildAgentDispatchTrace(entry.item,"")));
+  const firstWorkAt=firstObservedTimestamp(items,(entry)=>{
+    const item=entry&&entry.item&&typeof entry.item==="object"?entry.item:{};
+    return item.type==="commandExecution"||item.type==="fileChange"||item.type==="mcpToolCall";
+  });
+  const firstReviewAt=firstObservedTimestamp(items,(entry)=>{
+    const item=entry&&entry.item&&typeof entry.item==="object"?entry.item:{};
+    const trace=buildAgentDispatchTrace(item,"");
+    const child=safeString(trace&&trace.child,80).toLowerCase();
+    const notes=extractCollabStateMessages(item,3).join(" ").toLowerCase();
+    return child.includes("reviewer")||notes.includes("no findings")||notes.includes("finding");
+  });
+  const firstTesterAt=firstObservedTimestamp(items,(entry)=>{
+    const item=entry&&entry.item&&typeof entry.item==="object"?entry.item:{};
+    const trace=buildAgentDispatchTrace(item,"");
+    const child=safeString(trace&&trace.child,80).toLowerCase();
+    const notes=extractCollabStateMessages(item,3).join(" ").toLowerCase();
+    return child.includes("tester")||notes.includes("pass")||notes.includes("test");
+  });
+  const firstDocSyncAt=firstObservedTimestamp(items,(entry)=>{
+    const item=entry&&entry.item&&typeof entry.item==="object"?entry.item:{};
+    const paths=item.type==="fileChange"
+      ?Array.isArray(item.changes)?item.changes.map((change)=>change&&change.path?change.path:""):[]
+      :extractCollabOwnedPaths(item,8);
+    return paths.some((pathValue)=>{
+      const normalized=normalizeMergePath(pathValue);
+      return normalized.endsWith("docs/current_architecture.md")
+        ||normalized.endsWith("docs/architecture_changelog.md")
+        ||normalized.endsWith("harness_map.md");
+    });
+  });
+  const retryAt=firstObservedTimestamp(events,(entry)=>entry.type==="activity"&&/retry/i.test(safeString(entry.label,80)));
+  const finalMessageAt=firstObservedTimestamp(items,(entry)=>{
+    const item=entry&&entry.item&&typeof entry.item==="object"?entry.item:{};
+    return item.type==="agentMessage"&&typeof item.text==="string";
+  });
+  const step1End=minPositiveTimestamp(firstPlanAt,firstDispatchAt,firstWorkAt,completedAt)||completedAt;
+  const step2Start=step1End||startedAt;
+  const step2End=minPositiveTimestamp(firstDispatchAt,firstWorkAt,completedAt)||completedAt;
+  const step3Start=minPositiveTimestamp(firstDispatchAt,firstWorkAt);
+  const step4Start=minPositiveTimestamp(firstReviewAt,firstTesterAt,firstDocSyncAt,retryAt,finalMessageAt,completedAt);
+  const step3End=step3Start?Math.max(step3Start,minPositiveTimestamp(step4Start,finalMessageAt,completedAt)||completedAt):0;
+  const step5Start=minPositiveTimestamp(finalMessageAt,completedAt)||completedAt;
+  return{
+    schema:"stage-timeline.v1",
+    generatedAt:toIsoTimestamp(Date.now()),
+    selectedPlanningMode:safeString(planningContext&&planningContext.selection&&planningContext.selection.selectedMode,40)||"NORMAL",
+    selectedPlanningDepth:safeString(planningContext&&planningContext.selection&&planningContext.selection.selectedPlanningDepth,60)||"STANDARD_PLANNING",
+    selectedAssuranceDepth:safeString(planningContext&&planningContext.selection&&planningContext.selection.selectedAssuranceDepth,60)||"STANDARD_ASSURANCE",
+    flowPath:safeString(planningContext&&planningContext.selection&&planningContext.selection.flowPath,80)||"NORMAL_PATH",
+    executionFlow:safeString(planningContext&&planningContext.selection&&planningContext.selection.executionFlow,120)||"",
+    confidence:"estimated_from_runtime_events",
+    stages:[
+      stageEntry("Step 1 - Requirement Structuring",startedAt,step1End),
+      stageEntry("Step 2 - Dispatch Planning",step2Start,step2End),
+      stageEntry("Step 3 - Specialist Execution",step3Start,step3End),
+      stageEntry("Step 4 - Quality Gate",step4Start,step5Start||completedAt),
+      stageEntry("Step 5 - Final Outcome",step5Start,completedAt),
+    ],
+    checkpoints:{
+      firstPlanAt:firstPlanAt||0,
+      firstDispatchAt:firstDispatchAt||0,
+      firstWorkAt:firstWorkAt||0,
+      firstReviewAt:firstReviewAt||0,
+      firstTesterAt:firstTesterAt||0,
+      firstDocSyncAt:firstDocSyncAt||0,
+      retryAt:retryAt||0,
+      finalMessageAt:finalMessageAt||0,
+      completedAt:Number.isFinite(Number(completedAt))?Math.trunc(Number(completedAt)):0,
+    },
+    qualityGate:{
+      reviewerObserved:Array.isArray(childEvidenceLedger)&&childEvidenceLedger.some((entry)=>entry&&entry.reviewerObserved)?1:0,
+      testerObserved:Array.isArray(childEvidenceLedger)&&childEvidenceLedger.some((entry)=>entry&&entry.testerObserved)?1:0,
+      docSyncStatus:safeString(docSyncEvidence&&docSyncEvidence.status,20)||"SKIPPED",
+    },
+  };
+}
+function extractPlanningStatusDirective(text){
+  const matched=safeString(text,8000).match(/STATUS:\s*([A-Z_]+)/i);
+  if(!matched||!matched[1])return"";
+  const normalized=safeString(matched[1],80).toUpperCase();
+  if(normalized==="NEED_USER_INPUT"||normalized==="NEEDS_INPUT")return"NEEDS_INPUT";
+  if(normalized==="REQUIREMENTS_READY")return"REQUIREMENTS_READY";
+  if(normalized==="COMPLETED"||normalized==="OVER_DELIVERED_OR_COMPLETED")return"COMPLETED";
+  return normalized;
+}
+function buildFlowTraceSummary({planningContext,observedSignals,parentDispatchGuard,taskOutcomeStatus,taskOutcomeReason,finalStatus,childEvidenceLedger,docSyncEvidence,acceptanceResults,agentName=""}={}){
+  const usedAgents=Array.from(new Set([
+    safeString(agentName,80)||"",
+    ...(Array.isArray(childEvidenceLedger)?childEvidenceLedger.map((entry)=>safeString(entry&&entry.agent,80)).filter(Boolean):[]),
+  ])).filter(Boolean);
+  const usedSkills=Array.from(new Set(
+    Array.isArray(childEvidenceLedger)
+      ?childEvidenceLedger.flatMap((entry)=>Array.isArray(entry&&entry.skills)?entry.skills:[])
+      :[]
+  )).slice(0,16);
+  const passCount=Array.isArray(acceptanceResults)?acceptanceResults.filter((entry)=>entry&&entry.status==="PASS").length:0;
+  const failCount=Array.isArray(acceptanceResults)?acceptanceResults.filter((entry)=>entry&&entry.status==="FAIL").length:0;
+  return{
+    schema:"flow-trace-summary.v1",
+    generatedAt:toIsoTimestamp(Date.now()),
+    selectedPlanningMode:safeString(planningContext&&planningContext.selection&&planningContext.selection.selectedMode,40)||"NORMAL",
+    selectedPlanningDepth:safeString(planningContext&&planningContext.selection&&planningContext.selection.selectedPlanningDepth,60)||"STANDARD_PLANNING",
+    selectedAssuranceDepth:safeString(planningContext&&planningContext.selection&&planningContext.selection.selectedAssuranceDepth,60)||"STANDARD_ASSURANCE",
+    planningModeReasons:Array.isArray(planningContext&&planningContext.selection&&planningContext.selection.reasons)?planningContext.selection.reasons:[],
+    assuranceDepthReasons:Array.isArray(planningContext&&planningContext.selection&&planningContext.selection.assuranceReasons)?planningContext.selection.assuranceReasons:[],
+    flowPath:safeString(planningContext&&planningContext.selection&&planningContext.selection.flowPath,80)||"NORMAL_PATH",
+    executionFlow:safeString(planningContext&&planningContext.selection&&planningContext.selection.executionFlow,120)||"",
+    usedAgents,
+    dispatchCount:Number.isFinite(Number(observedSignals&&observedSignals.dispatchCount))?Math.max(0,Math.trunc(Number(observedSignals.dispatchCount))):0,
+    dispatchSuccessCount:Number.isFinite(Number(observedSignals&&observedSignals.dispatchSuccessCount))?Math.max(0,Math.trunc(Number(observedSignals.dispatchSuccessCount))):0,
+    reviewerExecuted:Array.isArray(childEvidenceLedger)&&childEvidenceLedger.some((entry)=>entry&&entry.reviewerObserved)?1:0,
+    testerExecuted:Array.isArray(childEvidenceLedger)&&childEvidenceLedger.some((entry)=>entry&&entry.testerObserved)?1:0,
+    usedContracts:[
+      summarizePathForOperationLog(harnessTurnContractSpecPath,220),
+      summarizePathForOperationLog(taskOutcomeContractPath,220),
+      summarizePathForOperationLog(planningModeContractPath,220),
+      summarizePathForOperationLog(assuranceModeContractPath,220),
+      summarizePathForOperationLog(planningDecisionContractSchemaPath,220),
+      summarizePathForOperationLog(requirementContractSchemaPath,220),
+      summarizePathForOperationLog(dispatchPlanSchemaPath,220),
+    ].filter(Boolean),
+    usedPolicies:[
+      "AGENTS.md",
+      "docs/AGENT_OPERATING_RULES.md",
+      "docs/EVIDENCE_CONTRACT.md",
+    ],
+    usedSkills,
+    finalOutcome:{
+      status:safeString(finalStatus,40)||"unknown",
+      taskOutcomeStatus:safeString(taskOutcomeStatus,80).toUpperCase()||"",
+      taskOutcomeReason:safeString(taskOutcomeReason,120)||"",
+      parentDispatchReason:safeString(parentDispatchGuard&&parentDispatchGuard.reason,120)||"",
+    },
+    acceptanceSummary:{
+      passCount,
+      failCount,
+      total:Array.isArray(acceptanceResults)?acceptanceResults.length:0,
+    },
+    evidenceSources:["events.ndjson","items.ndjson","manifest.json","evidence_manifest.json","stage_timeline.json","flow_trace_summary.json","review_load_breakdown.json"],
+    childEvidenceLedger:Array.isArray(childEvidenceLedger)?childEvidenceLedger:[],
+    docSyncEvidence:docSyncEvidence&&typeof docSyncEvidence==="object"?docSyncEvidence:null,
+    residualRiskSummary:Array.isArray(planningContext&&planningContext.dispatchPlan&&planningContext.dispatchPlan.residualRisks)
+      ?planningContext.dispatchPlan.residualRisks
+      :[],
+  };
+}
+function buildReviewLoadBreakdown({planningContext,stageTimeline,childEvidenceLedger,docSyncEvidence,acceptanceResults,requiredEvidenceFailures=[]}={}){
+  const timeline=stageTimeline&&typeof stageTimeline==="object"?stageTimeline:{};
+  const stages=Array.isArray(timeline.stages)?timeline.stages:[];
+  const qualityGate=timeline.qualityGate&&typeof timeline.qualityGate==="object"?timeline.qualityGate:{};
+  const reviewNotes=Array.isArray(childEvidenceLedger)
+    ?childEvidenceLedger.flatMap((entry)=>
+      entry&&entry.reviewerObserved&&Array.isArray(entry.evidenceNotes)
+        ?entry.evidenceNotes.map((note)=>`${safeString(entry.agent,80)}: ${safeString(note,240)}`)
+        :[]
+    ).filter(Boolean).slice(0,12)
+    :[];
+  const testerNotes=Array.isArray(childEvidenceLedger)
+    ?childEvidenceLedger.flatMap((entry)=>
+      entry&&entry.testerObserved&&Array.isArray(entry.evidenceNotes)
+        ?entry.evidenceNotes.map((note)=>`${safeString(entry.agent,80)}: ${safeString(note,240)}`)
+        :[]
+    ).filter(Boolean).slice(0,12)
+    :[];
+  return{
+    schema:"review-load-breakdown.v1",
+    generatedAt:toIsoTimestamp(Date.now()),
+    selectedPlanningDepth:safeString(planningContext&&planningContext.selection&&planningContext.selection.selectedPlanningDepth,60)||"STANDARD_PLANNING",
+    selectedAssuranceDepth:safeString(planningContext&&planningContext.selection&&planningContext.selection.selectedAssuranceDepth,60)||"STANDARD_ASSURANCE",
+    flowPath:safeString(planningContext&&planningContext.selection&&planningContext.selection.flowPath,80)||"NORMAL_PATH",
+    executionFlow:safeString(planningContext&&planningContext.selection&&planningContext.selection.executionFlow,120)||"",
+    qualityGate:{
+      reviewerRequired:planningContext&&planningContext.dispatchPlan&&planningContext.dispatchPlan.reviewerRequired?1:0,
+      testerRequired:planningContext&&planningContext.dispatchPlan&&planningContext.dispatchPlan.testerRequired?1:0,
+      signoffRequired:planningContext&&planningContext.dispatchPlan&&planningContext.dispatchPlan.signoffRequired?1:0,
+      docSyncRequired:docSyncEvidence&&docSyncEvidence.required?1:0,
+      dedicatedTestsRequired:planningContext&&planningContext.dispatchPlan&&planningContext.dispatchPlan.dedicatedTestsRequired?1:0,
+      reviewerObserved:qualityGate.reviewerObserved?1:0,
+      testerObserved:qualityGate.testerObserved?1:0,
+      docSyncStatus:safeString(qualityGate.docSyncStatus,20)||"SKIPPED",
+    },
+    stageDurations:Object.fromEntries(stages.map((entry)=>[safeString(entry&&entry.name,80)||"unknown",Number.isFinite(Number(entry&&entry.durationMs))?Math.max(0,Math.trunc(Number(entry.durationMs))):0])),
+    acceptanceSummary:{
+      passCount:Array.isArray(acceptanceResults)?acceptanceResults.filter((entry)=>entry&&entry.status==="PASS").length:0,
+      failCount:Array.isArray(acceptanceResults)?acceptanceResults.filter((entry)=>entry&&entry.status==="FAIL").length:0,
+      total:Array.isArray(acceptanceResults)?acceptanceResults.length:0,
+    },
+    reviewerFindingSummary:reviewNotes,
+    testerResultSummary:testerNotes,
+    requiredEvidenceFailures:Array.isArray(requiredEvidenceFailures)?requiredEvidenceFailures.slice(0,12):[],
+  };
+}
 
 async function ensureAgentThread(agentName,options){
   const state=getOrCreateAgentState(agentName);
@@ -6845,6 +7756,21 @@ async function executeTurnStreaming(res,prompt,agentName,options){
   );
   const executionProfile=normalizeExecutionProfile(options&&options.executionProfile,runtimeExecutionProfile);
   const executionIntent=normalizeExecutionIntent(options&&options.executionIntent,"interactive");
+  const planningContext=sanitizePlanningArtifactsForRuntime(
+    options&&options.planningContext&&typeof options.planningContext==="object"
+      ?options.planningContext
+      :buildPlanningArtifacts({
+        prompt,
+        options:{
+          ...options,
+          agentName,
+          sandboxMode,
+          approvalPolicy,
+          requestUserInputPolicy,
+        },
+        contract:{planning:planningModeContract,assurance:assuranceModeContract},
+      })
+  );
   const turnVisibility=buildTurnVisibilitySnapshot({
     requestProfile:executionProfile,
     executionIntent,
@@ -6857,6 +7783,7 @@ async function executeTurnStreaming(res,prompt,agentName,options){
     modelReasoningEffort,
     webSearch:webSearchEnabled,
     executionSource:safeString(options&&options.executionSource,80)||"api_exec",
+    planningContext,
   });
   const turnStats=createTurnStreamStats();
 
@@ -6988,8 +7915,22 @@ async function executeTurnStreaming(res,prompt,agentName,options){
     fullUtilizationDefaultsReady:turnVisibility.defaults&&turnVisibility.defaults.ready?1:0,
     fullUtilizationTurnReady:turnVisibility.turn&&turnVisibility.turn.ready?1:0,
     turnVisibility,
+    planningContext,
+    planningMode:safeString(planningContext&&planningContext.selection&&planningContext.selection.selectedMode,40)||"NORMAL",
+    planningDepth:safeString(planningContext&&planningContext.selection&&planningContext.selection.selectedPlanningDepth,60)||"STANDARD_PLANNING",
+    assuranceDepth:safeString(planningContext&&planningContext.selection&&planningContext.selection.selectedAssuranceDepth,60)||"STANDARD_ASSURANCE",
+    flowPath:safeString(planningContext&&planningContext.selection&&planningContext.selection.flowPath,80)||"NORMAL_PATH",
     parentDispatchGuard:null,
     observedSignals:null,
+    evidenceManifest:null,
+    evidenceManifestPath:null,
+    stageTimeline:null,
+    stageTimelinePath:null,
+    flowTraceSummary:null,
+    flowTraceSummaryPath:null,
+    planningDecisionContractPath:null,
+    reviewLoadBreakdown:null,
+    reviewLoadBreakdownPath:null,
     artifactDir:null,
     artifactManifestPath:null,
     artifactManifestSha256:null,
@@ -7100,6 +8041,10 @@ async function executeTurnStreaming(res,prompt,agentName,options){
     executionIntent:safeString(turnVisibility&&turnVisibility.intent?turnVisibility.intent:"interactive",80)||"interactive",
     executionSource:safeString(options&&options.executionSource?options.executionSource:"api_exec",80)||"api_exec",
     recipeHash:turnVisibility&&turnVisibility.recipe?safeString(turnVisibility.recipe.hash,80):"",
+    planningMode:safeString(planningContext&&planningContext.selection&&planningContext.selection.selectedMode,40)||"NORMAL",
+    planningDepth:safeString(planningContext&&planningContext.selection&&planningContext.selection.selectedPlanningDepth,60)||"STANDARD_PLANNING",
+    assuranceDepth:safeString(planningContext&&planningContext.selection&&planningContext.selection.selectedAssuranceDepth,60)||"STANDARD_ASSURANCE",
+    flowPath:safeString(planningContext&&planningContext.selection&&planningContext.selection.flowPath,80)||"NORMAL_PATH",
   };
 
   let clientClosed=false;
@@ -7114,6 +8059,8 @@ async function executeTurnStreaming(res,prompt,agentName,options){
   let dispatchCount=0;
   let dispatchSuccessCount=0;
   let dispatchFailureCount=0;
+  const observedStreamEvents=[];
+  const observedItemRecords=[];
   const dispatchChildren=[];
   const pushDispatchChild=(value)=>{
     const child=safeString(value,120);
@@ -7167,6 +8114,8 @@ async function executeTurnStreaming(res,prompt,agentName,options){
   };
   const safeWriteEvent=(event)=>{
     if(!event||typeof event!=="object")return;
+    observedStreamEvents.push({ts:Date.now(),...event});
+    if(observedStreamEvents.length>600)observedStreamEvents.shift();
     if(artifactRecorder&&typeof artifactRecorder.writeStreamEvent==="function"){
       artifactRecorder.writeStreamEvent(event);
     }
@@ -7202,8 +8151,13 @@ async function executeTurnStreaming(res,prompt,agentName,options){
     const normalizedStatus=normalizeExecutionState(turnStatus,{terminalFallback:true});
     let finalStatus=normalizedStatus==="in_progress"?"failed":normalizedStatus;
     let finalErrorText=safeString(maybeErrorText||errorText,4000);
+    const debugFinalize=(step)=>{
+      if(!debugFinalizeSteps)return;
+      console.log(`[turn-finalize] ${step} turn=${turnId} thread=${threadId} status=${finalStatus}`);
+    };
     turnRecord.status=finalStatus;
     setTurnTerminalState(turnRecord,finalStatus,{terminalEvent:"turn/completed",errorText:finalErrorText});
+    debugFinalize("after_initial_terminal_state");
     publishLatestTurnSnapshot(turnRecord,"turn_completed");
     const itemCounts=Object.entries(turnStats.itemCounts||{}).slice(0,20).reduce((acc,[key,value])=>{acc[key]=value;return acc;},{});
     const usage=turnStats.tokenUsage&&typeof turnStats.tokenUsage==="object"?{
@@ -7229,6 +8183,7 @@ async function executeTurnStreaming(res,prompt,agentName,options){
       dispatchFailureCount,
       dispatchChildren,
     });
+    debugFinalize("after_observed_signals");
     const parentDispatchGuard=evaluateParentDispatchGuard({
       mode:parentDispatchGuardMode,
       parentAgents:Array.from(parentAgentNames.values()),
@@ -7246,6 +8201,7 @@ async function executeTurnStreaming(res,prompt,agentName,options){
       attempt:parentDispatchAttempt,
       maxRetries:parentDispatchGuardMaxRetries,
     });
+    debugFinalize("after_parent_dispatch_guard");
     turnRecord.parentDispatchGuard=parentDispatchGuard;
     if(parentDispatchGuard.violation&&parentDispatchGuard.mode==="warn"){
       const detail=`parent dispatch guard warning: ${parentDispatchGuard.reason||"unknown_violation"}`;
@@ -7263,14 +8219,139 @@ async function executeTurnStreaming(res,prompt,agentName,options){
         detail:safeString(enforcementError,1200),
       });
     }
+    const authoritativeFinalText=(finalTextFromItemCompleted.trim()?finalTextFromItemCompleted:deltaText).trim();
+    const planningDirective=extractPlanningStatusDirective(authoritativeFinalText||finalErrorText);
+    const childEvidenceLedger=buildChildEvidenceLedger(observedItemRecords);
+    debugFinalize("after_child_evidence_ledger");
+    const docSyncEvidence=buildDocSyncEvidence({
+      prompt,
+      changedPaths:Array.isArray(observedSignals.sampleChangedPaths)?observedSignals.sampleChangedPaths:[],
+      childEvidenceLedger,
+      planningContext,
+    });
+    debugFinalize("after_doc_sync_evidence");
+    const proposalOnly=Boolean(planningContext&&planningContext.dispatchPlan&&planningContext.dispatchPlan.proposalOnly);
+    const reviewerEvidenceRequired=!proposalOnly&&Boolean(planningContext&&planningContext.dispatchPlan&&planningContext.dispatchPlan.reviewerRequired);
+    const testerEvidenceRequired=!proposalOnly&&Boolean(planningContext&&planningContext.dispatchPlan&&planningContext.dispatchPlan.testerRequired);
+    const dedicatedTestsRequired=!proposalOnly&&Boolean(planningContext&&planningContext.dispatchPlan&&planningContext.dispatchPlan.dedicatedTestsRequired);
+    const missingRequiredEvidence=[];
+    const reviewerObserved=childEvidenceLedger.some((entry)=>entry&&entry.reviewerObserved);
+    const testerObserved=childEvidenceLedger.some((entry)=>entry&&entry.testerObserved)||observedSignals.commandExecutions>0;
+    if(docSyncEvidence.required&&docSyncEvidence.status==="FAIL"){
+      missingRequiredEvidence.push("doc_sync_missing");
+    }
+    if(reviewerEvidenceRequired&&!reviewerObserved){
+      missingRequiredEvidence.push("reviewer_evidence_missing");
+    }
+    if(testerEvidenceRequired&&!testerObserved){
+      missingRequiredEvidence.push("tester_evidence_missing");
+    }
+    if(dedicatedTestsRequired&&!testerObserved){
+      missingRequiredEvidence.push("dedicated_test_evidence_missing");
+    }
+    debugFinalize("after_required_evidence_checks");
+    if((planningDirective==="NEEDS_INPUT"||Boolean(planningContext&&planningContext.selection&&planningContext.selection.needsInputRecommended&&turnRecord.planningMode==="DISCOVERY"&&!observedSignals.fileChanges&&!observedSignals.dispatchSuccessCount))&&finalStatus==="completed"){
+      finalStatus="interrupted";
+      if(!finalErrorText)finalErrorText="[needs_input] user decision required before implementation";
+      safeWriteEvent({
+        type:"activity",
+        label:"planning_needs_input",
+        detail:safeString(finalErrorText,1200),
+      });
+    }
+    if(missingRequiredEvidence.length&&finalStatus==="completed"){
+      finalStatus="failed";
+      if(!finalErrorText)finalErrorText=`[error] missing evidence: ${missingRequiredEvidence.join(", ")}`;
+      safeWriteEvent({
+        type:"activity",
+        label:"evidence_missing",
+        detail:safeString(missingRequiredEvidence.join(", "),1200),
+      });
+    }
     turnRecord.status=finalStatus;
     setTurnTerminalState(turnRecord,finalStatus,{terminalEvent:"turn/completed",errorText:finalErrorText});
+    debugFinalize("after_outcome_terminal_state");
     const taskOutcome=deriveTurnTaskOutcome({
       finalStatus,
       finalErrorText,
       approvalAudits:approvalAuditTrail,
       parentDispatchGuard,
+      explicitStatus:planningDirective==="NEEDS_INPUT"?"NEEDS_INPUT":"",
+      reason:planningDirective==="NEEDS_INPUT"?"interactive_approval_unavailable":"",
+      missingEvidence:missingRequiredEvidence.length>0,
     });
+    const acceptanceResults=buildAcceptanceCheckResults({
+      requirementContract:planningContext&&planningContext.requirementContract?planningContext.requirementContract:null,
+      observedSignals,
+      taskOutcomeStatus:taskOutcome.status,
+      needsInputRecommended:planningContext&&planningContext.selection&&planningContext.selection.needsInputRecommended,
+      docSyncEvidence,
+      childEvidenceLedger,
+    });
+    const evidenceSummary={
+      passCount:acceptanceResults.filter((entry)=>entry&&entry.status==="PASS").length,
+      failCount:acceptanceResults.filter((entry)=>entry&&entry.status==="FAIL").length,
+      skippedCount:acceptanceResults.filter((entry)=>entry&&entry.status==="SKIPPED").length,
+      total:acceptanceResults.length,
+    };
+    const stageTimeline=buildStageTimeline({
+      startedAt:turnRecord.startedAt,
+      completedAt:Number.isFinite(Number(turnRecord.completedAt))?turnRecord.completedAt:Date.now(),
+      streamEvents:observedStreamEvents,
+      itemRecords:observedItemRecords,
+      planningContext,
+      docSyncEvidence,
+      childEvidenceLedger,
+    });
+    const reviewLoadBreakdown=buildReviewLoadBreakdown({
+      planningContext,
+      stageTimeline,
+      childEvidenceLedger,
+      docSyncEvidence,
+      acceptanceResults,
+      requiredEvidenceFailures:missingRequiredEvidence,
+    });
+    const flowTraceSummary=buildFlowTraceSummary({
+      planningContext,
+      observedSignals,
+      parentDispatchGuard,
+      taskOutcomeStatus:taskOutcome.status,
+      taskOutcomeReason:taskOutcome.reason,
+      finalStatus,
+      childEvidenceLedger,
+      docSyncEvidence,
+      acceptanceResults,
+      agentName,
+    });
+    debugFinalize("after_evidence_aggregation");
+    const evidenceManifest={
+      schema:"turn-evidence-manifest.v1",
+      generatedAt:toIsoTimestamp(Date.now()),
+      selectedPlanningMode:safeString(planningContext&&planningContext.selection&&planningContext.selection.selectedMode,40)||"NORMAL",
+      selectedPlanningDepth:safeString(planningContext&&planningContext.selection&&planningContext.selection.selectedPlanningDepth,60)||"STANDARD_PLANNING",
+      selectedAssuranceDepth:safeString(planningContext&&planningContext.selection&&planningContext.selection.selectedAssuranceDepth,60)||"STANDARD_ASSURANCE",
+      flowPath:safeString(planningContext&&planningContext.selection&&planningContext.selection.flowPath,80)||"NORMAL_PATH",
+      executionFlow:safeString(planningContext&&planningContext.selection&&planningContext.selection.executionFlow,120)||"",
+      planningDecisionContract:planningContext&&planningContext.planningDecisionContract?planningContext.planningDecisionContract:null,
+      requirementContract:planningContext&&planningContext.requirementContract?planningContext.requirementContract:null,
+      dispatchPlan:planningContext&&planningContext.dispatchPlan?planningContext.dispatchPlan:null,
+      acceptanceChecks:acceptanceResults,
+      acceptanceSummary:evidenceSummary,
+      docSyncEvidence,
+      childEvidenceLedger,
+      reviewLoadBreakdown,
+      residualRiskSummary:Array.from(new Set([
+        ...(Array.isArray(planningContext&&planningContext.dispatchPlan&&planningContext.dispatchPlan.residualRisks)?planningContext.dispatchPlan.residualRisks:[]),
+        ...missingRequiredEvidence,
+      ])).slice(0,16),
+      requiredEvidenceFailures:missingRequiredEvidence,
+      evidenceSources:["events.ndjson","items.ndjson","manifest.json","evidence_manifest.json","stage_timeline.json","flow_trace_summary.json","review_load_breakdown.json"],
+      finalOutcome:{
+        status:finalStatus,
+        taskOutcomeStatus:taskOutcome.status,
+        taskOutcomeReason:taskOutcome.reason,
+      },
+    };
     const taskOutcomeBridgeValidation=validateTurnTaskOutcomeContract({
       turnStatus:finalStatus,
       taskOutcomeStatus:taskOutcome.status,
@@ -7304,9 +8385,13 @@ async function executeTurnStreaming(res,prompt,agentName,options){
     turnRecord.taskOutcomeStatus=taskOutcome.status;
     turnRecord.taskOutcomeReason=taskOutcome.reason;
     turnRecord.observedSignals=observedSignals;
+    turnRecord.evidenceManifest=evidenceManifest;
+    turnRecord.stageTimeline=stageTimeline;
+    turnRecord.flowTraceSummary=flowTraceSummary;
+    turnRecord.reviewLoadBreakdown=reviewLoadBreakdown;
     turnRecord.fullUtilizationObserved=(observedSignals.collabCalls>0||observedSignals.dispatchCount>0)?1:0;
+    debugFinalize("before_observed_snapshot");
     publishLatestTurnSnapshot(turnRecord,"turn_completed_observed");
-    const authoritativeFinal=finalTextFromItemCompleted.trim()?finalTextFromItemCompleted:deltaText;
     safeWriteEvent({
       type:"turn",
       phase:"completed",
@@ -7324,6 +8409,10 @@ async function executeTurnStreaming(res,prompt,agentName,options){
       status:finalStatus,
       taskOutcomeStatus:taskOutcome.status,
       taskOutcomeReason:taskOutcome.reason,
+      planningMode:safeString(planningContext&&planningContext.selection&&planningContext.selection.selectedMode,40)||"NORMAL",
+      planningDepth:safeString(planningContext&&planningContext.selection&&planningContext.selection.selectedPlanningDepth,60)||"STANDARD_PLANNING",
+      assuranceDepth:safeString(planningContext&&planningContext.selection&&planningContext.selection.selectedAssuranceDepth,60)||"STANDARD_ASSURANCE",
+      flowPath:safeString(planningContext&&planningContext.selection&&planningContext.selection.flowPath,80)||"NORMAL_PATH",
       terminalEvent:"turn/completed",
       errorText:finalErrorText,
       executionProfile:turnVisibility.profile.effective,
@@ -7332,11 +8421,12 @@ async function executeTurnStreaming(res,prompt,agentName,options){
       startedAt:turnRecord.startedAt,
       completedAt:turnRecord.completedAt,
       updatedAt:turnRecord.updatedAt,
-      outputSha256:hashSha256Hex(authoritativeFinal),
-      outputChars:authoritativeFinal.length,
+      outputSha256:hashSha256Hex(authoritativeFinalText),
+      outputChars:authoritativeFinalText.length,
       observedSignals,
       parentDispatchGuard,
     },{persist:false});
+    debugFinalize("after_execution_memory");
     const completedAt=Number.isFinite(Number(turnRecord.completedAt))?Math.max(0,Math.trunc(Number(turnRecord.completedAt))):nowTs();
     const turnDurationMs=Math.max(0,completedAt-Number(turnRecord.startedAt||completedAt));
     finishSessionPerformanceTurn(threadId,turnId,{
@@ -7475,12 +8565,54 @@ async function executeTurnStreaming(res,prompt,agentName,options){
         observedSignals,
         taskOutcomeStatus:taskOutcome.status,
         taskOutcomeReason:taskOutcome.reason,
+        planningContext,
+        planningDecisionContract:planningContext&&planningContext.planningDecisionContract?planningContext.planningDecisionContract:null,
+        requirementContract:planningContext&&planningContext.requirementContract?planningContext.requirementContract:null,
+        dispatchPlan:planningContext&&planningContext.dispatchPlan?planningContext.dispatchPlan:null,
+        evidenceManifest,
+        stageTimeline,
+        flowTraceSummary,
+        reviewLoadBreakdown,
       });
       if(artifactResult){
         turnRecord.artifactDir=artifactResult.dir||null;
         turnRecord.artifactManifestPath=artifactResult.manifest||null;
         turnRecord.artifactManifestSha256=artifactResult.manifestSha256||null;
         turnRecord.artifactPromptSha256=artifactResult.promptSha256||null;
+        turnRecord.evidenceManifestPath=artifactResult.evidenceManifestPath||null;
+        turnRecord.stageTimelinePath=artifactResult.stageTimelinePath||null;
+        turnRecord.flowTraceSummaryPath=artifactResult.flowTraceSummaryPath||null;
+        turnRecord.planningDecisionContractPath=artifactResult.planningDecisionContractPath||null;
+        turnRecord.reviewLoadBreakdownPath=artifactResult.reviewLoadBreakdownPath||null;
+        rememberExecutionMemoryRecord({
+          turnId,
+          threadId,
+          agentName,
+          status:finalStatus,
+          taskOutcomeStatus:taskOutcome.status,
+          taskOutcomeReason:taskOutcome.reason,
+          planningMode:turnRecord.planningMode,
+          planningDepth:turnRecord.planningDepth,
+          assuranceDepth:turnRecord.assuranceDepth,
+          flowPath:turnRecord.flowPath,
+          terminalEvent:"turn/completed",
+          errorText:finalErrorText,
+          executionProfile:turnVisibility.profile.effective,
+          executionIntent:turnVisibility.intent,
+          executionSource:turnRecord.source||"streaming_exec",
+          startedAt:turnRecord.startedAt,
+          completedAt:turnRecord.completedAt,
+          updatedAt:turnRecord.updatedAt,
+          outputSha256:hashSha256Hex(authoritativeFinalText),
+          outputChars:authoritativeFinalText.length,
+          observedSignals,
+          evidenceManifestPath:artifactResult.evidenceManifestPath||"",
+          stageTimelinePath:artifactResult.stageTimelinePath||"",
+          flowTraceSummaryPath:artifactResult.flowTraceSummaryPath||"",
+          planningDecisionContractPath:artifactResult.planningDecisionContractPath||"",
+          reviewLoadBreakdownPath:artifactResult.reviewLoadBreakdownPath||"",
+          parentDispatchGuard,
+        },{persist:false});
         publishLatestTurnSnapshot(turnRecord,"turn_artifacts_finalized");
         rememberAuditMemoryRecord({
           turnId,
@@ -7504,6 +8636,7 @@ async function executeTurnStreaming(res,prompt,agentName,options){
       }
       maybePruneTurnArtifactsStorage("turn_finalized");
     }
+    debugFinalize("after_artifacts");
     rememberReplayMemoryRecord({
       turnId,
       threadId,
@@ -7516,9 +8649,9 @@ async function executeTurnStreaming(res,prompt,agentName,options){
       executionSource:turnRecord.source||"streaming_exec",
       request:replaySeed,
       baseline:{
-        outputSha256:hashSha256Hex(authoritativeFinal),
-        outputLength:authoritativeFinal.length,
-        outputSnapshot:safeString(authoritativeFinal,replayOutputSnapshotMaxChars),
+        outputSha256:hashSha256Hex(authoritativeFinalText),
+        outputLength:authoritativeFinalText.length,
+        outputSnapshot:safeString(authoritativeFinalText,replayOutputSnapshotMaxChars),
         artifactManifestPath:safeString(turnRecord.artifactManifestPath,320)||"",
         artifactManifestSha256:safeString(turnRecord.artifactManifestSha256,80)||"",
       },
@@ -7529,6 +8662,7 @@ async function executeTurnStreaming(res,prompt,agentName,options){
     },{persist:false});
     persistHarnessExecutionMemoryStore({reason:"turn_finalized"});
     maybeEmitSloAlert(buildSloRuntimeSnapshot(),{reason:"turn_finalized"});
+    debugFinalize("after_memory_persist");
     if(parentDispatchGuard.retry){
       const nextAttempt=Number.isFinite(Number(parentDispatchGuard.nextAttempt))
         ?Math.max(0,Math.trunc(Number(parentDispatchGuard.nextAttempt)))
@@ -7616,7 +8750,7 @@ async function executeTurnStreaming(res,prompt,agentName,options){
     }
     const shadowInput={
       prompt:adversarialRootPrompt||prompt,
-      answer:authoritativeFinal,
+      answer:authoritativeFinalText,
       status:finalStatus,
       agentName,
       threadId,
@@ -7648,7 +8782,7 @@ async function executeTurnStreaming(res,prompt,agentName,options){
         :adversarialAttempt+1;
       const retryPrompt=buildAdversarialRetryPrompt({
         originalPrompt:adversarialRootPrompt||prompt,
-        previousAnswer:authoritativeFinal,
+        previousAnswer:authoritativeFinalText,
         review:shadowReviewResult&&shadowReviewResult.review?shadowReviewResult.review:null,
         attempt:adversarialAttempt,
         maxRetries:adversarialLoopMaxRetries,
@@ -7768,8 +8902,8 @@ async function executeTurnStreaming(res,prompt,agentName,options){
 
     if(clientClosed)return;
 
-    if(authoritativeFinal.trim()){
-      safeWriteEvent({type:"final",text:authoritativeFinal});
+    if(authoritativeFinalText.trim()){
+      safeWriteEvent({type:"final",text:authoritativeFinalText});
     }
 
     if(finalErrorText){
@@ -7780,6 +8914,7 @@ async function executeTurnStreaming(res,prompt,agentName,options){
 
     if(canWrite()){
       try{
+        debugFinalize("before_response_end");
         res.end();
       }catch{
       }
@@ -7826,6 +8961,8 @@ async function executeTurnStreaming(res,prompt,agentName,options){
     },
     onItemStarted:(item)=>{
       if(!item||typeof item!=="object")return;
+      observedItemRecords.push({ts:Date.now(),phase:"started",item});
+      if(observedItemRecords.length>400)observedItemRecords.shift();
       if(artifactRecorder&&typeof artifactRecorder.writeItem==="function"){
         artifactRecorder.writeItem("started",item);
       }
@@ -7833,6 +8970,8 @@ async function executeTurnStreaming(res,prompt,agentName,options){
     },
     onItemCompleted:(item)=>{
       if(!item||typeof item!=="object")return;
+      observedItemRecords.push({ts:Date.now(),phase:"completed",item});
+      if(observedItemRecords.length>400)observedItemRecords.shift();
       if(artifactRecorder&&typeof artifactRecorder.writeItem==="function"){
         artifactRecorder.writeItem("completed",item);
       }
@@ -8000,6 +9139,9 @@ async function runCodexExecStreaming(res,prompt,sandboxMode,options={}){
     forceNewSession:Boolean(normalized.forceNewSession),
     attemptedFreshFallback:Boolean(normalized.attemptedFreshFallback),
     images:Array.isArray(normalized.images)?normalized.images:[],
+    planningContext:normalized&&normalized.planningContext&&typeof normalized.planningContext==="object"
+      ?normalized.planningContext
+      :null,
     promptAudit:normalized&&normalized.promptAudit&&typeof normalized.promptAudit==="object"?normalized.promptAudit:null,
     idempotencyKey:safeString(normalized.idempotencyKey,200),
     governanceOverride:normalizeOverrideRequest(normalized.governanceOverride),
@@ -8198,10 +9340,12 @@ function normalizeExecutionState(state,{terminalFallback=false}={}){
   if(normalized==="inprogress"||normalized==="in_progress"||normalized==="running"||normalized==="queued"||normalized==="pending")return"in_progress";
   return terminalFallback?"failed":"in_progress";
 }
-function deriveTurnTaskOutcome({finalStatus,finalErrorText,approvalAudits,parentDispatchGuard,partial=false,missingEvidence=false}={}){
+function deriveTurnTaskOutcome({finalStatus,finalErrorText,approvalAudits,parentDispatchGuard,explicitStatus="",reason="",partial=false,missingEvidence=false}={}){
   const declinedAudit=findLatestDeclinedApprovalAudit(approvalAudits);
   return deriveTaskOutcome({
     turnStatus:finalStatus,
+    explicitStatus,
+    reason,
     approvalReason:declinedAudit&&declinedAudit.reason?declinedAudit.reason:"",
     governanceReason:declinedAudit&&declinedAudit.governanceReason?declinedAudit.governanceReason:"",
     errorText:finalErrorText,
@@ -8293,6 +9437,10 @@ function snapshotTurnRecord(record){
     source:safeString(record.source,80)||null,
     execution_profile:normalizeExecutionProfile(record.executionProfile,runtimeExecutionProfile),
     execution_intent:normalizeExecutionIntent(record.executionIntent,"interactive"),
+    planning_mode:safeString(record.planningMode,40)||"NORMAL",
+    planning_depth:safeString(record.planningDepth,60)||"STANDARD_PLANNING",
+    assurance_depth:safeString(record.assuranceDepth,60)||"STANDARD_ASSURANCE",
+    flow_path:safeString(record.flowPath,80)||"NORMAL_PATH",
     smoke_like_profile:record.smokeLikeProfile?1:0,
     full_utilization_defaults_ready:record.fullUtilizationDefaultsReady?1:0,
     full_utilization_turn_ready:record.fullUtilizationTurnReady?1:0,
@@ -8302,6 +9450,12 @@ function snapshotTurnRecord(record){
     artifact_dir:summarizePathForOperationLog(record.artifactDir,240)||null,
     artifact_manifest_path:summarizePathForOperationLog(record.artifactManifestPath,260)||null,
     artifact_manifest_sha256:safeString(record.artifactManifestSha256,80)||null,
+    evidence_manifest_path:summarizePathForOperationLog(record.evidenceManifestPath,260)||null,
+    stage_timeline_path:summarizePathForOperationLog(record.stageTimelinePath,260)||null,
+    flow_trace_summary_path:summarizePathForOperationLog(record.flowTraceSummaryPath,260)||null,
+    planning_decision_contract_path:summarizePathForOperationLog(record.planningDecisionContractPath,260)||null,
+    review_load_breakdown_path:summarizePathForOperationLog(record.reviewLoadBreakdownPath,260)||null,
+    planning:record.planningContext&&typeof record.planningContext==="object"?record.planningContext:null,
     visibility:turnVisibility,
     status,
     terminal_status:terminalStatus,
@@ -8380,13 +9534,59 @@ function cloneTurnRecordSnapshot(snapshot){
     ...snapshot,
   };
 }
+function summarizePlanningForTurnLog(planning){
+  const source=planning&&typeof planning==="object"?planning:null;
+  if(!source)return null;
+  const selection=source.selection&&typeof source.selection==="object"?source.selection:null;
+  const requirement=source.requirementContract&&typeof source.requirementContract==="object"?source.requirementContract:null;
+  const dispatchPlan=source.dispatchPlan&&typeof source.dispatchPlan==="object"?source.dispatchPlan:null;
+  return{
+    schema:safeString(source.schema,60)||"",
+    policyVersion:safeString(source.policyVersion,80)||"",
+    selection:selection?{
+      selectedMode:safeString(selection.selectedMode,40)||"",
+      selectedPlanningDepth:safeString(selection.selectedPlanningDepth,60)||"",
+      selectedAssuranceDepth:safeString(selection.selectedAssuranceDepth,60)||"",
+      flowPath:safeString(selection.flowPath,80)||"",
+      executionFlow:safeString(selection.executionFlow,120)||"",
+      needsInputRecommended:selection.needsInputRecommended?1:0,
+    }:null,
+    requirementSummary:requirement?{
+      acceptanceCheckCount:Array.isArray(requirement.acceptanceChecks)?requirement.acceptanceChecks.length:0,
+      openQuestionCount:Array.isArray(requirement.openQuestions)?requirement.openQuestions.length:0,
+      approvalBoundaryCount:Array.isArray(requirement.approvalBoundaryItems)?requirement.approvalBoundaryItems.length:0,
+    }:null,
+    dispatchSummary:dispatchPlan?{
+      proposalOnly:dispatchPlan.proposalOnly?1:0,
+      reviewerRequired:dispatchPlan.reviewerRequired?1:0,
+      testerRequired:dispatchPlan.testerRequired?1:0,
+      signoffRequired:dispatchPlan.signoffRequired?1:0,
+      dispatchCount:Array.isArray(dispatchPlan.dispatches)?dispatchPlan.dispatches.length:0,
+    }:null,
+  };
+}
+function safeJsonStringifyForConsole(value){
+  try{
+    return JSON.stringify(value);
+  }catch(error){
+    return JSON.stringify({
+      serialization_error:safeString(error&&error.message?error.message:String(error),240)||"unknown_serialization_error",
+      keys:value&&typeof value==="object"?Object.keys(value).slice(0,24):[],
+    });
+  }
+}
 function publishLatestTurnSnapshot(record,eventType){
   const snapshot=snapshotTurnRecord(record);
   if(!snapshot)return null;
   latestTurnSnapshot=snapshot;
   if(eventType){
-    const logPayload={event_type:eventType,event_at:new Date().toISOString(),...snapshot};
-    console.log(`[turn-state] ${JSON.stringify(logPayload)}`);
+    const logPayload={
+      event_type:eventType,
+      event_at:new Date().toISOString(),
+      ...snapshot,
+      planning:summarizePlanningForTurnLog(snapshot.planning),
+    };
+    console.log(`[turn-state] ${safeJsonStringifyForConsole(logPayload)}`);
   }
   return snapshot;
 }
@@ -8940,6 +10140,19 @@ function buildRuntimeApiSnapshot(){
       ...summarizeTaskOutcomeContract(taskOutcomeContract),
       path:summarizePathForOperationLog(taskOutcomeContractPath,220),
     },
+    planningContracts:{
+      schema:safeString(planningModeContract&&planningModeContract.schema,80)||"planning-mode-contract.v1",
+      version:safeString(planningModeContract&&planningModeContract.version,80)||"",
+      path:summarizePathForOperationLog(planningModeContractPath,220),
+      assuranceSchema:safeString(assuranceModeContract&&assuranceModeContract.schema,80)||"assurance-mode-contract.v1",
+      assuranceVersion:safeString(assuranceModeContract&&assuranceModeContract.version,80)||"",
+      assurancePath:summarizePathForOperationLog(assuranceModeContractPath,220),
+      planningDecisionSchemaPath:summarizePathForOperationLog(planningDecisionContractSchemaPath,220),
+      requirementSchemaPath:summarizePathForOperationLog(requirementContractSchemaPath,220),
+      dispatchSchemaPath:summarizePathForOperationLog(dispatchPlanSchemaPath,220),
+      modes:Array.isArray(planningModeContract&&planningModeContract.modes)?planningModeContract.modes:[],
+      assuranceModes:Array.isArray(assuranceModeContract&&assuranceModeContract.modes)?assuranceModeContract.modes:[],
+    },
     controlApi:{
       tokenHeader:controlApiTokenHeaderName,
       token:controlApiToken,
@@ -9044,6 +10257,7 @@ function buildHarnessOverviewSnapshot(){
       governance:runtime.governancePolicy,
       turn:runtime.contractSpec,
       taskOutcome:runtime.taskOutcomeContract,
+      planning:runtime.planningContracts,
     },
     evidence:{
       runtimeProof:buildBundleOverview(runtimeProofsRoot,"runtime_proof_summary.json",buildRuntimeProofBundleSnapshot),
@@ -10241,21 +11455,31 @@ async function requestHandler(req,res){
   }
   sendJson(res,405,{error:"Method not allowed"});
 }
-function shutdown(exitCode=0){
+async function stopHarnessServer(){
   if(shuttingDown)return;
   shuttingDown=true;
   clearPocSchedulerTimer();
   pocSchedulerState.enabled=false;
   pocSchedulerState.nextTickAt=0;
   persistHarnessExecutionMemoryStore({reason:"shutdown"});
-  logOperation("server.shutdown",{exitCode:Number.isFinite(Number(exitCode))?Math.trunc(Number(exitCode)):0});
+  logOperation("server.shutdown",{exitCode:0});
   appServer.stop();
-  if(webServer){
-    webServer.close(()=>process.exit(exitCode));
-    setTimeout(()=>process.exit(exitCode),3000).unref();
-  }else{
-    process.exit(exitCode);
+  const serverRef=webServer;
+  webServer=null;
+  webPort=null;
+  if(serverRef){
+    await Promise.race([
+      new Promise((resolve)=>{try{serverRef.close(()=>resolve());}catch{resolve();}}),
+      new Promise((resolve)=>setTimeout(resolve,3000)),
+    ]);
   }
+  shuttingDown=false;
+}
+function shutdown(exitCode=0){
+  if(shuttingDown)return;
+  stopHarnessServer().finally(()=>{
+    process.exit(exitCode);
+  });
 }
 
 function probeExistingServer(port){return new Promise(resolve=>{const req=http.request({hostname:"127.0.0.1",port,path:"/api/runtime",method:"GET",timeout:1200},res=>{let data="";res.on("data",chunk=>{data+=chunk.toString("utf8");});res.on("end",()=>{if(res.statusCode!==200){resolve(false);return;}try{const parsed=JSON.parse(data);resolve(parsed&&parsed.mode==="app-server"&&parsed.apiVersion===apiVersion);}catch{resolve(false);}});});req.on("error",()=>resolve(false));req.on("timeout",()=>{req.destroy();resolve(false);});req.end();});}
@@ -10327,6 +11551,14 @@ async function main(){const preferredPort=Number.isInteger(forcedUiPort)&&forced
   });
 }
 
+async function startHarnessServer(){
+  if(webServer&&typeof webServer.listening==="boolean"&&webServer.listening){
+    return{port:webPort};
+  }
+  await main();
+  return{port:webPort};
+}
+
 if(require.main===module){
   process.on("SIGINT",()=>shutdown(0));
   process.on("SIGTERM",()=>shutdown(0));
@@ -10337,6 +11569,13 @@ if(require.main===module){
 }
 
 module.exports={
+  startHarnessServer,
+  stopHarnessServer,
+  getHarnessServerState:()=>({
+    port:webPort,
+    listening:Boolean(webServer&&webServer.listening),
+    transport:getAppServerTransportMode(),
+  }),
   __riskAudit:{
     riskRulesVersion,
     approvalRiskRuleIds,

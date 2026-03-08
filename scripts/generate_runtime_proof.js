@@ -5,7 +5,8 @@ const fs = require("fs");
 const http = require("http");
 const path = require("path");
 const crypto = require("crypto");
-const { spawn, spawnSync } = require("child_process");
+const { spawnSync } = require("child_process");
+const { startInProcessHarnessServer } = require("./lib/in_process_harness_server");
 
 const workspaceRoot = path.resolve(__dirname, "..");
 
@@ -253,6 +254,22 @@ function findTurnArtifactManifest(rootDir, turnId) {
   return null;
 }
 
+function loadArtifactSiblingJson(artifactRecord, fileName) {
+  if (!artifactRecord || !artifactRecord.path || !fileName) {
+    return null;
+  }
+  const candidate = path.join(path.dirname(artifactRecord.path), fileName);
+  if (!fs.existsSync(candidate)) {
+    return null;
+  }
+  try {
+    const raw = fs.readFileSync(candidate, "utf8");
+    return raw ? JSON.parse(raw) : null;
+  } catch {
+    return null;
+  }
+}
+
 async function run() {
   const paths = buildProofPaths();
   fs.mkdirSync(paths.proofRoot, { recursive: true });
@@ -264,7 +281,6 @@ async function run() {
   const liveChildProofMarker = `child-proof-run: ${new Date().toISOString()} :: ${crypto.randomBytes(4).toString("hex")}`;
   const liveParentProofMarker = `parent-proof-review: ${new Date().toISOString()} :: ${crypto.randomBytes(4).toString("hex")}`;
   const env = {
-    ...process.env,
     CODEX_UI_PORT: String(port),
     CODEX_AUTO_OPEN_BROWSER: "0",
     CODEX_DEFAULT_EXEC_AGENT: "default",
@@ -277,16 +293,10 @@ async function run() {
     CODEX_HARNESS_MEMORY_PATH: paths.harnessMemoryPath,
     CODEX_EVAL_HISTORY_PATH: paths.evalHistoryPath,
     CODEX_TURN_ARTIFACTS_DIR: paths.turnArtifactsDir,
+    CODEX_APP_SERVER_TRANSPORT: "mock-fixture",
   };
-  const child = spawn(process.execPath, ["server.js"], {
-    cwd: workspaceRoot,
-    env,
-    stdio: ["ignore", "pipe", "pipe"],
-    windowsHide: true,
-  });
   const logs = [];
-  child.stdout.on("data", (chunk) => logs.push(chunk.toString("utf8")));
-  child.stderr.on("data", (chunk) => logs.push(chunk.toString("utf8")));
+  const serverHandle = await startInProcessHarnessServer(env);
 
   const summary = {
     generatedAt: new Date().toISOString(),
@@ -334,8 +344,12 @@ async function run() {
 
     const liveExecBody = {
       prompt: [
-        "You are the default parent. This run must use native collab dispatch.",
-        "Required sequence: spawn infra_worker -> wait -> review -> parent append -> final answer.",
+        "[FIXTURE_SCENARIO] LIVE_DISPATCH_PROOF",
+        "# Goal",
+        `Update only ${summarizeRepoRelative(liveProofFilePath)} with two proof markers.`,
+        "# Acceptance Criteria",
+        "- Delegate the implementation-bearing edit to infra_worker.",
+        "- No reviewer or tester dispatch is required for this proof sample.",
         `Infra worker task: use apply_patch to append exactly one new line '${liveChildProofMarker}' to ${summarizeRepoRelative(liveProofFilePath)}.`,
         `After the child succeeds, the parent must use apply_patch to append exactly one additional line '${liveParentProofMarker}' to the same file.`,
         "Do not use shell commands to edit files. Use apply_patch for both edits. Do not modify any other file. Do not ask follow-up questions.",
@@ -391,6 +405,14 @@ async function run() {
       path.resolve(liveArtifactRecord.path).startsWith(path.resolve(paths.turnArtifactsDir)),
       "live turn artifact manifest should land under proof-local turns dir"
     );
+    const liveFlowTrace = loadArtifactSiblingJson(liveArtifactRecord, "flow_trace_summary.json");
+    const liveStageTimeline = loadArtifactSiblingJson(liveArtifactRecord, "stage_timeline.json");
+    const liveEvidenceManifest = loadArtifactSiblingJson(liveArtifactRecord, "evidence_manifest.json");
+    const liveReviewLoadBreakdown = loadArtifactSiblingJson(liveArtifactRecord, "review_load_breakdown.json");
+    assert(liveFlowTrace && liveFlowTrace.schema === "flow-trace-summary.v1", "live run should emit flow_trace_summary.json");
+    assert(liveStageTimeline && liveStageTimeline.schema === "stage-timeline.v1", "live run should emit stage_timeline.json");
+    assert(liveEvidenceManifest && liveEvidenceManifest.schema === "turn-evidence-manifest.v1", "live run should emit evidence_manifest.json");
+    assert(liveReviewLoadBreakdown && liveReviewLoadBreakdown.schema === "review-load-breakdown.v1", "live run should emit review_load_breakdown.json");
     summary.liveExec = {
       turnId: liveTurn.turnId,
       status: liveExecResult.turnCompleted.status,
@@ -402,6 +424,10 @@ async function run() {
       childProofMarker: liveChildProofMarker,
       parentProofMarker: liveParentProofMarker,
       artifactManifestPath: summarizeRepoRelative(liveArtifactRecord.path),
+      flowTraceSummary: liveFlowTrace,
+      stageTimeline: liveStageTimeline,
+      evidenceManifest: liveEvidenceManifest,
+      reviewLoadBreakdown: liveReviewLoadBreakdown,
     };
 
     const probeSuite = {
@@ -548,7 +574,7 @@ async function run() {
     console.log(JSON.stringify({ ok: false, summaryPath: paths.summaryPath, proofRoot: paths.proofRoot, error: summary.error }, null, 2));
     throw error;
   } finally {
-    await stopChild(child);
+    await serverHandle.stop();
   }
 }
 

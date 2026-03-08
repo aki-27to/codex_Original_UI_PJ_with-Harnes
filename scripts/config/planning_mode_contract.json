@@ -1,0 +1,120 @@
+{
+  "schema": "planning-mode-contract.v1",
+  "version": "2026-03-08.r2",
+  "modes": ["FAST", "NORMAL", "DISCOVERY"],
+  "thresholds": {
+    "fast": {
+      "maxOpenQuestions": 1,
+      "minAcceptanceScore": 1,
+      "maxSpecialistBoundaries": 1,
+      "maxAssumptionScore": 1,
+      "maxOverDeliveryRiskScore": 1,
+      "minExistingSpecClarityScore": 1,
+      "minChangeScopeClarityScore": 1
+    },
+    "discovery": {
+      "minOpenQuestions": 2,
+      "maxAcceptanceScore": 0,
+      "minAssumptionScore": 2,
+      "minOverDeliveryRiskScore": 2,
+      "maxExistingSpecClarityScore": 0,
+      "maxChangeScopeClarityScore": 0
+    }
+  },
+  "signals": {
+    "openQuestionKeywords": [
+      "open question",
+      "tbd",
+      "to be decided",
+      "unclear",
+      "ambiguous",
+      "discovery",
+      "what should",
+      "which",
+      "need input",
+      "need decision",
+      "user decision",
+      "どうする",
+      "どれ",
+      "どこまで",
+      "未定",
+      "曖昧",
+      "判断",
+      "確認が必要"
+    ],
+    "userDecisionKeywords": [
+      "user decision",
+      "approval boundary",
+      "approval required",
+      "needs input",
+      "need input",
+      "clarify",
+      "confirm",
+      "choose",
+      "must decide",
+      "要確認",
+      "確認が必要",
+      "判断が必要",
+      "承認",
+      "入力が必要"
+    ],
+    "approvalBoundaryKeywords": [
+      "delete",
+      "remove dependency",
+      "install",
+      "permission",
+      "security boundary",
+      "external service",
+      "external system",
+      "account write",
+      "migration",
+      "schema change",
+      "destructive",
+      "dependency/runtime installation",
+      "cross-session",
+      "cross-project",
+      "削除",
+      "インストール",
+      "権限",
+      "外部サービス",
+      "外部システム",
+      "マイグレーション",
+      "破壊的"
+    ],
+    "overDeliveryRiskKeywords": [
+      "rewrite",
+      "redesign",
+      "re-architecture",
+      "new feature",
+      "greenfield",
+      "broad change",
+      "sweep",
+      "invent",
+      "speculative",
+      "over-delivery",
+      "new logic",
+      "protocol change",
+      "全面",
+      "新機能",
+      "大きな変更",
+      "作り直し",
+      "追加ロジック"
+    ],
+    "specialistKeywords": {
+      "frontend_worker": ["frontend", "ui", "ux", "browser", "css", "html", "react", "component", "layout", "web/"],
+      "backend_worker": ["backend", "server", "api", "protocol", "endpoint", "route", "script", "scripts/", "server.js", "contract", "schema", "harness"],
+      "infra_worker": ["infra", "runtime", "config", "logging", "signoff", "proof", "docs", "changelog", "architecture", "eval", "replay"],
+      "tester": ["test", "tester", "verification", "smoke", "prove", "proof", "eval", "pass/fail"],
+      "reviewer": ["review", "reviewer", "audit", "findings", "risk review"],
+      "explorer": ["explore", "investigate", "fact-find", "discovery"]
+    },
+    "sectionAliases": {
+      "goal": ["request", "goal", "purpose", "目的", "主目的"],
+      "baseline": ["implementation", "implementation requirements", "deliverables", "baseline scope", "scope", "実装要求", "期待する成果物"],
+      "acceptance": ["acceptance", "acceptance criteria", "success criteria", "受け入れ条件"],
+      "nonGoals": ["non-goal", "non goal", "non-goals", "非目標"],
+      "background": ["background", "context", "why", "背景", "背景認識"],
+      "constraints": ["constraint", "constraints", "guardrails", "制約", "重要制約"]
+    }
+  }
+}

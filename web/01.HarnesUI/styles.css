@@ -1126,6 +1126,128 @@ input[readonly] {
   gap: 8px;
 }
 
+.harness-plan-panel {
+  border: 1px solid #284672;
+  border-radius: 10px;
+  background: rgba(8, 16, 31, 0.72);
+  padding: 8px;
+  display: grid;
+  gap: 8px;
+}
+
+.harness-plan-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.harness-plan-head h4 {
+  margin: 0;
+  font-size: 12px;
+  color: #c4d7ff;
+}
+
+.harness-plan-head p {
+  margin: 4px 0 0;
+  color: #9fb6da;
+  font-size: 11px;
+  line-height: 1.35;
+}
+
+.harness-plan-meta {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 4px 8px;
+  border-radius: 999px;
+  background: rgba(26, 46, 78, 0.9);
+  border: 1px solid #35598d;
+  color: #d8e7ff;
+  font-size: 11px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.harness-plan-grid {
+  display: grid;
+  grid-template-columns: minmax(240px, 0.9fr) minmax(0, 1.1fr);
+  gap: 8px;
+}
+
+.harness-plan-current {
+  border: 1px solid #2d4f82;
+  border-radius: 10px;
+  background: linear-gradient(180deg, rgba(17, 31, 56, 0.94), rgba(11, 20, 37, 0.96));
+  padding: 10px;
+  display: grid;
+  gap: 6px;
+  align-content: start;
+}
+
+.harness-plan-current.idle,
+.harness-plan-step.pending {
+  border-color: #35598d;
+}
+
+.harness-plan-current.in_progress,
+.harness-plan-step.in_progress {
+  border-color: rgba(244, 174, 43, 0.82);
+  box-shadow: 0 0 16px rgba(244, 174, 43, 0.14);
+}
+
+.harness-plan-current.completed,
+.harness-plan-step.completed {
+  border-color: rgba(47, 191, 113, 0.7);
+}
+
+.harness-plan-current.failed,
+.harness-plan-step.failed,
+.harness-plan-current.interrupted,
+.harness-plan-step.interrupted {
+  border-color: rgba(232, 93, 117, 0.76);
+}
+
+.harness-plan-current-label {
+  font-size: 11px;
+  color: #9fb6da;
+}
+
+.harness-plan-current-step {
+  font-size: 16px;
+  line-height: 1.35;
+  color: #f2f7ff;
+}
+
+.harness-plan-current.in_progress .harness-plan-current-step {
+  color: #ffe3a8;
+}
+
+.harness-plan-current.completed .harness-plan-current-step {
+  color: #aaf1c8;
+}
+
+.harness-plan-current.failed .harness-plan-current-step,
+.harness-plan-current.interrupted .harness-plan-current-step {
+  color: #ffc0cc;
+}
+
+.harness-plan-current-detail {
+  margin: 0;
+  font-size: 12px;
+  line-height: 1.45;
+  color: #b5caea;
+}
+
+.harness-plan-column {
+  border: 1px solid #2d4f82;
+  border-radius: 10px;
+  background: rgba(11, 20, 37, 0.9);
+  padding: 10px;
+  display: grid;
+  gap: 8px;
+}
+
 .harness-journey-list {
   display: grid;
   grid-template-columns: repeat(5, minmax(0, 1fr));
@@ -1405,6 +1527,70 @@ input[readonly] {
   line-height: 1.4;
   color: #aac2e5;
   word-break: break-word;
+}
+
+.harness-plan-step {
+  border: 1px solid #2f4f81;
+  border-radius: 10px;
+  background: rgba(14, 25, 46, 0.88);
+  padding: 8px 10px;
+  display: grid;
+  gap: 6px;
+}
+
+.harness-plan-step.focus {
+  background: linear-gradient(180deg, rgba(27, 43, 73, 0.96), rgba(14, 25, 46, 0.94));
+}
+
+.harness-plan-step-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+}
+
+.harness-plan-step-index {
+  font-size: 11px;
+  font-weight: 700;
+  color: #9fb6da;
+  letter-spacing: 0.08em;
+}
+
+.harness-plan-step-status {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 68px;
+  padding: 3px 8px;
+  border-radius: 999px;
+  border: 1px solid #36598d;
+  background: rgba(25, 43, 73, 0.9);
+  color: #d8e7ff;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.harness-plan-step-status.in_progress {
+  border-color: rgba(244, 174, 43, 0.82);
+  color: #ffe3a8;
+}
+
+.harness-plan-step-status.completed {
+  border-color: rgba(47, 191, 113, 0.72);
+  color: #aaf1c8;
+}
+
+.harness-plan-step-status.failed,
+.harness-plan-step-status.interrupted {
+  border-color: rgba(232, 93, 117, 0.76);
+  color: #ffc0cc;
+}
+
+.harness-plan-step-text {
+  margin: 0;
+  font-size: 12px;
+  line-height: 1.45;
+  color: #d6e5ff;
 }
 
 .harness-diff {
@@ -2185,6 +2371,7 @@ button:disabled {
   .harness-focus-grid,
   .harness-journey-list,
   .harness-now-grid,
+  .harness-plan-grid,
   .harness-meta-grid,
   .harness-phase-list,
   .harness-evidence-grid,
@@ -2221,6 +2408,8 @@ button:disabled {
   .performance-grid,
   .harness-focus-grid,
   .harness-journey-list,
+  .harness-now-grid,
+  .harness-plan-grid,
   .harness-meta-grid,
   .harness-phase-list,
   .harness-evidence-grid,

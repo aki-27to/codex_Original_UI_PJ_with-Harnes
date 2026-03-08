@@ -39,6 +39,11 @@ This document is the active architecture spec for the Codex App Server integrati
 - `bootstrap_english_conversation_app_repo.bat` / `scripts/bootstrap_english_conversation_app_repo.ps1` can seed the sibling repo from the bundled static app when splitting it out for the first time.
 - `web/01.HarnesUI/overview.html` is a dedicated operator overview page that aggregates runtime posture, topology, contracts, evidence bundles, replay/eval summaries, and skill coverage without mixing that inventory into the execution console.
 - The floating Agent Topography Monitor now renders only agents that are relevant to the active chat, using that chat's current scoped parent, local trace/pending state, harness events, and matching runtime thread metadata.
+- The main `web/01.HarnesUI/index.html` execution console now exposes a dedicated `Execution Plan` panel inside `Harness Status`, showing:
+  - the latest plan summary from streamed `plan` events
+  - the current plan step card
+  - the full step list with localized status badges (`pending`, `in_progress`, `completed`, `failed`, `interrupted`)
+  - plan-focus fallback ordering of explicit `in_progress`, then blocked step, then next pending step while running, then last completed step
 
 ## 3) Collaboration-First Agent Topology
 
@@ -83,6 +88,11 @@ This document is the active architecture spec for the Codex App Server integrati
 - Task outcome taxonomy:
   - `scripts/config/task_outcome_contract.json`
   - defines `COMPLETED`, `BLOCKED`, `NEEDS_INPUT`, `FAILED_VALIDATION`, `PARTIAL`
+- Planning and dispatch contracts:
+  - `scripts/config/planning_mode_contract.json`
+  - `scripts/config/requirement_contract.schema.json`
+  - `scripts/config/dispatch_plan.schema.json`
+  - Step 1/2 now persist machine-readable planning artifacts instead of relying on free-form narrative only
 
 ## 5) Runtime Surfaces
 
@@ -95,6 +105,7 @@ This document is the active architecture spec for the Codex App Server integrati
     - keeps the existing same-origin browser path so conversation/TTS APIs do not need CORS or alternate ports
 - `GET /api/runtime`
   - runtime snapshot, latest turn, governance policy, turn contract, task outcome contract, eval/replay/SLO capability summary
+  - now also reports planning and assurance contract paths plus the latest turn's planning/assurance depth and flow-path fields
   - includes `gitAutomation` with config posture and latest turn-level auto-commit/autopush result
   - includes `staticApps.englishConversationApp` with mount source/root summary for the current English Conversation App static root
 - `GET /api/harness/overview`
@@ -107,6 +118,9 @@ This document is the active architecture spec for the Codex App Server integrati
   - authenticated JSON exec endpoint with NDJSON streaming turn events
   - defaults to `default` unless the request selects another configured role
   - rejects unconfigured agent targets such as retired `worker` and `worker@...` scoped aliases
+  - computes adaptive execution selection before execution and carries requirement/dispatch planning artifacts through the turn runtime
+  - planning depth and assurance depth are selected independently, so `FAST_PLANNING + LIGHT_ASSURANCE` and `DISCOVERY_PLANNING + SIGNOFF_ASSURANCE` are both valid outcomes
+  - `DISCOVERY` mode keeps blocking ambiguity in proposal-only space and maps explicit stop signals to `NEEDS_INPUT`
   - idempotency key may be supplied by header or body, but header/body mismatch is rejected with `400` before a claim is created
   - duplicate idempotency reuse with the same key but a mismatched effective request hash returns `409` (`idempotency_request_hash_mismatch`)
   - duplicate in-flight idempotency claims return `409`; resolved duplicates return the stored outcome snapshot with `200`
@@ -128,17 +142,32 @@ This document is the active architecture spec for the Codex App Server integrati
 - `POST /api/conversation/direct`
 
 ## 6) Evidence and Persistence
+- `natural_task_trace_summary.json` records the selected implementation-bearing turn id and thread id, so trace bundles stay anchored to the delegated turn even when later completions share the thread.
+- `SIGNOFF_ASSURANCE` sample runs keep planning depth, assurance depth, reviewer/tester execution, and doc-sync evidence co-located in signoff bundles.
+- Runtime proof samples can fall back to fixture-backed transport and still emit dispatch/doc-sync evidence under constrained sandboxes.
 
 - Turn artifacts are written under `logs/turns/` with `manifest.json` plus events/items/diff/stdout/stderr artifacts.
+- Each turn artifact directory now also carries:
+  - `requirement_contract.json`
+  - `dispatch_plan.json`
+  - `evidence_manifest.json`
+  - `stage_timeline.json`
+  - `flow_trace_summary.json`
+  - `review_load_breakdown.json`
 - The turn artifact manifest now records:
   - terminal turn status
   - terminal task outcome status and reason
   - turn/task-outcome bridge validation surface through the runtime contracts
   - approval audit records
   - execution observed signals
+  - selected planning mode, planning depth, assurance depth, and flow-path context
 - Parent-turn observed file signals can aggregate child `Owned paths:` reports from completed collab calls, so natural multi-agent traces preserve implementation-side changed-path samples.
+- `evidence_manifest.json` aggregates acceptance-check pass/fail, doc-sync evidence, child evidence ledger, and residual-risk summary so Step 4 review cost is lower without weakening the evidence gate.
+- `review_load_breakdown.json` aggregates reviewer findings, tester results, doc-sync status, and quality-gate duration hotspots.
+- `stage_timeline.json` and `flow_trace_summary.json` make it explicit which flow, planning depth, assurance depth, agents, contracts, and evidence sources were involved in the run.
 - `natural_task_trace_summary.json` records the selected implementation-bearing turn id and thread id, so signoff bundles stay anchored to the delegated turn even when later completions share the thread.
 - `scripts/generate_signoff_evidence.js` resolves the natural-task proof turn from persisted execution memory on the shared thread, so post-completion adversarial retries do not replace the implementation-bearing trace.
+- `scripts/generate_baseline_comparison.js` emits a measured baseline profile comparison from the same fixture tasks with governance-light settings, and falls back to a vanilla-like approximation only when baseline traces are unavailable.
 - Harness memory is stored in `logs/harness_execution_memory.json` by default and can be redirected with `CODEX_HARNESS_MEMORY_PATH`.
 - Eval run history is stored in `logs/eval_runs.jsonl` by default and can be redirected with `CODEX_EVAL_HISTORY_PATH`.
 - `logs/harness_execution_memory.json` and `logs/eval_runs.jsonl` are local runtime state files and are intentionally ignored from Git tracking at the repo root.
@@ -165,6 +194,8 @@ This document is the active architecture spec for the Codex App Server integrati
 - Its bundle shape is:
   - `logs/signoff-bundles/signoff-*/runtime_snapshot.json`
   - `logs/signoff-bundles/signoff-*/core_harness_workflow_run.json`
+  - `logs/signoff-bundles/signoff-*/fast_task_trace_summary.json`
+  - `logs/signoff-bundles/signoff-*/discovery_task_trace_summary.json`
   - `logs/signoff-bundles/signoff-*/natural_task_trace_summary.json`
   - `logs/signoff-bundles/signoff-*/harness_execution_memory.json`
   - `logs/signoff-bundles/signoff-*/eval_runs.jsonl`
@@ -182,6 +213,7 @@ This document is the active architecture spec for the Codex App Server integrati
   - run `node scripts/skill_portfolio_audit.js`
 - Eval / workflow policy changes:
   - run `node scripts/eval_replay_api_smoke_test.js`
+  - run `node scripts/planning_mode_policy_test.js` when planning-mode selection or Step 1/2 contracts change
 - Governance/runtime posture changes in `.codex/` or parent-role docs:
   - verify parent role config posture and role-boundary wording stay aligned across `.codex/config.toml`, `.codex/agents/*.toml`, and `docs/AGENT_OPERATING_RULES.md`
 - Spec sync before `COMPLETED`:

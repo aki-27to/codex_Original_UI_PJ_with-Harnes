@@ -94,11 +94,19 @@ function extractExactReplyContract(prompt) {
   if (!text) {
     return "";
   }
-  const match = text.match(/reply with exactly:\s*([^\r\n]+)/i);
-  if (!match) {
-    return "";
+  const patterns = [
+    /reply with exactly:\s*([^\r\n]+)/i,
+    /reply with exactly\s+([^\r\n]+)/i,
+    /respond with exactly:\s*([^\r\n]+)/i,
+    /respond with exactly\s+([^\r\n]+)/i,
+  ];
+  for (const pattern of patterns) {
+    const match = text.match(pattern);
+    if (match) {
+      return safeTrimmedString(match[1], 400);
+    }
   }
-  return safeTrimmedString(match[1], 400);
+  return "";
 }
 
 function extractStrictJsonContract(prompt) {

@@ -1,0 +1,176 @@
+# HARNESS_MAP
+
+Updated: 2026-03-08
+
+## 1) Purpose And Reading Order
+
+This file is the operator map for the harness.
+- Policy is human-facing.
+- Contracts are machine-readable.
+- Proof/signoff artifacts are execution evidence.
+
+Recommended read order:
+1. `AGENTS.md`
+2. `docs/AGENT_OPERATING_RULES.md`
+3. `docs/CURRENT_ARCHITECTURE.md`
+4. `docs/EVIDENCE_CONTRACT.md`
+5. `scripts/config/harness_contract_spec.json`
+6. `scripts/config/task_outcome_contract.json`
+7. `scripts/config/planning_mode_contract.json`
+8. `scripts/config/assurance_depth_contract.json`
+9. `scripts/config/planning_decision_contract.schema.json`
+10. `scripts/config/eval_suite_default.json`
+
+## 2) Layer Map
+
+- Tier-0 / constitutional:
+  - `AGENTS.md`
+- Tier-1 / operating policy:
+  - `docs/AGENT_OPERATING_RULES.md`
+  - `docs/APP_SERVER_PROTOCOL_RUNBOOK.md`
+  - `docs/CONTEXT_MEMORY_POLICY.md`
+  - `docs/EVIDENCE_CONTRACT.md`
+  - `docs/SKILL_PORTFOLIO_GOVERNANCE.md`
+- Current architecture / change history:
+  - `docs/CURRENT_ARCHITECTURE.md`
+  - `docs/ARCHITECTURE_CHANGELOG.md`
+- Machine-readable contracts:
+  - `scripts/config/harness_contract_spec.json`
+  - `scripts/config/task_outcome_contract.json`
+  - `scripts/config/planning_mode_contract.json`
+  - `scripts/config/assurance_depth_contract.json`
+  - `scripts/config/planning_decision_contract.schema.json`
+  - `scripts/config/requirement_contract.schema.json`
+  - `scripts/config/dispatch_plan.schema.json`
+  - `scripts/config/agent_governance_contracts.json`
+  - `scripts/config/skill_portfolio_policy.json`
+  - `scripts/config/skill_catalog.json`
+  - `scripts/config/eval_suite_default.json`
+- Runtime evidence / proof / signoff:
+  - `logs/turns/`
+  - `logs/harness_execution_memory.json`
+  - `logs/eval_runs.jsonl`
+  - `logs/proofs/`
+  - `logs/signoff-bundles/`
+
+## 3) Parent And Child Responsibilities
+
+- Parent-Orchestrator:
+  - lock requirements
+  - select planning mode
+  - fix the dispatch contract
+  - review child evidence
+  - decide final outcome and report residual risk
+- Child specialists:
+  - execute on owned paths only
+  - produce reproducible evidence
+  - keep review/test work separate when assigned
+- Boundary rule:
+  - Parent does not claim specialist-only work as complete without delegated evidence.
+  - See `AGENTS.md` and `docs/AGENT_OPERATING_RULES.md`.
+
+## 4) Flow Modes
+
+- Planning `FAST_PLANNING`
+  - small existing-scope change
+  - clear owner boundary
+  - acceptance checks are already concrete
+  - no approval-boundary contact
+  - almost no open questions
+- Planning `STANDARD_PLANNING`
+  - bounded but multi-specialist work
+  - reviewer/tester evidence matters
+  - assumptions exist, but execution is still safe
+- Planning `DISCOVERY_PLANNING`
+  - requirements or non-goals are still ambiguous
+  - open questions remain
+  - approval-boundary contact or explicit user decision exists
+  - implementation should stop with `NEEDS_INPUT` instead of guessing
+
+- Assurance `LIGHT_ASSURANCE`
+  - docs-only or very small bounded edits
+  - no unnecessary reviewer/tester/signoff overhead
+- Assurance `STANDARD_ASSURANCE`
+  - normal implementation work
+  - bounded review/test evidence when risk or workflow requires it
+- Assurance `SIGNOFF_ASSURANCE`
+  - runtime / protocol / infra / governance sensitive work
+  - reviewer/tester/doc-sync/signoff evidence must be ready
+
+Selector inputs are explicit:
+- open question count
+- acceptance-check clarity
+- specialist-boundary count
+- approval-boundary contact
+- over-delivery risk
+- user-decision requirement
+- assumption dependence
+- existing-spec clarity
+- change-scope clarity
+
+Assurance selector inputs are explicit:
+- touched change kinds (`docs`, `web`, `server.js`, `scripts`, governance)
+- runtime / protocol / infra contact
+- reviewer/tester need
+- user-facing impact
+- irreversible risk
+- new-logic / over-delivery risk
+- signoff importance
+
+Contract files:
+- `scripts/config/planning_mode_contract.json`
+- `scripts/config/assurance_depth_contract.json`
+- `scripts/config/planning_decision_contract.schema.json`
+- `scripts/config/requirement_contract.schema.json`
+- `scripts/config/dispatch_plan.schema.json`
+
+## 5) How A Normal Run Moves
+
+- Step 1 `Requirement Structuring`
+  - Look at `planning_decision_contract.json`, `requirement_contract.json`, and `scripts/config/requirement_contract.schema.json`.
+- Step 2 `Dispatch Planning`
+  - Look at `dispatch_plan.json` and `scripts/config/dispatch_plan.schema.json`.
+- Step 3 `Specialist Execution`
+  - Look at `logs/turns/<run>/items.ndjson`, `events.ndjson`, and child `Owned paths:` evidence.
+- Step 4 `Quality Gate`
+  - Look at `evidence_manifest.json`, `review_load_breakdown.json`, reviewer/tester evidence, and `docs/EVIDENCE_CONTRACT.md`.
+- Step 5 `Final Outcome`
+  - Look at `flow_trace_summary.json`, `stage_timeline.json`, `scripts/config/task_outcome_contract.json`, and signoff/proof bundles.
+
+Runtime invariants to keep in mind:
+- `requestUserInputPolicy=blocked`
+- `parentDispatchGuard=enforce`
+- retired `worker` is not a normal fallback
+- turn contract and task outcome contract stay separate
+
+## 6) Where To Inspect Current State
+
+- Current architecture / policy:
+  - `docs/CURRENT_ARCHITECTURE.md`
+  - `docs/ARCHITECTURE_CHANGELOG.md`
+- Per-run execution trace:
+  - `logs/turns/`
+- Aggregated execution memory:
+  - `logs/harness_execution_memory.json`
+- Eval history:
+  - `logs/eval_runs.jsonl`
+- Proof artifacts:
+  - `logs/proofs/`
+- Signoff bundles:
+  - `logs/signoff-bundles/`
+
+Most useful per-run files after the planning-mode upgrade:
+- `planning_decision_contract.json`
+- `requirement_contract.json`
+- `dispatch_plan.json`
+- `evidence_manifest.json`
+- `stage_timeline.json`
+- `flow_trace_summary.json`
+- `review_load_breakdown.json`
+- `signoff_summary.json`
+
+Comparison artifacts:
+- `logs/baseline-comparison/`
+- `baseline_comparison_report.json`
+- `speed_vs_assurance_report.md`
+- New bundles also include `measured_baseline_summary.json` plus `baseline_*_task_trace_summary.json` so speed/dispatch/review/evidence comparisons are based on measured runs instead of a prose-only approximation.

@@ -257,6 +257,36 @@ async function runIntegration() {
       };
     });
 
+    const planUiSnapshot = await page.evaluate(() => {
+      const cPlan = active();
+      cPlan.h = createHarnessState();
+      hset(cPlan, "running");
+      cPlan.h.planExp = "Parent locks the requirement, then exposes each implementation step and current progress.";
+      cPlan.h.plan = [
+        { step: "Lock requirement and acceptance checks", status: "completed" },
+        { step: "Render execution plan panel in the main UI", status: "in_progress" },
+        { step: "Verify browser rendering and update docs", status: "pending" },
+      ];
+      hpush(cPlan, "plan/update", "3 steps", "info");
+      renderHarness();
+      const currentCard = document.querySelector("#harnessPlanCurrentCard");
+      const currentLabel = document.querySelector("#harnessPlanCurrentCard .harness-plan-current-label");
+      const rows = Array.from(document.querySelectorAll("#harnessPlanList .harness-plan-step"));
+      return {
+        planMeta: document.querySelector("#harnessPlanMeta")?.textContent || "",
+        currentLabel: currentLabel?.textContent || "",
+        currentCardClass: currentCard?.className || "",
+        currentStep: document.querySelector("#harnessPlanCurrentStep")?.textContent || "",
+        currentDetail: document.querySelector("#harnessPlanCurrentDetail")?.textContent || "",
+        explanation: document.querySelector("#harnessPlanExplanation")?.textContent || "",
+        renderedStatuses: rows.map((row) => row.querySelector(".harness-plan-step-status")?.textContent || ""),
+        renderedSteps: rows.map((row) => row.querySelector(".harness-plan-step-text")?.textContent || ""),
+        focusedStep: document.querySelector("#harnessPlanList .harness-plan-step.focus .harness-plan-step-text")?.textContent || "",
+        focusedStatusClass:
+          document.querySelector("#harnessPlanList .harness-plan-step.focus .harness-plan-step-status")?.className || "",
+      };
+    });
+
     assert.strictEqual(
       modeComparison.strictExecution,
       "todo",
@@ -387,6 +417,62 @@ async function runIntegration() {
     assert(
       !modeComparison.overflowMissingPlan.detail.includes("turn/start"),
       "missing-plan failure should not regress to missing turn/start when overflow occurs"
+    );
+
+    assert.strictEqual(
+      planUiSnapshot.planMeta,
+      "1/3 completed",
+      "plan panel should summarize completed plan steps"
+    );
+    assert.strictEqual(
+      planUiSnapshot.currentLabel,
+      "Current Plan Step",
+      "plan panel should render the current-step label"
+    );
+    assert(
+      planUiSnapshot.currentCardClass.includes("in_progress"),
+      "current plan card should be highlighted as in_progress"
+    );
+    assert.strictEqual(
+      planUiSnapshot.currentStep,
+      "Render execution plan panel in the main UI",
+      "current plan card should surface the in-progress step text"
+    );
+    assert(
+      planUiSnapshot.currentDetail.includes("進行中"),
+      "current plan detail should expose the in-progress status label"
+    );
+    assert(
+      planUiSnapshot.currentDetail.includes("step 2 of 3"),
+      "current plan detail should expose the focused step index"
+    );
+    assert.strictEqual(
+      planUiSnapshot.explanation,
+      "Parent locks the requirement, then exposes each implementation step and current progress.",
+      "plan summary text should render in the plan panel"
+    );
+    assert.deepStrictEqual(
+      planUiSnapshot.renderedStatuses,
+      ["完了", "進行中", "待機"],
+      "plan list should render localized status labels for each step"
+    );
+    assert.deepStrictEqual(
+      planUiSnapshot.renderedSteps,
+      [
+        "Lock requirement and acceptance checks",
+        "Render execution plan panel in the main UI",
+        "Verify browser rendering and update docs",
+      ],
+      "plan list should render every plan step in order"
+    );
+    assert.strictEqual(
+      planUiSnapshot.focusedStep,
+      "Render execution plan panel in the main UI",
+      "plan list should focus the in-progress step"
+    );
+    assert(
+      planUiSnapshot.focusedStatusClass.includes("in_progress"),
+      "focused plan step should carry the in_progress status class"
     );
 
     console.log(`PASS harness_check_mode_test :: port=${port}`);

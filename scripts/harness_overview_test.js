@@ -5,8 +5,8 @@ const assert = require("assert");
 const fs = require("fs");
 const http = require("http");
 const path = require("path");
-const { spawn } = require("child_process");
 const vm = require("vm");
+const { startInProcessHarnessServer } = require("./lib/in_process_harness_server");
 
 const workspaceRoot = path.resolve(__dirname, "..");
 const serverJsPath = path.join(workspaceRoot, "server.js");
@@ -185,6 +185,16 @@ function createOverviewPayload(overrides = {}) {
         rbj: {
           enabled: true,
         },
+        planningMode: {
+          version: "planning-mode-contract.v1",
+          assuranceVersion: "assurance-mode-contract.v1",
+        },
+      },
+      planningContracts: {
+        schema: "planning-mode-contract.v1",
+        path: "scripts/config/planning_mode_contract.json",
+        assuranceSchema: "assurance-mode-contract.v1",
+        assurancePath: "scripts/config/assurance_depth_contract.json",
       },
       conversationApi: {
         endpoint: "POST /api/conversation/direct",
@@ -234,6 +244,9 @@ function createOverviewPayload(overrides = {}) {
         task_outcome_status: "COMPLETED",
         agent_name: "default",
         execution_profile: "full-runtime",
+        planning_mode: "NORMAL",
+        planning_depth: "STANDARD_PLANNING",
+        assurance_depth: "SIGNOFF_ASSURANCE",
       },
     },
     topology: {
@@ -754,6 +767,10 @@ async function stopServer(child) {
   if (!child) {
     return;
   }
+  if (typeof child.stop === "function") {
+    await child.stop();
+    return;
+  }
   try {
     if (!child.killed) {
       child.kill("SIGTERM");
@@ -769,16 +786,11 @@ async function stopServer(child) {
 
 async function runIntegrationCheck() {
   const port = pickPort();
-  const child = spawn(process.execPath, [serverJsPath], {
-    cwd: workspaceRoot,
-    env: {
-      ...process.env,
-      CODEX_UI_PORT: String(port),
-      CODEX_AUTO_OPEN_BROWSER: "0",
-      CODEX_PAUSE_ON_EXIT: "0",
-    },
-    stdio: ["ignore", "ignore", "pipe"],
-    windowsHide: true,
+  const child = await startInProcessHarnessServer({
+    CODEX_UI_PORT: String(port),
+    CODEX_AUTO_OPEN_BROWSER: "0",
+    CODEX_PAUSE_ON_EXIT: "0",
+    CODEX_APP_SERVER_TRANSPORT: "mock-fixture",
   });
 
   try {

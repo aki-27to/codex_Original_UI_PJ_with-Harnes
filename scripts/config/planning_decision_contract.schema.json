@@ -1,0 +1,34 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "planning-decision-contract.schema.json",
+  "title": "Planning Decision Contract",
+  "type": "object",
+  "required": [
+    "schema",
+    "source",
+    "selectedPlanningMode",
+    "selectedPlanningDepth",
+    "selectedAssuranceDepth",
+    "flowPath",
+    "adaptiveFlowId",
+    "planningReasons",
+    "assuranceReasons"
+  ],
+  "properties": {
+    "schema": { "const": "planning-decision-contract.v1" },
+    "source": { "type": "string", "minLength": 1 },
+    "promptHash": { "type": "string" },
+    "selectedPlanningMode": { "type": "string", "enum": ["FAST", "NORMAL", "DISCOVERY"] },
+    "selectedPlanningDepth": { "type": "string", "enum": ["FAST_PLANNING", "STANDARD_PLANNING", "DISCOVERY_PLANNING"] },
+    "selectedAssuranceDepth": { "type": "string", "enum": ["LIGHT_ASSURANCE", "STANDARD_ASSURANCE", "SIGNOFF_ASSURANCE"] },
+    "flowPath": { "type": "string", "enum": ["FAST_PATH", "NORMAL_PATH", "DISCOVERY_PATH"] },
+    "adaptiveFlowId": { "type": "string", "minLength": 1 },
+    "needsInputRecommended": { "type": "integer", "enum": [0, 1] },
+    "proposalOnlyRecommended": { "type": "integer", "enum": [0, 1] },
+    "planningReasons": { "type": "array", "items": { "type": "string" } },
+    "assuranceReasons": { "type": "array", "items": { "type": "string" } },
+    "planningSignals": { "type": "object" },
+    "assuranceSignals": { "type": "object" }
+  },
+  "additionalProperties": false
+}

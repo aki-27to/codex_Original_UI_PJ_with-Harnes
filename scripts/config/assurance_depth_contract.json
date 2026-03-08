@@ -1,0 +1,26 @@
+{
+  "schema": "assurance-mode-contract.v1",
+  "version": "2026-03-08.r1",
+  "modes": ["LIGHT_ASSURANCE", "STANDARD_ASSURANCE", "SIGNOFF_ASSURANCE"],
+  "thresholds": {
+    "light": {
+      "maxSpecialistBoundaries": 1,
+      "maxRegressionRiskScore": 1,
+      "maxUserFacingImpactScore": 1
+    },
+    "signoff": {
+      "minRiskScore": 3,
+      "minRegressionRiskScore": 2
+    }
+  },
+  "signals": {
+    "docsOnlyKeywords": ["docs only", "docs-only", "documentation only", "readme", "changelog", "harness_map", ".md", "docs/"],
+    "runtimeKeywords": ["server.js", "runtime", "protocol", "api", "/api/exec", "app server", "replay", "eval", "signoff", "proof", "scripts/", "scripts/config/", ".codex", "skill governance", "agent governance"],
+    "userFacingKeywords": ["ui", "ux", "web", "frontend", "html", "css", "browser", "label", "copy"],
+    "irreversibleKeywords": ["delete", "remove", "drop", "migration", "destructive", "irreversible", "install"],
+    "reviewKeywords": ["review", "reviewer", "audit", "finding", "findings"],
+    "testerKeywords": ["test", "tester", "eval", "proof", "verification", "smoke"],
+    "signoffKeywords": ["signoff", "proof", "release gate", "operator evidence"],
+    "newLogicKeywords": ["new logic", "new feature", "over-delivery", "rewrite", "redesign", "refactor behavior", "protocol change"]
+  }
+}

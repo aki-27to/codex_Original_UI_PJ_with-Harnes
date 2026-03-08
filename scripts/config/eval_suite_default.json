@@ -1,7 +1,7 @@
 {
   "schema": "harness-eval-suite.v1",
   "suiteId": "core-harness-workflow.v4",
-  "description": "Regression suite covering live exec behavior plus deterministic workflow-policy probes for retired worker rejection, parent-dispatch guard enforcement, idempotency lifecycle bridges, task outcomes, and adversarial review.",
+  "description": "Regression suite covering live exec behavior plus deterministic workflow-policy probes for retired worker rejection, parent-dispatch guard enforcement, adaptive planning and assurance depth selection, task outcomes, and adversarial review.",
   "outputSchema": {
     "type": "object",
     "required": ["status", "latencyMs", "passed", "score", "reason"],
@@ -20,43 +20,28 @@
       "driver": "exec",
       "prompt": "Reply with exactly: ACK",
       "weight": 1,
-      "expect": {
-        "mode": "exact",
-        "value": "ACK"
-      }
+      "expect": { "mode": "exact", "value": "ACK" }
     },
     {
       "id": "retired_worker_rejected",
       "title": "Retired worker cannot be selected as runtime agent",
       "driver": "agent_registry_probe",
-      "input": {
-        "agentName": "worker"
-      },
+      "input": { "agentName": "worker" },
       "weight": 2,
       "expect": {
         "mode": "json_fields",
-        "fields": {
-          "ok": false,
-          "reason": "agent_not_configured",
-          "agentName": "worker"
-        }
+        "fields": { "ok": false, "reason": "agent_not_configured", "agentName": "worker" }
       }
     },
     {
       "id": "retired_worker_scoped_rejected",
       "title": "Retired worker scoped alias cannot be selected as runtime agent",
       "driver": "agent_registry_probe",
-      "input": {
-        "agentName": "worker@chat-legacy"
-      },
+      "input": { "agentName": "worker@chat-legacy" },
       "weight": 1,
       "expect": {
         "mode": "json_fields",
-        "fields": {
-          "ok": false,
-          "reason": "agent_not_configured",
-          "agentName": "worker@chat-legacy"
-        }
+        "fields": { "ok": false, "reason": "agent_not_configured", "agentName": "worker@chat-legacy" }
       }
     },
     {
@@ -65,17 +50,140 @@
       "driver": "requirement_rbj_probe",
       "input": {
         "prompt": "Implement the requested backend change.",
-        "options": {
-          "agentName": "default"
-        }
+        "options": { "agentName": "default" }
+      },
+      "weight": 2,
+      "expect": {
+        "mode": "json_fields",
+        "fields": { "active": true, "mode": "requirement_definition_loop", "reason": "active" }
+      }
+    },
+    {
+      "id": "planning_mode_fast_selected",
+      "title": "Small docs fix selects FAST planning and LIGHT assurance",
+      "driver": "planning_mode_probe",
+      "input": {
+        "prompt": "# Goal\nUpdate only docs/CURRENT_ARCHITECTURE.md with one wording fix.\n# Acceptance Criteria\n- Change exactly one sentence.\n- Do not modify any other file.",
+        "options": { "agentName": "default" }
       },
       "weight": 2,
       "expect": {
         "mode": "json_fields",
         "fields": {
-          "active": true,
-          "mode": "requirement_definition_loop",
-          "reason": "active"
+          "selectedMode": "FAST",
+          "selectedPlanningDepth": "FAST_PLANNING",
+          "selectedAssuranceDepth": "LIGHT_ASSURANCE",
+          "flowPath": "FAST_PATH",
+          "needsInputRecommended": 0
+        }
+      }
+    },
+    {
+      "id": "planning_mode_discovery_selected",
+      "title": "Ambiguous task selects DISCOVERY planning and STANDARD assurance",
+      "driver": "planning_mode_probe",
+      "input": {
+        "prompt": "# Goal\nDesign a new enterprise execution workflow for a future product line.\n# Background\nThe goal, non-goals, specialist ownership, and acceptance checks are not fixed yet.\nUser decision is required before implementation.\n# Acceptance Criteria\n- First make the open questions explicit.",
+        "options": { "agentName": "default" }
+      },
+      "weight": 2,
+      "expect": {
+        "mode": "json_fields",
+        "fields": {
+          "selectedMode": "DISCOVERY",
+          "selectedPlanningDepth": "DISCOVERY_PLANNING",
+          "selectedAssuranceDepth": "STANDARD_ASSURANCE",
+          "flowPath": "DISCOVERY_PATH",
+          "needsInputRecommended": 1
+        }
+      }
+    },
+    {
+      "id": "approval_boundary_discovery_needs_input",
+      "title": "Approval-boundary task stays proposal-only and escalates assurance",
+      "driver": "planning_contract_probe",
+      "input": {
+        "prompt": "# Goal\nPerform a dependency/runtime installation and destructive schema migration.\n# Acceptance Criteria\n- Approval boundary is crossed and user decision is required.",
+        "options": { "agentName": "default" }
+      },
+      "weight": 2,
+      "expect": {
+        "mode": "json_fields",
+        "fields": {
+          "selectedMode": "DISCOVERY",
+          "selectedPlanningDepth": "DISCOVERY_PLANNING",
+          "selectedAssuranceDepth": "SIGNOFF_ASSURANCE",
+          "proposalOnly": 1,
+          "signoffRequired": 1
+        }
+      }
+    },
+    {
+      "id": "cross_specialist_dispatch_plan",
+      "title": "Cross-specialist scope produces multi-owner signoff plan",
+      "driver": "planning_contract_probe",
+      "input": {
+        "prompt": "# Goal\nUpdate server.js and docs/CURRENT_ARCHITECTURE.md to expose the selected execution flow in runtime output.\n# Implementation Requirements\n- Update server.js runtime output.\n- Update docs/CURRENT_ARCHITECTURE.md.\n# Acceptance Criteria\n- Reviewer evidence is required.\n- Tester evidence is required.\n- Signoff evidence is required.",
+        "options": { "agentName": "default" }
+      },
+      "weight": 2,
+      "expect": {
+        "mode": "json_fields",
+        "fields": {
+          "selectedMode": "NORMAL",
+          "selectedPlanningDepth": "STANDARD_PLANNING",
+          "selectedAssuranceDepth": "SIGNOFF_ASSURANCE",
+          "dispatchCount": 2,
+          "ownerAgents": ["backend_worker", "infra_worker"]
+        }
+      }
+    },
+    {
+      "id": "reviewer_tester_required_case",
+      "title": "Workflow marks reviewer tester and signoff when required",
+      "driver": "planning_contract_probe",
+      "input": {
+        "prompt": "# Goal\nUpdate server.js and docs/CURRENT_ARCHITECTURE.md to expose the selected execution flow in runtime output.\n# Acceptance Criteria\n- Reviewer evidence is required.\n- Tester evidence is required.\n- Signoff evidence is required.",
+        "options": { "agentName": "default" }
+      },
+      "weight": 1,
+      "expect": {
+        "mode": "json_fields",
+        "fields": { "reviewerRequired": 1, "testerRequired": 1, "signoffRequired": 1 }
+      }
+    },
+    {
+      "id": "dedicated_test_required_for_new_logic",
+      "title": "Over-delivery with new logic requires dedicated tests",
+      "driver": "planning_contract_probe",
+      "input": {
+        "prompt": "# Goal\nRewrite the runtime protocol handling in server.js and add new logic for signoff orchestration.\n# Acceptance Criteria\n- Reviewer evidence is required.\n- Tester evidence is required.\n- Signoff evidence is required.\n- Add dedicated tests for the new logic.",
+        "options": { "agentName": "default" }
+      },
+      "weight": 2,
+      "expect": {
+        "mode": "json_fields",
+        "fields": { "selectedAssuranceDepth": "SIGNOFF_ASSURANCE", "testerRequired": 1, "dedicatedTestsRequired": 1 }
+      }
+    },
+    {
+      "id": "context_leakage_planning_owned_paths",
+      "title": "Single-owner FAST path avoids out-of-scope owned paths",
+      "driver": "planning_contract_probe",
+      "input": {
+        "prompt": "# Goal\nUpdate only server.js.\n# Acceptance Criteria\n- Limit owned paths to server.js.\n- Avoid context leakage.",
+        "options": { "agentName": "default" }
+      },
+      "weight": 1,
+      "expect": {
+        "mode": "json_fields",
+        "fields": {
+          "selectedMode": "FAST",
+          "selectedPlanningDepth": "FAST_PLANNING",
+          "selectedAssuranceDepth": "STANDARD_ASSURANCE",
+          "dispatchCount": 1,
+          "ownerAgents": ["backend_worker"],
+          "contextLeakageRisk": 0
         }
       }
     },
@@ -99,11 +207,7 @@
       "weight": 2,
       "expect": {
         "mode": "json_fields",
-        "fields": {
-          "violation": 1,
-          "reason": "dispatch_not_attempted",
-          "retry": 1
-        }
+        "fields": { "violation": 1, "reason": "dispatch_not_attempted", "retry": 1 }
       }
     },
     {
@@ -150,121 +254,71 @@
       "weight": 1,
       "expect": {
         "mode": "json_fields",
-        "fields": {
-          "decision": "blocked",
-          "reason": "blocked_non_interactive_user_input_policy"
-        }
+        "fields": { "decision": "blocked", "reason": "blocked_non_interactive_user_input_policy" }
       }
     },
     {
       "id": "failed_validation_missing_evidence",
       "title": "Missing evidence maps to FAILED_VALIDATION",
       "driver": "task_outcome_probe",
-      "input": {
-        "turnStatus": "failed",
-        "missingEvidence": true
-      },
+      "input": { "turnStatus": "failed", "missingEvidence": true },
       "weight": 2,
       "expect": {
         "mode": "json_fields",
-        "fields": {
-          "status": "FAILED_VALIDATION",
-          "reason": "missing_required_evidence"
-        }
+        "fields": { "status": "FAILED_VALIDATION", "reason": "missing_required_evidence" }
       }
     },
     {
       "id": "needs_input_from_approval",
       "title": "Approval unavailability maps to NEEDS_INPUT",
       "driver": "task_outcome_probe",
-      "input": {
-        "turnStatus": "failed",
-        "approvalReason": "interactive_approval_unavailable"
-      },
+      "input": { "turnStatus": "failed", "approvalReason": "interactive_approval_unavailable" },
       "weight": 1,
       "expect": {
         "mode": "json_fields",
-        "fields": {
-          "status": "NEEDS_INPUT",
-          "reason": "interactive_approval_unavailable"
-        }
+        "fields": { "status": "NEEDS_INPUT", "reason": "interactive_approval_unavailable" }
       }
     },
     {
       "id": "turn_task_outcome_bridge_failed_validation",
       "title": "Failed turn accepts FAILED_VALIDATION outcome",
       "driver": "turn_task_outcome_probe",
-      "input": {
-        "turnStatus": "failed",
-        "taskOutcomeStatus": "FAILED_VALIDATION"
-      },
+      "input": { "turnStatus": "failed", "taskOutcomeStatus": "FAILED_VALIDATION" },
       "weight": 1,
-      "expect": {
-        "mode": "json_fields",
-        "fields": {
-          "ok": true,
-          "reason": "ok"
-        }
-      }
+      "expect": { "mode": "json_fields", "fields": { "ok": true, "reason": "compatible" } }
     },
     {
       "id": "turn_task_outcome_bridge_blocked",
       "title": "Failed turn accepts BLOCKED outcome",
       "driver": "turn_task_outcome_probe",
-      "input": {
-        "turnStatus": "failed",
-        "taskOutcomeStatus": "BLOCKED"
-      },
+      "input": { "turnStatus": "failed", "taskOutcomeStatus": "BLOCKED" },
       "weight": 1,
-      "expect": {
-        "mode": "json_fields",
-        "fields": {
-          "ok": true,
-          "reason": "ok"
-        }
-      }
+      "expect": { "mode": "json_fields", "fields": { "ok": true, "reason": "compatible" } }
     },
     {
       "id": "adversarial_exact_contract_mismatch",
-      "title": "Adversarial shadow review catches exact reply mismatch",
+      "title": "Adversarial shadow spots exact-contract mismatch",
       "driver": "adversarial_shadow_probe",
       "input": {
-        "prompt": "Reply with exactly: ACK",
-        "answer": "NOPE",
-        "status": "completed"
+        "request": "Reply with exactly ACK",
+        "assistantResponse": "ACK plus extra",
+        "taskOutcomeStatus": "COMPLETED"
       },
       "weight": 1,
       "expect": {
         "mode": "json_fields",
-        "fields": {
-          "decision": "needs_improvement",
-          "judge.verdict": "needs_improvement",
-          "signals.exactReplyContract": true
-        }
+        "fields": { "decision": "FAILED_VALIDATION", "reason": "exact_reply_contract_mismatch" }
       }
     },
     {
       "id": "adversarial_failed_validation_retry",
-      "title": "Adversarial loop retries FAILED_VALIDATION outcomes",
+      "title": "Adversarial loop retries FAILED_VALIDATION once",
       "driver": "adversarial_loop_probe",
-      "input": {
-        "enabled": true,
-        "finalStatus": "failed",
-        "taskOutcomeStatus": "FAILED_VALIDATION",
-        "decision": "needs_improvement",
-        "attempt": 0,
-        "maxRetries": 1,
-        "writable": true,
-        "clientClosed": false
-      },
+      "input": { "enabled": true, "attempt": 0, "maxRetries": 1, "decision": "FAILED_VALIDATION" },
       "weight": 1,
       "expect": {
         "mode": "json_fields",
-        "fields": {
-          "retry": true,
-          "reason": "failed_validation_review_failed",
-          "nextAttempt": 1
-        }
+        "fields": { "retry": true, "reason": "adversarial_failed_validation_retry" }
       }
     }
   ]

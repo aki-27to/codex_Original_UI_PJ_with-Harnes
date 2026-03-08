@@ -18,7 +18,7 @@ function assert(condition, message) {
 function testLoadSuite() {
   const suite = loadEvalSuiteFromFile(path.join(__dirname, "config", "eval_suite_default.json"));
   assert(suite && suite.schema === "harness-eval-suite.v1", "suite schema mismatch");
-  assert(Array.isArray(suite.cases) && suite.cases.length >= 6, "suite should have enough cases");
+  assert(Array.isArray(suite.cases) && suite.cases.length >= 12, "suite should have enough cases");
   const probeCase = suite.cases.find((entry) => entry && entry.driver === "agent_registry_probe");
   assert(probeCase && probeCase.input && probeCase.input.agentName === "worker", "suite should preserve probe-case input payload");
   const scopedWorkerCase = suite.cases.find((entry) => entry && entry.id === "retired_worker_scoped_rejected");
@@ -28,6 +28,19 @@ function testLoadSuite() {
   assert(guardCase && guardCase.input && Number(guardCase.input.fileChanges) === 1, "suite should require concrete implementation evidence for parent dispatch guard");
   const idempotencyCase = suite.cases.find((entry) => entry && entry.id === "idempotency_failed_outcome_bridge");
   assert(idempotencyCase && idempotencyCase.driver === "idempotency_bridge_probe", "suite should cover idempotency outcome bridge");
+  const fastPlanningCase = suite.cases.find((entry) => entry && entry.id === "planning_mode_fast_selected");
+  assert(fastPlanningCase && fastPlanningCase.driver === "planning_mode_probe", "suite should cover FAST planning mode");
+  assert(fastPlanningCase.expect.fields.selectedAssuranceDepth === "LIGHT_ASSURANCE", "suite should cover LIGHT assurance");
+  const discoveryPlanningCase = suite.cases.find((entry) => entry && entry.id === "planning_mode_discovery_selected");
+  assert(discoveryPlanningCase && discoveryPlanningCase.driver === "planning_mode_probe", "suite should cover DISCOVERY planning mode");
+  assert(discoveryPlanningCase.expect.fields.selectedPlanningDepth === "DISCOVERY_PLANNING", "suite should cover DISCOVERY planning depth");
+  const crossSpecialistCase = suite.cases.find((entry) => entry && entry.id === "cross_specialist_dispatch_plan");
+  assert(crossSpecialistCase && crossSpecialistCase.driver === "planning_contract_probe", "suite should cover cross-specialist dispatch plan");
+  assert(crossSpecialistCase.expect.fields.selectedAssuranceDepth === "SIGNOFF_ASSURANCE", "suite should cover SIGNOFF assurance");
+  const contextLeakCase = suite.cases.find((entry) => entry && entry.id === "context_leakage_planning_owned_paths");
+  assert(contextLeakCase && contextLeakCase.driver === "planning_contract_probe", "suite should cover context leakage guard");
+  const dedicatedTestCase = suite.cases.find((entry) => entry && entry.id === "dedicated_test_required_for_new_logic");
+  assert(dedicatedTestCase && dedicatedTestCase.driver === "planning_contract_probe", "suite should cover dedicated test requirement");
 }
 
 function testExpectationModes() {

@@ -6,6 +6,14 @@ const {
   resolveRequirementRbjState,
   stripRequirementRbjControlTokens,
 } = require("../lib/requirement_rbj_policy");
+const {
+  buildPlanningArtifacts,
+  loadAssuranceModeContract,
+  normalizeAssuranceModeContract,
+  loadPlanningModeContract,
+  normalizePlanningModeContract,
+  sanitizePlanningArtifactsForRuntime,
+} = require("../lib/planning_mode_policy");
 
 const ORIGINAL_REQUIREMENT = "?????3?????";
 const MATCH_VALUE_ENV_KEY = "REQUIREMENT_GUARD_MATCH_VALUE";
@@ -52,6 +60,8 @@ const SCOPE_EXPANSION_REJECT_TOKENS = Object.freeze([
   "[scope-no-plus]",
   "scope:no-plus",
 ]);
+const PLANNING_MODE_MARKER = "[PLANNING_MODE_V1]";
+const ASSURANCE_DEPTH_MARKER = "[ASSURANCE_DEPTH_V1]";
 
 const requirement = Object.freeze({
   id: "3",
@@ -173,6 +183,22 @@ function getScopeExpansionConfig(env) {
   };
 }
 
+function getPlanningModeConfig() {
+  try {
+    return loadPlanningModeContract();
+  } catch {
+    return normalizePlanningModeContract(null);
+  }
+}
+
+function getAssuranceModeConfig() {
+  try {
+    return loadAssuranceModeContract();
+  } catch {
+    return normalizeAssuranceModeContract(null);
+  }
+}
+
 function getMatchConfig(env) {
   const sourceEnv = normalizeEnvMap(env);
   const raw =
@@ -279,7 +305,8 @@ function buildRequirementDefinitionGatePrompt(
   expansionConfig,
   expansionState,
   rbjBlock,
-  rbjState
+  rbjState,
+  planningArtifacts
 ) {
   const maxQuestions =
     rbjState && Number.isFinite(rbjState.max_questions)
@@ -289,20 +316,44 @@ function buildRequirementDefinitionGatePrompt(
     rbjState && Number.isFinite(rbjState.min_confidence)
       ? Math.max(50, Math.min(100, Math.trunc(rbjState.min_confidence)))
       : 80;
+  const requirement =
+    planningArtifacts && planningArtifacts.requirementContract && typeof planningArtifacts.requirementContract === "object"
+      ? planningArtifacts.requirementContract
+      : {};
+  const selection =
+    planningArtifacts && planningArtifacts.selection && typeof planningArtifacts.selection === "object"
+      ? planningArtifacts.selection
+      : {};
+  const acceptanceChecks = Array.isArray(requirement.acceptanceChecks)
+    ? requirement.acceptanceChecks
+        .map((entry) => (entry && typeof entry === "object" && entry.title ? `- ${entry.title}` : ""))
+        .filter(Boolean)
+        .slice(0, 8)
+        .join("\n")
+    : "";
+  const openQuestions = Array.isArray(requirement.openQuestions)
+    ? requirement.openQuestions.map((entry) => `- ${entry}`).slice(0, 8).join("\n")
+    : "";
   return [
     `${config.marker} mode: requirement_definition_gate`,
     `${expansionConfig.marker} expansion_status: parked_until_rbj_pass`,
     `requested_expansion_mode: ${expansionState.mode}`,
+    `${PLANNING_MODE_MARKER} selected: DISCOVERY`,
+    `${ASSURANCE_DEPTH_MARKER} selected: ${typeof selection.selectedAssuranceDepth === "string" ? selection.selectedAssuranceDepth : "STANDARD_ASSURANCE"}`,
+    `planning_reasons: ${Array.isArray(selection.reasons) ? selection.reasons.join(", ") : ""}`,
+    `assurance_reasons: ${Array.isArray(selection.assuranceReasons) ? selection.assuranceReasons.join(", ") : ""}`,
     rbjBlock || "",
     "Execution protocol (mandatory):",
-    "1) Output sections in this exact order: [Blue-1], [Red], [Judge], [Blue-Improved].",
-    "2) In Blue sections, split content into: Confirmed Requirements / Assumptions (non-binding) / Open Questions (blocking).",
-    "3) Never fabricate concrete numbers (deadline/headcount/budget/SLA). If missing, write TBD and move to Open Questions.",
-    "4) Assumptions are placeholders only and must not become implementation commitments without user confirmation.",
-    "5) Keep Red strictly on evidence-backed requirement gaps; no scope invention.",
-    `6) If Judge verdict is ASK, ask at most ${maxQuestions} blocking questions and stop with STATUS: NEED_USER_INPUT.`,
-    `7) If Judge verdict is PASS with confidence >= ${minConfidence}, continue only if implementation is explicitly requested.`,
-    "8) If user requested requirement-definition only, stop after Blue-Improved with STATUS: REQUIREMENTS_READY.",
+    "1) Output sections in this exact order: [Discovery-Goal], [Discovery-NonGoals], [Discovery-Assumptions], [Discovery-OpenQuestions], [Discovery-Acceptance], [Discovery-Decision].",
+    "2) Keep assumptions non-binding and do not implement while blocking open questions remain.",
+    "3) Never fabricate concrete numbers (deadline/headcount/budget/SLA). If missing, write TBD and keep it in Open Questions.",
+    "4) Risky over-delivery is proposal-only in DISCOVERY mode.",
+    "5) If any user decision or approval-boundary item remains, stop with STATUS: NEED_USER_INPUT.",
+    `6) Ask at most ${maxQuestions} blocking questions in total.`,
+    `7) If all blocking questions are resolved and confidence >= ${minConfidence}, you may state STATUS: REQUIREMENTS_READY.`,
+    "8) Do not claim implementation completion from DISCOVERY mode output.",
+    acceptanceChecks ? "Seed acceptance checks:\n".concat(acceptanceChecks) : "",
+    openQuestions ? "Seed open questions:\n".concat(openQuestions) : "",
     "",
     "User request (verbatim):",
     originalPrompt,
@@ -312,24 +363,61 @@ function buildRequirementDefinitionGatePrompt(
 function buildRequirementGuardPrompt(
   originalPrompt,
   config,
-  canExecute,
   expansionConfig,
   expansionState,
-  rbjBlock,
-  rbjState
+  planningArtifacts,
+  rbjState,
+  rbjConfig
 ) {
-  if (rbjState && rbjState.active) {
+  const selection =
+    planningArtifacts && planningArtifacts.selection && typeof planningArtifacts.selection === "object"
+      ? planningArtifacts.selection
+      : {};
+  const requirement =
+    planningArtifacts && planningArtifacts.requirementContract && typeof planningArtifacts.requirementContract === "object"
+      ? planningArtifacts.requirementContract
+      : {};
+  const dispatchPlan =
+    planningArtifacts && planningArtifacts.dispatchPlan && typeof planningArtifacts.dispatchPlan === "object"
+      ? planningArtifacts.dispatchPlan
+      : {};
+  const selectedMode = typeof selection.selectedMode === "string" ? selection.selectedMode : "NORMAL";
+  const selectedPlanningDepth =
+    typeof selection.selectedPlanningDepth === "string" ? selection.selectedPlanningDepth : "STANDARD_PLANNING";
+  const selectedAssuranceDepth =
+    typeof selection.selectedAssuranceDepth === "string" ? selection.selectedAssuranceDepth : "STANDARD_ASSURANCE";
+  const planningReasonLine = `planning_reasons: ${Array.isArray(selection.reasons) ? selection.reasons.join(", ") : ""}`;
+  const assuranceReasonLine = `assurance_reasons: ${Array.isArray(selection.assuranceReasons) ? selection.assuranceReasons.join(", ") : ""}`;
+  const acceptanceChecks = Array.isArray(requirement.acceptanceChecks)
+    ? requirement.acceptanceChecks
+        .map((entry) => (entry && typeof entry === "object" && entry.title ? `- ${entry.title}` : ""))
+        .filter(Boolean)
+        .slice(0, 8)
+        .join("\n")
+    : "";
+  const dispatchOwners = Array.isArray(dispatchPlan.dispatches)
+    ? dispatchPlan.dispatches
+        .map((entry) => (entry && typeof entry === "object" && entry.ownerAgent ? entry.ownerAgent : ""))
+        .filter(Boolean)
+        .slice(0, 8)
+        .join(", ")
+    : "";
+
+  if (selectedMode === "DISCOVERY" && rbjState && rbjState.active) {
     return buildRequirementDefinitionGatePrompt(
       originalPrompt,
       config,
       expansionConfig,
       expansionState,
-      rbjBlock,
-      rbjState
+      buildRequirementRbjInstructionBlock({
+        config: rbjConfig,
+        state: rbjState,
+      }),
+      rbjState,
+      planningArtifacts
     );
   }
-  void canExecute;
-  const modeLine = "mode: over_delivery_execution";
+  const modeLine = selectedMode === "FAST" ? "mode: fast_execution" : "mode: structured_execution";
   const finishRule = expansionState.execute_expansion
     ? "- End with: STATUS: OVER_DELIVERED_OR_COMPLETED"
     : "- End with: STATUS: COMPLETED";
@@ -342,18 +430,51 @@ function buildRequirementGuardPrompt(
   const expansionHint = !expansionConfig.enabled
     ? "- Expansion controls are unavailable."
     : "- Preferred over-delivery scope: bug fixes, refactoring, safety hardening, tests, and docs updates.";
+  const planningRules =
+    selectedPlanningDepth === "FAST_PLANNING"
+      ? [
+          "1) Keep Step 1/2 concise: lock the goal, acceptance checks, and specialist owner quickly, then execute.",
+          "2) Do not ask follow-up questions unless correctness is blocked by a real missing decision.",
+          "3) Use native specialist dispatch if implementation crosses the parent-only boundary.",
+          "4) Preserve the baseline scope and avoid speculative extras.",
+        ]
+      : [
+          "1) Before execution, briefly lock explicit goal, non-goals, assumptions, and acceptance checks.",
+          "2) Make the dispatch plan explicit before implementation when multiple specialists are implicated.",
+          "3) If blocking ambiguity remains, stop with STATUS: NEED_USER_INPUT instead of guessing.",
+          "4) Keep over-delivery adjacent, bounded, and separately reported.",
+        ];
+  const assuranceRules =
+    selectedAssuranceDepth === "LIGHT_ASSURANCE"
+      ? [
+          "5) Keep assurance light: do not add reviewer/tester/doc-sync overhead unless the prompt or runtime risk requires it.",
+          "6) Still emit the standard trace artifacts for observability.",
+        ]
+      : selectedAssuranceDepth === "SIGNOFF_ASSURANCE"
+        ? [
+            "5) Treat this as signoff-grade work: reviewer/tester evidence, doc sync, and signoff bundle readiness are mandatory.",
+            "6) If new logic is introduced, dedicated tests are required before claiming completion.",
+          ]
+        : [
+            "5) Use standard assurance: gather bounded reviewer/tester evidence when the plan or risk profile calls for it.",
+            "6) Keep evidence organized so Step 4 can be reviewed quickly.",
+          ];
 
   return [
     `${config.marker} ${modeLine}`,
     `${expansionConfig.marker} ${expansionStatusLine}`,
-    rbjBlock || "",
+    `${PLANNING_MODE_MARKER} selected: ${selectedMode}`,
+    `${ASSURANCE_DEPTH_MARKER} selected: ${selectedAssuranceDepth}`,
+    planningReasonLine,
+    assuranceReasonLine,
     "Execution protocol (mandatory):",
-    "1) Deliver all explicit user requirements first.",
-    "2) Infer and implement safe high-value over-delivery where beneficial.",
-    "3) Prioritize quality upgrades: bug fixes, refactoring, test coverage, resilience, and maintainability.",
-    "4) Keep changes coherent and avoid destructive unrelated edits.",
-    "5) If critical ambiguity blocks correctness, ask concise clarifying questions.",
-    "6) Report baseline delivery, over-delivery items, and residual risks.",
+    ...planningRules,
+    ...assuranceRules,
+    "7) Deliver all explicit user requirements first.",
+    "8) Prioritize quality upgrades: bug fixes, refactoring, test coverage, resilience, and maintainability.",
+    "9) Report baseline delivery, over-delivery items, and residual risks.",
+    dispatchOwners ? `- Planned dispatch owners: ${dispatchOwners}` : "",
+    acceptanceChecks ? "Acceptance checks:\n".concat(acceptanceChecks) : "",
     expansionControlRule,
     expansionHint,
     finishRule,
@@ -402,11 +523,31 @@ function transformExecRequest(input) {
   const requirementLockConfig = getRequirementLockConfig(envMap);
   const scopeExpansionConfig = getScopeExpansionConfig(envMap);
   const requirementRbjConfig = getRequirementRbjConfig(envMap);
+  const planningModeConfig = getPlanningModeConfig();
+  const assuranceModeConfig = getAssuranceModeConfig();
   const requirementRbjState = resolveRequirementRbjState({
     prompt: fallback.prompt,
     options: fallback.options,
     config: requirementRbjConfig,
   });
+  const planningArtifacts = sanitizePlanningArtifactsForRuntime(
+    buildPlanningArtifacts({
+      prompt: fallback.prompt,
+      options: {
+        ...fallback.options,
+        sandboxMode: fallback.sandboxMode,
+      },
+      contract: {
+        planning: planningModeConfig,
+        assurance: assuranceModeConfig,
+      },
+    })
+  );
+
+  fallback.options = {
+    ...fallback.options,
+    planningContext: planningArtifacts,
+  };
 
   if (!requirementLockConfig.enabled) {
     return fallback;
@@ -456,28 +597,27 @@ function transformExecRequest(input) {
     normalizedPromptWithCoreTokens,
     requirementRbjConfig
   );
-  const canExecute = true;
   const expansionState = {
     mode: expansionMode,
-    execute_expansion: expansionMode === "auto_enabled" && canExecute,
+    execute_expansion:
+      expansionMode === "auto_enabled" &&
+      (!planningArtifacts.selection || planningArtifacts.selection.selectedMode !== "DISCOVERY"),
   };
-  const rbjBlock = requirementRbjState.active
-    ? buildRequirementRbjInstructionBlock({
-      config: requirementRbjConfig,
-      state: requirementRbjState,
-    })
-    : "";
 
   return {
     ...fallback,
+    options: {
+      ...fallback.options,
+      planningContext: planningArtifacts,
+    },
     prompt: buildRequirementGuardPrompt(
       normalizedPrompt,
       requirementLockConfig,
-      canExecute,
       scopeExpansionConfig,
       expansionState,
-      rbjBlock,
-      requirementRbjState
+      planningArtifacts,
+      requirementRbjState,
+      requirementRbjConfig
     ),
   };
 }
@@ -487,6 +627,8 @@ module.exports = {
   getMatchConfig,
   evaluateMatch,
   getRequirementLockConfig,
+  getPlanningModeConfig,
+  getAssuranceModeConfig,
   getRequirementRbjConfig,
   getScopeExpansionConfig,
   transformExecRequest,

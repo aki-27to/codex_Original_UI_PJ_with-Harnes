@@ -15,6 +15,8 @@ const allowedEvalDrivers = new Set([
   "parent_dispatch_guard_probe",
   "request_user_input_probe",
   "requirement_rbj_probe",
+  "planning_mode_probe",
+  "planning_contract_probe",
   "adversarial_shadow_probe",
   "adversarial_loop_probe",
 ]);

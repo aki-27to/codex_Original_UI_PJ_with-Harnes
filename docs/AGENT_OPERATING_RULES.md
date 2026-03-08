@@ -1,6 +1,6 @@
 ﻿# AGENT_OPERATING_RULES
 
-Updated: 2026-03-07
+Updated: 2026-03-08
 
 ## 1) Scope
 This document contains tier-1 operating rules referenced by `AGENTS.md`.
@@ -19,6 +19,53 @@ This document contains tier-1 operating rules referenced by `AGENTS.md`.
 - Collaboration-first rule:
   - end-to-end user execution defaults to `default`
   - `intake` and `release_manager` are phase-scoped parent overlays, not interchangeable general-purpose parents
+
+### 2.1 Planning Modes For Step 1/2
+- Step 1/2 thickness is selected per task, not globally.
+- `FAST`:
+  - existing-scope change
+  - specialist ownership is clear
+  - acceptance checks are already concrete
+  - no approval-boundary contact
+  - open questions are effectively zero
+- `NORMAL`:
+  - bounded but cross-specialist work
+  - reviewer/tester evidence matters
+  - assumptions exist but do not block execution
+- `DISCOVERY`:
+  - requirements or non-goals are still ambiguous
+  - approval-boundary contact or explicit user decision exists
+  - open questions or assumption load are high enough that speculative implementation would create rework
+- Selection inputs are explicit and machine-readable:
+  - open question count
+  - acceptance-check clarity
+  - specialist-boundary count
+  - approval-boundary contact
+  - over-delivery risk
+  - user-decision requirement
+  - assumption dependence
+- `DISCOVERY` must surface unresolved decisions as `NEEDS_INPUT`; risky over-delivery stays proposal-only.
+- `FAST` keeps the previous harness bias toward speed, but only when the selector says the task is actually low-risk.
+
+### 2.2 Assurance Depth For Step 4
+- Step 4 strictness is also selected per task, independently from Step 1/2 thickness.
+- `LIGHT_ASSURANCE`:
+  - docs-only or similarly low-risk bounded work
+  - no unnecessary reviewer/tester/signoff fan-out
+- `STANDARD_ASSURANCE`:
+  - normal implementation work
+  - bounded review/test evidence when the workflow or risk requires it
+- `SIGNOFF_ASSURANCE`:
+  - runtime, protocol, infra, governance, or new-logic work
+  - reviewer/tester/doc-sync/signoff evidence must be ready before `COMPLETED`
+- Assurance inputs are explicit and machine-readable:
+  - change kind (`docs`, `web`, `server.js`, `scripts`, governance)
+  - runtime/protocol/infra contact
+  - reviewer/tester need
+  - user-facing impact
+  - irreversible risk
+  - signoff importance
+  - new-logic risk
 
 ## 3) Role Routing
 - `default` (Parent Orchestrator): default runtime entrypoint, end-to-end parent owner, and the only general-purpose parent role.
@@ -78,7 +125,11 @@ This document contains tier-1 operating rules referenced by `AGENTS.md`.
 - Parent delegation flow must invoke `$parent-dispatch-guard` before completing Step 2/4/5 when child dispatch is expected.
 - Skill package create/update requests must invoke `$skill-creator-master` first; use `$skill-creator` only as fallback when unavailable.
 - Feedback-driven tuning or self-improvement scope changes must invoke `$feedback-promotion-governor` before any session/global promotion.
-- Requirement definition must run RBJ before Step 2 dispatch:
+- Requirement definition stays planning-mode-aware:
+  - `FAST`: compact requirement lock plus acceptance-check confirmation
+  - `NORMAL`: brief structured requirement lock plus explicit dispatch contract
+  - `DISCOVERY`: full discovery gate with open questions, assumptions, and `NEEDS_INPUT` stop behavior
+- RBJ remains the requirement-definition quality backstop before dispatch when the selector keeps the task in a discovery-grade loop:
   - Blue draft -> Red audit (`$red-requirement-auditor`) -> Judge verdict.
 - Red findings without `requirement_ref` must be discarded by Judge.
 - Frontend verification requiring browser operation must use `playwright` (and optionally `screenshot`) through `frontend_worker` or `tester`.
