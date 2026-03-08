@@ -19,8 +19,14 @@ This document is the active architecture spec for the Codex App Server integrati
   - `CODEX_REQUEST_USER_INPUT_POLICY=blocked`
   - `CODEX_PARENT_DISPATCH_GUARD_MODE=enforce`
   - `CODEX_PARENT_DISPATCH_GUARD_MAX_RETRIES=1`
+- `start_codex_ui.bat` also enables turn-complete Git automation by default:
+  - `CODEX_GIT_AUTOCOMMIT_ENABLED=1`
+  - `CODEX_GIT_AUTOPUSH_ENABLED=1`
+  - `CODEX_GIT_ALLOW_DIRTY_BASELINE=0`
+  - `CODEX_GIT_REMOTE=origin`
 - `server.js` now infers the non-interactive `request-user-input` fallback as `blocked` when `CODEX_REQUEST_USER_INPUT_POLICY` is unset.
 - `server.js` owns HTTP APIs, app-server protocol handling, evidence capture, replay, eval, and SLO surfaces.
+- Turn-complete Git automation ignores harness runtime metadata files such as `logs/harness_execution_memory.json` and `logs/eval_runs.jsonl` when the target repo is this workspace, so operator-memory persistence alone does not trigger an automated publish.
 - `web/` owns the browser UI and uses the standard exec/runtime APIs.
 - `archive/` now holds legacy docs, example sites, installer drops, and manual render outputs that are not part of the active runtime surface.
 - `GET /english-conversation-app/*` now preserves the existing same-origin route while resolving static files in this priority order:
@@ -86,6 +92,7 @@ This document is the active architecture spec for the Codex App Server integrati
     - keeps the existing same-origin browser path so conversation/TTS APIs do not need CORS or alternate ports
 - `GET /api/runtime`
   - runtime snapshot, latest turn, governance policy, turn contract, task outcome contract, eval/replay/SLO capability summary
+  - includes `gitAutomation` with config posture and latest turn-level auto-commit/autopush result
   - includes `staticApps.englishConversationApp` with mount source/root summary for the current English Conversation App static root
 - `GET /api/harness/overview`
   - aggregated operator snapshot for `web/01.HarnesUI/overview.html`
@@ -132,6 +139,8 @@ This document is the active architecture spec for the Codex App Server integrati
 - Harness memory is stored in `logs/harness_execution_memory.json` by default and can be redirected with `CODEX_HARNESS_MEMORY_PATH`.
 - Eval run history is stored in `logs/eval_runs.jsonl` by default and can be redirected with `CODEX_EVAL_HISTORY_PATH`.
 - Replay memory, idempotency snapshots, and latest turn snapshots carry `taskOutcomeStatus` and `taskOutcomeReason`.
+- Latest turn snapshots now also carry `cwd` and a summarized `git_automation` result when turn-complete Git automation runs.
+- When the target repo is this harness repo, Git automation ignores harness-managed runtime files such as `logs/harness_execution_memory.json` and `logs/eval_runs.jsonl` so those files do not block the next clean-baseline publish.
 - Idempotency snapshots also retain request metadata, lifecycle status, and response-close disposition for duplicate/replay inspection.
 - `POST /api/eval/run` probe cases can now persist synthetic execution-memory records when `persistProbeResultsToMemory` or `persistProbeResults` is enabled.
 - `scripts/generate_runtime_proof.js` is the isolated proof generator for this capability. Its verified proof bundle shape is:
@@ -162,6 +171,7 @@ This document is the active architecture spec for the Codex App Server integrati
 
 - `server.js` or `scripts/` changes:
   - run `node scripts/app_server_smoke_test.js`
+  - run `node scripts/git_automation_policy_test.js` when the change touches turn-complete Git automation
 - English Conversation App static-mount changes:
   - run `node scripts/external_english_conversation_app_mount_test.js`
 - Skill assignment or skill package changes:

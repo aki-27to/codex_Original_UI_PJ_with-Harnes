@@ -32,6 +32,7 @@ English conversation app:
 Run:
 
 ```bash
+node scripts/git_automation_policy_test.js
 node scripts/app_server_smoke_test.js
 node scripts/external_english_conversation_app_mount_test.js
 node scripts/eval_replay_api_smoke_test.js
@@ -42,6 +43,7 @@ node scripts/skill_portfolio_audit.js
 ```
 
 Validates:
+- turn-complete Git auto-commit/autopush policy against local temporary repos and a local bare remote
 - `codex app-server` startup and handshake (`initialize` -> `initialized`)
 - `thread/start` + `turn/start` + `turn/interrupt`
 - local harness startup (`GET /api/runtime`)
@@ -80,6 +82,7 @@ Unknown API routes return `404`.
 `GET /api/runtime` includes:
 - `mode: "app-server"`
 - `latest_turn` / `latestTurn`
+- `gitAutomation` / `git_automation` config + latest auto-commit/autopush result
 - `staticApps.englishConversationApp` mount source/root summary
 - `operationLog` settings
 - `executionProfile` / `executionVisibility` / `fullUtilization`
@@ -183,6 +186,18 @@ English Conversation App integration:
   - `CODEX_REQUIREMENT_RBJ_MAX_QUESTIONS=3`
   - `CODEX_REQUIREMENT_RBJ_MAX_REVISIONS=2`
   - `CODEX_EXECUTION_PROFILE=full-runtime`
+- Launcher defaults also enable turn-complete Git automation:
+  - `CODEX_GIT_AUTOCOMMIT_ENABLED=1`
+  - `CODEX_GIT_AUTOPUSH_ENABLED=1`
+  - `CODEX_GIT_ALLOW_DIRTY_BASELINE=0`
+  - `CODEX_GIT_REMOTE=origin`
+- Git automation behavior:
+  - runs only after `taskOutcomeStatus=COMPLETED`
+  - targets the turn `cwd` repo, not the harness repo unconditionally
+  - skips auto-commit/autopush when the target repo baseline is already dirty
+  - skips autopush when the target repo has no configured remote or is on detached HEAD
+  - when the target repo is this harness workspace, runtime metadata files such as `logs/harness_execution_memory.json` and `logs/eval_runs.jsonl` are ignored so they do not trigger auto-publish by themselves
+  - ignores harness-managed runtime files like `logs/harness_execution_memory.json` and `logs/eval_runs.jsonl` when the target repo is this harness repo
 - Smoke harness pins deterministic visibility profile:
   - `CODEX_EXECUTION_PROFILE=smoke-test`
 - Turn artifacts now include explicit execution metadata:

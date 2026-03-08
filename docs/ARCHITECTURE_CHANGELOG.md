@@ -4194,3 +4194,48 @@ Residual risk:
 
 ### Residual Risk
 - Archived example/doc paths are no longer in their historical top-level locations, so any private notes or external shortcuts that pointed at the old root paths will need manual adjustment.
+
+## 105. Turn-Complete Git Auto-Commit/Autopush for Target Repos (2026-03-08)
+
+### Intent
+- Let the harness publish work automatically after successful turns, including when the active `cwd` points at an external sibling app repo.
+- Keep the automation bounded to the target repo for the turn instead of assuming the harness repo is always the Git target.
+- Avoid scooping unrelated pre-existing edits by refusing to auto-commit on a dirty baseline unless operators explicitly opt in.
+
+### Implemented
+- Added `scripts/lib/git_automation.js`:
+  - captures Git repo state for an arbitrary turn `cwd`
+  - normalizes runtime config from env
+  - performs turn-complete `git add -A`, `git commit`, and optional `git push -u <remote> <branch>`
+  - skips safely when the turn is not `COMPLETED`, the target is not a Git repo, the repo baseline is already dirty, the repo has no remote, or HEAD is detached
+  - ignores harness runtime metadata files (`logs/harness_execution_memory.json`, `logs/eval_runs.jsonl`) when the target repo is this workspace so local memory persistence does not trigger an automated publish by itself
+  - ignores harness-managed runtime files (`logs/harness_execution_memory.json`, `logs/eval_runs.jsonl`) when the target repo is this harness repo so those files do not poison the next baseline
+- Updated `server.js`:
+  - captures a Git baseline snapshot at turn start for the active `cwd`
+  - runs Git automation after the turn is finalized and `taskOutcomeStatus` is known, but before artifact finalization and memory persistence
+  - records summarized Git automation state into the latest turn snapshot and `GET /api/runtime`
+  - emits `turn.git_automation` into turn artifacts and operation logs
+- Updated `start_codex_ui.bat`:
+  - enables Git automation defaults when unset:
+    - `CODEX_GIT_AUTOCOMMIT_ENABLED=1`
+    - `CODEX_GIT_AUTOPUSH_ENABLED=1`
+    - `CODEX_GIT_ALLOW_DIRTY_BASELINE=0`
+    - `CODEX_GIT_REMOTE=origin`
+- Added `scripts/git_automation_policy_test.js`:
+  - validates env normalization
+  - validates successful auto-commit + autopush against a temporary local repo and local bare remote
+  - validates dirty-baseline skip behavior
+  - validates no-change skip behavior
+  - validates ignored runtime metadata paths do not trigger automation
+- Updated `README.md` and `docs/CURRENT_ARCHITECTURE.md` to document launcher defaults, runtime exposure, skip conditions, and focused verification.
+
+### Verification Evidence
+1. `node --check server.js` -> PASS
+2. `node --check scripts/lib/git_automation.js` -> PASS
+3. `node --check scripts/git_automation_policy_test.js` -> PASS
+4. `node scripts/git_automation_policy_test.js` -> PASS
+5. `node scripts/app_server_smoke_test.js` -> PASS
+
+### Residual Risk
+- Auto-push is now enabled by launcher default, so a clean repo with a configured remote will publish immediately after a successful turn unless the env vars are overridden.
+- Dirty-baseline protection avoids sweeping unrelated local edits into an automated commit, but it also means operators must clean or explicitly allow dirty baselines before automation will publish a turn in that repo.

@@ -66,6 +66,11 @@ const {
   validateTaskOutcomeTurnCompatibility,
 }=require("./scripts/lib/task_outcome_policy");
 const {
+  buildGitAutomationConfig,
+  captureGitRepoState,
+  runGitAutomationForTurn,
+}=require("./scripts/lib/git_automation");
+const {
   getRequirementRbjConfig,
   resolveRequirementRbjState,
 }=require("./scripts/lib/requirement_rbj_policy");
@@ -110,6 +115,11 @@ const approvalRiskRuleIds=Object.freeze({
 });
 const requestUserInputPolicyEnvKey="CODEX_REQUEST_USER_INPUT_POLICY";
 const nonInteractiveRequestUserInputPolicy=normalizeRequestUserInputPolicy(process.env[requestUserInputPolicyEnvKey],"blocked");
+const gitAutomationConfig=buildGitAutomationConfig(process.env);
+const gitAutomationWorkspaceIgnoredPaths=Object.freeze([
+  "logs/harness_execution_memory.json",
+  "logs/eval_runs.jsonl",
+]);
 function normalizeConfiguredAgentName(value,fallback){
   const raw=typeof value==="string"?value.trim():"";
   if(raw)return raw.slice(0,120);
@@ -3507,6 +3517,7 @@ if(defaultExecAgentName!=="main"){
 let activeAgentName=defaultExecAgentName;
 
 let latestTurnSnapshot=null;
+let latestGitAutomationSnapshot=null;
 let latestAdversarialShadowReview=null;
 const sessionPerformanceLimits=Object.freeze({
   maxSessions:48,
@@ -6809,6 +6820,7 @@ async function executeTurnStreaming(res,prompt,agentName,options){
   const modelReasoningEffort=normalizeExecModelReasoningEffort(options&&options.modelReasoningEffort,defaultExecModelReasoningEffort);
   const requestUserInputPolicy=normalizeRequestUserInputPolicy(options&&options.requestUserInputPolicy,nonInteractiveRequestUserInputPolicy);
   const cwd=normalizeWorkingDirectory(options&&options.cwd,workspaceRoot);
+  const gitAutomationIgnoredPaths=isPathWithin(workspaceRoot,cwd)?gitAutomationWorkspaceIgnoredPaths:[];
   const promptSummary=summarizeTextForOperationLog(prompt,24000);
   const promptAuditSource=options&&options.promptAudit&&typeof options.promptAudit==="object"?options.promptAudit:{};
   const promptAudit={
@@ -6968,6 +6980,7 @@ async function executeTurnStreaming(res,prompt,agentName,options){
     turnId,
     threadId,
     agentName,
+    cwd,
     source:safeString(options&&options.executionSource,80)||"api_exec",
     executionProfile:turnVisibility.profile.effective,
     executionIntent:turnVisibility.intent,
@@ -6988,8 +7001,35 @@ async function executeTurnStreaming(res,prompt,agentName,options){
     taskOutcomeStatus:"",
     taskOutcomeReason:"",
     turnError:null,
+    gitAutomation:null,
+    gitAutomationBaseline:null,
     updatedAt:nowTs(),
   };
+  if(gitAutomationConfig.enabled){
+    try{
+      turnRecord.gitAutomationBaseline=captureGitRepoState({
+        cwd,
+        remoteName:gitAutomationConfig.remoteName,
+        timeoutMs:gitAutomationConfig.commandTimeoutMs,
+        ignoredPaths:gitAutomationIgnoredPaths,
+      });
+    }catch(error){
+      turnRecord.gitAutomationBaseline={
+        cwd,
+        gitAvailable:0,
+        repoDetected:0,
+        dirty:0,
+        reason:error&&error.message?error.message:String(error),
+        entries:[],
+        changedPaths:[],
+        branch:"",
+        detachedHead:0,
+        remoteName:gitAutomationConfig.remoteName,
+        remoteConfigured:0,
+        remoteUrl:"",
+      };
+    }
+  }
   publishLatestTurnSnapshot(turnRecord,"turn_started");
   startSessionPerformanceTurn(threadId,turnId,agentName,turnRecord.startedAt);
   const artifactRecorder=createTurnArtifactRecorder({
@@ -7031,6 +7071,16 @@ async function executeTurnStreaming(res,prompt,agentName,options){
         inputLength:promptAudit.inputLength,
         outputLength:promptAudit.outputLength,
         truncated:promptAudit.truncated,
+      },
+      gitAutomation:{
+        config:{
+          enabled:gitAutomationConfig.enabled?1:0,
+          autocommitEnabled:gitAutomationConfig.autocommitEnabled?1:0,
+          autopushEnabled:gitAutomationConfig.autopushEnabled?1:0,
+          allowDirtyBaseline:gitAutomationConfig.allowDirtyBaseline?1:0,
+          remoteName:safeString(gitAutomationConfig.remoteName,120)||"origin",
+        },
+        baseline:snapshotGitRepoStateForRuntime(turnRecord.gitAutomationBaseline),
       },
     });
   }
@@ -7336,6 +7386,86 @@ async function executeTurnStreaming(res,prompt,agentName,options){
       },
       usage,
     });
+    if(gitAutomationConfig.enabled){
+      let gitAutomationResult=null;
+      try{
+        gitAutomationResult=runGitAutomationForTurn({
+          config:{
+            ...gitAutomationConfig,
+            ignoredPaths:gitAutomationIgnoredPaths,
+          },
+          cwd,
+          baseline:turnRecord.gitAutomationBaseline,
+          finalStatus,
+          taskOutcomeStatus:taskOutcome.status,
+          taskOutcomeReason:taskOutcome.reason,
+          turnId,
+          threadId,
+          agentName,
+          executionProfile:turnVisibility.profile.effective,
+          executionIntent:turnVisibility.intent,
+          executionSource:turnRecord.source||"streaming_exec",
+        });
+      }catch(error){
+        gitAutomationResult={
+          mode:"completed-turn",
+          status:"failed",
+          reason:"unexpected_git_automation_error",
+          cwd,
+          repoRoot:"",
+          finalStatus,
+          taskOutcomeStatus:taskOutcome.status,
+          taskOutcomeReason:taskOutcome.reason,
+          turnId,
+          threadId,
+          agentName,
+          executionProfile:turnVisibility.profile.effective,
+          executionIntent:turnVisibility.intent,
+          executionSource:turnRecord.source||"streaming_exec",
+          autocommitEnabled:gitAutomationConfig.autocommitEnabled?1:0,
+          autopushEnabled:gitAutomationConfig.autopushEnabled?1:0,
+          allowDirtyBaseline:gitAutomationConfig.allowDirtyBaseline?1:0,
+          baseline:turnRecord.gitAutomationBaseline,
+          current:null,
+          commit:{attempted:0,status:"failed",message:"",hash:""},
+          push:{attempted:0,status:"skipped",remoteName:gitAutomationConfig.remoteName,branch:""},
+          startedAt:Date.now(),
+          completedAt:Date.now(),
+          error:error&&error.message?error.message:String(error),
+        };
+      }
+      turnRecord.gitAutomation=gitAutomationResult;
+      publishLatestGitAutomationSnapshot(gitAutomationResult);
+      publishLatestTurnSnapshot(turnRecord,"turn_git_automation");
+      if(artifactRecorder&&typeof artifactRecorder.writeEvent==="function"){
+        artifactRecorder.writeEvent("turn.git_automation",snapshotGitAutomationResult(gitAutomationResult));
+      }
+      const gitAutomationDetail=formatGitAutomationActivityDetail(gitAutomationResult);
+      if(gitAutomationDetail){
+        safeWriteEvent({type:"activity",label:"git_automation",detail:gitAutomationDetail});
+      }
+      logOperation("turn.git_automation",{
+        a:safeString(agentName,80),
+        th:safeString(threadId,120),
+        turn:safeString(turnId,120),
+        status:safeString(gitAutomationResult&&gitAutomationResult.status,80)||"unknown",
+        reason:safeString(gitAutomationResult&&gitAutomationResult.reason,120)||"",
+        repoRoot:summarizePathForOperationLog(gitAutomationResult&&gitAutomationResult.repoRoot,220),
+        commit:gitAutomationResult&&gitAutomationResult.commit&&typeof gitAutomationResult.commit==="object"
+          ?{
+            status:safeString(gitAutomationResult.commit.status,40)||"skipped",
+            hash:safeString(gitAutomationResult.commit.hash,40)||"",
+          }
+          :{status:"skipped",hash:""},
+        push:gitAutomationResult&&gitAutomationResult.push&&typeof gitAutomationResult.push==="object"
+          ?{
+            status:safeString(gitAutomationResult.push.status,40)||"skipped",
+            remoteName:safeString(gitAutomationResult.push.remoteName,80)||"",
+            branch:safeString(gitAutomationResult.push.branch,80)||"",
+          }
+          :{status:"skipped",remoteName:"",branch:""},
+      },"standard");
+    }
     if(artifactRecorder&&typeof artifactRecorder.finalize==="function"){
       const artifactResult=artifactRecorder.finalize({
         status:finalStatus,
@@ -8159,6 +8289,7 @@ function snapshotTurnRecord(record){
     turn_id:safeString(String(record.turnId||""),160)||null,
     thread_id:safeString(String(record.threadId||""),160)||null,
     agent_name:safeString(record.agentName||record.name||"",160)||null,
+    cwd:summarizePathForOperationLog(record.cwd,220)||null,
     source:safeString(record.source,80)||null,
     execution_profile:normalizeExecutionProfile(record.executionProfile,runtimeExecutionProfile),
     execution_intent:normalizeExecutionIntent(record.executionIntent,"interactive"),
@@ -8177,9 +8308,70 @@ function snapshotTurnRecord(record){
     task_outcome_status:safeString(record.taskOutcomeStatus,80).toUpperCase()||null,
     task_outcome_reason:safeString(record.taskOutcomeReason,120)||null,
     terminal_event:safeString(record.turnTerminalEvent,120)||null,
+    git_automation:snapshotGitAutomationResult(record.gitAutomation),
     started_at:Number.isFinite(Number(record.startedAt))?Math.max(0,Math.trunc(Number(record.startedAt))):null,
     completed_at:Number.isFinite(Number(record.completedAt))?Math.max(0,Math.trunc(Number(record.completedAt))):null,
     updated_at:Number.isFinite(Number(record.updatedAt))?Math.max(0,Math.trunc(Number(record.updatedAt))):nowTs(),
+  };
+}
+function snapshotGitRepoStateForRuntime(state){
+  const source=state&&typeof state==="object"?state:null;
+  if(!source)return null;
+  return{
+    cwd:summarizePathForOperationLog(source.cwd,220)||null,
+    repoRoot:summarizePathForOperationLog(source.repoRoot,220)||null,
+    gitAvailable:source.gitAvailable?1:0,
+    repoDetected:source.repoDetected?1:0,
+    dirty:source.dirty?1:0,
+    reason:safeString(source.reason,120)||"",
+    branch:safeString(source.branch,120)||"",
+    detachedHead:source.detachedHead?1:0,
+    remoteName:safeString(source.remoteName,120)||"",
+    remoteConfigured:source.remoteConfigured?1:0,
+    entryCount:Array.isArray(source.entries)?source.entries.length:0,
+    changedPaths:Array.isArray(source.changedPaths)?source.changedPaths.slice(0,12):[],
+  };
+}
+function snapshotGitAutomationResult(result){
+  const source=result&&typeof result==="object"?result:null;
+  if(!source)return null;
+  const commit=source.commit&&typeof source.commit==="object"?source.commit:{};
+  const push=source.push&&typeof source.push==="object"?source.push:{};
+  return{
+    mode:safeString(source.mode,40)||"completed-turn",
+    status:safeString(source.status,80)||"unknown",
+    reason:safeString(source.reason,120)||"",
+    cwd:summarizePathForOperationLog(source.cwd,220)||null,
+    repoRoot:summarizePathForOperationLog(source.repoRoot,220)||null,
+    finalStatus:safeString(source.finalStatus,40)||"",
+    taskOutcomeStatus:safeString(source.taskOutcomeStatus,80).toUpperCase()||"",
+    taskOutcomeReason:safeString(source.taskOutcomeReason,120)||"",
+    agentName:safeString(source.agentName,120)||"",
+    turnId:safeString(source.turnId,160)||"",
+    threadId:safeString(source.threadId,160)||"",
+    executionProfile:safeString(source.executionProfile,80)||"",
+    executionIntent:safeString(source.executionIntent,80)||"",
+    executionSource:safeString(source.executionSource,80)||"",
+    autocommitEnabled:source.autocommitEnabled?1:0,
+    autopushEnabled:source.autopushEnabled?1:0,
+    allowDirtyBaseline:source.allowDirtyBaseline?1:0,
+    baseline:snapshotGitRepoStateForRuntime(source.baseline),
+    current:snapshotGitRepoStateForRuntime(source.current),
+    commit:{
+      attempted:commit.attempted?1:0,
+      status:safeString(commit.status,40)||"skipped",
+      message:safeString(commit.message,160)||"",
+      hash:safeString(commit.hash,40)||"",
+    },
+    push:{
+      attempted:push.attempted?1:0,
+      status:safeString(push.status,40)||"skipped",
+      remoteName:safeString(push.remoteName,120)||"",
+      branch:safeString(push.branch,120)||"",
+      remoteConfigured:push.remoteConfigured?1:0,
+    },
+    startedAt:Number.isFinite(Number(source.startedAt))?Math.max(0,Math.trunc(Number(source.startedAt))):null,
+    completedAt:Number.isFinite(Number(source.completedAt))?Math.max(0,Math.trunc(Number(source.completedAt))):null,
   };
 }
 function cloneTurnRecordSnapshot(snapshot){
@@ -8200,6 +8392,48 @@ function publishLatestTurnSnapshot(record,eventType){
 }
 function getLatestTurnSnapshot(){
   return cloneTurnRecordSnapshot(latestTurnSnapshot);
+}
+function publishLatestGitAutomationSnapshot(result){
+  const snapshot=snapshotGitAutomationResult(result);
+  latestGitAutomationSnapshot=snapshot;
+  return snapshot;
+}
+function getLatestGitAutomationSnapshot(){
+  const snapshot=latestGitAutomationSnapshot;
+  if(!snapshot||typeof snapshot!=="object")return null;
+  return{
+    ...snapshot,
+  };
+}
+function buildGitAutomationRuntimeSnapshot(){
+  return{
+    enabled:gitAutomationConfig.enabled?1:0,
+    mode:"completed-turn",
+    autocommitEnabled:gitAutomationConfig.autocommitEnabled?1:0,
+    autopushEnabled:gitAutomationConfig.autopushEnabled?1:0,
+    allowDirtyBaseline:gitAutomationConfig.allowDirtyBaseline?1:0,
+    remoteName:safeString(gitAutomationConfig.remoteName,120)||"origin",
+    commitPrefix:safeString(gitAutomationConfig.commitPrefix,120)||"chore(codex):",
+    commandTimeoutMs:Number.isFinite(Number(gitAutomationConfig.commandTimeoutMs))?Math.max(0,Math.trunc(Number(gitAutomationConfig.commandTimeoutMs))):0,
+    pushTimeoutMs:Number.isFinite(Number(gitAutomationConfig.pushTimeoutMs))?Math.max(0,Math.trunc(Number(gitAutomationConfig.pushTimeoutMs))):0,
+    envKeys:gitAutomationConfig&&gitAutomationConfig.envKeys&&typeof gitAutomationConfig.envKeys==="object"
+      ?gitAutomationConfig.envKeys
+      :{},
+    latestResult:getLatestGitAutomationSnapshot(),
+  };
+}
+function formatGitAutomationActivityDetail(result){
+  const source=result&&typeof result==="object"?result:{};
+  const repoLabel=safeString(source.repoRoot,220)||safeString(source.cwd,220)||"(unknown repo)";
+  const status=safeString(source.status,80)||"unknown";
+  const reason=safeString(source.reason,120);
+  const commitHash=source.commit&&typeof source.commit==="object"?safeString(source.commit.hash,40):"";
+  const pushStatus=source.push&&typeof source.push==="object"?safeString(source.push.status,40):"";
+  const detail=[`repo=${repoLabel}`,`status=${status}`];
+  if(commitHash)detail.push(`commit=${commitHash}`);
+  if(pushStatus&&pushStatus!=="skipped")detail.push(`push=${pushStatus}`);
+  if(reason)detail.push(`reason=${reason}`);
+  return safeString(detail.join(" "),1200);
 }
 function parseOverviewTimestamp(value){
   const numeric=Number(value);
@@ -8637,6 +8871,7 @@ function buildRuntimeApiSnapshot(){
   const harnessMemory=buildHarnessMemoryRuntimeSnapshot();
   const slo=buildSloRuntimeSnapshot();
   const staticApps=buildStaticAppsRuntimeSnapshot();
+  const gitAutomation=buildGitAutomationRuntimeSnapshot();
   const evalHarness={
     suite:buildEvalSuiteSummary(defaultEvalSuite),
     configPath:summarizePathForOperationLog(evalSuiteConfigPath,220),
@@ -8686,6 +8921,8 @@ function buildRuntimeApiSnapshot(){
     adversarial_shadow:adversarialShadow,
     staticApps,
     static_apps:staticApps,
+    gitAutomation,
+    git_automation:gitAutomation,
     harnessMemory,
     harness_memory:harnessMemory,
     slo,
@@ -10042,6 +10279,7 @@ async function main(){const preferredPort=Number.isInteger(forcedUiPort)&&forced
     executionProfileSmokeLike:isSmokeExecutionProfile(runtimeExecutionProfile)?1:0,
     fullUtilization,
     parentDispatchGuard,
+    gitAutomation:buildGitAutomationRuntimeSnapshot(),
     operationLog:operationLog.runtimeSnapshot(),
     requestUserInputPolicy:nonInteractiveRequestUserInputPolicy,
     controlApiTokenHash:hashSha256Hex(controlApiToken).slice(0,16),
