@@ -2,6 +2,8 @@
 logs/turns/
 logs/codex_ops*.jsonl
 logs/archive/
+.pw-browsers/
+models/piper/**/*.onnx
 tools/piper/*
 !tools/piper/README.md
 tools/kokoro-fastapi/cache/
