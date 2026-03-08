@@ -83,6 +83,10 @@ function createConfig(overrides = {}) {
 let ok = true;
 
 ok = runCheck("config normalization", () => {
+  const defaultConfig = buildGitAutomationConfig({});
+  assert.equal(defaultConfig.autocommitEnabled, true);
+  assert.equal(defaultConfig.autopushEnabled, true);
+
   const config = buildGitAutomationConfig({
     CODEX_GIT_AUTOCOMMIT_ENABLED: "1",
     CODEX_GIT_AUTOPUSH_ENABLED: "1",

@@ -24,6 +24,7 @@ This document is the active architecture spec for the Codex App Server integrati
   - `CODEX_GIT_AUTOPUSH_ENABLED=1`
   - `CODEX_GIT_ALLOW_DIRTY_BASELINE=0`
   - `CODEX_GIT_REMOTE=origin`
+- `server.js` itself now defaults turn-complete Git automation to `commit + push` unless env overrides disable it.
 - `server.js` now infers the non-interactive `request-user-input` fallback as `blocked` when `CODEX_REQUEST_USER_INPUT_POLICY` is unset.
 - `server.js` owns HTTP APIs, app-server protocol handling, evidence capture, replay, eval, and SLO surfaces.
 - Turn-complete Git automation ignores harness runtime metadata files such as `logs/harness_execution_memory.json` and `logs/eval_runs.jsonl` when the target repo is this workspace, so operator-memory persistence alone does not trigger an automated publish.

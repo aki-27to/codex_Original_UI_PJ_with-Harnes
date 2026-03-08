@@ -4239,3 +4239,34 @@ Residual risk:
 ### Residual Risk
 - Auto-push is now enabled by launcher default, so a clean repo with a configured remote will publish immediately after a successful turn unless the env vars are overridden.
 - Dirty-baseline protection avoids sweeping unrelated local edits into an automated commit, but it also means operators must clean or explicitly allow dirty baselines before automation will publish a turn in that repo.
+
+## 106. README Japanese Rewrite + Server-Level Git Autopublish Default (2026-03-08)
+
+### Intent
+- Make the top-level README usable for the primary Japanese-speaking operator workflow.
+- Ensure Git automation is a harness default, not only a launcher default, so direct `node server.js` runs also publish through `push`.
+
+### Implemented
+- Rewrote `README.md` in Japanese while preserving the active runtime guidance:
+  - quick start
+  - English Conversation App split/mount behavior
+  - smoke tests
+  - runtime API summary
+  - Piper / Kokoro setup
+  - Git automation defaults and skip rules
+- Updated `scripts/lib/git_automation.js`:
+  - `buildGitAutomationConfig()` now defaults `CODEX_GIT_AUTOCOMMIT_ENABLED=1`
+  - `buildGitAutomationConfig()` now defaults `CODEX_GIT_AUTOPUSH_ENABLED=1`
+  - env overrides can still disable either behavior explicitly
+- Updated `scripts/git_automation_policy_test.js`:
+  - now verifies the no-env default is `autocommit=on` and `autopush=on`
+- Updated `docs/CURRENT_ARCHITECTURE.md`:
+  - documents that `server.js` itself defaults Git automation to `commit + push`
+
+### Verification Evidence
+1. `node --check scripts/lib/git_automation.js` -> PASS
+2. `node --check scripts/git_automation_policy_test.js` -> PASS
+3. `node scripts/git_automation_policy_test.js` -> PASS
+
+### Residual Risk
+- Because server-level defaults now enable autopush, running the harness against a clean repo with a configured remote will publish on successful turns even when the launcher is bypassed, unless env overrides disable it.

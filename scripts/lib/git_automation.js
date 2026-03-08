@@ -310,9 +310,9 @@ function captureGitRepoState({ cwd = "", remoteName = "origin", timeoutMs = 1500
 
 function buildGitAutomationConfig(env = process.env) {
   const source = env && typeof env === "object" ? env : {};
-  const autocommitEnabled = parseBooleanEnv(source, gitAutomationEnvKeys.autocommitEnabled, false);
+  const autocommitEnabled = parseBooleanEnv(source, gitAutomationEnvKeys.autocommitEnabled, true);
   const autopushEnabled = autocommitEnabled
-    ? parseBooleanEnv(source, gitAutomationEnvKeys.autopushEnabled, false)
+    ? parseBooleanEnv(source, gitAutomationEnvKeys.autopushEnabled, true)
     : false;
   return {
     enabled: autocommitEnabled || autopushEnabled,

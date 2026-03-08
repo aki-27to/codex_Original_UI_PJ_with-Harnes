@@ -1,35 +1,36 @@
-﻿# Codex Standard Harness
+# Codex Standard Harness
 
-Local harness for `codex app-server` (Web UI only).
+このリポジトリは `codex app-server` 用のローカル開発ハーネスです。  
+役割は Web UI、`server.js` による Node アダプタ、`codex app-server` との JSONL stdio 連携をまとめて扱うことです。
 
-Architecture:
-- HTTP UI (`web/*`)
-- Node adapter (`server.js`)
-- `codex app-server` over JSONL stdio (inside `server.js`)
+構成:
+- HTTP UI: `web/*`
+- Node アダプタ: `server.js`
+- 実行バックエンド: `codex app-server`
 
-Repository layout:
-- Active runtime/materials stay at the root (`docs/`, `scripts/`, `tools/`, `web/`, `logs/`, `output/`).
-- Archived legacy docs/examples/installers/manual renders now live under `archive/`.
+リポジトリ配置:
+- 現役の runtime / docs / scripts / tools / web UI は root に置きます。
+- 旧資料、サンプル、手動生成物は `archive/` に退避しています。
 
-## Quick start
+## クイックスタート
 
-1. Run `start_codex_ui.bat`
-2. Open `http://127.0.0.1:57525`
-3. Enter a prompt and click `Send`
+1. `start_codex_ui.bat` を実行
+2. `http://127.0.0.1:57525` を開く
+3. プロンプトを入力して `Send`
 
-English conversation app:
+## English Conversation App
 
-1. Run `start_english_conversation_app.bat`
-2. It opens `http://127.0.0.1:57525/english-conversation-app/index.html`
-3. Static files are resolved in this order while keeping the same URL:
-   - `CODEX_ENGLISH_CONVERSATION_APP_ROOT` when set
+1. `start_english_conversation_app.bat` を実行
+2. `http://127.0.0.1:57525/english-conversation-app/index.html` が開く
+3. 静的ファイルは次の優先順で解決されます
+   - `CODEX_ENGLISH_CONVERSATION_APP_ROOT`
    - sibling repo `../english-conversation-app/`
    - bundled fallback `web/english-conversation-app/`
-4. To seed the sibling repo from the bundled app once, run `bootstrap_english_conversation_app_repo.bat`
+4. bundled app を一度 sibling repo に展開したい場合は `bootstrap_english_conversation_app_repo.bat` を実行
 
-## Smoke test
+## スモークテスト
 
-Run:
+実行:
 
 ```bash
 node scripts/git_automation_policy_test.js
@@ -42,20 +43,20 @@ node scripts/skill_portfolio_policy_test.js
 node scripts/skill_portfolio_audit.js
 ```
 
-Validates:
-- turn-complete Git auto-commit/autopush policy against local temporary repos and a local bare remote
-- `codex app-server` startup and handshake (`initialize` -> `initialized`)
-- `thread/start` + `turn/start` + `turn/interrupt`
-- local harness startup (`GET /api/runtime`)
-- standard execution path (`POST /api/exec`)
-- external English Conversation App mount resolution + traversal guard
-- skill portfolio classification and anti-monotony governance policy
+確認内容:
+- turn 完了時の Git auto-commit / autopush ポリシー
+- `codex app-server` の起動と handshake
+- `thread/start`、`turn/start`、`turn/interrupt`
+- `GET /api/runtime`
+- `POST /api/exec`
+- English Conversation App の external mount と traversal guard
+- skill portfolio policy
 
-Expected result:
-- stdout contains `PASS`
-- exit code `0`
+期待結果:
+- stdout に `PASS` が出る
+- exit code が `0`
 
-## Active API routes
+## 利用可能な API
 
 - `GET /api/runtime`
 - `GET /api/conversation/runtime`
@@ -75,80 +76,79 @@ Expected result:
 - `POST /api/open-cmd`
 - `POST /api/requirement-guard/validate`
 
-Unknown API routes return `404`.
+未知の API ルートは `404` を返します。
 
-## Runtime fields
+## `GET /api/runtime` の主な項目
 
-`GET /api/runtime` includes:
 - `mode: "app-server"`
 - `latest_turn` / `latestTurn`
-- `gitAutomation` / `git_automation` config + latest auto-commit/autopush result
-- `staticApps.englishConversationApp` mount source/root summary
-- `operationLog` settings
+- `gitAutomation` / `git_automation`
+- `staticApps.englishConversationApp`
+- `operationLog`
 - `executionProfile` / `executionVisibility` / `fullUtilization`
-- `harnessMemory` summary (contract/execution/audit/replay/abstraction memory counters)
-- `slo` snapshot (failure rate / p95 latency / idempotency conflict rate)
-- `evalHarness` snapshot (fixed suite + run/history endpoints)
+- `harnessMemory`
+- `slo`
+- `evalHarness`
 
-## Requirements
+## 前提条件
 
-- `node` in `PATH`
-- `codex` in `PATH`
+- `node` が `PATH` にあること
+- `codex` が `PATH` にあること
 
-## Piper (Best Practice)
+## Piper 運用
 
-For stable and safe local operation, keep Piper binary vendored in this repo:
+安定運用のため、Piper の実行ファイルは repo 内に vendor する前提です。
 
-1. Place executable at `tools/piper/piper.exe` (Windows).
-2. Keep model files under `models/piper/<model-id>/`.
-3. Run preflight:
+1. Windows では `tools/piper/piper.exe` に配置
+2. モデルは `models/piper/<model-id>/` 配下に配置
+3. 事前チェック:
 
 ```bash
 node scripts/piper_runtime_doctor.js --model en_US-lessac-high
 ```
 
-Launchers auto-wire this path:
+launcher 側で自動参照されます:
 - `start_codex_ui.bat`
 - `start_english_conversation_app.bat`
 
-If you intentionally allow model download during doctor check, add `--allow-download`.
+doctor 実行時にダウンロードを許可するなら `--allow-download` を追加してください。
 
-Secure install (when temporary network access is allowed):
+一時的に network を許可して secure install する場合:
 
 ```powershell
 powershell -ExecutionPolicy Bypass -File scripts/piper_secure_install.ps1 `
   -Url "<piper release .zip or .exe url>" `
-  -Sha256 "<sha256 from trusted release note>"
+  -Sha256 "<trusted release note の sha256>"
 ```
 
-Batch wrapper:
+batch wrapper:
 
 ```bat
 scripts\piper_secure_install.bat -Url "<url>" -Sha256 "<sha256>"
 ```
 
-Default host allowlist in installer:
+installer の既定 allowlist:
 - `github.com`
 - `objects.githubusercontent.com`
 - `release-assets.githubusercontent.com`
 - `huggingface.co`
 
-## Kokoro FastAPI (Local OpenAI-Compatible TTS)
+## Kokoro FastAPI
 
-For local Kokoro TTS server bootstrap, use:
+ローカル OpenAI 互換 TTS として Kokoro FastAPI を使う場合:
 
 - `tools/kokoro-fastapi/docker-compose.yml`
 - `tools/kokoro-fastapi/.env.example`
 - `tools/kokoro-fastapi/README.md`
 
-Quick start:
+起動:
 
 ```powershell
 cd tools/kokoro-fastapi
 powershell -ExecutionPolicy Bypass -File .\start.ps1
 ```
 
-Verification:
+確認:
 
 ```powershell
 Invoke-WebRequest -Uri "http://127.0.0.1:8880/docs" -UseBasicParsing | Select-Object -ExpandProperty StatusCode
@@ -156,28 +156,46 @@ Invoke-RestMethod -Uri "http://127.0.0.1:8880/v1/models"
 powershell -ExecutionPolicy Bypass -File .\tools\kokoro-fastapi\smoke_test_speech.ps1
 ```
 
-English Conversation App integration:
+English Conversation App 連携:
+- `http://127.0.0.1:57525/english-conversation-app/index.html` を開く
+- sibling repo があれば `start_english_conversation_app.bat` が `CODEX_ENGLISH_CONVERSATION_APP_ROOT` を自動設定
+- 明示 override は `CODEX_ENGLISH_CONVERSATION_APP_ROOT=/abs/path/to/english-conversation-app`
+- 初回 split は `bootstrap_english_conversation_app_repo.bat`
+- `TTS Engine` を `Kokoro FastAPI (local)` に設定
+- 音声応答は `POST /api/voice/kokoro` を経由してブラウザ再生されます
 
-- Open `http://127.0.0.1:57525/english-conversation-app/index.html`
-- `start_english_conversation_app.bat` auto-points `CODEX_ENGLISH_CONVERSATION_APP_ROOT` to sibling `../english-conversation-app/` when that repo exists
-- `CODEX_ENGLISH_CONVERSATION_APP_ROOT=/abs/path/to/english-conversation-app` overrides both sibling and bundled roots
-- `bootstrap_english_conversation_app_repo.bat` copies the bundled app to sibling `../english-conversation-app/` for the initial split
-- Set `TTS Engine` to `Kokoro FastAPI (local)`
-- Replies will call `POST /api/voice/kokoro` via `server.js`, then play in browser.
+## Git 自動化
 
-## Notes
+このハーネスは、既定で turn 完了時に `commit + push` まで自動実行します。  
+`start_codex_ui.bat` 経由でも `node server.js` 直実行でも、env で明示無効化しない限り有効です。
 
-- Default port is `57525` (`CODEX_UI_PORT` to override)
-- Conversation is fixed to `app-server` provider (same Codex login/session as `/api/exec`).
-- Browser auto-open can be disabled with `CODEX_AUTO_OPEN_BROWSER=0`
-- Browser auto-open target can be overridden with `CODEX_AUTO_OPEN_PATH=/some/path`
-- English Conversation App static root can be overridden with `CODEX_ENGLISH_CONVERSATION_APP_ROOT=/abs/path/to/english-conversation-app`
-- Browser auto-open prefers Microsoft Edge when available (`CODEX_EDGE_EXE` to pin explicit Edge path)
-- `start_codex_ui.bat` auto-populates `CODEX_EDGE_EXE` from common Windows Edge install paths when unset
-- Launcher window pause-on-exit is enabled by default (`CODEX_PAUSE_ON_EXIT=1`, set `0` to disable)
-- Launcher defaults now enable the full parent-orchestrated path:
+既定値:
+- `CODEX_GIT_AUTOCOMMIT_ENABLED=1`
+- `CODEX_GIT_AUTOPUSH_ENABLED=1`
+- `CODEX_GIT_ALLOW_DIRTY_BASELINE=0`
+- `CODEX_GIT_REMOTE=origin`
+
+動作ルール:
+- `taskOutcomeStatus=COMPLETED` の turn だけが対象
+- 対象 repo は常にその turn の `cwd`
+- baseline が dirty の repo には自動 commit / push しない
+- remote 未設定または detached HEAD の場合は push しない
+- 対象がこのハーネス repo の場合は `logs/harness_execution_memory.json` と `logs/eval_runs.jsonl` を baseline 判定から除外する
+
+## 補足
+
+- 既定 port は `57525`
+- override は `CODEX_UI_PORT`
+- Conversation は `app-server` provider 固定
+- Browser 自動起動を止めるには `CODEX_AUTO_OPEN_BROWSER=0`
+- Browser の起動先を変えるには `CODEX_AUTO_OPEN_PATH=/some/path`
+- English Conversation App の static root override は `CODEX_ENGLISH_CONVERSATION_APP_ROOT=/abs/path/to/english-conversation-app`
+- Edge 優先起動。固定するなら `CODEX_EDGE_EXE`
+- `start_codex_ui.bat` は unset 時だけ以下を補います
   - `CODEX_DEFAULT_EXEC_AGENT=default`
-  - `CODEX_REQUEST_USER_INPUT_POLICY=auto-default`
+  - `CODEX_REQUEST_USER_INPUT_POLICY=blocked`
+  - `CODEX_PARENT_DISPATCH_GUARD_MODE=enforce`
+  - `CODEX_PARENT_DISPATCH_GUARD_MAX_RETRIES=1`
   - `CODEX_ADVERSARIAL_SHADOW_ENABLED=1`
   - `CODEX_ADVERSARIAL_LOOP_ENABLED=1`
   - `CODEX_ADVERSARIAL_LOOP_MAX_RETRIES=1`
@@ -186,47 +204,27 @@ English Conversation App integration:
   - `CODEX_REQUIREMENT_RBJ_MAX_QUESTIONS=3`
   - `CODEX_REQUIREMENT_RBJ_MAX_REVISIONS=2`
   - `CODEX_EXECUTION_PROFILE=full-runtime`
-- Launcher defaults also enable turn-complete Git automation:
-  - `CODEX_GIT_AUTOCOMMIT_ENABLED=1`
-  - `CODEX_GIT_AUTOPUSH_ENABLED=1`
-  - `CODEX_GIT_ALLOW_DIRTY_BASELINE=0`
-  - `CODEX_GIT_REMOTE=origin`
-- Git automation behavior:
-  - runs only after `taskOutcomeStatus=COMPLETED`
-  - targets the turn `cwd` repo, not the harness repo unconditionally
-  - skips auto-commit/autopush when the target repo baseline is already dirty
-  - skips autopush when the target repo has no configured remote or is on detached HEAD
-  - when the target repo is this harness workspace, runtime metadata files such as `logs/harness_execution_memory.json` and `logs/eval_runs.jsonl` are ignored so they do not trigger auto-publish by themselves
-  - ignores harness-managed runtime files like `logs/harness_execution_memory.json` and `logs/eval_runs.jsonl` when the target repo is this harness repo
-- Smoke harness pins deterministic visibility profile:
+- smoke harness の可視性固定値:
   - `CODEX_EXECUTION_PROFILE=smoke-test`
-- Turn artifacts now include explicit execution metadata:
-  - `manifest.json.execution.meta` (profile/intent/full-utilization checks)
-  - `manifest.json.execution.observed` (collab/mcp/dispatch counters)
-- Idempotency + turn memory is persisted at:
-  - `logs/harness_execution_memory.json`
-- Eval run history is persisted at:
-  - `logs/eval_runs.jsonl`
-- Repro-friendly execution profile:
-  - `executionProfile=repro` forces `webSearch=0`, `forceNewSession=1`, `requestUserInputPolicy=blocked`
-  - turn visibility/artifacts now include `execution.recipe.hash`
-- Daily operation log split can be enabled with `CODEX_OPERATION_LOG_DAILY_SPLIT=1` (writes `logs/codex_ops-YYYY-MM-DD.jsonl`)
-- Requirement lock via the requirement guard extension is disabled by default.
-  - Launchers set `CODEX_REQUIREMENT_GUARD_ENABLED=1` by default for full-runtime operation.
-  - `CODEX_REQUIREMENT_GUARD_ENABLED=1`: enable the extension in the UI path.
-  - `CODEX_REQUIREMENT_RBJ_ENABLED=1`: enable the Requirement Blue/Red/Judge loop block.
-  - `CODEX_REQUIREMENT_RBJ_MAX_QUESTIONS=3`: cap Judge ASK questions per loop.
-  - `CODEX_REQUIREMENT_RBJ_MAX_REVISIONS=2`: cap revision loops per request.
-  - `#requirement-locked`: allow intake + execution in the same turn (when enabled).
-  - `#guard-bypass`: skip requirement lock rewrite for one turn (when enabled).
-  - `#rbj-bypass`: keep requirement lock but skip RBJ loop block for one turn.
-  - `CODEX_REQUIREMENT_LOCK_ENABLED=0`: disable the guard while leaving the extension loaded.
-  - `CODEX_REQUIREMENT_LOCK_REQUIRE_CONFIRM=0`: keep guard on but do not require confirm token.
-  - `#scope-plus` or `#scope-expand`: approve optional Scope Expansion in the same turn.
-  - `#scope-core` or `#scope-no-plus`: force baseline-only execution for one turn.
-  - `CODEX_SCOPE_EXPANSION_ENABLED=0`: disable Scope Expansion while keeping Requirement Lock.
-  - `CODEX_SCOPE_EXPANSION_REQUIRE_APPROVAL=0`: auto-enable expansion without explicit token.
-- Migration details: `docs/standard-codex-migration.md`
+- turn artifact は `manifest.json.execution.meta` と `manifest.json.execution.observed` を含みます
+- idempotency と turn memory は `logs/harness_execution_memory.json`
+- eval history は `logs/eval_runs.jsonl`
+- `executionProfile=repro` は `webSearch=0`、`forceNewSession=1`、`requestUserInputPolicy=blocked`
+- operation log を日次分割する場合は `CODEX_OPERATION_LOG_DAILY_SPLIT=1`
+- Requirement Lock は既定で無効
+  - `CODEX_REQUIREMENT_GUARD_ENABLED=1`
+  - `CODEX_REQUIREMENT_RBJ_ENABLED=1`
+  - `CODEX_REQUIREMENT_RBJ_MAX_QUESTIONS=3`
+  - `CODEX_REQUIREMENT_RBJ_MAX_REVISIONS=2`
+  - `#requirement-locked`
+  - `#guard-bypass`
+  - `#rbj-bypass`
+  - `CODEX_REQUIREMENT_LOCK_ENABLED=0`
+  - `CODEX_REQUIREMENT_LOCK_REQUIRE_CONFIRM=0`
+  - `#scope-plus` / `#scope-expand`
+  - `#scope-core` / `#scope-no-plus`
+  - `CODEX_SCOPE_EXPANSION_ENABLED=0`
+  - `CODEX_SCOPE_EXPANSION_REQUIRE_APPROVAL=0`
 
-
-
+移行メモ:
+- `docs/standard-codex-migration.md`
