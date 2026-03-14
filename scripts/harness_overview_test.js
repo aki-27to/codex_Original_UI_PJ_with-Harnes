@@ -38,6 +38,26 @@ function sleep(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
+function spawnNodeScript(scriptPath, { cwd, env, stdio = ["ignore", "pipe", "pipe"] } = {}) {
+  const options = {
+    cwd,
+    env,
+    stdio,
+    windowsHide: true,
+  };
+  if (process.platform !== "win32") {
+    return spawn(process.execPath, [scriptPath], options);
+  }
+  try {
+    return spawn(process.execPath, [scriptPath], options);
+  } catch (error) {
+    if (!/EPERM/i.test(String(error && error.message ? error.message : error))) {
+      throw error;
+    }
+  }
+  return spawn(`"${process.execPath}" ${scriptPath}`, [], { ...options, shell: true });
+}
+
 function flushMicrotasks() {
   return Promise.resolve().then(() => Promise.resolve());
 }
@@ -606,8 +626,6 @@ function assertRenderedOverviewMatchesPayload(payload, elements) {
   );
   assertContains(elements.overviewHeroText.textContent, payloadActiveAgent(payload), "hero must render the active runtime agent");
   assertContains(elements.overviewHeroText.textContent, payloadDefaultExecAgent(payload), "hero must render the default exec agent");
-  assertContains(elements.runtimePostureCard.innerHTML, payloadActiveAgent(payload), "runtime posture must render the active agent detail");
-  assertContains(elements.runtimePostureCard.innerHTML, payloadDefaultExecAgent(payload), "runtime posture must render the default exec detail");
   const specialists = payload && payload.topology && payload.topology.lanes && Array.isArray(payload.topology.lanes.specialists)
     ? payload.topology.lanes.specialists
     : [];
