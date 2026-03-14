@@ -1,6 +1,6 @@
 ﻿# AGENT_OPERATING_RULES
 
-Updated: 2026-03-08
+Updated: 2026-03-13
 
 ## 1) Scope
 This document contains tier-1 operating rules referenced by `AGENTS.md`.
@@ -11,6 +11,7 @@ This document contains tier-1 operating rules referenced by `AGENTS.md`.
 - System model: one Parent Orchestrator + specialist Children.
 - Parent duties:
   - Step 1 `Requirement Understanding`: lock explicit goal + over-delivery scope.
+  - design-sensitive tasks must also lock benchmark, taste memory signals, disallowed patterns, and review gates before Step 2.
   - Step 2 `Planning and Dispatch`: split tasks, assign specialists, define acceptance checks.
   - Step 4 `Parent Review`: validate child outcomes against baseline and over-delivery criteria.
   - Step 5 `Final Report`: report baseline result + added value + residual risks.
@@ -133,6 +134,10 @@ This document contains tier-1 operating rules referenced by `AGENTS.md`.
   - Blue draft -> Red audit (`$red-requirement-auditor`) -> Judge verdict.
 - Red findings without `requirement_ref` must be discarded by Judge.
 - Frontend verification requiring browser operation must use `playwright` (and optionally `screenshot`) through `frontend_worker` or `tester`.
+- Design-sensitive `web/` work must explicitly plan for:
+  - benchmark comparison
+  - desktop/mobile visual review
+  - independent reviewer or tester verdict
 - OpenAI API/platform behavior checks must use `openai-docs`.
 - If an assigned skill is unavailable at runtime, report the gap explicitly and include a replacement plan.
 
@@ -161,3 +166,18 @@ This document contains tier-1 operating rules referenced by `AGENTS.md`.
 ### 11.3 Performance/Intent Rule
 - Performance means maximizing user satisfaction, not only speed.
 - Never trade away intent alignment for speed.
+
+### 11.4 Design-Sensitive Completion Gate
+- When the user asks for a site, page, visual redesign, or other judgment-heavy output, Parent Review must fail the turn unless:
+  - the active taste memory or equivalent intent contract is present
+  - the benchmark/reference target is named
+  - visual evidence is present
+  - independent review is present
+- Missing any of the above is `FAILED_VALIDATION`, not a soft warning.
+
+
+### 11.4 Intent-First Design Gate
+- Design-facing work must use the design acceptance contract and active taste memory.
+- `build/test/200` may never override a failed design acceptance review.
+- When the task is benchmarked against another site or visual target, Step 4 must treat benchmark superiority as an explicit PASS/FAIL question.
+- If a design-facing turn lacks screenshot evidence, reviewer involvement, or workspace lock, Parent Review should report `FAILED_VALIDATION` or `NEEDS_INPUT` instead of `COMPLETED`.

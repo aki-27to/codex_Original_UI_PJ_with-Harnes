@@ -1,12 +1,13 @@
 # CURRENT_ARCHITECTURE
 
-Updated: 2026-03-08
+Updated: 2026-03-14
 
 ## 1) Purpose
 
 This document is the active architecture spec for the Codex App Server integration harness.
 - Current-state architecture belongs here.
 - Historical implementation logs belong in `docs/ARCHITECTURE_CHANGELOG.md`.
+- Human-oriented structural walkthrough lives in `docs/AI_AGENT_HARNESS_DETAILED_DESIGN.html`; it is a companion design document and does not replace this spec or the machine-readable contracts.
 
 ## 2) Active Execution Path
 
@@ -28,8 +29,16 @@ This document is the active architecture spec for the Codex App Server integrati
 - `server.js` itself now defaults turn-complete Git automation to `commit + push` unless env overrides disable it.
 - `server.js` now infers the non-interactive `request-user-input` fallback as `blocked` when `CODEX_REQUEST_USER_INPUT_POLICY` is unset.
 - `server.js` owns HTTP APIs, app-server protocol handling, evidence capture, replay, eval, and SLO surfaces.
+- `server.js` now also owns the intent-first contract surface: design acceptance rules, persisted user taste memory, and design-sensitive completion gating.
 - Turn-complete Git automation ignores harness runtime metadata files such as `logs/harness_execution_memory.json` and `logs/eval_runs.jsonl` when the target repo is this workspace, so operator-memory persistence alone does not trigger an automated publish.
 - `web/` owns the browser UI and uses the standard exec/runtime APIs.
+- `web/index.html`, `web/01.HarnesUI/index.html`, and `web/01.HarnesUI/overview.html` now present Japanese-first operator copy while preserving clearer English technical identifiers such as `Codex`, `Node`, `API`, model IDs, sandbox/approval enum values, and thread/turn identifiers.
+- `web/01.HarnesUI/app.js` and `web/01.HarnesUI/overview.js` localize runtime-rendered verdicts, trace/topography labels, automation status, and overview evidence tags at display time so the browser UI does not leak raw English control wording into operator-visible text.
+- The console UI exposes a workspace chooser plus lock toggle; the operator-selected lock is enforced server-side without changing the standard `POST /api/exec` execution path.
+- Workspace guard control stays on the existing runtime surface:
+  - `POST /api/workspace/select`
+  - `POST /api/workspace/lock`
+  - `POST /api/workspace/unlock`
 - `archive/` now holds legacy docs, example sites, installer drops, and manual render outputs that are not part of the active runtime surface.
 - `GET /english-conversation-app/*` now preserves the existing same-origin route while resolving static files in this priority order:
   - `CODEX_ENGLISH_CONVERSATION_APP_ROOT`
@@ -99,15 +108,27 @@ This document is the active architecture spec for the Codex App Server integrati
 - Static UI routes:
   - `/01.HarnesUI/*`
     - always served from bundled `web/01.HarnesUI/`
-    - polls `GET /api/runtime` while local requests are active so stale client-side pending rows can self-heal after the backend has already emitted a terminal turn
+    - polls `GET /api/runtime` while local or runtime-reported requests are active so stale pending rows can self-heal after an explicit stop or detached backend completion
   - `/english-conversation-app/*`
     - served from external sibling/override root when present, otherwise bundled fallback
     - keeps the existing same-origin browser path so conversation/TTS APIs do not need CORS or alternate ports
 - `GET /api/runtime`
   - runtime snapshot, latest turn, governance policy, turn contract, task outcome contract, eval/replay/SLO capability summary
   - now also reports planning and assurance contract paths plus the latest turn's planning/assurance depth and flow-path fields
+  - includes `workspaceGuard` / `workspace_guard` so the UI can reflect the active locked root and picker availability
+  - includes `intentFirst` / `intent_first` so the UI can render design acceptance gates and active taste memory
   - includes `gitAutomation` with config posture and latest turn-level auto-commit/autopush result
   - includes `staticApps.englishConversationApp` with mount source/root summary for the current English Conversation App static root
+- `POST /api/intent/profile`
+  - authenticated control endpoint to update the active persisted taste profile used by the intent-first harness
+- `POST /api/intent/profile/reset`
+  - authenticated control endpoint to restore the active taste profile from the repo seed config
+- `POST /api/workspace/select`
+  - opens the native folder picker for the local operator and returns the selected directory without changing the execution path
+- `POST /api/workspace/lock`
+  - sets the current locked workspace root for UI-driven requests
+- `POST /api/workspace/unlock`
+  - clears the current locked workspace root
 - `GET /api/harness/overview`
   - aggregated operator snapshot for `web/01.HarnesUI/overview.html`
   - combines runtime posture, full agent topology, contract snapshots, latest proof/signoff bundles, recent eval history, replay memory, execution-memory summaries, and skill-portfolio audit output
@@ -121,11 +142,18 @@ This document is the active architecture spec for the Codex App Server integrati
   - computes adaptive execution selection before execution and carries requirement/dispatch planning artifacts through the turn runtime
   - planning depth and assurance depth are selected independently, so `FAST_PLANNING + LIGHT_ASSURANCE` and `DISCOVERY_PLANNING + SIGNOFF_ASSURANCE` are both valid outcomes
   - `DISCOVERY` mode keeps blocking ambiguity in proposal-only space and maps explicit stop signals to `NEEDS_INPUT`
+  - enforces the active UI workspace lock when `workspaceGuard.lockedRoot` is set, rejecting `cwd` values outside the locked directory tree
+  - for design-sensitive `web_ui` requests, rejects execution when the workspace is not locked
   - idempotency key may be supplied by header or body, but header/body mismatch is rejected with `400` before a claim is created
   - duplicate idempotency reuse with the same key but a mismatched effective request hash returns `409` (`idempotency_request_hash_mismatch`)
   - duplicate in-flight idempotency claims return `409`; resolved duplicates return the stored outcome snapshot with `200`
   - carries request-scoped runtime posture such as sandbox, approval, and request-user-input settings
+  - wraps design-sensitive `web_ui` prompts with the active intent-first brief before dispatch
   - collab-agent stream items now include `child=<agent>` hints when the dispatch target can be resolved, so the UI can attribute specialist activity to the active chat's monitor lane
+- `POST /api/turn/interrupt`
+  - authenticated same-origin control endpoint for explicit operator stop requests from `web/01.HarnesUI`
+  - accepts either `{threadId, turnId}` or `{agentName}` and resolves the active turn from runtime agent state when the browser has not received turn metadata yet
+  - forwards a real `turn/interrupt` request to the app-server instead of relying on client-side fetch abort alone
 - `GET /api/exec/idempotency/:key`
   - returns the current idempotency lifecycle snapshot for a claimed exec request
   - exposes `running`, terminal states, and `released` when a claim was closed before a terminal outcome was recorded
@@ -169,9 +197,11 @@ This document is the active architecture spec for the Codex App Server integrati
 - `scripts/generate_signoff_evidence.js` resolves the natural-task proof turn from persisted execution memory on the shared thread, so post-completion adversarial retries do not replace the implementation-bearing trace.
 - `scripts/generate_baseline_comparison.js` emits a measured baseline profile comparison from the same fixture tasks with governance-light settings, and falls back to a vanilla-like approximation only when baseline traces are unavailable.
 - Harness memory is stored in `logs/harness_execution_memory.json` by default and can be redirected with `CODEX_HARNESS_MEMORY_PATH`.
+- User taste memory is stored in `logs/user_taste_memory.json` and is seeded from `scripts/config/default_user_taste_memory.json`.
 - Eval run history is stored in `logs/eval_runs.jsonl` by default and can be redirected with `CODEX_EVAL_HISTORY_PATH`.
 - `logs/harness_execution_memory.json` and `logs/eval_runs.jsonl` are local runtime state files and are intentionally ignored from Git tracking at the repo root.
 - Replay memory, idempotency snapshots, and latest turn snapshots carry `taskOutcomeStatus` and `taskOutcomeReason`.
+- Latest turn snapshots now also carry `intent_first` summary data when design-sensitive completion gates apply.
 - Latest turn snapshots now also carry `cwd` and a summarized `git_automation` result when turn-complete Git automation runs.
 - When the target repo is this harness repo, Git automation ignores harness-managed runtime files such as `logs/harness_execution_memory.json` and `logs/eval_runs.jsonl` so those files do not block the next clean-baseline publish.
 - Idempotency snapshots also retain request metadata, lifecycle status, and response-close disposition for duplicate/replay inspection.
@@ -206,6 +236,7 @@ This document is the active architecture spec for the Codex App Server integrati
 
 - `server.js` or `scripts/` changes:
   - run `node scripts/app_server_smoke_test.js`
+  - run `node scripts/intent_first_runtime_test.js` when the change touches the intent-first contract, taste memory, or design-sensitive completion gate
   - run `node scripts/git_automation_policy_test.js` when the change touches turn-complete Git automation
 - English Conversation App static-mount changes:
   - run `node scripts/external_english_conversation_app_mount_test.js`
@@ -214,6 +245,11 @@ This document is the active architecture spec for the Codex App Server integrati
 - Eval / workflow policy changes:
   - run `node scripts/eval_replay_api_smoke_test.js`
   - run `node scripts/planning_mode_policy_test.js` when planning-mode selection or Step 1/2 contracts change
+- Intent-first UI changes in `web/01.HarnesUI/`:
+  - verify `/api/runtime` exposes `intentFirst`
+  - verify the main UI renders the active taste profile and completion gates
+  - verify `/api/harness/overview` serves the overview inventory used by operators
+  - capture screenshot evidence for the touched operator surfaces before claiming `COMPLETED`
 - Governance/runtime posture changes in `.codex/` or parent-role docs:
   - verify parent role config posture and role-boundary wording stay aligned across `.codex/config.toml`, `.codex/agents/*.toml`, and `docs/AGENT_OPERATING_RULES.md`
 - Spec sync before `COMPLETED`:

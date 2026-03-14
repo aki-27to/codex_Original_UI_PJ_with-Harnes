@@ -59,11 +59,49 @@ function testFailedValidationFromGuard() {
   assert(verdict.status === "FAILED_VALIDATION", "parent dispatch guard violation should map to FAILED_VALIDATION");
 }
 
+function testWorkspaceLockReason() {
+  const spec = loadTaskOutcomeContract(defaultTaskOutcomeContractPath);
+  const verdict = deriveTaskOutcome({
+    turnStatus: "failed",
+    reason: "intent_workspace_lock_missing",
+    spec,
+  });
+  assert(verdict.status === "FAILED_VALIDATION", "intent workspace lock gate should map to FAILED_VALIDATION");
+}
+
+function testIntentFirstGateReason() {
+  const spec = loadTaskOutcomeContract(defaultTaskOutcomeContractPath);
+  const verdict = deriveTaskOutcome({
+    turnStatus: "failed",
+    reason: "intent_visual_review_missing",
+    spec,
+  });
+  assert(verdict.status === "FAILED_VALIDATION", "intent visual review gate should map to FAILED_VALIDATION");
+}
+
+function testIntentDocumentationSyncReason() {
+  const spec = loadTaskOutcomeContract(defaultTaskOutcomeContractPath);
+  const verdict = deriveTaskOutcome({
+    turnStatus: "failed",
+    reason: "intent_documentation_sync_missing",
+    spec,
+  });
+  assert(verdict.status === "FAILED_VALIDATION", "intent documentation sync gate should map to FAILED_VALIDATION");
+}
+
 function testFailedDefaultBlocked() {
   const verdict = deriveTaskOutcome({
     turnStatus: "failed",
   });
   assert(verdict.status === "BLOCKED", "generic failed turn should default to BLOCKED");
+}
+
+function testIntentGateMapsToFailedValidation() {
+  const verdict = deriveTaskOutcome({
+    turnStatus: "failed",
+    reason: "intent_visual_review_missing",
+  });
+  assert(verdict.status === "FAILED_VALIDATION", "intent-first hard gate should map to FAILED_VALIDATION");
 }
 
 function testPartialDelivery() {
@@ -99,7 +137,11 @@ function run() {
     ["needs input from approval", testNeedsInputFromApprovalReason],
     ["blocked from governance", testBlockedFromGovernanceReason],
     ["failed validation from parent dispatch guard", testFailedValidationFromGuard],
+    ["workspace lock reason", testWorkspaceLockReason],
+    ["intent-first gate reason", testIntentFirstGateReason],
+    ["intent documentation sync reason", testIntentDocumentationSyncReason],
     ["failed default blocked", testFailedDefaultBlocked],
+    ["intent gate maps to failed validation", testIntentGateMapsToFailedValidation],
     ["partial outcome derivation", testPartialDelivery],
     ["turn compatibility", testTurnCompatibility],
   ];

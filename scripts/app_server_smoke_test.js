@@ -910,6 +910,56 @@ async function run() {
       ...localOriginHeaders,
       [controlHeaderName]: controlToken,
     };
+    const intentProfileRes = await requestHttpJson({
+      method: "GET",
+      path: "/api/intent/profile",
+      timeoutMs: 15000,
+      port: harnessPort,
+      headers: localOriginHeaders,
+    });
+    if (!intentProfileRes.json || intentProfileRes.json.ok !== true || !intentProfileRes.json.intentFirst) {
+      throw new Error("GET /api/intent/profile did not return intentFirst");
+    }
+    const intentPatchRes = await requestHttpJson({
+      method: "POST",
+      path: "/api/intent/profile",
+      timeoutMs: 15000,
+      port: harnessPort,
+      headers: {
+        ...authenticatedExecHeaders,
+        "Content-Type": "application/json",
+      },
+      body: {
+        action: "update_intent_profile",
+        profile: {
+          label: "smoke-profile",
+          northStar: ["ship a deliberate result"],
+          benchmarkSites: ["https://example.com"],
+          prefers: ["realness"],
+          rejects: ["template UI"],
+          requiredProof: ["desktop screenshot"],
+        },
+      },
+    });
+    if (!intentPatchRes.json || intentPatchRes.json.ok !== true || !intentPatchRes.json.intentFirst) {
+      throw new Error("POST /api/intent/profile did not return updated intentFirst");
+    }
+    const intentResetRes = await requestHttpJson({
+      method: "POST",
+      path: "/api/intent/profile/reset",
+      timeoutMs: 15000,
+      port: harnessPort,
+      headers: {
+        ...authenticatedExecHeaders,
+        "Content-Type": "application/json",
+      },
+      body: {
+        action: "reset_intent_profile",
+      },
+    });
+    if (!intentResetRes.json || intentResetRes.json.ok !== true || !intentResetRes.json.intentFirst) {
+      throw new Error("POST /api/intent/profile/reset did not return intentFirst");
+    }
     const evidenceArtifacts =
       runtimeReady && runtimeReady.evidenceArtifacts && typeof runtimeReady.evidenceArtifacts === "object"
         ? runtimeReady.evidenceArtifacts
@@ -978,6 +1028,23 @@ async function run() {
       typeof runtimeReady.contractSpec.taskOutcomeBridge !== "object"
     ) {
       throw new Error("runtime did not expose taskOutcomeBridge on contractSpec");
+    }
+    if (!runtimeReady.intentFirst || typeof runtimeReady.intentFirst !== "object") {
+      throw new Error("runtime did not expose intentFirst");
+    }
+    if (
+      !runtimeReady.intentFirst.tasteMemory ||
+      typeof runtimeReady.intentFirst.tasteMemory !== "object" ||
+      !runtimeReady.intentFirst.tasteMemory.activeProfile
+    ) {
+      throw new Error("runtime intentFirst did not expose activeProfile");
+    }
+    if (
+      !runtimeReady.intentFirst.workspaceLock ||
+      typeof runtimeReady.intentFirst.workspaceLock !== "object" ||
+      runtimeReady.intentFirst.workspaceLock.autoLockRecommended !== true
+    ) {
+      throw new Error("runtime intentFirst did not expose workspaceLock recommendation");
     }
     const governancePolicy =
       runtimeReady && runtimeReady.governancePolicy && typeof runtimeReady.governancePolicy === "object"

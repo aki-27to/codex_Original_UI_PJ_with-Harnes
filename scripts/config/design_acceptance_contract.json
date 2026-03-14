@@ -1,0 +1,65 @@
+{
+  "schema": "design-acceptance-contract.v1",
+  "version": "2026-03-13.r1",
+  "mode": "intent-first",
+  "benchmarkComparisonRequired": true,
+  "visualReviewRequired": true,
+  "independentReviewRequired": true,
+  "docSyncRequired": true,
+  "technicalVerificationRequired": true,
+  "workspaceLock": {
+    "requiredForSources": ["web_ui"],
+    "rejectWhenUnlocked": true
+  },
+  "promptEnvelope": {
+    "title": "Intent-First Brief",
+    "enabledForSources": ["web_ui"],
+    "completionRule": "Do not claim completion unless the output beats the benchmark, avoids banned patterns, and has screenshot plus reviewer evidence."
+  },
+  "keywords": [
+    "design",
+    "ui",
+    "ux",
+    "site",
+    "website",
+    "landing",
+    "brand",
+    "visual",
+    "look",
+    "feel",
+    "aesthetic",
+    "beautiful",
+    "quality",
+    "layout",
+    "style",
+    "AIっぽ",
+    "AI感",
+    "テンプレ",
+    "サイト",
+    "デザイン",
+    "見た目",
+    "雰囲気"
+  ],
+  "prohibitedPatterns": [
+    "generic glassmorphism or translucent panel stacks",
+    "uniform card grids that flatten hierarchy",
+    "template-like blue gradient dashboard language",
+    "abstract copy with no concrete proof or realness"
+  ],
+  "requiredArtifacts": [
+    "locked intent summary",
+    "benchmark decomposition",
+    "desktop screenshot review",
+    "mobile screenshot review",
+    "independent reviewer verdict",
+    "technical verification evidence",
+    "documentation sync"
+  ],
+  "evaluationAxes": [
+    "intent alignment",
+    "realness and credibility",
+    "typographic hierarchy",
+    "information density",
+    "benchmark superiority"
+  ]
+}

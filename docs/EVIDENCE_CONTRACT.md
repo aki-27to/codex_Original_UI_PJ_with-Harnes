@@ -1,6 +1,6 @@
 # EVIDENCE_CONTRACT
 
-Updated: 2026-03-08
+Updated: 2026-03-13
 
 ## 1) Purpose
 
@@ -44,6 +44,11 @@ Define the minimum verification and reporting artifacts required before a task c
   - launch the UI
   - verify `GET /api/runtime` returns HTTP 200
   - include browser/manual evidence when UI behavior changed materially
+  - for design-sensitive work, also include:
+    - benchmark or reference comparison note
+    - desktop screenshot review
+    - mobile screenshot review
+    - independent reviewer/tester verdict
 - Skill assignment or skill package changes:
   - `node scripts/skill_portfolio_audit.js`
 - Over-delivery that adds new logic:
@@ -98,3 +103,9 @@ Every completion report should make the evidence legible by including:
 - If a check is skipped, say exactly why it was skipped and what risk remains.
 - Evidence aggregation should reduce reviewer load, not hide missing checks. A neat manifest without the underlying proof is still a failure.
 - `SIGNOFF_ASSURANCE` runs should surface reviewer/tester/doc-sync status in `review_load_breakdown.json` for operator signoff.
+- If a task is design-sensitive and visual evidence is missing, the correct outcome is `FAILED_VALIDATION`, not `COMPLETED`.
+
+## 6.1) Subjective Quality Rule
+
+- For subjective quality work, "it looks better" is not evidence by itself.
+- Screenshot comparison, reviewer verdict, and benchmark reasoning are the minimum acceptable proof.

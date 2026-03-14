@@ -70,6 +70,23 @@ function createClassList() {
     contains(token) {
       return set.has(String(token));
     },
+    toggle(token, force) {
+      const normalized = String(token);
+      if (force === true) {
+        set.add(normalized);
+        return true;
+      }
+      if (force === false) {
+        set.delete(normalized);
+        return false;
+      }
+      if (set.has(normalized)) {
+        set.delete(normalized);
+        return false;
+      }
+      set.add(normalized);
+      return true;
+    },
     toString() {
       return Array.from(set).join(" ");
     },
@@ -107,6 +124,13 @@ function mergeObjects(base, override) {
 
 function assertContains(source, expected, message) {
   assert(String(source || "").includes(expected), `${message} :: missing ${expected}`);
+}
+
+function countOccurrences(source, expected) {
+  const text = String(source || "");
+  const needle = String(expected || "");
+  if (!needle) return 0;
+  return text.split(needle).length - 1;
 }
 
 function payloadActiveAgent(payload) {
@@ -580,9 +604,10 @@ function assertRenderedOverviewMatchesPayload(payload, elements) {
       && payload.runtime.fullUtilization.actual.defaultExecAgent,
     "payload must expose runtime.fullUtilization.actual.defaultExecAgent"
   );
-  assertContains(elements.overviewHeroText.textContent, `Active runtime agent is ${payloadActiveAgent(payload)}.`, "hero must render the active runtime agent");
-  assertContains(elements.overviewHeroText.textContent, `Default exec agent is ${payloadDefaultExecAgent(payload)}.`, "hero must render the default exec agent");
-  assertContains(elements.runtimePostureCard.innerHTML, `active agent ${payloadActiveAgent(payload)} / default exec ${payloadDefaultExecAgent(payload)}`, "runtime posture must render active/default agent detail");
+  assertContains(elements.overviewHeroText.textContent, payloadActiveAgent(payload), "hero must render the active runtime agent");
+  assertContains(elements.overviewHeroText.textContent, payloadDefaultExecAgent(payload), "hero must render the default exec agent");
+  assertContains(elements.runtimePostureCard.innerHTML, payloadActiveAgent(payload), "runtime posture must render the active agent detail");
+  assertContains(elements.runtimePostureCard.innerHTML, payloadDefaultExecAgent(payload), "runtime posture must render the default exec detail");
   const specialists = payload && payload.topology && payload.topology.lanes && Array.isArray(payload.topology.lanes.specialists)
     ? payload.topology.lanes.specialists
     : [];
@@ -668,7 +693,7 @@ async function runClientRefreshRaceCheck() {
   });
   await freshPromise;
   await flushMicrotasks();
-  assert.strictEqual(elements.overviewRefreshState.textContent, "Live", "fresh success should set refresh state to Live");
+  assert.strictEqual(elements.overviewRefreshState.textContent, "最新", "fresh success should set refresh state to 最新");
   assert.strictEqual(elements.overviewErrorBanner.classList.contains("hidden"), true, "fresh success should keep error banner hidden");
   assert.strictEqual(Number(hooks.state.payload && hooks.state.payload.generatedAt), 2, "fresh success payload should be retained");
   assertRenderedOverviewMatchesPayload(successPayload, elements);
@@ -677,7 +702,7 @@ async function runClientRefreshRaceCheck() {
   staleFailure.reject(new Error("stale failure"));
   await stalePromise;
   await flushMicrotasks();
-  assert.strictEqual(elements.overviewRefreshState.textContent, "Live", "stale failure must not overwrite newer successful refresh state");
+  assert.strictEqual(elements.overviewRefreshState.textContent, "最新", "stale failure must not overwrite newer successful refresh state");
   assert.strictEqual(elements.overviewErrorBanner.classList.contains("hidden"), true, "stale failure must not surface an error banner");
   assert.strictEqual(Number(hooks.state.payload && hooks.state.payload.generatedAt), 2, "stale failure must not replace the latest payload");
   assertContains(elements.topologySpecialistLane.innerHTML, "backend_worker", "stale failure must not disturb rendered specialist lane");
@@ -692,7 +717,7 @@ async function runClientRefreshRaceCheck() {
   latestFailure.reject(new Error("latest failure"));
   await latestFailurePromise;
   await flushMicrotasks();
-  assert.strictEqual(elements.overviewRefreshState.textContent, "Error", "latest failure must surface disconnected state");
+  assert.strictEqual(elements.overviewRefreshState.textContent, "エラー", "latest failure must surface disconnected state");
   assert.strictEqual(elements.overviewErrorBanner.classList.contains("hidden"), false, "latest failure must show an error banner");
   assertContains(elements.overviewErrorBanner.textContent, "latest failure", "latest failure banner must include the failure reason");
   assert.strictEqual(Number(hooks.state.payload && hooks.state.payload.generatedAt), 2, "latest failure must preserve the previous successful payload");
@@ -704,9 +729,9 @@ async function runClientRefreshRaceCheck() {
   });
   await staleSuccessPromise;
   await flushMicrotasks();
-  assert.strictEqual(elements.overviewRefreshState.textContent, "Error", "stale success must not clear a newer failure state");
+  assert.strictEqual(elements.overviewRefreshState.textContent, "エラー", "stale success must not clear a newer failure state");
   assert.strictEqual(elements.overviewErrorBanner.classList.contains("hidden"), false, "stale success must not hide the latest error banner");
-  assertContains(elements.overviewHeroText.textContent, `Active runtime agent is ${payloadActiveAgent(successPayload)}.`, "stale success must not replace the rendered hero payload");
+  assertContains(elements.overviewHeroText.textContent, payloadActiveAgent(successPayload), "stale success must not replace the rendered hero payload");
   assertContains(elements.topologySpecialistLane.innerHTML, "backend_worker", "stale success must not replace the rendered specialist lane");
   assert.strictEqual(String(elements.topologySpecialistLane.innerHTML).includes("infra_worker"), false, "stale success must not render a stale specialist lane");
   assert.strictEqual(Number(hooks.state.payload && hooks.state.payload.generatedAt), 2, "stale success must not replace the latest retained payload");
@@ -820,6 +845,8 @@ async function runIntegrationCheck() {
       "overview runtime must expose fullUtilization.actual.defaultExecAgent"
     );
     assert(Array.isArray(overviewJson.contracts.taskOutcome && overviewJson.contracts.taskOutcome.reasonMapKeys), "overview taskOutcome reasonMapKeys must be an array");
+    assert(overviewJson.contracts.designAcceptance && typeof overviewJson.contracts.designAcceptance === "object", "overview designAcceptance contract missing");
+    assert(overviewJson.memory.taste && typeof overviewJson.memory.taste === "object", "overview taste memory missing");
     const signoffLatest = overviewJson.evidence && overviewJson.evidence.signoff && overviewJson.evidence.signoff.latest;
     const signoffRecent = overviewJson.evidence && overviewJson.evidence.signoff && Array.isArray(overviewJson.evidence.signoff.recent)
       ? overviewJson.evidence.signoff.recent
@@ -841,7 +868,7 @@ async function runIntegrationCheck() {
 
     const htmlRes = await httpRequest(port, "/01.HarnesUI/overview.html");
     assert.strictEqual(htmlRes.statusCode, 200, "GET /01.HarnesUI/overview.html must return 200");
-    assert(htmlRes.raw.includes("Harness Overview"), "served overview html should include title text");
+    assert(htmlRes.raw.includes("ハーネス概要"), "served overview html should include title text");
     assert(htmlRes.raw.includes("./overview.js"), "served overview html must reference ./overview.js");
     const overviewJsRes = await httpRequest(port, "/01.HarnesUI/overview.js");
     assert.strictEqual(overviewJsRes.statusCode, 200, "GET /01.HarnesUI/overview.js must return 200");
@@ -860,10 +887,10 @@ async function runIntegrationCheck() {
       scriptSource: overviewJsRes.raw,
     });
     assertRenderedOverviewMatchesPayload(scopedPayload, scopedHarness.elements);
-    assertContains(scopedHarness.elements.overviewHeroText.textContent, "Active runtime agent is worker-scoped-proof.", "served renderer must keep active runtime agent distinct in scoped proof");
+    assertContains(scopedHarness.elements.overviewHeroText.textContent, "worker-scoped-proof", "served renderer must keep active runtime agent distinct in scoped proof");
     assertContains(
       scopedHarness.elements.overviewHeroText.textContent,
-      `Default exec agent is ${payloadDefaultExecAgent(scopedPayload)}.`,
+      payloadDefaultExecAgent(scopedPayload),
       "served renderer must keep default exec agent distinct in scoped proof"
     );
     const missingActivePayload = mergeObjects(overviewJson, {
@@ -875,11 +902,10 @@ async function runIntegrationCheck() {
       htmlSource: htmlRes.raw,
       scriptSource: overviewJsRes.raw,
     });
-    assertContains(missingActiveHarness.elements.overviewHeroText.textContent, "Active runtime agent is unreported.", "missing active agent must not fall back to default");
-    assertContains(
-      missingActiveHarness.elements.overviewHeroText.textContent,
-      `Default exec agent is ${payloadDefaultExecAgent(overviewJson)}.`,
-      "missing active agent must preserve the reported default exec agent"
+    assert.strictEqual(
+      countOccurrences(missingActiveHarness.elements.overviewHeroText.textContent, payloadDefaultExecAgent(overviewJson)),
+      1,
+      "missing active agent must not fall back to default"
     );
     const missingDefaultExecPayload = mergeObjects(overviewJson, {
       runtime: {
@@ -895,9 +921,13 @@ async function runIntegrationCheck() {
       htmlSource: htmlRes.raw,
       scriptSource: overviewJsRes.raw,
     });
-    assertContains(missingDefaultExecHarness.elements.overviewHeroText.textContent, "Default exec agent is unreported.", "missing default exec agent must not fall back to activeAgent");
     assert.strictEqual(
-      String(missingDefaultExecHarness.elements.overviewHeroText.textContent).includes("Default exec agent is worker-proof-missing-default."),
+      countOccurrences(missingDefaultExecHarness.elements.overviewHeroText.textContent, "worker-proof-missing-default"),
+      1,
+      "missing default exec agent must not fall back to activeAgent"
+    );
+    assert.strictEqual(
+      countOccurrences(missingDefaultExecHarness.elements.overviewHeroText.textContent, "worker-proof-missing-default") > 1,
       false,
       "missing default exec agent must never alias the active runtime agent"
     );

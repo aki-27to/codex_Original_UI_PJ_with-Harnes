@@ -67,6 +67,16 @@ const {
   validateTaskOutcomeTurnCompatibility,
 }=require("./scripts/lib/task_outcome_policy");
 const {
+  buildIntentFirstPrompt,
+  evaluateIntentFirstGates,
+  isDesignSensitiveRequest,
+  loadDesignAcceptanceContract,
+  loadUserTasteMemoryStore,
+  normalizeUserTasteMemoryStore,
+  persistUserTasteMemoryStore,
+  summarizeIntentFirstRuntime,
+}=require("./scripts/lib/intent_first_policy");
+const {
   buildGitAutomationConfig,
   captureGitRepoState,
   runGitAutomationForTurn,
@@ -205,9 +215,14 @@ const imageMimeByExtension={".png":"image/png",".jpg":"image/jpeg",".jpeg":"imag
 const allowedChatImageMimeTypes=new Set(Object.values(imageMimeByExtension));
 const allowedChatImageExtensions=new Set(Object.keys(imageMimeByExtension));
 const controlApiTokenHeaderName="x-codex-control-token";
-const controlApiActionAllowlist=openCmdWindowEnabled
-  ? new Set(["open_workspace_shell"])
-  : new Set();
+const controlApiActionAllowlist=new Set([
+  "select_workspace_directory",
+  "lock_workspace_directory",
+  "unlock_workspace_directory",
+  "update_intent_profile",
+  "reset_intent_profile",
+]);
+if(openCmdWindowEnabled)controlApiActionAllowlist.add("open_workspace_shell");
 const execApiRequiredContentType="application/json";
 const conversationApiRequiredContentType="application/json";
 const conversationRequestBodyLimitBytes=parsePositiveIntEnv("CODEX_CONVERSATION_REQUEST_BODY_LIMIT_BYTES",256*1024,8*1024,2*1024*1024);
@@ -243,6 +258,9 @@ const evalRunHistoryPath=resolveWorkspaceScopedPathOverride(
 );
 const runtimeProofsRoot=path.join(workspaceRoot,"logs","proofs");
 const signoffBundlesRoot=path.join(workspaceRoot,"logs","signoff-bundles");
+const designAcceptanceContractPath=path.join(workspaceRoot,"scripts","config","design_acceptance_contract.json");
+const userTasteMemorySeedPath=path.join(workspaceRoot,"scripts","config","default_user_taste_memory.json");
+const userTasteMemoryPath=path.join(workspaceRoot,"logs","user_taste_memory.json");
 const evalRunHistoryMaxLines=parsePositiveIntEnv("CODEX_EVAL_HISTORY_MAX_LINES",500,50,10000);
 const evalCaseTimeoutMs=parsePositiveIntEnv("CODEX_EVAL_CASE_TIMEOUT_MS",180000,30000,900000);
 const evalMaxCases=parsePositiveIntEnv("CODEX_EVAL_MAX_CASES",12,1,120);
@@ -273,6 +291,7 @@ const harnessTurnContractSpec=loadHarnessTurnContractSpecSafely();
 const taskOutcomeContract=loadTaskOutcomeContractSafely();
 const planningModeContract=loadPlanningModeContractSafely();
 const assuranceModeContract=loadAssuranceModeContractSafely();
+const designAcceptanceContract=loadDesignAcceptanceContractSafely();
 
 let webServer=null;
 let webPort=null;
@@ -280,6 +299,12 @@ let shuttingDown=false;
 let nextAgentNumber=1;
 let conversationPersonaMemoryLoaded=false;
 let conversationPersonaMemoryStore=createDefaultPersonaMemoryStore();
+let userTasteMemoryLoaded=false;
+let userTasteMemoryStore=normalizeUserTasteMemoryStore({});
+const workspaceGuardState={
+  lockedRoot:"",
+  updatedAt:0,
+};
 let requirementGuardExtensionModule=null;
 let requirementGuardExtensionLoadError=null;
 let requirementGuardExtensionAttempted=false;
@@ -450,6 +475,14 @@ function loadAssuranceModeContractSafely(){
     }
   }
 }
+function loadDesignAcceptanceContractSafely(){
+  try{
+    return loadDesignAcceptanceContract(designAcceptanceContractPath);
+  }catch(error){
+    console.warn(`[contract] failed to load design acceptance spec from ${designAcceptanceContractPath}: ${error&&error.message?error.message:String(error)}`);
+    return loadDesignAcceptanceContract();
+  }
+}
 function normalizeAutoOpenPath(value){
   const raw=safeString(value,240);
   if(!raw)return"";
@@ -498,6 +531,50 @@ function isPathWithin(root,target){
   const rootResolved=path.resolve(root).toLowerCase();
   const targetResolved=path.resolve(target).toLowerCase();
   return targetResolved===rootResolved||targetResolved.startsWith(`${rootResolved}${path.sep}`);
+}
+function workspaceGuardLockedRoot(){
+  return typeof workspaceGuardState.lockedRoot==="string"&&workspaceGuardState.lockedRoot
+    ? workspaceGuardState.lockedRoot
+    : "";
+}
+function buildWorkspaceGuardSnapshot(){
+  const lockedRoot=workspaceGuardLockedRoot();
+  return{
+    locked:Boolean(lockedRoot),
+    lockedRoot:lockedRoot||null,
+    scope:"directory_tree",
+    updatedAt:Number.isFinite(Number(workspaceGuardState.updatedAt))?Math.max(0,Math.trunc(Number(workspaceGuardState.updatedAt))):0,
+    canSelect:process.platform==="win32",
+    selectApi:"POST /api/workspace/select",
+    lockApi:"POST /api/workspace/lock",
+    unlockApi:"POST /api/workspace/unlock",
+  };
+}
+function setWorkspaceGuardLock(targetRoot){
+  const resolved=normalizeWorkingDirectory(targetRoot,workspaceRoot);
+  workspaceGuardState.lockedRoot=resolved;
+  workspaceGuardState.updatedAt=Date.now();
+  return buildWorkspaceGuardSnapshot();
+}
+function clearWorkspaceGuardLock(){
+  workspaceGuardState.lockedRoot="";
+  workspaceGuardState.updatedAt=Date.now();
+  return buildWorkspaceGuardSnapshot();
+}
+function enforceWorkspaceGuard(resolvedCwd){
+  const lockedRoot=workspaceGuardLockedRoot();
+  if(!lockedRoot)return resolvedCwd;
+  if(isPathWithin(lockedRoot,resolvedCwd))return resolvedCwd;
+  throw new Error(`cwd is outside locked workspace: ${resolvedCwd} (locked root: ${lockedRoot})`);
+}
+function resolveApiWorkingDirectory(value,fallbackCwd=workspaceRoot){
+  const lockedRoot=workspaceGuardLockedRoot();
+  const fallback=lockedRoot||fallbackCwd||workspaceRoot;
+  const resolved=normalizeWorkingDirectory(value,fallback);
+  return enforceWorkspaceGuard(resolved);
+}
+function escapePowerShellSingleQuoted(value){
+  return String(value||"").replace(/'/g,"''");
 }
 function resolveControlApiToken(){
   const raw=typeof process.env.CODEX_CONTROL_API_TOKEN==="string"?process.env.CODEX_CONTROL_API_TOKEN.trim():"";
@@ -4153,6 +4230,7 @@ function resolveExecRequestErrorStatus(error){
   if(/^unsupported content-type:/.test(message))return 415;
   if(/^cwd does not exist:/.test(message))return 400;
   if(/^cwd is not a directory:/.test(message))return 400;
+  if(/^cwd is outside locked workspace:/.test(message))return 403;
   if(/^images\[\d+\]:/.test(message))return 400;
   if(/^unsupported image /.test(message))return 400;
   if(/^image\./.test(message))return 400;
@@ -4290,10 +4368,53 @@ function serveStaticFile(req,res,pathname){
     res.end(data);
   });
 }
-function openCmdWindow(){
-  const cd=`cd /d \"${workspaceRoot}\"`;
+function selectWorkspaceDirectoryDialog(initialPath=""){
+  if(process.platform!=="win32"){
+    throw new Error("workspace directory picker is only supported on Windows");
+  }
+  const initial=normalizeOptionalString(initialPath,2000);
+  const resolvedInitial=initial?path.resolve(initial):"";
+  const scriptLines=[
+    "Add-Type -AssemblyName System.Windows.Forms",
+    "$dialog = New-Object System.Windows.Forms.FolderBrowserDialog",
+    "$dialog.Description = 'Select a locked workspace for the Codex UI.'",
+    "$dialog.ShowNewFolderButton = $true",
+  ];
+  if(resolvedInitial){
+    scriptLines.push(`$dialog.SelectedPath = '${escapePowerShellSingleQuoted(resolvedInitial)}'`);
+  }
+  scriptLines.push(
+    "$result = $dialog.ShowDialog()",
+    "if($result -eq [System.Windows.Forms.DialogResult]::OK -and $dialog.SelectedPath){",
+    "  [Console]::OutputEncoding = [System.Text.Encoding]::UTF8",
+    "  Write-Output $dialog.SelectedPath",
+    "}"
+  );
+  const result=spawnSync("powershell.exe",["-NoLogo","-NoProfile","-STA","-Command",scriptLines.join("; ")],{
+    cwd:workspaceRoot,
+    windowsHide:false,
+    encoding:"utf8",
+    timeout:5*60*1000,
+  });
+  if(result.error)throw new Error(`workspace directory picker failed: ${result.error.message}`);
+  if(!Number.isInteger(result.status))throw new Error("workspace directory picker failed: no exit status");
+  if(result.status!==0){
+    const detail=getFirstMeaningfulLine(`${result.stdout||""}\n${result.stderr||""}`)||`exit code ${result.status}`;
+    throw new Error(`workspace directory picker failed: ${detail}`);
+  }
+  const chosenPath=String(result.stdout||"")
+    .split(/\r?\n/)
+    .map((line)=>line.trim())
+    .filter(Boolean)
+    .pop()||"";
+  if(!chosenPath)return"";
+  return normalizeWorkingDirectory(chosenPath,workspaceRoot);
+}
+function openCmdWindow(targetCwd=workspaceRoot){
+  const resolvedCwd=resolveApiWorkingDirectory(targetCwd,workspaceRoot);
+  const cd=`cd /d \"${resolvedCwd}\"`;
   const cmd=`start \"\" /min cmd.exe /d /k ${cd}`;
-  const c=spawn("cmd.exe",["/d","/s","/c",cmd],{cwd:workspaceRoot,detached:true,stdio:"ignore",windowsHide:true});
+  const c=spawn("cmd.exe",["/d","/s","/c",cmd],{cwd:resolvedCwd,detached:true,stdio:"ignore",windowsHide:true});
   c.unref();
 }
 function writeChunk(res,text){
@@ -4529,6 +4650,122 @@ function resetConversationPersonaMemoryForUser(userId){
       updatedAt:0,
     },
   };
+}
+function loadUserTasteMemoryStoreCached(){
+  if(userTasteMemoryLoaded){
+    return userTasteMemoryStore;
+  }
+  userTasteMemoryLoaded=true;
+  try{
+    userTasteMemoryStore=loadUserTasteMemoryStore({
+      memoryPath:userTasteMemoryPath,
+      seedPath:userTasteMemorySeedPath,
+    });
+  }catch(error){
+    userTasteMemoryStore=normalizeUserTasteMemoryStore({});
+    logOperation("intent.user_taste_memory_load_failed",{
+      err:summarizeErrorForOperationLog(error,220),
+      path:summarizePathForOperationLog(userTasteMemoryPath,220),
+      seed:summarizePathForOperationLog(userTasteMemorySeedPath,220),
+    },"core");
+  }
+  return userTasteMemoryStore;
+}
+function persistUserTasteMemoryStoreCached(){
+  try{
+    const normalized=persistUserTasteMemoryStore(userTasteMemoryPath,userTasteMemoryStore);
+    userTasteMemoryStore=normalized;
+    userTasteMemoryLoaded=true;
+    return normalized;
+  }catch(error){
+    logOperation("intent.user_taste_memory_persist_failed",{
+      err:summarizeErrorForOperationLog(error,220),
+      path:summarizePathForOperationLog(userTasteMemoryPath,220),
+    },"core");
+    return null;
+  }
+}
+function buildIntentFirstRuntimeSnapshot(){
+  const store=loadUserTasteMemoryStoreCached();
+  const snapshot=summarizeIntentFirstRuntime({
+    contract:designAcceptanceContract,
+    store,
+    memoryPath:userTasteMemoryPath,
+    seedPath:userTasteMemorySeedPath,
+  });
+  return{
+    ...snapshot,
+    contract:{
+      ...(snapshot&&snapshot.contract&&typeof snapshot.contract==="object"?snapshot.contract:{}),
+      path:summarizePathForOperationLog(designAcceptanceContractPath,220),
+      promptEnvelope:{
+        title:safeString(designAcceptanceContract&&designAcceptanceContract.promptEnvelope&&designAcceptanceContract.promptEnvelope.title,120)||"Intent-First Brief",
+        enabledForSources:Array.isArray(designAcceptanceContract&&designAcceptanceContract.promptEnvelope&&designAcceptanceContract.promptEnvelope.enabledForSources)
+          ?designAcceptanceContract.promptEnvelope.enabledForSources.slice()
+          :[],
+        completionRule:safeString(designAcceptanceContract&&designAcceptanceContract.promptEnvelope&&designAcceptanceContract.promptEnvelope.completionRule,280)||"",
+        },
+    },
+    creativeSignals:{
+      promptKeywords:Array.isArray(designAcceptanceContract&&designAcceptanceContract.creativeSignals&&designAcceptanceContract.creativeSignals.promptKeywords)
+        ?designAcceptanceContract.creativeSignals.promptKeywords.slice(0,40)
+        :[],
+      pathPrefixes:Array.isArray(designAcceptanceContract&&designAcceptanceContract.creativeSignals&&designAcceptanceContract.creativeSignals.pathPrefixes)
+        ?designAcceptanceContract.creativeSignals.pathPrefixes.slice(0,20)
+        :[],
+      pathExtensions:Array.isArray(designAcceptanceContract&&designAcceptanceContract.creativeSignals&&designAcceptanceContract.creativeSignals.pathExtensions)
+        ?designAcceptanceContract.creativeSignals.pathExtensions.slice(0,20)
+        :[],
+    },
+    tasteMemory:{
+      ...(snapshot&&snapshot.tasteMemory&&typeof snapshot.tasteMemory==="object"?snapshot.tasteMemory:{}),
+      storage:summarizePathForOperationLog(userTasteMemoryPath,220),
+      seed:summarizePathForOperationLog(userTasteMemorySeedPath,220),
+    },
+  };
+}
+function updateActiveUserTasteProfile(patch){
+  const store=loadUserTasteMemoryStoreCached();
+  const activeProfileId=safeString(store&&store.activeProfileId,80).toLowerCase().replace(/[\s-]+/g,"_")||"default";
+  const profiles=store&&store.profiles&&typeof store.profiles==="object"?{...store.profiles}:{};
+  const current=profiles[activeProfileId]&&typeof profiles[activeProfileId]==="object"
+    ?profiles[activeProfileId]
+    :{id:activeProfileId,label:activeProfileId};
+  const nextPatch=patch&&typeof patch==="object"?{...patch}:{};
+  if(Object.prototype.hasOwnProperty.call(nextPatch,"northStar")){
+    nextPatch.northStarLines=Array.isArray(nextPatch.northStar)
+      ?nextPatch.northStar.slice(0,4)
+      :nextPatch.northStar;
+  }
+  const nextProfile={
+    ...current,
+    ...nextPatch,
+    id:activeProfileId,
+    updatedAt:Date.now(),
+  };
+  userTasteMemoryStore=normalizeUserTasteMemoryStore({
+    ...store,
+    updatedAt:Date.now(),
+    activeProfileId,
+    profiles:{
+      ...profiles,
+      [activeProfileId]:nextProfile,
+    },
+  });
+  return persistUserTasteMemoryStoreCached()||userTasteMemoryStore;
+}
+function resetUserTasteMemoryToSeed(){
+  userTasteMemoryLoaded=false;
+  userTasteMemoryStore=normalizeUserTasteMemoryStore({});
+  const store=loadUserTasteMemoryStore({
+    seedPath:userTasteMemorySeedPath,
+  });
+  userTasteMemoryStore=normalizeUserTasteMemoryStore({
+    ...store,
+    updatedAt:Date.now(),
+  });
+  userTasteMemoryLoaded=true;
+  return persistUserTasteMemoryStoreCached()||userTasteMemoryStore;
 }
 function buildConversationPromptFromRequest({message,history,level,topic,mode,memoryContext}){
   const conversationMode=normalizeConversationMode(mode);
@@ -5053,6 +5290,66 @@ function applyRequirementGuardExecExtension(input){
     console.error(`[requirement-guard] transformExecRequest failed: ${error&&error.message?error.message:String(error)}`);
     return fallback;
   }
+}
+function applyIntentFirstExecEnvelope({prompt,executionSource}={}){
+  const normalizedPrompt=safeString(prompt,defaultPromptCharLimit);
+  const normalizedSource=safeString(executionSource,80)||"api_exec";
+  const designSensitive=isDesignSensitiveRequest({
+    prompt:normalizedPrompt,
+    changedPaths:[],
+    contract:designAcceptanceContract,
+  });
+  if(!normalizedPrompt){
+    return{
+      prompt:normalizedPrompt,
+      applied:false,
+      designSensitive,
+      source:normalizedSource,
+    };
+  }
+  const enabledSources=Array.isArray(designAcceptanceContract.promptEnvelope&&designAcceptanceContract.promptEnvelope.enabledForSources)
+    ?designAcceptanceContract.promptEnvelope.enabledForSources
+    :[];
+  if(!designSensitive||!enabledSources.includes(normalizedSource)){
+    return{
+      prompt:normalizedPrompt,
+      applied:false,
+      designSensitive,
+      source:normalizedSource,
+    };
+  }
+  const store=loadUserTasteMemoryStoreCached();
+  return{
+    prompt:buildIntentFirstPrompt({
+      prompt:normalizedPrompt,
+      contract:designAcceptanceContract,
+      activeProfile:store&&store.profiles?store.profiles[store.activeProfileId]:null,
+    }),
+    applied:true,
+    designSensitive,
+    source:normalizedSource,
+  };
+}
+function evaluateIntentFirstPreflight({prompt,executionSource,workspaceGuard}={}){
+  const normalizedSource=safeString(executionSource,80)||"api_exec";
+  const designSensitive=isDesignSensitiveRequest({
+    prompt:safeString(prompt,defaultPromptCharLimit),
+    changedPaths:[],
+    contract:designAcceptanceContract,
+  });
+  const requiresLock=designSensitive&&Array.isArray(designAcceptanceContract.workspaceLock.requiredForSources)
+    &&designAcceptanceContract.workspaceLock.requiredForSources.includes(normalizedSource)
+    &&designAcceptanceContract.workspaceLock.rejectWhenUnlocked;
+  const locked=Boolean(workspaceGuard&&workspaceGuard.locked&&typeof workspaceGuard.lockedRoot==="string"&&workspaceGuard.lockedRoot.trim());
+  return{
+    designSensitive,
+    requiresLock,
+    locked,
+    ok:!requiresLock||locked,
+    error:requiresLock&&!locked
+      ?"intent-first design tasks require an active workspace lock before execution"
+      :"",
+  };
 }
 function getRequirementGuardRequirementLockSnapshot(moduleRef){
   if(!moduleRef||typeof moduleRef.getRequirementLockConfig!=="function")return null;
@@ -5632,6 +5929,60 @@ function validateRequestedAgentName(agentName){
     reason:"agent_not_configured",
     agentName:requested,
     allowedAgents:Array.from(allowed).sort().slice(0,24),
+  };
+}
+function resolveTurnInterruptTarget(input={}){
+  const requestedThreadId=safeString(input&&input.threadId,160)||"";
+  const requestedTurnId=safeString(input&&input.turnId,160)||"";
+  const requestedAgentName=normalizeAgentName(input&&input.agentName);
+  if(requestedThreadId&&requestedTurnId){
+    return{
+      ok:true,
+      threadId:requestedThreadId,
+      turnId:requestedTurnId,
+      agentName:requestedAgentName||"",
+      source:"request",
+    };
+  }
+  if(!requestedAgentName){
+    return{
+      ok:false,
+      status:400,
+      code:"interrupt_target_missing",
+      error:"threadId/turnId or agentName is required",
+    };
+  }
+  const agentValidation=validateRequestedAgentName(requestedAgentName);
+  if(!agentValidation.ok){
+    return{
+      ok:false,
+      status:400,
+      code:"agent_not_configured",
+      error:`agent is not configured for runtime use: ${safeString(requestedAgentName,80)||"unknown"}`,
+      agentName:requestedAgentName,
+      allowedAgents:Array.isArray(agentValidation.allowedAgents)?agentValidation.allowedAgents.slice(0,24):[],
+    };
+  }
+  const resolvedAgentName=safeString(agentValidation.agentName,120)||requestedAgentName;
+  const fallbackAgentName=safeString(agentValidation.baseAgentName,120)||"";
+  const state=agentStates.get(resolvedAgentName)||agentStates.get(fallbackAgentName)||null;
+  const stateThreadId=safeString(state&&state.threadId,160)||"";
+  const stateTurnId=safeString(state&&state.activeTurnId,160)||"";
+  if(stateThreadId&&stateTurnId){
+    return{
+      ok:true,
+      threadId:stateThreadId,
+      turnId:stateTurnId,
+      agentName:resolvedAgentName,
+      source:"agent_state",
+    };
+  }
+  return{
+    ok:false,
+    status:409,
+    code:"no_active_turn",
+    error:`no active turn to interrupt for agent: ${resolvedAgentName}`,
+    agentName:resolvedAgentName,
   };
 }
 function parseSlashPrompt(prompt){const t=(prompt||"").trim();const i=t.indexOf(" ");if(i<0)return{command:t.toLowerCase(),argsText:""};return{command:t.slice(0,i).toLowerCase(),argsText:t.slice(i+1).trim()};}
@@ -6991,12 +7342,45 @@ function createTurnStreamStats(){
     collabCalls:0,
     collabFailures:0,
     webSearches:0,
+    docSyncSeen:false,
+    lastViewportMode:"",
+    desktopVisualReviewSeen:false,
+    mobileVisualReviewSeen:false,
     sampleCommands:[],
     sampleMcpTools:[],
     sampleChangedPaths:[],
     collabOwnedReportKeys:new Set(),
     tokenUsage:null,
   };
+}
+function isDocumentationSyncPath(targetPath){
+  const normalized=normalizeMergePath(targetPath);
+  if(!normalized)return false;
+  return normalized==="AGENTS.md"
+    || normalized==="README.md"
+    || normalized.startsWith("docs/")
+    || normalized.endsWith("/README.md");
+}
+function inferViewportModeFromCommand(commandText,currentMode=""){
+  const text=safeString(commandText,400).toLowerCase();
+  if(!text)return currentMode||"";
+  const resizeMatch=text.match(/resize\s+(\d{2,4})\s+(\d{2,4})/i);
+  if(resizeMatch){
+    const width=Number.parseInt(resizeMatch[1],10);
+    if(Number.isFinite(width)&&width>0){
+      return width<=480?"mobile":"desktop";
+    }
+  }
+  if(text.includes("mobile")||text.includes("iphone")||text.includes("android"))return"mobile";
+  if(text.includes("desktop"))return"desktop";
+  return currentMode||"";
+}
+function commandProducesVisualEvidence(commandText){
+  const text=safeString(commandText,400).toLowerCase();
+  return text.includes("screenshot")
+    || text.includes("snapshot")
+    || text.includes("view_image")
+    || text.includes("playwright");
 }
 function incrementTurnStreamItemCount(stats,key){
   if(!stats||!stats.itemCounts||typeof key!=="string"||!key)return;
@@ -7020,6 +7404,17 @@ function collectTurnStreamItemStats(stats,item){
     if(item.status==="failed"||item.status==="declined"){
       stats.commandFailures+=1;
     }
+    const viewportMode=inferViewportModeFromCommand(item.command,stats.lastViewportMode);
+    if(viewportMode){
+      stats.lastViewportMode=viewportMode;
+    }
+    if(commandProducesVisualEvidence(item.command)){
+      if(stats.lastViewportMode==="mobile"){
+        stats.mobileVisualReviewSeen=true;
+      }else{
+        stats.desktopVisualReviewSeen=true;
+      }
+    }
     pushUniqueSample(stats.sampleCommands,item.command,3);
     return;
   }
@@ -7027,12 +7422,22 @@ function collectTurnStreamItemStats(stats,item){
     stats.fileChanges+=1;
     const changes=Array.isArray(item.changes)?item.changes.map(mapFileChange).filter(Boolean):[];
     stats.changedFiles+=changes.length;
+    if(changes.some((change)=>change&&isDocumentationSyncPath(change.path))){
+      stats.docSyncSeen=true;
+    }
     changes.slice(0,3).forEach((change)=>pushUniqueSample(stats.sampleChangedPaths,change.path,3));
     return;
   }
   if(type==="mcpToolCall"){
     stats.mcpCalls+=1;
     const toolSummary=[safeString(item.server,60),safeString(item.tool,60)].filter(Boolean).join(".");
+    if(commandProducesVisualEvidence(toolSummary)){
+      if(stats.lastViewportMode==="mobile"){
+        stats.mobileVisualReviewSeen=true;
+      }else{
+        stats.desktopVisualReviewSeen=true;
+      }
+    }
     pushUniqueSample(stats.sampleMcpTools,toolSummary,3);
     return;
   }
@@ -7044,6 +7449,9 @@ function collectTurnStreamItemStats(stats,item){
     }
     const ownedPaths=extractCollabOwnedPaths(item,12);
     if(ownedPaths.length){
+      if(ownedPaths.some((ownedPath)=>isDocumentationSyncPath(ownedPath))){
+        stats.docSyncSeen=true;
+      }
       const receiverKey=Array.isArray(item.receiverThreadIds)
         ?item.receiverThreadIds.map((entry)=>safeString(entry,120)).filter(Boolean).sort().join("|")
         :"";
@@ -7814,6 +8222,11 @@ async function executeTurnStreaming(res,prompt,agentName,options){
       defaultsReady:turnVisibility.defaults&&turnVisibility.defaults.ready?1:0,
       turnReady:turnVisibility.turn&&turnVisibility.turn.ready?1:0,
     },
+    intentFirst:{
+      applied:options&&options.intentFirst&&options.intentFirst.applied?1:0,
+      designSensitive:options&&options.intentFirst&&options.intentFirst.designSensitive?1:0,
+      source:safeString(options&&options.intentFirst&&options.intentFirst.source?options.intentFirst.source:"",80),
+    },
   });
 
   let threadId=null;
@@ -7942,6 +8355,13 @@ async function executeTurnStreaming(res,prompt,agentName,options){
     taskOutcomeStatus:"",
     taskOutcomeReason:"",
     turnError:null,
+    intentFirst:options&&options.intentFirst&&typeof options.intentFirst==="object"
+      ?{
+        applied:options.intentFirst.applied?1:0,
+        designSensitive:options.intentFirst.designSensitive?1:0,
+        source:safeString(options.intentFirst.source,80)||"",
+      }
+      :null,
     gitAutomation:null,
     gitAutomationBaseline:null,
     updatedAt:nowTs(),
@@ -8268,6 +8688,50 @@ async function executeTurnStreaming(res,prompt,agentName,options){
         detail:safeString(missingRequiredEvidence.join(", "),1200),
       });
     }
+    const intentFirstReview=evaluateIntentFirstGates({
+      contract:designAcceptanceContract,
+      store:loadUserTasteMemoryStoreCached(),
+      prompt:parentDispatchRootPrompt||prompt,
+      executionSource:turnRecord.source||"streaming_exec",
+      changedPaths:turnStats.sampleChangedPaths,
+      workspaceLocked:Boolean(workspaceGuardLockedRoot()),
+      docSyncComplete:Boolean(turnStats.docSyncSeen),
+      visualEvidence:{
+        desktopReview:Boolean(turnStats.desktopVisualReviewSeen),
+        mobileReview:Boolean(turnStats.mobileVisualReviewSeen),
+      },
+      dispatchChildren,
+      sampleMcpTools:turnStats.sampleMcpTools,
+      sampleCommands:turnStats.sampleCommands,
+      commandExecutions:turnStats.commandExecutions,
+    });
+    turnRecord.intentFirst={
+      ...(turnRecord.intentFirst&&typeof turnRecord.intentFirst==="object"?turnRecord.intentFirst:{}),
+      applies:intentFirstReview.applies?1:0,
+      designSensitive:intentFirstReview.designSensitive?1:0,
+      status:safeString(intentFirstReview.status,40)||"not_applicable",
+      summary:safeString(intentFirstReview.summary,220)||"",
+      missingHard:Array.isArray(intentFirstReview.missingHard)
+        ?intentFirstReview.missingHard.map((entry)=>safeString(entry.label,80)).filter(Boolean).slice(0,8)
+        :[],
+    };
+    if(intentFirstReview.applies&&Array.isArray(intentFirstReview.missingHard)&&intentFirstReview.missingHard.length){
+      const intentError=intentFirstReview.summary||"intent-first completion gate missing";
+      if(!finalErrorText)finalErrorText=`[error] ${intentError}`;
+      if(finalStatus==="completed"){
+        finalStatus="failed";
+      }
+      safeWriteEvent({
+        type:"activity",
+        label:"intent_first_block",
+        detail:safeString(intentError,1200),
+      });
+    }
+    const taskOutcomeReason=planningDirective==="NEEDS_INPUT"
+      ? "interactive_approval_unavailable"
+      : (intentFirstReview.applies&&Array.isArray(intentFirstReview.missingHard)&&intentFirstReview.missingHard.length
+        ? safeString(intentFirstReview.missingHard[0].reason,120)
+        : "");
     turnRecord.status=finalStatus;
     setTurnTerminalState(turnRecord,finalStatus,{terminalEvent:"turn/completed",errorText:finalErrorText});
     debugFinalize("after_outcome_terminal_state");
@@ -8277,7 +8741,7 @@ async function executeTurnStreaming(res,prompt,agentName,options){
       approvalAudits:approvalAuditTrail,
       parentDispatchGuard,
       explicitStatus:planningDirective==="NEEDS_INPUT"?"NEEDS_INPUT":"",
-      reason:planningDirective==="NEEDS_INPUT"?"interactive_approval_unavailable":"",
+      reason:taskOutcomeReason,
       missingEvidence:missingRequiredEvidence.length>0,
     });
     const acceptanceResults=buildAcceptanceCheckResults({
@@ -8464,6 +8928,7 @@ async function executeTurnStreaming(res,prompt,agentName,options){
         reason:taskOutcome.reason,
       },
       parentDispatchGuard,
+      intentFirst:turnRecord.intentFirst,
       execution:{
         profile:turnVisibility.profile.effective,
         intent:turnVisibility.intent,
@@ -9461,6 +9926,15 @@ function snapshotTurnRecord(record){
     terminal_status:terminalStatus,
     task_outcome_status:safeString(record.taskOutcomeStatus,80).toUpperCase()||null,
     task_outcome_reason:safeString(record.taskOutcomeReason,120)||null,
+    intent_first:record.intentFirst&&typeof record.intentFirst==="object"
+      ?{
+        applied:record.intentFirst.applied?1:0,
+        design_sensitive:record.intentFirst.designSensitive?1:0,
+        status:safeString(record.intentFirst.status,40)||"not_applicable",
+        summary:safeString(record.intentFirst.summary,220)||"",
+        missing_hard:Array.isArray(record.intentFirst.missingHard)?record.intentFirst.missingHard.slice(0,8):[],
+      }
+      :null,
     terminal_event:safeString(record.turnTerminalEvent,120)||null,
     git_automation:snapshotGitAutomationResult(record.gitAutomation),
     started_at:Number.isFinite(Number(record.startedAt))?Math.max(0,Math.trunc(Number(record.startedAt))):null,
@@ -10083,6 +10557,8 @@ function buildRuntimeApiSnapshot(){
   };
   const fullUtilization=buildFullUtilizationDefaultsSnapshot();
   const parentDispatchGuard=buildParentDispatchGuardDefaultsSnapshot();
+  const workspaceGuard=buildWorkspaceGuardSnapshot();
+  const intentFirst=buildIntentFirstRuntimeSnapshot();
   const executionVisibility={
     profile:runtimeExecutionProfile,
     envKey:executionProfileEnvKey,
@@ -10094,6 +10570,10 @@ function buildRuntimeApiSnapshot(){
     apiVersion,
     mode:"app-server",
     workspaceRoot,
+    workspaceGuard,
+    workspace_guard:workspaceGuard,
+    intentFirst,
+    intent_first:intentFirst,
     activeAgent:activeAgentName,
     sessionRef:active?active.sessionRef:null,
     agentCount:agentStates.size,
@@ -10245,6 +10725,7 @@ function buildHarnessOverviewSnapshot(){
       runtime:"/api/runtime",
       overview:"/api/harness/overview",
       topography:"/api/agent-topography",
+      intentProfile:"POST /api/intent/profile",
       conversationRuntime:"/api/conversation/runtime",
       evalSuites:"/api/eval/suites",
       evalHistory:"/api/eval/history",
@@ -10258,6 +10739,7 @@ function buildHarnessOverviewSnapshot(){
       turn:runtime.contractSpec,
       taskOutcome:runtime.taskOutcomeContract,
       planning:runtime.planningContracts,
+      designAcceptance:runtime.intentFirst&&runtime.intentFirst.contract?runtime.intentFirst.contract:{},
     },
     evidence:{
       runtimeProof:buildBundleOverview(runtimeProofsRoot,"runtime_proof_summary.json",buildRuntimeProofBundleSnapshot),
@@ -10269,6 +10751,7 @@ function buildHarnessOverviewSnapshot(){
     },
     memory:{
       harness:runtime.harnessMemory,
+      taste:runtime.intentFirst&&runtime.intentFirst.tasteMemory?runtime.intentFirst.tasteMemory:{},
       execution:buildExecutionMemoryOverview({limit:10,window:60}),
       replay:{
         recent:listReplayMemorySnapshots({limit:6}),
@@ -10288,6 +10771,72 @@ async function requestHandler(req,res){
 
   if(req.method==="GET"&&pathname==="/api/runtime"){
     sendJson(res,200,buildRuntimeApiSnapshot());
+    return;
+  }
+
+  if(req.method==="POST"&&pathname==="/api/intent/profile"){
+    try{
+      const contentTypeValidation=validateJsonMutationContentType(req,{required:true,expectedMime:execApiRequiredContentType});
+      if(!contentTypeValidation.ok){
+        sendJson(res,contentTypeValidation.status,{ok:false,error:contentTypeValidation.error});
+        return;
+      }
+      const raw=await readRequestBody(req,defaultRequestBodyLimitBytes);
+      const body=raw?JSON.parse(raw):{};
+      const action=safeString(body&&body.action,80);
+      const validation=validateControlMutationRequest(req,{action,requireAction:true});
+      if(!validation.ok){
+        sendJson(res,validation.status,{ok:false,error:validation.error});
+        return;
+      }
+      const payload=body&&body.profile&&typeof body.profile==="object"?body.profile:body;
+      updateActiveUserTasteProfile({
+        label:payload&&payload.label,
+        northStar:payload&&payload.northStar,
+        benchmarkUrls:payload&&payload.benchmarkSites,
+        notes:payload&&payload.benchmarkNotes,
+        mustHaves:payload&&payload.prefers,
+        avoid:payload&&payload.rejects,
+        requiredProof:payload&&payload.requiredProof,
+      });
+      const snapshot=buildIntentFirstRuntimeSnapshot();
+      logOperation("api.intent_profile_update",{
+        action,
+        profileId:safeString(snapshot&&snapshot.tasteMemory&&snapshot.tasteMemory.activeProfileId,80)||"default",
+        updatedAt:Number.isFinite(Number(snapshot&&snapshot.tasteMemory&&snapshot.tasteMemory.updatedAt))?Math.max(0,Math.trunc(Number(snapshot.tasteMemory.updatedAt))):0,
+      },"standard");
+      sendJson(res,200,{ok:true,intentFirst:snapshot,intent_first:snapshot});
+    }catch(error){
+      sendJson(res,400,{ok:false,error:error&&error.message?error.message:String(error)});
+    }
+    return;
+  }
+
+  if(req.method==="POST"&&pathname==="/api/intent/profile/reset"){
+    try{
+      const contentTypeValidation=validateJsonMutationContentType(req,{required:true,expectedMime:execApiRequiredContentType});
+      if(!contentTypeValidation.ok){
+        sendJson(res,contentTypeValidation.status,{ok:false,error:contentTypeValidation.error});
+        return;
+      }
+      const raw=await readRequestBody(req,defaultRequestBodyLimitBytes);
+      const body=raw?JSON.parse(raw):{};
+      const action=safeString(body&&body.action,80);
+      const validation=validateControlMutationRequest(req,{action,requireAction:true});
+      if(!validation.ok){
+        sendJson(res,validation.status,{ok:false,error:validation.error});
+        return;
+      }
+      const store=resetUserTasteMemoryToSeed();
+      const snapshot=buildIntentFirstRuntimeSnapshot();
+      logOperation("api.intent_profile_reset",{
+        action,
+        profileId:safeString(store&&store.activeProfileId,80)||"default",
+      },"standard");
+      sendJson(res,200,{ok:true,intentFirst:snapshot,intent_first:snapshot});
+    }catch(error){
+      sendJson(res,400,{ok:false,error:error&&error.message?error.message:String(error)});
+    }
     return;
   }
 
@@ -10314,8 +10863,14 @@ async function requestHandler(req,res){
         },
       });
     }catch(error){
-      sendJson(res,500,{ok:false,error:error&&error.message?error.message:String(error)});
+      const statusCode=resolveExecRequestErrorStatus(error);
+      sendJson(res,statusCode,{ok:false,error:error&&error.message?error.message:String(error)});
     }
+    return;
+  }
+
+  if(req.method==="GET"&&pathname==="/api/intent/profile"){
+    sendJson(res,200,{ok:true,intentFirst:buildIntentFirstRuntimeSnapshot()});
     return;
   }
 
@@ -10339,11 +10894,12 @@ async function requestHandler(req,res){
         return;
       }
       const mode=normalizePocBatchMode(body.mode);
-      const cwd=normalizeWorkingDirectory(body.cwd,workspaceRoot);
+      const cwd=resolveApiWorkingDirectory(body.cwd,workspaceRoot);
       const result=await executePocBatchRun({prompt,mode,cwd,source:"manual"});
       sendJson(res,200,result);
     }catch(error){
-      sendJson(res,500,{ok:false,error:error&&error.message?error.message:String(error)});
+      const statusCode=resolveExecRequestErrorStatus(error);
+      sendJson(res,statusCode,{ok:false,error:error&&error.message?error.message:String(error)});
     }
     return;
   }
@@ -10603,7 +11159,7 @@ async function requestHandler(req,res){
         modelReasoningEffort:normalizeExecModelReasoningEffort(overrides.modelReasoningEffort,sourceRecord.request.modelReasoningEffort),
         forceNewSession:reproProfile?1:normalizeBooleanFlag(Object.prototype.hasOwnProperty.call(overrides,"forceNewSession")?overrides.forceNewSession:sourceRecord.request.forceNewSession),
         agentName:normalizeAgentName(overrides.agentName)||sourceRecord.request.agentName,
-        cwd:normalizeWorkingDirectory(overrides.cwd,sourceRecord.request.cwd||workspaceRoot),
+        cwd:resolveApiWorkingDirectory(overrides.cwd,sourceRecord.request.cwd||workspaceRoot),
         requestUserInputPolicy:reproProfile
           ?"blocked"
           :normalizeRequestUserInputPolicy(overrides.requestUserInputPolicy,sourceRecord.request.requestUserInputPolicy),
@@ -11074,6 +11630,96 @@ async function requestHandler(req,res){
     return;
   }
 
+  if(req.method==="POST"&&pathname==="/api/workspace/select"){
+    try{
+      const contentTypeValidation=validateJsonMutationContentType(req,{required:true,expectedMime:execApiRequiredContentType});
+      if(!contentTypeValidation.ok){
+        sendJson(res,contentTypeValidation.status,{ok:false,error:contentTypeValidation.error});
+        return;
+      }
+      const raw=await readRequestBody(req,defaultRequestBodyLimitBytes);
+      const body=raw?JSON.parse(raw):{};
+      const action=safeString(body&&body.action,80);
+      const validation=validateControlMutationRequest(req,{action,requireAction:true});
+      if(!validation.ok){
+        sendJson(res,validation.status,{ok:false,error:validation.error});
+        return;
+      }
+      const initialPath=safeString(body&&body.initialPath,2000)||workspaceGuardLockedRoot()||workspaceRoot;
+      const chosenPath=selectWorkspaceDirectoryDialog(initialPath);
+      logOperation("api.workspace_select",{
+        action,
+        initialPath:summarizePathForOperationLog(initialPath,220),
+        selected:chosenPath?summarizePathForOperationLog(chosenPath,220):"",
+        cancelled:chosenPath?0:1,
+      },"standard");
+      sendJson(res,200,{
+        ok:true,
+        cancelled:!chosenPath,
+        path:chosenPath||null,
+        workspaceGuard:buildWorkspaceGuardSnapshot(),
+      });
+    }catch(error){
+      sendJson(res,400,{ok:false,error:error&&error.message?error.message:String(error)});
+    }
+    return;
+  }
+
+  if(req.method==="POST"&&pathname==="/api/workspace/lock"){
+    try{
+      const contentTypeValidation=validateJsonMutationContentType(req,{required:true,expectedMime:execApiRequiredContentType});
+      if(!contentTypeValidation.ok){
+        sendJson(res,contentTypeValidation.status,{ok:false,error:contentTypeValidation.error});
+        return;
+      }
+      const raw=await readRequestBody(req,defaultRequestBodyLimitBytes);
+      const body=raw?JSON.parse(raw):{};
+      const action=safeString(body&&body.action,80);
+      const validation=validateControlMutationRequest(req,{action,requireAction:true});
+      if(!validation.ok){
+        sendJson(res,validation.status,{ok:false,error:validation.error});
+        return;
+      }
+      const snapshot=setWorkspaceGuardLock(body&&body.path?body.path:body&&body.cwd?body.cwd:workspaceRoot);
+      logOperation("api.workspace_lock",{
+        action,
+        lockedRoot:summarizePathForOperationLog(snapshot.lockedRoot,220),
+      },"standard");
+      sendJson(res,200,{ok:true,workspaceGuard:snapshot});
+    }catch(error){
+      sendJson(res,400,{ok:false,error:error&&error.message?error.message:String(error)});
+    }
+    return;
+  }
+
+  if(req.method==="POST"&&pathname==="/api/workspace/unlock"){
+    try{
+      const contentTypeValidation=validateJsonMutationContentType(req,{required:true,expectedMime:execApiRequiredContentType});
+      if(!contentTypeValidation.ok){
+        sendJson(res,contentTypeValidation.status,{ok:false,error:contentTypeValidation.error});
+        return;
+      }
+      const raw=await readRequestBody(req,defaultRequestBodyLimitBytes);
+      const body=raw?JSON.parse(raw):{};
+      const action=safeString(body&&body.action,80);
+      const validation=validateControlMutationRequest(req,{action,requireAction:true});
+      if(!validation.ok){
+        sendJson(res,validation.status,{ok:false,error:validation.error});
+        return;
+      }
+      const previousLockedRoot=workspaceGuardLockedRoot();
+      const snapshot=clearWorkspaceGuardLock();
+      logOperation("api.workspace_unlock",{
+        action,
+        previousLockedRoot:summarizePathForOperationLog(previousLockedRoot,220),
+      },"standard");
+      sendJson(res,200,{ok:true,workspaceGuard:snapshot});
+    }catch(error){
+      sendJson(res,400,{ok:false,error:error&&error.message?error.message:String(error)});
+    }
+    return;
+  }
+
   if(req.method==="POST"&&pathname==="/api/open-cmd"){
     try{
       if(!openCmdWindowEnabled){
@@ -11087,6 +11733,11 @@ async function requestHandler(req,res){
           action:"",
         },"standard");
         sendJson(res,403,{ok:false,error:"open-cmd is disabled by runtime policy"});
+        return;
+      }
+      const contentTypeValidation=validateJsonMutationContentType(req,{required:true,expectedMime:execApiRequiredContentType});
+      if(!contentTypeValidation.ok){
+        sendJson(res,contentTypeValidation.status,{ok:false,error:contentTypeValidation.error});
         return;
       }
       const raw=await readRequestBody(req,defaultRequestBodyLimitBytes);
@@ -11108,11 +11759,12 @@ async function requestHandler(req,res){
       }
       logOperation("api.open_cmd",{
         action,
+        cwd:summarizePathForOperationLog(body&&body.cwd?body.cwd:workspaceGuardLockedRoot()||workspaceRoot,220),
         origin:safeString(requestHeaderValue(req,"origin"),220),
         referer:safeString(requestHeaderValue(req,"referer"),220),
         host:safeString(requestHeaderValue(req,"host"),120),
       },"standard");
-      openCmdWindow();
+      openCmdWindow(body&&body.cwd?body.cwd:workspaceGuardLockedRoot()||workspaceRoot);
       sendJson(res,200,{ok:true});
     }catch(e){
       sendJson(res,400,{ok:false,error:e&&e.message?e.message:String(e)});
@@ -11170,6 +11822,79 @@ async function requestHandler(req,res){
     return;
   }
 
+  if(req.method==="POST"&&pathname==="/api/turn/interrupt"){
+    try{
+      const mutationValidation=validateControlMutationRequest(req,{action:"exec_interrupt",enforceActionAllowlist:false});
+      if(!mutationValidation.ok){
+        logOperation("api.turn_interrupt_blocked",{
+          reason:safeString(mutationValidation.error,180),
+          status:Number.isFinite(Number(mutationValidation.status))?Math.trunc(Number(mutationValidation.status)):403,
+          origin:safeString(requestHeaderValue(req,"origin"),220),
+          referer:safeString(requestHeaderValue(req,"referer"),220),
+          host:safeString(requestHeaderValue(req,"host"),120),
+          hasToken:requestHeaderValue(req,controlApiTokenHeaderName)?1:0,
+        },"standard");
+        sendJson(res,mutationValidation.status,{ok:false,error:mutationValidation.error});
+        return;
+      }
+      const contentTypeValidation=validateJsonMutationContentType(req,{required:true,expectedMime:execApiRequiredContentType});
+      if(!contentTypeValidation.ok){
+        logOperation("api.turn_interrupt_blocked",{
+          reason:safeString(contentTypeValidation.error,180),
+          status:Number.isFinite(Number(contentTypeValidation.status))?Math.trunc(Number(contentTypeValidation.status)):415,
+          origin:safeString(requestHeaderValue(req,"origin"),220),
+          referer:safeString(requestHeaderValue(req,"referer"),220),
+          host:safeString(requestHeaderValue(req,"host"),120),
+          contentType:safeString(requestHeaderValue(req,"content-type"),120),
+        },"standard");
+        sendJson(res,contentTypeValidation.status,{ok:false,error:contentTypeValidation.error});
+        return;
+      }
+      const raw=await readRequestBody(req,defaultRequestBodyLimitBytes);
+      const body=raw?JSON.parse(raw):{};
+      const interruptTarget=resolveTurnInterruptTarget(body);
+      if(!interruptTarget.ok){
+        logOperation("api.turn_interrupt_blocked",{
+          reason:safeString(interruptTarget.error,180),
+          code:safeString(interruptTarget.code,80),
+          status:Number.isFinite(Number(interruptTarget.status))?Math.trunc(Number(interruptTarget.status)):400,
+          agent:safeString(interruptTarget.agentName,80),
+        },"standard");
+        sendJson(res,interruptTarget.status||400,{
+          ok:false,
+          error:interruptTarget.error,
+          code:interruptTarget.code,
+          agentName:interruptTarget.agentName||undefined,
+          allowedAgents:Array.isArray(interruptTarget.allowedAgents)?interruptTarget.allowedAgents:undefined,
+        });
+        return;
+      }
+      await appServer.sendRequest("turn/interrupt",{threadId:interruptTarget.threadId,turnId:interruptTarget.turnId},15000);
+      logOperation("api.turn_interrupt",{
+        threadId:safeString(interruptTarget.threadId,120),
+        turnId:safeString(interruptTarget.turnId,120),
+        agent:safeString(interruptTarget.agentName,80),
+        source:safeString(interruptTarget.source,40)||"request",
+      },"standard");
+      sendJson(res,200,{
+        ok:true,
+        status:"interrupt_requested",
+        target:{
+          threadId:interruptTarget.threadId,
+          turnId:interruptTarget.turnId,
+          agentName:interruptTarget.agentName||null,
+          source:interruptTarget.source||"request",
+        },
+      });
+    }catch(error){
+      logOperation("api.turn_interrupt_failed",{
+        err:summarizeErrorForOperationLog(error,220),
+      },"standard");
+      sendJson(res,502,{ok:false,error:error&&error.message?error.message:String(error)});
+    }
+    return;
+  }
+
   if(req.method==="POST"&&pathname==="/api/exec"){
     let idempotencyKey="";
     try{
@@ -11211,7 +11936,7 @@ async function requestHandler(req,res){
       const modelReasoningEffort=normalizeExecModelReasoningEffort(body.modelReasoningEffort,defaultExecModelReasoningEffort);
       const forceNewSession=normalizeBooleanFlag(body.forceNewSession);
       const agentName=normalizeAgentName(body.agentName);
-      const cwd=normalizeWorkingDirectory(body.cwd,workspaceRoot);
+      const cwd=resolveApiWorkingDirectory(body.cwd,workspaceRoot);
       const images=normalizeChatImageAttachments(body.images,body.image);
       const requestUserInputPolicy=normalizeRequestUserInputPolicy(body.requestUserInputPolicy,nonInteractiveRequestUserInputPolicy);
       const requestExecutionProfile=normalizeExecutionProfile(body.executionProfile,runtimeExecutionProfile);
@@ -11219,17 +11944,37 @@ async function requestHandler(req,res){
       const requestExecutionSource=safeString(body.executionSource,80)||"api_exec";
       const reproProfileRequested=isReproExecutionProfile(requestExecutionProfile);
       const governanceOverride=extractGovernanceOverride(body);
+      const intentPreflight=evaluateIntentFirstPreflight({
+        prompt,
+        executionSource:requestExecutionSource,
+        workspaceGuard:buildWorkspaceGuardSnapshot(),
+      });
+      if(!intentPreflight.ok){
+        logOperation("api.exec_blocked",{
+          method:req.method,
+          path:pathname,
+          reason:"workspace_lock_required",
+          executionSource:requestExecutionSource,
+          designSensitive:intentPreflight.designSensitive?1:0,
+          prompt:summarizeTextForOperationLog(prompt,320),
+        },"standard");
+        sendJson(res,409,{
+          ok:false,
+          error:intentPreflight.error,
+          code:"workspace_lock_required",
+          intentFirst:{
+            designSensitive:intentPreflight.designSensitive?1:0,
+            requiredLock:intentPreflight.requiresLock?1:0,
+          },
+        });
+        return;
+      }
       const extensionApplied=applyRequirementGuardExecExtension({
         prompt,
         sandboxMode,
         options:{approvalPolicy,webSearch,model,modelReasoningEffort,agentName,cwd,images,requestUserInputPolicy,governanceOverride,forceNewSession},
       });
-      const execPrompt=extensionApplied.prompt;
-      const execPromptAudit=buildPromptAudit({
-        rawPrompt,
-        normalizedPrompt:execPrompt,
-        maxChars:defaultPromptCharLimit,
-      });
+      let execPrompt=extensionApplied.prompt;
       const execSandboxMode=extensionApplied.sandboxMode;
       const execOptions=extensionApplied.options;
       const resolvedExecAgent=resolveAgentName(execOptions);
@@ -11265,12 +12010,27 @@ async function requestHandler(req,res){
       execOptions.requestUserInputPolicy=resolvedRequestUserInputPolicy;
       execOptions.model=resolvedExecModel;
       execOptions.modelReasoningEffort=resolvedExecModelReasoningEffort;
-      execOptions.promptAudit=execPromptAudit;
       execOptions.executionProfile=requestExecutionProfile;
       execOptions.executionIntent=requestExecutionIntent;
       execOptions.executionSource=requestExecutionSource;
       execOptions.reproProfile=reproProfileRequested?1:0;
       execOptions.governanceOverride=normalizeOverrideRequest(execOptions&&execOptions.governanceOverride?execOptions.governanceOverride:governanceOverride);
+      const intentEnvelope=applyIntentFirstExecEnvelope({
+        prompt:execPrompt,
+        executionSource:requestExecutionSource,
+      });
+      execPrompt=intentEnvelope.prompt;
+      execOptions.intentFirst={
+        applied:intentEnvelope.applied?1:0,
+        designSensitive:intentEnvelope.designSensitive?1:0,
+        source:safeString(intentEnvelope.source,80)||requestExecutionSource,
+      };
+      const execPromptAudit=buildPromptAudit({
+        rawPrompt,
+        normalizedPrompt:execPrompt,
+        maxChars:defaultPromptCharLimit,
+      });
+      execOptions.promptAudit=execPromptAudit;
       logOperation("api.exec",{
         method:req.method,
         path:pathname,
@@ -11293,6 +12053,8 @@ async function requestHandler(req,res){
         reproProfile:reproProfileRequested?1:0,
         executionIntent:requestExecutionIntent,
         executionSource:requestExecutionSource,
+        intentFirstApplied:execOptions.intentFirst&&execOptions.intentFirst.applied?1:0,
+        designSensitive:intentEnvelope.designSensitive?1:0,
         images:Array.isArray(execOptions&&execOptions.images)?execOptions.images.length:0,
         forceNewSession:execOptions&&execOptions.forceNewSession?1:0,
         idempotencyKey:safeString(idempotencyKey,120),

@@ -1,5 +1,22 @@
 ﻿# SYSTEM_ARCHITECTURE
 
+## 85. Explicit Stop Interrupt Route (2026-03-12)
+
+- Why:
+  - `web/01.HarnesUI` `Stop` only aborted the local fetch stream, while `executionSource=web_ui` detached backend turns on client disconnect.
+  - That made the UI look stopped immediately without sending a real `turn/interrupt`.
+- Changed:
+  - added `POST /api/turn/interrupt` in `server.js`
+  - endpoint uses the existing control-token + same-origin guard
+  - endpoint accepts `{threadId, turnId}` or `{agentName}` and resolves active turn metadata from runtime agent state when needed
+  - updated `web/01.HarnesUI/app.js` so `Stop` requests the new endpoint before aborting the local stream
+  - runtime pending polling now stays alive while runtime still reports active turns, not only while a local fetch is open
+- Verification:
+  - `node scripts/app_server_smoke_test.js`
+  - temp-port runtime/API check for `GET /api/runtime` and `POST /api/turn/interrupt`
+- Residual risk:
+  - if the operator presses `Stop` before a turn exists, the UI can only abort the local request before turn metadata is available
+
 譛邨ょ酔譛・ 2026-02-22  
 菴懈・譬ｹ諡: 繝ｪ繝昴ず繝医Μ螳溯｣・・騾・ｧ｣譫・+ 螳溷ロ繝・せ繝郁ｨｼ霍｡
 
@@ -4436,3 +4453,107 @@ Residual risk:
 - Added `scripts/generate_baseline_comparison.js` for vanilla-like baseline comparison output.
 - 2026-03-08: Runtime proof sample now records fixture-backed dispatch evidence plus doc-sync coverage for sandboxed proof generation.
 - 2026-03-08: Added signoff assurance sample evidence wiring for planning/assurance trace and doc-sync bundle checks.
+
+## 2026-03-10
+
+- Added UI workspace selection and lock APIs: `POST /api/workspace/select`, `POST /api/workspace/lock`, and `POST /api/workspace/unlock`.
+- Added `workspaceGuard` to `GET /api/runtime` so the console can render the active locked root and picker capability.
+- `POST /api/exec` and `POST /api/batch/run` now enforce the active locked workspace root for UI-driven requests.
+- Added workspace chooser controls to `web/01.HarnesUI/` with a `Choose Folder` action, lock toggle, and live status text.
+- Wired the UI to the existing server workspace-guard APIs: `POST /api/workspace/select`, `POST /api/workspace/lock`, and `POST /api/workspace/unlock`.
+- Surfaced the server workspace guard state from `/api/runtime` so the UI reflects the active lock and prevents folder changes while the lock is active.
+
+## 111. Intent-First Harness Contract (2026-03-13)
+
+### Intent
+- Move the harness from process-first completion toward intent-first completion for design-sensitive work.
+- Persist user taste signals instead of relying on transient prompt wording.
+- Fail design-sensitive completion when benchmark, workspace lock, visual review, or independent review gates are missing.
+
+### Implemented
+- Added `scripts/config/design_acceptance_contract.json`.
+- Added `scripts/config/default_user_taste_memory.json`.
+- Added `docs/DESIGN_ACCEPTANCE_CONTRACT.md`.
+- Updated `server.js`:
+  - exposes `intentFirst` in `GET /api/runtime`
+  - adds `POST /api/intent/profile` and `POST /api/intent/profile/reset`
+  - blocks design-sensitive `web_ui` execution without an active workspace lock
+  - applies the active taste-memory brief to design-sensitive `web_ui` prompts
+  - marks design-sensitive turns as failed validation when hard intent gates are missing
+- Updated `web/01.HarnesUI/`:
+  - adds editable taste-memory controls
+  - foregrounds benchmark, preference, rejection, and proof fields
+  - shows hard completion gates above operator telemetry
+
+### Verification Evidence
+1. `node --check web/01.HarnesUI/app.js` -> PASS
+2. `node scripts/task_outcome_policy_test.js` -> PASS
+3. `node scripts/intent_first_runtime_test.js` -> PASS
+
+### Residual Risk
+- Design-sensitive detection is heuristic today; prompts that imply visual work without using the configured keywords may still need manual operator judgment.
+
+## 112. AI Agent Harness Detailed Design HTML (2026-03-14)
+
+### Intent
+- Add a current, browser-readable detailed design document for the AI agent harness.
+- Keep that document in the active docs surface instead of burying it in `archive/`, while still avoiding the old "stale HTML mirror" problem.
+- Clarify that the HTML page is a companion design reference, not a replacement for `docs/CURRENT_ARCHITECTURE.md` or the machine-readable contracts.
+
+### Implemented
+- Added `docs/AI_AGENT_HARNESS_DETAILED_DESIGN.html`.
+  - documents repo-specific placement rationale (`docs/` vs `web/01.HarnesUI/`)
+  - explains the active execution path, component layers, runtime flows, persistence, and extension boundaries
+  - links back to the current architecture, changelog, protocol runbook, evidence contract, and design acceptance contract
+- Updated `docs/CURRENT_ARCHITECTURE.md`.
+  - records the new HTML document as a human-oriented companion design reference
+  - keeps `docs/CURRENT_ARCHITECTURE.md` as the active current-state spec source
+
+### Verification Evidence
+1. Manual docs inventory review -> PASS
+   - `docs/AI_AGENT_HARNESS_DETAILED_DESIGN.html` sits beside the active architecture/governance docs and is not placed under runtime UI or `archive/`
+2. Manual consistency review -> PASS
+   - the new HTML document points back to `docs/CURRENT_ARCHITECTURE.md` and contract docs as the source-of-truth layers
+   - `docs/CURRENT_ARCHITECTURE.md` explicitly labels the HTML page as a companion, not a replacement
+
+### Residual Risk
+- The new document is intentionally static HTML and is not served by the harness runtime today, so operators open it directly from the repository unless a later task adds a UI link or static route by design.
+
+## 113. Japanese-First Harness UI Copy (2026-03-14)
+
+### Intent
+- Make the active harness operator UI read naturally for Japanese users instead of feeling partially untranslated or template-derived.
+- Keep clearer English technical terms where translation would reduce operator clarity.
+- Preserve the existing local-first runtime path and DOM/API contracts while updating only user-facing copy.
+
+### Implemented
+- Updated `web/index.html`.
+  - landing page title and entry link now use Japanese-first harness wording
+- Updated `web/01.HarnesUI/index.html` and `web/01.HarnesUI/app.js`.
+  - translated main console headings, buttons, helper copy, empty states, notifications, and runtime/diagnostic labels to Japanese-first wording
+  - migrates legacy saved chat/message labels such as `Chat 1`, `You`, and `System` into Japanese labels on restore so returning users do not keep mixed-language history
+  - expanded harness quality/evidence keyword detection so Japanese trace text such as `テスト`, `レビュー`, `監査`, `ログ`, and `証跡` still advances the quality stage and evidence counters
+  - translated dynamic harness verdicts, trace/topography labels, automation status lines, and batch messages so visible runtime updates no longer fall back to raw English control wording
+  - kept clearer technical identifiers such as `Codex`, `Node`, `API`, model IDs, sandbox/approval enum values, and thread/turn IDs in English
+- Updated `web/01.HarnesUI/overview.html` and `web/01.HarnesUI/overview.js`.
+  - translated the overview page section headings, card labels, refresh/error states, evidence/memory summaries, and empty states
+  - translated remaining overview tags and evidence/runtime summary labels that were still surfacing raw English operator wording
+  - repaired the previously broken `overview.js` renderer while preserving the existing `/api/harness/overview` payload contract
+
+### Verification Evidence
+1. `node --check web/01.HarnesUI/app.js` -> PASS
+2. `node --check web/01.HarnesUI/overview.js` -> PASS
+3. `GET http://127.0.0.1:57525/api/runtime` -> `200`
+4. `GET http://127.0.0.1:57525/api/harness/overview` -> `200`
+5. Playwright screenshot review -> PASS
+   - `output/playwright/harness-main-desktop.png`
+   - `output/playwright/harness-main-mobile.png`
+   - `output/playwright/harness-overview-desktop.png`
+6. Playwright browser assertions -> PASS
+   - legacy saved chat title restored as `チャット 3`
+   - legacy message titles restored as `あなた` / `システム` / `Codex`
+   - visible-English token scan passed for main and overview operator pages
+
+### Residual Risk
+- Some technical English labels are intentionally preserved because they are clearer for local operators than forced Japanese rewrites.
+- Final release completion still depends on independent reviewer evidence, which is separate from this changelog entry.

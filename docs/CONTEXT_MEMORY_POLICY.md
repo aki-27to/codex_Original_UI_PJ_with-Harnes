@@ -27,6 +27,7 @@ Define how the harness preserves, summarizes, shares, and externalizes context s
 - Promote turn-local facts into session summary only when they affect likely next-step execution.
 - Promote facts into project memory only when they are stable, reusable, and source-backed.
 - Do not promote speculative interpretations, transient failures, or unverified user preferences into durable memory.
+- User taste signals may be promoted into durable memory only when the user has explicitly indicated them or approved them through the harness UI.
 - If a fact is already represented in a repo file, prefer updating or citing that file instead of duplicating the fact in freeform memory.
 
 ## 4) Parent and Child Context Boundaries
@@ -49,6 +50,7 @@ Define how the harness preserves, summarizes, shares, and externalizes context s
 - When command output is long, persist it as an artifact or file and summarize only the relevant result in prompt context.
 - When design state becomes durable, sync it into `docs/CURRENT_ARCHITECTURE.md` and append the matching change entry to `docs/ARCHITECTURE_CHANGELOG.md` rather than relying on conversational memory.
 - Prefer file references over copied blocks when the information already exists in the repository.
+- The intent-first harness keeps user taste memory in a dedicated persisted store instead of smearing those preferences across arbitrary prompts.
 
 ## 6) Safety and Privacy
 

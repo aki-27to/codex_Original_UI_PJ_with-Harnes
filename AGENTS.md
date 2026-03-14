@@ -10,6 +10,7 @@
 - Success は次を意味します:
   - baseline: ユーザーが求めたものを、検証可能な品質で正確に届けること
   - over-delivery: ユーザー意図を変えずに、安全かつ境界の明確な付加価値だけを加えること
+- 主観品質を含むタスクでは、Success は `動く` だけでは足りません。ユーザー意図、審美条件、比較対象、禁止表現まで一致して初めて Success とします。
 - Intent mismatch は最重要の failure mode とします。
 
 ## 2) 中核憲法 (Generic Layer)
@@ -28,8 +29,9 @@
 ## 3) Repository Overlay (この repo 固有)
 - Purpose: この repo は、local reliability、protocol correctness、operator UX に焦点を当てた Codex App Server integration harness です。
 - 明示要求がない限り、default は維持します: port `57525`、local-first workflow、追加 dependency なし。
-- UI/server の execution path は standard Codex (`POST /api/exec`) に維持します。
-- custom local orchestration、role fan-out endpoints、legacy compatibility paths を追加してはいけません。
+- UI/server の primary execution path は standard Codex (`POST /api/exec`) に維持します。
+- 既存の local operator workflow として `/api/batch/*` は許容しますが、これを role fan-out や別系統の custom orchestration へ拡張してはいけません。
+- `/api/batch/*` 以外の custom local orchestration、role fan-out endpoints、legacy compatibility paths を追加してはいけません。
 
 ## 4) Completion 定義
 - タスクは、次のすべてを満たした場合にのみ `COMPLETED` とします:
@@ -37,6 +39,11 @@
   - 必須 verification evidence が取得されている
   - 必須 documentation sync が完了している
   - residual risks / assumptions が明示的に報告されている
+- デザイン、サイト、UI/UX など意図依存の強いタスクでは、さらに次を満たさなければなりません:
+  - active taste memory または同等の意図契約が存在する
+  - benchmark / reference winner 条件が固定されている
+  - visual review と independent review が required evidence として取得されている
+  - これらが欠ける場合、見た目が良く見えても `COMPLETED` にしてはいけません
 
 ## 4.1) Task Status Taxonomy
 - `COMPLETED`: baseline が届けられ、required evidence が取得され、required doc sync が完了し、residual risks が報告されている状態。
@@ -71,6 +78,7 @@
   - `docs/CONTEXT_MEMORY_POLICY.md`
 - Evidence contract と minimum verification artifacts:
   - `docs/EVIDENCE_CONTRACT.md`
+  - `docs/DESIGN_ACCEPTANCE_CONTRACT.md`
 - Current architecture spec と change ledger:
   - `docs/CURRENT_ARCHITECTURE.md`
   - `docs/ARCHITECTURE_CHANGELOG.md`
@@ -84,6 +92,8 @@
 - Machine-readable runtime contracts:
   - `scripts/config/harness_contract_spec.json`
   - `scripts/config/task_outcome_contract.json`
+  - `scripts/config/design_acceptance_contract.json`
+  - `scripts/config/default_user_taste_memory.json`
 - Evaluation config (supplemental, non-governance):
   - `scripts/config/eval_suite_default.json`
 

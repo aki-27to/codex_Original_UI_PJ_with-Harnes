@@ -1,0 +1,34 @@
+{
+  "schema": "user-taste-memory.v1",
+  "version": 1,
+  "activeProfileId": "default",
+  "updatedAt": 0,
+  "profiles": {
+    "default": {
+      "id": "default",
+      "label": "Akima Intent Profile",
+      "northStar": "The harness must understand the user's ideal and ship work that does not feel AI-generated or template-derived.",
+      "qualityBar": "Do not stop at passing checks. The outcome must feel more convincing, more deliberate, and more real than the stated benchmark.",
+      "mustHaves": [
+        "Intent is translated into explicit acceptance checks before implementation.",
+        "Outputs have hierarchy, density, and material realness.",
+        "Benchmark strengths are named and surpassed intentionally.",
+        "If visual quality is weak, the task is not complete."
+      ],
+      "avoid": [
+        "AI-feeling glassmorphism",
+        "uniform card dashboards",
+        "badge-heavy template language",
+        "abstract copy with no concrete proof"
+      ],
+      "benchmarkUrls": [
+        "https://www.suruga-k.jp/"
+      ],
+      "notes": [
+        "Build, tests, and HTTP 200 are necessary but never sufficient.",
+        "Workspace targeting mistakes must be treated as hard failures."
+      ],
+      "updatedAt": 0
+    }
+  }
+}

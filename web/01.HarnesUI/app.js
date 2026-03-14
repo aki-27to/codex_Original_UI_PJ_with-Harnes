@@ -17,14 +17,15 @@ const HARNESS_CHECK_DEFAULT_MODE=HARNESS_CHECK_MODES.ADAPTIVE;
 const RUNTIME_PENDING_SYNC_MS=5000;
 const s={runtime:null,diag:null,diagErr:null,chats:[],active:null,nextChat:1,nextMsg:1,req:new Map(),trace:[],last:null,ticker:null,perf:{sessionRef:"",turnsCompleted:0,baseTokens:0,baseProcessingMs:0,liveTurnId:"",liveTurnStartedAt:0,liveTokens:0,historyTokens:[],historyProcessingMs:[],historyAt:[],updatedAt:0}};
 const chatStateSave={timer:null};
-const settingsState={hasStoredModel:false,hasStoredModelReasoningEffort:false};
+const settingsState={hasStoredModel:false,hasStoredModelReasoningEffort:false,lastWorkspaceLockNotice:""};
+const workspaceUiState={busy:false};
 const harnessCheckState={mode:HARNESS_CHECK_DEFAULT_MODE};
 const TOPOGRAPHY_REFRESH_MS=10000;
 const TOPOGRAPHY_COLLAPSED_KEY="codex-agent-topography-collapsed-v1";
 const HIDDEN_AGENT_NAMES=new Set(["main"]);
 const PARENT_AGENT_NAMES=new Set(["default","intake","release_manager"]);
 const topographyState={agents:[],source:"",error:"",usingFallback:false,lastUpdated:0,loading:false,timer:null,reqId:0,collapsed:false};
-const e={connectionState:by("connectionState"),modeState:by("modeState"),agentState:by("agentState"),pendingState:by("pendingState"),simpleViewToggle:by("simpleViewToggle"),runtimeAgent:by("runtimeAgent"),runtimeSession:by("runtimeSession"),runtimeExperimental:by("runtimeExperimental"),runtimeAgentCount:by("runtimeAgentCount"),workspacePath:by("workspacePath"),modelName:by("modelName"),modelReasoningEffort:by("modelReasoningEffort"),approvalPolicy:by("approvalPolicy"),sandboxMode:by("sandboxMode"),executionProfile:by("executionProfile"),uiVisibility:by("uiVisibility"),webSearch:by("webSearch"),commandFilter:by("commandFilter"),commandGrid:by("commandGrid"),commandTemplate:by("commandTemplate"),messageTemplate:by("messageTemplate"),chatList:by("chatList"),newChatBtn:by("newChatBtn"),deleteChatBtn:by("deleteChatBtn"),timeline:by("timeline"),promptInput:by("promptInput"),imageInput:by("imageInput"),imageAttachBtn:by("imageAttachBtn"),imageError:by("imageError"),imagePreview:by("imagePreview"),imagePreviewThumb:by("imagePreviewThumb"),imagePreviewName:by("imagePreviewName"),imagePreviewMeta:by("imagePreviewMeta"),imageRemoveBtn:by("imageRemoveBtn"),sendBtn:by("sendBtn"),stopBtn:by("stopBtn"),reconnectBtn:by("reconnectBtn"),refreshDiagBtn:by("refreshDiagBtn"),newThreadBtn:by("newThreadBtn"),openCmdBtn:by("openCmdBtn"),liveStatus:by("liveStatus"),liveStatusLabel:by("liveStatusLabel"),liveStatusElapsed:by("liveStatusElapsed"),liveStatusDetail:by("liveStatusDetail"),performancePanel:by("performancePanel"),perfSessionRef:by("perfSessionRef"),perfUpdatedAt:by("perfUpdatedAt"),perfTokenValue:by("perfTokenValue"),perfTokenDetail:by("perfTokenDetail"),perfTokenSpark:by("perfTokenSpark"),perfTimeValue:by("perfTimeValue"),perfTimeDetail:by("perfTimeDetail"),perfTimeSpark:by("perfTimeSpark"),agentInspector:by("agentInspector"),agentFlowLane:by("agentFlowLane"),agentTraceList:by("agentTraceList"),clearAgentTraceBtn:by("clearAgentTraceBtn"),agentTopographyPanel:by("agentTopographyPanel"),agentTopographyMeta:by("agentTopographyMeta"),agentTopographyList:by("agentTopographyList"),agentTopographyRefreshBtn:by("agentTopographyRefreshBtn"),diagCodexState:by("diagCodexState"),diagCodexDetail:by("diagCodexDetail"),diagNodeState:by("diagNodeState"),diagNodeDetail:by("diagNodeDetail"),diagSearchState:by("diagSearchState"),diagSearchDetail:by("diagSearchDetail"),diagSummaryText:by("diagSummaryText"),diagDetails:by("diagDetails"),diagDetailsSummary:by("diagDetailsSummary"),harnessStatus:by("harnessStatus"),harnessThreadId:by("harnessThreadId"),harnessTurnId:by("harnessTurnId"),harnessUpdatedAt:by("harnessUpdatedAt"),harnessItemList:by("harnessItemList"),harnessPlanMeta:by("harnessPlanMeta"),harnessPlanCurrentCard:by("harnessPlanCurrentCard"),harnessPlanCurrentStep:by("harnessPlanCurrentStep"),harnessPlanCurrentDetail:by("harnessPlanCurrentDetail"),harnessPlanExplanation:by("harnessPlanExplanation"),harnessPlanList:by("harnessPlanList"),harnessTokenUsage:by("harnessTokenUsage"),harnessDiffPreview:by("harnessDiffPreview"),harnessPhaseList:by("harnessPhaseList"),harnessEvidenceTasks:by("harnessEvidenceTasks"),harnessEvidenceTests:by("harnessEvidenceTests"),harnessEvidenceReviews:by("harnessEvidenceReviews"),harnessEvidenceLogs:by("harnessEvidenceLogs")};
+const e={connectionState:by("connectionState"),modeState:by("modeState"),agentState:by("agentState"),pendingState:by("pendingState"),simpleViewToggle:by("simpleViewToggle"),runtimeAgent:by("runtimeAgent"),runtimeSession:by("runtimeSession"),runtimeExperimental:by("runtimeExperimental"),runtimeAgentCount:by("runtimeAgentCount"),workspacePath:by("workspacePath"),workspaceBrowseBtn:by("workspaceBrowseBtn"),workspaceLockEnabled:by("workspaceLockEnabled"),workspaceLockStatus:by("workspaceLockStatus"),intentHeadline:by("intentHeadline"),intentSummary:by("intentSummary"),intentRuntimeStatus:by("intentRuntimeStatus"),intentLabelInput:by("intentLabelInput"),intentNorthStarInput:by("intentNorthStarInput"),intentBenchmarkInput:by("intentBenchmarkInput"),intentBenchmarkNotesInput:by("intentBenchmarkNotesInput"),intentPrefersInput:by("intentPrefersInput"),intentRejectsInput:by("intentRejectsInput"),intentProofInput:by("intentProofInput"),intentSaveBtn:by("intentSaveBtn"),intentResetBtn:by("intentResetBtn"),intentSaveState:by("intentSaveState"),intentGateHeadline:by("intentGateHeadline"),intentGateList:by("intentGateList"),modelName:by("modelName"),modelReasoningEffort:by("modelReasoningEffort"),approvalPolicy:by("approvalPolicy"),sandboxMode:by("sandboxMode"),executionProfile:by("executionProfile"),uiVisibility:by("uiVisibility"),webSearch:by("webSearch"),commandFilter:by("commandFilter"),commandGrid:by("commandGrid"),commandTemplate:by("commandTemplate"),messageTemplate:by("messageTemplate"),chatList:by("chatList"),newChatBtn:by("newChatBtn"),deleteChatBtn:by("deleteChatBtn"),timeline:by("timeline"),promptInput:by("promptInput"),imageInput:by("imageInput"),imageAttachBtn:by("imageAttachBtn"),imageError:by("imageError"),imagePreview:by("imagePreview"),imagePreviewThumb:by("imagePreviewThumb"),imagePreviewName:by("imagePreviewName"),imagePreviewMeta:by("imagePreviewMeta"),imageRemoveBtn:by("imageRemoveBtn"),sendBtn:by("sendBtn"),stopBtn:by("stopBtn"),reconnectBtn:by("reconnectBtn"),refreshDiagBtn:by("refreshDiagBtn"),newThreadBtn:by("newThreadBtn"),openCmdBtn:by("openCmdBtn"),liveStatus:by("liveStatus"),liveStatusLabel:by("liveStatusLabel"),liveStatusElapsed:by("liveStatusElapsed"),liveStatusDetail:by("liveStatusDetail"),performancePanel:by("performancePanel"),perfSessionRef:by("perfSessionRef"),perfUpdatedAt:by("perfUpdatedAt"),perfTokenValue:by("perfTokenValue"),perfTokenDetail:by("perfTokenDetail"),perfTokenSpark:by("perfTokenSpark"),perfTimeValue:by("perfTimeValue"),perfTimeDetail:by("perfTimeDetail"),perfTimeSpark:by("perfTimeSpark"),agentInspector:by("agentInspector"),agentFlowLane:by("agentFlowLane"),agentTraceList:by("agentTraceList"),clearAgentTraceBtn:by("clearAgentTraceBtn"),agentTopographyPanel:by("agentTopographyPanel"),agentTopographyMeta:by("agentTopographyMeta"),agentTopographyList:by("agentTopographyList"),agentTopographyRefreshBtn:by("agentTopographyRefreshBtn"),diagCodexState:by("diagCodexState"),diagCodexDetail:by("diagCodexDetail"),diagNodeState:by("diagNodeState"),diagNodeDetail:by("diagNodeDetail"),diagSearchState:by("diagSearchState"),diagSearchDetail:by("diagSearchDetail"),diagSummaryText:by("diagSummaryText"),diagDetails:by("diagDetails"),diagDetailsSummary:by("diagDetailsSummary"),harnessStatus:by("harnessStatus"),harnessThreadId:by("harnessThreadId"),harnessTurnId:by("harnessTurnId"),harnessUpdatedAt:by("harnessUpdatedAt"),harnessItemList:by("harnessItemList"),harnessPlanMeta:by("harnessPlanMeta"),harnessPlanCurrentCard:by("harnessPlanCurrentCard"),harnessPlanCurrentStep:by("harnessPlanCurrentStep"),harnessPlanCurrentDetail:by("harnessPlanCurrentDetail"),harnessPlanExplanation:by("harnessPlanExplanation"),harnessPlanList:by("harnessPlanList"),harnessTokenUsage:by("harnessTokenUsage"),harnessDiffPreview:by("harnessDiffPreview"),harnessPhaseList:by("harnessPhaseList"),harnessEvidenceTasks:by("harnessEvidenceTasks"),harnessEvidenceTests:by("harnessEvidenceTests"),harnessEvidenceReviews:by("harnessEvidenceReviews"),harnessEvidenceLogs:by("harnessEvidenceLogs")};
 e.harnessCheckMode=by("harnessCheckMode");
 e.harnessCheckModeHint=by("harnessCheckModeHint");
 e.agentTopographyToggleBtn=by("agentTopographyToggleBtn");
@@ -69,11 +70,11 @@ function applyHarnessCheckModeUi(){
   if(e.harnessCheckMode)e.harnessCheckMode.value=mode;
   if(e.harnessCheckModeHint){
     if(mode===HARNESS_CHECK_MODES.STRICT){
-      e.harnessCheckModeHint.textContent="Strict mode: stage 3 requires explicit plan/update.";
+      e.harnessCheckModeHint.textContent="厳密モード: ステージ 3 には明示的な計画更新が必要です。";
     }else if(mode===HARNESS_CHECK_MODES.RELAXED){
-      e.harnessCheckModeHint.textContent="Relaxed mode: stage progresses from inferred stream signals.";
+      e.harnessCheckModeHint.textContent="簡易モード: 推定されたストリーム信号で段階を進めます。";
     }else{
-      e.harnessCheckModeHint.textContent="Adaptive mode: lightweight turns allow inferred micro-plan, heavier turns require explicit plan/update.";
+      e.harnessCheckModeHint.textContent="適応モード: 軽いターンは推定マイクロプランを許容し、重いターンは明示的な計画更新を要求します。";
     }
   }
 }
@@ -264,6 +265,156 @@ const t1=(x,n=120)=>{const s=String(x||"").replace(/\s+/g," ").trim();return s.l
 const tt=(ms)=>Number.isFinite(ms)?new Date(ms).toLocaleTimeString("ja-JP",{hour12:false}):"--:--:--";
 const el=(ms)=>{if(!Number.isFinite(ms)||ms<0)return"--:--";const s=Math.floor(ms/1000),m=Math.floor((s%3600)/60),h=Math.floor(s/3600),ss=s%60;return h>0?`${String(h).padStart(2,"0")}:${String(m).padStart(2,"0")}:${String(ss).padStart(2,"0")}`:`${String(m).padStart(2,"0")}:${String(ss).padStart(2,"0")}`};
 const fmtInt=(value)=>Number.isFinite(Number(value))?Math.max(0,Math.trunc(Number(value))).toLocaleString("ja-JP"):"0";
+function displayFallbackText(value,fallback="不明"){
+  const text=typeof value==="string"?value.trim():"";
+  return text||fallback;
+}
+function displaySessionRef(value){
+  return displayFallbackText(value,"未取得");
+}
+function displayFlagState(enabled,{on="オン",off="オフ"}={}){
+  return enabled?on:off;
+}
+function displayHarnessVerdictLabel(label){
+  switch(String(label||"").trim().toUpperCase()){
+    case"PASS":
+      return"適合";
+    case"WARN":
+      return"要確認";
+    case"RUNNING":
+      return"進行中";
+    case"WAIT":
+      return"待機";
+    case"FAIL":
+      return"不適合";
+    default:
+      return displayFallbackText(label);
+  }
+}
+function displayHarnessModeLabel(mode,{includeRaw=false}={}){
+  const normalized=normalizeHarnessCheckMode(mode);
+  const labelMap={
+    [HARNESS_CHECK_MODES.ADAPTIVE]:"適応",
+    [HARNESS_CHECK_MODES.STRICT]:"厳密",
+    [HARNESS_CHECK_MODES.RELAXED]:"簡易",
+  };
+  const label=labelMap[normalized]||displayFallbackText(mode);
+  return includeRaw&&normalized?`${label}（${normalized}）`:label;
+}
+function displayHarnessStatusLabel(status){
+  const normalized=lowerText(status);
+  const labelMap={
+    blocked:"差し止め",
+    completed:"完了",
+    failed:"失敗",
+    failed_validation:"検証不足",
+    idle:"待機",
+    interrupted:"中断",
+    needs_input:"入力待ち",
+    partial:"部分完了",
+    running:"進行中",
+    starting:"開始中",
+    warn:"要確認",
+  };
+  return labelMap[normalized]||displayFallbackText(status);
+}
+function displayHarnessSignalLabel(signal,{includeRaw=false}={}){
+  const raw=String(signal||"").trim();
+  const normalized=raw.toLowerCase();
+  const labelMap={
+    "child dispatch":"子エージェント委譲",
+    "plan/update":"計画更新",
+    "requirement/dispatch":"要件整理と送信",
+    "turn/completed":"ターン完了",
+    "turn/start":"ターン開始",
+  };
+  const label=labelMap[normalized]||displayFallbackText(raw);
+  return includeRaw&&raw&&label!==raw?`${label}（${raw}）`:label;
+}
+function displayTraceTypeLabel(type,{includeRaw=false}={}){
+  const raw=String(type||"").trim();
+  const normalized=raw.toLowerCase();
+  const labelMap={
+    aborted:"中断",
+    activity:"アクティビティ",
+    "collab agent tool":"エージェント委譲",
+    completed:"完了",
+    "command execution":"コマンド実行",
+    dispatch:"依頼送信",
+    error:"エラー",
+    failed:"失敗",
+    "file change":"ファイル変更",
+    "http/error":"HTTP エラー",
+    "image view":"画像確認",
+    item:"項目",
+    "mcp tool":"MCP ツール",
+    "plan/update":"計画更新",
+    running:"実行中",
+    streaming:"ストリーム中",
+    "stream/error":"ストリーム異常",
+    "stream/open":"ストリーム接続",
+    "token/usage":"トークン使用",
+    "turn/completed":"ターン完了",
+    "turn/diff":"差分取得",
+    "turn/end":"ターン終了",
+    "turn/error":"ターン失敗",
+    "turn/interrupt":"ターン中断",
+    "turn/start":"ターン開始",
+    "web search":"Web 検索",
+  };
+  const label=labelMap[normalized]||displayFallbackText(raw);
+  return includeRaw&&raw&&label!==raw?`${label}（${raw}）`:label;
+}
+function displayMonitorStatusLabel(status){
+  const raw=String(status||"").trim();
+  const normalized=raw.toLowerCase();
+  const runningCountMatch=normalized.match(/^running\s*\((\d+)\)$/);
+  if(runningCountMatch)return`実行中 (${runningCountMatch[1]})`;
+  const labelMap={
+    active:"進行中",
+    completed:"完了",
+    failed:"失敗",
+    idle:"待機",
+    interrupted:"中断",
+    pending:"保留中",
+    selected:"選択中",
+    waiting:"待機",
+    running:"実行中",
+  };
+  if(Object.prototype.hasOwnProperty.call(labelMap,normalized))return labelMap[normalized];
+  const traceLabel=displayTraceTypeLabel(raw);
+  return traceLabel!==raw?traceLabel:displayFallbackText(raw);
+}
+function displayRoleLabel(role){
+  const raw=String(role||"").trim();
+  const normalized=raw.toLowerCase();
+  const labelMap={child:"子",parent:"親",runtime:"ランタイム",trace:"トレース"};
+  return labelMap[normalized]||displayFallbackText(raw);
+}
+function displayAutomationModeLabel(mode,{includeRaw=false}={}){
+  const raw=String(mode||"").trim();
+  const normalized=raw.toLowerCase();
+  const labelMap={
+    "dry-run":"試走",
+    live:"本実行",
+    mock:"模擬",
+    serial:"順次",
+  };
+  const label=labelMap[normalized]||displayFallbackText(raw);
+  return includeRaw&&raw&&label!==raw?`${label}（${raw}）`:label;
+}
+function displayAutomationRunStatusLabel(status){
+  const normalized=lowerText(status);
+  const labelMap={
+    cancelled:"取消",
+    completed:"完了",
+    failed:"失敗",
+    interrupted:"中断",
+    queued:"待機",
+    running:"進行中",
+  };
+  return labelMap[normalized]||displayFallbackText(status);
+}
 function normalizeExecModelNameForUi(value,fallback=DEFAULT_EXEC_MODEL){
   const raw=typeof value==="string"?value.trim():"";
   const candidate=raw||String(fallback||"").trim();
@@ -440,14 +591,18 @@ function reconcilePendingRequestsWithRuntime(runtime=s.runtime,{refreshUi=true}=
   if(refreshUi)refresh();
   return staleIds.length;
 }
+function hasTrackedPendingRequests(){
+  if(s.req.size>0)return true;
+  return s.chats.some((item)=>pendingCountForChat(item&&item.id)>0);
+}
 function startRuntimePendingSyncTicker(){
-  if(runtimePendingSyncState.timer!==null||s.req.size===0)return;
+  if(runtimePendingSyncState.timer!==null||!hasTrackedPendingRequests())return;
   runtimePendingSyncState.timer=setInterval(()=>{
-    if(runtimePendingSyncState.inFlight||s.req.size===0)return;
+    if(runtimePendingSyncState.inFlight||!hasTrackedPendingRequests())return;
     runtimePendingSyncState.inFlight=true;
     loadRuntime({reconcilePending:true}).catch(()=>{}).finally(()=>{
       runtimePendingSyncState.inFlight=false;
-      if(s.req.size===0)stopRuntimePendingSyncTicker();
+      if(!hasTrackedPendingRequests())stopRuntimePendingSyncTicker();
     });
   },RUNTIME_PENDING_SYNC_MS);
 }
@@ -459,7 +614,7 @@ function stopRuntimePendingSyncTicker(){
   runtimePendingSyncState.inFlight=false;
 }
 function syncRuntimePendingMonitor(){
-  if(s.req.size>0){
+  if(hasTrackedPendingRequests()){
     startRuntimePendingSyncTicker();
     return;
   }
@@ -485,7 +640,20 @@ function pendingCountForChat(chatId){
 function totalPendingCount(){
   return s.chats.reduce((sum,item)=>sum+pendingCountForChat(item&&item.id),0);
 }
-const selectedCwd=()=>{const chosen=e.workspacePath&&typeof e.workspacePath.value==="string"?e.workspacePath.value.trim():"";if(chosen)return chosen;return s.runtime&&typeof s.runtime.workspaceRoot==="string"?s.runtime.workspaceRoot:"";};
+const workspaceInputPath=()=>e.workspacePath&&typeof e.workspacePath.value==="string"?e.workspacePath.value.trim():"";
+const runtimeWorkspaceGuard=()=>{
+  const direct=s.runtime&&s.runtime.workspaceGuard&&typeof s.runtime.workspaceGuard==="object"?s.runtime.workspaceGuard:null;
+  if(direct)return direct;
+  return s.runtime&&s.runtime.workspace_guard&&typeof s.runtime.workspace_guard==="object"?s.runtime.workspace_guard:null;
+};
+const workspaceLockEnabled=()=>Boolean(runtimeWorkspaceGuard()&&runtimeWorkspaceGuard().locked);
+const selectedCwd=()=>{
+  const guard=runtimeWorkspaceGuard();
+  if(guard&&guard.locked&&typeof guard.lockedRoot==="string"&&guard.lockedRoot.trim())return guard.lockedRoot.trim();
+  const chosen=workspaceInputPath();
+  if(chosen)return chosen;
+  return s.runtime&&typeof s.runtime.workspaceRoot==="string"?s.runtime.workspaceRoot:"";
+};
 const controlApiCfg=()=>s.runtime&&s.runtime.controlApi&&typeof s.runtime.controlApi==="object"?s.runtime.controlApi:null;
 const controlApiToken=()=>{const cfg=controlApiCfg();return cfg&&typeof cfg.token==="string"?cfg.token.trim():"";};
 const controlApiTokenHeader=()=>{const cfg=controlApiCfg();return cfg&&typeof cfg.tokenHeader==="string"&&cfg.tokenHeader.trim()?cfg.tokenHeader.trim():"x-codex-control-token";};
@@ -495,6 +663,185 @@ const controlApiAllows=(action)=>{
   if(!wanted||!cfg||!Array.isArray(cfg.actionAllowlist))return false;
   return cfg.actionAllowlist.includes(wanted);
 };
+function renderWorkspaceScopeUi(){
+  const guard=runtimeWorkspaceGuard();
+  const locked=workspaceLockEnabled();
+  const lockedRoot=guard&&typeof guard.lockedRoot==="string"?guard.lockedRoot.trim():"";
+  const currentPath=lockedRoot||workspaceInputPath()||(s.runtime&&typeof s.runtime.workspaceRoot==="string"?s.runtime.workspaceRoot:"");
+  const canBrowse=controlApiAllows("select_workspace_directory")&&Boolean(!guard||guard.canSelect!==false);
+  const canLock=controlApiAllows("lock_workspace_directory");
+  const canUnlock=controlApiAllows("unlock_workspace_directory");
+  if(e.workspaceLockEnabled){
+    e.workspaceLockEnabled.checked=locked;
+    e.workspaceLockEnabled.disabled=workspaceUiState.busy||(locked?!canUnlock:(!canLock||!currentPath));
+  }
+  if(e.workspacePath){
+    if(locked&&lockedRoot)e.workspacePath.value=lockedRoot;
+    e.workspacePath.readOnly=locked||workspaceUiState.busy;
+    e.workspacePath.setAttribute("aria-readonly",locked||workspaceUiState.busy?"true":"false");
+  }
+  if(e.workspaceBrowseBtn){
+    e.workspaceBrowseBtn.disabled=workspaceUiState.busy||locked||!canBrowse;
+    e.workspaceBrowseBtn.title=workspaceUiState.busy
+      ?"ワークスペース設定を更新中です。"
+      :locked
+      ?"別のフォルダーを選ぶ前に固定を解除してください。"
+      :(canBrowse?"":"このランタイムではフォルダー選択を使えません。");
+  }
+  if(!e.workspaceLockStatus)return;
+  e.workspaceLockStatus.classList.remove("locked","warning");
+  if(locked){
+    e.workspaceLockStatus.classList.add("locked");
+    e.workspaceLockStatus.textContent=currentPath
+      ?`${currentPath} に固定中です。このツリー外へのリクエストはサーバーが拒否します。`
+      :"固定中です。実行前にワークスペースパスを指定してください。";
+    return;
+  }
+  const intent=runtimeIntentFirst();
+  const lockRequired=intent&&intent.workspaceLock&&intent.workspaceLock.rejectWhenUnlocked;
+  if(currentPath){
+    if(lockRequired){
+      e.workspaceLockStatus.classList.add("warning");
+      e.workspaceLockStatus.textContent=`Intent-First モードでは固定が必要です。現在のワークスペースは ${currentPath} です。デザイン系の実行は自動固定されるかブロックされます。`;
+      return;
+    }
+    e.workspaceLockStatus.textContent=`可変モードです。現在のワークスペースは ${currentPath} です。必要なら固定トグルでこの場所に絞り込んでください。`;
+    return;
+  }
+  if(!canBrowse){
+    e.workspaceLockStatus.classList.add("warning");
+    e.workspaceLockStatus.textContent="可変モードです。フォルダー選択が使えないため、ワークスペースパスを手入力してください。";
+    return;
+  }
+  e.workspaceLockStatus.textContent="可変モードです。フォルダーを選ぶか、ワークスペースパスを手入力してください。";
+}
+const runtimeIntentFirst=()=>{
+  const direct=s.runtime&&s.runtime.intentFirst&&typeof s.runtime.intentFirst==="object"?s.runtime.intentFirst:null;
+  if(direct)return direct;
+  return s.runtime&&s.runtime.intent_first&&typeof s.runtime.intent_first==="object"?s.runtime.intent_first:null;
+};
+const runtimeIntentProfile=()=>{
+  const intent=runtimeIntentFirst();
+  return intent&&intent.tasteMemory&&intent.tasteMemory.activeProfile&&typeof intent.tasteMemory.activeProfile==="object"
+    ?intent.tasteMemory.activeProfile
+    :null;
+};
+const runtimeLatestTurn=()=>{
+  const direct=s.runtime&&s.runtime.latestTurn&&typeof s.runtime.latestTurn==="object"?s.runtime.latestTurn:null;
+  if(direct)return direct;
+  return s.runtime&&s.runtime.latest_turn&&typeof s.runtime.latest_turn==="object"?s.runtime.latest_turn:null;
+};
+function textareaListValue(el){
+  const raw=el&&typeof el.value==="string"?el.value:"";
+  return raw.split(/\r?\n/).map((entry)=>entry.trim()).filter(Boolean);
+}
+function setIntentSaveState(label,tone="idle"){
+  if(!e.intentSaveState)return;
+  e.intentSaveState.textContent=label;
+  e.intentSaveState.className=`pill ${tone}`;
+}
+function isIntentSensitivePromptForUi(prompt){
+  const text=String(prompt||"").trim().toLowerCase();
+  if(!text)return false;
+  const intent=runtimeIntentFirst();
+  const keywords=intent&&intent.creativeSignals&&Array.isArray(intent.creativeSignals.promptKeywords)
+    ?intent.creativeSignals.promptKeywords
+    :[];
+  return keywords.some((keyword)=>text.includes(String(keyword||"").toLowerCase()));
+}
+function latestIntentMissingSet(){
+  const latest=runtimeLatestTurn();
+  const intent=latest&&latest.intent_first&&typeof latest.intent_first==="object"?latest.intent_first:null;
+  const missing=intent&&Array.isArray(intent.missing_hard)?intent.missing_hard:[];
+  return new Set(missing.map((entry)=>String(entry||"").trim().toLowerCase()).filter(Boolean));
+}
+function renderIntentFirstPanel(){
+  const intent=runtimeIntentFirst();
+  const profile=runtimeIntentProfile();
+  const latest=runtimeLatestTurn();
+  const missingLatest=latestIntentMissingSet();
+  if(e.intentHeadline){
+    e.intentHeadline.textContent=profile&&Array.isArray(profile.northStar)&&profile.northStar.length
+      ?profile.northStar.join(" / ")
+      :"ノーススターはまだ未設定です。";
+  }
+  if(e.intentSummary){
+    const benchmarkCount=profile&&Array.isArray(profile.benchmarkSites)?profile.benchmarkSites.length:0;
+    const rejectCount=profile&&Array.isArray(profile.rejects)?profile.rejects.length:0;
+    const profileLabel=profile&&profile.label?profile.label:"未設定";
+    e.intentSummary.textContent=`現在のプロファイルは ${profileLabel} です。ベンチマーク ${benchmarkCount} 件、明示的な拒否条件 ${rejectCount} 件を読み込みました。`;
+  }
+  if(e.intentRuntimeStatus){
+    const rows=[];
+    const latestIntent=latest&&latest.intent_first&&typeof latest.intent_first==="object"?latest.intent_first:null;
+    rows.push(`<span class="intent-runtime-chip ${workspaceLockEnabled()?"pass":"warn"}">ワークスペース ${workspaceLockEnabled()?"固定済み":"未固定"}</span>`);
+    rows.push(`<span class="intent-runtime-chip ${profile?"pass":"warn"}">好み記憶 ${profile?"読込済み":"不足"}</span>`);
+    rows.push(`<span class="intent-runtime-chip ${profile&&Array.isArray(profile.benchmarkSites)&&profile.benchmarkSites.length?"pass":"warn"}">ベンチマーク ${profile&&Array.isArray(profile.benchmarkSites)&&profile.benchmarkSites.length?"設定済み":"不足"}</span>`);
+    rows.push(`<span class="intent-runtime-chip ${latestIntent&&latestIntent.design_sensitive?"info":"neutral"}">最新ターン ${latestIntent&&latestIntent.design_sensitive?"デザイン系":"一般"}</span>`);
+    e.intentRuntimeStatus.innerHTML=rows.join("");
+  }
+  if(e.intentLabelInput&&profile&&!e.intentLabelInput.matches(":focus"))e.intentLabelInput.value=profile.label||"";
+  if(e.intentNorthStarInput&&profile&&!e.intentNorthStarInput.matches(":focus"))e.intentNorthStarInput.value=(Array.isArray(profile.northStar)?profile.northStar:[]).join("\n");
+  if(e.intentBenchmarkInput&&profile&&!e.intentBenchmarkInput.matches(":focus"))e.intentBenchmarkInput.value=(Array.isArray(profile.benchmarkSites)?profile.benchmarkSites:[]).join("\n");
+  if(e.intentBenchmarkNotesInput&&profile&&!e.intentBenchmarkNotesInput.matches(":focus"))e.intentBenchmarkNotesInput.value=(Array.isArray(profile.benchmarkNotes)?profile.benchmarkNotes:[]).join("\n");
+  if(e.intentPrefersInput&&profile&&!e.intentPrefersInput.matches(":focus"))e.intentPrefersInput.value=(Array.isArray(profile.prefers)?profile.prefers:[]).join("\n");
+  if(e.intentRejectsInput&&profile&&!e.intentRejectsInput.matches(":focus"))e.intentRejectsInput.value=(Array.isArray(profile.rejects)?profile.rejects:[]).join("\n");
+  if(e.intentProofInput&&profile&&!e.intentProofInput.matches(":focus"))e.intentProofInput.value=(Array.isArray(profile.requiredProof)?profile.requiredProof:[]).join("\n");
+  if(!e.intentGateList||!e.intentGateHeadline)return;
+  const gates=intent&&Array.isArray(intent.requiredGates)?intent.requiredGates:[];
+  const gateCards=gates.map((gate)=>{
+    const id=String(gate&&gate.id||"").trim();
+    const label=String(gate&&gate.label||id||"gate");
+    const normalizedId=id.toLowerCase();
+    const normalizedLabel=label.toLowerCase();
+    let stateLabel="保留";
+    let tone="neutral";
+    let detail="デザイン系ターンで確認されます。";
+    if(id==="taste_memory"){
+      const ok=Boolean(profile&&((profile.northStar&&profile.northStar.length)||(profile.prefers&&profile.prefers.length)||(profile.rejects&&profile.rejects.length)));
+      stateLabel=ok?"準備完了":"不足";
+      tone=ok?"pass":"fail";
+      detail=ok?"使える好みシグナルがハーネスに読み込まれています。":"使える好み記憶がまだ保存されていません。";
+    }else if(id==="benchmark"){
+      const ok=Boolean(profile&&Array.isArray(profile.benchmarkSites)&&profile.benchmarkSites.length);
+      stateLabel=ok?"準備完了":"不足";
+      tone=ok?"pass":"fail";
+      detail=ok?profile.benchmarkSites.join(" / "):"少なくとも 1 件はベンチマーク対象を設定してください。";
+    }else if(id==="workspace_lock"){
+      const ok=workspaceLockEnabled();
+      stateLabel=ok?"固定済み":"未固定";
+      tone=ok?"pass":"warn";
+      detail=ok?"固定ツリー外の作業はサーバーが拒否します。":"デザイン系の実行は自動固定されるかブロックされます。";
+    }else if(missingLatest.has(normalizedLabel)||missingLatest.has(normalizedId)){
+      stateLabel="不足";
+      tone="fail";
+      detail="直近のデザイン系ターンでこの必須ゲートを満たせませんでした。";
+    }else if(latest&&latest.intent_first&&latest.intent_first.design_sensitive){
+      const latestIntentStatus=String(latest.intent_first.status||"").toLowerCase();
+      const blocked=latestIntentStatus==="blocked"||latestIntentStatus==="failed_validation"||missingLatest.size>0;
+      stateLabel=blocked?"未証明":"確認済み";
+      tone=blocked?"warn":"pass";
+      detail=blocked?"直近のデザイン系ターンではこのゲートを十分に証明できていません。":"直近のデザイン系ターンではこのゲートに不足は報告されていません。";
+    }
+    return `<article class="intent-gate-card ${tone}">
+      <span class="intent-gate-label">${label}</span>
+      <strong class="intent-gate-state">${stateLabel}</strong>
+      <p class="intent-gate-detail">${detail}</p>
+    </article>`;
+  });
+  e.intentGateList.innerHTML=gateCards.length?gateCards.join(""):'<article class="intent-gate-card neutral"><span class="intent-gate-label">ゲートなし</span><strong class="intent-gate-state">n/a</strong><p class="intent-gate-detail">ランタイムから intent-first 契約が提供されていません。</p></article>';
+  const latestIntent=latest&&latest.intent_first&&typeof latest.intent_first==="object"?latest.intent_first:null;
+  if(latestIntent&&latestIntent.design_sensitive){
+    const latestIntentStatus=String(latestIntent.status||"").toLowerCase();
+    e.intentGateHeadline.textContent=latestIntentStatus==="blocked"||latestIntentStatus==="failed_validation"
+      ?`ブロック中: ${latestIntent.summary||"必須ゲート不足"}`
+      :latestIntent.summary||"最新のデザイン系ターンは intent ゲートを満たしました。";
+  }else{
+    e.intentGateHeadline.textContent=workspaceLockEnabled()
+      ?"デザイン系作業の準備ができています。"
+      :"デザイン系作業の前にワークスペースを固定してください。";
+  }
+}
 const IMAGE_MAX_BYTES=10*1024*1024;
 const IMAGE_EXT_TO_MIME={".png":"image/png",".jpg":"image/jpeg",".jpeg":"image/jpeg",".webp":"image/webp",".gif":"image/gif"};
 const IMAGE_MIME_TO_EXT={"image/png":".png","image/jpeg":".jpg","image/webp":".webp","image/gif":".gif"};
@@ -701,12 +1048,12 @@ function renderPerformanceIndicator(){
   const liveProcessingMsForUi=activeLiveForCurrentChat?liveProcessingMs:0;
   const totalTokens=toPerfInt(s.perf.baseTokens)+liveTokensForUi;
   const totalProcessingMs=toPerfInt(s.perf.baseProcessingMs)+liveProcessingMsForUi;
-  if(e.perfSessionRef)e.perfSessionRef.textContent=s.perf.sessionRef||"none";
+  if(e.perfSessionRef)e.perfSessionRef.textContent=displaySessionRef(s.perf.sessionRef);
   if(e.perfUpdatedAt)e.perfUpdatedAt.textContent=tt(s.perf.updatedAt||now);
   if(e.perfTokenValue)e.perfTokenValue.textContent=fmtInt(totalTokens);
-  if(e.perfTokenDetail)e.perfTokenDetail.textContent=`in-flight +${fmtInt(liveTokensForUi)}`;
+  if(e.perfTokenDetail)e.perfTokenDetail.textContent=`実行中 +${fmtInt(liveTokensForUi)}`;
   if(e.perfTimeValue)e.perfTimeValue.textContent=fmtInt(totalProcessingMs);
-  if(e.perfTimeDetail)e.perfTimeDetail.textContent=`in-flight +${fmtInt(liveProcessingMsForUi)}ms / turns ${fmtInt(s.perf.turnsCompleted)}`;
+  if(e.perfTimeDetail)e.perfTimeDetail.textContent=`進行中 +${fmtInt(liveProcessingMsForUi)}ms / 完了ターン ${fmtInt(s.perf.turnsCompleted)}`;
   renderSparkline(e.perfTokenSpark,buildSparkSeries(s.perf.historyTokens,totalTokens),"#6cb1ff");
   renderSparkline(e.perfTimeSpark,buildSparkSeries(s.perf.historyProcessingMs,totalProcessingMs),"#55d79b");
   e.performancePanel.classList.toggle("running",activeLiveForCurrentChat);
@@ -729,7 +1076,7 @@ function normalizeMonitorAgent(raw,index,{runtimeFallback=false}={}){
     else if(typeof roleSource.id==="string")roleSource=roleSource.id;
     else roleSource="";
   }
-  const roleFallback=typeof roleSource==="string"&&roleSource.trim()?roleSource.trim():(runtimeFallback?"runtime":"unknown");
+  const roleFallback=typeof roleSource==="string"&&roleSource.trim()?roleSource.trim():(runtimeFallback?"runtime":"不明");
   const role=inferAgentRoleForUi(name)==="parent"?"parent":roleFallback;
   let statusSource=item.status;
   if(typeof statusSource!=="string"||!statusSource.trim()){
@@ -737,7 +1084,7 @@ function normalizeMonitorAgent(raw,index,{runtimeFallback=false}={}){
     else if(typeof item.phase==="string"&&item.phase.trim())statusSource=item.phase.trim();
     else if(typeof item.health==="string"&&item.health.trim())statusSource=item.health.trim();
     else if(typeof item.isActive==="boolean")statusSource=item.isActive?"selected":"idle";
-    else statusSource=runtimeFallback?"idle":"unknown";
+    else statusSource=runtimeFallback?"idle":"不明";
   }
   return{
     name,
@@ -846,7 +1193,7 @@ function syncedTopographyRows(rows){
       row.tone="running";
       row.synced=true;
       row.syncAt=Date.now();
-      row.syncDetail=lastTrace?`trace ${tt(lastTrace.at)} / ${lastTrace.type}`:"trace sync / pending";
+      row.syncDetail=lastTrace?`トレース ${tt(lastTrace.at)} / ${displayTraceTypeLabel(lastTrace.type)}`:"トレース同期 / 保留中";
     }else if(lastTrace){
       const traceKind=traceTone(lastTrace.type);
       if(lastTrace.type==="aborted"){
@@ -867,7 +1214,7 @@ function syncedTopographyRows(rows){
       }
       row.synced=true;
       row.syncAt=lastTrace.at||0;
-      row.syncDetail=`trace ${tt(lastTrace.at)} / ${lastTrace.type}${lastTrace.detail?` / ${t1(lastTrace.detail,40)}`:""}`;
+      row.syncDetail=`トレース ${tt(lastTrace.at)} / ${displayTraceTypeLabel(lastTrace.type)}${lastTrace.detail?` / ${t1(lastTrace.detail,40)}`:""}`;
     }
     merged.push(row);
   });
@@ -901,10 +1248,10 @@ function renderAgentTopography(){
   else if(topographyState.error)e.agentTopographyMeta.textContent=`取得失敗: ${topographyState.error}`;
   else{
     const currentChat=active();
-    const sourceLabel=topographyState.usingFallback?"fallback /api/runtime":"/api/agent-topography";
+    const sourceLabel=topographyState.usingFallback?"代替経路 /api/runtime":"標準経路 /api/agent-topography";
     const at=topographyState.lastUpdated?tt(topographyState.lastUpdated):"--:--:--";
     const chatLabel=currentChat&&typeof currentChat.title==="string"&&currentChat.title.trim()?` / ${currentChat.title.trim()}`:"";
-    const traceSync=syncedCount>0?` / trace sync ${syncedCount} @ ${tt(latestSyncAt||Date.now())}`:"";
+    const traceSync=syncedCount>0?` / トレース同期 ${syncedCount} 件 @ ${tt(latestSyncAt||Date.now())}`:"";
     e.agentTopographyMeta.textContent=`${sourceLabel}${chatLabel} @ ${at}${traceSync}`;
   }
 
@@ -924,13 +1271,13 @@ function renderAgentTopography(){
     line.className="agent-topography-line";
     const name=document.createElement("p");
     name.className="agent-topography-name";
-    name.textContent=displayAgentNameForUi(row.name,{includeScope:true})||"unknown";
+    name.textContent=displayAgentNameForUi(row.name,{includeScope:true})||"不明";
     const status=document.createElement("span");
     status.className=`agent-topography-status ${row.tone||"idle"}`;
-    status.textContent=row.status||"unknown";
+    status.textContent=displayMonitorStatusLabel(row.status);
     const role=document.createElement("p");
     role.className="agent-topography-role";
-    role.textContent=`role: ${row.role||"unknown"}`;
+    role.textContent=`ロール: ${displayRoleLabel(row.role)}`;
     line.appendChild(name);
     line.appendChild(status);
     card.appendChild(line);
@@ -988,9 +1335,9 @@ async function loadAgentTopography({manual=false}={}){
       flow();
       return;
     }catch(runtimeError){
-      const primaryMessage=topographyError&&topographyError.message?topographyError.message:"unavailable";
-      const fallbackMessage=runtimeError&&runtimeError.message?runtimeError.message:"unavailable";
-      applyState({agents:runtimeAgentsForMonitor(s.runtime),source:"",error:`topography ${primaryMessage}; runtime ${fallbackMessage}`,usingFallback:true});
+      const primaryMessage=topographyError&&topographyError.message?topographyError.message:"利用不可";
+      const fallbackMessage=runtimeError&&runtimeError.message?runtimeError.message:"利用不可";
+      applyState({agents:runtimeAgentsForMonitor(s.runtime),source:"",error:`topography 取得: ${primaryMessage} / runtime 取得: ${fallbackMessage}`,usingFallback:true});
     }
   }
 }
@@ -1000,7 +1347,7 @@ function mkChat(o={}){
   const savedAgent=typeof o.agent==="string"&&o.agent.trim()?o.agent.trim():"";
   const c={
     id,
-    title:o.title||`Chat ${currentNumber}`,
+    title:o.title||`チャット ${currentNumber}`,
     agent:normalizeScopedChatAgentNameForUi(savedAgent,id),
     pending:0,
     messages:[],
@@ -1026,7 +1373,7 @@ function validateAttachmentFile(file){
   const mime=String(file.type||"").toLowerCase();
   if(!IMAGE_ALLOWED_MIME.has(mime))return`未対応のMIMEタイプです。${imageRuleLabel()}のみ添付できます。`;
   const expectedMime=IMAGE_EXT_TO_MIME[extension];
-  if(expectedMime&&mime!==expectedMime)return`拡張子とMIMEタイプが一致しません (${extension} / ${mime||"unknown"})。`;
+  if(expectedMime&&mime!==expectedMime)return`拡張子とMIMEタイプが一致しません (${extension} / ${mime||"不明"})。`;
   const size=Number.isFinite(Number(file.size))?Math.max(0,Math.trunc(Number(file.size))):0;
   if(size<=0)return"画像サイズを確認できません。別の画像を選択してください。";
   if(size>IMAGE_MAX_BYTES)return`画像サイズが上限を超えています。10MB以下の画像を選択してください。`;
@@ -1162,7 +1509,7 @@ function composeUserMessage(prompt,imagePayloads){
   const text=String(prompt||"").trim();
   const images=Array.isArray(imagePayloads)?imagePayloads.filter((payload)=>payload&&payload.name):[];
   if(images.length){
-    const imageLines=images.map((payload)=>`[image] ${payload.name} (${fmtBytes(payload.sizeBytes)})`);
+    const imageLines=images.map((payload)=>`[画像] ${payload.name} (${fmtBytes(payload.sizeBytes)})`);
     return text?`${text}\n${imageLines.join("\n")}`:imageLines.join("\n");
   }
   return text;
@@ -1171,8 +1518,8 @@ function composeDispatchDetail(prompt,imagePayloads){
   const text=String(prompt||"").trim();
   if(text)return text;
   const images=Array.isArray(imagePayloads)?imagePayloads.filter((payload)=>payload&&payload.name):[];
-  if(images.length===1)return`[image] ${images[0].name}`;
-  if(images.length>1)return`[images] ${images.length} files`;
+  if(images.length===1)return`画像 ${images[0].name}`;
+  if(images.length>1)return`画像 ${images.length} 件`;
   return"";
 }
 function renderAttachmentUi(){
@@ -1202,7 +1549,7 @@ function renderAttachmentUi(){
       name.textContent=String(item.file.name||"image");
       const meta=document.createElement("p");
       meta.className="image-preview-meta";
-      meta.textContent=`${fmtBytes(item.file.size)} / ${String(item.file.type||"unknown")}`;
+      meta.textContent=`${fmtBytes(item.file.size)} / ${String(item.file.type||"不明")}`;
       info.appendChild(name);
       info.appendChild(meta);
       const removeBtn=document.createElement("button");
@@ -1251,7 +1598,7 @@ function foldHarnessSignalsFromLabel(signals,labelText,detailText,statusText="")
   if(label==="turn/completed"||label==="turn/end"||status==="completed"||status==="failed"||status==="interrupted")signals.turnCompleted=true;
   if(label==="plan/update"){signals.plan=true;signals.planInferred=false;}
   if(text.includes("collab agent tool")||text.includes("spawn_agent")||text.includes("spawnagent")||text.includes("receivers="))signals.delegation=true;
-  if(text.includes("test")||text.includes("review")||text.includes("audit")||text.includes("guard"))signals.quality=true;
+  if(textIncludesAny(text,HARNESS_QUALITY_TERMS))signals.quality=true;
   if(signals.dispatch||signals.turnStart)signals.requirement=true;
 }
 function deriveHarnessOperationProfile(events){
@@ -1288,7 +1635,7 @@ function deriveHarnessOperationProfile(events){
       default:
         break;
     }
-    if(text.includes("test")||text.includes("review")||text.includes("audit")||text.includes("guard"))profile.qualityCount+=1;
+    if(textIncludesAny(text,HARNESS_QUALITY_TERMS))profile.qualityCount+=1;
     if(lowerText(item&&item.tone)==="failed")profile.failedCount+=1;
   });
   return profile;
@@ -1377,7 +1724,7 @@ function happly(c,ev){
   if(ev.type==="plan"){
     c.h.planExp=String(ev.explanation||"");
     c.h.plan=(Array.isArray(ev.steps)?ev.steps:[]).map((x)=>({step:String(x.step||""),status:String(x.status||"pending")})).filter((x)=>x.step).slice(0,16);
-    hpush(c,"plan/update",`${c.h.plan.length} steps`,`info`);
+    hpush(c,"plan/update",`${c.h.plan.length} 件`,`info`);
     return;
   }
   if(ev.type==="tokenUsage"){
@@ -1396,10 +1743,15 @@ function happly(c,ev){
   }
   if(ev.type==="diff"&&typeof ev.text==="string"){
     c.h.diff=ev.text;
-    hpush(c,"turn/diff",`${ev.text.length} chars`,"info");
+    hpush(c,"turn/diff",`${ev.text.length} 文字`,"info");
   }
 }
 function lowerText(value){return String(value||"").toLowerCase();}
+const HARNESS_QUALITY_TERMS=["test","pytest","playwright","vitest","jest","review","audit","guard","evidence","proof","テスト","検証","レビュー","監査","ガード","証跡","証拠","証明"];
+const HARNESS_TEST_TERMS=["test","pytest","playwright","vitest","jest","テスト","検証"];
+const HARNESS_REVIEW_TERMS=["review","audit","レビュー","監査"];
+const HARNESS_LOG_TERMS=["log","trace","artifact","ログ","トレース","証跡","アーティファクト"];
+function textIncludesAny(text,terms){return terms.some((term)=>text.includes(term));}
 function deriveHarnessEvidence(events){
   const taskLabels=new Set(["command execution","file change","mcp tool","collab agent tool","web search","image view","reasoning"]);
   const evidence={tasksDone:0,tasksTotal:0,tests:0,reviews:0,logs:0};
@@ -1412,9 +1764,9 @@ function deriveHarnessEvidence(events){
       evidence.tasksTotal+=1;
       if(tone!=="failed")evidence.tasksDone+=1;
     }
-    if(text.includes("test")||text.includes("pytest")||text.includes("playwright")||text.includes("vitest")||text.includes("jest"))evidence.tests+=1;
-    if(text.includes("review")||text.includes("audit"))evidence.reviews+=1;
-    if(text.includes("log")||text.includes("trace")||text.includes("artifact"))evidence.logs+=1;
+    if(textIncludesAny(text,HARNESS_TEST_TERMS))evidence.tests+=1;
+    if(textIncludesAny(text,HARNESS_REVIEW_TERMS))evidence.reviews+=1;
+    if(textIncludesAny(text,HARNESS_LOG_TERMS))evidence.logs+=1;
   });
   return evidence;
 }
@@ -1455,7 +1807,7 @@ function syncHarnessFlow(c,mode=activeHarnessCheckMode()){
   });
   const hasQualitySignal=signals.quality||events.some((item)=>{
     const text=`${lowerText(item&&item.l)} ${lowerText(item&&item.d)}`;
-    return text.includes("test")||text.includes("review")||text.includes("audit")||text.includes("guard");
+    return textIncludesAny(text,HARNESS_QUALITY_TERMS);
   });
   const hasAnyProgressSignal=hasRequirement||hasPlan||hasExecutionSignal||hasQualitySignal||hasDispatch||hasTurnStart||hasTurnCompleted;
   const hasActiveTurnLikeStatus=status==="starting"||status==="running"||status==="needs_input"||status==="completed"||status==="failed"||status==="interrupted";
@@ -1520,77 +1872,77 @@ function evaluateHarnessVerdict(h,mode=activeHarnessCheckMode()){
   const hasFailedEvent=events.some((item)=>item&&item.tone==="failed");
 
   if(status==="failed"||status==="interrupted"){
-    return{label:"FAIL",tone:"failed",detail:`Terminal status is ${status}.`};
+    return{label:"FAIL",tone:"failed",detail:`終端ステータスは ${displayHarnessStatusLabel(status)} です。`};
   }
   if(status==="needs_input"){
-    return{label:"WAIT",tone:"running",detail:"Waiting for user input/approval."};
+    return{label:"WAIT",tone:"running",detail:"ユーザー入力または承認を待っています。"};
   }
   if(checkMode===HARNESS_CHECK_MODES.STRICT||checkMode===HARNESS_CHECK_MODES.ADAPTIVE){
-    const modeName=checkMode===HARNESS_CHECK_MODES.STRICT?"Strict":"Adaptive";
-    const planSignalLabel=hasPlanInferred?"plan/update (inferred micro-plan)":"plan/update";
+    const modeName=displayHarnessModeLabel(checkMode);
+    const planSignalLabel=hasPlanInferred?"計画更新（推定マイクロプラン）":"計画更新";
     if(status==="running"||status==="starting"){
       if(hasTurnStart&&!hasPlan){
-        return{label:"WARN",tone:"running",detail:`Execution started before plan/update (${modeName.toLowerCase()} gate).`};
+        return{label:"WARN",tone:"running",detail:`計画更新（plan/update）の前に実行が始まりました（${modeName}ゲート）。`};
       }
       const observed=[];
-      if(hasRequirement)observed.push("requirement/dispatch");
-      if(hasTurnStart)observed.push("turn/start");
+      if(hasRequirement)observed.push(displayHarnessSignalLabel("requirement/dispatch"));
+      if(hasTurnStart)observed.push(displayHarnessSignalLabel("turn/start"));
       if(hasPlan)observed.push(planSignalLabel);
-      if(hasDelegation)observed.push("child dispatch");
+      if(hasDelegation)observed.push(displayHarnessSignalLabel("child dispatch"));
       return{
         label:"RUNNING",
         tone:"running",
-        detail:observed.length?`Observed: ${observed.join(", ")}.`:"Turn is in progress.",
+        detail:observed.length?`観測済み: ${observed.join(", ")}。`:"ターンを実行中です。",
       };
     }
     if(status==="completed"){
       const missingHard=[];
-      if(!hasRequirement)missingHard.push("requirement/dispatch");
-      if(!hasTurnStart)missingHard.push("turn/start");
-      if(!hasTurnCompleted)missingHard.push("turn/completed");
-      if(!hasPlan)missingHard.push("plan/update");
+      if(!hasRequirement)missingHard.push(displayHarnessSignalLabel("requirement/dispatch"));
+      if(!hasTurnStart)missingHard.push(displayHarnessSignalLabel("turn/start"));
+      if(!hasTurnCompleted)missingHard.push(displayHarnessSignalLabel("turn/completed"));
+      if(!hasPlan)missingHard.push(displayHarnessSignalLabel("plan/update"));
       if(missingHard.length){
-        return{label:"FAIL",tone:"failed",detail:`${modeName} missing required signals: ${missingHard.join(", ")}.`};
+        return{label:"FAIL",tone:"failed",detail:`${modeName} モードで必須シグナルが不足しています: ${missingHard.join(", ")}。`};
       }
       if(hasFailedEvent){
-        return{label:"WARN",tone:"failed",detail:"Completed but failed/error events exist in trace."};
+        return{label:"WARN",tone:"failed",detail:"完了しましたが、トレース内に失敗イベントがあります。"};
       }
       if(!hasDelegation&&!(checkMode===HARNESS_CHECK_MODES.ADAPTIVE&&hasPlanInferred)){
-        return{label:"WARN",tone:"running",detail:"Missing soft signal: child dispatch."};
+        return{label:"WARN",tone:"running",detail:"推奨シグナルの子エージェント委譲が観測できていません。"};
       }
       if(hasPlanInferred){
-        return{label:"PASS",tone:"completed",detail:"Adaptive required signals observed with inferred micro-plan for lightweight turn."};
+        return{label:"PASS",tone:"completed",detail:`軽量ターンとして、${modeName} の必須シグナルと推定マイクロプランを観測しました。`};
       }
-      return{label:"PASS",tone:"completed",detail:`${modeName} required harness signals observed.`};
+      return{label:"PASS",tone:"completed",detail:`${modeName} の必須ハーネスシグナルを観測しました。`};
     }
-    return{label:"WAIT",tone:"idle",detail:"No terminal turn yet."};
+    return{label:"WAIT",tone:"idle",detail:"まだ終端ターンはありません。"};
   }
   if(status==="running"||status==="starting"){
     const observed=[];
-    if(hasTurnStart)observed.push("turn/start");
-    if(hasPlan)observed.push("plan/update");
-    if(hasDelegation)observed.push("child dispatch");
+    if(hasTurnStart)observed.push(displayHarnessSignalLabel("turn/start"));
+    if(hasPlan)observed.push(displayHarnessSignalLabel("plan/update"));
+    if(hasDelegation)observed.push(displayHarnessSignalLabel("child dispatch"));
     return{
       label:"RUNNING",
       tone:"running",
-      detail:observed.length?`Observed: ${observed.join(", ")}.`:"Turn is in progress.",
+      detail:observed.length?`観測済み: ${observed.join(", ")}。`:"ターンを実行中です。",
     };
   }
   if(status==="completed"){
     if(hasFailedEvent){
-      return{label:"WARN",tone:"failed",detail:"Completed but failed/error events exist in trace."};
+      return{label:"WARN",tone:"failed",detail:"完了しましたが、トレース内に失敗イベントがあります。"};
     }
     const missing=[];
-    if(!hasTurnStart)missing.push("turn/start");
-    if(!hasTurnCompleted)missing.push("turn/completed");
-    if(!hasPlan)missing.push("plan/update");
-    if(!hasDelegation)missing.push("child dispatch");
+    if(!hasTurnStart)missing.push(displayHarnessSignalLabel("turn/start"));
+    if(!hasTurnCompleted)missing.push(displayHarnessSignalLabel("turn/completed"));
+    if(!hasPlan)missing.push(displayHarnessSignalLabel("plan/update"));
+    if(!hasDelegation)missing.push(displayHarnessSignalLabel("child dispatch"));
     if(missing.length){
-      return{label:"WARN",tone:"running",detail:`Missing signals: ${missing.join(", ")}.`};
+      return{label:"WARN",tone:"running",detail:`不足シグナル: ${missing.join(", ")}。`};
     }
-    return{label:"PASS",tone:"completed",detail:"Required harness signals observed."};
+    return{label:"PASS",tone:"completed",detail:"必須ハーネスシグナルを観測しました。"};
   }
-  return{label:"WAIT",tone:"idle",detail:"No terminal turn yet."};
+  return{label:"WAIT",tone:"idle",detail:"まだ終端ターンはありません。"};
 }
 function normalizePlanStepStatusForUi(value){
   const normalized=lowerText(value).replace(/[\s-]+/g,"_");
@@ -1658,12 +2010,12 @@ function renderChatList(){
     const activeCount=pendingCountForChat(c.id);
     c.pending=activeCount;
     const statusClass=activeCount>0?"running":"idle";
-    const statusLabel=activeCount>0?`Running ${activeCount}`:"Idle";
+    const statusLabel=activeCount>0?`実行中 ${activeCount}`:"待機中";
     const agentLabel=displayAgentNameForUi(c.agent);
     const b=document.createElement("button");
     b.type="button";
     b.className=c.id===s.active?"chat-item active":"chat-item";
-    b.title="ダブルクリックでタイトル変更 / Deleteで削除";
+    b.title="ダブルクリックでタイトル変更 / Delete キーで削除";
     b.innerHTML=`<span class=\"chat-item-line\"><span class=\"chat-item-title\">${c.title}</span><span class=\"chat-item-meta\">${agentLabel}</span><span class=\"chat-item-status ${statusClass}\">${statusLabel}</span></span>`;
     b.onclick=()=>{s.active=c.id;refresh()};
     b.ondblclick=(ev)=>{
@@ -1744,11 +2096,16 @@ function renderHarness(){
   stageEl.textContent=currentPhase?`${currentPhase.label} (${phaseStateText(currentPhase)})`:"未開始";
   stageEl.className=`harness-now-value ${phaseTone(currentPhase)}`;
   const latestEvent=toArr(h.events)[0];
-  workEl.textContent=latestEvent?`${latestEvent.l}${latestEvent.d?` / ${latestEvent.d}`:""}`:"待機中";
+  workEl.textContent=latestEvent?`${displayTraceTypeLabel(latestEvent.l)}${latestEvent.d?` / ${latestEvent.d}`:""}`:"待機中";
   workEl.className=`harness-now-value ${latestEvent&&latestEvent.tone==="failed"?"failed":(status==="running"?"running":"idle")}`;
-  const verdict=evaluateHarnessVerdict(h,checkMode);
+  let verdict=evaluateHarnessVerdict(h,checkMode);
+  const latest=runtimeLatestTurn();
+  const latestIntent=latest&&latest.intent_first&&typeof latest.intent_first==="object"?latest.intent_first:null;
+  if(verdict.label==="PASS"&&latestIntent&&latestIntent.design_sensitive&&["blocked","failed_validation"].includes(String(latestIntent.status||"").toLowerCase())){
+    verdict={label:"FAIL",tone:"failed",detail:latestIntent.summary||"Intent-First の完了ゲートにより最新のデザイン系ターンがブロックされました。"};
+  }
   if(complianceEl){
-    complianceEl.textContent=verdict.label;
+    complianceEl.textContent=displayHarnessVerdictLabel(verdict.label);
     complianceEl.className=`harness-now-value ${verdict.tone}`;
   }
   if(complianceDetailEl){
@@ -1828,20 +2185,18 @@ function renderHarness(){
   const reportPhase=flowItems.find((phase)=>phase&&phase.id==="report")||flowItems[4]||null;
 
   const highlights=[];
-  const modeLabelMap={
-    [HARNESS_CHECK_MODES.ADAPTIVE]:"adaptive（軽量自動）",
-    [HARNESS_CHECK_MODES.STRICT]:"strict（厳密）",
-    [HARNESS_CHECK_MODES.RELAXED]:"relaxed（推定）",
-  };
-  highlights.push(`判定モード: ${modeLabelMap[checkMode]||checkMode}`);
-  highlights.push(`準拠判定: ${verdict.label} / ${verdict.detail}`);
+  highlights.push(`判定モード: ${displayHarnessModeLabel(checkMode)}`);
+  highlights.push(`準拠判定: ${displayHarnessVerdictLabel(verdict.label)} / ${verdict.detail}`);
+  if(latestIntent&&latestIntent.design_sensitive){
+    highlights.push(`意図ゲート: ${displayHarnessStatusLabel(latestIntent.status||"不明")} / ${latestIntent.summary||"該当なし"}`);
+  }
   if(requirementPhase&&(requirementPhase.state!=="todo"||status==="needs_input"))highlights.push(`要件整理: ${describePhase(requirementPhase)}`);
   if(planningPhase&&planningPhase.state!=="todo")highlights.push(`計画作成: ${describePhase(planningPhase)}`);
   if(executionPhase&&(executionPhase.state!=="todo"||Number(evidence.tasksTotal)>0))highlights.push(`実行: ${describePhase(executionPhase)} / ${Number(evidence.tasksDone)||0}/${Number(evidence.tasksTotal)||0} タスク完了`);
   if(qualityPhase&&(qualityPhase.state!=="todo"||Number(evidence.tests)+Number(evidence.reviews)+Number(evidence.logs)>0))highlights.push(`品質チェック: ${describePhase(qualityPhase)} / テスト${Number(evidence.tests)||0} レビュー${Number(evidence.reviews)||0} ログ${Number(evidence.logs)||0}`);
   if(reportPhase&&(reportPhase.state!=="todo"||["completed","failed","needs_input","interrupted"].includes(status)))highlights.push(`報告: ${describePhase(reportPhase)}`);
   if(h.thread||h.turn){
-    highlights.push(`実行ID: Thread ${h.thread||"-"} / Turn ${h.turn||"-"}`);
+    highlights.push(`実行ID: スレッド ${h.thread||"-"} / ターン ${h.turn||"-"}`);
   }
   const inProgressStep=toArr(h.plan).find((step)=>step&&String(step.status||"").toLowerCase()==="in_progress");
   if(inProgressStep&&inProgressStep.step){
@@ -1851,7 +2206,7 @@ function renderHarness(){
   }
   const failedEvent=toArr(h.events).find((item)=>item&&item.tone==="failed");
   if(failedEvent){
-    highlights.push(`ブロッカー: ${failedEvent.l}${failedEvent.d?` / ${failedEvent.d}`:""}`);
+    highlights.push(`ブロッカー: ${displayTraceTypeLabel(failedEvent.l)}${failedEvent.d?` / ${failedEvent.d}`:""}`);
   }
   if(status==="needs_input"){
     highlights.push("ユーザー入力待ち: 追加回答または承認が必要です。");
@@ -1879,7 +2234,7 @@ function renderHarness(){
     highlightsEl.appendChild(li);
   });
 }
-function inspect(){if(!e.agentInspector)return;const c=active();if(!c)return;const ra=rAgents().find(a=>a.name===c.agent);e.agentInspector.textContent=ra?`Agent: ${displayAgentNameForUi(ra.name,{includeScope:true})}\nActive: ${ra.isActive?"yes":"no"}\nSession: ${ra.sessionRef||"none"}`:`Agent: ${displayAgentNameForUi(c.agent,{includeScope:true})}\nRuntime metadata not available.`}
+function inspect(){if(!e.agentInspector)return;const c=active();if(!c)return;const ra=rAgents().find(a=>a.name===c.agent);e.agentInspector.textContent=ra?`エージェント: ${displayAgentNameForUi(ra.name,{includeScope:true})}\n稼働: ${ra.isActive?"はい":"いいえ"}\nセッション: ${displaySessionRef(ra.sessionRef)}`:`エージェント: ${displayAgentNameForUi(c.agent,{includeScope:true})}\nランタイムメタデータはまだ取得できていません。`}
 function trace(type,agent,detail="",cid=s.active){s.trace.unshift({type,agent,cid:cid||"",detail:t1(detail,140),at:Date.now()});s.trace=s.trace.slice(0,180);flow()}
 function traceTone(type){if(type==="dispatch"||type==="streaming"||type==="running")return"running";if(type==="completed")return"completed";if(type==="failed"||type==="aborted")return"failed";return"idle"}
 function flow(){
@@ -1928,7 +2283,7 @@ function flow(){
         ?"running"
         :(fromTrace==="idle"&&runtime&&runtime.isActive?"idle":fromTrace);
       let statusText=tone==="running"?(pendingCount>0?`実行中 (${pendingCount})`:"実行中"):tone==="completed"?"完了":tone==="failed"?(lastTrace&&lastTrace.type==="aborted"?"中断":"失敗"):"待機";
-      let activity=lastTrace?`${tt(lastTrace.at)} ${lastTrace.type}${lastTrace.detail?` / ${lastTrace.detail}`:""}`:(pendingCount>0?"実行リクエスト処理中":"待機中");
+      let activity=lastTrace?`${tt(lastTrace.at)} ${displayTraceTypeLabel(lastTrace.type)}${lastTrace.detail?` / ${lastTrace.detail}`:""}`:(pendingCount>0?"実行リクエスト処理中":"待機中");
 
       const card=document.createElement("article");
       card.className="agent-flow-card";
@@ -1942,13 +2297,13 @@ function flow(){
       status.textContent=statusText;
       const role=document.createElement("p");
       role.className="agent-flow-meta";
-      role.textContent=`role: ${inferAgentRoleForUi(name)}`;
+      role.textContent=`ロール: ${displayRoleLabel(inferAgentRoleForUi(name))}`;
       const session=document.createElement("p");
       session.className="agent-flow-meta";
-      session.textContent=`session: ${runtime&&runtime.sessionRef?runtime.sessionRef:"none"}`;
+      session.textContent=`セッション: ${displaySessionRef(runtime&&runtime.sessionRef?runtime.sessionRef:"")}`;
       const work=document.createElement("p");
       work.className="agent-flow-meta";
-      work.textContent=`last: ${activity}`;
+      work.textContent=`直近: ${activity}`;
       card.appendChild(title);
       card.appendChild(status);
       card.appendChild(role);
@@ -1987,7 +2342,7 @@ function flow(){
   }
 
   e.agentTraceList.innerHTML=traceRows.length?"":'<li class="agent-trace-empty">まだトレースイベントはありません。</li>';
-  traceRows.slice(0,32).forEach(x=>{const tone=traceTone(x.type)==="failed"?(x.type==="aborted"?"aborted":"failed"):traceTone(x.type);const li=document.createElement("li");li.className=`agent-trace-item ${tone}`;li.innerHTML=`<span class=\"agent-trace-time\">${tt(x.at)}</span><span class=\"agent-trace-agent\">${displayAgentNameForUi(x.agent,{includeScope:true})}</span><span class=\"agent-trace-event\">${x.type}</span><span class=\"agent-trace-detail\">${x.detail||"-"}</span>`;e.agentTraceList.appendChild(li)});
+  traceRows.slice(0,32).forEach(x=>{const tone=traceTone(x.type)==="failed"?(x.type==="aborted"?"aborted":"failed"):traceTone(x.type);const li=document.createElement("li");li.className=`agent-trace-item ${tone}`;li.innerHTML=`<span class=\"agent-trace-time\">${tt(x.at)}</span><span class=\"agent-trace-agent\">${displayAgentNameForUi(x.agent,{includeScope:true})}</span><span class=\"agent-trace-event\">${displayTraceTypeLabel(x.type)}</span><span class=\"agent-trace-detail\">${x.detail||"-"}</span>`;e.agentTraceList.appendChild(li)});
   renderAgentTopography();
 }
 function live(){
@@ -2006,9 +2361,9 @@ function live(){
       bag.set(currentChat.agent,1);
     }
     e.liveStatus.className="live-status running";
-    e.liveStatusLabel.textContent=`Running (${currentPending})`;
+    e.liveStatusLabel.textContent=`実行中 (${currentPending})`;
     e.liveStatusElapsed.textContent=el(Date.now()-start);
-    e.liveStatusDetail.textContent=[...bag.entries()].map(([n,c])=>{const label=displayAgentNameForUi(n,{includeScope:true});return c>1?`${label} x${c}`:label;}).join(" / ")||"Processing...";
+    e.liveStatusDetail.textContent=[...bag.entries()].map(([n,c])=>{const label=displayAgentNameForUi(n,{includeScope:true});return c>1?`${label} x${c}`:label;}).join(" / ")||"処理中...";
     renderPerformanceIndicator();
     if(s.ticker===null)s.ticker=setInterval(live,400);
     return;
@@ -2021,63 +2376,130 @@ function live(){
   if(!lastForCurrentChat){
     const runningElsewhere=Math.max(0,totalPendingCount()-currentPending);
     e.liveStatus.className="live-status idle";
-    e.liveStatusLabel.textContent="Idle";
+    e.liveStatusLabel.textContent="待機中";
     e.liveStatusElapsed.textContent="--:--";
     e.liveStatusDetail.textContent=runningElsewhere>0
-      ?`No active requests in this chat. Running in other chats: ${runningElsewhere}.`
-      :"No active requests.";
+      ?`このチャットに進行中のリクエストはありません。他チャットで ${runningElsewhere} 件が動作中です。`
+      :"進行中のリクエストはありません。";
     renderPerformanceIndicator();
     return;
   }
   const tone=lastForCurrentChat.type==="failed"?"failed":lastForCurrentChat.type==="aborted"?"aborted":"completed";
   e.liveStatus.className=`live-status ${tone}`;
-  e.liveStatusLabel.textContent=lastForCurrentChat.type==="failed"?"Last run failed":lastForCurrentChat.type==="aborted"?"Last run interrupted":"Last run completed";
+  e.liveStatusLabel.textContent=lastForCurrentChat.type==="failed"?"直前の実行は失敗":lastForCurrentChat.type==="aborted"?"直前の実行は中断":"直前の実行は完了";
   e.liveStatusElapsed.textContent=el(Date.now()-lastForCurrentChat.at);
-  e.liveStatusDetail.textContent=`${lastForCurrentChat.chat||"chat"} / ${displayAgentNameForUi(lastForCurrentChat.agent,{includeScope:true})||"agent"} / ${lastForCurrentChat.detail||""}`;
+  e.liveStatusDetail.textContent=`${lastForCurrentChat.chat||"現在のチャット"} / ${displayAgentNameForUi(lastForCurrentChat.agent,{includeScope:true})||"現在のエージェント"} / ${lastForCurrentChat.detail||""}`;
   renderPerformanceIndicator();
+}
+function runtimeAgentRecordForUi(agentName){
+  const wanted=normalizeAgentNameForUi(agentName);
+  if(!wanted)return null;
+  return rAgents().find((item)=>normalizeAgentNameForUi(item&&item.name)===wanted)||null;
+}
+function resolveInterruptTargetForChat(chatRecord){
+  if(!chatRecord||typeof chatRecord!=="object")return null;
+  const agentName=normalizeAgentNameForUi(chatRecord.agent);
+  const harnessThreadId=typeof chatRecord.h?.thread==="string"?chatRecord.h.thread.trim():"";
+  const harnessTurnId=typeof chatRecord.h?.turn==="string"?chatRecord.h.turn.trim():"";
+  if(harnessThreadId&&harnessTurnId){
+    return{agentName,threadId:harnessThreadId,turnId:harnessTurnId,source:"harness"};
+  }
+  const runtimeAgent=runtimeAgentRecordForUi(agentName);
+  const runtimeThreadId=typeof runtimeAgent?.threadId==="string"?runtimeAgent.threadId.trim():"";
+  const runtimeTurnId=typeof runtimeAgent?.activeTurnId==="string"?runtimeAgent.activeTurnId.trim():"";
+  if(runtimeThreadId&&runtimeTurnId){
+    return{agentName,threadId:runtimeThreadId,turnId:runtimeTurnId,source:"runtime"};
+  }
+  if(agentName){
+    return{agentName,source:"agent"};
+  }
+  return null;
+}
+async function requestTurnInterrupt(target){
+  const token=controlApiToken();
+  if(!token)throw new Error("control API token を取得できません。先にランタイムを更新してください。");
+  const headerName=controlApiTokenHeader();
+  const headers={"Content-Type":"application/json"};
+  headers[headerName]=token;
+  const payload={};
+  if(target&&typeof target.agentName==="string"&&target.agentName)payload.agentName=target.agentName;
+  if(target&&typeof target.threadId==="string"&&target.threadId)payload.threadId=target.threadId;
+  if(target&&typeof target.turnId==="string"&&target.turnId)payload.turnId=target.turnId;
+  const response=await fetch("/api/turn/interrupt",{method:"POST",headers,body:JSON.stringify(payload)});
+  let parsed=null;
+  try{
+    parsed=await response.json();
+  }catch(_e){
+    parsed=null;
+  }
+  if(!response.ok){
+    const detail=parsed&&typeof parsed.error==="string"&&parsed.error
+      ?parsed.error
+      :`HTTP ${response.status}`;
+    throw new Error(detail);
+  }
+  return parsed&&typeof parsed==="object"?parsed:{ok:true,target:payload};
 }
 function pending(){
   const c=active();
   const totalPending=totalPendingCount();
-  const localCurrentPending=c?localPendingCountForChat(c.id):0;
   const currentPending=c?pendingCountForChat(c.id):0;
   const hasPending=totalPending>0;
   const hasCurrentPending=currentPending>0;
   if(c)c.pending=currentPending;
-  e.stopBtn.disabled=!c||localCurrentPending===0;
+  e.stopBtn.disabled=!c||currentPending===0;
   if(e.sendBtn)e.sendBtn.disabled=!c||currentPending>0;
   if(e.deleteChatBtn)e.deleteChatBtn.disabled=!c;
-  if(!hasPending)e.pendingState.textContent="No pending";
-  else if(currentPending>0)e.pendingState.textContent=`Pending: this chat ${currentPending} / total ${totalPending}`;
-  else e.pendingState.textContent=`Running in other chats: ${totalPending}`;
+  if(!hasPending)e.pendingState.textContent="実行待ちなし";
+  else if(currentPending>0)e.pendingState.textContent=`進行中: このチャット ${currentPending} / 全体 ${totalPending}`;
+  else e.pendingState.textContent=`他チャットで実行中: ${totalPending}`;
   e.pendingState.classList.toggle("waiting",hasCurrentPending);
   e.pendingState.classList.toggle("idle",!hasCurrentPending);
-  if(!c)e.agentState.textContent="Chat: none";
+  if(!c)e.agentState.textContent="チャット: なし";
   else{
     const agentLabel=displayAgentNameForUi(c.agent,{includeScope:true});
-    e.agentState.textContent=`Chat: ${c.title}${currentPending>0?` (${currentPending})`:""} / Agent: ${agentLabel}`;
+    e.agentState.textContent=`チャット: ${c.title}${currentPending>0?` (${currentPending})`:""} / エージェント: ${agentLabel}`;
   }
 }
-function refresh(){renderTimeline();renderChatList();renderHarness();inspect();pending();live();renderPerformanceIndicator();renderAutomationStatus();syncRuntimePendingMonitor()}
+function refresh(){renderTimeline();renderChatList();renderIntentFirstPanel();renderHarness();inspect();pending();live();renderPerformanceIndicator();renderAutomationStatus();syncRuntimePendingMonitor()}
 function profileSync(){const snap={approvalPolicy:e.approvalPolicy.value,sandboxMode:e.sandboxMode.value,webSearch:e.webSearch.checked};const id=Object.keys(PROFILES).find(k=>{const p=PROFILES[k];return p.approvalPolicy===snap.approvalPolicy&&p.sandboxMode===snap.sandboxMode&&p.webSearch===snap.webSearch});e.executionProfile.value=id||"custom"}
+function localizeLegacyMessageTitle(title,role){
+  const raw=typeof title==="string"?title.trim():"";
+  if(!raw)return role==="user"?"あなた":role==="system"?"システム":"Codex";
+  if(/^you$/i.test(raw)||/^user$/i.test(raw))return"あなた";
+  if(/^system$/i.test(raw))return"システム";
+  if(/^assistant$/i.test(raw))return"Codex";
+  return raw;
+}
+function localizeLegacyChatTitle(title,index){
+  const fallback=`チャット ${index+1}`;
+  const raw=t1(title||fallback,60).trim()||fallback;
+  const matched=raw.match(/^chat\s+(\d+)$/i);
+  if(matched)return`チャット ${matched[1]}`;
+  return raw;
+}
 function normalizeSavedMessage(raw,index){
   if(!raw||typeof raw!=="object")return null;
   const id=typeof raw.id==="string"&&raw.id.trim()?raw.id.trim():`m-restore-${index+1}`;
   const role=typeof raw.role==="string"&&raw.role.trim()?raw.role.trim():"assistant";
-  const title=typeof raw.title==="string"&&raw.title.trim()?raw.title.trim():(role==="user"?"You":"Codex");
+  const originalTitle=typeof raw.title==="string"?raw.title:"";
+  const title=localizeLegacyMessageTitle(originalTitle,role);
   const time=typeof raw.time==="string"?raw.time:"";
   const content=typeof raw.content==="string"?raw.content:String(raw.content||"");
-  return{id,role,title,time,content};
+  return{id,role,title,time,content,_migrated:title!==originalTitle};
 }
 function normalizeSavedChat(raw,index){
   if(!raw||typeof raw!=="object")return null;
   const id=typeof raw.id==="string"&&raw.id.trim()?raw.id.trim():`chat-restore-${index+1}-${Date.now()}`;
-  const title=t1(raw.title||`Chat ${index+1}`,60).trim()||`Chat ${index+1}`;
+  const originalTitle=typeof raw.title==="string"?raw.title:"";
+  const title=localizeLegacyChatTitle(originalTitle,index);
   const savedAgent=typeof raw.agent==="string"&&raw.agent.trim()?raw.agent.trim():"";
   const agent=normalizeScopedChatAgentNameForUi(savedAgent,id);
   const messages=toArr(raw.messages).map((item,msgIndex)=>normalizeSavedMessage(item,msgIndex)).filter(Boolean).slice(-CHAT_MESSAGE_LIMIT);
+  const migrated=title!==t1(originalTitle||`チャット ${index+1}`,60).trim()||messages.some((item)=>item&&item._migrated);
+  messages.forEach((item)=>{if(item&&typeof item==="object")delete item._migrated;});
   const forceNewSession=typeof raw.forceNewSession==="boolean"?raw.forceNewSession:messages.length===0;
-  return{id,title,agent,pending:0,messages,h:createHarnessState(),forceNewSession};
+  return{id,title,agent,pending:0,messages,h:createHarnessState(),forceNewSession,_migrated:migrated};
 }
 function deriveNextChatCounter(chats){
   let next=1;
@@ -2145,8 +2567,10 @@ function loadChatState(){
   if(!parsed||typeof parsed!=="object")return;
   const version=Number.isFinite(Number(parsed.v))?Math.trunc(Number(parsed.v)):0;
   if(version!==CHAT_STATE_VERSION)return;
+  let migrated=false;
   const restored=toArr(parsed.chats).map((item,index)=>normalizeSavedChat(item,index)).filter(Boolean);
   if(!restored.length)return;
+  restored.forEach((item)=>{if(item&&item._migrated)migrated=true;if(item&&typeof item==="object")delete item._migrated;});
   s.chats=restored;
   const activeId=typeof parsed.active==="string"?parsed.active:"";
   s.active=restored.some((item)=>item.id===activeId)?activeId:restored[0].id;
@@ -2154,10 +2578,11 @@ function loadChatState(){
   const storedNextMsg=Number.isFinite(Number(parsed.nextMsg))?Math.max(1,Math.trunc(Number(parsed.nextMsg))):1;
   s.nextChat=Math.max(storedNextChat,deriveNextChatCounter(restored));
   s.nextMsg=Math.max(storedNextMsg,deriveNextMessageCounter(restored));
+  if(migrated)saveChatStateNow();
 }
 function saveSettings(){
   try{
-    const payload={approvalPolicy:e.approvalPolicy.value,sandboxMode:e.sandboxMode.value,webSearch:Boolean(e.webSearch.checked),executionProfile:e.executionProfile.value,modelName:selectedExecModel(),modelReasoningEffort:selectedExecModelReasoningEffort(),simpleView:document.body.classList.contains("simple-view"),uiVisibility:e.uiVisibility?Boolean(e.uiVisibility.checked):true,workspacePath:selectedCwd()};
+    const payload={approvalPolicy:e.approvalPolicy.value,sandboxMode:e.sandboxMode.value,webSearch:Boolean(e.webSearch.checked),executionProfile:e.executionProfile.value,modelName:selectedExecModel(),modelReasoningEffort:selectedExecModelReasoningEffort(),simpleView:document.body.classList.contains("simple-view"),uiVisibility:e.uiVisibility?Boolean(e.uiVisibility.checked):true,workspacePath:workspaceInputPath()||selectedCwd()};
     localStorage.setItem(SETTINGS_KEY,JSON.stringify(payload));
   }catch{}
 }
@@ -2196,11 +2621,12 @@ function loadSettings(){
     document.body.classList.toggle("telemetry-off",!e.uiVisibility.checked);
   }
   if(typeof parsed.simpleView==="boolean")document.body.classList.toggle("simple-view",parsed.simpleView);
-  e.simpleViewToggle.textContent=document.body.classList.contains("simple-view")?"Show Details":"Simple View";
+  e.simpleViewToggle.textContent=document.body.classList.contains("simple-view")?"詳細を表示":"簡易表示";
   profileSync();
+  renderWorkspaceScopeUi();
 }
-function updateSearchDiag(){if(s.diagErr){e.diagSearchState.textContent="error";e.diagSearchState.className="diag-state missing";e.diagSearchDetail.textContent=s.diagErr;return}const codex=s.diag&&s.diag.tools&&s.diag.tools.codex&&s.diag.tools.codex.available;if(!e.webSearch.checked){e.diagSearchState.textContent="off";e.diagSearchState.className="diag-state off";e.diagSearchDetail.textContent="Disabled in settings.";return}if(codex){e.diagSearchState.textContent="on";e.diagSearchState.className="diag-state ready";e.diagSearchDetail.textContent="Web search active for next run.";return}e.diagSearchState.textContent="unavailable";e.diagSearchState.className="diag-state missing";e.diagSearchDetail.textContent="Codex CLI unavailable."}
-function tdiag(name,st,de){const t=s.diag&&s.diag.tools?s.diag.tools[name]:null;if(!t){st.textContent="unknown";st.className="diag-state pending";de.textContent="No data";return}if(t.available){st.textContent="ready";st.className="diag-state ready";de.textContent=t.version||"available";return}st.textContent="missing";st.className="diag-state missing";de.textContent=t.error||"unavailable"}
+function updateSearchDiag(){if(s.diagErr){e.diagSearchState.textContent="エラー";e.diagSearchState.className="diag-state missing";e.diagSearchDetail.textContent=s.diagErr;return}const codex=s.diag&&s.diag.tools&&s.diag.tools.codex&&s.diag.tools.codex.available;if(!e.webSearch.checked){e.diagSearchState.textContent="オフ";e.diagSearchState.className="diag-state off";e.diagSearchDetail.textContent="設定で無効です。";return}if(codex){e.diagSearchState.textContent="オン";e.diagSearchState.className="diag-state ready";e.diagSearchDetail.textContent="次回実行で Web 検索が有効です。";return}e.diagSearchState.textContent="利用不可";e.diagSearchState.className="diag-state missing";e.diagSearchDetail.textContent="Codex CLI を利用できません。"}
+function tdiag(name,st,de){const t=s.diag&&s.diag.tools?s.diag.tools[name]:null;if(!t){st.textContent="不明";st.className="diag-state pending";de.textContent="データなし";return}if(t.available){st.textContent="準備完了";st.className="diag-state ready";de.textContent=t.version||"利用可能";return}st.textContent="不足";st.className="diag-state missing";de.textContent=t.error||"利用不可"}
 function renderDiagSummary(){
   if(!e.diagSummaryText)return;
   const rows=[
@@ -2208,8 +2634,8 @@ function renderDiagSummary(){
     {name:"Node",state:e.diagNodeState?String(e.diagNodeState.textContent||"").toLowerCase():"unknown"},
     {name:"Web検索",state:e.diagSearchState?String(e.diagSearchState.textContent||"").toLowerCase():"unknown"},
   ];
-  const bad=rows.filter((row)=>["missing","error","unavailable"].includes(row.state));
-  const totalReady=rows.filter((row)=>["ready","on","off"].includes(row.state)).length;
+  const bad=rows.filter((row)=>["missing","error","unavailable","不足","エラー","利用不可"].includes(row.state));
+  const totalReady=rows.filter((row)=>["ready","on","off","準備完了","オン","オフ"].includes(row.state)).length;
   if(bad.length){
     e.diagSummaryText.textContent=`要確認: ${bad.map((row)=>row.name).join(" / ")}`;
     if(e.diagDetailsSummary)e.diagDetailsSummary.textContent="詳細を確認";
@@ -2221,7 +2647,7 @@ function renderDiagSummary(){
 }
 async function loadRuntime({reconcilePending=true}={}){
   const response=await fetch("/api/runtime",{cache:"no-store"});
-  if(!response.ok)throw new Error(`Failed to load runtime: ${response.status}`);
+  if(!response.ok)throw new Error(`ランタイムの読み込みに失敗しました: ${response.status}`);
   s.runtime=await response.json();
   if(reconcilePending)reconcilePendingRequestsWithRuntime(s.runtime,{refreshUi:false});
   if(e.modelName){
@@ -2238,20 +2664,23 @@ async function loadRuntime({reconcilePending=true}={}){
     else e.modelReasoningEffort.value=normalizeExecModelReasoningEffortForUi(currentReasoning,runtimeDefaultExecModelReasoningEffort());
   }
   syncPerformanceFromRuntime(s.runtime);
-  if(e.workspacePath&&!e.workspacePath.value.trim())e.workspacePath.value=s.runtime.workspaceRoot||"";
+  const workspaceGuard=runtimeWorkspaceGuard();
+  if(e.workspacePath&&workspaceGuard&&workspaceGuard.locked&&typeof workspaceGuard.lockedRoot==="string"&&workspaceGuard.lockedRoot.trim())e.workspacePath.value=workspaceGuard.lockedRoot.trim();
+  else if(e.workspacePath&&!e.workspacePath.value.trim())e.workspacePath.value=s.runtime.workspaceRoot||"";
   if(e.runtimeAgent)e.runtimeAgent.textContent=s.runtime.activeAgent||DEFAULT_AGENT_NAME;
-  if(e.runtimeSession)e.runtimeSession.textContent=s.runtime.sessionRef||"none";
-  if(e.runtimeExperimental)e.runtimeExperimental.textContent=s.runtime.experimental?"on":"off";
+  if(e.runtimeSession)e.runtimeSession.textContent=displaySessionRef(s.runtime.sessionRef);
+  if(e.runtimeExperimental)e.runtimeExperimental.textContent=displayFlagState(Boolean(s.runtime.experimental),{on:"有効",off:"無効"});
   if(e.runtimeAgentCount)e.runtimeAgentCount.textContent=Number.isInteger(s.runtime.agentCount)?String(s.runtime.agentCount):"1";
   if(e.openCmdBtn){
     const canOpenShell=Boolean(controlApiToken()&&controlApiAllows("open_workspace_shell"));
     e.openCmdBtn.disabled=!canOpenShell;
-    e.openCmdBtn.title=canOpenShell?"":"Open CMD is disabled by runtime policy.";
+    e.openCmdBtn.title=canOpenShell?"":"ランタイムポリシーにより Open CMD は無効です。";
   }
-  e.connectionState.textContent="Connected";
+  renderWorkspaceScopeUi();
+  e.connectionState.textContent="接続中";
   e.connectionState.classList.add("connected");
   e.connectionState.classList.remove("disconnected");
-  e.modeState.textContent=`Mode (${s.runtime.mode||"unknown"})`;
+  e.modeState.textContent=`モード (${s.runtime.mode||"不明"})`;
   if(topographyState.usingFallback){
     topographyState.agents=runtimeAgentsForMonitor(s.runtime);
     topographyState.source="/api/runtime";
@@ -2262,14 +2691,14 @@ async function loadRuntime({reconcilePending=true}={}){
   }
   refresh();
 }
-async function loadDiag(){try{const r=await fetch("/api/diagnostics",{cache:"no-store"});if(!r.ok){let body="";try{body=await r.text()}catch(_e){}const er=new Error(`HTTP ${r.status}`);er.kind="http";er.status=r.status;er.bodyText=body;throw er}s.diag=await r.json();s.diagErr=null}catch(er){s.diagErr=er&&er.kind==="http"?`HTTP ${er.status}: ${String(er.bodyText||"").replace(/\s+/g," ").trim().slice(0,180)}`:`Network error: ${er&&er.message?er.message:"unknown"}`;throw er}finally{if(s.diagErr){[e.diagCodexState,e.diagNodeState,e.diagSearchState].forEach((st,i)=>{const de=[e.diagCodexDetail,e.diagNodeDetail,e.diagSearchDetail][i];st.textContent="error";st.className="diag-state missing";de.textContent=s.diagErr})}else{tdiag("codex",e.diagCodexState,e.diagCodexDetail);tdiag("node",e.diagNodeState,e.diagNodeDetail);updateSearchDiag()}renderDiagSummary()}}
+async function loadDiag(){try{const r=await fetch("/api/diagnostics",{cache:"no-store"});if(!r.ok){let body="";try{body=await r.text()}catch(_e){}const er=new Error(`HTTP ${r.status}`);er.kind="http";er.status=r.status;er.bodyText=body;throw er}s.diag=await r.json();s.diagErr=null}catch(er){s.diagErr=er&&er.kind==="http"?`HTTP ${er.status}: ${String(er.bodyText||"").replace(/\s+/g," ").trim().slice(0,180)}`:`ネットワークエラー: ${er&&er.message?er.message:"不明"}`;throw er}finally{if(s.diagErr){[e.diagCodexState,e.diagNodeState,e.diagSearchState].forEach((st,i)=>{const de=[e.diagCodexDetail,e.diagNodeDetail,e.diagSearchDetail][i];st.textContent="エラー";st.className="diag-state missing";de.textContent=s.diagErr})}else{tdiag("codex",e.diagCodexState,e.diagCodexDetail);tdiag("node",e.diagNodeState,e.diagNodeDetail);updateSearchDiag()}renderDiagSummary()}}
 function hasAutomationUi(){return Boolean(automationUi.panel&&automationUi.status&&automationUi.history);}
 function normalizeAutomationBatchRun(raw,index){
   const item=raw&&typeof raw==="object"?raw:{};
   const runId=typeof item.runId==="string"&&item.runId.trim()?item.runId.trim():`run-${index+1}`;
   const mode=typeof item.mode==="string"&&item.mode.trim()?item.mode.trim():"mock";
-  const status=typeof item.status==="string"&&item.status.trim()?item.status.trim():"unknown";
-  const summary=typeof item.summary==="string"&&item.summary.trim()?item.summary.trim():"(no summary)";
+  const status=typeof item.status==="string"&&item.status.trim()?item.status.trim():"不明";
+  const summary=typeof item.summary==="string"&&item.summary.trim()?item.summary.trim():"(要約なし)";
   const startedAt=Number.isFinite(Number(item.startedAt))?Number(item.startedAt):0;
   const finishedAt=Number.isFinite(Number(item.finishedAt))?Number(item.finishedAt):0;
   const prompt=typeof item.prompt==="string"?item.prompt:"";
@@ -2304,8 +2733,8 @@ function renderAutomationStatus(){
   if(automationUi.batchMode)automationUi.batchMode.disabled=hasBusy;
 
   if(!status){
-    automationUi.status.textContent=automationState.lastError?`Automation error: ${automationState.lastError}`:"Automation status loading...";
-    automationUi.history.innerHTML='<li class="automation-empty">status loading...</li>';
+    automationUi.status.textContent=automationState.lastError?`自動化エラー: ${automationState.lastError}`:"自動化ステータスを読み込み中です...";
+    automationUi.history.innerHTML='<li class="automation-empty">ステータスを読み込み中です...</li>';
     return;
   }
 
@@ -2321,28 +2750,29 @@ function renderAutomationStatus(){
   const nextTick=scheduler.nextTickAt?tt(scheduler.nextTickAt):"--:--:--";
   if(automationUi.schedulerMeta){
     automationUi.schedulerMeta.textContent=scheduler.enabled
-      ?`scheduler: ON / interval ${scheduler.intervalSec}s / next ${nextTick}`
-      :"scheduler: OFF";
+      ?`スケジューラ: 稼働中 / 間隔 ${scheduler.intervalSec}s / 次回 ${nextTick}`
+      :"スケジューラ: 停止";
   }
-  const modeLabel=automationUi.batchMode?String(automationUi.batchMode.value||"mock"):"mock";
+  const modeKey=automationUi.batchMode?String(automationUi.batchMode.value||"mock"):"mock";
+  const modeLabel=displayAutomationModeLabel(modeKey);
   const runCount=toArr(status.runs).length;
-  let line=`batch=${status.batchPath} / runs=${runCount} / mode=${modeLabel}`;
-  if(automationState.lastError)line+=` / last_error=${automationState.lastError}`;
+  let line=`バッチ API: ${status.batchPath} / 実行回数: ${runCount} / モード: ${modeLabel}`;
+  if(automationState.lastError)line+=` / 最新エラー: ${automationState.lastError}`;
   automationUi.status.textContent=line;
 
   automationUi.history.innerHTML="";
   const rows=toArr(status.runs).slice(0,20);
   if(!rows.length){
-    automationUi.history.innerHTML='<li class="automation-empty">No batch history yet.</li>';
+    automationUi.history.innerHTML='<li class="automation-empty">バッチ履歴はまだありません。</li>';
     return;
   }
   rows.forEach((item)=>{
     const li=document.createElement("li");
     li.className=`automation-history-item ${item.status==="completed"?"ok":"ng"}`;
     const at=item.finishedAt||item.startedAt||Date.now();
-    const summary=t1(item.summary||"(no summary)",160);
-    const tail=item.error?` / error=${t1(item.error,120)}`:"";
-    li.textContent=`${tt(at)} [${item.mode}] ${item.status} ${item.runId} / ${summary}${tail}`;
+    const summary=t1(item.summary||"(要約なし)",160);
+    const tail=item.error?` / エラー: ${t1(item.error,120)}`:"";
+    li.textContent=`${tt(at)} [${displayAutomationModeLabel(item.mode)}] ${displayAutomationRunStatusLabel(item.status)} ${item.runId} / ${summary}${tail}`;
     automationUi.history.appendChild(li);
   });
 }
@@ -2362,6 +2792,151 @@ async function postAutomation({path,payload,limitErrorLabel}){
   }
   return parsed;
 }
+async function chooseWorkspaceDirectory(){
+  if(!controlApiAllows("select_workspace_directory"))throw new Error("このランタイムではワークスペース選択を使えません。");
+  const token=controlApiToken();
+  if(!token)throw new Error("control API token を取得できません。先にランタイムを更新してください。");
+  const headerName=controlApiTokenHeader();
+  const headers={"Content-Type":"application/json"};
+  headers[headerName]=token;
+  workspaceUiState.busy=true;
+  renderWorkspaceScopeUi();
+  try{
+    const response=await fetch("/api/workspace/select",{
+      method:"POST",
+      headers,
+      body:JSON.stringify({
+        action:"select_workspace_directory",
+        initialPath:selectedCwd(),
+      }),
+    });
+    const parsed=parseJsonSafe(await response.text())||{};
+    if(!response.ok||parsed.ok===false){
+      const detail=parsed&&parsed.error?parsed.error:`HTTP ${response.status}`;
+      throw new Error(detail);
+    }
+    if(parsed.cancelled)return false;
+    const nextPath=typeof parsed.path==="string"?parsed.path.trim():"";
+    if(!nextPath)return false;
+    if(e.workspacePath)e.workspacePath.value=nextPath;
+    if(parsed.workspaceGuard&&s.runtime&&typeof s.runtime==="object"){
+      s.runtime.workspaceGuard=parsed.workspaceGuard;
+      s.runtime.workspace_guard=parsed.workspaceGuard;
+    }
+    saveSettings();
+    renderWorkspaceScopeUi();
+    return true;
+  }finally{
+    workspaceUiState.busy=false;
+    renderWorkspaceScopeUi();
+  }
+}
+async function applyWorkspaceLock(shouldLock){
+  const token=controlApiToken();
+  if(!token)throw new Error("control API token を取得できません。先にランタイムを更新してください。");
+  const headerName=controlApiTokenHeader();
+  const headers={"Content-Type":"application/json"};
+  headers[headerName]=token;
+  const path=shouldLock?"/api/workspace/lock":"/api/workspace/unlock";
+  const action=shouldLock?"lock_workspace_directory":"unlock_workspace_directory";
+  const requestBody=shouldLock
+    ? {action,path:selectedCwd()}
+    : {action};
+  workspaceUiState.busy=true;
+  renderWorkspaceScopeUi();
+  try{
+    const response=await fetch(path,{
+      method:"POST",
+      headers,
+      body:JSON.stringify(requestBody),
+    });
+    const parsed=parseJsonSafe(await response.text())||{};
+    if(!response.ok||parsed.ok===false){
+      const detail=parsed&&parsed.error?parsed.error:`HTTP ${response.status}`;
+      throw new Error(detail);
+    }
+    if(parsed.workspaceGuard&&s.runtime&&typeof s.runtime==="object"){
+      s.runtime.workspaceGuard=parsed.workspaceGuard;
+      s.runtime.workspace_guard=parsed.workspaceGuard;
+    }
+    if(shouldLock&&e.workspacePath&&parsed.workspaceGuard&&typeof parsed.workspaceGuard.lockedRoot==="string"&&parsed.workspaceGuard.lockedRoot.trim()){
+      e.workspacePath.value=parsed.workspaceGuard.lockedRoot.trim();
+    }
+    await loadRuntime();
+    saveSettings();
+    return parsed.workspaceGuard||null;
+  }finally{
+    workspaceUiState.busy=false;
+    renderWorkspaceScopeUi();
+  }
+}
+async function postIntentProfile(path,payload){
+  const token=controlApiToken();
+  if(!token)throw new Error("control API token を取得できません。先にランタイムを更新してください。");
+  const headerName=controlApiTokenHeader();
+  const headers={"Content-Type":"application/json"};
+  headers[headerName]=token;
+  const response=await fetch(path,{
+    method:"POST",
+    headers,
+    body:JSON.stringify(payload||{}),
+  });
+  const parsed=parseJsonSafe(await response.text())||{};
+  if(!response.ok||parsed.ok===false){
+    const detail=parsed&&parsed.error?parsed.error:`HTTP ${response.status}`;
+    throw new Error(detail);
+  }
+  if(parsed.intentFirst&&s.runtime&&typeof s.runtime==="object"){
+    s.runtime.intentFirst=parsed.intentFirst;
+    s.runtime.intent_first=parsed.intentFirst;
+  }
+  await loadRuntime();
+  return parsed;
+}
+async function saveIntentProfile(){
+  setIntentSaveState("保存中","waiting");
+  try{
+    await postIntentProfile("/api/intent/profile",{
+      action:"update_intent_profile",
+      profile:{
+        label:e.intentLabelInput&&typeof e.intentLabelInput.value==="string"?e.intentLabelInput.value.trim():"",
+        northStar:textareaListValue(e.intentNorthStarInput),
+        benchmarkSites:textareaListValue(e.intentBenchmarkInput),
+        benchmarkNotes:textareaListValue(e.intentBenchmarkNotesInput),
+        prefers:textareaListValue(e.intentPrefersInput),
+        rejects:textareaListValue(e.intentRejectsInput),
+        requiredProof:textareaListValue(e.intentProofInput),
+      },
+    });
+    setIntentSaveState("保存済み","connected");
+    msg(s.active,"system","システム","Intent プロファイルを更新しました。");
+  }catch(error){
+    setIntentSaveState("失敗","disconnected");
+    msg(s.active,"system","システム",`Intent プロファイルの更新に失敗しました: ${error&&error.message?error.message:"不明"}`);
+  }
+}
+async function resetIntentProfile(){
+  setIntentSaveState("初期化中","waiting");
+  try{
+    await postIntentProfile("/api/intent/profile/reset",{
+      action:"reset_intent_profile",
+    });
+    setIntentSaveState("初期化済み","connected");
+    msg(s.active,"system","システム","Intent プロファイルを初期値に戻しました。");
+  }catch(error){
+    setIntentSaveState("失敗","disconnected");
+    msg(s.active,"system","システム",`Intent プロファイルの初期化に失敗しました: ${error&&error.message?error.message:"不明"}`);
+  }
+}
+async function ensureIntentWorkspaceLockForPrompt(prompt){
+  const intent=runtimeIntentFirst();
+  if(!intent||!intent.workspaceLock||!intent.workspaceLock.autoLockRecommended)return true;
+  const sensitive=isIntentSensitivePromptForUi(prompt);
+  if(!sensitive||workspaceLockEnabled())return true;
+  await applyWorkspaceLock(true);
+  msg(s.active,"system","システム",`Intent-First 用に ${selectedCwd()} を固定しました。`);
+  return true;
+}
 async function loadAutomationStatus({silent=false}={}){
   if(!hasAutomationUi())return null;
   if(!silent)automationState.loading=true;
@@ -2372,7 +2947,7 @@ async function loadAutomationStatus({silent=false}={}){
     renderAutomationStatus();
     return automationState.status;
   }catch(error){
-    automationState.lastError=error&&error.message?error.message:"unknown";
+    automationState.lastError=error&&error.message?error.message:"不明";
     renderAutomationStatus();
     return null;
   }finally{
@@ -2404,11 +2979,11 @@ async function applyAutomationSchedulerNow(){
     await postAutomation({
       path:"/api/batch/scheduler",
       payload:desired,
-      limitErrorLabel:"scheduler update failed",
+      limitErrorLabel:"scheduler 更新に失敗しました",
     });
     await loadAutomationStatus({silent:true});
   }catch(error){
-    automationState.lastError=error&&error.message?error.message:"scheduler update failed";
+    automationState.lastError=error&&error.message?error.message:"スケジューラ更新に失敗しました";
   }finally{
     automationState.schedulerUpdating=false;
     renderAutomationStatus();
@@ -2439,7 +3014,7 @@ async function runAutomationBatchOnce(){
   if(!hasAutomationUi())return;
   const prompt=String(automationUi.batchPrompt&&automationUi.batchPrompt.value||"").trim();
   if(!prompt){
-    automationState.lastError="batch prompt is empty";
+    automationState.lastError="バッチ用プロンプトが空です";
     renderAutomationStatus();
     return;
   }
@@ -2451,13 +3026,13 @@ async function runAutomationBatchOnce(){
     await postAutomation({
       path:"/api/batch/run",
       payload:{prompt,mode,cwd:selectedCwd()},
-      limitErrorLabel:"batch run failed",
+      limitErrorLabel:"バッチ実行に失敗しました",
     });
     await loadAutomationStatus({silent:true});
-    msg(s.active,"system","System",`Batch completed (${mode})`);
+    msg(s.active,"system","システム",`バッチを完了しました (${mode})`);
   }catch(error){
-    automationState.lastError=error&&error.message?error.message:"batch run failed";
-    msg(s.active,"system","System",`Batch failed: ${automationState.lastError}`);
+    automationState.lastError=error&&error.message?error.message:"バッチ実行に失敗しました";
+    msg(s.active,"system","システム",`バッチ実行に失敗しました: ${automationState.lastError}`);
   }finally{
     automationState.running=false;
     renderAutomationStatus();
@@ -2537,7 +3112,7 @@ async function runPrompt(raw,cid=s.active,options={}){
   if(!c)return;
   const currentPending=pendingCountForChat(c.id);
   if(currentPending>0){
-    msg(c.id,"system","System","このチャットは実行中です。完了後に送信してください。");
+    msg(c.id,"system","システム","このチャットは実行中です。完了後に送信してください。");
     return;
   }
   const runAgent=ensureChatAgent(c);
@@ -2558,20 +3133,26 @@ async function runPrompt(raw,cid=s.active,options={}){
     return;
   }
   clearAttachmentError();
+  try{
+    await ensureIntentWorkspaceLockForPrompt(prompt);
+  }catch(error){
+    msg(c.id,"system","システム",`Intent-First のワークスペース固定に失敗しました: ${error&&error.message?error.message:"不明"}`);
+    return;
+  }
   const dispatchDetail=composeDispatchDetail(prompt,imagePayloads);
   const shouldForceNewSession=Boolean(c.forceNewSession);
   c.h=createHarnessState();
   hset(c,"starting");
-  hpush(c,"dispatch",dispatchDetail||"(empty)","running");
+  hpush(c,"dispatch",dispatchDetail||"入力なし","running");
   if(c.id===s.active)renderHarness();
-  msg(c.id,"user","You",composeUserMessage(prompt,imagePayloads));
+  msg(c.id,"user","あなた",composeUserMessage(prompt,imagePayloads));
   if(c.id===s.active){
     e.promptInput.value="";
     if(imagePayloads.length)clearAttachment();
   }
   const out=msg(c.id,"assistant","Codex","");
   if(!out)return;
-  madd(out,`[waiting] Standard Codex: ON${imagePayloads.length?` (${imagePayloads.length} images attached)`:""}\n`);
+  madd(out,`[待機] Standard Codex: 有効${imagePayloads.length?`（画像 ${imagePayloads.length} 枚を添付）`:""}\n`);
   const rid=`req-${Date.now()}-${Math.random().toString(36).slice(2,8)}`;
   const ctl=new AbortController();
   s.req.set(rid,{cid:c.id,agent:runAgent,at:Date.now(),controller:ctl});
@@ -2579,8 +3160,8 @@ async function runPrompt(raw,cid=s.active,options={}){
   pending();
   live();
   syncRuntimePendingMonitor();
-  trace("dispatch",runAgent,dispatchDetail||"(empty)",c.id);
-  let ttype="completed",tdetail="completed",finalApplied=false;
+  trace("dispatch",runAgent,dispatchDetail||"入力なし",c.id);
+  let ttype="completed",tdetail="完了",finalApplied=false;
   try{
     const selectedApproval=typeof e.approvalPolicy.value==="string"&&e.approvalPolicy.value?e.approvalPolicy.value:"never";
     const selectedSandbox=typeof e.sandboxMode.value==="string"&&e.sandboxMode.value?e.sandboxMode.value:"danger-full-access";
@@ -2603,30 +3184,30 @@ async function runPrompt(raw,cid=s.active,options={}){
     };
     if(imagePayloads.length)requestPayload.images=imagePayloads;
     const token=controlApiToken();
-    if(!token)throw new Error("control API token unavailable. refresh runtime first.");
+    if(!token)throw new Error("control API token を取得できません。先にランタイムを更新してください。");
     const headerName=controlApiTokenHeader();
     const headers={"Content-Type":"application/json"};
     headers[headerName]=token;
     const r=await fetch("/api/exec",{method:"POST",headers,body:JSON.stringify(requestPayload),signal:ctl.signal});
-    if(!r.ok||!r.body){const body=await r.text();ttype="failed";tdetail=`HTTP ${r.status} ${t1(body,90)}`;mset(out,`[error] ${r.status} ${body}`);hset(c,"failed");hpush(c,"http/error",tdetail,"failed");renderHarness();return}
+    if(!r.ok||!r.body){const body=await r.text();ttype="failed";tdetail=`HTTP ${r.status} ${t1(body,90)}`;mset(out,`[エラー] ${r.status} ${body}`);hset(c,"failed");hpush(c,"http/error",tdetail,"failed");renderHarness();return}
     c.forceNewSession=false;
     scheduleSaveChatState();
-    trace("streaming",runAgent,"stream started",c.id);
+    trace("streaming",runAgent,"ストリーム開始",c.id);
     hset(c,"running");
-    hpush(c,"stream/open","NDJSON stream connected","running");
+    hpush(c,"stream/open","NDJSON ストリーム接続完了","running");
     renderHarness();
     mset(out,"");
     const reader=r.body.getReader();
     const decoder=new TextDecoder();
     let buf="";
-    const apply=ev=>{if(!ev||typeof ev!=="object"||typeof ev.type!=="string")return false;if(ev.type==="delta"){if(typeof ev.text==="string"&&ev.text)madd(out,ev.text);return true}if(ev.type==="final"){mset(out,typeof ev.text==="string"?ev.text:"");finalApplied=true;return true}if(ev.type==="error"){const t=typeof ev.text==="string"?ev.text:"";if(t){if(finalApplied)madd(out,`\n${t}\n`);else mset(out,t);ttype="failed";tdetail=t1(t,120);hset(c,"failed");hpush(c,"stream/error",tdetail,"failed");renderHarness()}return true}if(ev.type==="status"){const st=String(ev.status||"");if(st==="failed"){ttype="failed";if(tdetail==="completed")tdetail="status=failed"}else if(st==="interrupted"){ttype="aborted";tdetail="status=interrupted"}hset(c,st||"completed");renderHarness();return true}if(["turn","item","activity","plan","tokenUsage","diff"].includes(ev.type)){happly(c,ev);renderHarness();return true}return false};
+    const apply=ev=>{if(!ev||typeof ev!=="object"||typeof ev.type!=="string")return false;if(ev.type==="delta"){if(typeof ev.text==="string"&&ev.text)madd(out,ev.text);return true}if(ev.type==="final"){mset(out,typeof ev.text==="string"?ev.text:"");finalApplied=true;return true}if(ev.type==="error"){const t=typeof ev.text==="string"?ev.text:"";if(t){if(finalApplied)madd(out,`\n${t}\n`);else mset(out,t);ttype="failed";tdetail=t1(t,120);hset(c,"failed");hpush(c,"stream/error",tdetail,"failed");renderHarness()}return true}if(ev.type==="status"){const st=String(ev.status||"");if(st==="failed"){ttype="failed";if(tdetail==="完了")tdetail="ステータス=失敗"}else if(st==="interrupted"){ttype="aborted";tdetail="ステータス=中断"}hset(c,st||"completed");renderHarness();return true}if(["turn","item","activity","plan","tokenUsage","diff"].includes(ev.type)){happly(c,ev);renderHarness();return true}return false};
     const onLine=line=>{const t=String(line||"").trim();if(!t)return;try{const p=JSON.parse(t);if(apply(p))return}catch(_e){}madd(out,line.endsWith("\n")?line:`${line}\n`)};
     const flush=(chunk,force=false)=>{if(chunk)buf+=chunk;while(true){const i=buf.indexOf("\n");if(i<0)break;const line=buf.slice(0,i);buf=buf.slice(i+1);onLine(line)}if(force&&buf.length){onLine(buf);buf=""}};
     while(true){const{value,done}=await reader.read();if(done)break;flush(decoder.decode(value,{stream:true}))}
     flush(decoder.decode(),true)
-  }catch(err){if(err&&err.name==="AbortError"){ttype="aborted";tdetail="user interrupted";madd(out,"\n[user interrupted]\n");hset(c,"interrupted");hpush(c,"turn/interrupt","user interrupt","failed");renderHarness();return}ttype="failed";tdetail=err&&err.message?err.message:"runtime error";hset(c,"failed");hpush(c,"turn/error",t1(tdetail,180),"failed");renderHarness();throw err}finally{s.req.delete(rid);c.pending=Math.max(0,c.pending-1);syncRuntimePendingMonitor();if(ttype==="completed")hset(c,"completed");else if(ttype==="failed")hset(c,"failed");else if(ttype==="aborted")hset(c,"interrupted");hpush(c,"turn/end",t1(tdetail,180),ttype==="failed"?"failed":"info");s.last={type:ttype,detail:tdetail,at:Date.now(),agent:runAgent,chat:c.title,cid:c.id};trace(ttype,runAgent,tdetail,c.id);refresh();if(s.req.size===0){try{await loadRuntime()}catch(_e){e.connectionState.textContent="Disconnected";e.connectionState.classList.remove("connected");e.connectionState.classList.add("disconnected")}}scheduleSaveChatState();updateSearchDiag()}
+  }catch(err){if(err&&err.name==="AbortError"){ttype="aborted";tdetail="ユーザー中断";madd(out,"\n[ユーザーが中断しました]\n");hset(c,"interrupted");hpush(c,"turn/interrupt","ユーザー中断","failed");renderHarness();return}ttype="failed";tdetail=err&&err.message?err.message:"ランタイムエラー";hset(c,"failed");hpush(c,"turn/error",t1(tdetail,180),"failed");renderHarness();throw err}finally{s.req.delete(rid);c.pending=Math.max(0,c.pending-1);syncRuntimePendingMonitor();if(ttype==="completed")hset(c,"completed");else if(ttype==="failed")hset(c,"failed");else if(ttype==="aborted")hset(c,"interrupted");hpush(c,"turn/end",t1(tdetail,180),ttype==="failed"?"failed":"info");s.last={type:ttype,detail:tdetail,at:Date.now(),agent:runAgent,chat:c.title,cid:c.id};trace(ttype,runAgent,tdetail,c.id);refresh();if(s.req.size===0){try{await loadRuntime()}catch(_e){e.connectionState.textContent="未接続";e.connectionState.classList.remove("connected");e.connectionState.classList.add("disconnected")}}scheduleSaveChatState();updateSearchDiag()}
 }
-function renderCommands(q=""){e.commandGrid.innerHTML="";const qq=q.trim().toLowerCase();const list=COMMANDS.filter(c=>!qq||c.toLowerCase().includes(qq));if(!list.length){e.commandGrid.innerHTML='<article class="command-empty">No matching commands.</article>';return}list.forEach(cmd=>{const f=e.commandTemplate.content.cloneNode(true);f.querySelector(".command-text").textContent=cmd;const b=f.querySelector(".command-badge");b.textContent="local";b.classList.add("local");f.querySelector(".command-desc").textContent="Quick insert/run command.";f.querySelector(".insert-btn").onclick=()=>{const cur=e.promptInput.value,p=cur&&!cur.endsWith("\n")?"\n":"";e.promptInput.value=`${cur}${p}${cmd} `;e.promptInput.focus()};f.querySelector(".run-btn").onclick=async()=>{e.promptInput.value=cmd;await runPrompt(e.promptInput.value,s.active).catch(er=>msg(s.active,"system","System",`Send failed: ${er&&er.message?er.message:"unknown"}`))};e.commandGrid.appendChild(f)})}
+function renderCommands(q=""){e.commandGrid.innerHTML="";const qq=q.trim().toLowerCase();const list=COMMANDS.filter(c=>!qq||c.toLowerCase().includes(qq));if(!list.length){e.commandGrid.innerHTML='<article class="command-empty">一致するコマンドはありません。</article>';return}list.forEach(cmd=>{const f=e.commandTemplate.content.cloneNode(true);f.querySelector(".command-text").textContent=cmd;const b=f.querySelector(".command-badge");b.textContent="local";b.classList.add("local");f.querySelector(".command-desc").textContent="すぐに挿入または実行できます。";f.querySelector(".insert-btn").onclick=()=>{const cur=e.promptInput.value,p=cur&&!cur.endsWith("\n")?"\n":"";e.promptInput.value=`${cur}${p}${cmd} `;e.promptInput.focus()};f.querySelector(".run-btn").onclick=async()=>{e.promptInput.value=cmd;await runPrompt(e.promptInput.value,s.active).catch(er=>msg(s.active,"system","システム",`送信に失敗しました: ${er&&er.message?er.message:"不明"}`))};e.commandGrid.appendChild(f)})}
 function clearChat(){const c=active();if(!c)return;c.messages=[];c.h=createHarnessState();c.forceNewSession=true;s.trace=s.trace.filter((item)=>item&&item.cid!==c.id);if(s.last&&s.last.cid===c.id)s.last=null;scheduleSaveChatState();refresh()}
 function deleteChat(chatId=s.active){
   const target=chat(chatId);
@@ -2653,7 +3234,7 @@ function deleteChat(chatId=s.active){
   s.trace=s.trace.filter((item)=>item&&item.cid!==target.id);
   if(s.last&&s.last.cid===target.id)s.last=null;
   if(!s.chats.length){
-    const fallback=mkChat({title:"Chat 1",agent:DEFAULT_AGENT_NAME});
+    const fallback=mkChat({title:"チャット 1",agent:DEFAULT_AGENT_NAME});
     s.active=fallback.id;
   }else if(activeId===target.id||!chat(s.active)){
     const nextIndex=Math.max(0,Math.min(currentIndex,s.chats.length-1));
@@ -2664,9 +3245,50 @@ function deleteChat(chatId=s.active){
   refresh();
   return true;
 }
-function stop(){const c=active();if(!c)return;let n=0;s.req.forEach(r=>{if(r.cid===c.id){r.controller.abort();n+=1}});if(n>0)msg(c.id,"system","System",`Stopped ${n} running request(s).`) }
+async function stop(){
+  const c=active();
+  if(!c)return;
+  const currentPending=pendingCountForChat(c.id);
+  if(currentPending===0)return;
+  const localRows=[...s.req.values()].filter((row)=>row&&row.cid===c.id);
+  const interruptTarget=resolveInterruptTargetForChat(c);
+  let interruptRequested=false;
+  let interruptDetail="";
+  if(interruptTarget){
+    try{
+      const interruptResult=await requestTurnInterrupt(interruptTarget);
+      interruptRequested=Boolean(interruptResult&&interruptResult.ok);
+      if(interruptResult&&interruptResult.target&&typeof interruptResult.target.turnId==="string"&&interruptResult.target.turnId){
+        interruptDetail=`ターン=${interruptResult.target.turnId}`;
+      }
+    }catch(error){
+      interruptDetail=error&&error.message?error.message:"中断要求に失敗しました";
+    }
+  }
+  let abortedCount=0;
+  localRows.forEach((row)=>{
+    try{
+      row.controller.abort();
+      abortedCount+=1;
+    }catch{
+    }
+  });
+  if(interruptRequested){
+    msg(c.id,"system","システム",`${displayAgentNameForUi(c.agent,{includeScope:true})||"現在の実行"} に停止要求を送りました${interruptDetail?` (${interruptDetail})`:""}。`);
+  }else if(abortedCount>0&&interruptDetail){
+    msg(c.id,"system","システム",`ローカルストリームを中断しました。停止要求は失敗しました: ${interruptDetail}`);
+  }else if(abortedCount>0){
+    msg(c.id,"system","システム","ランタイムのターン情報が出る前にローカルストリームを中断しました。");
+  }else if(interruptDetail){
+    msg(c.id,"system","システム",`停止に失敗しました: ${interruptDetail}`);
+  }
+  try{
+    await loadRuntime({reconcilePending:true});
+  }catch(_e){
+  }
+}
 function bind(){
-  e.sendBtn.onclick=()=>runPrompt(e.promptInput.value,s.active,{attachments:composerAttachment.items.map((item)=>item.file)}).catch(er=>msg(s.active,"system","System",`Send failed: ${er&&er.message?er.message:"unknown"}`));
+  e.sendBtn.onclick=()=>runPrompt(e.promptInput.value,s.active,{attachments:composerAttachment.items.map((item)=>item.file)}).catch(er=>msg(s.active,"system","システム",`送信に失敗しました: ${er&&er.message?er.message:"不明"}`));
   e.stopBtn.onclick=stop;
   e.newThreadBtn.onclick=clearChat;
   if(e.deleteChatBtn)e.deleteChatBtn.onclick=()=>deleteChat();
@@ -2676,15 +3298,15 @@ function bind(){
   if(e.openCmdBtn)e.openCmdBtn.onclick=async()=>{
     try{
       if(!controlApiAllows("open_workspace_shell")){
-        msg(s.active,"system","System","Open CMD is disabled by runtime policy.");
+        msg(s.active,"system","システム","ランタイムポリシーにより Open CMD は無効です。");
         return;
       }
       const token=controlApiToken();
-      if(!token)throw new Error("control API token unavailable. refresh runtime first.");
+      if(!token)throw new Error("control API token を取得できません。先にランタイムを更新してください。");
       const headerName=controlApiTokenHeader();
       const headers={"Content-Type":"application/json"};
       headers[headerName]=token;
-      const response=await fetch("/api/open-cmd",{method:"POST",headers,body:JSON.stringify({action:"open_workspace_shell"})});
+      const response=await fetch("/api/open-cmd",{method:"POST",headers,body:JSON.stringify({action:"open_workspace_shell",cwd:selectedCwd()})});
       if(!response.ok){
         let detail="";
         try{
@@ -2695,17 +3317,22 @@ function bind(){
         }
         throw new Error(`HTTP ${response.status}${detail?`: ${detail}`:""}`);
       }
-      msg(s.active,"system","System","Opened new CMD window.");
+      msg(s.active,"system","システム","新しい CMD ウィンドウを開きました。");
     }catch(er){
-      msg(s.active,"system","System",`Failed to open CMD: ${er&&er.message?er.message:"unknown"}`);
+      msg(s.active,"system","システム",`CMD を開けませんでした: ${er&&er.message?er.message:"不明"}`);
     }
   };
-  e.reconnectBtn.onclick=async()=>{try{await loadRuntime();msg(s.active,"system","System","Runtime refreshed.")}catch(er){e.connectionState.textContent="Disconnected";e.connectionState.classList.remove("connected");e.connectionState.classList.add("disconnected");msg(s.active,"system","System",`Reconnect failed: ${er&&er.message?er.message:"unknown"}`)}};
-  e.refreshDiagBtn.onclick=async()=>{try{await loadDiag();msg(s.active,"system","System","Diagnostics refreshed.")}catch(er){msg(s.active,"system","System",`Diagnostics refresh failed: ${er&&er.message?er.message:"unknown"}`)}};
+  if(e.workspaceBrowseBtn)e.workspaceBrowseBtn.onclick=()=>chooseWorkspaceDirectory()
+    .then(changed=>{if(changed)msg(s.active,"system","システム",`ワークスペースを選択しました: ${selectedCwd()}`);})
+    .catch(er=>msg(s.active,"system","システム",`ワークスペース選択に失敗しました: ${er&&er.message?er.message:"不明"}`));
+  e.reconnectBtn.onclick=async()=>{try{await loadRuntime();msg(s.active,"system","システム","ランタイムを更新しました。")}catch(er){e.connectionState.textContent="未接続";e.connectionState.classList.remove("connected");e.connectionState.classList.add("disconnected");msg(s.active,"system","システム",`再接続に失敗しました: ${er&&er.message?er.message:"不明"}`)}};
+  e.refreshDiagBtn.onclick=async()=>{try{await loadDiag();msg(s.active,"system","システム","診断情報を更新しました。")}catch(er){msg(s.active,"system","システム",`診断情報の更新に失敗しました: ${er&&er.message?er.message:"不明"}`)}};
   e.newChatBtn.onclick=()=>{const c=mkChat({agent:DEFAULT_AGENT_NAME,forceNewSession:true});s.active=c.id;refresh()};
-  e.clearAgentTraceBtn.onclick=()=>{const c=active();if(!c){s.trace=[];s.last=null;flow();return;}s.trace=s.trace.filter((item)=>item&&item.cid!==c.id);if(s.last&&s.last.cid===c.id)s.last=null;flow();msg(s.active,"system","System","Current chat trace cleared.")};
+  e.clearAgentTraceBtn.onclick=()=>{const c=active();if(!c){s.trace=[];s.last=null;flow();return;}s.trace=s.trace.filter((item)=>item&&item.cid!==c.id);if(s.last&&s.last.cid===c.id)s.last=null;flow();msg(s.active,"system","システム","現在のチャットのトレースを消去しました。")};
   if(e.agentTopographyRefreshBtn)e.agentTopographyRefreshBtn.onclick=()=>loadAgentTopography({manual:true}).catch(()=>{});
   if(e.agentTopographyToggleBtn)e.agentTopographyToggleBtn.onclick=()=>setTopographyCollapsed(!topographyState.collapsed);
+  if(e.intentSaveBtn)e.intentSaveBtn.onclick=()=>saveIntentProfile().catch(()=>{});
+  if(e.intentResetBtn)e.intentResetBtn.onclick=()=>resetIntentProfile().catch(()=>{});
   if(automationUi.batchRunBtn)automationUi.batchRunBtn.onclick=()=>runAutomationBatchOnce().catch(()=>{});
   if(automationUi.batchMode)automationUi.batchMode.onchange=()=>renderAutomationStatus();
   if(automationUi.schedulerEnabled)automationUi.schedulerEnabled.onchange=()=>queueAutomationSchedulerApply({immediate:false});
@@ -2732,14 +3359,35 @@ function bind(){
     e.webSearch.checked=Boolean(p.webSearch);
     saveSettings();
     updateSearchDiag();
-    msg(s.active,"system","System",`Profile applied: ${e.executionProfile.value}`);
+    msg(s.active,"system","システム",`プロファイルを適用しました: ${e.executionProfile.value}`);
   };
   [e.approvalPolicy,e.sandboxMode,e.webSearch].forEach(x=>x.onchange=()=>{profileSync();saveSettings();updateSearchDiag()});
   if(e.modelName)e.modelName.onchange=()=>{const normalizedModel=normalizeExecModelNameForUi(e.modelName.value,runtimeDefaultExecModel());e.modelName.value=ensureExecModelOptionForUi(normalizedModel)||normalizedModel;settingsState.hasStoredModel=true;saveSettings();};
   if(e.modelReasoningEffort)e.modelReasoningEffort.onchange=()=>{e.modelReasoningEffort.value=normalizeExecModelReasoningEffortForUi(e.modelReasoningEffort.value,runtimeDefaultExecModelReasoningEffort());settingsState.hasStoredModelReasoningEffort=true;saveSettings();};
-  e.workspacePath.onchange=()=>saveSettings();
+  e.workspacePath.onchange=()=>{saveSettings();renderWorkspaceScopeUi();};
+  if(e.workspaceLockEnabled)e.workspaceLockEnabled.onchange=async()=>{
+    const shouldLock=Boolean(e.workspaceLockEnabled.checked);
+    const previousLocked=workspaceLockEnabled();
+    if(shouldLock===previousLocked){renderWorkspaceScopeUi();return;}
+    e.workspaceLockEnabled.disabled=true;
+    try{
+      const snapshot=await applyWorkspaceLock(shouldLock);
+      const notice=shouldLock&&snapshot&&typeof snapshot.lockedRoot==="string"&&snapshot.lockedRoot.trim()
+        ?`ワークスペースを固定しました: ${snapshot.lockedRoot.trim()}`
+        :"ワークスペース固定を解除しました。";
+      if(notice!==settingsState.lastWorkspaceLockNotice){
+        settingsState.lastWorkspaceLockNotice=notice;
+        msg(s.active,"system","システム",notice);
+      }
+    }catch(er){
+      msg(s.active,"system","システム",`ワークスペース固定の更新に失敗しました: ${er&&er.message?er.message:"不明"}`);
+    }finally{
+      e.workspaceLockEnabled.disabled=false;
+      renderWorkspaceScopeUi();
+    }
+  };
   if(e.uiVisibility)e.uiVisibility.onchange=()=>{document.body.classList.toggle("telemetry-off",!e.uiVisibility.checked);saveSettings();};
-  e.simpleViewToggle.onclick=()=>{const n=!document.body.classList.contains("simple-view");document.body.classList.toggle("simple-view",n);e.simpleViewToggle.textContent=n?"Show Details":"Simple View";saveSettings()};
+  e.simpleViewToggle.onclick=()=>{const n=!document.body.classList.contains("simple-view");document.body.classList.toggle("simple-view",n);e.simpleViewToggle.textContent=n?"詳細を表示":"簡易表示";saveSettings()};
 }
 async function boot(){
   loadSettings();
@@ -2750,21 +3398,21 @@ async function boot(){
   renderCommands();
   renderAttachmentUi();
   renderAgentTopography();
-  if(!s.chats.length)mkChat({title:"Chat 1",agent:DEFAULT_AGENT_NAME});
+  if(!s.chats.length)mkChat({title:"チャット 1",agent:DEFAULT_AGENT_NAME});
   if(!chat(s.active))s.active=s.chats[0].id;
   refresh();
-  e.modeState.textContent="Mode";
-  e.connectionState.textContent="Disconnected";
+  e.modeState.textContent="モード";
+  e.connectionState.textContent="未接続";
   e.connectionState.classList.add("disconnected");
   try{
     await loadRuntime();
   }catch(error){
-    msg(s.active,"system","System",`Runtime check failed: ${error&&error.message?error.message:"unknown"}`);
+    msg(s.active,"system","システム",`ランタイム確認に失敗しました: ${error&&error.message?error.message:"不明"}`);
   }
   try{
     await loadDiag();
   }catch(error){
-    msg(s.active,"system","System",`Diagnostics check failed: ${error&&error.message?error.message:"unknown"}`);
+    msg(s.active,"system","システム",`診断確認に失敗しました: ${error&&error.message?error.message:"不明"}`);
   }
   try{
     await loadAutomationStatus({silent:false});
@@ -2777,13 +3425,12 @@ async function boot(){
     const current=active();
     const hasMessages=current&&Array.isArray(current.messages)&&current.messages.length>0;
     if(!hasMessages){
-      msg(s.active,"system","System","Ready. Standard Codex: ON");
+      msg(s.active,"system","システム","準備完了です。Standard Codex: 有効");
     }
   }
 }
 window.addEventListener("beforeunload",()=>{if(s.ticker!==null){clearInterval(s.ticker);s.ticker=null}stopRuntimePendingSyncTicker();stopAgentTopographyTicker();stopAutomationStatusTicker();revokeAttachmentPreview();flushSaveChatState();});
 boot();
-
 
 
 

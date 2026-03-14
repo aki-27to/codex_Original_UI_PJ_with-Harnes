@@ -7,7 +7,7 @@ const defaultTaskOutcomeContractPath = path.join(__dirname, "..", "config", "tas
 
 const defaultTaskOutcomeContractDefinition = Object.freeze({
   schema: "task-outcome-contract.v1",
-  version: "2026-03-07.r2",
+  version: "2026-03-13.r4",
   statuses: [
     { id: "COMPLETED", class: "success", terminal: true },
     { id: "BLOCKED", class: "blocked", terminal: true },
@@ -35,6 +35,17 @@ const defaultTaskOutcomeContractDefinition = Object.freeze({
     agent_read_only_role: "BLOCKED",
     parent_dispatch_guard_block: "FAILED_VALIDATION",
     missing_required_evidence: "FAILED_VALIDATION",
+    intent_taste_memory_missing: "FAILED_VALIDATION",
+    intent_benchmark_missing: "FAILED_VALIDATION",
+    intent_workspace_lock_missing: "FAILED_VALIDATION",
+    intent_visual_review_missing: "FAILED_VALIDATION",
+    intent_reviewer_missing: "FAILED_VALIDATION",
+    intent_technical_verification_missing: "FAILED_VALIDATION",
+    intent_documentation_sync_missing: "FAILED_VALIDATION",
+    intent_first_gate_missing: "FAILED_VALIDATION",
+    workspace_lock_required: "NEEDS_INPUT",
+    visual_review_missing: "FAILED_VALIDATION",
+    benchmark_superiority_unproven: "FAILED_VALIDATION",
     partial_delivery: "PARTIAL",
   },
 });
@@ -274,6 +285,9 @@ function classifyErrorReason(errorText) {
   }
   if (text.includes("parent dispatch guard")) {
     return "parent_dispatch_guard_block";
+  }
+  if (text.includes("intent-first")) {
+    return "missing_required_evidence";
   }
   if (text.includes("missing evidence")) {
     return "missing_required_evidence";
