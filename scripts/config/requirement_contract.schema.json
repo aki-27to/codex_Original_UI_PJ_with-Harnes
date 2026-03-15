@@ -13,6 +13,7 @@
     "openQuestions",
     "approvalBoundaryItems",
     "acceptanceChecks",
+    "userValueFrame",
     "selectedPlanningDepth",
     "selectedAssuranceDepth",
     "selectedPlanningMode",
@@ -20,11 +21,13 @@
     "assuranceDepthReasons"
   ],
   "properties": {
-    "schema": { "const": "requirement-contract.v2" },
+    "schema": { "const": "requirement-contract.v3" },
     "source": { "type": "string", "minLength": 1 },
     "promptHash": { "type": "string" },
     "explicitGoal": { "type": "string", "minLength": 1 },
     "implicitGoal": { "type": "string" },
+    "taskFamily": { "type": "string", "minLength": 1 },
+    "familyProfileId": { "type": "string", "minLength": 1 },
     "baselineScope": { "type": "array", "items": { "type": "string" } },
     "overDeliveryScope": { "type": "array", "items": { "type": "string" } },
     "nonGoals": { "type": "array", "items": { "type": "string" } },
@@ -44,6 +47,30 @@
         },
         "additionalProperties": false
       }
+    },
+    "userValueFrame": {
+      "type": "object",
+      "required": [
+        "valueThesis",
+        "userWants",
+        "userShouldFeelGet",
+        "mustAvoid",
+        "hardConstraints",
+        "qualityAxes",
+        "benchmarkCandidates",
+        "completedMeans"
+      ],
+      "properties": {
+        "valueThesis": { "type": "string" },
+        "userWants": { "type": "array", "items": { "type": "string" } },
+        "userShouldFeelGet": { "type": "array", "items": { "type": "string" } },
+        "mustAvoid": { "type": "array", "items": { "type": "string" } },
+        "hardConstraints": { "type": "array", "items": { "type": "string" } },
+        "qualityAxes": { "type": "array", "items": { "type": "string" } },
+        "benchmarkCandidates": { "type": "array", "items": { "type": "string" } },
+        "completedMeans": { "type": "array", "items": { "type": "string" } }
+      },
+      "additionalProperties": false
     },
     "selectedPlanningDepth": {
       "type": "string",

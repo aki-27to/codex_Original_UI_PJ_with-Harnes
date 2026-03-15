@@ -1,0 +1,47 @@
+{
+  "schema": "task-family-profiles.v1",
+  "version": "2026-03-14.r1",
+  "defaultFamily": "deterministic_code",
+  "families": [
+    {
+      "id": "deterministic_code",
+      "label": "Deterministic Code",
+      "objective": "correctness_first",
+      "minimumPlanningMode": "FAST",
+      "ambiguityHandling": "bounded_assumption",
+      "completionContract": "task_outcome_default",
+      "keywords": ["fix", "bug", "implement", "refactor", "api", "test", "server.js", "scripts/", "repo"],
+      "sources": ["api_exec", "batch"]
+    },
+    {
+      "id": "web_creative",
+      "label": "Web Creative",
+      "objective": "wow_first",
+      "minimumPlanningMode": "NORMAL",
+      "ambiguityHandling": "expand_with_directions",
+      "completionContract": "design_acceptance",
+      "keywords": ["website", "landing", "visual", "brand", "design", "ui", "ux", "quality", "premium", "レイアウト", "フォント", "ページ", "見た目", "高級感", "デザイン"],
+      "sources": ["web_ui"]
+    },
+    {
+      "id": "research_analysis",
+      "label": "Research Analysis",
+      "objective": "coverage_and_insight",
+      "minimumPlanningMode": "NORMAL",
+      "ambiguityHandling": "compare_hypotheses",
+      "completionContract": "task_outcome_default",
+      "keywords": ["research", "analysis", "investigate", "compare", "survey", "sources"],
+      "sources": []
+    },
+    {
+      "id": "planning_design",
+      "label": "Planning Design",
+      "objective": "decision_support",
+      "minimumPlanningMode": "NORMAL",
+      "ambiguityHandling": "surface_decisions",
+      "completionContract": "task_outcome_default",
+      "keywords": ["plan", "planning", "architecture", "spec", "requirements", "proposal", "roadmap"],
+      "sources": []
+    }
+  ]
+}

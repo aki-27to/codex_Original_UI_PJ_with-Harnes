@@ -3,6 +3,12 @@
 const crypto = require("crypto");
 const fs = require("fs");
 const path = require("path");
+const {
+  defaultTaskFamilyProfilesPath,
+  loadTaskFamilyProfilesContract,
+  normalizeTaskFamilyProfilesContract,
+  selectTaskFamilyProfile,
+} = require("./task_family_profile_policy");
 
 const planningModePolicyVersion = "adaptive-execution-policy.v2";
 const allowedPlanningModes = Object.freeze(["FAST", "NORMAL", "DISCOVERY"]);
@@ -174,6 +180,18 @@ function normalizePlanningDepth(value, fallback = "STANDARD_PLANNING") {
   return allowedPlanningDepths.includes(fallback) ? fallback : "STANDARD_PLANNING";
 }
 
+function normalizeBooleanOption(value, fallback = false) {
+  if (value === undefined || value === null) return Boolean(fallback);
+  if (typeof value === "boolean") return value;
+  if (typeof value === "number") return value !== 0;
+  if (typeof value === "string") {
+    const normalized = value.trim().toLowerCase();
+    if (!normalized) return Boolean(fallback);
+    return normalized === "1" || normalized === "true" || normalized === "yes" || normalized === "on";
+  }
+  return Boolean(value);
+}
+
 function normalizeAssuranceMode(value, fallback = "STANDARD_ASSURANCE") {
   const normalized = safeString(value, 60).toUpperCase();
   if (allowedAssuranceModes.includes(normalized)) return normalized;
@@ -302,11 +320,15 @@ function loadAdaptiveContracts(input) {
     return {
       planning: normalizePlanningModeContract(input.planning),
       assurance: normalizeAssuranceModeContract(input.assurance),
+      familyProfiles: input.familyProfiles
+        ? normalizeTaskFamilyProfilesContract(input.familyProfiles)
+        : loadTaskFamilyProfilesContract(),
     };
   }
   return {
     planning: input && typeof input === "object" ? normalizePlanningModeContract(input) : loadPlanningModeContract(),
     assurance: loadAssuranceModeContract(),
+    familyProfiles: loadTaskFamilyProfilesContract(),
   };
 }
 
@@ -365,8 +387,54 @@ function extractPromptParagraphs(prompt) {
 function firstSentence(text) {
   const normalized = safeString(text, 320);
   if (!normalized) return "";
-  const match = normalized.match(/^(.+?[.?!])(?:\s|$)/);
+  const match = normalized.match(/^(.+?[.?!。！？])(?:\s|$)/);
   return match && match[1] ? safeString(match[1], 320) : normalized;
+}
+
+function stripQuestionPunctuation(text) {
+  return safeString(text, 320)
+    .replace(/[?？!！。．\s]+$/g, "")
+    .trim();
+}
+
+function summarizeQuestionTopicForGoal(text) {
+  const normalized = stripQuestionPunctuation(stripPolicyControlLine(text));
+  if (!normalized) return "";
+  let match = normalized.match(/^(.+?)(?:っていうのは|というのは|とは)(?:何|なに)(?:ですか|なの|なんですか)?$/);
+  if (match && match[1]) return `${match[1].trim()}の意味`;
+  match = normalized.match(/^(.+?)(?:って何|ってなに|とは何|とはなに)(?:ですか|なの|なんですか)?$/);
+  if (match && match[1]) return `${match[1].trim()}の意味`;
+  match = normalized.match(/^(.+?場合)(?:は)?どうなる(?:の|んですか|か)?$/);
+  if (match && match[1]) return `${match[1].trim()}の挙動`;
+  match = normalized.match(/^(.+?)(?:のとき|の時)(?:は)?どうなる(?:の|んですか|か)?$/);
+  if (match && match[1]) return `${match[1].trim()}ときの挙動`;
+  match = normalized.match(/^(.+?)どうなる(?:の|んですか|か)?$/);
+  if (match && match[1]) return `${match[1].trim()}ときの挙動`;
+  match = normalized.match(/^(.+?)(?:を|について)?(?:どうすればいい|どうしたらいい|どうやる|どう使う)(?:の|んですか|か)?$/);
+  if (match && match[1]) return `${match[1].trim()}の進め方`;
+  match = normalized.match(/^(.+?)(?:って)?(?:何|なに)(?:ですか)?$/);
+  if (match && match[1]) return `${match[1].trim()}の内容`;
+  return normalized;
+}
+
+function joinTopicsForGoal(parts) {
+  if (!parts.length) return "";
+  if (parts.length === 1) return parts[0];
+  if (parts.length === 2) return `${parts[0]}と${parts[1]}`;
+  return `${parts.slice(0, 2).join("、")}など`;
+}
+
+function inferQuestionAnswerGoal(prompt) {
+  const firstParagraph = extractPromptParagraphs(prompt)[0] || prompt;
+  const parts = uniqueStrings(
+    safeString(firstParagraph, 400)
+      .split(/[?？]+/)
+      .map((entry) => summarizeQuestionTopicForGoal(entry))
+      .filter(Boolean),
+    3
+  );
+  if (!parts.length) return "";
+  return `${joinTopicsForGoal(parts)}を説明する`;
 }
 
 function uniqueStrings(values, max = 24) {
@@ -478,6 +546,51 @@ function extractImplicitGoal(prompt, sections, contract) {
   return firstSentence(paragraphs.slice(1, 3).join(" "));
 }
 
+function addLocalizedSpecialistOwners(prompt, owners, pathHints = []) {
+  const text = safeString(prompt, 40000);
+  const hints = Array.isArray(pathHints) ? pathHints.map((entry) => safeString(entry, 240).toLowerCase()) : [];
+  if (!text && !hints.length) return uniqueStrings(owners, 8);
+  const addOwner = (role, condition) => {
+    if (condition) owners.push(role);
+  };
+  const hasUrl = /https?:\/\//i.test(text);
+  addOwner(
+    "frontend_worker",
+    /\b(?:frontend|ui|ux|css|html|browser)\b/i.test(text)
+      || /(?:\u30d5\u30a9\u30f3\u30c8|\u30ec\u30a4\u30a2\u30a6\u30c8|\u30c7\u30b6\u30a4\u30f3|\u898b\u305f\u76ee|\u753b\u9762|\u30d6\u30e9\u30a6\u30b6|\u30d5\u30ed\u30f3\u30c8|\u30c8\u30c3\u30d7\u30da\u30fc\u30b8|\u30e9\u30f3\u30c7\u30a3\u30f3\u30b0\u30da\u30fc\u30b8|\u5c0e\u7dda)/.test(text)
+      || (hasUrl && /(?:\u30da\u30fc\u30b8|\u30da\u30fc\u30b8\u6570|\u30b5\u30a4\u30c8|\u30ec\u30a4\u30a2\u30a6\u30c8|\u30d5\u30a9\u30f3\u30c8)/.test(text))
+      || hints.some((entry) => entry.startsWith("web/"))
+  );
+  addOwner(
+    "backend_worker",
+    /\b(?:backend|server|api|protocol|endpoint|route)\b/i.test(text)
+      || /(?:\u30d0\u30c3\u30af\u30a8\u30f3\u30c9|\u30b5\u30fc\u30d0|\u30a8\u30f3\u30c9\u30dd\u30a4\u30f3\u30c8|\u30eb\u30fc\u30c8|\u30d7\u30ed\u30c8\u30b3\u30eb|\u30b9\u30ad\u30fc\u30de|\u5951\u7d04)/.test(text)
+      || hints.some((entry) => entry === "server.js" || entry.startsWith("scripts/"))
+  );
+  addOwner(
+    "infra_worker",
+    /\b(?:infra|runtime|config|logging|signoff|proof|docs|changelog|architecture|eval|replay)\b/i.test(text)
+      || /(?:\u30a4\u30f3\u30d5\u30e9|\u30e9\u30f3\u30bf\u30a4\u30e0|\u8a2d\u5b9a|\u30ed\u30b0|\u69cb\u6210|\u30c9\u30ad\u30e5\u30e1\u30f3\u30c8|\u5909\u66f4\u5c65\u6b74|\u30a2\u30fc\u30ad\u30c6\u30af\u30c1\u30e3)/.test(text)
+      || hints.some((entry) => entry.startsWith("docs/") || entry.endsWith(".md"))
+  );
+  addOwner(
+    "tester",
+    /\b(?:test|tester|verification|smoke|prove|proof|eval)\b/i.test(text)
+      || /(?:\u30c6\u30b9\u30c8|\u691c\u8a3c|\u30b9\u30e2\u30fc\u30af|\u8a55\u4fa1|\u518d\u73fe\u78ba\u8a8d)/.test(text)
+  );
+  addOwner(
+    "reviewer",
+    /\b(?:review|reviewer|audit|findings)\b/i.test(text)
+      || /(?:\u30ec\u30d3\u30e5\u30fc|\u76e3\u67fb|\u6307\u6458|\u30ea\u30b9\u30af\u30ec\u30d3\u30e5\u30fc)/.test(text)
+  );
+  addOwner(
+    "explorer",
+    /\b(?:explore|investigate|fact-find|discovery)\b/i.test(text)
+      || /(?:\u8abf\u67fb|\u63a2\u7d22|\u4e8b\u5b9f\u78ba\u8a8d|\u539f\u56e0\u5206\u6790)/.test(text)
+  );
+  return uniqueStrings(owners, 8);
+}
+
 function detectSpecialistOwners(prompt, specialistKeywords, pathHints = []) {
   const lower = safeString(prompt, 40000).toLowerCase();
   const hints = Array.isArray(pathHints) ? pathHints.map((entry) => safeString(entry, 240).toLowerCase()) : [];
@@ -489,6 +602,7 @@ function detectSpecialistOwners(prompt, specialistKeywords, pathHints = []) {
     });
     if (matched) owners.push(role);
   }
+  addLocalizedSpecialistOwners(prompt, owners, pathHints);
   if (!owners.length) {
     if (hints.some((entry) => entry.startsWith("web/"))) owners.push("frontend_worker");
     else if (hints.some((entry) => entry.startsWith("docs/") || entry.endsWith(".md"))) owners.push("infra_worker");
@@ -710,10 +824,16 @@ function buildPlanningDecisionContract({ selection, assuranceSelection } = {}) {
     selectedPlanningMode: planning.selectedMode,
     selectedPlanningDepth: planning.selectedPlanningDepth,
     selectedAssuranceDepth: assurance.selectedAssuranceDepth,
+    taskFamily: safeString(planning.taskFamily, 80) || "deterministic_code",
+    familyProfileId: safeString(planning.familyProfileId, 80) || safeString(planning.taskFamily, 80) || "deterministic_code",
     flowPath: planning.flowPath,
     adaptiveFlowId: assurance.adaptiveFlowId,
     needsInputRecommended: planning.needsInputRecommended ? 1 : 0,
     proposalOnlyRecommended: planning.selectedMode === "DISCOVERY" ? 1 : 0,
+    planningScore: clampInt(planning.planningScore, 0, 0, 8),
+    planningScoreBreakdown: planning.planningScoreBreakdown && typeof planning.planningScoreBreakdown === "object" ? planning.planningScoreBreakdown : {},
+    assuranceScore: clampInt(assurance.assuranceScore, 0, 0, 8),
+    assuranceScoreBreakdown: assurance.assuranceScoreBreakdown && typeof assurance.assuranceScoreBreakdown === "object" ? assurance.assuranceScoreBreakdown : {},
     planningReasons: uniqueStrings(planning.reasons, 16),
     assuranceReasons: uniqueStrings(assurance.reasons, 16),
     planningSignals: planning.signals,
@@ -726,13 +846,13 @@ function buildRequirementContract({ prompt = "", options = {}, selection, assura
   const normalizedAssurance = assuranceSelection && typeof assuranceSelection === "object" ? assuranceSelection : buildAssuranceSelection({ prompt, options, selection: normalizedSelection });
   const assumptions = [];
   if (normalizedSelection.signals.assumptionDependence !== "low") {
-    assumptions.push("Some task boundaries still depend on prompt interpretation.");
+    assumptions.push("タスク境界の一部は、まだ入力文の解釈に依存している。");
   }
   if (!normalizedSelection.extracted.nonGoals.length) {
     assumptions.push("Anything outside the explicit goal stays proposal-only unless the prompt says otherwise.");
   }
   return {
-    schema: "requirement-contract.v2",
+    schema: "requirement-contract.v3",
     source: "runtime_inferred_pre_dispatch",
     promptHash: normalizedSelection.promptHash,
     explicitGoal: normalizedSelection.extracted.explicitGoal,
@@ -976,7 +1096,7 @@ function sanitizePlanningArtifactsForRuntime(input) {
       assuranceSignals: planningDecisionContract.assuranceSignals && typeof planningDecisionContract.assuranceSignals === "object" ? planningDecisionContract.assuranceSignals : {},
     },
     requirementContract: {
-      schema: safeString(requirement.schema, 80) || "requirement-contract.v2",
+      schema: safeString(requirement.schema, 80) || "requirement-contract.v3",
       source: safeString(requirement.source, 80) || "runtime_inferred_pre_dispatch",
       promptHash: safeString(requirement.promptHash, 80) || safeString(selection.promptHash, 80) || "",
       explicitGoal: safeString(requirement.explicitGoal, 320),
@@ -1046,12 +1166,313 @@ module.exports = {
   sanitizePlanningArtifactsForRuntime,
 };
 
+function stripPolicyControlLine(line) {
+  const normalized = safeString(line, 280);
+  if (!normalized) return "";
+  if (/^\[(?:fixture_scenario|baseline_profile)\][^\r\n]*$/i.test(normalized)) return "";
+  const stripped = normalized
+    .replace(/^(?:(?:#|\[)(?:requirement-locked|scope-core|scope-plus|scope-expand|scope-no-plus|guard-bypass|rbj-bypass)(?:\]|)\b[ \t]*)+/i, "")
+    .trim();
+  return stripped;
+}
+
+function sanitizePromptForPolicyAnalysis(prompt) {
+  return safeString(prompt, 40000)
+    .split(/\r?\n/)
+    .map((line) => stripPolicyControlLine(line))
+    .filter(Boolean)
+    .join("\n");
+}
+
+function inferOpenQuestionsFromAmbiguity(prompt) {
+  const lower = safeString(prompt, 40000).toLowerCase();
+  const inferred = [];
+  if (/(?:goal|product goal).*(?:not fixed|not clear|unclear|tbd|to be decided)/i.test(lower)) {
+    inferred.push("What is the concrete product goal?");
+  }
+  if (/(?:non-goals?|non goals?).*(?:not fixed|not clear|unclear|tbd|to be decided)/i.test(lower)) {
+    inferred.push("What are the non-goals?");
+  }
+  if (/(?:specialist ownership|specialist boundaries|ownership).*(?:not fixed|not clear|unclear|tbd|to be decided)/i.test(lower)) {
+    inferred.push("Which specialist boundaries are in scope?");
+  }
+  if (/(?:acceptance checks?|acceptance criteria).*(?:not fixed|not clear|unclear|tbd|to be decided)/i.test(lower)) {
+    inferred.push("What acceptance checks define success?");
+  }
+  if (/(?:user decision|needs input|need input|approval required|required before implementation)/i.test(lower)) {
+    inferred.push("Which user decision is required before implementation?");
+  }
+  if (/(?:approval boundary|approval).*(?:required|needed)/i.test(lower)) {
+    inferred.push("What approval is required before implementation?");
+  }
+  return uniqueStrings(inferred, 12);
+}
+
+function inferNonGoals(nonGoals, selectedMode) {
+  const existing = uniqueStrings(nonGoals, 16);
+  if (existing.length || normalizePlanningMode(selectedMode, "NORMAL") !== "DISCOVERY") return existing;
+  return [
+    "未解決の確認事項が片付くまでは、実装や設定変更を行わない。",
+    "要件確認の範囲を超えてスコープを広げない。",
+  ];
+}
+
+function extractPromptDirectiveLines(prompt, matcher, max = 8) {
+  const lines = sanitizePromptForPolicyAnalysis(prompt).split(/\r?\n/);
+  const matched = [];
+  for (const rawLine of lines) {
+    const normalized = safeString(rawLine, 240)
+      .replace(/^\s*[-*+]\s*/, "")
+      .replace(/^\s{0,3}#{1,6}\s*/, "")
+      .trim();
+    if (!normalized || matched.includes(normalized)) continue;
+    if (typeof matcher === "function" && !matcher(normalized)) continue;
+    matched.push(normalized);
+    if (matched.length >= max) break;
+  }
+  return matched;
+}
+
+function extractReferenceUrls(prompt, max = 6) {
+  const matches = safeString(prompt, 40000).match(/https?:\/\/[^\s)]+/gi) || [];
+  return uniqueStrings(matches.map((entry) => String(entry).replace(/[),.;]+$/, "")), max);
+}
+
+function isAvoidanceDirective(text) {
+  return /(?:\bavoid\b|\bdo not\b|\bdon't\b|\bmust not\b|\bnever\b|\bwithout\b|\bskip\b|\bno\b.+\b(?:generic|filler|extra|scope)\b|禁止|避け|しない|やらない|不要|ダメ|だめ)/i.test(text);
+}
+
+function isHardConstraintDirective(text) {
+  return /(?:\bmust\b|\brequired\b|\bexactly\b|\bonly\b|\bwithout\b|\bkeep\b|\bpreserve\b|\bdo not\b|\bmust not\b|\bnever\b|\bno\b.+\b(?:other file|dependency|installation|destructive|migration)\b|必須|禁止|のみ|だけ|変更しない|壊さない|追加しない)/i.test(text);
+}
+
+function buildDefaultUserValueProfile(taskFamily) {
+  switch (safeString(taskFamily, 80).toLowerCase()) {
+    case "web_creative":
+      return {
+        valueThesis: "依頼された Web 体験を、手順のきれいさよりも第一印象と情報の強さが先に伝わる形で届ける。",
+        userShouldFeelGet: [
+          "テンプレートではなく、意図を持って設計されたように感じる。",
+          "価値と構造がひと目で伝わる。",
+          "PC とモバイルの両方でちゃんとして見える。",
+        ],
+        mustAvoid: [
+          "AIっぽい無難な量産レイアウト。",
+          "区切りのリズムがない単調なカード並び。",
+          "根拠のない抽象的な埋め草コピー。",
+        ],
+        qualityAxes: [
+          "first_impression",
+          "information_hierarchy",
+          "typography_and_spacing",
+          "responsive_realness",
+          "benchmark_superiority",
+        ],
+        completedMeans: [
+          "結果が、無難な平均解より一段上の意図された出来に感じられる。",
+          "ページの価値が分かりやすく伝わり、安っぽさを避け、レスポンシブでも破綻しない。",
+        ],
+      };
+    case "research_analysis":
+      return {
+        valueThesis: "意思決定に使える答えとして信頼できるように、網羅性と比較の根拠、不確実さの明示を重視して届ける。",
+        userShouldFeelGet: [
+          "重要な選択肢や仮説の差が分かりやすく比較されている。",
+          "何が事実で、何が推測で、何がまだ不明かが見える。",
+        ],
+        mustAvoid: [
+          "比較なしの一方向な断定。",
+          "根拠のない主張。",
+          "不確実さを隠すこと。",
+        ],
+        qualityAxes: [
+          "coverage",
+          "source_grounding",
+          "hypothesis_separation",
+          "comparison_quality",
+          "decision_usefulness",
+        ],
+        completedMeans: [
+          "重要な可能性を押さえ、比較し、確信度も正直に示している。",
+        ],
+      };
+    case "planning_design":
+      return {
+        valueThesis: "結論を押しつける前に、選択肢とトレードオフ、実行した場合の影響を整理して、次の判断をしやすくする。",
+        userShouldFeelGet: [
+          "次に何を決めるべきかが、前より曖昧でなくなる。",
+          "おすすめだけでなく、差分や影響まで理解できる。",
+        ],
+        mustAvoid: [
+          "早すぎる一択の断定。",
+          "実行影響が見えないふわっとした計画。",
+          "重要なトレードオフの見落とし。",
+        ],
+        qualityAxes: [
+          "decision_support",
+          "tradeoff_clarity",
+          "option_quality",
+          "execution_readiness",
+          "risk_visibility",
+        ],
+        completedMeans: [
+          "トレードオフ、リスク、次の一手が分かり、進路を選べる。",
+        ],
+      };
+    default:
+      return {
+        valueThesis: "依頼された変更を正しく、局所的に、あとからの手戻り圧を増やさない形で届ける。",
+        userShouldFeelGet: [
+          "余計な巻き込みなしで、求めた振る舞いが手に入る。",
+          "変更範囲が適切で、技術的にも妥当だと判断できる。",
+        ],
+        mustAvoid: [
+          "推測でのスコープ拡大。",
+          "必要のない大きな書き換え。",
+          "具体的な検証なしの完了宣言。",
+        ],
+        qualityAxes: [
+          "correctness",
+          "bounded_scope",
+          "regression_resistance",
+          "maintainability",
+          "actionability",
+        ],
+        completedMeans: [
+          "依頼された変更が機能し、範囲も適切で、明らかな回帰圧を増やさない。",
+        ],
+      };
+  }
+}
+
+function inferPromptLevelUserValueSignals(prompt, taskFamily) {
+  const lower = sanitizePromptForPolicyAnalysis(prompt).toLowerCase();
+  const values = {
+    userShouldFeelGet: [],
+    mustAvoid: [],
+    qualityAxes: [],
+    completedMeans: [],
+  };
+  if (taskFamily === "web_creative") {
+    if (/(?:premium|luxury|high-end|editorial|高級|上質)/i.test(lower)) {
+      values.userShouldFeelGet.push("安っぽいテンプレートではなく、上質に感じる。");
+    }
+    if (/(?:landing|lp|conversion|cta|コンバージョン|lp)/i.test(lower)) {
+      values.userShouldFeelGet.push("何を勧めているのかが早く伝わり、次の行動が分かりやすい。");
+      values.qualityAxes.push("conversion_clarity");
+    }
+    if (/(?:benchmark|reference|suruga-k|参考|ベンチマーク)/i.test(lower)) {
+      values.qualityAxes.push("reference_benchmarking");
+      values.completedMeans.push("結果が、明示または暗黙の比較対象に見劣りしない。");
+    }
+    if (/(?:avoid ai|ai-looking|aiっぽ|安っぽ|cheap)/i.test(lower)) {
+      values.mustAvoid.push("AIっぽい安さや、露骨なテンプレ感。");
+    }
+    if (/(?:mobile|responsive|desktop|レスポンシブ|モバイル)/i.test(lower)) {
+      values.qualityAxes.push("responsive_quality");
+    }
+  } else if (taskFamily === "research_analysis") {
+    if (/(?:compare|比較|tradeoff|トレードオフ)/i.test(lower)) values.qualityAxes.push("comparative_reasoning");
+    if (/(?:source|citation|根拠|出典)/i.test(lower)) values.qualityAxes.push("source_quality");
+  } else if (taskFamily === "planning_design") {
+    if (/(?:roadmap|phases|step|段階|ロードマップ)/i.test(lower)) values.qualityAxes.push("sequencing");
+    if (/(?:tradeoff|comparison|比較|選択肢)/i.test(lower)) values.qualityAxes.push("option_tradeoffs");
+  } else {
+    if (/(?:test|verification|verify|検証|テスト)/i.test(lower)) values.qualityAxes.push("verification");
+    if (/(?:local|bounded|minimal|small|局所|最小)/i.test(lower)) values.qualityAxes.push("locality");
+    if (/(?:regression|rollback|safe|回帰|安全)/i.test(lower)) values.qualityAxes.push("regression_safety");
+  }
+  if (/(?:best|strongest|excellent|圧倒的|最強|最高品質)/i.test(lower)) {
+    values.userShouldFeelGet.push("無難な平均解より明らかに強いと感じる。");
+    values.completedMeans.push("単にレビュー可能な最低線ではなく、はっきり上振れした出来に感じられる。");
+  }
+  return values;
+}
+
+function buildUserValueFrame({
+  prompt = "",
+  explicitGoal = "",
+  implicitGoal = "",
+  taskFamily = "deterministic_code",
+  baselineScope = [],
+  nonGoals = [],
+  acceptanceChecks = [],
+  approvalBoundaryItems = [],
+} = {}) {
+  const defaults = buildDefaultUserValueProfile(taskFamily);
+  const promptSignals = inferPromptLevelUserValueSignals(prompt, taskFamily);
+  const directiveAvoids = extractPromptDirectiveLines(prompt, isAvoidanceDirective, 8);
+  const directiveConstraints = extractPromptDirectiveLines(prompt, isHardConstraintDirective, 8);
+  const acceptanceTitles = (Array.isArray(acceptanceChecks) ? acceptanceChecks : [])
+    .map((entry) => safeString(entry && entry.title, 240))
+    .filter(Boolean);
+  const wants = uniqueStrings(
+    [
+      explicitGoal,
+      ...baselineScope,
+      implicitGoal,
+    ],
+    8
+  );
+  const hardConstraints = uniqueStrings(
+    [
+      ...directiveConstraints,
+      ...acceptanceTitles.filter((entry) => isHardConstraintDirective(entry)),
+      ...approvalBoundaryItems.map((entry) => `Explicit user approval is required before: ${entry}.`),
+    ],
+    10
+  );
+  const completedMeans = uniqueStrings(
+    [
+      ...defaults.completedMeans,
+      ...promptSignals.completedMeans,
+      ...acceptanceTitles,
+    ],
+    10
+  );
+  return {
+    valueThesis: safeString(defaults.valueThesis, 320),
+    userWants: wants,
+    userShouldFeelGet: uniqueStrings(
+      [...defaults.userShouldFeelGet, ...promptSignals.userShouldFeelGet],
+      8
+    ),
+    mustAvoid: uniqueStrings(
+      [...defaults.mustAvoid, ...directiveAvoids, ...nonGoals, ...promptSignals.mustAvoid],
+      10
+    ),
+    hardConstraints,
+    qualityAxes: uniqueStrings(
+      [...defaults.qualityAxes, ...promptSignals.qualityAxes],
+      10
+    ),
+    benchmarkCandidates: extractReferenceUrls(prompt, 6),
+    completedMeans,
+  };
+}
+
+function sanitizeUserValueFrame(value) {
+  const source = value && typeof value === "object" ? value : {};
+  return {
+    valueThesis: safeString(source.valueThesis, 320),
+    userWants: uniqueStrings(source.userWants, 8),
+    userShouldFeelGet: uniqueStrings(source.userShouldFeelGet, 8),
+    mustAvoid: uniqueStrings(source.mustAvoid, 10),
+    hardConstraints: uniqueStrings(source.hardConstraints, 10),
+    qualityAxes: uniqueStrings(source.qualityAxes, 10),
+    benchmarkCandidates: uniqueStrings(source.benchmarkCandidates, 6),
+    completedMeans: uniqueStrings(source.completedMeans, 10),
+  };
+}
+
 function extractQuestionCandidates(prompt, keywords) {
   const matches = [];
   for (const line of safeString(prompt, 40000).split(/\r?\n/)) {
-    const normalized = safeString(line, 280);
+    const normalized = stripPolicyControlLine(line);
     if (!normalized) continue;
     if (/\b(?:no|without)\s+open questions?\b/i.test(normalized) || /\bopen questions?\s+(?:are|is)\s+not\b/i.test(normalized)) continue;
+    if (/^first make the open questions explicit\.?$/i.test(normalized)) continue;
+    if (/^stop with status:\s*need_user_input\.?$/i.test(normalized)) continue;
     if (/[?？]/.test(normalized) || hasAnyKeyword(normalized, keywords)) {
       matches.push(normalized.replace(/^\s*[-*+]\s*/, ""));
     }
@@ -1059,18 +1480,31 @@ function extractQuestionCandidates(prompt, keywords) {
   return uniqueStrings(matches, 12);
 }
 
+function filterBlockingOpenQuestions(candidates) {
+  return uniqueStrings(
+    (Array.isArray(candidates) ? candidates : []).filter((entry) => {
+      const normalized = safeString(entry, 240);
+      if (!normalized) return false;
+      if (!/[?？]/.test(normalized)) return true;
+      return /(?:goal|scope|non-goal|non goal|acceptance|success criteria|benchmark|reference|direction|preference|constraint|approval|decision|required|owner|ownership|boundary|implementation|before implementation|要件|非対象|受け入れ|基準|参考|方向|好み|制約|承認|判断|境界|実装前|優先)/i.test(normalized);
+    }),
+    12
+  );
+}
+
 function detectApprovalBoundaryItems(prompt, keywords) {
   return uniqueStrings(matchingKeywords(prompt, keywords, 12), 12);
 }
 
 function detectSpecialistOwners(prompt, keywordMap) {
-  const lower = safeString(prompt, 40000).toLowerCase();
+  const lower = sanitizePromptForPolicyAnalysis(prompt).toLowerCase();
   const owners = [];
   for (const [role, keywords] of Object.entries(keywordMap || {})) {
     if ((Array.isArray(keywords) ? keywords : []).some((keyword) => textIncludesKeyword(lower, keyword))) {
       owners.push(role);
     }
   }
+  addLocalizedSpecialistOwners(prompt, owners);
   if (!owners.length) owners.push("backend_worker");
   return uniqueStrings(owners, 8);
 }
@@ -1097,7 +1531,7 @@ function scoreOverDeliveryRisk({ prompt, keywords, specialistBoundaryCount, acce
 }
 
 function scoreExistingSpecClarity({ prompt, baselineScopeCount, acceptanceScore, openQuestionsCount }) {
-  const lower = safeString(prompt, 40000).toLowerCase();
+  const lower = sanitizePromptForPolicyAnalysis(prompt).toLowerCase();
   if (openQuestionsCount >= 2 || /(new feature|greenfield|future product|design a new)/.test(lower)) return { id: "low", score: 0 };
   if (baselineScopeCount >= 1 && acceptanceScore >= 1 && /(existing|small|only|change only|modify only|bounded)/.test(lower)) return { id: "high", score: 2 };
   if (baselineScopeCount >= 1 || acceptanceScore >= 1) return { id: "medium", score: 1 };
@@ -1105,17 +1539,112 @@ function scoreExistingSpecClarity({ prompt, baselineScopeCount, acceptanceScore,
 }
 
 function scoreChangeScopeClarity({ prompt, baselineScopeCount, specialistBoundaryCount }) {
-  const lower = safeString(prompt, 40000).toLowerCase();
+  const lower = sanitizePromptForPolicyAnalysis(prompt).toLowerCase();
   const pathHints = /(?:server\.js|docs\/|web\/|scripts\/|scripts\/config\/|harness_map\.md|readme)/.test(lower);
   if ((baselineScopeCount >= 1 || pathHints) && specialistBoundaryCount <= 1) return { id: "high", score: 2 };
   if (baselineScopeCount >= 1 || pathHints || specialistBoundaryCount <= 2) return { id: "medium", score: 1 };
   return { id: "low", score: 0 };
 }
 
+function mapPlanningScoreToDepth(total) {
+  const normalized = clampInt(total, 0, 0, 8);
+  if (normalized <= 2) return "FAST_PLANNING";
+  if (normalized <= 5) return "STANDARD_PLANNING";
+  return "DISCOVERY_PLANNING";
+}
+
+function mapPlanningDepthToMode(depth) {
+  const normalized = normalizePlanningDepth(depth, "STANDARD_PLANNING");
+  if (normalized === "FAST_PLANNING") return "FAST";
+  if (normalized === "DISCOVERY_PLANNING") return "DISCOVERY";
+  return "NORMAL";
+}
+
+function mapAssuranceScoreToDepth(total) {
+  const normalized = clampInt(total, 0, 0, 8);
+  if (normalized <= 2) return "LIGHT_ASSURANCE";
+  if (normalized <= 5) return "STANDARD_ASSURANCE";
+  return "SIGNOFF_ASSURANCE";
+}
+
+function buildPlanningScoreBreakdown({
+  openQuestionsCount,
+  acceptanceClarity,
+  overDeliveryRisk,
+  approvalBoundaryItems,
+  userDecisionRequired,
+  existingSpecClarity,
+  changeScopeClarity,
+  specialistBoundaryCount,
+  prompt,
+}) {
+  const ambiguity = approvalBoundaryItems.length > 0 || openQuestionsCount >= 3 || specialistBoundaryCount >= 3
+    ? 2
+    : (userDecisionRequired || openQuestionsCount >= 1 || specialistBoundaryCount >= 2 ? 1 : 0);
+  const acceptanceUncertainty = acceptanceClarity.score <= 0 ? 2 : acceptanceClarity.score === 1 ? 1 : 0;
+  const novelty = overDeliveryRisk.score >= 2 || existingSpecClarity.score <= 0 || specialistBoundaryCount >= 2 || /(?:new feature|future product|greenfield|design a new)/i.test(prompt)
+    ? 2
+    : (overDeliveryRisk.score === 1 || existingSpecClarity.score === 1 || changeScopeClarity.score === 1 ? 1 : 0);
+  const externalDependency = approvalBoundaryItems.length >= 2 || /(?:user decision is required|needs input|need input|approval required|must decide)/i.test(prompt)
+    ? 2
+    : (approvalBoundaryItems.length === 1 || userDecisionRequired || /(?:external service|external system|account|dependency|migration)/i.test(prompt) ? 1 : 0);
+  const total = ambiguity + acceptanceUncertainty + novelty + externalDependency;
+  return {
+    ambiguity,
+    acceptance_uncertainty: acceptanceUncertainty,
+    novelty,
+    external_dependency: externalDependency,
+    total,
+    rationale: [
+      `ambiguity=${ambiguity}`,
+      `acceptance_uncertainty=${acceptanceUncertainty}`,
+      `novelty=${novelty}`,
+      `external_dependency=${externalDependency}`,
+    ],
+  };
+}
+
+function buildAssuranceScoreBreakdown({
+  runtimeTouch,
+  protocolTouch,
+  governanceTouch,
+  userFacingImpact,
+  irreversibleRisk,
+  signoffImportant,
+  reviewerSuggested,
+  testerSuggested,
+  implementationBoundaryCount,
+}) {
+  const blastRadius = protocolTouch || governanceTouch || implementationBoundaryCount > 1
+    ? 2
+    : (runtimeTouch || userFacingImpact ? 1 : 0);
+  const irreversibility = irreversibleRisk ? 2 : 0;
+  const releaseCriticality = signoffImportant || protocolTouch || governanceTouch
+    ? 2
+    : (runtimeTouch || userFacingImpact ? 1 : 0);
+  const evidenceBurden = signoffImportant || (reviewerSuggested && testerSuggested)
+    ? 2
+    : (reviewerSuggested || testerSuggested ? 1 : 0);
+  const total = blastRadius + irreversibility + releaseCriticality + evidenceBurden;
+  return {
+    blast_radius: blastRadius,
+    irreversibility,
+    release_criticality: releaseCriticality,
+    evidence_burden: evidenceBurden,
+    total,
+    rationale: [
+      `blast_radius=${blastRadius}`,
+      `irreversibility=${irreversibility}`,
+      `release_criticality=${releaseCriticality}`,
+      `evidence_burden=${evidenceBurden}`,
+    ],
+  };
+}
+
 function extractAcceptanceChecks(prompt, sections, contract) {
   const aliases = contract && contract.signals && contract.signals.sectionAliases ? contract.signals.sectionAliases.acceptance : [];
   const fromSections = collectEntriesFromSections(collectSectionsByAlias(sections, aliases));
-  const exactReplyMatch = safeString(prompt, 40000).match(/reply with exactly:\s*([^\r\n]+)/i);
+  const exactReplyMatch = sanitizePromptForPolicyAnalysis(prompt).match(/reply with exactly:\s*([^\r\n]+)/i);
   const outputs = [];
   let nextId = 1;
   for (const title of fromSections) {
@@ -1136,6 +1665,10 @@ function extractExplicitGoal(prompt, sections, contract) {
   const aliases = contract && contract.signals && contract.signals.sectionAliases ? contract.signals.sectionAliases.goal : [];
   const goalEntries = collectEntriesFromSections(collectSectionsByAlias(sections, aliases));
   if (goalEntries.length) return firstSentence(goalEntries.join(" "));
+  if (/[?？]/.test(safeString(prompt, 40000))) {
+    const inferredQuestionGoal = inferQuestionAnswerGoal(prompt);
+    if (inferredQuestionGoal) return inferredQuestionGoal;
+  }
   return firstSentence(extractPromptParagraphs(prompt)[0] || prompt);
 }
 
@@ -1147,7 +1680,7 @@ function extractImplicitGoal(prompt, sections, contract) {
 }
 
 function detectScopeAreas(prompt, baselineScope) {
-  const lower = safeString(prompt, 40000).toLowerCase();
+  const lower = sanitizePromptForPolicyAnalysis(prompt).toLowerCase();
   const scopeText = uniqueStrings(baselineScope, 24).join(" ").toLowerCase();
   const text = `${lower}\n${scopeText}`;
   return {
@@ -1160,8 +1693,9 @@ function detectScopeAreas(prompt, baselineScope) {
 }
 
 function buildAssuranceSelection({ prompt, selection, assuranceContract }) {
-  const text = safeString(prompt, 40000);
-  const areas = detectScopeAreas(prompt, selection.extracted.baselineScope);
+  const analysisPrompt = sanitizePromptForPolicyAnalysis(prompt);
+  const text = safeString(analysisPrompt, 40000);
+  const areas = detectScopeAreas(analysisPrompt, selection.extracted.baselineScope);
   const docsOnly = areas.docs && !areas.web && !areas.server && !areas.scripts && !areas.governance;
   const implementationBoundaryCount = Array.isArray(selection.signals && selection.signals.specialistOwners)
     ? selection.signals.specialistOwners.filter((role) => !["reviewer", "tester", "explorer"].includes(role)).length
@@ -1210,15 +1744,36 @@ function buildAssuranceSelection({ prompt, selection, assuranceContract }) {
     !signoffImportant &&
     !reviewerSuggested &&
     !testerSuggested;
+  const assuranceScoreBreakdown = buildAssuranceScoreBreakdown({
+    runtimeTouch,
+    protocolTouch,
+    governanceTouch,
+    userFacingImpact,
+    irreversibleRisk,
+    signoffImportant,
+    reviewerSuggested,
+    testerSuggested,
+    implementationBoundaryCount,
+  });
   const signoffRequired =
     signoffImportant ||
     irreversibleRisk ||
     riskScore >= assuranceContract.thresholds.signoff.minRiskScore ||
     (newLogicRisk && regressionRiskScore >= assuranceContract.thresholds.signoff.minRegressionRiskScore);
-  const selectedAssuranceDepth = signoffRequired ? "SIGNOFF_ASSURANCE" : lightEligible ? "LIGHT_ASSURANCE" : "STANDARD_ASSURANCE";
+  let selectedAssuranceDepth = signoffRequired
+    ? "SIGNOFF_ASSURANCE"
+    : lightEligible
+      ? "LIGHT_ASSURANCE"
+      : mapAssuranceScoreToDepth(assuranceScoreBreakdown.total);
+  if (selection.selectedPlanningDepth === "DISCOVERY_PLANNING" && selectedAssuranceDepth === "LIGHT_ASSURANCE") {
+    selectedAssuranceDepth = "STANDARD_ASSURANCE";
+  }
   return {
     selectedAssuranceDepth,
+    assuranceScore: assuranceScoreBreakdown.total,
+    assuranceScoreBreakdown,
     reasons: [
+      ...assuranceScoreBreakdown.rationale,
       `changeKinds=${uniqueStrings([docsOnly ? "docs-only" : "", runtimeTouch ? "runtime" : "", protocolTouch ? "protocol" : "", governanceTouch ? "governance" : "", userFacingImpact ? "user-facing" : ""], 6).join("|") || "bounded"}`,
       `reviewerSuggested=${reviewerSuggested ? "yes" : "no"}`,
       `testerSuggested=${testerSuggested ? "yes" : "no"}`,
@@ -1244,73 +1799,240 @@ function buildAssuranceSelection({ prompt, selection, assuranceContract }) {
   };
 }
 
+function buildClarificationDecision({
+  prompt = "",
+  taskFamily = "",
+  openQuestions = [],
+  approvalBoundaryItems = [],
+  explicitUserDecisionRequired = false,
+  acceptanceChecks = [],
+  baselineScope = [],
+} = {}) {
+  const normalizedPrompt = sanitizePromptForPolicyAnalysis(prompt);
+  const lower = normalizedPrompt.toLowerCase();
+  const normalizedTaskFamily = safeString(taskFamily, 80).toLowerCase();
+  if (approvalBoundaryItems.length > 0 || explicitUserDecisionRequired) {
+    return {
+      action: "needs_input",
+      reason: "explicit_user_decision_required",
+      question: "",
+      summary: "Approval-boundary or explicit user decision items block safe execution.",
+      missingAnchors: [],
+    };
+  }
+  if (normalizedTaskFamily !== "web_creative") {
+    return {
+      action: "proceed",
+      reason: "task_family_not_design_sensitive",
+      question: "",
+      summary: "",
+      missingAnchors: [],
+    };
+  }
+  if ((Array.isArray(openQuestions) ? openQuestions.length : 0) >= 2) {
+    return {
+      action: "needs_input",
+      reason: "multiple_open_questions_present",
+      question: "",
+      summary: "Multiple unresolved questions remain for a design-sensitive request.",
+      missingAnchors: [],
+    };
+  }
+  const benchmarkAnchored =
+    extractReferenceUrls(normalizedPrompt, 6).length > 0
+    || /(?:benchmark|reference|inspired by|modeled after|match(?: the)? style|参考|参照|ベンチマーク|寄せて|雰囲気を合わせ|似せて|suruga-k|dribbble|figma)/i.test(normalizedPrompt);
+  const directionAnchored =
+    /(?:readability|clarity|conversion|premium|luxury|editorial|minimal|playful|serious|trust|safe|dense|information density|typography|spacing|operator|developer|enterprise|mobile|responsive|高級|上品|見やす|読みやす|安心|信頼|情報量|余白|タイポ|可読|ブランド|世界観|印象|雰囲気|開発者向け|運用者向け|社内向け|スマホ|モバイル|レスポンシブ)/i.test(normalizedPrompt);
+  const preferenceDriven =
+    /(?:user(?:'s)? taste|taste|preference|fit the user's taste|good looking|good feel|feel right|redesign|refresh|polish|improve this ui|良い感じ|好み|ユーザーの好み|見た目|デザイン|雰囲気|印象|世界観|UI|UX)/i.test(normalizedPrompt);
+  const scopeConcrete =
+    Array.isArray(acceptanceChecks) && acceptanceChecks.length > 0
+      ? true
+      : Array.isArray(baselineScope) && baselineScope.length >= 2;
+  if (preferenceDriven && !benchmarkAnchored && !directionAnchored && !scopeConcrete) {
+    return {
+      action: "ask_user_once",
+      reason: "web_creative_missing_direction_anchor",
+      question: "この UI 改善で最優先したい方向は何ですか。参考にしたい見た目や、逆に避けたい雰囲気があれば 1 つだけ教えてください。",
+      summary: "Preference-sensitive UI request lacks both a benchmark anchor and an explicit priority axis.",
+      missingAnchors: ["priority_axis", "benchmark_or_visual_reference"],
+    };
+  }
+  return {
+    action: "proceed",
+    reason: benchmarkAnchored || directionAnchored ? "design_direction_anchored" : "bounded_design_scope",
+    question: "",
+    summary: "",
+    missingAnchors: [],
+  };
+}
+
 function buildPlanningSelection({ prompt = "", options = {}, contract } = {}) {
   const contracts = loadAdaptiveContracts(contract);
-  const sections = parsePromptSections(prompt);
+  const analysisPrompt = sanitizePromptForPolicyAnalysis(prompt);
+  const sections = parsePromptSections(analysisPrompt);
   const aliases = contracts.planning.signals.sectionAliases;
-  const acceptanceChecks = extractAcceptanceChecks(prompt, sections, contracts.planning);
+  const acceptanceChecks = extractAcceptanceChecks(analysisPrompt, sections, contracts.planning);
   const baselineScope = uniqueStrings([
     ...collectEntriesFromSections(collectSectionsByAlias(sections, aliases.baseline)),
     ...collectEntriesFromSections(collectSectionsByAlias(sections, aliases.constraints)),
   ], 24);
   const nonGoals = collectEntriesFromSections(collectSectionsByAlias(sections, aliases.nonGoals));
-  const openQuestions = extractQuestionCandidates(prompt, contracts.planning.signals.openQuestionKeywords);
-  const approvalBoundaryItems = detectApprovalBoundaryItems(prompt, contracts.planning.signals.approvalBoundaryKeywords);
-  const userDecisionRequired = approvalBoundaryItems.length > 0 || openQuestions.length > 0 || hasAnyKeyword(prompt, contracts.planning.signals.userDecisionKeywords);
-  const specialistOwners = detectSpecialistOwners(prompt, contracts.planning.signals.specialistKeywords);
+  const questionCandidates = extractQuestionCandidates(analysisPrompt, contracts.planning.signals.openQuestionKeywords);
+  const rawOpenQuestions = uniqueStrings([
+    ...filterBlockingOpenQuestions(questionCandidates),
+    ...inferOpenQuestionsFromAmbiguity(analysisPrompt),
+  ], 12);
+  const approvalBoundaryItems = detectApprovalBoundaryItems(analysisPrompt, contracts.planning.signals.approvalBoundaryKeywords);
+  const explicitUserDecisionRequired =
+    approvalBoundaryItems.length > 0 || hasAnyKeyword(analysisPrompt, contracts.planning.signals.userDecisionKeywords);
+  const familySelection = selectTaskFamilyProfile({
+    prompt: analysisPrompt,
+    options,
+    contract: contracts.familyProfiles,
+  });
+  const clarificationDecision = buildClarificationDecision({
+    prompt: analysisPrompt,
+    taskFamily: familySelection.taskFamily,
+    openQuestions: rawOpenQuestions,
+    approvalBoundaryItems,
+    explicitUserDecisionRequired,
+    acceptanceChecks,
+    baselineScope,
+  });
+  const openQuestions = uniqueStrings([
+    ...rawOpenQuestions,
+    clarificationDecision.action === "ask_user_once" ? clarificationDecision.question : "",
+  ], 12);
+  const fastModeEnabled = normalizeBooleanOption(options && options.fastModeEnabled, false);
+  const userDecisionRequired =
+    explicitUserDecisionRequired
+    || clarificationDecision.action !== "proceed"
+    || openQuestions.length > 0;
+  const specialistOwners = detectSpecialistOwners(analysisPrompt, contracts.planning.signals.specialistKeywords);
   const acceptanceClarity = scoreAcceptanceClarity(acceptanceChecks);
-  const overDeliveryRisk = scoreOverDeliveryRisk({ prompt, keywords: contracts.planning.signals.overDeliveryRiskKeywords, specialistBoundaryCount: specialistOwners.length, acceptanceScore: acceptanceClarity.score });
+  const overDeliveryRisk = scoreOverDeliveryRisk({
+    prompt: analysisPrompt,
+    keywords: contracts.planning.signals.overDeliveryRiskKeywords,
+    specialistBoundaryCount: specialistOwners.length,
+    acceptanceScore: acceptanceClarity.score,
+  });
   const assumptionDependence = scoreAssumptionDependence({
     acceptanceScore: acceptanceClarity.score,
     openQuestionsCount: openQuestions.length,
     baselineScopeCount: baselineScope.length,
-    promptLength: safeString(prompt, 40000).length,
+    promptLength: safeString(analysisPrompt, 40000).length,
   });
-  const existingSpecClarity = scoreExistingSpecClarity({ prompt, baselineScopeCount: baselineScope.length, acceptanceScore: acceptanceClarity.score, openQuestionsCount: openQuestions.length });
-  const changeScopeClarity = scoreChangeScopeClarity({ prompt, baselineScopeCount: baselineScope.length, specialistBoundaryCount: specialistOwners.length });
-  const fastEligible =
-    openQuestions.length <= contracts.planning.thresholds.fast.maxOpenQuestions &&
-    acceptanceClarity.score >= contracts.planning.thresholds.fast.minAcceptanceScore &&
-    specialistOwners.length <= contracts.planning.thresholds.fast.maxSpecialistBoundaries &&
+  const existingSpecClarity = scoreExistingSpecClarity({
+    prompt: analysisPrompt,
+    baselineScopeCount: baselineScope.length,
+    acceptanceScore: acceptanceClarity.score,
+    openQuestionsCount: openQuestions.length,
+  });
+  const changeScopeClarity = scoreChangeScopeClarity({
+    prompt: analysisPrompt,
+    baselineScopeCount: baselineScope.length,
+    specialistBoundaryCount: specialistOwners.length,
+  });
+  const planningScoreBreakdown = buildPlanningScoreBreakdown({
+    openQuestionsCount: openQuestions.length,
+    acceptanceClarity,
+    overDeliveryRisk,
+    approvalBoundaryItems,
+    userDecisionRequired,
+    existingSpecClarity,
+    changeScopeClarity,
+    specialistBoundaryCount: specialistOwners.length,
+    prompt: analysisPrompt,
+  });
+  let selectedPlanningDepth = mapPlanningScoreToDepth(planningScoreBreakdown.total);
+  let selectedMode = mapPlanningDepthToMode(selectedPlanningDepth);
+  const deterministicImplementationNeedsDiscovery =
+    familySelection.taskFamily === "deterministic_code" &&
+    acceptanceChecks.length === 0 &&
+    baselineScope.length === 0 &&
+    existingSpecClarity.score === 0 &&
+    assumptionDependence.score >= 1;
+  if (clarificationDecision.action === "ask_user_once" || clarificationDecision.action === "needs_input") {
+    selectedMode = "DISCOVERY";
+    selectedPlanningDepth = "DISCOVERY_PLANNING";
+  }
+  if (deterministicImplementationNeedsDiscovery && selectedMode !== "DISCOVERY") {
+    selectedMode = "DISCOVERY";
+    selectedPlanningDepth = "DISCOVERY_PLANNING";
+  }
+  if (
+    familySelection.taskFamily === "web_creative" &&
+    familySelection.ambiguityHandling === "expand_with_directions" &&
     approvalBoundaryItems.length === 0 &&
-    !userDecisionRequired &&
-    assumptionDependence.score <= contracts.planning.thresholds.fast.maxAssumptionScore &&
-    overDeliveryRisk.score <= contracts.planning.thresholds.fast.maxOverDeliveryRiskScore &&
-    existingSpecClarity.score >= contracts.planning.thresholds.fast.minExistingSpecClarityScore &&
-    changeScopeClarity.score >= contracts.planning.thresholds.fast.minChangeScopeClarityScore;
-  const discoveryRequired =
-    approvalBoundaryItems.length > 0 ||
-    userDecisionRequired ||
-    openQuestions.length >= contracts.planning.thresholds.discovery.minOpenQuestions ||
-    acceptanceClarity.score <= contracts.planning.thresholds.discovery.maxAcceptanceScore ||
-    assumptionDependence.score >= contracts.planning.thresholds.discovery.minAssumptionScore ||
-    overDeliveryRisk.score >= contracts.planning.thresholds.discovery.minOverDeliveryRiskScore ||
-    existingSpecClarity.score <= contracts.planning.thresholds.discovery.maxExistingSpecClarityScore ||
-    changeScopeClarity.score <= contracts.planning.thresholds.discovery.maxChangeScopeClarityScore;
-  const selectedMode = discoveryRequired ? "DISCOVERY" : fastEligible ? "FAST" : "NORMAL";
-  const selectedPlanningDepth = toPlanningDepth(selectedMode);
+    !explicitUserDecisionRequired &&
+    clarificationDecision.action === "proceed" &&
+    selectedMode === "DISCOVERY"
+  ) {
+    selectedMode = "NORMAL";
+    selectedPlanningDepth = "STANDARD_PLANNING";
+  }
+  if (familySelection.minimumPlanningMode === "NORMAL" && selectedMode === "FAST") {
+    selectedMode = "NORMAL";
+    selectedPlanningDepth = "STANDARD_PLANNING";
+  }
+  if (
+    fastModeEnabled &&
+    selectedMode === "NORMAL" &&
+    approvalBoundaryItems.length === 0 &&
+    !explicitUserDecisionRequired &&
+    clarificationDecision.action === "proceed"
+  ) {
+    selectedMode = "FAST";
+    selectedPlanningDepth = "FAST_PLANNING";
+  }
   const planningReasons = [
+    `taskFamily=${familySelection.taskFamily}`,
+    `familyAmbiguityHandling=${familySelection.ambiguityHandling}`,
+    ...planningScoreBreakdown.rationale,
     `openQuestions=${openQuestions.length}`,
     `acceptanceClarity=${acceptanceClarity.id}`,
     `specialistBoundaries=${specialistOwners.length}`,
     `approvalBoundaryTouched=${approvalBoundaryItems.length > 0 ? "yes" : "no"}`,
     `overDeliveryRisk=${overDeliveryRisk.id}`,
     `userDecisionRequired=${userDecisionRequired ? "yes" : "no"}`,
+    `clarificationAction=${clarificationDecision.action}`,
+    `clarificationReason=${clarificationDecision.reason}`,
     `assumptionDependence=${assumptionDependence.id}`,
     `existingSpecClarity=${existingSpecClarity.id}`,
     `changeScopeClarity=${changeScopeClarity.id}`,
+    `fastMode=${fastModeEnabled ? "on" : "off"}`,
   ];
   const selection = {
     schema: "adaptive-execution-selection.v1",
     version: planningModePolicyVersion,
-    promptHash: hashPrompt(prompt),
+    promptHash: hashPrompt(analysisPrompt),
     selectedMode,
     selectedPlanningDepth,
+    planningScore: planningScoreBreakdown.total,
+    planningScoreBreakdown,
+    taskFamily: familySelection.taskFamily,
+    familyProfileId: familySelection.familyProfileId,
+    familyProfile: {
+      label: familySelection.label,
+      objective: familySelection.objective,
+      minimumPlanningMode: familySelection.minimumPlanningMode,
+      ambiguityHandling: familySelection.ambiguityHandling,
+      completionContract: familySelection.completionContract,
+      reasons: Array.isArray(familySelection.reasons) ? familySelection.reasons : [],
+      keywordHits: Array.isArray(familySelection.keywordHits) ? familySelection.keywordHits : [],
+      executionSourceMatched: familySelection.executionSourceMatched ? 1 : 0,
+    },
     flowPath: `${selectedMode}_PATH`,
     executionFlow: "",
     reasons: planningReasons,
     planningReasons,
-    needsInputRecommended: selectedMode === "DISCOVERY" && (userDecisionRequired || approvalBoundaryItems.length > 0 || openQuestions.length > 0),
+    needsInputRecommended: selectedMode === "DISCOVERY" && (
+      clarificationDecision.action !== "proceed" ||
+      explicitUserDecisionRequired ||
+      approvalBoundaryItems.length > 0 ||
+      (familySelection.taskFamily !== "web_creative" && openQuestions.length > 0)
+    ),
     signals: {
       openQuestionsCount: openQuestions.length,
       acceptanceCheckCount: acceptanceChecks.length,
@@ -1321,13 +2043,20 @@ function buildPlanningSelection({ prompt = "", options = {}, contract } = {}) {
       approvalBoundaryCount: approvalBoundaryItems.length,
       overDeliveryRisk: overDeliveryRisk.id,
       userDecisionRequired: userDecisionRequired ? 1 : 0,
+      explicitUserDecisionRequired: explicitUserDecisionRequired ? 1 : 0,
+      clarificationAction: clarificationDecision.action,
+      clarificationReason: clarificationDecision.reason,
+      clarificationQuestion: clarificationDecision.question,
+      clarificationSummary: clarificationDecision.summary,
+      clarificationMissingAnchors: clarificationDecision.missingAnchors,
       assumptionDependence: assumptionDependence.id,
       existingSpecClarity: existingSpecClarity.id,
       changeScopeClarity: changeScopeClarity.id,
+      ambiguityInventoryCount: openQuestions.length + approvalBoundaryItems.length,
     },
     extracted: {
-      explicitGoal: extractExplicitGoal(prompt, sections, contracts.planning),
-      implicitGoal: extractImplicitGoal(prompt, sections, contracts.planning),
+      explicitGoal: extractExplicitGoal(analysisPrompt, sections, contracts.planning),
+      implicitGoal: extractImplicitGoal(analysisPrompt, sections, contracts.planning),
       baselineScope,
       overDeliveryScope: overDeliveryRisk.hits,
       nonGoals,
@@ -1340,10 +2069,13 @@ function buildPlanningSelection({ prompt = "", options = {}, contract } = {}) {
       requestUserInputPolicy: safeString(options && options.requestUserInputPolicy, 40),
       sandboxMode: safeString(options && options.sandboxMode, 40),
       approvalPolicy: safeString(options && options.approvalPolicy, 40),
+      fastModeEnabled: fastModeEnabled ? 1 : 0,
     },
   };
-  const assuranceSelection = buildAssuranceSelection({ prompt, selection, assuranceContract: contracts.assurance });
+  const assuranceSelection = buildAssuranceSelection({ prompt: analysisPrompt, selection, assuranceContract: contracts.assurance });
   selection.selectedAssuranceDepth = assuranceSelection.selectedAssuranceDepth;
+  selection.assuranceScore = assuranceSelection.assuranceScore;
+  selection.assuranceScoreBreakdown = assuranceSelection.assuranceScoreBreakdown;
   selection.assuranceReasons = assuranceSelection.reasons;
   selection.assuranceSignals = assuranceSelection.signals;
   selection.executionFlow = `${selection.selectedPlanningDepth}+${selection.selectedAssuranceDepth}`;
@@ -1352,28 +2084,47 @@ function buildPlanningSelection({ prompt = "", options = {}, contract } = {}) {
 
 function buildRequirementContract({ prompt = "", options = {}, selection, contract } = {}) {
   const normalizedSelection = selection && typeof selection === "object" ? selection : buildPlanningSelection({ prompt, options, contract });
+  const normalizedContracts = loadAdaptiveContracts(contract);
+  const analysisPrompt = sanitizePromptForPolicyAnalysis(prompt);
+  const sections = parsePromptSections(analysisPrompt);
+  const explicitGoal = extractExplicitGoal(analysisPrompt, sections, normalizedContracts.planning);
+  const implicitGoal = extractImplicitGoal(analysisPrompt, sections, normalizedContracts.planning);
+  const inferredNonGoals = inferNonGoals(normalizedSelection.extracted.nonGoals, normalizedSelection.selectedMode);
   const assumptions = [];
   if (normalizedSelection.signals.assumptionDependence !== "low") {
     assumptions.push(
       normalizedSelection.signals.acceptanceClarity === "low"
-        ? "Acceptance checks are not fully specified, so implementation details may require user confirmation."
-        : "Some task boundaries still depend on inferred scope from the prompt."
+        ? "受け入れ条件がまだ十分に固まっていないため、実装詳細はユーザー確認が必要になる可能性がある。"
+        : "タスク境界の一部は、まだ入力文からの推定に依存している。"
     );
   }
-  if (!normalizedSelection.extracted.nonGoals.length) assumptions.push("Any scope outside the explicit goal should stay proposal-only unless the prompt states otherwise.");
+  if (!normalizedSelection.extracted.nonGoals.length) assumptions.push("明示ゴールの外側は、入力で明示されていない限り提案止まりにする。");
+  const userValueFrame = buildUserValueFrame({
+    prompt: analysisPrompt,
+    explicitGoal,
+    implicitGoal,
+    taskFamily: safeString(normalizedSelection.taskFamily, 80) || "deterministic_code",
+    baselineScope: normalizedSelection.extracted.baselineScope,
+    nonGoals: inferredNonGoals,
+    acceptanceChecks: normalizedSelection.extracted.acceptanceChecks,
+    approvalBoundaryItems: normalizedSelection.extracted.approvalBoundaryItems,
+  });
   return {
-    schema: "requirement-contract.v1",
+    schema: "requirement-contract.v3",
     source: "runtime_inferred_pre_dispatch",
     promptHash: normalizedSelection.promptHash,
-    explicitGoal: normalizedSelection.extracted.explicitGoal,
-    implicitGoal: normalizedSelection.extracted.implicitGoal,
+    explicitGoal,
+    implicitGoal,
+    taskFamily: safeString(normalizedSelection.taskFamily, 80) || "deterministic_code",
+    familyProfileId: safeString(normalizedSelection.familyProfileId, 80) || safeString(normalizedSelection.taskFamily, 80) || "deterministic_code",
     baselineScope: normalizedSelection.extracted.baselineScope,
     overDeliveryScope: normalizedSelection.extracted.overDeliveryScope,
-    nonGoals: normalizedSelection.extracted.nonGoals,
+    nonGoals: inferredNonGoals,
     assumptions: uniqueStrings(assumptions, 8),
     openQuestions: normalizedSelection.extracted.openQuestions,
     approvalBoundaryItems: normalizedSelection.extracted.approvalBoundaryItems,
     acceptanceChecks: normalizedSelection.extracted.acceptanceChecks,
+    userValueFrame,
     selectedPlanningMode: normalizedSelection.selectedMode,
     selectedPlanningDepth: normalizedSelection.selectedPlanningDepth,
     selectedAssuranceDepth: normalizedSelection.selectedAssuranceDepth,
@@ -1383,7 +2134,7 @@ function buildRequirementContract({ prompt = "", options = {}, selection, contra
 }
 
 function defaultOwnedPathsForRole(role, prompt) {
-  const lower = safeString(prompt, 40000).toLowerCase();
+  const lower = sanitizePromptForPolicyAnalysis(prompt).toLowerCase();
   switch (role) {
     case "frontend_worker":
       return ["web/"];
@@ -1423,7 +2174,7 @@ function defaultEvidenceForRole(role, assuranceDepth, dedicatedTestsRequired) {
     case "reviewer":
       return ["findings_first_review"];
     case "explorer":
-      return ["fact_finding_notes"];
+      return ["fact_finding_notes", "open_question_register"];
     default:
       return ["artifact_manifest"];
   }
@@ -1435,24 +2186,33 @@ function buildDispatchPlan({ prompt = "", options = {}, selection, requirementCo
   const acceptanceIds = Array.isArray(requirement.acceptanceChecks) ? requirement.acceptanceChecks.map((entry) => safeString(entry && entry.id, 60)).filter(Boolean) : [];
   const roles = normalizedSelection.signals.specialistOwners.filter((role) => !["reviewer", "tester", "explorer"].includes(role));
   const assuranceDepth = normalizeAssuranceMode(normalizedSelection.selectedAssuranceDepth, "STANDARD_ASSURANCE");
-  const reviewerRequired = normalizedSelection.selectedPlanningDepth !== "FAST_PLANNING" || Boolean(normalizedSelection.assuranceSignals && normalizedSelection.assuranceSignals.reviewerSuggested) || normalizedSelection.signals.specialistBoundaryCount > 1;
+  const reviewerRequired = assuranceDepth === "SIGNOFF_ASSURANCE" || Boolean(normalizedSelection.assuranceSignals && normalizedSelection.assuranceSignals.reviewerSuggested);
   const testerRequired = assuranceDepth === "SIGNOFF_ASSURANCE" || Boolean(normalizedSelection.assuranceSignals && normalizedSelection.assuranceSignals.testerSuggested);
   const signoffRequired = assuranceDepth === "SIGNOFF_ASSURANCE";
   const dedicatedTestsRequired = assuranceDepth === "SIGNOFF_ASSURANCE" && Boolean(normalizedSelection.assuranceSignals && (normalizedSelection.assuranceSignals.newLogicRisk || normalizedSelection.assuranceSignals.runtimeTouch || normalizedSelection.assuranceSignals.protocolTouch));
   const dispatches = [];
   if (normalizedSelection.selectedPlanningDepth === "DISCOVERY_PLANNING") {
+    const clarificationAction = safeString(normalizedSelection.signals && normalizedSelection.signals.clarificationAction, 40);
+    const clarificationQuestion = safeString(normalizedSelection.signals && normalizedSelection.signals.clarificationQuestion, 320);
+    const clarificationSummary = safeString(normalizedSelection.signals && normalizedSelection.signals.clarificationSummary, 320);
     dispatches.push({
       dispatchId: "dispatch-default-discovery",
       ownerAgent: safeString(options && options.agentName, 80) || "default",
       ownedPaths: [],
-      taskSummary: "Clarify unresolved requirements, non-goals, assumptions, and approval-boundary items before implementation.",
+      taskSummary: clarificationAction === "ask_user_once"
+        ? `\u5b9f\u88c5\u524d\u306b\u3001\u6700\u3082\u52b9\u304f\u78ba\u8a8d\u3067\u304d\u308b\u8cea\u554f\u30921\u3064\u3060\u3051\u884c\u3046\u3002${clarificationQuestion ? ` \u8cea\u554f: ${clarificationQuestion}` : ""}`
+        : clarificationAction === "needs_input"
+          ? "\u5b9f\u88c5\u524d\u306b\u5fc5\u8981\u306a\u30e6\u30fc\u30b6\u30fc\u5224\u65ad\u307e\u305f\u306f\u627f\u8a8d\u304c\u63c3\u3046\u307e\u3067\u5b9f\u884c\u3092\u505c\u6b62\u3059\u308b\u3002"
+          : "\u5b9f\u88c5\u306b\u5165\u308b\u524d\u306b\u3001\u672a\u89e3\u6c7a\u306e\u8981\u4ef6\u3001\u975e\u5bfe\u8c61\u7bc4\u56f2\u3001\u524d\u63d0\u3001\u627f\u8a8d\u5883\u754c\u3092\u6574\u7406\u3059\u308b\u3002",
       acceptanceChecks: acceptanceIds,
       toolsMcpRequirements: ["planning_contract", "read_only_analysis"],
       reviewerRequired: 0,
       testerRequired: 0,
       signoffRequired: signoffRequired ? 1 : 0,
-      escalationPoint: "If blocking questions or approval-boundary items remain, stop with NEEDS_INPUT.",
-      expectedEvidence: uniqueStrings(["requirement_contract", "flow_trace_summary", "open_questions"], 8),
+      escalationPoint: clarificationAction === "ask_user_once"
+        ? "\u30e6\u30fc\u30b6\u30fc\u304c\u78ba\u8a8d\u8cea\u554f\u306b\u56de\u7b54\u3059\u308b\u307e\u3067\u306f\u5b9f\u88c5\u3057\u306a\u3044\u3002"
+        : "\u672a\u89e3\u6c7a\u306e\u78ba\u8a8d\u4e8b\u9805\u307e\u305f\u306f\u627f\u8a8d\u5883\u754c\u304c\u6b8b\u308b\u5834\u5408\u306f\u3001NEEDS_INPUT \u3067\u505c\u6b62\u3059\u308b\u3002",
+      expectedEvidence: uniqueStrings(["requirement_contract", "flow_trace_summary", "open_question_register", "assumption_register", "non_goal_register", clarificationAction === "ask_user_once" ? "clarification_prompt" : "", clarificationSummary], 8),
     });
   } else {
     const effectiveRoles = roles.length ? roles : [normalizedSelection.assuranceSignals && normalizedSelection.assuranceSignals.docsOnly ? "infra_worker" : "backend_worker"];
@@ -1463,12 +2223,12 @@ function buildDispatchPlan({ prompt = "", options = {}, selection, requirementCo
         ownerAgent: role,
         ownedPaths: defaultOwnedPathsForRole(role, prompt),
         taskSummary: role === "infra_worker"
-          ? "Own contracts, docs sync, runtime observability, and signoff-facing evidence updates."
+          ? "\u5951\u7d04\u3001docs sync\u3001runtime \u53ef\u89b3\u6e2c\u6027\u3001signoff \u5411\u3051\u8a3c\u8de1\u66f4\u65b0\u3092\u62c5\u5f53\u3059\u308b\u3002"
           : role === "backend_worker"
-            ? "Own server-side orchestration, policies, and runtime behavior changes."
+            ? "\u30b5\u30fc\u30d0\u30fc\u5074\u306e\u30aa\u30fc\u30b1\u30b9\u30c8\u30ec\u30fc\u30b7\u30e7\u30f3\u3001\u30dd\u30ea\u30b7\u30fc\u3001runtime \u632f\u308b\u821e\u3044\u5909\u66f4\u3092\u62c5\u5f53\u3059\u308b\u3002"
             : role === "frontend_worker"
-              ? "Own UI and operator-facing web changes."
-              : "Own bounded specialist execution for the selected scope.",
+              ? "UI \u3068\u30aa\u30da\u30ec\u30fc\u30bf\u30fc\u5411\u3051 Web \u5909\u66f4\u3092\u62c5\u5f53\u3059\u308b\u3002"
+              : "\u9078\u629e\u3055\u308c\u305f\u7bc4\u56f2\u306e specialist \u5b9f\u884c\u3092\u62c5\u5f53\u3059\u308b\u3002",
         acceptanceChecks: acceptanceIds,
         toolsMcpRequirements: defaultToolsForRole(role),
         reviewerRequired: reviewerRequired ? 1 : 0,
@@ -1482,16 +2242,22 @@ function buildDispatchPlan({ prompt = "", options = {}, selection, requirementCo
     }
   }
   const residualRisks = [];
-  if (normalizedSelection.selectedPlanningDepth === "DISCOVERY_PLANNING") residualRisks.push("Implementation is intentionally paused until user decisions resolve the open questions.");
+  if (normalizedSelection.selectedPlanningDepth === "DISCOVERY_PLANNING") {
+    const clarificationAction = safeString(normalizedSelection.signals && normalizedSelection.signals.clarificationAction, 40);
+    if (clarificationAction === "ask_user_once") residualRisks.push("Implementation is intentionally paused until one clarifying answer anchors the design direction.");
+    else residualRisks.push("Implementation is intentionally paused until user decisions resolve the open questions.");
+  }
   else if (normalizedSelection.signals.assumptionDependence !== "low") residualRisks.push("Some implementation details still depend on inferred assumptions from the prompt.");
   if (dedicatedTestsRequired) residualRisks.push("New logic or protocol-sensitive behavior requires dedicated verification before signoff.");
   return {
-    schema: "dispatch-plan.v1",
+    schema: "dispatch-plan.v2",
     source: "runtime_inferred_pre_dispatch",
     promptHash: normalizedSelection.promptHash,
     planningMode: normalizedSelection.selectedMode,
     planningDepth: normalizedSelection.selectedPlanningDepth,
     assuranceDepth,
+    taskFamily: safeString(normalizedSelection.taskFamily, 80) || "deterministic_code",
+    familyProfileId: safeString(normalizedSelection.familyProfileId, 80) || safeString(normalizedSelection.taskFamily, 80) || "deterministic_code",
     flowPath: normalizedSelection.flowPath,
     executionFlow: normalizedSelection.executionFlow,
     proposalOnly: normalizedSelection.selectedPlanningDepth === "DISCOVERY_PLANNING" ? 1 : 0,
@@ -1509,9 +2275,26 @@ function buildDispatchPlan({ prompt = "", options = {}, selection, requirementCo
 function buildPlanningArtifacts({ prompt = "", options = {}, contract } = {}) {
   const contracts = loadAdaptiveContracts(contract);
   const selection = buildPlanningSelection({ prompt, options, contract: contracts });
+  const assuranceSelection = {
+    selectedAssuranceDepth: selection.selectedAssuranceDepth,
+    assuranceScore: selection.assuranceScore,
+    assuranceScoreBreakdown: selection.assuranceScoreBreakdown,
+    reasons: Array.isArray(selection.assuranceReasons) ? selection.assuranceReasons : [],
+    signals: selection.assuranceSignals && typeof selection.assuranceSignals === "object" ? selection.assuranceSignals : {},
+  };
+  const planningDecisionContract = buildPlanningDecisionContract({ selection, assuranceSelection });
   const requirementContract = buildRequirementContract({ prompt, options, selection, contract: contracts });
   const dispatchPlan = buildDispatchPlan({ prompt, options, selection, requirementContract, contract: contracts });
-  return { schema: "planning-artifacts.v2", policyVersion: planningModePolicyVersion, contracts, selection, requirementContract, dispatchPlan };
+  return {
+    schema: "planning-artifacts.v2",
+    policyVersion: planningModePolicyVersion,
+    contracts,
+    selection,
+    assuranceSelection,
+    planningDecisionContract,
+    requirementContract,
+    dispatchPlan,
+  };
 }
 
 function sanitizeAcceptanceChecks(value) {
@@ -1549,11 +2332,18 @@ function sanitizeDispatches(value) {
 function sanitizePlanningArtifactsForRuntime(input) {
   const payload = input && typeof input === "object" ? input : {};
   const selection = payload.selection && typeof payload.selection === "object" ? payload.selection : {};
+  const assuranceSelection = payload.assuranceSelection && typeof payload.assuranceSelection === "object" ? payload.assuranceSelection : {};
+  const planningDecisionContract = payload.planningDecisionContract && typeof payload.planningDecisionContract === "object" ? payload.planningDecisionContract : {};
   const requirement = payload.requirementContract && typeof payload.requirementContract === "object" ? payload.requirementContract : {};
   const dispatchPlan = payload.dispatchPlan && typeof payload.dispatchPlan === "object" ? payload.dispatchPlan : {};
   const selectedMode = normalizePlanningMode(selection.selectedMode || requirement.selectedPlanningMode || dispatchPlan.planningMode, "NORMAL");
   const selectedPlanningDepth = normalizePlanningDepth(selection.selectedPlanningDepth || requirement.selectedPlanningDepth || dispatchPlan.planningDepth || toPlanningDepth(selectedMode), "STANDARD_PLANNING");
-  const selectedAssuranceDepth = normalizeAssuranceMode(selection.selectedAssuranceDepth || requirement.selectedAssuranceDepth || dispatchPlan.assuranceDepth, "STANDARD_ASSURANCE");
+  const selectedAssuranceDepth = normalizeAssuranceMode(
+    selection.selectedAssuranceDepth || assuranceSelection.selectedAssuranceDepth || planningDecisionContract.selectedAssuranceDepth || requirement.selectedAssuranceDepth || dispatchPlan.assuranceDepth,
+    "STANDARD_ASSURANCE"
+  );
+  const taskFamily = safeString(selection.taskFamily || planningDecisionContract.taskFamily || requirement.taskFamily || dispatchPlan.taskFamily, 80) || "deterministic_code";
+  const familyProfileId = safeString(selection.familyProfileId || planningDecisionContract.familyProfileId || requirement.familyProfileId || dispatchPlan.familyProfileId, 80) || taskFamily;
   return {
     schema: "planning-artifacts.v2",
     policyVersion: safeString(payload.policyVersion, 80) || planningModePolicyVersion,
@@ -1564,6 +2354,22 @@ function sanitizePlanningArtifactsForRuntime(input) {
       selectedMode,
       selectedPlanningDepth,
       selectedAssuranceDepth,
+      taskFamily,
+      familyProfileId,
+      planningScore: clampInt(selection.planningScore, 0, 0, 8),
+      planningScoreBreakdown: selection.planningScoreBreakdown && typeof selection.planningScoreBreakdown === "object" ? selection.planningScoreBreakdown : {},
+      assuranceScore: clampInt(selection.assuranceScore, 0, 0, 8),
+      assuranceScoreBreakdown: selection.assuranceScoreBreakdown && typeof selection.assuranceScoreBreakdown === "object" ? selection.assuranceScoreBreakdown : {},
+      familyProfile: {
+        label: safeString(selection.familyProfile && selection.familyProfile.label, 120),
+        objective: safeString(selection.familyProfile && selection.familyProfile.objective, 80),
+        minimumPlanningMode: normalizePlanningMode(selection.familyProfile && selection.familyProfile.minimumPlanningMode, "NORMAL"),
+        ambiguityHandling: safeString(selection.familyProfile && selection.familyProfile.ambiguityHandling, 80),
+        completionContract: safeString(selection.familyProfile && selection.familyProfile.completionContract, 80),
+        reasons: uniqueStrings(selection.familyProfile && selection.familyProfile.reasons, 8),
+        keywordHits: uniqueStrings(selection.familyProfile && selection.familyProfile.keywordHits, 8),
+        executionSourceMatched: selection.familyProfile && selection.familyProfile.executionSourceMatched ? 1 : 0,
+      },
       flowPath: safeString(selection.flowPath, 80) || `${selectedMode}_PATH`,
       executionFlow: safeString(selection.executionFlow, 120) || `${selectedPlanningDepth}+${selectedAssuranceDepth}`,
       reasons: uniqueStrings(selection.reasons || selection.planningReasons, 16),
@@ -1580,9 +2386,16 @@ function sanitizePlanningArtifactsForRuntime(input) {
         approvalBoundaryCount: clampInt(selection.signals && selection.signals.approvalBoundaryCount, 0, 0, 12),
         overDeliveryRisk: safeString(selection.signals && selection.signals.overDeliveryRisk, 40) || "low",
         userDecisionRequired: selection.signals && selection.signals.userDecisionRequired ? 1 : 0,
+        explicitUserDecisionRequired: selection.signals && selection.signals.explicitUserDecisionRequired ? 1 : 0,
+        clarificationAction: safeString(selection.signals && selection.signals.clarificationAction, 40),
+        clarificationReason: safeString(selection.signals && selection.signals.clarificationReason, 120),
+        clarificationQuestion: safeString(selection.signals && selection.signals.clarificationQuestion, 320),
+        clarificationSummary: safeString(selection.signals && selection.signals.clarificationSummary, 320),
+        clarificationMissingAnchors: uniqueStrings(selection.signals && selection.signals.clarificationMissingAnchors, 4),
         assumptionDependence: safeString(selection.signals && selection.signals.assumptionDependence, 40) || "low",
         existingSpecClarity: safeString(selection.signals && selection.signals.existingSpecClarity, 40) || "low",
         changeScopeClarity: safeString(selection.signals && selection.signals.changeScopeClarity, 40) || "low",
+        ambiguityInventoryCount: clampInt(selection.signals && selection.signals.ambiguityInventoryCount, 0, 0, 24),
       },
       assuranceSignals: {
         docsOnly: selection.assuranceSignals && selection.assuranceSignals.docsOnly ? 1 : 0,
@@ -1599,12 +2412,64 @@ function sanitizePlanningArtifactsForRuntime(input) {
         riskScore: clampInt(selection.assuranceSignals && selection.assuranceSignals.riskScore, 0, 0, 8),
       },
     },
+    assuranceSelection: {
+      schema: safeString(assuranceSelection.schema, 80) || "assurance-mode-selection.v1",
+      selectedAssuranceDepth,
+      assuranceScore: clampInt(assuranceSelection.assuranceScore || selection.assuranceScore || planningDecisionContract.assuranceScore, 0, 0, 8),
+      assuranceScoreBreakdown: assuranceSelection.assuranceScoreBreakdown && typeof assuranceSelection.assuranceScoreBreakdown === "object"
+        ? assuranceSelection.assuranceScoreBreakdown
+        : selection.assuranceScoreBreakdown && typeof selection.assuranceScoreBreakdown === "object"
+          ? selection.assuranceScoreBreakdown
+          : planningDecisionContract.assuranceScoreBreakdown && typeof planningDecisionContract.assuranceScoreBreakdown === "object"
+            ? planningDecisionContract.assuranceScoreBreakdown
+            : {},
+      reasons: uniqueStrings(assuranceSelection.reasons || selection.assuranceReasons, 16),
+      signals: assuranceSelection.signals && typeof assuranceSelection.signals === "object"
+        ? assuranceSelection.signals
+        : selection.assuranceSignals && typeof selection.assuranceSignals === "object"
+          ? selection.assuranceSignals
+          : {},
+    },
+    planningDecisionContract: {
+      schema: safeString(planningDecisionContract.schema, 80) || "planning-decision-contract.v1",
+      source: safeString(planningDecisionContract.source, 80) || "runtime_inferred_pre_dispatch",
+      promptHash: safeString(planningDecisionContract.promptHash, 80) || safeString(selection.promptHash, 80),
+      selectedPlanningMode: selectedMode,
+      selectedPlanningDepth,
+      selectedAssuranceDepth,
+      taskFamily,
+      familyProfileId,
+      flowPath: safeString(planningDecisionContract.flowPath, 80) || safeString(selection.flowPath, 80) || `${selectedMode}_PATH`,
+      adaptiveFlowId: safeString(planningDecisionContract.adaptiveFlowId, 120) || `${selectedPlanningDepth}__${selectedAssuranceDepth}`,
+      needsInputRecommended: planningDecisionContract.needsInputRecommended ? 1 : 0,
+      proposalOnlyRecommended: planningDecisionContract.proposalOnlyRecommended ? 1 : 0,
+      planningScore: clampInt(planningDecisionContract.planningScore || selection.planningScore, 0, 0, 8),
+      planningScoreBreakdown: planningDecisionContract.planningScoreBreakdown && typeof planningDecisionContract.planningScoreBreakdown === "object"
+        ? planningDecisionContract.planningScoreBreakdown
+        : selection.planningScoreBreakdown && typeof selection.planningScoreBreakdown === "object"
+          ? selection.planningScoreBreakdown
+          : {},
+      assuranceScore: clampInt(planningDecisionContract.assuranceScore || assuranceSelection.assuranceScore || selection.assuranceScore, 0, 0, 8),
+      assuranceScoreBreakdown: planningDecisionContract.assuranceScoreBreakdown && typeof planningDecisionContract.assuranceScoreBreakdown === "object"
+        ? planningDecisionContract.assuranceScoreBreakdown
+        : assuranceSelection.assuranceScoreBreakdown && typeof assuranceSelection.assuranceScoreBreakdown === "object"
+          ? assuranceSelection.assuranceScoreBreakdown
+          : selection.assuranceScoreBreakdown && typeof selection.assuranceScoreBreakdown === "object"
+            ? selection.assuranceScoreBreakdown
+            : {},
+      planningReasons: uniqueStrings(planningDecisionContract.planningReasons || selection.planningReasons || selection.reasons, 16),
+      assuranceReasons: uniqueStrings(planningDecisionContract.assuranceReasons || assuranceSelection.reasons || selection.assuranceReasons, 16),
+      planningSignals: planningDecisionContract.planningSignals && typeof planningDecisionContract.planningSignals === "object" ? planningDecisionContract.planningSignals : selection.signals && typeof selection.signals === "object" ? selection.signals : {},
+      assuranceSignals: planningDecisionContract.assuranceSignals && typeof planningDecisionContract.assuranceSignals === "object" ? planningDecisionContract.assuranceSignals : selection.assuranceSignals && typeof selection.assuranceSignals === "object" ? selection.assuranceSignals : {},
+    },
     requirementContract: {
-      schema: safeString(requirement.schema, 80) || "requirement-contract.v2",
+      schema: safeString(requirement.schema, 80) || "requirement-contract.v3",
       source: safeString(requirement.source, 80) || "runtime_inferred_pre_dispatch",
       promptHash: safeString(requirement.promptHash, 80) || safeString(selection.promptHash, 80),
       explicitGoal: safeString(requirement.explicitGoal, 320),
       implicitGoal: safeString(requirement.implicitGoal, 320),
+      taskFamily,
+      familyProfileId,
       baselineScope: uniqueStrings(requirement.baselineScope, 24),
       overDeliveryScope: uniqueStrings(requirement.overDeliveryScope, 16),
       nonGoals: uniqueStrings(requirement.nonGoals, 16),
@@ -1612,6 +2477,7 @@ function sanitizePlanningArtifactsForRuntime(input) {
       openQuestions: uniqueStrings(requirement.openQuestions, 12),
       approvalBoundaryItems: uniqueStrings(requirement.approvalBoundaryItems, 12),
       acceptanceChecks: sanitizeAcceptanceChecks(requirement.acceptanceChecks),
+      userValueFrame: sanitizeUserValueFrame(requirement.userValueFrame),
       selectedPlanningMode: normalizePlanningMode(requirement.selectedPlanningMode || selectedMode, "NORMAL"),
       selectedPlanningDepth: normalizePlanningDepth(requirement.selectedPlanningDepth || selectedPlanningDepth, "STANDARD_PLANNING"),
       selectedAssuranceDepth: normalizeAssuranceMode(requirement.selectedAssuranceDepth || selectedAssuranceDepth, "STANDARD_ASSURANCE"),
@@ -1625,6 +2491,8 @@ function sanitizePlanningArtifactsForRuntime(input) {
       planningMode: normalizePlanningMode(dispatchPlan.planningMode || selectedMode, "NORMAL"),
       planningDepth: normalizePlanningDepth(dispatchPlan.planningDepth || selectedPlanningDepth, "STANDARD_PLANNING"),
       assuranceDepth: normalizeAssuranceMode(dispatchPlan.assuranceDepth || selectedAssuranceDepth, "STANDARD_ASSURANCE"),
+      taskFamily,
+      familyProfileId,
       flowPath: safeString(dispatchPlan.flowPath, 80) || `${selectedMode}_PATH`,
       executionFlow: safeString(dispatchPlan.executionFlow, 120) || `${selectedPlanningDepth}+${selectedAssuranceDepth}`,
       proposalOnly: dispatchPlan.proposalOnly ? 1 : 0,
@@ -1657,9 +2525,11 @@ module.exports = {
   defaultPlanningDecisionContractSchemaPath,
   defaultPlanningModeContractPath,
   defaultRequirementContractSchemaPath,
+  defaultTaskFamilyProfilesPath,
   loadAssuranceModeContract,
   loadAssuranceDepthContract: loadAssuranceModeContract,
   loadPlanningModeContract,
+  loadTaskFamilyProfilesContract,
   normalizeAssuranceMode,
   normalizeAssuranceModeContract,
   normalizeAssuranceDepth: normalizeAssuranceMode,
@@ -1667,7 +2537,9 @@ module.exports = {
   normalizePlanningDepth,
   normalizePlanningMode,
   normalizePlanningModeContract,
+  normalizeTaskFamilyProfilesContract,
   planningModePolicyVersion,
   sanitizePlanningArtifactsForRuntime,
+  selectTaskFamilyProfile,
   toPlanningDepth,
 };

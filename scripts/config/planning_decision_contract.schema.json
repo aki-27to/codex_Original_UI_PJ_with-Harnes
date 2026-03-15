@@ -21,6 +21,8 @@
     "selectedPlanningMode": { "type": "string", "enum": ["FAST", "NORMAL", "DISCOVERY"] },
     "selectedPlanningDepth": { "type": "string", "enum": ["FAST_PLANNING", "STANDARD_PLANNING", "DISCOVERY_PLANNING"] },
     "selectedAssuranceDepth": { "type": "string", "enum": ["LIGHT_ASSURANCE", "STANDARD_ASSURANCE", "SIGNOFF_ASSURANCE"] },
+    "taskFamily": { "type": "string", "minLength": 1 },
+    "familyProfileId": { "type": "string", "minLength": 1 },
     "flowPath": { "type": "string", "enum": ["FAST_PATH", "NORMAL_PATH", "DISCOVERY_PATH"] },
     "adaptiveFlowId": { "type": "string", "minLength": 1 },
     "needsInputRecommended": { "type": "integer", "enum": [0, 1] },

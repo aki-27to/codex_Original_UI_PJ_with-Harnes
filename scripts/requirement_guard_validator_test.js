@@ -93,12 +93,20 @@ function run() {
     plainTransform.prompt.includes("[REQUIREMENT_RBJ_V1] mode: requirement_definition_loop"),
     "plain prompt should include requirement RBJ mode"
   );
+  assert.ok(
+    plainTransform.prompt.includes("user_value_core"),
+    "plain prompt should require a user_value_core bucket during RBJ"
+  );
   assert.ok(plainTransform.prompt.includes("STATUS: NEED_USER_INPUT"), "plain prompt should include ASK stop status");
   assert.ok(
     plainTransform.prompt.includes("non-binding"),
     "plain prompt should require non-binding assumptions"
   );
   assert.ok(plainTransform.prompt.includes("write TBD"), "plain prompt should require TBD for unknown concrete values");
+  assert.ok(
+    plainTransform.prompt.includes("User-value frame (primary optimization target):"),
+    "plain prompt should include a user-value frame"
+  );
   assert.ok(
     plainTransform.prompt.includes("Implement a login endpoint and add tests."),
     "rewritten prompt should include original request"
@@ -250,6 +258,58 @@ function run() {
     "FAST planning mode should keep a concise execution prompt"
   );
 
+  const webCreativeTransform = matcher.transformExecRequest({
+    prompt: "#requirement-locked このUI、ユーザーの好みにちゃんと合うように改善して。",
+    sandboxMode: "workspace-write",
+    options: { approvalPolicy: "on-request", executionSource: "web_ui" },
+    env: { CODEX_REQUIREMENT_RBJ_ENABLED: "0" },
+  });
+  assert.ok(
+    webCreativeTransform.prompt.includes("[REQUIREMENT_LOCK_V1] mode: single_clarification_gate"),
+    "preference-sensitive web creative transform should request one clarification question"
+  );
+  assert.ok(
+    webCreativeTransform.prompt.includes("Ask exactly one short clarifying question in the user's language."),
+    "single clarification gate should constrain the model to one question"
+  );
+  assert.ok(
+    webCreativeTransform.prompt.includes("STATUS: NEED_USER_INPUT"),
+    "single clarification gate should terminate with NEED_USER_INPUT"
+  );
+  assert.ok(
+    webCreativeTransform.prompt.includes("Suggested question:"),
+    "single clarification gate should carry the suggested clarifying question"
+  );
+  assert.strictEqual(
+    webCreativeTransform.options.planningContext.selection.taskFamily,
+    "web_creative",
+    "planning context should persist web_creative task family"
+  );
+  assert.strictEqual(
+    webCreativeTransform.options.planningContext.selection.signals.clarificationAction,
+    "ask_user_once",
+    "planning context should persist the single-question clarification action"
+  );
+
+  const anchoredWebCreativeTransform = matcher.transformExecRequest({
+    prompt: "#requirement-locked フォントやレイアウトを https://www.suruga-k.jp/ を参考に刷新して下さい。",
+    sandboxMode: "workspace-write",
+    options: { approvalPolicy: "on-request", executionSource: "web_ui" },
+    env: { CODEX_REQUIREMENT_RBJ_ENABLED: "0" },
+  });
+  assert.ok(
+    anchoredWebCreativeTransform.prompt.includes("[REQUIREMENT_LOCK_V1] mode: structured_execution"),
+    "reference-anchored web creative transform should still proceed to structured execution"
+  );
+  assert.ok(
+    anchoredWebCreativeTransform.prompt.includes("Family profile: web_creative."),
+    "reference-anchored web creative transform should retain family profile guidance"
+  );
+  assert.ok(
+    anchoredWebCreativeTransform.prompt.includes("Treat missing taste detail as room to generate strong directions"),
+    "reference-anchored web creative transform should still receive execution guidance"
+  );
+
   const slashTransform = matcher.transformExecRequest({
     prompt: "/agent list",
     sandboxMode: "workspace-write",
@@ -280,4 +340,3 @@ try {
   console.error(`FAIL requirement_guard_validator_test: ${error instanceof Error ? error.message : String(error)}`);
   process.exit(1);
 }
-

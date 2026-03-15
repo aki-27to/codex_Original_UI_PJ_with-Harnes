@@ -33,6 +33,8 @@
       "type": "string",
       "enum": ["LIGHT_ASSURANCE", "STANDARD_ASSURANCE", "SIGNOFF_ASSURANCE"]
     },
+    "taskFamily": { "type": "string", "minLength": 1 },
+    "familyProfileId": { "type": "string", "minLength": 1 },
     "flowPath": { "type": "string", "enum": ["FAST_PATH", "NORMAL_PATH", "DISCOVERY_PATH"] },
     "proposalOnly": { "type": "integer", "enum": [0, 1] },
     "reviewerRequired": { "type": "integer", "enum": [0, 1] },

@@ -299,6 +299,44 @@ function includesAnyToken(text, tokens) {
   );
 }
 
+function formatPromptBulletBlock(title, values, max = 6) {
+  const items = Array.isArray(values)
+    ? values
+        .map((entry) => (typeof entry === "string" ? entry.trim() : ""))
+        .filter(Boolean)
+        .slice(0, max)
+    : [];
+  if (!items.length) {
+    return "";
+  }
+  return `${title}:\n${items.map((entry) => `- ${entry}`).join("\n")}`;
+}
+
+function buildUserValueFramePromptBlock(requirement) {
+  const frame =
+    requirement && requirement.userValueFrame && typeof requirement.userValueFrame === "object"
+      ? requirement.userValueFrame
+      : {};
+  const lines = [];
+  if (typeof frame.valueThesis === "string" && frame.valueThesis.trim()) {
+    lines.push("User-value frame (primary optimization target):");
+    lines.push(`- Value thesis: ${frame.valueThesis.trim()}`);
+  }
+  const sections = [
+    formatPromptBulletBlock("User wants", frame.userWants, 6),
+    formatPromptBulletBlock("User should feel/get", frame.userShouldFeelGet, 6),
+    formatPromptBulletBlock("Must avoid", frame.mustAvoid, 6),
+    formatPromptBulletBlock("Hard constraints", frame.hardConstraints, 6),
+    formatPromptBulletBlock("Quality axes", frame.qualityAxes, 6),
+    formatPromptBulletBlock("Benchmark candidates", frame.benchmarkCandidates, 4),
+    formatPromptBulletBlock("Completed means", frame.completedMeans, 6),
+  ].filter(Boolean);
+  if (!lines.length && !sections.length) {
+    return "";
+  }
+  return [...lines, ...sections].join("\n");
+}
+
 function buildRequirementDefinitionGatePrompt(
   originalPrompt,
   config,
@@ -334,6 +372,7 @@ function buildRequirementDefinitionGatePrompt(
   const openQuestions = Array.isArray(requirement.openQuestions)
     ? requirement.openQuestions.map((entry) => `- ${entry}`).slice(0, 8).join("\n")
     : "";
+  const userValueFrame = buildUserValueFramePromptBlock(requirement);
   return [
     `${config.marker} mode: requirement_definition_gate`,
     `${expansionConfig.marker} expansion_status: parked_until_rbj_pass`,
@@ -344,16 +383,65 @@ function buildRequirementDefinitionGatePrompt(
     `assurance_reasons: ${Array.isArray(selection.assuranceReasons) ? selection.assuranceReasons.join(", ") : ""}`,
     rbjBlock || "",
     "Execution protocol (mandatory):",
-    "1) Output sections in this exact order: [Discovery-Goal], [Discovery-NonGoals], [Discovery-Assumptions], [Discovery-OpenQuestions], [Discovery-Acceptance], [Discovery-Decision].",
-    "2) Keep assumptions non-binding and do not implement while blocking open questions remain.",
+    "1) Output sections in this exact order: [Discovery-Goal], [Discovery-UserValue], [Discovery-NonGoals], [Discovery-Assumptions], [Discovery-OpenQuestions], [Discovery-Acceptance], [Discovery-Decision].",
+    "2) Lock the user-value frame first; acceptance is a guardrail, not a substitute for the value target.",
     "3) Never fabricate concrete numbers (deadline/headcount/budget/SLA). If missing, write TBD and keep it in Open Questions.",
     "4) Risky over-delivery is proposal-only in DISCOVERY mode.",
     "5) If any user decision or approval-boundary item remains, stop with STATUS: NEED_USER_INPUT.",
     `6) Ask at most ${maxQuestions} blocking questions in total.`,
     `7) If all blocking questions are resolved and confidence >= ${minConfidence}, you may state STATUS: REQUIREMENTS_READY.`,
     "8) Do not claim implementation completion from DISCOVERY mode output.",
+    userValueFrame,
     acceptanceChecks ? "Seed acceptance checks:\n".concat(acceptanceChecks) : "",
     openQuestions ? "Seed open questions:\n".concat(openQuestions) : "",
+    "",
+    "User request (verbatim):",
+    originalPrompt,
+  ].join("\n");
+}
+
+function buildSingleClarificationPrompt(
+  originalPrompt,
+  config,
+  expansionConfig,
+  expansionState,
+  planningArtifacts
+) {
+  const selection =
+    planningArtifacts && planningArtifacts.selection && typeof planningArtifacts.selection === "object"
+      ? planningArtifacts.selection
+      : {};
+  const requirement =
+    planningArtifacts && planningArtifacts.requirementContract && typeof planningArtifacts.requirementContract === "object"
+      ? planningArtifacts.requirementContract
+      : {};
+  const signals = selection && selection.signals && typeof selection.signals === "object"
+    ? selection.signals
+    : {};
+  const suggestedQuestion =
+    typeof signals.clarificationQuestion === "string" && signals.clarificationQuestion.trim()
+      ? signals.clarificationQuestion.trim()
+      : "Before implementation, what single direction should be prioritized?";
+  const summary =
+    typeof signals.clarificationSummary === "string" && signals.clarificationSummary.trim()
+      ? signals.clarificationSummary.trim()
+      : "One high-leverage clarification is required before implementation.";
+  return [
+    `${config.marker} mode: single_clarification_gate`,
+    `${expansionConfig.marker} expansion_status: ${expansionState.mode}`,
+    `${PLANNING_MODE_MARKER} selected: DISCOVERY`,
+    `${ASSURANCE_DEPTH_MARKER} selected: ${typeof selection.selectedAssuranceDepth === "string" ? selection.selectedAssuranceDepth : "STANDARD_ASSURANCE"}`,
+    `planning_reasons: ${Array.isArray(selection.reasons) ? selection.reasons.join(", ") : ""}`,
+    `assurance_reasons: ${Array.isArray(selection.assuranceReasons) ? selection.assuranceReasons.join(", ") : ""}`,
+    "Execution protocol (mandatory):",
+    "1) Ask exactly one short clarifying question in the user's language.",
+    "2) Ask only the highest-leverage question that will reduce outcome drift the most.",
+    "3) Do not dispatch specialists, do not edit files, and do not claim implementation progress.",
+    "4) Keep the reply concise and operator-readable.",
+    "5) End with: STATUS: NEED_USER_INPUT",
+    `Clarification summary: ${summary}`,
+    `Suggested question: ${suggestedQuestion}`,
+    buildUserValueFramePromptBlock(requirement),
     "",
     "User request (verbatim):",
     originalPrompt,
@@ -388,6 +476,10 @@ function buildRequirementGuardPrompt(
     typeof selection.selectedAssuranceDepth === "string" ? selection.selectedAssuranceDepth : "STANDARD_ASSURANCE";
   const planningReasonLine = `planning_reasons: ${Array.isArray(selection.reasons) ? selection.reasons.join(", ") : ""}`;
   const assuranceReasonLine = `assurance_reasons: ${Array.isArray(selection.assuranceReasons) ? selection.assuranceReasons.join(", ") : ""}`;
+  const clarificationAction =
+    selection && selection.signals && typeof selection.signals.clarificationAction === "string"
+      ? selection.signals.clarificationAction
+      : "";
   const acceptanceChecks = Array.isArray(requirement.acceptanceChecks)
     ? requirement.acceptanceChecks
         .map((entry) => (entry && typeof entry === "object" && entry.title ? `- ${entry.title}` : ""))
@@ -402,7 +494,48 @@ function buildRequirementGuardPrompt(
         .slice(0, 8)
         .join(", ")
     : "";
+  const taskFamily =
+    typeof selection.taskFamily === "string" && selection.taskFamily
+      ? selection.taskFamily
+      : "deterministic_code";
+  const familyProfile =
+    selection.familyProfile && typeof selection.familyProfile === "object"
+      ? selection.familyProfile
+      : {};
+  const familyExecutionRules =
+    taskFamily === "web_creative"
+      ? [
+          "Family profile: web_creative.",
+          "10) Treat missing taste detail as room to generate strong directions, not as a reason to stop, unless a real approval-boundary or irreversible decision is present.",
+          "11) Start by locking 2-3 candidate visual directions mentally, choose the strongest one, and execute decisively instead of drifting into generic compromise.",
+          "12) Optimize for first impression, hierarchy, typography, information density, and benchmark superiority before reviewability or process narration.",
+          "13) Avoid AI-looking generic layouts, weak card-grid sameness, glassmorphism-by-default, and abstract filler copy with no proof.",
+          "14) Make the page feel intentionally designed: concrete content, strong section rhythm, responsive behavior, and a believable visual system are mandatory.",
+        ]
+      : taskFamily === "research_analysis"
+        ? [
+            "Family profile: research_analysis.",
+            "10) Favor coverage, comparison, and explicit hypothesis separation over fast single-answer confidence.",
+          ]
+        : taskFamily === "planning_design"
+          ? [
+              "Family profile: planning_design.",
+              "10) Favor decision support: surface options, tradeoffs, and execution consequences before prescribing a single path.",
+            ]
+          : [
+              "Family profile: deterministic_code.",
+          "10) Favor correctness, bounded assumptions, and localized changes over speculative expansion.",
+            ];
 
+  if (clarificationAction === "ask_user_once") {
+    return buildSingleClarificationPrompt(
+      originalPrompt,
+      config,
+      expansionConfig,
+      expansionState,
+      planningArtifacts
+    );
+  }
   if (selectedMode === "DISCOVERY" && rbjState && rbjState.active) {
     return buildRequirementDefinitionGatePrompt(
       originalPrompt,
@@ -433,13 +566,13 @@ function buildRequirementGuardPrompt(
   const planningRules =
     selectedPlanningDepth === "FAST_PLANNING"
       ? [
-          "1) Keep Step 1/2 concise: lock the goal, acceptance checks, and specialist owner quickly, then execute.",
+          "1) Keep Step 1/2 concise: lock user value, the goal, acceptance checks, and specialist owner quickly, then execute.",
           "2) Do not ask follow-up questions unless correctness is blocked by a real missing decision.",
           "3) Use native specialist dispatch if implementation crosses the parent-only boundary.",
           "4) Preserve the baseline scope and avoid speculative extras.",
         ]
       : [
-          "1) Before execution, briefly lock explicit goal, non-goals, assumptions, and acceptance checks.",
+          "1) Before execution, briefly lock the user-value frame, explicit goal, non-goals, assumptions, and acceptance checks.",
           "2) Make the dispatch plan explicit before implementation when multiple specialists are implicated.",
           "3) If blocking ambiguity remains, stop with STATUS: NEED_USER_INPUT instead of guessing.",
           "4) Keep over-delivery adjacent, bounded, and separately reported.",
@@ -471,8 +604,14 @@ function buildRequirementGuardPrompt(
     ...planningRules,
     ...assuranceRules,
     "7) Deliver all explicit user requirements first.",
-    "8) Prioritize quality upgrades: bug fixes, refactoring, test coverage, resilience, and maintainability.",
+    "8) Optimize for the user-value frame first; evidence and acceptance checks confirm the work but are not the creative or technical ceiling.",
     "9) Report baseline delivery, over-delivery items, and residual risks.",
+    `- Task family: ${taskFamily}`,
+    typeof familyProfile.objective === "string" && familyProfile.objective
+      ? `- Family objective: ${familyProfile.objective}`
+      : "",
+    buildUserValueFramePromptBlock(requirement),
+    ...familyExecutionRules,
     dispatchOwners ? `- Planned dispatch owners: ${dispatchOwners}` : "",
     acceptanceChecks ? "Acceptance checks:\n".concat(acceptanceChecks) : "",
     expansionControlRule,

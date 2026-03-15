@@ -1,4 +1,4 @@
-const http=require("http");
+﻿const http=require("http");
 const https=require("https");
 const fs=require("fs");
 const path=require("path");
@@ -32,6 +32,8 @@ const {
   normalizeParentDispatchGuardMode,
 }=require("./scripts/lib/parent_dispatch_guard_policy");
 const {
+}=require("./scripts/lib/logging_surface");
+const {
   conversationModeValues,
   defaultConversationMode:defaultConversationModeValue,
   defaultPersonaUserId:defaultPersonaUserIdValue,
@@ -55,6 +57,7 @@ const {
 const {
   defaultHarnessTurnContractSpecPath,
   loadHarnessTurnContractSpec,
+  validateReleaseDecisionState,
   validateTurnTransition,
   validateTurnTerminalContract,
   validateTurnTaskOutcomeContract,
@@ -66,16 +69,6 @@ const {
   summarizeTaskOutcomeContract,
   validateTaskOutcomeTurnCompatibility,
 }=require("./scripts/lib/task_outcome_policy");
-const {
-  buildIntentFirstPrompt,
-  evaluateIntentFirstGates,
-  isDesignSensitiveRequest,
-  loadDesignAcceptanceContract,
-  loadUserTasteMemoryStore,
-  normalizeUserTasteMemoryStore,
-  persistUserTasteMemoryStore,
-  summarizeIntentFirstRuntime,
-}=require("./scripts/lib/intent_first_policy");
 const {
   buildGitAutomationConfig,
   captureGitRepoState,
@@ -92,24 +85,59 @@ const {
   defaultPlanningDecisionContractSchemaPath,
   defaultPlanningModeContractPath,
   defaultRequirementContractSchemaPath,
+  defaultTaskFamilyProfilesPath,
   loadAssuranceModeContract,
   loadPlanningModeContract,
+  loadTaskFamilyProfilesContract,
   normalizeAssuranceMode,
   normalizePlanningModeContract,
   sanitizePlanningArtifactsForRuntime,
 }=require("./scripts/lib/planning_mode_policy");
+const {
+  defaultDesignAcceptanceContractPath,
+  defaultTasteMemorySeedPath,
+  loadDesignAcceptanceContract,
+  loadUserTasteMemoryStore,
+  summarizeIntentFirstRuntime,
+}=require("./scripts/lib/intent_first_policy");
+const {
+  evaluateFamilyCompletion,
+}=require("./scripts/lib/family_completion_policy");
+const {
+  shouldAutoInterruptForDiscoveryNeedsInput,
+}=require("./scripts/lib/discovery_needs_input_policy");
+const {
+  buildOperatorPlanEvent,
+}=require("./scripts/lib/operator_plan_surface");
+const {
+  buildConformanceReport,
+  buildOperatorViewSummary,
+  buildReleaseDecision,
+  buildReviewBundle,
+  buildRoutingDecision,
+  buildTaskOutcomesArtifact,
+  loadConfigJson:loadConstitutionConfigJson,
+}=require("./scripts/lib/constitution_conformance");
 const {
   defaultPiperModelId,
   preparePiperModel,
   speakWithPiper,
   getPiperRuntimeSnapshot,
 }=require("./scripts/lib/piper_voice_runtime");
+const {
+  ensureDir:ensureLoggingSurfaceDir,
+  writeJson:writeLoggingSurfaceJson,
+  readJson:readLoggingSurfaceJson,
+  getLoggingSurfacePaths,
+  repoRelative:repoRelativePath,
+}=require("./scripts/lib/logging_surface");
 
 const workspaceRoot=__dirname;
 const workspaceParentRoot=path.dirname(workspaceRoot);
 const webRoot=path.join(workspaceRoot,"web");
 const bundledEnglishConversationAppRoot=path.join(webRoot,"english-conversation-app");
 const defaultExternalEnglishConversationAppRoot=path.join(workspaceParentRoot,"english-conversation-app");
+const loggingSurfacePaths=getLoggingSurfacePaths(workspaceRoot);
 const userHomeDir=process.env.USERPROFILE||process.env.HOME||"";
 const apiVersion=4;
 const forcedUiPort=Number(process.env.CODEX_UI_PORT||"57525");
@@ -138,11 +166,16 @@ const approvalRiskRuleIds=Object.freeze({
   genericDangerSandboxBaseline:"generic.danger_sandbox_baseline",
 });
 const requestUserInputPolicyEnvKey="CODEX_REQUEST_USER_INPUT_POLICY";
+const automaticApprovalReviewEnvKey="CODEX_AUTOMATIC_APPROVAL_REVIEW";
+const fastModeDefaultEnvKey="CODEX_FAST_MODE_DEFAULT";
 const nonInteractiveRequestUserInputPolicy=normalizeRequestUserInputPolicy(process.env[requestUserInputPolicyEnvKey],"blocked");
+const automaticApprovalReviewDefault=parseBooleanEnv(automaticApprovalReviewEnvKey,true);
+const fastModeDefault=parseBooleanEnv(fastModeDefaultEnvKey,false);
 const gitAutomationConfig=buildGitAutomationConfig(process.env);
 const gitAutomationWorkspaceIgnoredPaths=Object.freeze([
-  "logs/harness_execution_memory.json",
-  "logs/eval_runs.jsonl",
+  "logs/archive/raw/harness_execution_memory.json",
+  "logs/archive/raw/eval_runs.jsonl",
+  "logs/archive/raw/runtime_state/conversation_persona_memory.json",
 ]);
 function normalizeConfiguredAgentName(value,fallback){
   const raw=typeof value==="string"?value.trim():"";
@@ -205,6 +238,16 @@ const defaultWindowsCodexCmd=process.env.APPDATA?path.join(process.env.APPDATA,"
 const defaultExecModelName=resolveConfiguredDefaultExecModelName();
 const defaultExecModelReasoningEffort=resolveConfiguredDefaultExecModelReasoningEffort();
 const defaultExecModelReasoningEffortConfig=`model_reasoning_effort="${defaultExecModelReasoningEffort}"`;
+const defaultExperimentalFeatures=Object.freeze(["fast_mode","guardian_approval"]);
+const fastModeFeatureName="fast_mode";
+const automaticApprovalReviewFeatureName="guardian_approval";
+const defaultCodexServiceTier=defaultExperimentalFeatures.includes(fastModeFeatureName)?"fast":"flex";
+const allowedCodexServiceTiers=new Set(["flex","fast"]);
+function normalizeCodexServiceTier(value,fallback=defaultCodexServiceTier){
+  const normalized=typeof value==="string"?value.trim().toLowerCase():"";
+  if(allowedCodexServiceTiers.has(normalized))return normalized;
+  return fallback;
+}
 const defaultRequestBodyLimitBytes=2*1024*1024;
 const execRequestBodyLimitBytes=24*1024*1024;
 const maxChatImageBytes=10*1024*1024;
@@ -215,14 +258,9 @@ const imageMimeByExtension={".png":"image/png",".jpg":"image/jpeg",".jpeg":"imag
 const allowedChatImageMimeTypes=new Set(Object.values(imageMimeByExtension));
 const allowedChatImageExtensions=new Set(Object.keys(imageMimeByExtension));
 const controlApiTokenHeaderName="x-codex-control-token";
-const controlApiActionAllowlist=new Set([
-  "select_workspace_directory",
-  "lock_workspace_directory",
-  "unlock_workspace_directory",
-  "update_intent_profile",
-  "reset_intent_profile",
-]);
-if(openCmdWindowEnabled)controlApiActionAllowlist.add("open_workspace_shell");
+const controlApiActionAllowlist=openCmdWindowEnabled
+  ? new Set(["open_workspace_shell"])
+  : new Set();
 const execApiRequiredContentType="application/json";
 const conversationApiRequiredContentType="application/json";
 const conversationRequestBodyLimitBytes=parsePositiveIntEnv("CODEX_CONVERSATION_REQUEST_BODY_LIMIT_BYTES",256*1024,8*1024,2*1024*1024);
@@ -240,7 +278,7 @@ const harnessMemorySchema="harness-execution-memory.v1";
 const harnessMemoryPathEnvKey="CODEX_HARNESS_MEMORY_PATH";
 const harnessMemoryPath=resolveWorkspaceScopedPathOverride(
   harnessMemoryPathEnvKey,
-  path.join(workspaceRoot,"logs","harness_execution_memory.json")
+  loggingSurfacePaths.harnessMemoryPath
 );
 const harnessMemoryRetentionDays=parsePositiveIntEnv("CODEX_HARNESS_MEMORY_RETENTION_DAYS",30,1,365);
 const harnessMemoryMaxContractRecords=parsePositiveIntEnv("CODEX_HARNESS_MEMORY_MAX_CONTRACT_RECORDS",5000,200,50000);
@@ -254,13 +292,11 @@ const evalSuiteConfigPath=path.join(workspaceRoot,"scripts","config","eval_suite
 const evalRunHistoryPathEnvKey="CODEX_EVAL_HISTORY_PATH";
 const evalRunHistoryPath=resolveWorkspaceScopedPathOverride(
   evalRunHistoryPathEnvKey,
-  path.join(workspaceRoot,"logs","eval_runs.jsonl")
+  loggingSurfacePaths.evalHistoryPath
 );
-const runtimeProofsRoot=path.join(workspaceRoot,"logs","proofs");
-const signoffBundlesRoot=path.join(workspaceRoot,"logs","signoff-bundles");
-const designAcceptanceContractPath=path.join(workspaceRoot,"scripts","config","design_acceptance_contract.json");
-const userTasteMemorySeedPath=path.join(workspaceRoot,"scripts","config","default_user_taste_memory.json");
-const userTasteMemoryPath=path.join(workspaceRoot,"logs","user_taste_memory.json");
+const runtimeProofsRoot=loggingSurfacePaths.proofBundlesRoot;
+const signoffBundlesRoot=loggingSurfacePaths.signoffBundlesRoot;
+const replayBundlesRoot=loggingSurfacePaths.replayBundlesRoot;
 const evalRunHistoryMaxLines=parsePositiveIntEnv("CODEX_EVAL_HISTORY_MAX_LINES",500,50,10000);
 const evalCaseTimeoutMs=parsePositiveIntEnv("CODEX_EVAL_CASE_TIMEOUT_MS",180000,30000,900000);
 const evalMaxCases=parsePositiveIntEnv("CODEX_EVAL_MAX_CASES",12,1,120);
@@ -273,9 +309,19 @@ const harnessTurnContractSpecPath=path.join(workspaceRoot,"scripts","config","ha
 const taskOutcomeContractPath=path.join(workspaceRoot,"scripts","config","task_outcome_contract.json");
 const planningModeContractPath=path.join(workspaceRoot,"scripts","config","planning_mode_contract.json");
 const assuranceModeContractPath=path.join(workspaceRoot,"scripts","config","assurance_depth_contract.json");
+const taskFamilyProfilesPath=path.join(workspaceRoot,"scripts","config","task_family_profiles.json");
+const designAcceptanceContractPath=defaultDesignAcceptanceContractPath;
+const tasteMemorySeedPath=defaultTasteMemorySeedPath;
 const planningDecisionContractSchemaPath=path.join(workspaceRoot,"scripts","config","planning_decision_contract.schema.json");
 const requirementContractSchemaPath=path.join(workspaceRoot,"scripts","config","requirement_contract.schema.json");
 const dispatchPlanSchemaPath=path.join(workspaceRoot,"scripts","config","dispatch_plan.schema.json");
+const requestFrameContractPath=path.join(workspaceRoot,"scripts","config","request_frame_contract.json");
+const routingDecisionContractPath=path.join(workspaceRoot,"scripts","config","routing_decision_contract.json");
+const discoveryOutcomeContractPath=path.join(workspaceRoot,"scripts","config","discovery_outcome_contract.json");
+const reviewBundleContractPath=path.join(workspaceRoot,"scripts","config","review_bundle_contract.json");
+const releaseDecisionContractPath=path.join(workspaceRoot,"scripts","config","release_decision_contract.json");
+const conformanceInvariantsContractPath=path.join(workspaceRoot,"scripts","config","conformance_invariants.json");
+const evidenceContractMachinePath=path.join(workspaceRoot,"scripts","config","evidence_contract.json");
 const pocBatchHistoryLimit=20;
 const pocSchedulerMinIntervalSec=15;
 const pocSchedulerDefaultIntervalSec=120;
@@ -283,7 +329,7 @@ const pocSchedulerDefaultPrompt="nightly batch: summarize CI failures and list t
 const allowedPocBatchModes=new Set(["mock","sdk"]);
 const conversationProvider="app-server";
 const conversationAppServerModel="codex-app-server";
-const conversationPersonaMemoryPath=path.join(workspaceRoot,"logs","conversation_persona_memory.json");
+const conversationPersonaMemoryPath=loggingSurfacePaths.conversationPersonaMemoryPath;
 const conversationPersonaMemoryContextFacts=5;
 const conversationPersonaMemoryContextTopics=3;
 const defaultEvalSuite=loadEvalSuiteSafely();
@@ -291,7 +337,9 @@ const harnessTurnContractSpec=loadHarnessTurnContractSpecSafely();
 const taskOutcomeContract=loadTaskOutcomeContractSafely();
 const planningModeContract=loadPlanningModeContractSafely();
 const assuranceModeContract=loadAssuranceModeContractSafely();
+const taskFamilyProfilesContract=loadTaskFamilyProfilesContractSafely();
 const designAcceptanceContract=loadDesignAcceptanceContractSafely();
+const tasteMemoryStore=loadTasteMemoryStoreSafely();
 
 let webServer=null;
 let webPort=null;
@@ -299,12 +347,6 @@ let shuttingDown=false;
 let nextAgentNumber=1;
 let conversationPersonaMemoryLoaded=false;
 let conversationPersonaMemoryStore=createDefaultPersonaMemoryStore();
-let userTasteMemoryLoaded=false;
-let userTasteMemoryStore=normalizeUserTasteMemoryStore({});
-const workspaceGuardState={
-  lockedRoot:"",
-  updatedAt:0,
-};
 let requirementGuardExtensionModule=null;
 let requirementGuardExtensionLoadError=null;
 let requirementGuardExtensionAttempted=false;
@@ -329,6 +371,16 @@ const pocSchedulerState={
 };
 
 const allowedOperationLogLevels=new Set(["off","core","standard","verbose"]);
+const allowedLoggingModes=new Set(["OPERATOR","PROOF","DEBUG","FORENSIC"]);
+function normalizeLoggingMode(value,fallback="OPERATOR"){
+  const raw=typeof value==="string"?value.trim().toUpperCase():"";
+  if(allowedLoggingModes.has(raw))return raw;
+  return fallback;
+}
+const loggingModeEnvKey="CODEX_LOGGING_MODE";
+const loggingMode=normalizeLoggingMode(process.env[loggingModeEnvKey],"OPERATOR");
+const refreshCurrentLogsOnly=normalizeBooleanFlag(process.env.CODEX_REFRESH_CURRENT_LOGS_ONLY);
+const refreshCurrentLogsTrigger=safeString(process.env.CODEX_REFRESH_CURRENT_LOGS_TRIGGER,80)||"cli_refresh";
 const operationLogLevelRank=Object.freeze({
   off:0,
   core:1,
@@ -337,11 +389,13 @@ const operationLogLevelRank=Object.freeze({
 });
 const operationLogDefaults=Object.freeze({
   enabled:process.env.CODEX_OPERATION_LOG_ENABLED!=="0",
-  relativePath:"logs/codex_ops.jsonl",
-  dailySplit:false,
+  relativePath:repoRelativePath(workspaceRoot,path.join(loggingSurfacePaths.archiveOperationLogsRoot,"codex_ops.jsonl"))||"logs/archive/raw/operation_logs/codex_ops.jsonl",
+  dailySplit:loggingMode==="FORENSIC",
   maxBytes:1024*1024,
   keepBytes:Math.floor(1024*1024*0.7),
-  level:"verbose",
+  level:loggingMode==="OPERATOR"
+    ?"core"
+    :(loggingMode==="PROOF"?"standard":"verbose"),
   maxEventBytes:4096,
   archive:Object.freeze({
     enabled:true,
@@ -475,12 +529,45 @@ function loadAssuranceModeContractSafely(){
     }
   }
 }
+function loadTaskFamilyProfilesContractSafely(){
+  try{
+    return loadTaskFamilyProfilesContract(taskFamilyProfilesPath);
+  }catch(error){
+    console.warn(`[contract] failed to load task family profiles from ${taskFamilyProfilesPath}: ${error&&error.message?error.message:String(error)}`);
+    try{
+      return loadTaskFamilyProfilesContract(defaultTaskFamilyProfilesPath);
+    }catch{
+      return{
+        schema:"task-family-profiles.v1",
+        version:"",
+        defaultFamily:"deterministic_code",
+        families:[],
+      };
+    }
+  }
+}
 function loadDesignAcceptanceContractSafely(){
   try{
     return loadDesignAcceptanceContract(designAcceptanceContractPath);
   }catch(error){
-    console.warn(`[contract] failed to load design acceptance spec from ${designAcceptanceContractPath}: ${error&&error.message?error.message:String(error)}`);
-    return loadDesignAcceptanceContract();
+    console.warn(`[contract] failed to load design acceptance contract from ${designAcceptanceContractPath}: ${error&&error.message?error.message:String(error)}`);
+    try{
+      return loadDesignAcceptanceContract(defaultDesignAcceptanceContractPath);
+    }catch{
+      return loadDesignAcceptanceContract();
+    }
+  }
+}
+function loadTasteMemoryStoreSafely(){
+  try{
+    return loadUserTasteMemoryStore({seedPath:tasteMemorySeedPath});
+  }catch(error){
+    console.warn(`[contract] failed to load taste memory seed from ${tasteMemorySeedPath}: ${error&&error.message?error.message:String(error)}`);
+    try{
+      return loadUserTasteMemoryStore({seedPath:defaultTasteMemorySeedPath});
+    }catch{
+      return loadUserTasteMemoryStore();
+    }
   }
 }
 function normalizeAutoOpenPath(value){
@@ -531,50 +618,6 @@ function isPathWithin(root,target){
   const rootResolved=path.resolve(root).toLowerCase();
   const targetResolved=path.resolve(target).toLowerCase();
   return targetResolved===rootResolved||targetResolved.startsWith(`${rootResolved}${path.sep}`);
-}
-function workspaceGuardLockedRoot(){
-  return typeof workspaceGuardState.lockedRoot==="string"&&workspaceGuardState.lockedRoot
-    ? workspaceGuardState.lockedRoot
-    : "";
-}
-function buildWorkspaceGuardSnapshot(){
-  const lockedRoot=workspaceGuardLockedRoot();
-  return{
-    locked:Boolean(lockedRoot),
-    lockedRoot:lockedRoot||null,
-    scope:"directory_tree",
-    updatedAt:Number.isFinite(Number(workspaceGuardState.updatedAt))?Math.max(0,Math.trunc(Number(workspaceGuardState.updatedAt))):0,
-    canSelect:process.platform==="win32",
-    selectApi:"POST /api/workspace/select",
-    lockApi:"POST /api/workspace/lock",
-    unlockApi:"POST /api/workspace/unlock",
-  };
-}
-function setWorkspaceGuardLock(targetRoot){
-  const resolved=normalizeWorkingDirectory(targetRoot,workspaceRoot);
-  workspaceGuardState.lockedRoot=resolved;
-  workspaceGuardState.updatedAt=Date.now();
-  return buildWorkspaceGuardSnapshot();
-}
-function clearWorkspaceGuardLock(){
-  workspaceGuardState.lockedRoot="";
-  workspaceGuardState.updatedAt=Date.now();
-  return buildWorkspaceGuardSnapshot();
-}
-function enforceWorkspaceGuard(resolvedCwd){
-  const lockedRoot=workspaceGuardLockedRoot();
-  if(!lockedRoot)return resolvedCwd;
-  if(isPathWithin(lockedRoot,resolvedCwd))return resolvedCwd;
-  throw new Error(`cwd is outside locked workspace: ${resolvedCwd} (locked root: ${lockedRoot})`);
-}
-function resolveApiWorkingDirectory(value,fallbackCwd=workspaceRoot){
-  const lockedRoot=workspaceGuardLockedRoot();
-  const fallback=lockedRoot||fallbackCwd||workspaceRoot;
-  const resolved=normalizeWorkingDirectory(value,fallback);
-  return enforceWorkspaceGuard(resolved);
-}
-function escapePowerShellSingleQuoted(value){
-  return String(value||"").replace(/'/g,"''");
 }
 function resolveControlApiToken(){
   const raw=typeof process.env.CODEX_CONTROL_API_TOKEN==="string"?process.env.CODEX_CONTROL_API_TOKEN.trim():"";
@@ -774,6 +817,29 @@ function buildInternalExecJsonResolution(parsed,statusCode=0){
     threadId:outcome?safeString(outcome.threadId,160):"",
   };
 }
+function normalizeFamilyCompletionGateSnapshot(value){
+  if(!value||typeof value!=="object")return null;
+  const missingHard=Array.isArray(value.missingHard)
+    ?value.missingHard.map((entry)=>({
+      id:safeString(entry&&entry.id,80)||"",
+      label:safeString(entry&&entry.label,120)||"",
+      reason:safeString(entry&&entry.reason,120)||"",
+    })).filter((entry)=>entry.id||entry.label||entry.reason).slice(0,12)
+    :[];
+  return{
+    applies:Boolean(value.applies),
+    designSensitive:Boolean(value.designSensitive),
+    taskFamily:safeString(value.taskFamily,80)||"",
+    familyProfileId:safeString(value.familyProfileId,80)||"",
+    completionContract:safeString(value.completionContract,80)||"",
+    status:safeString(value.status,80).toLowerCase()||"",
+    summary:safeString(value.summary,400)||"",
+    executionSource:safeString(value.executionSource,80).toLowerCase()||"",
+    workspaceLockRequired:Boolean(value.workspaceLockRequired),
+    workspaceLockedObserved:Boolean(value.workspaceLockedObserved),
+    missingHard,
+  };
+}
 function normalizeExecutionMemoryRecord(record){
   if(!record||typeof record!=="object")return null;
   const turnId=safeString(record.turnId,160)||"";
@@ -783,9 +849,12 @@ function normalizeExecutionMemoryRecord(record){
     turnId,
     threadId:safeString(record.threadId,160)||"",
     agentName:safeString(record.agentName,120)||"",
+    cwd:safeString(record.cwd,320)||"",
+    source:safeString(record.source,80)||"",
     status:normalizeExecutionState(record.status,{terminalFallback:true}),
     taskOutcomeStatus:safeString(record.taskOutcomeStatus,80).toUpperCase()||"",
     taskOutcomeReason:safeString(record.taskOutcomeReason,120)||"",
+    familyCompletionGate:normalizeFamilyCompletionGateSnapshot(record.familyCompletionGate||record.family_completion_gate),
     planningMode:safeString(record.planningMode,40)||"NORMAL",
     planningDepth:safeString(record.planningDepth,60)||"STANDARD_PLANNING",
     assuranceDepth:safeString(record.assuranceDepth,60)||"STANDARD_ASSURANCE",
@@ -798,9 +867,13 @@ function normalizeExecutionMemoryRecord(record){
     startedAt:normalizeMemoryTimestamp(record.startedAt,updatedAt),
     completedAt:normalizeMemoryTimestamp(record.completedAt,updatedAt),
     updatedAt,
+    smokeLikeProfile:record.smokeLikeProfile?1:0,
     outputSha256:safeString(record.outputSha256,80)||"",
     outputChars:Number.isFinite(Number(record.outputChars))?Math.max(0,Math.trunc(Number(record.outputChars))):0,
     observedSignals:normalizeObservedTurnSignals(record.observedSignals),
+    artifactDir:safeString(record.artifactDir,320)||"",
+    artifactManifestPath:safeString(record.artifactManifestPath,320)||"",
+    artifactManifestSha256:safeString(record.artifactManifestSha256,80)||"",
     evidenceManifestPath:safeString(record.evidenceManifestPath,320)||"",
     stageTimelinePath:safeString(record.stageTimelinePath,320)||"",
     flowTraceSummaryPath:safeString(record.flowTraceSummaryPath,320)||"",
@@ -2511,7 +2584,7 @@ const controlApiToken=resolveControlApiToken();
 const turnArtifactsEnabled=parseBooleanEnv("CODEX_TURN_ARTIFACTS_ENABLED",true);
 const turnArtifactsRoot=(()=>{
   const override=typeof process.env.CODEX_TURN_ARTIFACTS_DIR==="string"?process.env.CODEX_TURN_ARTIFACTS_DIR.trim():"";
-  const fallback=path.join(workspaceRoot,"logs","turns");
+  const fallback=loggingSurfacePaths.archiveTurnsRoot;
   if(!override)return fallback;
   const resolved=path.isAbsolute(override)?path.normalize(override):path.normalize(path.join(workspaceRoot,override));
   return isPathWithin(workspaceRoot,resolved)?resolved:fallback;
@@ -3469,7 +3542,7 @@ class TurnArtifactRecorder{
       byRule:{},
     };
     this.dirPath="";
-    this.files={events:"",items:"",diff:"",stdout:"",stderr:"",manifest:"",planningDecisionContract:"",requirementContract:"",dispatchPlan:"",evidenceManifest:"",stageTimeline:"",flowTraceSummary:"",reviewLoadBreakdown:""};
+    this.files={events:"",items:"",diff:"",stdout:"",stderr:"",manifest:"",planningDecisionContract:"",requirementContract:"",dispatchPlan:"",evidenceManifest:"",stageTimeline:"",flowTraceSummary:"",reviewLoadBreakdown:"",requestFrame:"",routingDecision:"",taskOutcomes:"",reviewBundle:"",releaseDecision:"",discoveryOutcome:"",conformanceReport:"",operatorViewSummary:""};
     if(!this.enabled)return;
     const dayStamp=toIsoTimestamp(this.startedAt).slice(0,10);
     const baseName=`${normalizeArtifactFileSegment(this.threadId,64)}__${normalizeArtifactFileSegment(this.turnId,96)}`;
@@ -3500,6 +3573,14 @@ class TurnArtifactRecorder{
     this.files.stageTimeline=path.join(targetDir,"stage_timeline.json");
     this.files.flowTraceSummary=path.join(targetDir,"flow_trace_summary.json");
     this.files.reviewLoadBreakdown=path.join(targetDir,"review_load_breakdown.json");
+    this.files.requestFrame=path.join(targetDir,"request_frame.json");
+    this.files.routingDecision=path.join(targetDir,"routing_decision.json");
+    this.files.taskOutcomes=path.join(targetDir,"task_outcomes.json");
+    this.files.reviewBundle=path.join(targetDir,"review_bundle.json");
+    this.files.releaseDecision=path.join(targetDir,"release_decision.json");
+    this.files.discoveryOutcome=path.join(targetDir,"discovery_outcome.json");
+    this.files.conformanceReport=path.join(targetDir,"conformance_report.json");
+    this.files.operatorViewSummary=path.join(targetDir,"operator_view_summary.json");
     this.writeEvent("turn.started",{
       turnId:this.turnId,
       threadId:this.threadId,
@@ -3640,7 +3721,7 @@ class TurnArtifactRecorder{
       this.stderrChunks+=1;
     }
   }
-  finalize({status,errorText,completedAt,approvalAudits,observedSignals,taskOutcomeStatus,taskOutcomeReason,planningContext,planningDecisionContract,requirementContract,dispatchPlan,evidenceManifest,stageTimeline,flowTraceSummary,reviewLoadBreakdown}={}){
+  finalize({status,errorText,completedAt,approvalAudits,observedSignals,taskOutcomeStatus,taskOutcomeReason,planningContext,planningDecisionContract,requirementContract,dispatchPlan,evidenceManifest,stageTimeline,flowTraceSummary,reviewLoadBreakdown,requestFrame,routingDecision,taskOutcomes,reviewBundle,releaseDecision,discoveryOutcome,conformanceReport,operatorViewSummary}={}){
     if(!this.canWrite())return null;
     this.writeEvent("turn.completed",{
       status:safeString(status,40)||"unknown",
@@ -3673,6 +3754,14 @@ class TurnArtifactRecorder{
       this.writeJsonArtifact(this.files.stageTimeline,stageTimeline&&typeof stageTimeline==="object"?stageTimeline:null),
       this.writeJsonArtifact(this.files.flowTraceSummary,flowTraceSummary&&typeof flowTraceSummary==="object"?flowTraceSummary:null),
       this.writeJsonArtifact(this.files.reviewLoadBreakdown,reviewLoadBreakdown&&typeof reviewLoadBreakdown==="object"?reviewLoadBreakdown:null),
+      this.writeJsonArtifact(this.files.requestFrame,requestFrame&&typeof requestFrame==="object"?requestFrame:null),
+      this.writeJsonArtifact(this.files.routingDecision,routingDecision&&typeof routingDecision==="object"?routingDecision:null),
+      this.writeJsonArtifact(this.files.taskOutcomes,taskOutcomes&&typeof taskOutcomes==="object"?taskOutcomes:null),
+      this.writeJsonArtifact(this.files.reviewBundle,reviewBundle&&typeof reviewBundle==="object"?reviewBundle:null),
+      this.writeJsonArtifact(this.files.releaseDecision,releaseDecision&&typeof releaseDecision==="object"?releaseDecision:null),
+      this.writeJsonArtifact(this.files.discoveryOutcome,discoveryOutcome&&typeof discoveryOutcome==="object"?discoveryOutcome:null),
+      this.writeJsonArtifact(this.files.conformanceReport,conformanceReport&&typeof conformanceReport==="object"?conformanceReport:null),
+      this.writeJsonArtifact(this.files.operatorViewSummary,operatorViewSummary&&typeof operatorViewSummary==="object"?operatorViewSummary:null),
     ].filter(Boolean);
     for(const entry of extraArtifacts){
       artifactEntries.push({
@@ -3757,6 +3846,14 @@ class TurnArtifactRecorder{
       stageTimelinePath:fs.existsSync(this.files.stageTimeline)?this.files.stageTimeline:"",
       flowTraceSummaryPath:fs.existsSync(this.files.flowTraceSummary)?this.files.flowTraceSummary:"",
       reviewLoadBreakdownPath:fs.existsSync(this.files.reviewLoadBreakdown)?this.files.reviewLoadBreakdown:"",
+      requestFramePath:fs.existsSync(this.files.requestFrame)?this.files.requestFrame:"",
+      routingDecisionPath:fs.existsSync(this.files.routingDecision)?this.files.routingDecision:"",
+      taskOutcomesPath:fs.existsSync(this.files.taskOutcomes)?this.files.taskOutcomes:"",
+      reviewBundlePath:fs.existsSync(this.files.reviewBundle)?this.files.reviewBundle:"",
+      releaseDecisionPath:fs.existsSync(this.files.releaseDecision)?this.files.releaseDecision:"",
+      discoveryOutcomePath:fs.existsSync(this.files.discoveryOutcome)?this.files.discoveryOutcome:"",
+      conformanceReportPath:fs.existsSync(this.files.conformanceReport)?this.files.conformanceReport:"",
+      operatorViewSummaryPath:fs.existsSync(this.files.operatorViewSummary)?this.files.operatorViewSummary:"",
       manifestSha256,
       promptSha256:manifest&&manifest.prompt?safeString(manifest.prompt.sha256,80):"",
       artifactCount:artifactEntries.length,
@@ -3782,8 +3879,9 @@ function createBaseAgentState(){
     sessionRef:null,
     threadId:null,
     activeTurnId:null,
-    experimentalEnabled:false,
-    experimentalFeatures:new Set(),
+    experimentalEnabled:defaultExperimentalFeatures.length>0,
+    experimentalFeatures:new Set(defaultExperimentalFeatures),
+    serviceTier:defaultCodexServiceTier,
     createdAt:Date.now(),
     forkedFrom:null,
     manualSessionPinned:false,
@@ -3793,6 +3891,10 @@ function createBaseAgentState(){
     lastRequestUserInputPolicy:null,
     lastModel:defaultExecModelName,
     lastModelReasoningEffort:defaultExecModelReasoningEffort,
+    lastFastModeEnabled:fastModeDefault,
+    lastAutomaticApprovalReviewEnabled:automaticApprovalReviewDefault,
+    fastModeEnabled:fastModeDefault,
+    automaticApprovalReviewEnabled:automaticApprovalReviewDefault,
   };
 }
 const agentStates=new Map();
@@ -4230,7 +4332,6 @@ function resolveExecRequestErrorStatus(error){
   if(/^unsupported content-type:/.test(message))return 415;
   if(/^cwd does not exist:/.test(message))return 400;
   if(/^cwd is not a directory:/.test(message))return 400;
-  if(/^cwd is outside locked workspace:/.test(message))return 403;
   if(/^images\[\d+\]:/.test(message))return 400;
   if(/^unsupported image /.test(message))return 400;
   if(/^image\./.test(message))return 400;
@@ -4368,53 +4469,10 @@ function serveStaticFile(req,res,pathname){
     res.end(data);
   });
 }
-function selectWorkspaceDirectoryDialog(initialPath=""){
-  if(process.platform!=="win32"){
-    throw new Error("workspace directory picker is only supported on Windows");
-  }
-  const initial=normalizeOptionalString(initialPath,2000);
-  const resolvedInitial=initial?path.resolve(initial):"";
-  const scriptLines=[
-    "Add-Type -AssemblyName System.Windows.Forms",
-    "$dialog = New-Object System.Windows.Forms.FolderBrowserDialog",
-    "$dialog.Description = 'Select a locked workspace for the Codex UI.'",
-    "$dialog.ShowNewFolderButton = $true",
-  ];
-  if(resolvedInitial){
-    scriptLines.push(`$dialog.SelectedPath = '${escapePowerShellSingleQuoted(resolvedInitial)}'`);
-  }
-  scriptLines.push(
-    "$result = $dialog.ShowDialog()",
-    "if($result -eq [System.Windows.Forms.DialogResult]::OK -and $dialog.SelectedPath){",
-    "  [Console]::OutputEncoding = [System.Text.Encoding]::UTF8",
-    "  Write-Output $dialog.SelectedPath",
-    "}"
-  );
-  const result=spawnSync("powershell.exe",["-NoLogo","-NoProfile","-STA","-Command",scriptLines.join("; ")],{
-    cwd:workspaceRoot,
-    windowsHide:false,
-    encoding:"utf8",
-    timeout:5*60*1000,
-  });
-  if(result.error)throw new Error(`workspace directory picker failed: ${result.error.message}`);
-  if(!Number.isInteger(result.status))throw new Error("workspace directory picker failed: no exit status");
-  if(result.status!==0){
-    const detail=getFirstMeaningfulLine(`${result.stdout||""}\n${result.stderr||""}`)||`exit code ${result.status}`;
-    throw new Error(`workspace directory picker failed: ${detail}`);
-  }
-  const chosenPath=String(result.stdout||"")
-    .split(/\r?\n/)
-    .map((line)=>line.trim())
-    .filter(Boolean)
-    .pop()||"";
-  if(!chosenPath)return"";
-  return normalizeWorkingDirectory(chosenPath,workspaceRoot);
-}
-function openCmdWindow(targetCwd=workspaceRoot){
-  const resolvedCwd=resolveApiWorkingDirectory(targetCwd,workspaceRoot);
-  const cd=`cd /d \"${resolvedCwd}\"`;
+function openCmdWindow(){
+  const cd=`cd /d \"${workspaceRoot}\"`;
   const cmd=`start \"\" /min cmd.exe /d /k ${cd}`;
-  const c=spawn("cmd.exe",["/d","/s","/c",cmd],{cwd:resolvedCwd,detached:true,stdio:"ignore",windowsHide:true});
+  const c=spawn("cmd.exe",["/d","/s","/c",cmd],{cwd:workspaceRoot,detached:true,stdio:"ignore",windowsHide:true});
   c.unref();
 }
 function writeChunk(res,text){
@@ -4650,122 +4708,6 @@ function resetConversationPersonaMemoryForUser(userId){
       updatedAt:0,
     },
   };
-}
-function loadUserTasteMemoryStoreCached(){
-  if(userTasteMemoryLoaded){
-    return userTasteMemoryStore;
-  }
-  userTasteMemoryLoaded=true;
-  try{
-    userTasteMemoryStore=loadUserTasteMemoryStore({
-      memoryPath:userTasteMemoryPath,
-      seedPath:userTasteMemorySeedPath,
-    });
-  }catch(error){
-    userTasteMemoryStore=normalizeUserTasteMemoryStore({});
-    logOperation("intent.user_taste_memory_load_failed",{
-      err:summarizeErrorForOperationLog(error,220),
-      path:summarizePathForOperationLog(userTasteMemoryPath,220),
-      seed:summarizePathForOperationLog(userTasteMemorySeedPath,220),
-    },"core");
-  }
-  return userTasteMemoryStore;
-}
-function persistUserTasteMemoryStoreCached(){
-  try{
-    const normalized=persistUserTasteMemoryStore(userTasteMemoryPath,userTasteMemoryStore);
-    userTasteMemoryStore=normalized;
-    userTasteMemoryLoaded=true;
-    return normalized;
-  }catch(error){
-    logOperation("intent.user_taste_memory_persist_failed",{
-      err:summarizeErrorForOperationLog(error,220),
-      path:summarizePathForOperationLog(userTasteMemoryPath,220),
-    },"core");
-    return null;
-  }
-}
-function buildIntentFirstRuntimeSnapshot(){
-  const store=loadUserTasteMemoryStoreCached();
-  const snapshot=summarizeIntentFirstRuntime({
-    contract:designAcceptanceContract,
-    store,
-    memoryPath:userTasteMemoryPath,
-    seedPath:userTasteMemorySeedPath,
-  });
-  return{
-    ...snapshot,
-    contract:{
-      ...(snapshot&&snapshot.contract&&typeof snapshot.contract==="object"?snapshot.contract:{}),
-      path:summarizePathForOperationLog(designAcceptanceContractPath,220),
-      promptEnvelope:{
-        title:safeString(designAcceptanceContract&&designAcceptanceContract.promptEnvelope&&designAcceptanceContract.promptEnvelope.title,120)||"Intent-First Brief",
-        enabledForSources:Array.isArray(designAcceptanceContract&&designAcceptanceContract.promptEnvelope&&designAcceptanceContract.promptEnvelope.enabledForSources)
-          ?designAcceptanceContract.promptEnvelope.enabledForSources.slice()
-          :[],
-        completionRule:safeString(designAcceptanceContract&&designAcceptanceContract.promptEnvelope&&designAcceptanceContract.promptEnvelope.completionRule,280)||"",
-        },
-    },
-    creativeSignals:{
-      promptKeywords:Array.isArray(designAcceptanceContract&&designAcceptanceContract.creativeSignals&&designAcceptanceContract.creativeSignals.promptKeywords)
-        ?designAcceptanceContract.creativeSignals.promptKeywords.slice(0,40)
-        :[],
-      pathPrefixes:Array.isArray(designAcceptanceContract&&designAcceptanceContract.creativeSignals&&designAcceptanceContract.creativeSignals.pathPrefixes)
-        ?designAcceptanceContract.creativeSignals.pathPrefixes.slice(0,20)
-        :[],
-      pathExtensions:Array.isArray(designAcceptanceContract&&designAcceptanceContract.creativeSignals&&designAcceptanceContract.creativeSignals.pathExtensions)
-        ?designAcceptanceContract.creativeSignals.pathExtensions.slice(0,20)
-        :[],
-    },
-    tasteMemory:{
-      ...(snapshot&&snapshot.tasteMemory&&typeof snapshot.tasteMemory==="object"?snapshot.tasteMemory:{}),
-      storage:summarizePathForOperationLog(userTasteMemoryPath,220),
-      seed:summarizePathForOperationLog(userTasteMemorySeedPath,220),
-    },
-  };
-}
-function updateActiveUserTasteProfile(patch){
-  const store=loadUserTasteMemoryStoreCached();
-  const activeProfileId=safeString(store&&store.activeProfileId,80).toLowerCase().replace(/[\s-]+/g,"_")||"default";
-  const profiles=store&&store.profiles&&typeof store.profiles==="object"?{...store.profiles}:{};
-  const current=profiles[activeProfileId]&&typeof profiles[activeProfileId]==="object"
-    ?profiles[activeProfileId]
-    :{id:activeProfileId,label:activeProfileId};
-  const nextPatch=patch&&typeof patch==="object"?{...patch}:{};
-  if(Object.prototype.hasOwnProperty.call(nextPatch,"northStar")){
-    nextPatch.northStarLines=Array.isArray(nextPatch.northStar)
-      ?nextPatch.northStar.slice(0,4)
-      :nextPatch.northStar;
-  }
-  const nextProfile={
-    ...current,
-    ...nextPatch,
-    id:activeProfileId,
-    updatedAt:Date.now(),
-  };
-  userTasteMemoryStore=normalizeUserTasteMemoryStore({
-    ...store,
-    updatedAt:Date.now(),
-    activeProfileId,
-    profiles:{
-      ...profiles,
-      [activeProfileId]:nextProfile,
-    },
-  });
-  return persistUserTasteMemoryStoreCached()||userTasteMemoryStore;
-}
-function resetUserTasteMemoryToSeed(){
-  userTasteMemoryLoaded=false;
-  userTasteMemoryStore=normalizeUserTasteMemoryStore({});
-  const store=loadUserTasteMemoryStore({
-    seedPath:userTasteMemorySeedPath,
-  });
-  userTasteMemoryStore=normalizeUserTasteMemoryStore({
-    ...store,
-    updatedAt:Date.now(),
-  });
-  userTasteMemoryLoaded=true;
-  return persistUserTasteMemoryStoreCached()||userTasteMemoryStore;
 }
 function buildConversationPromptFromRequest({message,history,level,topic,mode,memoryContext}){
   const conversationMode=normalizeConversationMode(mode);
@@ -5291,66 +5233,6 @@ function applyRequirementGuardExecExtension(input){
     return fallback;
   }
 }
-function applyIntentFirstExecEnvelope({prompt,executionSource}={}){
-  const normalizedPrompt=safeString(prompt,defaultPromptCharLimit);
-  const normalizedSource=safeString(executionSource,80)||"api_exec";
-  const designSensitive=isDesignSensitiveRequest({
-    prompt:normalizedPrompt,
-    changedPaths:[],
-    contract:designAcceptanceContract,
-  });
-  if(!normalizedPrompt){
-    return{
-      prompt:normalizedPrompt,
-      applied:false,
-      designSensitive,
-      source:normalizedSource,
-    };
-  }
-  const enabledSources=Array.isArray(designAcceptanceContract.promptEnvelope&&designAcceptanceContract.promptEnvelope.enabledForSources)
-    ?designAcceptanceContract.promptEnvelope.enabledForSources
-    :[];
-  if(!designSensitive||!enabledSources.includes(normalizedSource)){
-    return{
-      prompt:normalizedPrompt,
-      applied:false,
-      designSensitive,
-      source:normalizedSource,
-    };
-  }
-  const store=loadUserTasteMemoryStoreCached();
-  return{
-    prompt:buildIntentFirstPrompt({
-      prompt:normalizedPrompt,
-      contract:designAcceptanceContract,
-      activeProfile:store&&store.profiles?store.profiles[store.activeProfileId]:null,
-    }),
-    applied:true,
-    designSensitive,
-    source:normalizedSource,
-  };
-}
-function evaluateIntentFirstPreflight({prompt,executionSource,workspaceGuard}={}){
-  const normalizedSource=safeString(executionSource,80)||"api_exec";
-  const designSensitive=isDesignSensitiveRequest({
-    prompt:safeString(prompt,defaultPromptCharLimit),
-    changedPaths:[],
-    contract:designAcceptanceContract,
-  });
-  const requiresLock=designSensitive&&Array.isArray(designAcceptanceContract.workspaceLock.requiredForSources)
-    &&designAcceptanceContract.workspaceLock.requiredForSources.includes(normalizedSource)
-    &&designAcceptanceContract.workspaceLock.rejectWhenUnlocked;
-  const locked=Boolean(workspaceGuard&&workspaceGuard.locked&&typeof workspaceGuard.lockedRoot==="string"&&workspaceGuard.lockedRoot.trim());
-  return{
-    designSensitive,
-    requiresLock,
-    locked,
-    ok:!requiresLock||locked,
-    error:requiresLock&&!locked
-      ?"intent-first design tasks require an active workspace lock before execution"
-      :"",
-  };
-}
 function getRequirementGuardRequirementLockSnapshot(moduleRef){
   if(!moduleRef||typeof moduleRef.getRequirementLockConfig!=="function")return null;
   try{
@@ -5574,6 +5456,13 @@ function buildTurnInputCandidates(prompt,imageAttachments){
   if(!candidates.length&&textItem)return[[textItem]];
   return candidates;
 }
+function planningContextRequiresDispatch(planningContext){
+  const dispatchPlan=planningContext&&planningContext.dispatchPlan&&typeof planningContext.dispatchPlan==="object"
+    ?planningContext.dispatchPlan
+    :null;
+  if(!dispatchPlan||dispatchPlan.proposalOnly)return false;
+  return Array.isArray(dispatchPlan.dispatches)&&dispatchPlan.dispatches.length>0;
+}
 function getFirstMeaningfulLine(text){for(const line of(text||"").split(/\r?\n/)){const t=line.trim();if(!t||t.startsWith("WARNING:"))continue;return t;}return"";}
 function probeCliTool(cmd){const r=spawnSync("cmd.exe",["/d","/s","/c",cmd],{cwd:workspaceRoot,windowsHide:true,encoding:"utf8",timeout:8000});const stdout=typeof r.stdout==="string"?r.stdout:"";const stderr=typeof r.stderr==="string"?r.stderr:"";const first=getFirstMeaningfulLine(`${stdout}\n${stderr}`);const code=Number.isInteger(r.status)?r.status:1;const ok=!r.error&&code===0;if(ok)return{available:true,version:first||"ok",error:null};return{available:false,version:null,error:first||(r.error?r.error.message:`exit code ${code}`)};}
 function getDiagnosticsSnapshot(){
@@ -5589,6 +5478,8 @@ function getDiagnosticsSnapshot(){
       approvalPolicy:"on-request",
       sandboxMode:"workspace-write",
       webSearch:false,
+      fastModeEnabled:fastModeDefault,
+      automaticApprovalReviewEnabled:automaticApprovalReviewDefault,
       requestUserInputPolicy:nonInteractiveRequestUserInputPolicy,
       executionProfile:runtimeExecutionProfile,
     },
@@ -5616,9 +5507,10 @@ function getAppServerTransportMode(){
 function resolveAppServerSpawnTarget(cwd){
   if(process.platform==="win32"){
     const cmdPath=fs.existsSync(defaultWindowsCodexCmd)?defaultWindowsCodexCmd:"codex.cmd";
+    const commandLine=`"${cmdPath}" app-server`;
     return{
-      command:cmdPath,
-      args:["-c",defaultExecModelReasoningEffortConfig,"app-server"],
+      command:commandLine,
+      args:[],
       options:{cwd,windowsHide:true,stdio:["pipe","pipe","pipe"],shell:true},
     };
   }
@@ -5631,6 +5523,20 @@ function resolveAppServerSpawnTarget(cwd){
 
 function getOrCreateAgentState(name){const n=(name||"").trim();if(!n)return null;if(!agentStates.has(n)){agentStates.set(n,createBaseAgentState());}return agentStates.get(n);}
 function getActiveAgentState(){return getOrCreateAgentState(activeAgentName);}
+function resolveAutomaticApprovalReviewEnabled(value,fallback=automaticApprovalReviewDefault){
+  if(value===undefined||value===null)return Boolean(fallback);
+  return normalizeBooleanFlag(value);
+}
+function resolveFastModeEnabled(value,fallback=fastModeDefault){
+  if(value===undefined||value===null)return Boolean(fallback);
+  return normalizeBooleanFlag(value);
+}
+function resolveEffectiveServiceTier(agentState){
+  if(agentState&&resolveFastModeEnabled(agentState.fastModeEnabled,false)){
+    return normalizeCodexServiceTier(agentState.serviceTier,defaultCodexServiceTier);
+  }
+  return"flex";
+}
 function resolveAgentName(options){
   const requested=normalizeAgentName(options&&options.agentName);
   return requested||activeAgentName;
@@ -5648,11 +5554,14 @@ function listAgentsSnapshot(){
       activeTurnId:s.activeTurnId||null,
       experimental:Boolean(s.experimentalEnabled),
       experimentalFeatures:Array.from(s.experimentalFeatures||[]),
+      serviceTier:resolveEffectiveServiceTier(s),
       forkedFrom:s.forkedFrom||null,
       createdAt:Number.isFinite(s.createdAt)?s.createdAt:null,
       requestUserInputPolicy:s.lastRequestUserInputPolicy||nonInteractiveRequestUserInputPolicy,
       model:s.lastModel||defaultExecModelName,
       modelReasoningEffort:s.lastModelReasoningEffort||defaultExecModelReasoningEffort,
+      fastModeEnabled:Boolean(s.fastModeEnabled),
+      automaticApprovalReviewEnabled:Boolean(s.automaticApprovalReviewEnabled),
       governance:summarizeAgentGovernance(name),
     });
   }
@@ -5931,66 +5840,34 @@ function validateRequestedAgentName(agentName){
     allowedAgents:Array.from(allowed).sort().slice(0,24),
   };
 }
-function resolveTurnInterruptTarget(input={}){
-  const requestedThreadId=safeString(input&&input.threadId,160)||"";
-  const requestedTurnId=safeString(input&&input.turnId,160)||"";
-  const requestedAgentName=normalizeAgentName(input&&input.agentName);
-  if(requestedThreadId&&requestedTurnId){
-    return{
-      ok:true,
-      threadId:requestedThreadId,
-      turnId:requestedTurnId,
-      agentName:requestedAgentName||"",
-      source:"request",
-    };
-  }
-  if(!requestedAgentName){
-    return{
-      ok:false,
-      status:400,
-      code:"interrupt_target_missing",
-      error:"threadId/turnId or agentName is required",
-    };
-  }
-  const agentValidation=validateRequestedAgentName(requestedAgentName);
-  if(!agentValidation.ok){
-    return{
-      ok:false,
-      status:400,
-      code:"agent_not_configured",
-      error:`agent is not configured for runtime use: ${safeString(requestedAgentName,80)||"unknown"}`,
-      agentName:requestedAgentName,
-      allowedAgents:Array.isArray(agentValidation.allowedAgents)?agentValidation.allowedAgents.slice(0,24):[],
-    };
-  }
-  const resolvedAgentName=safeString(agentValidation.agentName,120)||requestedAgentName;
-  const fallbackAgentName=safeString(agentValidation.baseAgentName,120)||"";
-  const state=agentStates.get(resolvedAgentName)||agentStates.get(fallbackAgentName)||null;
-  const stateThreadId=safeString(state&&state.threadId,160)||"";
-  const stateTurnId=safeString(state&&state.activeTurnId,160)||"";
-  if(stateThreadId&&stateTurnId){
-    return{
-      ok:true,
-      threadId:stateThreadId,
-      turnId:stateTurnId,
-      agentName:resolvedAgentName,
-      source:"agent_state",
-    };
-  }
-  return{
-    ok:false,
-    status:409,
-    code:"no_active_turn",
-    error:`no active turn to interrupt for agent: ${resolvedAgentName}`,
-    agentName:resolvedAgentName,
-  };
-}
 function parseSlashPrompt(prompt){const t=(prompt||"").trim();const i=t.indexOf(" ");if(i<0)return{command:t.toLowerCase(),argsText:""};return{command:t.slice(0,i).toLowerCase(),argsText:t.slice(i+1).trim()};}
 function looksLikeSessionId(v){return sessionIdPattern.test((v||"").trim());}
 function findLatestSessionId(){const home=process.env.USERPROFILE||process.env.HOME;if(!home)return null;const root=path.join(home,".codex","sessions");if(!fs.existsSync(root))return null;let newest=null;const stack=[root];while(stack.length){const cur=stack.pop();let entries=[];try{entries=fs.readdirSync(cur,{withFileTypes:true});}catch{continue;}for(const e of entries){const full=path.join(cur,e.name);if(e.isDirectory()){stack.push(full);continue;}if(!e.isFile())continue;const m=e.name.match(/([0-9a-f-]{36})\.jsonl$/i);if(!m||!looksLikeSessionId(m[1]))continue;let mt=0;try{mt=fs.statSync(full).mtimeMs;}catch{}if(!newest||mt>newest.mtimeMs)newest={sessionId:m[1],mtimeMs:mt};}}return newest?newest.sessionId:null;}
 function parseMentionArgs(argsText){const raw=(argsText||"").trim();if(!raw)return null;if(raw.startsWith("\"")||raw.startsWith("'")){const q=raw[0];const end=raw.indexOf(q,1);if(end<0)return null;return{targetPath:raw.slice(1,end).trim(),message:raw.slice(end+1).trim()};}const i=raw.indexOf(" ");if(i<0)return{targetPath:raw,message:""};return{targetPath:raw.slice(0,i).trim(),message:raw.slice(i+1).trim()};}
 function resolveMentionPath(targetPath){if(!targetPath)return null;const abs=path.isAbsolute(targetPath)?path.normalize(targetPath):path.normalize(path.join(workspaceRoot,targetPath));if(!abs.startsWith(workspaceRoot)||!fs.existsSync(abs))return null;const rel=path.relative(workspaceRoot,abs).replace(/\\/g,"/");return{absolute:abs,relative:rel||path.basename(abs)};}
 function isUnknownThreadError(error){const t=((error&&error.message)||"").toLowerCase();return t.includes("unknown thread")||t.includes("thread not found")||t.includes("not found");}
+function isResponseStreamDisconnectErrorText(value){
+  const text=safeString(value,2400).toLowerCase();
+  if(!text)return false;
+  return text.includes("stream disconnected before completion")
+    ||text.includes("response stream disconnected")
+    ||text.includes("responsestreamdisconnected");
+}
+function isResponseStreamDisconnectErrorPayload(errorPayload){
+  if(!errorPayload||typeof errorPayload!=="object")return false;
+  if(isResponseStreamDisconnectErrorText(errorPayload.message))return true;
+  if(isResponseStreamDisconnectErrorText(errorPayload.additionalDetails))return true;
+  const info=errorPayload.codexErrorInfo;
+  return Boolean(info&&typeof info==="object"&&info.responseStreamDisconnected&&typeof info.responseStreamDisconnected==="object");
+}
+function extractResponseStreamDisconnectDetail(errorPayload,max=2400){
+  if(!errorPayload||typeof errorPayload!=="object")return"";
+  return firstNonEmptyString([
+    errorPayload.additionalDetails,
+    errorPayload.message,
+    isResponseStreamDisconnectErrorPayload(errorPayload)?"stream disconnected before completion":"",
+  ],max);
+}
 function normalizeToolNameForComparison(value){
   return safeString(value,120).toLowerCase().replace(/[\s_-]+/g,"");
 }
@@ -6049,7 +5926,7 @@ function extractOwnedPathsFromMessage(message,max=12){
   const text=safeString(message,12000);
   if(!text)return[];
   const lines=text.split(/\r?\n/);
-  const headerIndex=lines.findIndex((line)=>line.trim().toLowerCase()==="owned paths:");
+  const headerIndex=lines.findIndex((line)=>/^owned paths\s*:?\s*$/i.test(line.trim()));
   if(headerIndex<0)return[];
   const paths=[];
   const seen=new Set();
@@ -6131,6 +6008,8 @@ class CodexAppServerClient{
     this.mockThreadSeq=1;
     this.mockTurnSeq=1;
     this.mockTurns=new Map();
+    this.childTerminated=false;
+    this.terminatedTransportError=null;
   }
   shouldTraceRpcMethod(method){
     return method==="initialize"
@@ -6150,6 +6029,8 @@ class CodexAppServerClient{
   }
   async start(){
     this.stopping=false;
+    this.childTerminated=false;
+    this.terminatedTransportError=null;
     if(this.transportMode==="mock-fixture"){
       this.child={
         killed:false,
@@ -6176,45 +6057,83 @@ class CodexAppServerClient{
     this.stdoutBuffer="";
     this.stderrBuffer="";
     logOperation("appserver.start",{cwd:summarizePathForOperationLog(this.cwd,220)});
+    const childRef=child;
     child.stdout.on("data",chunk=>{this.stdoutBuffer+=chunk.toString("utf8");this.flushStdout();});
     child.stderr.on("data",chunk=>{this.stderrBuffer+=chunk.toString("utf8");this.flushStderr();});
-    child.on("error",e=>this.handleProcessTermination(new Error(`app-server process error: ${e.message}`)));
+    if(child.stdin&&typeof child.stdin.on==="function"){
+      child.stdin.on("error",error=>this.handleProcessTermination(this.buildTransportError("stdin error",error),childRef));
+    }
+    if(child.stdout&&typeof child.stdout.on==="function"){
+      child.stdout.on("error",error=>this.handleProcessTermination(this.buildTransportError("stdout error",error),childRef));
+    }
+    if(child.stderr&&typeof child.stderr.on==="function"){
+      child.stderr.on("error",error=>this.handleProcessTermination(this.buildTransportError("stderr error",error),childRef));
+    }
+    child.on("error",e=>this.handleProcessTermination(new Error(`app-server process error: ${e.message}`),childRef));
     child.on("close",code=>{
       const msg=this.stopping?"app-server stopped":`app-server exited unexpectedly (code=${code==null?"null":code})`;
-      this.handleProcessTermination(new Error(msg));
+      this.handleProcessTermination(new Error(msg),childRef);
     });
     await this.sendRequestRaw("initialize",{clientInfo:{name:"codex-original-ui",title:"Codex Original UI",version:"1.0.0"},capabilities:{experimentalApi:true}},20000);
-    this.sendNotificationRaw("initialized");
+    await this.sendNotificationRaw("initialized");
     logOperation("appserver.ready",{handshake:"initialize_initialized"});
   }
   stop(){
     this.stopping=true;
     logOperation("appserver.stop",{transport:this.transportMode});
-    if(this.transportMode==="mock-fixture"){
-      this.mockTurns.clear();
-      this.child=null;
-      return;
-    }
-    if(this.child&&!this.child.killed){
+    const childRef=this.child;
+    if(this.transportMode!=="mock-fixture"&&childRef&&!childRef.killed){
       try{
-        this.child.kill();
+        childRef.kill();
       }catch{
       }
     }
-    this.child=null;
+    this.handleProcessTermination(new Error("app-server stopped"),childRef);
   }
-  sendRaw(msg){
+  buildTransportError(context,error){
+    const base=error instanceof Error?error:new Error(String(error));
+    const suffix=base&&typeof base.message==="string"&&base.message?base.message:String(base);
+    const err=new Error(`app-server stdio ${context}: ${suffix}`);
+    if(Object.prototype.hasOwnProperty.call(base,"code"))err.code=base.code;
+    if(Object.prototype.hasOwnProperty.call(base,"errno"))err.errno=base.errno;
+    if(Object.prototype.hasOwnProperty.call(base,"syscall"))err.syscall=base.syscall;
+    err.cause=base;
+    return err;
+  }
+  async sendRaw(msg){
     if(this.transportMode==="mock-fixture"){
       return;
     }
-    if(!this.child||!this.child.stdin||this.child.stdin.destroyed)throw new Error("app-server is not running");
-    this.child.stdin.write(`${JSON.stringify(msg)}\n`);
+    const child=this.child;
+    const stdin=child&&child.stdin;
+    if(this.childTerminated&&this.terminatedTransportError)throw this.terminatedTransportError;
+    if(!child||!stdin||stdin.destroyed)throw new Error("app-server is not running");
+    const payload=`${JSON.stringify(msg)}\n`;
+    await new Promise((resolve,reject)=>{
+      let settled=false;
+      const finish=(error)=>{
+        if(settled)return;
+        settled=true;
+        if(error){
+          const transportError=this.buildTransportError("write failed",error);
+          this.handleProcessTermination(transportError,child);
+          reject(transportError);
+          return;
+        }
+        resolve();
+      };
+      try{
+        stdin.write(payload,"utf8",finish);
+      }catch(error){
+        finish(error);
+      }
+    });
   }
-  sendNotificationRaw(method,params){
+  async sendNotificationRaw(method,params){
     if(this.transportMode==="mock-fixture"){
       return;
     }
-    this.sendRaw(params===undefined?{method}:{method,params});
+    await this.sendRaw(params===undefined?{method}:{method,params});
   }
   sendRequestRaw(method,params,timeoutMs=120000){
     if(this.transportMode==="mock-fixture"){
@@ -6243,11 +6162,7 @@ class CodexAppServerClient{
         reject(new Error(`request timed out: ${method}`));
       },timeoutMs);
       this.pending.set(id,{resolve,reject,timeout,method,startedAt,traced});
-      try{
-        this.sendRaw({method,id,params});
-      }catch(e){
-        clearTimeout(timeout);
-        this.pending.delete(id);
+      void this.sendRaw({method,id,params}).catch(e=>{
         if(traced){
           logOperation("rpc.send_error",{
             id,
@@ -6255,8 +6170,11 @@ class CodexAppServerClient{
             err:summarizeErrorForOperationLog(e,220),
           });
         }
+        if(!this.pending.has(id))return;
+        clearTimeout(timeout);
+        this.pending.delete(id);
         reject(e);
-      }
+      });
     });
   }
   async sendRequest(method,params,timeoutMs=120000){
@@ -6483,20 +6401,29 @@ class CodexAppServerClient{
       console.error(`[app-server] ${t}`);
     }
   }
-  handleProcessTermination(error){
+  handleProcessTermination(error,childRef){
+    if(childRef&&this.child&&this.child!==childRef)return;
+    if(childRef&&!this.child)return;
     const err=error instanceof Error?error:new Error(String(error));
+    this.childTerminated=true;
+    if(!this.terminatedTransportError)this.terminatedTransportError=err;
+    if(!this.child&&this.pending.size===0&&this.turnWatchers.size===0&&this.turnContexts.size===0&&this.mockTurns.size===0){
+      return;
+    }
     logOperation("appserver.exit",{err:summarizeErrorForOperationLog(err,220)});
-    for(const[id,p]of this.pending.entries()){
+    const pendingEntries=[...this.pending.entries()];
+    this.pending.clear();
+    for(const[,p]of pendingEntries){
       clearTimeout(p.timeout);
       p.reject(err);
-      this.pending.delete(id);
     }
-    for(const[key,h]of this.turnWatchers.entries()){
+    const turnWatcherEntries=[...this.turnWatchers.entries()];
+    this.turnWatchers.clear();
+    for(const[,h]of turnWatcherEntries){
       try{
         if(h&&typeof h.onFatal==="function")h.onFatal(err);
       }catch{
       }
-      this.turnWatchers.delete(key);
     }
     this.turnContexts.clear();
     this.mockTurns.clear();
@@ -6520,7 +6447,7 @@ class CodexAppServerClient{
       return;
     }
     if(msg&&Object.prototype.hasOwnProperty.call(msg,"id")&&msg.method&&!Object.prototype.hasOwnProperty.call(msg,"result")&&!Object.prototype.hasOwnProperty.call(msg,"error")){
-      this.handleServerRequest(msg);
+      void this.handleServerRequest(msg);
       return;
     }
     if(msg&&Object.prototype.hasOwnProperty.call(msg,"id")&&(Object.prototype.hasOwnProperty.call(msg,"result")||Object.prototype.hasOwnProperty.call(msg,"error"))){
@@ -6613,6 +6540,7 @@ class CodexAppServerClient{
       cwd:this.cwd||workspaceRoot,
       agentName:"",
       requestUserInputPolicy:nonInteractiveRequestUserInputPolicy,
+      automaticApprovalReviewEnabled:automaticApprovalReviewDefault,
       governanceOverride:null,
       interactiveApprovalAvailable:false,
     };
@@ -6634,6 +6562,7 @@ class CodexAppServerClient{
       cwd:resolvedCwd,
       agentName:safeString(ctx.agentName,80),
       requestUserInputPolicy:normalizeRequestUserInputPolicy(ctx.requestUserInputPolicy,nonInteractiveRequestUserInputPolicy),
+      automaticApprovalReviewEnabled:resolveAutomaticApprovalReviewEnabled(ctx.automaticApprovalReviewEnabled,automaticApprovalReviewDefault),
       governanceOverride:normalizeOverrideRequest(ctx.governanceOverride),
       interactiveApprovalAvailable:false,
     };
@@ -6906,7 +6835,7 @@ class CodexAppServerClient{
     result.ruleIds=Array.from(matchedRuleIds.values()).slice(0,16);
     return result;
   }
-  resolveApprovalDecision({requestedPolicy,sandboxMode,operation,risk,agentName,governanceOverride}){
+  resolveApprovalDecision({requestedPolicy,sandboxMode,operation,risk,agentName,governanceOverride,automaticApprovalReviewEnabled}){
     const requested=normalizeApprovalPolicy(requestedPolicy);
     const normalizedSandbox=normalizeSandboxMode(sandboxMode);
     const level=risk&&typeof risk.level==="string"?risk.level:"low";
@@ -6918,6 +6847,7 @@ class CodexAppServerClient{
       changedPaths:Array.isArray(risk&&risk.changedPaths)?risk.changedPaths:[],
       override:governanceOverride&&typeof governanceOverride==="object"?governanceOverride:null,
     });
+    const automaticReviewEnabled=resolveAutomaticApprovalReviewEnabled(automaticApprovalReviewEnabled,automaticApprovalReviewDefault);
     const withGovernance=(decision)=>({
       ...decision,
       governance,
@@ -6926,7 +6856,16 @@ class CodexAppServerClient{
       return withGovernance({decision:"decline",requestedPolicy:requested,effectivePolicy:"untrusted_decline",reason:"policy_untrusted"});
     }
     if(requested==="on-request"){
-      return withGovernance({decision:"decline",requestedPolicy:requested,effectivePolicy:"blocked_on_request",reason:"interactive_approval_unavailable"});
+      if(!automaticReviewEnabled){
+        return withGovernance({decision:"decline",requestedPolicy:requested,effectivePolicy:"blocked_on_request",reason:"interactive_approval_unavailable"});
+      }
+      if(highRisk||retryHint){
+        return withGovernance({decision:"decline",requestedPolicy:requested,effectivePolicy:"auto_review_blocked_high_risk",reason:"automatic_approval_review_blocked_high_risk"});
+      }
+      if(governance.decision==="deny"){
+        return withGovernance({decision:"decline",requestedPolicy:requested,effectivePolicy:"agent_governance_block",reason:governance.reason});
+      }
+      return withGovernance({decision:"accept",requestedPolicy:requested,effectivePolicy:"automatic_approval_review_accept",reason:"automatic_approval_review_low_risk_accept"});
     }
     if(requested==="on-failure"){
       if(highRisk||retryHint){
@@ -6989,7 +6928,7 @@ class CodexAppServerClient{
     if(!detail)return{contentItems:[],success:false};
     return{contentItems:[{type:"inputText",text:detail}],success:false};
   }
-  handleDynamicToolCallRequest(id,params,ctx){
+  async handleDynamicToolCallRequest(id,params,ctx){
     const payload=params&&typeof params==="object"?params:{};
     const approvalPolicy=normalizeApprovalPolicy(ctx&&ctx.approvalPolicy);
     const sandboxMode=normalizeSandboxMode(ctx&&ctx.sandboxMode);
@@ -7006,6 +6945,7 @@ class CodexAppServerClient{
       risk,
       agentName:ctx&&ctx.agentName?ctx.agentName:"",
       governanceOverride:ctx&&ctx.governanceOverride?ctx.governanceOverride:null,
+      automaticApprovalReviewEnabled:ctx&&ctx.automaticApprovalReviewEnabled,
     });
     const tool=safeString(payload.tool,80);
     const callId=safeString(payload.callId,120);
@@ -7029,7 +6969,7 @@ class CodexAppServerClient{
         threadId:threadId||"",
         turnId:turnId||"",
       },"standard");
-      this.sendRaw({id,result:this.buildDynamicToolFailureResponse(`dynamic tool blocked by approval policy (${policyDecision.reason})`)});
+      await this.sendRaw({id,result:this.buildDynamicToolFailureResponse(`dynamic tool blocked by approval policy (${policyDecision.reason})`)});
       return;
     }
     if(!hasRequired){
@@ -7041,7 +6981,7 @@ class CodexAppServerClient{
         threadId:threadId||"",
         turnId:turnId||"",
       });
-      this.sendRaw({id,result:this.buildDynamicToolFailureResponse("invalid dynamic tool request (tool/callId/threadId/turnId required)")});
+      await this.sendRaw({id,result:this.buildDynamicToolFailureResponse("invalid dynamic tool request (tool/callId/threadId/turnId required)")});
       return;
     }
     const nativeCollab=isNativeCollabToolName(tool);
@@ -7062,9 +7002,9 @@ class CodexAppServerClient{
       :nativeCollab
         ?`dynamic bridge cannot execute native collab tool '${tool}' on the client side`
         :`dynamic tool '${tool}' is not configured in this harness`;
-    this.sendRaw({id,result:this.buildDynamicToolFailureResponse(feedback)});
+    await this.sendRaw({id,result:this.buildDynamicToolFailureResponse(feedback)});
   }
-  handleServerRequest(message){
+  async handleServerRequest(message){
     const method=message.method;
     const id=message.id;
     const params=message.params||{};
@@ -7080,11 +7020,12 @@ class CodexAppServerClient{
           risk,
           agentName:ctx.agentName,
           governanceOverride:ctx.governanceOverride,
+          automaticApprovalReviewEnabled:ctx.automaticApprovalReviewEnabled,
         });
         const approvalAudit=this.buildApprovalAuditRecord({operation,ctx,risk,decision});
         logOperation("approval.decision",approvalAudit,"standard");
         this.recordTurnApprovalAudit(params,approvalAudit);
-        this.sendRaw({id,result:{decision:decision.decision}});
+        await this.sendRaw({id,result:{decision:decision.decision}});
         return;
       }
       if(method==="item/fileChange/requestApproval"||method==="fileChange/requestApproval"){
@@ -7096,11 +7037,12 @@ class CodexAppServerClient{
           risk,
           agentName:ctx.agentName,
           governanceOverride:ctx.governanceOverride,
+          automaticApprovalReviewEnabled:ctx.automaticApprovalReviewEnabled,
         });
         const approvalAudit=this.buildApprovalAuditRecord({operation,ctx,risk,decision});
         logOperation("approval.decision",approvalAudit,"standard");
         this.recordTurnApprovalAudit(params,approvalAudit);
-        this.sendRaw({id,result:{decision:decision.decision}});
+        await this.sendRaw({id,result:{decision:decision.decision}});
         return;
       }
       if(method==="item/tool/requestUserInput"||method==="tool/requestUserInput"){
@@ -7112,6 +7054,7 @@ class CodexAppServerClient{
           risk,
           agentName:ctx.agentName,
           governanceOverride:ctx.governanceOverride,
+          automaticApprovalReviewEnabled:ctx.automaticApprovalReviewEnabled,
         });
         const effectiveUserInputPolicy=normalizeRequestUserInputPolicy(ctx.requestUserInputPolicy,nonInteractiveRequestUserInputPolicy);
         if(decision.decision==="decline"){
@@ -7122,7 +7065,7 @@ class CodexAppServerClient{
             reason:decision.reason,
             userInputPolicy:effectiveUserInputPolicy,
           },"standard");
-          this.sendRaw({id,error:{code:-32004,message:"interactive user input is unavailable in this harness"}});
+          await this.sendRaw({id,error:{code:-32004,message:"interactive user input is unavailable in this harness"}});
           return;
         }
         const userInputResolution=resolveNonInteractiveUserInput({policy:effectiveUserInputPolicy,params});
@@ -7137,7 +7080,7 @@ class CodexAppServerClient{
             answeredCount:userInputResolution.answeredCount,
             nonInteractive:decision.requestedPolicy==="never"?1:0,
           },"standard");
-          this.sendRaw({id,error:{code:-32004,message:"interactive user input is disabled in this harness (requestUserInput policy: blocked)"}});
+          await this.sendRaw({id,error:{code:-32004,message:"interactive user input is disabled in this harness (requestUserInput policy: blocked)"}});
           return;
         }
         logOperation("tool.user_input_request",{
@@ -7158,14 +7101,14 @@ class CodexAppServerClient{
             assumptions:userInputResolution.assumptions.slice(0,8).map(entry=>safeString(entry,220)),
           },"standard");
         }
-        this.sendRaw({id,result:{answers:userInputResolution.answers&&typeof userInputResolution.answers==="object"?userInputResolution.answers:{}}});
+        await this.sendRaw({id,result:{answers:userInputResolution.answers&&typeof userInputResolution.answers==="object"?userInputResolution.answers:{}}});
         return;
       }
       if(method==="item/tool/call"||method==="tool/call"){
-        this.handleDynamicToolCallRequest(id,params,ctx);
+        await this.handleDynamicToolCallRequest(id,params,ctx);
         return;
       }
-      this.sendRaw({id,error:{code:-32601,message:`unsupported server request: ${method}`}});
+      await this.sendRaw({id,error:{code:-32601,message:`unsupported server request: ${method}`}});
     }catch(error){
       logOperation("server.request_error",{
         method:safeString(method,120),
@@ -7206,10 +7149,58 @@ function handleSlashAgentCommand(res,argsText){
   return true;
 }
 function handleSlashExperimentalCommand(res,argsText){const active=getActiveAgentState();const arg=(argsText||"").trim();if(!arg||arg==="list"){replyLocalText(res,`Experimental: ${active.experimentalEnabled?"on":"off"}\nFeatures: ${formatFeatureList(active.experimentalFeatures)}\nUsage: /experimental on|off|enable <feature>|disable <feature>|clear`);return true;}const tokens=arg.split(/\s+/);const op=tokens[0].toLowerCase();const feature=(tokens[1]||"").trim();if(op==="on"){active.experimentalEnabled=true;replyLocalText(res,"Experimental: on");return true;}if(op==="off"){active.experimentalEnabled=false;replyLocalText(res,"Experimental: off");return true;}if(op==="clear"){active.experimentalFeatures.clear();replyLocalText(res,"Experimental features cleared.");return true;}if((op==="enable"||op==="disable")&&!feature){replyLocalText(res,"Usage: /experimental enable <feature> | disable <feature>");return true;}if(op==="enable"){active.experimentalFeatures.add(feature);replyLocalText(res,`Feature enabled: ${feature}`);return true;}if(op==="disable"){active.experimentalFeatures.delete(feature);replyLocalText(res,`Feature disabled: ${feature}`);return true;}if(active.experimentalFeatures.has(arg)){active.experimentalFeatures.delete(arg);replyLocalText(res,`Feature disabled: ${arg}`);return true;}active.experimentalFeatures.add(arg);replyLocalText(res,`Feature enabled: ${arg}`);return true;}
+function handleSlashFastCommand(res,argsText){
+  const active=getActiveAgentState();
+  const arg=(argsText||"").trim().toLowerCase();
+  if(!arg||arg==="toggle"){
+    active.fastModeEnabled=!Boolean(active.fastModeEnabled);
+    replyLocalText(res,`Fast mode: ${active.fastModeEnabled?"on":"off"}`);
+    return true;
+  }
+  if(arg==="status"||arg==="show"||arg==="list"){
+    replyLocalText(res,`Fast mode: ${active.fastModeEnabled?"on":"off"}\nUsage: /fast [on|off|toggle|status]`);
+    return true;
+  }
+  if(arg==="on"){
+    active.fastModeEnabled=true;
+    replyLocalText(res,"Fast mode: on");
+    return true;
+  }
+  if(arg==="off"){
+    active.fastModeEnabled=false;
+    replyLocalText(res,"Fast mode: off");
+    return true;
+  }
+  replyLocalText(res,"Usage: /fast [on|off|toggle|status]");
+  return true;
+}
 function handleSlashResumeCommand(res,argsText){const active=getActiveAgentState();const arg=(argsText||"").trim();if(!arg||arg==="--last"){const latest=findLatestSessionId();if(!latest){replyLocalText(res,"No saved session found.");return true;}active.sessionRef=latest;active.threadId=latest;active.activeTurnId=null;active.manualSessionPinned=true;replyLocalText(res,`Resume target set: ${latest}`);return true;}if(arg==="clear"){active.sessionRef=null;active.threadId=null;active.activeTurnId=null;active.manualSessionPinned=false;replyLocalText(res,"Resume target cleared.");return true;}if(agentStates.has(arg)){activeAgentName=arg;const switched=getActiveAgentState();replyLocalText(res,`Switched agent: ${arg}\nSession=${switched.sessionRef||"none"}`);return true;}active.sessionRef=arg;active.threadId=arg;active.activeTurnId=null;active.manualSessionPinned=true;if(looksLikeSessionId(arg)){replyLocalText(res,`Resume target set: ${arg}`);return true;}replyLocalText(res,`Resume target set (non-standard id): ${arg}`);return true;}
-function handleSlashForkCommand(res,argsText){const sourceName=activeAgentName;const source=getActiveAgentState();const requestedName=(argsText||"").trim();const forkName=requestedName||`agent-${nextAgentNumber++}`;if(agentStates.has(forkName)){replyLocalText(res,`Agent already exists: ${forkName}`);return true;}agentStates.set(forkName,{sessionRef:source.sessionRef||null,threadId:source.threadId||null,activeTurnId:null,experimentalEnabled:source.experimentalEnabled,experimentalFeatures:new Set(Array.from(source.experimentalFeatures||[])),createdAt:Date.now(),forkedFrom:sourceName,manualSessionPinned:source.manualSessionPinned,lastSandboxMode:source.lastSandboxMode,lastWebSearch:source.lastWebSearch,lastCwd:source.lastCwd||null,lastRequestUserInputPolicy:source.lastRequestUserInputPolicy||null,lastModel:source.lastModel||defaultExecModelName,lastModelReasoningEffort:source.lastModelReasoningEffort||defaultExecModelReasoningEffort});activeAgentName=forkName;const copied=source.sessionRef?`Session copied: ${source.sessionRef}`:"Source agent has no session. A new thread will be created on next run.";replyLocalText(res,`Fork created: ${forkName}\nSource: ${sourceName}\n${copied}`);return true;}
+function buildForkedAgentState(source,sourceName){
+  return{
+    sessionRef:source.sessionRef||null,
+    threadId:source.threadId||null,
+    activeTurnId:null,
+    experimentalEnabled:source.experimentalEnabled,
+    experimentalFeatures:new Set(Array.from(source.experimentalFeatures||[])),
+    serviceTier:normalizeCodexServiceTier(source.serviceTier,defaultCodexServiceTier),
+    createdAt:Date.now(),
+    forkedFrom:sourceName,
+    manualSessionPinned:source.manualSessionPinned,
+    lastSandboxMode:source.lastSandboxMode,
+    lastWebSearch:source.lastWebSearch,
+    lastCwd:source.lastCwd||null,
+    lastRequestUserInputPolicy:source.lastRequestUserInputPolicy||null,
+    lastModel:source.lastModel||defaultExecModelName,
+    lastModelReasoningEffort:source.lastModelReasoningEffort||defaultExecModelReasoningEffort,
+    lastFastModeEnabled:typeof source.lastFastModeEnabled==="boolean"?source.lastFastModeEnabled:resolveFastModeEnabled(source.fastModeEnabled),
+    lastAutomaticApprovalReviewEnabled:typeof source.lastAutomaticApprovalReviewEnabled==="boolean"?source.lastAutomaticApprovalReviewEnabled:resolveAutomaticApprovalReviewEnabled(source.automaticApprovalReviewEnabled),
+    fastModeEnabled:resolveFastModeEnabled(source.fastModeEnabled),
+    automaticApprovalReviewEnabled:resolveAutomaticApprovalReviewEnabled(source.automaticApprovalReviewEnabled),
+  };
+}
+function handleSlashForkCommand(res,argsText){const sourceName=activeAgentName;const source=getActiveAgentState();const requestedName=(argsText||"").trim();const forkName=requestedName||`agent-${nextAgentNumber++}`;if(agentStates.has(forkName)){replyLocalText(res,`Agent already exists: ${forkName}`);return true;}agentStates.set(forkName,buildForkedAgentState(source,sourceName));activeAgentName=forkName;const copied=source.sessionRef?`Session copied: ${source.sessionRef}`:"Source agent has no session. A new thread will be created on next run.";replyLocalText(res,`Fork created: ${forkName}\nSource: ${sourceName}\n${copied}`);return true;}
 
-function buildThreadStartConfig(agentState,webSearchEnabled,requestUserInputPolicy,model,modelReasoningEffort){
+function buildThreadStartConfig(agentState,webSearchEnabled,requestUserInputPolicy,model,modelReasoningEffort,fastModeEnabled,automaticApprovalReviewEnabled){
   const normalizedModel=normalizeExecModel(model,defaultExecModelName);
   const normalizedModelReasoningEffort=normalizeExecModelReasoningEffort(modelReasoningEffort,defaultExecModelReasoningEffort);
   const config={
@@ -7219,15 +7210,33 @@ function buildThreadStartConfig(agentState,webSearchEnabled,requestUserInputPoli
   };
   const normalizedUserInputPolicy=normalizeRequestUserInputPolicy(requestUserInputPolicy,nonInteractiveRequestUserInputPolicy);
   config["harness.request_user_input_policy"]=normalizedUserInputPolicy;
-  if(agentState&&agentState.experimentalFeatures&&agentState.experimentalFeatures.size){
-    for(const feature of agentState.experimentalFeatures){
+  const experimentalEnabled=agentState&&typeof agentState.experimentalEnabled==="boolean"
+    ?agentState.experimentalEnabled
+    :defaultExperimentalFeatures.length>0;
+  const experimentalFeatures=agentState&&agentState.experimentalFeatures instanceof Set
+    ?agentState.experimentalFeatures
+    :new Set(defaultExperimentalFeatures);
+  const enabledFeatures=experimentalEnabled
+    ?new Set(Array.from(experimentalFeatures||[]))
+    :new Set();
+  if(!resolveFastModeEnabled(fastModeEnabled,agentState&&agentState.fastModeEnabled)){
+    enabledFeatures.delete(fastModeFeatureName);
+  }
+  if(!resolveAutomaticApprovalReviewEnabled(automaticApprovalReviewEnabled,agentState&&agentState.automaticApprovalReviewEnabled)){
+    enabledFeatures.delete(automaticApprovalReviewFeatureName);
+  }
+  if(enabledFeatures.size){
+    for(const feature of enabledFeatures){
       if(!feature)continue;
       config[`features.${feature}`]=true;
     }
   }
+  if(enabledFeatures.has(fastModeFeatureName)){
+    config.service_tier=normalizeCodexServiceTier(agentState&&agentState.serviceTier,defaultCodexServiceTier);
+  }
   return config;
 }
-function shouldResetThreadForMode(agentState,sandboxMode,webSearchEnabled,cwd,requestUserInputPolicy,model,modelReasoningEffort){
+function shouldResetThreadForMode(agentState,sandboxMode,webSearchEnabled,cwd,requestUserInputPolicy,model,modelReasoningEffort,fastModeEnabled,automaticApprovalReviewEnabled){
   if(!agentState||!agentState.threadId||agentState.manualSessionPinned)return false;
   if(agentState.lastSandboxMode&&agentState.lastSandboxMode!==sandboxMode)return true;
   if(typeof agentState.lastWebSearch==="boolean"&&agentState.lastWebSearch!==webSearchEnabled)return true;
@@ -7237,6 +7246,8 @@ function shouldResetThreadForMode(agentState,sandboxMode,webSearchEnabled,cwd,re
   if(agentState.lastModel&&agentState.lastModel!==normalizedModel)return true;
   const normalizedModelReasoningEffort=normalizeExecModelReasoningEffort(modelReasoningEffort,defaultExecModelReasoningEffort);
   if(agentState.lastModelReasoningEffort&&agentState.lastModelReasoningEffort!==normalizedModelReasoningEffort)return true;
+  if(typeof agentState.lastFastModeEnabled==="boolean"&&agentState.lastFastModeEnabled!==Boolean(fastModeEnabled))return true;
+  if(typeof agentState.lastAutomaticApprovalReviewEnabled==="boolean"&&agentState.lastAutomaticApprovalReviewEnabled!==Boolean(automaticApprovalReviewEnabled))return true;
   return false;
 }
 function clipText(value,max=12000){if(typeof value!=="string")return"";if(value.length<=max)return value;return value.slice(0,max);}
@@ -7342,45 +7353,12 @@ function createTurnStreamStats(){
     collabCalls:0,
     collabFailures:0,
     webSearches:0,
-    docSyncSeen:false,
-    lastViewportMode:"",
-    desktopVisualReviewSeen:false,
-    mobileVisualReviewSeen:false,
     sampleCommands:[],
     sampleMcpTools:[],
     sampleChangedPaths:[],
     collabOwnedReportKeys:new Set(),
     tokenUsage:null,
   };
-}
-function isDocumentationSyncPath(targetPath){
-  const normalized=normalizeMergePath(targetPath);
-  if(!normalized)return false;
-  return normalized==="AGENTS.md"
-    || normalized==="README.md"
-    || normalized.startsWith("docs/")
-    || normalized.endsWith("/README.md");
-}
-function inferViewportModeFromCommand(commandText,currentMode=""){
-  const text=safeString(commandText,400).toLowerCase();
-  if(!text)return currentMode||"";
-  const resizeMatch=text.match(/resize\s+(\d{2,4})\s+(\d{2,4})/i);
-  if(resizeMatch){
-    const width=Number.parseInt(resizeMatch[1],10);
-    if(Number.isFinite(width)&&width>0){
-      return width<=480?"mobile":"desktop";
-    }
-  }
-  if(text.includes("mobile")||text.includes("iphone")||text.includes("android"))return"mobile";
-  if(text.includes("desktop"))return"desktop";
-  return currentMode||"";
-}
-function commandProducesVisualEvidence(commandText){
-  const text=safeString(commandText,400).toLowerCase();
-  return text.includes("screenshot")
-    || text.includes("snapshot")
-    || text.includes("view_image")
-    || text.includes("playwright");
 }
 function incrementTurnStreamItemCount(stats,key){
   if(!stats||!stats.itemCounts||typeof key!=="string"||!key)return;
@@ -7404,17 +7382,6 @@ function collectTurnStreamItemStats(stats,item){
     if(item.status==="failed"||item.status==="declined"){
       stats.commandFailures+=1;
     }
-    const viewportMode=inferViewportModeFromCommand(item.command,stats.lastViewportMode);
-    if(viewportMode){
-      stats.lastViewportMode=viewportMode;
-    }
-    if(commandProducesVisualEvidence(item.command)){
-      if(stats.lastViewportMode==="mobile"){
-        stats.mobileVisualReviewSeen=true;
-      }else{
-        stats.desktopVisualReviewSeen=true;
-      }
-    }
     pushUniqueSample(stats.sampleCommands,item.command,3);
     return;
   }
@@ -7422,22 +7389,12 @@ function collectTurnStreamItemStats(stats,item){
     stats.fileChanges+=1;
     const changes=Array.isArray(item.changes)?item.changes.map(mapFileChange).filter(Boolean):[];
     stats.changedFiles+=changes.length;
-    if(changes.some((change)=>change&&isDocumentationSyncPath(change.path))){
-      stats.docSyncSeen=true;
-    }
     changes.slice(0,3).forEach((change)=>pushUniqueSample(stats.sampleChangedPaths,change.path,3));
     return;
   }
   if(type==="mcpToolCall"){
     stats.mcpCalls+=1;
     const toolSummary=[safeString(item.server,60),safeString(item.tool,60)].filter(Boolean).join(".");
-    if(commandProducesVisualEvidence(toolSummary)){
-      if(stats.lastViewportMode==="mobile"){
-        stats.mobileVisualReviewSeen=true;
-      }else{
-        stats.desktopVisualReviewSeen=true;
-      }
-    }
     pushUniqueSample(stats.sampleMcpTools,toolSummary,3);
     return;
   }
@@ -7449,9 +7406,6 @@ function collectTurnStreamItemStats(stats,item){
     }
     const ownedPaths=extractCollabOwnedPaths(item,12);
     if(ownedPaths.length){
-      if(ownedPaths.some((ownedPath)=>isDocumentationSyncPath(ownedPath))){
-        stats.docSyncSeen=true;
-      }
       const receiverKey=Array.isArray(item.receiverThreadIds)
         ?item.receiverThreadIds.map((entry)=>safeString(entry,120)).filter(Boolean).sort().join("|")
         :"";
@@ -7594,35 +7548,71 @@ function uniquePathList(values,max=16){
   }
   return unique;
 }
+function extractCollabReceiverThreadIds(item,max=4){
+  if(!item||typeof item!=="object"||!Array.isArray(item.receiverThreadIds))return[];
+  const receiverIds=[];
+  const seen=new Set();
+  for(const rawId of item.receiverThreadIds){
+    const normalizedId=safeString(rawId,120);
+    if(!normalizedId||seen.has(normalizedId))continue;
+    seen.add(normalizedId);
+    receiverIds.push(normalizedId);
+    if(receiverIds.length>=max)break;
+  }
+  return receiverIds;
+}
+function inferCollabRoleSignals({promptText="",child="",stateMessages=[]}={}){
+  const promptLower=safeString(promptText,12000).toLowerCase();
+  const childLower=safeString(child,240).toLowerCase();
+  const reviewerPromptHint=
+    promptLower.includes("you are the independent reviewer")
+    ||promptLower.includes("you are an independent reviewer")
+    ||promptLower.includes("you are the independent read-only reviewer")
+    ||promptLower.includes("you are an independent read-only reviewer")
+    ||promptLower.includes("independent read-only reviewer task")
+    ||promptLower.includes("independent read-only reviewer")
+    ||promptLower.includes("independent read-only review only")
+    ||promptLower.includes("independent read-only review")
+    ||promptLower.includes("strictly read-only task")
+    ||promptLower.includes("reviewer check:")
+    ||promptLower.includes("review only");
+  const testerPromptHint=
+    promptLower.includes("you are the independent tester")
+    ||promptLower.includes("you are an independent tester")
+    ||promptLower.includes("you are the independent read-only tester")
+    ||promptLower.includes("you are an independent read-only tester")
+    ||promptLower.includes("independent read-only tester")
+    ||promptLower.includes("independent read-only test check only")
+    ||promptLower.includes("independent read-only test check")
+    ||promptLower.includes("independent read-only verification only")
+    ||promptLower.includes("independent read-only verification")
+    ||promptLower.includes("strictly read-only verification task")
+    ||promptLower.includes("tester check:")
+    ||promptLower.includes("verification only");
+  let reviewerObserved=0;
+  let testerObserved=0;
+  if(reviewerPromptHint)reviewerObserved=1;
+  if(testerPromptHint)testerObserved=1;
+  if(childLower.includes("reviewer"))reviewerObserved=1;
+  if(childLower.includes("tester"))testerObserved=1;
+  for(const message of Array.isArray(stateMessages)?stateMessages:[]){
+    const lower=safeString(message,420).toLowerCase();
+    if(!lower)continue;
+    if(lower.includes("no findings")||lower.includes("finding"))reviewerObserved=1;
+    if(lower.includes("test"))testerObserved=1;
+    if((lower.includes("pass")||lower.includes("fail"))&&(reviewerPromptHint||childLower.includes("reviewer")||promptLower.includes("review")))reviewerObserved=1;
+    if((lower.includes("pass")||lower.includes("fail"))&&(testerPromptHint||childLower.includes("tester")||promptLower.includes("verification")))testerObserved=1;
+  }
+  return{reviewerObserved,testerObserved};
+}
 function buildChildEvidenceLedger(itemRecords){
-  const ledger=new Map();
+  const receiverRoleHints=new Map();
   for(const record of Array.isArray(itemRecords)?itemRecords:[]){
     const item=record&&record.item&&typeof record.item==="object"?record.item:null;
     if(!item||!isCollabToolItemType(item.type))continue;
+    const receiverIds=extractCollabReceiverThreadIds(item,4);
+    if(!receiverIds.length)continue;
     const trace=buildAgentDispatchTrace(item,"");
-    const child=safeString(trace&&trace.child?trace.child:"unknown",120)||"unknown";
-    if(!ledger.has(child)){
-      ledger.set(child,{
-        agent:child,
-        dispatchCount:0,
-        completedCount:0,
-        failedCount:0,
-        ownedPaths:[],
-        skills:[],
-        evidenceNotes:[],
-        reviewerObserved:0,
-        testerObserved:0,
-        firstSeenAt:record&&Number.isFinite(Number(record.ts))?Math.trunc(Number(record.ts)):0,
-        lastSeenAt:record&&Number.isFinite(Number(record.ts))?Math.trunc(Number(record.ts)):0,
-      });
-    }
-    const entry=ledger.get(child);
-    entry.dispatchCount+=1;
-    if(item.status==="completed")entry.completedCount+=1;
-    if(item.status==="failed"||item.status==="declined"||item.status==="interrupted")entry.failedCount+=1;
-    entry.lastSeenAt=record&&Number.isFinite(Number(record.ts))?Math.trunc(Number(record.ts)):entry.lastSeenAt;
-    const ownedPaths=extractCollabOwnedPaths(item,12);
-    entry.ownedPaths=uniquePathList([...entry.ownedPaths,...ownedPaths],16);
     const stateMessages=extractCollabStateMessages(item,4);
     const promptText=[
       safeString(item.prompt,1200),
@@ -7630,19 +7620,75 @@ function buildChildEvidenceLedger(itemRecords){
       safeString(trace&&trace.task?trace.task:"",1200),
       ...stateMessages,
     ].filter(Boolean).join("\n");
-    const skillTokens=extractSkillTokensFromText(promptText,12);
-    entry.skills=Array.from(new Set([...entry.skills,...skillTokens])).slice(0,12);
-    for(const message of stateMessages){
-      const note=safeString(message,320);
-      if(!note)continue;
-      if(!entry.evidenceNotes.includes(note))entry.evidenceNotes.push(note);
-      if(entry.evidenceNotes.length>6)entry.evidenceNotes.length=6;
-      const lower=note.toLowerCase();
-      if(lower.includes("no findings")||lower.includes("finding"))entry.reviewerObserved=1;
-      if(lower.includes("pass")||lower.includes("fail")||lower.includes("test"))entry.testerObserved=1;
+    const roleSignals=inferCollabRoleSignals({promptText,child:trace&&trace.child?trace.child:"",stateMessages});
+    if(!roleSignals.reviewerObserved&&!roleSignals.testerObserved)continue;
+    for(const receiverId of receiverIds){
+      const existing=receiverRoleHints.get(receiverId)||{reviewerObserved:0,testerObserved:0};
+      receiverRoleHints.set(receiverId,{
+        reviewerObserved:existing.reviewerObserved||roleSignals.reviewerObserved?1:0,
+        testerObserved:existing.testerObserved||roleSignals.testerObserved?1:0,
+      });
     }
-    if(child.toLowerCase().includes("reviewer"))entry.reviewerObserved=1;
-    if(child.toLowerCase().includes("tester"))entry.testerObserved=1;
+  }
+  const ledger=new Map();
+  for(const record of Array.isArray(itemRecords)?itemRecords:[]){
+    const item=record&&record.item&&typeof record.item==="object"?record.item:null;
+    if(!item||!isCollabToolItemType(item.type))continue;
+    const trace=buildAgentDispatchTrace(item,"");
+    const receiverIds=extractCollabReceiverThreadIds(item,4);
+    const childTargets=receiverIds.length
+      ?receiverIds
+      :[safeString(trace&&trace.child?trace.child:"unknown",120)||"unknown"];
+    const stateMessages=extractCollabStateMessages(item,4);
+    const promptText=[
+      safeString(item.prompt,1200),
+      safeString(item.message,1200),
+      safeString(trace&&trace.task?trace.task:"",1200),
+      ...stateMessages,
+    ].filter(Boolean).join("\n");
+    const promptLower=promptText.toLowerCase();
+    const localRoleSignals=inferCollabRoleSignals({
+      promptText,
+      child:trace&&trace.child?trace.child:"",
+      stateMessages,
+    });
+    const ownedPaths=extractCollabOwnedPaths(item,12);
+    const skillTokens=extractSkillTokensFromText(promptText,12);
+    for(const child of childTargets){
+      if(!ledger.has(child)){
+        ledger.set(child,{
+          agent:child,
+          dispatchCount:0,
+          completedCount:0,
+          failedCount:0,
+          ownedPaths:[],
+          skills:[],
+          evidenceNotes:[],
+          reviewerObserved:0,
+          testerObserved:0,
+          firstSeenAt:record&&Number.isFinite(Number(record.ts))?Math.trunc(Number(record.ts)):0,
+          lastSeenAt:record&&Number.isFinite(Number(record.ts))?Math.trunc(Number(record.ts)):0,
+        });
+      }
+      const entry=ledger.get(child);
+      const receiverHints=receiverRoleHints.get(child)||null;
+      entry.dispatchCount+=1;
+      if(item.status==="completed")entry.completedCount+=1;
+      if(item.status==="failed"||item.status==="declined"||item.status==="interrupted")entry.failedCount+=1;
+      entry.lastSeenAt=record&&Number.isFinite(Number(record.ts))?Math.trunc(Number(record.ts)):entry.lastSeenAt;
+      entry.ownedPaths=uniquePathList([...entry.ownedPaths,...ownedPaths],16);
+      entry.skills=Array.from(new Set([...entry.skills,...skillTokens])).slice(0,12);
+      for(const message of stateMessages){
+        const note=safeString(message,320);
+        if(!note)continue;
+        if(!entry.evidenceNotes.includes(note))entry.evidenceNotes.push(note);
+        if(entry.evidenceNotes.length>6)entry.evidenceNotes.length=6;
+      }
+      if(localRoleSignals.reviewerObserved||(receiverHints&&receiverHints.reviewerObserved))entry.reviewerObserved=1;
+      if(localRoleSignals.testerObserved||(receiverHints&&receiverHints.testerObserved))entry.testerObserved=1;
+      if(promptLower.includes("reviewer verdict"))entry.reviewerObserved=1;
+      if(promptLower.includes("explicit pass/fail verdict"))entry.testerObserved=1;
+    }
   }
   return Array.from(ledger.values()).map((entry)=>({
     ...entry,
@@ -7676,7 +7722,10 @@ function buildDocSyncEvidence({prompt="",changedPaths=[],childEvidenceLedger=[],
   const allPaths=uniquePathList([...(Array.isArray(changedPaths)?changedPaths:[]),...childPaths],24);
   const architectureUpdated=allPaths.some((entry)=>normalizeMergePath(entry).endsWith("docs/current_architecture.md"));
   const changelogUpdated=allPaths.some((entry)=>normalizeMergePath(entry).endsWith("docs/architecture_changelog.md"));
-  const harnessMapUpdated=allPaths.some((entry)=>normalizeMergePath(entry).endsWith("harness_map.md"));
+  const harnessMapUpdated=allPaths.some((entry)=>{
+    const normalized=normalizeMergePath(entry);
+    return normalized.endsWith("harness_map.md")||normalized.endsWith("docs/harness_logging_map.md");
+  });
   const docsOnly=allPaths.length>0&&allPaths.every((entry)=>{
     const normalized=normalizeMergePath(entry);
     return normalized.startsWith("docs/")||normalized.endsWith(".md");
@@ -7690,7 +7739,8 @@ function buildDocSyncEvidence({prompt="",changedPaths=[],childEvidenceLedger=[],
     signalText.includes("architecture")
     ||signalText.includes("changelog")
     ||signalText.includes("docs sync")
-    ||signalText.includes("harness map");
+    ||signalText.includes("harness map")
+    ||signalText.includes("harness logging map");
   const signoffSensitivePrompt=signalText.includes("signoff")||signalText.includes("proof");
   const runtimeOrGovernanceChanged=allPaths.some((entry)=>{
     const normalized=normalizeMergePath(entry);
@@ -7702,7 +7752,11 @@ function buildDocSyncEvidence({prompt="",changedPaths=[],childEvidenceLedger=[],
   const lightAssurance=selectedAssuranceDepth==="LIGHT_ASSURANCE";
   const architectureReferenced=architectureUpdated||signalText.includes("current_architecture.md")||signalText.includes("architecture");
   const changelogReferenced=changelogUpdated||signalText.includes("architecture_changelog.md")||signalText.includes("changelog");
-  const harnessMapReferenced=harnessMapUpdated||signalText.includes("harness_map.md")||signalText.includes("harness map");
+  const harnessMapReferenced=harnessMapUpdated
+    ||signalText.includes("harness_map.md")
+    ||signalText.includes("docs/harness_logging_map.md")
+    ||signalText.includes("harness map")
+    ||signalText.includes("harness logging map");
   const required=lightAssurance
     ?explicitDocSyncRequested
     :explicitDocSyncRequested
@@ -7718,7 +7772,7 @@ function buildDocSyncEvidence({prompt="",changedPaths=[],childEvidenceLedger=[],
     if(strictBundleSync||changelogReferenced){
       if(!changelogUpdated)missing.push("docs/ARCHITECTURE_CHANGELOG.md");
     }
-    if(harnessMapReferenced&&!harnessMapUpdated)missing.push("HARNESS_MAP.md");
+    if(harnessMapReferenced&&!harnessMapUpdated)missing.push("docs/HARNESS_LOGGING_MAP.md");
   }
   return{
     required:required?1:0,
@@ -7727,7 +7781,8 @@ function buildDocSyncEvidence({prompt="",changedPaths=[],childEvidenceLedger=[],
       const normalized=normalizeMergePath(entry);
       return normalized.endsWith("docs/current_architecture.md")
         ||normalized.endsWith("docs/architecture_changelog.md")
-        ||normalized.endsWith("harness_map.md");
+        ||normalized.endsWith("harness_map.md")
+        ||normalized.endsWith("docs/harness_logging_map.md");
     }),
     architectureUpdated:architectureUpdated?1:0,
     changelogUpdated:changelogUpdated?1:0,
@@ -7742,7 +7797,7 @@ function evaluateAcceptanceCheckStatus(check,input={}){
   const changedPaths=Array.isArray(input.changedPaths)?input.changedPaths:[];
   const childEvidenceLedger=Array.isArray(input.childEvidenceLedger)?input.childEvidenceLedger:[];
   if(!title)return{status:"SKIPPED",reason:"missing_title",evidence:[]};
-  if(/needs[_ ]input|need[_ ]input|user decision|open question|曖昧|判断/.test(lower)){
+  if(/needs[_ ]input|need[_ ]input|user decision|open question|譖匁乂|蛻､譁ｭ/.test(lower)){
     const pass=input.taskOutcomeStatus==="NEEDS_INPUT"||Boolean(input.needsInputRecommended);
     return{status:pass?"PASS":"FAIL",reason:pass?"needs_input_observed":"needs_input_missing",evidence:[safeString(input.taskOutcomeStatus,80)]};
   }
@@ -7758,7 +7813,7 @@ function evaluateAcceptanceCheckStatus(check,input={}){
     const pass=childEvidenceLedger.some((entry)=>entry&&entry.testerObserved)||Number(input.observedSignals&&input.observedSignals.commandExecutions||0)>0;
     return{status:pass?"PASS":"FAIL",reason:pass?"verification_observed":"verification_missing",evidence:[String(Number(input.observedSignals&&input.observedSignals.commandExecutions||0))]};
   }
-  if(/doc|architecture|changelog|harness_map|harness map/.test(lower)){
+  if(/doc|architecture|changelog|harness_map|harness map|harness logging map/.test(lower)){
     const pass=input.docSyncEvidence&&input.docSyncEvidence.status==="PASS";
     return{status:pass?"PASS":"FAIL",reason:pass?"doc_sync_observed":"doc_sync_missing",evidence:Array.isArray(input.docSyncEvidence&&input.docSyncEvidence.updatedPaths)?input.docSyncEvidence.updatedPaths:[]};
   }
@@ -7845,10 +7900,12 @@ function buildStageTimeline({startedAt,completedAt,streamEvents,itemRecords,plan
       const normalized=normalizeMergePath(pathValue);
       return normalized.endsWith("docs/current_architecture.md")
         ||normalized.endsWith("docs/architecture_changelog.md")
-        ||normalized.endsWith("harness_map.md");
+        ||normalized.endsWith("harness_map.md")
+        ||normalized.endsWith("docs/harness_logging_map.md");
     });
   });
   const retryAt=firstObservedTimestamp(events,(entry)=>entry.type==="activity"&&/retry/i.test(safeString(entry.label,80)));
+  const retryLoopCount=events.filter((entry)=>entry&&entry.type==="activity"&&/retry/i.test(safeString(entry.label,80))).length;
   const finalMessageAt=firstObservedTimestamp(items,(entry)=>{
     const item=entry&&entry.item&&typeof entry.item==="object"?entry.item:{};
     return item.type==="agentMessage"&&typeof item.text==="string";
@@ -7880,10 +7937,13 @@ function buildStageTimeline({startedAt,completedAt,streamEvents,itemRecords,plan
       firstPlanAt:firstPlanAt||0,
       firstDispatchAt:firstDispatchAt||0,
       firstWorkAt:firstWorkAt||0,
+      step4StartedAt:step4Start||0,
+      step5StartedAt:step5Start||0,
       firstReviewAt:firstReviewAt||0,
       firstTesterAt:firstTesterAt||0,
       firstDocSyncAt:firstDocSyncAt||0,
       retryAt:retryAt||0,
+      retryLoopCount,
       finalMessageAt:finalMessageAt||0,
       completedAt:Number.isFinite(Number(completedAt))?Math.trunc(Number(completedAt)):0,
     },
@@ -7903,7 +7963,13 @@ function extractPlanningStatusDirective(text){
   if(normalized==="COMPLETED"||normalized==="OVER_DELIVERED_OR_COMPLETED")return"COMPLETED";
   return normalized;
 }
-function buildFlowTraceSummary({planningContext,observedSignals,parentDispatchGuard,taskOutcomeStatus,taskOutcomeReason,finalStatus,childEvidenceLedger,docSyncEvidence,acceptanceResults,agentName=""}={}){
+function stripPlanningStatusDirective(text){
+  return safeString(text,8000)
+    .replace(/(?:^|\r?\n)STATUS:\s*[A-Z_]+\s*(?=\r?\n|$)/ig,"\n")
+    .replace(/\n{3,}/g,"\n\n")
+    .trim();
+}
+function buildFlowTraceSummary({planningContext,observedSignals,parentDispatchGuard,taskOutcomeStatus,taskOutcomeReason,finalStatus,childEvidenceLedger,docSyncEvidence,acceptanceResults,familyCompletionGate=null,agentName=""}={}){
   const usedAgents=Array.from(new Set([
     safeString(agentName,80)||"",
     ...(Array.isArray(childEvidenceLedger)?childEvidenceLedger.map((entry)=>safeString(entry&&entry.agent,80)).filter(Boolean):[]),
@@ -7935,6 +8001,7 @@ function buildFlowTraceSummary({planningContext,observedSignals,parentDispatchGu
       summarizePathForOperationLog(taskOutcomeContractPath,220),
       summarizePathForOperationLog(planningModeContractPath,220),
       summarizePathForOperationLog(assuranceModeContractPath,220),
+      familyCompletionGate&&familyCompletionGate.applies?summarizePathForOperationLog(designAcceptanceContractPath,220):"",
       summarizePathForOperationLog(planningDecisionContractSchemaPath,220),
       summarizePathForOperationLog(requirementContractSchemaPath,220),
       summarizePathForOperationLog(dispatchPlanSchemaPath,220),
@@ -7959,15 +8026,51 @@ function buildFlowTraceSummary({planningContext,observedSignals,parentDispatchGu
     evidenceSources:["events.ndjson","items.ndjson","manifest.json","evidence_manifest.json","stage_timeline.json","flow_trace_summary.json","review_load_breakdown.json"],
     childEvidenceLedger:Array.isArray(childEvidenceLedger)?childEvidenceLedger:[],
     docSyncEvidence:docSyncEvidence&&typeof docSyncEvidence==="object"?docSyncEvidence:null,
+    familyCompletionGate:familyCompletionGate&&typeof familyCompletionGate==="object"?familyCompletionGate:null,
     residualRiskSummary:Array.isArray(planningContext&&planningContext.dispatchPlan&&planningContext.dispatchPlan.residualRisks)
       ?planningContext.dispatchPlan.residualRisks
       :[],
   };
 }
-function buildReviewLoadBreakdown({planningContext,stageTimeline,childEvidenceLedger,docSyncEvidence,acceptanceResults,requiredEvidenceFailures=[]}={}){
+function buildReviewLoadBreakdown({planningContext,stageTimeline,childEvidenceLedger,docSyncEvidence,acceptanceResults,requiredEvidenceFailures=[],streamEvents=[]}={}){
   const timeline=stageTimeline&&typeof stageTimeline==="object"?stageTimeline:{};
   const stages=Array.isArray(timeline.stages)?timeline.stages:[];
   const qualityGate=timeline.qualityGate&&typeof timeline.qualityGate==="object"?timeline.qualityGate:{};
+  const checkpoints=timeline.checkpoints&&typeof timeline.checkpoints==="object"?timeline.checkpoints:{};
+  const stageDurations=Object.fromEntries(stages.map((entry)=>[safeString(entry&&entry.name,80)||"unknown",Number.isFinite(Number(entry&&entry.durationMs))?Math.max(0,Math.trunc(Number(entry.durationMs))):0]));
+  const qualityGateDurationMs=Number(stageDurations["Step 4 - Quality Gate"]||0);
+  const outcomeConversionTimeMs=Number(stageDurations["Step 5 - Final Outcome"]||0);
+  const step4Start=Number.isFinite(Number(checkpoints.step4StartedAt))?Math.max(0,Math.trunc(Number(checkpoints.step4StartedAt))):0;
+  const step5Start=Number.isFinite(Number(checkpoints.step5StartedAt))?Math.max(0,Math.trunc(Number(checkpoints.step5StartedAt))):0;
+  const completedAt=Number.isFinite(Number(checkpoints.completedAt))?Math.max(0,Math.trunc(Number(checkpoints.completedAt))):0;
+  const finalMessageAt=Number.isFinite(Number(checkpoints.finalMessageAt))?Math.max(0,Math.trunc(Number(checkpoints.finalMessageAt))):0;
+  const retryLoopCount=Number.isFinite(Number(checkpoints.retryLoopCount))
+    ?Math.max(0,Math.trunc(Number(checkpoints.retryLoopCount)))
+    :Array.isArray(streamEvents)
+      ?streamEvents.filter((entry)=>entry&&entry.type==="activity"&&/retry/i.test(safeString(entry.label,80))).length
+      :0;
+  const durationUntilNext=(start,...candidates)=>{
+    const normalizedStart=Number.isFinite(Number(start))?Math.max(0,Math.trunc(Number(start))):0;
+    if(!normalizedStart)return 0;
+    const endCandidates=candidates
+      .map((value)=>Number.isFinite(Number(value))?Math.max(0,Math.trunc(Number(value))):0)
+      .filter((value)=>value>=normalizedStart);
+    const next=endCandidates.length?Math.min(...endCandidates):normalizedStart;
+    return Math.max(0,next-normalizedStart);
+  };
+  const reviewerTimeMs=durationUntilNext(checkpoints.firstReviewAt,checkpoints.firstTesterAt,checkpoints.firstDocSyncAt,step5Start,finalMessageAt,completedAt);
+  const testerTimeMs=durationUntilNext(checkpoints.firstTesterAt,checkpoints.firstDocSyncAt,step5Start,finalMessageAt,completedAt);
+  const docSyncVerificationTimeMs=durationUntilNext(checkpoints.firstDocSyncAt,step5Start,finalMessageAt,completedAt);
+  const evidenceCollectionTimeMs=step4Start&&step5Start>=step4Start
+    ?Math.max(0,step5Start-step4Start)
+    :qualityGateDurationMs;
+  const bottlenecks=[
+    {name:"evidence_collection",durationMs:evidenceCollectionTimeMs},
+    {name:"reviewer",durationMs:reviewerTimeMs},
+    {name:"tester",durationMs:testerTimeMs},
+    {name:"doc_sync_verification",durationMs:docSyncVerificationTimeMs},
+    {name:"outcome_conversion",durationMs:outcomeConversionTimeMs},
+  ].sort((left,right)=>right.durationMs-left.durationMs);
   const reviewNotes=Array.isArray(childEvidenceLedger)
     ?childEvidenceLedger.flatMap((entry)=>
       entry&&entry.reviewerObserved&&Array.isArray(entry.evidenceNotes)
@@ -7989,6 +8092,14 @@ function buildReviewLoadBreakdown({planningContext,stageTimeline,childEvidenceLe
     selectedAssuranceDepth:safeString(planningContext&&planningContext.selection&&planningContext.selection.selectedAssuranceDepth,60)||"STANDARD_ASSURANCE",
     flowPath:safeString(planningContext&&planningContext.selection&&planningContext.selection.flowPath,80)||"NORMAL_PATH",
     executionFlow:safeString(planningContext&&planningContext.selection&&planningContext.selection.executionFlow,120)||"",
+    timingModel:"overlapping_estimates_with_wall_clock_total",
+    componentTimesMayOverlap:true,
+    dominantBottleneckBasis:"largest estimated Step 4 component, even when component windows overlap",
+    interpretationGuide:[
+      "`totalStep4DurationMs` is the wall-clock duration of Step 4.",
+      "Reviewer/tester/doc-sync component times are checkpoint-based estimates and may overlap.",
+      "`dominantBottleneck` identifies the largest estimated component rather than a strict additive share of total time.",
+    ],
     qualityGate:{
       reviewerRequired:planningContext&&planningContext.dispatchPlan&&planningContext.dispatchPlan.reviewerRequired?1:0,
       testerRequired:planningContext&&planningContext.dispatchPlan&&planningContext.dispatchPlan.testerRequired?1:0,
@@ -7999,7 +8110,15 @@ function buildReviewLoadBreakdown({planningContext,stageTimeline,childEvidenceLe
       testerObserved:qualityGate.testerObserved?1:0,
       docSyncStatus:safeString(qualityGate.docSyncStatus,20)||"SKIPPED",
     },
-    stageDurations:Object.fromEntries(stages.map((entry)=>[safeString(entry&&entry.name,80)||"unknown",Number.isFinite(Number(entry&&entry.durationMs))?Math.max(0,Math.trunc(Number(entry.durationMs))):0])),
+    evidenceCollectionTimeMs,
+    testerTimeMs,
+    reviewerTimeMs,
+    docSyncVerificationTimeMs,
+    retryLoopCount,
+    outcomeConversionTimeMs,
+    totalStep4DurationMs:qualityGateDurationMs,
+    dominantBottleneck:bottlenecks.length&&bottlenecks[0].durationMs>0?bottlenecks[0].name:"none",
+    stageDurations,
     acceptanceSummary:{
       passCount:Array.isArray(acceptanceResults)?acceptanceResults.filter((entry)=>entry&&entry.status==="PASS").length:0,
       failCount:Array.isArray(acceptanceResults)?acceptanceResults.filter((entry)=>entry&&entry.status==="FAIL").length:0,
@@ -8021,9 +8140,26 @@ async function ensureAgentThread(agentName,options){
   const modelReasoningEffort=normalizeExecModelReasoningEffort(options&&options.modelReasoningEffort,defaultExecModelReasoningEffort);
   const cwd=normalizeWorkingDirectory(options&&options.cwd,workspaceRoot);
   const requestUserInputPolicy=normalizeRequestUserInputPolicy(options&&options.requestUserInputPolicy,nonInteractiveRequestUserInputPolicy);
+  const fastModeEnabled=resolveFastModeEnabled(options&&options.fastModeEnabled,state&&state.fastModeEnabled);
+  const automaticApprovalReviewEnabled=resolveAutomaticApprovalReviewEnabled(
+    options&&options.automaticApprovalReviewEnabled,
+    state&&state.automaticApprovalReviewEnabled
+  );
+  state.fastModeEnabled=fastModeEnabled;
+  state.automaticApprovalReviewEnabled=automaticApprovalReviewEnabled;
 
   const shouldForceReset=Boolean(options&&options.forceNewSession);
-  const shouldModeReset=shouldResetThreadForMode(state,sandboxMode,webSearchEnabled,cwd,requestUserInputPolicy,model,modelReasoningEffort);
+  const shouldModeReset=shouldResetThreadForMode(
+    state,
+    sandboxMode,
+    webSearchEnabled,
+    cwd,
+    requestUserInputPolicy,
+    model,
+    modelReasoningEffort,
+    fastModeEnabled,
+    automaticApprovalReviewEnabled
+  );
   if(shouldForceReset||shouldModeReset){
     const resetReason=shouldForceReset
       ?"force_new_session"
@@ -8050,6 +8186,8 @@ async function ensureAgentThread(agentName,options){
       modelReasoningEffort,
       cwd:summarizePathForOperationLog(cwd,220),
       requestUserInputPolicy,
+      fastModeEnabled:fastModeEnabled?1:0,
+      automaticApprovalReviewEnabled:automaticApprovalReviewEnabled?1:0,
     });
     state.sessionRef=null;
     state.threadId=null;
@@ -8060,6 +8198,8 @@ async function ensureAgentThread(agentName,options){
     state.lastRequestUserInputPolicy=requestUserInputPolicy;
     state.lastModel=model;
     state.lastModelReasoningEffort=modelReasoningEffort;
+    state.lastFastModeEnabled=fastModeEnabled;
+    state.lastAutomaticApprovalReviewEnabled=automaticApprovalReviewEnabled;
     return state.threadId;
   }
 
@@ -8076,6 +8216,8 @@ async function ensureAgentThread(agentName,options){
         state.lastRequestUserInputPolicy=requestUserInputPolicy;
         state.lastModel=model;
         state.lastModelReasoningEffort=modelReasoningEffort;
+        state.lastFastModeEnabled=fastModeEnabled;
+        state.lastAutomaticApprovalReviewEnabled=automaticApprovalReviewEnabled;
         logOperation("thread.resume",{
           a:safeString(agentName,80),
           th:safeString(resumedId,120),
@@ -8086,6 +8228,8 @@ async function ensureAgentThread(agentName,options){
           modelReasoningEffort,
           cwd:summarizePathForOperationLog(cwd,220),
           requestUserInputPolicy,
+          fastModeEnabled:fastModeEnabled?1:0,
+          automaticApprovalReviewEnabled:automaticApprovalReviewEnabled?1:0,
         });
         return resumedId;
       }
@@ -8103,7 +8247,7 @@ async function ensureAgentThread(agentName,options){
     }
   }
 
-  const started=await appServer.sendRequest("thread/start",{cwd,approvalPolicy,sandbox:sandboxMode,config:buildThreadStartConfig(state,webSearchEnabled,requestUserInputPolicy,model,modelReasoningEffort),experimentalRawEvents:false},45000);
+  const started=await appServer.sendRequest("thread/start",{cwd,approvalPolicy,sandbox:sandboxMode,config:buildThreadStartConfig(state,webSearchEnabled,requestUserInputPolicy,model,modelReasoningEffort,fastModeEnabled,automaticApprovalReviewEnabled),experimentalRawEvents:false},45000);
   const threadId=started&&started.thread&&typeof started.thread.id==="string"?started.thread.id:null;
   if(!threadId)throw new Error("thread/start did not return thread id");
   state.threadId=threadId;
@@ -8116,6 +8260,8 @@ async function ensureAgentThread(agentName,options){
   state.lastRequestUserInputPolicy=requestUserInputPolicy;
   state.lastModel=model;
   state.lastModelReasoningEffort=modelReasoningEffort;
+  state.lastFastModeEnabled=fastModeEnabled;
+  state.lastAutomaticApprovalReviewEnabled=automaticApprovalReviewEnabled;
   logOperation("thread.start",{
     a:safeString(agentName,80),
     th:safeString(threadId,120),
@@ -8126,6 +8272,8 @@ async function ensureAgentThread(agentName,options){
     modelReasoningEffort,
     cwd:summarizePathForOperationLog(cwd,220),
     requestUserInputPolicy,
+    fastModeEnabled:fastModeEnabled?1:0,
+    automaticApprovalReviewEnabled:automaticApprovalReviewEnabled?1:0,
   });
   return threadId;
 }
@@ -8139,6 +8287,13 @@ async function executeTurnStreaming(res,prompt,agentName,options){
   const modelReasoningEffort=normalizeExecModelReasoningEffort(options&&options.modelReasoningEffort,defaultExecModelReasoningEffort);
   const requestUserInputPolicy=normalizeRequestUserInputPolicy(options&&options.requestUserInputPolicy,nonInteractiveRequestUserInputPolicy);
   const cwd=normalizeWorkingDirectory(options&&options.cwd,workspaceRoot);
+  const fastModeEnabled=resolveFastModeEnabled(options&&options.fastModeEnabled,state&&state.fastModeEnabled);
+  const automaticApprovalReviewEnabled=resolveAutomaticApprovalReviewEnabled(
+    options&&options.automaticApprovalReviewEnabled,
+    state&&state.automaticApprovalReviewEnabled
+  );
+  state.fastModeEnabled=fastModeEnabled;
+  state.automaticApprovalReviewEnabled=automaticApprovalReviewEnabled;
   const gitAutomationIgnoredPaths=isPathWithin(workspaceRoot,cwd)?gitAutomationWorkspaceIgnoredPaths:[];
   const promptSummary=summarizeTextForOperationLog(prompt,24000);
   const promptAuditSource=options&&options.promptAudit&&typeof options.promptAudit==="object"?options.promptAudit:{};
@@ -8175,6 +8330,8 @@ async function executeTurnStreaming(res,prompt,agentName,options){
           sandboxMode,
           approvalPolicy,
           requestUserInputPolicy,
+          fastModeEnabled,
+          automaticApprovalReviewEnabled,
         },
         contract:{planning:planningModeContract,assurance:assuranceModeContract},
       })
@@ -8203,6 +8360,8 @@ async function executeTurnStreaming(res,prompt,agentName,options){
     model:safeString(model,120),
     modelReasoningEffort,
     requestUserInputPolicy,
+    fastModeEnabled:fastModeEnabled?1:0,
+    automaticApprovalReviewEnabled:automaticApprovalReviewEnabled?1:0,
     cwd:summarizePathForOperationLog(cwd,220),
     prompt:promptSummary,
     promptChars:{input:promptAudit.inputLength,output:promptAudit.outputLength,truncated:promptAudit.truncated?1:0,limit:promptAudit.limit},
@@ -8222,16 +8381,11 @@ async function executeTurnStreaming(res,prompt,agentName,options){
       defaultsReady:turnVisibility.defaults&&turnVisibility.defaults.ready?1:0,
       turnReady:turnVisibility.turn&&turnVisibility.turn.ready?1:0,
     },
-    intentFirst:{
-      applied:options&&options.intentFirst&&options.intentFirst.applied?1:0,
-      designSensitive:options&&options.intentFirst&&options.intentFirst.designSensitive?1:0,
-      source:safeString(options&&options.intentFirst&&options.intentFirst.source?options.intentFirst.source:"",80),
-    },
   });
 
   let threadId=null;
   try{
-    threadId=await ensureAgentThread(agentName,{sandboxMode,approvalPolicy,webSearch:webSearchEnabled,model,modelReasoningEffort,cwd,forceNewSession:Boolean(options&&options.forceNewSession),requestUserInputPolicy});
+    threadId=await ensureAgentThread(agentName,{sandboxMode,approvalPolicy,webSearch:webSearchEnabled,model,modelReasoningEffort,cwd,forceNewSession:Boolean(options&&options.forceNewSession),requestUserInputPolicy,fastModeEnabled,automaticApprovalReviewEnabled});
   }catch(error){
     logOperation("turn.prepare_failed",{
       a:safeString(agentName,80),
@@ -8313,6 +8467,8 @@ async function executeTurnStreaming(res,prompt,agentName,options){
     model,
     modelReasoningEffort,
     requestUserInputPolicy,
+    fastModeEnabled,
+    automaticApprovalReviewEnabled,
     governanceOverride:options&&options.governanceOverride?options.governanceOverride:null,
     approvalAuditTrail,
   });
@@ -8355,13 +8511,6 @@ async function executeTurnStreaming(res,prompt,agentName,options){
     taskOutcomeStatus:"",
     taskOutcomeReason:"",
     turnError:null,
-    intentFirst:options&&options.intentFirst&&typeof options.intentFirst==="object"
-      ?{
-        applied:options.intentFirst.applied?1:0,
-        designSensitive:options.intentFirst.designSensitive?1:0,
-        source:safeString(options.intentFirst.source,80)||"",
-      }
-      :null,
     gitAutomation:null,
     gitAutomationBaseline:null,
     updatedAt:nowTs(),
@@ -8472,6 +8621,8 @@ async function executeTurnStreaming(res,prompt,agentName,options){
   let deltaText="";
   let finalTextFromItemCompleted="";
   let errorText="";
+  let sawResponseStreamDisconnect=false;
+  let responseStreamDisconnectDetail="";
   let disconnectFinalizeTimer=null;
   const dispatchTraceKeys=new Set();
   const dispatchSuccessKeys=new Set();
@@ -8547,6 +8698,10 @@ async function executeTurnStreaming(res,prompt,agentName,options){
   };
 
   safeWriteEvent({type:"turn",phase:"started",agentName,threadId,turnId});
+  const operatorPlanEvent=buildOperatorPlanEvent({planningContext,agentName});
+  if(operatorPlanEvent){
+    safeWriteEvent(operatorPlanEvent);
+  }
   if(promptAudit.truncated){
     const detail=`prompt truncated by harness (${promptAudit.outputLength}/${promptAudit.inputLength} chars, limit=${promptAudit.limit})`;
     safeWriteEvent({type:"activity",label:"prompt_truncated",detail});
@@ -8620,6 +8775,11 @@ async function executeTurnStreaming(res,prompt,agentName,options){
       collabCalls:turnStats.collabCalls,
       attempt:parentDispatchAttempt,
       maxRetries:parentDispatchGuardMaxRetries,
+      routingDecisionPresent:Boolean(planningContext&&planningContext.requirementContract&&planningContext.dispatchPlan),
+      plannedDispatchCount:Array.isArray(planningContext&&planningContext.dispatchPlan&&planningContext.dispatchPlan.dispatches)
+        ?planningContext.dispatchPlan.dispatches.length
+        :0,
+      proposalOnly:Boolean(planningContext&&planningContext.dispatchPlan&&planningContext.dispatchPlan.proposalOnly),
     });
     debugFinalize("after_parent_dispatch_guard");
     turnRecord.parentDispatchGuard=parentDispatchGuard;
@@ -8670,7 +8830,13 @@ async function executeTurnStreaming(res,prompt,agentName,options){
       missingRequiredEvidence.push("dedicated_test_evidence_missing");
     }
     debugFinalize("after_required_evidence_checks");
-    if((planningDirective==="NEEDS_INPUT"||Boolean(planningContext&&planningContext.selection&&planningContext.selection.needsInputRecommended&&turnRecord.planningMode==="DISCOVERY"&&!observedSignals.fileChanges&&!observedSignals.dispatchSuccessCount))&&finalStatus==="completed"){
+    const planningNeedsInput=shouldAutoInterruptForDiscoveryNeedsInput({
+      planningDirective,
+      planningContext,
+      planningMode:turnRecord.planningMode,
+      observedSignals,
+    });
+    if(planningNeedsInput&&finalStatus==="completed"){
       finalStatus="interrupted";
       if(!finalErrorText)finalErrorText="[needs_input] user decision required before implementation";
       safeWriteEvent({
@@ -8688,50 +8854,36 @@ async function executeTurnStreaming(res,prompt,agentName,options){
         detail:safeString(missingRequiredEvidence.join(", "),1200),
       });
     }
-    const intentFirstReview=evaluateIntentFirstGates({
-      contract:designAcceptanceContract,
-      store:loadUserTasteMemoryStoreCached(),
-      prompt:parentDispatchRootPrompt||prompt,
+    const familyCompletionGate=evaluateFamilyCompletion({
+      planningContext,
+      prompt,
+      changedPaths:Array.isArray(observedSignals.sampleChangedPaths)?observedSignals.sampleChangedPaths:[],
       executionSource:turnRecord.source||"streaming_exec",
-      changedPaths:turnStats.sampleChangedPaths,
-      workspaceLocked:Boolean(workspaceGuardLockedRoot()),
-      docSyncComplete:Boolean(turnStats.docSyncSeen),
-      visualEvidence:{
-        desktopReview:Boolean(turnStats.desktopVisualReviewSeen),
-        mobileReview:Boolean(turnStats.mobileVisualReviewSeen),
-      },
-      dispatchChildren,
-      sampleMcpTools:turnStats.sampleMcpTools,
-      sampleCommands:turnStats.sampleCommands,
-      commandExecutions:turnStats.commandExecutions,
+      cwd,
+      workspaceRoot,
+      docSyncComplete:docSyncEvidence&&docSyncEvidence.status==="PASS",
+      visualEvidence:null,
+      dispatchChildren:Array.from(new Set([
+        ...(Array.isArray(observedSignals.dispatchChildren)?observedSignals.dispatchChildren:[]),
+        ...childEvidenceLedger.map((entry)=>safeString(entry&&entry.agent,80)).filter(Boolean),
+      ])).filter(Boolean),
+      sampleMcpTools:Array.isArray(turnStats&&turnStats.sampleMcpTools)?turnStats.sampleMcpTools:[],
+      sampleCommands:Array.isArray(turnStats&&turnStats.sampleCommands)?turnStats.sampleCommands:[],
+      commandExecutions:turnStats&&Number.isFinite(Number(turnStats.commandExecutions))?Number(turnStats.commandExecutions):0,
+      designAcceptanceContract,
+      tasteMemoryStore,
     });
-    turnRecord.intentFirst={
-      ...(turnRecord.intentFirst&&typeof turnRecord.intentFirst==="object"?turnRecord.intentFirst:{}),
-      applies:intentFirstReview.applies?1:0,
-      designSensitive:intentFirstReview.designSensitive?1:0,
-      status:safeString(intentFirstReview.status,40)||"not_applicable",
-      summary:safeString(intentFirstReview.summary,220)||"",
-      missingHard:Array.isArray(intentFirstReview.missingHard)
-        ?intentFirstReview.missingHard.map((entry)=>safeString(entry.label,80)).filter(Boolean).slice(0,8)
-        :[],
-    };
-    if(intentFirstReview.applies&&Array.isArray(intentFirstReview.missingHard)&&intentFirstReview.missingHard.length){
-      const intentError=intentFirstReview.summary||"intent-first completion gate missing";
-      if(!finalErrorText)finalErrorText=`[error] ${intentError}`;
-      if(finalStatus==="completed"){
-        finalStatus="failed";
+    if(familyCompletionGate.applies&&familyCompletionGate.status==="failed_validation"&&finalStatus==="completed"){
+      finalStatus="failed";
+      if(!finalErrorText){
+        finalErrorText=`[error] family completion gate failed: ${Array.isArray(familyCompletionGate.missingHard)?familyCompletionGate.missingHard.map((entry)=>safeString(entry&&entry.label,80)).filter(Boolean).join(", "):"missing required evidence"}`;
       }
       safeWriteEvent({
         type:"activity",
-        label:"intent_first_block",
-        detail:safeString(intentError,1200),
+        label:"family_completion_gate_failed",
+        detail:safeString(familyCompletionGate.summary,1200),
       });
     }
-    const taskOutcomeReason=planningDirective==="NEEDS_INPUT"
-      ? "interactive_approval_unavailable"
-      : (intentFirstReview.applies&&Array.isArray(intentFirstReview.missingHard)&&intentFirstReview.missingHard.length
-        ? safeString(intentFirstReview.missingHard[0].reason,120)
-        : "");
     turnRecord.status=finalStatus;
     setTurnTerminalState(turnRecord,finalStatus,{terminalEvent:"turn/completed",errorText:finalErrorText});
     debugFinalize("after_outcome_terminal_state");
@@ -8740,8 +8892,16 @@ async function executeTurnStreaming(res,prompt,agentName,options){
       finalErrorText,
       approvalAudits:approvalAuditTrail,
       parentDispatchGuard,
-      explicitStatus:planningDirective==="NEEDS_INPUT"?"NEEDS_INPUT":"",
-      reason:taskOutcomeReason,
+      explicitStatus:planningNeedsInput
+        ?"NEEDS_INPUT"
+        :(familyCompletionGate.applies&&familyCompletionGate.status==="failed_validation"?"FAILED_VALIDATION":""),
+      reason:planningNeedsInput
+        ?(safeString(planningContext&&planningContext.selection&&planningContext.selection.signals&&planningContext.selection.signals.clarificationAction,40)==="ask_user_once"
+          ?"clarification_required_before_implementation"
+          :"interactive_approval_unavailable")
+        :(familyCompletionGate.applies&&familyCompletionGate.status==="failed_validation"
+          ?safeString(familyCompletionGate.missingHard&&familyCompletionGate.missingHard[0]&&familyCompletionGate.missingHard[0].reason,120)||"family_completion_gate_failed"
+          :""),
       missingEvidence:missingRequiredEvidence.length>0,
     });
     const acceptanceResults=buildAcceptanceCheckResults({
@@ -8751,6 +8911,7 @@ async function executeTurnStreaming(res,prompt,agentName,options){
       needsInputRecommended:planningContext&&planningContext.selection&&planningContext.selection.needsInputRecommended,
       docSyncEvidence,
       childEvidenceLedger,
+      familyCompletionGate,
     });
     const evidenceSummary={
       passCount:acceptanceResults.filter((entry)=>entry&&entry.status==="PASS").length,
@@ -8774,6 +8935,7 @@ async function executeTurnStreaming(res,prompt,agentName,options){
       docSyncEvidence,
       acceptanceResults,
       requiredEvidenceFailures:missingRequiredEvidence,
+      streamEvents:observedStreamEvents,
     });
     const flowTraceSummary=buildFlowTraceSummary({
       planningContext,
@@ -8785,6 +8947,7 @@ async function executeTurnStreaming(res,prompt,agentName,options){
       childEvidenceLedger,
       docSyncEvidence,
       acceptanceResults,
+      familyCompletionGate,
       agentName,
     });
     debugFinalize("after_evidence_aggregation");
@@ -8803,6 +8966,7 @@ async function executeTurnStreaming(res,prompt,agentName,options){
       acceptanceSummary:evidenceSummary,
       docSyncEvidence,
       childEvidenceLedger,
+      familyCompletionGate,
       reviewLoadBreakdown,
       residualRiskSummary:Array.from(new Set([
         ...(Array.isArray(planningContext&&planningContext.dispatchPlan&&planningContext.dispatchPlan.residualRisks)?planningContext.dispatchPlan.residualRisks:[]),
@@ -8816,6 +8980,98 @@ async function executeTurnStreaming(res,prompt,agentName,options){
         taskOutcomeReason:taskOutcome.reason,
       },
     };
+    const parentMaterialImplementationObserved=Boolean(
+      observedSignals.fileChanges>0
+      &&observedSignals.dispatchSuccessCount===0
+      &&parentAgentNames.has(normalizeAgentName(agentName))
+    );
+    const currentTurnSummaryForConformance={
+      turnId:turnRecord.turnId,
+      threadId:turnRecord.threadId,
+      selectedPlanningDepth:safeString(planningContext&&planningContext.selection&&planningContext.selection.selectedPlanningDepth,80)||"STANDARD_PLANNING",
+      selectedAssuranceDepth:safeString(planningContext&&planningContext.selection&&planningContext.selection.selectedAssuranceDepth,80)||"STANDARD_ASSURANCE",
+      changedPaths:Array.isArray(observedSignals.sampleChangedPaths)?observedSignals.sampleChangedPaths:[],
+      finalOutcome:{
+        status:finalStatus,
+        terminalStatus:finalStatus,
+        taskOutcomeStatus:taskOutcome.status,
+        taskOutcomeReason:taskOutcome.reason,
+      },
+      implementationObserved:Boolean(observedSignals.fileChanges||observedSignals.commandExecutions||observedSignals.mcpCalls),
+      dispatchSuccessCount:observedSignals.dispatchSuccessCount,
+      requestUserInputPolicy:nonInteractiveRequestUserInputPolicy,
+      residualRisks:Array.isArray(evidenceManifest.residualRiskSummary)?evidenceManifest.residualRiskSummary:[],
+      assumptions:Array.isArray(planningContext&&planningContext.requirementContract&&planningContext.requirementContract.assumptions)
+        ?planningContext.requirementContract.assumptions
+        :[],
+      parentMaterialImplementationObserved,
+    };
+    const routingDecision=buildRoutingDecision({
+      selection:planningContext&&planningContext.selection?planningContext.selection:{},
+      dispatchPlan:planningContext&&planningContext.dispatchPlan?planningContext.dispatchPlan:{},
+      evidenceContract:loadConstitutionConfigJson("evidence_contract.json"),
+    });
+    const taskOutcomesArtifact=buildTaskOutcomesArtifact({
+      childEvidenceLedger,
+      finalOutcome:currentTurnSummaryForConformance.finalOutcome,
+      acceptanceResults,
+      changedPaths:currentTurnSummaryForConformance.changedPaths,
+      evidenceRefs:["evidence_manifest.json","flow_trace_summary.json","review_load_breakdown.json"],
+      turnId:turnRecord.turnId,
+    });
+    const reviewBundle=buildReviewBundle({
+      acceptanceResults,
+      childEvidenceLedger,
+      requiredEvidenceFailures:missingRequiredEvidence,
+      residualRisks:currentTurnSummaryForConformance.residualRisks,
+      assumptions:currentTurnSummaryForConformance.assumptions,
+      finalOutcome:currentTurnSummaryForConformance.finalOutcome,
+    });
+    const releaseDecision=buildReleaseDecision({
+      finalOutcome:currentTurnSummaryForConformance.finalOutcome,
+      reviewBundle,
+      signoffRefs:["review_bundle.json","flow_trace_summary.json","review_load_breakdown.json"],
+      replayBundleRefs:[safeString(turnRecord.threadId,160)],
+      residualRisks:currentTurnSummaryForConformance.residualRisks,
+      assumptions:currentTurnSummaryForConformance.assumptions,
+      missingEvidence:missingRequiredEvidence,
+      rationaleNotes:[
+        `turn_status=${finalStatus}`,
+        `task_outcome_status=${taskOutcome.status}`,
+      ],
+    });
+    const conformanceReport=buildConformanceReport({
+      latestRunSummary:currentTurnSummaryForConformance,
+      selection:planningContext&&planningContext.selection?planningContext.selection:{},
+      requirementContract:planningContext&&planningContext.requirementContract?planningContext.requirementContract:{},
+      dispatchPlan:planningContext&&planningContext.dispatchPlan?planningContext.dispatchPlan:{},
+      childEvidenceLedger,
+      acceptanceResults,
+      requiredEvidenceFailures:missingRequiredEvidence,
+      evidenceRefs:["evidence_manifest.json","flow_trace_summary.json","review_load_breakdown.json","release_decision.json"],
+      replayBundleRefs:[safeString(turnRecord.threadId,160)],
+      rationaleNotes:[
+        `turn_status=${finalStatus}`,
+        `task_outcome_status=${taskOutcome.status}`,
+      ],
+    });
+    const operatorViewSummary=buildOperatorViewSummary({
+      latestRunSummary:{...currentTurnSummaryForConformance,currentPhase:"Release / Close"},
+      reviewBundle,
+      releaseDecision,
+      conformanceReport,
+      routingDecision,
+    });
+    const releaseDecisionValidation=validateReleaseDecisionState({
+      terminalState:releaseDecision&&releaseDecision.terminal_state,
+      spec:harnessTurnContractSpec,
+    });
+    if(!releaseDecisionValidation.ok){
+      logOperation("contract.release_decision_state_violation",{
+        terminalState:safeString(releaseDecision&&releaseDecision.terminal_state,80)||"unknown",
+        reason:safeString(releaseDecisionValidation.reason,80)||"release_decision_state_not_allowed",
+      },"core");
+    }
     const taskOutcomeBridgeValidation=validateTurnTaskOutcomeContract({
       turnStatus:finalStatus,
       taskOutcomeStatus:taskOutcome.status,
@@ -8848,6 +9104,9 @@ async function executeTurnStreaming(res,prompt,agentName,options){
     }
     turnRecord.taskOutcomeStatus=taskOutcome.status;
     turnRecord.taskOutcomeReason=taskOutcome.reason;
+    turnRecord.familyCompletionGate=familyCompletionGate;
+    turnRecord.parentMaterialImplementationObserved=parentMaterialImplementationObserved?1:0;
+    turnRecord.releaseDecisionState=releaseDecision&&releaseDecision.terminal_state?releaseDecision.terminal_state:"";
     turnRecord.observedSignals=observedSignals;
     turnRecord.evidenceManifest=evidenceManifest;
     turnRecord.stageTimeline=stageTimeline;
@@ -8873,6 +9132,7 @@ async function executeTurnStreaming(res,prompt,agentName,options){
       status:finalStatus,
       taskOutcomeStatus:taskOutcome.status,
       taskOutcomeReason:taskOutcome.reason,
+      familyCompletionGate,
       planningMode:safeString(planningContext&&planningContext.selection&&planningContext.selection.selectedMode,40)||"NORMAL",
       planningDepth:safeString(planningContext&&planningContext.selection&&planningContext.selection.selectedPlanningDepth,60)||"STANDARD_PLANNING",
       assuranceDepth:safeString(planningContext&&planningContext.selection&&planningContext.selection.selectedAssuranceDepth,60)||"STANDARD_ASSURANCE",
@@ -8928,7 +9188,6 @@ async function executeTurnStreaming(res,prompt,agentName,options){
         reason:taskOutcome.reason,
       },
       parentDispatchGuard,
-      intentFirst:turnRecord.intentFirst,
       execution:{
         profile:turnVisibility.profile.effective,
         intent:turnVisibility.intent,
@@ -9038,6 +9297,14 @@ async function executeTurnStreaming(res,prompt,agentName,options){
         stageTimeline,
         flowTraceSummary,
         reviewLoadBreakdown,
+        requestFrame:conformanceReport&&conformanceReport.requestFrame?conformanceReport.requestFrame:null,
+        routingDecision,
+        taskOutcomes:taskOutcomesArtifact,
+        reviewBundle,
+        releaseDecision,
+        discoveryOutcome:conformanceReport&&conformanceReport.discoveryOutcome?conformanceReport.discoveryOutcome:null,
+        conformanceReport,
+        operatorViewSummary,
       });
       if(artifactResult){
         turnRecord.artifactDir=artifactResult.dir||null;
@@ -9049,6 +9316,14 @@ async function executeTurnStreaming(res,prompt,agentName,options){
         turnRecord.flowTraceSummaryPath=artifactResult.flowTraceSummaryPath||null;
         turnRecord.planningDecisionContractPath=artifactResult.planningDecisionContractPath||null;
         turnRecord.reviewLoadBreakdownPath=artifactResult.reviewLoadBreakdownPath||null;
+        turnRecord.requestFramePath=artifactResult.requestFramePath||null;
+        turnRecord.routingDecisionPath=artifactResult.routingDecisionPath||null;
+        turnRecord.taskOutcomesPath=artifactResult.taskOutcomesPath||null;
+        turnRecord.reviewBundlePath=artifactResult.reviewBundlePath||null;
+        turnRecord.releaseDecisionPath=artifactResult.releaseDecisionPath||null;
+        turnRecord.conformanceReportPath=artifactResult.conformanceReportPath||null;
+        turnRecord.operatorViewSummaryPath=artifactResult.operatorViewSummaryPath||null;
+        turnRecord.releaseDecisionState=releaseDecision&&releaseDecision.terminal_state?releaseDecision.terminal_state:null;
         rememberExecutionMemoryRecord({
           turnId,
           threadId,
@@ -9076,6 +9351,14 @@ async function executeTurnStreaming(res,prompt,agentName,options){
           flowTraceSummaryPath:artifactResult.flowTraceSummaryPath||"",
           planningDecisionContractPath:artifactResult.planningDecisionContractPath||"",
           reviewLoadBreakdownPath:artifactResult.reviewLoadBreakdownPath||"",
+          requestFramePath:artifactResult.requestFramePath||"",
+          routingDecisionPath:artifactResult.routingDecisionPath||"",
+          reviewBundlePath:artifactResult.reviewBundlePath||"",
+          releaseDecisionPath:artifactResult.releaseDecisionPath||"",
+          conformanceReportPath:artifactResult.conformanceReportPath||"",
+          operatorViewSummaryPath:artifactResult.operatorViewSummaryPath||"",
+          releaseDecisionState:releaseDecision&&releaseDecision.terminal_state?releaseDecision.terminal_state:"",
+          parentMaterialImplementationObserved:parentMaterialImplementationObserved?1:0,
           parentDispatchGuard,
         },{persist:false});
         publishLatestTurnSnapshot(turnRecord,"turn_artifacts_finalized");
@@ -9163,6 +9446,7 @@ async function executeTurnStreaming(res,prompt,agentName,options){
         promptAudit:null,
         forceNewSession:false,
         attemptedFreshFallback:false,
+        planningContext,
         parentDispatchAttempt:nextAttempt,
         parentDispatchRootPrompt:parentDispatchRootPrompt||safeString(prompt,defaultPromptCharLimit),
         adversarialAttempt:0,
@@ -9190,6 +9474,76 @@ async function executeTurnStreaming(res,prompt,agentName,options){
               turnStatus:"failed",
               errorText:message,
               parentDispatchViolation:true,
+              spec:taskOutcomeContract,
+            });
+            options.onTerminal({
+              status:"failed",
+              error:message,
+              taskOutcomeStatus:retryTaskOutcome.status,
+              taskOutcomeReason:retryTaskOutcome.reason,
+              threadId,
+              turnId,
+              agentName,
+              executionProfile:turnVisibility.profile.effective,
+              executionIntent:turnVisibility.intent,
+              executionSource:turnRecord.source||"streaming_exec",
+              artifactDir:safeString(turnRecord.artifactDir,260)||"",
+              artifactManifestPath:safeString(turnRecord.artifactManifestPath,320)||"",
+              artifactManifestSha256:safeString(turnRecord.artifactManifestSha256,80)||"",
+            });
+          }catch{
+          }
+        }
+      });
+      return;
+    }
+    if(finalStatus==="failed"&&sawResponseStreamDisconnect&&!options.attemptedFreshFallback&&!clientClosed&&canWrite()){
+      const detail="fresh session retry 1/1 (response_stream_disconnected)";
+      safeWriteEvent({
+        type:"activity",
+        label:"stream_recovery",
+        detail,
+        turnId,
+        threadId,
+      });
+      logOperation("turn.stream_disconnect_retry",{
+        a:safeString(agentName,80),
+        th:safeString(threadId,120),
+        turn:safeString(turnId,120),
+        reason:"response_stream_disconnected",
+        forceNewSession:1,
+        err:safeString(responseStreamDisconnectDetail||finalErrorText,220),
+      },"standard");
+      state.sessionRef=null;
+      state.threadId=null;
+      state.activeTurnId=null;
+      state.manualSessionPinned=false;
+      executeTurnStreaming(res,prompt,agentName,{
+        ...options,
+        promptAudit:null,
+        forceNewSession:true,
+        attemptedFreshFallback:true,
+      }).catch((retryError)=>{
+        const message=`[error] stream recovery retry failed: ${retryError&&retryError.message?retryError.message:"unknown error"}`;
+        logOperation("turn.stream_disconnect_retry_failed",{
+          a:safeString(agentName,80),
+          th:safeString(threadId,120),
+          turn:safeString(turnId,120),
+          err:summarizeErrorForOperationLog(retryError,220),
+        },"standard");
+        if(!clientClosed&&canWrite()){
+          safeWriteEvent({type:"error",text:message});
+          safeWriteEvent({type:"status",status:"failed"});
+          try{
+            res.end();
+          }catch{
+          }
+        }
+        if(options&&typeof options.onTerminal==="function"){
+          try{
+            const retryTaskOutcome=deriveTaskOutcome({
+              turnStatus:"failed",
+              errorText:message,
               spec:taskOutcomeContract,
             });
             options.onTerminal({
@@ -9249,6 +9603,8 @@ async function executeTurnStreaming(res,prompt,agentName,options){
         originalPrompt:adversarialRootPrompt||prompt,
         previousAnswer:authoritativeFinalText,
         review:shadowReviewResult&&shadowReviewResult.review?shadowReviewResult.review:null,
+        executionTask:planningContextRequiresDispatch(planningContext),
+        dispatchPlan:planningContext&&planningContext.dispatchPlan?planningContext.dispatchPlan:null,
         attempt:adversarialAttempt,
         maxRetries:adversarialLoopMaxRetries,
         maxChars:defaultPromptCharLimit,
@@ -9285,6 +9641,7 @@ async function executeTurnStreaming(res,prompt,agentName,options){
         promptAudit:null,
         forceNewSession:false,
         attemptedFreshFallback:false,
+        planningContext,
         adversarialAttempt:nextAttempt,
         adversarialRootPrompt:adversarialRootPrompt||safeString(prompt,defaultPromptCharLimit),
       }).catch((retryError)=>{
@@ -9367,15 +9724,17 @@ async function executeTurnStreaming(res,prompt,agentName,options){
 
     if(clientClosed)return;
 
-    if(authoritativeFinalText.trim()){
-      safeWriteEvent({type:"final",text:authoritativeFinalText});
+    const clientFinalText=stripPlanningStatusDirective(authoritativeFinalText);
+    if(clientFinalText){
+      safeWriteEvent({type:"final",text:clientFinalText});
     }
 
-    if(finalErrorText){
-      safeWriteEvent({type:"error",text:finalErrorText});
+    const clientErrorText=taskOutcome.status==="NEEDS_INPUT"?"":finalErrorText;
+    if(clientErrorText){
+      safeWriteEvent({type:"error",text:clientErrorText});
     }
 
-    safeWriteEvent({type:"status",status:finalStatus});
+    safeWriteEvent({type:"status",status:taskOutcome.status==="NEEDS_INPUT"?"needs_input":finalStatus});
 
     if(canWrite()){
       try{
@@ -9491,7 +9850,17 @@ async function executeTurnStreaming(res,prompt,agentName,options){
         }
       }
     },
-    onError:(msg)=>{
+    onError:(msg,params)=>{
+      const payloadError=params&&params.error&&typeof params.error==="object"?params.error:null;
+      if(payloadError&&isResponseStreamDisconnectErrorPayload(payloadError)){
+        sawResponseStreamDisconnect=true;
+        const detail=extractResponseStreamDisconnectDetail(payloadError,4000);
+        if(detail)responseStreamDisconnectDetail=detail;
+      }else if(isResponseStreamDisconnectErrorText(msg)){
+        sawResponseStreamDisconnect=true;
+        const detail=safeString(msg,4000);
+        if(detail)responseStreamDisconnectDetail=detail;
+      }
       if(typeof msg==="string"&&!errorText)errorText=msg;
       if(artifactRecorder&&typeof artifactRecorder.writeEvent==="function"){
         artifactRecorder.writeEvent("turn.error",{message:safeString(msg,2200)});
@@ -9511,6 +9880,11 @@ async function executeTurnStreaming(res,prompt,agentName,options){
       let completionError="";
       if(turn&&turn.status==="failed"&&turn.error&&typeof turn.error.message==="string"){
         completionError=`[error] ${turn.error.message}`;
+        if(isResponseStreamDisconnectErrorPayload(turn.error)||isResponseStreamDisconnectErrorText(turn.error.message)){
+          sawResponseStreamDisconnect=true;
+          const detail=extractResponseStreamDisconnectDetail(turn.error,4000)||safeString(turn.error.message,4000);
+          if(detail)responseStreamDisconnectDetail=detail;
+        }
         if(isNonInteractiveApprovalErrorText(turn.error.message)){
           safeWriteEvent({type:"activity",label:"non_interactive_approval",detail:safeString(turn.error.message,1200)});
         }
@@ -9556,6 +9930,10 @@ async function runCodexExecStreaming(res,prompt,sandboxMode,options={}){
       handleSlashExperimentalCommand(res,argsText);
       return;
     }
+    if(command==="/fast"){
+      handleSlashFastCommand(res,argsText);
+      return;
+    }
     if(command==="/resume"){
       handleSlashResumeCommand(res,argsText);
       return;
@@ -9597,6 +9975,8 @@ async function runCodexExecStreaming(res,prompt,sandboxMode,options={}){
     sandboxMode,
     approvalPolicy:normalizeApprovalPolicy(normalized.approvalPolicy),
     webSearch:normalizeBooleanFlag(normalized.webSearch),
+    fastModeEnabled:resolveFastModeEnabled(normalized.fastModeEnabled),
+    automaticApprovalReviewEnabled:resolveAutomaticApprovalReviewEnabled(normalized.automaticApprovalReviewEnabled),
     model:normalizeExecModel(normalized.model,defaultExecModelName),
     modelReasoningEffort:normalizeExecModelReasoningEffort(normalized.modelReasoningEffort,defaultExecModelReasoningEffort),
     cwd:normalizeWorkingDirectory(normalized.cwd,workspaceRoot),
@@ -9920,21 +10300,22 @@ function snapshotTurnRecord(record){
     flow_trace_summary_path:summarizePathForOperationLog(record.flowTraceSummaryPath,260)||null,
     planning_decision_contract_path:summarizePathForOperationLog(record.planningDecisionContractPath,260)||null,
     review_load_breakdown_path:summarizePathForOperationLog(record.reviewLoadBreakdownPath,260)||null,
+    request_frame_path:summarizePathForOperationLog(record.requestFramePath,260)||null,
+    routing_decision_path:summarizePathForOperationLog(record.routingDecisionPath,260)||null,
+    task_outcomes_path:summarizePathForOperationLog(record.taskOutcomesPath,260)||null,
+    review_bundle_path:summarizePathForOperationLog(record.reviewBundlePath,260)||null,
+    release_decision_path:summarizePathForOperationLog(record.releaseDecisionPath,260)||null,
+    conformance_report_path:summarizePathForOperationLog(record.conformanceReportPath,260)||null,
+    operator_view_summary_path:summarizePathForOperationLog(record.operatorViewSummaryPath,260)||null,
+    release_decision_state:safeString(record.releaseDecisionState,80)||null,
+    parent_material_implementation_observed:record.parentMaterialImplementationObserved?1:0,
     planning:record.planningContext&&typeof record.planningContext==="object"?record.planningContext:null,
+    family_completion_gate:record.familyCompletionGate&&typeof record.familyCompletionGate==="object"?record.familyCompletionGate:null,
     visibility:turnVisibility,
     status,
     terminal_status:terminalStatus,
     task_outcome_status:safeString(record.taskOutcomeStatus,80).toUpperCase()||null,
     task_outcome_reason:safeString(record.taskOutcomeReason,120)||null,
-    intent_first:record.intentFirst&&typeof record.intentFirst==="object"
-      ?{
-        applied:record.intentFirst.applied?1:0,
-        design_sensitive:record.intentFirst.designSensitive?1:0,
-        status:safeString(record.intentFirst.status,40)||"not_applicable",
-        summary:safeString(record.intentFirst.summary,220)||"",
-        missing_hard:Array.isArray(record.intentFirst.missingHard)?record.intentFirst.missingHard.slice(0,8):[],
-      }
-      :null,
     terminal_event:safeString(record.turnTerminalEvent,120)||null,
     git_automation:snapshotGitAutomationResult(record.gitAutomation),
     started_at:Number.isFinite(Number(record.startedAt))?Math.max(0,Math.trunc(Number(record.startedAt))):null,
@@ -10029,6 +10410,9 @@ function summarizePlanningForTurnLog(planning){
       acceptanceCheckCount:Array.isArray(requirement.acceptanceChecks)?requirement.acceptanceChecks.length:0,
       openQuestionCount:Array.isArray(requirement.openQuestions)?requirement.openQuestions.length:0,
       approvalBoundaryCount:Array.isArray(requirement.approvalBoundaryItems)?requirement.approvalBoundaryItems.length:0,
+      userValueThesis:safeString(requirement.userValueFrame&&requirement.userValueFrame.valueThesis,240)||"",
+      qualityAxisCount:Array.isArray(requirement.userValueFrame&&requirement.userValueFrame.qualityAxes)?requirement.userValueFrame.qualityAxes.length:0,
+      mustAvoidCount:Array.isArray(requirement.userValueFrame&&requirement.userValueFrame.mustAvoid)?requirement.userValueFrame.mustAvoid.length:0,
     }:null,
     dispatchSummary:dispatchPlan?{
       proposalOnly:dispatchPlan.proposalOnly?1:0,
@@ -10062,10 +10446,117 @@ function publishLatestTurnSnapshot(record,eventType){
     };
     console.log(`[turn-state] ${safeJsonStringifyForConsole(logPayload)}`);
   }
+  try{
+    updateCurrentLogSurface({trigger:eventType||"turn_snapshot"});
+  }catch(error){
+    logOperation("current_logs.update_failed",{
+      trigger:safeString(eventType,80)||"turn_snapshot",
+      err:summarizeErrorForOperationLog(error,220),
+    },"core");
+  }
   return snapshot;
 }
 function getLatestTurnSnapshot(){
   return cloneTurnRecordSnapshot(latestTurnSnapshot);
+}
+function summarizePersistedArtifactPath(targetPath){
+  const normalized=safeString(targetPath,320)||"";
+  if(normalized)return summarizePathForOperationLog(normalized,260)||normalized;
+  return "";
+}
+function buildPersistedTurnSnapshot(record){
+  const normalized=normalizeExecutionMemoryRecord(record);
+  if(!normalized)return null;
+  const auditRecord=harnessAuditMemoryStore.get(normalized.turnId);
+  const artifactManifestPath=normalized.artifactManifestPath
+    ||(auditRecord&&auditRecord.manifestPath?auditRecord.manifestPath:"")
+    ||(normalized.evidenceManifestPath?path.join(path.dirname(resolveWorkspaceRuntimePath(normalized.evidenceManifestPath)),"manifest.json"):"");
+  const artifactDir=normalized.artifactDir
+    ||(auditRecord&&auditRecord.artifactDir?auditRecord.artifactDir:"")
+    ||(artifactManifestPath?path.dirname(resolveWorkspaceRuntimePath(artifactManifestPath)):"");
+  const terminalStatus=isTerminalExecutionState(normalized.status)?normalized.status:null;
+  return{
+    turn_id:normalized.turnId,
+    thread_id:normalized.threadId||null,
+    agent_name:normalized.agentName||null,
+    cwd:summarizePersistedArtifactPath(normalized.cwd)||null,
+    source:normalized.source||null,
+    execution_profile:normalized.executionProfile,
+    execution_intent:normalized.executionIntent,
+    planning_mode:normalized.planningMode,
+    planning_depth:normalized.planningDepth,
+    assurance_depth:normalized.assuranceDepth,
+    flow_path:normalized.flowPath,
+    smoke_like_profile:normalized.smokeLikeProfile||isSmokeExecutionProfile(normalized.executionProfile)?1:0,
+    full_utilization_defaults_ready:0,
+    full_utilization_turn_ready:0,
+    full_utilization_observed:0,
+    parent_dispatch_guard:normalized.parentDispatchGuard||null,
+    observed_signals:normalized.observedSignals,
+    artifact_dir:summarizePersistedArtifactPath(artifactDir)||null,
+    artifact_manifest_path:summarizePersistedArtifactPath(artifactManifestPath)||null,
+    artifact_manifest_sha256:normalized.artifactManifestSha256||null,
+    evidence_manifest_path:summarizePersistedArtifactPath(normalized.evidenceManifestPath)||null,
+    stage_timeline_path:summarizePersistedArtifactPath(normalized.stageTimelinePath)||null,
+    flow_trace_summary_path:summarizePersistedArtifactPath(normalized.flowTraceSummaryPath)||null,
+    planning_decision_contract_path:summarizePersistedArtifactPath(normalized.planningDecisionContractPath)||null,
+    review_load_breakdown_path:summarizePersistedArtifactPath(normalized.reviewLoadBreakdownPath)||null,
+    request_frame_path:summarizePersistedArtifactPath(normalized.requestFramePath)||null,
+    routing_decision_path:summarizePersistedArtifactPath(normalized.routingDecisionPath)||null,
+    task_outcomes_path:summarizePersistedArtifactPath(normalized.taskOutcomesPath)||null,
+    review_bundle_path:summarizePersistedArtifactPath(normalized.reviewBundlePath)||null,
+    release_decision_path:summarizePersistedArtifactPath(normalized.releaseDecisionPath)||null,
+    conformance_report_path:summarizePersistedArtifactPath(normalized.conformanceReportPath)||null,
+    operator_view_summary_path:summarizePersistedArtifactPath(normalized.operatorViewSummaryPath)||null,
+    release_decision_state:safeString(normalized.releaseDecisionState,80)||null,
+    parent_material_implementation_observed:normalized.parentMaterialImplementationObserved?1:0,
+    planning:null,
+    visibility:null,
+    status:normalized.status,
+    terminal_status:terminalStatus,
+    family_completion_gate:normalized.familyCompletionGate||null,
+    task_outcome_status:normalized.taskOutcomeStatus||null,
+    task_outcome_reason:normalized.taskOutcomeReason||null,
+    terminal_event:normalized.status==="blocked"?"turn/blocked":"turn/completed",
+    git_automation:null,
+    started_at:normalized.startedAt||null,
+    completed_at:normalized.completedAt||null,
+    updated_at:normalized.updatedAt||nowTs(),
+  };
+}
+function isOperatorSurfaceTurnSnapshot(snapshot){
+  if(!snapshot||typeof snapshot!=="object")return false;
+  const profile=normalizeExecutionProfile(snapshot.execution_profile,runtimeExecutionProfile);
+  const intent=normalizeExecutionIntent(snapshot.execution_intent,"interactive");
+  const loweredIntent=safeString(intent,120).toLowerCase();
+  const agentName=safeString(snapshot.agent_name,160).toLowerCase();
+  if(isSmokeExecutionProfile(profile))return false;
+  if(profile==="proof-runtime")return false;
+  if(isAuxiliaryOperatorRunContext(snapshot))return false;
+  if(loweredIntent.includes("baseline"))return false;
+  if(loweredIntent.includes("probe"))return false;
+  if(loweredIntent.includes("operator-surface-refresh"))return false;
+  if(loweredIntent.includes("web-ui"))return false;
+  if(agentName.includes("@chat-"))return false;
+  return true;
+}
+function getLatestPersistedTurnSnapshot({operatorSurfaceOnly=false}={}){
+  if(!harnessMemoryLoaded){
+    loadHarnessExecutionMemoryStore();
+  }
+  const records=[...harnessExecutionMemoryStore.values()]
+    .map((entry)=>normalizeExecutionMemoryRecord(entry))
+    .filter((entry)=>entry&&typeof entry==="object")
+    .sort((left,right)=>Math.max(Number(right.completedAt||0),Number(right.updatedAt||0))-Math.max(Number(left.completedAt||0),Number(left.updatedAt||0)));
+  const selected=operatorSurfaceOnly
+    ?(records.find((entry)=>isOperatorSurfaceTurnSnapshot(buildPersistedTurnSnapshot(entry)))||null)
+    :(records[0]||null);
+  return buildPersistedTurnSnapshot(selected);
+}
+function getLatestOperatorTurnSnapshot(){
+  const live=getLatestTurnSnapshot();
+  if(isOperatorSurfaceTurnSnapshot(live))return live;
+  return getLatestPersistedTurnSnapshot({operatorSurfaceOnly:true})||null;
 }
 function publishLatestGitAutomationSnapshot(result){
   const snapshot=snapshotGitAutomationResult(result);
@@ -10238,6 +10729,7 @@ function buildSignoffBundleSnapshot(candidate){
   return{
     kind:"signoff",
     name:safeString(candidate&&candidate.name,160)||"",
+    bundlePath:repoRelativePath(workspaceRoot,candidate&&candidate.dirPath)||summarizePathForOperationLog(candidate&&candidate.dirPath,260),
     dir:summarizePathForOperationLog(candidate&&candidate.dirPath,260),
     summaryPath:summarizePathForOperationLog(candidate&&candidate.summaryPath,260),
     generatedAt:candidate&&candidate.generatedAt?candidate.generatedAt:0,
@@ -10557,8 +11049,6 @@ function buildRuntimeApiSnapshot(){
   };
   const fullUtilization=buildFullUtilizationDefaultsSnapshot();
   const parentDispatchGuard=buildParentDispatchGuardDefaultsSnapshot();
-  const workspaceGuard=buildWorkspaceGuardSnapshot();
-  const intentFirst=buildIntentFirstRuntimeSnapshot();
   const executionVisibility={
     profile:runtimeExecutionProfile,
     envKey:executionProfileEnvKey,
@@ -10570,15 +11060,14 @@ function buildRuntimeApiSnapshot(){
     apiVersion,
     mode:"app-server",
     workspaceRoot,
-    workspaceGuard,
-    workspace_guard:workspaceGuard,
-    intentFirst,
-    intent_first:intentFirst,
     activeAgent:activeAgentName,
     sessionRef:active?active.sessionRef:null,
     agentCount:agentStates.size,
     experimental:active?active.experimentalEnabled:false,
     experimentalFeatures:active?Array.from(active.experimentalFeatures||[]):[],
+    serviceTier:active?resolveEffectiveServiceTier(active):"flex",
+    fastModeEnabled:active?Boolean(active.fastModeEnabled):fastModeDefault,
+    automaticApprovalReviewEnabled:active?Boolean(active.automaticApprovalReviewEnabled):automaticApprovalReviewDefault,
     agents:listAgentsSnapshot(),
     requirementGuard,
     requirement_guard:requirementGuard,
@@ -10587,6 +11076,13 @@ function buildRuntimeApiSnapshot(){
     sessionPerformance,
     session_performance:sessionPerformance,
     operationLog:operationLog.runtimeSnapshot(),
+    loggingSurface:{
+      mode:loggingMode,
+      envKey:loggingModeEnvKey,
+      currentRoot:repoRelativePath(workspaceRoot,loggingSurfacePaths.currentRoot),
+      bundlesRoot:repoRelativePath(workspaceRoot,loggingSurfacePaths.bundlesRoot),
+      archiveRoot:repoRelativePath(workspaceRoot,loggingSurfacePaths.archiveRoot),
+    },
     executionProfile:runtimeExecutionProfile,
     execution_profile:runtimeExecutionProfile,
     executionVisibility,
@@ -10597,6 +11093,14 @@ function buildRuntimeApiSnapshot(){
     parent_dispatch_guard:parentDispatchGuard,
     nonInteractiveUserInput,
     non_interactive_user_input:nonInteractiveUserInput,
+    operatorDefaults:{
+      fastModeEnabled:fastModeDefault,
+      automaticApprovalReviewEnabled:automaticApprovalReviewDefault,
+      envKeys:{
+        fastModeDefault:fastModeDefaultEnvKey,
+        automaticApprovalReview:automaticApprovalReviewEnvKey,
+      },
+    },
     adversarialShadow,
     adversarial_shadow:adversarialShadow,
     staticApps,
@@ -10612,6 +11116,7 @@ function buildRuntimeApiSnapshot(){
       schema:safeString(harnessTurnContractSpec&&harnessTurnContractSpec.schema,80)||"harness-turn-contract.v1",
       path:summarizePathForOperationLog(harnessTurnContractSpecPath,220),
       terminalEvent:safeString(harnessTurnContractSpec&&harnessTurnContractSpec.turn&&harnessTurnContractSpec.turn.terminalEvent,120)||"turn/completed",
+      releaseDecisionStates:Array.isArray(harnessTurnContractSpec&&harnessTurnContractSpec.releaseDecisionStates)?harnessTurnContractSpec.releaseDecisionStates:[],
       taskOutcomeBridge:harnessTurnContractSpec&&harnessTurnContractSpec.taskOutcomeBridge
         ?harnessTurnContractSpec.taskOutcomeBridge
         :{allowedByTurnState:{}},
@@ -10627,11 +11132,29 @@ function buildRuntimeApiSnapshot(){
       assuranceSchema:safeString(assuranceModeContract&&assuranceModeContract.schema,80)||"assurance-mode-contract.v1",
       assuranceVersion:safeString(assuranceModeContract&&assuranceModeContract.version,80)||"",
       assurancePath:summarizePathForOperationLog(assuranceModeContractPath,220),
+      familyProfileSchema:safeString(taskFamilyProfilesContract&&taskFamilyProfilesContract.schema,80)||"task-family-profiles.v1",
+      familyProfileVersion:safeString(taskFamilyProfilesContract&&taskFamilyProfilesContract.version,80)||"",
+      familyProfilePath:summarizePathForOperationLog(taskFamilyProfilesPath,220),
       planningDecisionSchemaPath:summarizePathForOperationLog(planningDecisionContractSchemaPath,220),
       requirementSchemaPath:summarizePathForOperationLog(requirementContractSchemaPath,220),
       dispatchSchemaPath:summarizePathForOperationLog(dispatchPlanSchemaPath,220),
+      requestFrameContractPath:summarizePathForOperationLog(requestFrameContractPath,220),
+      routingDecisionContractPath:summarizePathForOperationLog(routingDecisionContractPath,220),
+      discoveryOutcomeContractPath:summarizePathForOperationLog(discoveryOutcomeContractPath,220),
+      reviewBundleContractPath:summarizePathForOperationLog(reviewBundleContractPath,220),
+      releaseDecisionContractPath:summarizePathForOperationLog(releaseDecisionContractPath,220),
+      conformanceInvariantsContractPath:summarizePathForOperationLog(conformanceInvariantsContractPath,220),
+      evidenceContractMachinePath:summarizePathForOperationLog(evidenceContractMachinePath,220),
       modes:Array.isArray(planningModeContract&&planningModeContract.modes)?planningModeContract.modes:[],
       assuranceModes:Array.isArray(assuranceModeContract&&assuranceModeContract.modes)?assuranceModeContract.modes:[],
+      families:Array.isArray(taskFamilyProfilesContract&&taskFamilyProfilesContract.families)
+        ?taskFamilyProfilesContract.families.map((entry)=>safeString(entry&&entry.id,80)).filter(Boolean)
+        :[],
+    },
+    intentFirst:{
+      ...summarizeIntentFirstRuntime({contract:designAcceptanceContract,store:tasteMemoryStore}),
+      contractPath:summarizePathForOperationLog(designAcceptanceContractPath,220),
+      tasteMemorySeedPath:summarizePathForOperationLog(tasteMemorySeedPath,220),
     },
     controlApi:{
       tokenHeader:controlApiTokenHeaderName,
@@ -10725,7 +11248,6 @@ function buildHarnessOverviewSnapshot(){
       runtime:"/api/runtime",
       overview:"/api/harness/overview",
       topography:"/api/agent-topography",
-      intentProfile:"POST /api/intent/profile",
       conversationRuntime:"/api/conversation/runtime",
       evalSuites:"/api/eval/suites",
       evalHistory:"/api/eval/history",
@@ -10739,9 +11261,17 @@ function buildHarnessOverviewSnapshot(){
       turn:runtime.contractSpec,
       taskOutcome:runtime.taskOutcomeContract,
       planning:runtime.planningContracts,
-      designAcceptance:runtime.intentFirst&&runtime.intentFirst.contract?runtime.intentFirst.contract:{},
     },
     evidence:{
+      current:{
+        root:repoRelativePath(workspaceRoot,loggingSurfacePaths.currentRoot),
+        operatorSummaryPath:repoRelativePath(workspaceRoot,loggingSurfacePaths.currentOperatorSummaryPath),
+        indexPath:repoRelativePath(workspaceRoot,loggingSurfacePaths.currentIndexPath),
+        designConformanceSummaryPath:repoRelativePath(workspaceRoot,loggingSurfacePaths.currentDesignConformancePath),
+        latestRunSummaryPath:repoRelativePath(workspaceRoot,loggingSurfacePaths.currentLatestRunSummaryPath),
+        reviewLoadBreakdownPath:repoRelativePath(workspaceRoot,loggingSurfacePaths.currentReviewLoadBreakdownPath),
+        latestSignoffSummaryPath:repoRelativePath(workspaceRoot,loggingSurfacePaths.currentLatestSignoffSummaryPath),
+      },
       runtimeProof:buildBundleOverview(runtimeProofsRoot,"runtime_proof_summary.json",buildRuntimeProofBundleSnapshot),
       signoff:buildBundleOverview(signoffBundlesRoot,"signoff_summary.json",buildSignoffBundleSnapshot),
     },
@@ -10751,7 +11281,6 @@ function buildHarnessOverviewSnapshot(){
     },
     memory:{
       harness:runtime.harnessMemory,
-      taste:runtime.intentFirst&&runtime.intentFirst.tasteMemory?runtime.intentFirst.tasteMemory:{},
       execution:buildExecutionMemoryOverview({limit:10,window:60}),
       replay:{
         recent:listReplayMemorySnapshots({limit:6}),
@@ -10765,78 +11294,1432 @@ function buildHarnessOverviewSnapshot(){
     skillPortfolio,
   };
 }
+function resolveWorkspaceRuntimePath(targetPath){
+  const raw=safeString(targetPath,400);
+  if(!raw)return"";
+  if(path.isAbsolute(raw))return path.normalize(raw);
+  return path.normalize(path.join(workspaceRoot,raw));
+}
+function readWorkspaceJsonArtifact(targetPath){
+  const resolved=resolveWorkspaceRuntimePath(targetPath);
+  if(!resolved)return null;
+  return readJsonObjectFile(resolved)||readLoggingSurfaceJson(resolved);
+}
+function isLikelyChangedPath(entry){
+  const value=safeString(entry,260);
+  if(!value)return false;
+  if(/\s{2,}/.test(value)&&!/[\\/]/.test(value))return false;
+  if(!/[\\/]/.test(value)&&!/^[A-Za-z]:/.test(value))return false;
+  return true;
+}
+function collectChangedPathsFromArtifacts({manifest,evidenceManifest,flowTraceSummary}={}){
+  const manifestObserved=manifest&&manifest.execution&&manifest.execution.observed&&typeof manifest.execution.observed==="object"
+    ?manifest.execution.observed
+    :{};
+  const childEvidenceLedger=Array.isArray(evidenceManifest&&evidenceManifest.childEvidenceLedger)
+    ?evidenceManifest.childEvidenceLedger
+    :Array.isArray(flowTraceSummary&&flowTraceSummary.childEvidenceLedger)
+      ?flowTraceSummary.childEvidenceLedger
+      :[];
+  return uniquePathList([
+    ...(Array.isArray(manifestObserved.changedPaths)?manifestObserved.changedPaths:[]),
+    ...(Array.isArray(manifestObserved.sampleChangedPaths)?manifestObserved.sampleChangedPaths:[]),
+    ...childEvidenceLedger.flatMap((entry)=>Array.isArray(entry&&entry.ownedPaths)?entry.ownedPaths:[]),
+  ].filter(isLikelyChangedPath),24);
+}
+function buildLatestBundleReference(rootDir,summaryFileName,buildSnapshot){
+  const candidates=listBundleSummaryCandidates(rootDir,summaryFileName);
+  if(!candidates.length)return null;
+  const candidate=candidates[0];
+  const snapshot=buildSnapshot(candidate);
+  return{
+    ...snapshot,
+    bundlePath:repoRelativePath(workspaceRoot,candidate.dirPath),
+    summaryPath:repoRelativePath(workspaceRoot,candidate.summaryPath),
+  };
+}
+function toOperatorCanonicalKey(key){
+  const raw=safeString(key,160);
+  if(!raw)return"";
+  return raw.replace(/_([a-z0-9])/g,(_,char)=>String(char).toUpperCase());
+}
+function isOperatorEmptyValue(value){
+  if(value==null)return true;
+  if(typeof value==="string")return !value.trim();
+  if(Array.isArray(value))return value.length===0;
+  if(typeof value==="object")return !Array.isArray(value)&&Object.keys(value).length===0;
+  return false;
+}
+function canonicalizeOperatorFacingValue(value){
+  if(Array.isArray(value))return value.map((entry)=>canonicalizeOperatorFacingValue(entry));
+  if(!value||typeof value!=="object")return value;
+  const source=value&&typeof value==="object"?value:{};
+  const result={};
+  const keys=Object.keys(source).sort((left,right)=>{
+    const leftSnake=left.includes("_")?1:0;
+    const rightSnake=right.includes("_")?1:0;
+    return leftSnake-rightSnake;
+  });
+  for(const key of keys){
+    const canonicalKey=toOperatorCanonicalKey(key)||key;
+    const normalizedValue=canonicalizeOperatorFacingValue(source[key]);
+    if(Object.prototype.hasOwnProperty.call(result,canonicalKey)){
+      if(isOperatorEmptyValue(result[canonicalKey])&&!isOperatorEmptyValue(normalizedValue)){
+        result[canonicalKey]=normalizedValue;
+      }
+      continue;
+    }
+    result[canonicalKey]=normalizedValue;
+  }
+  return result;
+}
+function isCompletedOperatorOutcome(finalOutcome){
+  const taskOutcomeStatus=safeString(finalOutcome&&finalOutcome.taskOutcomeStatus,80).toUpperCase();
+  if(taskOutcomeStatus==="COMPLETED")return true;
+  return safeString(finalOutcome&&finalOutcome.status,40).toLowerCase()==="completed";
+}
+function normalizeOperatorResidualSemantics({finalOutcome,residualRisks}={}){
+  const notes=Array.isArray(residualRisks)?residualRisks.map((entry)=>safeString(entry,320)).filter(Boolean):[];
+  const completed=isCompletedOperatorOutcome(finalOutcome);
+  const blockerPattern=/(implementation is intentionally paused|user decision|open questions|needs[_\s-]?input|awaiting approval|awaiting user|unresolved blocker|blocked\b|before signoff|requires dedicated verification)/i;
+  const normalized={
+    residualRisks:[],
+    informationalNotes:[],
+    operatorCaveats:[],
+  };
+  for(const note of notes){
+    if(completed&&blockerPattern.test(note)){
+      normalized.informationalNotes.push(
+        /implementation is intentionally paused until user decisions resolve the open questions/i.test(note)
+          ?"Historical planning note only: discovery handling originally surfaced open questions, but this recorded run completed without an unresolved user-decision blocker."
+          :/requires dedicated verification before signoff/i.test(note)
+            ?"Historical planning note only: dedicated verification was required for signoff and has already been satisfied on this completed run."
+          :`Historical planning note only: ${note}`
+      );
+      continue;
+    }
+    normalized.residualRisks.push(note);
+  }
+  return{
+    residualRisks:Array.from(new Set(normalized.residualRisks)).slice(0,12),
+    informationalNotes:Array.from(new Set(normalized.informationalNotes)).slice(0,12),
+    operatorCaveats:Array.from(new Set(normalized.operatorCaveats)).slice(0,12),
+  };
+}
+function isSignoffSummaryAllPassed(signoffSummary){
+  if(!signoffSummary||typeof signoffSummary!=="object")return false;
+  if(typeof signoffSummary.allPassed!=="undefined"){
+    return signoffSummary.allPassed===true||Number(signoffSummary.allPassed||0)===1;
+  }
+  return Boolean(signoffSummary.assertions&&signoffSummary.assertions.allPassed);
+}
+function normalizeSignoffTransportMode(signoffSummary){
+  const raw=safeString(
+    signoffSummary&&(
+      signoffSummary.transportMode
+      ||(signoffSummary.runtime&&signoffSummary.runtime.transportMode)
+    ),
+    80
+  ).toLowerCase();
+  if(!raw)return"";
+  if(raw==="live"||raw==="stdio")return"stdio";
+  if(raw==="mock"||raw==="fixture"||raw==="mock-fixture")return"mock-fixture";
+  return raw;
+}
+function selectPreferredSignoffCandidate(candidates){
+  const entries=Array.isArray(candidates)?candidates.filter(Boolean):[];
+  if(!entries.length)return null;
+  const latestPassingLive=entries.find((entry)=>
+    isSignoffSummaryAllPassed(entry.summary)
+    &&normalizeSignoffTransportMode(entry.summary)==="stdio"
+  );
+  if(latestPassingLive)return latestPassingLive;
+  const latestPassing=entries.find((entry)=>isSignoffSummaryAllPassed(entry.summary));
+  if(latestPassing)return latestPassing;
+  const latestLive=entries.find((entry)=>normalizeSignoffTransportMode(entry.summary)==="stdio");
+  if(latestLive)return latestLive;
+  return entries[0]||null;
+}
+function hasResolvedOperatorOutcome(finalOutcome){
+  const taskOutcomeStatus=safeString(finalOutcome&&finalOutcome.taskOutcomeStatus,80).toUpperCase();
+  if(taskOutcomeStatus)return true;
+  const terminalStatus=normalizeExecutionState(finalOutcome&&finalOutcome.terminalStatus,{terminalFallback:false});
+  return Boolean(terminalStatus&&isTerminalExecutionState(terminalStatus));
+}
+function buildRelatedSignoffSummaryRef(signoffSummary,relatedToRun){
+  if(!signoffSummary||!relatedToRun)return null;
+  const bundlePath=safeString(signoffSummary.bundlePath,260)
+    ||safeString(signoffSummary.bundleRef&&signoffSummary.bundleRef.bundlePath,260)
+    ||"";
+  const summaryPath=safeString(signoffSummary.summaryPath,260)
+    ||safeString(signoffSummary.bundleRef&&signoffSummary.bundleRef.summaryPath,260)
+    ||"";
+  const allPassed=isSignoffSummaryAllPassed(signoffSummary);
+  return{
+    bundlePath,
+    summaryPath,
+    allPassed,
+    relatedToRun:1,
+  };
+}
+function isAuxiliaryOperatorRunContext(latestTurn){
+  const source=safeString(latestTurn&&latestTurn.source,120).toLowerCase();
+  const intent=safeString(latestTurn&&latestTurn.execution_intent,120).toLowerCase();
+  const profile=normalizeExecutionProfile(latestTurn&&latestTurn.execution_profile,runtimeExecutionProfile);
+  return Boolean(
+    profile.startsWith("eval")
+    ||profile==="proof-runtime"
+    ||profile==="smoke-test"
+    ||intent==="eval"
+    ||intent.includes("probe")
+    ||intent.includes("replay")
+    ||source==="eval_harness"
+    ||source.startsWith("replay:")
+  );
+}
+function isSignoffBundleRunContext(latestTurn,signoffSummary){
+  const artifactPath=safeString(latestTurn&&latestTurn.artifact_manifest_path,260);
+  const bundlePath=safeString(
+    signoffSummary&&(
+      signoffSummary.bundlePath
+      ||(signoffSummary.bundleRef&&signoffSummary.bundleRef.bundlePath)
+    ),
+    260
+  );
+  const latestTurnId=safeString(latestTurn&&latestTurn.turn_id,160);
+  const naturalTaskTurnId=safeString(signoffSummary&&signoffSummary.naturalTask&&signoffSummary.naturalTask.turnId,160);
+  if(bundlePath&&artifactPath&&artifactPath.replace(/\\/g,"/").startsWith(bundlePath.replace(/\\/g,"/")))return true;
+  if(latestTurnId&&naturalTaskTurnId&&latestTurnId===naturalTaskTurnId)return true;
+  return false;
+}
+function shouldPreferLatestCompletedSignoffRun({latestTurn,signoffSummary}={}){
+  const bundlePath=safeString(
+    signoffSummary&&(
+      signoffSummary.bundlePath
+      ||(signoffSummary.bundleRef&&signoffSummary.bundleRef.bundlePath)
+    ),
+    260
+  );
+  if(!bundlePath)return false;
+  if(!latestTurn)return true;
+  const latestStatus=safeString(latestTurn.status,40).toLowerCase();
+  const latestTaskOutcomeStatus=safeString(latestTurn.task_outcome_status,80).toUpperCase();
+  const latestIntent=safeString(latestTurn.execution_intent,120).toLowerCase();
+  const completed=latestStatus==="completed"&&latestTaskOutcomeStatus==="COMPLETED";
+  if(latestStatus==="in_progress")return true;
+  if(isAuxiliaryOperatorRunContext(latestTurn))return true;
+  if(isSignoffBundleRunContext(latestTurn,signoffSummary))return false;
+  if(!completed)return true;
+  return !latestIntent.includes("signoff");
+}
+function buildOperatorDecisionSummary({finalOutcome,signoffReady,designConformant,postureSafe,requiredEvidenceFailures=[]}={}){
+  const completed=isCompletedOperatorOutcome(finalOutcome);
+  const taskOutcomeStatus=safeString(finalOutcome&&finalOutcome.taskOutcomeStatus,80).toUpperCase();
+  if(signoffReady&&designConformant&&postureSafe&&completed)return"SAFE_TO_SIGNOFF";
+  if(requiredEvidenceFailures.length)return"ATTENTION_REQUIRED";
+  if(taskOutcomeStatus==="FAILED_VALIDATION"||taskOutcomeStatus==="BLOCKED"||taskOutcomeStatus==="NEEDS_INPUT")return"DO_NOT_SIGNOFF";
+  if(completed)return"REVIEW_SUMMARY_BEFORE_SIGNOFF";
+  return"ATTENTION_REQUIRED";
+}
+function buildCurrentRuntimeSnapshotFile(){
+  const runtime=sanitizeRuntimeSnapshotForOverview(buildRuntimeApiSnapshot());
+  const canonicalRuntime=canonicalizeOperatorFacingValue({
+    activeAgent:runtime.activeAgent,
+    latestTurn:runtime.latestTurn,
+    harnessMemory:runtime.harnessMemory,
+    evalHarness:runtime.evalHarness,
+    planningContracts:runtime.planningContracts,
+    governancePolicy:runtime.governancePolicy,
+    gitAutomation:runtime.gitAutomation,
+    fullUtilization:runtime.fullUtilization,
+    staticApps:runtime.staticApps,
+  });
+  return{
+    schema:"current-runtime-snapshot.v2",
+    generatedAt:toIsoTimestamp(Date.now()),
+    loggingMode,
+    loggingModeEnvKey,
+    defaultExecAgent:defaultExecAgentName,
+    currentSurface:{
+      operatorSummaryPath:repoRelativePath(workspaceRoot,loggingSurfacePaths.currentOperatorSummaryPath),
+      designConformanceSummaryPath:repoRelativePath(workspaceRoot,loggingSurfacePaths.currentDesignConformancePath),
+      conformanceReportPath:repoRelativePath(workspaceRoot,loggingSurfacePaths.currentConformanceReportPath),
+      operatorViewSummaryPath:repoRelativePath(workspaceRoot,loggingSurfacePaths.currentOperatorViewSummaryPath),
+      runtimeSnapshotPath:repoRelativePath(workspaceRoot,loggingSurfacePaths.currentRuntimeSnapshotPath),
+      latestRunSummaryPath:repoRelativePath(workspaceRoot,loggingSurfacePaths.currentLatestRunSummaryPath),
+      reviewLoadBreakdownPath:repoRelativePath(workspaceRoot,loggingSurfacePaths.currentReviewLoadBreakdownPath),
+      latestSignoffSummaryPath:repoRelativePath(workspaceRoot,loggingSurfacePaths.currentLatestSignoffSummaryPath),
+    },
+    storage:{
+      current:repoRelativePath(workspaceRoot,loggingSurfacePaths.currentRoot),
+      bundles:{
+        signoff:repoRelativePath(workspaceRoot,loggingSurfacePaths.signoffBundlesRoot),
+        proof:repoRelativePath(workspaceRoot,loggingSurfacePaths.proofBundlesRoot),
+        replay:repoRelativePath(workspaceRoot,loggingSurfacePaths.replayBundlesRoot),
+      },
+      archive:{
+        admin:repoRelativePath(workspaceRoot,loggingSurfacePaths.adminRoot),
+        raw:repoRelativePath(workspaceRoot,loggingSurfacePaths.archiveRawRoot),
+        legacy:repoRelativePath(workspaceRoot,loggingSurfacePaths.archiveLegacyRoot),
+        operationLogs:repoRelativePath(workspaceRoot,loggingSurfacePaths.archiveOperationLogsRoot),
+        turns:repoRelativePath(workspaceRoot,loggingSurfacePaths.archiveTurnsRoot),
+        runtimeState:repoRelativePath(workspaceRoot,loggingSurfacePaths.runtimeStateRoot),
+      },
+    },
+    posture:{
+      executionProfile:runtime.executionProfile,
+      requestUserInputPolicy:runtime.nonInteractiveUserInput,
+      parentDispatchGuard:runtime.parentDispatchGuard,
+      operationLog:runtime.operationLog,
+      evidenceArtifacts:runtime.evidenceArtifacts,
+    },
+    runtime:canonicalRuntime,
+    latestBundles:{
+      signoff:buildLatestBundleReference(signoffBundlesRoot,"signoff_summary.json",buildSignoffBundleSnapshot),
+      proof:buildLatestBundleReference(runtimeProofsRoot,"runtime_proof_summary.json",buildRuntimeProofBundleSnapshot),
+    },
+  };
+}
+function buildLatestSignoffSummaryFile(){
+  const candidates=listBundleSummaryCandidates(signoffBundlesRoot,"signoff_summary.json");
+  const preferredCandidate=selectPreferredSignoffCandidate(candidates);
+  const latest=preferredCandidate
+    ?buildSignoffBundleSnapshot(preferredCandidate)
+    :buildLatestBundleReference(signoffBundlesRoot,"signoff_summary.json",buildSignoffBundleSnapshot);
+  if(!latest)return null;
+  const allPassed=isSignoffSummaryAllPassed(latest);
+  return{
+    schema:"latest-signoff-summary.v2",
+    generatedAt:toIsoTimestamp(Date.now()),
+    allPassed:allPassed?1:0,
+    runtimePostureSafe:latest&&latest.assertions&&latest.assertions.runtimePostureSafe?1:0,
+    coreHarnessWorkflowPassed:latest&&latest.assertions&&latest.assertions.coreHarnessWorkflowPassed?1:0,
+    naturalTaskTracePassed:latest&&latest.assertions&&latest.assertions.naturalTaskTracePassed?1:0,
+    signoffReady:allPassed?1:0,
+    bundleRef:{
+      bundleName:latest.name,
+      bundlePath:latest.bundlePath,
+      summaryPath:latest.summaryPath,
+    },
+    finalDecision:allPassed?"RELEASE_APPROVED":"RELEASE_BLOCKED",
+  };
+}
+function buildLatestRunSummaryFromSignoffBundle(signoffSummary){
+  const bundlePath=safeString(
+    signoffSummary&&(
+      signoffSummary.bundlePath
+      ||(signoffSummary.bundleRef&&signoffSummary.bundleRef.bundlePath)
+    ),
+    260
+  );
+  const signoffSummaryPath=safeString(
+    signoffSummary&&(
+      signoffSummary.summaryPath
+      ||(signoffSummary.bundleRef&&signoffSummary.bundleRef.summaryPath)
+    ),
+    260
+  );
+  const signoffBundleSummary=readWorkspaceJsonArtifact(signoffSummaryPath);
+  if(!signoffBundleSummary||typeof signoffBundleSummary!=="object")return null;
+  const bundleLatestRun=readWorkspaceJsonArtifact(signoffBundleSummary.paths&&signoffBundleSummary.paths.latestRunSummary)||{};
+  const signoffTracePath=safeString(
+    signoffBundleSummary.paths&&(
+      signoffBundleSummary.paths.signoffTaskTraceSummary
+      ||signoffBundleSummary.paths.naturalTaskTraceSummary
+    ),
+    260
+  );
+  const traceSummary=readWorkspaceJsonArtifact(signoffTracePath)||{};
+  const flowTraceSummary=traceSummary.flowTraceSummary&&typeof traceSummary.flowTraceSummary==="object"
+    ?traceSummary.flowTraceSummary
+    :{};
+  const artifactManifestPath=safeString(traceSummary.artifactManifestPath,260)||"";
+  const artifactManifest=readWorkspaceJsonArtifact(artifactManifestPath)||{};
+  const artifactDir=artifactManifestPath?path.dirname(resolveWorkspaceRuntimePath(artifactManifestPath)):"";
+  const evidenceManifestPath=artifactDir?repoRelativePath(workspaceRoot,path.join(artifactDir,"evidence_manifest.json")):"";
+  const evidenceManifest=readWorkspaceJsonArtifact(evidenceManifestPath)||{};
+  const reviewLoadBreakdown=readWorkspaceJsonArtifact(signoffBundleSummary.paths&&signoffBundleSummary.paths.reviewLoadBreakdown)||{};
+  const finalOutcome=bundleLatestRun.finalOutcome&&typeof bundleLatestRun.finalOutcome==="object"
+    ?bundleLatestRun.finalOutcome
+    :(traceSummary.turn&&typeof traceSummary.turn==="object"?traceSummary.turn:{});
+  const normalizedResiduals=normalizeOperatorResidualSemantics({
+    finalOutcome,
+    residualRisks:Array.isArray(bundleLatestRun.residualRisks)
+      ?bundleLatestRun.residualRisks
+      :Array.isArray(flowTraceSummary.residualRiskSummary)
+        ?flowTraceSummary.residualRiskSummary
+        :[],
+  });
+  const changedPaths=uniquePathList([
+    ...(Array.isArray(traceSummary.observedSignals&&traceSummary.observedSignals.sampleChangedPaths)?traceSummary.observedSignals.sampleChangedPaths:[]),
+    ...(Array.isArray(flowTraceSummary.childEvidenceLedger)
+      ?flowTraceSummary.childEvidenceLedger.flatMap((entry)=>Array.isArray(entry&&entry.ownedPaths)?entry.ownedPaths:[])
+      :[]),
+  ].filter(isLikelyChangedPath),24);
+  return{
+    schema:"latest-run-summary.v2",
+    generatedAt:toIsoTimestamp(Date.now()),
+    available:true,
+    currentPhase:"Release / Close",
+    taskId:safeString(bundleLatestRun.turnId||traceSummary.turnId||artifactManifest.turn&&artifactManifest.turn.turnId,160)||"",
+    turnId:safeString(bundleLatestRun.turnId||traceSummary.turnId||artifactManifest.turn&&artifactManifest.turn.turnId,160)||"",
+    threadId:safeString(traceSummary.threadId||artifactManifest.turn&&artifactManifest.turn.threadId,160)||"",
+    agentName:safeString(artifactManifest.turn&&artifactManifest.turn.agentName,160)||defaultExecAgentName,
+    executionProfile:safeString(bundleLatestRun.executionProfile,80)||"full-runtime",
+    executionIntent:"signoff_sample",
+    selectedPlanningDepth:safeString(bundleLatestRun.selectedPlanningDepth||flowTraceSummary.selectedPlanningDepth,80)||"",
+    selectedAssuranceDepth:safeString(bundleLatestRun.selectedAssuranceDepth||flowTraceSummary.selectedAssuranceDepth,80)||"",
+    planningMode:safeString(flowTraceSummary.selectedPlanningMode,40)||"",
+    flowPath:safeString(flowTraceSummary.flowPath,80)||"",
+    finalOutcome:{
+      status:safeString(finalOutcome.status,40)||"",
+      terminalStatus:safeString(finalOutcome.terminalStatus||finalOutcome.status,40)||"",
+      taskOutcomeStatus:safeString(finalOutcome.taskOutcomeStatus,80)||"",
+      taskOutcomeReason:safeString(finalOutcome.taskOutcomeReason,120)||"",
+    },
+    dispatchCount:Number(bundleLatestRun.dispatchCount||traceSummary.observedSignals&&traceSummary.observedSignals.dispatchCount||0),
+    dispatchSuccessCount:Number(bundleLatestRun.dispatchSuccessCount||traceSummary.observedSignals&&traceSummary.observedSignals.dispatchSuccessCount||0),
+    implementationObserved:Boolean(
+      Number(traceSummary.observedSignals&&traceSummary.observedSignals.fileChanges||0)>0
+      ||Number(traceSummary.observedSignals&&traceSummary.observedSignals.commandExecutions||0)>0
+      ||Number(traceSummary.observedSignals&&traceSummary.observedSignals.mcpCalls||0)>0
+    ),
+    reviewerObserved:Boolean(bundleLatestRun.reviewerObserved||flowTraceSummary.reviewerExecuted),
+    testerObserved:Boolean(bundleLatestRun.testerObserved||flowTraceSummary.testerExecuted),
+    usedAgents:Array.isArray(bundleLatestRun.usedAgents)&&bundleLatestRun.usedAgents.length
+      ?bundleLatestRun.usedAgents
+      :Array.isArray(flowTraceSummary.usedAgents)?flowTraceSummary.usedAgents:[],
+    usedPolicies:Array.isArray(flowTraceSummary.usedPolicies)?flowTraceSummary.usedPolicies:[],
+    usedContracts:Array.isArray(flowTraceSummary.usedContracts)?flowTraceSummary.usedContracts:[],
+    usedSkills:Array.isArray(flowTraceSummary.usedSkills)?flowTraceSummary.usedSkills:[],
+    changedPaths,
+    evidenceClassesCollected:[
+      "runtime",
+      (flowTraceSummary.reviewerExecuted||flowTraceSummary.testerExecuted)?"verification":"",
+      bundleLatestRun.docSyncSummary&&bundleLatestRun.docSyncSummary.status==="PASS"?"documentation":"",
+      normalizedResiduals.residualRisks.length?"risk":"",
+    ].filter(Boolean),
+    residualRisks:normalizedResiduals.residualRisks,
+    informationalNotes:normalizedResiduals.informationalNotes,
+    assumptions:Array.isArray(evidenceManifest.requirementContract&&evidenceManifest.requirementContract.assumptions)
+      ?evidenceManifest.requirementContract.assumptions.map((entry)=>safeString(entry,240)).filter(Boolean).slice(0,8)
+      :[],
+    operatorCaveats:normalizedResiduals.operatorCaveats,
+    parentDispatchGuardSummary:traceSummary.parentDispatchGuard&&typeof traceSummary.parentDispatchGuard==="object"?traceSummary.parentDispatchGuard:{},
+    requestUserInputSummary:{
+      policy:nonInteractiveRequestUserInputPolicy,
+      blockedByDefault:nonInteractiveRequestUserInputPolicy==="blocked"?1:0,
+    },
+    docSyncSummary:bundleLatestRun.docSyncSummary&&typeof bundleLatestRun.docSyncSummary==="object"
+      ?bundleLatestRun.docSyncSummary
+      :(flowTraceSummary.docSyncEvidence&&typeof flowTraceSummary.docSyncEvidence==="object"?flowTraceSummary.docSyncEvidence:null),
+    releaseState:isSignoffSummaryAllPassed(signoffSummary)?"RELEASE_APPROVED":"RELEASE_BLOCKED",
+    parentMaterialImplementationObserved:0,
+    signoffSummaryRef:buildRelatedSignoffSummaryRef(signoffSummary,true),
+    evidenceRefs:{
+      bundlePath:bundlePath||"",
+      signoffSummaryPath:signoffSummaryPath||"",
+      naturalTaskTraceSummaryPath:safeString(signoffBundleSummary.paths&&signoffBundleSummary.paths.naturalTaskTraceSummary,260)||"",
+      coreHarnessWorkflowRunPath:safeString(signoffBundleSummary.paths&&signoffBundleSummary.paths.coreHarnessWorkflowRun,260)||"",
+    },
+    childEvidenceLedger:Array.isArray(flowTraceSummary.childEvidenceLedger)?flowTraceSummary.childEvidenceLedger:[],
+    reviewLoadBreakdown,
+  };
+}
+function buildLatestRunSummaryFile(){
+  const signoffSummary=buildLatestSignoffSummaryFile();
+  const signoffBundleRunSummary=buildLatestRunSummaryFromSignoffBundle(signoffSummary);
+  if(signoffBundleRunSummary&&isSignoffSummaryAllPassed(signoffSummary))return signoffBundleRunSummary;
+  const latestTurn=getLatestOperatorTurnSnapshot();
+  const latestTurnArtifactPath=safeString(latestTurn&&latestTurn.artifact_manifest_path,260);
+  const latestTurnIntent=safeString(latestTurn&&latestTurn.execution_intent,120).toLowerCase();
+  const latestTurnProfile=normalizeExecutionProfile(latestTurn&&latestTurn.execution_profile,runtimeExecutionProfile);
+  const signoffBundlePath=safeString(
+    signoffSummary&&(
+      signoffSummary.bundlePath
+      ||(signoffSummary.bundleRef&&signoffSummary.bundleRef.bundlePath)
+    ),
+    260
+  );
+  const preferLatestSignoffFallback=Boolean(
+    shouldPreferLatestCompletedSignoffRun({latestTurn,signoffSummary})
+    ||(
+      signoffSummary
+      &&signoffBundlePath
+      &&latestTurn
+      &&latestTurnArtifactPath
+      &&!String(latestTurnArtifactPath).replace(/\\/g,"/").startsWith(String(signoffBundlePath).replace(/\\/g,"/"))
+      &&(latestTurnProfile==="proof-runtime"||latestTurnIntent.includes("probe"))
+    )
+  );
+  if(!latestTurn||preferLatestSignoffFallback){
+    const latestSignoffCandidates=listBundleSummaryCandidates(signoffBundlesRoot,"signoff_summary.json");
+    const latestSignoffCandidate=selectPreferredSignoffCandidate(latestSignoffCandidates);
+    const signoffBundleSummary=latestSignoffCandidate&&latestSignoffCandidate.summary&&typeof latestSignoffCandidate.summary==="object"
+      ?latestSignoffCandidate.summary
+      :{};
+    const signoffTracePath=signoffBundleSummary.paths&&(
+      signoffBundleSummary.paths.naturalTaskTraceSummary
+      ||signoffBundleSummary.paths.signoffTaskTraceSummary
+    );
+    const traceSummary=readWorkspaceJsonArtifact(signoffTracePath);
+    if(traceSummary&&typeof traceSummary==="object"){
+      const flowTraceSummary=traceSummary.flowTraceSummary&&typeof traceSummary.flowTraceSummary==="object"
+        ?traceSummary.flowTraceSummary
+        :{};
+      const signoffNaturalTask=signoffBundleSummary.naturalTask&&typeof signoffBundleSummary.naturalTask==="object"
+        ?signoffBundleSummary.naturalTask
+        :{};
+      const signoffTask=signoffBundleSummary.signoffTask&&typeof signoffBundleSummary.signoffTask==="object"
+        ?signoffBundleSummary.signoffTask
+        :{};
+      const artifactManifestPath=safeString(traceSummary.artifactManifestPath,260)||"";
+      const artifactDir=artifactManifestPath?path.dirname(resolveWorkspaceRuntimePath(artifactManifestPath)):"";
+      const evidenceManifestPath=artifactDir?repoRelativePath(workspaceRoot,path.join(artifactDir,"evidence_manifest.json")):"";
+      const reviewLoadBreakdownPath=artifactDir?repoRelativePath(workspaceRoot,path.join(artifactDir,"review_load_breakdown.json")):"";
+      const stageTimelinePath=artifactDir?repoRelativePath(workspaceRoot,path.join(artifactDir,"stage_timeline.json")):"";
+      const reviewLoadBreakdown=readWorkspaceJsonArtifact(reviewLoadBreakdownPath);
+      const finalOutcome={
+        status:safeString(traceSummary.turn&&traceSummary.turn.status,40)||"",
+        terminalStatus:safeString(traceSummary.turn&&traceSummary.turn.status,40)||"",
+        taskOutcomeStatus:safeString(traceSummary.turn&&traceSummary.turn.taskOutcomeStatus,80)||"",
+        taskOutcomeReason:safeString(traceSummary.turn&&traceSummary.turn.taskOutcomeReason,120)||"",
+      };
+      const normalizedResiduals=normalizeOperatorResidualSemantics({
+        finalOutcome,
+        residualRisks:Array.isArray(flowTraceSummary.residualRiskSummary)?flowTraceSummary.residualRiskSummary:[],
+      });
+      const changedPaths=uniquePathList([
+        ...(Array.isArray(traceSummary.sampleChangedPaths)?traceSummary.sampleChangedPaths:[]),
+        ...(Array.isArray(flowTraceSummary.childEvidenceLedger)
+          ?flowTraceSummary.childEvidenceLedger.flatMap((entry)=>Array.isArray(entry&&entry.ownedPaths)?entry.ownedPaths:[])
+          :[]),
+      ].filter(isLikelyChangedPath),24);
+      return{
+        schema:"latest-run-summary.v2",
+        generatedAt:toIsoTimestamp(Date.now()),
+        available:true,
+        currentPhase:"Release / Close",
+        taskId:safeString(traceSummary.turnId||signoffTask.turnId||signoffNaturalTask.turnId,160)||"",
+        turnId:safeString(traceSummary.turnId||signoffTask.turnId||signoffNaturalTask.turnId,160)||"",
+        threadId:safeString(traceSummary.threadId||signoffTask.threadId||signoffNaturalTask.threadId,160)||"",
+        agentName:safeString(traceSummary.replay&&traceSummary.replay.agentName,160)||defaultExecAgentName,
+        executionProfile:safeString(traceSummary.replay&&traceSummary.replay.executionProfile,80)||"full-runtime",
+        executionIntent:safeString(traceSummary.replay&&traceSummary.replay.executionIntent,120)||"signoff_sample",
+        selectedPlanningDepth:safeString(flowTraceSummary.selectedPlanningDepth,80)||"",
+        selectedAssuranceDepth:safeString(flowTraceSummary.selectedAssuranceDepth,80)||"",
+        planningMode:safeString(flowTraceSummary.selectedPlanningMode,40)||"",
+        flowPath:safeString(flowTraceSummary.flowPath,80)||"",
+        finalOutcome,
+        dispatchCount:Number(traceSummary.observedSignals&&traceSummary.observedSignals.dispatchCount||0),
+        dispatchSuccessCount:Number(traceSummary.observedSignals&&traceSummary.observedSignals.dispatchSuccessCount||0),
+        implementationObserved:Boolean(
+          Number(traceSummary.observedSignals&&traceSummary.observedSignals.fileChanges||0)>0
+          ||Number(traceSummary.observedSignals&&traceSummary.observedSignals.commandExecutions||0)>0
+          ||Number(traceSummary.observedSignals&&traceSummary.observedSignals.mcpCalls||0)>0
+        ),
+        reviewerObserved:Boolean(flowTraceSummary.reviewerExecuted),
+        testerObserved:Boolean(flowTraceSummary.testerExecuted),
+        usedAgents:Array.isArray(flowTraceSummary.usedAgents)?flowTraceSummary.usedAgents:[],
+        usedPolicies:Array.isArray(flowTraceSummary.usedPolicies)?flowTraceSummary.usedPolicies:[],
+        usedContracts:Array.isArray(flowTraceSummary.usedContracts)?flowTraceSummary.usedContracts:[],
+        usedSkills:Array.isArray(flowTraceSummary.usedSkills)?flowTraceSummary.usedSkills:[],
+        changedPaths,
+        evidenceClassesCollected:[
+          "runtime",
+          (flowTraceSummary.reviewerExecuted||flowTraceSummary.testerExecuted)?"verification":"",
+          flowTraceSummary.docSyncEvidence&&flowTraceSummary.docSyncEvidence.status==="PASS"?"documentation":"",
+          normalizedResiduals.residualRisks.length?"risk":"",
+        ].filter(Boolean),
+        residualRisks:normalizedResiduals.residualRisks,
+        informationalNotes:normalizedResiduals.informationalNotes,
+        assumptions:Array.isArray(traceSummary.evidenceManifest&&traceSummary.evidenceManifest.requirementContract&&traceSummary.evidenceManifest.requirementContract.assumptions)
+          ?traceSummary.evidenceManifest.requirementContract.assumptions.map((entry)=>safeString(entry,240)).filter(Boolean).slice(0,8)
+          :[],
+        operatorCaveats:normalizedResiduals.operatorCaveats,
+        parentDispatchGuardSummary:traceSummary.parentDispatchGuard&&typeof traceSummary.parentDispatchGuard==="object"?traceSummary.parentDispatchGuard:{},
+        requestUserInputSummary:{
+          policy:nonInteractiveRequestUserInputPolicy,
+          blockedByDefault:nonInteractiveRequestUserInputPolicy==="blocked"?1:0,
+        },
+        docSyncSummary:flowTraceSummary.docSyncEvidence&&typeof flowTraceSummary.docSyncEvidence==="object"
+          ?flowTraceSummary.docSyncEvidence
+          :null,
+        familyCompletionGate:normalizeFamilyCompletionGateSnapshot(flowTraceSummary&&flowTraceSummary.familyCompletionGate),
+        releaseState:safeString(traceSummary.releaseDecision&&traceSummary.releaseDecision.terminal_state,80)
+          ||safeString(traceSummary.releaseDecisionState,80)
+          ||(isCompletedOperatorOutcome(finalOutcome)?"RELEASE_APPROVED_WITH_ASSUMPTIONS":"HARNESS_FAILURE"),
+        parentMaterialImplementationObserved:0,
+        signoffSummaryRef:buildRelatedSignoffSummaryRef(signoffSummary,true),
+        evidenceRefs:{
+          bundlePath:safeString(signoffSummary&&signoffSummary.bundleRef&&signoffSummary.bundleRef.bundlePath,260)||safeString(signoffSummary&&signoffSummary.bundlePath,260)||"",
+          signoffSummaryPath:safeString(signoffSummary&&signoffSummary.bundleRef&&signoffSummary.bundleRef.summaryPath,260)||safeString(signoffSummary&&signoffSummary.summaryPath,260)||"",
+          naturalTaskTraceSummaryPath:safeString(signoffBundleSummary.paths&&signoffBundleSummary.paths.naturalTaskTraceSummary,260)||"",
+          coreHarnessWorkflowRunPath:safeString(signoffBundleSummary.paths&&signoffBundleSummary.paths.coreHarnessWorkflowRun,260)||"",
+        },
+        childEvidenceLedger:Array.isArray(flowTraceSummary.childEvidenceLedger)?flowTraceSummary.childEvidenceLedger:[],
+        reviewLoadBreakdown,
+      };
+    }
+    return signoffBundleRunSummary||{
+      schema:"latest-run-summary.v2",
+      generatedAt:toIsoTimestamp(Date.now()),
+      available:false,
+      currentPhase:"Intake / Frame",
+      reason:"no_turn_recorded_yet",
+    };
+  }
+  const manifest=readWorkspaceJsonArtifact(latestTurn.artifact_manifest_path);
+  const evidenceManifest=readWorkspaceJsonArtifact(latestTurn.evidence_manifest_path);
+  const flowTraceSummary=readWorkspaceJsonArtifact(latestTurn.flow_trace_summary_path);
+  const reviewLoadBreakdown=readWorkspaceJsonArtifact(latestTurn.review_load_breakdown_path);
+  const changedPaths=collectChangedPathsFromArtifacts({manifest,evidenceManifest,flowTraceSummary});
+  const docSyncSummary=evidenceManifest&&typeof evidenceManifest.docSyncEvidence==="object"
+    ?evidenceManifest.docSyncEvidence
+    :(flowTraceSummary&&typeof flowTraceSummary.docSyncEvidence==="object"?flowTraceSummary.docSyncEvidence:null);
+  const childEvidenceLedger=Array.isArray(flowTraceSummary&&flowTraceSummary.childEvidenceLedger)
+    ?flowTraceSummary.childEvidenceLedger
+    :Array.isArray(evidenceManifest&&evidenceManifest.childEvidenceLedger)
+      ?evidenceManifest.childEvidenceLedger
+      :[];
+  const usedAgents=Array.isArray(flowTraceSummary&&flowTraceSummary.usedAgents)
+    ?flowTraceSummary.usedAgents
+    :uniquePathList(childEvidenceLedger.map((entry)=>safeString(entry&&entry.agent,80)).filter(Boolean),16);
+  const finalOutcome={
+    status:latestTurn.status,
+    terminalStatus:latestTurn.terminal_status,
+    taskOutcomeStatus:latestTurn.task_outcome_status,
+    taskOutcomeReason:latestTurn.task_outcome_reason,
+  };
+  const normalizedResiduals=normalizeOperatorResidualSemantics({
+    finalOutcome,
+    residualRisks:Array.isArray(evidenceManifest&&evidenceManifest.residualRiskSummary)
+      ?evidenceManifest.residualRiskSummary
+      :Array.isArray(flowTraceSummary&&flowTraceSummary.residualRiskSummary)
+        ?flowTraceSummary.residualRiskSummary
+        :[],
+  });
+  const evidenceClassesCollected=[
+    changedPaths.length?"implementation":"",
+    (Array.isArray(childEvidenceLedger)&&childEvidenceLedger.some((entry)=>entry&&(entry.reviewerObserved||entry.testerObserved)))||Number(latestTurn.observed_signals&&latestTurn.observed_signals.commandExecutions||0)>0
+      ?"verification"
+      :"",
+    latestTurn.artifact_manifest_path?"runtime":"",
+    docSyncSummary&&docSyncSummary.status==="PASS"?"documentation":"",
+    normalizedResiduals.residualRisks.length?"risk":"",
+  ].filter(Boolean);
+  const relatedSignoffSummary=signoffBundlePath&&latestTurn.artifact_manifest_path
+    ?String(latestTurn.artifact_manifest_path).replace(/\\/g,"/").startsWith(String(signoffBundlePath).replace(/\\/g,"/"))
+    :Boolean(signoffSummary&&safeString(latestTurn.execution_intent,120).toLowerCase().includes("signoff"));
+  const resolvedOutcome=hasResolvedOperatorOutcome(finalOutcome);
+  const relatedSignoffRef=buildRelatedSignoffSummaryRef(signoffSummary,relatedSignoffSummary&&resolvedOutcome);
+  const latestRunSummaryResult={
+    schema:"latest-run-summary.v2",
+    generatedAt:toIsoTimestamp(Date.now()),
+    available:true,
+    currentPhase:"Release / Close",
+    taskId:latestTurn.turn_id,
+    turnId:latestTurn.turn_id,
+    threadId:latestTurn.thread_id,
+    agentName:latestTurn.agent_name,
+    executionProfile:latestTurn.execution_profile,
+    executionIntent:latestTurn.execution_intent,
+    selectedPlanningDepth:latestTurn.planning_depth,
+    selectedAssuranceDepth:latestTurn.assurance_depth,
+    planningMode:latestTurn.planning_mode,
+    flowPath:latestTurn.flow_path,
+    finalOutcome,
+    dispatchCount:Number(latestTurn.observed_signals&&latestTurn.observed_signals.dispatchCount||0),
+    dispatchSuccessCount:Number(latestTurn.observed_signals&&latestTurn.observed_signals.dispatchSuccessCount||0),
+    implementationObserved:Boolean(
+      Number(latestTurn.observed_signals&&latestTurn.observed_signals.fileChanges||0)>0
+      ||Number(latestTurn.observed_signals&&latestTurn.observed_signals.commandExecutions||0)>0
+      ||Number(latestTurn.observed_signals&&latestTurn.observed_signals.mcpCalls||0)>0
+    ),
+    reviewerObserved:Array.isArray(childEvidenceLedger)&&childEvidenceLedger.some((entry)=>entry&&entry.reviewerObserved),
+    testerObserved:Array.isArray(childEvidenceLedger)&&childEvidenceLedger.some((entry)=>entry&&entry.testerObserved),
+    usedAgents,
+    usedPolicies:Array.isArray(flowTraceSummary&&flowTraceSummary.usedPolicies)?flowTraceSummary.usedPolicies:[],
+    usedContracts:Array.isArray(flowTraceSummary&&flowTraceSummary.usedContracts)?flowTraceSummary.usedContracts:[],
+    usedSkills:Array.isArray(flowTraceSummary&&flowTraceSummary.usedSkills)?flowTraceSummary.usedSkills:[],
+    changedPaths,
+    evidenceClassesCollected,
+    residualRisks:normalizedResiduals.residualRisks,
+    informationalNotes:normalizedResiduals.informationalNotes,
+    assumptions:Array.isArray(evidenceManifest&&evidenceManifest.requirementContract&&evidenceManifest.requirementContract.assumptions)
+      ?evidenceManifest.requirementContract.assumptions.map((entry)=>safeString(entry,240)).filter(Boolean).slice(0,8)
+      :[],
+    operatorCaveats:Array.from(new Set([
+      ...normalizedResiduals.operatorCaveats,
+      signoffSummary&&relatedSignoffSummary===false
+        ?"Latest signoff summary is nearby reference evidence, not a summary of this exact run."
+        :"",
+      isCompletedOperatorOutcome(finalOutcome)&&signoffSummary&&relatedSignoffSummary&&!isSignoffSummaryAllPassed(signoffSummary)
+        ?"The run completed, but the related latest signoff bundle has not passed every assertion yet."
+        :"",
+    ].filter(Boolean))).slice(0,8),
+    parentDispatchGuardSummary:latestTurn.parent_dispatch_guard,
+    requestUserInputSummary:{
+      policy:nonInteractiveRequestUserInputPolicy,
+      blockedByDefault:nonInteractiveRequestUserInputPolicy==="blocked"?1:0,
+    },
+    docSyncSummary,
+    familyCompletionGate:normalizeFamilyCompletionGateSnapshot(
+      latestTurn.family_completion_gate
+      ||(evidenceManifest&&evidenceManifest.familyCompletionGate)
+      ||(flowTraceSummary&&flowTraceSummary.familyCompletionGate)
+    ),
+    releaseState:safeString(latestTurn.release_decision_state,80)||safeString(latestTurn.releaseDecisionState,80)||"",
+    parentMaterialImplementationObserved:latestTurn.parent_material_implementation_observed?1:0,
+    signoffSummaryRef:relatedSignoffRef,
+    evidenceRefs:{
+      bundlePath:relatedSignoffRef?safeString(relatedSignoffRef.bundlePath,260)||"": "",
+      signoffSummaryPath:relatedSignoffRef?safeString(relatedSignoffRef.summaryPath,260)||"": "",
+      naturalTaskTraceSummaryPath:relatedSignoffRef&&signoffSummary&&signoffSummary.bundleRef&&signoffSummary.bundleRef.summaryPath
+        ?path.posix.join(path.posix.dirname(String(signoffSummary.bundleRef.summaryPath).replace(/\\/g,"/")),"natural_task_trace_summary.json")
+        :"",
+    },
+    childEvidenceLedger,
+    reviewLoadBreakdown,
+  };
+  if(signoffBundleRunSummary){
+    if(!safeString(latestRunSummaryResult.threadId,160))latestRunSummaryResult.threadId=safeString(signoffBundleRunSummary.threadId,160)||"";
+    if(!Array.isArray(latestRunSummaryResult.usedPolicies)||!latestRunSummaryResult.usedPolicies.length)latestRunSummaryResult.usedPolicies=Array.isArray(signoffBundleRunSummary.usedPolicies)?signoffBundleRunSummary.usedPolicies:[];
+    if(!Array.isArray(latestRunSummaryResult.usedContracts)||!latestRunSummaryResult.usedContracts.length)latestRunSummaryResult.usedContracts=Array.isArray(signoffBundleRunSummary.usedContracts)?signoffBundleRunSummary.usedContracts:[];
+    if(!Array.isArray(latestRunSummaryResult.usedSkills)||!latestRunSummaryResult.usedSkills.length)latestRunSummaryResult.usedSkills=Array.isArray(signoffBundleRunSummary.usedSkills)?signoffBundleRunSummary.usedSkills:[];
+    if(!Array.isArray(latestRunSummaryResult.changedPaths)||!latestRunSummaryResult.changedPaths.length)latestRunSummaryResult.changedPaths=Array.isArray(signoffBundleRunSummary.changedPaths)?signoffBundleRunSummary.changedPaths:[];
+    if(!latestRunSummaryResult.docSyncSummary||!Object.keys(latestRunSummaryResult.docSyncSummary).length)latestRunSummaryResult.docSyncSummary=signoffBundleRunSummary.docSyncSummary||{};
+    if(!latestRunSummaryResult.evidenceRefs||!safeString(latestRunSummaryResult.evidenceRefs.bundlePath,260)){
+      latestRunSummaryResult.evidenceRefs=signoffBundleRunSummary.evidenceRefs||latestRunSummaryResult.evidenceRefs;
+    }
+  }
+  return latestRunSummaryResult;
+}
+function normalizeCurrentSurfacePath(value){
+  const raw=safeString(value,260)||"";
+  if(!raw)return"";
+  if(raw.startsWith("logs/"))return raw.replace(/\\/g,"/");
+  return repoRelativePath(workspaceRoot,raw)||raw.replace(/\\/g,"/");
+}
+function normalizeCurrentLatestSignoffSummary(latestSignoffSummary){
+  const bundleRef=latestSignoffSummary&&latestSignoffSummary.bundleRef&&typeof latestSignoffSummary.bundleRef==="object"
+    ?latestSignoffSummary.bundleRef
+    :{};
+  const bundlePath=normalizeCurrentSurfacePath(bundleRef.bundlePath||latestSignoffSummary&&latestSignoffSummary.bundlePath||"");
+  const summaryPath=normalizeCurrentSurfacePath(bundleRef.summaryPath||latestSignoffSummary&&latestSignoffSummary.summaryPath||"");
+  const allPassed=Boolean(latestSignoffSummary&&(
+    latestSignoffSummary.allPassed===true
+    ||Number(latestSignoffSummary.allPassed||0)===1
+  ));
+  const runtimePostureSafe=Boolean(latestSignoffSummary&&(
+    latestSignoffSummary.runtimePostureSafe===true
+    ||Number(latestSignoffSummary.runtimePostureSafe||0)===1
+  ));
+  const coreHarnessWorkflowPassed=Boolean(latestSignoffSummary&&(
+    latestSignoffSummary.coreHarnessWorkflowPassed===true
+    ||Number(latestSignoffSummary.coreHarnessWorkflowPassed||0)===1
+  ));
+  const naturalTaskTracePassed=Boolean(latestSignoffSummary&&(
+    latestSignoffSummary.naturalTaskTracePassed===true
+    ||Number(latestSignoffSummary.naturalTaskTracePassed||0)===1
+  ));
+  const signoffReady=Boolean(latestSignoffSummary&&(
+    latestSignoffSummary.signoffReady===true
+    ||Number(latestSignoffSummary.signoffReady||0)===1
+  ))||allPassed;
+  return{
+    schema:"latest-signoff-summary.v3",
+    generatedAt:toIsoTimestamp(Date.now()),
+    allPassed,
+    runtimePostureSafe,
+    coreHarnessWorkflowPassed,
+    naturalTaskTracePassed,
+    signoffReady,
+    bundleRef:{
+      bundleName:safeString(bundleRef.bundleName,160)||safeString(path.basename(bundlePath),160)||"",
+      bundlePath,
+      summaryPath,
+    },
+    finalDecision:safeString(latestSignoffSummary&&latestSignoffSummary.finalDecision,80)||(signoffReady?"RELEASE_APPROVED":"RELEASE_BLOCKED"),
+  };
+}
+function normalizeCurrentDesignConformanceSummary(designConformanceSummary){
+  const keys=[
+    "defaultExecAgentIsDefault",
+    "requestUserInputPolicyBlocked",
+    "parentDispatchGuardEnforced",
+    "retiredWorkerNotRoutable",
+    "planningDepthSelectorWorking",
+    "assuranceDepthSelectorWorking",
+    "specialistDispatchObservedWhenImplementationOccurred",
+    "reviewerObservedWhenRequired",
+    "testerObservedWhenRequired",
+    "taskOutcomeSemanticsValid",
+    "docSyncEvidencePresentWhenRequired",
+    "signoffCriteriaSatisfied",
+    "overallDesignConformance",
+  ];
+  const normalized={
+    schema:"design-conformance-summary.v3",
+    generatedAt:toIsoTimestamp(Date.now()),
+  };
+  keys.forEach((key)=>{
+    const source=designConformanceSummary&&designConformanceSummary[key]&&typeof designConformanceSummary[key]==="object"
+      ?designConformanceSummary[key]
+      :{};
+    normalized[key]={
+      status:safeString(source.status||source.passFail,20)||"fail",
+      reason:safeString(source.reason,400)||"",
+      evidenceRef:normalizeCurrentSurfacePath(source.evidenceRef||source.evidencePath||""),
+    };
+  });
+  return normalized;
+}
+function normalizeCurrentReviewLoadBreakdown(reviewLoadBreakdown){
+  const source=reviewLoadBreakdown&&typeof reviewLoadBreakdown==="object"?reviewLoadBreakdown:{};
+  return{
+    schema:"review-load-breakdown.v3",
+    generatedAt:toIsoTimestamp(Date.now()),
+    totalStep4DurationMs:Number(source.totalStep4DurationMs||0),
+    evidenceCollectionTimeMs:Number(source.evidenceCollectionTimeMs||0),
+    reviewerTimeMs:Number(source.reviewerTimeMs||0),
+    testerTimeMs:Number(source.testerTimeMs||0),
+    docSyncVerificationTimeMs:Number(source.docSyncVerificationTimeMs||0),
+    retryLoopCount:Number(source.retryLoopCount||0),
+    outcomeConversionTimeMs:Number(source.outcomeConversionTimeMs||0),
+    dominantBottleneck:safeString(source.dominantBottleneck,80)||"none",
+    timingModel:safeString(source.timingModel,120)||"overlapping_estimates_with_wall_clock_total",
+    componentTimesMayOverlap:Boolean(source.componentTimesMayOverlap),
+    dominantBottleneckBasis:safeString(source.dominantBottleneckBasis,160)||"",
+    interpretationGuide:Array.isArray(source.interpretationGuide)
+      ?source.interpretationGuide
+      :[],
+    qualityGate:source.qualityGate&&typeof source.qualityGate==="object"?source.qualityGate:{},
+    acceptanceSummary:source.acceptanceSummary&&typeof source.acceptanceSummary==="object"?source.acceptanceSummary:{},
+    reviewerFindingSummary:Array.isArray(source.reviewerFindingSummary)?source.reviewerFindingSummary:[],
+    testerResultSummary:Array.isArray(source.testerResultSummary)?source.testerResultSummary:[],
+    requiredEvidenceFailures:Array.isArray(source.requiredEvidenceFailures)?source.requiredEvidenceFailures:[],
+    stageDurations:source.stageDurations&&typeof source.stageDurations==="object"?source.stageDurations:{},
+  };
+}
+function normalizeCurrentLatestRunSummary(latestRunSummary,latestSignoffSummary){
+  const source=latestRunSummary&&typeof latestRunSummary==="object"?latestRunSummary:{};
+  const signoffBundleFallback=buildLatestRunSummaryFromSignoffBundle({
+    allPassed:Boolean(latestSignoffSummary&&latestSignoffSummary.allPassed),
+    bundleRef:latestSignoffSummary&&latestSignoffSummary.bundleRef&&typeof latestSignoffSummary.bundleRef==="object"
+      ?latestSignoffSummary.bundleRef
+      :{},
+    bundlePath:latestSignoffSummary&&latestSignoffSummary.bundleRef&&latestSignoffSummary.bundleRef.bundlePath,
+    summaryPath:latestSignoffSummary&&latestSignoffSummary.bundleRef&&latestSignoffSummary.bundleRef.summaryPath,
+  });
+  const fallbackSource=signoffBundleFallback&&typeof signoffBundleFallback==="object"
+    ?signoffBundleFallback
+    :{};
+  const finalOutcome=source.finalOutcome&&typeof source.finalOutcome==="object"?source.finalOutcome:{};
+  const evidenceRefs=source.evidenceRefs&&typeof source.evidenceRefs==="object"?source.evidenceRefs:{};
+  const fallbackEvidenceRefs=fallbackSource.evidenceRefs&&typeof fallbackSource.evidenceRefs==="object"
+    ?fallbackSource.evidenceRefs
+    :{};
+  const selectedUsedPolicies=Array.isArray(source.usedPolicies)&&source.usedPolicies.length
+    ?source.usedPolicies
+    :(Array.isArray(fallbackSource.usedPolicies)?fallbackSource.usedPolicies:[]);
+  const selectedUsedContracts=Array.isArray(source.usedContracts)&&source.usedContracts.length
+    ?source.usedContracts
+    :(Array.isArray(fallbackSource.usedContracts)?fallbackSource.usedContracts:[]);
+  const selectedUsedSkills=Array.isArray(source.usedSkills)&&source.usedSkills.length
+    ?source.usedSkills
+    :(Array.isArray(fallbackSource.usedSkills)?fallbackSource.usedSkills:[]);
+  const selectedChangedPaths=Array.isArray(source.changedPaths)&&source.changedPaths.length
+    ?source.changedPaths
+    :(Array.isArray(fallbackSource.changedPaths)?fallbackSource.changedPaths:[]);
+  const selectedDocSyncSummary=source.docSyncSummary&&typeof source.docSyncSummary==="object"&&Object.keys(source.docSyncSummary).length
+    ?source.docSyncSummary
+    :(fallbackSource.docSyncSummary&&typeof fallbackSource.docSyncSummary==="object"
+      ?fallbackSource.docSyncSummary
+      :{});
+  return{
+    schema:"latest-run-summary.v3",
+    generatedAt:toIsoTimestamp(Date.now()),
+    runId:safeString(source.runId||source.taskId||source.turnId||fallbackSource.runId||fallbackSource.taskId||fallbackSource.turnId,160)||"",
+    threadId:safeString(source.threadId||fallbackSource.threadId,160)||"",
+    turnId:safeString(source.turnId||fallbackSource.turnId||fallbackSource.taskId,160)||"",
+    selectedPlanningDepth:safeString(source.selectedPlanningDepth||fallbackSource.selectedPlanningDepth,80)||"",
+    selectedAssuranceDepth:safeString(source.selectedAssuranceDepth||fallbackSource.selectedAssuranceDepth,80)||"",
+    finalOutcome:Object.keys(finalOutcome).length
+      ?finalOutcome
+      :(fallbackSource.finalOutcome&&typeof fallbackSource.finalOutcome==="object"?fallbackSource.finalOutcome:{}),
+    usedAgents:Array.isArray(source.usedAgents)?source.usedAgents:[],
+    usedPolicies:selectedUsedPolicies,
+    usedContracts:selectedUsedContracts,
+    usedSkills:selectedUsedSkills,
+    dispatchCount:Number(source.dispatchCount||fallbackSource.dispatchCount||0),
+    dispatchSuccessCount:Number(source.dispatchSuccessCount||fallbackSource.dispatchSuccessCount||0),
+    implementationObserved:Boolean(source.implementationObserved||fallbackSource.implementationObserved),
+    reviewerObserved:Boolean(source.reviewerObserved||fallbackSource.reviewerObserved),
+    testerObserved:Boolean(source.testerObserved||fallbackSource.testerObserved),
+    changedPaths:selectedChangedPaths.map((entry)=>normalizeCurrentSurfacePath(entry)).filter(Boolean),
+    docSyncSummary:selectedDocSyncSummary,
+    evidenceRefs:{
+      bundlePath:normalizeCurrentSurfacePath(
+        latestSignoffSummary&&latestSignoffSummary.bundleRef&&latestSignoffSummary.bundleRef.bundlePath
+        ||evidenceRefs.bundlePath
+        ||fallbackEvidenceRefs.bundlePath
+        ||""
+      ),
+      signoffSummaryPath:normalizeCurrentSurfacePath(
+        latestSignoffSummary&&latestSignoffSummary.bundleRef&&latestSignoffSummary.bundleRef.summaryPath
+        ||evidenceRefs.signoffSummaryPath
+        ||fallbackEvidenceRefs.signoffSummaryPath
+        ||""
+      ),
+      naturalTaskTraceSummaryPath:normalizeCurrentSurfacePath(
+        evidenceRefs.naturalTaskTraceSummaryPath
+        ||evidenceRefs.naturalTaskTraceSummary
+        ||fallbackEvidenceRefs.naturalTaskTraceSummaryPath
+        ||""
+      ),
+      coreHarnessWorkflowRunPath:normalizeCurrentSurfacePath(
+        evidenceRefs.coreHarnessWorkflowRunPath
+        ||evidenceRefs.coreHarnessWorkflowRun
+        ||fallbackEvidenceRefs.coreHarnessWorkflowRunPath
+        ||""
+      ),
+    },
+    residualRisks:Array.isArray(source.residualRisks)?source.residualRisks:[],
+    informationalNotes:Array.isArray(source.informationalNotes)?source.informationalNotes:[],
+    assumptions:Array.isArray(source.assumptions)?source.assumptions:[],
+    operatorCaveats:Array.isArray(source.operatorCaveats)?source.operatorCaveats:[],
+    signoffRef:{
+      allPassed:Boolean(latestSignoffSummary&&latestSignoffSummary.allPassed),
+      bundlePath:normalizeCurrentSurfacePath(latestSignoffSummary&&latestSignoffSummary.bundleRef&&latestSignoffSummary.bundleRef.bundlePath||""),
+      summaryPath:normalizeCurrentSurfacePath(latestSignoffSummary&&latestSignoffSummary.bundleRef&&latestSignoffSummary.bundleRef.summaryPath||""),
+    },
+  };
+}
+function normalizeCurrentOperatorSummary({operatorSummary,designConformanceSummary,latestRunSummary,reviewLoadBreakdown,latestSignoffSummary}){
+  const source=operatorSummary&&typeof operatorSummary==="object"?operatorSummary:{};
+  const posture=source.postureSummary&&typeof source.postureSummary==="object"
+    ?source.postureSummary
+    :source.posture&&typeof source.posture==="object"
+      ?source.posture
+      :{};
+  const designConformanceStatus=safeString(designConformanceSummary&&designConformanceSummary.overallDesignConformance&&designConformanceSummary.overallDesignConformance.status,20)||"fail";
+  const latestRunStatus=safeString(
+    latestRunSummary&&latestRunSummary.finalOutcome&&(
+      latestRunSummary.finalOutcome.taskOutcomeStatus
+      ||latestRunSummary.finalOutcome.status
+    ),
+    80
+  )||"UNKNOWN";
+  const signoffReady=Boolean(latestSignoffSummary&&latestSignoffSummary.signoffReady);
+  const signoffStatus=Boolean(latestSignoffSummary&&latestSignoffSummary.allPassed)?"PASS":"FAIL";
+  const hasReviewLoadSummary=
+    Number(reviewLoadBreakdown&&reviewLoadBreakdown.totalStep4DurationMs||0)>0
+    ||Number(reviewLoadBreakdown&&reviewLoadBreakdown.evidenceCollectionTimeMs||0)>0
+    ||Number(reviewLoadBreakdown&&reviewLoadBreakdown.reviewerTimeMs||0)>0
+    ||Number(reviewLoadBreakdown&&reviewLoadBreakdown.testerTimeMs||0)>0
+    ||Number(reviewLoadBreakdown&&reviewLoadBreakdown.docSyncVerificationTimeMs||0)>0
+    ||(Boolean(safeString(reviewLoadBreakdown&&reviewLoadBreakdown.dominantBottleneck,80))
+      &&safeString(reviewLoadBreakdown&&reviewLoadBreakdown.dominantBottleneck,80)!=="none");
+  const reviewLoadStatus=hasReviewLoadSummary?"REVIEW_SUMMARY_AVAILABLE":"MISSING";
+  const recommendedDecision=signoffReady&&designConformanceStatus==="pass"&&latestRunStatus==="COMPLETED"
+    ?"SAFE_TO_SIGNOFF"
+    :latestRunStatus==="UNKNOWN"||reviewLoadStatus==="MISSING"
+      ?"CURRENT_TRUTH_INCOMPLETE"
+      :latestRunStatus==="COMPLETED"
+        ?"REVIEW_BEFORE_SIGNOFF"
+        :"DO_NOT_SIGNOFF";
+  const topLineDecision=recommendedDecision;
+  const whyThisIsSafe=[];
+  if(latestRunStatus==="COMPLETED")whyThisIsSafe.push("Latest run completed.");
+  if(designConformanceStatus==="pass")whyThisIsSafe.push("Design conformance checks are passing.");
+  if(signoffReady)whyThisIsSafe.push("Latest signoff checks passed.");
+  const whyThisMayNeedAttention=[];
+  if(Array.isArray(latestRunSummary&&latestRunSummary.residualRisks)&&latestRunSummary.residualRisks.length){
+    whyThisMayNeedAttention.push(`Residual risks: ${latestRunSummary.residualRisks.join("; ")}`);
+  }
+  if(Array.isArray(latestRunSummary&&latestRunSummary.informationalNotes)&&latestRunSummary.informationalNotes.length){
+    whyThisMayNeedAttention.push(`Informational notes: ${latestRunSummary.informationalNotes.join("; ")}`);
+  }
+  if(reviewLoadBreakdown&&reviewLoadBreakdown.dominantBottleneck&&reviewLoadBreakdown.dominantBottleneck!=="none"){
+    whyThisMayNeedAttention.push(`Dominant Step 4 bottleneck: ${reviewLoadBreakdown.dominantBottleneck}.`);
+  }
+  if(reviewLoadStatus==="MISSING")whyThisMayNeedAttention.push("Current review-load summary is missing.");
+  if(designConformanceStatus!=="pass")whyThisMayNeedAttention.push("Design conformance summary is not fully passing.");
+  if(!signoffReady)whyThisMayNeedAttention.push("Latest signoff bundle is not fully passing.");
+  return{
+    schema:"operator-summary.v3",
+    generatedAt:toIsoTimestamp(Date.now()),
+    topLineDecision,
+    recommendedDecision,
+    designConformanceStatus,
+    latestRunStatus,
+    signoffStatus,
+    reviewLoadStatus,
+    whyThisIsSafe,
+    whyThisMayNeedAttention,
+    openOnlyIfNeeded:[
+      "logs/current/design_conformance_summary.json",
+      "logs/current/latest_run_summary.json",
+      "logs/current/review_load_breakdown.json",
+      "logs/current/latest_signoff_summary.json",
+      ...(latestSignoffSummary&&latestSignoffSummary.bundleRef&&latestSignoffSummary.bundleRef.bundlePath
+        ?[latestSignoffSummary.bundleRef.bundlePath]
+        :[]),
+    ],
+    postureSummary:{
+      loggingMode:safeString(posture.loggingMode,40)||"OPERATOR",
+      requestUserInputPolicy:safeString(posture.requestUserInputPolicy,40)||"blocked",
+      parentDispatchGuardMode:safeString(posture.parentDispatchGuardMode,40)||"enforce",
+      defaultExecAgent:designConformanceStatus==="pass"
+        ?"default"
+        :(safeString(posture.defaultExecAgent,80)||defaultExecAgentName||"unknown"),
+      runtimePostureSafe:Boolean(latestSignoffSummary&&latestSignoffSummary.runtimePostureSafe),
+    },
+    refs:{
+      designConformanceSummary:"logs/current/design_conformance_summary.json",
+      latestRunSummary:"logs/current/latest_run_summary.json",
+      reviewLoadBreakdown:"logs/current/review_load_breakdown.json",
+      latestSignoffSummary:"logs/current/latest_signoff_summary.json",
+      bundlePath:normalizeCurrentSurfacePath(latestSignoffSummary&&latestSignoffSummary.bundleRef&&latestSignoffSummary.bundleRef.bundlePath||""),
+    },
+  };
+}
+function parseWorkflowCasePreview(caseEntry){
+  const preview=safeString(caseEntry&&caseEntry.output&&caseEntry.output.preview,4000);
+  if(!preview)return null;
+  try{
+    return JSON.parse(preview);
+  }catch{
+    return null;
+  }
+}
+function getWorkflowCaseById(coreHarnessWorkflowRun,caseId){
+  const runs=Array.isArray(coreHarnessWorkflowRun&&coreHarnessWorkflowRun.report&&coreHarnessWorkflowRun.report.runs)
+    ?coreHarnessWorkflowRun.report.runs
+    :[];
+  const cases=runs[0]&&Array.isArray(runs[0].cases)?runs[0].cases:[];
+  return cases.find((entry)=>safeString(entry&&entry.caseId,120)===caseId)||null;
+}
+function buildCurrentReviewLoadBreakdownFile(latestRunSummary){
+  const source=latestRunSummary&&latestRunSummary.reviewLoadBreakdown&&typeof latestRunSummary.reviewLoadBreakdown==="object"
+    ?latestRunSummary.reviewLoadBreakdown
+    :{};
+  return{
+    schema:"current-review-load-breakdown.v2",
+    generatedAt:toIsoTimestamp(Date.now()),
+    turnId:latestRunSummary&&latestRunSummary.turnId?latestRunSummary.turnId:null,
+    threadId:latestRunSummary&&latestRunSummary.threadId?latestRunSummary.threadId:null,
+    evidenceCollectionTimeMs:Number(source.evidenceCollectionTimeMs||0),
+    testerTimeMs:Number(source.testerTimeMs||0),
+    reviewerTimeMs:Number(source.reviewerTimeMs||0),
+    docSyncVerificationTimeMs:Number(source.docSyncVerificationTimeMs||0),
+    retryLoopCount:Number(source.retryLoopCount||0),
+    outcomeConversionTimeMs:Number(source.outcomeConversionTimeMs||0),
+    totalStep4DurationMs:Number(source.totalStep4DurationMs||0),
+    dominantBottleneck:safeString(source.dominantBottleneck,80)||"none",
+    timingModel:safeString(source.timingModel,80)||"overlapping_estimates_with_wall_clock_total",
+    componentTimesMayOverlap:Boolean(source.componentTimesMayOverlap!==undefined?source.componentTimesMayOverlap:true),
+    dominantBottleneckBasis:safeString(source.dominantBottleneckBasis,160)
+      ||"largest estimated Step 4 component, even when component windows overlap",
+    interpretationGuide:Array.isArray(source.interpretationGuide)
+      ?source.interpretationGuide
+      :[
+        "`totalStep4DurationMs` is the wall-clock Step 4 duration.",
+        "Component times are heuristic slices derived from review/test/doc-sync checkpoints and may overlap.",
+        "`dominantBottleneck` points to the largest estimated component rather than a strict additive share of total time.",
+      ],
+    qualityGate:source.qualityGate&&typeof source.qualityGate==="object"?source.qualityGate:{},
+    acceptanceSummary:source.acceptanceSummary&&typeof source.acceptanceSummary==="object"?source.acceptanceSummary:{},
+    reviewerFindingSummary:Array.isArray(source.reviewerFindingSummary)?source.reviewerFindingSummary:[],
+    testerResultSummary:Array.isArray(source.testerResultSummary)?source.testerResultSummary:[],
+    requiredEvidenceFailures:Array.isArray(source.requiredEvidenceFailures)?source.requiredEvidenceFailures:[],
+    stageDurations:source.stageDurations&&typeof source.stageDurations==="object"?source.stageDurations:{},
+  };
+}
+function buildCurrentDesignConformanceSummary({runtimeSnapshot,latestRunSummary,latestSignoffSummary}){
+  const runtime=runtimeSnapshot&&runtimeSnapshot.runtime&&typeof runtimeSnapshot.runtime==="object"?runtimeSnapshot.runtime:{};
+  const latestTurn=runtime.latestTurn&&typeof runtime.latestTurn==="object"?runtime.latestTurn:{};
+  const check=(pass,reason,evidenceRef)=>({
+    status:pass?"pass":"fail",
+    reason,
+    evidenceRef,
+  });
+  const latestRunEvidenceRef=repoRelativePath(workspaceRoot,loggingSurfacePaths.currentLatestRunSummaryPath);
+  const signoffEvidenceRef=latestSignoffSummary
+    ?repoRelativePath(workspaceRoot,loggingSurfacePaths.currentLatestSignoffSummaryPath)
+    :latestRunEvidenceRef;
+  const signoffCandidates=listBundleSummaryCandidates(signoffBundlesRoot,"signoff_summary.json");
+  const latestSignoffCandidate=selectPreferredSignoffCandidate(signoffCandidates);
+  const signoffBundleSummary=latestSignoffCandidate&&latestSignoffCandidate.summary&&typeof latestSignoffCandidate.summary==="object"
+    ?latestSignoffCandidate.summary
+    :{};
+  const signoffRuntime=signoffBundleSummary.runtime&&typeof signoffBundleSummary.runtime==="object"?signoffBundleSummary.runtime:{};
+  const signoffTask=signoffBundleSummary.signoffTask&&typeof signoffBundleSummary.signoffTask==="object"?signoffBundleSummary.signoffTask:{};
+  const naturalTask=signoffBundleSummary.naturalTask&&typeof signoffBundleSummary.naturalTask==="object"?signoffBundleSummary.naturalTask:{};
+  const signoffTaskAssertions=signoffTask.assertions&&typeof signoffTask.assertions==="object"?signoffTask.assertions:{};
+  const naturalTaskAssertions=naturalTask.assertions&&typeof naturalTask.assertions==="object"?naturalTask.assertions:{};
+  const latestTurnTerminalStatus=safeString(latestTurn.terminalStatus,40)||safeString(latestTurn.terminal_status,40)||"unknown";
+  const latestTurnTaskOutcomeStatus=safeString(latestTurn.taskOutcomeStatus,80)||safeString(latestTurn.task_outcome_status,80)||"unknown";
+  const coreHarnessWorkflowRun=readWorkspaceJsonArtifact(signoffBundleSummary.paths&&signoffBundleSummary.paths.coreHarnessWorkflowRun)||{};
+  const requestUserInputBlocked=getWorkflowCaseById(coreHarnessWorkflowRun,"needs_input_blocked_policy");
+  const workerRejected=getWorkflowCaseById(coreHarnessWorkflowRun,"retired_worker_rejected");
+  const workerScopedRejected=getWorkflowCaseById(coreHarnessWorkflowRun,"retired_worker_scoped_rejected");
+  const fastPlanning=getWorkflowCaseById(coreHarnessWorkflowRun,"planning_mode_fast_selected");
+  const discoveryPlanning=getWorkflowCaseById(coreHarnessWorkflowRun,"planning_mode_discovery_selected");
+  const reviewerTesterRequired=getWorkflowCaseById(coreHarnessWorkflowRun,"reviewer_tester_required_case");
+  const dedicatedTestsRequired=getWorkflowCaseById(coreHarnessWorkflowRun,"dedicated_test_required_for_new_logic");
+  const failedValidationBridge=getWorkflowCaseById(coreHarnessWorkflowRun,"turn_task_outcome_bridge_failed_validation");
+  const blockedBridge=getWorkflowCaseById(coreHarnessWorkflowRun,"turn_task_outcome_bridge_blocked");
+  const missingEvidence=getWorkflowCaseById(coreHarnessWorkflowRun,"failed_validation_missing_evidence");
+  const checks={
+    defaultExecAgentIsDefault:check(
+      Boolean(signoffRuntime.fullUtilization&&signoffRuntime.fullUtilization.checks&&signoffRuntime.fullUtilization.checks.defaultExecAgentIsDefault),
+      Boolean(signoffRuntime.fullUtilization&&signoffRuntime.fullUtilization.checks&&signoffRuntime.fullUtilization.checks.defaultExecAgentIsDefault)
+        ?"default exec agent is 'default'"
+        :`default exec agent is '${defaultExecAgentName}'`,
+      signoffEvidenceRef
+    ),
+    requestUserInputPolicyBlocked:check(
+      signoffRuntime&&signoffRuntime.nonInteractiveUserInput&&signoffRuntime.nonInteractiveUserInput.policy==="blocked"&&Boolean(requestUserInputBlocked&&requestUserInputBlocked.passed),
+      signoffRuntime&&signoffRuntime.nonInteractiveUserInput&&signoffRuntime.nonInteractiveUserInput.policy==="blocked"
+        ?"non-interactive request-user-input policy is blocked"
+        :`non-interactive request-user-input policy is '${safeString(runtimeSnapshot&&runtimeSnapshot.posture&&runtimeSnapshot.posture.requestUserInputPolicy&&runtimeSnapshot.posture.requestUserInputPolicy.policy,40)||"unknown"}'`,
+      signoffEvidenceRef
+    ),
+    parentDispatchGuardEnforced:check(
+      signoffRuntime&&signoffRuntime.parentDispatchGuard&&signoffRuntime.parentDispatchGuard.mode==="enforce",
+      signoffRuntime&&signoffRuntime.parentDispatchGuard&&signoffRuntime.parentDispatchGuard.mode==="enforce"
+        ?"parent dispatch guard mode is enforce"
+        :`parent dispatch guard mode is '${safeString(runtimeSnapshot&&runtimeSnapshot.posture&&runtimeSnapshot.posture.parentDispatchGuard&&runtimeSnapshot.posture.parentDispatchGuard.mode,20)||"unknown"}'`,
+      signoffEvidenceRef
+    ),
+    retiredWorkerNotRoutable:check(
+      Boolean(workerRejected&&workerRejected.passed)&&Boolean(workerScopedRejected&&workerScopedRejected.passed),
+      Boolean(workerRejected&&workerRejected.passed)&&Boolean(workerScopedRejected&&workerScopedRejected.passed)
+        ?"worker is retained only as a legacy contract and not routable for active execution"
+        :"worker routability rejection was not fully proven by workflow probes",
+      signoffEvidenceRef
+    ),
+    planningDepthSelectorWorking:check(
+      Boolean(fastPlanning&&fastPlanning.passed)&&Boolean(discoveryPlanning&&discoveryPlanning.passed),
+      Boolean(fastPlanning&&fastPlanning.passed)&&Boolean(discoveryPlanning&&discoveryPlanning.passed)
+        ?"planning depth probes passed for FAST and DISCOVERY"
+        :"planning depth probes are incomplete or failing",
+      signoffEvidenceRef
+    ),
+    assuranceDepthSelectorWorking:check(
+      Boolean(reviewerTesterRequired&&reviewerTesterRequired.passed)
+      &&Boolean(dedicatedTestsRequired&&dedicatedTestsRequired.passed)
+      &&safeString(reviewerTesterRequired&&reviewerTesterRequired.reason,80)!=="json_fields_mismatch"
+      &&safeString(dedicatedTestsRequired&&dedicatedTestsRequired.reason,80)!=="json_fields_mismatch",
+      Boolean(reviewerTesterRequired&&reviewerTesterRequired.passed)&&Boolean(dedicatedTestsRequired&&dedicatedTestsRequired.passed)
+        ?"assurance depth escalated to SIGNOFF_ASSURANCE when required"
+        :"assurance depth probes are incomplete or failing",
+      signoffEvidenceRef
+    ),
+    specialistDispatchObservedWhenImplementationOccurred:check(
+      Boolean(naturalTaskAssertions.implementationObserved)
+        &&Boolean(naturalTaskAssertions.parentDispatchSatisfied)
+        &&Boolean(naturalTaskAssertions.dispatchCountObserved),
+      Boolean(naturalTaskAssertions.implementationObserved)
+        ?"natural task trace shows implementation with delegated specialist dispatch"
+        :"natural task trace does not prove delegated implementation",
+      signoffEvidenceRef
+    ),
+    reviewerObservedWhenRequired:check(
+      Boolean(signoffTaskAssertions.signoffReviewerExecuted),
+      Boolean(signoffTaskAssertions.signoffReviewerExecuted)
+        ?"reviewer observed on signoff-required run"
+        :"reviewer missing on signoff-required run",
+      signoffEvidenceRef
+    ),
+    testerObservedWhenRequired:check(
+      Boolean(signoffTaskAssertions.signoffTesterExecuted),
+      Boolean(signoffTaskAssertions.signoffTesterExecuted)
+        ?"tester observed on signoff-required run"
+        :"tester missing on signoff-required run",
+      signoffEvidenceRef
+    ),
+    taskOutcomeSemanticsValid:check(
+      Boolean(failedValidationBridge&&failedValidationBridge.passed)
+        &&Boolean(blockedBridge&&blockedBridge.passed)
+        &&Boolean(missingEvidence&&missingEvidence.passed),
+      Boolean(failedValidationBridge&&failedValidationBridge.passed)
+        ?`terminal=${latestTurnTerminalStatus} taskOutcome=${latestTurnTaskOutcomeStatus}`
+        :"task outcome bridge probes are incomplete or failing",
+      signoffEvidenceRef
+    ),
+    docSyncEvidencePresentWhenRequired:check(
+      Boolean(signoffTaskAssertions.evidenceBulletPresent)
+        &&Boolean(signoffTaskAssertions.changelogUpdated)
+        &&Boolean(signoffTaskAssertions.reviewBreakdownPresent),
+      Boolean(signoffTaskAssertions.evidenceBulletPresent)
+        ?"doc sync evidence is present when required"
+        :"doc sync evidence is incomplete for the signoff-required run",
+      signoffEvidenceRef
+    ),
+    signoffCriteriaSatisfied:check(
+      Boolean(latestSignoffSummary&&Number(latestSignoffSummary.allPassed||0)===1),
+      latestSignoffSummary&&Number(latestSignoffSummary.allPassed||0)===1
+        ?"latest signoff bundle passed all assertions"
+        :"latest signoff bundle is missing or not fully passing",
+      signoffEvidenceRef
+    ),
+  };
+  const allPass=Object.values(checks).every((entry)=>entry&&entry.status==="pass");
+  return{
+    schema:"design-conformance-summary.v2",
+    generatedAt:toIsoTimestamp(Date.now()),
+    ...checks,
+    overallDesignConformance:{
+      status:allPass?"pass":"fail",
+      reason:allPass?"all tracked design conformance checks passed":"one or more tracked design conformance checks failed",
+      evidenceRef:signoffEvidenceRef||latestRunEvidenceRef,
+    },
+  };
+}
+function buildCurrentOperatorSummaryFile({runtimeSnapshot,latestRunSummary,latestSignoffSummary,reviewLoadBreakdown,designConformanceSummary,conformanceReport,operatorViewSummary}){
+  const finalOutcome=latestRunSummary&&latestRunSummary.finalOutcome&&typeof latestRunSummary.finalOutcome==="object"
+    ?latestRunSummary.finalOutcome
+    :{};
+  const overallConformance=designConformanceSummary&&designConformanceSummary.overallDesignConformance&&typeof designConformanceSummary.overallDesignConformance==="object"
+    ?designConformanceSummary.overallDesignConformance
+    :{};
+  const requiredEvidenceFailures=Array.isArray(reviewLoadBreakdown&&reviewLoadBreakdown.requiredEvidenceFailures)
+    ?reviewLoadBreakdown.requiredEvidenceFailures
+    :[];
+  const residualRisks=Array.isArray(latestRunSummary&&latestRunSummary.residualRisks)?latestRunSummary.residualRisks:[];
+  const informationalNotes=Array.isArray(latestRunSummary&&latestRunSummary.informationalNotes)?latestRunSummary.informationalNotes:[];
+  const operatorCaveats=Array.isArray(latestRunSummary&&latestRunSummary.operatorCaveats)?latestRunSummary.operatorCaveats:[];
+  const runtimePosture=runtimeSnapshot&&runtimeSnapshot.posture&&typeof runtimeSnapshot.posture==="object"
+    ?runtimeSnapshot.posture
+    :{};
+  const postureSafe=Boolean(latestSignoffSummary&&Number(latestSignoffSummary.runtimePostureSafe||0)===1);
+  const designConformant=safeString(overallConformance.status,40)==="pass";
+  const signoffReady=Boolean(latestSignoffSummary&&Number(latestSignoffSummary.signoffReady||0)===1);
+  const latestRunStatus=isCompletedOperatorOutcome(finalOutcome)
+    ?"COMPLETED"
+    :(safeString(finalOutcome.taskOutcomeStatus,80).toUpperCase()||safeString(finalOutcome.status,80).toUpperCase()||"UNKNOWN");
+  const reviewLoadStatus=requiredEvidenceFailures.length
+    ?"ATTENTION_REQUIRED"
+    :safeString(reviewLoadBreakdown&&reviewLoadBreakdown.dominantBottleneck,80)&&safeString(reviewLoadBreakdown&&reviewLoadBreakdown.dominantBottleneck,80)!=="none"
+      ?"REVIEW_SUMMARY_AVAILABLE"
+      :"NO_REVIEW_LOAD_RECORDED";
+  const topLineDecision=signoffReady&&designConformant&&latestRunStatus==="COMPLETED"
+    ?"SAFE_TO_SIGNOFF"
+    :(safeString(conformanceReport&&conformanceReport.releaseDecision&&conformanceReport.releaseDecision.terminal_state,80)
+      ||buildOperatorDecisionSummary({
+        finalOutcome,
+        signoffReady,
+        designConformant,
+        postureSafe,
+        requiredEvidenceFailures,
+      }));
+  const refs={
+    designConformanceSummary:repoRelativePath(workspaceRoot,loggingSurfacePaths.currentDesignConformancePath),
+    latestRunSummary:repoRelativePath(workspaceRoot,loggingSurfacePaths.currentLatestRunSummaryPath),
+    reviewLoadBreakdown:repoRelativePath(workspaceRoot,loggingSurfacePaths.currentReviewLoadBreakdownPath),
+    latestSignoffSummary:repoRelativePath(workspaceRoot,loggingSurfacePaths.currentLatestSignoffSummaryPath),
+    bundlePath:latestSignoffSummary&&latestSignoffSummary.bundleRef?safeString(latestSignoffSummary.bundleRef.bundlePath,260)||"": "",
+  };
+  const whyThisIsSafe=[
+    isCompletedOperatorOutcome(finalOutcome)
+      ?`Latest run completed with task outcome ${safeString(finalOutcome.taskOutcomeStatus,80)||safeString(finalOutcome.status,40)||"unknown"}.`
+      :"",
+    postureSafe
+      ?"Runtime posture keeps request-user-input blocked and parent dispatch guard enforced."
+      :"",
+    designConformant
+      ?"Tracked design-conformance checks are passing."
+      :"",
+    signoffReady
+      ?"Latest signoff bundle assertions all passed."
+      :"",
+  ].filter(Boolean);
+  const whyThisMayNeedAttention=Array.from(new Set([
+    requiredEvidenceFailures.length?`Required evidence failures: ${requiredEvidenceFailures.join("; ")}`:"",
+    residualRisks.length?`Residual risks remain: ${residualRisks.join("; ")}`:"",
+    informationalNotes.length?`Informational notes were separated from residual risks to keep completed-outcome semantics clean.`:"",
+    safeString(reviewLoadBreakdown&&reviewLoadBreakdown.dominantBottleneck,80)&&safeString(reviewLoadBreakdown&&reviewLoadBreakdown.dominantBottleneck,80)!=="none"
+      ?`Dominant Step 4 bottleneck estimate: ${safeString(reviewLoadBreakdown&&reviewLoadBreakdown.dominantBottleneck,80)}.`
+      :"",
+    !signoffReady&&latestSignoffSummary
+      ?"Latest signoff bundle is not fully passing yet."
+      :"",
+    !designConformant
+      ?"Design conformance summary is not fully passing."
+      :"",
+  ].filter(Boolean))).slice(0,8);
+  return{
+    schema:"operator-summary.v3",
+    generatedAt:toIsoTimestamp(Date.now()),
+    topLineDecision,
+    designConformanceStatus:safeString(overallConformance.status,40)||"unknown",
+    latestRunStatus:latestRunStatus,
+    signoffStatus:signoffReady?"PASS":"FAIL",
+    reviewLoadStatus:reviewLoadStatus,
+    whyThisIsSafe,
+    whyThisMayNeedAttention,
+    openOnlyIfNeeded:Object.values(refs).filter(Boolean),
+    postureSummary:{
+      loggingMode:"OPERATOR",
+      requestUserInputPolicy:postureSafe?"blocked":(safeString(runtimePosture.requestUserInputPolicy&&runtimePosture.requestUserInputPolicy.policy,40)||"unknown"),
+      parentDispatchGuardMode:postureSafe?"enforce":(safeString(runtimePosture.parentDispatchGuard&&runtimePosture.parentDispatchGuard.mode,40)||"unknown"),
+      defaultExecAgent:designConformant?"default":(safeString(runtimeSnapshot&&runtimeSnapshot.defaultExecAgent,80)||defaultExecAgentName||"unknown"),
+      runtimePostureSafe:postureSafe?true:false,
+    },
+    refs,
+  };
+}
+function buildCurrentIndexFile({runtimeSnapshot,latestRunSummary,latestSignoffSummary,reviewLoadBreakdown}){
+  return{
+    schema:"current-log-index.v2",
+    generatedAt:toIsoTimestamp(Date.now()),
+    firstLookFiles:[
+      {
+        question:"What should a human open first?",
+        path:repoRelativePath(workspaceRoot,loggingSurfacePaths.currentOperatorSummaryPath),
+      },
+    ],
+    detailedFiles:[
+      {
+        question:"What happened on the latest run?",
+        path:repoRelativePath(workspaceRoot,loggingSurfacePaths.currentLatestRunSummaryPath),
+      },
+      {
+        question:"Is Step 4 review load too heavy?",
+        path:repoRelativePath(workspaceRoot,loggingSurfacePaths.currentReviewLoadBreakdownPath),
+      },
+      {
+        question:"What is the current runtime posture and storage map?",
+        path:repoRelativePath(workspaceRoot,loggingSurfacePaths.currentRuntimeSnapshotPath),
+      },
+      {
+        question:"Is the harness still built according to the intended design?",
+        path:repoRelativePath(workspaceRoot,loggingSurfacePaths.currentDesignConformancePath),
+      },
+      {
+        question:"What is the current constitution conformance report?",
+        path:repoRelativePath(workspaceRoot,loggingSurfacePaths.currentConformanceReportPath),
+      },
+      {
+        question:"What does the operator need on one screen?",
+        path:repoRelativePath(workspaceRoot,loggingSurfacePaths.currentOperatorViewSummaryPath),
+      },
+      ...(latestSignoffSummary
+        ?[
+          {
+            question:"Is the latest signoff bundle ready to trust?",
+            path:repoRelativePath(workspaceRoot,loggingSurfacePaths.currentLatestSignoffSummaryPath),
+          },
+        ]
+        :[]),
+    ],
+    surfaces:{
+      current:repoRelativePath(workspaceRoot,loggingSurfacePaths.currentRoot),
+      bundles:repoRelativePath(workspaceRoot,loggingSurfacePaths.bundlesRoot),
+      archive:repoRelativePath(workspaceRoot,loggingSurfacePaths.archiveRoot),
+    },
+    latest:{
+      turnId:latestRunSummary&&latestRunSummary.turnId?latestRunSummary.turnId:null,
+      taskOutcomeStatus:latestRunSummary&&latestRunSummary.finalOutcome?latestRunSummary.finalOutcome.taskOutcomeStatus:null,
+      signoffBundle:latestSignoffSummary&&latestSignoffSummary.bundleName?latestSignoffSummary.bundleName:null,
+      dominantReviewBottleneck:reviewLoadBreakdown&&reviewLoadBreakdown.dominantBottleneck?reviewLoadBreakdown.dominantBottleneck:"none",
+      loggingMode:runtimeSnapshot&&runtimeSnapshot.loggingMode?runtimeSnapshot.loggingMode:loggingMode,
+    },
+  };
+}
+function updateCurrentLogSurface({trigger=""}={}){
+  ensureLoggingSurfaceDir(loggingSurfacePaths.currentRoot);
+  const runtimeSnapshot=buildCurrentRuntimeSnapshotFile();
+  const latestSignoffSummaryRaw=buildLatestSignoffSummaryFile();
+  const latestRunSummaryRaw=buildLatestRunSummaryFile();
+  const reviewLoadBreakdownRaw=buildCurrentReviewLoadBreakdownFile(latestRunSummaryRaw);
+  const designConformanceSummaryRaw=buildCurrentDesignConformanceSummary({
+    runtimeSnapshot,
+    latestRunSummary:latestRunSummaryRaw,
+    latestSignoffSummary:latestSignoffSummaryRaw,
+  });
+  const conformanceReport=buildConformanceReport({
+    latestRunSummary:latestRunSummaryRaw,
+    signoffSummary:latestSignoffSummaryRaw,
+    childEvidenceLedger:latestRunSummaryRaw&&Array.isArray(latestRunSummaryRaw.childEvidenceLedger)?latestRunSummaryRaw.childEvidenceLedger:[],
+    requiredEvidenceFailures:reviewLoadBreakdownRaw&&Array.isArray(reviewLoadBreakdownRaw.requiredEvidenceFailures)?reviewLoadBreakdownRaw.requiredEvidenceFailures:[],
+    evidenceRefs:[
+      repoRelativePath(workspaceRoot,loggingSurfacePaths.currentLatestRunSummaryPath),
+      repoRelativePath(workspaceRoot,loggingSurfacePaths.currentReviewLoadBreakdownPath),
+      repoRelativePath(workspaceRoot,loggingSurfacePaths.currentLatestSignoffSummaryPath),
+    ],
+    rationaleNotes:[
+      `trigger=${safeString(trigger,80)||"runtime_update"}`,
+    ],
+  });
+  const operatorViewSummary=buildOperatorViewSummary({
+    latestRunSummary:latestRunSummaryRaw,
+    reviewBundle:conformanceReport.reviewBundle,
+    releaseDecision:conformanceReport.releaseDecision,
+    conformanceReport,
+    routingDecision:conformanceReport.routingDecision,
+  });
+  const operatorSummaryRaw=buildCurrentOperatorSummaryFile({
+    runtimeSnapshot,
+    latestRunSummary:latestRunSummaryRaw,
+    latestSignoffSummary:latestSignoffSummaryRaw,
+    reviewLoadBreakdown:reviewLoadBreakdownRaw,
+    designConformanceSummary:designConformanceSummaryRaw,
+    conformanceReport,
+    operatorViewSummary,
+  });
+  const latestSignoffSummary=normalizeCurrentLatestSignoffSummary(latestSignoffSummaryRaw);
+  const latestRunSummary=normalizeCurrentLatestRunSummary(latestRunSummaryRaw,latestSignoffSummary);
+  const reviewLoadBreakdown=normalizeCurrentReviewLoadBreakdown(reviewLoadBreakdownRaw);
+  const designConformanceSummary=normalizeCurrentDesignConformanceSummary(designConformanceSummaryRaw);
+  const operatorSummary=normalizeCurrentOperatorSummary({
+    operatorSummary:operatorSummaryRaw,
+    designConformanceSummary,
+    latestRunSummary,
+    reviewLoadBreakdown,
+    latestSignoffSummary,
+  });
+  writeLoggingSurfaceJson(loggingSurfacePaths.currentOperatorSummaryPath,operatorSummary);
+  writeLoggingSurfaceJson(loggingSurfacePaths.currentLatestRunSummaryPath,latestRunSummary);
+  writeLoggingSurfaceJson(loggingSurfacePaths.currentReviewLoadBreakdownPath,reviewLoadBreakdown);
+  writeLoggingSurfaceJson(loggingSurfacePaths.currentDesignConformancePath,designConformanceSummary);
+  if(latestSignoffSummary){
+    writeLoggingSurfaceJson(loggingSurfacePaths.currentLatestSignoffSummaryPath,latestSignoffSummary);
+  }else if(fs.existsSync(loggingSurfacePaths.currentLatestSignoffSummaryPath)){
+    try{
+      fs.unlinkSync(loggingSurfacePaths.currentLatestSignoffSummaryPath);
+    }catch{
+    }
+  }
+  [
+    loggingSurfacePaths.currentRuntimeSnapshotPath,
+    loggingSurfacePaths.currentIndexPath,
+    loggingSurfacePaths.currentConformanceReportPath,
+    loggingSurfacePaths.currentOperatorViewSummaryPath,
+  ].forEach((targetPath)=>{
+    if(!targetPath||!fs.existsSync(targetPath))return;
+    try{
+      fs.unlinkSync(targetPath);
+    }catch{
+    }
+  });
+  logOperation("current_logs.updated",{
+    trigger:safeString(trigger,80)||"runtime",
+    currentRoot:repoRelativePath(workspaceRoot,loggingSurfacePaths.currentRoot),
+    operatorSummaryPath:repoRelativePath(workspaceRoot,loggingSurfacePaths.currentOperatorSummaryPath),
+    latestTurnId:latestRunSummary&&latestRunSummary.turnId?safeString(latestRunSummary.turnId,160):"",
+    signoffBundle:latestSignoffSummary&&latestSignoffSummary.bundleName?safeString(latestSignoffSummary.bundleName,160):"",
+  },"core");
+}
 async function requestHandler(req,res){
   const url=new URL(req.url,`http://${req.headers.host}`);
   const pathname=url.pathname;
 
   if(req.method==="GET"&&pathname==="/api/runtime"){
     sendJson(res,200,buildRuntimeApiSnapshot());
-    return;
-  }
-
-  if(req.method==="POST"&&pathname==="/api/intent/profile"){
-    try{
-      const contentTypeValidation=validateJsonMutationContentType(req,{required:true,expectedMime:execApiRequiredContentType});
-      if(!contentTypeValidation.ok){
-        sendJson(res,contentTypeValidation.status,{ok:false,error:contentTypeValidation.error});
-        return;
-      }
-      const raw=await readRequestBody(req,defaultRequestBodyLimitBytes);
-      const body=raw?JSON.parse(raw):{};
-      const action=safeString(body&&body.action,80);
-      const validation=validateControlMutationRequest(req,{action,requireAction:true});
-      if(!validation.ok){
-        sendJson(res,validation.status,{ok:false,error:validation.error});
-        return;
-      }
-      const payload=body&&body.profile&&typeof body.profile==="object"?body.profile:body;
-      updateActiveUserTasteProfile({
-        label:payload&&payload.label,
-        northStar:payload&&payload.northStar,
-        benchmarkUrls:payload&&payload.benchmarkSites,
-        notes:payload&&payload.benchmarkNotes,
-        mustHaves:payload&&payload.prefers,
-        avoid:payload&&payload.rejects,
-        requiredProof:payload&&payload.requiredProof,
-      });
-      const snapshot=buildIntentFirstRuntimeSnapshot();
-      logOperation("api.intent_profile_update",{
-        action,
-        profileId:safeString(snapshot&&snapshot.tasteMemory&&snapshot.tasteMemory.activeProfileId,80)||"default",
-        updatedAt:Number.isFinite(Number(snapshot&&snapshot.tasteMemory&&snapshot.tasteMemory.updatedAt))?Math.max(0,Math.trunc(Number(snapshot.tasteMemory.updatedAt))):0,
-      },"standard");
-      sendJson(res,200,{ok:true,intentFirst:snapshot,intent_first:snapshot});
-    }catch(error){
-      sendJson(res,400,{ok:false,error:error&&error.message?error.message:String(error)});
-    }
-    return;
-  }
-
-  if(req.method==="POST"&&pathname==="/api/intent/profile/reset"){
-    try{
-      const contentTypeValidation=validateJsonMutationContentType(req,{required:true,expectedMime:execApiRequiredContentType});
-      if(!contentTypeValidation.ok){
-        sendJson(res,contentTypeValidation.status,{ok:false,error:contentTypeValidation.error});
-        return;
-      }
-      const raw=await readRequestBody(req,defaultRequestBodyLimitBytes);
-      const body=raw?JSON.parse(raw):{};
-      const action=safeString(body&&body.action,80);
-      const validation=validateControlMutationRequest(req,{action,requireAction:true});
-      if(!validation.ok){
-        sendJson(res,validation.status,{ok:false,error:validation.error});
-        return;
-      }
-      const store=resetUserTasteMemoryToSeed();
-      const snapshot=buildIntentFirstRuntimeSnapshot();
-      logOperation("api.intent_profile_reset",{
-        action,
-        profileId:safeString(store&&store.activeProfileId,80)||"default",
-      },"standard");
-      sendJson(res,200,{ok:true,intentFirst:snapshot,intent_first:snapshot});
-    }catch(error){
-      sendJson(res,400,{ok:false,error:error&&error.message?error.message:String(error)});
-    }
     return;
   }
 
@@ -10863,14 +12746,8 @@ async function requestHandler(req,res){
         },
       });
     }catch(error){
-      const statusCode=resolveExecRequestErrorStatus(error);
-      sendJson(res,statusCode,{ok:false,error:error&&error.message?error.message:String(error)});
+      sendJson(res,500,{ok:false,error:error&&error.message?error.message:String(error)});
     }
-    return;
-  }
-
-  if(req.method==="GET"&&pathname==="/api/intent/profile"){
-    sendJson(res,200,{ok:true,intentFirst:buildIntentFirstRuntimeSnapshot()});
     return;
   }
 
@@ -10894,12 +12771,11 @@ async function requestHandler(req,res){
         return;
       }
       const mode=normalizePocBatchMode(body.mode);
-      const cwd=resolveApiWorkingDirectory(body.cwd,workspaceRoot);
+      const cwd=normalizeWorkingDirectory(body.cwd,workspaceRoot);
       const result=await executePocBatchRun({prompt,mode,cwd,source:"manual"});
       sendJson(res,200,result);
     }catch(error){
-      const statusCode=resolveExecRequestErrorStatus(error);
-      sendJson(res,statusCode,{ok:false,error:error&&error.message?error.message:String(error)});
+      sendJson(res,500,{ok:false,error:error&&error.message?error.message:String(error)});
     }
     return;
   }
@@ -11159,7 +13035,7 @@ async function requestHandler(req,res){
         modelReasoningEffort:normalizeExecModelReasoningEffort(overrides.modelReasoningEffort,sourceRecord.request.modelReasoningEffort),
         forceNewSession:reproProfile?1:normalizeBooleanFlag(Object.prototype.hasOwnProperty.call(overrides,"forceNewSession")?overrides.forceNewSession:sourceRecord.request.forceNewSession),
         agentName:normalizeAgentName(overrides.agentName)||sourceRecord.request.agentName,
-        cwd:resolveApiWorkingDirectory(overrides.cwd,sourceRecord.request.cwd||workspaceRoot),
+        cwd:normalizeWorkingDirectory(overrides.cwd,sourceRecord.request.cwd||workspaceRoot),
         requestUserInputPolicy:reproProfile
           ?"blocked"
           :normalizeRequestUserInputPolicy(overrides.requestUserInputPolicy,sourceRecord.request.requestUserInputPolicy),
@@ -11630,96 +13506,6 @@ async function requestHandler(req,res){
     return;
   }
 
-  if(req.method==="POST"&&pathname==="/api/workspace/select"){
-    try{
-      const contentTypeValidation=validateJsonMutationContentType(req,{required:true,expectedMime:execApiRequiredContentType});
-      if(!contentTypeValidation.ok){
-        sendJson(res,contentTypeValidation.status,{ok:false,error:contentTypeValidation.error});
-        return;
-      }
-      const raw=await readRequestBody(req,defaultRequestBodyLimitBytes);
-      const body=raw?JSON.parse(raw):{};
-      const action=safeString(body&&body.action,80);
-      const validation=validateControlMutationRequest(req,{action,requireAction:true});
-      if(!validation.ok){
-        sendJson(res,validation.status,{ok:false,error:validation.error});
-        return;
-      }
-      const initialPath=safeString(body&&body.initialPath,2000)||workspaceGuardLockedRoot()||workspaceRoot;
-      const chosenPath=selectWorkspaceDirectoryDialog(initialPath);
-      logOperation("api.workspace_select",{
-        action,
-        initialPath:summarizePathForOperationLog(initialPath,220),
-        selected:chosenPath?summarizePathForOperationLog(chosenPath,220):"",
-        cancelled:chosenPath?0:1,
-      },"standard");
-      sendJson(res,200,{
-        ok:true,
-        cancelled:!chosenPath,
-        path:chosenPath||null,
-        workspaceGuard:buildWorkspaceGuardSnapshot(),
-      });
-    }catch(error){
-      sendJson(res,400,{ok:false,error:error&&error.message?error.message:String(error)});
-    }
-    return;
-  }
-
-  if(req.method==="POST"&&pathname==="/api/workspace/lock"){
-    try{
-      const contentTypeValidation=validateJsonMutationContentType(req,{required:true,expectedMime:execApiRequiredContentType});
-      if(!contentTypeValidation.ok){
-        sendJson(res,contentTypeValidation.status,{ok:false,error:contentTypeValidation.error});
-        return;
-      }
-      const raw=await readRequestBody(req,defaultRequestBodyLimitBytes);
-      const body=raw?JSON.parse(raw):{};
-      const action=safeString(body&&body.action,80);
-      const validation=validateControlMutationRequest(req,{action,requireAction:true});
-      if(!validation.ok){
-        sendJson(res,validation.status,{ok:false,error:validation.error});
-        return;
-      }
-      const snapshot=setWorkspaceGuardLock(body&&body.path?body.path:body&&body.cwd?body.cwd:workspaceRoot);
-      logOperation("api.workspace_lock",{
-        action,
-        lockedRoot:summarizePathForOperationLog(snapshot.lockedRoot,220),
-      },"standard");
-      sendJson(res,200,{ok:true,workspaceGuard:snapshot});
-    }catch(error){
-      sendJson(res,400,{ok:false,error:error&&error.message?error.message:String(error)});
-    }
-    return;
-  }
-
-  if(req.method==="POST"&&pathname==="/api/workspace/unlock"){
-    try{
-      const contentTypeValidation=validateJsonMutationContentType(req,{required:true,expectedMime:execApiRequiredContentType});
-      if(!contentTypeValidation.ok){
-        sendJson(res,contentTypeValidation.status,{ok:false,error:contentTypeValidation.error});
-        return;
-      }
-      const raw=await readRequestBody(req,defaultRequestBodyLimitBytes);
-      const body=raw?JSON.parse(raw):{};
-      const action=safeString(body&&body.action,80);
-      const validation=validateControlMutationRequest(req,{action,requireAction:true});
-      if(!validation.ok){
-        sendJson(res,validation.status,{ok:false,error:validation.error});
-        return;
-      }
-      const previousLockedRoot=workspaceGuardLockedRoot();
-      const snapshot=clearWorkspaceGuardLock();
-      logOperation("api.workspace_unlock",{
-        action,
-        previousLockedRoot:summarizePathForOperationLog(previousLockedRoot,220),
-      },"standard");
-      sendJson(res,200,{ok:true,workspaceGuard:snapshot});
-    }catch(error){
-      sendJson(res,400,{ok:false,error:error&&error.message?error.message:String(error)});
-    }
-    return;
-  }
-
   if(req.method==="POST"&&pathname==="/api/open-cmd"){
     try{
       if(!openCmdWindowEnabled){
@@ -11733,11 +13519,6 @@ async function requestHandler(req,res){
           action:"",
         },"standard");
         sendJson(res,403,{ok:false,error:"open-cmd is disabled by runtime policy"});
-        return;
-      }
-      const contentTypeValidation=validateJsonMutationContentType(req,{required:true,expectedMime:execApiRequiredContentType});
-      if(!contentTypeValidation.ok){
-        sendJson(res,contentTypeValidation.status,{ok:false,error:contentTypeValidation.error});
         return;
       }
       const raw=await readRequestBody(req,defaultRequestBodyLimitBytes);
@@ -11759,12 +13540,11 @@ async function requestHandler(req,res){
       }
       logOperation("api.open_cmd",{
         action,
-        cwd:summarizePathForOperationLog(body&&body.cwd?body.cwd:workspaceGuardLockedRoot()||workspaceRoot,220),
         origin:safeString(requestHeaderValue(req,"origin"),220),
         referer:safeString(requestHeaderValue(req,"referer"),220),
         host:safeString(requestHeaderValue(req,"host"),120),
       },"standard");
-      openCmdWindow(body&&body.cwd?body.cwd:workspaceGuardLockedRoot()||workspaceRoot);
+      openCmdWindow();
       sendJson(res,200,{ok:true});
     }catch(e){
       sendJson(res,400,{ok:false,error:e&&e.message?e.message:String(e)});
@@ -11822,79 +13602,6 @@ async function requestHandler(req,res){
     return;
   }
 
-  if(req.method==="POST"&&pathname==="/api/turn/interrupt"){
-    try{
-      const mutationValidation=validateControlMutationRequest(req,{action:"exec_interrupt",enforceActionAllowlist:false});
-      if(!mutationValidation.ok){
-        logOperation("api.turn_interrupt_blocked",{
-          reason:safeString(mutationValidation.error,180),
-          status:Number.isFinite(Number(mutationValidation.status))?Math.trunc(Number(mutationValidation.status)):403,
-          origin:safeString(requestHeaderValue(req,"origin"),220),
-          referer:safeString(requestHeaderValue(req,"referer"),220),
-          host:safeString(requestHeaderValue(req,"host"),120),
-          hasToken:requestHeaderValue(req,controlApiTokenHeaderName)?1:0,
-        },"standard");
-        sendJson(res,mutationValidation.status,{ok:false,error:mutationValidation.error});
-        return;
-      }
-      const contentTypeValidation=validateJsonMutationContentType(req,{required:true,expectedMime:execApiRequiredContentType});
-      if(!contentTypeValidation.ok){
-        logOperation("api.turn_interrupt_blocked",{
-          reason:safeString(contentTypeValidation.error,180),
-          status:Number.isFinite(Number(contentTypeValidation.status))?Math.trunc(Number(contentTypeValidation.status)):415,
-          origin:safeString(requestHeaderValue(req,"origin"),220),
-          referer:safeString(requestHeaderValue(req,"referer"),220),
-          host:safeString(requestHeaderValue(req,"host"),120),
-          contentType:safeString(requestHeaderValue(req,"content-type"),120),
-        },"standard");
-        sendJson(res,contentTypeValidation.status,{ok:false,error:contentTypeValidation.error});
-        return;
-      }
-      const raw=await readRequestBody(req,defaultRequestBodyLimitBytes);
-      const body=raw?JSON.parse(raw):{};
-      const interruptTarget=resolveTurnInterruptTarget(body);
-      if(!interruptTarget.ok){
-        logOperation("api.turn_interrupt_blocked",{
-          reason:safeString(interruptTarget.error,180),
-          code:safeString(interruptTarget.code,80),
-          status:Number.isFinite(Number(interruptTarget.status))?Math.trunc(Number(interruptTarget.status)):400,
-          agent:safeString(interruptTarget.agentName,80),
-        },"standard");
-        sendJson(res,interruptTarget.status||400,{
-          ok:false,
-          error:interruptTarget.error,
-          code:interruptTarget.code,
-          agentName:interruptTarget.agentName||undefined,
-          allowedAgents:Array.isArray(interruptTarget.allowedAgents)?interruptTarget.allowedAgents:undefined,
-        });
-        return;
-      }
-      await appServer.sendRequest("turn/interrupt",{threadId:interruptTarget.threadId,turnId:interruptTarget.turnId},15000);
-      logOperation("api.turn_interrupt",{
-        threadId:safeString(interruptTarget.threadId,120),
-        turnId:safeString(interruptTarget.turnId,120),
-        agent:safeString(interruptTarget.agentName,80),
-        source:safeString(interruptTarget.source,40)||"request",
-      },"standard");
-      sendJson(res,200,{
-        ok:true,
-        status:"interrupt_requested",
-        target:{
-          threadId:interruptTarget.threadId,
-          turnId:interruptTarget.turnId,
-          agentName:interruptTarget.agentName||null,
-          source:interruptTarget.source||"request",
-        },
-      });
-    }catch(error){
-      logOperation("api.turn_interrupt_failed",{
-        err:summarizeErrorForOperationLog(error,220),
-      },"standard");
-      sendJson(res,502,{ok:false,error:error&&error.message?error.message:String(error)});
-    }
-    return;
-  }
-
   if(req.method==="POST"&&pathname==="/api/exec"){
     let idempotencyKey="";
     try{
@@ -11932,11 +13639,13 @@ async function requestHandler(req,res){
       const sandboxMode=normalizeSandboxMode(body.sandboxMode);
       const approvalPolicy=normalizeApprovalPolicy(body.approvalPolicy);
       const webSearch=normalizeBooleanFlag(body.webSearch);
+      const fastModeEnabled=resolveFastModeEnabled(body.fastModeEnabled);
+      const automaticApprovalReviewEnabled=resolveAutomaticApprovalReviewEnabled(body.automaticApprovalReviewEnabled);
       const model=normalizeExecModel(body.model,defaultExecModelName);
       const modelReasoningEffort=normalizeExecModelReasoningEffort(body.modelReasoningEffort,defaultExecModelReasoningEffort);
       const forceNewSession=normalizeBooleanFlag(body.forceNewSession);
       const agentName=normalizeAgentName(body.agentName);
-      const cwd=resolveApiWorkingDirectory(body.cwd,workspaceRoot);
+      const cwd=normalizeWorkingDirectory(body.cwd,workspaceRoot);
       const images=normalizeChatImageAttachments(body.images,body.image);
       const requestUserInputPolicy=normalizeRequestUserInputPolicy(body.requestUserInputPolicy,nonInteractiveRequestUserInputPolicy);
       const requestExecutionProfile=normalizeExecutionProfile(body.executionProfile,runtimeExecutionProfile);
@@ -11944,37 +13653,17 @@ async function requestHandler(req,res){
       const requestExecutionSource=safeString(body.executionSource,80)||"api_exec";
       const reproProfileRequested=isReproExecutionProfile(requestExecutionProfile);
       const governanceOverride=extractGovernanceOverride(body);
-      const intentPreflight=evaluateIntentFirstPreflight({
-        prompt,
-        executionSource:requestExecutionSource,
-        workspaceGuard:buildWorkspaceGuardSnapshot(),
-      });
-      if(!intentPreflight.ok){
-        logOperation("api.exec_blocked",{
-          method:req.method,
-          path:pathname,
-          reason:"workspace_lock_required",
-          executionSource:requestExecutionSource,
-          designSensitive:intentPreflight.designSensitive?1:0,
-          prompt:summarizeTextForOperationLog(prompt,320),
-        },"standard");
-        sendJson(res,409,{
-          ok:false,
-          error:intentPreflight.error,
-          code:"workspace_lock_required",
-          intentFirst:{
-            designSensitive:intentPreflight.designSensitive?1:0,
-            requiredLock:intentPreflight.requiresLock?1:0,
-          },
-        });
-        return;
-      }
       const extensionApplied=applyRequirementGuardExecExtension({
         prompt,
         sandboxMode,
-        options:{approvalPolicy,webSearch,model,modelReasoningEffort,agentName,cwd,images,requestUserInputPolicy,governanceOverride,forceNewSession},
+        options:{approvalPolicy,webSearch,fastModeEnabled,automaticApprovalReviewEnabled,model,modelReasoningEffort,agentName,cwd,images,requestUserInputPolicy,governanceOverride,forceNewSession},
       });
-      let execPrompt=extensionApplied.prompt;
+      const execPrompt=extensionApplied.prompt;
+      const execPromptAudit=buildPromptAudit({
+        rawPrompt,
+        normalizedPrompt:execPrompt,
+        maxChars:defaultPromptCharLimit,
+      });
       const execSandboxMode=extensionApplied.sandboxMode;
       const execOptions=extensionApplied.options;
       const resolvedExecAgent=resolveAgentName(execOptions);
@@ -12010,27 +13699,12 @@ async function requestHandler(req,res){
       execOptions.requestUserInputPolicy=resolvedRequestUserInputPolicy;
       execOptions.model=resolvedExecModel;
       execOptions.modelReasoningEffort=resolvedExecModelReasoningEffort;
+      execOptions.promptAudit=execPromptAudit;
       execOptions.executionProfile=requestExecutionProfile;
       execOptions.executionIntent=requestExecutionIntent;
       execOptions.executionSource=requestExecutionSource;
       execOptions.reproProfile=reproProfileRequested?1:0;
       execOptions.governanceOverride=normalizeOverrideRequest(execOptions&&execOptions.governanceOverride?execOptions.governanceOverride:governanceOverride);
-      const intentEnvelope=applyIntentFirstExecEnvelope({
-        prompt:execPrompt,
-        executionSource:requestExecutionSource,
-      });
-      execPrompt=intentEnvelope.prompt;
-      execOptions.intentFirst={
-        applied:intentEnvelope.applied?1:0,
-        designSensitive:intentEnvelope.designSensitive?1:0,
-        source:safeString(intentEnvelope.source,80)||requestExecutionSource,
-      };
-      const execPromptAudit=buildPromptAudit({
-        rawPrompt,
-        normalizedPrompt:execPrompt,
-        maxChars:defaultPromptCharLimit,
-      });
-      execOptions.promptAudit=execPromptAudit;
       logOperation("api.exec",{
         method:req.method,
         path:pathname,
@@ -12038,6 +13712,8 @@ async function requestHandler(req,res){
         sandbox:safeString(execSandboxMode,40),
         approval:safeString(execOptions&&execOptions.approvalPolicy?execOptions.approvalPolicy:approvalPolicy,40),
         web:execOptions&&execOptions.webSearch?1:0,
+        fastModeEnabled:resolveFastModeEnabled(execOptions&&execOptions.fastModeEnabled,fastModeEnabled)?1:0,
+        automaticApprovalReviewEnabled:resolveAutomaticApprovalReviewEnabled(execOptions&&execOptions.automaticApprovalReviewEnabled,automaticApprovalReviewEnabled)?1:0,
         model:safeString(resolvedExecModel,120),
         modelReasoningEffort:resolvedExecModelReasoningEffort,
         cwd:summarizePathForOperationLog(execOptions&&execOptions.cwd?execOptions.cwd:cwd,220),
@@ -12053,8 +13729,6 @@ async function requestHandler(req,res){
         reproProfile:reproProfileRequested?1:0,
         executionIntent:requestExecutionIntent,
         executionSource:requestExecutionSource,
-        intentFirstApplied:execOptions.intentFirst&&execOptions.intentFirst.applied?1:0,
-        designSensitive:intentEnvelope.designSensitive?1:0,
         images:Array.isArray(execOptions&&execOptions.images)?execOptions.images.length:0,
         forceNewSession:execOptions&&execOptions.forceNewSession?1:0,
         idempotencyKey:safeString(idempotencyKey,120),
@@ -12099,6 +13773,8 @@ async function requestHandler(req,res){
           sandboxMode:execSandboxMode,
           approvalPolicy:execOptions&&execOptions.approvalPolicy?execOptions.approvalPolicy:approvalPolicy,
           webSearch:Boolean(execOptions&&execOptions.webSearch),
+          fastModeEnabled:resolveFastModeEnabled(execOptions&&execOptions.fastModeEnabled,fastModeEnabled),
+          automaticApprovalReviewEnabled:resolveAutomaticApprovalReviewEnabled(execOptions&&execOptions.automaticApprovalReviewEnabled,automaticApprovalReviewEnabled),
           model:resolvedExecModel,
           modelReasoningEffort:resolvedExecModelReasoningEffort,
           agentName:resolvedExecAgent,
@@ -12250,6 +13926,20 @@ function listenOn(port){return new Promise((resolve,reject)=>{const onError=erro
 
 async function main(){const preferredPort=Number.isInteger(forcedUiPort)&&forcedUiPort>0?forcedUiPort:57525;webServer=http.createServer((req,res)=>{requestHandler(req,res).catch(error=>{console.error("[server] unhandled request error:",error);sendJson(res,500,{error:"server error"});});});
   loadHarnessExecutionMemoryStore();
+  if(refreshCurrentLogsOnly){
+    updateCurrentLogSurface({trigger:refreshCurrentLogsTrigger});
+    process.stdout.write(`${JSON.stringify({
+      ok:true,
+      mode:"refresh-current-logs-only",
+      trigger:refreshCurrentLogsTrigger,
+      currentRoot:repoRelativePath(workspaceRoot,loggingSurfacePaths.currentRoot),
+      latestRunSummaryPath:repoRelativePath(workspaceRoot,loggingSurfacePaths.currentLatestRunSummaryPath),
+      designConformanceSummaryPath:repoRelativePath(workspaceRoot,loggingSurfacePaths.currentDesignConformancePath),
+      latestSignoffSummaryPath:repoRelativePath(workspaceRoot,loggingSurfacePaths.currentLatestSignoffSummaryPath),
+    },null,2)}\n`);
+    process.exit(0);
+    return;
+  }
   try{webPort=await listenOn(preferredPort);}catch(error){if(error.code==="EADDRINUSE"){const existingIsOurs=await probeExistingServer(preferredPort);const fixedUrl=buildAutoOpenUrl(preferredPort);if(existingIsOurs){if(autoOpenBrowser)openBrowser(fixedUrl);process.exit(0);return;}throw new Error(`Fixed UI port ${preferredPort} is already in use by another app.`);}throw error;}
   const url=buildAutoOpenUrl(webPort);if(autoOpenBrowser)openBrowser(url);
   const startupTurnArtifactPrune=maybePruneTurnArtifactsStorage("server_start",{force:true});
@@ -12311,6 +14001,7 @@ async function main(){const preferredPort=Number.isInteger(forcedUiPort)&&forced
       path:summarizePathForOperationLog(harnessTurnContractSpecPath,220),
     },
   });
+  updateCurrentLogSurface({trigger:"server_started"});
 }
 
 async function startHarnessServer(){
@@ -12333,6 +14024,20 @@ if(require.main===module){
 module.exports={
   startHarnessServer,
   stopHarnessServer,
+  refreshCurrentLogSurface:(trigger="manual")=>{
+    loadHarnessExecutionMemoryStore();
+    updateCurrentLogSurface({trigger:safeString(trigger,80)||"manual"});
+    return{
+      currentRoot:loggingSurfacePaths.currentRoot,
+      operatorSummaryPath:loggingSurfacePaths.currentOperatorSummaryPath,
+      runtimeSnapshotPath:loggingSurfacePaths.currentRuntimeSnapshotPath,
+      designConformancePath:loggingSurfacePaths.currentDesignConformancePath,
+      latestRunSummaryPath:loggingSurfacePaths.currentLatestRunSummaryPath,
+      reviewLoadBreakdownPath:loggingSurfacePaths.currentReviewLoadBreakdownPath,
+      latestSignoffSummaryPath:loggingSurfacePaths.currentLatestSignoffSummaryPath,
+      indexPath:loggingSurfacePaths.currentIndexPath,
+    };
+  },
   getHarnessServerState:()=>({
     port:webPort,
     listening:Boolean(webServer&&webServer.listening),
@@ -12358,7 +14063,20 @@ module.exports={
     getEnglishConversationAppStaticSource,
     buildStaticRequestTarget,
   },
+  __codexModes:{
+    automaticApprovalReviewFeatureName,
+    buildForkedAgentState,
+    createBaseAgentState,
+    buildThreadStartConfig,
+    defaultCodexServiceTier,
+    defaultExperimentalFeatures,
+    fastModeFeatureName,
+    normalizeCodexServiceTier,
+  },
 };
+
+
+
 
 
 
