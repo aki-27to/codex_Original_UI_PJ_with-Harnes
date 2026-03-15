@@ -9,6 +9,7 @@ const {
   loadDesignAcceptanceContract,
   loadUserTasteMemoryStore,
   normalizeUserTasteMemoryStore,
+  requiresWorkspaceLockForSource,
   summarizeIntentFirstRuntime,
 } = require("./lib/intent_first_policy");
 
@@ -104,6 +105,12 @@ function testRuntimeSummary() {
   assert(summary && summary.tasteMemory && summary.tasteMemory.activeProfile, "runtime summary active profile missing");
 }
 
+function testWorkspaceLockSourceCheck() {
+  const contract = loadDesignAcceptanceContract();
+  assert(requiresWorkspaceLockForSource({ contract, executionSource: "web_ui" }) === true, "web_ui should require workspace lock");
+  assert(requiresWorkspaceLockForSource({ contract, executionSource: "api_exec" }) === false, "api_exec should not require workspace lock");
+}
+
 function run() {
   const tests = [
     ["load defaults", testLoadDefaults],
@@ -111,6 +118,7 @@ function run() {
     ["prompt envelope", testPromptEnvelope],
     ["gate evaluation", testGateEvaluation],
     ["documentation sync gate", testGateRequiresDocumentationSync],
+    ["workspace lock source check", testWorkspaceLockSourceCheck],
     ["runtime summary", testRuntimeSummary],
   ];
   let passed = 0;

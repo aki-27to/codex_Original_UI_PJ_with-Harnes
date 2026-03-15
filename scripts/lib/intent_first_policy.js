@@ -342,6 +342,18 @@ function isDesignSensitiveRequest({ prompt = "", changedPaths = [], contract } =
   return Boolean(promptMatch || pathMatch);
 }
 
+function requiresWorkspaceLockForSource({ contract, executionSource = "" } = {}) {
+  const normalizedContract = normalizeDesignAcceptanceContract(contract || defaultDesignAcceptanceContract);
+  const source = compactText(executionSource, 80).toLowerCase();
+  if (!source) {
+    return false;
+  }
+  const requiredSources = Array.isArray(normalizedContract.workspaceLock.requiredForSources)
+    ? normalizedContract.workspaceLock.requiredForSources.map((entry) => compactText(entry, 80).toLowerCase()).filter(Boolean)
+    : [];
+  return requiredSources.includes(source);
+}
+
 function buildIntentFirstPrompt({ prompt = "", contract, activeProfile } = {}) {
   const normalizedPrompt = compactText(prompt, 24000);
   const normalizedContract = normalizeDesignAcceptanceContract(contract || defaultDesignAcceptanceContract);
@@ -526,5 +538,6 @@ module.exports = {
   loadUserTasteMemoryStore,
   normalizeUserTasteMemoryStore,
   persistUserTasteMemoryStore,
+  requiresWorkspaceLockForSource,
   summarizeIntentFirstRuntime,
 };
