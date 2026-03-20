@@ -64,13 +64,29 @@
         </section>
 
         <section class="side-card settings-card">
+          <div class="settings-head">
+            <h3>実行設定</h3>
+            <p>普段は最新 Codex に合わせた上位モードを使い、必要なときだけ config-level の詳細設定へ降ります。</p>
+          </div>
           <div class="settings-grid">
+            <article class="settings-mode-card">
+              <span class="settings-mode-eyebrow">現在の権限モード</span>
+              <strong id="executionProfileHeadline" class="settings-mode-title">Guardian Approvals</strong>
+              <p id="executionProfileDescription" class="settings-mode-detail">Workspace 書き込みを維持しつつ、eligible な承認要求を guardian reviewer に回します。</p>
+              <div class="settings-chip-row" aria-live="polite">
+                <span id="executionProfileApprovalChip" class="settings-chip">approval_policy</span>
+                <span id="executionProfileSandboxChip" class="settings-chip">sandbox_mode</span>
+                <span id="executionProfileSearchChip" class="settings-chip">web_search</span>
+                <span id="executionProfileGuardianChip" class="settings-chip">guardian</span>
+              </div>
+            </article>
             <label>
-              権限プリセット
+              権限モード
               <select id="executionProfile">
-                <option value="auto">Auto (default)</option>
-                <option value="read-only">Read-only</option>
-                <option value="full-access">Full Access</option>
+                <option value="auto">Agent (Auto)</option>
+                <option value="read-only">Chat (Read Only)</option>
+                <option value="guardian">Guardian Approvals</option>
+                <option value="full-access">Agent (Full Access)</option>
                 <option value="custom">Custom (config.toml)</option>
               </select>
             </label>
@@ -93,28 +109,16 @@
               </select>
             </label>
             <label>
-              承認ポリシー
-              <select id="approvalPolicy">
-                <option value="on-request">on-request</option>
-                <option value="untrusted">untrusted</option>
-                <option value="never">never</option>
+              Web検索
+              <select id="webSearchMode">
+                <option value="cached">Cached</option>
+                <option value="live">Live</option>
+                <option value="disabled">Disabled</option>
               </select>
             </label>
             <label class="settings-toggle">
               <span>Fast mode</span>
               <input id="fastModeEnabled" type="checkbox">
-            </label>
-            <label class="settings-toggle">
-              <span>Automatic approval review</span>
-              <input id="automaticApprovalReviewEnabled" type="checkbox" checked>
-            </label>
-            <label>
-              サンドボックスモード
-              <select id="sandboxMode">
-                <option value="workspace-write">workspace-write</option>
-                <option value="read-only">read-only</option>
-                <option value="danger-full-access">danger-full-access</option>
-              </select>
             </label>
             <label class="search-toggle">
               補助パネル
@@ -123,7 +127,32 @@
                 <span>補助情報も表示する</span>
               </span>
             </label>
-            <input id="webSearch" type="checkbox" hidden>
+            <details id="permissionsAdvanced" class="settings-advanced" data-advanced="true">
+              <summary>詳細設定 (config-level)</summary>
+              <div class="settings-grid settings-grid-advanced">
+                <label>
+                  approval_policy
+                  <select id="approvalPolicy">
+                    <option value="on-request">on-request</option>
+                    <option value="untrusted">untrusted</option>
+                    <option value="never">never</option>
+                  </select>
+                </label>
+                <label class="settings-toggle">
+                  <span>Guardian approvals</span>
+                  <input id="automaticApprovalReviewEnabled" type="checkbox" checked>
+                </label>
+                <label>
+                  sandbox_mode
+                  <select id="sandboxMode">
+                    <option value="workspace-write">workspace-write</option>
+                    <option value="read-only">read-only</option>
+                    <option value="danger-full-access">danger-full-access</option>
+                  </select>
+                </label>
+              </div>
+              <p id="permissionsAdvancedHint" class="settings-advanced-hint">Custom を選ぶと、この欄の設定がそのまま request payload に反映されます。</p>
+            </details>
             <label class="workspace">
               ワークスペース
               <input id="workspacePath" type="text" placeholder="C:\path\to\workdir">
@@ -276,6 +305,23 @@
           <div id="agentFlowLane" class="agent-flow-lane">
             <article class="agent-flow-empty">まだエージェント状態はありません。</article>
           </div>
+          <section id="agentTopographyPanel" class="agent-topography-panel" aria-live="polite">
+            <div class="agent-topography-head">
+              <div>
+                <h4>担当エージェント</h4>
+                <p class="agent-topography-copy"><code>/api/agent-topography</code> とこのチャットの trace を重ねて、今どの役割が動いているかを表示します。</p>
+              </div>
+              <button id="agentTopographyRefreshBtn" class="btn mini secondary" type="button">更新</button>
+            </div>
+            <p id="agentTopographyMeta" class="agent-topography-meta">読み込み中...</p>
+            <div id="agentTopographyList" class="agent-topography-list">
+              <div class="agent-topography-empty">エージェント情報を読み込み中...</div>
+            </div>
+          </section>
+          <div class="agent-trace-subhead">
+            <h4>イベント履歴</h4>
+            <p>このチャットの直近 32 件を表示します。</p>
+          </div>
           <ol id="agentTraceList" class="agent-trace-list">
             <li class="agent-trace-empty">まだトレースイベントはありません。</li>
           </ol>
@@ -358,20 +404,6 @@
       </div>
     </article>
   </template>
-
-  <section id="agentTopographyPanel" class="agent-topography-monitor" aria-live="polite">
-    <div class="agent-topography-head">
-      <h2>AIエージェントかんばん</h2>
-      <div class="agent-topography-actions">
-        <button id="agentTopographyRefreshBtn" class="btn mini secondary" type="button">更新</button>
-        <button id="agentTopographyToggleBtn" class="btn mini secondary" type="button" aria-expanded="true" aria-controls="agentTopographyList">閉じる</button>
-      </div>
-    </div>
-    <p id="agentTopographyMeta" class="agent-topography-meta">読み込み中...</p>
-    <div id="agentTopographyList" class="agent-topography-list">
-      <div class="agent-topography-empty">エージェント情報を読み込み中...</div>
-    </div>
-  </section>
 
   <script src="./app.js"></script>
 </body>

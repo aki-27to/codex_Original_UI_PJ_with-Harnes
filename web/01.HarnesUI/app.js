@@ -1,24 +1,31 @@
 ﻿const PROFILES=Object.freeze({
-  auto:{approvalPolicy:"on-request",sandboxMode:"workspace-write",webSearch:true},
-  "read-only":{approvalPolicy:"on-request",sandboxMode:"read-only",webSearch:true},
-  "full-access":{approvalPolicy:"never",sandboxMode:"danger-full-access",webSearch:true},
+  auto:{approvalPolicy:"on-request",sandboxMode:"workspace-write",webSearchMode:"cached",automaticApprovalReviewEnabled:false},
+  "read-only":{approvalPolicy:"on-request",sandboxMode:"read-only",webSearchMode:"cached",automaticApprovalReviewEnabled:false},
+  guardian:{approvalPolicy:"on-request",sandboxMode:"workspace-write",webSearchMode:"cached",automaticApprovalReviewEnabled:true},
+  "full-access":{approvalPolicy:"never",sandboxMode:"danger-full-access",webSearchMode:"live",automaticApprovalReviewEnabled:false},
 });
-const DEFAULT_PROFILE_ID="auto";
+const DEFAULT_PROFILE_ID="guardian";
 const PROFILE_IDS=new Set(Object.keys(PROFILES));
 const PROFILE_LABELS=Object.freeze({
-  auto:"Auto (default)",
-  "read-only":"Read-only",
-  "full-access":"Full Access",
+  auto:"Agent (Auto)",
+  "read-only":"Chat (Read Only)",
+  guardian:"Guardian Approvals",
+  "full-access":"Agent (Full Access)",
   custom:"Custom (config.toml)",
 });
 const LEGACY_PROFILE_ALIASES=Object.freeze({
   safe:"read-only",
   balanced:"auto",
   "full-auto":"auto",
+  agent:"auto",
+  chat:"read-only",
+  guardian:"guardian",
+  "guardian-approvals":"guardian",
   power:"full-access",
 });
 const ALLOWED_APPROVAL_POLICIES=new Set(["untrusted","on-request","never"]);
 const ALLOWED_SANDBOX_MODES=new Set(["read-only","workspace-write","danger-full-access"]);
+const ALLOWED_WEB_SEARCH_MODES=new Set(["disabled","cached","live"]);
 const COMMANDS=[];
 const DEFAULT_AGENT_NAME="default";
 const DEFAULT_EXEC_MODEL="gpt-5.4";
@@ -26,7 +33,8 @@ const DEFAULT_EXEC_MODEL_REASONING_EFFORT="xhigh";
 const EXEC_MODEL_PRESET_OPTIONS=["gpt-5.4","gpt-5.4-mini","gpt-5.3-codex"];
 const EXEC_MODEL_REASONING_EFFORTS=["minimal","low","medium","high","xhigh"];
 const LEGACY_EXEC_MODEL_ALIASES=Object.freeze({"codex-5.3":"gpt-5.3-codex"});
-const SETTINGS_KEY="codex-console-settings-v2";
+const SETTINGS_KEY="codex-console-settings-v3";
+const SETTINGS_KEY_LEGACY="codex-console-settings-v2";
 const CHAT_STATE_KEY="codex-console-chat-v1";
 const CHAT_STATE_VERSION=1;
 const CHAT_MESSAGE_LIMIT=240;
@@ -40,10 +48,17 @@ const EXEC_SUBMIT_RETRY_DELAYS_MS=Object.freeze([1200,2400]);
 const RUNTIME_PENDING_SYNC_MS=5000;
 const s={runtime:null,diag:null,diagErr:null,chats:[],active:null,nextChat:1,nextMsg:1,req:new Map(),trace:[],last:null,ticker:null,perf:createPerformanceState()};
 const chatStateSave={timer:null};
-const settingsState={hasStoredModel:false,hasStoredModelReasoningEffort:false,hasStoredFastMode:false,hasStoredAutomaticApprovalReview:false};
+const settingsState={
+  hasStoredModel:false,
+  hasStoredModelReasoningEffort:false,
+  hasStoredFastMode:false,
+  hasStoredAutomaticApprovalReview:false,
+  hasStoredExecutionProfile:false,
+  hasStoredWebSearchMode:false,
+  hasStoredPermissionDetail:false,
+};
 const harnessCheckState={mode:HARNESS_CHECK_DEFAULT_MODE};
 const TOPOGRAPHY_REFRESH_MS=10000;
-const TOPOGRAPHY_COLLAPSED_KEY="codex-agent-topography-collapsed-v1";
 const HIDDEN_AGENT_NAMES=new Set(["main"]);
 const PARENT_AGENT_NAMES=new Set(["default","intake","release_manager"]);
 const VERIFICATION_AGENT_NAMES=new Set(["explorer","reviewer","tester"]);
@@ -59,11 +74,10 @@ const TASK_FAMILY_LABELS=Object.freeze({
   research:"調査",
   planning:"設計・整理",
 });
-const topographyState={agents:[],source:"",error:"",usingFallback:false,lastUpdated:0,loading:false,timer:null,refreshSoonTimer:null,reqId:0,collapsed:false};
-const e={connectionState:by("connectionState"),modeState:by("modeState"),agentState:by("agentState"),pendingState:by("pendingState"),simpleViewToggle:by("simpleViewToggle"),runtimeAgent:by("runtimeAgent"),runtimeSession:by("runtimeSession"),runtimeExperimental:by("runtimeExperimental"),runtimeAgentCount:by("runtimeAgentCount"),workspacePath:by("workspacePath"),modelName:by("modelName"),modelReasoningEffort:by("modelReasoningEffort"),approvalPolicy:by("approvalPolicy"),fastModeEnabled:by("fastModeEnabled"),automaticApprovalReviewEnabled:by("automaticApprovalReviewEnabled"),sandboxMode:by("sandboxMode"),executionProfile:by("executionProfile"),uiVisibility:by("uiVisibility"),webSearch:by("webSearch"),commandFilter:by("commandFilter"),commandGrid:by("commandGrid"),commandTemplate:by("commandTemplate"),messageTemplate:by("messageTemplate"),chatList:by("chatList"),newChatBtn:by("newChatBtn"),deleteChatBtn:by("deleteChatBtn"),timeline:by("timeline"),promptInput:by("promptInput"),imageInput:by("imageInput"),imageAttachBtn:by("imageAttachBtn"),imageError:by("imageError"),imagePreview:by("imagePreview"),imagePreviewThumb:by("imagePreviewThumb"),imagePreviewName:by("imagePreviewName"),imagePreviewMeta:by("imagePreviewMeta"),imageRemoveBtn:by("imageRemoveBtn"),sendBtn:by("sendBtn"),stopBtn:by("stopBtn"),reconnectBtn:by("reconnectBtn"),refreshDiagBtn:by("refreshDiagBtn"),newThreadBtn:by("newThreadBtn"),openCmdBtn:by("openCmdBtn"),liveStatus:by("liveStatus"),liveStatusLabel:by("liveStatusLabel"),liveStatusElapsed:by("liveStatusElapsed"),liveStatusDetail:by("liveStatusDetail"),performancePanel:by("performancePanel"),perfSessionRef:by("perfSessionRef"),perfUpdatedAt:by("perfUpdatedAt"),perfTokenValue:by("perfTokenValue"),perfTokenDetail:by("perfTokenDetail"),perfTokenSpark:by("perfTokenSpark"),perfTimeValue:by("perfTimeValue"),perfTimeDetail:by("perfTimeDetail"),perfTimeSpark:by("perfTimeSpark"),agentInspector:by("agentInspector"),agentFlowLane:by("agentFlowLane"),agentTraceList:by("agentTraceList"),clearAgentTraceBtn:by("clearAgentTraceBtn"),agentTopographyPanel:by("agentTopographyPanel"),agentTopographyMeta:by("agentTopographyMeta"),agentTopographyList:by("agentTopographyList"),agentTopographyRefreshBtn:by("agentTopographyRefreshBtn"),diagCodexState:by("diagCodexState"),diagCodexDetail:by("diagCodexDetail"),diagNodeState:by("diagNodeState"),diagNodeDetail:by("diagNodeDetail"),diagSearchState:by("diagSearchState"),diagSearchDetail:by("diagSearchDetail"),diagSummaryText:by("diagSummaryText"),diagDetails:by("diagDetails"),diagDetailsSummary:by("diagDetailsSummary"),harnessStatus:by("harnessStatus"),harnessThreadId:by("harnessThreadId"),harnessTurnId:by("harnessTurnId"),harnessUpdatedAt:by("harnessUpdatedAt"),harnessItemList:by("harnessItemList"),harnessPlanMeta:by("harnessPlanMeta"),harnessPlanCurrentCard:by("harnessPlanCurrentCard"),harnessPlanCurrentStep:by("harnessPlanCurrentStep"),harnessPlanCurrentDetail:by("harnessPlanCurrentDetail"),harnessPlanExplanation:by("harnessPlanExplanation"),harnessPlanList:by("harnessPlanList"),harnessTokenUsage:by("harnessTokenUsage"),harnessDiffPreview:by("harnessDiffPreview"),harnessPhaseList:by("harnessPhaseList"),harnessEvidenceTasks:by("harnessEvidenceTasks"),harnessEvidenceTests:by("harnessEvidenceTests"),harnessEvidenceReviews:by("harnessEvidenceReviews"),harnessEvidenceLogs:by("harnessEvidenceLogs")};
+const topographyState={agents:[],source:"",error:"",usingFallback:false,lastUpdated:0,loading:false,timer:null,refreshSoonTimer:null,reqId:0};
+const e={connectionState:by("connectionState"),modeState:by("modeState"),agentState:by("agentState"),pendingState:by("pendingState"),simpleViewToggle:by("simpleViewToggle"),runtimeAgent:by("runtimeAgent"),runtimeSession:by("runtimeSession"),runtimeExperimental:by("runtimeExperimental"),runtimeAgentCount:by("runtimeAgentCount"),workspacePath:by("workspacePath"),modelName:by("modelName"),modelReasoningEffort:by("modelReasoningEffort"),executionProfileHeadline:by("executionProfileHeadline"),executionProfileDescription:by("executionProfileDescription"),executionProfileApprovalChip:by("executionProfileApprovalChip"),executionProfileSandboxChip:by("executionProfileSandboxChip"),executionProfileSearchChip:by("executionProfileSearchChip"),executionProfileGuardianChip:by("executionProfileGuardianChip"),approvalPolicy:by("approvalPolicy"),fastModeEnabled:by("fastModeEnabled"),automaticApprovalReviewEnabled:by("automaticApprovalReviewEnabled"),sandboxMode:by("sandboxMode"),executionProfile:by("executionProfile"),permissionsAdvanced:by("permissionsAdvanced"),permissionsAdvancedHint:by("permissionsAdvancedHint"),uiVisibility:by("uiVisibility"),webSearchMode:by("webSearchMode"),commandFilter:by("commandFilter"),commandGrid:by("commandGrid"),commandTemplate:by("commandTemplate"),messageTemplate:by("messageTemplate"),chatList:by("chatList"),newChatBtn:by("newChatBtn"),deleteChatBtn:by("deleteChatBtn"),timeline:by("timeline"),promptInput:by("promptInput"),imageInput:by("imageInput"),imageAttachBtn:by("imageAttachBtn"),imageError:by("imageError"),imagePreview:by("imagePreview"),imagePreviewThumb:by("imagePreviewThumb"),imagePreviewName:by("imagePreviewName"),imagePreviewMeta:by("imagePreviewMeta"),imageRemoveBtn:by("imageRemoveBtn"),sendBtn:by("sendBtn"),stopBtn:by("stopBtn"),reconnectBtn:by("reconnectBtn"),refreshDiagBtn:by("refreshDiagBtn"),newThreadBtn:by("newThreadBtn"),openCmdBtn:by("openCmdBtn"),liveStatus:by("liveStatus"),liveStatusLabel:by("liveStatusLabel"),liveStatusElapsed:by("liveStatusElapsed"),liveStatusDetail:by("liveStatusDetail"),performancePanel:by("performancePanel"),perfSessionRef:by("perfSessionRef"),perfUpdatedAt:by("perfUpdatedAt"),perfTokenValue:by("perfTokenValue"),perfTokenDetail:by("perfTokenDetail"),perfTokenSpark:by("perfTokenSpark"),perfTimeValue:by("perfTimeValue"),perfTimeDetail:by("perfTimeDetail"),perfTimeSpark:by("perfTimeSpark"),agentInspector:by("agentInspector"),agentFlowLane:by("agentFlowLane"),agentTraceList:by("agentTraceList"),clearAgentTraceBtn:by("clearAgentTraceBtn"),agentTopographyPanel:by("agentTopographyPanel"),agentTopographyMeta:by("agentTopographyMeta"),agentTopographyList:by("agentTopographyList"),agentTopographyRefreshBtn:by("agentTopographyRefreshBtn"),diagCodexState:by("diagCodexState"),diagCodexDetail:by("diagCodexDetail"),diagNodeState:by("diagNodeState"),diagNodeDetail:by("diagNodeDetail"),diagSearchState:by("diagSearchState"),diagSearchDetail:by("diagSearchDetail"),diagSummaryText:by("diagSummaryText"),diagDetails:by("diagDetails"),diagDetailsSummary:by("diagDetailsSummary"),harnessStatus:by("harnessStatus"),harnessThreadId:by("harnessThreadId"),harnessTurnId:by("harnessTurnId"),harnessUpdatedAt:by("harnessUpdatedAt"),harnessItemList:by("harnessItemList"),harnessPlanMeta:by("harnessPlanMeta"),harnessPlanCurrentCard:by("harnessPlanCurrentCard"),harnessPlanCurrentStep:by("harnessPlanCurrentStep"),harnessPlanCurrentDetail:by("harnessPlanCurrentDetail"),harnessPlanExplanation:by("harnessPlanExplanation"),harnessPlanList:by("harnessPlanList"),harnessTokenUsage:by("harnessTokenUsage"),harnessDiffPreview:by("harnessDiffPreview"),harnessPhaseList:by("harnessPhaseList"),harnessEvidenceTasks:by("harnessEvidenceTasks"),harnessEvidenceTests:by("harnessEvidenceTests"),harnessEvidenceReviews:by("harnessEvidenceReviews"),harnessEvidenceLogs:by("harnessEvidenceLogs")};
 e.harnessCheckMode=by("harnessCheckMode");
 e.harnessCheckModeHint=by("harnessCheckModeHint");
-e.agentTopographyToggleBtn=by("agentTopographyToggleBtn");
 const automationUi={
   panel:by("automationPanel"),
   status:by("automationStatusLine"),
@@ -916,10 +930,89 @@ function summarizeInlineListForUi(items,{maxItems=3,emptyLabel=""}={}){
   const remainder=list.length-visible.length;
   return`${visible.join(" / ")}${remainder>0?` / 他 ${remainder} 件`:""}`;
 }
+function requirementStatusLabelForUi(value){
+  const normalized=typeof value==="string"?value.trim().toUpperCase():"";
+  if(normalized==="LOCKED")return"確定";
+  if(normalized==="BLOCKED")return"保留";
+  if(normalized==="REVISED")return"改訂";
+  return"下書き";
+}
+function requirementValidationLabelForUi(value){
+  const normalized=typeof value==="string"?value.trim().toUpperCase():"";
+  if(normalized==="PASS")return"PASS";
+  if(normalized==="BLOCK")return"BLOCK";
+  return"WARN";
+}
+const REQUIREMENT_FIELD_LABELS_FOR_UI=Object.freeze({
+  explicitGoal:"明示ゴール",
+  implicitGoal:"暗黙ゴール",
+  baselineScope:"基本スコープ",
+  nonGoals:"非対象",
+  approvalBoundaryItems:"承認境界",
+  acceptanceChecks:"受け入れ条件",
+  "userValueFrame.valueThesis":"価値の中心",
+  "userValueFrame.userWants":"欲しい結果",
+  "userValueFrame.mustAvoid":"避けること",
+  "userValueFrame.hardConstraints":"厳守条件",
+  "userValueFrame.qualityAxes":"品質軸",
+  "userValueFrame.benchmarkCandidates":"参考比較",
+  "userValueFrame.completedMeans":"完了像",
+  "intentInterpretation.presentation":"見せ方",
+  "intentInterpretation.direction":"向かう先",
+  "intentInterpretation.hypothesis":"意図仮説",
+});
+function requirementFieldLabelForUi(value){
+  const key=typeof value==="string"?value.trim():"";
+  return REQUIREMENT_FIELD_LABELS_FOR_UI[key]||key;
+}
+function collectRequirementProvenanceCountsForUi(value,counts={user_explicit:0,user_implied:0,system_inferred:0,policy_default:0}){
+  if(!value||typeof value!=="object")return counts;
+  if(typeof value.source==="string"&&Object.prototype.hasOwnProperty.call(counts,value.source)){
+    counts[value.source]+=1;
+  }
+  Object.keys(value).forEach((key)=>{
+    const entry=value[key];
+    if(Array.isArray(entry)){
+      entry.forEach((item)=>{
+        if(item&&typeof item==="object"&&typeof item.source==="string"&&Object.prototype.hasOwnProperty.call(counts,item.source)){
+          counts[item.source]+=1;
+        }
+      });
+      return;
+    }
+    if(entry&&typeof entry==="object"&&typeof entry.source!=="string"){
+      collectRequirementProvenanceCountsForUi(entry,counts);
+    }
+  });
+  return counts;
+}
+function summarizeRequirementProvenanceForUi(value){
+  const counts=collectRequirementProvenanceCountsForUi(value);
+  const parts=[
+    counts.user_explicit?`明示 ${counts.user_explicit}`:"",
+    counts.user_implied?`含意 ${counts.user_implied}`:"",
+    counts.system_inferred?`推定 ${counts.system_inferred}`:"",
+    counts.policy_default?`既定 ${counts.policy_default}`:"",
+  ].filter(Boolean);
+  return{counts,parts};
+}
 function buildRequirementLockSnapshotForUi(turn){
   const requirement=requirementContractForUi(turn);
   const userValueFrame=requirement.userValueFrame&&typeof requirement.userValueFrame==="object"?requirement.userValueFrame:{};
   const intentInterpretation=requirement.intentInterpretation&&typeof requirement.intentInterpretation==="object"?requirement.intentInterpretation:{};
+  const provenance=requirement.provenance&&typeof requirement.provenance==="object"?requirement.provenance:{};
+  const validation=requirement.validation&&typeof requirement.validation==="object"?requirement.validation:{};
+  const revisionLedger=requirement.revisionLedger&&typeof requirement.revisionLedger==="object"?requirement.revisionLedger:{};
+  const contractStatus=typeof requirement.status==="string"?requirement.status.trim().toUpperCase():"";
+  const contractStatusReason=typeof requirement.statusReason==="string"?requirementTextLabelForUi(t1(requirement.statusReason,220).trim()):"";
+  const validationVerdict=typeof validation.verdict==="string"?validation.verdict.trim().toUpperCase():"";
+  const validationSummary=validation.summary&&typeof validation.summary==="object"?validation.summary:{};
+  const validationChecks=toArr(validation.checks).filter((entry)=>entry&&typeof entry==="object");
+  const validationBlocks=validationChecks.filter((entry)=>String(entry.status||"").toUpperCase()==="BLOCK");
+  const validationWarnings=validationChecks.filter((entry)=>String(entry.status||"").toUpperCase()==="WARN");
+  const revisionSummary=typeof revisionLedger.summary==="string"?t1(revisionLedger.summary,220).trim():"";
+  const revisionChangedFields=compactTextListForUi(revisionLedger.changedFields,{transform:requirementFieldLabelForUi,maxItems:6,maxChars:80});
+  const provenanceSummary=summarizeRequirementProvenanceForUi(provenance);
   const acceptanceChecks=acceptanceCheckLabelsForUi(requirement.acceptanceChecks).map(requirementTextLabelForUi);
   const baselineScope=compactTextListForUi(requirement.baselineScope,{transform:requirementTextLabelForUi});
   const overDeliveryScope=compactTextListForUi(requirement.overDeliveryScope,{transform:requirementTextLabelForUi});
@@ -1009,18 +1102,70 @@ function buildRequirementLockSnapshotForUi(turn){
     mustAvoid,
     qualityAxes,
     completedMeans,
+    contractStatus,
+    contractStatusLabel:requirementStatusLabelForUi(contractStatus),
+    contractStatusReason,
+    validationVerdict,
+    validationVerdictLabel:requirementValidationLabelForUi(validationVerdict),
+    validationSummary:{
+      passCount:Number(validationSummary.passCount||0),
+      warnCount:Number(validationSummary.warnCount||0),
+      blockCount:Number(validationSummary.blockCount||0),
+      total:Number(validationSummary.total||validationChecks.length||0),
+    },
+    validationHighlights:compactTextListForUi(
+      validationBlocks.length?validationBlocks.map((entry)=>entry.detail):validationWarnings.map((entry)=>entry.detail),
+      {maxItems:3,maxChars:180,transform:requirementTextLabelForUi}
+    ),
+    revision:{
+      revisionNumber:Number(revisionLedger.revisionNumber||1),
+      revised:Boolean(revisionLedger.revised),
+      revisionKind:typeof revisionLedger.revisionKind==="string"?revisionLedger.revisionKind.trim():"",
+      requiresReapproval:Boolean(revisionLedger.requiresReapproval),
+      summary:revisionSummary,
+      changedFields:revisionChangedFields,
+    },
+    provenanceSummary,
     lockedCount,
     headline:(goalLooksQuestionLike&&hasInterpretedQuestionView?intentDirection:"")||explicitGoal||implicitGoal||valueThesis||"",
     metaParts:[
+      contractStatus?`状態 ${requirementStatusLabelForUi(contractStatus)}`:"",
+      validationVerdict?`検証 ${requirementValidationLabelForUi(validationVerdict)}`:"",
       acceptanceChecks.length?`受け入れ ${acceptanceChecks.length}`:"",
       scopeSummaryParts.length?scopeSummaryParts.join(" / "):"",
       riskSummaryParts.length?riskSummaryParts.join(" / "):"",
+      provenanceSummary.parts.length?provenanceSummary.parts.slice(0,2).join(" / "):"",
     ].filter(Boolean),
   };
 }
 function requirementGroupsForUi(snapshot){
   if(!snapshot||!snapshot.hasRequirement)return[];
   const groups=[];
+  if(snapshot.contractStatus||snapshot.validationVerdict||snapshot.revision&&snapshot.revision.revised){
+    const items=[];
+    if(snapshot.contractStatus)items.push(`状態: ${snapshot.contractStatusLabel||requirementStatusLabelForUi(snapshot.contractStatus)}${snapshot.contractStatusReason?` / ${snapshot.contractStatusReason}`:""}`);
+    if(snapshot.validationVerdict){
+      const validationMeta=[
+        snapshot.validationSummary&&snapshot.validationSummary.blockCount?`BLOCK ${snapshot.validationSummary.blockCount}`:"",
+        snapshot.validationSummary&&snapshot.validationSummary.warnCount?`WARN ${snapshot.validationSummary.warnCount}`:"",
+        snapshot.validationSummary&&snapshot.validationSummary.passCount?`PASS ${snapshot.validationSummary.passCount}`:"",
+      ].filter(Boolean).join(" / ");
+      items.push(`契約検証: ${snapshot.validationVerdictLabel||requirementValidationLabelForUi(snapshot.validationVerdict)}${validationMeta?` / ${validationMeta}`:""}`);
+    }
+    if(snapshot.validationHighlights&&snapshot.validationHighlights.length){
+      items.push(`主な論点: ${summarizeInlineListForUi(snapshot.validationHighlights,{maxItems:2})}`);
+    }
+    if(snapshot.revision&&snapshot.revision.revised){
+      items.push(`改訂: v${snapshot.revision.revisionNumber||1}${snapshot.revision.summary?` / ${snapshot.revision.summary}`:""}`);
+      if(snapshot.revision.changedFields&&snapshot.revision.changedFields.length){
+        items.push(`変更点: ${summarizeInlineListForUi(snapshot.revision.changedFields,{maxItems:3})}`);
+      }
+    }
+    if(snapshot.provenanceSummary&&snapshot.provenanceSummary.parts&&snapshot.provenanceSummary.parts.length){
+      items.push(`出所: ${summarizeInlineListForUi(snapshot.provenanceSummary.parts,{maxItems:4})}`);
+    }
+    if(items.length)groups.push({title:"契約状態",items});
+  }
   if(snapshot.explicitGoal||snapshot.implicitGoal||snapshot.intentDirection||snapshot.intentHypothesis){
     const items=[];
     if(snapshot.goalGroupTitle==="進行仮説"){
@@ -1072,7 +1217,7 @@ function buildPhaseSummariesForUi({flowItems,requirementSnapshot,displayedPlan,e
   const familyGateLabel=runtimeContext&&runtimeContext.gateApplies?familyGateStatusLabelForUi(runtimeContext.gateStatus):"";
   const summaryMap={};
   summaryMap.requirements=requirementSnapshot&&requirementSnapshot.hasRequirement
-    ?`目的解釈 ${requirementSnapshot.intentDirection||requirementSnapshot.explicitGoal||requirementSnapshot.implicitGoal||"固定済み"} / 受け入れ ${requirementSnapshot.acceptanceChecks.length||0} / 非対象 ${requirementSnapshot.nonGoals.length||0} / 前提 ${requirementSnapshot.assumptions.length||0}${requirementSnapshot.openQuestions.length?` / 未解決 ${requirementSnapshot.openQuestions.length}`:""}`
+    ?`${requirementSnapshot.contractStatusLabel?`状態 ${requirementSnapshot.contractStatusLabel} / `:""}目的解釈 ${requirementSnapshot.intentDirection||requirementSnapshot.explicitGoal||requirementSnapshot.implicitGoal||"固定済み"} / 受け入れ ${requirementSnapshot.acceptanceChecks.length||0} / 非対象 ${requirementSnapshot.nonGoals.length||0} / 前提 ${requirementSnapshot.assumptions.length||0}${requirementSnapshot.openQuestions.length?` / 未解決 ${requirementSnapshot.openQuestions.length}`:""}${requirementSnapshot.validationVerdictLabel?` / 検証 ${requirementSnapshot.validationVerdictLabel}`:""}`
     :`要件ロック待ち${currentStatus&&currentStatus!=="idle"?" / 依頼は送信済み":""}`;
   if(displayedPlan&&displayedPlan.decision==="skip"){
     summaryMap.planning=planSkipReasonLabelForUi(displayedPlan.skipReason);
@@ -1559,27 +1704,6 @@ function runtimeAgentsForMonitor(runtime){
   }
   return[];
 }
-function loadTopographyUiState(){
-  try{
-    const stored=localStorage.getItem(TOPOGRAPHY_COLLAPSED_KEY);
-    topographyState.collapsed=stored===null?false:stored==="1";
-  }catch{
-    topographyState.collapsed=false;
-  }
-}
-function saveTopographyUiState(){
-  try{
-    localStorage.setItem(TOPOGRAPHY_COLLAPSED_KEY,topographyState.collapsed?"1":"0");
-  }catch{
-  }
-}
-function setTopographyCollapsed(next){
-  const normalized=Boolean(next);
-  if(topographyState.collapsed===normalized)return;
-  topographyState.collapsed=normalized;
-  saveTopographyUiState();
-  renderAgentTopography();
-}
 function syncedTopographyRows(rows){
   const trackedChatScopes=trackedChatScopesForUi();
   const activeContext=activeChatTopographyContextForUi(rows);
@@ -1680,15 +1804,9 @@ function syncedTopographyRows(rows){
 }
 function renderAgentTopography(){
   if(!e.agentTopographyPanel||!e.agentTopographyMeta||!e.agentTopographyList)return;
-  e.agentTopographyPanel.classList.toggle("collapsed",topographyState.collapsed);
   e.agentTopographyPanel.classList.toggle("loading",topographyState.loading);
   e.agentTopographyPanel.classList.toggle("fallback",topographyState.usingFallback&&!topographyState.error);
   e.agentTopographyPanel.classList.toggle("error",Boolean(topographyState.error));
-  if(e.agentTopographyToggleBtn){
-    e.agentTopographyToggleBtn.textContent=topographyState.collapsed?"開く":"閉じる";
-    e.agentTopographyToggleBtn.setAttribute("aria-expanded",topographyState.collapsed?"false":"true");
-  }
-  e.agentTopographyList.hidden=topographyState.collapsed;
   if(e.agentTopographyRefreshBtn)e.agentTopographyRefreshBtn.disabled=topographyState.loading;
 
   const rows=syncedTopographyRows(topographyState.agents);
@@ -2843,10 +2961,9 @@ function renderHarness(){
   }
   if(requirementMetaEl){
     requirementMetaEl.textContent=requirementSnapshot.hasRequirement
-      ?[
-        requirementSnapshot.acceptanceChecks.length?`受け入れ ${requirementSnapshot.acceptanceChecks.length}`:"",
-        requirementSnapshot.openQuestions.length?`未解決 ${requirementSnapshot.openQuestions.length}`:"LOCKED",
-      ].filter(Boolean).join(" / ")
+      ?(requirementSnapshot.metaParts&&requirementSnapshot.metaParts.length
+        ?requirementSnapshot.metaParts.join(" / ")
+        :"確定")
       :"ロック待ち";
   }
   if(requirementHeadlineEl){
@@ -3207,6 +3324,23 @@ function normalizeSandboxModeForUi(value,fallback="workspace-write"){
   const normalized=typeof value==="string"?value.trim().toLowerCase():"";
   return ALLOWED_SANDBOX_MODES.has(normalized)?normalized:fallback;
 }
+function normalizeWebSearchModeForUi(value,fallback="cached"){
+  if(typeof value==="boolean")return value?"live":"disabled";
+  if(typeof value==="number")return value!==0?"live":"disabled";
+  const normalized=typeof value==="string"?value.trim().toLowerCase():"";
+  if(normalized==="1"||normalized==="true"||normalized==="on")return"live";
+  if(normalized==="0"||normalized==="false"||normalized==="off")return"disabled";
+  return ALLOWED_WEB_SEARCH_MODES.has(normalized)?normalized:fallback;
+}
+function webSearchEnabledForUi(value){
+  return normalizeWebSearchModeForUi(value,"disabled")!=="disabled";
+}
+function webSearchModeLabelForUi(value){
+  const normalized=normalizeWebSearchModeForUi(value,"cached");
+  if(normalized==="live")return"Web: live";
+  if(normalized==="disabled")return"Web: disabled";
+  return"Web: cached";
+}
 function normalizeExecutionProfileForUi(value,fallback=DEFAULT_PROFILE_ID){
   const normalized=typeof value==="string"?value.trim().toLowerCase():"";
   if(!normalized)return fallback;
@@ -3218,6 +3352,53 @@ function executionProfileLabelForUi(value){
   const normalized=normalizeExecutionProfileForUi(value,"custom");
   return PROFILE_LABELS[normalized]||PROFILE_LABELS.custom;
 }
+function currentPermissionSnapshotForUi(){
+  return{
+    approvalPolicy:normalizeApprovalPolicyForUi(e.approvalPolicy&&e.approvalPolicy.value,""),
+    sandboxMode:normalizeSandboxModeForUi(e.sandboxMode&&e.sandboxMode.value,""),
+    webSearchMode:normalizeWebSearchModeForUi(e.webSearchMode&&e.webSearchMode.value,""),
+    automaticApprovalReviewEnabled:Boolean(e.automaticApprovalReviewEnabled&&e.automaticApprovalReviewEnabled.checked),
+  };
+}
+function describeExecutionProfileForUi(profileId,snap=currentPermissionSnapshotForUi()){
+  const normalized=normalizeExecutionProfileForUi(profileId,"custom");
+  if(normalized==="auto")return"Workspace 内では自動で読み書きと実行を行い、workspace 外や追加リスクのある操作では承認を求めます。";
+  if(normalized==="read-only")return"まず読む・考えることに寄せるモードです。編集、コマンド実行、ネットワーク利用は承認待ちになります。";
+  if(normalized==="guardian")return"Workspace 書き込みを維持しつつ、eligible な on-request 承認を guardian reviewer に回します。";
+  if(normalized==="full-access")return"サンドボックスも承認も外し、workspace 外アクセスと live Web検索を許可します。注意して使ってください。";
+  const parts=[
+    `approval_policy=${snap.approvalPolicy||"on-request"}`,
+    `sandbox_mode=${snap.sandboxMode||"workspace-write"}`,
+    `web_search=${snap.webSearchMode||"cached"}`,
+    `guardian=${snap.automaticApprovalReviewEnabled?"on":"off"}`,
+  ];
+  return`下の config-level controls がそのまま有効です。現在の組み合わせは ${parts.join(" / ")} です。`;
+}
+function syncPermissionModeControlsForUi(){
+  const isCustom=normalizeExecutionProfileForUi(e.executionProfile&&e.executionProfile.value,"custom")==="custom";
+  [e.approvalPolicy,e.automaticApprovalReviewEnabled,e.sandboxMode].filter(Boolean).forEach(control=>control.disabled=!isCustom);
+  if(e.permissionsAdvancedHint){
+    e.permissionsAdvancedHint.textContent=isCustom
+      ?"Custom を選んでいるため、この欄の値がそのまま request payload に反映されます。"
+      :"上位モードが raw controls を上書きしています。細かく調整したい場合だけ Custom に切り替えてください。";
+  }
+  if(e.permissionsAdvanced&&isCustom)e.permissionsAdvanced.open=true;
+}
+function renderExecutionProfileSummaryForUi(profileId=e.executionProfile&&e.executionProfile.value){
+  const normalized=normalizeExecutionProfileForUi(profileId,"custom");
+  const snap=currentPermissionSnapshotForUi();
+  if(e.executionProfileHeadline)e.executionProfileHeadline.textContent=executionProfileLabelForUi(normalized);
+  if(e.executionProfileDescription)e.executionProfileDescription.textContent=describeExecutionProfileForUi(normalized,snap);
+  if(e.executionProfileApprovalChip)e.executionProfileApprovalChip.textContent=`Approval: ${snap.approvalPolicy||"on-request"}`;
+  if(e.executionProfileSandboxChip)e.executionProfileSandboxChip.textContent=`Sandbox: ${snap.sandboxMode||"workspace-write"}`;
+  if(e.executionProfileSearchChip)e.executionProfileSearchChip.textContent=webSearchModeLabelForUi(snap.webSearchMode||"cached");
+  if(e.executionProfileGuardianChip){
+    const guardianLabel=snap.approvalPolicy==="never"
+      ?"Guardian: inactive"
+      :`Guardian: ${snap.automaticApprovalReviewEnabled?"on":"off"}`;
+    e.executionProfileGuardianChip.textContent=guardianLabel;
+  }
+}
 function applyExecutionProfileToUi(profileId){
   const normalized=normalizeExecutionProfileForUi(profileId,"");
   const profile=normalized?PROFILES[normalized]:null;
@@ -3225,12 +3406,26 @@ function applyExecutionProfileToUi(profileId){
   e.executionProfile.value=normalized;
   e.approvalPolicy.value=profile.approvalPolicy;
   if(e.fastModeEnabled)e.fastModeEnabled.checked=runtimeDefaultFastModeEnabled();
-  if(e.automaticApprovalReviewEnabled)e.automaticApprovalReviewEnabled.checked=runtimeDefaultAutomaticApprovalReviewEnabled();
+  if(e.automaticApprovalReviewEnabled)e.automaticApprovalReviewEnabled.checked=Boolean(profile.automaticApprovalReviewEnabled);
   e.sandboxMode.value=profile.sandboxMode;
-  e.webSearch.checked=Boolean(profile.webSearch);
+  if(e.webSearchMode)e.webSearchMode.value=profile.webSearchMode;
+  renderExecutionProfileSummaryForUi(normalized);
+  syncPermissionModeControlsForUi();
   return true;
 }
-function profileSync(){const snap={approvalPolicy:normalizeApprovalPolicyForUi(e.approvalPolicy.value,""),sandboxMode:normalizeSandboxModeForUi(e.sandboxMode.value,""),webSearch:Boolean(e.webSearch.checked)};const id=Object.keys(PROFILES).find(k=>{const p=PROFILES[k];return p.approvalPolicy===snap.approvalPolicy&&p.sandboxMode===snap.sandboxMode&&p.webSearch===snap.webSearch});e.executionProfile.value=id||"custom"}
+function profileSync(){
+  const snap=currentPermissionSnapshotForUi();
+  const id=Object.keys(PROFILES).find(k=>{
+    const p=PROFILES[k];
+    return p.approvalPolicy===snap.approvalPolicy
+      &&p.sandboxMode===snap.sandboxMode
+      &&p.webSearchMode===snap.webSearchMode
+      &&Boolean(p.automaticApprovalReviewEnabled)===snap.automaticApprovalReviewEnabled;
+  });
+  e.executionProfile.value=id||"custom";
+  renderExecutionProfileSummaryForUi(e.executionProfile.value);
+  syncPermissionModeControlsForUi();
+}
 function normalizeSavedMessage(raw,index){
   if(!raw||typeof raw!=="object")return null;
   const id=typeof raw.id==="string"&&raw.id.trim()?raw.id.trim():`m-restore-${index+1}`;
@@ -3440,24 +3635,57 @@ function loadChatState(){
   s.nextChat=Math.max(storedNextChat,deriveNextChatCounter(restored));
   s.nextMsg=Math.max(storedNextMsg,deriveNextMessageCounter(restored));
 }
+function resolveStoredWebSearchModeForUi(parsed,fallback="cached"){
+  const source=parsed&&typeof parsed==="object"?parsed:{};
+  if(typeof source.webSearchMode==="string"&&source.webSearchMode.trim()){
+    return normalizeWebSearchModeForUi(source.webSearchMode,fallback);
+  }
+  if(typeof source.webSearch==="boolean"){
+    if(!source.webSearch)return"disabled";
+    const legacyProfile=normalizeExecutionProfileForUi(source.executionProfile,"");
+    const legacySandbox=normalizeSandboxModeForUi(source.sandboxMode,"workspace-write");
+    if(legacyProfile==="full-access"||legacySandbox==="danger-full-access")return"live";
+    return"cached";
+  }
+  return normalizeWebSearchModeForUi("",fallback);
+}
 function saveSettings(){
   try{
-    const payload={approvalPolicy:e.approvalPolicy.value,fastModeEnabled:Boolean(e.fastModeEnabled&&e.fastModeEnabled.checked),automaticApprovalReviewEnabled:Boolean(e.automaticApprovalReviewEnabled&&e.automaticApprovalReviewEnabled.checked),sandboxMode:e.sandboxMode.value,webSearch:Boolean(e.webSearch.checked),executionProfile:e.executionProfile.value,modelName:selectedExecModel(),modelReasoningEffort:selectedExecModelReasoningEffort(),simpleView:document.body.classList.contains("simple-view"),uiVisibility:e.uiVisibility?Boolean(e.uiVisibility.checked):true,workspacePath:selectedCwd()};
+    const payload={
+      approvalPolicy:e.approvalPolicy.value,
+      fastModeEnabled:Boolean(e.fastModeEnabled&&e.fastModeEnabled.checked),
+      automaticApprovalReviewEnabled:Boolean(e.automaticApprovalReviewEnabled&&e.automaticApprovalReviewEnabled.checked),
+      sandboxMode:e.sandboxMode.value,
+      webSearchMode:normalizeWebSearchModeForUi(e.webSearchMode&&e.webSearchMode.value,"cached"),
+      webSearch:webSearchEnabledForUi(e.webSearchMode&&e.webSearchMode.value),
+      executionProfile:e.executionProfile.value,
+      modelName:selectedExecModel(),
+      modelReasoningEffort:selectedExecModelReasoningEffort(),
+      simpleView:document.body.classList.contains("simple-view"),
+      uiVisibility:e.uiVisibility?Boolean(e.uiVisibility.checked):true,
+      workspacePath:selectedCwd(),
+    };
     localStorage.setItem(SETTINGS_KEY,JSON.stringify(payload));
     settingsState.hasStoredFastMode=true;
     settingsState.hasStoredAutomaticApprovalReview=true;
+    settingsState.hasStoredExecutionProfile=true;
+    settingsState.hasStoredWebSearchMode=true;
   }catch{}
 }
 function loadSettings(){
   let parsed={};
-  try{parsed=JSON.parse(localStorage.getItem(SETTINGS_KEY)||"{}")}catch{parsed={}}
-  const defaultProfile=PROFILES[DEFAULT_PROFILE_ID]||{approvalPolicy:"on-request",sandboxMode:"workspace-write",webSearch:true};
+  const rawStoredSettings=localStorage.getItem(SETTINGS_KEY)||localStorage.getItem(SETTINGS_KEY_LEGACY)||"{}";
+  try{parsed=JSON.parse(rawStoredSettings)}catch{parsed={}}
+  const defaultProfile=PROFILES[DEFAULT_PROFILE_ID]||{approvalPolicy:"on-request",sandboxMode:"workspace-write",webSearchMode:"cached",automaticApprovalReviewEnabled:true};
   const normalizedStoredProfile=normalizeExecutionProfileForUi(parsed.executionProfile,"");
   const shouldApplyStoredPreset=normalizedStoredProfile&&normalizedStoredProfile!=="custom";
   settingsState.hasStoredModel=false;
   settingsState.hasStoredModelReasoningEffort=false;
   settingsState.hasStoredFastMode=false;
   settingsState.hasStoredAutomaticApprovalReview=false;
+  settingsState.hasStoredExecutionProfile=false;
+  settingsState.hasStoredWebSearchMode=false;
+  settingsState.hasStoredPermissionDetail=false;
   applyExecutionProfileToUi(DEFAULT_PROFILE_ID);
   if(e.modelName){
     const runtimeModel=runtimeDefaultExecModel();
@@ -3469,11 +3697,13 @@ function loadSettings(){
   else{
     e.approvalPolicy.value=normalizeApprovalPolicyForUi(parsed.approvalPolicy,defaultProfile.approvalPolicy);
     e.sandboxMode.value=normalizeSandboxModeForUi(parsed.sandboxMode,defaultProfile.sandboxMode);
-    if(typeof parsed.webSearch==="boolean")e.webSearch.checked=Boolean(parsed.webSearch);
+    if(e.webSearchMode)e.webSearchMode.value=resolveStoredWebSearchModeForUi(parsed,defaultProfile.webSearchMode);
+    settingsState.hasStoredPermissionDetail=Boolean(parsed.approvalPolicy||parsed.sandboxMode||Object.prototype.hasOwnProperty.call(parsed,"webSearch")||parsed.webSearchMode);
   }
   if(typeof parsed.fastModeEnabled==="boolean"&&e.fastModeEnabled){e.fastModeEnabled.checked=Boolean(parsed.fastModeEnabled);settingsState.hasStoredFastMode=true;}
   if(typeof parsed.automaticApprovalReviewEnabled==="boolean"&&e.automaticApprovalReviewEnabled){e.automaticApprovalReviewEnabled.checked=Boolean(parsed.automaticApprovalReviewEnabled);settingsState.hasStoredAutomaticApprovalReview=true;}
-  if(typeof parsed.executionProfile==="string")e.executionProfile.value=normalizeExecutionProfileForUi(parsed.executionProfile,"custom");
+  if(typeof parsed.executionProfile==="string"){e.executionProfile.value=normalizeExecutionProfileForUi(parsed.executionProfile,"custom");settingsState.hasStoredExecutionProfile=true;}
+  if((typeof parsed.webSearchMode==="string"&&parsed.webSearchMode.trim())||typeof parsed.webSearch==="boolean")settingsState.hasStoredWebSearchMode=true;
   if(e.modelName&&typeof parsed.modelName==="string"&&parsed.modelName.trim()){
     const normalizedStoredModel=normalizeExecModelNameForUi(parsed.modelName,runtimeDefaultExecModel());
     e.modelName.value=ensureExecModelOptionForUi(normalizedStoredModel)||normalizedStoredModel;
@@ -3494,7 +3724,33 @@ function loadSettings(){
   e.simpleViewToggle.textContent=document.body.classList.contains("simple-view")?"詳細表示":"要点表示";
   profileSync();
 }
-function updateSearchDiag(){if(s.diagErr){e.diagSearchState.textContent="異常";e.diagSearchState.className="diag-state missing";e.diagSearchDetail.textContent=s.diagErr;return}const codex=s.diag&&s.diag.tools&&s.diag.tools.codex&&s.diag.tools.codex.available;if(!e.webSearch.checked){e.diagSearchState.textContent="OFF";e.diagSearchState.className="diag-state off";e.diagSearchDetail.textContent="設定で無効です。";return}if(codex){e.diagSearchState.textContent="ON";e.diagSearchState.className="diag-state ready";e.diagSearchDetail.textContent="次の実行で Web検索を使えます。";return}e.diagSearchState.textContent="利用不可";e.diagSearchState.className="diag-state missing";e.diagSearchDetail.textContent="Codex CLI が利用できません。"}
+function updateSearchDiag(){
+  if(s.diagErr){
+    e.diagSearchState.textContent="異常";
+    e.diagSearchState.className="diag-state missing";
+    e.diagSearchDetail.textContent=s.diagErr;
+    return;
+  }
+  const codex=s.diag&&s.diag.tools&&s.diag.tools.codex&&s.diag.tools.codex.available;
+  const mode=normalizeWebSearchModeForUi(e.webSearchMode&&e.webSearchMode.value,"cached");
+  if(mode==="disabled"){
+    e.diagSearchState.textContent="OFF";
+    e.diagSearchState.className="diag-state off";
+    e.diagSearchDetail.textContent="設定で無効です。";
+    return;
+  }
+  if(!codex){
+    e.diagSearchState.textContent="利用不可";
+    e.diagSearchState.className="diag-state missing";
+    e.diagSearchDetail.textContent="Codex CLI が利用できません。";
+    return;
+  }
+  e.diagSearchState.textContent=mode==="live"?"LIVE":"CACHED";
+  e.diagSearchState.className="diag-state ready";
+  e.diagSearchDetail.textContent=mode==="live"
+    ?"次の実行で live Web検索を使えます。"
+    :"次の実行で cached Web検索を使えます。";
+}
 function tdiag(name,st,de){const t=s.diag&&s.diag.tools?s.diag.tools[name]:null;if(!t){st.textContent="未確認";st.className="diag-state pending";de.textContent="データなし";return}if(t.available){st.textContent="準備完了";st.className="diag-state ready";de.textContent=t.version||"利用可能";return}st.textContent="不足";st.className="diag-state missing";de.textContent=t.error||"利用不可"}
 function renderDiagSummary(){
   if(!e.diagSummaryText)return;
@@ -3504,7 +3760,7 @@ function renderDiagSummary(){
     {name:"Web検索",state:e.diagSearchState?String(e.diagSearchState.textContent||"").trim():"未確認"},
   ];
   const bad=rows.filter((row)=>["不足","異常","利用不可"].includes(row.state));
-  const totalReady=rows.filter((row)=>["準備完了","ON","OFF"].includes(row.state)).length;
+  const totalReady=rows.filter((row)=>["準備完了","LIVE","CACHED","OFF"].includes(row.state)).length;
   if(bad.length){
     e.diagSummaryText.textContent=`要確認: ${bad.map((row)=>row.name).join(" / ")}`;
     if(e.diagDetailsSummary)e.diagDetailsSummary.textContent="詳細を確認";
@@ -3534,6 +3790,7 @@ async function loadRuntime({reconcilePending=true}={}){
   }
   if(e.fastModeEnabled&&!settingsState.hasStoredFastMode)e.fastModeEnabled.checked=runtimeDefaultFastModeEnabled();
   if(e.automaticApprovalReviewEnabled&&!settingsState.hasStoredAutomaticApprovalReview)e.automaticApprovalReviewEnabled.checked=runtimeDefaultAutomaticApprovalReviewEnabled();
+  profileSync();
   syncPerformanceFromRuntime(s.runtime);
   if(e.workspacePath&&!e.workspacePath.value.trim())e.workspacePath.value=s.runtime.workspaceRoot||"";
   if(e.runtimeAgent)e.runtimeAgent.textContent=s.runtime.activeAgent||DEFAULT_AGENT_NAME;
@@ -4009,7 +4266,7 @@ async function runPrompt(raw,cid=s.active,options={}){
   try{
     const selectedApproval=normalizeApprovalPolicyForUi(e.approvalPolicy.value,PROFILES[DEFAULT_PROFILE_ID].approvalPolicy);
     const selectedSandbox=normalizeSandboxModeForUi(e.sandboxMode.value,PROFILES[DEFAULT_PROFILE_ID].sandboxMode);
-    const selectedWebSearch=Boolean(e.webSearch&&e.webSearch.checked);
+    const selectedWebSearchMode=normalizeWebSearchModeForUi(e.webSearchMode&&e.webSearchMode.value,"cached");
     const selectedModel=selectedExecModel();
     const selectedModelReasoningEffort=selectedExecModelReasoningEffort();
     const requestPayload={
@@ -4018,7 +4275,8 @@ async function runPrompt(raw,cid=s.active,options={}){
       approvalPolicy:selectedApproval,
       fastModeEnabled:Boolean(e.fastModeEnabled&&e.fastModeEnabled.checked),
       automaticApprovalReviewEnabled:Boolean(e.automaticApprovalReviewEnabled&&e.automaticApprovalReviewEnabled.checked),
-      webSearch:selectedWebSearch,
+      webSearch:webSearchEnabledForUi(selectedWebSearchMode),
+      webSearchMode:selectedWebSearchMode,
       model:selectedModel,
       modelReasoningEffort:selectedModelReasoningEffort,
       agentName:runAgent,
@@ -4129,7 +4387,6 @@ function bind(){
   e.newChatBtn.onclick=()=>{const c=mkChat({agent:DEFAULT_AGENT_NAME,forceNewSession:true});s.active=c.id;refresh()};
   e.clearAgentTraceBtn.onclick=()=>{const c=active();if(!c){s.trace=[];s.last=null;flow();return;}s.trace=s.trace.filter((item)=>item&&item.cid!==c.id);if(s.last&&s.last.cid===c.id)s.last=null;flow();msg(s.active,"system","System","Current chat trace cleared.")};
   if(e.agentTopographyRefreshBtn)e.agentTopographyRefreshBtn.onclick=()=>loadAgentTopography({manual:true}).catch(()=>{});
-  if(e.agentTopographyToggleBtn)e.agentTopographyToggleBtn.onclick=()=>setTopographyCollapsed(!topographyState.collapsed);
   if(automationUi.batchRunBtn)automationUi.batchRunBtn.onclick=()=>runAutomationBatchOnce().catch(()=>{});
   if(automationUi.batchMode)automationUi.batchMode.onchange=()=>renderAutomationStatus();
   if(automationUi.schedulerEnabled)automationUi.schedulerEnabled.onchange=()=>queueAutomationSchedulerApply({immediate:false});
@@ -4150,13 +4407,13 @@ function bind(){
   window.addEventListener("resize",()=>syncPromptInputHeight({remeasureBase:true}));
   if(e.commandFilter)e.commandFilter.oninput=()=>renderCommands(e.commandFilter.value);
   e.executionProfile.onchange=()=>{
-    if(e.executionProfile.value==="custom"){saveSettings();return}
+    if(e.executionProfile.value==="custom"){profileSync();saveSettings();updateSearchDiag();return}
     if(!applyExecutionProfileToUi(e.executionProfile.value))return;
     saveSettings();
     updateSearchDiag();
-    msg(s.active,"system","System",`Permissions preset applied: ${executionProfileLabelForUi(e.executionProfile.value)}`);
+    msg(s.active,"system","System",`Permission mode applied: ${executionProfileLabelForUi(e.executionProfile.value)}`);
   };
-  [e.approvalPolicy,e.fastModeEnabled,e.automaticApprovalReviewEnabled,e.sandboxMode,e.webSearch].filter(Boolean).forEach(x=>x.onchange=()=>{profileSync();saveSettings();updateSearchDiag()});
+  [e.approvalPolicy,e.fastModeEnabled,e.automaticApprovalReviewEnabled,e.sandboxMode,e.webSearchMode].filter(Boolean).forEach(x=>x.onchange=()=>{profileSync();saveSettings();updateSearchDiag()});
   if(e.modelName)e.modelName.onchange=()=>{const normalizedModel=normalizeExecModelNameForUi(e.modelName.value,runtimeDefaultExecModel());e.modelName.value=ensureExecModelOptionForUi(normalizedModel)||normalizedModel;settingsState.hasStoredModel=true;saveSettings();};
   if(e.modelReasoningEffort)e.modelReasoningEffort.onchange=()=>{e.modelReasoningEffort.value=normalizeExecModelReasoningEffortForUi(e.modelReasoningEffort.value,runtimeDefaultExecModelReasoningEffort());settingsState.hasStoredModelReasoningEffort=true;saveSettings();};
   e.workspacePath.onchange=()=>saveSettings();
@@ -4166,7 +4423,6 @@ function bind(){
 async function boot(){
   loadSettings();
   loadHarnessCheckMode();
-  loadTopographyUiState();
   loadChatState();
   bind();
   renderCommands();

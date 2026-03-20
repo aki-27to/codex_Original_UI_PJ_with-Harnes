@@ -2805,7 +2805,9 @@ function buildExecutionRecipe({
   executionIntent,
   executionSource,
   webSearch,
+  webSearchMode,
 }={}){
+  const normalizedWebSearchMode=normalizeWebSearchMode(webSearchMode,normalizeBooleanFlag(webSearch)?"live":"disabled");
   const recipe={
     schema:"harness-repro-recipe.v1",
     apiVersion,
@@ -2828,7 +2830,8 @@ function buildExecutionRecipe({
       sandboxMode:normalizeSandboxMode(sandboxMode),
       approvalPolicy:normalizeApprovalPolicy(approvalPolicy),
       cwd:safeString(cwd,220)||workspaceRoot,
-      webSearch:webSearch?1:0,
+      webSearch:normalizeBooleanFlag(webSearch)?1:0,
+      webSearchMode:normalizedWebSearchMode,
       requestUserInputPolicy:normalizeRequestUserInputPolicy(requestUserInputPolicy,nonInteractiveRequestUserInputPolicy),
     },
     generatedAt:Date.now(),
@@ -2870,6 +2873,7 @@ function buildTurnVisibilitySnapshot(input={}){
     executionIntent,
     executionSource:meta.executionSource,
     webSearch:normalizeBooleanFlag(meta.webSearch),
+    webSearchMode:meta.webSearchMode,
   });
   return{
     profile:{
@@ -3687,7 +3691,7 @@ class TurnArtifactRecorder{
       byRule:{},
     };
     this.dirPath="";
-    this.files={events:"",items:"",diff:"",stdout:"",stderr:"",manifest:"",planningDecisionContract:"",requirementContract:"",dispatchPlan:"",evidenceManifest:"",stageTimeline:"",flowTraceSummary:"",reviewLoadBreakdown:"",requestFrame:"",routingDecision:"",taskOutcomes:"",reviewBundle:"",releaseDecision:"",discoveryOutcome:"",conformanceReport:"",operatorViewSummary:""};
+    this.files={events:"",items:"",diff:"",stdout:"",stderr:"",manifest:"",planningDecisionContract:"",requirementContract:"",requirementValidation:"",dispatchPlan:"",evidenceManifest:"",stageTimeline:"",flowTraceSummary:"",reviewLoadBreakdown:"",requestFrame:"",routingDecision:"",taskOutcomes:"",reviewBundle:"",releaseDecision:"",discoveryOutcome:"",conformanceReport:"",operatorViewSummary:""};
     if(!this.enabled)return;
     const dayStamp=toIsoTimestamp(this.startedAt).slice(0,10);
     const baseName=`${normalizeArtifactFileSegment(this.threadId,64)}__${normalizeArtifactFileSegment(this.turnId,96)}`;
@@ -3713,6 +3717,7 @@ class TurnArtifactRecorder{
     this.files.manifest=path.join(targetDir,"manifest.json");
     this.files.planningDecisionContract=path.join(targetDir,"planning_decision_contract.json");
     this.files.requirementContract=path.join(targetDir,"requirement_contract.json");
+    this.files.requirementValidation=path.join(targetDir,"requirement_validation.json");
     this.files.dispatchPlan=path.join(targetDir,"dispatch_plan.json");
     this.files.evidenceManifest=path.join(targetDir,"evidence_manifest.json");
     this.files.stageTimeline=path.join(targetDir,"stage_timeline.json");
@@ -3894,6 +3899,7 @@ class TurnArtifactRecorder{
     const extraArtifacts=[
       this.writeJsonArtifact(this.files.planningDecisionContract,planningDecisionContract&&typeof planningDecisionContract==="object"?planningDecisionContract:null),
       this.writeJsonArtifact(this.files.requirementContract,requirementContract&&typeof requirementContract==="object"?requirementContract:null),
+      this.writeJsonArtifact(this.files.requirementValidation,requirementContract&&requirementContract.validation&&typeof requirementContract.validation==="object"?requirementContract.validation:null),
       this.writeJsonArtifact(this.files.dispatchPlan,dispatchPlan&&typeof dispatchPlan==="object"?dispatchPlan:null),
       this.writeJsonArtifact(this.files.evidenceManifest,evidenceManifest&&typeof evidenceManifest==="object"?evidenceManifest:null),
       this.writeJsonArtifact(this.files.stageTimeline,stageTimeline&&typeof stageTimeline==="object"?stageTimeline:null),
@@ -3986,6 +3992,7 @@ class TurnArtifactRecorder{
       manifest:this.files.manifest,
       planningDecisionContractPath:fs.existsSync(this.files.planningDecisionContract)?this.files.planningDecisionContract:"",
       requirementContractPath:fs.existsSync(this.files.requirementContract)?this.files.requirementContract:"",
+      requirementValidationPath:fs.existsSync(this.files.requirementValidation)?this.files.requirementValidation:"",
       dispatchPlanPath:fs.existsSync(this.files.dispatchPlan)?this.files.dispatchPlan:"",
       evidenceManifestPath:fs.existsSync(this.files.evidenceManifest)?this.files.evidenceManifest:"",
       stageTimelinePath:fs.existsSync(this.files.stageTimeline)?this.files.stageTimeline:"",
@@ -4032,6 +4039,7 @@ function createBaseAgentState(){
     manualSessionPinned:false,
     lastSandboxMode:null,
     lastWebSearch:null,
+    lastWebSearchMode:null,
     lastCwd:null,
     lastRequestUserInputPolicy:null,
     lastModel:defaultExecModelName,
@@ -4932,6 +4940,19 @@ function isSlashCommand(prompt){return typeof prompt==="string"&&prompt.trim().s
 function normalizeApprovalPolicy(v){const n=(v||"on-request").trim().toLowerCase();return allowedApprovalPolicies.has(n)?n:"on-request";}
 function normalizeSandboxMode(v){const n=(v||"workspace-write").trim().toLowerCase();return allowedSandboxModes.has(n)?n:"workspace-write";}
 function normalizeBooleanFlag(v){if(typeof v==="boolean")return v;if(typeof v==="number")return v!==0;if(typeof v==="string"){const n=v.trim().toLowerCase();return n==="1"||n==="true"||n==="yes"||n==="on";}return false;}
+function normalizeWebSearchMode(v,fallback="disabled"){
+  if(typeof v==="boolean")return v?"live":"disabled";
+  if(typeof v==="number")return v!==0?"live":"disabled";
+  const raw=safeString(v,40).trim().toLowerCase();
+  if(!raw)return fallback;
+  if(raw==="1"||raw==="true"||raw==="yes"||raw==="on")return"live";
+  if(raw==="0"||raw==="false"||raw==="off")return"disabled";
+  if(raw==="cached"||raw==="live"||raw==="disabled")return raw;
+  return fallback;
+}
+function isWebSearchEnabledForMode(mode){
+  return normalizeWebSearchMode(mode,"disabled")!=="disabled";
+}
 function normalizeAgentName(v){if(typeof v!=="string")return null;const n=v.trim();if(!n)return null;return n.slice(0,120);} 
 function normalizeExecModel(v,fallback=defaultExecModelName){
   const requested=safeString(v,120);
@@ -7669,6 +7690,7 @@ function buildForkedAgentState(source,sourceName){
     manualSessionPinned:source.manualSessionPinned,
     lastSandboxMode:source.lastSandboxMode,
     lastWebSearch:source.lastWebSearch,
+    lastWebSearchMode:source.lastWebSearchMode||null,
     lastCwd:source.lastCwd||null,
     lastRequestUserInputPolicy:source.lastRequestUserInputPolicy||null,
     lastModel:source.lastModel||defaultExecModelName,
@@ -7692,11 +7714,12 @@ function derivePreviousPlanningContextForRequest(agentState,cwd){
   return sanitizePlanningArtifactsForRuntime(state.lastPlanningContext);
 }
 
-function buildThreadStartConfig(agentState,webSearchEnabled,requestUserInputPolicy,model,modelReasoningEffort,fastModeEnabled,automaticApprovalReviewEnabled){
+function buildThreadStartConfig(agentState,webSearchMode,requestUserInputPolicy,model,modelReasoningEffort,fastModeEnabled,automaticApprovalReviewEnabled){
   const normalizedModel=normalizeExecModel(model,defaultExecModelName);
   const normalizedModelReasoningEffort=normalizeExecModelReasoningEffort(modelReasoningEffort,defaultExecModelReasoningEffort);
+  const normalizedWebSearchMode=normalizeWebSearchMode(webSearchMode,"disabled");
   const config={
-    web_search:webSearchEnabled?"live":"disabled",
+    web_search:normalizedWebSearchMode,
     model:normalizedModel,
     model_reasoning_effort:normalizedModelReasoningEffort,
   };
@@ -7728,10 +7751,12 @@ function buildThreadStartConfig(agentState,webSearchEnabled,requestUserInputPoli
   }
   return config;
 }
-function shouldResetThreadForMode(agentState,sandboxMode,webSearchEnabled,cwd,requestUserInputPolicy,model,modelReasoningEffort,fastModeEnabled,automaticApprovalReviewEnabled){
+function shouldResetThreadForMode(agentState,sandboxMode,webSearchMode,cwd,requestUserInputPolicy,model,modelReasoningEffort,fastModeEnabled,automaticApprovalReviewEnabled){
   if(!agentState||!agentState.threadId||agentState.manualSessionPinned)return false;
   if(agentState.lastSandboxMode&&agentState.lastSandboxMode!==sandboxMode)return true;
-  if(typeof agentState.lastWebSearch==="boolean"&&agentState.lastWebSearch!==webSearchEnabled)return true;
+  const normalizedWebSearchMode=normalizeWebSearchMode(webSearchMode,"disabled");
+  if(agentState.lastWebSearchMode&&agentState.lastWebSearchMode!==normalizedWebSearchMode)return true;
+  if(!agentState.lastWebSearchMode&&typeof agentState.lastWebSearch==="boolean"&&agentState.lastWebSearch!==isWebSearchEnabledForMode(normalizedWebSearchMode))return true;
   if(agentState.lastCwd&&cwd&&agentState.lastCwd!==cwd)return true;
   if(agentState.lastRequestUserInputPolicy&&agentState.lastRequestUserInputPolicy!==requestUserInputPolicy)return true;
   const normalizedModel=normalizeExecModel(model,defaultExecModelName);
@@ -8669,7 +8694,8 @@ async function ensureAgentThread(agentName,options){
   if(!state)throw new Error(`invalid agent: ${agentName}`);
   const sandboxMode=normalizeSandboxMode(options&&options.sandboxMode);
   const approvalPolicy=normalizeApprovalPolicy(options&&options.approvalPolicy);
-  const webSearchEnabled=normalizeBooleanFlag(options&&options.webSearch);
+  const webSearchMode=normalizeWebSearchMode(options&&Object.prototype.hasOwnProperty.call(options||{},"webSearchMode")?options.webSearchMode:options&&options.webSearch,"disabled");
+  const webSearchEnabled=isWebSearchEnabledForMode(webSearchMode);
   const model=normalizeExecModel(options&&options.model,defaultExecModelName);
   const modelReasoningEffort=normalizeExecModelReasoningEffort(options&&options.modelReasoningEffort,defaultExecModelReasoningEffort);
   const cwd=normalizeWorkingDirectory(options&&options.cwd,workspaceRoot);
@@ -8686,7 +8712,7 @@ async function ensureAgentThread(agentName,options){
   const shouldModeReset=shouldResetThreadForMode(
     state,
     sandboxMode,
-    webSearchEnabled,
+    webSearchMode,
     cwd,
     requestUserInputPolicy,
     model,
@@ -8699,7 +8725,8 @@ async function ensureAgentThread(agentName,options){
       ?"force_new_session"
       :(state.lastSandboxMode&&state.lastSandboxMode!==sandboxMode
         ?"sandbox_changed"
-        :(typeof state.lastWebSearch==="boolean"&&state.lastWebSearch!==webSearchEnabled
+        :((state.lastWebSearchMode&&state.lastWebSearchMode!==webSearchMode)
+          ||(!state.lastWebSearchMode&&typeof state.lastWebSearch==="boolean"&&state.lastWebSearch!==webSearchEnabled)
           ?"web_search_changed"
           :(state.lastCwd&&cwd&&state.lastCwd!==cwd
             ?"cwd_changed"
@@ -8716,6 +8743,7 @@ async function ensureAgentThread(agentName,options){
       sandbox:sandboxMode,
       approval:approvalPolicy,
       web:webSearchEnabled?1:0,
+      webMode:webSearchMode,
       model:safeString(model,120),
       modelReasoningEffort,
       cwd:summarizePathForOperationLog(cwd,220),
@@ -8732,6 +8760,8 @@ async function ensureAgentThread(agentName,options){
     state.lastRequestUserInputPolicy=requestUserInputPolicy;
     state.lastModel=model;
     state.lastModelReasoningEffort=modelReasoningEffort;
+    state.lastWebSearch=webSearchEnabled;
+    state.lastWebSearchMode=webSearchMode;
     state.lastFastModeEnabled=fastModeEnabled;
     state.lastAutomaticApprovalReviewEnabled=automaticApprovalReviewEnabled;
     return state.threadId;
@@ -8746,6 +8776,7 @@ async function ensureAgentThread(agentName,options){
         state.sessionRef=resumedId;
         state.lastSandboxMode=sandboxMode;
         state.lastWebSearch=webSearchEnabled;
+        state.lastWebSearchMode=webSearchMode;
         state.lastCwd=cwd;
         state.lastRequestUserInputPolicy=requestUserInputPolicy;
         state.lastModel=model;
@@ -8758,6 +8789,7 @@ async function ensureAgentThread(agentName,options){
           sandbox:sandboxMode,
           approval:approvalPolicy,
           web:webSearchEnabled?1:0,
+          webMode:webSearchMode,
           model:safeString(model,120),
           modelReasoningEffort,
           cwd:summarizePathForOperationLog(cwd,220),
@@ -8781,7 +8813,7 @@ async function ensureAgentThread(agentName,options){
     }
   }
 
-  const started=await appServer.sendRequest("thread/start",{cwd,approvalPolicy,sandbox:sandboxMode,config:buildThreadStartConfig(state,webSearchEnabled,requestUserInputPolicy,model,modelReasoningEffort,fastModeEnabled,automaticApprovalReviewEnabled),experimentalRawEvents:false},45000);
+  const started=await appServer.sendRequest("thread/start",{cwd,approvalPolicy,sandbox:sandboxMode,config:buildThreadStartConfig(state,webSearchMode,requestUserInputPolicy,model,modelReasoningEffort,fastModeEnabled,automaticApprovalReviewEnabled),experimentalRawEvents:false},45000);
   const threadId=started&&started.thread&&typeof started.thread.id==="string"?started.thread.id:null;
   if(!threadId)throw new Error("thread/start did not return thread id");
   state.threadId=threadId;
@@ -8790,6 +8822,7 @@ async function ensureAgentThread(agentName,options){
   state.manualSessionPinned=false;
   state.lastSandboxMode=sandboxMode;
   state.lastWebSearch=webSearchEnabled;
+  state.lastWebSearchMode=webSearchMode;
   state.lastCwd=cwd;
   state.lastRequestUserInputPolicy=requestUserInputPolicy;
   state.lastModel=model;
@@ -8802,6 +8835,7 @@ async function ensureAgentThread(agentName,options){
     sandbox:sandboxMode,
     approval:approvalPolicy,
     web:webSearchEnabled?1:0,
+    webMode:webSearchMode,
     model:safeString(model,120),
     modelReasoningEffort,
     cwd:summarizePathForOperationLog(cwd,220),
@@ -8816,7 +8850,8 @@ async function executeTurnStreaming(res,prompt,agentName,options){
   const state=getOrCreateAgentState(agentName);
   const sandboxMode=normalizeSandboxMode(options&&options.sandboxMode);
   const approvalPolicy=normalizeApprovalPolicy(options&&options.approvalPolicy);
-  const webSearchEnabled=normalizeBooleanFlag(options&&options.webSearch);
+  const webSearchMode=normalizeWebSearchMode(options&&Object.prototype.hasOwnProperty.call(options||{},"webSearchMode")?options.webSearchMode:options&&options.webSearch,"disabled");
+  const webSearchEnabled=isWebSearchEnabledForMode(webSearchMode);
   const model=normalizeExecModel(options&&options.model,defaultExecModelName);
   const modelReasoningEffort=normalizeExecModelReasoningEffort(options&&options.modelReasoningEffort,defaultExecModelReasoningEffort);
   const requestUserInputPolicy=normalizeRequestUserInputPolicy(options&&options.requestUserInputPolicy,nonInteractiveRequestUserInputPolicy);
@@ -8882,6 +8917,7 @@ async function executeTurnStreaming(res,prompt,agentName,options){
     model,
     modelReasoningEffort,
     webSearch:webSearchEnabled,
+    webSearchMode,
     executionSource:safeString(options&&options.executionSource,80)||"api_exec",
     planningContext,
   });
@@ -8892,6 +8928,7 @@ async function executeTurnStreaming(res,prompt,agentName,options){
     sandbox:sandboxMode,
     approval:approvalPolicy,
     web:webSearchEnabled?1:0,
+    webMode:webSearchMode,
     model:safeString(model,120),
     modelReasoningEffort,
     requestUserInputPolicy,
@@ -8920,7 +8957,7 @@ async function executeTurnStreaming(res,prompt,agentName,options){
 
   let threadId=null;
   try{
-    threadId=await ensureAgentThread(agentName,{sandboxMode,approvalPolicy,webSearch:webSearchEnabled,model,modelReasoningEffort,cwd,forceNewSession:Boolean(options&&options.forceNewSession),requestUserInputPolicy,fastModeEnabled,automaticApprovalReviewEnabled});
+    threadId=await ensureAgentThread(agentName,{sandboxMode,approvalPolicy,webSearch:webSearchEnabled,webSearchMode,model,modelReasoningEffort,cwd,forceNewSession:Boolean(options&&options.forceNewSession),requestUserInputPolicy,fastModeEnabled,automaticApprovalReviewEnabled});
   }catch(error){
     logOperation("turn.prepare_failed",{
       a:safeString(agentName,80),
@@ -9503,6 +9540,7 @@ async function executeTurnStreaming(res,prompt,agentName,options){
       executionFlow:safeString(planningContext&&planningContext.selection&&planningContext.selection.executionFlow,120)||"",
       planningDecisionContract:planningContext&&planningContext.planningDecisionContract?planningContext.planningDecisionContract:null,
       requirementContract:planningContext&&planningContext.requirementContract?planningContext.requirementContract:null,
+      requirementValidation:planningContext&&planningContext.requirementContract&&planningContext.requirementContract.validation?planningContext.requirementContract.validation:null,
       dispatchPlan:planningContext&&planningContext.dispatchPlan?planningContext.dispatchPlan:null,
       acceptanceChecks:acceptanceResults,
       acceptanceSummary:evidenceSummary,
@@ -9515,7 +9553,7 @@ async function executeTurnStreaming(res,prompt,agentName,options){
         ...missingRequiredEvidence,
       ])).slice(0,16),
       requiredEvidenceFailures:missingRequiredEvidence,
-      evidenceSources:["events.ndjson","items.ndjson","manifest.json","evidence_manifest.json","stage_timeline.json","flow_trace_summary.json","review_load_breakdown.json"],
+      evidenceSources:["events.ndjson","items.ndjson","manifest.json","requirement_validation.json","evidence_manifest.json","stage_timeline.json","flow_trace_summary.json","review_load_breakdown.json"],
       finalOutcome:{
         status:finalStatus,
         taskOutcomeStatus:taskOutcome.status,
@@ -10527,6 +10565,7 @@ async function runCodexExecStreaming(res,prompt,sandboxMode,options={}){
     sandboxMode,
     approvalPolicy:normalizeApprovalPolicy(normalized.approvalPolicy),
     webSearch:normalizeBooleanFlag(normalized.webSearch),
+    webSearchMode:normalizeWebSearchMode(Object.prototype.hasOwnProperty.call(normalized,"webSearchMode")?normalized.webSearchMode:normalized.webSearch,"disabled"),
     fastModeEnabled:resolveFastModeEnabled(normalized.fastModeEnabled),
     automaticApprovalReviewEnabled:resolveAutomaticApprovalReviewEnabled(normalized.automaticApprovalReviewEnabled),
     model:normalizeExecModel(normalized.model,defaultExecModelName),
@@ -14323,6 +14362,7 @@ async function requestHandler(req,res){
       const prompt=safeString(rawPrompt,defaultPromptCharLimit);
       const sandboxMode=normalizeSandboxMode(body.sandboxMode);
       const approvalPolicy=normalizeApprovalPolicy(body.approvalPolicy);
+      const webSearchMode=normalizeWebSearchMode(Object.prototype.hasOwnProperty.call(body,"webSearchMode")?body.webSearchMode:body.webSearch,"disabled");
       const webSearch=normalizeBooleanFlag(body.webSearch);
       const fastModeEnabled=resolveFastModeEnabled(body.fastModeEnabled);
       const automaticApprovalReviewEnabled=resolveAutomaticApprovalReviewEnabled(body.automaticApprovalReviewEnabled);
@@ -14365,7 +14405,7 @@ async function requestHandler(req,res){
       const extensionApplied=applyRequirementGuardExecExtension({
         prompt,
         sandboxMode,
-        options:{approvalPolicy,webSearch,fastModeEnabled,automaticApprovalReviewEnabled,model,modelReasoningEffort,agentName,cwd,images,requestUserInputPolicy,governanceOverride,forceNewSession,previousPlanningContext},
+        options:{approvalPolicy,webSearch,webSearchMode,fastModeEnabled,automaticApprovalReviewEnabled,model,modelReasoningEffort,agentName,cwd,images,requestUserInputPolicy,governanceOverride,forceNewSession,previousPlanningContext},
       });
       const execPrompt=extensionApplied.prompt;
       const execPromptAudit=buildPromptAudit({
@@ -14395,6 +14435,7 @@ async function requestHandler(req,res){
       }
       if(reproProfileRequested){
         execOptions.webSearch=false;
+        execOptions.webSearchMode="disabled";
         execOptions.forceNewSession=true;
         execOptions.requestUserInputPolicy="blocked";
       }
@@ -14435,6 +14476,7 @@ async function requestHandler(req,res){
         sandbox:safeString(execSandboxMode,40),
         approval:safeString(execOptions&&execOptions.approvalPolicy?execOptions.approvalPolicy:approvalPolicy,40),
         web:execOptions&&execOptions.webSearch?1:0,
+        webMode:normalizeWebSearchMode(execOptions&&Object.prototype.hasOwnProperty.call(execOptions,"webSearchMode")?execOptions.webSearchMode:webSearchMode,"disabled"),
         fastModeEnabled:resolveFastModeEnabled(execOptions&&execOptions.fastModeEnabled,fastModeEnabled)?1:0,
         automaticApprovalReviewEnabled:resolveAutomaticApprovalReviewEnabled(execOptions&&execOptions.automaticApprovalReviewEnabled,automaticApprovalReviewEnabled)?1:0,
         model:safeString(resolvedExecModel,120),
@@ -14496,6 +14538,7 @@ async function requestHandler(req,res){
           sandboxMode:execSandboxMode,
           approvalPolicy:execOptions&&execOptions.approvalPolicy?execOptions.approvalPolicy:approvalPolicy,
           webSearch:Boolean(execOptions&&execOptions.webSearch),
+          webSearchMode:normalizeWebSearchMode(execOptions&&Object.prototype.hasOwnProperty.call(execOptions,"webSearchMode")?execOptions.webSearchMode:webSearchMode,"disabled"),
           fastModeEnabled:resolveFastModeEnabled(execOptions&&execOptions.fastModeEnabled,fastModeEnabled),
           automaticApprovalReviewEnabled:resolveAutomaticApprovalReviewEnabled(execOptions&&execOptions.automaticApprovalReviewEnabled,automaticApprovalReviewEnabled),
           model:resolvedExecModel,
@@ -14794,6 +14837,8 @@ module.exports={
     defaultCodexServiceTier,
     defaultExperimentalFeatures,
     fastModeFeatureName,
+    isWebSearchEnabledForMode,
+    normalizeWebSearchMode,
     normalizeCodexServiceTier,
   },
   __topography:{

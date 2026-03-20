@@ -167,7 +167,7 @@ body.simple-view .topbar {
 }
 
 body.simple-view .main-layout {
-  grid-template-columns: minmax(300px, 360px) minmax(0, 1fr);
+  grid-template-columns: minmax(240px, 300px) minmax(0, 1fr);
 }
 
 .side-panel {
@@ -313,7 +313,7 @@ body.simple-view .command-panel {
 }
 
 body.simple-view .work-panel {
-  grid-template-rows: auto auto auto minmax(280px, 46vh) auto;
+  grid-template-rows: auto auto minmax(280px, 46vh) auto;
 }
 
 .toolbar {
@@ -333,6 +333,12 @@ body.simple-view .toolbar {
 
 body.simple-view .side-panel .toolbar {
   grid-template-columns: 1fr;
+}
+
+body.simple-view .maintenance-card,
+body.simple-view .settings-card,
+body.simple-view .performance-panel {
+  display: none;
 }
 
 body.simple-view [data-advanced="true"] {
@@ -651,6 +657,19 @@ body.simple-view .agent-inspector {
   gap: 8px;
 }
 
+.settings-head h3 {
+  margin: 0;
+  font-size: 14px;
+  color: #dce8ff;
+}
+
+.settings-head p {
+  margin: 4px 0 10px;
+  font-size: 11px;
+  line-height: 1.5;
+  color: #9fb4d8;
+}
+
 .side-panel .settings-grid {
   grid-template-columns: 1fr;
 }
@@ -667,8 +686,69 @@ label {
   color: var(--text-dim);
 }
 
+.settings-mode-card,
+.settings-advanced,
 .workspace {
   grid-column: 1 / span 4;
+}
+
+.settings-mode-card {
+  border: 1px solid #31538a;
+  border-radius: 12px;
+  background: linear-gradient(180deg, rgba(18, 31, 56, 0.94), rgba(9, 18, 36, 0.96));
+  padding: 11px 12px;
+  display: grid;
+  gap: 7px;
+}
+
+.settings-mode-eyebrow {
+  font-size: 11px;
+  letter-spacing: 0.04em;
+  color: #8fb2eb;
+  text-transform: uppercase;
+}
+
+.settings-mode-title {
+  font-size: 16px;
+  color: #f3f7ff;
+}
+
+.settings-mode-detail {
+  margin: 0;
+  font-size: 12px;
+  line-height: 1.55;
+  color: #c8d9f7;
+}
+
+.settings-chip-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.settings-chip {
+  display: inline-flex;
+  align-items: center;
+  min-height: 26px;
+  padding: 0 9px;
+  border-radius: 999px;
+  border: 1px solid #34588f;
+  background: rgba(8, 16, 31, 0.7);
+  color: #d7e5ff;
+  font-size: 11px;
+  line-height: 1.2;
+}
+
+.settings-toggle {
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.settings-toggle input[type="checkbox"] {
+  width: 16px;
+  height: 16px;
+  accent-color: var(--accent);
 }
 
 .workspace-shell {
@@ -684,6 +764,60 @@ label {
 
 .side-panel .workspace-shell {
   grid-column: auto;
+}
+
+.side-panel .settings-mode-card,
+.side-panel .settings-advanced {
+  grid-column: auto;
+}
+
+.settings-advanced {
+  border: 1px solid #294778;
+  border-radius: 12px;
+  background: rgba(8, 16, 32, 0.8);
+  padding: 8px 10px 10px;
+}
+
+.settings-advanced summary {
+  list-style: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 12px;
+  font-weight: 700;
+  color: #d3e2ff;
+}
+
+.settings-advanced summary::-webkit-details-marker {
+  display: none;
+}
+
+.settings-advanced summary::after {
+  content: "▾";
+  color: #98b7ea;
+  font-size: 12px;
+}
+
+.settings-advanced:not([open]) summary::after {
+  content: "▸";
+}
+
+.settings-grid-advanced {
+  margin-top: 8px;
+}
+
+.settings-advanced-hint {
+  margin: 8px 0 0;
+  font-size: 11px;
+  line-height: 1.5;
+  color: #9fb4d8;
+}
+
+.settings-advanced select:disabled,
+.settings-advanced input:disabled {
+  opacity: 0.58;
+  cursor: not-allowed;
 }
 
 .workspace-tools {
@@ -911,7 +1045,7 @@ input[readonly] {
 .agent-flow-panel,
 .diagnostics-panel,
 .timeline,
-.agent-topography-monitor {
+.agent-topography-panel {
   border-color: rgba(164, 137, 94, 0.34);
   background: linear-gradient(180deg, rgba(25, 22, 18, 0.94), rgba(14, 16, 19, 0.96));
   box-shadow: 0 18px 44px rgba(2, 4, 8, 0.36);
@@ -1284,6 +1418,10 @@ input[readonly] {
   gap: 4px;
 }
 
+body.simple-view .harness-head-tools {
+  justify-items: start;
+}
+
 .harness-head p {
   margin: 0;
   color: var(--text-dim);
@@ -1316,6 +1454,11 @@ input[readonly] {
   color: #9db4d9;
   font-size: 11px;
   line-height: 1.35;
+}
+
+body.simple-view .harness-check-mode,
+body.simple-view .harness-check-hint {
+  display: none;
 }
 
 .harness-focus-grid {
@@ -1380,9 +1523,9 @@ input[readonly] {
   color: #c8daf9;
   font-size: 12px;
   line-height: 1.4;
-  white-space: nowrap;
-  min-width: max-content;
-  padding-right: 10px;
+  white-space: normal;
+  min-width: 0;
+  padding-right: 0;
 }
 
 .harness-mission {
@@ -1425,6 +1568,92 @@ input[readonly] {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 8px;
+}
+
+.harness-requirement-panel {
+  border: 1px solid #284672;
+  border-radius: 10px;
+  background:
+    linear-gradient(180deg, rgba(17, 28, 48, 0.92), rgba(10, 18, 32, 0.94)),
+    radial-gradient(circle at top right, rgba(190, 145, 72, 0.12), transparent 45%);
+  padding: 10px;
+  display: grid;
+  gap: 10px;
+}
+
+.harness-requirement-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.harness-requirement-head h4 {
+  margin: 0;
+  font-size: 13px;
+  color: #e4d6bc;
+  letter-spacing: 0.04em;
+}
+
+.harness-requirement-head p {
+  margin: 4px 0 0;
+  color: #bda987;
+  font-size: 11px;
+  line-height: 1.45;
+}
+
+.harness-requirement-headline {
+  margin: 0;
+  font-size: 15px;
+  line-height: 1.55;
+  color: #f4ecdc;
+}
+
+.harness-requirement-sections {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.harness-requirement-group {
+  border: 1px solid rgba(150, 118, 74, 0.44);
+  border-radius: 10px;
+  background: rgba(19, 17, 15, 0.6);
+  padding: 9px 10px;
+  display: grid;
+  gap: 8px;
+}
+
+.harness-requirement-group h5 {
+  margin: 0;
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #d9ba82;
+}
+
+.harness-requirement-group.empty {
+  border-style: dashed;
+}
+
+.harness-requirement-group.empty p {
+  margin: 0;
+  font-size: 12px;
+  line-height: 1.45;
+  color: #cbb89a;
+}
+
+.harness-requirement-list {
+  margin: 0;
+  padding-left: 16px;
+  display: grid;
+  gap: 6px;
+}
+
+.harness-requirement-list li {
+  color: #e8ddcb;
+  font-size: 12px;
+  line-height: 1.5;
 }
 
 .harness-plan-panel {
@@ -1502,6 +1731,12 @@ input[readonly] {
   border-color: rgba(47, 191, 113, 0.7);
 }
 
+.harness-plan-current.skipped,
+.harness-plan-step.skipped {
+  border-color: rgba(87, 184, 255, 0.72);
+  box-shadow: 0 0 16px rgba(87, 184, 255, 0.12);
+}
+
 .harness-plan-current.failed,
 .harness-plan-step.failed,
 .harness-plan-current.interrupted,
@@ -1526,6 +1761,10 @@ input[readonly] {
 
 .harness-plan-current.completed .harness-plan-current-step {
   color: #aaf1c8;
+}
+
+.harness-plan-current.skipped .harness-plan-current-step {
+  color: #bae8ff;
 }
 
 .harness-plan-current.failed .harness-plan-current-step,
@@ -1577,6 +1816,15 @@ input[readonly] {
   line-height: 1.35;
 }
 
+.harness-journey-state {
+  font-weight: 700;
+  color: #d9e7ff;
+}
+
+.harness-journey-summary {
+  min-height: 44px;
+}
+
 .harness-journey-step.active {
   border-color: rgba(244, 174, 43, 0.78);
   box-shadow: 0 0 14px rgba(244, 174, 43, 0.18);
@@ -1594,6 +1842,15 @@ input[readonly] {
 .harness-journey-step.done h4,
 .harness-journey-step.done p {
   color: #bdf2cf;
+}
+
+.harness-journey-step.skipped {
+  border-color: rgba(87, 184, 255, 0.72);
+}
+
+.harness-journey-step.skipped h4,
+.harness-journey-step.skipped p {
+  color: #bae8ff;
 }
 
 .harness-journey-step.failed {
@@ -1634,6 +1891,10 @@ input[readonly] {
 
 .harness-now-value.completed {
   color: #aaf1c8;
+}
+
+.harness-now-value.skipped {
+  color: #bae8ff;
 }
 
 .harness-now-value.failed,
@@ -1881,6 +2142,11 @@ input[readonly] {
   color: #aaf1c8;
 }
 
+.harness-plan-step-status.skipped {
+  border-color: rgba(87, 184, 255, 0.74);
+  color: #bae8ff;
+}
+
 .harness-plan-step-status.failed,
 .harness-plan-step-status.interrupted {
   border-color: rgba(232, 93, 117, 0.76);
@@ -1931,6 +2197,8 @@ input[readonly] {
   border-radius: 12px;
   background: linear-gradient(180deg, rgba(12, 22, 41, 0.86), rgba(8, 15, 29, 0.92));
   padding: 10px;
+  display: grid;
+  gap: 10px;
 }
 
 body.simple-view .agent-flow-panel {
@@ -1942,7 +2210,6 @@ body.simple-view .agent-flow-panel {
   justify-content: space-between;
   align-items: flex-start;
   gap: 12px;
-  margin-bottom: 8px;
 }
 
 .agent-flow-head h3 {
@@ -1960,6 +2227,25 @@ body.simple-view .agent-flow-panel {
   display: grid;
   grid-template-columns: repeat(4, minmax(220px, 1fr));
   gap: 8px;
+}
+
+.agent-trace-subhead {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 12px;
+}
+
+.agent-trace-subhead h4 {
+  margin: 0;
+  font-size: 13px;
+  color: #d9e7ff;
+}
+
+.agent-trace-subhead p {
+  margin: 0;
+  color: #95afd7;
+  font-size: 11px;
 }
 
 .agent-flow-column {
@@ -2418,6 +2704,11 @@ textarea {
   line-height: 1.45;
 }
 
+#promptInput {
+  overflow-y: hidden;
+  resize: none;
+}
+
 .btn {
   border: 1px solid #30508a;
   border-radius: 10px;
@@ -2457,63 +2748,46 @@ textarea {
   display: none !important;
 }
 
-.agent-topography-monitor {
-  position: fixed;
-  right: 14px;
-  bottom: 14px;
-  z-index: 12;
-  width: min(320px, calc(100vw - 24px));
-  max-height: min(42vh, 360px);
+.agent-topography-panel {
   border: 1px solid #2a4677;
   border-radius: 12px;
-  background: linear-gradient(180deg, rgba(10, 18, 35, 0.94), rgba(8, 14, 26, 0.96));
-  box-shadow: 0 16px 30px rgba(1, 5, 12, 0.46);
-  padding: 8px;
+  background: rgba(10, 18, 33, 0.72);
+  padding: 10px;
   display: grid;
   gap: 8px;
-  overflow: hidden;
 }
 
-.agent-topography-monitor.loading {
+.agent-topography-panel.loading {
   border-color: #3a5f98;
 }
 
-.agent-topography-monitor.fallback {
+.agent-topography-panel.fallback {
   border-color: rgba(244, 174, 43, 0.7);
 }
 
-.agent-topography-monitor.error {
+.agent-topography-panel.error {
   border-color: rgba(232, 93, 117, 0.74);
 }
 
 .agent-topography-head {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   justify-content: space-between;
   gap: 10px;
 }
 
-.agent-topography-actions {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-}
-
-.agent-topography-head h2 {
+.agent-topography-head h4 {
   margin: 0;
-  font-size: 12px;
+  font-size: 13px;
   color: #d9e8ff;
   letter-spacing: 0.02em;
 }
 
-.agent-topography-monitor.collapsed {
-  max-height: none;
-  gap: 6px;
-}
-
-.agent-topography-monitor.collapsed .agent-topography-meta,
-.agent-topography-monitor.collapsed .agent-topography-list {
-  display: none;
+.agent-topography-copy {
+  margin: 4px 0 0;
+  font-size: 11px;
+  color: #95afd7;
+  line-height: 1.45;
 }
 
 .agent-topography-meta {
@@ -2525,20 +2799,75 @@ textarea {
 .agent-topography-list {
   margin: 0;
   padding: 0;
-  list-style: none;
   display: grid;
-  gap: 6px;
+  gap: 10px;
   overflow: auto;
-  max-height: min(28vh, 250px);
+  max-height: 320px;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  align-items: start;
+}
+
+.agent-topography-lane {
+  border: 1px solid rgba(47, 75, 121, 0.88);
+  border-radius: 12px;
+  padding: 8px;
+  background: rgba(10, 18, 33, 0.58);
+  display: grid;
+  gap: 8px;
+  min-height: 100%;
+}
+
+.agent-topography-lane-running {
+  border-color: rgba(244, 174, 43, 0.52);
+  background: linear-gradient(180deg, rgba(50, 36, 9, 0.52), rgba(12, 18, 30, 0.7));
+}
+
+.agent-topography-lane-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.agent-topography-lane-title {
+  margin: 0;
+  font-size: 12px;
+  color: #e2edff;
+  letter-spacing: 0.02em;
+}
+
+.agent-topography-lane-count {
+  min-width: 22px;
+  height: 22px;
+  border-radius: 999px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+  font-weight: 800;
+  color: #dce9ff;
+  border: 1px solid rgba(79, 118, 179, 0.68);
+  background: rgba(26, 39, 64, 0.8);
+}
+
+.agent-topography-cards {
+  display: grid;
+  gap: 8px;
+  align-content: start;
 }
 
 .agent-topography-item {
   border: 1px solid #2b4676;
-  border-radius: 9px;
-  padding: 6px 8px;
+  border-radius: 11px;
+  padding: 8px 9px;
   background: rgba(13, 24, 43, 0.82);
   display: grid;
-  gap: 4px;
+  gap: 6px;
+}
+
+.agent-topography-item.active {
+  border-color: rgba(244, 174, 43, 0.72);
+  box-shadow: inset 0 0 0 1px rgba(244, 174, 43, 0.2);
 }
 
 .agent-topography-item.synced {
@@ -2616,10 +2945,8 @@ textarea {
 
 body.telemetry-off .runtime-strip,
 body.telemetry-off .performance-panel,
-body.telemetry-off .harness-panel,
 body.telemetry-off .agent-flow-panel,
-body.telemetry-off .diagnostics-panel,
-body.telemetry-off .agent-topography-monitor {
+body.telemetry-off .diagnostics-panel {
   display: none;
 }
 
@@ -2677,6 +3004,7 @@ button:disabled {
 
   .runtime-strip,
   .performance-grid,
+  .harness-requirement-sections,
   .intent-gate-list,
   .harness-focus-grid,
   .harness-journey-list,
@@ -2717,6 +3045,7 @@ button:disabled {
   .intent-grid,
   .runtime-strip,
   .performance-grid,
+  .harness-requirement-sections,
   .intent-gate-list,
   .harness-focus-grid,
   .harness-journey-list,
@@ -2788,14 +3117,14 @@ button:disabled {
     max-height: 42vh;
   }
 
-  .agent-topography-monitor {
-    position: static;
-    width: auto;
-    max-height: none;
-    margin: 10px 0 0;
-  }
-
   .agent-topography-list {
-    max-height: 200px;
+    max-height: 240px;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 720px) {
+  .agent-topography-list {
+    grid-template-columns: 1fr;
   }
 }
