@@ -1,26 +1,43 @@
-# CURRENT_ARCHITECTURE
+﻿# CURRENT_ARCHITECTURE
 
-Updated: 2026-03-14
+Updated: 2026-03-20
 
 ## 1) Purpose
 
 This document is the active architecture spec for the Codex App Server integration harness.
 - Current-state architecture belongs here.
 - Historical implementation logs belong in `docs/ARCHITECTURE_CHANGELOG.md`.
-- Human-oriented structural walkthrough lives in `docs/AI_AGENT_HARNESS_DETAILED_DESIGN.html`; it is a companion design document and does not replace this spec or the machine-readable contracts.
+- Frozen design authority is `docs/HARNESS_CONSTITUTION.md`.
+- Narrative docs are subordinate to machine-readable contracts and runtime proof.
+- Human-oriented overview-first guide: `docs/AI_AGENT_HARNESS_DETAILED_DESIGN.html`. It explains the harness mechanism from big picture to deeper details and does not replace this spec or the machine-readable contracts.
 
 ## 2) Active Execution Path
 
 - Interactive execution stays on standard Codex through `POST /api/exec`.
 - The UI is local-first and defaults to port `57525`.
 - An invalid non-numeric `CODEX_UI_PORT` falls back to `57525` before `UI_URL` is built.
+- Project-scoped Codex defaults in `.codex/config.toml` keep `features.fast_mode = false` for this repo, keep `features.guardian_approval = true` enabled, and leave `service_tier` unspecified so non-Fast turns follow the provider default instead of forcing `flex`.
+- The web harness now initializes Fast mode and Automatic approval review from the runtime operator defaults, and forwards the operator's current `fastModeEnabled` / `automaticApprovalReviewEnabled` toggle values on every interactive `POST /api/exec` call, so Fast can be switched on or off from the local UI without relying on slash-command state.
+- Fast mode now defaults to OFF for fresh local sessions unless `CODEX_FAST_MODE_DEFAULT` overrides it, and repo-scoped Codex defaults no longer re-enable Fast behind the operator default.
+- `web/01.HarnesUI/index.html` now exposes Codex-aligned permissions wording in the settings panel: `Auto (default)`, `Read-only`, `Full Access`, and `Custom (config.toml)` presets, raw sandbox controls remain `read-only | workspace-write | danger-full-access`, and the deprecated interactive `on-failure` approval policy is normalized to `on-request` in the UI.
+- `web/01.HarnesUI/index.html` and `web/01.HarnesUI/app.js` now keep the local model preset surface aligned with the current Codex lineup by exposing `gpt-5.4`, `gpt-5.4-mini`, and `gpt-5.3-codex` as first-class operator choices.
+- The main `web/01.HarnesUI/index.html` chat composer now auto-grows with multi-line input while keeping its empty-state height as the stable baseline, so clearing the field or resizing the window while expanded still returns the control to the original initial height.
+- Interactive Web UI submits now attach UI-generated idempotency keys and automatically retry bounded transient `/api/exec` submit failures, so short harness restarts or transport drops do not immediately surface as a final operator failure.
+- `on-request` approval policy is now compatible with the non-interactive harness path: low-risk approval requests are auto-reviewed and accepted, while high-risk approval requests still fail closed instead of silently bypassing review.
 - `default` is the default exec agent and the canonical collaboration-first parent entrypoint for end-to-end tasks.
 - `start_codex_ui.bat` applies safer Windows launcher defaults only when env vars are unset:
   - `CODEX_EXECUTION_PROFILE=full-runtime`
   - `CODEX_REQUEST_USER_INPUT_POLICY=blocked`
+  - `CODEX_AUTOMATIC_APPROVAL_REVIEW=1`
+  - `CODEX_FAST_MODE_DEFAULT=0`
+  - `CODEX_SERVER_RESTART_MAX_RETRIES=4`
+  - `CODEX_SERVER_RESTART_DELAY_MS=1500`
+  - `CODEX_SERVER_STABLE_WINDOW_SECONDS=30`
   - `CODEX_PARENT_DISPATCH_GUARD_MODE=enforce`
   - `CODEX_PARENT_DISPATCH_GUARD_MAX_RETRIES=1`
-- `start_codex_ui.bat` now self-elevates to Windows Administrator via UAC before starting the harness process.
+- The launcher now also keeps `node server.js` behind a restart loop with a bounded retry budget and stability window, so unexpected harness exits can recover without requiring an immediate manual relaunch.
+- Re-running `start_codex_ui.bat` now acts as a launcher-owned restart for the local harness on the configured UI port: if that port is already served by this harness, the launcher stops the existing listener first, starts a fresh `node server.js`, and owns the single browser auto-open so the latest source is reflected without duplicate UI windows.
+- `start_codex_ui.bat` now applies `CODEX_PAUSE_ON_EXIT=1` before its early dependency/elevation checks as well, so the launcher does not immediately disappear on those fast-fail paths unless operators explicitly opt out with `CODEX_PAUSE_ON_EXIT=0`.
 - `start_codex_ui.bat` also enables turn-complete Git automation by default:
   - `CODEX_GIT_AUTOCOMMIT_ENABLED=1`
   - `CODEX_GIT_AUTOPUSH_ENABLED=1`
@@ -29,26 +46,56 @@ This document is the active architecture spec for the Codex App Server integrati
 - `server.js` itself now defaults turn-complete Git automation to `commit + push` unless env overrides disable it.
 - `server.js` now infers the non-interactive `request-user-input` fallback as `blocked` when `CODEX_REQUEST_USER_INPUT_POLICY` is unset.
 - `server.js` owns HTTP APIs, app-server protocol handling, evidence capture, replay, eval, and SLO surfaces.
-- `server.js` now also owns the intent-first contract surface: design acceptance rules, persisted user taste memory, and design-sensitive completion gating.
-- Turn-complete Git automation ignores harness runtime metadata files such as `logs/harness_execution_memory.json` and `logs/eval_runs.jsonl` when the target repo is this workspace, so operator-memory persistence alone does not trigger an automated publish.
+- `server.js` now treats app-server stdio transport failures as child-scoped failures: write-side pipe errors and late stale-child close/error events reject the affected RPCs/turn watchers, clear the dead child, and keep the parent harness server alive so the next request can respawn the app-server.
+- The harness is a governed decision system: top-level outcomes must end in one of
+  - `RELEASE_APPROVED`
+  - `RELEASE_APPROVED_WITH_ASSUMPTIONS`
+  - `RELEASE_BLOCKED`
+  - `EXTERNAL_ACTION_REQUIRED`
+  - `HARNESS_FAILURE`
+- `logs/current/` is restricted to the fixed five operator-facing summaries; constitution-conformance and operator-view detail stay in bundle or raw evidence, not as extra current files.
+- Child evidence ledgers now infer reviewer/tester participation from dispatched child prompt context when the app-server surfaces opaque child thread IDs, preventing live reviewer evidence from being dropped purely because the receiver name is not a human-readable role label.
+- Adversarial retries and parent-dispatch retries now preserve the original `planningContext` instead of re-planning from the retry copy, so execution-task retries keep the same dispatch and evidence contract as the originating turn.
+- The parent dispatch guard now treats non-proposal turns with planned child dispatches as dispatch-required even before file edits or commands are observed, preventing answer-only completions from bypassing a child-execution contract.
+- Planning-mode specialist routing now applies localized frontend/backend signals for Japanese prompts, and `LIGHT_ASSURANCE` single-specialist plans do not force reviewer evidence unless review or signoff signals actually require it.
+- Benchmarked `web_creative` work now has an assurance floor: any web-creative request with a fixed benchmark/reference URL is at least `STANDARD_ASSURANCE`, and explicit near-copy phrasing such as `ほぼ同じ` / `完全再現` / `丸パクリ` escalates to `SIGNOFF_ASSURANCE`.
+- Follow-up turns now carry forward the prior turn's locked benchmark candidates when the same workspace stays on a web-creative correction thread, so "this is still too different" style prompts do not silently drop the reference anchor.
+- Specialist `ownedPaths` are now derived from the active repo/workspace shape instead of generic role defaults, so Laravel-style workspaces resolve frontend ownership to paths such as `resources/views/`, `resources/css/`, `resources/js/`, and `routes/web.php` instead of a misleading fallback like `web/`.
+- User-facing final text is now softened when the derived task outcome is not `COMPLETED`: adversarial shadow review flags premature completion claims, and the runtime rewrites leading `done/fixed/修正済み` phrasing into explicit not-complete wording before it reaches the operator.
+- User-facing response enforcement now also treats unsolicited follow-up/menu-style closings as a contract defect for non-blocked answers. Adversarial shadow review fails answers that reopen the conversation with `必要なら...` / `If you'd like...` style offers when the prompt did not ask for options, adversarial retry prompts now explicitly require direct-answer-first plus close-in-place behavior for short fact/status turns, and the final client text strips any leftover optional closing invitation as a last-resort safety net.
+- Close-in-place user-facing response governance is now machine-readable as well as documented: `scripts/config/user_facing_response_contract.json` defines exempt outcome states, prompt signals that allow option menus, prohibited closing starters, completion-claim lead phrases, internal-process disclosure bans, and exact-reply bypass rules; `server.js`, `scripts/lib/user_facing_response_policy.js`, and `scripts/lib/adversarial_shadow_policy.js` all consume that shared contract instead of carrying separate hard-coded policy lists.
+- Turn-complete Git automation ignores harness runtime metadata files under `logs/archive/raw/` plus persona memory under `logs/archive/raw/runtime_state/` when the target repo is this workspace, so operator-memory persistence alone does not trigger an automated publish.
 - `web/` owns the browser UI and uses the standard exec/runtime APIs.
-- `web/index.html`, `web/01.HarnesUI/index.html`, and `web/01.HarnesUI/overview.html` now present Japanese-first operator copy while preserving clearer English technical identifiers such as `Codex`, `Node`, `API`, model IDs, sandbox/approval enum values, and thread/turn identifiers.
-- `web/01.HarnesUI/app.js` and `web/01.HarnesUI/overview.js` localize runtime-rendered verdicts, trace/topography labels, automation status, and overview evidence tags at display time so the browser UI does not leak raw English control wording into operator-visible text.
-- The console UI exposes a workspace chooser plus lock toggle; the operator-selected lock is enforced server-side without changing the standard `POST /api/exec` execution path.
-- Workspace guard control stays on the existing runtime surface:
-  - `POST /api/workspace/select`
-  - `POST /api/workspace/lock`
-  - `POST /api/workspace/unlock`
-- `archive/` now holds legacy docs, example sites, installer drops, and manual render outputs that are not part of the active runtime surface.
+- `web/01.HarnesUI/guide.html` is the static human-facing guide that explains the harness in child-friendly language without depending on live runtime data.
+- Previously archived legacy/reference payloads that were proven unused were purged from the repository root; the active runtime no longer ships a top-level legacy payload set.
 - `GET /english-conversation-app/*` now preserves the existing same-origin route while resolving static files in this priority order:
   - `CODEX_ENGLISH_CONVERSATION_APP_ROOT`
   - sibling repo `../english-conversation-app/`
   - bundled fallback `web/english-conversation-app/`
-- `start_english_conversation_app.bat` primes `CODEX_ENGLISH_CONVERSATION_APP_ROOT` to the sibling repo when `..\english-conversation-app\index.html` exists and the env var is unset.
 - `bootstrap_english_conversation_app_repo.bat` / `scripts/bootstrap_english_conversation_app_repo.ps1` can seed the sibling repo from the bundled static app when splitting it out for the first time.
 - `web/01.HarnesUI/overview.html` is a dedicated operator overview page that aggregates runtime posture, topology, contracts, evidence bundles, replay/eval summaries, and skill coverage without mixing that inventory into the execution console.
-- The floating Agent Topography Monitor now renders only agents that are relevant to the active chat, using that chat's current scoped parent, local trace/pending state, harness events, and matching runtime thread metadata.
+- The floating `AIエージェントかんばん` remains visible even in the simplified console and secondary-telemetry-off posture, defaults to expanded when no local preference exists, groups agents into `稼働中 / 親 / 専門 / 検証` lanes, keeps any scoped runtime agent with an active turn visible in `稼働中` even when that scoped session belongs to a different chat, and now also surfaces actually spawned collab child agents as live rows when `spawnAgent`/`sendInput`/`wait` activity proves they are actively working.
+- `web/01.HarnesUI/index.html` keeps `Performance Metrics` scoped to the active chat's thread/session instead of the process-global runtime session, so plan/progress/performance surfaces stay aligned while operators switch between chats.
+- `web/01.HarnesUI/app.js` now primes a local Web Audio context from the send interaction and plays a short completion chime when the active `runPrompt` flow reaches a terminal status (`completed`, `failed`, or `interrupted`).
+- `server.js` now keeps a transient live-collab child registry for real spawn activity. When collab payloads omit the explicit child role, the harness resolves the child name from the locked dispatch plan or prompt-role hints, merges that live child into `/api/agent-topography`, and clears the row when the matching `wait`/`closeAgent` lifecycle shows the child has stopped working.
+- `web/01.HarnesUI/app.js` now fast-refreshes `/api/agent-topography` after collab item completions, so spawned child specialists appear on the board during the active turn instead of waiting for the 10s background poll.
+- `web/01.HarnesUI/app.js` now preserves the main chat composer's existing initial height while auto-growing and shrinking `#promptInput` to match multiline operator input, including send-clear, preset insert, command insert, and viewport-resize reflow paths.
+- `web/01.HarnesUI/index.html` now treats readability as the top-level console goal: it defaults to a simpler view, never hides the main `Harness Status` panel behind the secondary-telemetry toggle, and surfaces `task family`, `user-value thesis`, and `family gate` inside the existing progress/verdict summaries instead of adding extra inventory panels.
+- `Execution Plan` no longer fabricates inferred operator-visible steps from harness-flow heuristics. The panel now shows only explicit streamed `plan` events or an explicit `PLAN SKIP` decision derived from the pre-dispatch planning context.
+- `Current Work` now prefers the active explicit plan step (or `PLAN SKIP`) over the latest raw event row, so operators can see which locked plan step is currently being executed.
+- `web/01.HarnesUI/index.html` now exposes a dedicated `Requirement Lock` panel inside `Harness Status`, so the active chat can read the locked Step 1 contract directly from `latestTurn.planning.requirementContract` instead of inferring it from later plan or trace rows.
+- The `Requirement Lock` surface now summarizes the locked explicit/implicit goal, acceptance checks, baseline vs over-delivery scope, non-goals, assumptions/open questions, and `userValueFrame` priorities (`valueThesis`, `mustAvoid`, `qualityAxes`, `completedMeans`) for the active chat.
+- Question-style Step 1 goals inside `Requirement Lock` now render from a machine-readable `intentInterpretation` stored in `latestTurn.planning.requirementContract`, rather than from UI-only restatement heuristics. `scripts/lib/planning_mode_policy.js` now locks `presentation` (`goal` or `progress_hypothesis`), `questionLike`, `direction`, and `hypothesis` during Step 1, and `web/01.HarnesUI/app.js` treats that contract as the primary source of truth.
+- The `進行仮説` presentation is now gated on actual interpretation at the contract layer: when Step 1 cannot derive a distinct interpreted direction or hypothesis, the locked `intentInterpretation.presentation` stays `goal`, and the UI must not fabricate `向かう先` / `ユーザー意図の仮説` from the raw user wording. Meta-questions about literal requirement intake now lock a dedicated interpreted `direction` / `hypothesis` pair that distinguishes appearance from actual behavior.
+- Step 1 requirement extraction now tolerates unstructured Japanese-first prompts better: `scripts/lib/planning_mode_policy.js` strips courtesy-only lead-ins such as `ありがとうございます。`, recognizes additional Japanese goal/scope headings from `scripts/config/planning_mode_contract.json`, promotes purpose-bearing lines like `製作目的...` into `explicitGoal`, and infers concrete baseline items such as page count, working directory, content placeholders, company metadata, and reference URLs from plain multiline briefs even when the operator did not pre-structure the prompt.
+- `web/01.HarnesUI/app.js` now treats the Requirement Lock as present only when Step 1 captured core requirement data (`explicitGoal`, `implicitGoal`, acceptance checks, baseline/over-delivery scope, non-goals, assumptions, or open questions). The panel no longer shows a misleading locked summary for greeting-only input that only produced the default `userValueFrame`.
+- The five journey cards in `Harness Status` now render per-phase outcome summaries, so Step 1 shows what was locked, Step 2 shows plan/dispatch commitment, and later phases summarize execution progress, evidence/review state, and report/gate outcome rather than only a generic phase label.
 - The main `web/01.HarnesUI/index.html` execution console now exposes a dedicated `Execution Plan` panel inside `Harness Status`, showing:
+  - the latest plan summary from streamed `plan` events, including harness-emitted policy-plan / `PLAN SKIP` events at turn start
+  - the current plan step card
+  - a `Current Work` surface synchronized to the same plan focus
+  - the full step list with localized status badges (`pending`, `in_progress`, `completed`, `failed`, `interrupted`, `skipped`)
+- `Execution Plan` 邵ｺ・ｯ隴丞ｮ茨ｽ､・ｺ騾ｧ繝ｻ竊鷹坎閧ｲ蛻､隴厄ｽｴ隴・ｽｰ邵ｺ謔溘・邵ｺ・ｪ邵ｺ繝ｻ縺｡郢晢ｽｼ郢晢ｽｳ邵ｺ・ｧ郢ｧ繧・竏･ctive chat 邵ｺ・ｮ harness flow 邵ｺ荵晢ｽ芽ｬ暦ｽｨ陞ｳ繝ｻplan 郢ｧ螳夲ｽ｡・ｨ驕会ｽｺ邵ｺ蜉ｱﾂ竏壹′郢晏｣ｹﾎ樒ｹ晢ｽｼ郢ｧ・ｿ郢晢ｽｼ邵ｺ譴ｧ辟秘ｬ・・・ｰ繝ｻ・ｺ荳岩・鬨ｾ・ｲ隰仙干・帝恆・ｽ邵ｺ蛹ｻ・狗ｹｧ蛹ｻ竕ｧ邵ｺ・ｫ邵ｺ蜉ｱ竏ｪ邵ｺ蜷ｶﾂ繝ｻ- The main `web/01.HarnesUI/index.html` execution console now exposes a dedicated `Execution Plan` panel inside `Harness Status`, showing:
   - the latest plan summary from streamed `plan` events
   - the current plan step card
   - the full step list with localized status badges (`pending`, `in_progress`, `completed`, `failed`, `interrupted`)
@@ -68,7 +115,7 @@ This document is the active architecture spec for the Codex App Server integrati
   - `release_manager`
     - Step 4/5-only parent gate
     - config posture: `sandbox_mode = "read-only"`, `approval_policy = "never"`
-    - reviews child evidence, verifies doc sync, and decides PASS/FAIL/BLOCKED
+    - reviews child evidence, verifies doc sync, and emits the final business release decision
 - Specialist child roles:
   - `frontend_worker`
   - `backend_worker`
@@ -78,13 +125,17 @@ This document is the active architecture spec for the Codex App Server integrati
   - `explorer`
 - Collaboration rule:
   - implementation work routes to child specialists instead of parent direct execution
+  - parent roles must not perform material implementation directly
+  - read-only diagnostic shell/MCP inspection does not count as parent material implementation for the Parent Dispatch Guard
   - `intake` and `release_manager` are focused parent overlays, not interchangeable default parents
-  - unresolved user decisions must surface as `NEEDS_INPUT`/`BLOCKED`; parent roles must not auto-answer approval-boundary questions
+  - unresolved user decisions must surface as `EXTERNAL_ACTION_REQUIRED`/`RELEASE_BLOCKED`; parent roles must not auto-answer approval-boundary questions
+  - user-facing response policy now treats `結論 / 根拠 / 限界/反論 / 実務上の意味` as the default high-precision answer shape, but allows task-specific overrides for short answers, reviews, implementation reports, option comparisons, and blocked states when those forms improve reach precision without dropping answer, basis, limits, and practical implication coverage
+  - short fact/status turns now enforce `lead with the direct answer` plus `close in place` not only as docs policy but also through shadow-review findings, retry instructions, and final-text sanitization for non-blocked runs
 - Retired runtime role:
   - `worker`
   - no longer configured in `.codex/config.toml` and must not appear in normal dispatch plans
   - `POST /api/exec` rejects `worker` and scoped aliases such as `worker@chat-legacy` as unconfigured runtime targets
-  - retained only as a legacy governance contract artifact for bounded compatibility audits and explicit parent-override interpretation
+- retained only as a legacy governance/eval contract artifact for bounded compatibility audits and explicit parent-override interpretation
 
 ## 4) Machine-Readable Contracts
 
@@ -93,42 +144,75 @@ This document is the active architecture spec for the Codex App Server integrati
   - defines parent agents, scope paths, read-only and verification-only roles, plus legacy `worker` audit gating
 - Turn lifecycle:
   - `scripts/config/harness_contract_spec.json`
-  - defines `in_progress -> completed|interrupted|failed`, terminal event `turn/completed`, and turn-to-task-outcome bridge rules
+  - defines turn lifecycle, release decision states, and turn-to-task-outcome bridge rules
 - Task outcome taxonomy:
   - `scripts/config/task_outcome_contract.json`
   - defines `COMPLETED`, `BLOCKED`, `NEEDS_INPUT`, `FAILED_VALIDATION`, `PARTIAL`
+- User-facing response contract:
+  - `scripts/config/user_facing_response_contract.json`
+  - defines close-in-place exemptions, allowed prompt-menu signals, prohibited optional closing starters, completion-claim leads, internal-process disclosure bans, and exact-reply override behavior
+- Frozen constitution and phase artifacts:
+  - `docs/HARNESS_CONSTITUTION.md`
+  - `scripts/config/request_frame_contract.json`
+  - `scripts/config/routing_decision_contract.json`
+  - `scripts/config/discovery_outcome_contract.json`
+  - `scripts/config/review_bundle_contract.json`
+  - `scripts/config/release_decision_contract.json`
+  - `scripts/config/conformance_invariants.json`
+  - `scripts/config/evidence_contract.json`
+- Top-level harness decisions use business release states, not generic completion labels:
+  - `RELEASE_APPROVED`
+  - `RELEASE_APPROVED_WITH_ASSUMPTIONS`
+  - `RELEASE_BLOCKED`
+  - `EXTERNAL_ACTION_REQUIRED`
+  - `HARNESS_FAILURE`
+- Bundle-level conformance artifacts must carry the actual planning and assurance score breakdown selected by policy, not zero-filled placeholders.
 - Planning and dispatch contracts:
   - `scripts/config/planning_mode_contract.json`
+  - `scripts/config/task_family_profiles.json`
+  - `scripts/config/design_acceptance_contract.json`
   - `scripts/config/requirement_contract.schema.json`
   - `scripts/config/dispatch_plan.schema.json`
   - Step 1/2 now persist machine-readable planning artifacts instead of relying on free-form narrative only
+  - planning artifacts now persist `taskFamily` / `familyProfileId` so runtime, overview, and downstream evaluation can distinguish `web_creative` from deterministic code paths
+  - `requirement-contract.v3` now persists a machine-readable `userValueFrame` so requirement locking records the primary user value before acceptance/evidence details
+  - `userValueFrame` includes `valueThesis`, `userWants`, `userShouldFeelGet`, `mustAvoid`, `hardConstraints`, `qualityAxes`, `benchmarkCandidates`, and `completedMeans`
+  - family-aware completion is now active: `web_creative` / `design_acceptance` turns evaluate intent-first hard gates before a completed turn can remain `COMPLETED`
+  - task-outcome classification now recognizes `family_completion_gate_failed` and `intent_*` validation reasons without relying on a server-only explicit override
 
 ## 5) Runtime Surfaces
 
 - Static UI routes:
   - `/01.HarnesUI/*`
     - always served from bundled `web/01.HarnesUI/`
-    - polls `GET /api/runtime` while local or runtime-reported requests are active so stale pending rows can self-heal after an explicit stop or detached backend completion
+    - polls `GET /api/runtime` while local requests are active so stale client-side pending rows can self-heal after the backend has already emitted a terminal turn
   - `/english-conversation-app/*`
     - served from external sibling/override root when present, otherwise bundled fallback
     - keeps the existing same-origin browser path so conversation/TTS APIs do not need CORS or alternate ports
 - `GET /api/runtime`
   - runtime snapshot, latest turn, governance policy, turn contract, task outcome contract, eval/replay/SLO capability summary
-  - now also reports planning and assurance contract paths plus the latest turn's planning/assurance depth and flow-path fields
-  - includes `workspaceGuard` / `workspace_guard` so the UI can reflect the active locked root and picker availability
-  - includes `intentFirst` / `intent_first` so the UI can render design acceptance gates and active taste memory
+  - exposes `userFacingResponseContract` summary/path so operators can inspect which close-in-place and response-safety rules are actively enforced
+  - now also reports planning, assurance, and task-family-profile contract paths plus the latest turn's planning/assurance depth, flow-path, and task-family fields
+  - exposes `intentFirst` runtime summary, including design-acceptance contract path, taste-memory seed path, active runtime taste-memory overlay path, taste-memory profile, and required creative gates
+  - exposes top-level `workspaceGuard` / `workspace_guard` state so operators can see whether a workspace lock is active, which root is locked, and which execution sources require that lock
+  - persisted latest-turn snapshots now retain `family_completion_gate`, so runtime reloads keep specialized completion verdicts visible
+  - sanitized planning artifacts preserve the `userValueFrame`, so stored requirement contracts and runtime snapshots carry the same user-value target that shaped execution
+  - exposes constitution contract paths and release decision state vocabulary for operator/runtime inspection
   - includes `gitAutomation` with config posture and latest turn-level auto-commit/autopush result
   - includes `staticApps.englishConversationApp` with mount source/root summary for the current English Conversation App static root
+- `GET /api/intent/profile`
+  - returns the same `intentFirst` summary as a dedicated local operator API for intent-first posture inspection
+  - does not require the control token for same-origin read access
 - `POST /api/intent/profile`
-  - authenticated control endpoint to update the active persisted taste profile used by the intent-first harness
+  - authenticated JSON mutation endpoint for updating the active intent/taste profile
+  - persists the active profile into a runtime-state overlay under `logs/archive/raw/runtime_state/intent_profile_memory.json` instead of editing the seed contract file
 - `POST /api/intent/profile/reset`
-  - authenticated control endpoint to restore the active taste profile from the repo seed config
-- `POST /api/workspace/select`
-  - opens the native folder picker for the local operator and returns the selected directory without changing the execution path
+  - authenticated JSON mutation endpoint that removes the runtime overlay and restores the seed-backed default profile
 - `POST /api/workspace/lock`
-  - sets the current locked workspace root for UI-driven requests
+  - authenticated JSON mutation endpoint that accepts `action = lock_workspace_directory` plus a target directory path
+  - activates a runtime workspace boundary used by both `/api/batch/run` and `/api/exec`
 - `POST /api/workspace/unlock`
-  - clears the current locked workspace root
+  - authenticated JSON mutation endpoint that accepts `action = unlock_workspace_directory` and clears the active workspace boundary
 - `GET /api/harness/overview`
   - aggregated operator snapshot for `web/01.HarnesUI/overview.html`
   - combines runtime posture, full agent topology, contract snapshots, latest proof/signoff bundles, recent eval history, replay memory, execution-memory summaries, and skill-portfolio audit output
@@ -139,21 +223,25 @@ This document is the active architecture spec for the Codex App Server integrati
   - authenticated JSON exec endpoint with NDJSON streaming turn events
   - defaults to `default` unless the request selects another configured role
   - rejects unconfigured agent targets such as retired `worker` and `worker@...` scoped aliases
+  - applies the shared `user_facing_response_contract` during adversarial shadow review and client-final rewrite so close-in-place behavior and premature completion/disclosure checks stay contract-driven
+  - blocks design-sensitive requests from lock-required sources such as `web_ui` with `409 workspace_lock_required` until a workspace lock is active
+  - when a workspace lock is active, rejects requests whose effective `cwd` falls outside the locked root
   - computes adaptive execution selection before execution and carries requirement/dispatch planning artifacts through the turn runtime
+  - requirement locking and requirement-guard prompt shaping are now `user-value first`: the locked `userValueFrame` is injected ahead of acceptance/evidence guidance, and RBJ requirement definition requires a `user_value_core` before implementation planning can pass
+  - emits an operator-visible plan event at turn start from the locked `planningContext`, or an explicit `PLAN SKIP` event for answer-only turns, before later execution items stream in
   - planning depth and assurance depth are selected independently, so `FAST_PLANNING + LIGHT_ASSURANCE` and `DISCOVERY_PLANNING + SIGNOFF_ASSURANCE` are both valid outcomes
-  - `DISCOVERY` mode keeps blocking ambiguity in proposal-only space and maps explicit stop signals to `NEEDS_INPUT`
-  - enforces the active UI workspace lock when `workspaceGuard.lockedRoot` is set, rejecting `cwd` values outside the locked directory tree
-  - for design-sensitive `web_ui` requests, rejects execution when the workspace is not locked
+  - `DISCOVERY` mode keeps blocking ambiguity in proposal-only space and maps explicit stop signals to `EXTERNAL_ACTION_REQUIRED`
+  - subjective `web_creative` turns now split ambiguity into three actions: proceed, ask exactly one clarifying question, or require explicit user input before implementation
+  - when the clarification path is selected, the requirement guard emits a single-question gate and the streamed terminal status surfaces to HarnesUI as `needs_input` instead of a false failure
+  - answer-only confirmation turns no longer auto-surface `[needs_input] user decision required before implementation` from heuristic `DISCOVERY` open-question detection when no explicit approval boundary or explicit user-decision signal is present; the fallback remains available for true approval-boundary / explicit-decision cases
+  - `01.HarnesUI` keeps internal terminal-control errors in harness state instead of appending them to an already-final assistant bubble, and parent-dispatch retry guidance now uses an internal-only wording without the visible `[Parent Dispatch Guard]` banner text
+  - `01.HarnesUI` now assigns a request-scoped idempotency key to each interactive submit, retries transient browser-side submit failures twice with short backoff, and only surfaces a terminal send failure after the retry budget is exhausted
   - idempotency key may be supplied by header or body, but header/body mismatch is rejected with `400` before a claim is created
   - duplicate idempotency reuse with the same key but a mismatched effective request hash returns `409` (`idempotency_request_hash_mismatch`)
   - duplicate in-flight idempotency claims return `409`; resolved duplicates return the stored outcome snapshot with `200`
   - carries request-scoped runtime posture such as sandbox, approval, and request-user-input settings
-  - wraps design-sensitive `web_ui` prompts with the active intent-first brief before dispatch
   - collab-agent stream items now include `child=<agent>` hints when the dispatch target can be resolved, so the UI can attribute specialist activity to the active chat's monitor lane
-- `POST /api/turn/interrupt`
-  - authenticated same-origin control endpoint for explicit operator stop requests from `web/01.HarnesUI`
-  - accepts either `{threadId, turnId}` or `{agentName}` and resolves the active turn from runtime agent state when the browser has not received turn metadata yet
-  - forwards a real `turn/interrupt` request to the app-server instead of relying on client-side fetch abort alone
+  - transport failures matching upstream `stream disconnected before completion` now trigger one automatic fresh-session retry before the turn is exposed as terminal failure
 - `GET /api/exec/idempotency/:key`
   - returns the current idempotency lifecycle snapshot for a claimed exec request
   - exposes `running`, terminal states, and `released` when a claim was closed before a terminal outcome was recorded
@@ -170,12 +258,60 @@ This document is the active architecture spec for the Codex App Server integrati
 - `POST /api/conversation/direct`
 
 ## 6) Evidence and Persistence
+- Root `logs/` is now an operator-clean 3-surface split:
+  - `logs/current/`
+  - `logs/bundles/`
+  - `logs/archive/`
+- Operator-first logging now starts at `logs/current/operator_summary.json`.
+- Intent/taste profile operator overrides now persist under `logs/archive/raw/runtime_state/intent_profile_memory.json`, while `scripts/config/default_user_taste_memory.json` remains the immutable seed/default source.
+- `operator_summary.json` is the only intended first-look file and now carries:
+  - `topLineDecision`
+  - `whyThisIsSafe`
+  - `whyThisMayNeedAttention`
+  - `openOnlyIfNeeded`
+- Normal human review should stay within:
+  - `operator_summary.json`
+  - `design_conformance_summary.json`
+  - `latest_run_summary.json`
+  - `review_load_breakdown.json`
+  - `latest_signoff_summary.json` when a signoff bundle exists
+- `operator_summary.json` is expected to route humans through `openOnlyIfNeeded`; it should not require `logs/current/index.json` for the default review path.
+- `latest_run_summary.json` keeps `residualRisks` for real unresolved risk only. Completed runs may still carry `informationalNotes`, `assumptions`, or `operatorCaveats`, but they should not read as paused, blocked on user choice, or otherwise unfinished.
+- `runtime_snapshot.json` is no longer part of `logs/current/`; detailed posture storage lives in the latest signoff bundle.
+- The operator-facing posture summary is embedded in `logs/current/operator_summary.json`, while the detailed snapshot remains bundle-only.
+- `operator_summary.json` is the only current-surface entrypoint; the fixed current surface does not preserve a separate `index.json`.
+- When both live `stdio` and later `mock-fixture` signoff bundles exist, current-surface truth prefers the latest passing live `stdio` bundle so stronger parity evidence is not hidden by newer fixture-only summaries.
+- Migration/admin evidence is emitted to:
+  - `logs/archive/admin/log_inventory_before.json`
+  - `logs/archive/admin/log_inventory_after.json`
+  - `logs/archive/admin/log_deletion_report.json`
+- `docs/HARNESS_LOGGING_MAP.md` is the human-first lookup table for this surface.
 - `natural_task_trace_summary.json` records the selected implementation-bearing turn id and thread id, so trace bundles stay anchored to the delegated turn even when later completions share the thread.
 - `SIGNOFF_ASSURANCE` sample runs keep planning depth, assurance depth, reviewer/tester execution, and doc-sync evidence co-located in signoff bundles.
 - Runtime proof samples can fall back to fixture-backed transport and still emit dispatch/doc-sync evidence under constrained sandboxes.
+- Live runtime proof bundles now emit top-level `conformance_report.json` and `operator_view_summary.json` backed by explicit proof acceptance checks, so proof bundles expose constitution-grade release judgment without relying only on turn-local artifacts.
+- Signoff bundles are summary-first at the top level and push raw turn / operation-log / measured-baseline deep artifacts under `raw/`.
+- Live signoff bundles now preserve `conformance_report.json` and `operator_view_summary.json` at bundle top level, and `bundle_surface_map.json` distinguishes those fixed top-level summaries from relocated operator aids such as `lane_latency_summary.json`, `signoff_resume_state.json`, and comparison reports.
+- `scripts/generate_signoff_evidence.js` supports split-resumable live signoff execution. Each bundle keeps `signoff_resume_state.json` so operators can pause after a stage and resume the same bundle without re-running completed evidence stages.
+- `lane_latency_summary.json` records stage wall-clock time, dominant bottlenecks, and per-sample latency/evidence breakdown for measured and raw-direct baselines.
+- `bundle_surface_map.json` is emitted into each signoff bundle so humans can distinguish top-level summaries from deep raw artifacts without opening turn directories.
+- Raw direct baseline capture lives under `raw/raw_direct_baseline/` with `raw_direct_baseline_summary.json` plus four lane-specific trace summaries. `scripts/generate_baseline_comparison.js` prefers that direct live baseline when all four direct traces exist, falls back truthfully to measured or vanilla-like comparison when needed, and refreshes `signoff_summary.json` plus `bundle_surface_map.json` so standalone comparison regeneration does not leave stale comparison paths or truth claims behind.
+- `node scripts/export_submission_artifacts.js` exports a review-first default surface only:
+  - current operator summaries
+  - top-level signoff bundle summaries, including bundle `conformance_report.json` and `operator_view_summary.json`
+  - required repo/docs
+- `runtime_snapshot.json` is bundle-only and should be opened only when posture detail is needed.
+- `--with-raw` adds bundle detail plus admin/raw artifacts only when forensic detail is explicitly needed.
+- `submission_manifest.json` is part of that export contract: its `fileCount` and explanatory `notes` must stay aligned with the actual selected files for the chosen mode.
+- `logs/current/latest_run_summary.json` now carries `familyCompletionGate` when the latest run used a specialized family completion contract, so operator-facing current surfaces preserve why a turn was downgraded to `FAILED_VALIDATION`.
 
-- Turn artifacts are written under `logs/turns/` with `manifest.json` plus events/items/diff/stdout/stderr artifacts.
+- Turn artifacts are written under `logs/archive/raw/turns/` by default, with `manifest.json` plus events/items/diff/stdout/stderr artifacts hidden from the normal operator surface.
 - Each turn artifact directory now also carries:
+  - `request_frame.json`
+  - `routing_decision.json`
+  - `task_outcomes.json`
+  - `review_bundle.json`
+  - `release_decision.json`
   - `requirement_contract.json`
   - `dispatch_plan.json`
   - `evidence_manifest.json`
@@ -185,34 +321,44 @@ This document is the active architecture spec for the Codex App Server integrati
 - The turn artifact manifest now records:
   - terminal turn status
   - terminal task outcome status and reason
+  - top-level release decision state
   - turn/task-outcome bridge validation surface through the runtime contracts
   - approval audit records
   - execution observed signals
   - selected planning mode, planning depth, assurance depth, and flow-path context
+  - family completion gate verdict when a task family carries a specialized completion contract such as `design_acceptance`
 - Parent-turn observed file signals can aggregate child `Owned paths:` reports from completed collab calls, so natural multi-agent traces preserve implementation-side changed-path samples.
+- Child evidence parsing accepts `Owned paths` with or without a trailing colon, so live reviewer/tester notes still contribute doc-sync evidence when the model drops the punctuation.
 - `evidence_manifest.json` aggregates acceptance-check pass/fail, doc-sync evidence, child evidence ledger, and residual-risk summary so Step 4 review cost is lower without weakening the evidence gate.
-- `review_load_breakdown.json` aggregates reviewer findings, tester results, doc-sync status, and quality-gate duration hotspots.
+- `review_load_breakdown.json` now also captures evidence-collection time, reviewer/tester/doc-sync timing estimates, retry-loop count, outcome-conversion time, total Step 4 duration, and dominant bottleneck.
+- Both turn-level and current `review_load_breakdown.json` summaries now state their timing model explicitly, including that component estimates may overlap and that `dominantBottleneck` is the largest estimated bucket rather than an additive share of `totalStep4DurationMs`.
 - `stage_timeline.json` and `flow_trace_summary.json` make it explicit which flow, planning depth, assurance depth, agents, contracts, and evidence sources were involved in the run.
-- `natural_task_trace_summary.json` records the selected implementation-bearing turn id and thread id, so signoff bundles stay anchored to the delegated turn even when later completions share the thread.
 - `scripts/generate_signoff_evidence.js` resolves the natural-task proof turn from persisted execution memory on the shared thread, so post-completion adversarial retries do not replace the implementation-bearing trace.
-- `scripts/generate_baseline_comparison.js` emits a measured baseline profile comparison from the same fixture tasks with governance-light settings, and falls back to a vanilla-like approximation only when baseline traces are unavailable.
-- Harness memory is stored in `logs/harness_execution_memory.json` by default and can be redirected with `CODEX_HARNESS_MEMORY_PATH`.
-- User taste memory is stored in `logs/user_taste_memory.json` and is seeded from `scripts/config/default_user_taste_memory.json`.
-- Eval run history is stored in `logs/eval_runs.jsonl` by default and can be redirected with `CODEX_EVAL_HISTORY_PATH`.
-- `logs/harness_execution_memory.json` and `logs/eval_runs.jsonl` are local runtime state files and are intentionally ignored from Git tracking at the repo root.
+- Adversarial retry prompts now preserve execution-task semantics for signoff-style work, and exact-reply contracts suppress citation/date style findings when extra prose would violate the contract.
+- Live DISCOVERY samples may still delegate proposal-only investigation; the evaluation gate now accepts those runs when they avoid implementation edits, satisfy the parent-dispatch guard, and terminate as either `NEEDS_INPUT` or proposal-only `COMPLETED`.
+- The measured live raw-like baseline uses the same DISCOVERY rule: proposal-only delegated investigation is allowed when reviewer/tester remain absent, implementation edits stay absent, and the parent-dispatch guard is satisfied or unnecessary.
+- `scripts/generate_signoff_evidence.js` and `scripts/generate_runtime_proof.js` now honor env-selected app-server transport (`mock-fixture` or `stdio`) and record `transportMode` in proof/signoff summaries plus task trace artifacts.
+- `scripts/app_server_smoke_test.js` and `scripts/eval_replay_api_smoke_test.js` now verify the HTTP/runtime surfaces through `startInProcessHarnessServer(...)` with `mock-fixture` transport, so the repo's required smoke evidence remains collectable even when the host sandbox blocks child-process spawn for live `stdio` app-server startup.
+- DISCOVERY-grade planning analysis now strips fixture-only control markers before requirement extraction, infers structured open questions/non-goals from ambiguity cues, and persists those artifacts as `requirement-contract.v3` and `dispatch-plan.v2`.
+- `scripts/generate_baseline_comparison.js` now records per-sample transport provenance, scores DISCOVERY evidence richness from requirement/dispatch artifacts, and warns when any comparison sample still relies on `mock-fixture`.
+- Harness memory is stored in `logs/archive/raw/harness_execution_memory.json` by default and can be redirected with `CODEX_HARNESS_MEMORY_PATH`.
+- Eval run history is stored in `logs/archive/raw/eval_runs.jsonl` by default and can be redirected with `CODEX_EVAL_HISTORY_PATH`.
+- Conversation persona memory is stored in `logs/archive/raw/runtime_state/conversation_persona_memory.json`.
+- Runtime state files are intentionally hidden from the operator-first surface and referenced through `logs/current/*.json`.
 - Replay memory, idempotency snapshots, and latest turn snapshots carry `taskOutcomeStatus` and `taskOutcomeReason`.
-- Latest turn snapshots now also carry `intent_first` summary data when design-sensitive completion gates apply.
 - Latest turn snapshots now also carry `cwd` and a summarized `git_automation` result when turn-complete Git automation runs.
-- When the target repo is this harness repo, Git automation ignores harness-managed runtime files such as `logs/harness_execution_memory.json` and `logs/eval_runs.jsonl` so those files do not block the next clean-baseline publish.
+- When the target repo is this harness repo, Git automation ignores harness-managed runtime files under `logs/archive/raw/` plus persona memory under `logs/archive/raw/runtime_state/` so those files do not block the next clean-baseline publish.
 - Idempotency snapshots also retain request metadata, lifecycle status, and response-close disposition for duplicate/replay inspection.
 - `POST /api/eval/run` probe cases can now persist synthetic execution-memory records when `persistProbeResultsToMemory` or `persistProbeResults` is enabled.
+- Raw operation logs default to `logs/archive/raw/operation_logs/` in `OPERATOR` mode and become more verbose only in `PROOF`, `DEBUG`, or `FORENSIC` mode via `CODEX_LOGGING_MODE`.
 - `scripts/generate_runtime_proof.js` is the isolated proof generator for this capability. Its verified proof bundle shape is:
-  - `logs/proofs/runtime-proof-*/harness_execution_memory.json`
-  - `logs/proofs/runtime-proof-*/eval_runs.jsonl`
-  - `logs/proofs/runtime-proof-*/turns/` via `CODEX_TURN_ARTIFACTS_DIR`
-  - `logs/proofs/runtime-proof-*/runtime_proof_summary.json`
-  - live dispatch proof file: `logs/proofs/runtime-proof-*/live_dispatch_proof.md`
+  - `logs/bundles/proof/runtime-proof-*/harness_execution_memory.json`
+  - `logs/bundles/proof/runtime-proof-*/eval_runs.jsonl`
+  - `logs/bundles/proof/runtime-proof-*/turns/` via `CODEX_TURN_ARTIFACTS_DIR`
+  - `logs/bundles/proof/runtime-proof-*/runtime_proof_summary.json`
+  - live dispatch proof file: `logs/bundles/proof/runtime-proof-*/live_dispatch_proof.md`
 - `scripts/generate_signoff_evidence.js` is the isolated signoff evidence generator for final-safe proof runs. It launches with:
+  - `CODEX_LOGGING_MODE=PROOF`
   - `CODEX_REQUEST_USER_INPUT_POLICY=blocked`
   - `CODEX_PARENT_DISPATCH_GUARD_MODE=enforce`
   - `CODEX_PARENT_DISPATCH_GUARD_MAX_RETRIES=1`
@@ -222,22 +368,26 @@ This document is the active architecture spec for the Codex App Server integrati
   - `CODEX_ADVERSARIAL_SHADOW_ENABLED=1`
   - `CODEX_ADVERSARIAL_LOOP_ENABLED=1`
 - Its bundle shape is:
-  - `logs/signoff-bundles/signoff-*/runtime_snapshot.json`
-  - `logs/signoff-bundles/signoff-*/core_harness_workflow_run.json`
-  - `logs/signoff-bundles/signoff-*/fast_task_trace_summary.json`
-  - `logs/signoff-bundles/signoff-*/discovery_task_trace_summary.json`
-  - `logs/signoff-bundles/signoff-*/natural_task_trace_summary.json`
-  - `logs/signoff-bundles/signoff-*/harness_execution_memory.json`
-  - `logs/signoff-bundles/signoff-*/eval_runs.jsonl`
-  - `logs/signoff-bundles/signoff-*/turns/`
-  - `logs/signoff-bundles/signoff-*/signoff_summary.json`
+  - `logs/bundles/signoff/signoff-*/bundle_surface_map.json`
+  - `logs/bundles/signoff/signoff-*/runtime_snapshot.json`
+  - `logs/bundles/signoff/signoff-*/core_harness_workflow_run.json`
+  - `logs/bundles/signoff/signoff-*/natural_task_trace_summary.json`
+  - `logs/bundles/signoff/signoff-*/latest_run_summary.json`
+  - `logs/bundles/signoff/signoff-*/review_load_breakdown.json`
+  - `logs/bundles/signoff/signoff-*/raw/turns/`
+  - `logs/bundles/signoff/signoff-*/signoff_summary.json`
 
 ## 7) Current Completion Gates
 
 - `server.js` or `scripts/` changes:
   - run `node scripts/app_server_smoke_test.js`
-  - run `node scripts/intent_first_runtime_test.js` when the change touches the intent-first contract, taste memory, or design-sensitive completion gate
+  - run `node scripts/exec_retry_regression_test.mjs` when interactive submit retry handling, launcher restart defaults, or Fast mode operator defaults change
+  - run `node scripts/send_retry_resilience_test.mjs` when idempotency/header wiring or retry classification changes
   - run `node scripts/git_automation_policy_test.js` when the change touches turn-complete Git automation
+- `web/` changes:
+  - verify `GET /api/runtime` returns HTTP 200
+  - verify `GET /01.HarnesUI/index.html` returns HTTP 200
+  - run `node scripts/harnesui_prompt_autogrow_test.js` when the main chat composer height logic changes
 - English Conversation App static-mount changes:
   - run `node scripts/external_english_conversation_app_mount_test.js`
 - Skill assignment or skill package changes:
@@ -245,14 +395,12 @@ This document is the active architecture spec for the Codex App Server integrati
 - Eval / workflow policy changes:
   - run `node scripts/eval_replay_api_smoke_test.js`
   - run `node scripts/planning_mode_policy_test.js` when planning-mode selection or Step 1/2 contracts change
-- Intent-first UI changes in `web/01.HarnesUI/`:
-  - verify `/api/runtime` exposes `intentFirst`
-  - verify the main UI renders the active taste profile and completion gates
-  - verify `/api/harness/overview` serves the overview inventory used by operators
-  - capture screenshot evidence for the touched operator surfaces before claiming `COMPLETED`
+  - run `node scripts/harnesui_requirement_summary_test.js` when Requirement Lock UI summarization or empty-state detection changes
+  - run `node scripts/baseline_comparison_test.js` when DISCOVERY evidence scoring or baseline-comparison reporting changes
 - Governance/runtime posture changes in `.codex/` or parent-role docs:
+  - run `node scripts/project_codex_config_policy_test.js`
   - verify parent role config posture and role-boundary wording stay aligned across `.codex/config.toml`, `.codex/agents/*.toml`, and `docs/AGENT_OPERATING_RULES.md`
-- Spec sync before `COMPLETED`:
+- Spec sync before `RELEASE_APPROVED`:
   - update this file
   - append a matching entry to `docs/ARCHITECTURE_CHANGELOG.md`
 
@@ -265,3 +413,5 @@ This document is the active architecture spec for the Codex App Server integrati
 - Default eval coverage is now workflow-aware, but broader scenario depth is still limited by the small baseline suite.
 - The external English Conversation App priority is resolved at request time; operators still need to ensure the sibling repo contents themselves stay compatible with the harness APIs.
 - Some lower-tier operator documents remain mixed-language.
+- Live `stdio` parity still depends on the host allowing child-process spawn for the Codex app-server. In spawn-restricted sandboxes, proof/signoff `transportMode=stdio` can only fail fast with recorded evidence (`spawn EPERM`) rather than produce a full live comparison bundle.
+- Playwright browser verification can fail for the same reason in this sandbox (`browserType.launch: spawn EPERM`), so local UI changes may need a normal desktop shell for screenshot-grade browser evidence even when route checks and targeted UI logic tests pass.

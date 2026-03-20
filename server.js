@@ -25,6 +25,12 @@ const {
 const {defaultPromptCharLimit,buildPromptAudit,evaluateImagePayloadBudget,formatBytes}=require("./scripts/lib/exec_payload_policy");
 const {buildAdversarialShadowReview,shadowReviewVersion}=require("./scripts/lib/adversarial_shadow_policy");
 const {buildAdversarialRetryPrompt,shouldRetryAdversarialLoop}=require("./scripts/lib/adversarial_loop_policy");
+const {stripUnsolicitedClosingProposal}=require("./scripts/lib/user_facing_response_policy");
+const {
+  defaultUserFacingResponseContractPath,
+  loadUserFacingResponseContract,
+  summarizeUserFacingResponseContract,
+}=require("./scripts/lib/user_facing_response_contract");
 const {
   buildParentDispatchGuardRetryPrompt,
   buildParentDispatchGuardRuntimeSnapshot,
@@ -96,8 +102,12 @@ const {
 const {
   defaultDesignAcceptanceContractPath,
   defaultTasteMemorySeedPath,
+  isDesignSensitiveRequest,
   loadDesignAcceptanceContract,
   loadUserTasteMemoryStore,
+  normalizeUserTasteMemoryStore,
+  persistUserTasteMemoryStore,
+  requiresWorkspaceLockForSource,
   summarizeIntentFirstRuntime,
 }=require("./scripts/lib/intent_first_policy");
 const {
@@ -176,6 +186,7 @@ const gitAutomationWorkspaceIgnoredPaths=Object.freeze([
   "logs/archive/raw/harness_execution_memory.json",
   "logs/archive/raw/eval_runs.jsonl",
   "logs/archive/raw/runtime_state/conversation_persona_memory.json",
+  "logs/archive/raw/runtime_state/intent_profile_memory.json",
 ]);
 function normalizeConfiguredAgentName(value,fallback){
   const raw=typeof value==="string"?value.trim():"";
@@ -242,6 +253,7 @@ const defaultExperimentalFeatures=Object.freeze(["fast_mode","guardian_approval"
 const fastModeFeatureName="fast_mode";
 const automaticApprovalReviewFeatureName="guardian_approval";
 const defaultCodexServiceTier=defaultExperimentalFeatures.includes(fastModeFeatureName)?"fast":"flex";
+const nonFastEffectiveServiceTier="auto";
 const allowedCodexServiceTiers=new Set(["flex","fast"]);
 function normalizeCodexServiceTier(value,fallback=defaultCodexServiceTier){
   const normalized=typeof value==="string"?value.trim().toLowerCase():"";
@@ -307,11 +319,14 @@ const sloFailureRateMax=Number(parseRateEnv("CODEX_SLO_FAILURE_RATE_MAX","0.25",
 const sloIdempotencyConflictRateMax=Number(parseRateEnv("CODEX_SLO_IDEMPOTENCY_CONFLICT_RATE_MAX","0.05",0,1).toFixed(4));
 const harnessTurnContractSpecPath=path.join(workspaceRoot,"scripts","config","harness_contract_spec.json");
 const taskOutcomeContractPath=path.join(workspaceRoot,"scripts","config","task_outcome_contract.json");
+const userFacingResponseContractPath=defaultUserFacingResponseContractPath;
 const planningModeContractPath=path.join(workspaceRoot,"scripts","config","planning_mode_contract.json");
 const assuranceModeContractPath=path.join(workspaceRoot,"scripts","config","assurance_depth_contract.json");
 const taskFamilyProfilesPath=path.join(workspaceRoot,"scripts","config","task_family_profiles.json");
 const designAcceptanceContractPath=defaultDesignAcceptanceContractPath;
+const userFacingResponseContract=loadUserFacingResponseContract(userFacingResponseContractPath);
 const tasteMemorySeedPath=defaultTasteMemorySeedPath;
+const tasteMemoryMemoryPath=path.join(loggingSurfacePaths.runtimeStateRoot,"intent_profile_memory.json");
 const planningDecisionContractSchemaPath=path.join(workspaceRoot,"scripts","config","planning_decision_contract.schema.json");
 const requirementContractSchemaPath=path.join(workspaceRoot,"scripts","config","requirement_contract.schema.json");
 const dispatchPlanSchemaPath=path.join(workspaceRoot,"scripts","config","dispatch_plan.schema.json");
@@ -339,7 +354,8 @@ const planningModeContract=loadPlanningModeContractSafely();
 const assuranceModeContract=loadAssuranceModeContractSafely();
 const taskFamilyProfilesContract=loadTaskFamilyProfilesContractSafely();
 const designAcceptanceContract=loadDesignAcceptanceContractSafely();
-const tasteMemoryStore=loadTasteMemoryStoreSafely();
+let tasteMemoryStore=loadTasteMemoryStoreSafely();
+let workspaceGuardLockedRoot="";
 
 let webServer=null;
 let webPort=null;
@@ -560,15 +576,143 @@ function loadDesignAcceptanceContractSafely(){
 }
 function loadTasteMemoryStoreSafely(){
   try{
-    return loadUserTasteMemoryStore({seedPath:tasteMemorySeedPath});
+    return loadUserTasteMemoryStore({memoryPath:tasteMemoryMemoryPath,seedPath:tasteMemorySeedPath});
   }catch(error){
     console.warn(`[contract] failed to load taste memory seed from ${tasteMemorySeedPath}: ${error&&error.message?error.message:String(error)}`);
     try{
-      return loadUserTasteMemoryStore({seedPath:defaultTasteMemorySeedPath});
+      return loadUserTasteMemoryStore({memoryPath:tasteMemoryMemoryPath,seedPath:defaultTasteMemorySeedPath});
     }catch{
       return loadUserTasteMemoryStore();
     }
   }
+}
+function buildIntentFirstApiSnapshot(){
+  return{
+    ok:true,
+    intentFirst:{
+      ...summarizeIntentFirstRuntime({contract:designAcceptanceContract,store:tasteMemoryStore}),
+      contractPath:summarizePathForOperationLog(designAcceptanceContractPath,220),
+      tasteMemorySeedPath:summarizePathForOperationLog(tasteMemorySeedPath,220),
+      tasteMemoryPath:summarizePathForOperationLog(tasteMemoryMemoryPath,220),
+    },
+  };
+}
+function mergeIntentProfilePatch(currentProfile,profilePatch){
+  const current=currentProfile&&typeof currentProfile==="object"?{...currentProfile}:{};
+  const patch=profilePatch&&typeof profilePatch==="object"?profilePatch:{};
+  const clearFields=(fields)=>{
+    for(const field of fields){
+      delete current[field];
+    }
+  };
+  if(Object.prototype.hasOwnProperty.call(patch,"northStar")||Object.prototype.hasOwnProperty.call(patch,"northStarLines")){
+    clearFields(["northStar","northStarLines"]);
+  }
+  if(Object.prototype.hasOwnProperty.call(patch,"mustHaves")||Object.prototype.hasOwnProperty.call(patch,"prefers")){
+    clearFields(["mustHaves","prefers"]);
+  }
+  if(Object.prototype.hasOwnProperty.call(patch,"avoid")||Object.prototype.hasOwnProperty.call(patch,"rejects")){
+    clearFields(["avoid","rejects"]);
+  }
+  if(Object.prototype.hasOwnProperty.call(patch,"benchmarkUrls")||Object.prototype.hasOwnProperty.call(patch,"benchmarkSites")){
+    clearFields(["benchmarkUrls","benchmarkSites"]);
+  }
+  if(Object.prototype.hasOwnProperty.call(patch,"notes")||Object.prototype.hasOwnProperty.call(patch,"benchmarkNotes")){
+    clearFields(["notes","benchmarkNotes"]);
+  }
+  if(Object.prototype.hasOwnProperty.call(patch,"requiredProof")){
+    clearFields(["requiredProof"]);
+  }
+  return{
+    ...current,
+    ...patch,
+  };
+}
+function updateIntentProfileStore(profilePatch){
+  const currentStore=normalizeUserTasteMemoryStore(tasteMemoryStore);
+  const activeProfileId=safeString(currentStore&&currentStore.activeProfileId,80).toLowerCase()||"default";
+  const currentProfile=currentStore&&currentStore.profiles&&currentStore.profiles[activeProfileId]&&typeof currentStore.profiles[activeProfileId]==="object"
+    ?currentStore.profiles[activeProfileId]
+    :{};
+  const nextStore=normalizeUserTasteMemoryStore({
+    ...currentStore,
+    profiles:{
+      ...(currentStore&&currentStore.profiles&&typeof currentStore.profiles==="object"?currentStore.profiles:{}),
+      [activeProfileId]:{
+        ...mergeIntentProfilePatch(currentProfile,profilePatch),
+        id:activeProfileId,
+      },
+    },
+  });
+  tasteMemoryStore=persistUserTasteMemoryStore(tasteMemoryMemoryPath,nextStore);
+  return buildIntentFirstApiSnapshot();
+}
+function resetIntentProfileStore(){
+  try{
+    if(fs.existsSync(tasteMemoryMemoryPath))fs.unlinkSync(tasteMemoryMemoryPath);
+  }catch(error){
+    throw new Error(`failed to reset intent profile memory: ${error&&error.message?error.message:String(error)}`);
+  }
+  tasteMemoryStore=loadTasteMemoryStoreSafely();
+  return buildIntentFirstApiSnapshot();
+}
+function buildWorkspaceGuardSnapshot(){
+  const workspaceLock=designAcceptanceContract&&designAcceptanceContract.workspaceLock&&typeof designAcceptanceContract.workspaceLock==="object"
+    ?designAcceptanceContract.workspaceLock
+    :{};
+  return{
+    locked:Boolean(workspaceGuardLockedRoot),
+    lockedRoot:workspaceGuardLockedRoot||null,
+    requiredForSources:Array.isArray(workspaceLock.requiredForSources)
+      ?workspaceLock.requiredForSources.map((entry)=>safeString(entry,80)).filter(Boolean)
+      :[],
+    rejectWhenUnlocked:Boolean(workspaceLock.rejectWhenUnlocked),
+  };
+}
+function resolveWorkspaceGuardRequirement({prompt="",executionSource=""}={}){
+  const designSensitive=isDesignSensitiveRequest({prompt,contract:designAcceptanceContract});
+  return{
+    designSensitive,
+    workspaceLockRequired:designSensitive&&requiresWorkspaceLockForSource({
+      contract:designAcceptanceContract,
+      executionSource,
+    }),
+  };
+}
+function lockWorkspaceDirectory(targetPath){
+  const lockedRoot=normalizeWorkingDirectory(targetPath,targetPath||workspaceRoot);
+  workspaceGuardLockedRoot=lockedRoot;
+  logOperation("workspace_guard.locked",{
+    lockedRoot:summarizePathForOperationLog(lockedRoot,220),
+  },"standard");
+  return{
+    ok:true,
+    workspaceGuard:buildWorkspaceGuardSnapshot(),
+  };
+}
+function unlockWorkspaceDirectory(){
+  const previousLockedRoot=workspaceGuardLockedRoot||"";
+  workspaceGuardLockedRoot="";
+  logOperation("workspace_guard.unlocked",{
+    previousLockedRoot:summarizePathForOperationLog(previousLockedRoot,220),
+  },"standard");
+  return{
+    ok:true,
+    workspaceGuard:buildWorkspaceGuardSnapshot(),
+  };
+}
+function buildWorkspaceGuardViolation(cwd,{label="cwd",statusCode=403,code="outside_locked_workspace"}={}){
+  if(!workspaceGuardLockedRoot)return null;
+  if(isPathWithin(workspaceGuardLockedRoot,cwd))return null;
+  return{
+    statusCode:Number.isFinite(Number(statusCode))?Math.trunc(Number(statusCode)):403,
+    payload:{
+      ok:false,
+      error:`${label} is outside locked workspace: ${cwd}`,
+      code:safeString(code,80)||"outside_locked_workspace",
+      workspaceGuard:buildWorkspaceGuardSnapshot(),
+    },
+  };
 }
 function normalizeAutoOpenPath(value){
   const raw=safeString(value,240);
@@ -2041,6 +2185,7 @@ function executeEvalProbeCase(evalCase,variant){
         minScore:input.minScore,
         maxPromptChars:input.maxPromptChars,
         maxAnswerChars:input.maxAnswerChars,
+        responseContract:userFacingResponseContract,
       });
       const finding=Array.isArray(review&&review.red&&review.red.findings)
         ?review.red.findings.find((entry)=>safeString(entry&&entry.id,80)==="exact_reply_contract_mismatch")
@@ -3893,6 +4038,7 @@ function createBaseAgentState(){
     lastModelReasoningEffort:defaultExecModelReasoningEffort,
     lastFastModeEnabled:fastModeDefault,
     lastAutomaticApprovalReviewEnabled:automaticApprovalReviewDefault,
+    lastPlanningContext:null,
     fastModeEnabled:fastModeDefault,
     automaticApprovalReviewEnabled:automaticApprovalReviewDefault,
   };
@@ -3906,6 +4052,304 @@ if(defaultExecAgentName!=="main"){
   agentStates.set("main",mainState);
 }
 let activeAgentName=defaultExecAgentName;
+const liveCollabChildCatalogByThread=new Map();
+const liveCollabChildActivityByThread=new Map();
+const liveCollabChildStaleMs=15*60*1000;
+
+function pruneLiveCollabChildState(nowMs=Date.now()){
+  const now=Number.isFinite(Number(nowMs))?Number(nowMs):Date.now();
+  for(const[threadId,entry]of liveCollabChildActivityByThread.entries()){
+    const updatedAt=Number.isFinite(Number(entry&&entry.updatedAt))?Number(entry.updatedAt):0;
+    const parentTurnId=safeString(entry&&entry.parentTurnId,160);
+    if(parentTurnId&&latestTurnSnapshot&&safeString(latestTurnSnapshot.turnId,160)===parentTurnId&&latestTurnSnapshot.status==="in_progress")continue;
+    if(updatedAt>0&&now-updatedAt<=liveCollabChildStaleMs)continue;
+    liveCollabChildActivityByThread.delete(threadId);
+  }
+  for(const[threadId,entry]of liveCollabChildCatalogByThread.entries()){
+    const updatedAt=Number.isFinite(Number(entry&&entry.updatedAt))?Number(entry.updatedAt):0;
+    if(updatedAt>0&&now-updatedAt<=liveCollabChildStaleMs)continue;
+    if(liveCollabChildActivityByThread.has(threadId))continue;
+    liveCollabChildCatalogByThread.delete(threadId);
+  }
+}
+function looksLikeCollabThreadId(value){
+  const text=safeString(value,160);
+  if(!text)return false;
+  return /^mock-thread-/i.test(text)
+    ||/thread/i.test(text)
+    ||/^[0-9a-f]{8,}(?:-[0-9a-f]{4,}){2,}$/i.test(text)
+    ||/^[0-9a-f]{16,}$/i.test(text);
+}
+function normalizeLiveCollabFallbackName(threadId){
+  const normalizedThreadId=safeString(threadId,120);
+  if(!normalizedThreadId)return"child";
+  return`child@${normalizedThreadId}`;
+}
+function buildConfiguredAgentLookup(){
+  const lookup=new Map();
+  for(const agent of parseConfiguredAgentsFromCodexConfig()){
+    const name=normalizeAgentName(agent&&agent.name);
+    if(!name)continue;
+    lookup.set(name,{
+      name,
+      description:safeString(agent&&agent.description,400)||"",
+      role:safeString(agent&&agent.role,80)||inferAgentRole(name,safeString(agent&&agent.description,400)||""),
+      configFile:safeString(agent&&agent.configFile,240)||null,
+    });
+  }
+  return lookup;
+}
+function configuredAgentKeywordEntries(configuredAgentsByName){
+  const entries=[];
+  for(const[name]of configuredAgentsByName instanceof Map?configuredAgentsByName:new Map()){
+    if(parentAgentNames.has(name))continue;
+    const tokens=Array.from(new Set(
+      name.split(/[^a-z0-9]+/i).map((entry)=>safeString(entry,80).toLowerCase()).filter((entry)=>entry.length>=4)
+    ));
+    entries.push({name,tokens});
+  }
+  return entries;
+}
+function inferConfiguredAgentFromPromptText(promptText,configuredAgentsByName){
+  const lower=safeString(promptText,12000).toLowerCase();
+  if(!lower||!(configuredAgentsByName instanceof Map)||!configuredAgentsByName.size)return"";
+  for(const[name]of configuredAgentsByName){
+    if(parentAgentNames.has(name))continue;
+    if(lower.includes(name.toLowerCase()))return name;
+  }
+  const keywordEntries=configuredAgentKeywordEntries(configuredAgentsByName);
+  for(const entry of keywordEntries){
+    if(entry.tokens.some((token)=>lower.includes(token)))return entry.name;
+  }
+  if(lower.includes("backend")&&configuredAgentsByName.has("backend_worker"))return"backend_worker";
+  if(lower.includes("frontend")&&configuredAgentsByName.has("frontend_worker"))return"frontend_worker";
+  if(lower.includes("infra")&&configuredAgentsByName.has("infra_worker"))return"infra_worker";
+  if(lower.includes("review")&&configuredAgentsByName.has("reviewer"))return"reviewer";
+  if((lower.includes("test")||lower.includes("verification"))&&configuredAgentsByName.has("tester"))return"tester";
+  if((lower.includes("explore")||lower.includes("investigator"))&&configuredAgentsByName.has("explorer"))return"explorer";
+  return"";
+}
+function plannedDispatchOwnersFromPlanningContext(planningContext){
+  const dispatches=Array.isArray(planningContext&&planningContext.dispatchPlan&&planningContext.dispatchPlan.dispatches)
+    ?planningContext.dispatchPlan.dispatches
+    :[];
+  return dispatches
+    .map((entry)=>normalizeAgentName(entry&&entry.ownerAgent))
+    .filter(Boolean);
+}
+function createLiveCollabTurnTracker({planningContext,parentAgentName="",parentThreadId="",parentTurnId=""}={}){
+  return{
+    parentAgentName:safeString(parentAgentName,120)||"",
+    parentThreadId:safeString(parentThreadId,160)||"",
+    parentTurnId:safeString(parentTurnId,160)||"",
+    plannedDispatchOwners:plannedDispatchOwnersFromPlanningContext(planningContext),
+    nextPlannedDispatchIndex:0,
+    configuredAgentsByName:buildConfiguredAgentLookup(),
+    childNameByThread:new Map(),
+    receiverIdsByCallId:new Map(),
+  };
+}
+function nextPlannedDispatchOwnerForTracker(tracker){
+  if(!tracker||!Array.isArray(tracker.plannedDispatchOwners))return"";
+  while(tracker.nextPlannedDispatchIndex<tracker.plannedDispatchOwners.length){
+    const candidate=normalizeAgentName(tracker.plannedDispatchOwners[tracker.nextPlannedDispatchIndex]);
+    tracker.nextPlannedDispatchIndex+=1;
+    if(candidate)return candidate;
+  }
+  return"";
+}
+function inferLiveCollabChildName({item,tracker}={}){
+  const trace=buildAgentDispatchTrace(item,"");
+  const direct=normalizeAgentName(trace&&trace.child?trace.child:"");
+  if(direct&&direct!=="unknown"&&!looksLikeCollabThreadId(direct))return direct;
+  const receiverIds=extractCollabReceiverThreadIds(item,1);
+  for(const receiverId of receiverIds){
+    const mapped=tracker&&tracker.childNameByThread instanceof Map?normalizeAgentName(tracker.childNameByThread.get(receiverId)):"";
+    if(mapped)return mapped;
+  }
+  const stateMessages=extractCollabStateMessages(item,4);
+  const promptText=[
+    safeString(item&&item.prompt,2400),
+    safeString(item&&item.message,2400),
+    safeString(trace&&trace.task?trace.task:"",2400),
+    ...stateMessages,
+  ].filter(Boolean).join("\n");
+  const configuredAgentsByName=tracker&&tracker.configuredAgentsByName instanceof Map
+    ?tracker.configuredAgentsByName
+    :buildConfiguredAgentLookup();
+  const promptCandidate=inferConfiguredAgentFromPromptText(promptText,configuredAgentsByName);
+  if(promptCandidate)return promptCandidate;
+  const roleSignals=inferCollabRoleSignals({promptText,child:direct,stateMessages});
+  if(roleSignals.reviewerObserved&&configuredAgentsByName.has("reviewer"))return"reviewer";
+  if(roleSignals.testerObserved&&configuredAgentsByName.has("tester"))return"tester";
+  const plannedOwner=nextPlannedDispatchOwnerForTracker(tracker);
+  if(plannedOwner)return plannedOwner;
+  return normalizeLiveCollabFallbackName(receiverIds[0]||"");
+}
+function ensureLiveCollabChildCatalog(threadId,{name="",tracker=null}={}){
+  const normalizedThreadId=safeString(threadId,160);
+  if(!normalizedThreadId)return null;
+  const configuredAgentsByName=tracker&&tracker.configuredAgentsByName instanceof Map
+    ?tracker.configuredAgentsByName
+    :buildConfiguredAgentLookup();
+  const requestedName=normalizeAgentName(name);
+  const resolvedName=requestedName||normalizeLiveCollabFallbackName(normalizedThreadId);
+  const configured=configuredAgentsByName.get(resolvedName)||null;
+  const record={
+    threadId:normalizedThreadId,
+    name:resolvedName,
+    description:configured&&configured.description?configured.description:"",
+    role:configured&&configured.role?configured.role:inferAgentRole(resolvedName,configured&&configured.description?configured.description:""),
+    parentAgentName:tracker&&tracker.parentAgentName?tracker.parentAgentName:"",
+    parentThreadId:tracker&&tracker.parentThreadId?tracker.parentThreadId:"",
+    parentTurnId:tracker&&tracker.parentTurnId?tracker.parentTurnId:"",
+    updatedAt:Date.now(),
+  };
+  const existing=liveCollabChildCatalogByThread.get(normalizedThreadId);
+  const merged=existing?{...existing,...record}:{...record};
+  liveCollabChildCatalogByThread.set(normalizedThreadId,merged);
+  if(tracker&&tracker.childNameByThread instanceof Map){
+    tracker.childNameByThread.set(normalizedThreadId,resolvedName);
+  }
+  return merged;
+}
+function setLiveCollabChildActivity(threadId,{name="",status="running",detail="",tracker=null}={}){
+  const catalog=ensureLiveCollabChildCatalog(threadId,{name,tracker});
+  if(!catalog)return null;
+  const updatedAt=Date.now();
+  const entry={
+    ...catalog,
+    source:"collab",
+    sessionRef:catalog.threadId,
+    activeTurnId:catalog.parentTurnId||"",
+    isActive:true,
+    status:safeString(status,80)||"running",
+    detail:safeString(detail,240)||"",
+    updatedAt,
+  };
+  liveCollabChildCatalogByThread.set(catalog.threadId,{...catalog,updatedAt});
+  liveCollabChildActivityByThread.set(catalog.threadId,entry);
+  return entry;
+}
+function clearLiveCollabChildActivity(threadId){
+  const normalizedThreadId=safeString(threadId,160);
+  if(!normalizedThreadId)return false;
+  return liveCollabChildActivityByThread.delete(normalizedThreadId);
+}
+function clearLiveCollabChildActivityForTurn(turnId){
+  const normalizedTurnId=safeString(turnId,160);
+  if(!normalizedTurnId)return;
+  for(const[threadId,entry]of liveCollabChildActivityByThread.entries()){
+    if(safeString(entry&&entry.parentTurnId,160)!==normalizedTurnId)continue;
+    liveCollabChildActivityByThread.delete(threadId);
+  }
+}
+function liveCollabReceiverIdsForItem(item,tracker,max=4){
+  const direct=extractCollabReceiverThreadIds(item,max);
+  if(direct.length)return direct;
+  const itemId=safeString(item&&item.id,120);
+  if(!itemId||!tracker||!(tracker.receiverIdsByCallId instanceof Map))return[];
+  const cached=tracker.receiverIdsByCallId.get(itemId);
+  return Array.isArray(cached)?cached.slice(0,max):[];
+}
+function observeLiveCollabItem({item,phase="",tracker=null}={}){
+  if(!item||typeof item!=="object"||!isCollabToolItemType(item.type))return null;
+  pruneLiveCollabChildState();
+  const normalizedPhase=safeString(phase,40).toLowerCase();
+  const tool=normalizeToolNameForComparison(item.tool);
+  const itemId=safeString(item.id,120);
+  let receiverIds=extractCollabReceiverThreadIds(item,4);
+  if(itemId&&tracker&&tracker.receiverIdsByCallId instanceof Map&&receiverIds.length){
+    tracker.receiverIdsByCallId.set(itemId,receiverIds.slice(0,4));
+  }
+  if(!receiverIds.length){
+    receiverIds=liveCollabReceiverIdsForItem(item,tracker,4);
+  }
+  let childName="";
+  if(tool==="spawnagent"){
+    const status=safeString(item.status,40).toLowerCase();
+    if(status==="completed"&&receiverIds.length){
+      childName=inferLiveCollabChildName({item,tracker});
+      receiverIds.forEach((receiverId)=>{
+        setLiveCollabChildActivity(receiverId,{
+          name:childName,
+          status:"spawned",
+          detail:"spawn完了 / 子agent初期化中",
+          tracker,
+        });
+      });
+    }
+    return{receiverIds,childName};
+  }
+  if(tool==="wait"){
+    if(normalizedPhase==="started"&&receiverIds.length){
+      receiverIds.forEach((receiverId)=>{
+        childName=childName||inferLiveCollabChildName({item,tracker});
+        setLiveCollabChildActivity(receiverId,{
+          name:childName,
+          status:"working",
+          detail:"子agentが処理中",
+          tracker,
+        });
+      });
+    }
+    if(normalizedPhase==="completed"&&receiverIds.length){
+      receiverIds.forEach((receiverId)=>clearLiveCollabChildActivity(receiverId));
+      if(itemId&&tracker&&tracker.receiverIdsByCallId instanceof Map){
+        tracker.receiverIdsByCallId.delete(itemId);
+      }
+    }
+    return{receiverIds,childName};
+  }
+  if(tool==="sendinput"||tool==="resumeagent"){
+    if(receiverIds.length){
+      receiverIds.forEach((receiverId)=>{
+        childName=childName||inferLiveCollabChildName({item,tracker});
+        setLiveCollabChildActivity(receiverId,{
+          name:childName,
+          status:"working",
+          detail:tool==="sendinput"?"追加入力を処理中":"子agentを再開中",
+          tracker,
+        });
+      });
+    }
+    if(normalizedPhase==="completed"&&itemId&&tracker&&tracker.receiverIdsByCallId instanceof Map){
+      tracker.receiverIdsByCallId.delete(itemId);
+    }
+    return{receiverIds,childName};
+  }
+  if(tool==="closeagent"){
+    if(normalizedPhase==="completed"&&receiverIds.length){
+      receiverIds.forEach((receiverId)=>{
+        clearLiveCollabChildActivity(receiverId);
+        liveCollabChildCatalogByThread.delete(receiverId);
+        if(tracker&&tracker.childNameByThread instanceof Map){
+          tracker.childNameByThread.delete(receiverId);
+        }
+      });
+    }
+    if(itemId&&tracker&&tracker.receiverIdsByCallId instanceof Map){
+      tracker.receiverIdsByCallId.delete(itemId);
+    }
+    return{receiverIds,childName};
+  }
+  return{receiverIds,childName};
+}
+function getLiveCollabChildRows(){
+  pruneLiveCollabChildState();
+  return Array.from(liveCollabChildActivityByThread.values()).map((entry)=>({
+    name:safeString(entry&&entry.name,120)||normalizeLiveCollabFallbackName(entry&&entry.threadId?entry.threadId:""),
+    description:safeString(entry&&entry.detail,240)||safeString(entry&&entry.description,400)||"",
+    role:safeString(entry&&entry.role,80)||inferAgentRole(safeString(entry&&entry.name,120)||"",safeString(entry&&entry.description,400)||""),
+    source:"collab",
+    isActive:true,
+    selected:false,
+    threadId:safeString(entry&&entry.threadId,160)||null,
+    activeTurnId:safeString(entry&&entry.activeTurnId,160)||null,
+    sessionRef:safeString(entry&&entry.sessionRef,160)||safeString(entry&&entry.threadId,160)||null,
+    status:safeString(entry&&entry.status,80)||"running",
+  }));
+}
 
 let latestTurnSnapshot=null;
 let latestGitAutomationSnapshot=null;
@@ -4194,6 +4638,7 @@ function runAdversarialShadowReview(input={},meta={}){
       minScore:adversarialShadowMinScore,
       maxPromptChars:adversarialShadowMaxPromptChars,
       maxAnswerChars:adversarialShadowMaxAnswerChars,
+      responseContract:userFacingResponseContract,
     });
     const findings=Array.isArray(review&&review.red&&review.red.findings)?review.red.findings:[];
     const severity=review&&review.red&&review.red.severity&&typeof review.red.severity==="object"
@@ -5178,6 +5623,9 @@ function getRequirementGuardMatcherSnapshot(){
 }
 function normalizeExecOptionsForRun(options){
   const source=options&&typeof options==="object"?options:{};
+  const previousPlanningContext=source.previousPlanningContext&&typeof source.previousPlanningContext==="object"
+    ?sanitizePlanningArtifactsForRuntime(source.previousPlanningContext)
+    :null;
   const planningContext=sanitizePlanningArtifactsForRuntime(
     source.planningContext&&typeof source.planningContext==="object"
       ?source.planningContext
@@ -5198,6 +5646,7 @@ function normalizeExecOptionsForRun(options){
     attemptedFreshFallback:Boolean(source.attemptedFreshFallback),
     images:Array.isArray(source.images)?source.images:[],
     requestUserInputPolicy:normalizeRequestUserInputPolicy(source.requestUserInputPolicy,nonInteractiveRequestUserInputPolicy),
+    previousPlanningContext,
     planningContext,
   };
 }
@@ -5535,7 +5984,7 @@ function resolveEffectiveServiceTier(agentState){
   if(agentState&&resolveFastModeEnabled(agentState.fastModeEnabled,false)){
     return normalizeCodexServiceTier(agentState.serviceTier,defaultCodexServiceTier);
   }
-  return"flex";
+  return nonFastEffectiveServiceTier;
 }
 function resolveAgentName(options){
   const requested=normalizeAgentName(options&&options.agentName);
@@ -5750,47 +6199,79 @@ function resolveTopographyStatus(source,runtime){
 function getAgentTopographySnapshot(){
   const configured=parseConfiguredAgentsFromCodexConfig();
   const runtime=listAgentsSnapshot();
+  const liveCollabRows=getLiveCollabChildRows();
   const runtimeByName=new Map();
   for(const item of runtime){
     const name=normalizeAgentName(item&&item.name);
     if(!name)continue;
     runtimeByName.set(name,item);
   }
+  const liveByName=new Map();
+  for(const item of liveCollabRows){
+    const name=normalizeAgentName(item&&item.name);
+    if(!name)continue;
+    liveByName.set(name,item);
+  }
   const merged=[];
   for(const configuredAgent of configured){
     const runtimeState=runtimeByName.get(configuredAgent.name)||null;
+    const liveState=liveByName.get(configuredAgent.name)||null;
     runtimeByName.delete(configuredAgent.name);
+    liveByName.delete(configuredAgent.name);
+    const effectiveSource=liveState
+      ?(runtimeState?"configured+collab":"collab")
+      :"configured";
     merged.push({
       name:configuredAgent.name,
-      description:configuredAgent.description||"",
+      description:liveState&&liveState.description?liveState.description:(configuredAgent.description||""),
       configFile:configuredAgent.configFile||null,
-      role:configuredAgent.role,
+      role:liveState&&liveState.role?liveState.role:configuredAgent.role,
       governance:summarizeAgentGovernance(configuredAgent.name),
-      source:"configured",
-      isActive:runtimeState?Boolean(runtimeState.isActive):false,
-      selected:runtimeState?Boolean(runtimeState.isActive):false,
-      threadId:runtimeState&&runtimeState.threadId?runtimeState.threadId:null,
-      activeTurnId:runtimeState&&runtimeState.activeTurnId?runtimeState.activeTurnId:null,
-      sessionRef:runtimeState&&runtimeState.sessionRef?runtimeState.sessionRef:null,
-      status:resolveTopographyStatus("configured",runtimeState),
+      source:effectiveSource,
+      isActive:liveState?true:(runtimeState?Boolean(runtimeState.isActive):false),
+      selected:liveState?false:(runtimeState?Boolean(runtimeState.isActive):false),
+      threadId:liveState&&liveState.threadId?liveState.threadId:(runtimeState&&runtimeState.threadId?runtimeState.threadId:null),
+      activeTurnId:liveState&&liveState.activeTurnId?liveState.activeTurnId:(runtimeState&&runtimeState.activeTurnId?runtimeState.activeTurnId:null),
+      sessionRef:liveState&&liveState.sessionRef?liveState.sessionRef:(runtimeState&&runtimeState.sessionRef?runtimeState.sessionRef:null),
+      status:liveState&&liveState.status?liveState.status:resolveTopographyStatus("configured",runtimeState),
     });
   }
   for(const runtimeState of runtimeByName.values()){
     const name=normalizeAgentName(runtimeState&&runtimeState.name);
     if(!name)continue;
+    const liveState=liveByName.get(name)||null;
+    liveByName.delete(name);
     merged.push({
       name,
-      description:"",
+      description:liveState&&liveState.description?liveState.description:"",
       configFile:null,
-      role:inferAgentRole(name,""),
+      role:liveState&&liveState.role?liveState.role:inferAgentRole(name,""),
       governance:summarizeAgentGovernance(name),
-      source:"runtime",
-      isActive:Boolean(runtimeState.isActive),
-      selected:Boolean(runtimeState.isActive),
-      threadId:runtimeState&&runtimeState.threadId?runtimeState.threadId:null,
-      activeTurnId:runtimeState&&runtimeState.activeTurnId?runtimeState.activeTurnId:null,
-      sessionRef:runtimeState&&runtimeState.sessionRef?runtimeState.sessionRef:null,
-      status:resolveTopographyStatus("runtime",runtimeState),
+      source:liveState?"runtime+collab":"runtime",
+      isActive:liveState?true:Boolean(runtimeState.isActive),
+      selected:liveState?false:Boolean(runtimeState.isActive),
+      threadId:liveState&&liveState.threadId?liveState.threadId:(runtimeState&&runtimeState.threadId?runtimeState.threadId:null),
+      activeTurnId:liveState&&liveState.activeTurnId?liveState.activeTurnId:(runtimeState&&runtimeState.activeTurnId?runtimeState.activeTurnId:null),
+      sessionRef:liveState&&liveState.sessionRef?liveState.sessionRef:(runtimeState&&runtimeState.sessionRef?runtimeState.sessionRef:null),
+      status:liveState&&liveState.status?liveState.status:resolveTopographyStatus("runtime",runtimeState),
+    });
+  }
+  for(const liveState of liveByName.values()){
+    const name=normalizeAgentName(liveState&&liveState.name);
+    if(!name)continue;
+    merged.push({
+      name,
+      description:liveState&&liveState.description?liveState.description:"",
+      configFile:null,
+      role:liveState&&liveState.role?liveState.role:inferAgentRole(name,""),
+      governance:summarizeAgentGovernance(name),
+      source:"collab",
+      isActive:true,
+      selected:false,
+      threadId:liveState&&liveState.threadId?liveState.threadId:null,
+      activeTurnId:liveState&&liveState.activeTurnId?liveState.activeTurnId:null,
+      sessionRef:liveState&&liveState.sessionRef?liveState.sessionRef:null,
+      status:liveState&&liveState.status?liveState.status:"running",
     });
   }
   return merged;
@@ -7194,11 +7675,22 @@ function buildForkedAgentState(source,sourceName){
     lastModelReasoningEffort:source.lastModelReasoningEffort||defaultExecModelReasoningEffort,
     lastFastModeEnabled:typeof source.lastFastModeEnabled==="boolean"?source.lastFastModeEnabled:resolveFastModeEnabled(source.fastModeEnabled),
     lastAutomaticApprovalReviewEnabled:typeof source.lastAutomaticApprovalReviewEnabled==="boolean"?source.lastAutomaticApprovalReviewEnabled:resolveAutomaticApprovalReviewEnabled(source.automaticApprovalReviewEnabled),
+    lastPlanningContext:source.lastPlanningContext&&typeof source.lastPlanningContext==="object"
+      ?sanitizePlanningArtifactsForRuntime(source.lastPlanningContext)
+      :null,
     fastModeEnabled:resolveFastModeEnabled(source.fastModeEnabled),
     automaticApprovalReviewEnabled:resolveAutomaticApprovalReviewEnabled(source.automaticApprovalReviewEnabled),
   };
 }
 function handleSlashForkCommand(res,argsText){const sourceName=activeAgentName;const source=getActiveAgentState();const requestedName=(argsText||"").trim();const forkName=requestedName||`agent-${nextAgentNumber++}`;if(agentStates.has(forkName)){replyLocalText(res,`Agent already exists: ${forkName}`);return true;}agentStates.set(forkName,buildForkedAgentState(source,sourceName));activeAgentName=forkName;const copied=source.sessionRef?`Session copied: ${source.sessionRef}`:"Source agent has no session. A new thread will be created on next run.";replyLocalText(res,`Fork created: ${forkName}\nSource: ${sourceName}\n${copied}`);return true;}
+
+function derivePreviousPlanningContextForRequest(agentState,cwd){
+  const state=agentState&&typeof agentState==="object"?agentState:{};
+  const currentCwd=safeString(cwd,320);
+  if(!state.lastPlanningContext||typeof state.lastPlanningContext!=="object")return null;
+  if(state.lastCwd&&currentCwd&&safeString(state.lastCwd,320)!==currentCwd)return null;
+  return sanitizePlanningArtifactsForRuntime(state.lastPlanningContext);
+}
 
 function buildThreadStartConfig(agentState,webSearchEnabled,requestUserInputPolicy,model,modelReasoningEffort,fastModeEnabled,automaticApprovalReviewEnabled){
   const normalizedModel=normalizeExecModel(model,defaultExecModelName);
@@ -7251,7 +7743,7 @@ function shouldResetThreadForMode(agentState,sandboxMode,webSearchEnabled,cwd,re
   return false;
 }
 function clipText(value,max=12000){if(typeof value!=="string")return"";if(value.length<=max)return value;return value.slice(0,max);}
-function summarizeTurnItemForStream(item){
+function summarizeTurnItemForStream(item,context={}){
   if(!item||typeof item!=="object")return null;
   const type=typeof item.type==="string"?item.type:"unknown";
   const id=typeof item.id==="string"?item.id:"";
@@ -7293,12 +7785,22 @@ function summarizeTurnItemForStream(item){
   }
   if(isCollabToolItemType(type)){
     const tool=safeString(item.tool,120);
-    const receivers=Array.isArray(item.receiverThreadIds)?item.receiverThreadIds.length:0;
+    const contextReceiverIds=Array.isArray(context&&context.receiverIds)
+      ?context.receiverIds.map((entry)=>safeString(entry,120)).filter(Boolean).slice(0,4)
+      :[];
+    const receiverThreadIds=contextReceiverIds.length
+      ?contextReceiverIds
+      :(Array.isArray(item.receiverThreadIds)?item.receiverThreadIds.map((entry)=>safeString(entry,120)).filter(Boolean).slice(0,4):[]);
+    const receivers=receiverThreadIds.length;
     const detailParts=[tool||"collab tool",status||"unknown",`receivers=${receivers}`];
+    const hintedChild=safeString(context&&context.childName,120);
     const dispatchTrace=buildAgentDispatchTrace(item,"");
-    if(dispatchTrace&&dispatchTrace.child&&dispatchTrace.child!=="unknown"){
-      detailParts.push(`child=${dispatchTrace.child}`);
+    const traceChild=safeString(dispatchTrace&&dispatchTrace.child?dispatchTrace.child:"",120);
+    const childName=hintedChild||traceChild;
+    if(childName&&childName!=="unknown"&&!looksLikeCollabThreadId(childName)){
+      detailParts.push(`child=${childName}`);
     }
+    if(receiverThreadIds[0])detailParts.push(`thread=${receiverThreadIds[0]}`);
     const prompt=safeString(item.prompt,220);
     if(prompt)detailParts.push(prompt);
     const stateMessages=extractCollabStateMessages(item,2);
@@ -7969,6 +8471,38 @@ function stripPlanningStatusDirective(text){
     .replace(/\n{3,}/g,"\n\n")
     .trim();
 }
+function leadContainsCompletionClaim(text){
+  const lead=safeString(text,320);
+  if(!lead)return false;
+  return /(?:\b(?:done|fixed|completed|resolved|implemented|shipped|reflected)\b|修正済み|反映済み|対応済み|完了(?:しました|です)?|解消(?:しました|です)?|直しました|できました|問題ありません)/i.test(lead);
+}
+function stripLeadingCompletionClaim(text){
+  return safeString(text,8000)
+    .replace(/^(?:\s*(?:yes|ok|okay|はい)[。.!?\s]*)?(?:(?:今回|この(?:件|修正|変更)|the (?:fix|change|update)|this (?:fix|change|update))[^。\n]{0,60})?(?:修正済みです|反映済みです|対応済みです|完了しました|完了です|解消しました|直しました|できました|done|fixed|completed|resolved|implemented|shipped|reflected)(?:[。.!]|\s)*/i,"")
+    .trim();
+}
+function rewriteClientFinalTextForOutcome(text,{taskOutcomeStatus="",prompt=""}={}){
+  const stripped=stripUnsolicitedClosingProposal({
+    prompt,
+    answer:stripPlanningStatusDirective(text),
+    taskOutcomeStatus,
+    responseContract:userFacingResponseContract,
+  });
+  const outcome=safeString(taskOutcomeStatus,40).toUpperCase();
+  if(!stripped||!outcome||outcome==="COMPLETED"||!leadContainsCompletionClaim(stripped)){
+    return stripped;
+  }
+  const softened=stripLeadingCompletionClaim(stripped);
+  const lead=
+    outcome==="FAILED_VALIDATION"
+      ?"未完了です。必要な確認または証拠がまだ不足しています。"
+      :outcome==="NEEDS_INPUT"
+        ?"未完了です。ユーザー判断が必要です。"
+        :outcome==="PARTIAL"
+          ?"一部のみ完了です。"
+          :"未完了です。";
+  return softened?`${lead}\n\n${softened}`:lead;
+}
 function buildFlowTraceSummary({planningContext,observedSignals,parentDispatchGuard,taskOutcomeStatus,taskOutcomeReason,finalStatus,childEvidenceLedger,docSyncEvidence,acceptanceResults,familyCompletionGate=null,agentName=""}={}){
   const usedAgents=Array.from(new Set([
     safeString(agentName,80)||"",
@@ -8336,6 +8870,7 @@ async function executeTurnStreaming(res,prompt,agentName,options){
         contract:{planning:planningModeContract,assurance:assuranceModeContract},
       })
   );
+  state.lastPlanningContext=planningContext;
   const turnVisibility=buildTurnVisibilitySnapshot({
     requestProfile:executionProfile,
     executionIntent,
@@ -8627,6 +9162,12 @@ async function executeTurnStreaming(res,prompt,agentName,options){
   const dispatchTraceKeys=new Set();
   const dispatchSuccessKeys=new Set();
   const dispatchFailureKeys=new Set();
+  const liveCollabTurnTracker=createLiveCollabTurnTracker({
+    planningContext,
+    parentAgentName:agentName,
+    parentThreadId:threadId,
+    parentTurnId:turnId,
+  });
   let dispatchCount=0;
   let dispatchSuccessCount=0;
   let dispatchFailureCount=0;
@@ -8722,6 +9263,7 @@ async function executeTurnStreaming(res,prompt,agentName,options){
     turnFinalized=true;
     clearDisconnectTimer();
     cleanup();
+    clearLiveCollabChildActivityForTurn(turnId);
     state.activeTurnId=null;
     const normalizedStatus=normalizeExecutionState(turnStatus,{terminalFallback:true});
     let finalStatus=normalizedStatus==="in_progress"?"failed":normalizedStatus;
@@ -9571,6 +10113,7 @@ async function executeTurnStreaming(res,prompt,agentName,options){
       prompt:adversarialRootPrompt||prompt,
       answer:authoritativeFinalText,
       status:finalStatus,
+      taskOutcomeStatus:taskOutcome.status,
       agentName,
       threadId,
       turnId,
@@ -9724,7 +10267,10 @@ async function executeTurnStreaming(res,prompt,agentName,options){
 
     if(clientClosed)return;
 
-    const clientFinalText=stripPlanningStatusDirective(authoritativeFinalText);
+    const clientFinalText=rewriteClientFinalTextForOutcome(authoritativeFinalText,{
+      taskOutcomeStatus:taskOutcome.status,
+      prompt:adversarialRootPrompt||prompt,
+    });
     if(clientFinalText){
       safeWriteEvent({type:"final",text:clientFinalText});
     }
@@ -9790,6 +10336,9 @@ async function executeTurnStreaming(res,prompt,agentName,options){
       if(artifactRecorder&&typeof artifactRecorder.writeItem==="function"){
         artifactRecorder.writeItem("started",item);
       }
+      if(isCollabToolItemType(item.type)){
+        observeLiveCollabItem({item,phase:"started",tracker:liveCollabTurnTracker});
+      }
       traceAgentDispatch(item,"started");
     },
     onItemCompleted:(item)=>{
@@ -9799,10 +10348,13 @@ async function executeTurnStreaming(res,prompt,agentName,options){
       if(artifactRecorder&&typeof artifactRecorder.writeItem==="function"){
         artifactRecorder.writeItem("completed",item);
       }
+      const liveCollabSummaryContext=isCollabToolItemType(item.type)
+        ?observeLiveCollabItem({item,phase:"completed",tracker:liveCollabTurnTracker})
+        :null;
       traceAgentDispatch(item,"completed");
       recordDispatchOutcome(item);
       collectTurnStreamItemStats(turnStats,item);
-      const summary=summarizeTurnItemForStream(item);
+      const summary=summarizeTurnItemForStream(item,liveCollabSummaryContext||{});
       if(summary){
         safeWriteEvent({type:"item",item:summary});
       }
@@ -11035,6 +11587,7 @@ function buildRuntimeApiSnapshot(){
   const nonInteractiveUserInput={policy:nonInteractiveRequestUserInputPolicy,envKey:requestUserInputPolicyEnvKey};
   const adversarialShadow=buildAdversarialShadowRuntimeSnapshot();
   const harnessMemory=buildHarnessMemoryRuntimeSnapshot();
+  const workspaceGuard=buildWorkspaceGuardSnapshot();
   const slo=buildSloRuntimeSnapshot();
   const staticApps=buildStaticAppsRuntimeSnapshot();
   const gitAutomation=buildGitAutomationRuntimeSnapshot();
@@ -11065,7 +11618,7 @@ function buildRuntimeApiSnapshot(){
     agentCount:agentStates.size,
     experimental:active?active.experimentalEnabled:false,
     experimentalFeatures:active?Array.from(active.experimentalFeatures||[]):[],
-    serviceTier:active?resolveEffectiveServiceTier(active):"flex",
+    serviceTier:active?resolveEffectiveServiceTier(active):nonFastEffectiveServiceTier,
     fastModeEnabled:active?Boolean(active.fastModeEnabled):fastModeDefault,
     automaticApprovalReviewEnabled:active?Boolean(active.automaticApprovalReviewEnabled):automaticApprovalReviewDefault,
     agents:listAgentsSnapshot(),
@@ -11125,6 +11678,10 @@ function buildRuntimeApiSnapshot(){
       ...summarizeTaskOutcomeContract(taskOutcomeContract),
       path:summarizePathForOperationLog(taskOutcomeContractPath,220),
     },
+    userFacingResponseContract:{
+      ...summarizeUserFacingResponseContract(userFacingResponseContract),
+      path:summarizePathForOperationLog(userFacingResponseContractPath,220),
+    },
     planningContracts:{
       schema:safeString(planningModeContract&&planningModeContract.schema,80)||"planning-mode-contract.v1",
       version:safeString(planningModeContract&&planningModeContract.version,80)||"",
@@ -11155,7 +11712,10 @@ function buildRuntimeApiSnapshot(){
       ...summarizeIntentFirstRuntime({contract:designAcceptanceContract,store:tasteMemoryStore}),
       contractPath:summarizePathForOperationLog(designAcceptanceContractPath,220),
       tasteMemorySeedPath:summarizePathForOperationLog(tasteMemorySeedPath,220),
+      tasteMemoryPath:summarizePathForOperationLog(tasteMemoryMemoryPath,220),
     },
+    workspaceGuard,
+    workspace_guard:workspaceGuard,
     controlApi:{
       tokenHeader:controlApiTokenHeaderName,
       token:controlApiToken,
@@ -12723,6 +13283,120 @@ async function requestHandler(req,res){
     return;
   }
 
+   if(req.method==="GET"&&pathname==="/api/intent/profile"){
+    sendJson(res,200,buildIntentFirstApiSnapshot());
+    return;
+  }
+
+  if(req.method==="POST"&&pathname==="/api/intent/profile"){
+    try{
+      const validation=validateControlMutationRequest(req,{action:"exec",enforceActionAllowlist:false});
+      if(!validation.ok){
+        sendJson(res,validation.status,{ok:false,error:validation.error});
+        return;
+      }
+      const contentTypeValidation=validateJsonMutationContentType(req,{required:true,expectedMime:execApiRequiredContentType});
+      if(!contentTypeValidation.ok){
+        sendJson(res,contentTypeValidation.status,{ok:false,error:contentTypeValidation.error});
+        return;
+      }
+      const raw=await readRequestBody(req,defaultRequestBodyLimitBytes);
+      const body=raw?JSON.parse(raw):{};
+      const action=safeString(body&&body.action,80).toLowerCase();
+      if(action&&action!=="update_intent_profile"){
+        sendJson(res,400,{ok:false,error:`unsupported action: ${action}`});
+        return;
+      }
+      sendJson(res,200,updateIntentProfileStore(body&&body.profile&&typeof body.profile==="object"?body.profile:{}));
+    }catch(error){
+      sendJson(res,400,{ok:false,error:error&&error.message?error.message:String(error)});
+    }
+    return;
+  }
+
+  if(req.method==="POST"&&pathname==="/api/intent/profile/reset"){
+    try{
+      const validation=validateControlMutationRequest(req,{action:"exec",enforceActionAllowlist:false});
+      if(!validation.ok){
+        sendJson(res,validation.status,{ok:false,error:validation.error});
+        return;
+      }
+      const contentTypeValidation=validateJsonMutationContentType(req,{required:true,expectedMime:execApiRequiredContentType});
+      if(!contentTypeValidation.ok){
+        sendJson(res,contentTypeValidation.status,{ok:false,error:contentTypeValidation.error});
+        return;
+      }
+      const raw=await readRequestBody(req,defaultRequestBodyLimitBytes);
+      const body=raw?JSON.parse(raw):{};
+      const action=safeString(body&&body.action,80).toLowerCase();
+      if(action&&action!=="reset_intent_profile"){
+        sendJson(res,400,{ok:false,error:`unsupported action: ${action}`});
+        return;
+      }
+      sendJson(res,200,resetIntentProfileStore());
+    }catch(error){
+      sendJson(res,400,{ok:false,error:error&&error.message?error.message:String(error)});
+    }
+    return;
+  }
+
+  if(req.method==="POST"&&pathname==="/api/workspace/lock"){
+    try{
+      const validation=validateControlMutationRequest(req,{action:"exec",enforceActionAllowlist:false});
+      if(!validation.ok){
+        sendJson(res,validation.status,{ok:false,error:validation.error});
+        return;
+      }
+      const contentTypeValidation=validateJsonMutationContentType(req,{required:true,expectedMime:execApiRequiredContentType});
+      if(!contentTypeValidation.ok){
+        sendJson(res,contentTypeValidation.status,{ok:false,error:contentTypeValidation.error});
+        return;
+      }
+      const raw=await readRequestBody(req,defaultRequestBodyLimitBytes);
+      const body=raw?JSON.parse(raw):{};
+      const action=safeString(body&&body.action,80).toLowerCase();
+      if(action!=="lock_workspace_directory"){
+        sendJson(res,400,{ok:false,error:`unsupported action: ${action||"(empty)"}`});
+        return;
+      }
+      const requestedPath=safeString(body&&body.path,2000);
+      if(!requestedPath){
+        sendJson(res,400,{ok:false,error:"path is required"});
+        return;
+      }
+      sendJson(res,200,lockWorkspaceDirectory(requestedPath));
+    }catch(error){
+      sendJson(res,400,{ok:false,error:error&&error.message?error.message:String(error)});
+    }
+    return;
+  }
+
+  if(req.method==="POST"&&pathname==="/api/workspace/unlock"){
+    try{
+      const validation=validateControlMutationRequest(req,{action:"exec",enforceActionAllowlist:false});
+      if(!validation.ok){
+        sendJson(res,validation.status,{ok:false,error:validation.error});
+        return;
+      }
+      const contentTypeValidation=validateJsonMutationContentType(req,{required:true,expectedMime:execApiRequiredContentType});
+      if(!contentTypeValidation.ok){
+        sendJson(res,contentTypeValidation.status,{ok:false,error:contentTypeValidation.error});
+        return;
+      }
+      const raw=await readRequestBody(req,defaultRequestBodyLimitBytes);
+      const body=raw?JSON.parse(raw):{};
+      const action=safeString(body&&body.action,80).toLowerCase();
+      if(action!=="unlock_workspace_directory"){
+        sendJson(res,400,{ok:false,error:`unsupported action: ${action||"(empty)"}`});
+        return;
+      }
+      sendJson(res,200,unlockWorkspaceDirectory());
+    }catch(error){
+      sendJson(res,400,{ok:false,error:error&&error.message?error.message:String(error)});
+    }
+    return;
+  }
+
   if(req.method==="GET"&&pathname==="/api/harness/overview"){
     sendJson(res,200,buildHarnessOverviewSnapshot());
     return;
@@ -12772,6 +13446,17 @@ async function requestHandler(req,res){
       }
       const mode=normalizePocBatchMode(body.mode);
       const cwd=normalizeWorkingDirectory(body.cwd,workspaceRoot);
+      const workspaceGuardViolation=buildWorkspaceGuardViolation(cwd);
+      if(workspaceGuardViolation){
+        logOperation("api.batch_blocked",{
+          path:pathname,
+          reason:safeString(workspaceGuardViolation.payload&&workspaceGuardViolation.payload.code,80)||"outside_locked_workspace",
+          cwd:summarizePathForOperationLog(cwd,220),
+          lockedRoot:summarizePathForOperationLog(workspaceGuardLockedRoot,220),
+        },"standard");
+        sendJson(res,workspaceGuardViolation.statusCode,workspaceGuardViolation.payload);
+        return;
+      }
       const result=await executePocBatchRun({prompt,mode,cwd,source:"manual"});
       sendJson(res,200,result);
     }catch(error){
@@ -13651,12 +14336,36 @@ async function requestHandler(req,res){
       const requestExecutionProfile=normalizeExecutionProfile(body.executionProfile,runtimeExecutionProfile);
       const requestExecutionIntent=normalizeExecutionIntent(body.executionIntent,"interactive");
       const requestExecutionSource=safeString(body.executionSource,80)||"api_exec";
+      const workspaceGuardRequirement=resolveWorkspaceGuardRequirement({
+        prompt,
+        executionSource:requestExecutionSource,
+      });
+      if(workspaceGuardRequirement.workspaceLockRequired&&!workspaceGuardLockedRoot){
+        logOperation("api.exec_blocked",{
+          method:req.method,
+          path:pathname,
+          reason:"workspace_lock_required",
+          executionSource:requestExecutionSource,
+          cwd:summarizePathForOperationLog(cwd,220),
+          prompt:summarizeTextForOperationLog(prompt,24000),
+        },"standard");
+        sendJson(res,409,{
+          ok:false,
+          error:"workspace lock required for this design-sensitive execution source",
+          code:"workspace_lock_required",
+          executionSource:requestExecutionSource,
+          workspaceGuard:buildWorkspaceGuardSnapshot(),
+        });
+        return;
+      }
       const reproProfileRequested=isReproExecutionProfile(requestExecutionProfile);
       const governanceOverride=extractGovernanceOverride(body);
+      const requestedAgentState=getOrCreateAgentState(agentName);
+      const previousPlanningContext=derivePreviousPlanningContextForRequest(requestedAgentState,cwd);
       const extensionApplied=applyRequirementGuardExecExtension({
         prompt,
         sandboxMode,
-        options:{approvalPolicy,webSearch,fastModeEnabled,automaticApprovalReviewEnabled,model,modelReasoningEffort,agentName,cwd,images,requestUserInputPolicy,governanceOverride,forceNewSession},
+        options:{approvalPolicy,webSearch,fastModeEnabled,automaticApprovalReviewEnabled,model,modelReasoningEffort,agentName,cwd,images,requestUserInputPolicy,governanceOverride,forceNewSession,previousPlanningContext},
       });
       const execPrompt=extensionApplied.prompt;
       const execPromptAudit=buildPromptAudit({
@@ -13705,6 +14414,20 @@ async function requestHandler(req,res){
       execOptions.executionSource=requestExecutionSource;
       execOptions.reproProfile=reproProfileRequested?1:0;
       execOptions.governanceOverride=normalizeOverrideRequest(execOptions&&execOptions.governanceOverride?execOptions.governanceOverride:governanceOverride);
+      const resolvedExecCwd=execOptions&&execOptions.cwd?execOptions.cwd:cwd;
+      const workspaceGuardViolation=buildWorkspaceGuardViolation(resolvedExecCwd);
+      if(workspaceGuardViolation){
+        logOperation("api.exec_blocked",{
+          method:req.method,
+          path:pathname,
+          reason:safeString(workspaceGuardViolation.payload&&workspaceGuardViolation.payload.code,80)||"outside_locked_workspace",
+          executionSource:requestExecutionSource,
+          cwd:summarizePathForOperationLog(resolvedExecCwd,220),
+          lockedRoot:summarizePathForOperationLog(workspaceGuardLockedRoot,220),
+        },"standard");
+        sendJson(res,workspaceGuardViolation.statusCode,workspaceGuardViolation.payload);
+        return;
+      }
       logOperation("api.exec",{
         method:req.method,
         path:pathname,
@@ -13716,7 +14439,7 @@ async function requestHandler(req,res){
         automaticApprovalReviewEnabled:resolveAutomaticApprovalReviewEnabled(execOptions&&execOptions.automaticApprovalReviewEnabled,automaticApprovalReviewEnabled)?1:0,
         model:safeString(resolvedExecModel,120),
         modelReasoningEffort:resolvedExecModelReasoningEffort,
-        cwd:summarizePathForOperationLog(execOptions&&execOptions.cwd?execOptions.cwd:cwd,220),
+        cwd:summarizePathForOperationLog(resolvedExecCwd,220),
         prompt:summarizeTextForOperationLog(execPrompt,24000),
         promptChars:{
           input:execPromptAudit.inputLength,
@@ -13761,7 +14484,7 @@ async function requestHandler(req,res){
         approval:safeString(execOptions&&execOptions.approvalPolicy?execOptions.approvalPolicy:approvalPolicy,40),
         model:safeString(resolvedExecModel,120),
         modelReasoningEffort:resolvedExecModelReasoningEffort,
-        cwd:summarizePathForOperationLog(execOptions&&execOptions.cwd?execOptions.cwd:cwd,220),
+        cwd:summarizePathForOperationLog(resolvedExecCwd,220),
         requestUserInputPolicy:resolvedRequestUserInputPolicy,
         executionProfile:requestExecutionProfile,
         executionIntent:requestExecutionIntent,
@@ -13778,7 +14501,7 @@ async function requestHandler(req,res){
           model:resolvedExecModel,
           modelReasoningEffort:resolvedExecModelReasoningEffort,
           agentName:resolvedExecAgent,
-          cwd:execOptions&&execOptions.cwd?execOptions.cwd:cwd,
+          cwd:resolvedExecCwd,
           requestUserInputPolicy:resolvedRequestUserInputPolicy,
           executionProfile:requestExecutionProfile,
           executionIntent:requestExecutionIntent,
@@ -14073,12 +14796,14 @@ module.exports={
     fastModeFeatureName,
     normalizeCodexServiceTier,
   },
+  __topography:{
+    createLiveCollabTurnTracker,
+    observeLiveCollabItem,
+    getAgentTopographySnapshot,
+    getLiveCollabChildRows,
+    clearLiveCollabChildState:()=>{
+      liveCollabChildActivityByThread.clear();
+      liveCollabChildCatalogByThread.clear();
+    },
+  },
 };
-
-
-
-
-
-
-
-

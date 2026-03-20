@@ -1,12 +1,25 @@
 "use strict";
 
 const shadowReviewVersion = "shadow-v1-rule";
+const {
+  detectUnsolicitedClosingProposal,
+  extractExactReplyContract,
+  leadContainsCompletionClaim,
+} = require("./user_facing_response_policy");
+const {
+  containsAnyLiteral,
+  loadUserFacingResponseContract,
+  normalizeUserFacingResponseContract,
+} = require("./user_facing_response_contract");
+
 const severityPenalty = Object.freeze({
   critical: 45,
   high: 30,
   medium: 15,
   low: 5,
 });
+
+const defaultUserFacingResponseContract = loadUserFacingResponseContract();
 
 function safeTrimmedString(value, max = 12000) {
   if (typeof value !== "string") {
@@ -41,11 +54,11 @@ function hasRecencyIntent(text) {
     /\bcurrent\b/i,
     /\btoday\b/i,
     /\bnow\b/i,
-    /最新/,
-    /直近/,
-    /現在/,
-    /今日/,
-    /最近/,
+    /\u6700\u65b0/,
+    /\u76f4\u8fd1/,
+    /\u73fe\u5728/,
+    /\u4eca\u65e5/,
+    /\u4eca/,
   ]);
 }
 
@@ -54,7 +67,7 @@ function hasDateSignal(text) {
     /\b(?:19|20)\d{2}[\/\-\.](?:0?[1-9]|1[0-2])[\/\-\.](?:0?[1-9]|[12]\d|3[01])\b/,
     /\b(?:jan|feb|mar|apr|may|jun|jul|aug|sep|sept|oct|nov|dec)[a-z]*\s+\d{1,2},?\s+(?:19|20)\d{2}\b/i,
     /\b(as of|updated)\b/i,
-    /(?:19|20)\d{2}年(?:0?[1-9]|1[0-2])月(?:0?[1-9]|[12]\d|3[01])日/,
+    /(?:19|20)\d{2}\u5e74(?:0?[1-9]|1[0-2])\u6708(?:0?[1-9]|[12]\d|3[01])\u65e5/,
   ]);
 }
 
@@ -65,9 +78,9 @@ function hasCitationIntent(text) {
     /\blink\b/i,
     /\bevidence\b/i,
     /\bprove\b/i,
-    /根拠/,
-    /出典/,
-    /引用/,
+    /\u6839\u62e0/,
+    /\u51fa\u5178/,
+    /\u8a3c\u62e0/,
   ]);
 }
 
@@ -89,26 +102,6 @@ function hasRiskyCommandSignal(text) {
   ]);
 }
 
-function extractExactReplyContract(prompt) {
-  const text = safeTrimmedString(prompt, 4000);
-  if (!text) {
-    return "";
-  }
-  const patterns = [
-    /reply with exactly:\s*([^\r\n]+)/i,
-    /reply with exactly\s+([^\r\n]+)/i,
-    /respond with exactly:\s*([^\r\n]+)/i,
-    /respond with exactly\s+([^\r\n]+)/i,
-  ];
-  for (const pattern of patterns) {
-    const match = text.match(pattern);
-    if (match) {
-      return safeTrimmedString(match[1], 400);
-    }
-  }
-  return "";
-}
-
 function extractStrictJsonContract(prompt) {
   const text = safeTrimmedString(prompt, 8000);
   if (!text) {
@@ -126,16 +119,11 @@ function extractStrictJsonContract(prompt) {
   }
 }
 
-function detectInternalProcessLeakage(text) {
-  return includesAny(text, [
-    /\bblue\/red\/judge\b/i,
-    /\brequirement_rbj\b/i,
-    /\bspawn_agent\b/i,
-    /\bsend_input\b/i,
-    /\bparent dispatch guard\b/i,
-    /\binternal quality retry\b/i,
-    /\badversarial review\b/i,
-  ]);
+function resolveResponseContract(input) {
+  if (!input) {
+    return defaultUserFacingResponseContract;
+  }
+  return normalizeUserFacingResponseContract(input);
 }
 
 function compareStrictJsonContract(expected, actual) {
@@ -194,6 +182,8 @@ function buildAdversarialShadowReview(input = {}) {
   const prompt = safeTrimmedString(source.prompt, maxPromptChars);
   const answer = safeTrimmedString(source.answer, maxAnswerChars);
   const status = safeTrimmedString(source.status, 40).toLowerCase() || "unknown";
+  const taskOutcomeStatus = safeTrimmedString(source.taskOutcomeStatus, 40).toUpperCase();
+  const responseContract = resolveResponseContract(source.responseContract);
   const findings = [];
 
   if (status !== "completed") {
@@ -214,9 +204,26 @@ function buildAdversarialShadowReview(input = {}) {
     });
   }
 
+  const exactReplyContract = extractExactReplyContract(prompt);
+  if (
+    responseContract.completionClaims.requireCompletedTaskOutcome
+    && taskOutcomeStatus
+    && taskOutcomeStatus !== "COMPLETED"
+    && answer
+    && leadContainsCompletionClaim(answer, responseContract)
+    && !exactReplyContract
+  ) {
+    pushFinding(findings, {
+      id: "completion_claim_before_validation",
+      severity: "high",
+      category: "contract",
+      message: "answer claimed completion even though the task outcome was not completed",
+      evidence: `taskOutcomeStatus=${taskOutcomeStatus}`,
+    });
+  }
   const recencyRequested = hasRecencyIntent(prompt);
   const answerHasDate = hasDateSignal(answer);
-  if (recencyRequested && answer && !answerHasDate) {
+  if (recencyRequested && answer && !answerHasDate && !exactReplyContract) {
     pushFinding(findings, {
       id: "recency_without_date_signal",
       severity: "medium",
@@ -227,7 +234,7 @@ function buildAdversarialShadowReview(input = {}) {
 
   const citationRequested = hasCitationIntent(prompt);
   const answerHasCitation = hasCitationSignal(answer);
-  if (citationRequested && answer && !answerHasCitation) {
+  if (citationRequested && answer && !answerHasCitation && !exactReplyContract) {
     pushFinding(findings, {
       id: "citation_requested_but_missing",
       severity: "medium",
@@ -235,8 +242,22 @@ function buildAdversarialShadowReview(input = {}) {
       message: "prompt requested evidence/citation but answer has no link-like source",
     });
   }
+  const unsolicitedClosingProposal = detectUnsolicitedClosingProposal({
+    prompt,
+    answer,
+    taskOutcomeStatus,
+    responseContract,
+  });
+  if (status === "completed" && unsolicitedClosingProposal && !exactReplyContract) {
+    pushFinding(findings, {
+      id: "unsolicited_followup_closing",
+      severity: "high",
+      category: "contract",
+      message: "answer reopened the conversation with an unsolicited follow-up/menu-style closing",
+      evidence: unsolicitedClosingProposal.text,
+    });
+  }
 
-  const exactReplyContract = extractExactReplyContract(prompt);
   if (status === "completed" && exactReplyContract && answer && answer !== exactReplyContract) {
     pushFinding(findings, {
       id: "exact_reply_contract_mismatch",
@@ -294,7 +315,11 @@ function buildAdversarialShadowReview(input = {}) {
     });
   }
 
-  if (status === "completed" && answer && detectInternalProcessLeakage(answer)) {
+  const internalProcessLeakage =
+    status === "completed"
+    && responseContract.internalProcessDisclosure.enabled
+    && containsAnyLiteral(answer, responseContract.internalProcessDisclosure.prohibitedPhrases);
+  if (internalProcessLeakage) {
     pushFinding(findings, {
       id: "internal_process_leakage",
       severity: "high",
@@ -336,7 +361,8 @@ function buildAdversarialShadowReview(input = {}) {
       answerHasCitation,
       exactReplyContract: Boolean(exactReplyContract),
       strictJsonContract: Boolean(strictJsonContract),
-      internalProcessLeakage: detectInternalProcessLeakage(answer),
+      internalProcessLeakage,
+      unsolicitedClosingProposal: Boolean(unsolicitedClosingProposal),
     },
   };
 }

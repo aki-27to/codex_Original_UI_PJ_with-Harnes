@@ -1,9 +1,29 @@
-﻿const PROFILES={safe:{approvalPolicy:"untrusted",sandboxMode:"read-only",webSearch:false},balanced:{approvalPolicy:"on-failure",sandboxMode:"workspace-write",webSearch:true},"full-auto":{approvalPolicy:"never",sandboxMode:"workspace-write",webSearch:true},power:{approvalPolicy:"on-request",sandboxMode:"danger-full-access",webSearch:true}};
+﻿const PROFILES=Object.freeze({
+  auto:{approvalPolicy:"on-request",sandboxMode:"workspace-write",webSearch:true},
+  "read-only":{approvalPolicy:"on-request",sandboxMode:"read-only",webSearch:true},
+  "full-access":{approvalPolicy:"never",sandboxMode:"danger-full-access",webSearch:true},
+});
+const DEFAULT_PROFILE_ID="auto";
+const PROFILE_IDS=new Set(Object.keys(PROFILES));
+const PROFILE_LABELS=Object.freeze({
+  auto:"Auto (default)",
+  "read-only":"Read-only",
+  "full-access":"Full Access",
+  custom:"Custom (config.toml)",
+});
+const LEGACY_PROFILE_ALIASES=Object.freeze({
+  safe:"read-only",
+  balanced:"auto",
+  "full-auto":"auto",
+  power:"full-access",
+});
+const ALLOWED_APPROVAL_POLICIES=new Set(["untrusted","on-request","never"]);
+const ALLOWED_SANDBOX_MODES=new Set(["read-only","workspace-write","danger-full-access"]);
 const COMMANDS=[];
 const DEFAULT_AGENT_NAME="default";
 const DEFAULT_EXEC_MODEL="gpt-5.4";
 const DEFAULT_EXEC_MODEL_REASONING_EFFORT="xhigh";
-const EXEC_MODEL_PRESET_OPTIONS=["gpt-5.4","gpt-5.3-codex"];
+const EXEC_MODEL_PRESET_OPTIONS=["gpt-5.4","gpt-5.4-mini","gpt-5.3-codex"];
 const EXEC_MODEL_REASONING_EFFORTS=["minimal","low","medium","high","xhigh"];
 const LEGACY_EXEC_MODEL_ALIASES=Object.freeze({"codex-5.3":"gpt-5.3-codex"});
 const SETTINGS_KEY="codex-console-settings-v2";
@@ -26,13 +46,20 @@ const TOPOGRAPHY_REFRESH_MS=10000;
 const TOPOGRAPHY_COLLAPSED_KEY="codex-agent-topography-collapsed-v1";
 const HIDDEN_AGENT_NAMES=new Set(["main"]);
 const PARENT_AGENT_NAMES=new Set(["default","intake","release_manager"]);
+const VERIFICATION_AGENT_NAMES=new Set(["explorer","reviewer","tester"]);
+const AGENT_KANBAN_LANES=Object.freeze([
+  {id:"running",label:"稼働中",empty:"今このチャットで動いている agent はありません。"},
+  {id:"parents",label:"親",empty:"親 agent はありません。"},
+  {id:"specialists",label:"専門",empty:"専門 agent はありません。"},
+  {id:"verification",label:"検証",empty:"検証系 agent はありません。"},
+]);
 const TASK_FAMILY_LABELS=Object.freeze({
   web_creative:"WEB制作",
   deterministic_code:"実装・修正",
   research:"調査",
   planning:"設計・整理",
 });
-const topographyState={agents:[],source:"",error:"",usingFallback:false,lastUpdated:0,loading:false,timer:null,reqId:0,collapsed:false};
+const topographyState={agents:[],source:"",error:"",usingFallback:false,lastUpdated:0,loading:false,timer:null,refreshSoonTimer:null,reqId:0,collapsed:false};
 const e={connectionState:by("connectionState"),modeState:by("modeState"),agentState:by("agentState"),pendingState:by("pendingState"),simpleViewToggle:by("simpleViewToggle"),runtimeAgent:by("runtimeAgent"),runtimeSession:by("runtimeSession"),runtimeExperimental:by("runtimeExperimental"),runtimeAgentCount:by("runtimeAgentCount"),workspacePath:by("workspacePath"),modelName:by("modelName"),modelReasoningEffort:by("modelReasoningEffort"),approvalPolicy:by("approvalPolicy"),fastModeEnabled:by("fastModeEnabled"),automaticApprovalReviewEnabled:by("automaticApprovalReviewEnabled"),sandboxMode:by("sandboxMode"),executionProfile:by("executionProfile"),uiVisibility:by("uiVisibility"),webSearch:by("webSearch"),commandFilter:by("commandFilter"),commandGrid:by("commandGrid"),commandTemplate:by("commandTemplate"),messageTemplate:by("messageTemplate"),chatList:by("chatList"),newChatBtn:by("newChatBtn"),deleteChatBtn:by("deleteChatBtn"),timeline:by("timeline"),promptInput:by("promptInput"),imageInput:by("imageInput"),imageAttachBtn:by("imageAttachBtn"),imageError:by("imageError"),imagePreview:by("imagePreview"),imagePreviewThumb:by("imagePreviewThumb"),imagePreviewName:by("imagePreviewName"),imagePreviewMeta:by("imagePreviewMeta"),imageRemoveBtn:by("imageRemoveBtn"),sendBtn:by("sendBtn"),stopBtn:by("stopBtn"),reconnectBtn:by("reconnectBtn"),refreshDiagBtn:by("refreshDiagBtn"),newThreadBtn:by("newThreadBtn"),openCmdBtn:by("openCmdBtn"),liveStatus:by("liveStatus"),liveStatusLabel:by("liveStatusLabel"),liveStatusElapsed:by("liveStatusElapsed"),liveStatusDetail:by("liveStatusDetail"),performancePanel:by("performancePanel"),perfSessionRef:by("perfSessionRef"),perfUpdatedAt:by("perfUpdatedAt"),perfTokenValue:by("perfTokenValue"),perfTokenDetail:by("perfTokenDetail"),perfTokenSpark:by("perfTokenSpark"),perfTimeValue:by("perfTimeValue"),perfTimeDetail:by("perfTimeDetail"),perfTimeSpark:by("perfTimeSpark"),agentInspector:by("agentInspector"),agentFlowLane:by("agentFlowLane"),agentTraceList:by("agentTraceList"),clearAgentTraceBtn:by("clearAgentTraceBtn"),agentTopographyPanel:by("agentTopographyPanel"),agentTopographyMeta:by("agentTopographyMeta"),agentTopographyList:by("agentTopographyList"),agentTopographyRefreshBtn:by("agentTopographyRefreshBtn"),diagCodexState:by("diagCodexState"),diagCodexDetail:by("diagCodexDetail"),diagNodeState:by("diagNodeState"),diagNodeDetail:by("diagNodeDetail"),diagSearchState:by("diagSearchState"),diagSearchDetail:by("diagSearchDetail"),diagSummaryText:by("diagSummaryText"),diagDetails:by("diagDetails"),diagDetailsSummary:by("diagDetailsSummary"),harnessStatus:by("harnessStatus"),harnessThreadId:by("harnessThreadId"),harnessTurnId:by("harnessTurnId"),harnessUpdatedAt:by("harnessUpdatedAt"),harnessItemList:by("harnessItemList"),harnessPlanMeta:by("harnessPlanMeta"),harnessPlanCurrentCard:by("harnessPlanCurrentCard"),harnessPlanCurrentStep:by("harnessPlanCurrentStep"),harnessPlanCurrentDetail:by("harnessPlanCurrentDetail"),harnessPlanExplanation:by("harnessPlanExplanation"),harnessPlanList:by("harnessPlanList"),harnessTokenUsage:by("harnessTokenUsage"),harnessDiffPreview:by("harnessDiffPreview"),harnessPhaseList:by("harnessPhaseList"),harnessEvidenceTasks:by("harnessEvidenceTasks"),harnessEvidenceTests:by("harnessEvidenceTests"),harnessEvidenceReviews:by("harnessEvidenceReviews"),harnessEvidenceLogs:by("harnessEvidenceLogs")};
 e.harnessCheckMode=by("harnessCheckMode");
 e.harnessCheckModeHint=by("harnessCheckModeHint");
@@ -347,6 +374,71 @@ function inferAgentRoleForUi(name){
   if(PARENT_AGENT_NAMES.has(normalized))return"parent";
   if(normalized==="")return"child";
   return"child";
+}
+function monitorBaseAgentNameForUi(name){
+  const normalized=normalizeAgentNameForUi(name);
+  if(!normalized)return"";
+  const canonical=canonicalParentAgentNameForUi(normalized);
+  if(canonical)return canonical;
+  const scopeSep=normalized.indexOf("@");
+  return scopeSep>0?normalized.slice(0,scopeSep):normalized;
+}
+function isVerificationAgentForUi(row){
+  const baseName=monitorBaseAgentNameForUi(row&&row.name);
+  return VERIFICATION_AGENT_NAMES.has(baseName);
+}
+function isRunningMonitorAgentForUi(row){
+  if(!row||typeof row!=="object")return false;
+  if(typeof row.activeTurnId==="string"&&row.activeTurnId.trim())return true;
+  if(row.tone==="running")return true;
+  const status=String(row.status||"").toLowerCase();
+  return status.includes("running")
+    ||status.includes("busy")
+    ||status.includes("progress")
+    ||status.includes("working")
+    ||status.includes("streaming");
+}
+function monitorLaneForUi(row){
+  if(isRunningMonitorAgentForUi(row))return"running";
+  if(row&&row.role==="parent")return"parents";
+  if(isVerificationAgentForUi(row))return"verification";
+  return"specialists";
+}
+function monitorRoleLabelForUi(row){
+  const lane=monitorLaneForUi(row);
+  if(lane==="running")return"稼働中";
+  if(lane==="parents")return"親";
+  if(lane==="verification")return"検証";
+  return"専門";
+}
+function compactMonitorRefForUi(value){
+  const text=String(value||"").trim();
+  if(!text)return"";
+  if(text.length<=18)return text;
+  return`${text.slice(0,8)}…${text.slice(-4)}`;
+}
+function groupTopographyRowsForUi(rows){
+  const grouped=new Map(AGENT_KANBAN_LANES.map((lane)=>[lane.id,{...lane,items:[]}]));
+  toArr(rows).forEach((row)=>{
+    const laneId=monitorLaneForUi(row);
+    const lane=grouped.get(laneId)||grouped.get("specialists");
+    lane.items.push(row);
+  });
+  grouped.forEach((lane)=>{
+    lane.items.sort((left,right)=>{
+      const leftRunning=isRunningMonitorAgentForUi(left)?1:0;
+      const rightRunning=isRunningMonitorAgentForUi(right)?1:0;
+      if(rightRunning!==leftRunning)return rightRunning-leftRunning;
+      const leftSynced=left&&left.synced?1:0;
+      const rightSynced=right&&right.synced?1:0;
+      if(rightSynced!==leftSynced)return rightSynced-leftSynced;
+      const leftSelected=left&&String(left.status||"").toLowerCase()==="selected"?1:0;
+      const rightSelected=right&&String(right.status||"").toLowerCase()==="selected"?1:0;
+      if(rightSelected!==leftSelected)return rightSelected-leftSelected;
+      return String(left&&left.name||"").localeCompare(String(right&&right.name||""));
+    });
+  });
+  return AGENT_KANBAN_LANES.map((lane)=>grouped.get(lane.id));
 }
 const t1=(x,n=120)=>{const s=String(x||"").replace(/\s+/g," ").trim();return s.length>n?`${s.slice(0,n-1)}…`:s};
 const tt=(ms)=>Number.isFinite(ms)?new Date(ms).toLocaleTimeString("ja-JP",{hour12:false}):"--:--:--";
@@ -687,11 +779,109 @@ function normalizeRequirementCompareKeyForUi(value){
     .replace(/[?？!！。．:：/／、,\s-]+/g,"")
     .toLowerCase();
 }
+function requirementKeysOverlapForUi(left,right,{minLength=12}={}){
+  const leftKey=normalizeRequirementCompareKeyForUi(left);
+  const rightKey=normalizeRequirementCompareKeyForUi(right);
+  if(!leftKey||!rightKey)return false;
+  if(leftKey===rightKey)return true;
+  if(leftKey.length>=minLength&&rightKey.includes(leftKey))return true;
+  if(rightKey.length>=minLength&&leftKey.includes(rightKey))return true;
+  return false;
+}
+function distinctRequirementCandidateForUi(value,{explicitGoal="",explicitGoalRaw="",blockedValues=[]}={}){
+  const text=requirementTextLabelForUi(t1(value,220).trim());
+  if(!text||/[?？]/.test(text))return"";
+  if(
+    requirementKeysOverlapForUi(text,explicitGoal,{minLength:10})
+    || requirementKeysOverlapForUi(text,explicitGoalRaw,{minLength:10})
+  )return"";
+  for(const blocked of toArr(blockedValues)){
+    if(requirementKeysOverlapForUi(text,blocked,{minLength:10}))return"";
+  }
+  return text;
+}
+function collectDistinctRequirementCandidatesForUi(values,options={}){
+  const seen=new Set();
+  return toArr(values).map((entry)=>distinctRequirementCandidateForUi(entry,options)).filter((text)=>{
+    const key=normalizeRequirementCompareKeyForUi(text);
+    if(!key||seen.has(key))return false;
+    seen.add(key);
+    return true;
+  });
+}
 function stripQuestionLeadForUi(value){
   return requirementTextLabelForUi(value)
     .replace(/^(?:質問に答える|次の点を説明する|Answer the user's question about|Explain these points)\s*:?\s*/,"")
     .replace(/[?？!！。．\s]+$/g,"")
     .trim();
+}
+function joinIntentPhrasesForUi(parts){
+  const phrases=toArr(parts).map((entry)=>String(entry||"").trim()).filter(Boolean).slice(0,3);
+  if(!phrases.length)return"";
+  if(phrases.length===1)return phrases[0];
+  return phrases.reduce((acc,entry,index)=>{
+    if(index===0)return entry;
+    return`${acc.replace(/する$/,"し、")}${entry}`;
+  },"");
+}
+function inferQuestionIntentDirectionForUi(value){
+  const text=stripQuestionLeadForUi(value);
+  if(!text)return"";
+  const appearanceOnly=/(?:ように見える|見えるだけ|だけでしょうか|だけなのか|見えているだけ)/.test(text);
+  const literalVsInterpretation=/(?:そのまま受け取|literal|焼き直し|言い換え|オウム返し)/i.test(text)&&/(?:解釈|意図|仮説|要件)/.test(text);
+  if(literalVsInterpretation&&appearanceOnly){
+    return"要件ロックが原文の反復に見える理由を、見え方と実際の挙動を切り分け、どこまで解釈できていてどこが原文寄りかを整理して説明する";
+  }
+  if(literalVsInterpretation&&/(?:なぜ|なんで|理由|どうして)/.test(text)){
+    return"要件ロックが原文の反復に見える理由と、どこまで解釈できていてどこが原文寄りかを整理して説明する";
+  }
+  if(literalVsInterpretation){
+    return"要件ロックが原文の反復に見える点を、どこまで解釈できていてどこが原文寄りかを整理する";
+  }
+  const recentLabel=/(?:最近|直近)/.test(text)?"最近の":"今回の";
+  let topicLabel="";
+  if(/要件/.test(text)&&/(?:修正|変更|直し|改善)/.test(text))topicLabel=`${recentLabel}要件まわりの修正について、`;
+  else if(/(?:表示|UI|画面|見た目)/i.test(text)&&/(?:修正|変更|直し|改善)/.test(text))topicLabel=`${recentLabel}表示まわりの修正について、`;
+  else if(/(?:修正|変更|直し|改善)/.test(text))topicLabel=`${recentLabel}修正について、`;
+  const actions=[];
+  if(/(?:ええかんじ|ええ感じ|いい感じ|良くなった|よくなった|改善|直った|問題|大丈夫|伝わりやす|見やす|自然|狙いどおり)/.test(text)){
+    actions.push("狙いどおり改善できたかを確認する");
+  }
+  if(/(?:どんな修正|どこを修正|何を修正|何を変えた|どこを変えた|変更点|修正したか|どう直した|どんな変更)/.test(text)){
+    actions.push("変更点を具体的に説明する");
+  }
+  if(/(?:なぜ|なんで|理由|どうして)/.test(text)){
+    actions.push("理由を説明する");
+  }
+  if(!actions.length&&/(?:教えて|教えてください|説明して|説明してください|知りたい)/.test(text)){
+    actions.push("知りたいポイントを整理して説明する");
+  }
+  const actionText=joinIntentPhrasesForUi(actions);
+  return actionText?`${topicLabel}${actionText}`:"";
+}
+function inferQuestionIntentHypothesisForUi(value){
+  const text=stripQuestionLeadForUi(value);
+  if(!text)return"";
+  const appearanceOnly=/(?:ように見える|見えるだけ|だけでしょうか|だけなのか|見えているだけ)/.test(text);
+  const literalVsInterpretation=/(?:そのまま受け取|literal|焼き直し|言い換え|オウム返し)/i.test(text)&&/(?:解釈|意図|仮説|要件)/.test(text);
+  if(literalVsInterpretation&&appearanceOnly){
+    return"見え方だけの問題か、実際に意図解釈が弱いのかを切り分けて確かめたい";
+  }
+  if(literalVsInterpretation){
+    return"原文固定と意図解釈のどちらが支配的かを確かめたい";
+  }
+  const improvementReview=/(?:ええかんじ|ええ感じ|いい感じ|良くなった|よくなった|改善|直った|問題|大丈夫|伝わりやす|見やす|自然|狙いどおり)/.test(text);
+  const changeExplanation=/(?:どんな修正|どこを修正|何を修正|何を変えた|どこを変えた|変更点|修正したか|どう直した|どんな変更)/.test(text);
+  if(improvementReview&&changeExplanation){
+    return"変更点だけでなく、改善の根拠まで短く把握したい";
+  }
+  if(changeExplanation){
+    return"変更点とその意図のつながりを把握したい";
+  }
+  if(improvementReview){
+    return"結果だけでなく、改善できた根拠まで把握したい";
+  }
+  return"";
 }
 function formatPlanSkipWorkTextForUi(value){
   const text=t1(value,240).trim().replace(/^PLAN SKIP\s*[:/]\s*/i,"");
@@ -723,26 +913,54 @@ function summarizeInlineListForUi(items,{maxItems=3,emptyLabel=""}={}){
 function buildRequirementLockSnapshotForUi(turn){
   const requirement=requirementContractForUi(turn);
   const userValueFrame=requirement.userValueFrame&&typeof requirement.userValueFrame==="object"?requirement.userValueFrame:{};
+  const intentInterpretation=requirement.intentInterpretation&&typeof requirement.intentInterpretation==="object"?requirement.intentInterpretation:{};
   const acceptanceChecks=acceptanceCheckLabelsForUi(requirement.acceptanceChecks).map(requirementTextLabelForUi);
   const baselineScope=compactTextListForUi(requirement.baselineScope,{transform:requirementTextLabelForUi});
   const overDeliveryScope=compactTextListForUi(requirement.overDeliveryScope,{transform:requirementTextLabelForUi});
   const nonGoals=compactTextListForUi(requirement.nonGoals,{transform:requirementTextLabelForUi});
   const assumptions=compactTextListForUi(requirement.assumptions,{transform:requirementTextLabelForUi});
   const openQuestionsRaw=compactTextListForUi(requirement.openQuestions,{transform:requirementTextLabelForUi});
+  const userWantsRaw=compactTextListForUi(userValueFrame.userWants,{transform:requirementTextLabelForUi});
+  const hardConstraints=compactTextListForUi(userValueFrame.hardConstraints,{transform:requirementTextLabelForUi});
   const mustAvoid=compactTextListForUi(userValueFrame.mustAvoid,{transform:requirementTextLabelForUi});
   const qualityAxes=compactTextListForUi(userValueFrame.qualityAxes,{transform:qualityAxisLabelForUi});
   const completedMeans=compactTextListForUi(userValueFrame.completedMeans,{transform:requirementTextLabelForUi});
   const valueThesis=typeof userValueFrame.valueThesis==="string"?requirementTextLabelForUi(t1(userValueFrame.valueThesis,220).trim()):"";
   const explicitGoalRaw=typeof requirement.explicitGoal==="string"?requirementTextLabelForUi(t1(requirement.explicitGoal,220).trim()):"";
   const implicitGoal=typeof requirement.implicitGoal==="string"?requirementTextLabelForUi(t1(requirement.implicitGoal,220).trim()):"";
-  const goalLooksQuestionLike=Boolean(explicitGoalRaw)&&(
-    explicitGoalRaw.startsWith("質問に答える:")
-    || explicitGoalRaw.startsWith("次の点を説明する:")
-    || /[?？]/.test(explicitGoalRaw)
-    || (/を説明する$/.test(explicitGoalRaw)&&!implicitGoal)
-  );
+  const hasLockedIntentInterpretation=Object.keys(intentInterpretation).length>0;
+  const lockedQuestionLike=hasLockedIntentInterpretation?Boolean(intentInterpretation.questionLike):false;
+  const lockedIntentPresentation=hasLockedIntentInterpretation&&intentInterpretation.presentation==="progress_hypothesis"?"progress_hypothesis":"goal";
+  const lockedIntentDirection=typeof intentInterpretation.direction==="string"?requirementTextLabelForUi(t1(intentInterpretation.direction,220).trim()):"";
+  const lockedIntentHypothesis=typeof intentInterpretation.hypothesis==="string"?requirementTextLabelForUi(t1(intentInterpretation.hypothesis,220).trim()):"";
+  const goalLooksQuestionLike=hasLockedIntentInterpretation&&lockedQuestionLike;
   const explicitGoal=goalLooksQuestionLike?stripQuestionLeadForUi(explicitGoalRaw):explicitGoalRaw;
-  const openQuestions=openQuestionsRaw.filter((entry)=>normalizeRequirementCompareKeyForUi(entry)!==normalizeRequirementCompareKeyForUi(explicitGoalRaw));
+  const openQuestions=openQuestionsRaw.filter((entry)=>{
+    if(requirementKeysOverlapForUi(entry,explicitGoalRaw)||requirementKeysOverlapForUi(entry,explicitGoal))return false;
+    if(goalLooksQuestionLike&&lockedIntentDirection&&requirementKeysOverlapForUi(entry,lockedIntentDirection,{minLength:16}))return false;
+    return true;
+  });
+  const hasInterpretedQuestionView=hasLockedIntentInterpretation
+    &&lockedQuestionLike
+    &&lockedIntentPresentation==="progress_hypothesis"
+    &&Boolean(lockedIntentDirection||lockedIntentHypothesis);
+  const intentDirection=hasLockedIntentInterpretation
+    ?(hasInterpretedQuestionView?lockedIntentDirection:"")
+    :"";
+  const intentDirectionKey=normalizeRequirementCompareKeyForUi(intentDirection);
+  const intentHypothesis=hasLockedIntentInterpretation
+    ?(hasInterpretedQuestionView?lockedIntentHypothesis:"")
+    :"";
+  const hasRequirementCore=Boolean(
+    explicitGoal
+    || implicitGoal
+    || acceptanceChecks.length
+    || baselineScope.length
+    || overDeliveryScope.length
+    || nonGoals.length
+    || assumptions.length
+    || openQuestions.length
+  );
   const lockedCount=
     acceptanceChecks.length
     +baselineScope.length
@@ -750,6 +968,8 @@ function buildRequirementLockSnapshotForUi(turn){
     +nonGoals.length
     +assumptions.length
     +openQuestions.length
+    +userWantsRaw.length
+    +hardConstraints.length
     +mustAvoid.length
     +qualityAxes.length
     +completedMeans.length;
@@ -761,10 +981,14 @@ function buildRequirementLockSnapshotForUi(turn){
   if(assumptions.length)riskSummaryParts.push(`assumption ${assumptions.length}`);
   if(openQuestions.length)riskSummaryParts.push(`open ${openQuestions.length}`);
   return{
-    hasRequirement:Boolean(explicitGoal||implicitGoal||acceptanceChecks.length||baselineScope.length||nonGoals.length||valueThesis||lockedCount),
-    goalGroupTitle:goalLooksQuestionLike?"回答テーマ":"ゴール",
-    explicitGoalLabel:goalLooksQuestionLike?"テーマ":"明示ゴール",
-    implicitGoalLabel:goalLooksQuestionLike?"補足背景":"暗黙ゴール",
+    hasRequirement:hasRequirementCore,
+    goalGroupTitle:goalLooksQuestionLike&&hasInterpretedQuestionView?"進行仮説":"ゴール",
+    explicitGoalLabel:goalLooksQuestionLike&&hasInterpretedQuestionView?"扱う論点":"明示ゴール",
+    implicitGoalLabel:goalLooksQuestionLike&&hasInterpretedQuestionView?"補足背景":"暗黙ゴール",
+    intentDirectionLabel:goalLooksQuestionLike&&hasInterpretedQuestionView?"向かう先":"主目的",
+    intentHypothesisLabel:goalLooksQuestionLike&&hasInterpretedQuestionView?"ユーザー意図の仮説":"補助目的",
+    intentDirection,
+    intentHypothesis,
     explicitGoal,
     implicitGoal,
     acceptanceChecks,
@@ -773,12 +997,14 @@ function buildRequirementLockSnapshotForUi(turn){
     nonGoals,
     assumptions,
     openQuestions,
+    userWants:userWantsRaw,
+    hardConstraints,
     valueThesis,
     mustAvoid,
     qualityAxes,
     completedMeans,
     lockedCount,
-    headline:explicitGoal||implicitGoal||valueThesis||"",
+    headline:(goalLooksQuestionLike&&hasInterpretedQuestionView?intentDirection:"")||explicitGoal||implicitGoal||valueThesis||"",
     metaParts:[
       acceptanceChecks.length?`受け入れ ${acceptanceChecks.length}`:"",
       scopeSummaryParts.length?scopeSummaryParts.join(" / "):"",
@@ -789,11 +1015,22 @@ function buildRequirementLockSnapshotForUi(turn){
 function requirementGroupsForUi(snapshot){
   if(!snapshot||!snapshot.hasRequirement)return[];
   const groups=[];
-  if(snapshot.explicitGoal||snapshot.implicitGoal){
+  if(snapshot.explicitGoal||snapshot.implicitGoal||snapshot.intentDirection||snapshot.intentHypothesis){
     const items=[];
-    if(snapshot.explicitGoal)items.push(`${snapshot.explicitGoalLabel||"主目的"}: ${snapshot.explicitGoal}`);
-    if(snapshot.implicitGoal)items.push(`${snapshot.implicitGoalLabel||"補助目的"}: ${snapshot.implicitGoal}`);
-    groups.push({title:snapshot.goalGroupTitle==="回答テーマ"?"回答テーマ":"目的の解釈",items});
+    if(snapshot.goalGroupTitle==="進行仮説"){
+      const explicitGoalKey=normalizeRequirementCompareKeyForUi(snapshot.explicitGoal);
+      const implicitGoalKey=normalizeRequirementCompareKeyForUi(snapshot.implicitGoal);
+      const intentDirectionKey=normalizeRequirementCompareKeyForUi(snapshot.intentDirection);
+      const intentHypothesisKey=normalizeRequirementCompareKeyForUi(snapshot.intentHypothesis);
+      if(snapshot.intentDirection)items.push(`${snapshot.intentDirectionLabel||"向かう先"}: ${snapshot.intentDirection}`);
+      if(snapshot.intentHypothesis&&intentHypothesisKey!==intentDirectionKey)items.push(`${snapshot.intentHypothesisLabel||"ユーザー意図の仮説"}: ${snapshot.intentHypothesis}`);
+      if(snapshot.explicitGoal&&explicitGoalKey!==intentDirectionKey&&explicitGoalKey!==intentHypothesisKey)items.push(`${snapshot.explicitGoalLabel||"扱う論点"}: ${snapshot.explicitGoal}`);
+      if(snapshot.implicitGoal&&implicitGoalKey!==intentDirectionKey&&implicitGoalKey!==intentHypothesisKey&&implicitGoalKey!==explicitGoalKey)items.push(`${snapshot.implicitGoalLabel||"補足背景"}: ${snapshot.implicitGoal}`);
+    }else{
+      if(snapshot.explicitGoal)items.push(`${snapshot.explicitGoalLabel||"主目的"}: ${snapshot.explicitGoal}`);
+      if(snapshot.implicitGoal)items.push(`${snapshot.implicitGoalLabel||"補助目的"}: ${snapshot.implicitGoal}`);
+    }
+    groups.push({title:snapshot.goalGroupTitle||"ゴール",items});
   }
   if(snapshot.acceptanceChecks.length){
     groups.push({title:"受け入れ条件",items:snapshot.acceptanceChecks});
@@ -829,7 +1066,7 @@ function buildPhaseSummariesForUi({flowItems,requirementSnapshot,displayedPlan,e
   const familyGateLabel=runtimeContext&&runtimeContext.gateApplies?familyGateStatusLabelForUi(runtimeContext.gateStatus):"";
   const summaryMap={};
   summaryMap.requirements=requirementSnapshot&&requirementSnapshot.hasRequirement
-    ?`目的解釈 ${requirementSnapshot.explicitGoal||requirementSnapshot.implicitGoal||"固定済み"} / 受け入れ ${requirementSnapshot.acceptanceChecks.length||0} / 非対象 ${requirementSnapshot.nonGoals.length||0} / 前提 ${requirementSnapshot.assumptions.length||0}${requirementSnapshot.openQuestions.length?` / 未解決 ${requirementSnapshot.openQuestions.length}`:""}`
+    ?`目的解釈 ${requirementSnapshot.intentDirection||requirementSnapshot.explicitGoal||requirementSnapshot.implicitGoal||"固定済み"} / 受け入れ ${requirementSnapshot.acceptanceChecks.length||0} / 非対象 ${requirementSnapshot.nonGoals.length||0} / 前提 ${requirementSnapshot.assumptions.length||0}${requirementSnapshot.openQuestions.length?` / 未解決 ${requirementSnapshot.openQuestions.length}`:""}`
     :`要件ロック待ち${currentStatus&&currentStatus!=="idle"?" / 依頼は送信済み":""}`;
   if(displayedPlan&&displayedPlan.decision==="skip"){
     summaryMap.planning=planSkipReasonLabelForUi(displayedPlan.skipReason);
@@ -1281,6 +1518,9 @@ function normalizeMonitorAgent(raw,index,{runtimeFallback=false}={}){
     else if(typeof item.isActive==="boolean")statusSource=item.isActive?"selected":"idle";
     else statusSource=runtimeFallback?"idle":"unknown";
   }
+  const activeTurnId=typeof item.activeTurnId==="string"?item.activeTurnId:"";
+  if(activeTurnId.trim())statusSource="running";
+  else if(Boolean(item.isActive)&&/^(?:configured|idle)$/i.test(String(statusSource||"").trim()))statusSource="selected";
   return{
     name,
     role,
@@ -1288,9 +1528,11 @@ function normalizeMonitorAgent(raw,index,{runtimeFallback=false}={}){
     tone:monitorTone(statusSource),
     source:typeof item.source==="string"?item.source:"",
     threadId:typeof item.threadId==="string"?item.threadId:"",
-    activeTurnId:typeof item.activeTurnId==="string"?item.activeTurnId:"",
+    activeTurnId,
     sessionRef:typeof item.sessionRef==="string"?item.sessionRef:"",
     isActive:Boolean(item.isActive),
+    description:typeof item.description==="string"?item.description:"",
+    governance:item&&item.governance&&typeof item.governance==="object"?item.governance:{},
   };
 }
 function extractTopographyAgents(payload){
@@ -1314,9 +1556,9 @@ function runtimeAgentsForMonitor(runtime){
 function loadTopographyUiState(){
   try{
     const stored=localStorage.getItem(TOPOGRAPHY_COLLAPSED_KEY);
-    topographyState.collapsed=stored===null?true:stored==="1";
+    topographyState.collapsed=stored===null?false:stored==="1";
   }catch{
-    topographyState.collapsed=true;
+    topographyState.collapsed=false;
   }
 }
 function saveTopographyUiState(){
@@ -1335,16 +1577,22 @@ function setTopographyCollapsed(next){
 function syncedTopographyRows(rows){
   const trackedChatScopes=trackedChatScopesForUi();
   const activeContext=activeChatTopographyContextForUi(rows);
-  const shouldIncludeName=(name)=>{
+  const shouldIncludeRow=(raw)=>{
+    const row=raw&&typeof raw==="object"?raw:{name:raw};
+    const normalized=normalizeAgentNameForUi(row.name);
+    if(!normalized||isHiddenAgentForUi(normalized))return false;
+    const chatScope=chatScopeFromAgentNameForUi(normalized);
+    if(!chatScope)return true;
+    if((typeof row.activeTurnId==="string"&&row.activeTurnId.trim())||Boolean(row.isActive))return true;
     if(activeContext.hasCurrentChatSignals&&activeContext.matchNames.size){
-      return monitorAgentMatchesForUi(name,activeContext.matchNames);
+      return monitorAgentMatchesForUi(normalized,activeContext.matchNames);
     }
-    return shouldRenderMonitorAgentNameForUi(name,{trackedChatScopes});
+    return shouldRenderMonitorAgentNameForUi(normalized,{trackedChatScopes});
   };
   const baseByName=new Map();
   toArr(rows).forEach((raw,index)=>{
     const normalized=normalizeMonitorAgent(raw,index);
-    if(normalized&&normalized.name&&shouldIncludeName(normalized.name)){
+    if(normalized&&normalized.name&&shouldIncludeRow(normalized)){
       baseByName.set(normalized.name,{...normalized,synced:false,syncDetail:"",syncAt:0});
     }
   });
@@ -1354,7 +1602,7 @@ function syncedTopographyRows(rows){
     const chatId=item&&typeof item.cid==="string"?item.cid.trim():"";
     if(chatId!==activeContext.currentChatId)return;
     const name=resolveMonitorAgentNameForUi(item&&typeof item.agent==="string"?item.agent.trim():"",baseByName);
-    if(!name||!shouldIncludeName(name))return;
+    if(!name||!shouldIncludeRow({name}))return;
     pendingByAgent.set(name,(pendingByAgent.get(name)||0)+1);
   });
 
@@ -1363,7 +1611,7 @@ function syncedTopographyRows(rows){
     const chatId=item&&typeof item.cid==="string"?item.cid.trim():"";
     if(chatId!==activeContext.currentChatId)return;
     const name=resolveMonitorAgentNameForUi(item&&typeof item.agent==="string"?item.agent.trim():"",baseByName);
-    if(!name||!shouldIncludeName(name)||latestTraceByAgent.has(name))return;
+    if(!name||!shouldIncludeRow({name})||latestTraceByAgent.has(name))return;
     latestTraceByAgent.set(name,item);
   });
 
@@ -1438,6 +1686,7 @@ function renderAgentTopography(){
   if(e.agentTopographyRefreshBtn)e.agentTopographyRefreshBtn.disabled=topographyState.loading;
 
   const rows=syncedTopographyRows(topographyState.agents);
+  const lanes=groupTopographyRowsForUi(rows);
   const syncedCount=rows.filter((row)=>row.synced).length;
   const latestSyncAt=rows.reduce((max,row)=>Math.max(max,Number.isFinite(Number(row.syncAt))?Number(row.syncAt):0),0);
   if(topographyState.loading)e.agentTopographyMeta.textContent="更新中...";
@@ -1447,48 +1696,89 @@ function renderAgentTopography(){
     const sourceLabel=topographyState.usingFallback?"代替 /api/runtime":"/api/agent-topography";
     const at=topographyState.lastUpdated?tt(topographyState.lastUpdated):"--:--:--";
     const chatLabel=currentChat&&typeof currentChat.title==="string"&&currentChat.title.trim()?` / ${currentChat.title.trim()}`:"";
+    const laneSummary=lanes.map((lane)=>`${lane.label} ${lane.items.length}`).join(" / ");
     const traceSync=syncedCount>0?` / trace sync ${syncedCount} @ ${tt(latestSyncAt||Date.now())}`:"";
-    e.agentTopographyMeta.textContent=`${sourceLabel}${chatLabel} @ ${at}${traceSync}`;
+    e.agentTopographyMeta.textContent=`${sourceLabel}${chatLabel} @ ${at} / ${laneSummary}${traceSync}`;
   }
 
   e.agentTopographyList.innerHTML="";
   if(!rows.length){
-    const empty=document.createElement("li");
+    const empty=document.createElement("div");
     empty.className="agent-topography-empty";
     empty.textContent=topographyState.error?"エージェント情報を取得できませんでした。":"表示できるエージェントがありません。";
     e.agentTopographyList.appendChild(empty);
     return;
   }
-  rows.forEach((row)=>{
-    const card=document.createElement("li");
-    card.className="agent-topography-item";
-    if(row.synced)card.classList.add("synced");
-    const line=document.createElement("div");
-    line.className="agent-topography-line";
-    const name=document.createElement("p");
-    name.className="agent-topography-name";
-    name.textContent=displayAgentNameForUi(row.name,{includeScope:true})||"unknown";
-    const status=document.createElement("span");
-    status.className=`agent-topography-status ${row.tone||"idle"}`;
-    status.textContent=row.status||"unknown";
-    const role=document.createElement("p");
-    role.className="agent-topography-role";
-    role.textContent=`役割: ${row.role||"unknown"}`;
-    const session=document.createElement("p");
-    session.className="agent-topography-role";
-    session.textContent=`セッション: ${row.sessionRef||row.threadId||"none"}`;
-    line.appendChild(name);
-    line.appendChild(status);
-    card.appendChild(line);
-    card.appendChild(role);
-    card.appendChild(session);
-    if(row.syncDetail){
-      const sync=document.createElement("p");
-      sync.className="agent-topography-sync";
-      sync.textContent=row.syncDetail;
-      card.appendChild(sync);
+  lanes.forEach((lane)=>{
+    const laneSection=document.createElement("section");
+    laneSection.className=`agent-topography-lane agent-topography-lane-${lane.id}`;
+    const laneHead=document.createElement("div");
+    laneHead.className="agent-topography-lane-head";
+    const laneTitle=document.createElement("h3");
+    laneTitle.className="agent-topography-lane-title";
+    laneTitle.textContent=lane.label;
+    const laneCount=document.createElement("span");
+    laneCount.className="agent-topography-lane-count";
+    laneCount.textContent=String(lane.items.length);
+    laneHead.appendChild(laneTitle);
+    laneHead.appendChild(laneCount);
+    laneSection.appendChild(laneHead);
+
+    const laneCards=document.createElement("div");
+    laneCards.className="agent-topography-cards";
+    if(!lane.items.length){
+      const empty=document.createElement("div");
+      empty.className="agent-topography-empty";
+      empty.textContent=lane.empty;
+      laneCards.appendChild(empty);
+    }else{
+      lane.items.forEach((row)=>{
+        const card=document.createElement("article");
+        card.className="agent-topography-item";
+        if(row.synced)card.classList.add("synced");
+        if(isRunningMonitorAgentForUi(row))card.classList.add("active");
+        const line=document.createElement("div");
+        line.className="agent-topography-line";
+        const name=document.createElement("p");
+        name.className="agent-topography-name";
+        name.textContent=displayAgentNameForUi(row.name,{includeScope:true})||"unknown";
+        const status=document.createElement("span");
+        status.className=`agent-topography-status ${row.tone||"idle"}`;
+        status.textContent=row.status||"unknown";
+        line.appendChild(name);
+        line.appendChild(status);
+        card.appendChild(line);
+
+        const role=document.createElement("p");
+        role.className="agent-topography-role";
+        role.textContent=`区分: ${monitorRoleLabelForUi(row)} / source: ${row.source||"unknown"}`;
+        card.appendChild(role);
+
+        const session=document.createElement("p");
+        session.className="agent-topography-role";
+        const sessionParts=[];
+        if(row.sessionRef)sessionParts.push(`session ${compactMonitorRefForUi(row.sessionRef)}`);
+        if(row.threadId&&!row.sessionRef)sessionParts.push(`thread ${compactMonitorRefForUi(row.threadId)}`);
+        if(row.activeTurnId)sessionParts.push(`turn ${compactMonitorRefForUi(row.activeTurnId)}`);
+        session.textContent=sessionParts.length?sessionParts.join(" / "):"session なし";
+        card.appendChild(session);
+
+        if(row.syncDetail){
+          const sync=document.createElement("p");
+          sync.className="agent-topography-sync";
+          sync.textContent=row.syncDetail;
+          card.appendChild(sync);
+        }else if(row.description){
+          const desc=document.createElement("p");
+          desc.className="agent-topography-sync";
+          desc.textContent=t1(row.description,72);
+          card.appendChild(desc);
+        }
+        laneCards.appendChild(card);
+      });
     }
-    e.agentTopographyList.appendChild(card);
+    laneSection.appendChild(laneCards);
+    e.agentTopographyList.appendChild(laneSection);
   });
 }
 function stopAgentTopographyTicker(){
@@ -1496,10 +1786,22 @@ function stopAgentTopographyTicker(){
     clearInterval(topographyState.timer);
     topographyState.timer=null;
   }
+  if(topographyState.refreshSoonTimer!==null){
+    clearTimeout(topographyState.refreshSoonTimer);
+    topographyState.refreshSoonTimer=null;
+  }
 }
 function startAgentTopographyTicker(){
   stopAgentTopographyTicker();
   topographyState.timer=setInterval(()=>{loadAgentTopography().catch(()=>{});},TOPOGRAPHY_REFRESH_MS);
+}
+function scheduleTopographyRefreshSoon(delayMs=180){
+  if(!e.agentTopographyList)return;
+  if(topographyState.refreshSoonTimer!==null)return;
+  topographyState.refreshSoonTimer=setTimeout(()=>{
+    topographyState.refreshSoonTimer=null;
+    loadAgentTopography().catch(()=>{});
+  },Math.max(0,Math.trunc(Number(delayMs)||0)));
 }
 async function loadAgentTopography({manual=false}={}){
   if(!e.agentTopographyList)return;
@@ -1933,11 +2235,13 @@ function happly(c,ev){
       hpush(c,"turn/completed",ev.status||"completed",ev.status==="failed"?"failed":"info");
       onPerformanceTurnCompleted(c,ev);
     }
+    scheduleTopographyRefreshSoon();
     return;
   }
   if(ev.type==="item"){
     const i=ev.item||{};
     hpush(c,i.label||i.type||"item",i.detail||"",i.status==="failed"?"failed":"info");
+    if(i.type==="collabAgentToolCall"||i.type==="collabToolCall")scheduleTopographyRefreshSoon();
     return;
   }
   if(ev.type==="activity"){
@@ -2544,7 +2848,7 @@ function renderHarness(){
       ?requirementSnapshot.headline||"要件の主目的は固まりました。"
       :status==="running"||status==="starting"
         ?"実行は始まっていますが、このチャットではまだ要件ロック内容を取得できていません。"
-        :"このチャットで要件がロックされると、目的と完成条件をここに表示します。";
+        :"このチャットで要件がロックされると、AIがどこに向かって進むかと完成条件をここに表示します。";
   }
   if(requirementSectionsEl){
     requirementSectionsEl.innerHTML="";
@@ -2556,7 +2860,7 @@ function renderHarness(){
       const text=document.createElement("p");
       text.textContent=requirementSnapshot.hasRequirement
         ?"要件ロックはありますが、表示できるサマリー項目が不足しています。"
-        :"要件・受け入れ条件・非対象が固まると、この欄で読めるようになります。";
+        :"AIの向かう先、受け入れ条件、非対象が固まると、この欄で読めるようになります。";
       empty.appendChild(title);
       empty.appendChild(text);
       requirementSectionsEl.appendChild(empty);
@@ -2888,7 +3192,39 @@ function pending(){
   }
 }
 function refresh(){renderTimeline();renderChatList();renderHarness();inspect();pending();live();renderPerformanceIndicator();renderAutomationStatus();syncRuntimePendingMonitor()}
-function profileSync(){const snap={approvalPolicy:e.approvalPolicy.value,sandboxMode:e.sandboxMode.value,webSearch:e.webSearch.checked};const id=Object.keys(PROFILES).find(k=>{const p=PROFILES[k];return p.approvalPolicy===snap.approvalPolicy&&p.sandboxMode===snap.sandboxMode&&p.webSearch===snap.webSearch});e.executionProfile.value=id||"custom"}
+function normalizeApprovalPolicyForUi(value,fallback="on-request"){
+  const normalized=typeof value==="string"?value.trim().toLowerCase():"";
+  if(normalized==="on-failure")return"on-request";
+  return ALLOWED_APPROVAL_POLICIES.has(normalized)?normalized:fallback;
+}
+function normalizeSandboxModeForUi(value,fallback="workspace-write"){
+  const normalized=typeof value==="string"?value.trim().toLowerCase():"";
+  return ALLOWED_SANDBOX_MODES.has(normalized)?normalized:fallback;
+}
+function normalizeExecutionProfileForUi(value,fallback=DEFAULT_PROFILE_ID){
+  const normalized=typeof value==="string"?value.trim().toLowerCase():"";
+  if(!normalized)return fallback;
+  const aliased=LEGACY_PROFILE_ALIASES[normalized]||normalized;
+  if(aliased==="custom")return aliased;
+  return PROFILE_IDS.has(aliased)?aliased:fallback;
+}
+function executionProfileLabelForUi(value){
+  const normalized=normalizeExecutionProfileForUi(value,"custom");
+  return PROFILE_LABELS[normalized]||PROFILE_LABELS.custom;
+}
+function applyExecutionProfileToUi(profileId){
+  const normalized=normalizeExecutionProfileForUi(profileId,"");
+  const profile=normalized?PROFILES[normalized]:null;
+  if(!profile)return false;
+  e.executionProfile.value=normalized;
+  e.approvalPolicy.value=profile.approvalPolicy;
+  if(e.fastModeEnabled)e.fastModeEnabled.checked=runtimeDefaultFastModeEnabled();
+  if(e.automaticApprovalReviewEnabled)e.automaticApprovalReviewEnabled.checked=runtimeDefaultAutomaticApprovalReviewEnabled();
+  e.sandboxMode.value=profile.sandboxMode;
+  e.webSearch.checked=Boolean(profile.webSearch);
+  return true;
+}
+function profileSync(){const snap={approvalPolicy:normalizeApprovalPolicyForUi(e.approvalPolicy.value,""),sandboxMode:normalizeSandboxModeForUi(e.sandboxMode.value,""),webSearch:Boolean(e.webSearch.checked)};const id=Object.keys(PROFILES).find(k=>{const p=PROFILES[k];return p.approvalPolicy===snap.approvalPolicy&&p.sandboxMode===snap.sandboxMode&&p.webSearch===snap.webSearch});e.executionProfile.value=id||"custom"}
 function normalizeSavedMessage(raw,index){
   if(!raw||typeof raw!=="object")return null;
   const id=typeof raw.id==="string"&&raw.id.trim()?raw.id.trim():`m-restore-${index+1}`;
@@ -3109,28 +3445,29 @@ function saveSettings(){
 function loadSettings(){
   let parsed={};
   try{parsed=JSON.parse(localStorage.getItem(SETTINGS_KEY)||"{}")}catch{parsed={}}
-  const defaultProfile=PROFILES["power"]||{approvalPolicy:"on-request",sandboxMode:"danger-full-access",webSearch:true};
+  const defaultProfile=PROFILES[DEFAULT_PROFILE_ID]||{approvalPolicy:"on-request",sandboxMode:"workspace-write",webSearch:true};
+  const normalizedStoredProfile=normalizeExecutionProfileForUi(parsed.executionProfile,"");
+  const shouldApplyStoredPreset=normalizedStoredProfile&&normalizedStoredProfile!=="custom";
   settingsState.hasStoredModel=false;
   settingsState.hasStoredModelReasoningEffort=false;
   settingsState.hasStoredFastMode=false;
   settingsState.hasStoredAutomaticApprovalReview=false;
-  e.approvalPolicy.value=defaultProfile.approvalPolicy;
-  if(e.fastModeEnabled)e.fastModeEnabled.checked=runtimeDefaultFastModeEnabled();
-  if(e.automaticApprovalReviewEnabled)e.automaticApprovalReviewEnabled.checked=runtimeDefaultAutomaticApprovalReviewEnabled();
-  e.sandboxMode.value=defaultProfile.sandboxMode;
-  e.webSearch.checked=Boolean(defaultProfile.webSearch);
+  applyExecutionProfileToUi(DEFAULT_PROFILE_ID);
   if(e.modelName){
     const runtimeModel=runtimeDefaultExecModel();
     hydrateExecModelOptionsForUi([runtimeModel,parsed&&typeof parsed.modelName==="string"?parsed.modelName:""]);
     e.modelName.value=ensureExecModelOptionForUi(runtimeModel)||runtimeModel;
   }
   if(e.modelReasoningEffort)e.modelReasoningEffort.value=runtimeDefaultExecModelReasoningEffort();
-  if(typeof parsed.approvalPolicy==="string"&&parsed.approvalPolicy.trim())e.approvalPolicy.value=parsed.approvalPolicy.trim();
+  if(shouldApplyStoredPreset)applyExecutionProfileToUi(normalizedStoredProfile);
+  else{
+    e.approvalPolicy.value=normalizeApprovalPolicyForUi(parsed.approvalPolicy,defaultProfile.approvalPolicy);
+    e.sandboxMode.value=normalizeSandboxModeForUi(parsed.sandboxMode,defaultProfile.sandboxMode);
+    if(typeof parsed.webSearch==="boolean")e.webSearch.checked=Boolean(parsed.webSearch);
+  }
   if(typeof parsed.fastModeEnabled==="boolean"&&e.fastModeEnabled){e.fastModeEnabled.checked=Boolean(parsed.fastModeEnabled);settingsState.hasStoredFastMode=true;}
   if(typeof parsed.automaticApprovalReviewEnabled==="boolean"&&e.automaticApprovalReviewEnabled){e.automaticApprovalReviewEnabled.checked=Boolean(parsed.automaticApprovalReviewEnabled);settingsState.hasStoredAutomaticApprovalReview=true;}
-  if(typeof parsed.sandboxMode==="string"&&parsed.sandboxMode.trim())e.sandboxMode.value=parsed.sandboxMode.trim();
-  if(typeof parsed.webSearch==="boolean")e.webSearch.checked=Boolean(parsed.webSearch);
-  if(typeof parsed.executionProfile==="string")e.executionProfile.value=parsed.executionProfile;
+  if(typeof parsed.executionProfile==="string")e.executionProfile.value=normalizeExecutionProfileForUi(parsed.executionProfile,"custom");
   if(e.modelName&&typeof parsed.modelName==="string"&&parsed.modelName.trim()){
     const normalizedStoredModel=normalizeExecModelNameForUi(parsed.modelName,runtimeDefaultExecModel());
     e.modelName.value=ensureExecModelOptionForUi(normalizedStoredModel)||normalizedStoredModel;
@@ -3664,8 +4001,8 @@ async function runPrompt(raw,cid=s.active,options={}){
   trace("dispatch",runAgent,dispatchDetail||"(empty)",c.id);
   let ttype="completed",tdetail="completed",finalApplied=false;
   try{
-    const selectedApproval=typeof e.approvalPolicy.value==="string"&&e.approvalPolicy.value?e.approvalPolicy.value:"never";
-    const selectedSandbox=typeof e.sandboxMode.value==="string"&&e.sandboxMode.value?e.sandboxMode.value:"danger-full-access";
+    const selectedApproval=normalizeApprovalPolicyForUi(e.approvalPolicy.value,PROFILES[DEFAULT_PROFILE_ID].approvalPolicy);
+    const selectedSandbox=normalizeSandboxModeForUi(e.sandboxMode.value,PROFILES[DEFAULT_PROFILE_ID].sandboxMode);
     const selectedWebSearch=Boolean(e.webSearch&&e.webSearch.checked);
     const selectedModel=selectedExecModel();
     const selectedModelReasoningEffort=selectedExecModelReasoningEffort();
@@ -3808,16 +4145,10 @@ function bind(){
   if(e.commandFilter)e.commandFilter.oninput=()=>renderCommands(e.commandFilter.value);
   e.executionProfile.onchange=()=>{
     if(e.executionProfile.value==="custom"){saveSettings();return}
-    const p=PROFILES[e.executionProfile.value];
-    if(!p)return;
-    e.approvalPolicy.value=p.approvalPolicy;
-    if(e.fastModeEnabled)e.fastModeEnabled.checked=runtimeDefaultFastModeEnabled();
-    if(e.automaticApprovalReviewEnabled)e.automaticApprovalReviewEnabled.checked=runtimeDefaultAutomaticApprovalReviewEnabled();
-    e.sandboxMode.value=p.sandboxMode;
-    e.webSearch.checked=Boolean(p.webSearch);
+    if(!applyExecutionProfileToUi(e.executionProfile.value))return;
     saveSettings();
     updateSearchDiag();
-    msg(s.active,"system","System",`Profile applied: ${e.executionProfile.value}`);
+    msg(s.active,"system","System",`Permissions preset applied: ${executionProfileLabelForUi(e.executionProfile.value)}`);
   };
   [e.approvalPolicy,e.fastModeEnabled,e.automaticApprovalReviewEnabled,e.sandboxMode,e.webSearch].filter(Boolean).forEach(x=>x.onchange=()=>{profileSync();saveSettings();updateSearchDiag()});
   if(e.modelName)e.modelName.onchange=()=>{const normalizedModel=normalizeExecModelNameForUi(e.modelName.value,runtimeDefaultExecModel());e.modelName.value=ensureExecModelOptionForUi(normalizedModel)||normalizedModel;settingsState.hasStoredModel=true;saveSettings();};

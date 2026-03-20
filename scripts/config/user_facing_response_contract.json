@@ -1,0 +1,94 @@
+{
+  "schema": "user-facing-response-contract.v1",
+  "version": "2026-03-20.r1",
+  "closeInPlace": {
+    "enabled": true,
+    "exemptTaskOutcomeStatuses": [
+      "NEEDS_INPUT",
+      "BLOCKED"
+    ],
+    "allowedPromptSignals": [
+      "option",
+      "options",
+      "alternative",
+      "alternatives",
+      "trade-off",
+      "tradeoffs",
+      "compare",
+      "comparison",
+      "recommend",
+      "recommended",
+      "choose",
+      "decision",
+      "next step",
+      "next steps",
+      "roadmap",
+      "plan",
+      "break down",
+      "organize",
+      "detail",
+      "details",
+      "dig deeper",
+      "\u9078\u629e\u80a2",
+      "\u6bd4\u8f03",
+      "\u63a8\u5968",
+      "\u8a73\u3057\u304f",
+      "\u8a73\u7d30",
+      "\u6b21\u306e\u30b9\u30c6\u30c3\u30d7",
+      "\u30ed\u30fc\u30c9\u30de\u30c3\u30d7",
+      "\u8a08\u753b",
+      "\u6574\u7406"
+    ],
+    "prohibitedClosingStarts": [
+      "if you'd like",
+      "if you like",
+      "if you want",
+      "let me know if",
+      "would you like me to",
+      "i can also",
+      "i can break this down",
+      "i can drill into",
+      "i can walk through",
+      "\u5fc5\u8981\u306a\u3089",
+      "\u5fc5\u8981\u3067\u3042\u308c\u3070",
+      "\u3082\u3057\u5fc5\u8981\u306a\u3089",
+      "\u3082\u3057\u5fc5\u8981\u3067\u3042\u308c\u3070"
+    ]
+  },
+  "completionClaims": {
+    "requireCompletedTaskOutcome": true,
+    "prohibitedLeadPhrases": [
+      "done",
+      "fixed",
+      "completed",
+      "resolved",
+      "implemented",
+      "shipped",
+      "reflected",
+      "\u4fee\u6b63\u6e08\u307f\u3067\u3059",
+      "\u53cd\u6620\u6e08\u307f\u3067\u3059",
+      "\u5bfe\u5fdc\u6e08\u307f\u3067\u3059",
+      "\u5b8c\u4e86\u3057\u307e\u3057\u305f",
+      "\u5b8c\u4e86\u3067\u3059",
+      "\u89e3\u6d88\u3057\u307e\u3057\u305f",
+      "\u76f4\u3057\u307e\u3057\u305f",
+      "\u3067\u304d\u307e\u3057\u305f"
+    ]
+  },
+  "internalProcessDisclosure": {
+    "enabled": true,
+    "prohibitedPhrases": [
+      "blue/red/judge",
+      "requirement_rbj",
+      "spawn_agent",
+      "send_input",
+      "parent dispatch guard",
+      "internal quality retry",
+      "adversarial review"
+    ]
+  },
+  "exactReplyContracts": {
+    "bypassCloseInPlace": true,
+    "bypassEvidenceChecks": true
+  }
+}

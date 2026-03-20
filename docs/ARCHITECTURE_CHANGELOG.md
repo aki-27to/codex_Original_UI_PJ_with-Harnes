@@ -1,26 +1,73 @@
 ﻿# SYSTEM_ARCHITECTURE
 
-## 85. Explicit Stop Interrupt Route (2026-03-12)
-
-- Why:
-  - `web/01.HarnesUI` `Stop` only aborted the local fetch stream, while `executionSource=web_ui` detached backend turns on client disconnect.
-  - That made the UI look stopped immediately without sending a real `turn/interrupt`.
-- Changed:
-  - added `POST /api/turn/interrupt` in `server.js`
-  - endpoint uses the existing control-token + same-origin guard
-  - endpoint accepts `{threadId, turnId}` or `{agentName}` and resolves active turn metadata from runtime agent state when needed
-  - updated `web/01.HarnesUI/app.js` so `Stop` requests the new endpoint before aborting the local stream
-  - runtime pending polling now stays alive while runtime still reports active turns, not only while a local fetch is open
-- Verification:
-  - `node scripts/app_server_smoke_test.js`
-  - temp-port runtime/API check for `GET /api/runtime` and `POST /api/turn/interrupt`
-- Residual risk:
-  - if the operator presses `Stop` before a turn exists, the UI can only abort the local request before turn metadata is available
-
 譛邨ょ酔譛・ 2026-02-22  
 菴懈・譬ｹ諡: 繝ｪ繝昴ず繝医Μ螳溯｣・・騾・ｧ｣譫・+ 螳溷ロ繝・せ繝郁ｨｼ霍｡
-
+- 2026-03-20: Made the floating `AIエージェントかんばん` show actual spawned specialists instead of only parent/runtime rows. `server.js` now tracks live collab child activity from real `spawnAgent` / `sendInput` / `wait` / `closeAgent` tool items, resolves child names from the locked dispatch plan or prompt-role hints when the payload only exposes `receiverThreadIds`, merges those live rows into `/api/agent-topography`, and clears them once the matching wait/close lifecycle proves the child stopped working. `web/01.HarnesUI/app.js` now fast-refreshes topography after collab item completions so the board shows spawned workers during the active turn, and `scripts/agent_topography_test.js` plus `scripts/harness_console_ui_policy_test.js` now cover the live-child path. Playwright visual verification confirmed `backend_worker` appears in `稼働中` with `source: collab` on a seeded live snapshot.
+- 2026-03-20: Converted user-facing response safety from a prose-only rule into a shared machine-readable runtime contract. Added `scripts/config/user_facing_response_contract.json` plus `scripts/lib/user_facing_response_contract.js`, rewired `scripts/lib/user_facing_response_policy.js` and `scripts/lib/adversarial_shadow_policy.js` to consume the same contract for close-in-place enforcement, completion-claim gating, and internal-process disclosure checks, exposed the active contract summary/path through `/api/runtime`, added coverage in `scripts/user_facing_response_policy_test.js` and `scripts/app_server_smoke_test.js`, synced `scripts/app_server_transport_resilience_test.js` with the repo's explicit Fast-mode-off default, and updated `web/01.HarnesUI` model presets to expose `gpt-5.4-mini` alongside `gpt-5.4` and `gpt-5.3-codex`.
+- 2026-03-19: Hardened the user-facing response contract so non-blocked short/direct answers now close in place instead of appending unsolicited `必要なら...` / `If you'd like...` style follow-up offers. Added shared response-policy helpers in `scripts/lib/user_facing_response_policy.js`, taught `scripts/lib/adversarial_shadow_policy.js` to fail `unsolicited_followup_closing`, updated `scripts/lib/adversarial_loop_policy.js` retry instructions to require direct-answer-first plus close-in-place behavior, extended `server.js` final-text rewriting to strip leftover optional closing invitations before emitting the client-facing `final`, added `scripts/user_facing_response_policy_test.js`, and expanded `scripts/adversarial_shadow_policy_test.js` plus `scripts/adversarial_loop_policy_test.js`.
+- 2026-03-19: Restored the dedicated local intent-profile API surface expected by the smoke/runtime contract. `server.js` now serves `GET /api/intent/profile`, `POST /api/intent/profile`, and `POST /api/intent/profile/reset`, persists operator intent/taste-profile updates into `logs/archive/raw/runtime_state/intent_profile_memory.json` instead of mutating the seed file, exposes that runtime overlay path inside `runtime.intentFirst`, and ignores the overlay file in turn-complete Git automation. This closes the `/api/intent/profile did not return intentFirst` regression and brings `node scripts/app_server_smoke_test.js` back to PASS.
+- 2026-03-19: Closed the remaining intent-first workspace-lock runtime gap. `server.js` now exposes top-level `workspaceGuard` state in `/api/runtime`, adds authenticated `POST /api/workspace/lock` and `POST /api/workspace/unlock` control APIs, blocks design-sensitive `/api/exec` requests from lock-required sources such as `web_ui` with `409 workspace_lock_required` until a lock exists, rejects `/api/exec` and `/api/batch/run` when their `cwd` falls outside the active locked root, and fixes intent-profile patch merging so alias fields like `northStar`, `benchmarkSites`, `prefers`, and `rejects` override the normalized stored profile instead of being shadowed by canonical fields. Updated `scripts/intent_first_runtime_test.js` and `scripts/workspace_lock_api_smoke_test.js` to use the in-process harness server so the Windows sandbox no longer trips `spawn EPERM`, and both tests now PASS.
+- 2026-03-18: Moved `Requirement Lock` intent interpretation upstream into the Step 1 contract itself. `scripts/lib/planning_mode_policy.js` now persists a machine-readable `intentInterpretation` (`presentation`, `questionLike`, `direction`, `hypothesis`) inside `requirement-contract.v3`, `scripts/config/requirement_contract.schema.json` requires that field, `web/01.HarnesUI/app.js` now treats the contract as the primary source of truth instead of inventing hypotheses client-side, and regressions in `scripts/planning_mode_policy_test.js` plus `scripts/harnesui_requirement_summary_test.js` now cover both interpreted meta-questions and the “do not fabricate a hypothesis when no interpretation exists” path.
+- 2026-03-18: Restored the operator-facing agent board in `web/01.HarnesUI` and then tightened its meaning so it only foregrounds agents that are actually active in runtime/trace data. The floating panel stays labeled `AIエージェントかんばん`, remains visible in `simple-view` and `telemetry-off`, defaults to expanded when no local preference exists, groups agents into `稼働中 / 親 / 専門 / 検証` lanes, keeps scoped runtime agents with an active turn visible in `稼働中` even when they belong to a different chat session, and no longer decorates planned-but-idle specialists as if they were presently working. Updated `scripts/agent_topography_test.js` and `scripts/harness_console_ui_policy_test.js`, and re-verified the UI via Playwright.
+- 2026-03-17: Realigned `web/01.HarnesUI` settings copy with the latest Codex permissions model. The top selector now uses `Auto (default)` / `Read-only` / `Full Access` / `Custom (config.toml)`, raw sandbox wording is `サンドボックスモード`, deprecated `on-failure` no longer appears in the approval dropdown, and `web/01.HarnesUI/app.js` now normalizes legacy saved presets (`safe` / `balanced` / `full-auto` / `power`) plus legacy `on-failure` settings into the current Codex combinations on load.
+- 2026-03-17: Updated the user-facing response contract so `結論 / 根拠 / 限界/反論 / 実務上の意味` is now documented as the default high-precision answer shape rather than an absolute format; `AGENTS.md` now allows task-specific override formats when they improve reach precision, and `docs/AGENT_OPERATING_RULES.md` now defines preferred override patterns for short fact answers, reviews, implementation reports, option comparisons, and blocked/approval-boundary states while preserving answer/basis/limits/practical-implication coverage.
+- 2026-03-17: Refined the `Requirement Lock` UI so question-style Step 1 goals no longer echo the literal topic as `回答テーマ`; `web/01.HarnesUI/app.js` now derives a `進行仮説` from `userValueFrame.userWants` / locked intent signals plus a question-intent reframing heuristic, surfaces `向かう先` as the headline, drops redundant `未解決` rows that only restate the same question, and updated `scripts/harnesui_requirement_summary_test.js` to cover the new grouping.
+- 2026-03-17: Removed the repo-scoped `service_tier = "flex"` default after confirming it broke ChatGPT-authenticated Codex/TUI and `codex app-server` sessions with `Unsupported service_tier: flex`; the repo now keeps `features.fast_mode = false`, keeps `guardian_approval = true`, and leaves non-Fast service tier selection unspecified (`auto`) so the provider default is used unless operators explicitly enable Fast.
+- 2026-03-15: Tightened Step 1 requirement understanding so Requirement Lock no longer treats courtesy-only lead-ins as the user goal, `planning_mode_contract.json` recognizes more Japanese headings (`依頼文`, `製作目的`, `要件`, `前提`, `非対象`), unstructured Japanese multiline briefs now infer real baseline items such as page count / working directory / company metadata / placeholder-image constraints, and `web/01.HarnesUI` only shows the Requirement Lock panel when core requirement fields were actually captured; added regressions in `scripts/planning_mode_policy_test.js` and `scripts/harnesui_requirement_summary_test.js`.
+- 2026-03-15: Hardened benchmarked web-recreation governance so `web_creative + benchmark URL` cannot fall below `STANDARD_ASSURANCE`, explicit near-copy requests (`ほぼ同じ` / `完全再現` / `丸パクリ`) force `SIGNOFF_ASSURANCE`, follow-up turns inherit locked benchmark candidates from the previous planning context in the same workspace, repo-aware specialist `ownedPaths` now come from the active workspace shape (for example Laravel `resources/views/` instead of a generic `web/` fallback), and non-completed turns no longer leak `修正済み` / `done` style completion claims to operators because both adversarial shadow review and runtime final-text rewriting now suppress them; added regressions in `scripts/planning_mode_policy_test.js`, `scripts/adversarial_shadow_policy_test.js`, `scripts/adversarial_loop_wiring_test.js`, and `scripts/planning_carryover_wiring_test.js`.
+- 2026-03-15: Removed the repo-scoped Fast default from `.codex/config.toml` by switching the project service tier to `flex` and setting `features.fast_mode = false`, keeping `guardian_approval` enabled and aligning repo defaults with the existing runtime `CODEX_FAST_MODE_DEFAULT=0` posture.
+- 2026-03-15: Rewrote `docs/AI_AGENT_HARNESS_DETAILED_DESIGN.html` into an overview-first Japanese mechanism guide that starts from the big picture, explains parent/child/server/UI roles in plain language, centers the request flow and safety/evidence concepts, and removes inventory-heavy metric cards and endpoint-count-first framing.
+- 2026-03-15: Made the main `web/01.HarnesUI` chat composer keep its current initial height while auto-growing and shrinking `#promptInput` with multiline input, including send-clear, preset insert, command insert, and resize reflow handling.
+- 2026-03-15: Changed Fast mode to default OFF across `server.js`, `start_codex_ui.bat`, and `web/01.HarnesUI` unless `CODEX_FAST_MODE_DEFAULT` explicitly overrides it.
+- 2026-03-15: Fixed `web/01.HarnesUI` chat composer auto-grow baselining so resize-time remeasurement always uses the empty default control state, clearing the field still returns it to the original initial height, manual resize is disabled for deterministic behavior, and `scripts/harnesui_prompt_autogrow_test.js` now guards the regression.
+- 2026-03-15: Reworked `web/01.HarnesUI` progress visibility so `Harness Status` now includes a dedicated `Requirement Lock` summary driven by `latestTurn.planning.requirementContract`, and each phase card shows what was actually fixed or completed instead of only the phase name.
+- 2026-03-15: Added browser-side `POST /api/exec` submit retries in `web/01.HarnesUI` using request-scoped idempotency keys, clearer terminal send-failure messaging, and launcher-side automatic harness restart with bounded retry/backoff in `start_codex_ui.bat`.
+- 2026-03-15: Added project-scoped Codex defaults in `.codex/config.toml` so this repo keeps `features.fast_mode = true`, `features.guardian_approval = true`, and `service_tier = "fast"` without per-session operator setup.
+- 2026-03-15: Added a three-way ambiguity gate for design-sensitive `web_creative` prompts so the harness can proceed, ask exactly one clarification question, or stop for explicit input; HarnesUI now surfaces that terminal path as `needs_input` instead of a false failure.
+- 2026-03-15: Wired the harness runtime to honor those defaults locally as well: `start_codex_ui.bat` now exports `CODEX_FAST_MODE_DEFAULT=1` and `CODEX_AUTOMATIC_APPROVAL_REVIEW=1` when unset, planning policy promotes bounded `NORMAL` work into `FAST` when fast mode is enabled, and `on-request` approvals now run through automatic low-risk review instead of failing immediately as "interactive approval unavailable".
+- 2026-03-15: Surfaced the repo-default `Fast mode` / `Automatic approval review` posture in `web/01.HarnesUI`, changed the default interactive `power` profile to `approvalPolicy: on-request`, and made the UI send `fastModeEnabled = true` plus `automaticApprovalReviewEnabled = true` on every interactive `POST /api/exec` request.
+- 2026-03-15: Fixed `web/01.HarnesUI` settings persistence so operator Fast mode / Automatic approval review toggles stay pinned after local saves instead of snapping back to repo defaults during periodic `/api/runtime` refresh; updated the UI policy test and current architecture spec accordingly.
+- 2026-03-15: Removed the redundant `Codex 既定モード` summary block from `web/01.HarnesUI` so the settings panel now relies on the existing Fast mode / Automatic approval review checkboxes only; made the UI policy test ASCII-safe by asserting the removed node IDs are absent instead of matching mojibake-prone Japanese literals.
+- 2026-03-15: Fixed `start_codex_ui.bat` restart ergonomics so reruns stop an already-running local harness on the configured port before starting a fresh `node server.js`, and browser auto-open is now launcher-owned to avoid opening the same `01.HarnesUI` window twice.
+- 2026-03-15: Moved the launcher's `CODEX_PAUSE_ON_EXIT=1` default ahead of the elevation/dependency checks so fast-fail startup paths no longer disappear before operators can read the error, while `CODEX_PAUSE_ON_EXIT=0` still keeps automation non-interactive.
+- 2026-03-15: Hardened app-server stdio failure containment so `EPIPE`/write-side transport errors are handled inside `CodexAppServerClient`, stale `close`/`error` events from an old child cannot tear down a replacement child, and the next request can respawn the app-server without forcing parent harness shutdown; added `scripts/app_server_transport_resilience_test.js` for regression coverage.
+- 2026-03-15: Tightened the spurious discovery `needs_input` fallback so answer-only confirmation turns no longer append `[needs_input] user decision required before implementation` from heuristic open-question detection alone; the auto-surfaced fallback now remains reserved for explicit approval-boundary or explicit user-decision signals.
+- 2026-03-15: Narrowed Parent Dispatch Guard material-work detection so read-only diagnostic/status turns no longer count shell/MCP inspection as parent implementation; dispatch remains required for actual file-changing parent work and for planned non-proposal child execution.
+- 2026-03-15: Stopped `01.HarnesUI` from appending post-final internal terminal errors into the visible assistant transcript, and softened parent-dispatch retry prompt wording so retry guidance stays internal instead of surfacing as a user-facing `[Parent Dispatch Guard] ...` block.
+- 2026-03-15: Added a lightweight `01.HarnesUI` completion chime using the browser Web Audio API so interactive runs play a short local notification when `runPrompt` reaches `completed`, `failed`, or `interrupted`, without adding audio asset files or extra dependencies.
+- 2026-03-15: Added machine-readable `task_family_profiles.json`, a task-family selector for planning, family-aware requirement-guard prompt shaping, runtime exposure of family-profile contracts, and user-value scoring support for `web_creative` comparisons.
+- 2026-03-15: Refocused `web/01.HarnesUI/index.html` around operator readability: the console now defaults to a simpler Japanese-first view, keeps `Harness Status` visible even when secondary telemetry is hidden, demotes `Performance Metrics` / `Execution Trace` / `Diagnostics` / floating topography to secondary panels, and threads `task family`, `user-value thesis`, and `family gate` into the existing progress/verdict surfaces instead of adding new clutter.
+- 2026-03-15: Added root-level `AI_AGENT_HARNESS_TEXTBOOK_JA.html` as a comprehensive Japanese textbook for the harness, consolidating governance, architecture, API surface, evidence/logging, skill/runtime concepts, launch configuration, verification scripts, and current operational caveats into one browser-readable document; updated `docs/CURRENT_ARCHITECTURE.md` to point at the new textbook.
+- 2026-03-15: Wired family-aware completion through the outcome/current surface stack: `task_outcome_contract` now classifies `intent_*` and `family_completion_gate_failed` as `FAILED_VALIDATION`, persisted latest-turn snapshots retain `family_completion_gate`, `/api/runtime` + operator surfaces keep that verdict visible after reload, and `latest_run_summary.json` now carries the specialized family completion result for creative runs.
+- 2026-03-15: Promoted `user-value first` into the upstream requirement contract: `requirement-contract.v3` now persists a machine-readable `userValueFrame` (`valueThesis`, `userWants`, `userShouldFeelGet`, `mustAvoid`, `hardConstraints`, `qualityAxes`, `benchmarkCandidates`, `completedMeans`), planning/runtime sanitation preserves it, requirement-guard prompts treat it as the primary optimization target, and RBJ requirement-definition now requires a `user_value_core` section before implementation planning.
+- 2026-03-11: Fixed execution-retry contract drift so adversarial and parent-dispatch retries preserve the original planning context, execution retries carry the dispatch/evidence contract forward instead of degrading into answer-only rewrites, the parent dispatch guard blocks completed parent turns that still had planned child work, and Japanese frontend redesign prompts now route to `frontend_worker` without forcing unnecessary `LIGHT_ASSURANCE` reviewer evidence.
+- 2026-03-12: `Execution Plan` now shows only explicit operator-visible plan events or explicit `PLAN SKIP` decisions derived from the locked planning context, `Current Work` now follows the active plan step instead of the latest raw event, and the planning journey card surfaces `SKIP` when detailed planning is intentionally omitted for direct-response turns.
+- 2026-03-09: Fixed current-surface truth selection so operator-facing summaries prefer the latest passing live `stdio` signoff bundle over newer `mock-fixture` bundles, remove extra current files after refresh, and keep the fixed five current summaries aligned with bundle truth.
+- 2026-03-10: Scoped `web/01.HarnesUI` performance and operator-monitor session labels to the active chat so `Performance Metrics`, `Harness Status`, and agent monitor cards now describe the same chat/thread instead of mixing active-chat harness state with global runtime session data.
+- 2026-03-10: `Execution Plan` は明示的な計画更新が出ない軽量ターンでも、active-chat の推定 plan へフォールバックし、`No plan` の代わりに手順順序と進捗を表示するようになりました。
+- 2026-03-10: Localized the `Execution Plan` operator surface to Japanese-first labels and details while preserving the `明示プラン` / `推定プラン` distinction for active-chat plan tracking.
+- 2026-03-10: Hardened `/api/exec` streaming recovery so upstream `stream disconnected before completion` failures trigger a single fresh-session retry before surfacing terminal failure, aligning stream-disconnect handling with the existing unknown-thread fallback.
+- 2026-03-09: Aligned signoff bundle truth surfaces so live signoff bundles preserve top-level `conformance_report.json` and `operator_view_summary.json`, `bundle_surface_map.json` cleanly separates fixed top-level summaries from relocated operator aids, default flat export includes those bundle-level release summaries, and comparison refresh now re-normalizes the bundle surface contract for existing bundles.
+- 2026-03-09: Runtime proof generation now writes top-level `conformance_report.json` and `operator_view_summary.json` with explicit proof acceptance coverage, closing proof-bundle invariant gaps around material-claim evidence and inspectable acceptance coverage.
+- 2026-03-08: Restored `docs/HARNESS_CONSTITUTION.md` as the frozen design authority, preserved `logs/current/conformance_report.json` and `logs/current/operator_view_summary.json` across current-surface refreshes, and fixed signoff conformance artifacts so planning/assurance score breakdowns now reflect the actual routing-policy output.
+- 2026-03-09: Added split-resumable live signoff bundle execution with `signoff_resume_state.json`, emitted `lane_latency_summary.json` for stage/baseline hotspot visibility, captured `raw/raw_direct_baseline/` as a separate direct stdio baseline surface, fixed baseline comparison path resolution so direct-baseline reports read the bundle-local raw/summaries artifacts truthfully, and taught standalone comparison refreshes to re-sync relocated top-level comparison artifacts plus `signoff_summary.json` / `bundle_surface_map.json`.
+- 2026-03-08: Hardened live child-evidence attribution so reviewer/tester evidence survives opaque child thread IDs from the app-server by inferring those roles from the dispatched child prompt context, restoring approvable live `stdio` runtime proof generation.
+- 2026-03-08: Purged repo-root legacy/reference payloads that were proven unused, removing the top-level `archive/` payload set, stale generated artifacts under `output/`, `submissions/`, `提出用/`, `tmp_export.out`, unreferenced English Conversation App comparison screenshots, and previously unused `docs/HARNESS_CONSTITUTION.md`; also removed the broken `manual-single-codex.html` UI link and updated English Conversation App guidance to go through `start_codex_ui.bat`.
+- 2026-03-08: Verification after that cleanup: `node scripts/app_server_smoke_test.js` -> PASS, `node scripts/eval_replay_api_smoke_test.js` -> PASS, `node scripts/requirement_guard_validator_test.js` -> FAIL (`runtime-sensitive non-parent transform should still carry assurance depth information`).
+- 2026-03-08: Converged the repo on the frozen governed-decision constitution by adding machine-readable `RequestFrame`, `RoutingDecision`, `DiscoveryOutcome`, `ReviewBundle`, `ReleaseDecision`, evidence, and invariant contracts; added `docs/HARNESS_CONSTITUTION.md`; introduced `scripts/generate_conformance_report.js` plus `scripts/generate_operator_view.js`; taught `server.js` and signoff/proof generators to emit `conformance_report.json`, `operator_view_summary.json`, and top-level business release states; and enforced that parent agents cannot perform material implementation directly.
 - 2026-03-08: Replaced the baseline comparison fallback with measured governance-light sample runs stored inside each signoff bundle, while keeping vanilla-like fallback only for older bundles missing baseline traces.
+- 2026-03-08: Synced operator-first polish docs so `operator_summary.json` is documented as the single first-look file with `topLineDecision` / `whyThisIsSafe` / `whyThisMayNeedAttention` / `openOnlyIfNeeded`, `runtime_snapshot.json` is explicitly optional camelCase-only detail, `latest_run_summary.json` is documented to keep completed-run blocker wording out of `residualRisks`, `review_load_breakdown.json` is documented with its timing-model explanation, `current/index.json` is no longer part of the default human path, and `submission_manifest.json` notes/fileCount are expected to match the review-first export mode.
+- 2026-03-08: Hardened adversarial shadow/retry handling for execution tasks so `Final reply must be exactly:` contracts are recognized, citation/date findings no longer conflict with exact-reply signoff tasks, and retry prompts preserve actual execution/delegation instead of devolving into answer-only rewrites.
+- 2026-03-08: Relaxed child evidence parsing so `Owned paths` headers are recognized with or without a trailing colon, fixing live signoff doc-sync aggregation when reviewer/tester notes omit the punctuation.
+- 2026-03-08: Updated live discovery evaluation to accept proposal-only delegated investigation when the run makes no implementation edits, satisfies the parent-dispatch guard, and terminates as either `NEEDS_INPUT` or proposal-only `COMPLETED`.
+- 2026-03-08: Brought the measured live raw-like baseline onto the same DISCOVERY rule so proposal-only delegated investigation is accepted when reviewer/tester stay absent, no implementation edits occur, and dispatch remains satisfied-or-unneeded.
+- 2026-03-08: Applied final operator-first logging polish so `logs/current/runtime_snapshot.json` keeps camelCase-only persisted keys, `latest_run_summary.json` separates completed-run informational notes from real residual risks, `review_load_breakdown.json` declares its overlapping timing model, `operator_summary.json` no longer points humans at `current/index.json`, and default submission export keeps bundle detail/raw artifacts behind `--with-raw`.
+- 2026-03-08: Finalized the operator-first logging cleanup so `logs/current/operator_summary.json` is the only first-look entry, root `logs/` collapses to `current / bundles / archive`, admin migration reports live under `logs/archive/admin/`, signoff bundles push raw turns/operation logs under `raw/`, and `scripts/export_submission_artifacts.js` now exports a flat default review surface with optional raw add-ons.
+- 2026-03-08: Added `scripts/baseline_comparison_test.js` so DISCOVERY evidence-richness scoring and transport-aware comparison reporting have dedicated regression coverage.
+- 2026-03-08: Made proof/signoff generation transport-aware (`mock-fixture` or `stdio`) with explicit `transportMode` recorded in summaries/traces, upgraded discovery requirement artifacts to the `v2` schemas with inferred open-question/non-goal structure, and taught the baseline comparison report to score discovery evidence richness plus flag remaining fixture-backed samples.
+- 2026-03-08: Reworked `scripts/app_server_smoke_test.js` and `scripts/eval_replay_api_smoke_test.js` to use the in-process harness path for sandbox-safe verification, updated artifact discovery to follow the archived turn-artifact surface, and switched eval API smoke coverage to a targeted custom suite so `/api/eval/run` stays stable under the runtime `maxCases` cap.
+- 2026-03-08: Executed the logging-surface migration so `logs/current/` is the operator-first entrypoint, bundles live under `logs/bundles/`, raw turn/operation/runtime-state artifacts moved under `logs/archive/`, duplicate baseline/test proof surfaces were deleted, and inventory/deletion reports now document before/after retention.
+- 2026-03-08: Reworked the logging surface so operator review starts in `logs/current/`, proof/signoff bundles live under `logs/bundles/`, raw turn/operation/runtime-state artifacts default under `logs/archive/`, and current summaries now expose design conformance, latest run, latest signoff, and Step 4 review-load timing without requiring raw-log traversal.
 
 ## 0. 騾・ｧ｣譫舌・蟇ｾ雎｡遽・峇
 
@@ -4453,107 +4500,35 @@ Residual risk:
 - Added `scripts/generate_baseline_comparison.js` for vanilla-like baseline comparison output.
 - 2026-03-08: Runtime proof sample now records fixture-backed dispatch evidence plus doc-sync coverage for sandboxed proof generation.
 - 2026-03-08: Added signoff assurance sample evidence wiring for planning/assurance trace and doc-sync bundle checks.
+# 2026-03-08 - Human-first current log surface
 
-## 2026-03-10
+- Added `logs/current/operator_summary.json` as the single human-first entrypoint for current logs.
+- Moved log migration/admin reports from `logs/` root to `logs/archive/admin/`.
+- Demoted `logs/current/index.json` to a secondary machine-oriented directory guide instead of the primary human entrypoint.
+# 2026-03-08
 
-- Added UI workspace selection and lock APIs: `POST /api/workspace/select`, `POST /api/workspace/lock`, and `POST /api/workspace/unlock`.
-- Added `workspaceGuard` to `GET /api/runtime` so the console can render the active locked root and picker capability.
-- `POST /api/exec` and `POST /api/batch/run` now enforce the active locked workspace root for UI-driven requests.
-- Added workspace chooser controls to `web/01.HarnesUI/` with a `Choose Folder` action, lock toggle, and live status text.
-- Wired the UI to the existing server workspace-guard APIs: `POST /api/workspace/select`, `POST /api/workspace/lock`, and `POST /api/workspace/unlock`.
-- Surfaced the server workspace guard state from `/api/runtime` so the UI reflects the active lock and prevents folder changes while the lock is active.
+- Audited retirement leftovers and removed the unused `.codex/agents/worker.toml` compatibility file. Retired `worker` compatibility now remains only in governance and eval contracts.
+- Deleted archive-only resources with zero local references: the legacy installer payload under `archive/installers/` and the manual render artifacts under `archive/outputs/`.
+- Removed stale references to the missing `start_english_conversation_app.bat` launcher and updated operator/bootstrap guidance to use `start_codex_ui.bat` plus the same-origin English Conversation App route.
+- Removed the broken `manual-single-codex.html` link from the operator console.
+- Added `web/01.HarnesUI/guide.html` and `guide.css` as the static human-facing harness explainer, and linked the guide from both the Console and Overview pages.
+- 2026-03-08: Converged the harness onto the frozen constitution by adding `docs/HARNESS_CONSTITUTION.md`, machine-readable contracts for `RequestFrame` / `RoutingDecision` / `DiscoveryOutcome` / `ReviewBundle` / `ReleaseDecision` / evidence / conformance invariants, explicit operator/conformance summaries, and constitution-aware release decision states. Policy/runtime enforcement now blocks parent material implementation, requires routing artifacts before child execution, keeps blocked user-input posture, and exposes `conformance_report.json` plus `operator_view_summary.json` in current and bundle surfaces.
 
-## 111. Intent-First Harness Contract (2026-03-13)
 
-### Intent
-- Move the harness from process-first completion toward intent-first completion for design-sensitive work.
-- Persist user taste signals instead of relying on transient prompt wording.
-- Fail design-sensitive completion when benchmark, workspace lock, visual review, or independent review gates are missing.
+## 2026-03-15 - Exec Submit Retry + FastMode Default OFF
 
-### Implemented
-- Added `scripts/config/design_acceptance_contract.json`.
-- Added `scripts/config/default_user_taste_memory.json`.
-- Added `docs/DESIGN_ACCEPTANCE_CONTRACT.md`.
-- Updated `server.js`:
-  - exposes `intentFirst` in `GET /api/runtime`
-  - adds `POST /api/intent/profile` and `POST /api/intent/profile/reset`
-  - blocks design-sensitive `web_ui` execution without an active workspace lock
-  - applies the active taste-memory brief to design-sensitive `web_ui` prompts
-  - marks design-sensitive turns as failed validation when hard intent gates are missing
-- Updated `web/01.HarnesUI/`:
-  - adds editable taste-memory controls
-  - foregrounds benchmark, preference, rejection, and proof fields
-  - shows hard completion gates above operator telemetry
+- Changed the server/operator FastMode default to OFF when `CODEX_FAST_MODE_DEFAULT` is unset, while preserving env override behavior.
+- Updated the Web UI FastMode checkbox default to unchecked and kept runtime-driven operator defaults authoritative once `/api/runtime` loads.
+- Added bounded automatic retry for transient interactive `POST /api/exec` submit failures in `web/01.HarnesUI/app.js`.
+- Interactive UI submits now attach a stable idempotency key to both the request body and `Idempotency-Key` header, so retries do not widen into duplicate work.
+- Retry attempts now refresh runtime state before resubmitting, which refreshes the control token after a local harness restart.
+- Hardened `start_codex_ui.bat` with launcher-managed auto-restart defaults, a retry budget, restart delay, and a stability window for unexpected `node server.js` exits.
 
-### Verification Evidence
-1. `node --check web/01.HarnesUI/app.js` -> PASS
-2. `node scripts/task_outcome_policy_test.js` -> PASS
-3. `node scripts/intent_first_runtime_test.js` -> PASS
+### Verification
+
+1. `node scripts/exec_retry_regression_test.mjs` -> PASS
+2. `node scripts/app_server_smoke_test.js` -> pending manual run in a normal shell; this js_repl environment cannot invoke the repository shell runner directly
 
 ### Residual Risk
-- Design-sensitive detection is heuristic today; prompts that imply visual work without using the configured keywords may still need manual operator judgment.
 
-## 112. AI Agent Harness Detailed Design HTML (2026-03-14)
-
-### Intent
-- Add a current, browser-readable detailed design document for the AI agent harness.
-- Keep that document in the active docs surface instead of burying it in `archive/`, while still avoiding the old "stale HTML mirror" problem.
-- Clarify that the HTML page is a companion design reference, not a replacement for `docs/CURRENT_ARCHITECTURE.md` or the machine-readable contracts.
-
-### Implemented
-- Added `docs/AI_AGENT_HARNESS_DETAILED_DESIGN.html`.
-  - documents repo-specific placement rationale (`docs/` vs `web/01.HarnesUI/`)
-  - explains the active execution path, component layers, runtime flows, persistence, and extension boundaries
-  - links back to the current architecture, changelog, protocol runbook, evidence contract, and design acceptance contract
-- Updated `docs/CURRENT_ARCHITECTURE.md`.
-  - records the new HTML document as a human-oriented companion design reference
-  - keeps `docs/CURRENT_ARCHITECTURE.md` as the active current-state spec source
-
-### Verification Evidence
-1. Manual docs inventory review -> PASS
-   - `docs/AI_AGENT_HARNESS_DETAILED_DESIGN.html` sits beside the active architecture/governance docs and is not placed under runtime UI or `archive/`
-2. Manual consistency review -> PASS
-   - the new HTML document points back to `docs/CURRENT_ARCHITECTURE.md` and contract docs as the source-of-truth layers
-   - `docs/CURRENT_ARCHITECTURE.md` explicitly labels the HTML page as a companion, not a replacement
-
-### Residual Risk
-- The new document is intentionally static HTML and is not served by the harness runtime today, so operators open it directly from the repository unless a later task adds a UI link or static route by design.
-
-## 113. Japanese-First Harness UI Copy (2026-03-14)
-
-### Intent
-- Make the active harness operator UI read naturally for Japanese users instead of feeling partially untranslated or template-derived.
-- Keep clearer English technical terms where translation would reduce operator clarity.
-- Preserve the existing local-first runtime path and DOM/API contracts while updating only user-facing copy.
-
-### Implemented
-- Updated `web/index.html`.
-  - landing page title and entry link now use Japanese-first harness wording
-- Updated `web/01.HarnesUI/index.html` and `web/01.HarnesUI/app.js`.
-  - translated main console headings, buttons, helper copy, empty states, notifications, and runtime/diagnostic labels to Japanese-first wording
-  - migrates legacy saved chat/message labels such as `Chat 1`, `You`, and `System` into Japanese labels on restore so returning users do not keep mixed-language history
-  - expanded harness quality/evidence keyword detection so Japanese trace text such as `テスト`, `レビュー`, `監査`, `ログ`, and `証跡` still advances the quality stage and evidence counters
-  - translated dynamic harness verdicts, trace/topography labels, automation status lines, and batch messages so visible runtime updates no longer fall back to raw English control wording
-  - kept clearer technical identifiers such as `Codex`, `Node`, `API`, model IDs, sandbox/approval enum values, and thread/turn IDs in English
-- Updated `web/01.HarnesUI/overview.html` and `web/01.HarnesUI/overview.js`.
-  - translated the overview page section headings, card labels, refresh/error states, evidence/memory summaries, and empty states
-  - translated remaining overview tags and evidence/runtime summary labels that were still surfacing raw English operator wording
-  - repaired the previously broken `overview.js` renderer while preserving the existing `/api/harness/overview` payload contract
-
-### Verification Evidence
-1. `node --check web/01.HarnesUI/app.js` -> PASS
-2. `node --check web/01.HarnesUI/overview.js` -> PASS
-3. `GET http://127.0.0.1:57525/api/runtime` -> `200`
-4. `GET http://127.0.0.1:57525/api/harness/overview` -> `200`
-5. Playwright screenshot review -> PASS
-   - `output/playwright/harness-main-desktop.png`
-   - `output/playwright/harness-main-mobile.png`
-   - `output/playwright/harness-overview-desktop.png`
-6. Playwright browser assertions -> PASS
-   - legacy saved chat title restored as `チャット 3`
-   - legacy message titles restored as `あなた` / `システム` / `Codex`
-   - visible-English token scan passed for main and overview operator pages
-
-### Residual Risk
-- Some technical English labels are intentionally preserved because they are clearer for local operators than forced Japanese rewrites.
-- Final release completion still depends on independent reviewer evidence, which is separate from this changelog entry.
+- If a request was already accepted by the server before the browser lost the response stream, the retry path will stop on the existing idempotency record rather than fabricate a second execution; operators may still need to inspect the latest harness turn for that already-accepted work.

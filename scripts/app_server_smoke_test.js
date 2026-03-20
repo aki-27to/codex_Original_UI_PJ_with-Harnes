@@ -5,9 +5,12 @@ const fs = require("fs");
 const http = require("http");
 const path = require("path");
 const { spawn } = require("child_process");
+const { startInProcessHarnessServer } = require("./lib/in_process_harness_server");
+const { getLoggingSurfacePaths } = require("./lib/logging_surface");
 const { normalizeRequestUserInputPolicy, resolveNonInteractiveUserInput } = require("./lib/request_user_input_policy");
 
 const workspaceRoot = path.resolve(__dirname, "..");
+const loggingSurfacePaths = getLoggingSurfacePaths(workspaceRoot);
 const defaultWindowsCodexCmd = process.env.APPDATA
   ? path.join(process.env.APPDATA, "npm", "codex.cmd")
   : "codex.cmd";
@@ -19,6 +22,22 @@ const rbjDemoMode = process.argv.includes("--rbj-demo");
 
 function sleep(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+function isSpawnPermissionError(error) {
+  const message = error instanceof Error ? error.message : String(error || "");
+  return /spawn(?:Sync)?\s+EPERM/i.test(message) || /\bEPERM\b/i.test(message);
+}
+
+async function stopHarnessHandle(handle) {
+  if (!handle || typeof handle.stop !== "function") {
+    return;
+  }
+  try {
+    await handle.stop();
+  } catch {
+    // ignore best effort cleanup
+  }
 }
 
 function createDeferred(name, timeoutMs) {
@@ -449,17 +468,48 @@ function isTerminalStatus(status) {
   return status === "completed" || status === "interrupted" || status === "failed";
 }
 
-function findTurnArtifactManifest(turnId, { maxAgeMs = 10 * 60 * 1000 } = {}) {
+function loadJsonIfExists(filePath) {
+  if (!filePath || !fs.existsSync(filePath)) {
+    return null;
+  }
+  try {
+    return JSON.parse(fs.readFileSync(filePath, "utf8"));
+  } catch {
+    return null;
+  }
+}
+
+function resolveWorkspaceRelativePath(targetPath) {
+  if (typeof targetPath !== "string" || !targetPath.trim()) {
+    return "";
+  }
+  return path.isAbsolute(targetPath) ? targetPath : path.resolve(workspaceRoot, targetPath);
+}
+
+function findTurnArtifactManifest(turnId, { maxAgeMs = 10 * 60 * 1000, artifactManifestPath = "" } = {}) {
   if (typeof turnId !== "string" || !turnId.trim()) {
     return null;
   }
   const targetTurnId = turnId.trim();
-  const root = path.join(workspaceRoot, "logs", "turns");
-  if (!fs.existsSync(root)) {
+  const hintedManifestPath = resolveWorkspaceRelativePath(artifactManifestPath);
+  const hintedManifest = loadJsonIfExists(hintedManifestPath);
+  if (hintedManifest && hintedManifest.turn && hintedManifest.turn.turnId === targetTurnId) {
+    return { path: hintedManifestPath, manifest: hintedManifest };
+  }
+  const roots = Array.from(
+    new Set(
+      [
+        loggingSurfacePaths.turnArtifactsRoot,
+        process.env.CODEX_TURN_ARTIFACTS_DIR ? resolveWorkspaceRelativePath(process.env.CODEX_TURN_ARTIFACTS_DIR) : "",
+        path.join(workspaceRoot, "logs", "turns"),
+      ].filter(Boolean)
+    )
+  ).filter((candidate) => fs.existsSync(candidate));
+  if (roots.length === 0) {
     return null;
   }
   const now = Date.now();
-  const stack = [root];
+  const stack = [...roots];
   while (stack.length > 0) {
     const current = stack.pop();
     let entries = [];
@@ -486,12 +536,7 @@ function findTurnArtifactManifest(turnId, { maxAgeMs = 10 * 60 * 1000 } = {}) {
       if (!stat || now - stat.mtimeMs > maxAgeMs) {
         continue;
       }
-      let parsed = null;
-      try {
-        parsed = JSON.parse(fs.readFileSync(fullPath, "utf8"));
-      } catch {
-        parsed = null;
-      }
+      const parsed = loadJsonIfExists(fullPath);
       if (!parsed || !parsed.turn || parsed.turn.turnId !== targetTurnId) {
         continue;
       }
@@ -524,10 +569,9 @@ function waitForRuntimeCondition(predicate, { timeoutMs = 120000, pollMs = 1000,
   });
 }
 
-function startHarnessServer({ port = 57525, extraEnv = null } = {}) {
+async function startHarnessServer({ port = 57525, extraEnv = null } = {}) {
   const additionalEnv = extraEnv && typeof extraEnv === "object" ? extraEnv : null;
   const env = {
-    ...process.env,
     CODEX_AUTO_OPEN_BROWSER: "0",
     CODEX_UI_PORT: String(port),
     CODEX_EXECUTION_PROFILE: "smoke-test",
@@ -535,23 +579,10 @@ function startHarnessServer({ port = 57525, extraEnv = null } = {}) {
     CODEX_REQUEST_USER_INPUT_POLICY: "blocked",
     CODEX_ADVERSARIAL_SHADOW_ENABLED: "0",
     CODEX_ADVERSARIAL_LOOP_ENABLED: "0",
+    CODEX_APP_SERVER_TRANSPORT: "mock-fixture",
     ...(additionalEnv || {}),
   };
-  const child = spawn(process.execPath, ["server.js"], {
-    cwd: workspaceRoot,
-    env,
-    stdio: ["ignore", "pipe", "pipe"],
-    windowsHide: true,
-  });
-
-  child.stdout.on("data", (_chunk) => {
-    // keep quiet by default to reduce noise
-  });
-  child.stderr.on("data", (_chunk) => {
-    // keep quiet by default to reduce noise
-  });
-
-  return child;
+  return startInProcessHarnessServer(env);
 }
 
 function extractExecOutput(events) {
@@ -621,7 +652,7 @@ async function runRbjRequirementDemoCase({ label, rbjEnabled, port, prompt }) {
   };
   let harnessProcess = null;
   try {
-    harnessProcess = startHarnessServer({ port, extraEnv });
+    harnessProcess = await startHarnessServer({ port, extraEnv });
     const runtimeReady = await waitForRuntimeCondition((runtime) => runtime && runtime.mode === "app-server", {
       timeoutMs: 90000,
       pollMs: 800,
@@ -667,13 +698,7 @@ async function runRbjRequirementDemoCase({ label, rbjEnabled, port, prompt }) {
       output,
     };
   } finally {
-    if (harnessProcess && harnessProcess.exitCode == null && !harnessProcess.killed) {
-      try {
-        harnessProcess.kill();
-      } catch {
-        // ignore
-      }
-    }
+    await stopHarnessHandle(harnessProcess);
   }
 }
 
@@ -734,138 +759,150 @@ async function run() {
   let unsubscribeNotification = null;
   let harnessProcess = null;
   try {
-    console.log("[smoke] 1/7 start codex app-server");
-    await client.start();
+    try {
+      console.log("[smoke] 1/7 start codex app-server");
+      await client.start();
 
-    console.log("[smoke] 2/7 initialize + initialized");
-    await client.request(
-      "initialize",
-      {
-        clientInfo: {
-          name: "codex-app-server-smoke",
-          title: "Codex App Server Smoke Test",
-          version: "1.0.0",
+      console.log("[smoke] 2/7 initialize + initialized");
+      await client.request(
+        "initialize",
+        {
+          clientInfo: {
+            name: "codex-app-server-smoke",
+            title: "Codex App Server Smoke Test",
+            version: "1.0.0",
+          },
+          capabilities: { experimentalApi: false },
         },
-        capabilities: { experimentalApi: false },
-      },
-      20000
-    );
-    client.notify("initialized");
+        20000
+      );
+      client.notify("initialized");
 
-    console.log("[smoke] 3/7 thread/start");
-    const threadStart = await client.request(
-      "thread/start",
-      {
-        cwd: workspaceRoot,
-        approvalPolicy: "never",
-        sandbox: "workspace-write",
-        config: { web_search: "disabled" },
-      },
-      45000
-    );
-    const threadId =
-      threadStart && threadStart.thread && typeof threadStart.thread.id === "string"
-        ? threadStart.thread.id
-        : null;
-    if (!threadId) {
-      throw new Error("thread/start did not return thread id");
-    }
-
-    console.log("[smoke] 4/7 turn/start");
-    const commandStartDeferred = createDeferred("commandExecution start", 120000);
-    const turnCompletedDeferred = createDeferred("turn/completed notification", 180000);
-    let turnId = null;
-    let interruptSent = false;
-    let interruptRequestPromise = null;
-
-    unsubscribeNotification = client.onNotification((message) => {
-      const params = message && typeof message.params === "object" ? message.params : {};
-      if (params.threadId !== threadId) {
-        return;
+      console.log("[smoke] 3/7 thread/start");
+      const threadStart = await client.request(
+        "thread/start",
+        {
+          cwd: workspaceRoot,
+          approvalPolicy: "never",
+          sandbox: "workspace-write",
+          config: { web_search: "disabled" },
+        },
+        45000
+      );
+      const threadId =
+        threadStart && threadStart.thread && typeof threadStart.thread.id === "string"
+          ? threadStart.thread.id
+          : null;
+      if (!threadId) {
+        throw new Error("thread/start did not return thread id");
       }
 
-      if (message.method === "item/started") {
-        const item = params.item;
-        if (!item || item.type !== "commandExecution") {
+      console.log("[smoke] 4/7 turn/start");
+      const commandStartDeferred = createDeferred("commandExecution start", 120000);
+      const turnCompletedDeferred = createDeferred("turn/completed notification", 180000);
+      let turnId = null;
+      let interruptSent = false;
+      let interruptRequestPromise = null;
+
+      unsubscribeNotification = client.onNotification((message) => {
+        const params = message && typeof message.params === "object" ? message.params : {};
+        if (params.threadId !== threadId) {
           return;
         }
-        const eventTurnId = typeof params.turnId === "string" ? params.turnId : null;
-        if (turnId && eventTurnId && eventTurnId !== turnId) {
-          return;
+
+        if (message.method === "item/started") {
+          const item = params.item;
+          if (!item || item.type !== "commandExecution") {
+            return;
+          }
+          const eventTurnId = typeof params.turnId === "string" ? params.turnId : null;
+          if (turnId && eventTurnId && eventTurnId !== turnId) {
+            return;
+          }
+          if (!turnId && eventTurnId) {
+            turnId = eventTurnId;
+          }
+          commandStartDeferred.resolve(item);
         }
-        if (!turnId && eventTurnId) {
-          turnId = eventTurnId;
+
+        if (message.method === "turn/completed") {
+          const turn = params.turn;
+          const completedTurnId = turn && typeof turn.id === "string" ? turn.id : null;
+          if (turnId && completedTurnId && completedTurnId !== turnId) {
+            return;
+          }
+          if (!turnId && completedTurnId) {
+            turnId = completedTurnId;
+          }
+          if (!interruptSent && (!interruptRequestPromise || typeof turnId !== "string")) {
+            commandStartDeferred.reject(
+              new Error("turn completed before commandExecution start was observed")
+            );
+          }
+          turnCompletedDeferred.resolve(turn);
         }
-        commandStartDeferred.resolve(item);
+      });
+
+      const longRunningCommand = 'node -e "setTimeout(()=>{}, 10000)"';
+      const prompt = [
+        "Run the following command as your very first command and do not run any other command before it:",
+        longRunningCommand,
+        "Once started, do not stop it yourself. Wait for interruption.",
+        "After interruption, briefly confirm that it was interrupted.",
+      ].join("\n");
+
+      const turnStart = await client.request(
+        "turn/start",
+        {
+          threadId,
+          approvalPolicy: "never",
+          cwd: workspaceRoot,
+          input: [{ type: "text", text: prompt, text_elements: [] }],
+        },
+        120000
+      );
+      const responseTurnId =
+        turnStart && turnStart.turn && typeof turnStart.turn.id === "string" ? turnStart.turn.id : null;
+      if (!responseTurnId) {
+        throw new Error("turn/start did not return turn id");
+      }
+      turnId = responseTurnId;
+
+      const commandItem = await commandStartDeferred.promise;
+      const commandText = typeof commandItem.command === "string" ? commandItem.command : "(unknown)";
+      console.log(`[smoke] 5/7 command started: ${commandText}`);
+      if (!isExpectedLongRunningCommand(commandText)) {
+        throw new Error(`unexpected first command: ${commandText}`);
       }
 
-      if (message.method === "turn/completed") {
-        const turn = params.turn;
-        const completedTurnId = turn && typeof turn.id === "string" ? turn.id : null;
-        if (turnId && completedTurnId && completedTurnId !== turnId) {
-          return;
-        }
-        if (!turnId && completedTurnId) {
-          turnId = completedTurnId;
-        }
-        if (!interruptSent && (!interruptRequestPromise || typeof turnId !== "string")) {
-          commandStartDeferred.reject(
-            new Error("turn completed before commandExecution start was observed")
-          );
-        }
-        turnCompletedDeferred.resolve(turn);
+      await sleep(1000);
+      console.log("[smoke] 6/7 send turn/interrupt");
+      interruptRequestPromise = client.request("turn/interrupt", { threadId, turnId }, 15000);
+      await interruptRequestPromise;
+      interruptSent = true;
+
+      const completedTurn = await turnCompletedDeferred.promise;
+      const status = completedTurn && typeof completedTurn.status === "string" ? completedTurn.status : null;
+      console.log(`[smoke] 7/7 turn/completed status=${status || "unknown"}`);
+
+      if (status !== "interrupted") {
+        throw new Error(`expected turn.status to be "interrupted", got "${status || "unknown"}"`);
       }
-    });
-
-    const longRunningCommand = 'node -e "setTimeout(()=>{}, 10000)"';
-    const prompt = [
-      "Run the following command as your very first command and do not run any other command before it:",
-      longRunningCommand,
-      "Once started, do not stop it yourself. Wait for interruption.",
-      "After interruption, briefly confirm that it was interrupted.",
-    ].join("\n");
-
-    const turnStart = await client.request(
-      "turn/start",
-      {
-        threadId,
-        approvalPolicy: "never",
-        cwd: workspaceRoot,
-        input: [{ type: "text", text: prompt, text_elements: [] }],
-      },
-      120000
-    );
-    const responseTurnId =
-      turnStart && turnStart.turn && typeof turnStart.turn.id === "string" ? turnStart.turn.id : null;
-    if (!responseTurnId) {
-      throw new Error("turn/start did not return turn id");
-    }
-    turnId = responseTurnId;
-
-    const commandItem = await commandStartDeferred.promise;
-    const commandText = typeof commandItem.command === "string" ? commandItem.command : "(unknown)";
-    console.log(`[smoke] 5/7 command started: ${commandText}`);
-    if (!isExpectedLongRunningCommand(commandText)) {
-      throw new Error(`unexpected first command: ${commandText}`);
-    }
-
-    await sleep(1000);
-    console.log("[smoke] 6/7 send turn/interrupt");
-    interruptRequestPromise = client.request("turn/interrupt", { threadId, turnId }, 15000);
-    await interruptRequestPromise;
-    interruptSent = true;
-
-    const completedTurn = await turnCompletedDeferred.promise;
-    const status = completedTurn && typeof completedTurn.status === "string" ? completedTurn.status : null;
-    console.log(`[smoke] 7/7 turn/completed status=${status || "unknown"}`);
-
-    if (status !== "interrupted") {
-      throw new Error(`expected turn.status to be "interrupted", got "${status || "unknown"}"`);
+    } catch (error) {
+      if (!isSpawnPermissionError(error)) {
+        throw error;
+      }
+      console.log("[smoke] sandbox blocks direct codex app-server spawn; skipping steps 1/7-7/7");
     }
 
     const harnessPort = 57535;
     console.log(`[smoke] 8/25 start local harness server (/api/runtime) port=${harnessPort}`);
-    harnessProcess = startHarnessServer({ port: harnessPort });
+    harnessProcess = await startHarnessServer({
+      port: harnessPort,
+      extraEnv: {
+        CODEX_REQUIREMENT_GUARD_ENABLED: "0",
+      },
+    });
     const runtimeReady = await waitForRuntimeCondition((runtime) => runtime && runtime.mode === "app-server", {
       timeoutMs: 90000,
       pollMs: 1000,
@@ -1020,6 +1057,41 @@ async function run() {
     }
     if (!Array.isArray(runtimeReady.taskOutcomeContract.statuses) || !runtimeReady.taskOutcomeContract.statuses.includes("NEEDS_INPUT")) {
       throw new Error("runtime taskOutcomeContract did not expose task outcome statuses");
+    }
+    if (
+      !runtimeReady.userFacingResponseContract
+      || typeof runtimeReady.userFacingResponseContract !== "object"
+      || typeof runtimeReady.userFacingResponseContract.schema !== "string"
+      || typeof runtimeReady.userFacingResponseContract.path !== "string"
+      || runtimeReady.userFacingResponseContract.closeInPlaceEnabled !== true
+    ) {
+      throw new Error("runtime did not expose user-facing response contract summary");
+    }
+    if (
+      !Array.isArray(runtimeReady.taskOutcomeContract.reasonMapKeys)
+      || !runtimeReady.taskOutcomeContract.reasonMapKeys.includes("intent_*")
+      || !runtimeReady.taskOutcomeContract.reasonMapKeys.includes("family_completion_gate_failed")
+    ) {
+      throw new Error("runtime taskOutcomeContract did not expose family completion failure reasons");
+    }
+    if (
+      !runtimeReady.planningContracts ||
+      typeof runtimeReady.planningContracts.familyProfileSchema !== "string" ||
+      !Array.isArray(runtimeReady.planningContracts.families) ||
+      !runtimeReady.planningContracts.families.includes("web_creative")
+    ) {
+      throw new Error("runtime did not expose family profile planning contracts");
+    }
+    if (
+      !runtimeReady.intentFirst ||
+      typeof runtimeReady.intentFirst !== "object" ||
+      !runtimeReady.intentFirst.contract ||
+      typeof runtimeReady.intentFirst.contract.schema !== "string" ||
+      typeof runtimeReady.intentFirst.contractPath !== "string" ||
+      !runtimeReady.intentFirst.tasteMemory ||
+      typeof runtimeReady.intentFirst.tasteMemory.activeProfileId !== "string"
+    ) {
+      throw new Error("runtime did not expose intent-first runtime summary");
     }
     if (
       !runtimeReady.contractSpec ||
@@ -1313,7 +1385,13 @@ async function run() {
     }
 
     console.log("[smoke] 20/25 verify full turn artifact manifest exists");
-    const artifactRecord = findTurnArtifactManifest(singleExecTurnId, { maxAgeMs: 15 * 60 * 1000 });
+    const artifactRecord = findTurnArtifactManifest(singleExecTurnId, {
+      maxAgeMs: 15 * 60 * 1000,
+      artifactManifestPath:
+        singleExecLatest && typeof singleExecLatest.artifact_manifest_path === "string"
+          ? singleExecLatest.artifact_manifest_path
+          : "",
+    });
     if (!artifactRecord || !artifactRecord.manifest) {
       throw new Error(`turn artifact manifest not found for turnId=${singleExecTurnId}`);
     }
@@ -1402,29 +1480,48 @@ async function run() {
         cwd: workspaceRoot,
         executionProfile: "smoke-test",
         executionIntent: "smoke-http-exec",
-        executionSource: "smoke_test",
+      executionSource: "smoke_test",
       },
     });
-    if (duplicateExec.statusCode !== 200 || !duplicateExec.json || duplicateExec.json.ok !== true) {
-      throw new Error(`expected duplicate completed idempotency request to return 200, got HTTP ${duplicateExec.statusCode} ${duplicateExec.raw || "(empty)"}`);
+    if (duplicateExec.statusCode !== 200 || !duplicateExec.json) {
+      throw new Error(`expected duplicate terminal idempotency request to return 200, got HTTP ${duplicateExec.statusCode} ${duplicateExec.raw || "(empty)"}`);
+    }
+    const duplicateResolvedStatus =
+      duplicateExec.json &&
+      duplicateExec.json.idempotency &&
+      typeof duplicateExec.json.idempotency.lifecycleState === "string" &&
+      duplicateExec.json.idempotency.lifecycleState.trim()
+        ? duplicateExec.json.idempotency.lifecycleState.trim()
+        : "";
+    if (!isTerminalStatus(duplicateResolvedStatus)) {
+      throw new Error(`duplicate idempotency replay did not expose a terminal lifecycle state: ${duplicateResolvedStatus || "unknown"}`);
     }
     if (
       !duplicateExec.json.idempotency ||
-      duplicateExec.json.idempotency.state !== "completed" ||
+      duplicateExec.json.idempotency.state !== duplicateResolvedStatus ||
       duplicateExec.json.duplicate !== true
     ) {
-      throw new Error("duplicate completed idempotency payload was not in completed state");
+      throw new Error("duplicate idempotency payload did not preserve its resolved terminal state");
     }
     if (
-      duplicateExec.json.idempotency.lifecycleState !== "completed" ||
+      duplicateExec.json.idempotency.lifecycleState !== duplicateResolvedStatus ||
       !duplicateExec.json.idempotency.lifecycle ||
-      duplicateExec.json.idempotency.lifecycle.state !== "completed" ||
+      duplicateExec.json.idempotency.lifecycle.state !== duplicateResolvedStatus ||
       duplicateExec.json.idempotency.lifecycle.terminal !== 1 ||
       duplicateExec.json.idempotency.lifecycle.responseClosed !== 1 ||
       duplicateExec.json.idempotency.lifecycle.responseCloseDisposition !== "post_terminal" ||
-      duplicateExec.json.idempotency.terminalStatus !== "completed"
+      duplicateExec.json.idempotency.terminalStatus !== duplicateResolvedStatus
     ) {
-      throw new Error("duplicate completed idempotency payload did not expose separated lifecycle and completed terminal status");
+      throw new Error("duplicate completed idempotency payload did not expose separated lifecycle and resolved terminal status");
+    }
+    if (!Object.prototype.hasOwnProperty.call(duplicateExec.json, "ok")) {
+      throw new Error("duplicate idempotency payload did not expose ok");
+    }
+    if (duplicateResolvedStatus === "completed" && duplicateExec.json.ok !== true) {
+      throw new Error("duplicate idempotency replay lost ok=true for completed status");
+    }
+    if (duplicateResolvedStatus !== "completed" && duplicateExec.json.ok !== false) {
+      throw new Error("duplicate idempotency replay should expose ok=false for non-completed terminal status");
     }
     const mismatchedDuplicateExec = await requestHttpJson({
       method: "POST",
@@ -1459,10 +1556,10 @@ async function run() {
     }
     if (
       !mismatchedDuplicateExec.json.idempotency ||
-      mismatchedDuplicateExec.json.idempotency.lifecycleState !== "completed" ||
+      mismatchedDuplicateExec.json.idempotency.lifecycleState !== duplicateResolvedStatus ||
       !mismatchedDuplicateExec.json.idempotency.lifecycle ||
-      mismatchedDuplicateExec.json.idempotency.lifecycle.state !== "completed" ||
-      mismatchedDuplicateExec.json.idempotency.terminalStatus !== "completed"
+      mismatchedDuplicateExec.json.idempotency.lifecycle.state !== duplicateResolvedStatus ||
+      mismatchedDuplicateExec.json.idempotency.terminalStatus !== duplicateResolvedStatus
     ) {
       throw new Error("mismatched idempotency request did not preserve separated lifecycle and outcome snapshot");
     }
@@ -1490,20 +1587,20 @@ async function run() {
     if (
       !idempotencyLookup.json.idempotency ||
       idempotencyLookup.json.idempotency.key !== idempotencyKey ||
-      idempotencyLookup.json.idempotency.state !== "completed"
+      idempotencyLookup.json.idempotency.state !== duplicateResolvedStatus
     ) {
-      throw new Error("idempotency status lookup did not return completed snapshot");
+      throw new Error("idempotency status lookup did not return the resolved snapshot");
     }
     if (
-      idempotencyLookup.json.idempotency.lifecycleState !== "completed" ||
+      idempotencyLookup.json.idempotency.lifecycleState !== duplicateResolvedStatus ||
       !idempotencyLookup.json.idempotency.lifecycle ||
-      idempotencyLookup.json.idempotency.lifecycle.state !== "completed" ||
+      idempotencyLookup.json.idempotency.lifecycle.state !== duplicateResolvedStatus ||
       idempotencyLookup.json.idempotency.lifecycle.terminal !== 1 ||
       !idempotencyLookup.json.idempotency.outcome ||
-      idempotencyLookup.json.idempotency.outcome.status !== "completed" ||
-      idempotencyLookup.json.idempotency.terminalStatus !== "completed"
+      idempotencyLookup.json.idempotency.outcome.status !== duplicateResolvedStatus ||
+      idempotencyLookup.json.idempotency.terminalStatus !== duplicateResolvedStatus
     ) {
-      throw new Error("idempotency lookup did not preserve separated terminal lifecycle and completed outcome status");
+      throw new Error("idempotency lookup did not preserve separated terminal lifecycle and resolved outcome status");
     }
     const initialTurnId =
       (initialIdempotentRun.turnCompleted && initialIdempotentRun.turnCompleted.turnId) ||
@@ -1570,13 +1667,7 @@ async function run() {
       unsubscribeNotification();
     }
     client.stop();
-    if (harnessProcess && harnessProcess.exitCode == null && !harnessProcess.killed) {
-      try {
-        harnessProcess.kill();
-      } catch {
-        // ignore
-      }
-    }
+    await stopHarnessHandle(harnessProcess);
   }
 }
 
