@@ -574,6 +574,12 @@ function runtimeTurnCompletedAtForUi(turn){
   if(!turn||typeof turn!=="object")return 0;
   return toPerfInt(turn.completed_at||turn.completedAt||turn.updated_at||turn.updatedAt);
 }
+function chatCanAdoptUnboundLatestTurnForUi(chatRecord){
+  if(!chatRecord||typeof chatRecord!=="object")return false;
+  if(Boolean(chatRecord.forceNewSession))return false;
+  if(!Array.isArray(s.chats)||s.chats.length!==1)return false;
+  return Array.isArray(chatRecord.messages)&&chatRecord.messages.length>0;
+}
 function cloneJsonForUi(value,fallback=null){
   if(value===undefined)return fallback;
   try{
@@ -652,7 +658,7 @@ function runtimeTurnMatchesChat(turn,chatRecord){
   if(chatThread&&threadId&&chatThread===threadId)return true;
   if(chatAgent&&turnAgent&&chatAgent===turnAgent){
     if(pendingCountForChat(chatRecord.id)>0)return true;
-    if(!chatTurn&&!chatThread&&Array.isArray(s.chats)&&s.chats.length===1)return true;
+    if(!chatTurn&&!chatThread&&chatCanAdoptUnboundLatestTurnForUi(chatRecord))return true;
   }
   return false;
 }
