@@ -96,6 +96,60 @@ function normalizeDispatches(dispatchPlan) {
   }).filter((dispatch) => dispatch.ownerAgent || dispatch.taskSummary || dispatch.ownedPaths.length > 0);
 }
 
+function normalizeAcceptanceTitles(requirementContract) {
+  return toArray(requirementContract && requirementContract.acceptanceChecks).map((entry) => {
+    if (entry && typeof entry === "object" && entry.title) {
+      return safeString(entry.title, 160);
+    }
+    return safeString(String(entry || ""), 160);
+  }).filter(Boolean);
+}
+
+function stripTerminalPunctuation(text) {
+  return safeString(text, 240).replace(/[。．.!！?？]+$/u, "").trim();
+}
+
+function buildGoalSummary(requirementContract) {
+  const explicitGoal = safeString(requirementContract && requirementContract.explicitGoal, 220);
+  if (explicitGoal) {
+    return explicitGoal;
+  }
+  const implicitGoal = safeString(requirementContract && requirementContract.implicitGoal, 220);
+  if (implicitGoal) {
+    return implicitGoal;
+  }
+  const baselineScope = uniqueStrings(requirementContract && requirementContract.baselineScope, 3);
+  return baselineScope.length ? baselineScope.join(" / ") : "";
+}
+
+function buildPrimaryOpenQuestion(requirementContract) {
+  const questions = uniqueStrings(requirementContract && requirementContract.openQuestions, 4);
+  return questions[0] || "";
+}
+
+function isGenericTaskSummary(text) {
+  const normalized = stripTerminalPunctuation(text).toLowerCase();
+  if (!normalized) {
+    return true;
+  }
+  return normalized === "clarify unresolved requirements, non-goals, and approval-boundary items before implementation"
+    || normalized === "own runtime, server, protocol, and orchestration behavior changes"
+    || normalized === "own ui and operator-facing web changes"
+    || normalized === "own contracts, docs sync, and operator-visible harness wiring"
+    || normalized.includes("未解決の要件")
+    || normalized.includes("未解決の確認事項")
+    || normalized.includes("ユーザー判断または承認が揃うまで実行を停止する")
+    || normalized.includes("契約、docs sync")
+    || normalized.includes("サーバー側のオーケストレーション")
+    || normalized.includes("ui とオペレーター向け web 変更")
+    || normalized.includes("specialist 実行");
+}
+
+function summarizeOwnedPaths(dispatches) {
+  const paths = uniqueStrings(toArray(dispatches).flatMap((dispatch) => toArray(dispatch && dispatch.ownedPaths)), 3);
+  return paths.length ? paths.join(" / ") : "";
+}
+
 function getClarificationSignals(planningContext) {
   const context = planningContext && typeof planningContext === "object" ? planningContext : {};
   const selectionSignals = context.selection && context.selection.signals && typeof context.selection.signals === "object"
@@ -163,10 +217,24 @@ function buildSkipStep() {
   };
 }
 
-function buildDiscoverySteps(dispatches) {
+function buildDiscoverySteps(dispatches, requirementContract) {
   const primary = dispatches[0] || {};
-  const firstStepText = primary.taskSummary
-    || "\u5b9f\u88c5\u306b\u5165\u308b\u524d\u306b\u3001\u672a\u89e3\u6c7a\u306e\u8981\u4ef6\u3001\u524d\u63d0\u3001\u30e6\u30fc\u30b6\u30fc\u5224\u65ad\u5883\u754c\u3092\u6574\u7406\u3057\u307e\u3059\u3002";
+  const goal = stripTerminalPunctuation(buildGoalSummary(requirementContract));
+  const openQuestion = stripTerminalPunctuation(buildPrimaryOpenQuestion(requirementContract));
+  const concreteTaskSummary = isGenericTaskSummary(primary.taskSummary) ? "" : stripTerminalPunctuation(primary.taskSummary);
+  const firstStepText = concreteTaskSummary
+    || (goal && openQuestion
+      ? `依頼「${goal}」を進める前に、未解決の確認事項を整理します。最優先論点: ${openQuestion}。`
+      : goal
+        ? `依頼「${goal}」を実装可能な形にするため、未解決の確認事項を整理します。`
+        : openQuestion
+          ? `未解決の確認事項を整理します。最優先論点: ${openQuestion}。`
+          : "\u5b9f\u88c5\u306b\u5165\u308b\u524d\u306b\u3001\u672a\u89e3\u6c7a\u306e\u8981\u4ef6\u3001\u524d\u63d0\u3001\u30e6\u30fc\u30b6\u30fc\u5224\u65ad\u5883\u754c\u3092\u6574\u7406\u3057\u307e\u3059\u3002");
+  const waitStepText = openQuestion
+    ? `確認待ち: ${openQuestion}。回答が揃うまで実装は止めます。`
+    : goal
+      ? `確認待ち: 「${goal}」に必要なユーザー判断が揃うまで実装は止めます。`
+      : "\u672a\u89e3\u6c7a\u306e\u78ba\u8a8d\u4e8b\u9805\u304c\u6b8b\u308b\u5834\u5408\u306f\u3001\u5b9f\u88c5\u524d\u306b\u30e6\u30fc\u30b6\u30fc\u5165\u529b\u3092\u6c42\u3081\u3066\u505c\u6b62\u3057\u307e\u3059\u3002";
   return [
     {
       stepId: primary.dispatchId || "discovery-clarify",
@@ -178,7 +246,7 @@ function buildDiscoverySteps(dispatches) {
     },
     {
       stepId: "needs-input-stop",
-      step: "\u672a\u89e3\u6c7a\u306e\u78ba\u8a8d\u4e8b\u9805\u304c\u6b8b\u308b\u5834\u5408\u306f\u3001\u5b9f\u88c5\u524d\u306b\u30e6\u30fc\u30b6\u30fc\u5165\u529b\u3092\u6c42\u3081\u3066\u505c\u6b62\u3057\u307e\u3059\u3002",
+      step: waitStepText,
       status: "pending",
       phase: "report",
       kind: "needs_input",
@@ -187,15 +255,16 @@ function buildDiscoverySteps(dispatches) {
   ];
 }
 
-function buildClarificationSteps(clarification, dispatches) {
+function buildClarificationSteps(clarification, dispatches, requirementContract) {
   const primary = dispatches[0] || {};
+  const goal = stripTerminalPunctuation(buildGoalSummary(requirementContract));
   const question = clarification && clarification.question
     ? clarification.question
     : "\u5b9f\u88c5\u524d\u306b\u78ba\u8a8d\u8cea\u554f\u30921\u3064\u884c\u3044\u307e\u3059\u3002";
   return [
     {
       stepId: primary.dispatchId || "clarification-question",
-      step: `\u5b9f\u88c5\u524d\u306b\u78ba\u8a8d\u8cea\u554f\u30921\u3064\u884c\u3044\u307e\u3059\u3002 ${question}`,
+      step: `\u5b9f\u88c5\u524d\u306b\u78ba\u8a8d\u8cea\u554f\u30921\u3064\u884c\u3044\u307e\u3059\u3002${goal ? ` 対象: 「${goal}」。` : ""} ${question}`,
       status: "in_progress",
       phase: "planning",
       kind: "clarification",
@@ -203,7 +272,7 @@ function buildClarificationSteps(clarification, dispatches) {
     },
     {
       stepId: "clarification-wait",
-      step: "\u30e6\u30fc\u30b6\u30fc\u306e\u56de\u7b54\u3092\u5f85\u3061\u3001\u305d\u306e\u5185\u5bb9\u3092\u8d77\u70b9\u306b\u5b9f\u884c\u8a08\u753b\u3092\u7d44\u307f\u76f4\u3057\u307e\u3059\u3002",
+      step: `回答待ち: ${stripTerminalPunctuation(question)}。回答を起点に実行計画を組み直します。`,
       status: "pending",
       phase: "report",
       kind: "needs_input",
@@ -212,15 +281,29 @@ function buildClarificationSteps(clarification, dispatches) {
   ];
 }
 
-function buildExecutionStep(dispatches) {
+function buildExecutionStep(dispatches, requirementContract) {
   const owners = joinOwnerLabels(dispatches.map((dispatch) => dispatch.ownerAgent));
-  const summaries = uniqueStrings(dispatches.map((dispatch) => dispatch.taskSummary), 3);
-  const detail = summaries.length
-    ? ` \u62c5\u5f53\u5185\u5bb9: ${summaries.join(" / ")}`
-    : "";
+  const concreteSummaries = uniqueStrings(
+    dispatches
+      .map((dispatch) => dispatch.taskSummary)
+      .filter((summary) => !isGenericTaskSummary(summary)),
+    3
+  );
+  const goal = stripTerminalPunctuation(buildGoalSummary(requirementContract));
+  const ownedPaths = summarizeOwnedPaths(dispatches);
+  const acceptanceTitles = normalizeAcceptanceTitles(requirementContract).slice(0, 2);
+  const workSummary = concreteSummaries.length
+    ? concreteSummaries.join(" / ")
+    : goal
+      ? `「${goal}」を満たす変更`
+      : "\u62c5\u5f53\u7bc4\u56f2\u306e\u5909\u66f4";
+  const details = [];
+  if (ownedPaths) details.push(`対象: ${ownedPaths}`);
+  if (acceptanceTitles.length) details.push(`完了条件: ${acceptanceTitles.join(" / ")}`);
+  const detail = details.length ? ` ${details.join("。")}。` : "";
   return {
     stepId: "execution",
-    step: `\u5b9f\u884c: ${owners} \u304c\u62c5\u5f53\u7bc4\u56f2\u3092\u9032\u3081\u307e\u3059\u3002${detail}`,
+    step: `\u5b9f\u884c: ${owners} \u304c ${workSummary} \u3092\u9032\u3081\u307e\u3059\u3002${detail}`,
     status: "in_progress",
     phase: "execution",
     kind: "execution",
@@ -255,10 +338,13 @@ function buildQualityStep(dispatchPlan) {
   };
 }
 
-function buildReportStep() {
+function buildReportStep(requirementContract) {
+  const goal = stripTerminalPunctuation(buildGoalSummary(requirementContract));
   return {
     stepId: "report",
-    step: "\u6700\u7d42\u7d50\u679c\u3001\u8a3c\u8de1\u306e\u8981\u7d04\u3001\u6b8b\u308b\u30ea\u30b9\u30af\u3092\u30aa\u30da\u30ec\u30fc\u30bf\u30fc\u306b\u5831\u544a\u3057\u307e\u3059\u3002",
+    step: goal
+      ? `\u6700\u7d42\u5831\u544a: 「${goal}」\u3078\u306e\u5bfe\u5fdc\u7d50\u679c\u3001\u8a3c\u8de1\u306e\u8981\u7d04\u3001\u6b8b\u308b\u30ea\u30b9\u30af\u3092\u307e\u3068\u3081\u307e\u3059\u3002`
+      : "\u6700\u7d42\u7d50\u679c\u3001\u8a3c\u8de1\u306e\u8981\u7d04\u3001\u6b8b\u308b\u30ea\u30b9\u30af\u3092\u30aa\u30da\u30ec\u30fc\u30bf\u30fc\u306b\u5831\u544a\u3057\u307e\u3059\u3002",
     status: "pending",
     phase: "report",
     kind: "report",
@@ -266,8 +352,9 @@ function buildReportStep() {
   };
 }
 
-function buildPlanExplanation(summary, dispatches, dispatchPlan) {
+function buildPlanExplanation(summary, dispatches, dispatchPlan, requirementContract) {
   const owners = joinOwnerLabels(dispatches.map((dispatch) => dispatch.ownerAgent));
+  const goal = stripTerminalPunctuation(buildGoalSummary(requirementContract));
   const flags = [];
   if (dispatchPlan && dispatchPlan.reviewerRequired) {
     flags.push(translateQualityLabel("reviewer"));
@@ -282,7 +369,7 @@ function buildPlanExplanation(summary, dispatches, dispatchPlan) {
     flags.push(translateQualityLabel("signoff"));
   }
   const qualitySummary = flags.length ? `\u54c1\u8cea=${flags.join("\u3001")}` : "\u54c1\u8cea=\u306a\u3057";
-  return `\u30dd\u30ea\u30b7\u30fc\u30d7\u30e9\u30f3\u3092\u78ba\u5b9a\u3057\u307e\u3057\u305f (${summary.planningMode} / ${summary.planningDepth} / ${summary.assuranceDepth} / ${summary.flowPath})\u3002 \u62c5\u5f53=${owners}; ${qualitySummary}\u3002`;
+  return `\u30dd\u30ea\u30b7\u30fc\u30d7\u30e9\u30f3\u3092\u78ba\u5b9a\u3057\u307e\u3057\u305f (${summary.planningMode} / ${summary.planningDepth} / ${summary.assuranceDepth} / ${summary.flowPath})\u3002${goal ? ` 対象=${goal};` : ""} \u62c5\u5f53=${owners}; ${qualitySummary}\u3002`;
 }
 
 function buildOperatorPlanEvent({ planningContext, agentName = "default" } = {}) {
@@ -307,21 +394,21 @@ function buildOperatorPlanEvent({ planningContext, agentName = "default" } = {})
     steps = [buildSkipStep()];
     explanation = buildSkipExplanation(summary);
   } else if (clarification.action === "ask_user_once") {
-    steps = buildClarificationSteps(clarification, dispatches);
+    steps = buildClarificationSteps(clarification, dispatches, requirementContract);
     explanation = clarification.summary
-      ? `${buildPlanExplanation(summary, dispatches, dispatchPlan)} ${clarification.summary}`
-      : buildPlanExplanation(summary, dispatches, dispatchPlan);
+      ? `${buildPlanExplanation(summary, dispatches, dispatchPlan, requirementContract)} ${clarification.summary}`
+      : buildPlanExplanation(summary, dispatches, dispatchPlan, requirementContract);
   } else if (dispatchPlan && dispatchPlan.proposalOnly) {
-    steps = buildDiscoverySteps(dispatches);
-    explanation = buildPlanExplanation(summary, dispatches, dispatchPlan);
+    steps = buildDiscoverySteps(dispatches, requirementContract);
+    explanation = buildPlanExplanation(summary, dispatches, dispatchPlan, requirementContract);
   } else {
-    steps = [buildExecutionStep(dispatches)];
+    steps = [buildExecutionStep(dispatches, requirementContract)];
     const qualityStep = buildQualityStep(dispatchPlan);
     if (qualityStep) {
       steps.push(qualityStep);
     }
-    steps.push(buildReportStep());
-    explanation = buildPlanExplanation(summary, dispatches, dispatchPlan);
+    steps.push(buildReportStep(requirementContract));
+    explanation = buildPlanExplanation(summary, dispatches, dispatchPlan, requirementContract);
   }
 
   if (!steps.length) {
