@@ -1,6 +1,17 @@
 {
-  "schema": "task-outcome-contract.v1",
-  "version": "2026-03-13.r4",
+  "schema": "task-outcome-contract.v2",
+  "version": "2026-03-08.r1",
+  "proofCarryingRequiredFields": [
+    "task_id",
+    "actor",
+    "status",
+    "claimed_work",
+    "changed_artifacts",
+    "evidence_refs",
+    "unresolved_items",
+    "acceptance_coverage",
+    "handoff_readiness"
+  ],
   "statuses": [
     {
       "id": "COMPLETED",
@@ -56,19 +67,11 @@
     "path_out_of_scope": "BLOCKED",
     "verification_scope_violation": "BLOCKED",
     "agent_read_only_role": "BLOCKED",
+    "parent_material_implementation_forbidden": "FAILED_VALIDATION",
     "parent_dispatch_guard_block": "FAILED_VALIDATION",
     "missing_required_evidence": "FAILED_VALIDATION",
-    "intent_taste_memory_missing": "FAILED_VALIDATION",
-    "intent_benchmark_missing": "FAILED_VALIDATION",
-    "intent_workspace_lock_missing": "FAILED_VALIDATION",
-    "intent_visual_review_missing": "FAILED_VALIDATION",
-    "intent_reviewer_missing": "FAILED_VALIDATION",
-    "intent_technical_verification_missing": "FAILED_VALIDATION",
-    "intent_documentation_sync_missing": "FAILED_VALIDATION",
-    "partial_delivery": "PARTIAL",
-    "intent_first_gate_missing": "FAILED_VALIDATION",
-    "workspace_lock_required": "NEEDS_INPUT",
-    "visual_review_missing": "FAILED_VALIDATION",
-    "benchmark_superiority_unproven": "FAILED_VALIDATION"
+    "family_completion_gate_failed": "FAILED_VALIDATION",
+    "intent_*": "FAILED_VALIDATION",
+    "partial_delivery": "PARTIAL"
   }
 }

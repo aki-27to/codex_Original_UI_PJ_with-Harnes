@@ -1,6 +1,10 @@
-﻿[features]
+network_access = true
+
+[features]
 multi_agent = true
 collaboration_modes = true
+fast_mode = false
+guardian_approval = true
 
 [agents]
 max_threads = 12
@@ -40,3 +44,9 @@ config_file = "agents/tester.toml"
 [agents.release_manager]
 description = "Phase-scoped parent gate for Step 4/5 only. Reviews evidence and release docs; no intake planning or direct implementation."
 config_file = "agents/release-manager.toml"
+
+[mcp_servers.stitch]
+url = "https://stitch.googleapis.com/mcp"
+
+[mcp_servers.stitch.env_http_headers]
+X-Goog-Api-Key = "STITCH_API_KEY"

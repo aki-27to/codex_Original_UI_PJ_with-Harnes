@@ -1,0 +1,15 @@
+{
+  "schema": "discovery-outcome-contract.v1",
+  "version": "2026-03-08.r1",
+  "lane": "DISCOVERY",
+  "requiredFields": [
+    "open_questions",
+    "assumptions",
+    "candidate_hypotheses",
+    "disconfirming_evidence",
+    "decision_boundary",
+    "non_goals",
+    "recommended_next_path",
+    "confidence_rationale"
+  ]
+}

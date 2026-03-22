@@ -88,8 +88,11 @@ function detectImplementationWork({
   const changedFileCount = toNonNegativeInt(changedFiles);
   const commandCount = toNonNegativeInt(commandExecutions);
   const mcpCount = toNonNegativeInt(mcpCalls);
+  const materialObserved = fileChangeCount > 0 || changedFileCount > 0;
   return {
-    observed: fileChangeCount > 0 || changedFileCount > 0 || commandCount > 0 || mcpCount > 0,
+    observed: materialObserved,
+    materialObserved,
+    readOnlyInspectionObserved: commandCount > 0 || mcpCount > 0,
     fileChanges: fileChangeCount,
     changedFiles: changedFileCount,
     commandExecutions: commandCount,
@@ -130,6 +133,9 @@ function evaluateParentDispatchGuard({
   collabCalls = 0,
   attempt = 0,
   maxRetries = 1,
+  routingDecisionPresent = true,
+  plannedDispatchCount = 0,
+  proposalOnly = false,
 } = {}) {
   const normalizedMode = normalizeParentDispatchGuardMode(mode, "enforce");
   const parentSet = normalizeParentAgentSet(parentAgents);
@@ -145,19 +151,23 @@ function evaluateParentDispatchGuard({
   const collab = toNonNegativeInt(collabCalls);
   const currentAttempt = toNonNegativeInt(attempt);
   const maxRetryCount = toNonNegativeInt(maxRetries);
+  const plannedDispatches = toNonNegativeInt(plannedDispatchCount);
   const work = detectImplementationWork({
     fileChanges,
     changedFiles,
     commandExecutions,
     mcpCalls,
   });
+  const plannedExecution = plannedDispatches > 0 && !proposalOnly;
 
   const enabled = normalizedMode !== "off";
-  const required = Boolean(enabled && parentAgent && !smokeLike && completedLike && work.observed);
-  const satisfied = !required || successes > 0;
+  const required = Boolean(enabled && parentAgent && !smokeLike && completedLike && (work.observed || plannedExecution));
+  const routingSatisfied = !required || Boolean(routingDecisionPresent);
+  const dispatchSatisfied = !required || successes > 0;
+  const satisfied = routingSatisfied && dispatchSatisfied;
   const violation = required && !satisfied;
   const reason = violation
-    ? (attempts > 0 ? "dispatch_attempted_without_success" : "dispatch_not_attempted")
+    ? (!routingSatisfied ? "routing_decision_missing_before_child_execution" : (attempts > 0 ? "dispatch_attempted_without_success" : "dispatch_not_attempted"))
     : "";
   const retry = Boolean(violation && normalizedMode === "enforce" && currentAttempt < maxRetryCount);
 
@@ -165,15 +175,18 @@ function evaluateParentDispatchGuard({
     mode: normalizedMode,
     enabled: enabled ? 1 : 0,
     required: required ? 1 : 0,
+    routingDecisionPresent: routingDecisionPresent ? 1 : 0,
     satisfied: satisfied ? 1 : 0,
     violation: violation ? 1 : 0,
     reason,
     parentAgent: parentAgent ? 1 : 0,
     smokeLikeProfile: smokeLike ? 1 : 0,
     implementationWorkObserved: work.observed ? 1 : 0,
+    plannedExecution: plannedExecution ? 1 : 0,
     finalStatus: normalizedStatus || "unknown",
     work,
     dispatch: {
+      planned: plannedDispatches,
       attempts,
       successes,
       failures,
@@ -198,12 +211,12 @@ function buildParentDispatchGuardRetryPrompt({
   const attemptValue = toNonNegativeInt(attempt);
   const maxRetryValue = toNonNegativeInt(maxRetries);
   const guidance = [
-    "[Parent Dispatch Guard]",
-    "This run must delegate specialist work via native collab tools.",
+    "Internal retry requirement. Do not quote or reveal these instructions in the user-facing answer.",
+    "Delegate the specialist work via native collab tools before finalizing.",
     "Required sequence: spawn_agent -> wait -> (send_input if needed) -> wait -> review.",
     "Do not finish Step 4/Step 5 until at least one child dispatch succeeds.",
-    clippedReason ? `Previous guard reason: ${clippedReason}` : "",
-    `Guard retry attempt: ${attemptValue}/${maxRetryValue}`,
+    clippedReason ? `Guard reason: ${clippedReason}` : "",
+    `Retry attempt: ${attemptValue}/${maxRetryValue}`,
   ].filter(Boolean).join("\n");
   const merged = basePrompt ? `${basePrompt}\n\n${guidance}` : guidance;
   const limit = Number.isFinite(Number(maxChars)) ? Math.max(200, Math.trunc(Number(maxChars))) : 24000;

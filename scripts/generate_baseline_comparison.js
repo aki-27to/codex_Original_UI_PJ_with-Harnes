@@ -3,8 +3,10 @@
 
 const fs = require("fs");
 const path = require("path");
+const { getLoggingSurfacePaths } = require("./lib/logging_surface");
 
 const workspaceRoot = path.resolve(__dirname, "..");
+const loggingSurfacePaths = getLoggingSurfacePaths(workspaceRoot);
 
 function safeString(value, max = 2000) {
   if (typeof value !== "string") return "";
@@ -27,6 +29,10 @@ function writeText(filePath, value) {
   fs.writeFileSync(filePath, value, "utf8");
 }
 
+function repoRelative(filePath) {
+  return filePath ? path.relative(workspaceRoot, filePath).split(path.sep).join("/") : "";
+}
+
 function latestDirectory(rootDir) {
   if (!fs.existsSync(rootDir)) return null;
   const entries = fs.readdirSync(rootDir, { withFileTypes: true })
@@ -43,7 +49,7 @@ function latestDirectory(rootDir) {
 function resolveBundleRoot() {
   const explicit = safeString(process.argv[2], 400);
   if (explicit) return path.resolve(workspaceRoot, explicit);
-  return latestDirectory(path.join(workspaceRoot, "logs", "signoff-bundles"));
+  return latestDirectory(loggingSurfacePaths.signoffBundlesRoot);
 }
 
 function loadOptionalJson(filePath) {
@@ -60,7 +66,238 @@ function toCount(value) {
   return Number.isFinite(parsed) ? Math.max(0, Math.trunc(parsed)) : 0;
 }
 
+function normalizeTransportMode(value) {
+  const raw = safeString(value, 80).toLowerCase();
+  if (!raw) return "";
+  if (raw === "mock" || raw === "fixture" || raw === "mock-fixture") return "mock-fixture";
+  if (raw === "live" || raw === "stdio") return "stdio";
+  return raw;
+}
+
+function resolveCandidatePath(bundleRoot, candidate) {
+  const value = safeString(candidate, 400);
+  if (!value) return "";
+  return path.isAbsolute(value) ? value : path.join(bundleRoot, value);
+}
+
+function findExistingArtifactPath(bundleRoot, candidates = []) {
+  for (const candidate of Array.isArray(candidates) ? candidates : []) {
+    const resolved = resolveCandidatePath(bundleRoot, candidate);
+    if (resolved && fs.existsSync(resolved)) {
+      return resolved;
+    }
+  }
+  return "";
+}
+
+function loadArtifact(bundleRoot, candidates = []) {
+  const filePath = findExistingArtifactPath(bundleRoot, candidates);
+  return {
+    path: filePath,
+    value: filePath ? loadOptionalJson(filePath) : null,
+  };
+}
+
+function buildFixedBundleSurfaceLists(bundleRoot) {
+  const rel = (segments) => repoRelative(path.join(bundleRoot, ...segments));
+  const topLevelSummaries = [
+    rel(["signoff_summary.json"]),
+    rel(["runtime_snapshot.json"]),
+    rel(["core_harness_workflow_run.json"]),
+    rel(["natural_task_trace_summary.json"]),
+    rel(["latest_run_summary.json"]),
+    rel(["review_load_breakdown.json"]),
+    rel(["conformance_report.json"]),
+    rel(["operator_view_summary.json"]),
+    rel(["bundle_surface_map.json"]),
+  ];
+  return {
+    topLevelSummaries,
+    openFirst: [
+      ...topLevelSummaries,
+      rel(["raw", "relocated_top_level", "lane_latency_summary.json"]),
+      rel(["raw", "relocated_top_level", "signoff_resume_state.json"]),
+      rel(["raw", "relocated_top_level", "baseline_comparison_report.json"]),
+      rel(["raw", "relocated_top_level", "speed_vs_assurance_report.md"]),
+    ],
+  };
+}
+
+function reconcileBundleComparisonSurfaces({
+  bundleRoot,
+  report,
+  markdown,
+  archiveJsonPath,
+  archiveMdPath,
+  jsonPath,
+  mdPath,
+}) {
+  const relocatedRoot = path.join(bundleRoot, "raw", "relocated_top_level");
+  const preferredJsonPath = fs.existsSync(relocatedRoot)
+    ? path.join(relocatedRoot, "baseline_comparison_report.json")
+    : jsonPath;
+  const preferredMdPath = fs.existsSync(relocatedRoot)
+    ? path.join(relocatedRoot, "speed_vs_assurance_report.md")
+    : mdPath;
+
+  if (preferredJsonPath !== jsonPath) writeJson(preferredJsonPath, report);
+  if (preferredMdPath !== mdPath) writeText(preferredMdPath, markdown);
+  if (preferredJsonPath !== jsonPath && fs.existsSync(jsonPath)) fs.rmSync(jsonPath, { force: true });
+  if (preferredMdPath !== mdPath && fs.existsSync(mdPath)) fs.rmSync(mdPath, { force: true });
+
+  const signoffSummaryPath = path.join(bundleRoot, "signoff_summary.json");
+  const signoffSummary = loadOptionalJson(signoffSummaryPath);
+  if (signoffSummary && typeof signoffSummary === "object") {
+    const nextSummary = { ...signoffSummary };
+    nextSummary.updatedAt = new Date().toISOString();
+    nextSummary.baselineComparison = {
+      ...(nextSummary.baselineComparison && typeof nextSummary.baselineComparison === "object" ? nextSummary.baselineComparison : {}),
+      status: "ok",
+      reportPath: preferredJsonPath,
+      markdownPath: preferredMdPath,
+      archiveReportPath: archiveJsonPath,
+      archiveMarkdownPath: archiveMdPath,
+      truthfulClaimStatus:
+        report && report.truthfulClaimStatus && typeof report.truthfulClaimStatus === "object" ? report.truthfulClaimStatus : {},
+    };
+    nextSummary.paths = {
+      ...(nextSummary.paths && typeof nextSummary.paths === "object" ? nextSummary.paths : {}),
+      baselineComparisonReport: preferredJsonPath,
+      speedVsAssuranceReport: preferredMdPath,
+    };
+    writeJson(signoffSummaryPath, nextSummary);
+  }
+
+  const bundleSurfaceMapPath = path.join(bundleRoot, "bundle_surface_map.json");
+  const bundleSurfaceMap = loadOptionalJson(bundleSurfaceMapPath);
+  if (bundleSurfaceMap && typeof bundleSurfaceMap === "object") {
+    const fixedLists = buildFixedBundleSurfaceLists(bundleRoot);
+    const nextSurfaceMap = { ...bundleSurfaceMap };
+    nextSurfaceMap.generatedAt = new Date().toISOString();
+    nextSurfaceMap.openFirst = fixedLists.openFirst;
+    nextSurfaceMap.topLevelSummaries = fixedLists.topLevelSummaries;
+    writeJson(bundleSurfaceMapPath, nextSurfaceMap);
+  }
+
+  return { preferredJsonPath, preferredMdPath };
+}
+
+function classifyMeasuredBaseline(summary) {
+  const profile = safeString(summary && summary.profile, 80).toLowerCase();
+  const transportMode = normalizeTransportMode(summary && summary.transportMode);
+  if (profile === "live-raw-codex-like" || (transportMode === "stdio" && profile !== "measured-baseline-smoke")) {
+    return {
+      approximationKey: "live-raw-codex-like-profile",
+      sampleLabel: "live raw-Codex-like profile",
+      markdownSummary: "This report compares governed harness runs against a live raw-Codex-like baseline captured over stdio transport.",
+    };
+  }
+  return {
+    approximationKey: "measured-baseline-profile",
+    sampleLabel: "measured baseline profile",
+    markdownSummary: "This report compares governed harness runs against a measured in-repo baseline profile with governance-light settings.",
+  };
+}
+
+function classifyRawDirectBaseline(summary) {
+  const transportMode = normalizeTransportMode(summary && summary.transportMode);
+  return {
+    approximationKey: "raw-codex-direct-baseline",
+    sampleLabel: "raw Codex direct baseline",
+    markdownSummary:
+      transportMode === "stdio"
+        ? "This report compares governed harness runs against direct stdio Codex app-server runs without harness governance."
+        : "This report attempted a raw Codex direct baseline, but the captured transport was not live stdio.",
+  };
+}
+
+function countMeaningfulDiscoveryQuestions(openQuestions) {
+  return uniqueDiscoveryQuestions(openQuestions).length;
+}
+
+function uniqueDiscoveryQuestions(openQuestions) {
+  const out = [];
+  for (const entry of Array.isArray(openQuestions) ? openQuestions : []) {
+    const question = safeString(entry, 240);
+    if (!question) continue;
+    if (/^\[(?:fixture_scenario|baseline_profile)\]/i.test(question)) continue;
+    if (/^first make the open questions explicit\.?$/i.test(question)) continue;
+    if (/^stop with status:\s*need_user_input\.?$/i.test(question)) continue;
+    if (out.includes(question)) continue;
+    out.push(question);
+  }
+  return out;
+}
+
+function countDiscoveryEvidenceSignals(traceSummary, flow, evidence) {
+  const requirement = evidence && evidence.requirementContract && typeof evidence.requirementContract === "object"
+    ? evidence.requirementContract
+    : {};
+  const finalOutcome = flow && flow.finalOutcome && typeof flow.finalOutcome === "object"
+    ? flow.finalOutcome
+    : traceSummary && traceSummary.turn && typeof traceSummary.turn === "object"
+      ? traceSummary.turn
+      : {};
+  const meaningfulQuestionCount = countMeaningfulDiscoveryQuestions(requirement.openQuestions);
+  return [
+    meaningfulQuestionCount >= 2,
+    meaningfulQuestionCount >= 4,
+    Array.isArray(requirement.assumptions) && requirement.assumptions.length > 0,
+    Array.isArray(requirement.nonGoals) && requirement.nonGoals.length > 0,
+    Array.isArray(requirement.baselineScope) && requirement.baselineScope.length > 0,
+    safeString(finalOutcome.taskOutcomeStatus, 40) === "NEEDS_INPUT",
+  ].filter(Boolean).length;
+}
+
 function metricFromTrace(traceSummary) {
+  if (safeString(traceSummary && traceSummary.schema, 80) === "raw-direct-baseline-trace.v1") {
+    const discoverySignals =
+      traceSummary && traceSummary.discoverySignals && typeof traceSummary.discoverySignals === "object"
+        ? traceSummary.discoverySignals
+        : {};
+    const meaningfulOpenQuestionsCount = Array.isArray(traceSummary && traceSummary.meaningfulOpenQuestions)
+      ? traceSummary.meaningfulOpenQuestions.length
+      : 0;
+    const discoveryEvidenceScore = [
+      meaningfulOpenQuestionsCount >= 2,
+      meaningfulOpenQuestionsCount >= 4,
+      Number(discoverySignals.assumptions || 0) > 0,
+      Number(discoverySignals.nonGoals || 0) > 0,
+      Number(discoverySignals.decisionBoundary || 0) > 0,
+      Number(discoverySignals.needsInput || 0) > 0,
+    ].filter(Boolean).length;
+    const changedArtifacts = Array.isArray(traceSummary && traceSummary.changedArtifacts) ? traceSummary.changedArtifacts : [];
+    const itemSummaries = Array.isArray(traceSummary && traceSummary.itemSummaries) ? traceSummary.itemSummaries : [];
+    const assertions =
+      traceSummary && traceSummary.assertions && typeof traceSummary.assertions === "object"
+        ? traceSummary.assertions
+        : {};
+    return {
+      planningDepth: null,
+      assuranceDepth: null,
+      executionFlow: "RAW_DIRECT_BASELINE",
+      finalOutcome: traceSummary && traceSummary.turn ? traceSummary.turn : null,
+      totalDurationMs: toCount(traceSummary && traceSummary.wallClockMs),
+      dispatchCount: 0,
+      dispatchSuccessCount: 0,
+      reviewerExecuted: 0,
+      testerExecuted: 0,
+      acceptancePassCount: assertions.explicitVerificationPassed ? 1 : 0,
+      acceptanceFailCount: assertions.explicitVerificationPassed ? 0 : 1,
+      childEvidenceAgents: 0,
+      docSyncStatus: "SKIPPED",
+      evidenceSourceCount: itemSummaries.length > 0 ? 1 : 0,
+      discoveryEvidenceScore,
+      meaningfulOpenQuestionsCount,
+      transportMode: normalizeTransportMode(traceSummary && traceSummary.transportMode) || null,
+      evidenceQualityScore: [
+        safeString(traceSummary && traceSummary.finalText, 120).length > 0,
+        changedArtifacts.length > 0,
+        itemSummaries.length > 0,
+        Boolean(assertions.explicitVerificationPassed),
+      ].filter(Boolean).length + discoveryEvidenceScore,
+    };
+  }
   const flow = traceSummary && traceSummary.flowTraceSummary && typeof traceSummary.flowTraceSummary === "object"
     ? traceSummary.flowTraceSummary
     : null;
@@ -82,7 +319,21 @@ function metricFromTrace(traceSummary) {
   const acceptanceSummary = flow && flow.acceptanceSummary && typeof flow.acceptanceSummary === "object"
     ? flow.acceptanceSummary
     : {};
+  const dispatchPlan = evidence && evidence.dispatchPlan && typeof evidence.dispatchPlan === "object"
+    ? evidence.dispatchPlan
+    : {};
+  const finalOutcome = flow && flow.finalOutcome && typeof flow.finalOutcome === "object"
+    ? flow.finalOutcome
+    : traceSummary && traceSummary.turn && typeof traceSummary.turn === "object"
+      ? traceSummary.turn
+      : {};
   const totalDurationMs = stages.reduce((sum, entry) => sum + (Number(entry && entry.durationMs) || 0), 0);
+  const reviewEvidencePresent = Boolean(review) || evidenceSources.includes("review_load_breakdown.json");
+  const discoveryEvidenceScore =
+    safeString(flow && flow.selectedPlanningDepth, 60) === "DISCOVERY_PLANNING" &&
+    safeString(finalOutcome.taskOutcomeStatus, 40) === "NEEDS_INPUT"
+      ? countDiscoveryEvidenceSignals(traceSummary, flow, evidence)
+      : 0;
   const evidenceQualityScore = [
     childEvidenceLedger.length > 0,
     evidenceSources.length >= 4,
@@ -90,14 +341,21 @@ function metricFromTrace(traceSummary) {
     toCount(flow && flow.testerExecuted) > 0,
     safeString(docSyncEvidence.status, 20) === "PASS",
     toCount(acceptanceSummary.passCount) > 0,
-    Boolean(review),
+    reviewEvidencePresent,
     Boolean(evidence),
-  ].filter(Boolean).length;
+  ].filter(Boolean).length + discoveryEvidenceScore;
+  const transportMode = normalizeTransportMode(
+    traceSummary && traceSummary.transportMode
+      ? traceSummary.transportMode
+      : traceSummary && traceSummary.runtime && traceSummary.runtime.transportMode
+        ? traceSummary.runtime.transportMode
+        : ""
+  );
   return {
     planningDepth: safeString(flow && flow.selectedPlanningDepth, 60) || null,
     assuranceDepth: safeString(flow && flow.selectedAssuranceDepth, 60) || null,
     executionFlow: safeString(flow && flow.executionFlow, 120) || null,
-    finalOutcome: flow && flow.finalOutcome ? flow.finalOutcome : traceSummary && traceSummary.turn ? traceSummary.turn : null,
+    finalOutcome: finalOutcome || null,
     totalDurationMs,
     dispatchCount: toCount(flow && flow.dispatchCount),
     dispatchSuccessCount: toCount(flow && flow.dispatchSuccessCount),
@@ -108,6 +366,12 @@ function metricFromTrace(traceSummary) {
     childEvidenceAgents: childEvidenceLedger.length,
     docSyncStatus: safeString(docSyncEvidence.status, 20) || "UNKNOWN",
     evidenceSourceCount: evidenceSources.length,
+    discoveryEvidenceScore,
+    meaningfulOpenQuestionsCount:
+      evidence && evidence.requirementContract && Array.isArray(evidence.requirementContract.openQuestions)
+        ? countMeaningfulDiscoveryQuestions(evidence.requirementContract.openQuestions)
+        : 0,
+    transportMode: transportMode || null,
     evidenceQualityScore,
   };
 }
@@ -149,26 +413,154 @@ function vanillaLikeProfile(name) {
   }
 }
 
-function loadMeasuredBaseline(bundleRoot) {
-  const summary = loadOptionalJson(path.join(bundleRoot, "measured_baseline_summary.json"));
-  const traces = {
-    fast: loadOptionalJson(path.join(bundleRoot, "baseline_fast_task_trace_summary.json")),
-    discovery: loadOptionalJson(path.join(bundleRoot, "baseline_discovery_task_trace_summary.json")),
-    signoff: loadOptionalJson(path.join(bundleRoot, "baseline_signoff_task_trace_summary.json")),
-    natural: loadOptionalJson(path.join(bundleRoot, "baseline_natural_task_trace_summary.json")),
+function loadHarnessTraces(bundleRoot, signoffSummary) {
+  const summaryPaths = signoffSummary && signoffSummary.paths && typeof signoffSummary.paths === "object"
+    ? signoffSummary.paths
+    : {};
+  const fast = loadArtifact(bundleRoot, [
+    summaryPaths.fastTaskTraceSummary,
+    "fast_task_trace_summary.json",
+    "raw/summaries/fast_task_trace_summary.json",
+  ]);
+  const discovery = loadArtifact(bundleRoot, [
+    summaryPaths.discoveryTaskTraceSummary,
+    "discovery_task_trace_summary.json",
+    "raw/summaries/discovery_task_trace_summary.json",
+  ]);
+  const signoff = loadArtifact(bundleRoot, [
+    summaryPaths.signoffTaskTraceSummary,
+    "signoff_task_trace_summary.json",
+    "raw/summaries/signoff_task_trace_summary.json",
+  ]);
+  const natural = loadArtifact(bundleRoot, [
+    summaryPaths.naturalTaskTraceSummary,
+    "natural_task_trace_summary.json",
+    "raw/summaries/natural_task_trace_summary.json",
+  ]);
+  return {
+    traces: {
+      fast: fast.value,
+      discovery: discovery.value,
+      signoff: signoff.value,
+      natural: natural.value,
+    },
+    tracePaths: {
+      fast: fast.path,
+      discovery: discovery.path,
+      signoff: signoff.path,
+      natural: natural.path,
+    },
   };
-  const available = Object.values(traces).some(Boolean);
-  return available || summary ? { summary, traces } : null;
 }
 
-function buildMeasuredBaselineEntry(label, harnessTrace, baselineTrace, baselineSummary) {
+function loadMeasuredBaseline(bundleRoot, signoffSummary) {
+  const summaryPaths = signoffSummary && signoffSummary.paths && typeof signoffSummary.paths === "object"
+    ? signoffSummary.paths
+    : {};
+  const summary = loadArtifact(bundleRoot, [
+    summaryPaths.measuredBaselineSummary,
+    "measured_baseline_summary.json",
+    "raw/measured_baseline/measured_baseline_summary.json",
+  ]);
+  const fast = loadArtifact(bundleRoot, [
+    summaryPaths.baselineFastTaskTraceSummary,
+    "baseline_fast_task_trace_summary.json",
+    "raw/measured_baseline/baseline_fast_task_trace_summary.json",
+  ]);
+  const discovery = loadArtifact(bundleRoot, [
+    summaryPaths.baselineDiscoveryTaskTraceSummary,
+    "baseline_discovery_task_trace_summary.json",
+    "raw/measured_baseline/baseline_discovery_task_trace_summary.json",
+  ]);
+  const signoff = loadArtifact(bundleRoot, [
+    summaryPaths.baselineSignoffTaskTraceSummary,
+    "baseline_signoff_task_trace_summary.json",
+    "raw/measured_baseline/baseline_signoff_task_trace_summary.json",
+  ]);
+  const natural = loadArtifact(bundleRoot, [
+    summaryPaths.baselineNaturalTaskTraceSummary,
+    "baseline_natural_task_trace_summary.json",
+    "raw/measured_baseline/baseline_natural_task_trace_summary.json",
+  ]);
+  const available = [summary.value, fast.value, discovery.value, signoff.value, natural.value].some(Boolean);
+  return available
+    ? {
+        summary: summary.value,
+        summaryPath: summary.path,
+        traces: {
+          fast: fast.value,
+          discovery: discovery.value,
+          signoff: signoff.value,
+          natural: natural.value,
+        },
+        tracePaths: {
+          fast: fast.path,
+          discovery: discovery.path,
+          signoff: signoff.path,
+          natural: natural.path,
+        },
+      }
+    : null;
+}
+
+function loadRawDirectBaseline(bundleRoot, signoffSummary) {
+  const summaryPaths = signoffSummary && signoffSummary.paths && typeof signoffSummary.paths === "object"
+    ? signoffSummary.paths
+    : {};
+  const summary = loadArtifact(bundleRoot, [
+    summaryPaths.rawDirectBaselineSummary,
+    "raw_direct_baseline_summary.json",
+    "raw/raw_direct_baseline/raw_direct_baseline_summary.json",
+  ]);
+  const fast = loadArtifact(bundleRoot, [
+    summaryPaths.rawDirectFastTaskTraceSummary,
+    "raw_direct_fast_task_trace_summary.json",
+    "raw/raw_direct_baseline/raw_direct_fast_task_trace_summary.json",
+  ]);
+  const discovery = loadArtifact(bundleRoot, [
+    summaryPaths.rawDirectDiscoveryTaskTraceSummary,
+    "raw_direct_discovery_task_trace_summary.json",
+    "raw/raw_direct_baseline/raw_direct_discovery_task_trace_summary.json",
+  ]);
+  const signoff = loadArtifact(bundleRoot, [
+    summaryPaths.rawDirectSignoffTaskTraceSummary,
+    "raw_direct_signoff_task_trace_summary.json",
+    "raw/raw_direct_baseline/raw_direct_signoff_task_trace_summary.json",
+  ]);
+  const natural = loadArtifact(bundleRoot, [
+    summaryPaths.rawDirectNaturalTaskTraceSummary,
+    "raw_direct_natural_task_trace_summary.json",
+    "raw/raw_direct_baseline/raw_direct_natural_task_trace_summary.json",
+  ]);
+  const available = [summary.value, fast.value, discovery.value, signoff.value, natural.value].some(Boolean);
+  return available
+    ? {
+        summary: summary.value,
+        summaryPath: summary.path,
+        traces: {
+          fast: fast.value,
+          discovery: discovery.value,
+          signoff: signoff.value,
+          natural: natural.value,
+        },
+        tracePaths: {
+          fast: fast.path,
+          discovery: discovery.path,
+          signoff: signoff.path,
+          natural: natural.path,
+        },
+      }
+    : null;
+}
+
+function buildStructuredBaselineEntry(label, harnessTrace, baselineTrace, baselineSummary, baselineClassification) {
   const harness = metricFromTrace(harnessTrace);
   const baseline = metricFromTrace(baselineTrace);
   const durationDeltaMs = harness.totalDurationMs - baseline.totalDurationMs;
   const evidenceDelta = harness.evidenceQualityScore - baseline.evidenceQualityScore;
   return {
     label,
-    approximation: "measured baseline profile",
+    approximation: baselineClassification.sampleLabel,
     baselineProfile: safeString(baselineSummary && baselineSummary.profile, 80) || "measured-baseline-smoke",
     harness,
     baseline,
@@ -180,12 +572,12 @@ function buildMeasuredBaselineEntry(label, harnessTrace, baselineTrace, baseline
       evidenceQualityDelta: evidenceDelta,
       speedComment:
         durationDeltaMs <= 0
-          ? "Harness stayed at or below measured baseline latency for this sample."
+          ? "Harness stayed at or below baseline latency for this sample."
           : `Harness paid ${durationDeltaMs} ms of additional governance cost for this sample.`,
       assuranceComment:
         evidenceDelta > 0
-          ? `Harness produced ${evidenceDelta} additional evidence-quality signals over the measured baseline profile.`
-          : "Harness evidence advantage was not larger than the measured baseline on this sample.",
+          ? `Harness produced ${evidenceDelta} additional evidence-quality signals over the ${baselineClassification.sampleLabel}.`
+          : `Harness evidence advantage was not larger than the ${baselineClassification.sampleLabel} on this sample.`,
     },
   };
 }
@@ -218,8 +610,14 @@ function buildMarkdown(report) {
     "",
     `Bundle: ${safeString(report.bundleRoot, 400) || "unavailable"}`,
     "",
+    `Transport: ${report.transportModes.length ? report.transportModes.join(", ") : "unknown"}`,
+    `Live transport parity: ${safeString(report.truthfulClaimStatus && report.truthfulClaimStatus.liveTransportParity, 40) || "NOT PROVEN"}`,
+    `Raw Codex direct superiority: ${safeString(report.truthfulClaimStatus && report.truthfulClaimStatus.rawCodexDirectSuperiority, 40) || "NOT PROVEN"}`,
+    "",
     report.approximation === "measured-baseline-profile"
-      ? "This report compares governed harness runs against a measured in-repo baseline profile with governance-light settings."
+      || report.approximation === "live-raw-codex-like-profile"
+      || report.approximation === "raw-codex-direct-baseline"
+      ? report.markdownSummary
       : "This report uses a vanilla-like baseline profile, not a real raw Codex run.",
     "",
   ];
@@ -231,10 +629,16 @@ function buildMarkdown(report) {
       lines.push(`- Duration: harness ${entry.harness.totalDurationMs || 0} ms / baseline ${entry.baseline.totalDurationMs || 0} ms`);
       lines.push(`- Dispatch/review/test: harness ${entry.harness.dispatchCount}/${entry.harness.reviewerExecuted}/${entry.harness.testerExecuted} / baseline ${entry.baseline.dispatchCount}/${entry.baseline.reviewerExecuted}/${entry.baseline.testerExecuted}`);
       lines.push(`- Evidence quality: harness ${entry.harness.evidenceQualityScore} / baseline ${entry.baseline.evidenceQualityScore}`);
+      if (entry.harness.discoveryEvidenceScore || entry.baseline.discoveryEvidenceScore) {
+        lines.push(`- Discovery evidence: harness ${entry.harness.discoveryEvidenceScore} / baseline ${entry.baseline.discoveryEvidenceScore}`);
+      }
     } else {
       lines.push(`- Harness duration: ${entry.harness.totalDurationMs || 0} ms`);
       lines.push(`- Dispatch/review/test: ${entry.harness.dispatchCount}/${entry.harness.reviewerExecuted}/${entry.harness.testerExecuted}`);
       lines.push(`- Evidence quality: ${entry.harness.evidenceQualityScore}`);
+      if (entry.harness.discoveryEvidenceScore) {
+        lines.push(`- Discovery evidence: ${entry.harness.discoveryEvidenceScore}`);
+      }
     }
     lines.push(`- Speed: ${entry.comparison.speedComment}`);
     lines.push(`- Assurance: ${entry.comparison.assuranceComment}`);
@@ -256,37 +660,58 @@ function generateBaselineComparison(bundleRootInput = "") {
     throw new Error("signoff bundle root not found");
   }
 
-  const harnessTraces = {
-    fast: loadOptionalJson(path.join(bundleRoot, "fast_task_trace_summary.json")),
-    discovery: loadOptionalJson(path.join(bundleRoot, "discovery_task_trace_summary.json")),
-    signoff: loadOptionalJson(path.join(bundleRoot, "signoff_task_trace_summary.json")),
-    natural: loadOptionalJson(path.join(bundleRoot, "natural_task_trace_summary.json")),
-  };
   const signoffSummary = loadOptionalJson(path.join(bundleRoot, "signoff_summary.json"));
-  const measuredBaseline = loadMeasuredBaseline(bundleRoot);
-  const usingMeasuredBaseline = Boolean(measuredBaseline && Object.values(measuredBaseline.traces || {}).some(Boolean));
+  const harnessBundle = loadHarnessTraces(bundleRoot, signoffSummary);
+  const harnessTraces = harnessBundle.traces;
+  const measuredBaseline = loadMeasuredBaseline(bundleRoot, signoffSummary);
+  const rawDirectBaseline = loadRawDirectBaseline(bundleRoot, signoffSummary);
+  const measuredBaselineTraceCount = measuredBaseline ? Object.values(measuredBaseline.traces || {}).filter(Boolean).length : 0;
+  const rawDirectTraceCount = rawDirectBaseline ? Object.values(rawDirectBaseline.traces || {}).filter(Boolean).length : 0;
+  const usingRawDirectBaseline =
+    Boolean(rawDirectBaseline && rawDirectBaseline.summary && safeString(rawDirectBaseline.summary.status, 40) === "ok")
+    && rawDirectTraceCount === 4;
+  const usingMeasuredBaseline =
+    Boolean(measuredBaseline && measuredBaseline.summary)
+    && measuredBaselineTraceCount === 4;
+  const baselineClassification = usingRawDirectBaseline
+    ? classifyRawDirectBaseline(rawDirectBaseline && rawDirectBaseline.summary)
+    : classifyMeasuredBaseline(measuredBaseline && measuredBaseline.summary);
 
-  const samples = usingMeasuredBaseline
+  const samples = usingRawDirectBaseline
     ? [
-        buildMeasuredBaselineEntry("FAST sample", harnessTraces.fast, measuredBaseline.traces.fast, measuredBaseline.summary),
-        buildMeasuredBaselineEntry("DISCOVERY sample", harnessTraces.discovery, measuredBaseline.traces.discovery, measuredBaseline.summary),
-        buildMeasuredBaselineEntry("SIGNOFF sample", harnessTraces.signoff, measuredBaseline.traces.signoff, measuredBaseline.summary),
-        buildMeasuredBaselineEntry("Natural sample", harnessTraces.natural, measuredBaseline.traces.natural, measuredBaseline.summary),
+        buildStructuredBaselineEntry("FAST sample", harnessTraces.fast, rawDirectBaseline.traces.fast, rawDirectBaseline.summary, baselineClassification),
+        buildStructuredBaselineEntry("DISCOVERY sample", harnessTraces.discovery, rawDirectBaseline.traces.discovery, rawDirectBaseline.summary, baselineClassification),
+        buildStructuredBaselineEntry("SIGNOFF sample", harnessTraces.signoff, rawDirectBaseline.traces.signoff, rawDirectBaseline.summary, baselineClassification),
+        buildStructuredBaselineEntry("Natural sample", harnessTraces.natural, rawDirectBaseline.traces.natural, rawDirectBaseline.summary, baselineClassification),
       ]
-    : [
-        buildApproximationEntry("FAST sample", harnessTraces.fast, "fast"),
-        buildApproximationEntry("DISCOVERY sample", harnessTraces.discovery, "discovery"),
-        buildApproximationEntry("SIGNOFF sample", harnessTraces.signoff, "signoff"),
-        buildApproximationEntry("Natural sample", harnessTraces.natural, "normal"),
-      ];
+    : usingMeasuredBaseline
+      ? [
+          buildStructuredBaselineEntry("FAST sample", harnessTraces.fast, measuredBaseline.traces.fast, measuredBaseline.summary, baselineClassification),
+          buildStructuredBaselineEntry("DISCOVERY sample", harnessTraces.discovery, measuredBaseline.traces.discovery, measuredBaseline.summary, baselineClassification),
+          buildStructuredBaselineEntry("SIGNOFF sample", harnessTraces.signoff, measuredBaseline.traces.signoff, measuredBaseline.summary, baselineClassification),
+          buildStructuredBaselineEntry("Natural sample", harnessTraces.natural, measuredBaseline.traces.natural, measuredBaseline.summary, baselineClassification),
+        ]
+      : [
+          buildApproximationEntry("FAST sample", harnessTraces.fast, "fast"),
+          buildApproximationEntry("DISCOVERY sample", harnessTraces.discovery, "discovery"),
+          buildApproximationEntry("SIGNOFF sample", harnessTraces.signoff, "signoff"),
+          buildApproximationEntry("Natural sample", harnessTraces.natural, "normal"),
+        ];
 
   const report = {
     schema: "baseline-comparison-report.v2",
     generatedAt: new Date().toISOString(),
-    approximation: usingMeasuredBaseline ? "measured-baseline-profile" : "vanilla-like baseline profile",
+    approximation: usingRawDirectBaseline
+      ? baselineClassification.approximationKey
+      : usingMeasuredBaseline
+        ? baselineClassification.approximationKey
+        : "vanilla-like baseline profile",
+    markdownSummary: usingRawDirectBaseline || usingMeasuredBaseline ? baselineClassification.markdownSummary : "",
     bundleRoot,
     signoffSummaryPath: path.join(bundleRoot, "signoff_summary.json"),
-    measuredBaselineSummaryPath: path.join(bundleRoot, "measured_baseline_summary.json"),
+    harnessTracePaths: harnessBundle.tracePaths,
+    measuredBaselineSummaryPath: measuredBaseline && measuredBaseline.summaryPath ? measuredBaseline.summaryPath : "",
+    rawDirectBaselineSummaryPath: rawDirectBaseline && rawDirectBaseline.summaryPath ? rawDirectBaseline.summaryPath : "",
     samples,
     aggregate: {
       signoffAllPassed: Boolean(signoffSummary && signoffSummary.allPassed),
@@ -294,26 +719,78 @@ function generateBaselineComparison(bundleRootInput = "") {
         .map(metricFromTrace)
         .filter((entry) => entry.totalDurationMs > 0).length,
       measuredBaselineAvailable: usingMeasuredBaseline ? 1 : 0,
+      measuredBaselineTraceCount,
+      rawDirectBaselineAvailable: usingRawDirectBaseline ? 1 : 0,
+    },
+    rawDirectBaseline: {
+      status: safeString(rawDirectBaseline && rawDirectBaseline.summary && rawDirectBaseline.summary.status, 40) || "unavailable",
+      traceCount: rawDirectTraceCount,
+      transportMode: safeString(rawDirectBaseline && rawDirectBaseline.summary && rawDirectBaseline.summary.transportMode, 40),
+      directness: safeString(rawDirectBaseline && rawDirectBaseline.summary && rawDirectBaseline.summary.directness, 80),
+    },
+    transportModes: Array.from(new Set(samples.flatMap((entry) => [
+      entry && entry.harness && entry.harness.transportMode ? entry.harness.transportMode : "",
+      entry && entry.baseline && entry.baseline.transportMode ? entry.baseline.transportMode : "",
+    ]).filter(Boolean))),
+    truthfulClaimStatus: {
+      liveTransportParity:
+        (usingRawDirectBaseline || usingMeasuredBaseline)
+        && !Array.from(new Set(samples.flatMap((entry) => [
+          entry && entry.harness && entry.harness.transportMode ? entry.harness.transportMode : "",
+          entry && entry.baseline && entry.baseline.transportMode ? entry.baseline.transportMode : "",
+        ]).filter(Boolean))).includes("mock-fixture")
+        && safeString(signoffSummary && signoffSummary.transportMode, 40) === "stdio"
+        && Boolean(signoffSummary && signoffSummary.allPassed)
+          ? "PROVEN"
+          : "NOT PROVEN",
+      rawCodexDirectSuperiority: "NOT PROVEN",
     },
     gaps: [],
   };
 
   if (!harnessTraces.signoff) report.gaps.push("SIGNOFF sample trace is missing.");
   if (!(signoffSummary && typeof signoffSummary === "object")) report.gaps.push("signoff_summary.json is missing.");
-  if (!usingMeasuredBaseline) report.gaps.push("Measured baseline traces are unavailable; falling back to vanilla-like approximation.");
+  if (rawDirectBaseline && !usingRawDirectBaseline) {
+    report.gaps.push("Raw Codex direct baseline was attempted but did not produce a full four-sample direct comparison set.");
+  }
+  if (measuredBaseline && !usingMeasuredBaseline) {
+    report.gaps.push("Measured baseline traces are incomplete; falling back to vanilla-like approximation.");
+  }
+  if (!usingRawDirectBaseline && !usingMeasuredBaseline) {
+    report.gaps.push("Measured baseline traces are unavailable; falling back to vanilla-like approximation.");
+  }
+  if (report.transportModes.includes("mock-fixture")) report.gaps.push("At least one sample still ran on mock-fixture transport; live raw-Codex parity remains unproven.");
 
   const jsonPath = path.join(bundleRoot, "baseline_comparison_report.json");
   const mdPath = path.join(bundleRoot, "speed_vs_assurance_report.md");
-  const archiveRoot = path.join(workspaceRoot, "logs", "baseline-comparison");
+  const archiveRoot = loggingSurfacePaths.archiveBaselineComparisonRoot;
   const archiveName = path.basename(bundleRoot);
   const archiveJsonPath = path.join(archiveRoot, `${archiveName}.json`);
   const archiveMdPath = path.join(archiveRoot, `${archiveName}.md`);
 
+  const markdown = buildMarkdown(report);
   writeJson(jsonPath, report);
-  writeText(mdPath, buildMarkdown(report));
+  writeText(mdPath, markdown);
   writeJson(archiveJsonPath, report);
-  writeText(archiveMdPath, buildMarkdown(report));
-  return { ok: true, bundleRoot, jsonPath, mdPath, archiveJsonPath, archiveMdPath, report };
+  writeText(archiveMdPath, markdown);
+  const reconciled = reconcileBundleComparisonSurfaces({
+    bundleRoot,
+    report,
+    markdown,
+    archiveJsonPath,
+    archiveMdPath,
+    jsonPath,
+    mdPath,
+  });
+  return {
+    ok: true,
+    bundleRoot,
+    jsonPath: reconciled.preferredJsonPath,
+    mdPath: reconciled.preferredMdPath,
+    archiveJsonPath,
+    archiveMdPath,
+    report,
+  };
 }
 
 if (require.main === module) {
@@ -323,4 +800,5 @@ if (require.main === module) {
 
 module.exports = {
   generateBaselineComparison,
+  metricFromTrace,
 };

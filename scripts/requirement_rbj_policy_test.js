@@ -73,6 +73,14 @@ function run() {
     instruction.includes("assumptions_non_binding"),
     "instruction should require non-binding assumptions bucket"
   );
+  assert.ok(
+    instruction.includes("user_value_core"),
+    "instruction should require a user_value_core bucket"
+  );
+  assert.ok(
+    instruction.includes("user_should_feel_get"),
+    "instruction should require user value experience targets"
+  );
 
   const stripped = stripRequirementRbjControlTokens(
     "#rbj-confirm #rbj-bypass Design a secure API",

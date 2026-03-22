@@ -1,6 +1,7 @@
 "use strict";
 
 const allowedRequestUserInputPolicies = new Set(["blocked", "auto-default", "auto-empty"]);
+const defaultBlockedPolicy = "blocked";
 
 function safeTrimmedString(value, max = 2000) {
   if (typeof value !== "string") {
@@ -13,7 +14,7 @@ function safeTrimmedString(value, max = 2000) {
   return trimmed.slice(0, max);
 }
 
-function normalizeRequestUserInputPolicy(value, fallback = "blocked") {
+function normalizeRequestUserInputPolicy(value, fallback = defaultBlockedPolicy) {
   const normalizedFallback = (() => {
     const candidate = safeTrimmedString(fallback, 80).toLowerCase();
     if (allowedRequestUserInputPolicies.has(candidate)) {
@@ -152,6 +153,7 @@ function resolveNonInteractiveUserInput({ policy, params }) {
       policy: normalizedPolicy,
       decision: "blocked",
       reason: "blocked_non_interactive_user_input_policy",
+      businessDecisionState: "EXTERNAL_ACTION_REQUIRED",
       answers: {},
       assumptions: [],
       questionCount: questions.length,
@@ -184,6 +186,7 @@ function resolveNonInteractiveUserInput({ policy, params }) {
 
 module.exports = {
   allowedRequestUserInputPolicies,
+  defaultBlockedPolicy,
   buildAutoDefaultAnswers,
   normalizeRequestUserInputPolicy,
   resolveNonInteractiveUserInput,

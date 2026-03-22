@@ -32,4 +32,5 @@ Copy-Item -Path (Join-Path $sourceRoot "*") -Destination $resolvedTargetRoot -Re
 Write-Output "[bootstrap] source: $sourceRoot"
 Write-Output "[bootstrap] target: $resolvedTargetRoot"
 Write-Output "[bootstrap] complete"
-Write-Output ("[bootstrap] start the app with: {0}" -f (Join-Path $workspaceRoot "start_english_conversation_app.bat"))
+Write-Output ("[bootstrap] start the main harness with: {0}" -f (Join-Path $workspaceRoot "start_codex_ui.bat"))
+Write-Output "[bootstrap] then open: http://127.0.0.1:57525/english-conversation-app/index.html"

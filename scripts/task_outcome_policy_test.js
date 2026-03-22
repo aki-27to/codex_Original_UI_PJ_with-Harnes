@@ -18,7 +18,7 @@ function assert(condition, message) {
 
 function testLoadContract() {
   const spec = loadTaskOutcomeContract(path.join(__dirname, "config", "task_outcome_contract.json"));
-  assert(spec && spec.schema === "task-outcome-contract.v1", "task outcome contract schema mismatch");
+  assert(spec && spec.schema === "task-outcome-contract.v2", "task outcome contract schema mismatch");
   assert(Array.isArray(spec.statuses) && spec.statuses.some((entry) => entry.id === "NEEDS_INPUT"), "task outcome statuses missing NEEDS_INPUT");
 }
 
@@ -59,34 +59,12 @@ function testFailedValidationFromGuard() {
   assert(verdict.status === "FAILED_VALIDATION", "parent dispatch guard violation should map to FAILED_VALIDATION");
 }
 
-function testWorkspaceLockReason() {
-  const spec = loadTaskOutcomeContract(defaultTaskOutcomeContractPath);
-  const verdict = deriveTaskOutcome({
-    turnStatus: "failed",
-    reason: "intent_workspace_lock_missing",
-    spec,
-  });
-  assert(verdict.status === "FAILED_VALIDATION", "intent workspace lock gate should map to FAILED_VALIDATION");
-}
-
-function testIntentFirstGateReason() {
-  const spec = loadTaskOutcomeContract(defaultTaskOutcomeContractPath);
+function testFailedValidationFromIntentWildcard() {
   const verdict = deriveTaskOutcome({
     turnStatus: "failed",
     reason: "intent_visual_review_missing",
-    spec,
   });
-  assert(verdict.status === "FAILED_VALIDATION", "intent visual review gate should map to FAILED_VALIDATION");
-}
-
-function testIntentDocumentationSyncReason() {
-  const spec = loadTaskOutcomeContract(defaultTaskOutcomeContractPath);
-  const verdict = deriveTaskOutcome({
-    turnStatus: "failed",
-    reason: "intent_documentation_sync_missing",
-    spec,
-  });
-  assert(verdict.status === "FAILED_VALIDATION", "intent documentation sync gate should map to FAILED_VALIDATION");
+  assert(verdict.status === "FAILED_VALIDATION", "intent_* reasons should map to FAILED_VALIDATION");
 }
 
 function testFailedDefaultBlocked() {
@@ -94,14 +72,6 @@ function testFailedDefaultBlocked() {
     turnStatus: "failed",
   });
   assert(verdict.status === "BLOCKED", "generic failed turn should default to BLOCKED");
-}
-
-function testIntentGateMapsToFailedValidation() {
-  const verdict = deriveTaskOutcome({
-    turnStatus: "failed",
-    reason: "intent_visual_review_missing",
-  });
-  assert(verdict.status === "FAILED_VALIDATION", "intent-first hard gate should map to FAILED_VALIDATION");
 }
 
 function testPartialDelivery() {
@@ -137,11 +107,8 @@ function run() {
     ["needs input from approval", testNeedsInputFromApprovalReason],
     ["blocked from governance", testBlockedFromGovernanceReason],
     ["failed validation from parent dispatch guard", testFailedValidationFromGuard],
-    ["workspace lock reason", testWorkspaceLockReason],
-    ["intent-first gate reason", testIntentFirstGateReason],
-    ["intent documentation sync reason", testIntentDocumentationSyncReason],
+    ["failed validation from intent wildcard", testFailedValidationFromIntentWildcard],
     ["failed default blocked", testFailedDefaultBlocked],
-    ["intent gate maps to failed validation", testIntentGateMapsToFailedValidation],
     ["partial outcome derivation", testPartialDelivery],
     ["turn compatibility", testTurnCompatibility],
   ];

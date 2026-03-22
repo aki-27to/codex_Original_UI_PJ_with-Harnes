@@ -110,6 +110,14 @@ function stripTerminalPunctuation(text) {
 }
 
 function buildGoalSummary(requirementContract) {
+  const lockedGoal = safeString(requirementContract && requirementContract.lockedGoal, 220);
+  if (lockedGoal) {
+    return lockedGoal;
+  }
+  const displayGoal = safeString(requirementContract && requirementContract.displayContract && requirementContract.displayContract.goal, 220);
+  if (displayGoal) {
+    return displayGoal;
+  }
   const explicitGoal = safeString(requirementContract && requirementContract.explicitGoal, 220);
   if (explicitGoal) {
     return explicitGoal;

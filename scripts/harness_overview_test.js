@@ -239,6 +239,21 @@ function createOverviewPayload(overrides = {}) {
         path: "scripts/config/planning_mode_contract.json",
         assuranceSchema: "assurance-mode-contract.v1",
         assurancePath: "scripts/config/assurance_depth_contract.json",
+        familyProfileSchema: "task-family-profiles.v1",
+        familyProfilePath: "scripts/config/task_family_profiles.json",
+        families: ["deterministic_code", "web_creative", "research_analysis", "planning_design"],
+      },
+      latestTurn: {
+        turn_id: "turn-002",
+        status: "failed",
+        task_outcome_status: "FAILED_VALIDATION",
+        family_completion_gate: {
+          applies: true,
+          status: "failed_validation",
+          taskFamily: "web_creative",
+          completionContract: "design_acceptance",
+          missingHard: [{ label: "screenshot review", reason: "intent_visual_review_missing" }],
+        },
       },
       conversationApi: {
         endpoint: "POST /api/conversation/direct",
@@ -246,7 +261,7 @@ function createOverviewPayload(overrides = {}) {
         model: "gpt-5",
       },
       evidenceArtifacts: {
-        root: "logs/turns",
+        root: "logs/archive/raw/turns",
         maxDays: 14,
       },
       idempotency: {
@@ -256,7 +271,7 @@ function createOverviewPayload(overrides = {}) {
         },
       },
       harnessMemory: {
-        storage: "logs/harness_execution_memory.json",
+        storage: "logs/archive/raw/harness_execution_memory.json",
         retentionDays: 14,
       },
       controlApi: {
@@ -284,13 +299,20 @@ function createOverviewPayload(overrides = {}) {
       },
       latestTurn: {
         turn_id: "turn-002",
-        status: "completed",
-        task_outcome_status: "COMPLETED",
+        status: "failed",
+        task_outcome_status: "FAILED_VALIDATION",
         agent_name: "default",
         execution_profile: "full-runtime",
         planning_mode: "NORMAL",
         planning_depth: "STANDARD_PLANNING",
         assurance_depth: "SIGNOFF_ASSURANCE",
+        family_completion_gate: {
+          applies: true,
+          status: "failed_validation",
+          taskFamily: "web_creative",
+          completionContract: "design_acceptance",
+          missingHard: [{ label: "screenshot review", reason: "intent_visual_review_missing" }],
+        },
       },
     },
     topology: {
@@ -396,11 +418,11 @@ function createOverviewPayload(overrides = {}) {
     },
     evidence: {
       signoff: {
-        storageRoot: "logs/signoff-bundles",
+        storageRoot: "logs/bundles/signoff",
         latest: {
           name: "signoff-001",
           generatedAt: 1710000000000,
-          summaryPath: "logs/signoff-bundles/signoff-001/signoff_summary.json",
+          summaryPath: "logs/bundles/signoff/signoff-001/signoff_summary.json",
           assertions: {
             allPassed: true,
           },
@@ -422,16 +444,16 @@ function createOverviewPayload(overrides = {}) {
           {
             name: "signoff-001",
             generatedAt: 1710000000000,
-            summaryPath: "logs/signoff-bundles/signoff-001/signoff_summary.json",
+            summaryPath: "logs/bundles/signoff/signoff-001/signoff_summary.json",
           },
         ],
       },
       runtimeProof: {
-        storageRoot: "logs/proofs",
+        storageRoot: "logs/bundles/proof",
         latest: {
           name: "runtime-proof-001",
           generatedAt: 1710000001000,
-          summaryPath: "logs/proofs/runtime-proof-001/runtime_proof_summary.json",
+          summaryPath: "logs/bundles/proof/runtime-proof-001/runtime_proof_summary.json",
           runtime: {
             parentDispatchGuardMode: "enforce",
           },
@@ -450,7 +472,7 @@ function createOverviewPayload(overrides = {}) {
           {
             name: "runtime-proof-001",
             generatedAt: 1710000001000,
-            summaryPath: "logs/proofs/runtime-proof-001/runtime_proof_summary.json",
+            summaryPath: "logs/bundles/proof/runtime-proof-001/runtime_proof_summary.json",
           },
         ],
       },
@@ -657,6 +679,24 @@ function assertRenderedOverviewMatchesPayload(payload, elements) {
     && payload.evidence.signoff.latest.coreHarnessWorkflow.suiteId;
   if (workflowSuiteId) {
     assertContains(elements.signoffEvidenceCard.innerHTML, String(workflowSuiteId), "signoff evidence must render workflow contract");
+  }
+  assertContains(elements.runtimePostureCard.innerHTML, "task-family-profiles.v1", "runtime posture must render family profile contract");
+  const familyCompletionGate = payload
+    && payload.runtime
+    && payload.runtime.latestTurn
+    && payload.runtime.latestTurn.family_completion_gate
+    && typeof payload.runtime.latestTurn.family_completion_gate === "object"
+      ? payload.runtime.latestTurn.family_completion_gate
+      : payload
+        && payload.health
+        && payload.health.latestTurn
+        && payload.health.latestTurn.family_completion_gate
+        && typeof payload.health.latestTurn.family_completion_gate === "object"
+          ? payload.health.latestTurn.family_completion_gate
+          : null;
+  if (familyCompletionGate && familyCompletionGate.applies) {
+    assertContains(elements.healthCard.innerHTML, String(familyCompletionGate.status || "pending"), "health card must render family completion gate status");
+    assertContains(elements.healthCard.innerHTML, String(familyCompletionGate.completionContract || "contract"), "health card must render family completion gate contract");
   }
 }
 

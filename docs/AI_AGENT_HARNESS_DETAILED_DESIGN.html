@@ -3,35 +3,36 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>AI Agent Harness Detailed Design</title>
+  <title>AI Agent Harness Detailed Design | Overview-First Guide</title>
   <style>
     :root {
-      --bg: #f4efe5;
-      --panel: rgba(255, 251, 245, 0.96);
-      --panel-strong: #fff8ee;
-      --text: #1a1d22;
-      --muted: #5e6672;
-      --line: rgba(26, 29, 34, 0.12);
-      --accent: #0f7a5a;
-      --accent-soft: rgba(15, 122, 90, 0.12);
-      --warn: #9b4d18;
-      --danger: #b42318;
-      --info: #1d4ed8;
-      --shadow: 0 20px 54px rgba(33, 35, 38, 0.12);
+      --bg: #f7f3eb;
+      --paper: #fffdf8;
+      --paper-strong: #fff7ec;
+      --line: #dccfbe;
+      --text: #1f2430;
+      --muted: #596170;
+      --accent: #176b53;
+      --accent-soft: #e5f4ee;
+      --warm: #fff2dc;
+      --info: #eaf2ff;
+      --shadow: 0 18px 40px rgba(34, 38, 44, 0.1);
       --radius: 22px;
+      --radius-small: 16px;
     }
 
     * { box-sizing: border-box; }
+
     html { scroll-behavior: smooth; }
 
     body {
       margin: 0;
       color: var(--text);
       background:
-        radial-gradient(circle at top left, rgba(15, 122, 90, 0.18), transparent 28%),
-        radial-gradient(circle at top right, rgba(212, 138, 46, 0.16), transparent 30%),
-        linear-gradient(180deg, #faf5ed 0%, var(--bg) 56%, #ece4d8 100%);
-      font: 16px/1.72 "Yu Gothic UI", "Hiragino Sans", "Meiryo", sans-serif;
+        radial-gradient(circle at top left, rgba(23, 107, 83, 0.12), transparent 30%),
+        radial-gradient(circle at top right, rgba(221, 156, 69, 0.14), transparent 28%),
+        linear-gradient(180deg, #fbf7f0 0%, var(--bg) 60%, #efe5d6 100%);
+      font: 16px/1.75 "Yu Gothic UI", "Hiragino Sans", "Meiryo", sans-serif;
     }
 
     a {
@@ -40,45 +41,35 @@
       text-underline-offset: 0.14em;
     }
 
-    code, pre, kbd {
+    code {
       font-family: Consolas, "Courier New", monospace;
+      font-size: 0.95em;
     }
 
     .page {
-      width: min(1380px, calc(100% - 32px));
+      width: min(1120px, calc(100% - 28px));
       margin: 0 auto;
       padding: 28px 0 56px;
     }
 
     .hero,
-    .panel {
-      background: var(--panel);
+    .panel,
+    .nav {
+      background: rgba(255, 253, 248, 0.95);
       border: 1px solid var(--line);
       border-radius: var(--radius);
       box-shadow: var(--shadow);
-      backdrop-filter: blur(8px);
+      backdrop-filter: blur(6px);
     }
 
     .hero {
-      position: relative;
-      overflow: hidden;
-      padding: 36px 36px 30px;
-      margin-bottom: 22px;
-    }
-
-    .hero::after {
-      content: "";
-      position: absolute;
-      inset: auto -56px -68px auto;
-      width: 300px;
-      height: 300px;
-      background: radial-gradient(circle, rgba(15, 122, 90, 0.14), transparent 70%);
-      pointer-events: none;
+      padding: 34px;
+      margin-bottom: 18px;
     }
 
     .eyebrow {
       display: inline-block;
-      margin: 0 0 12px;
+      margin-bottom: 12px;
       padding: 6px 12px;
       border-radius: 999px;
       background: var(--accent-soft);
@@ -95,113 +86,101 @@
     }
 
     h1 {
-      max-width: 980px;
-      font-size: clamp(2rem, 4vw, 3.4rem);
+      max-width: 900px;
+      font-size: clamp(2rem, 4.6vw, 3.3rem);
       letter-spacing: -0.03em;
     }
 
     h2 {
-      font-size: 1.52rem;
+      font-size: clamp(1.4rem, 3vw, 1.9rem);
       letter-spacing: -0.02em;
     }
 
-    h3 { font-size: 1.08rem; }
-    h4 { font-size: 1rem; }
+    h3 {
+      font-size: 1.08rem;
+      margin-bottom: 10px;
+    }
 
-    p { margin: 0 0 12px; }
-
-    ul, ol {
+    p {
       margin: 0 0 12px;
+    }
+
+    ul,
+    ol {
+      margin: 0;
       padding-left: 22px;
     }
 
-    li { margin-bottom: 6px; }
+    li {
+      margin-bottom: 8px;
+    }
 
     .lead {
-      max-width: 980px;
+      max-width: 920px;
       color: var(--muted);
-      font-size: 1.02rem;
+      font-size: 1.05rem;
     }
 
-    .hero-meta {
+    .hero-grid,
+    .grid-2,
+    .grid-3 {
+      display: grid;
+      gap: 14px;
+    }
+
+    .hero-grid {
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      margin-top: 22px;
+    }
+
+    .grid-2 {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .grid-3 {
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+
+    .mini-card,
+    .card,
+    .step,
+    .term {
+      border: 1px solid var(--line);
+      border-radius: var(--radius-small);
+      background: rgba(255, 255, 255, 0.84);
+    }
+
+    .mini-card {
+      padding: 16px;
+    }
+
+    .mini-card strong {
+      display: block;
+      margin-bottom: 8px;
+      font-size: 1rem;
+    }
+
+    .nav {
+      padding: 16px 18px;
+      margin-bottom: 18px;
+    }
+
+    .nav ul {
       display: flex;
       flex-wrap: wrap;
-      gap: 10px;
-      margin-top: 18px;
-    }
-
-    .chip {
-      display: inline-flex;
-      align-items: center;
-      gap: 8px;
-      padding: 8px 12px;
-      border-radius: 999px;
-      border: 1px solid var(--line);
-      background: rgba(255, 255, 255, 0.72);
-      font-size: 13px;
-      line-height: 1.3;
-    }
-
-    .metrics {
-      display: grid;
-      grid-template-columns: repeat(4, minmax(0, 1fr));
-      gap: 16px;
-      margin-bottom: 22px;
-    }
-
-    .metric-card {
-      padding: 18px 18px 16px;
-    }
-
-    .metric-card strong {
-      display: block;
-      font-size: 1.7rem;
-      margin-bottom: 8px;
-      letter-spacing: -0.03em;
-    }
-
-    .metric-card p {
-      color: var(--muted);
-      margin-bottom: 0;
-    }
-
-    .layout {
-      display: grid;
-      grid-template-columns: 280px minmax(0, 1fr);
-      gap: 18px;
-      align-items: start;
-    }
-
-    .toc {
-      position: sticky;
-      top: 16px;
-      padding: 22px 20px;
-    }
-
-    .toc h2 {
-      font-size: 1.1rem;
-      margin-bottom: 14px;
-    }
-
-    .toc ul {
+      gap: 10px 14px;
       list-style: none;
       padding: 0;
       margin: 0;
     }
 
-    .toc li { margin: 0 0 9px; }
-
-    .toc a {
-      display: block;
-      padding: 8px 10px;
-      border-radius: 12px;
+    .nav a {
+      display: inline-block;
+      padding: 7px 11px;
+      border-radius: 999px;
+      background: rgba(23, 107, 83, 0.08);
       text-decoration: none;
       color: var(--text);
-      background: rgba(255, 255, 255, 0.45);
-    }
-
-    .toc a:hover {
-      background: rgba(15, 122, 90, 0.1);
     }
 
     .content {
@@ -210,959 +189,536 @@
     }
 
     .panel {
-      padding: 24px 24px 22px;
+      padding: 24px;
     }
 
-    .note {
-      padding: 14px 16px;
-      border-radius: 16px;
-      border: 1px solid rgba(29, 78, 216, 0.2);
-      background: rgba(29, 78, 216, 0.06);
-      color: #1f3f99;
-      margin: 14px 0;
+    .section-head {
+      margin-bottom: 16px;
     }
 
-    .warning {
-      padding: 14px 16px;
-      border-radius: 16px;
-      border: 1px solid rgba(180, 35, 24, 0.2);
-      background: rgba(180, 35, 24, 0.06);
-      color: #7a2019;
-      margin: 14px 0;
-    }
-
-    .grid-2 {
-      display: grid;
-      gap: 14px;
-      margin-top: 14px;
-      grid-template-columns: repeat(2, minmax(0, 1fr));
-    }
-
-    .subcard {
-      padding: 16px 16px 14px;
-      border-radius: 18px;
-      background: var(--panel-strong);
-      border: 1px solid var(--line);
-    }
-
-    .subcard p:last-child,
-    .subcard ul:last-child,
-    .subcard ol:last-child {
+    .section-head p:last-child {
       margin-bottom: 0;
     }
 
-    table {
-      width: 100%;
-      border-collapse: collapse;
-      margin-top: 14px;
-      font-size: 14px;
-    }
-
-    th, td {
-      vertical-align: top;
-      text-align: left;
-      padding: 12px 12px;
-      border-bottom: 1px solid var(--line);
-    }
-
-    th {
-      background: rgba(15, 122, 90, 0.08);
+    .kicker {
+      margin-bottom: 8px;
+      color: var(--accent);
       font-size: 12px;
-      letter-spacing: 0.04em;
+      font-weight: 700;
+      letter-spacing: 0.08em;
       text-transform: uppercase;
     }
 
-    tbody tr:nth-child(even) td {
-      background: rgba(255, 255, 255, 0.42);
+    .card,
+    .step,
+    .term {
+      padding: 18px;
     }
 
-    .mono-list {
+    .card p:last-child,
+    .step p:last-child,
+    .term p:last-child {
+      margin-bottom: 0;
+    }
+
+    .story {
       display: grid;
-      gap: 8px;
-      margin-top: 12px;
+      gap: 12px;
     }
 
-    .mono-list code {
-      display: block;
-      padding: 10px 12px;
-      border-radius: 14px;
-      background: rgba(17, 24, 39, 0.05);
-      border: 1px solid rgba(17, 24, 39, 0.08);
-      overflow-wrap: anywhere;
-    }
-
-    .checklist {
+    .step {
       display: grid;
-      gap: 10px;
-      margin-top: 12px;
+      grid-template-columns: 54px minmax(0, 1fr);
+      gap: 16px;
+      align-items: start;
     }
 
-    .checklist div {
-      padding: 12px 14px;
-      border-radius: 14px;
-      background: rgba(255, 255, 255, 0.58);
+    .step-number {
+      display: grid;
+      place-items: center;
+      width: 54px;
+      height: 54px;
+      border-radius: 18px;
+      background: var(--accent-soft);
+      color: var(--accent);
+      font-size: 1.2rem;
+      font-weight: 700;
+    }
+
+    .callout,
+    .plain-note,
+    .warning {
+      padding: 16px 18px;
+      border-radius: var(--radius-small);
       border: 1px solid var(--line);
+      margin-top: 16px;
     }
 
-    @media (max-width: 1180px) {
-      .metrics { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-      .layout { grid-template-columns: 1fr; }
-      .toc { position: static; }
+    .callout {
+      background: var(--info);
     }
 
-    @media (max-width: 760px) {
-      .page { width: min(100% - 20px, 1380px); }
-      .hero, .panel { padding-left: 18px; padding-right: 18px; }
-      .metrics, .grid-2 { grid-template-columns: 1fr; }
-      table { display: block; overflow-x: auto; white-space: nowrap; }
-      td { white-space: normal; min-width: 180px; }
+    .plain-note {
+      background: var(--paper-strong);
+    }
+
+    .warning {
+      background: var(--warm);
+    }
+
+    .term-list {
+      display: grid;
+      gap: 12px;
+    }
+
+    .term-title {
+      margin-bottom: 6px;
+      font-weight: 700;
+    }
+
+    .code-line {
+      display: inline-block;
+      padding: 3px 8px;
+      border-radius: 999px;
+      background: rgba(23, 107, 83, 0.08);
+    }
+
+    .foot-links {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-top: 16px;
+    }
+
+    .foot-links a {
+      padding: 8px 12px;
+      border-radius: 999px;
+      background: rgba(23, 107, 83, 0.08);
+      text-decoration: none;
+    }
+
+    footer {
+      margin-top: 18px;
+      padding: 18px 22px;
+      color: var(--muted);
+      text-align: center;
+    }
+
+    @media (max-width: 920px) {
+      .hero-grid,
+      .grid-2,
+      .grid-3 {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    @media (max-width: 640px) {
+      .page {
+        width: min(100% - 18px, 1120px);
+        padding-top: 18px;
+      }
+
+      .hero,
+      .panel {
+        padding: 20px;
+      }
+
+      .step {
+        grid-template-columns: 1fr;
+      }
+
+      .step-number {
+        width: 48px;
+        height: 48px;
+      }
     }
   </style>
 </head>
 <body>
   <div class="page">
-    <header class="hero">
-      <span class="eyebrow">Current Implementation Audit</span>
-      <h1>AI Agent Harness Detailed Design</h1>
+    <header class="hero" id="top">
+      <p class="eyebrow">Overview First</p>
+      <h1>AI Agent Harness のしくみを、やさしい順番で説明する本</h1>
       <p class="lead">
-        本書は <code>C:\Users\akima\Desktop\codex_Original_UI_PJ</code> の現行ワークツリーを 2026-03-14 時点で実地監査し、
-        いま存在するハーネスの構成、制御境界、API、UI、証跡、補助サブシステム、検証面を漏れなく追えるように再編成した詳細設計です。
-        競合時の source of truth は <code>server.js</code>、<code>.codex/</code>、<code>scripts/config/*.json</code>、および関連 runbook です。
+        この文書は、AI Agent Harness を「何のための仕組みか」から順に理解するための解説書です。
+        先に数や一覧を並べるのではなく、まず全体像、その次に役割、最後に細かい仕組みへ進みます。
       </p>
-      <div class="hero-meta">
-        <span class="chip">Audit Base: <code>server.js</code> / <code>web/</code> / <code>.codex/</code> / <code>scripts/config/</code></span>
-        <span class="chip">Primary Path: <code>POST /api/exec</code> on standard Codex app-server</span>
-        <span class="chip">Default Port: <code>57525</code></span>
-        <span class="chip">Design Mode: local-first / no extra dependency by default</span>
+      <p class="lead">
+        小学生にも読めるように短い文で書きます。ただし内容は今の実装に合わせます。
+        つまり、やさしいけれど、ふわっとした紹介ではなく、実際の動きに沿った説明です。
+      </p>
+      <div class="hero-grid" aria-label="Quick summary">
+        <article class="mini-card">
+          <strong>これは何?</strong>
+          <p>ブラウザで受けたお願いを、親エージェントと専門エージェントのチームで安全に進める仕組みです。</p>
+        </article>
+        <article class="mini-card">
+          <strong>いちばん大事な道</strong>
+          <p><span class="code-line"><code>POST /api/exec</code></span> が主な実行の入口です。ここから仕事が始まります。</p>
+        </article>
+        <article class="mini-card">
+          <strong>最後に何を残す?</strong>
+          <p>答えだけでは終わりません。レビュー、証拠、文書反映までそろって初めて完了です。</p>
+        </article>
       </div>
     </header>
 
-    <section class="metrics">
-      <article class="metric-card panel">
-        <strong>32</strong>
-        <p>HTTP API surface observed in <code>requestHandler</code>.<br>実行・制御・検証・会話/TTS・補助運用を含みます。</p>
-      </article>
-      <article class="metric-card panel">
-        <strong>9 + 1</strong>
-        <p>有効ロール 9 種と、互換監査専用で残る retired <code>worker</code> artifact 1 種です。</p>
-      </article>
-      <article class="metric-card panel">
-        <strong>3</strong>
-        <p>ブラウザ面は console、overview、English Conversation App mount の 3 面です。<code>/</code> は console へ redirect します。</p>
-      </article>
-      <article class="metric-card panel">
-        <strong>5+</strong>
-        <p>永続面は turn artifacts、harness memory、taste memory、persona memory、eval history、proof/signoff bundle を持ちます。</p>
-      </article>
-    </section>
+    <nav class="nav" aria-label="Section navigation">
+      <ul>
+        <li><a href="#big-picture">1. 全体像</a></li>
+        <li><a href="#cast">2. 登場人物</a></li>
+        <li><a href="#journey">3. 1回の依頼の旅</a></li>
+        <li><a href="#safety">4. 安全の考え方</a></li>
+        <li><a href="#screens">5. 画面の役目</a></li>
+        <li><a href="#records">6. 記録の残り方</a></li>
+        <li><a href="#trouble">7. 困ったとき</a></li>
+        <li><a href="#details">8. もう少し詳しく</a></li>
+      </ul>
+    </nav>
 
-    <div class="layout">
-      <aside class="toc panel">
-        <h2>目次</h2>
-        <ul>
-          <li><a href="#positioning">1. 文書の位置づけ</a></li>
-          <li><a href="#scope">2. 対象範囲と境界</a></li>
-          <li><a href="#runtime">3. ランタイム全体像</a></li>
-          <li><a href="#agents">4. エージェント / ガバナンス / スキル</a></li>
-          <li><a href="#ui">5. Operator Surface</a></li>
-          <li><a href="#api">6. API サーフェス</a></li>
-          <li><a href="#flows">7. 主要フロー</a></li>
-          <li><a href="#boundaries">8. 制御境界と安全策</a></li>
-          <li><a href="#evidence">9. 証跡 / 永続化 / Proof</a></li>
-          <li><a href="#config">10. 起動・設定・既定値</a></li>
-          <li><a href="#verification">11. 検証面と現物差異</a></li>
-          <li><a href="#refs">12. 関連ソース</a></li>
-        </ul>
-      </aside>
-
-      <main class="content">
-        <section id="positioning" class="panel">
-          <h2>1. 文書の位置づけ</h2>
+    <main class="content">
+      <section class="panel" id="big-picture">
+        <div class="section-head">
+          <p class="kicker">Big Picture</p>
+          <h2>1. まずは全体像</h2>
           <p>
-            本書は「ハーネスの人間向け詳細設計」です。概説ではなく、現行実装に存在する面を台帳化することを目的にしています。
-            したがって本書は、アーキテクチャの意図説明だけでなく、どの UI がどの API を使い、どのログがどこへ保存され、
-            どのガードがどの経路で効くかまで記述します。
+            Harness は、AI に仕事をさせるための「受付つき作業チーム」です。
+            ただ AI に丸投げするのではなく、誰が何をしたかを見えるようにしながら進めます。
           </p>
-          <div class="checklist">
-            <div><strong>Source of truth</strong>: 実装の最終真実は <code>server.js</code>、<code>.codex/config.toml</code>、<code>.codex/agents/*.toml</code>、<code>scripts/config/*.json</code> です。</div>
-            <div><strong>Companion docs</strong>: 現在アーキテクチャは <code>docs/CURRENT_ARCHITECTURE.md</code>、プロトコルは <code>docs/APP_SERVER_PROTOCOL_RUNBOOK.md</code>、証跡契約は <code>docs/EVIDENCE_CONTRACT.md</code> にあります。</div>
-            <div><strong>Audit basis</strong>: 本更新は <code>docs/AI_AGENT_HARNESS_DETAILED_DESIGN_AUDIT.md</code> の不足監査を吸収したものです。</div>
-            <div><strong>Conflict rule</strong>: 本書に書かれていても、現物ワークツリーに存在しないものは「設計の理想像」ではなく「現物差異」として明示します。</div>
-          </div>
-        </section>
-
-        <section id="scope" class="panel">
-          <h2>2. 対象範囲と境界</h2>
+        </div>
+        <div class="grid-2">
+          <article class="card">
+            <h3>ひとことで言うと</h3>
+            <p>人がお願いを出す。</p>
+            <p>親エージェントが「何をすれば成功か」を先に決める。</p>
+            <p>そのあと、合う専門家に仕事を任せる。</p>
+            <p>最後に、本当に終わったかを証拠つきで確かめる。</p>
+          </article>
+          <article class="card">
+            <h3>この仕組みが守りたいもの</h3>
+            <p>1つ目は、ユーザーの意図どおりに動くことです。</p>
+            <p>2つ目は、勝手に仕事を広げすぎないことです。</p>
+            <p>3つ目は、「できました」と言う前に証拠をそろえることです。</p>
+          </article>
+        </div>
+        <div class="callout">
+          <strong>大事な見方</strong>
           <p>
-            この repo のハーネスは、local reliability、protocol correctness、operator UX を重視した Codex App Server integration harness です。
-            既定の実行経路は standard Codex の <code>POST /api/exec</code> に固定されており、role fan-out 用の別系統 orchestration は追加しません。
+            この Harness の中心は、画面の数でも、API の数でもありません。
+            「お願いがどう流れて、どこで安全確認が入り、どこに証拠が残るか」が中心です。
           </p>
-          <table>
-            <thead>
-              <tr>
-                <th>項目</th>
-                <th>現行設計</th>
-                <th>明示的にやらないこと</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr>
-                <td>Primary execution</td>
-                <td><code>POST /api/exec</code> を通る standard Codex app-server path</td>
-                <td><code>/api/batch/*</code> 以外の custom local orchestration、role fan-out endpoint、legacy alternate exec path</td>
-              </tr>
-              <tr>
-                <td>Operator posture</td>
-                <td>local-first、既定 port <code>57525</code>、browser auto-open、workspace lock あり</td>
-                <td>remote multi-tenant service 化、CORS 前提の別ポート分離</td>
-              </tr>
-              <tr>
-                <td>Dependencies</td>
-                <td>既存 repo の Node / Codex CLI / optional voice runtime を前提</td>
-                <td>明示要求なしの dependency/runtime install 変更</td>
-              </tr>
-              <tr>
-                <td>Batch path</td>
-                <td><code>/api/batch/*</code> は既存 local operator workflow として許容</td>
-                <td>これを親子ロール fan-out や第二の実行系へ拡張すること</td>
-              </tr>
-            </tbody>
-          </table>
-          <div class="note">
-            監査対象は主に <code>server.js</code>、<code>web/01.HarnesUI/*</code>、<code>web/index.html</code>、<code>.codex/*</code>、
-            <code>scripts/config/*</code>、<code>scripts/*test.js</code>、<code>start_codex_ui.bat</code>、関連 docs です。
-          </div>
-        </section>
+        </div>
+      </section>
 
-        <section id="runtime" class="panel">
-          <h2>3. ランタイム全体像</h2>
+      <section class="panel" id="cast">
+        <div class="section-head">
+          <p class="kicker">Cast</p>
+          <h2>2. だれが何をするのか</h2>
           <p>
-            ランタイムは単一の <code>server.js</code> が中心です。HTTP API、Codex app-server との stdio プロトコル、turn lifecycle、
-            evidence capture、replay/eval/SLO、workspace guard、intent-first gating、conversation/TTS を一体で保持します。
+            しくみを理解するときは、まず登場人物を知ると読みやすくなります。
+            ここではやさしい呼び方と、実際の名前をセットで書きます。
           </p>
-          <table>
-            <thead>
-              <tr>
-                <th>層</th>
-                <th>実体</th>
-                <th>責務</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr>
-                <td>Browser surfaces</td>
-                <td><code>/01.HarnesUI/index.html</code>, <code>/01.HarnesUI/overview.html</code>, <code>/english-conversation-app/*</code></td>
-                <td>operator console、overview inventory、English conversation/TTS UI。<code>/</code> は console へ redirect。</td>
-              </tr>
-              <tr>
-                <td>HTTP control plane</td>
-                <td><code>server.js</code></td>
-                <td>runtime snapshot、exec、interrupt、workspace/intent mutation、eval/replay、diagnostics、voice、conversation を提供。</td>
-              </tr>
-              <tr>
-                <td>Codex protocol bridge</td>
-                <td><code>server.js</code> 内の app-server client</td>
-                <td>strict <code>initialize -&gt; initialized</code> handshake、JSONL over stdio、JSON-RPC style envelope、<code>turn/completed</code> terminal rule を実装。</td>
-              </tr>
-              <tr>
-                <td>Policy / contracts</td>
-                <td><code>scripts/config/*.json</code></td>
-                <td>governance、turn contract、task outcome、design acceptance、skill portfolio、eval suite の機械可読 contract。</td>
-              </tr>
-              <tr>
-                <td>Persistence</td>
-                <td><code>logs/</code></td>
-                <td>turn artifacts、harness memory、taste memory、persona memory、eval history、operation log、runtime proof、signoff bundle を保存。</td>
-              </tr>
-            </tbody>
-          </table>
-
-          <div class="grid-2">
-            <article class="subcard">
-              <h3>Runtime snapshot の主要オブジェクト</h3>
-              <p><code>GET /api/runtime</code> は少なくとも次を返します。</p>
-              <div class="mono-list">
-                <code>workspaceGuard / workspace_guard</code>
-                <code>intentFirst / intent_first</code>
-                <code>agents / activeAgent / latestTurn / sessionPerformance</code>
-                <code>operationLog / executionVisibility / fullUtilization</code>
-                <code>parentDispatchGuard / requirementGuard / adversarialShadow</code>
-                <code>staticApps / gitAutomation / harnessMemory / slo / evalHarness</code>
-                <code>contractSpec / taskOutcomeContract / governancePolicy</code>
-                <code>controlApi / execApi / replayApi / evalApi / conversationApi / piperVoiceApi / kokoroVoiceApi</code>
-                <code>evidenceArtifacts / idempotency</code>
-              </div>
-            </article>
-            <article class="subcard">
-              <h3>Static app mount</h3>
-              <p>English Conversation App の静的 root は次の優先順で解決されます。</p>
-              <ol>
-                <li><code>CODEX_ENGLISH_CONVERSATION_APP_ROOT</code></li>
-                <li>sibling repo <code>../english-conversation-app/</code></li>
-                <li>bundled fallback <code>web/english-conversation-app/</code></li>
-              </ol>
-              <p>初回 split では <code>bootstrap_english_conversation_app_repo.bat</code> または <code>scripts/bootstrap_english_conversation_app_repo.ps1</code> で bundled app を sibling repo へ展開できます。</p>
-              <p>同一 origin で mount することで、conversation/TTS API は CORS や別ポートを必要としません。</p>
-            </article>
-          </div>
-        </section>
-
-        <section id="agents" class="panel">
-          <h2>4. エージェント / ガバナンス / スキル</h2>
+        </div>
+        <div class="grid-3">
+          <article class="card">
+            <h3>お願いする人</h3>
+            <p>人間の利用者です。ブラウザの画面から依頼を書きます。</p>
+            <p>入口の画面は主に <code>web/01.HarnesUI/</code> です。</p>
+          </article>
+          <article class="card">
+            <h3>受付と交通整理</h3>
+            <p>ローカルサーバーの <code>server.js</code> です。</p>
+            <p>依頼を受け取り、実行の道筋と記録の置き場を整えます。</p>
+          </article>
+          <article class="card">
+            <h3>まとめ役</h3>
+            <p>親エージェントです。ふつうは <code>default</code> が動きます。</p>
+            <p>「まず何を決めるか」「誰に任せるか」を決める役目です。</p>
+          </article>
+        </div>
+        <div class="grid-3" style="margin-top: 14px;">
+          <article class="card">
+            <h3>専門役</h3>
+            <p><code>frontend_worker</code>、<code>backend_worker</code>、<code>infra_worker</code> などです。</p>
+            <p>画面、API、設定、検証のように、得意分野ごとに担当します。</p>
+          </article>
+          <article class="card">
+            <h3>見張り役</h3>
+            <p><code>reviewer</code> と <code>tester</code> です。</p>
+            <p>必要なときに、別目線で確かめてバグや抜けを減らします。</p>
+          </article>
+          <article class="card">
+            <h3>記録係</h3>
+            <p><code>logs/</code> です。</p>
+            <p>「何をしたか」「なぜそう判断したか」を後から追えるように残します。</p>
+          </article>
+        </div>
+        <div class="plain-note">
+          <strong>補足</strong>
           <p>
-            ランタイム registry は <code>.codex/config.toml</code> にあり、実行 posture は <code>.codex/agents/*.toml</code> が持ちます。
-            親は <code>default</code>、<code>intake</code>、<code>release_manager</code> の 3 種、child specialist は 6 種です。
-            <code>worker.toml</code> は残っていますが runtime registry には登録されず、互換監査専用 artifact です。
+            この文書では Parent を「まとめ役」、Child を「専門役」と呼びます。
+            親エージェントには <code>default</code> のほかに、入口整理に寄る <code>intake</code> と、
+            最終判定に寄る <code>release_manager</code> があります。
+            でも日常の主役はまず <code>default</code> です。
           </p>
-          <table>
-            <thead>
-              <tr>
-                <th>Role</th>
-                <th>分類</th>
-                <th>Runtime posture</th>
-                <th>責務</th>
-                <th>Governance scope</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr>
-                <td><code>default</code></td>
-                <td>parent</td>
-                <td><code>workspace-write</code> / <code>never</code></td>
-                <td>唯一の汎用 parent。5-step flow 全体、specialist delegation、最終 doc sync。</td>
-                <td>親 role のため repo 横断。specialist work の直実装は原則禁止。</td>
-              </tr>
-              <tr>
-                <td><code>intake</code></td>
-                <td>parent</td>
-                <td><code>read-only</code> / <code>never</code></td>
-                <td>Step 1/2 専用。baseline と over-delivery の契約固定、dispatch criteria 設計。</td>
-                <td>planner overlay。一般 parent の代替ではない。</td>
-              </tr>
-              <tr>
-                <td><code>release_manager</code></td>
-                <td>parent</td>
-                <td><code>read-only</code> / <code>never</code></td>
-                <td>Step 4/5 専用。evidence review、doc sync 確認、PASS/FAIL/BLOCKED 判定。</td>
-                <td>review gate overlay。</td>
-              </tr>
-              <tr>
-                <td><code>frontend_worker</code></td>
-                <td>specialist</td>
-                <td>configured child</td>
-                <td>web UI / browser behavior。</td>
-                <td><code>web/</code></td>
-              </tr>
-              <tr>
-                <td><code>backend_worker</code></td>
-                <td>specialist</td>
-                <td>configured child</td>
-                <td>server/app-server protocol/API behavior。</td>
-                <td><code>server.js</code>, <code>scripts/</code>, <code>docs/</code></td>
-              </tr>
-              <tr>
-                <td><code>infra_worker</code></td>
-                <td>specialist</td>
-                <td>configured child</td>
-                <td>runtime config / launch / operational reliability。</td>
-                <td><code>.codex/</code>, <code>logs/</code>, <code>docs/</code>, <code>start_codex_ui.bat</code></td>
-              </tr>
-              <tr>
-                <td><code>tester</code></td>
-                <td>specialist</td>
-                <td>verification-only</td>
-                <td>executable verification と user journey evidence。</td>
-                <td><code>scripts/</code></td>
-              </tr>
-              <tr>
-                <td><code>reviewer</code></td>
-                <td>specialist</td>
-                <td>read-only / verification-only</td>
-                <td>independent defect/risk review。</td>
-                <td>scope path なし。</td>
-              </tr>
-              <tr>
-                <td><code>explorer</code></td>
-                <td>specialist</td>
-                <td>read-only / verification-only</td>
-                <td>uncertainty reduction / fact gathering。</td>
-                <td>scope path なし。</td>
-              </tr>
-              <tr>
-                <td><code>worker</code></td>
-                <td>retired artifact</td>
-                <td>legacy-only</td>
-                <td>runtime では reject。親 override 付き互換監査以外では使わない。</td>
-                <td>契約上は残るが通常 dispatch 不可。</td>
-              </tr>
-            </tbody>
-          </table>
+        </div>
+      </section>
 
-          <div class="grid-2">
-            <article class="subcard">
-              <h3>Machine-readable governance contracts</h3>
-              <ul>
-                <li><code>scripts/config/agent_governance_contracts.json</code>: parent agents、scope paths、read-only / verification-only / legacy-only。</li>
-                <li><code>scripts/config/harness_contract_spec.json</code>: <code>in_progress -&gt; completed|interrupted|failed</code> と <code>turn/completed</code> terminal event。</li>
-                <li><code>scripts/config/task_outcome_contract.json</code>: <code>COMPLETED</code> / <code>BLOCKED</code> / <code>NEEDS_INPUT</code> / <code>FAILED_VALIDATION</code> / <code>PARTIAL</code>。</li>
-                <li><code>scripts/config/design_acceptance_contract.json</code>: intent-first design acceptance gates。</li>
-              </ul>
-            </article>
-            <article class="subcard">
-              <h3>Skill routing contract</h3>
-              <p>
-                skill source of truth は <code>scripts/config/skill_catalog.json</code> です。
-                overview は role-to-skill assignment を集計し、skill portfolio audit は <code>scripts/skill_portfolio_audit.js</code> と
-                <code>scripts/skill_portfolio_policy_test.js</code> で検証します。
-              </p>
-              <ul>
-                <li>parent 系: <code>openai-docs</code>、<code>parent-dispatch-guard</code>、<code>red-requirement-auditor</code> など</li>
-                <li><code>frontend_worker</code>: <code>playwright</code>、<code>screenshot</code>、<code>ui-regression-diff</code></li>
-                <li><code>backend_worker</code>: <code>appserver-protocol-debugger</code>、<code>api-contract-testgen</code> など</li>
-                <li><code>reviewer</code>/<code>explorer</code>: read-only に適した audit skill 群</li>
-              </ul>
-            </article>
-          </div>
-        </section>
-
-        <section id="ui" class="panel">
-          <h2>5. Operator Surface</h2>
+      <section class="panel" id="journey">
+        <div class="section-head">
+          <p class="kicker">Journey</p>
+          <h2>3. 1回の依頼は、どう進むのか</h2>
           <p>
-            UI は単なる chat shell ではなく、intent-first 契約、workspace guard、runtime diagnostics、agent topology、evidence overview を操作・可視化する operator console です。
+            ここがこの文書の中心です。
+            細かい一覧を見る前に、まず「1回の依頼の旅」を頭に入れてください。
           </p>
-          <h3>5.1 Main Console: <code>/01.HarnesUI/index.html</code></h3>
-          <table>
-            <thead>
-              <tr>
-                <th>画面ブロック</th>
-                <th>主な要素</th>
-                <th>依存 API / state</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr>
-                <td>Maintenance tools</td>
-                <td>再接続、新規スレッド、診断更新、overview へのリンク、手動ページへのリンク</td>
-                <td><code>/api/runtime</code>, <code>/api/diagnostics</code>, <code>/api/turn/interrupt</code></td>
-              </tr>
-              <tr>
-                <td>Chat manager</td>
-                <td>multi-chat list、チャット追加/削除、active chat 切替</td>
-                <td>local browser state + runtime turn/thread metadata</td>
-              </tr>
-              <tr>
-                <td>Execution controls</td>
-                <td>execution profile、model、reasoning、approval policy、sandbox、workspace path、workspace lock</td>
-                <td><code>/api/runtime</code>, <code>/api/workspace/select|lock|unlock</code>, <code>/api/exec</code></td>
-              </tr>
-              <tr>
-                <td>Intent board</td>
-                <td>taste memory 編集、benchmark URL、prefers/rejects、required proof 保存/初期化</td>
-                <td><code>/api/intent/profile</code>, <code>/api/intent/profile/reset</code>, <code>/api/runtime</code></td>
-              </tr>
-              <tr>
-                <td>Completion gates</td>
-                <td>intent-first hard gate の一覧表示</td>
-                <td><code>runtime.intentFirst</code></td>
-              </tr>
-              <tr>
-                <td>Live status / metrics</td>
-                <td>進行状況、elapsed、session tokens、processing ms</td>
-                <td><code>runtime.latestTurn</code>, <code>runtime.sessionPerformance</code></td>
-              </tr>
-              <tr>
-                <td>Harness journey</td>
-                <td>5-step 進行、compliance badge、highlights</td>
-                <td>stream items、latest turn、task outcome</td>
-              </tr>
-              <tr>
-                <td>Execution trace</td>
-                <td>agent flow lane、trace list、clear trace</td>
-                <td>NDJSON stream + active chat scoped agent matching</td>
-              </tr>
-              <tr>
-                <td>Diagnostics</td>
-                <td>Codex/Node 状態、summary、details</td>
-                <td><code>/api/diagnostics</code></td>
-              </tr>
-              <tr>
-                <td>Agent Topography Monitor</td>
-                <td>active chat に関連する parent/child lane のみ表示</td>
-                <td><code>/api/agent-topography</code> + local trace/pending/context filtering</td>
-              </tr>
-            </tbody>
-          </table>
-
-          <h3>5.2 Overview Page: <code>/01.HarnesUI/overview.html</code></h3>
+        </div>
+        <div class="story" aria-label="Request journey">
+          <article class="step">
+            <div class="step-number">1</div>
+            <div>
+              <h3>人が依頼を書く</h3>
+              <p>利用者はブラウザの画面で依頼を書きます。画像や設定もここで一緒に送れます。</p>
+              <p>主な送り先は <code>POST /api/exec</code> です。</p>
+            </div>
+          </article>
+          <article class="step">
+            <div class="step-number">2</div>
+            <div>
+              <h3>サーバーが受け取って、今の状態をそろえる</h3>
+              <p>サーバーは依頼を受け取り、必要ならセッションを整えます。</p>
+              <p>同じ依頼が事故で二重送信されても壊れにくいように、再送対策も持ちます。</p>
+            </div>
+          </article>
+          <article class="step">
+            <div class="step-number">3</div>
+            <div>
+              <h3>まとめ役が「成功の形」を先に決める</h3>
+              <p>これを intent-first と考えるとわかりやすいです。先に「何がゴールか」「何をしないか」を固定します。</p>
+              <p>つまり、作業前に約束を作る段階です。</p>
+            </div>
+          </article>
+          <article class="step">
+            <div class="step-number">4</div>
+            <div>
+              <h3>合う専門役に仕事を渡す</h3>
+              <p>画面の仕事なら <code>frontend_worker</code>、API なら <code>backend_worker</code> のように振り分けます。</p>
+              <p>親が全部ひとりで片づけるのではなく、専門家に任せるのが基本です。</p>
+            </div>
+          </article>
+          <article class="step">
+            <div class="step-number">5</div>
+            <div>
+              <h3>必要なレビューと検証をする</h3>
+              <p>動いたかだけでは足りません。</p>
+              <p>バグがないか、ユーザー意図から外れていないか、証拠がそろっているかを見ます。</p>
+            </div>
+          </article>
+          <article class="step">
+            <div class="step-number">6</div>
+            <div>
+              <h3>文書と記録をそろえて、最後の判定を出す</h3>
+              <p>必要な文書反映まで終えたら、Harness は最終のリリース判定を出します。</p>
+              <p>このとき、結果だけでなく、残っている前提や注意点も一緒に報告します。</p>
+            </div>
+          </article>
+        </div>
+        <div class="warning">
+          <strong>ここで覚える一番大事なこと</strong>
           <p>
-            overview は execution console と切り離された inventory page です。runtime posture、guardrail、health、topology lanes、turn/task contracts、
-            latest signoff/runtime proof、eval history、API surface summary、execution memory、replay patterns、skill portfolio、raw snapshot を集約表示します。
+            この Harness は「すぐ答える仕組み」より、「意図を固定して、専門家に任せて、証拠を残して終わる仕組み」です。
+            だから、旅の途中に確認の段階がいくつか入ります。
           </p>
+        </div>
+      </section>
 
-          <h3>5.3 English Conversation App: <code>/english-conversation-app/*</code></h3>
-          <table>
-            <thead>
-              <tr>
-                <th>項目</th>
-                <th>現行挙動</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr>
-                <td>Static mount</td>
-                <td>same-origin で配信。static root は env override → sibling repo → bundled fallback の順で解決。</td>
-              </tr>
-              <tr>
-                <td>Bootstrap</td>
-                <td>bundled app から sibling repo を起こす初回導線として <code>bootstrap_english_conversation_app_repo.bat</code> / <code>scripts/bootstrap_english_conversation_app_repo.ps1</code> を持つ。</td>
-              </tr>
-              <tr>
-                <td>Conversation path</td>
-                <td><code>POST /api/conversation/direct</code> を使い、provider は固定で <code>app-server</code>。</td>
-              </tr>
-              <tr>
-                <td>Persona memory</td>
-                <td><code>persona_friend</code> mode の記憶は <code>logs/conversation_persona_memory.json</code> に保存。</td>
-              </tr>
-              <tr>
-                <td>TTS</td>
-                <td>Piper と Kokoro の両 runtime を同 origin から叩く。Piper は local model、Kokoro は FastAPI upstream。</td>
-              </tr>
-            </tbody>
-          </table>
-        </section>
-
-        <section id="api" class="panel">
-          <h2>6. API サーフェス</h2>
+      <section class="panel" id="safety">
+        <div class="section-head">
+          <p class="kicker">Safety</p>
+          <h2>4. なぜ安全ルールがいるのか</h2>
           <p>
-            監査時点で <code>requestHandler</code> から観測できた HTTP surface は 32 本です。以下では handler-level の保護境界まで含めて列挙します。
+            速さだけを求めると、たいていどこかで困ります。
+            この Harness は、よくある失敗を先回りして減らすように作られています。
           </p>
-
-          <h3>6.1 Read / Snapshot APIs</h3>
-          <table>
-            <thead>
-              <tr>
-                <th>Method / Path</th>
-                <th>保護境界</th>
-                <th>役割</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr><td><code>GET /api/runtime</code></td><td>token 不要</td><td>runtime 全景。control/exec/conversation/voice/evidence/idempotency まで含む中心 snapshot。</td></tr>
-              <tr><td><code>GET /api/harness/overview</code></td><td>token 不要</td><td>overview page 向け集約 snapshot。control token は redact される。</td></tr>
-              <tr><td><code>GET /api/intent/profile</code></td><td>token 不要</td><td>active taste profile と design acceptance snapshot を返す。</td></tr>
-              <tr><td><code>GET /api/agent-topography</code></td><td>token 不要</td><td>configured agents と runtime state を merge した topology を返す。</td></tr>
-              <tr><td><code>GET /api/diagnostics</code></td><td>token 不要</td><td><code>codex --version</code>、<code>node --version</code>、defaults、execution visibility、adversarial shadow snapshot。</td></tr>
-              <tr><td><code>GET /api/conversation/runtime</code></td><td>token 不要</td><td>conversation provider、mode options、limits、persona memory storage を返す。</td></tr>
-              <tr><td><code>GET /api/conversation/persona/memory</code></td><td>token 不要</td><td><code>personaUserId</code> ごとの persona summary を返す。</td></tr>
-              <tr><td><code>GET /api/batch/status</code></td><td>token 不要</td><td>既存 PoC batch 状態 snapshot。</td></tr>
-              <tr><td><code>GET /api/slo/status</code></td><td>token 不要</td><td>SLO snapshot。呼び出し時に degrade/recover alert の発火対象。</td></tr>
-              <tr><td><code>GET /api/eval/suites</code></td><td>token 不要</td><td>既定 eval suite と default limits。</td></tr>
-              <tr><td><code>GET /api/eval/history</code></td><td>local origin + control token</td><td>eval run 履歴。<code>limit</code> 指定可。</td></tr>
-              <tr><td><code>GET /api/replay/turns</code></td><td>local origin + control token</td><td>replay memory の recent turns 一覧。</td></tr>
-              <tr><td><code>GET /api/replay/turn/:turnId</code></td><td>local origin + control token</td><td>特定 turn の replay baseline。<code>include_prompt=1</code> 可。</td></tr>
-              <tr><td><code>GET /api/exec/idempotency/:key</code></td><td>local origin + control token</td><td>idempotency lifecycle snapshot。<code>wait_ms</code> で wait 可能。</td></tr>
-            </tbody>
-          </table>
-
-          <h3>6.2 Control / Mutation APIs</h3>
-          <table>
-            <thead>
-              <tr>
-                <th>Method / Path</th>
-                <th>保護境界</th>
-                <th>現行挙動</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr><td><code>POST /api/exec</code></td><td>local origin + control token</td><td>JSON body / NDJSON stream。agent validation、workspace guard、intent-first preflight、idempotency、turn artifacts、git automation を統合。</td></tr>
-              <tr><td><code>POST /api/turn/interrupt</code></td><td>local origin + control token</td><td><code>{threadId,turnId}</code> または <code>{agentName}</code> から active turn を止める。</td></tr>
-              <tr><td><code>POST /api/intent/profile</code></td><td>local origin + control token + action allowlist</td><td>taste memory 更新。<code>update_intent_profile</code> action 前提。</td></tr>
-              <tr><td><code>POST /api/intent/profile/reset</code></td><td>local origin + control token + action allowlist</td><td>seed taste memory へ戻す。<code>reset_intent_profile</code> action 前提。</td></tr>
-              <tr><td><code>POST /api/workspace/select</code></td><td>local origin + control token + action allowlist</td><td>Windows の folder picker を開く。</td></tr>
-              <tr><td><code>POST /api/workspace/lock</code></td><td>local origin + control token + action allowlist</td><td>locked root を設定。</td></tr>
-              <tr><td><code>POST /api/workspace/unlock</code></td><td>local origin + control token + action allowlist</td><td>locked root を解除。</td></tr>
-              <tr><td><code>POST /api/open-cmd</code></td><td>local origin + control token + action allowlist</td><td><code>CODEX_ALLOW_OPEN_CMD_WINDOW=1</code> のときだけ有効。既定は disabled。</td></tr>
-              <tr><td><code>POST /api/eval/run</code></td><td>local origin + control token</td><td>suite/variants を実行し、history へ append。probe persistence を opt-in で memory に保存。</td></tr>
-              <tr><td><code>POST /api/replay/turn</code></td><td>local origin + control token</td><td>既存 turn を repro profile 含めて再実行し、diff を返す。</td></tr>
-            </tbody>
-          </table>
-
-          <h3>6.3 Conversation / Voice / Utility APIs</h3>
-          <table>
-            <thead>
-              <tr>
-                <th>Method / Path</th>
-                <th>保護境界</th>
-                <th>現行挙動</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr><td><code>POST /api/conversation/direct</code></td><td>same local origin のみ</td><td>message/history/level/topic/mode を app-server に渡し、英会話応答を返す。</td></tr>
-              <tr><td><code>POST /api/conversation/persona/reset</code></td><td>same local origin のみ</td><td><code>personaUserId</code> の記憶を初期化。</td></tr>
-              <tr><td><code>POST /api/voice/piper/prepare</code></td><td>same local origin のみ</td><td>Piper model warmup。model assets 準備用。</td></tr>
-              <tr><td><code>POST /api/voice/piper</code></td><td>same local origin のみ</td><td>Piper local model で再生。default model は <code>-high</code> 系を要求。</td></tr>
-              <tr><td><code>POST /api/voice/kokoro</code></td><td>same local origin のみ</td><td>Kokoro FastAPI upstream <code>/v1/audio/speech</code> を叩く。</td></tr>
-              <tr><td><code>POST /api/requirement-guard/validate</code></td><td>token 不要</td><td>requirement guard matcher の独立検証 API。input 値と expected 値の一致を返す。</td></tr>
-              <tr><td><code>POST /api/batch/run</code></td><td>token 不要</td><td>PoC batch 実行。prompt 必須。</td></tr>
-              <tr><td><code>POST /api/batch/scheduler</code></td><td>token 不要</td><td>PoC scheduler の enable / interval 設定。</td></tr>
-            </tbody>
-          </table>
-        </section>
-
-        <section id="flows" class="panel">
-          <h2>7. 主要フロー</h2>
-
-          <h3>7.1 Boot flow</h3>
-          <ol>
-            <li><code>start_codex_ui.bat</code> が UAC self-elevation を試みる。</li>
-            <li><code>node</code> と <code>codex</code> の存在を preflight する。</li>
-            <li><code>CODEX_UI_PORT</code> を数値検証し、無効なら <code>57525</code> に戻す。</li>
-            <li>execution profile、request-user-input、dispatch guard、adversarial loop、git automation などの launcher defaults を未設定時のみ注入する。</li>
-            <li>ブラウザ自動起動が有効なら、URL の応答を待って Edge もしくは system default browser を開く。</li>
-            <li><code>node server.js</code> を起動する。</li>
-          </ol>
-
-          <h3>7.2 Interactive exec flow</h3>
-          <ol>
-            <li>browser UI が prompt / settings / images / workspace context を <code>POST /api/exec</code> へ送る。</li>
-            <li>server が content-type、control token、agent name、workspace guard、idempotency key を検証する。</li>
-            <li>design-sensitive <code>web_ui</code> source なら workspace lock と intent-first brief を強制する。</li>
-            <li>app-server との <code>initialize -&gt; initialized</code> handshake 後、JSONL stream で turn events を受ける。</li>
-            <li>runtime は stream から command/file/mcp/collab/dispatch の observed signal を抽出する。</li>
-            <li>turn 完了時に parent dispatch guard、intent-first gates、task outcome bridge、adversarial shadow review を評価する。</li>
-            <li>turn artifact、latest turn snapshot、execution memory、replay baseline、operation log を更新する。</li>
-            <li><code>taskOutcomeStatus=COMPLETED</code> なら git automation が turn の <code>cwd</code> を対象に commit/push を試みる。</li>
-          </ol>
-
-          <h3>7.3 Replay / Eval flow</h3>
-          <ol>
-            <li>replay は過去 turn の prompt と execution recipe を再構成し、必要なら repro profile で <code>webSearch=0</code>、<code>forceNewSession=1</code>、<code>requestUserInputPolicy=blocked</code> を強制する。</li>
-            <li>eval は default suite <code>core-harness-workflow.v4</code> を variants ごとに回し、exec case と deterministic probe case を混在実行する。</li>
-            <li>eval report は <code>logs/eval_runs.jsonl</code> に append され、必要なら synthetic probe 結果を harness memory に保存する。</li>
-          </ol>
-
-          <h3>7.4 Conversation / Voice flow</h3>
-          <ol>
-            <li>conversation request は same-origin 制約を通過した後、app-server provider へ送られる。</li>
-            <li><code>persona_friend</code> mode では request 前に persona memory を読み、request 後に message/topic をもとに更新する。</li>
-            <li>TTS は Piper なら local model assets、Kokoro なら upstream HTTP で音声を生成する。</li>
-          </ol>
-        </section>
-
-        <section id="boundaries" class="panel">
-          <h2>8. 制御境界と安全策</h2>
-
-          <h3>8.1 Control-plane 認証</h3>
-          <table>
-            <thead>
-              <tr>
-                <th>Mechanism</th>
-                <th>現行挙動</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr>
-                <td><code>validateControlMutationRequest()</code></td>
-                <td>loopback same-origin と <code>x-codex-control-token</code> を両方要求。workspace/intention/open-cmd 系は action allowlist も要求。</td>
-              </tr>
-              <tr>
-                <td><code>validateLocalOriginRequest()</code></td>
-                <td>conversation / voice 系で使用。token は不要だが same local origin は必須。</td>
-              </tr>
-              <tr>
-                <td>Open exception</td>
-                <td><code>/api/runtime</code>、<code>/api/harness/overview</code>、<code>/api/diagnostics</code>、<code>/api/agent-topography</code>、<code>/api/eval/suites</code> などは token 不要で読める。</td>
-              </tr>
-              <tr>
-                <td>Notable gap</td>
-                <td><code>/api/batch/run</code>、<code>/api/batch/scheduler</code>、<code>/api/requirement-guard/validate</code> は handler-level token check を持たない。</td>
-              </tr>
-            </tbody>
-          </table>
-
-          <h3>8.2 Workspace guard / intent-first gate</h3>
-          <div class="grid-2">
-            <article class="subcard">
-              <h4>Workspace guard</h4>
-              <ul>
-                <li>scope は <code>directory_tree</code>。</li>
-                <li>locked root がある場合、<code>cwd</code> はその配下でないと reject。</li>
-                <li><code>web_ui</code> source は unlocked だと preflight で reject。</li>
-                <li>folder picker は Windows のみ。</li>
-              </ul>
-            </article>
-            <article class="subcard">
-              <h4>Design acceptance</h4>
-              <ul>
-                <li><code>benchmarkComparisonRequired=true</code></li>
-                <li><code>visualReviewRequired=true</code></li>
-                <li><code>independentReviewRequired=true</code></li>
-                <li><code>docSyncRequired=true</code></li>
-                <li><code>technicalVerificationRequired=true</code></li>
-                <li>required artifacts は locked intent summary、benchmark decomposition、desktop/mobile screenshot review、independent reviewer verdict、technical verification、documentation sync。</li>
-              </ul>
-            </article>
-          </div>
-
-          <h3>8.3 Requirement guard / RBJ / scope expansion</h3>
+        </div>
+        <div class="grid-3">
+          <article class="card">
+            <h3>勝手に話を広げない</h3>
+            <p>ユーザーが求めていない大きな改造を、黙って足さないようにします。</p>
+            <p>まず baseline を守り、その近くで小さな付加価値だけを許します。</p>
+          </article>
+          <article class="card">
+            <h3>まとめ役が専門役のふりをしない</h3>
+            <p>親エージェントは司令塔です。実装の主役を勝手に奪わないように guard が入ります。</p>
+            <p>これで役割分担が崩れにくくなります。</p>
+          </article>
+          <article class="card">
+            <h3>証拠なしで完了と言わない</h3>
+            <p>「できました」だけでは不十分です。</p>
+            <p>検証結果、レビュー、文書反映、残るリスクまで見て初めて完了になります。</p>
+          </article>
+        </div>
+        <div class="callout">
+          <strong>やさしい言い換え</strong>
           <p>
-            requirement guard extension point は <code>scripts/extensions/requirement_guard_hook.js</code> です。
-            prompt に marker を付与して requirement lock、scope expansion token、RBJ requirement definition loop を管理します。
+            intent-first は「作る前に約束を決めること」です。
+            evidence は「ほんとうにやったとわかる記録」です。
+            release decision は「最終的に出してよいかの判定」です。
           </p>
-          <ul>
-            <li>RBJ の marker は <code>[REQUIREMENT_RBJ_V1]</code>、既定 parent agents は <code>default</code> / <code>intake</code> / <code>release_manager</code>。</li>
-            <li>RBJ 既定値は <code>max_questions=3</code>、<code>max_revisions=2</code>、<code>min_confidence=80</code>。</li>
-            <li>scope expansion は <code>[SCOPE_EXPANSION_V1]</code> と token 群で core-only / auto-enabled を切り替える。</li>
-            <li>requirement guard matcher は <code>REQUIREMENT_GUARD_MATCH_VALUE</code> と <code>/api/requirement-guard/validate</code> で疎通確認できる。</li>
-          </ul>
+        </div>
+      </section>
 
-          <h3>8.4 Parent dispatch guard / adversarial shadow</h3>
-          <ul>
-            <li>launcher default は <code>CODEX_PARENT_DISPATCH_GUARD_MODE=enforce</code>、<code>CODEX_PARENT_DISPATCH_GUARD_MAX_RETRIES=1</code>。</li>
-            <li>parent が child dispatch なしで completion しようとすると、warn では警告、enforce では final status を block できる。</li>
-            <li>adversarial shadow は既定 enabled。<code>minScore=72</code>、prompt max <code>8000</code> chars、answer max <code>16000</code> chars。</li>
-            <li>adversarial loop は既定 enabled、<code>maxRetries=1</code>。FAILED_VALIDATION などを retry 根拠に使う。</li>
-          </ul>
-
-          <h3>8.5 Idempotency lifecycle</h3>
-          <ul>
-            <li>key は header <code>idempotency-key</code> または body <code>idempotencyKey</code>。両方あり不一致なら <code>400</code>。</li>
-            <li>同一 key で request hash が違うと <code>409 idempotency_request_hash_mismatch</code>。</li>
-            <li>running duplicate は <code>409</code>。resolved duplicate は保存済み outcome snapshot を <code>200</code> で返す。</li>
-            <li>snapshot は lifecycle <code>running</code> / terminal states / <code>released</code> を持つ。</li>
-            <li>既定 TTL は <code>30 min</code>、status wait 上限は <code>30000 ms</code>。</li>
-          </ul>
-
-          <h3>8.6 Git automation</h3>
-          <ul>
-            <li>turn-complete で走る。対象は <code>taskOutcomeStatus=COMPLETED</code> の turn のみ。</li>
-            <li>対象 repo はその turn の <code>cwd</code>。baseline が dirty なら skip。</li>
-            <li>remote 未設定または detached HEAD なら push しない。</li>
-            <li>この harness repo に対しては <code>logs/harness_execution_memory.json</code> と <code>logs/eval_runs.jsonl</code> を baseline 判定から除外する。</li>
-          </ul>
-        </section>
-
-        <section id="evidence" class="panel">
-          <h2>9. 証跡 / 永続化 / Proof</h2>
+      <section class="panel" id="screens">
+        <div class="section-head">
+          <p class="kicker">Surfaces</p>
+          <h2>5. どの画面が何の役目を持つのか</h2>
           <p>
-            このハーネスは「動いた」だけでなく「何が起きたか」を回収する設計です。turn 単位の artifact、セッション横断 memory、proof/signoff bundle を分離して持ちます。
+            画面はたくさんの情報を見せるためにあります。
+            でも、画面そのものが主役ではありません。主役はその後ろの流れです。
           </p>
-
-          <h3>9.1 常設ストレージ</h3>
-          <table>
-            <thead>
-              <tr>
-                <th>Path</th>
-                <th>内容</th>
-                <th>補足</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr><td><code>logs/turns/</code></td><td>turn artifacts。<code>manifest.json</code>、stream events、stdout/stderr、diff、items など。</td><td>manifest は terminal turn status、task outcome、approval audits、observed signals を持つ。</td></tr>
-              <tr><td><code>logs/harness_execution_memory.json</code></td><td>contract / execution / audit / replay / pattern memory。</td><td>既定 retention <code>30 days</code>。path override は <code>CODEX_HARNESS_MEMORY_PATH</code>。</td></tr>
-              <tr><td><code>logs/user_taste_memory.json</code></td><td>intent-first taste memory。</td><td>seed は <code>scripts/config/default_user_taste_memory.json</code>。</td></tr>
-              <tr><td><code>logs/conversation_persona_memory.json</code></td><td>persona_friend mode の conversation memory。</td><td>facts / topics / turns を user 単位で保持。</td></tr>
-              <tr><td><code>logs/eval_runs.jsonl</code></td><td>eval report 履歴。</td><td>path override は <code>CODEX_EVAL_HISTORY_PATH</code>。</td></tr>
-              <tr><td><code>logs/codex_ops*.jsonl</code></td><td>compact operation log。</td><td>既定 base path は <code>logs/codex_ops.jsonl</code>。daily split、trim、archive を持つ。</td></tr>
-            </tbody>
-          </table>
-
-          <h3>9.2 Operation log と artifact security</h3>
-          <ul>
-            <li>operation log default は <code>logs/codex_ops.jsonl</code>、max size <code>1 MB</code>、archive max <code>32 MB</code>、archive max files <code>64</code>。</li>
-            <li>turn artifacts default retention は <code>14 days</code>、max storage は <code>256 MB</code>。</li>
-            <li>turn artifact redaction は既定 enabled、placeholder は <code>[REDACTED]</code>。</li>
-            <li>latest turn snapshot は <code>intent_first</code> summary、<code>cwd</code>、<code>git_automation</code> result も carry する。</li>
-          </ul>
-
-          <h3>9.3 Runtime proof bundle</h3>
-          <div class="mono-list">
-            <code>logs/proofs/runtime-proof-*/harness_execution_memory.json</code>
-            <code>logs/proofs/runtime-proof-*/eval_runs.jsonl</code>
-            <code>logs/proofs/runtime-proof-*/turns/</code>
-            <code>logs/proofs/runtime-proof-*/runtime_proof_summary.json</code>
-            <code>logs/proofs/runtime-proof-*/live_dispatch_proof.md</code>
-          </div>
-          <p>生成器は <code>scripts/generate_runtime_proof.js</code> です。</p>
-
-          <h3>9.4 Signoff bundle</h3>
-          <div class="mono-list">
-            <code>logs/signoff-bundles/signoff-*/runtime_snapshot.json</code>
-            <code>logs/signoff-bundles/signoff-*/core_harness_workflow_run.json</code>
-            <code>logs/signoff-bundles/signoff-*/natural_task_trace_summary.json</code>
-            <code>logs/signoff-bundles/signoff-*/harness_execution_memory.json</code>
-            <code>logs/signoff-bundles/signoff-*/eval_runs.jsonl</code>
-            <code>logs/signoff-bundles/signoff-*/turns/</code>
-            <code>logs/signoff-bundles/signoff-*/signoff_summary.json</code>
-          </div>
+        </div>
+        <div class="grid-3">
+          <article class="card">
+            <h3>Console</h3>
+            <p>依頼を出す主画面です。今の作業、計画、判定、進み具合を見る場所でもあります。</p>
+          </article>
+          <article class="card">
+            <h3>Overview</h3>
+            <p>全体の状態を見る画面です。runtime、契約、証拠、履歴をまとめて見たいときに向きます。</p>
+          </article>
+          <article class="card">
+            <h3>Guide</h3>
+            <p><code>guide.html</code> は静的な説明ページです。動いている最中のデータに頼らず、考え方を説明します。</p>
+          </article>
+        </div>
+        <div class="plain-note">
+          <strong>境界の話</strong>
           <p>
-            生成器は <code>scripts/generate_signoff_evidence.js</code> です。起動時に
-            <code>CODEX_REQUEST_USER_INPUT_POLICY=blocked</code>、dispatch guard enforce、requirement guard / lock / RBJ、adversarial shadow / loop を有効にした safe posture を取ります。
+            付帯アプリも同じサーバーから見えることがありますが、この文書で中心にするのは Harness 自身のしくみです。
+            つまり、「依頼を受けて安全に進める本体」の話を優先します。
           </p>
-        </section>
+        </div>
+      </section>
 
-        <section id="config" class="panel">
-          <h2>10. 起動・設定・既定値</h2>
-
-          <h3>10.1 Launcher defaults: <code>start_codex_ui.bat</code></h3>
-          <table>
-            <thead>
-              <tr>
-                <th>Env</th>
-                <th>既定値</th>
-                <th>意味</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr><td><code>CODEX_UI_PORT</code></td><td><code>57525</code></td><td>数値でなければ fallback。</td></tr>
-              <tr><td><code>CODEX_AUTO_OPEN_PATH</code></td><td><code>/01.HarnesUI/index.html</code></td><td>browser auto-open 先。</td></tr>
-              <tr><td><code>CODEX_DEFAULT_EXEC_AGENT</code></td><td><code>default</code></td><td>canonical parent entrypoint。</td></tr>
-              <tr><td><code>CODEX_REQUEST_USER_INPUT_POLICY</code></td><td><code>blocked</code></td><td>non-interactive posture。</td></tr>
-              <tr><td><code>CODEX_PARENT_DISPATCH_GUARD_MODE</code></td><td><code>enforce</code></td><td>parent direct completion を抑止。</td></tr>
-              <tr><td><code>CODEX_PARENT_DISPATCH_GUARD_MAX_RETRIES</code></td><td><code>1</code></td><td>repair loop 上限。</td></tr>
-              <tr><td><code>CODEX_ADVERSARIAL_SHADOW_ENABLED</code></td><td><code>1</code></td><td>shadow review 有効。</td></tr>
-              <tr><td><code>CODEX_ADVERSARIAL_LOOP_ENABLED</code></td><td><code>1</code></td><td>review 失敗時 retry 有効。</td></tr>
-              <tr><td><code>CODEX_REQUIREMENT_GUARD_ENABLED</code></td><td><code>1</code></td><td>requirement guard extension を使う。</td></tr>
-              <tr><td><code>CODEX_REQUIREMENT_RBJ_ENABLED</code></td><td><code>1</code></td><td>RBJ requirement loop 有効。</td></tr>
-              <tr><td><code>CODEX_REQUIREMENT_RBJ_MAX_QUESTIONS</code></td><td><code>3</code></td><td>blocking question 上限。</td></tr>
-              <tr><td><code>CODEX_REQUIREMENT_RBJ_MAX_REVISIONS</code></td><td><code>2</code></td><td>revision 上限。</td></tr>
-              <tr><td><code>CODEX_EXECUTION_PROFILE</code></td><td><code>full-runtime</code></td><td>runtime visibility の基準。</td></tr>
-              <tr><td><code>CODEX_GIT_AUTOCOMMIT_ENABLED</code></td><td><code>1</code></td><td>turn complete commit。</td></tr>
-              <tr><td><code>CODEX_GIT_AUTOPUSH_ENABLED</code></td><td><code>1</code></td><td>turn complete push。</td></tr>
-              <tr><td><code>CODEX_GIT_ALLOW_DIRTY_BASELINE</code></td><td><code>0</code></td><td>dirty baseline は publish しない。</td></tr>
-              <tr><td><code>CODEX_GIT_REMOTE</code></td><td><code>origin</code></td><td>push target remote。</td></tr>
-              <tr><td><code>CODEX_PIPER_BIN</code></td><td>auto-detect</td><td><code>tools/piper/piper.exe</code> があれば launcher が自動設定。</td></tr>
-              <tr><td><code>CODEX_EDGE_EXE</code></td><td>auto-detect</td><td>Edge 優先起動。未設定時は代表的な Windows install path を順に探索。</td></tr>
-            </tbody>
-          </table>
+      <section class="panel" id="records">
+        <div class="section-head">
+          <p class="kicker">Records</p>
+          <h2>6. 記録はどこに残るのか</h2>
           <p>
-            README には supplement として <code>CODEX_OPERATION_LOG_DAILY_SPLIT</code>、
-            <code>CODEX_REQUIREMENT_LOCK_REQUIRE_CONFIRM</code>、
-            <code>CODEX_SCOPE_EXPANSION_REQUIRE_APPROVAL</code> など、常時変更しないが運用で使う追加 knobs もあります。
+            記録の場所を知ると、トラブル調査もレビューも急に楽になります。
+            この Harness は記録の置き場を3つの層に分けています。
           </p>
-
-          <h3>10.2 Server-side notable defaults</h3>
-          <div class="grid-2">
-            <article class="subcard">
-              <h4>Conversation</h4>
-              <ul>
-                <li>body limit <code>256 KB</code></li>
-                <li>timeout <code>45000 ms</code></li>
-                <li>max tokens <code>220</code></li>
-                <li>history items <code>14</code></li>
-              </ul>
-            </article>
-            <article class="subcard">
-              <h4>Kokoro / SLO / Memory</h4>
-              <ul>
-                <li>kokoro base URL <code>http://127.0.0.1:8880</code></li>
-                <li>voice <code>af_heart</code> / model <code>kokoro</code></li>
-                <li>SLO window <code>30 turns</code></li>
-                <li>p95 latency max <code>120000 ms</code></li>
-                <li>failure rate max <code>0.25</code></li>
-                <li>idempotency conflict rate max <code>0.05</code></li>
-                <li>harness memory retention <code>30 days</code></li>
-              </ul>
-            </article>
-          </div>
-        </section>
-
-        <section id="verification" class="panel">
-          <h2>11. 検証面と現物差異</h2>
-
-          <h3>11.1 主要検証スクリプト</h3>
-          <table>
-            <thead>
-              <tr>
-                <th>領域</th>
-                <th>代表スクリプト</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr><td>app-server / protocol</td><td><code>scripts/app_server_smoke_test.js</code>, <code>scripts/harness_contract_policy_test.js</code>, <code>scripts/agent_topography_test.js</code></td></tr>
-              <tr><td>intent-first / workspace</td><td><code>scripts/intent_first_runtime_test.js</code>, <code>scripts/intent_first_policy_test.js</code>, <code>scripts/workspace_lock_api_smoke_test.js</code></td></tr>
-              <tr><td>eval / replay / SLO</td><td><code>scripts/eval_replay_api_smoke_test.js</code>, <code>scripts/eval_harness_policy_test.js</code></td></tr>
-              <tr><td>requirement / RBJ / dispatch</td><td><code>scripts/requirement_guard_validator_test.js</code>, <code>scripts/requirement_rbj_policy_test.js</code>, <code>scripts/parent_dispatch_guard_policy_test.js</code>, <code>scripts/rbj_spawn_smoke_test.js</code></td></tr>
-              <tr><td>conversation / voice</td><td><code>scripts/conversation_persona_policy_test.js</code>, <code>scripts/external_english_conversation_app_mount_test.js</code></td></tr>
-              <tr><td>git / evidence / artifacts</td><td><code>scripts/git_automation_policy_test.js</code>, <code>scripts/approval_risk_audit_test.js</code>, <code>scripts/turn_artifact_security_test.js</code></td></tr>
-              <tr><td>skills / governance</td><td><code>scripts/skill_portfolio_policy_test.js</code>, <code>scripts/agent_governance_policy_test.js</code>, <code>scripts/task_outcome_policy_test.js</code></td></tr>
-            </tbody>
-          </table>
-
-          <h3>11.2 既定 eval suite のカバレッジ</h3>
+        </div>
+        <div class="term-list">
+          <article class="term">
+            <div class="term-title"><code>logs/current/</code></div>
+            <p>今すぐ見るための場所です。いちばん最初に見るならここです。</p>
+            <p>特に <code>operator_summary.json</code> は「いま何が起きているか」をつかむ入口です。</p>
+          </article>
+          <article class="term">
+            <div class="term-title"><code>logs/bundles/</code></div>
+            <p>証拠をひとまとまりにした場所です。</p>
+            <p>proof や signoff のように、後で提出したり見返したりする単位で残します。</p>
+          </article>
+          <article class="term">
+            <div class="term-title"><code>logs/archive/raw/</code></div>
+            <p>いちばん細かい生データです。</p>
+            <p>普段は深追いしなくてよいですが、何が本当に起きたかを厳密にたどるときに使います。</p>
+          </article>
+        </div>
+        <div class="warning">
+          <strong>覚え方</strong>
           <p>
-            <code>scripts/config/eval_suite_default.json</code> は <code>core-harness-workflow.v4</code> を既定にし、
-            exact ACK contract、retired worker rejection、requirement RBJ activation、parent dispatch guard violation、
-            idempotency bridge、request-user-input blocked policy、task outcome mapping、turn/task bridge、adversarial shadow / loop を含みます。
+            <code>current</code> は今日のノート、<code>bundles</code> は提出用のファイル、
+            <code>archive/raw</code> は倉庫の原本だと思うと整理しやすいです。
           </p>
+        </div>
+      </section>
 
-          <h3>11.3 現物差異</h3>
-          <div class="warning">
-            <p><strong>差異 1</strong>: <code>README.md</code> と <code>docs/CURRENT_ARCHITECTURE.md</code> は <code>start_english_conversation_app.bat</code> を参照していますが、監査時点のワークツリーにはそのファイルが存在しません。</p>
-            <p><strong>差異 2</strong>: <code>web/01.HarnesUI/index.html</code> には <code>./manual-single-codex.html</code> へのリンクがありますが、同名ファイルは存在しません。</p>
-            <p><strong>差異 3</strong>: <code>web/01.HarnesUI/app.js</code> には batch automation UI の state/hook が残っていますが、現行 <code>index.html</code> には対応 panel が描画されていません。</p>
-          </div>
-        </section>
+      <section class="panel" id="trouble">
+        <div class="section-head">
+          <p class="kicker">Troubleshooting</p>
+          <h2>7. 困ったときは、どこから見るべきか</h2>
+          <p>
+            「なんだか動かない」と感じたら、全部を一気に見る必要はありません。
+            次の順で見れば、だいたい迷子になりません。
+          </p>
+        </div>
+        <ol>
+          <li><code>GET /api/runtime</code> が 200 で返るかを見る。まず本体が起きているかを確かめます。</li>
+          <li>Console の <code>Harness Status</code> を見る。今の作業段階と止まり位置がわかります。</li>
+          <li><code>logs/current/operator_summary.json</code> を見る。人向けの要約はここが入口です。</li>
+          <li>もっと深く知りたいなら <code>logs/bundles/</code> と <code>logs/archive/raw/</code> へ降ります。</li>
+          <li>運用ルールを確認したいなら <code>docs/APP_SERVER_PROTOCOL_RUNBOOK.md</code> と <code>docs/EVIDENCE_CONTRACT.md</code> を開きます。</li>
+        </ol>
+        <div class="callout">
+          <strong>よくある勘違い</strong>
+          <p>
+            画面に答えが出ていないからといって、すぐに全部が壊れたとは限りません。
+            途中で review 待ち、evidence 不足、doc sync 未完了のように、
+            「安全のために止まっているだけ」の場合もあります。
+          </p>
+        </div>
+      </section>
 
-        <section id="refs" class="panel">
-          <h2>12. 関連ソース</h2>
-          <div class="grid-2">
-            <article class="subcard">
-              <h3>Core runtime</h3>
-              <div class="mono-list">
-                <code>server.js</code>
-                <code>start_codex_ui.bat</code>
-                <code>web/index.html</code>
-                <code>web/01.HarnesUI/index.html</code>
-                <code>web/01.HarnesUI/app.js</code>
-                <code>web/01.HarnesUI/overview.html</code>
-                <code>web/01.HarnesUI/overview.js</code>
-              </div>
-            </article>
-            <article class="subcard">
-              <h3>Contracts / governance</h3>
-              <div class="mono-list">
-                <code>.codex/config.toml</code>
-                <code>.codex/agents/*.toml</code>
-                <code>scripts/config/agent_governance_contracts.json</code>
-                <code>scripts/config/harness_contract_spec.json</code>
-                <code>scripts/config/task_outcome_contract.json</code>
-                <code>scripts/config/design_acceptance_contract.json</code>
-                <code>scripts/config/default_user_taste_memory.json</code>
-                <code>scripts/config/skill_catalog.json</code>
-                <code>scripts/config/skill_portfolio_policy.json</code>
-                <code>scripts/config/eval_suite_default.json</code>
-              </div>
-            </article>
-            <article class="subcard">
-              <h3>Runbooks / docs</h3>
-              <div class="mono-list">
-                <code>docs/CURRENT_ARCHITECTURE.md</code>
-                <code>docs/APP_SERVER_PROTOCOL_RUNBOOK.md</code>
-                <code>docs/EVIDENCE_CONTRACT.md</code>
-                <code>docs/DESIGN_ACCEPTANCE_CONTRACT.md</code>
-                <code>docs/AGENT_OPERATING_RULES.md</code>
-                <code>docs/SKILL_PORTFOLIO_GOVERNANCE.md</code>
-                <code>docs/AI_AGENT_HARNESS_DETAILED_DESIGN_AUDIT.md</code>
-              </div>
-            </article>
-            <article class="subcard">
-              <h3>Verification entrypoints</h3>
-              <div class="mono-list">
-                <code>scripts/app_server_smoke_test.js</code>
-                <code>scripts/eval_replay_api_smoke_test.js</code>
-                <code>scripts/intent_first_runtime_test.js</code>
-                <code>scripts/workspace_lock_api_smoke_test.js</code>
-                <code>scripts/turn_artifact_security_test.js</code>
-                <code>scripts/generate_runtime_proof.js</code>
-                <code>scripts/generate_signoff_evidence.js</code>
-              </div>
-            </article>
-          </div>
-        </section>
-      </main>
-    </div>
+      <section class="panel" id="details">
+        <div class="section-head">
+          <p class="kicker">Deeper View</p>
+          <h2>8. もう少し詳しい仕組み</h2>
+          <p>
+            ここからは、全体像をつかんだ人向けの少し詳しい話です。
+            先にここから読むより、前の章を読んでから戻るほうが理解しやすいです。
+          </p>
+        </div>
+        <div class="grid-2">
+          <article class="card">
+            <h3>主な入口は 2 つ</h3>
+            <p><code>POST /api/exec</code> は仕事を始める入口です。</p>
+            <p><code>GET /api/runtime</code> は今の状態を読む入口です。</p>
+            <p>この 2 つを押さえるだけでも、Harness の骨組みはかなり見えます。</p>
+          </article>
+          <article class="card">
+            <h3>ローカルファースト</h3>
+            <p>UI はローカル中心で動き、既定ポートは <code>57525</code> です。</p>
+            <p>つまり、まず手元で完結しやすい形を大事にしています。</p>
+          </article>
+          <article class="card">
+            <h3>再送に強くする工夫</h3>
+            <p>同じ依頼が二重に走って混乱しないように、idempotency key を使います。</p>
+            <p>やさしく言うと「同じ伝票を見分ける番号」です。</p>
+          </article>
+          <article class="card">
+            <h3>最終判定は generic completion ではない</h3>
+            <p>上位の判定は <code>RELEASE_APPROVED</code> などの business release state で終わります。</p>
+            <p>単なる <code>COMPLETED</code> だけではなく、出してよいかまで見る最終ラベルです。</p>
+          </article>
+          <article class="card">
+            <h3>人向け説明より強いもの</h3>
+            <p>この文書は理解の助けです。</p>
+            <p>でも、厳密な正本は machine-readable contracts と runtime proof です。つまり、機械が読める約束と実行の証拠のほうが強い、という意味です。</p>
+          </article>
+          <article class="card">
+            <h3>付加価値の条件</h3>
+            <p>よい追加提案でも、ユーザー意図を変える大きな寄り道は許しません。</p>
+            <p>小さく安全で、専用の証拠があるときだけ over-delivery を許します。</p>
+          </article>
+        </div>
+        <div class="foot-links">
+          <a href="./CURRENT_ARCHITECTURE.md">Current Architecture</a>
+          <a href="./APP_SERVER_PROTOCOL_RUNBOOK.md">Protocol Runbook</a>
+          <a href="./EVIDENCE_CONTRACT.md">Evidence Contract</a>
+          <a href="../AGENTS.md">AGENTS</a>
+        </div>
+      </section>
+    </main>
+
+    <footer class="nav">
+      <p>
+        このページは「一覧のための台帳」ではなく、「しくみを理解するための本」として再構成しています。
+        迷ったら、まず 3 章の「1回の依頼の旅」に戻ってください。
+      </p>
+      <p><a href="#top">ページ上部へ戻る</a></p>
+    </footer>
   </div>
 </body>
 </html>

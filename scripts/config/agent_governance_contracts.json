@@ -1,11 +1,27 @@
 {
-  "schema": "agent-governance.v1",
-  "version": "2026-03-07.r1",
+  "schema": "agent-governance.v2",
+  "version": "2026-03-08.r1",
   "parentAgents": [
     "default",
     "intake",
     "release_manager"
   ],
+  "parentPolicy": {
+    "materialImplementationForbidden": true,
+    "allowedOperations": [
+      "read",
+      "route",
+      "dispatch",
+      "aggregate",
+      "review",
+      "signoff_package"
+    ]
+  },
+  "runtimeInvariants": {
+    "routingDecisionRequiredBeforeChildExecution": true,
+    "blockedRequestUserInputPolicy": "blocked",
+    "retiredWorkerAllowedInNormalRuntime": false
+  },
   "contracts": {
     "frontend_worker": {
       "id": "frontend_worker",

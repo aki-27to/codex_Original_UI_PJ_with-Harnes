@@ -28,8 +28,32 @@ function run() {
     "retry branch does not forward adversarialAttempt=nextAttempt"
   );
   assert(
+    /buildAdversarialRetryPrompt\(\{[\s\S]*executionTask:\s*planningContextRequiresDispatch\(planningContext\)[\s\S]*dispatchPlan:\s*planningContext&&planningContext\.dispatchPlan\?planningContext\.dispatchPlan:null[\s\S]*\}\)/.test(source),
+    "adversarial retry prompt should carry explicit execution-task and dispatch-plan context"
+  );
+  assert(
+    /executeTurnStreaming\(res,retryPrompt\|\|adversarialRootPrompt\|\|prompt,agentName,\{[\s\S]*planningContext[\s\S]*adversarialAttempt:\s*nextAttempt/.test(source),
+    "adversarial retry branch should preserve planningContext across retries"
+  );
+  assert(
+    /executeTurnStreaming\(res,retryPrompt\|\|parentDispatchRootPrompt\|\|prompt,agentName,\{[\s\S]*planningContext[\s\S]*parentDispatchAttempt:\s*nextAttempt/.test(source),
+    "parent dispatch retry branch should preserve planningContext across retries"
+  );
+  assert(
+    /evaluateParentDispatchGuard\(\{[\s\S]*plannedDispatchCount:Array\.isArray\(planningContext&&planningContext\.dispatchPlan&&planningContext\.dispatchPlan\.dispatches\)[\s\S]*proposalOnly:Boolean\(planningContext&&planningContext\.dispatchPlan&&planningContext\.dispatchPlan\.proposalOnly\)/.test(source),
+    "parent dispatch guard should receive planned dispatch metadata from planningContext"
+  );
+  assert(
     /const\s+loopActive\s*=\s*adversarialShadowEnabled&&adversarialLoopEnabled/.test(source),
     "loopActive gate definition was not found"
+  );
+  assert(
+    /const\s+shadowInput=\{[\s\S]*taskOutcomeStatus:taskOutcome\.status[\s\S]*\}/.test(source),
+    "shadow review input should receive the derived task outcome status"
+  );
+  assert(
+    /const\s+clientFinalText=rewriteClientFinalTextForOutcome\(authoritativeFinalText,\{taskOutcomeStatus:taskOutcome\.status\}\);/.test(source),
+    "client final text should be normalized against non-completed task outcomes"
   );
   console.log("[adversarial-loop-wiring-test] PASS loop wiring patterns");
   console.log("PASS");

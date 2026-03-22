@@ -19,6 +19,18 @@ function testDefaultPortfolioPasses() {
   assert.ok(report.portfolio.activeClassCount >= 3, "default portfolio should keep class diversity >= 3");
 }
 
+function testStitchSkillAssignedToParentRoles() {
+  const catalog = loadSkillCatalog();
+  assert.ok(
+    Array.isArray(catalog.assignments.default) && catalog.assignments.default.includes("web-designer-master"),
+    "default should carry web-designer-master so parent intake can answer Stitch-first UI requests"
+  );
+  assert.ok(
+    Array.isArray(catalog.assignments.intake) && catalog.assignments.intake.includes("web-designer-master"),
+    "intake should carry web-designer-master so Step 1 can inspect Stitch-backed UI requests"
+  );
+}
+
 function testRoleRequirementFailure() {
   const policy = deepClone(loadSkillPortfolioPolicy());
   const catalog = deepClone(loadSkillCatalog());
@@ -82,6 +94,7 @@ function testOutcomeAggregation() {
 function run() {
   const tests = [
     ["default portfolio pass", testDefaultPortfolioPasses],
+    ["stitch skill assigned to parent roles", testStitchSkillAssignedToParentRoles],
     ["role requirement failure", testRoleRequirementFailure],
     ["promotion scenario to role", testPromotionCandidateScenarioToRole],
     ["guard failure blocks promotion", testGuardFailureBlocksPromotion],

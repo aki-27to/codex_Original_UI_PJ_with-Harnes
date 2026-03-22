@@ -1,7 +1,7 @@
 {
   "schema": "harness-eval-suite.v1",
-  "suiteId": "core-harness-workflow.v4",
-  "description": "Regression suite covering live exec behavior plus deterministic workflow-policy probes for retired worker rejection, parent-dispatch guard enforcement, adaptive planning and assurance depth selection, task outcomes, and adversarial review.",
+  "suiteId": "core-harness-workflow.v5",
+  "description": "Regression suite covering live exec behavior plus deterministic workflow-policy probes for retired worker rejection, parent-dispatch guard enforcement, frozen constitution routing/depth selection, task outcomes, and adversarial review.",
   "outputSchema": {
     "type": "object",
     "required": ["status", "latencyMs", "passed", "score", "reason"],
@@ -21,6 +21,21 @@
       "prompt": "Reply with exactly: ACK",
       "weight": 1,
       "expect": { "mode": "exact", "value": "ACK" }
+    },
+    {
+      "id": "parent_material_implementation_blocked",
+      "title": "Parent material implementation is rejected by governance",
+      "driver": "agent_governance_probe",
+      "input": {
+        "agentName": "default",
+        "operation": "fileChange",
+        "changedPaths": ["server.js"]
+      },
+      "weight": 2,
+      "expect": {
+        "mode": "json_fields",
+        "fields": { "decision": "deny", "reason": "parent_material_implementation_forbidden" }
+      }
     },
     {
       "id": "retired_worker_rejected",

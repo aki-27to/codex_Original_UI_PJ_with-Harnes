@@ -74,35 +74,34 @@ function run() {
     env: {},
   });
   assert.ok(
-    plainTransform.prompt.includes("[REQUIREMENT_LOCK_V1] mode: requirement_definition_gate"),
-    "plain prompt should enter requirement_definition_gate mode for discovery tasks when RBJ is active"
+    plainTransform.prompt.includes("[REQUIREMENT_LOCK_V1] mode: structured_execution"),
+    "plain prompt should move into structured execution once Step 1 can autonomously tighten the requirement"
   );
   assert.ok(
-    plainTransform.prompt.includes("[SCOPE_EXPANSION_V1] expansion_status: parked_until_rbj_pass"),
-    "plain prompt should park expansion until RBJ pass"
+    plainTransform.prompt.includes("[SCOPE_EXPANSION_V1] expansion_status: auto_enabled"),
+    "plain prompt should keep adjacent expansion available once the requirement is already tight enough to execute"
   );
   assert.ok(
-    plainTransform.prompt.includes("[PLANNING_MODE_V1] selected: DISCOVERY"),
-    "plain prompt should report DISCOVERY planning mode"
+    plainTransform.prompt.includes("[PLANNING_MODE_V1] selected: NORMAL"),
+    "plain prompt should report NORMAL planning mode once low-risk ambiguity is auto-tightened"
   );
   assert.ok(
     plainTransform.prompt.includes("[ASSURANCE_DEPTH_V1] selected: STANDARD_ASSURANCE"),
     "plain prompt should report STANDARD assurance depth for ambiguous bounded work"
   );
   assert.ok(
-    plainTransform.prompt.includes("[REQUIREMENT_RBJ_V1] mode: requirement_definition_loop"),
-    "plain prompt should include requirement RBJ mode"
+    !plainTransform.prompt.includes("[REQUIREMENT_RBJ_V1] mode: requirement_definition_loop"),
+    "plain prompt should skip the RBJ requirement loop once the requirement is already execution-ready"
   );
   assert.ok(
-    plainTransform.prompt.includes("user_value_core"),
-    "plain prompt should require a user_value_core bucket during RBJ"
+    plainTransform.prompt.includes("Before execution, briefly lock the user-value frame, explicit goal, non-goals, assumptions, and acceptance checks."),
+    "plain prompt should carry the structured execution lock-in step"
   );
-  assert.ok(plainTransform.prompt.includes("STATUS: NEED_USER_INPUT"), "plain prompt should include ASK stop status");
+  assert.ok(plainTransform.prompt.includes("STATUS: NEED_USER_INPUT"), "plain prompt should still preserve the stop status if new blocking ambiguity appears later");
   assert.ok(
-    plainTransform.prompt.includes("non-binding"),
-    "plain prompt should require non-binding assumptions"
+    plainTransform.prompt.includes("Keep over-delivery adjacent, bounded, and separately reported."),
+    "plain prompt should still instruct the model to keep extra value bounded"
   );
-  assert.ok(plainTransform.prompt.includes("write TBD"), "plain prompt should require TBD for unknown concrete values");
   assert.ok(
     plainTransform.prompt.includes("User-value frame (primary optimization target):"),
     "plain prompt should include a user-value frame"
@@ -113,8 +112,8 @@ function run() {
   );
   assert.strictEqual(
     plainTransform.options.planningContext.selection.selectedMode,
-    "DISCOVERY",
-    "planning context should select DISCOVERY for ambiguous new-feature work"
+    "NORMAL",
+    "planning context should select NORMAL when the harness can autonomously tighten the new-feature requirement"
   );
 
   const confirmedTransform = matcher.transformExecRequest({
@@ -124,24 +123,24 @@ function run() {
     env: {},
   });
   assert.ok(
-    confirmedTransform.prompt.includes("[REQUIREMENT_LOCK_V1] mode: requirement_definition_gate"),
-    "confirmed prompt should stay in requirement definition gate mode while RBJ is active"
+    confirmedTransform.prompt.includes("[REQUIREMENT_LOCK_V1] mode: structured_execution"),
+    "confirmed prompt should stay in structured execution mode once the requirement is already tight enough"
   );
   assert.ok(
-    confirmedTransform.prompt.includes("[SCOPE_EXPANSION_V1] expansion_status: parked_until_rbj_pass"),
-    "confirmed prompt should keep expansion parked until RBJ pass"
+    confirmedTransform.prompt.includes("[SCOPE_EXPANSION_V1] expansion_status: auto_enabled"),
+    "confirmed prompt should keep expansion available once the requirement lock is already strong enough"
   );
   assert.ok(
-    confirmedTransform.prompt.includes("[PLANNING_MODE_V1] selected: DISCOVERY"),
-    "confirmed prompt should preserve DISCOVERY planning mode"
+    confirmedTransform.prompt.includes("[PLANNING_MODE_V1] selected: NORMAL"),
+    "confirmed prompt should preserve NORMAL planning mode for execution-ready work"
   );
   assert.ok(
     confirmedTransform.prompt.includes("[ASSURANCE_DEPTH_V1] selected: STANDARD_ASSURANCE"),
     "confirmed prompt should preserve assurance depth"
   );
   assert.ok(
-    confirmedTransform.prompt.includes("STATUS: REQUIREMENTS_READY"),
-    "confirmed prompt should include requirements-ready stop status"
+    confirmedTransform.prompt.includes("Execution protocol (mandatory):"),
+    "confirmed prompt should switch into the structured execution protocol"
   );
   assert.ok(
     confirmedTransform.prompt.includes("User request (verbatim):\nImplement a login endpoint and add tests."),
@@ -159,12 +158,8 @@ function run() {
     env: {},
   });
   assert.ok(
-    expandedTransform.prompt.includes("[SCOPE_EXPANSION_V1] expansion_status: parked_until_rbj_pass"),
-    "scope-plus token should keep expansion parked while RBJ gate is active"
-  );
-  assert.ok(
-    expandedTransform.prompt.includes("requested_expansion_mode: auto_enabled"),
-    "scope-plus token should keep auto-enabled intent for post-pass execution"
+    expandedTransform.prompt.includes("[SCOPE_EXPANSION_V1] expansion_status: auto_enabled"),
+    "scope-plus token should remain auto-enabled when the requirement is already execution-ready"
   );
 
   const coreOnlyTransform = matcher.transformExecRequest({
@@ -174,12 +169,8 @@ function run() {
     env: {},
   });
   assert.ok(
-    coreOnlyTransform.prompt.includes("[SCOPE_EXPANSION_V1] expansion_status: parked_until_rbj_pass"),
-    "explicit core-only token should still park expansion until RBJ pass"
-  );
-  assert.ok(
-    coreOnlyTransform.prompt.includes("requested_expansion_mode: core_only"),
-    "explicit core-only token should be preserved as requested intent"
+    coreOnlyTransform.prompt.includes("[SCOPE_EXPANSION_V1] expansion_status: core_only"),
+    "explicit core-only token should be preserved directly once the requirement is already execution-ready"
   );
 
   const nonParentTransform = matcher.transformExecRequest({
@@ -208,7 +199,7 @@ function run() {
     env: { CODEX_SCOPE_EXPANSION_REQUIRE_APPROVAL: "0" },
   });
   assert.ok(
-    autoExpansionTransform.prompt.includes("requested_expansion_mode: auto_enabled"),
+    autoExpansionTransform.prompt.includes("[SCOPE_EXPANSION_V1] expansion_status: auto_enabled"),
     "expansion intent should remain auto-enabled when approval requirement is off"
   );
 
@@ -235,8 +226,8 @@ function run() {
     "rbj marker should not appear when CODEX_REQUIREMENT_RBJ_ENABLED=0"
   );
   assert.ok(
-    rbjDisabledTransform.prompt.includes("[REQUIREMENT_LOCK_V1] mode: structured_execution"),
-    "rbj-disabled prompt should still preserve planning-aware execution mode"
+    rbjDisabledTransform.prompt.includes("[REQUIREMENT_LOCK_V1] mode: fast_execution"),
+    "rbj-disabled prompt should still preserve planning-aware execution mode when the request is tight enough for FAST"
   );
 
   const fastTransform = matcher.transformExecRequest({

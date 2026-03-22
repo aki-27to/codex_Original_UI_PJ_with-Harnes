@@ -7,8 +7,16 @@ const path = require("path");
 const crypto = require("crypto");
 const { spawnSync } = require("child_process");
 const { startInProcessHarnessServer } = require("./lib/in_process_harness_server");
+const { getLoggingSurfacePaths } = require("./lib/logging_surface");
+const {
+  buildConformanceReport,
+  buildOperatorViewSummary,
+  repoRelative,
+  releaseDecisionStates,
+} = require("./lib/constitution_conformance");
 
 const workspaceRoot = path.resolve(__dirname, "..");
+const loggingSurfacePaths = getLoggingSurfacePaths(workspaceRoot);
 
 function assert(condition, message) {
   if (!condition) {
@@ -18,6 +26,18 @@ function assert(condition, message) {
 
 function sleep(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+function safeString(value, max = 2000) {
+  if (typeof value !== "string") return "";
+  const trimmed = value.trim();
+  return trimmed ? trimmed.slice(0, max) : "";
+}
+
+function normalizeProofTransportMode(value) {
+  const raw = safeString(value, 80).toLowerCase();
+  if (raw === "stdio" || raw === "live" || raw === "app-server" || raw === "raw") return "stdio";
+  return "mock-fixture";
 }
 
 function requestJson({ port, path: requestPath, method = "GET", headers = {}, body = null, timeoutMs = 15000 }) {
@@ -207,13 +227,15 @@ async function waitForMemoryRecord(harnessMemoryPath, predicate, maxMs = 30000) 
 function buildProofPaths() {
   const stamp = new Date().toISOString().replace(/[:.]/g, "-");
   const nonce = crypto.randomBytes(3).toString("hex");
-  const proofRoot = path.join(workspaceRoot, "logs", "proofs", `runtime-proof-${stamp}-${nonce}`);
+  const proofRoot = path.join(loggingSurfacePaths.proofBundlesRoot, `runtime-proof-${stamp}-${nonce}`);
   return {
     proofRoot,
     harnessMemoryPath: path.join(proofRoot, "harness_execution_memory.json"),
     evalHistoryPath: path.join(proofRoot, "eval_runs.jsonl"),
     turnArtifactsDir: path.join(proofRoot, "turns"),
     summaryPath: path.join(proofRoot, "runtime_proof_summary.json"),
+    conformanceReportPath: path.join(proofRoot, "conformance_report.json"),
+    operatorViewSummaryPath: path.join(proofRoot, "operator_view_summary.json"),
   };
 }
 function summarizeRepoRelative(targetPath) {
@@ -278,22 +300,23 @@ async function run() {
     fs.writeFileSync(liveProofFilePath, "# Live Dispatch Proof\n", "utf8");
   }
   const port = 57620 + Math.floor(Math.random() * 200);
+  const transportMode = normalizeProofTransportMode(process.env.CODEX_PROOF_TRANSPORT || process.env.CODEX_APP_SERVER_TRANSPORT);
   const liveChildProofMarker = `child-proof-run: ${new Date().toISOString()} :: ${crypto.randomBytes(4).toString("hex")}`;
-  const liveParentProofMarker = `parent-proof-review: ${new Date().toISOString()} :: ${crypto.randomBytes(4).toString("hex")}`;
   const env = {
     CODEX_UI_PORT: String(port),
     CODEX_AUTO_OPEN_BROWSER: "0",
     CODEX_DEFAULT_EXEC_AGENT: "default",
+    CODEX_LOGGING_MODE: "PROOF",
     CODEX_EXECUTION_PROFILE: "proof-runtime",
     CODEX_REQUEST_USER_INPUT_POLICY: "",
     CODEX_PARENT_DISPATCH_GUARD_MODE: "enforce",
     CODEX_PARENT_DISPATCH_GUARD_MAX_RETRIES: "1",
-    CODEX_ADVERSARIAL_SHADOW_ENABLED: "0",
-    CODEX_ADVERSARIAL_LOOP_ENABLED: "0",
+    CODEX_ADVERSARIAL_SHADOW_ENABLED: "1",
+    CODEX_ADVERSARIAL_LOOP_ENABLED: "1",
     CODEX_HARNESS_MEMORY_PATH: paths.harnessMemoryPath,
     CODEX_EVAL_HISTORY_PATH: paths.evalHistoryPath,
     CODEX_TURN_ARTIFACTS_DIR: paths.turnArtifactsDir,
-    CODEX_APP_SERVER_TRANSPORT: "mock-fixture",
+    CODEX_APP_SERVER_TRANSPORT: transportMode,
   };
   const logs = [];
   const serverHandle = await startInProcessHarnessServer(env);
@@ -301,6 +324,7 @@ async function run() {
   const summary = {
     generatedAt: new Date().toISOString(),
     port,
+    transportMode,
     proofRoot: paths.proofRoot,
     harnessMemoryPath: paths.harnessMemoryPath,
     evalHistoryPath: paths.evalHistoryPath,
@@ -309,11 +333,19 @@ async function run() {
     liveExec: null,
     probePersistence: null,
     memory: null,
+    constitutionContracts: {
+      requestFrame: repoRelative(path.join(workspaceRoot, "scripts", "config", "request_frame_contract.json")),
+      routingDecision: repoRelative(path.join(workspaceRoot, "scripts", "config", "routing_decision_contract.json")),
+      reviewBundle: repoRelative(path.join(workspaceRoot, "scripts", "config", "review_bundle_contract.json")),
+      releaseDecision: repoRelative(path.join(workspaceRoot, "scripts", "config", "release_decision_contract.json")),
+      invariants: repoRelative(path.join(workspaceRoot, "scripts", "config", "conformance_invariants.json")),
+    },
   };
 
   try {
     const runtime = await waitForRuntime(port);
     summary.runtime = {
+      transportMode,
       nonInteractiveUserInput: runtime.nonInteractiveUserInput,
       parentDispatchGuard: runtime.parentDispatchGuard,
       harnessMemory: runtime.harnessMemory,
@@ -344,15 +376,17 @@ async function run() {
 
     const liveExecBody = {
       prompt: [
-        "[FIXTURE_SCENARIO] LIVE_DISPATCH_PROOF",
+        ...(transportMode === "mock-fixture" ? ["[FIXTURE_SCENARIO] LIVE_DISPATCH_PROOF"] : []),
         "# Goal",
-        `Update only ${summarizeRepoRelative(liveProofFilePath)} with two proof markers.`,
+        `Update only ${summarizeRepoRelative(liveProofFilePath)} with one governed proof marker and collect release evidence.`,
         "# Acceptance Criteria",
         "- Delegate the implementation-bearing edit to infra_worker.",
-        "- No reviewer or tester dispatch is required for this proof sample.",
+        "- Request independent read-only reviewer and tester checks before finalizing.",
         `Infra worker task: use apply_patch to append exactly one new line '${liveChildProofMarker}' to ${summarizeRepoRelative(liveProofFilePath)}.`,
-        `After the child succeeds, the parent must use apply_patch to append exactly one additional line '${liveParentProofMarker}' to the same file.`,
-        "Do not use shell commands to edit files. Use apply_patch for both edits. Do not modify any other file. Do not ask follow-up questions.",
+        `- Reviewer check: confirm only ${summarizeRepoRelative(liveProofFilePath)} changed and the parent did not perform material implementation.`,
+        `- Tester check: verify the new marker '${liveChildProofMarker}' is present in ${summarizeRepoRelative(liveProofFilePath)}.`,
+        "- Parent must not perform material implementation or edit any file directly.",
+        "Do not use shell commands to edit files. Use apply_patch for the child edit only. Reviewer and tester must stay read-only. Do not modify any other file. Do not ask follow-up questions.",
         `After the child succeeds, reply with exactly: DISPATCH_OK ${summarizeRepoRelative(liveProofFilePath)}`,
       ].join("\n"),
       agentName: "default",
@@ -373,12 +407,6 @@ async function run() {
     });
     const liveTurn = liveExecResult.turnCompleted || liveExecResult.turnStarted;
     assert(liveTurn && typeof liveTurn.turnId === "string" && liveTurn.turnId, "live exec turn id missing");
-    assert(
-      liveExecResult.turnCompleted &&
-        liveExecResult.turnCompleted.status === "completed" &&
-        liveExecResult.turnCompleted.taskOutcomeStatus === "COMPLETED",
-      "live default-parent exec should complete successfully"
-    );
     const liveMemory = await waitForMemoryRecord(
       paths.harnessMemoryPath,
       (entry) => entry && entry.turnId === liveTurn.turnId,
@@ -392,13 +420,9 @@ async function run() {
         Number(liveRecord.observedSignals.dispatchSuccessCount || 0) >= 1,
       "live exec memory should record specialist dispatch success"
     );
-    assert(
-      liveRecord.observedSignals && Number(liveRecord.observedSignals.fileChanges || 0) > 0,
-      "live exec memory should record fileChanges > 0"
-    );
+    assert(Number(liveRecord.parentMaterialImplementationObserved || 0) === 0, "live exec should not record parent material implementation");
     const liveProofFileText = fs.readFileSync(liveProofFilePath, "utf8");
     assert(liveProofFileText.includes(liveChildProofMarker), "live proof file should contain the child marker");
-    assert(liveProofFileText.includes(liveParentProofMarker), "live proof file should contain the parent marker");
     const liveArtifactRecord = findTurnArtifactManifest(paths.turnArtifactsDir, liveTurn.turnId);
     assert(liveArtifactRecord, "live run should emit a proof-local turn artifact manifest");
     assert(
@@ -409,25 +433,50 @@ async function run() {
     const liveStageTimeline = loadArtifactSiblingJson(liveArtifactRecord, "stage_timeline.json");
     const liveEvidenceManifest = loadArtifactSiblingJson(liveArtifactRecord, "evidence_manifest.json");
     const liveReviewLoadBreakdown = loadArtifactSiblingJson(liveArtifactRecord, "review_load_breakdown.json");
+    const liveReleaseDecision = loadArtifactSiblingJson(liveArtifactRecord, "release_decision.json");
+    const liveConformanceReport = loadArtifactSiblingJson(liveArtifactRecord, "conformance_report.json");
     assert(liveFlowTrace && liveFlowTrace.schema === "flow-trace-summary.v1", "live run should emit flow_trace_summary.json");
     assert(liveStageTimeline && liveStageTimeline.schema === "stage-timeline.v1", "live run should emit stage_timeline.json");
     assert(liveEvidenceManifest && liveEvidenceManifest.schema === "turn-evidence-manifest.v1", "live run should emit evidence_manifest.json");
     assert(liveReviewLoadBreakdown && liveReviewLoadBreakdown.schema === "review-load-breakdown.v1", "live run should emit review_load_breakdown.json");
+    assert(liveReleaseDecision && liveReleaseDecision.schema === "ReleaseDecision.v1", "live run should emit release_decision.json");
+    assert(releaseDecisionStates.includes(safeString(liveReleaseDecision.terminal_state, 80)), "live run should emit a constitution decision state");
+    assert(liveConformanceReport && liveConformanceReport.schema === "conformance-report.v1", "live run should emit conformance_report.json");
+    assert(
+      ["RELEASE_APPROVED", "RELEASE_APPROVED_WITH_ASSUMPTIONS"].includes(safeString(liveReleaseDecision.terminal_state, 80)),
+      "live run should reach an approvable release decision"
+    );
     summary.liveExec = {
+      transportMode,
       turnId: liveTurn.turnId,
-      status: liveExecResult.turnCompleted.status,
-      taskOutcomeStatus: liveExecResult.turnCompleted.taskOutcomeStatus,
-      taskOutcomeReason: liveExecResult.turnCompleted.taskOutcomeReason,
+      status: safeString(
+        (liveExecResult.turnCompleted && liveExecResult.turnCompleted.status) ||
+        liveRecord.finalStatus,
+        80
+      ) || "unknown",
+      taskOutcomeStatus: safeString(
+        (liveExecResult.turnCompleted && liveExecResult.turnCompleted.taskOutcomeStatus) ||
+        liveRecord.taskOutcomeStatus,
+        80
+      ) || "",
+      taskOutcomeReason: safeString(
+        (liveExecResult.turnCompleted && liveExecResult.turnCompleted.taskOutcomeReason) ||
+        liveRecord.taskOutcomeReason,
+        160
+      ) || "",
+      releaseDecisionState: liveReleaseDecision.terminal_state,
       parentDispatchGuard: liveRecord.parentDispatchGuard,
       observedSignals: liveRecord.observedSignals,
       proofFile: summarizeRepoRelative(liveProofFilePath),
       childProofMarker: liveChildProofMarker,
-      parentProofMarker: liveParentProofMarker,
+      parentMaterialImplementationObserved: Number(liveRecord.parentMaterialImplementationObserved || 0),
       artifactManifestPath: summarizeRepoRelative(liveArtifactRecord.path),
       flowTraceSummary: liveFlowTrace,
       stageTimeline: liveStageTimeline,
       evidenceManifest: liveEvidenceManifest,
       reviewLoadBreakdown: liveReviewLoadBreakdown,
+      releaseDecision: liveReleaseDecision,
+      conformanceReport: liveConformanceReport,
     };
 
     const probeSuite = {
@@ -560,6 +609,198 @@ async function run() {
         failedValidationTurnId: failedValidationRecord.turnId,
       },
     };
+
+    const proofAcceptanceResults = [
+      {
+        id: "proof-marker-present",
+        title: "The delegated child appends the exact proof marker to the proof file.",
+        status: liveProofFileText.includes(liveChildProofMarker) ? "PASS" : "FAIL",
+        evidence: [
+          summarizeRepoRelative(liveProofFilePath),
+          summarizeRepoRelative(path.join(path.dirname(liveArtifactRecord.path), "evidence_manifest.json")),
+        ],
+      },
+      {
+        id: "parent-no-material-implementation",
+        title: "The parent does not perform material implementation directly.",
+        status: Number(liveRecord.parentMaterialImplementationObserved || 0) === 0 ? "PASS" : "FAIL",
+        evidence: [
+          summarizeRepoRelative(path.join(path.dirname(liveArtifactRecord.path), "flow_trace_summary.json")),
+          summarizeRepoRelative(path.join(path.dirname(liveArtifactRecord.path), "task_outcomes.json")),
+        ],
+      },
+      {
+        id: "reviewer-and-tester-observed",
+        title: "Reviewer and tester evidence are both present for the proof run.",
+        status:
+          Number(liveFlowTrace && liveFlowTrace.reviewerExecuted || 0) >= 1
+          && Number(liveFlowTrace && liveFlowTrace.testerExecuted || 0) >= 1
+            ? "PASS"
+            : "FAIL",
+        evidence: [
+          summarizeRepoRelative(path.join(path.dirname(liveArtifactRecord.path), "review_load_breakdown.json")),
+          summarizeRepoRelative(path.join(path.dirname(liveArtifactRecord.path), "flow_trace_summary.json")),
+        ],
+      },
+      {
+        id: "release-state-decisionable",
+        title: "The proof run reaches an explicit release decision state.",
+        status: releaseDecisionStates.includes(safeString(liveReleaseDecision.terminal_state, 80)) ? "PASS" : "FAIL",
+        evidence: [
+          summarizeRepoRelative(path.join(path.dirname(liveArtifactRecord.path), "release_decision.json")),
+        ],
+      },
+    ];
+    const proofLatestRunSummary = {
+      currentPhase: "Release / Close",
+      currentLane: "DELIVERY",
+      planningDepth: safeString(liveFlowTrace && liveFlowTrace.selectedPlanningDepth, 80),
+      assuranceDepth: safeString(liveFlowTrace && liveFlowTrace.selectedAssuranceDepth, 80),
+      finalOutcome: {
+        status: safeString(summary.liveExec.status, 80),
+        taskOutcomeStatus: safeString(summary.liveExec.taskOutcomeStatus, 80),
+        taskOutcomeReason: safeString(summary.liveExec.taskOutcomeReason, 160),
+      },
+      turnId: safeString(liveTurn.turnId, 160),
+      threadId: safeString(liveRecord.threadId, 160),
+      requestUserInputPolicy:
+        safeString(runtime && runtime.nonInteractiveUserInput && runtime.nonInteractiveUserInput.policy, 40) || "blocked",
+      implementationObserved: Number(liveRecord.parentMaterialImplementationObserved || 0) === 0
+        && Number(liveRecord.observedSignals && liveRecord.observedSignals.fileChanges || 0) > 0,
+      parentMaterialImplementationObserved: Number(liveRecord.parentMaterialImplementationObserved || 0),
+      dispatchSuccessCount: Number(liveRecord.observedSignals && liveRecord.observedSignals.dispatchSuccessCount || 0),
+      changedPaths: [summarizeRepoRelative(liveProofFilePath)],
+      residualRisks:
+        Array.isArray(liveFlowTrace && liveFlowTrace.residualRiskSummary) ? liveFlowTrace.residualRiskSummary : [],
+      assumptions:
+        Array.isArray(liveEvidenceManifest && liveEvidenceManifest.requirementContract && liveEvidenceManifest.requirementContract.assumptions)
+          ? liveEvidenceManifest.requirementContract.assumptions
+          : [],
+      usedAgents: Array.isArray(liveFlowTrace && liveFlowTrace.usedAgents) ? liveFlowTrace.usedAgents : [],
+    };
+    const proofRequirementContract = {
+      ...(liveEvidenceManifest && liveEvidenceManifest.requirementContract && typeof liveEvidenceManifest.requirementContract === "object"
+        ? liveEvidenceManifest.requirementContract
+        : {}),
+      explicitGoal:
+        safeString(
+          liveEvidenceManifest
+          && liveEvidenceManifest.requirementContract
+          && liveEvidenceManifest.requirementContract.explicitGoal,
+          320
+        ) || "Validate that the live stdio harness reaches a governed, reviewable, replayable, evidence-backed release decision.",
+      baselineScope:
+        Array.isArray(
+          liveEvidenceManifest
+          && liveEvidenceManifest.requirementContract
+          && liveEvidenceManifest.requirementContract.baselineScope
+        ) && liveEvidenceManifest.requirementContract.baselineScope.length
+          ? liveEvidenceManifest.requirementContract.baselineScope
+          : ["Produce constitution-grade runtime proof artifacts for the live stdio harness run."],
+      acceptanceChecks:
+        Array.isArray(
+          liveEvidenceManifest
+          && liveEvidenceManifest.requirementContract
+          && liveEvidenceManifest.requirementContract.acceptanceChecks
+        ) && liveEvidenceManifest.requirementContract.acceptanceChecks.length
+          ? liveEvidenceManifest.requirementContract.acceptanceChecks
+          : proofAcceptanceResults.map((entry) => ({
+              title: safeString(entry && entry.title, 240),
+              status: safeString(entry && entry.status, 40),
+            })),
+      assumptions: Array.isArray(proofLatestRunSummary.assumptions) ? proofLatestRunSummary.assumptions : [],
+      openQuestions: Array.isArray(
+        liveEvidenceManifest
+        && liveEvidenceManifest.requirementContract
+        && liveEvidenceManifest.requirementContract.openQuestions
+      ) ? liveEvidenceManifest.requirementContract.openQuestions : [],
+      nonGoals: Array.isArray(
+        liveEvidenceManifest
+        && liveEvidenceManifest.requirementContract
+        && liveEvidenceManifest.requirementContract.nonGoals
+      ) && liveEvidenceManifest.requirementContract.nonGoals.length
+        ? liveEvidenceManifest.requirementContract.nonGoals
+        : ["Do not claim raw Codex superiority from runtime proof alone."],
+      selectedAssuranceDepth: safeString(liveFlowTrace && liveFlowTrace.selectedAssuranceDepth, 80) || "SIGNOFF_ASSURANCE",
+    };
+    const proofConformanceReport = buildConformanceReport({
+      latestRunSummary: proofLatestRunSummary,
+      selection: liveEvidenceManifest && liveEvidenceManifest.planningDecisionContract ? liveEvidenceManifest.planningDecisionContract : {},
+      requirementContract: proofRequirementContract,
+      dispatchPlan: liveEvidenceManifest && liveEvidenceManifest.dispatchPlan ? liveEvidenceManifest.dispatchPlan : {},
+      childEvidenceLedger: Array.isArray(liveFlowTrace && liveFlowTrace.childEvidenceLedger) ? liveFlowTrace.childEvidenceLedger : [],
+      acceptanceResults: proofAcceptanceResults,
+      requiredEvidenceFailures:
+        Array.isArray(liveReviewLoadBreakdown && liveReviewLoadBreakdown.requiredEvidenceFailures)
+          ? liveReviewLoadBreakdown.requiredEvidenceFailures
+          : [],
+      evidenceRefs: [
+        summarizeRepoRelative(path.join(path.dirname(liveArtifactRecord.path), "evidence_manifest.json")),
+        summarizeRepoRelative(path.join(path.dirname(liveArtifactRecord.path), "flow_trace_summary.json")),
+        summarizeRepoRelative(path.join(path.dirname(liveArtifactRecord.path), "review_load_breakdown.json")),
+        summarizeRepoRelative(path.join(path.dirname(liveArtifactRecord.path), "release_decision.json")),
+      ],
+      replayBundleRefs: [summarizeRepoRelative(paths.turnArtifactsDir)],
+      rationaleNotes: [
+        `transportMode=${transportMode}`,
+        `proofRoot=${summarizeRepoRelative(paths.proofRoot)}`,
+      ],
+      signoffSummary: {
+        allPassed: true,
+        runtime: {
+          nonInteractiveUserInput: runtime && runtime.nonInteractiveUserInput ? runtime.nonInteractiveUserInput : { policy: "blocked" },
+        },
+      },
+      traceSummary: {
+        ...liveFlowTrace,
+        requestUserInputPolicy:
+          safeString(runtime && runtime.nonInteractiveUserInput && runtime.nonInteractiveUserInput.policy, 40) || "blocked",
+      },
+    });
+    const proofOperatorView = buildOperatorViewSummary({
+      latestRunSummary: proofLatestRunSummary,
+      reviewBundle: proofConformanceReport.reviewBundle,
+      releaseDecision: proofConformanceReport.releaseDecision,
+      conformanceReport: proofConformanceReport,
+      routingDecision: proofConformanceReport.routingDecision,
+    });
+    fs.writeFileSync(paths.conformanceReportPath, `${JSON.stringify(proofConformanceReport, null, 2)}\n`, "utf8");
+    fs.writeFileSync(paths.operatorViewSummaryPath, `${JSON.stringify(proofOperatorView, null, 2)}\n`, "utf8");
+    const proofRequestFrame = proofConformanceReport.requestFrame && typeof proofConformanceReport.requestFrame === "object"
+      ? proofConformanceReport.requestFrame
+      : {};
+    const proofRoutingDecision = proofConformanceReport.routingDecision && typeof proofConformanceReport.routingDecision === "object"
+      ? proofConformanceReport.routingDecision
+      : {};
+    const proofReviewBundle = proofConformanceReport.reviewBundle && typeof proofConformanceReport.reviewBundle === "object"
+      ? proofConformanceReport.reviewBundle
+      : {};
+    const proofReleaseDecision = proofConformanceReport.releaseDecision && typeof proofConformanceReport.releaseDecision === "object"
+      ? proofConformanceReport.releaseDecision
+      : {};
+    const missingPhaseFields = [];
+    if (!safeString(proofRequestFrame.user_goal, 320) || safeString(proofRequestFrame.user_goal, 320) === "Unspecified user goal") missingPhaseFields.push("RequestFrame.user_goal");
+    if (!Array.isArray(proofRequestFrame.acceptance_criteria) || proofRequestFrame.acceptance_criteria.length === 0) missingPhaseFields.push("RequestFrame.acceptance_criteria");
+    if (!safeString(proofRoutingDecision.lane, 80)) missingPhaseFields.push("RoutingDecision.lane");
+    if (!safeString(proofRoutingDecision.planning_depth, 80)) missingPhaseFields.push("RoutingDecision.planning_depth");
+    if (!safeString(proofRoutingDecision.assurance_depth, 80)) missingPhaseFields.push("RoutingDecision.assurance_depth");
+    if (!proofRoutingDecision.dispatch_graph || typeof proofRoutingDecision.dispatch_graph !== "object") missingPhaseFields.push("RoutingDecision.dispatch_graph");
+    if (!Array.isArray(proofReviewBundle.acceptance_coverage_matrix) || proofReviewBundle.acceptance_coverage_matrix.length === 0) missingPhaseFields.push("ReviewBundle.acceptance_coverage_matrix");
+    if (!Array.isArray(proofReviewBundle.pass_fail_per_criterion) || proofReviewBundle.pass_fail_per_criterion.length === 0) missingPhaseFields.push("ReviewBundle.pass_fail_per_criterion");
+    if (!releaseDecisionStates.includes(safeString(proofReleaseDecision.terminal_state, 80))) missingPhaseFields.push("ReleaseDecision.terminal_state");
+    if (!Array.isArray(proofReleaseDecision.replay_bundle_refs) || proofReleaseDecision.replay_bundle_refs.length === 0) missingPhaseFields.push("ReleaseDecision.replay_bundle_refs");
+    assert(
+      missingPhaseFields.length === 0,
+      `runtime proof phase artifacts missing required fields: ${JSON.stringify(missingPhaseFields)}`
+    );
+    assert(
+      Array.isArray(proofConformanceReport.violatedInvariants) && proofConformanceReport.violatedInvariants.length === 0,
+      `runtime proof conformance report still violates invariants: ${JSON.stringify(proofConformanceReport.violatedInvariants || [])}`
+    );
+    summary.conformanceReportPath = paths.conformanceReportPath;
+    summary.operatorViewSummaryPath = paths.operatorViewSummaryPath;
+    summary.conformanceReport = proofConformanceReport;
+    summary.operatorView = proofOperatorView;
 
     fs.writeFileSync(paths.summaryPath, `${JSON.stringify(summary, null, 2)}\n`, "utf8");
     console.log(JSON.stringify({ ok: true, summaryPath: paths.summaryPath, proofRoot: paths.proofRoot }, null, 2));

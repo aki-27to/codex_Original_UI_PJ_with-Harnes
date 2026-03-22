@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Codex ハーネス概要</title>
+  <title>Codex Harness Overview</title>
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Ccircle cx='32' cy='32' r='28' fill='%231db86a'/%3E%3Ccircle cx='32' cy='32' r='12' fill='%23050b16'/%3E%3C/svg%3E">
   <link rel="stylesheet" href="./styles.css">
   <link rel="stylesheet" href="./overview.css">
@@ -15,32 +15,33 @@
       <div class="brand">
         <span class="brand-dot"></span>
         <div>
-          <h1>ハーネス概要</h1>
-          <p>ランタイム姿勢、トポロジー、契約、証跡、記憶、健全性を 1 枚で確認する運用マップ。</p>
+          <h1>Harness Overview</h1>
+          <p>Runtime posture, topology, contracts, evidence, memory, and health in one operator map.</p>
         </div>
       </div>
       <div class="state-pills overview-actions">
-        <a class="btn secondary mini" href="./index.html">コンソール</a>
-        <button id="overviewRefreshBtn" class="btn mini" type="button">更新</button>
-        <span id="overviewRefreshState" class="pill idle">読み込み中</span>
-        <span id="overviewGeneratedAt" class="pill neutral">スナップショット --:--:--</span>
+        <a class="btn secondary mini" href="./index.html">Console</a>
+        <a class="btn secondary mini" href="./guide.html">Guide</a>
+        <button id="overviewRefreshBtn" class="btn mini" type="button">Refresh</button>
+        <span id="overviewRefreshState" class="pill idle">Loading</span>
+        <span id="overviewGeneratedAt" class="pill neutral">Snapshot --:--:--</span>
       </div>
     </header>
 
-    <nav class="overview-anchor-nav" aria-label="概要セクション">
-      <a href="#runtimeSection">ランタイム</a>
-      <a href="#topologySection">トポロジー</a>
-      <a href="#contractsSection">契約</a>
-      <a href="#evidenceSection">証跡</a>
-      <a href="#memorySection">記憶</a>
+    <nav class="overview-anchor-nav" aria-label="Overview sections">
+      <a href="#runtimeSection">Runtime</a>
+      <a href="#topologySection">Topology</a>
+      <a href="#contractsSection">Contracts</a>
+      <a href="#evidenceSection">Evidence</a>
+      <a href="#memorySection">Memory</a>
     </nav>
 
     <main class="overview-layout">
       <section class="overview-hero">
         <div class="overview-hero-copy">
-          <p class="overview-eyebrow">システムマップ</p>
-          <h2>実行コンソールから分離した、ハーネス制御面とライブ証跡。</h2>
-          <p id="overviewHeroText" class="overview-hero-text">現在のランタイムスナップショットを読み込み中です。</p>
+          <p class="overview-eyebrow">System Map</p>
+          <h2>Harness control plane and live proof, separated from the execution console.</h2>
+          <p id="overviewHeroText" class="overview-hero-text">Loading current runtime snapshot.</p>
         </div>
         <div id="overviewHeroPills" class="overview-hero-pills"></div>
       </section>
@@ -52,30 +53,30 @@
       <section id="runtimeSection" class="overview-section">
         <div class="overview-section-head">
           <div>
-            <p class="overview-kicker">ランタイム</p>
-            <h3>姿勢と制御面</h3>
+            <p class="overview-kicker">Runtime</p>
+            <h3>Posture and control plane</h3>
           </div>
-          <p class="overview-section-copy">ドキュメント推測ではなく、ライブのデフォルト値と運用 API をそのまま反映します。</p>
+          <p class="overview-section-copy">The page below mirrors live defaults and operator-facing APIs instead of inferring them from docs.</p>
         </div>
         <div class="overview-grid overview-grid-3">
           <article class="side-card overview-panel">
             <div class="overview-panel-head">
-              <h4>ランタイム姿勢</h4>
-              <p>実行デフォルト、親エージェント姿勢、現在のセッション状態。</p>
+              <h4>Runtime Posture</h4>
+              <p>Execution defaults, parent posture, and live session state.</p>
             </div>
             <div id="runtimePostureCard"></div>
           </article>
           <article class="side-card overview-panel">
             <div class="overview-panel-head">
-              <h4>ガードレール</h4>
-              <p>ディスパッチ、ユーザー入力、要件、adversarial 系ポリシー。</p>
+              <h4>Guard Rails</h4>
+              <p>Dispatch, user-input, requirement, and adversarial policies.</p>
             </div>
             <div id="guardrailCard"></div>
           </article>
           <article class="side-card overview-panel">
             <div class="overview-panel-head">
-              <h4>健全性</h4>
-              <p>SLO と直近の終端ターンを表示します。</p>
+              <h4>Health</h4>
+              <p>SLO view plus the latest terminal turn.</p>
             </div>
             <div id="healthCard"></div>
           </article>
@@ -85,38 +86,38 @@
       <section id="topologySection" class="overview-section">
         <div class="overview-section-head">
           <div>
-            <p class="overview-kicker">トポロジー</p>
-            <h3>設定済みロールとランタイムレーン</h3>
+            <p class="overview-kicker">Topology</p>
+            <h3>Configured roles and runtime lanes</h3>
           </div>
-          <p class="overview-section-copy">親、専門ロール、検証ロール、廃止互換レーンを分離し、オーケストレーション構造を見える化します。</p>
+          <p class="overview-section-copy">Parents, specialists, verification roles, and retired compatibility lanes are separated so the orchestration model is visible.</p>
         </div>
         <div id="topologySummary" class="overview-inline-stat-grid"></div>
         <div class="overview-grid overview-grid-4">
           <article class="side-card overview-panel overview-lane-panel lane-parent">
             <div class="overview-panel-head">
-              <h4>親エージェント</h4>
-              <p>オーケストレーターとスコープ付きランタイム変種。</p>
+              <h4>Parents</h4>
+              <p>Orchestrators and scoped runtime variants.</p>
             </div>
             <div id="topologyParentLane" class="overview-lane-list"></div>
           </article>
           <article class="side-card overview-panel overview-lane-panel lane-specialist">
             <div class="overview-panel-head">
-              <h4>専門ロール</h4>
-              <p>frontend、backend、infra の実行レーン。</p>
+              <h4>Specialists</h4>
+              <p>Frontend, backend, and infra execution lanes.</p>
             </div>
             <div id="topologySpecialistLane" class="overview-lane-list"></div>
           </article>
           <article class="side-card overview-panel overview-lane-panel lane-verification">
             <div class="overview-panel-head">
-              <h4>検証ロール</h4>
-              <p>tester、reviewer、explorer のカバレッジ。</p>
+              <h4>Verification</h4>
+              <p>Tester, reviewer, and explorer coverage.</p>
             </div>
             <div id="topologyVerificationLane" class="overview-lane-list"></div>
           </article>
           <article class="side-card overview-panel overview-lane-panel lane-retired">
             <div class="overview-panel-head">
-              <h4>廃止済み</h4>
-              <p>通常ルーティングを担うべきではない互換アーティファクト。</p>
+              <h4>Retired</h4>
+              <p>Compatibility artifacts that should not drive normal routing.</p>
             </div>
             <div id="topologyRetiredLane" class="overview-lane-list"></div>
           </article>
@@ -126,30 +127,30 @@
       <section id="contractsSection" class="overview-section">
         <div class="overview-section-head">
           <div>
-            <p class="overview-kicker">契約</p>
-            <h3>ランタイムが必須と定めること</h3>
+            <p class="overview-kicker">Contracts</p>
+            <h3>What the runtime says must happen</h3>
           </div>
-          <p class="overview-section-copy">ターンライフサイクル、タスク結果、ガバナンス範囲を machine-readable なスナップショットで表示します。</p>
+          <p class="overview-section-copy">The turn lifecycle, task outcomes, and governance scope are shown as machine-readable snapshots.</p>
         </div>
         <div class="overview-grid overview-grid-3">
           <article class="side-card overview-panel">
             <div class="overview-panel-head">
-              <h4>Turn 契約</h4>
-              <p>ライフサイクルと task-outcome bridge。</p>
+              <h4>Turn Contract</h4>
+              <p>Lifecycle and task-outcome bridge.</p>
             </div>
             <div id="turnContractCard"></div>
           </article>
           <article class="side-card overview-panel">
             <div class="overview-panel-head">
-              <h4>タスク結果</h4>
-              <p>終端状態と reason カバレッジ。</p>
+              <h4>Task Outcomes</h4>
+              <p>Terminal states and reason coverage.</p>
             </div>
             <div id="taskOutcomeCard"></div>
           </article>
           <article class="side-card overview-panel">
             <div class="overview-panel-head">
-              <h4>ガバナンス</h4>
-              <p>親エージェント集合、廃止レーン、override ポリシー。</p>
+              <h4>Governance</h4>
+              <p>Parent set, retired lanes, and override policy.</p>
             </div>
             <div id="governanceCard"></div>
           </article>
@@ -159,23 +160,23 @@
       <section id="evidenceSection" class="overview-section">
         <div class="overview-section-head">
           <div>
-            <p class="overview-kicker">証跡</p>
-            <h3>最新の証明と回帰結果</h3>
+            <p class="overview-kicker">Evidence</p>
+            <h3>Fresh proof and regression outcomes</h3>
           </div>
-          <p class="overview-section-copy">最新 signoff バンドル、runtime 証跡バンドル、評価履歴を UI 上で要約表示します。</p>
+          <p class="overview-section-copy">The newest signoff bundle, runtime proof bundle, and eval history are summarized without leaving the UI.</p>
         </div>
         <div class="overview-grid overview-grid-2">
           <article class="side-card overview-panel">
             <div class="overview-panel-head">
-              <h4>最新 signoff</h4>
-              <p>フルスイートと natural-task trace。</p>
+              <h4>Latest Signoff</h4>
+              <p>Full suite plus natural-task trace.</p>
             </div>
             <div id="signoffEvidenceCard"></div>
           </article>
           <article class="side-card overview-panel">
             <div class="overview-panel-head">
-              <h4>最新 runtime 証跡</h4>
-              <p>ガード適用と probe 永続化。</p>
+              <h4>Latest Runtime Proof</h4>
+              <p>Guard enforcement and probe persistence.</p>
             </div>
             <div id="runtimeProofCard"></div>
           </article>
@@ -183,15 +184,15 @@
         <div class="overview-grid overview-grid-2">
           <article class="side-card overview-panel">
             <div class="overview-panel-head">
-              <h4>最近の評価実行</h4>
-              <p>ハーネスが記録した直近の suite 実行です。</p>
+              <h4>Recent Eval Runs</h4>
+              <p>Newest suite executions recorded by the harness.</p>
             </div>
             <div id="evalRunsCard"></div>
           </article>
           <article class="side-card overview-panel">
             <div class="overview-panel-head">
-              <h4>API サーフェス</h4>
-              <p>overview、runtime、replay、eval、conversation の各 endpoint。</p>
+              <h4>API Surfaces</h4>
+              <p>Overview, runtime, replay, eval, and conversation endpoints.</p>
             </div>
             <div id="apiSurfacesCard"></div>
           </article>
@@ -201,30 +202,30 @@
       <section id="memorySection" class="overview-section">
         <div class="overview-section-head">
           <div>
-            <p class="overview-kicker">記憶</p>
-            <h3>永続化、再現、スキルカバレッジ</h3>
+            <p class="overview-kicker">Memory</p>
+            <h3>Persistence, replay, and skill coverage</h3>
           </div>
-          <p class="overview-section-copy">最新実行メモリ、リプレイ状態、繰り返しパターン、skill portfolio 検査をまとめて表示します。</p>
+          <p class="overview-section-copy">Recent execution memory, replay state, recurring patterns, and skill portfolio checks live together here.</p>
         </div>
         <div class="overview-grid overview-grid-3">
           <article class="side-card overview-panel">
             <div class="overview-panel-head">
-              <h4>実行メモリ</h4>
-              <p>直近の結果と parent-dispatch 証跡。</p>
+              <h4>Execution Memory</h4>
+              <p>Recent outcomes and parent-dispatch evidence.</p>
             </div>
             <div id="executionMemoryCard"></div>
           </article>
           <article class="side-card overview-panel">
             <div class="overview-panel-head">
-              <h4>リプレイとパターン</h4>
-              <p>再現トレースと再発しやすい失敗シグネチャ。</p>
+              <h4>Replay and Patterns</h4>
+              <p>Repro traces and recurring failure signatures.</p>
             </div>
             <div id="replayPatternsCard"></div>
           </article>
           <article class="side-card overview-panel">
             <div class="overview-panel-head">
-              <h4>スキルポートフォリオ</h4>
-              <p>ロール網羅、欠落提案、監査状態。</p>
+              <h4>Skill Portfolio</h4>
+              <p>Role coverage, missing proposals, and audit status.</p>
             </div>
             <div id="skillPortfolioCard"></div>
           </article>
@@ -232,18 +233,18 @@
         <div class="overview-grid overview-grid-2">
           <article class="side-card overview-panel">
             <div class="overview-panel-head">
-              <h4>ロール確認</h4>
-              <p>skill ポートフォリオ監査におけるロール別割り当て充足度。</p>
+              <h4>Role Checks</h4>
+              <p>Per-role assignment coverage from the skill portfolio audit.</p>
             </div>
             <div id="roleChecksCard"></div>
           </article>
           <article class="side-card overview-panel">
             <div class="overview-panel-head">
-              <h4>生のスナップショット</h4>
-              <p>運用確認やデバッグ向けの完全な JSON payload。</p>
+              <h4>Raw Snapshot</h4>
+              <p>Full JSON payload for operator inspection or debugging.</p>
             </div>
             <details class="overview-raw-details" open>
-              <summary>生の `/api/harness/overview` スナップショットを表示</summary>
+              <summary>Show raw `/api/harness/overview` snapshot</summary>
               <pre id="overviewRawSnapshot" class="overview-raw-snapshot"></pre>
             </details>
           </article>

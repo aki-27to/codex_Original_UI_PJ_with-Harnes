@@ -1,0 +1,27 @@
+{
+  "schema": "request-frame-contract.v1",
+  "version": "2026-03-08.r1",
+  "artifactName": "RequestFrame",
+  "requiredFields": [
+    "user_goal",
+    "expected_deliverable",
+    "constraints",
+    "acceptance_criteria",
+    "ambiguity_points",
+    "risk_class",
+    "external_dependencies",
+    "assumption_policy",
+    "requested_release_posture"
+  ],
+  "riskClasses": [
+    "low",
+    "medium",
+    "high",
+    "signoff_critical"
+  ],
+  "requestedReleasePostures": [
+    "LIGHT_ASSURANCE",
+    "STANDARD_ASSURANCE",
+    "SIGNOFF_ASSURANCE"
+  ]
+}

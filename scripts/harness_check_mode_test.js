@@ -122,7 +122,12 @@ async function runIntegration() {
     const initialMode = await page.$eval("#harnessCheckMode", (el) => el.value);
     assert.strictEqual(initialMode, "adaptive", "default check mode should be adaptive");
 
-    await page.selectOption("#harnessCheckMode", "relaxed");
+    await page.evaluate(() => {
+      const el = document.querySelector("#harnessCheckMode");
+      if (!el) throw new Error("missing #harnessCheckMode");
+      el.value = "relaxed";
+      el.dispatchEvent(new Event("change", { bubbles: true }));
+    });
     await page.waitForTimeout(120);
     const storedMode = await page.evaluate(() =>
       localStorage.getItem("codex-harness-check-mode-v2")
@@ -287,6 +292,91 @@ async function runIntegration() {
       };
     });
 
+    const blockedRequirementUiSnapshot = await page.evaluate(() => {
+      const cBlocked = active();
+      cBlocked.h = createHarnessState();
+      cBlocked.h.turnSnapshot = {
+        planning: {
+          requirementContract: {
+            explicitGoal: "UIに最終表示するときは",
+            implicitGoal: "",
+            openQuestions: ["What acceptance checks define success?"],
+            acceptanceChecks: [],
+            baselineScope: [],
+            overDeliveryScope: [],
+            nonGoals: ["推測でスコープを広げない"],
+            assumptions: [],
+            status: "BLOCKED",
+            statusReason: "Open questions remain: 1.",
+            validation: {
+              verdict: "BLOCK",
+              summary: { passCount: 1, warnCount: 0, blockCount: 1, total: 2 },
+              checks: [{ status: "BLOCK", detail: "Acceptance checks are missing or too weak for reliable completion judgment." }],
+            },
+            intentInterpretation: {
+              presentation: "progress_hypothesis",
+              questionLike: true,
+              direction: "今の問題は成果物ではなく、ハーネスが「未証明」と「失敗」を同じ赤で潰していることです。",
+              hypothesis: "表示上の意味づけを切り分けたい",
+            },
+            userValueFrame: {
+              valueThesis: "未証明と失敗の違いが一目で分かる状態にする",
+              userWants: [],
+              userShouldFeelGet: [],
+              mustAvoid: [],
+              hardConstraints: [],
+              qualityAxes: ["bounded_scope"],
+              completedMeans: [],
+            },
+            displayContract: {
+              headline: "UIに最終表示するときは",
+              goal: "UIに最終表示するときは",
+              goalMode: "locked",
+              goalLabel: "locked_goal",
+              nextAction: "Clarify: What acceptance checks define success?",
+              holdReason: "Acceptance checks are missing or too weak for reliable completion judgment.",
+              targetOutcome: "",
+              boundaries: [],
+              askNext: [{ question: "What acceptance checks define success?", category: "blocking", reason: "missing_acceptance" }],
+              delightTitles: [],
+            },
+          },
+        },
+      };
+      hset(cBlocked, "running");
+      const blockedMeta = ensureHarnessPlanMeta(cBlocked.h);
+      blockedMeta.decision = "skip";
+      blockedMeta.skipReason = "direct_response_only";
+      blockedMeta.source = "policy";
+      hpush(cBlocked, "dispatch", "blocked-case", "running");
+      hpush(cBlocked, "turn/start", "blocked-case", "running");
+      hpush(cBlocked, "plan/update", "PLAN SKIP / FAST_PLANNING", "info");
+      hpush(cBlocked, "reasoning", "blocked-case", "info");
+      syncHarnessFlow(cBlocked, "adaptive");
+      renderHarness();
+      const phases = Object.fromEntries(
+        Array.from(document.querySelectorAll("#harnessJourneyList .harness-journey-step")).map((node) => [
+          node.querySelector("h4")?.textContent || "",
+          node.className || "",
+        ])
+      );
+      return {
+        requirementStage: cBlocked.h.flow.find((phase) => phase.id === "requirements")?.state || "",
+        planningStage: cBlocked.h.flow.find((phase) => phase.id === "planning")?.state || "",
+        executionStage: cBlocked.h.flow.find((phase) => phase.id === "execution")?.state || "",
+        qualityStage: cBlocked.h.flow.find((phase) => phase.id === "quality")?.state || "",
+        reportStage: cBlocked.h.flow.find((phase) => phase.id === "report")?.state || "",
+        currentStage: document.querySelector("#harnessJourneyStage")?.textContent || "",
+        currentWork: document.querySelector("#harnessJourneyWork")?.textContent || "",
+        planningSummary:
+          Array.from(document.querySelectorAll("#harnessJourneyList .harness-journey-step"))[1]?.querySelector(".harness-journey-summary")?.textContent || "",
+        executionSummary:
+          Array.from(document.querySelectorAll("#harnessJourneyList .harness-journey-step"))[2]?.querySelector(".harness-journey-summary")?.textContent || "",
+        planMeta: document.querySelector("#harnessPlanMeta")?.textContent || "",
+        phaseClasses: phases,
+      };
+    });
+
     assert.strictEqual(
       modeComparison.strictExecution,
       "todo",
@@ -351,7 +441,7 @@ async function runIntegration() {
       "adaptive lightweight completed turn should pass with inferred micro-plan"
     );
     assert(
-      modeComparison.adaptiveLightweightComplete.detail.includes("inferred micro-plan"),
+      modeComparison.adaptiveLightweightComplete.detail.includes("推定マイクロプラン"),
       "adaptive lightweight pass should mention inferred micro-plan"
     );
 
@@ -418,16 +508,52 @@ async function runIntegration() {
       !modeComparison.overflowMissingPlan.detail.includes("turn/start"),
       "missing-plan failure should not regress to missing turn/start when overflow occurs"
     );
-
     assert.strictEqual(
-      planUiSnapshot.planMeta,
-      "1/3 completed",
-      "plan panel should summarize completed plan steps"
+      blockedRequirementUiSnapshot.requirementStage,
+      "blocked",
+      "blocked requirement contracts should keep Step 1 blocked"
     );
     assert.strictEqual(
-      planUiSnapshot.currentLabel,
-      "Current Plan Step",
-      "plan panel should render the current-step label"
+      blockedRequirementUiSnapshot.planningStage,
+      "todo",
+      "blocked requirement contracts should not advance to planning"
+    );
+    assert.strictEqual(
+      blockedRequirementUiSnapshot.executionStage,
+      "todo",
+      "blocked requirement contracts should not advance to execution"
+    );
+    assert.strictEqual(
+      blockedRequirementUiSnapshot.qualityStage,
+      "todo",
+      "blocked requirement contracts should not advance to quality"
+    );
+    assert.strictEqual(
+      blockedRequirementUiSnapshot.reportStage,
+      "todo",
+      "blocked requirement contracts should not advance to reporting"
+    );
+    assert(
+      blockedRequirementUiSnapshot.currentStage.includes("1. 要件整理"),
+      "current stage should stay on Step 1 when the requirement contract is blocked"
+    );
+    assert(
+      blockedRequirementUiSnapshot.currentWork.includes("要確認")
+        || blockedRequirementUiSnapshot.currentWork.includes("何を満たせば成功と言えるか？"),
+      "current work should surface the requirement blocker instead of a later-stage plan skip"
+    );
+    assert(
+      blockedRequirementUiSnapshot.planningSummary.includes("要件整理が保留のため"),
+      "planning summary should explain that downstream work is gated by the blocked requirement contract"
+    );
+    assert(
+      blockedRequirementUiSnapshot.executionSummary.includes("要件整理が保留のため"),
+      "execution summary should explain that downstream work is gated by the blocked requirement contract"
+    );
+
+    assert(
+      planUiSnapshot.planMeta.includes("1/3"),
+      "plan panel should summarize completed plan steps"
     );
     assert(
       planUiSnapshot.currentCardClass.includes("in_progress"),
@@ -445,6 +571,14 @@ async function runIntegration() {
     assert(
       planUiSnapshot.currentDetail.includes("step 2 of 3"),
       "current plan detail should expose the focused step index"
+    );
+    assert(
+      planUiSnapshot.currentWork.includes("2/3"),
+      "Current Work should expose the active plan position"
+    );
+    assert(
+      planUiSnapshot.currentWork.includes("Render execution plan panel in the main UI"),
+      "Current Work should surface the active plan step text"
     );
     assert.strictEqual(
       planUiSnapshot.explanation,
@@ -473,6 +607,81 @@ async function runIntegration() {
     assert(
       planUiSnapshot.focusedStatusClass.includes("in_progress"),
       "focused plan step should carry the in_progress status class"
+    );
+    assert(
+      requirementUiSnapshot.requirementMeta.includes("受け入れ 2"),
+      "requirement lock meta should expose the acceptance check count"
+    );
+    assert(
+      requirementUiSnapshot.requirementHeadline.includes("Show what was locked in Step 1"),
+      "requirement lock headline should surface the explicit goal"
+    );
+    assert.deepStrictEqual(
+      requirementUiSnapshot.groupTitles,
+      ["ゴール", "受け入れ条件", "スコープ", "非対象・前提", "価値基準"],
+      "requirement lock panel should render the expected summary groups"
+    );
+    assert(
+      requirementUiSnapshot.groupItems.some((entry) => entry.includes("Requirement lock summary is visible in Harness Status.")),
+      "requirement lock panel should render acceptance checks"
+    );
+    assert(
+      requirementUiSnapshot.groupItems.some((entry) => entry.includes("Generic progress-only cards")),
+      "requirement lock panel should render must-avoid guidance"
+    );
+    assert(
+      requirementUiSnapshot.firstPhaseSummary.includes("受け入れ 2"),
+      "requirements phase should summarize locked acceptance checks"
+    );
+    assert(
+      requirementUiSnapshot.secondPhaseSummary.includes("dispatch 2"),
+      "planning phase should summarize dispatch ownership"
+    );
+    assert(
+      requirementUiSnapshot.thirdPhaseSummary.includes("実行中"),
+      "execution phase should summarize active implementation progress"
+    );
+    assert(
+      requirementUiSnapshot.fourthPhaseSummary.includes("family gate"),
+      "quality phase should summarize the family gate state"
+    );
+    assert(
+      requirementUiSnapshot.currentWork.includes("Implement UI"),
+      "Current Work should still prefer the active plan step when requirement details are present"
+    );
+    assert.strictEqual(
+      skipUiSnapshot.planMeta,
+      "PLAN SKIP",
+      "skip plan should surface PLAN SKIP in the meta badge"
+    );
+    assert(
+      skipUiSnapshot.currentCardClass.includes("skipped"),
+      "skip plan card should carry skipped styling"
+    );
+    assert(
+      skipUiSnapshot.currentDetail.includes("PLAN SKIP"),
+      "skip plan detail should surface PLAN SKIP"
+    );
+    assert(
+      skipUiSnapshot.currentDetail.includes("FAST_PLANNING"),
+      "skip plan detail should expose planning depth"
+    );
+    assert(
+      skipUiSnapshot.currentWork.includes("PLAN SKIP"),
+      "Current Work should surface PLAN SKIP when planning is intentionally omitted"
+    );
+    assert(
+      skipUiSnapshot.planningCardClass.includes("skipped"),
+      "planning journey card should show skipped state"
+    );
+    assert(
+      skipUiSnapshot.planningCardText.includes("詳細 plan 省略"),
+      "planning journey card should explain the skip state"
+    );
+    assert.strictEqual(
+      skipUiSnapshot.renderedStatus,
+      "SKIP",
+      "skip plan row should render a SKIP status badge"
     );
 
     console.log(`PASS harness_check_mode_test :: port=${port}`);

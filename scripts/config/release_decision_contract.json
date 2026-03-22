@@ -1,0 +1,21 @@
+{
+  "schema": "release-decision-contract.v1",
+  "version": "2026-03-08.r1",
+  "artifactName": "ReleaseDecision",
+  "requiredFields": [
+    "terminal_state",
+    "rationale",
+    "signoff_refs",
+    "blocker_list",
+    "waived_risks",
+    "remaining_conditions",
+    "replay_bundle_refs"
+  ],
+  "terminalStates": [
+    "RELEASE_APPROVED",
+    "RELEASE_APPROVED_WITH_ASSUMPTIONS",
+    "RELEASE_BLOCKED",
+    "EXTERNAL_ACTION_REQUIRED",
+    "HARNESS_FAILURE"
+  ]
+}

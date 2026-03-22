@@ -2,6 +2,8 @@
 "use strict";
 
 const assert = require("assert");
+const fs = require("fs");
+const os = require("os");
 const path = require("path");
 const {
   buildPlanningArtifacts,
@@ -30,6 +32,44 @@ function run() {
       && Array.isArray(fastArtifacts.requirementContract.userValueFrame.qualityAxes)
       && fastArtifacts.requirementContract.userValueFrame.qualityAxes.includes("correctness"),
     "FAST deterministic task should still receive a user-value frame"
+  );
+  assert.strictEqual(fastArtifacts.requirementContract.status, "LOCKED", "bounded FAST task should lock the requirement contract");
+  assert.strictEqual(fastArtifacts.requirementContract.validation.verdict, "PASS", "bounded FAST task should pass requirement validation");
+  assert.ok(
+    typeof fastArtifacts.requirementContract.lockedGoal === "string" && fastArtifacts.requirementContract.lockedGoal.length > 0,
+    "FAST task should promote the validated goal into lockedGoal"
+  );
+  assert.strictEqual(
+    fastArtifacts.requirementContract.displayContract.goalMode,
+    "locked",
+    "FAST task should expose a locked display contract"
+  );
+  assert.strictEqual(
+    fastArtifacts.requirementContract.provenance.explicitGoal.source,
+    "user_explicit",
+    "explicit goal provenance should capture direct user wording for structured prompts"
+  );
+  const lockedOnlySanitized = sanitizePlanningArtifactsForRuntime({
+    ...fastArtifacts,
+    requirementContract: {
+      ...fastArtifacts.requirementContract,
+      explicitGoal: "",
+      implicitGoal: "",
+      lockedGoal: "Keep the operator contract readable without echoing the raw prompt.",
+      intentHypotheses: [{
+        id: "hypothesis_1",
+        goal: "Keep the operator contract readable without echoing the raw prompt.",
+        confidence: 100,
+        evidence: ["locked_goal"],
+        locked: true,
+      }],
+      status: "",
+    },
+  });
+  assert.strictEqual(
+    lockedOnlySanitized.requirementContract.status,
+    "LOCKED",
+    "runtime sanitization should treat lockedGoal or intent hypotheses as core requirement data"
   );
 
   const normalPrompt = [
@@ -65,6 +105,164 @@ function run() {
   assert.strictEqual(forcedFastArtifacts.selection.selectedAssuranceDepth, "SIGNOFF_ASSURANCE", "fast mode should not weaken required assurance depth");
   assert.strictEqual(forcedFastArtifacts.selection.runtime.fastModeEnabled, 1, "runtime planning context should persist fast mode");
 
+  const weakAcceptancePrompt = [
+    "# Goal",
+    "Refresh only the Requirement Lock card copy so the contract reads clearly.",
+    "# Constraints",
+    "- Do not change runtime behavior.",
+  ].join("\n");
+  const weakAcceptanceArtifacts = buildPlanningArtifacts({ prompt: weakAcceptancePrompt, options: { agentName: "default" }, contract });
+  assert.ok(
+    weakAcceptanceArtifacts.requirementContract.acceptanceChecks.length >= 2,
+    "missing acceptance checks should be auto-tightened into inferred acceptance gates when the request is otherwise bounded"
+  );
+  assert.strictEqual(
+    weakAcceptanceArtifacts.requirementContract.status,
+    "LOCKED",
+    "bounded requests should stay locked instead of blocking on an artificial acceptance question"
+  );
+  assert.deepStrictEqual(
+    weakAcceptanceArtifacts.requirementContract.questionPlan.askNext,
+    [],
+    "auto-tightened bounded requests should not leave a synthetic acceptance question behind"
+  );
+  assert.ok(
+    weakAcceptanceArtifacts.requirementContract.questionPlan.askNext.every((entry) => /[?？]$/.test(entry.question)),
+    "question plan entries should remain real questions instead of raw validator prose"
+  );
+
+  const autonomousTighteningPrompt = [
+    "# Goal",
+    "Update only the Requirement Lock card copy in web/01.HarnesUI/app.js so the wording is clearer for operators.",
+    "# Constraints",
+    "- Keep the change local to the Requirement Lock surface.",
+    "- Do not change runtime behavior.",
+  ].join("\n");
+  const autonomousTighteningArtifacts = buildPlanningArtifacts({
+    prompt: autonomousTighteningPrompt,
+    options: { agentName: "default" },
+    contract,
+  });
+  assert.ok(
+    autonomousTighteningArtifacts.requirementContract.acceptanceChecks.length >= 2,
+    "bounded prompts without explicit acceptance criteria should gain inferred acceptance checks"
+  );
+  assert.deepStrictEqual(
+    autonomousTighteningArtifacts.requirementContract.openQuestions,
+    [],
+    "bounded prompts with inferred acceptance checks should not keep artificial blocking open questions"
+  );
+  assert.strictEqual(
+    autonomousTighteningArtifacts.requirementContract.status,
+    "LOCKED",
+    "bounded prompts should lock once autonomous tightening resolves low-risk ambiguity"
+  );
+  assert.notStrictEqual(
+    autonomousTighteningArtifacts.selection.selectedMode,
+    "DISCOVERY",
+    "bounded prompts should not fall back to DISCOVERY once low-risk ambiguity is auto-tightened"
+  );
+
+  const deferredQuestionPrompt = [
+    "# Goal",
+    "Refresh only the Requirement Lock card copy in the UI.",
+    "# Constraints",
+    "- Keep the change local to the Requirement Lock surface.",
+    "- Do not change runtime behavior.",
+    "- What acceptance checks define success?",
+  ].join("\n");
+  const deferredQuestionArtifacts = buildPlanningArtifacts({
+    prompt: deferredQuestionPrompt,
+    options: { agentName: "default" },
+    contract,
+  });
+  assert.deepStrictEqual(
+    deferredQuestionArtifacts.requirementContract.openQuestions,
+    [],
+    "defaultable acceptance questions should be deferred instead of blocking the contract"
+  );
+  assert.ok(
+    deferredQuestionArtifacts.requirementContract.questionPlan.defaultable.some((entry) => /What acceptance checks define success\?/i.test(entry.question)),
+    "defaultable acceptance questions should remain visible in the deferred question lane"
+  );
+  assert.strictEqual(
+    deferredQuestionArtifacts.requirementContract.status,
+    "LOCKED",
+    "defaultable acceptance questions should not keep the requirement contract blocked"
+  );
+
+  const anchoredTastePrompt = [
+    "# Goal",
+    "Refresh the landing page UI so it feels closer to https://www.suruga-k.jp/ while keeping the current one-page structure.",
+    "- Which visual direction should be emphasized first?",
+  ].join("\n");
+  const anchoredTasteArtifacts = buildPlanningArtifacts({
+    prompt: anchoredTastePrompt,
+    options: { agentName: "default", executionSource: "web_ui" },
+    contract,
+  });
+  assert.deepStrictEqual(
+    anchoredTasteArtifacts.requirementContract.openQuestions,
+    [],
+    "anchored design taste questions should not block the core contract"
+  );
+  assert.ok(
+    anchoredTasteArtifacts.requirementContract.questionPlan.taste.some((entry) => /Which visual direction should be emphasized first\?/i.test(entry.question)),
+    "anchored design taste questions should stay visible in the taste lane"
+  );
+  assert.notStrictEqual(
+    anchoredTasteArtifacts.selection.selectedMode,
+    "DISCOVERY",
+    "anchored design follow-ups should stay out of DISCOVERY when the direction is already constrained"
+  );
+
+  const fragmentaryGoalArtifacts = buildPlanningArtifacts({
+    prompt: [
+      "# Goal",
+      "UIに最終表示するときは",
+      "# Open Questions",
+      "- What acceptance checks define success?",
+    ].join("\n"),
+    options: { agentName: "default" },
+    contract,
+  });
+  assert.notStrictEqual(
+    fragmentaryGoalArtifacts.requirementContract.lockedGoal,
+    "UI縺ｫ譛邨り｡ｨ遉ｺ縺吶ｋ縺ｨ縺阪・",
+    "fragmentary subordinate clauses should not be promoted literally into locked goals"
+  );
+  assert.ok(
+    !/縺ｨ縺阪・$/.test(fragmentaryGoalArtifacts.requirementContract.lockedGoal),
+    "fragmentary subordinate clauses should be replaced by a safer synthesized goal if the contract can still lock"
+  );
+
+  const approvalBoundaryPrompt = [
+    "# Goal",
+    "Update only the Requirement Lock summary copy in the UI.",
+    "# Constraints",
+    "- User approval required before removing the legacy summary card.",
+  ].join("\n");
+  const approvalBoundaryArtifacts = buildPlanningArtifacts({ prompt: approvalBoundaryPrompt, options: { agentName: "default" }, contract });
+  assert.ok(
+    approvalBoundaryArtifacts.requirementContract.questionPlan.askNext.some((entry) => /approval/i.test(entry.question)),
+    "approval-boundary findings should produce a blocking approval question"
+  );
+  const approvalBoundarySanitized = sanitizePlanningArtifactsForRuntime({
+    ...approvalBoundaryArtifacts,
+    requirementContract: {
+      ...approvalBoundaryArtifacts.requirementContract,
+      approvalBoundaryItems: ["remove the legacy summary card"],
+      displayContract: {
+        ...approvalBoundaryArtifacts.requirementContract.displayContract,
+        boundaries: [],
+      },
+    },
+  });
+  assert.ok(
+    approvalBoundarySanitized.requirementContract.displayContract.boundaries.some((entry) => /Approval required before: remove the legacy summary card/i.test(entry)),
+    "display contract boundaries should surface approval-boundary items"
+  );
+
   const japaneseFrontendPrompt = [
     "# Goal",
     "\u30d5\u30a9\u30f3\u30c8\u3084\u30ec\u30a4\u30a2\u30a6\u30c8\u3092 https://www.suruga-k.jp/ \u3092\u53c2\u8003\u306b\u5237\u65b0\u3057\u3066\u4e0b\u3055\u3044\u3002",
@@ -73,14 +271,127 @@ function run() {
   const japaneseFrontendArtifacts = buildPlanningArtifacts({ prompt: japaneseFrontendPrompt, options: { agentName: "default" }, contract });
   assert.strictEqual(japaneseFrontendArtifacts.selection.selectedMode, "NORMAL", "Japanese frontend redesign should stay in NORMAL mode");
   assert.strictEqual(japaneseFrontendArtifacts.selection.selectedPlanningDepth, "STANDARD_PLANNING", "Japanese frontend redesign should keep standard planning");
-  assert.strictEqual(japaneseFrontendArtifacts.selection.selectedAssuranceDepth, "LIGHT_ASSURANCE", "bounded frontend redesign should stay light assurance");
+  assert.strictEqual(japaneseFrontendArtifacts.selection.selectedAssuranceDepth, "STANDARD_ASSURANCE", "benchmarked frontend redesign should not stay light assurance");
   assert.deepStrictEqual(
     japaneseFrontendArtifacts.dispatchPlan.dispatches.map((entry) => entry.ownerAgent),
     ["frontend_worker"],
     "Japanese frontend redesign should route to frontend_worker"
   );
-  assert.strictEqual(japaneseFrontendArtifacts.dispatchPlan.reviewerRequired, 0, "light-assurance frontend redesign should not force reviewer evidence");
-  assert.strictEqual(japaneseFrontendArtifacts.dispatchPlan.testerRequired, 0, "light-assurance frontend redesign should not force tester evidence");
+  assert.strictEqual(japaneseFrontendArtifacts.dispatchPlan.reviewerRequired, 1, "benchmarked frontend redesign should require reviewer evidence");
+  assert.strictEqual(japaneseFrontendArtifacts.dispatchPlan.testerRequired, 0, "standard benchmarked frontend redesign should not force tester evidence");
+  assert.ok(
+    japaneseFrontendArtifacts.requirementContract.userValueFrame.benchmarkCandidates.includes("https://www.suruga-k.jp/"),
+    "benchmark URL should persist into the requirement contract"
+  );
+
+  const strictRecreationPrompt = [
+    "# Goal",
+    "https://www.suruga-k.jp/ を参考に TOP をほぼ同じに完全再現してください。丸パクリでも構いません。",
+  ].join("\n");
+  const strictRecreationArtifacts = buildPlanningArtifacts({
+    prompt: strictRecreationPrompt,
+    options: { agentName: "default", executionSource: "web_ui" },
+    contract,
+  });
+  assert.strictEqual(strictRecreationArtifacts.selection.selectedAssuranceDepth, "SIGNOFF_ASSURANCE", "strict benchmark recreation should force signoff assurance");
+  assert.strictEqual(strictRecreationArtifacts.dispatchPlan.reviewerRequired, 1, "strict benchmark recreation should require reviewer evidence");
+  assert.strictEqual(strictRecreationArtifacts.dispatchPlan.testerRequired, 1, "strict benchmark recreation should require tester evidence");
+
+  const stitchRecreationPrompt = [
+    "以下に従ってWEB UIを刷新してください。",
+    "以下を完全再現してください。",
+    "",
+    "## Stitch Instructions",
+    "Get the images and code for the following Stitch project's screens:",
+    "",
+    "## Project",
+    "Title: Home - SURUGA-K",
+    "ID: 10142073172180669410",
+    "",
+    "## Screens:",
+    "1. TOP - 三重非破壊検査（画像サンプル反映版）",
+    "   ID: 6be8048471f94faaad7a7d18601c6d2f",
+    "",
+    "Use a utility like `curl -L` to download the hosted URLs.",
+  ].join("\n");
+  const stitchRecreationArtifacts = buildPlanningArtifacts({
+    prompt: stitchRecreationPrompt,
+    options: { agentName: "default", executionSource: "web_ui" },
+    contract,
+  });
+  assert.strictEqual(
+    stitchRecreationArtifacts.requirementContract.lockedGoal,
+    "Stitch の「Home - SURUGA-K」内の「TOP - 三重非破壊検査（画像サンプル反映版）」画面の画像とコードを取得し、WEB UI に忠実再現する",
+    "Stitch structured prompts should lock onto the actual replay objective instead of a generic UI refresh headline"
+  );
+  assert.ok(
+    stitchRecreationArtifacts.requirementContract.baselineScope.some((entry) => /Stitch project: Home - SURUGA-K \/ ID 10142073172180669410/.test(entry)),
+    "Stitch structured prompts should keep the project identity in baseline scope"
+  );
+  assert.ok(
+    stitchRecreationArtifacts.requirementContract.baselineScope.some((entry) => /Stitch screen: TOP - 三重非破壊検査（画像サンプル反映版） \/ ID 6be8048471f94faaad7a7d18601c6d2f/.test(entry)),
+    "Stitch structured prompts should keep the screen identity in baseline scope"
+  );
+  assert.ok(
+    /画像とコードを取得/.test(stitchRecreationArtifacts.requirementContract.displayContract.nextAction),
+    "Stitch structured prompts should direct the agent to fetch the screen assets first"
+  );
+  assert.ok(
+    stitchRecreationArtifacts.requirementContract.displayContract.boundaries.includes("指定された Stitch screen を基準にする"),
+    "Stitch structured prompts should surface the replay boundary"
+  );
+  assert.strictEqual(
+    stitchRecreationArtifacts.requirementContract.displayContract.holdReason,
+    "",
+    "locked Stitch replay prompts should not leak generic hold-risk prose into the UI contract"
+  );
+  assert.strictEqual(
+    stitchRecreationArtifacts.requirementContract.status,
+    "LOCKED",
+    "fully specified Stitch replay prompts should not remain blocked"
+  );
+
+  const followUpArtifacts = buildPlanningArtifacts({
+    prompt: "全然違うので、ほぼ同じに寄せて修正してください。",
+    options: {
+      agentName: "default",
+      executionSource: "web_ui",
+      previousPlanningContext: japaneseFrontendArtifacts,
+    },
+    contract,
+  });
+  assert.strictEqual(followUpArtifacts.selection.taskFamily, "web_creative", "design follow-up should keep the web_creative family");
+  assert.strictEqual(followUpArtifacts.selection.selectedAssuranceDepth, "SIGNOFF_ASSURANCE", "follow-up strict recreation request should keep signoff assurance");
+  assert.ok(
+    followUpArtifacts.requirementContract.userValueFrame.benchmarkCandidates.includes("https://www.suruga-k.jp/"),
+    "follow-up prompt should inherit the locked benchmark URL"
+  );
+  assert.strictEqual(followUpArtifacts.requirementContract.status, "REVISED", "follow-up contract changes should surface as a revised requirement contract");
+  assert.ok(
+    Array.isArray(followUpArtifacts.requirementContract.revisionLedger.changedFields)
+      && followUpArtifacts.requirementContract.revisionLedger.changedFields.length >= 1,
+    "follow-up prompt should record changed requirement fields in the revision ledger"
+  );
+
+  const tempWorkspace = fs.mkdtempSync(path.join(os.tmpdir(), "planning-owned-paths-"));
+  fs.mkdirSync(path.join(tempWorkspace, "resources", "views"), { recursive: true });
+  fs.mkdirSync(path.join(tempWorkspace, "resources", "css"), { recursive: true });
+  fs.mkdirSync(path.join(tempWorkspace, "resources", "js"), { recursive: true });
+  fs.mkdirSync(path.join(tempWorkspace, "routes"), { recursive: true });
+  fs.writeFileSync(path.join(tempWorkspace, "routes", "web.php"), "<?php\n", "utf8");
+  const laravelFrontendArtifacts = buildPlanningArtifacts({
+    prompt: japaneseFrontendPrompt,
+    options: { agentName: "default", executionSource: "web_ui", cwd: tempWorkspace },
+    contract,
+  });
+  assert.ok(
+    laravelFrontendArtifacts.dispatchPlan.dispatches[0].ownedPaths.includes("resources/views/"),
+    "frontend owned paths should reflect Laravel resources/views"
+  );
+  assert.ok(
+    !laravelFrontendArtifacts.dispatchPlan.dispatches[0].ownedPaths.includes("web/"),
+    "frontend owned paths should not fall back to generic web/ when repo-specific paths exist"
+  );
 
   const webCreativePrompt = [
     "# Goal",
@@ -125,6 +436,8 @@ function run() {
       && webCreativeArtifacts.requirementContract.userValueFrame.mustAvoid.length >= 1,
     "web creative requirement contract should include must-avoid guardrails"
   );
+  assert.strictEqual(webCreativeArtifacts.requirementContract.status, "BLOCKED", "clarification-first web request should keep the requirement contract blocked");
+  assert.strictEqual(webCreativeArtifacts.requirementContract.validation.verdict, "BLOCK", "clarification-first web request should surface blocking requirement validation");
 
   const questionPrompt = "ワークスペースっていうのはなに？？ここに何も記載しなかった場合はどうなるの？";
   const questionArtifacts = buildPlanningArtifacts({
@@ -137,10 +450,88 @@ function run() {
     "ワークスペースの意味とここに何も記載しなかった場合の挙動を説明する",
     "question-only prompt should lock an interpreted explanation goal instead of copying the raw input"
   );
+  assert.strictEqual(
+    questionArtifacts.requirementContract.intentInterpretation.presentation,
+    "progress_hypothesis",
+    "question-only prompt should persist an interpreted progress-hypothesis presentation"
+  );
+  assert.strictEqual(
+    questionArtifacts.requirementContract.intentInterpretation.direction,
+    "ワークスペースの意味とここに何も記載しなかった場合の挙動を説明する",
+    "question-only prompt should persist the interpreted direction in the requirement contract"
+  );
   assert.deepStrictEqual(
     questionArtifacts.requirementContract.openQuestions,
     [],
     "question-only prompt should not surface the user's question as an unresolved blocker"
+  );
+
+  const literalVsInterpretationPrompt = "これなんで要件をそのまま受け取っているの？解釈ができていないように見えるだけでしょうか？";
+  const literalVsInterpretationArtifacts = buildPlanningArtifacts({
+    prompt: literalVsInterpretationPrompt,
+    options: { agentName: "default" },
+    contract,
+  });
+  assert.strictEqual(
+    literalVsInterpretationArtifacts.requirementContract.intentInterpretation.presentation,
+    "progress_hypothesis",
+    "meta prompts about literal requirement intake should persist an interpreted progress-hypothesis"
+  );
+  assert.strictEqual(
+    literalVsInterpretationArtifacts.requirementContract.intentInterpretation.direction,
+    "要件ロックが原文の反復に見える理由を、見え方と実際の挙動を切り分け、どこまで解釈できていてどこが原文寄りかを整理して説明する",
+    "meta prompts should persist an interpreted direction instead of a generic literal restatement"
+  );
+  assert.strictEqual(
+    literalVsInterpretationArtifacts.requirementContract.intentInterpretation.hypothesis,
+    "見え方だけの問題か、実際に意図解釈が弱いのかを切り分けて確かめたい",
+    "meta prompts should persist an interpreted user-intent hypothesis"
+  );
+
+  const greetingOnlyArtifacts = buildPlanningArtifacts({
+    prompt: "ありがとうございます。",
+    options: { agentName: "default" },
+    contract,
+  });
+  assert.strictEqual(
+    greetingOnlyArtifacts.requirementContract.explicitGoal,
+    "",
+    "greeting-only input should not lock a courtesy phrase as the explicit goal"
+  );
+
+  const unstructuredJapaneseBrief = [
+    "ありがとうございます。",
+    "でも思っていたサイトと全然違います。",
+    "参考サイト８：独自性２で再構築してください。",
+    "以下の要件でＷＥＢサイトを開発してください。",
+    "C:\\Users\\akima\\dev\\Test Recruitment Page 配下で作業を実施すること",
+    "ページ数は3ページとすること。そのうち１ページは問合せページとすること。",
+    "製作目的は新入社員採用時に会社説明会用をメインに。このサイトを見て興味を持ってもらえるTOPにすること。",
+    "画像はすべて空欄に。",
+    "フォントも参考サイトと合わせること。",
+    "会社名：有限会社三重非破壊検査",
+    "参考サイト：https://www.suruga-k.jp/",
+  ].join("\n");
+  const unstructuredJapaneseArtifacts = buildPlanningArtifacts({
+    prompt: unstructuredJapaneseBrief,
+    options: { agentName: "default", executionSource: "web_ui" },
+    contract,
+  });
+  assert.ok(
+    unstructuredJapaneseArtifacts.requirementContract.explicitGoal.includes("新入社員採用時に会社説明会用"),
+    "unstructured Japanese brief should lock the actual product goal instead of the greeting or complaint preface"
+  );
+  assert.ok(
+    unstructuredJapaneseArtifacts.requirementContract.baselineScope.includes("ページ数は3ページとすること。そのうち１ページは問合せページとすること。"),
+    "unstructured Japanese brief should infer page-count requirements into the baseline scope"
+  );
+  assert.ok(
+    unstructuredJapaneseArtifacts.requirementContract.baselineScope.includes("画像はすべて空欄に。"),
+    "unstructured Japanese brief should infer concrete content constraints into the baseline scope"
+  );
+  assert.ok(
+    unstructuredJapaneseArtifacts.requirementContract.baselineScope.some((entry) => entry.includes("有限会社三重非破壊検査")),
+    "unstructured Japanese brief should keep concrete company metadata in the baseline scope"
   );
 
   const discoveryPrompt = [
@@ -159,11 +550,11 @@ function run() {
   assert.strictEqual(discoveryArtifacts.selection.selectedAssuranceDepth, "STANDARD_ASSURANCE", "ambiguous non-runtime task should default to STANDARD_ASSURANCE");
   assert.strictEqual(discoveryArtifacts.selection.needsInputRecommended, true, "DISCOVERY should recommend NEEDS_INPUT");
   assert.strictEqual(discoveryArtifacts.dispatchPlan.proposalOnly, 1, "DISCOVERY dispatch plan should stay proposal-only");
-  assert.strictEqual(discoveryArtifacts.requirementContract.schema, "requirement-contract.v3", "requirement contract should match the v3 schema");
+  assert.strictEqual(discoveryArtifacts.requirementContract.schema, "requirement-contract.v5", "requirement contract should match the v5 schema");
   assert.strictEqual(discoveryArtifacts.dispatchPlan.schema, "dispatch-plan.v2", "dispatch plan should match the v2 schema");
   assert.ok(
-    discoveryArtifacts.requirementContract.openQuestions.includes("What acceptance checks define success?"),
-    "DISCOVERY should infer an explicit acceptance-check question"
+    discoveryArtifacts.requirementContract.questionPlan.defaultable.some((entry) => entry.question === "What acceptance checks define success?"),
+    "DISCOVERY should keep the inferred acceptance-check question visible in the deferred lane"
   );
   assert.ok(
     discoveryArtifacts.requirementContract.openQuestions.includes("Which specialist boundaries are in scope?"),
@@ -178,6 +569,36 @@ function run() {
       && Array.isArray(discoveryArtifacts.requirementContract.userValueFrame.completedMeans)
       && discoveryArtifacts.requirementContract.userValueFrame.completedMeans.length >= 1,
     "DISCOVERY requirement contract should still include user-value completion framing"
+  );
+  assert.strictEqual(discoveryArtifacts.requirementContract.status, "BLOCKED", "DISCOVERY contract should remain blocked until clarification is resolved");
+  assert.strictEqual(discoveryArtifacts.requirementContract.validation.verdict, "BLOCK", "DISCOVERY contract should surface blocking validation");
+  assert.strictEqual(discoveryArtifacts.requirementContract.lockedGoal, "", "DISCOVERY contract should not lock the goal before the contract is ready");
+  assert.ok(
+    Array.isArray(discoveryArtifacts.requirementContract.intentHypotheses)
+      && discoveryArtifacts.requirementContract.intentHypotheses.length >= 1,
+    "DISCOVERY contract should retain goal hypotheses instead of only a locked goal"
+  );
+  assert.ok(
+    discoveryArtifacts.requirementContract.questionPlan
+      && Array.isArray(discoveryArtifacts.requirementContract.questionPlan.askNext)
+      && discoveryArtifacts.requirementContract.questionPlan.askNext.length >= 1,
+    "DISCOVERY contract should prioritize a small next-question plan"
+  );
+  assert.ok(
+    discoveryArtifacts.requirementContract.challengeReport
+      && Array.isArray(discoveryArtifacts.requirementContract.challengeReport.findings)
+      && discoveryArtifacts.requirementContract.challengeReport.findings.length >= 1,
+    "DISCOVERY contract should carry challenger-style findings"
+  );
+  assert.strictEqual(
+    discoveryArtifacts.requirementContract.displayContract.goalMode,
+    "hypothesis",
+    "DISCOVERY contract should expose a hypothesis-mode display contract"
+  );
+  assert.ok(
+    Array.isArray(discoveryArtifacts.requirementContract.provenance.nonGoals)
+      && discoveryArtifacts.requirementContract.provenance.nonGoals.some((entry) => entry.source === "policy_default"),
+    "inferred discovery non-goals should be tagged as policy defaults"
   );
 
   const markerPrompt = [
@@ -206,6 +627,15 @@ function run() {
       && sanitized.requirementContract.userValueFrame.valueThesis,
     "sanitized artifacts should preserve user-value frame"
   );
+  assert.strictEqual(
+    sanitized.requirementContract.intentInterpretation.presentation,
+    "goal",
+    "sanitized artifacts should preserve requirement intent interpretation"
+  );
+  assert.strictEqual(sanitized.requirementContract.status, "BLOCKED", "sanitized artifacts should preserve requirement status");
+  assert.strictEqual(sanitized.requirementContract.validation.verdict, "BLOCK", "sanitized artifacts should preserve requirement validation verdict");
+  assert.ok(Array.isArray(sanitized.requirementContract.intentHypotheses), "sanitized artifacts should preserve intent hypotheses");
+  assert.ok(sanitized.requirementContract.displayContract && typeof sanitized.requirementContract.displayContract === "object", "sanitized artifacts should preserve the display contract");
 }
 
 try {

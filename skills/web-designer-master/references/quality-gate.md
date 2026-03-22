@@ -2,32 +2,26 @@
 
 Mark each item PASS or FAIL before delivery.
 
-## Visual Originality
+## Source Traceability
 
-1. The page has a clear visual identity, not a default template clone.
-2. At least one signature design element is present.
-3. Section rhythm is varied; composition is not uniformly repetitive.
+1. The response states whether Stitch was used or a manual fallback was used.
+2. Stitch project IDs, screen IDs, or equivalent source references are captured when available.
+3. Route mapping between source screens and implemented pages is explicit.
 
-## Typography and Color
+## Adaptation Quality
 
-1. Typeface choices are intentional and match brand tone.
-2. Color system is tokenized and coherent.
-3. Contrast is readable for key content and controls.
-
-## Interaction and Motion
-
-1. Motion supports hierarchy and does not distract.
-2. `prefers-reduced-motion` is respected.
-3. Hover/focus states are consistent and clear.
+1. Imported code has been adapted to the repo structure, not pasted in raw.
+2. Placeholder text, dead wrappers, and generated cruft are removed.
+3. Existing design-system constraints are preserved when required.
 
 ## Responsive and Accessibility
 
-1. Desktop, tablet, and mobile layouts are all verified.
+1. Desktop and mobile layouts are both verified.
 2. Landmarks and heading hierarchy are semantic.
 3. Keyboard navigation is functional for major interactions.
 
 ## Delivery Readiness
 
-1. Design rationale connects to business goal.
-2. Assets and code are organized for handoff.
-3. No obvious placeholder text or unfinished visual fragments remain.
+1. The implementation reflects the user's actual page/app goal, not just the imported draft.
+2. The final report distinguishes Stitch-derived work from manual refinements.
+3. Any auth/tooling/setup limitation is reported explicitly.

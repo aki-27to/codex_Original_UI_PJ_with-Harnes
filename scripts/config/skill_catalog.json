@@ -11,13 +11,15 @@
       "spec-sync-assistant",
       "parent-dispatch-guard",
       "feedback-promotion-governor",
-      "red-requirement-auditor"
+      "red-requirement-auditor",
+      "web-designer-master"
     ],
     "intake": [
       "openai-docs",
       "parent-dispatch-guard",
       "feedback-promotion-governor",
-      "red-requirement-auditor"
+      "red-requirement-auditor",
+      "web-designer-master"
     ],
     "release_manager": [
       "openai-docs",
@@ -449,9 +451,11 @@
       "coverage": "partial",
       "maturity": "experimental",
       "ownerRoles": [
+        "default",
+        "intake",
         "frontend_worker"
       ],
-      "intent": "Explore bold UI/UX directions while maintaining implementation quality constraints.",
+      "intent": "Use a Stitch-first workflow to import, adapt, and ship web UI while preserving repo-specific implementation quality constraints.",
       "primaryMetric": {
         "name": "design_acceptance_rate",
         "target": 0.7,

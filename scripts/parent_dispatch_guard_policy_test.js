@@ -60,7 +60,7 @@ function testSatisfiedWhenDispatchSucceeded() {
     agentName: "release_manager",
     executionProfile: "standard",
     finalStatus: "completed",
-    commandExecutions: 1,
+    fileChanges: 1,
     dispatchCount: 1,
     dispatchSuccessCount: 1,
     dispatchFailureCount: 0,
@@ -80,7 +80,7 @@ function testScopedDefaultAgentRecognizedAsParent() {
     agentName: "default@chat-001",
     executionProfile: "standard",
     finalStatus: "completed",
-    mcpCalls: 1,
+    changedFiles: 1,
     dispatchCount: 0,
     dispatchSuccessCount: 0,
     dispatchFailureCount: 0,
@@ -106,6 +106,63 @@ function testNotRequiredWithoutImplementationSignals() {
   });
   assert(verdict.required === 0, "guard should not require dispatch for non-implementation parent turn");
   assert(verdict.violation === 0, "non-implementation parent turn should not violate dispatch guard");
+}
+
+function testReadOnlyCommandsDoNotRequireDispatch() {
+  const verdict = evaluateParentDispatchGuard({
+    mode: "enforce",
+    parentAgents: ["default", "intake", "release_manager"],
+    agentName: "default",
+    executionProfile: "standard",
+    finalStatus: "completed",
+    commandExecutions: 3,
+    dispatchCount: 0,
+    dispatchSuccessCount: 0,
+    dispatchFailureCount: 0,
+    collabCalls: 0,
+  });
+  assert(verdict.required === 0, "read-only command turns should not require dispatch");
+  assert(verdict.violation === 0, "read-only command turns should not violate dispatch guard");
+  assert(verdict.work.readOnlyInspectionObserved === true, "read-only command observation should still be recorded");
+}
+
+function testReadOnlyMcpCallsDoNotRequireDispatch() {
+  const verdict = evaluateParentDispatchGuard({
+    mode: "enforce",
+    parentAgents: ["default", "intake", "release_manager"],
+    agentName: "default",
+    executionProfile: "standard",
+    finalStatus: "completed",
+    mcpCalls: 2,
+    dispatchCount: 0,
+    dispatchSuccessCount: 0,
+    dispatchFailureCount: 0,
+    collabCalls: 0,
+  });
+  assert(verdict.required === 0, "read-only MCP inspection turns should not require dispatch");
+  assert(verdict.violation === 0, "read-only MCP inspection turns should not violate dispatch guard");
+  assert(verdict.work.readOnlyInspectionObserved === true, "read-only MCP observation should still be recorded");
+}
+
+function testRequiresDispatchWhenPlanStillExpectsChildWork() {
+  const verdict = evaluateParentDispatchGuard({
+    mode: "enforce",
+    parentAgents: ["default", "intake", "release_manager"],
+    agentName: "default@chat-001",
+    executionProfile: "standard",
+    finalStatus: "completed",
+    dispatchCount: 0,
+    dispatchSuccessCount: 0,
+    dispatchFailureCount: 0,
+    collabCalls: 0,
+    routingDecisionPresent: true,
+    plannedDispatchCount: 1,
+    proposalOnly: false,
+  });
+  assert(verdict.required === 1, "planned child work should require dispatch even before implementation signals are observed");
+  assert(verdict.plannedExecution === 1, "guard should record planned execution");
+  assert(verdict.violation === 1, "planned child work without dispatch should violate the guard");
+  assert(verdict.reason === "dispatch_not_attempted", "guard should report missing dispatch when planned child work never started");
 }
 
 function testSkippedForSmokeProfile() {
@@ -135,6 +192,8 @@ function testRetryPromptBuilder() {
   });
   assert(prompt.includes("spawn_agent -> wait"), "retry prompt should include collab sequence");
   assert(prompt.includes("dispatch_not_attempted"), "retry prompt should include guard reason");
+  assert(prompt.includes("Do not quote or reveal"), "retry prompt should instruct the model not to leak internal guard text");
+  assert(!prompt.includes("[Parent Dispatch Guard]"), "retry prompt should avoid user-facing guard banner text");
 }
 
 function run() {
@@ -145,6 +204,9 @@ function run() {
     ["satisfied when dispatch succeeded", testSatisfiedWhenDispatchSucceeded],
     ["scoped default agent recognized as parent", testScopedDefaultAgentRecognizedAsParent],
     ["skip non-implementation parent turn", testNotRequiredWithoutImplementationSignals],
+    ["skip read-only command inspection turn", testReadOnlyCommandsDoNotRequireDispatch],
+    ["skip read-only MCP inspection turn", testReadOnlyMcpCallsDoNotRequireDispatch],
+    ["require dispatch when plan expects child work", testRequiresDispatchWhenPlanStillExpectsChildWork],
     ["skip for smoke profile", testSkippedForSmokeProfile],
     ["retry prompt builder", testRetryPromptBuilder],
   ];

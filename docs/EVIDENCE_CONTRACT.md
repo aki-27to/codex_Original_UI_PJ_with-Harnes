@@ -4,8 +4,10 @@ Updated: 2026-03-13
 
 ## 1) Purpose
 
-Define the minimum verification and reporting artifacts required before a task can move to `COMPLETED`.
+Define the minimum verification and reporting artifacts required before a task can move to a releasable decision state.
+- Machine-readable evidence source of truth: `scripts/config/evidence_contract.json`.
 - Machine-readable outcome taxonomy source: `scripts/config/task_outcome_contract.json`.
+- Machine-readable business decision source: `scripts/config/release_decision_contract.json`.
 
 ## 2) Evidence Classes
 
@@ -57,14 +59,33 @@ Define the minimum verification and reporting artifacts required before a task c
 
 ## 3.1) Structured Evidence Manifests
 
-- Each turn artifact bundle should aggregate evidence into machine-readable companion files:
+- Each governed run must make the constitution artifacts inspectable as machine-readable files:
+  - `request_frame.json`
+  - `routing_decision.json`
+  - `task_outcomes.json`
+  - `review_bundle.json`
+  - `release_decision.json`
+- Each turn artifact bundle should also aggregate execution evidence into companion files:
   - `requirement_contract.json`
+  - `requirement_validation.json`
   - `dispatch_plan.json`
   - `evidence_manifest.json`
   - `stage_timeline.json`
   - `flow_trace_summary.json`
   - `review_load_breakdown.json`
+  - `conformance_report.json`
+  - `operator_view_summary.json`
+- Each signoff bundle should also preserve bundle-level orchestration evidence:
+  - `signoff_resume_state.json`
+  - `lane_latency_summary.json`
+- When live baseline comparison is requested, signoff bundles should preserve direct baseline evidence separately from governed harness traces:
+  - `raw_direct_baseline_summary.json`
+  - `raw_direct_fast_task_trace_summary.json`
+  - `raw_direct_discovery_task_trace_summary.json`
+  - `raw_direct_signoff_task_trace_summary.json`
+  - `raw_direct_natural_task_trace_summary.json`
 - `evidence_manifest.json` should summarize:
+  - requirement validator verdict and key blocking/warning checks
   - acceptance check pass/fail status
   - doc sync evidence
   - child evidence ledger
@@ -74,12 +95,37 @@ Define the minimum verification and reporting artifacts required before a task c
   - tester result summary
   - doc sync status
   - quality-gate duration hotspots
+  - evidence-collection time
+  - reviewer/tester/doc-sync timing estimates
+  - retry-loop count
+  - outcome-conversion time
+  - total Step 4 duration
+  - dominant bottleneck
+  - explicit timing-model note that component estimates may overlap and `dominantBottleneck` is the largest estimated bucket rather than an additive share of `totalStep4DurationMs`
 - `stage_timeline.json` should make Step 1/2/3/4/5 timing legible enough for operator review.
 - `flow_trace_summary.json` should show which planning depth, assurance depth, agents, contracts, skills, and evidence sources were actually involved in the run.
+- `conformance_report.json` should evaluate the frozen invariants and expose any violated invariants explicitly.
+- `operator_view_summary.json` should provide the operator one-screen state:
+  - `current_phase`
+  - `current_lane`
+  - `planning_depth`
+  - `assurance_depth`
+  - `dispatch_graph`
+  - `current_blockers`
+  - `evidence_completeness`
+  - `residual_risk`
+  - `release_state`
+  - `violated_invariants`
+  - `remaining_conditions_to_release`
+- `lane_latency_summary.json` should identify:
+  - per-stage wall-clock duration
+  - dominant stage bottlenecks
+  - measured baseline sample breakdown
+  - raw direct baseline sample breakdown when direct comparison is available
 
 ## 4) Reporting Contract
 
-Every completion report should make the evidence legible by including:
+Every release/signoff report should make the evidence legible by including:
 
 - the command or manual check performed
 - the result summary
@@ -90,11 +136,12 @@ Every completion report should make the evidence legible by including:
 
 ## 5) Failure Semantics
 
-- Missing required evidence means the task is not `COMPLETED`.
+- Missing required evidence means the task is not releasable.
 - Failing required verification means the task should be reported as `FAILED_VALIDATION` unless the user explicitly accepts the risk.
 - If a check cannot run because of environment limits or missing dependencies, report `BLOCKED` or `PARTIAL` instead of claiming completion.
 - Runtime-facing task outcome IDs should use the machine-readable taxonomy from `scripts/config/task_outcome_contract.json`, not ad hoc labels.
 - Turn terminal status and task outcome status should remain compatible with the bridge rules in `scripts/config/harness_contract_spec.json`.
+- Top-level release decisions must use the business decision states from `scripts/config/release_decision_contract.json`; docs or summaries alone do not satisfy this gate.
 
 ## 6) Evidence Quality Rule
 

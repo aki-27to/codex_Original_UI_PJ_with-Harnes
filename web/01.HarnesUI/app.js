@@ -4,7 +4,7 @@
   guardian:{approvalPolicy:"on-request",sandboxMode:"workspace-write",webSearchMode:"cached",automaticApprovalReviewEnabled:true},
   "full-access":{approvalPolicy:"never",sandboxMode:"danger-full-access",webSearchMode:"live",automaticApprovalReviewEnabled:false},
 });
-const DEFAULT_PROFILE_ID="guardian";
+const DEFAULT_PROFILE_ID="full-access";
 const PROFILE_IDS=new Set(Object.keys(PROFILES));
 const PROFILE_LABELS=Object.freeze({
   auto:"Agent (Auto)",
@@ -46,7 +46,10 @@ const EXEC_STREAM_CONTENT_TYPE="application/x-ndjson";
 const EXEC_IDEMPOTENCY_HEADER="Idempotency-Key";
 const EXEC_SUBMIT_RETRY_DELAYS_MS=Object.freeze([1200,2400]);
 const RUNTIME_PENDING_SYNC_MS=5000;
+const COMPOSER_STICKY_MIN_VIEWPORT_HEIGHT=640;
+const UI_RELOAD_CACHE_PARAM="ui_reload";
 const s={runtime:null,diag:null,diagErr:null,chats:[],active:null,nextChat:1,nextMsg:1,req:new Map(),trace:[],last:null,ticker:null,perf:createPerformanceState()};
+const workspaceGuardUiState={message:"",tone:""};
 const chatStateSave={timer:null};
 const settingsState={
   hasStoredModel:false,
@@ -75,9 +78,26 @@ const TASK_FAMILY_LABELS=Object.freeze({
   planning:"設計・整理",
 });
 const topographyState={agents:[],source:"",error:"",usingFallback:false,lastUpdated:0,loading:false,timer:null,refreshSoonTimer:null,reqId:0};
-const e={connectionState:by("connectionState"),modeState:by("modeState"),agentState:by("agentState"),pendingState:by("pendingState"),simpleViewToggle:by("simpleViewToggle"),runtimeAgent:by("runtimeAgent"),runtimeSession:by("runtimeSession"),runtimeExperimental:by("runtimeExperimental"),runtimeAgentCount:by("runtimeAgentCount"),workspacePath:by("workspacePath"),modelName:by("modelName"),modelReasoningEffort:by("modelReasoningEffort"),executionProfileHeadline:by("executionProfileHeadline"),executionProfileDescription:by("executionProfileDescription"),executionProfileApprovalChip:by("executionProfileApprovalChip"),executionProfileSandboxChip:by("executionProfileSandboxChip"),executionProfileSearchChip:by("executionProfileSearchChip"),executionProfileGuardianChip:by("executionProfileGuardianChip"),approvalPolicy:by("approvalPolicy"),fastModeEnabled:by("fastModeEnabled"),automaticApprovalReviewEnabled:by("automaticApprovalReviewEnabled"),sandboxMode:by("sandboxMode"),executionProfile:by("executionProfile"),permissionsAdvanced:by("permissionsAdvanced"),permissionsAdvancedHint:by("permissionsAdvancedHint"),uiVisibility:by("uiVisibility"),webSearchMode:by("webSearchMode"),commandFilter:by("commandFilter"),commandGrid:by("commandGrid"),commandTemplate:by("commandTemplate"),messageTemplate:by("messageTemplate"),chatList:by("chatList"),newChatBtn:by("newChatBtn"),deleteChatBtn:by("deleteChatBtn"),timeline:by("timeline"),promptInput:by("promptInput"),imageInput:by("imageInput"),imageAttachBtn:by("imageAttachBtn"),imageError:by("imageError"),imagePreview:by("imagePreview"),imagePreviewThumb:by("imagePreviewThumb"),imagePreviewName:by("imagePreviewName"),imagePreviewMeta:by("imagePreviewMeta"),imageRemoveBtn:by("imageRemoveBtn"),sendBtn:by("sendBtn"),stopBtn:by("stopBtn"),reconnectBtn:by("reconnectBtn"),refreshDiagBtn:by("refreshDiagBtn"),newThreadBtn:by("newThreadBtn"),openCmdBtn:by("openCmdBtn"),liveStatus:by("liveStatus"),liveStatusLabel:by("liveStatusLabel"),liveStatusElapsed:by("liveStatusElapsed"),liveStatusDetail:by("liveStatusDetail"),performancePanel:by("performancePanel"),perfSessionRef:by("perfSessionRef"),perfUpdatedAt:by("perfUpdatedAt"),perfTokenValue:by("perfTokenValue"),perfTokenDetail:by("perfTokenDetail"),perfTokenSpark:by("perfTokenSpark"),perfTimeValue:by("perfTimeValue"),perfTimeDetail:by("perfTimeDetail"),perfTimeSpark:by("perfTimeSpark"),agentInspector:by("agentInspector"),agentFlowLane:by("agentFlowLane"),agentTraceList:by("agentTraceList"),clearAgentTraceBtn:by("clearAgentTraceBtn"),agentTopographyPanel:by("agentTopographyPanel"),agentTopographyMeta:by("agentTopographyMeta"),agentTopographyList:by("agentTopographyList"),agentTopographyRefreshBtn:by("agentTopographyRefreshBtn"),diagCodexState:by("diagCodexState"),diagCodexDetail:by("diagCodexDetail"),diagNodeState:by("diagNodeState"),diagNodeDetail:by("diagNodeDetail"),diagSearchState:by("diagSearchState"),diagSearchDetail:by("diagSearchDetail"),diagSummaryText:by("diagSummaryText"),diagDetails:by("diagDetails"),diagDetailsSummary:by("diagDetailsSummary"),harnessStatus:by("harnessStatus"),harnessThreadId:by("harnessThreadId"),harnessTurnId:by("harnessTurnId"),harnessUpdatedAt:by("harnessUpdatedAt"),harnessItemList:by("harnessItemList"),harnessPlanMeta:by("harnessPlanMeta"),harnessPlanCurrentCard:by("harnessPlanCurrentCard"),harnessPlanCurrentStep:by("harnessPlanCurrentStep"),harnessPlanCurrentDetail:by("harnessPlanCurrentDetail"),harnessPlanExplanation:by("harnessPlanExplanation"),harnessPlanList:by("harnessPlanList"),harnessTokenUsage:by("harnessTokenUsage"),harnessDiffPreview:by("harnessDiffPreview"),harnessPhaseList:by("harnessPhaseList"),harnessEvidenceTasks:by("harnessEvidenceTasks"),harnessEvidenceTests:by("harnessEvidenceTests"),harnessEvidenceReviews:by("harnessEvidenceReviews"),harnessEvidenceLogs:by("harnessEvidenceLogs")};
+const e={connectionState:by("connectionState"),modeState:by("modeState"),agentState:by("agentState"),pendingState:by("pendingState"),simpleViewToggle:by("simpleViewToggle"),uiReloadBtn:by("uiReloadBtn"),runtimeAgent:by("runtimeAgent"),runtimeSession:by("runtimeSession"),runtimeExperimental:by("runtimeExperimental"),runtimeAgentCount:by("runtimeAgentCount"),workspacePath:by("workspacePath"),workspaceLockBtn:by("workspaceLockBtn"),workspaceUnlockBtn:by("workspaceUnlockBtn"),workspaceStatus:by("workspaceStatus"),modelName:by("modelName"),modelReasoningEffort:by("modelReasoningEffort"),executionProfileHeadline:by("executionProfileHeadline"),executionProfileDescription:by("executionProfileDescription"),executionProfileApprovalChip:by("executionProfileApprovalChip"),executionProfileSandboxChip:by("executionProfileSandboxChip"),executionProfileSearchChip:by("executionProfileSearchChip"),executionProfileGuardianChip:by("executionProfileGuardianChip"),approvalPolicy:by("approvalPolicy"),fastModeEnabled:by("fastModeEnabled"),automaticApprovalReviewEnabled:by("automaticApprovalReviewEnabled"),sandboxMode:by("sandboxMode"),executionProfile:by("executionProfile"),permissionsAdvanced:by("permissionsAdvanced"),permissionsAdvancedHint:by("permissionsAdvancedHint"),uiVisibility:by("uiVisibility"),webSearchMode:by("webSearchMode"),commandFilter:by("commandFilter"),commandGrid:by("commandGrid"),commandTemplate:by("commandTemplate"),messageTemplate:by("messageTemplate"),chatList:by("chatList"),newChatBtn:by("newChatBtn"),deleteChatBtn:by("deleteChatBtn"),timeline:by("timeline"),promptInput:by("promptInput"),imageInput:by("imageInput"),imageAttachBtn:by("imageAttachBtn"),imageError:by("imageError"),imagePreview:by("imagePreview"),imagePreviewThumb:by("imagePreviewThumb"),imagePreviewName:by("imagePreviewName"),imagePreviewMeta:by("imagePreviewMeta"),imageRemoveBtn:by("imageRemoveBtn"),sendBtn:by("sendBtn"),stopBtn:by("stopBtn"),reconnectBtn:by("reconnectBtn"),refreshDiagBtn:by("refreshDiagBtn"),newThreadBtn:by("newThreadBtn"),openCmdBtn:by("openCmdBtn"),liveStatus:by("liveStatus"),liveStatusLabel:by("liveStatusLabel"),liveStatusElapsed:by("liveStatusElapsed"),liveStatusDetail:by("liveStatusDetail"),performancePanel:by("performancePanel"),perfSessionRef:by("perfSessionRef"),perfUpdatedAt:by("perfUpdatedAt"),perfTokenValue:by("perfTokenValue"),perfTokenDetail:by("perfTokenDetail"),perfTokenSpark:by("perfTokenSpark"),perfTimeValue:by("perfTimeValue"),perfTimeDetail:by("perfTimeDetail"),perfTimeSpark:by("perfTimeSpark"),agentInspector:by("agentInspector"),agentFlowLane:by("agentFlowLane"),agentTraceList:by("agentTraceList"),clearAgentTraceBtn:by("clearAgentTraceBtn"),agentTopographyPanel:by("agentTopographyPanel"),agentTopographyMeta:by("agentTopographyMeta"),agentTopographyList:by("agentTopographyList"),agentTopographyRefreshBtn:by("agentTopographyRefreshBtn"),diagCodexState:by("diagCodexState"),diagCodexDetail:by("diagCodexDetail"),diagNodeState:by("diagNodeState"),diagNodeDetail:by("diagNodeDetail"),diagSearchState:by("diagSearchState"),diagSearchDetail:by("diagSearchDetail"),diagSummaryText:by("diagSummaryText"),diagDetails:by("diagDetails"),diagDetailsSummary:by("diagDetailsSummary"),harnessStatus:by("harnessStatus"),harnessThreadId:by("harnessThreadId"),harnessTurnId:by("harnessTurnId"),harnessUpdatedAt:by("harnessUpdatedAt"),harnessItemList:by("harnessItemList"),harnessPlanMeta:by("harnessPlanMeta"),harnessPlanCurrentCard:by("harnessPlanCurrentCard"),harnessPlanCurrentStep:by("harnessPlanCurrentStep"),harnessPlanCurrentDetail:by("harnessPlanCurrentDetail"),harnessPlanExplanation:by("harnessPlanExplanation"),harnessPlanList:by("harnessPlanList"),harnessTokenUsage:by("harnessTokenUsage"),harnessDiffPreview:by("harnessDiffPreview"),harnessPhaseList:by("harnessPhaseList"),harnessEvidenceTasks:by("harnessEvidenceTasks"),harnessEvidenceTests:by("harnessEvidenceTests"),harnessEvidenceReviews:by("harnessEvidenceReviews"),harnessEvidenceLogs:by("harnessEvidenceLogs")};
 e.harnessCheckMode=by("harnessCheckMode");
 e.harnessCheckModeHint=by("harnessCheckModeHint");
+e.focusActionDetail=by("focusActionDetail");
+e.focusActionTitle=by("focusActionTitle");
+e.focusActionHint=by("focusActionHint");
+e.focusChatCard=by("focusChatCard");
+e.focusChatValue=by("focusChatValue");
+e.focusChatHint=by("focusChatHint");
+e.focusWorkspaceCard=by("focusWorkspaceCard");
+e.focusWorkspaceValue=by("focusWorkspaceValue");
+e.focusWorkspaceHint=by("focusWorkspaceHint");
+e.focusSendCard=by("focusSendCard");
+e.focusSendValue=by("focusSendValue");
+e.focusSendHint=by("focusSendHint");
+e.focusToTimelineBtn=by("focusToTimelineBtn");
+e.focusToComposerBtn=by("focusToComposerBtn");
+e.jumpToComposerBtn=by("jumpToComposerBtn");
+e.conversationSummary=by("conversationSummary");
+e.composer=by("composer");
 const automationUi={
   panel:by("automationPanel"),
   status:by("automationStatusLine"),
@@ -112,6 +132,41 @@ const notificationAudioState={
   lastPlayAt:0,
 };
 function by(id){return document.getElementById(id)}
+function shouldUseStickyComposerForUi(viewportHeight=window.innerHeight){
+  void viewportHeight;
+  return false;
+}
+function buildUiReloadUrlForUi(currentHref=window.location.href,timestamp=Date.now()){
+  const fallbackOrigin=window.location&&window.location.origin?window.location.origin:window.location.href;
+  const url=new URL(currentHref,fallbackOrigin);
+  const normalizedTimestamp=Math.max(0,Math.trunc(Number(timestamp)||Date.now()));
+  url.searchParams.set(UI_RELOAD_CACHE_PARAM,String(normalizedTimestamp));
+  return url.toString();
+}
+function reloadUiShellForUi(){
+  window.location.replace(buildUiReloadUrlForUi());
+}
+function syncComposerViewportSpacingForUi(){
+  if(typeof document==="undefined"||!document.documentElement)return 0;
+  if(document.body&&document.body.classList){
+    if(typeof document.body.classList.add==="function")document.body.classList.add("composer-static");
+    else document.body.classList.toggle("composer-static",true);
+  }
+  document.documentElement.style.setProperty("--composer-block-size","0px");
+  return 0;
+}
+function scheduleComposerViewportSyncForUi(){
+  if(composerLayoutState.viewportSyncFrame)return;
+  const flush=()=>{
+    composerLayoutState.viewportSyncFrame=0;
+    syncComposerViewportSpacingForUi();
+  };
+  if(typeof window!=="undefined"&&typeof window.requestAnimationFrame==="function"){
+    composerLayoutState.viewportSyncFrame=window.requestAnimationFrame(flush);
+    return;
+  }
+  flush();
+}
 function createNotificationAudioContext(){
   const AudioCtx=window.AudioContext||window.webkitAudioContext;
   if(typeof AudioCtx!=="function")return null;
@@ -411,6 +466,27 @@ function isRunningMonitorAgentForUi(row){
     ||status.includes("progress")
     ||status.includes("working")
     ||status.includes("streaming");
+}
+function isFailedMonitorAgentForUi(row){
+  if(!row||typeof row!=="object")return false;
+  if(row.tone==="failed")return true;
+  const status=String(row.status||"").toLowerCase();
+  return status.includes("fail")
+    ||status.includes("error")
+    ||status.includes("abort")
+    ||status.includes("interrupt")
+    ||status.includes("needs_input")
+    ||status.includes("blocked");
+}
+function isCompletedMonitorAgentForUi(row){
+  if(!row||typeof row!=="object")return false;
+  if(row.tone==="completed")return true;
+  const status=String(row.status||"").toLowerCase();
+  return status.includes("complete")
+    ||status.includes("done")
+    ||status.includes("pass")
+    ||status.includes("success")
+    ||status.includes("ready");
 }
 function monitorLaneForUi(row){
   if(isRunningMonitorAgentForUi(row))return"running";
@@ -764,6 +840,7 @@ const REQUIREMENT_TEXT_LABELS_FOR_UI=Object.freeze({
   "No implementation or config changes until the open questions are resolved.":"未解決の確認事項が解消するまで、実装や設定変更は行わない。",
   "Do not expand scope beyond requirement clarification.":"要件確認を超えて、勝手にスコープを広げない。",
   "Acceptance checks are not fully specified, so implementation details may require user confirmation.":"受け入れ条件がまだ十分に決まっていないため、実装の細部はユーザー確認が必要になる可能性がある。",
+  "What acceptance checks define success?":"何を満たせば成功と言えるか？",
   "Some task boundaries still depend on inferred scope from the prompt.":"作業範囲の一部は、入力文からの推定にまだ依存している。",
   "Any scope outside the explicit goal should stay proposal-only unless the prompt states otherwise.":"明示ゴールの外側は、入力で明示されない限り提案止まりにとどめる。",
   "Deliver the requested web experience in a way that wins on first impression, hierarchy, and believability before process neatness.":"第一印象、情報の優先順位、信頼感で勝てるWeb体験を届ける。",
@@ -834,6 +911,17 @@ function stripQuestionLeadForUi(value){
     .replace(/^(?:質問に答える|次の点を説明する|Answer the user's question about|Explain these points)\s*:?\s*/,"")
     .replace(/[?？!！。．\s]+$/g,"")
     .trim();
+}
+function requirementLooksFragmentaryForUi(value){
+  const text=requirementTextLabelForUi(t1(value,220).trim());
+  if(!text)return false;
+  if(/[?？]$/.test(text))return true;
+  return /(?:とき|時|場合|際)(?:は|には)?$|(?:前に|後に|あとで|後で)$|(?:なら|ならば|したら)$/.test(text);
+}
+function preferredRequirementNarrativeForUi(values,{fallback=""}={}){
+  const candidates=toArr(values).map((entry)=>requirementTextLabelForUi(t1(entry,220).trim())).filter(Boolean);
+  const preferred=candidates.find((entry)=>!requirementLooksFragmentaryForUi(entry));
+  return preferred||candidates[0]||requirementTextLabelForUi(t1(fallback,220).trim())||"";
 }
 function joinIntentPhrasesForUi(parts){
   const phrases=toArr(parts).map((entry)=>String(entry||"").trim()).filter(Boolean).slice(0,3);
@@ -1000,6 +1088,9 @@ function buildRequirementLockSnapshotForUi(turn){
   const requirement=requirementContractForUi(turn);
   const userValueFrame=requirement.userValueFrame&&typeof requirement.userValueFrame==="object"?requirement.userValueFrame:{};
   const intentInterpretation=requirement.intentInterpretation&&typeof requirement.intentInterpretation==="object"?requirement.intentInterpretation:{};
+  const displayContract=requirement.displayContract&&typeof requirement.displayContract==="object"?requirement.displayContract:{};
+  const questionPlan=requirement.questionPlan&&typeof requirement.questionPlan==="object"?requirement.questionPlan:{};
+  const delightPlan=requirement.delightPlan&&typeof requirement.delightPlan==="object"?requirement.delightPlan:{};
   const provenance=requirement.provenance&&typeof requirement.provenance==="object"?requirement.provenance:{};
   const validation=requirement.validation&&typeof requirement.validation==="object"?requirement.validation:{};
   const revisionLedger=requirement.revisionLedger&&typeof requirement.revisionLedger==="object"?requirement.revisionLedger:{};
@@ -1027,6 +1118,37 @@ function buildRequirementLockSnapshotForUi(turn){
   const valueThesis=typeof userValueFrame.valueThesis==="string"?requirementTextLabelForUi(t1(userValueFrame.valueThesis,220).trim()):"";
   const explicitGoalRaw=typeof requirement.explicitGoal==="string"?requirementTextLabelForUi(t1(requirement.explicitGoal,220).trim()):"";
   const implicitGoal=typeof requirement.implicitGoal==="string"?requirementTextLabelForUi(t1(requirement.implicitGoal,220).trim()):"";
+  const lockedGoal=typeof requirement.lockedGoal==="string"?requirementTextLabelForUi(t1(requirement.lockedGoal,220).trim()):"";
+  const intentHypotheses=compactTextListForUi(
+    toArr(requirement.intentHypotheses).map((entry)=>entry&&typeof entry==="object"?entry.goal:""),
+    {transform:requirementTextLabelForUi,maxItems:4,maxChars:200}
+  );
+  const displayAskNext=compactTextListForUi(
+    toArr(displayContract.askNext).map((entry)=>entry&&typeof entry==="object"?entry.question:entry),
+    {transform:requirementTextLabelForUi,maxItems:3,maxChars:180}
+  );
+  const questionPlanAskNext=compactTextListForUi(
+    toArr(questionPlan.askNext).map((entry)=>entry&&typeof entry==="object"?entry.question:entry),
+    {transform:requirementTextLabelForUi,maxItems:3,maxChars:180}
+  );
+  const delightTitles=compactTextListForUi(
+    Array.isArray(displayContract.delightTitles)&&displayContract.delightTitles.length?displayContract.delightTitles:toArr(delightPlan.candidates).map((entry)=>entry&&typeof entry==="object"?entry.title:entry),
+    {transform:requirementTextLabelForUi,maxItems:4,maxChars:180}
+  );
+  const approvalBoundaryItems=compactTextListForUi(
+    toArr(requirement.approvalBoundaryItems).map((entry)=>entry?`Approval required before: ${entry}`:""),
+    {transform:requirementTextLabelForUi,maxItems:4,maxChars:180}
+  );
+  const displayBoundaries=compactTextListForUi(
+    Array.isArray(displayContract.boundaries)&&displayContract.boundaries.length?displayContract.boundaries:[],
+    {transform:requirementTextLabelForUi,maxItems:6,maxChars:180}
+  );
+  const displayGoal=typeof displayContract.goal==="string"?requirementTextLabelForUi(t1(displayContract.goal,220).trim()):"";
+  const displayHeadline=typeof displayContract.headline==="string"?requirementTextLabelForUi(t1(displayContract.headline,220).trim()):"";
+  const displayNextAction=typeof displayContract.nextAction==="string"?requirementTextLabelForUi(t1(displayContract.nextAction,220).trim()):"";
+  const displayHoldReason=typeof displayContract.holdReason==="string"?requirementTextLabelForUi(t1(displayContract.holdReason,220).trim()):"";
+  const displayTargetOutcome=typeof displayContract.targetOutcome==="string"?requirementTextLabelForUi(t1(displayContract.targetOutcome,220).trim()):"";
+  const displayGoalMode=typeof displayContract.goalMode==="string"?displayContract.goalMode.trim().toLowerCase():"draft";
   const hasLockedIntentInterpretation=Object.keys(intentInterpretation).length>0;
   const lockedQuestionLike=hasLockedIntentInterpretation?Boolean(intentInterpretation.questionLike):false;
   const lockedIntentPresentation=hasLockedIntentInterpretation&&intentInterpretation.presentation==="progress_hypothesis"?"progress_hypothesis":"goal";
@@ -1053,12 +1175,16 @@ function buildRequirementLockSnapshotForUi(turn){
   const hasRequirementCore=Boolean(
     explicitGoal
     || implicitGoal
+    || lockedGoal
+    || displayGoal
+    || intentHypotheses.length
     || acceptanceChecks.length
     || baselineScope.length
     || overDeliveryScope.length
     || nonGoals.length
     || assumptions.length
     || openQuestions.length
+    || approvalBoundaryItems.length
   );
   const lockedCount=
     acceptanceChecks.length
@@ -1079,6 +1205,16 @@ function buildRequirementLockSnapshotForUi(turn){
   if(nonGoals.length)riskSummaryParts.push(`non-goal ${nonGoals.length}`);
   if(assumptions.length)riskSummaryParts.push(`assumption ${assumptions.length}`);
   if(openQuestions.length)riskSummaryParts.push(`open ${openQuestions.length}`);
+  if(approvalBoundaryItems.length)riskSummaryParts.push(`approval ${approvalBoundaryItems.length}`);
+  const conciseMetaParts=[
+    contractStatus?requirementStatusLabelForUi(contractStatus):"",
+    contractStatus==="BLOCKED"&&(displayAskNext.length||questionPlanAskNext.length||openQuestions.length)
+      ?`要確認 ${displayAskNext.length||questionPlanAskNext.length||openQuestions.length}`
+      :"",
+    contractStatus==="REVISED"&&revisionLedger&&revisionLedger.revised
+      ?`v${Number(revisionLedger.revisionNumber||1)}`
+      :"",
+  ].filter(Boolean);
   return{
     hasRequirement:hasRequirementCore,
     goalGroupTitle:goalLooksQuestionLike&&hasInterpretedQuestionView?"進行仮説":"ゴール",
@@ -1090,6 +1226,8 @@ function buildRequirementLockSnapshotForUi(turn){
     intentHypothesis,
     explicitGoal,
     implicitGoal,
+    lockedGoal,
+    intentHypotheses,
     acceptanceChecks,
     baselineScope,
     overDeliveryScope,
@@ -1102,6 +1240,15 @@ function buildRequirementLockSnapshotForUi(turn){
     mustAvoid,
     qualityAxes,
     completedMeans,
+    displayGoal:requirementLooksFragmentaryForUi(displayGoal)?"":displayGoal,
+    displayGoalMode:contractStatus==="LOCKED"||contractStatus==="REVISED"?displayGoalMode:"hypothesis",
+    displayHeadline:requirementLooksFragmentaryForUi(displayHeadline)?"":displayHeadline,
+    displayNextAction,
+    displayHoldReason,
+    displayTargetOutcome,
+    displayAskNext:displayAskNext.length?displayAskNext:questionPlanAskNext,
+    displayBoundaries:displayBoundaries.length?displayBoundaries:compactTextListForUi([...approvalBoundaryItems,...nonGoals,...mustAvoid,...hardConstraints],{transform:requirementTextLabelForUi,maxItems:6,maxChars:180}),
+    delightTitles,
     contractStatus,
     contractStatusLabel:requirementStatusLabelForUi(contractStatus),
     contractStatusReason,
@@ -1127,11 +1274,21 @@ function buildRequirementLockSnapshotForUi(turn){
     },
     provenanceSummary,
     lockedCount,
-    headline:(goalLooksQuestionLike&&hasInterpretedQuestionView?intentDirection:"")||explicitGoal||implicitGoal||valueThesis||"",
-    metaParts:[
+    headline:preferredRequirementNarrativeForUi([
+      requirementLooksFragmentaryForUi(displayHeadline)?"":displayHeadline,
+      requirementLooksFragmentaryForUi(displayGoal)?"":displayGoal,
+      requirementLooksFragmentaryForUi(lockedGoal)?"":lockedGoal,
+      goalLooksQuestionLike&&hasInterpretedQuestionView?intentDirection:"",
+      requirementLooksFragmentaryForUi(explicitGoal)?"":explicitGoal,
+      implicitGoal,
+      valueThesis,
+    ]),
+    metaParts:conciseMetaParts.length?conciseMetaParts:[
       contractStatus?`状態 ${requirementStatusLabelForUi(contractStatus)}`:"",
       validationVerdict?`検証 ${requirementValidationLabelForUi(validationVerdict)}`:"",
       acceptanceChecks.length?`受け入れ ${acceptanceChecks.length}`:"",
+      intentHypotheses.length>1?`候補 ${intentHypotheses.length}`:"",
+      (displayAskNext.length||questionPlanAskNext.length)?`質問 ${displayAskNext.length||questionPlanAskNext.length}`:"",
       scopeSummaryParts.length?scopeSummaryParts.join(" / "):"",
       riskSummaryParts.length?riskSummaryParts.join(" / "):"",
       provenanceSummary.parts.length?provenanceSummary.parts.slice(0,2).join(" / "):"",
@@ -1140,86 +1297,143 @@ function buildRequirementLockSnapshotForUi(turn){
 }
 function requirementGroupsForUi(snapshot){
   if(!snapshot||!snapshot.hasRequirement)return[];
-  const groups=[];
-  if(snapshot.contractStatus||snapshot.validationVerdict||snapshot.revision&&snapshot.revision.revised){
-    const items=[];
-    if(snapshot.contractStatus)items.push(`状態: ${snapshot.contractStatusLabel||requirementStatusLabelForUi(snapshot.contractStatus)}${snapshot.contractStatusReason?` / ${snapshot.contractStatusReason}`:""}`);
-    if(snapshot.validationVerdict){
-      const validationMeta=[
-        snapshot.validationSummary&&snapshot.validationSummary.blockCount?`BLOCK ${snapshot.validationSummary.blockCount}`:"",
-        snapshot.validationSummary&&snapshot.validationSummary.warnCount?`WARN ${snapshot.validationSummary.warnCount}`:"",
-        snapshot.validationSummary&&snapshot.validationSummary.passCount?`PASS ${snapshot.validationSummary.passCount}`:"",
-      ].filter(Boolean).join(" / ");
-      items.push(`契約検証: ${snapshot.validationVerdictLabel||requirementValidationLabelForUi(snapshot.validationVerdict)}${validationMeta?` / ${validationMeta}`:""}`);
-    }
-    if(snapshot.validationHighlights&&snapshot.validationHighlights.length){
-      items.push(`主な論点: ${summarizeInlineListForUi(snapshot.validationHighlights,{maxItems:2})}`);
-    }
-    if(snapshot.revision&&snapshot.revision.revised){
-      items.push(`改訂: v${snapshot.revision.revisionNumber||1}${snapshot.revision.summary?` / ${snapshot.revision.summary}`:""}`);
-      if(snapshot.revision.changedFields&&snapshot.revision.changedFields.length){
-        items.push(`変更点: ${summarizeInlineListForUi(snapshot.revision.changedFields,{maxItems:3})}`);
-      }
-    }
-    if(snapshot.provenanceSummary&&snapshot.provenanceSummary.parts&&snapshot.provenanceSummary.parts.length){
-      items.push(`出所: ${summarizeInlineListForUi(snapshot.provenanceSummary.parts,{maxItems:4})}`);
-    }
-    if(items.length)groups.push({title:"契約状態",items});
+  const rows=[];
+  const interpretation=preferredRequirementNarrativeForUi([
+    snapshot.displayGoal,
+    snapshot.lockedGoal,
+    snapshot.intentDirection,
+    snapshot.explicitGoal,
+    snapshot.implicitGoal,
+    snapshot.valueThesis,
+  ]);
+  if(!interpretation)return[];
+  const referenceTargets=[];
+  toArr(snapshot.baselineScope).forEach((entry)=>{
+    const text=String(entry||"").trim();
+    if(!text)return;
+    if(/^Stitch project:/i.test(text))referenceTargets.push(text.replace(/^Stitch project:\s*/i,"Project "));
+    else if(/^Stitch screen:/i.test(text))referenceTargets.push(text.replace(/^Stitch screen:\s*/i,"Screen "));
+    else if(/画像とコード|images and code/i.test(text))referenceTargets.push("画像とコードを取得して基準にする");
+    else if(/curl\s*-L/i.test(text)||/hosted url/i.test(text))referenceTargets.push("hosted URL は curl -L で取得する");
+  });
+  if(referenceTargets.length){
+    rows.push({
+      label:"確認対象",
+      text:summarizeInlineListForUi(referenceTargets,{maxItems:3}),
+    });
   }
-  if(snapshot.explicitGoal||snapshot.implicitGoal||snapshot.intentDirection||snapshot.intentHypothesis){
-    const items=[];
-    if(snapshot.goalGroupTitle==="進行仮説"){
-      const explicitGoalKey=normalizeRequirementCompareKeyForUi(snapshot.explicitGoal);
-      const implicitGoalKey=normalizeRequirementCompareKeyForUi(snapshot.implicitGoal);
-      const intentDirectionKey=normalizeRequirementCompareKeyForUi(snapshot.intentDirection);
-      const intentHypothesisKey=normalizeRequirementCompareKeyForUi(snapshot.intentHypothesis);
-      if(snapshot.intentDirection)items.push(`${snapshot.intentDirectionLabel||"向かう先"}: ${snapshot.intentDirection}`);
-      if(snapshot.intentHypothesis&&intentHypothesisKey!==intentDirectionKey)items.push(`${snapshot.intentHypothesisLabel||"ユーザー意図の仮説"}: ${snapshot.intentHypothesis}`);
-      if(snapshot.explicitGoal&&explicitGoalKey!==intentDirectionKey&&explicitGoalKey!==intentHypothesisKey)items.push(`${snapshot.explicitGoalLabel||"扱う論点"}: ${snapshot.explicitGoal}`);
-      if(snapshot.implicitGoal&&implicitGoalKey!==intentDirectionKey&&implicitGoalKey!==intentHypothesisKey&&implicitGoalKey!==explicitGoalKey)items.push(`${snapshot.implicitGoalLabel||"補足背景"}: ${snapshot.implicitGoal}`);
+  const approachParts=[];
+  if(snapshot.displayAskNext&&snapshot.displayAskNext.length){
+    const firstAsk=String(snapshot.displayAskNext[0]||"").trim();
+    if(firstAsk){
+      if(/^まず/.test(firstAsk))approachParts.push(firstAsk);
+      else if(/(?:確認する|決める|固める|整理する|絞る|見る|詰める)$/.test(firstAsk))approachParts.push(firstAsk);
+      else approachParts.push(`まず ${firstAsk} を確認する`);
+    }
+  }else if(snapshot.displayNextAction){
+    const nextActionText=String(snapshot.displayNextAction||"").trim();
+    if(/^Clarify:\s*/i.test(nextActionText)){
+      approachParts.push(`まず ${nextActionText.replace(/^Clarify:\s*/i,"").trim()} を確認する`);
+    }else if(/^Plan around\s+/i.test(nextActionText)){
+      approachParts.push(`まず ${nextActionText.replace(/^Plan around\s+/i,"").trim()} を満たす形に寄せる`);
+    }else if(/^Stay inside\s+/i.test(nextActionText)){
+      approachParts.push(`まず ${nextActionText.replace(/^Stay inside\s+/i,"").trim()} の範囲に絞る`);
+    }else if(/^Clarify the core contract before execution\.?$/i.test(nextActionText)){
+      approachParts.push("まず要件の芯を固める");
     }else{
-      if(snapshot.explicitGoal)items.push(`${snapshot.explicitGoalLabel||"主目的"}: ${snapshot.explicitGoal}`);
-      if(snapshot.implicitGoal)items.push(`${snapshot.implicitGoalLabel||"補助目的"}: ${snapshot.implicitGoal}`);
+      approachParts.push(nextActionText);
     }
-    groups.push({title:snapshot.goalGroupTitle||"ゴール",items});
+  }else if(snapshot.openQuestions.length){
+    approachParts.push(`まず ${summarizeInlineListForUi(snapshot.openQuestions,{maxItems:2})} を確認し、要件確認の範囲で方向を固める`);
+  }else if(snapshot.acceptanceChecks.length){
+    approachParts.push(`まず ${summarizeInlineListForUi(snapshot.acceptanceChecks,{maxItems:2})} を満たす形を決める`);
+  }else if(snapshot.baselineScope.length){
+    approachParts.push(`まず ${summarizeInlineListForUi(snapshot.baselineScope,{maxItems:2})} の範囲に絞って計画へ落とす`);
+  }else{
+    approachParts.push("まず依頼された範囲を外さず、余計なスコープを増やさずに計画へ進む");
   }
-  if(snapshot.acceptanceChecks.length){
-    groups.push({title:"受け入れ条件",items:snapshot.acceptanceChecks});
+  if(snapshot.contractStatus==="BLOCKED"){
+    approachParts.push("今は未解決事項の整理が先で、まだ実装や設定変更には進まない");
+  }else if(snapshot.contractStatus==="REVISED"){
+    approachParts.push("前ターンとの差分を反映したうえで計画を更新する");
+  }else if(snapshot.contractStatus==="LOCKED"){
+    approachParts.push("この解釈を土台に次の計画を作る");
   }
-  if(snapshot.baselineScope.length||snapshot.overDeliveryScope.length){
-    const items=[];
-    if(snapshot.baselineScope.length)items.push(`基本スコープ: ${summarizeInlineListForUi(snapshot.baselineScope,{maxItems:3})}`);
-    if(snapshot.overDeliveryScope.length)items.push(`付加価値スコープ: ${summarizeInlineListForUi(snapshot.overDeliveryScope,{maxItems:3})}`);
-    groups.push({title:"スコープ",items});
+  if(approachParts.length){
+    rows.push({label:"進め方",text:`${approachParts.join("。")}。`});
   }
-  if(snapshot.nonGoals.length||snapshot.assumptions.length||snapshot.openQuestions.length){
-    const items=[];
-    if(snapshot.nonGoals.length)items.push(`非対象: ${summarizeInlineListForUi(snapshot.nonGoals,{maxItems:3})}`);
-    if(snapshot.assumptions.length)items.push(`前提: ${summarizeInlineListForUi(snapshot.assumptions,{maxItems:3})}`);
-    if(snapshot.openQuestions.length)items.push(`未解決: ${summarizeInlineListForUi(snapshot.openQuestions,{maxItems:3})}`);
-    groups.push({title:"非対象・前提",items});
+  const holdReason=snapshot.contractStatus==="BLOCKED"
+    ?(
+      snapshot.displayHoldReason
+      || snapshot.contractStatusReason
+      || ((snapshot.validationHighlights&&snapshot.validationHighlights.length)?snapshot.validationHighlights[0]:"")
+      || (snapshot.assumptions.length&&!snapshot.openQuestions.length?`前提: ${summarizeInlineListForUi(snapshot.assumptions,{maxItems:2})}`:"")
+    )
+    :(
+      snapshot.displayHoldReason
+      || ""
+    );
+  if(holdReason){
+    rows.push({
+      label:snapshot.contractStatus==="BLOCKED"?"止まる理由":"補足",
+      text:holdReason,
+    });
   }
-  if(snapshot.valueThesis||snapshot.mustAvoid.length||snapshot.qualityAxes.length||snapshot.completedMeans.length){
-    const items=[];
-    if(snapshot.valueThesis)items.push(`価値の中心: ${snapshot.valueThesis}`);
-    if(snapshot.mustAvoid.length)items.push(`避けること: ${summarizeInlineListForUi(snapshot.mustAvoid,{maxItems:3})}`);
-    if(snapshot.qualityAxes.length)items.push(`品質軸: ${summarizeInlineListForUi(snapshot.qualityAxes,{maxItems:3})}`);
-    if(snapshot.completedMeans.length)items.push(`完了像: ${summarizeInlineListForUi(snapshot.completedMeans,{maxItems:3})}`);
-    groups.push({title:"価値基準",items});
+  const boundaryParts=[];
+  if(snapshot.displayBoundaries&&snapshot.displayBoundaries.length)boundaryParts.push(summarizeInlineListForUi(snapshot.displayBoundaries,{maxItems:3}));
+  else{
+    if(snapshot.nonGoals.length)boundaryParts.push(`非対象 ${summarizeInlineListForUi(snapshot.nonGoals,{maxItems:2})}`);
+    if(snapshot.mustAvoid.length)boundaryParts.push(`避けること ${summarizeInlineListForUi(snapshot.mustAvoid,{maxItems:2})}`);
+    if(snapshot.hardConstraints.length)boundaryParts.push(`厳守 ${summarizeInlineListForUi(snapshot.hardConstraints,{maxItems:2})}`);
   }
-  return groups.filter((group)=>group&&group.items&&group.items.length);
+  if(boundaryParts.length){
+    rows.push({label:"守る線",text:boundaryParts.join(" / ")});
+  }
+  if(!rows.length){
+    rows.push({label:"進め方",text:"この解釈を土台に、余計なスコープを増やさず次の計画へ進む。"});
+  }
+  return [{
+    title:"AIの方針",
+    summaryLabel:snapshot.contractStatus==="LOCKED"||snapshot.contractStatus==="REVISED"?"確定した見立て":"いまの見立て",
+    summary:interpretation,
+    rows:rows.slice(0,3),
+  }];
+}
+function requirementNeedsFurtherLockForUi(snapshot){
+  if(!snapshot||!snapshot.hasRequirement)return false;
+  if(snapshot.contractStatus==="BLOCKED")return true;
+  if(snapshot.validationVerdict==="BLOCK")return true;
+  if(snapshot.validationVerdict==="WARN"&&((snapshot.displayAskNext&&snapshot.displayAskNext.length)||snapshot.openQuestions.length))return true;
+  return false;
+}
+function applyRequirementPhaseStateForUi(flowItems,snapshot){
+  const phases=Array.isArray(flowItems)?flowItems:[];
+  const requirementPhase=phases.find((phase)=>phase&&phase.id==="requirements");
+  if(!requirementPhase)return;
+  if(requirementNeedsFurtherLockForUi(snapshot)){
+    requirementPhase.state="blocked";
+    const count=(snapshot.displayAskNext&&snapshot.displayAskNext.length)||snapshot.openQuestions.length||0;
+    requirementPhase.detail=count>0?`要確認 ${count}`:(snapshot.contractStatusLabel||"保留");
+    return;
+  }
+  if(requirementPhase.state==="blocked"){
+    requirementPhase.state="done";
+  }
 }
 function buildPhaseSummariesForUi({flowItems,requirementSnapshot,displayedPlan,evidence,runtimeContext,verdict,status,turn}={}){
   const planSteps=displayedPlan&&Array.isArray(displayedPlan.steps)?displayedPlan.steps:[];
   const dispatchPlan=dispatchPlanForUi(turn);
   const dispatches=Array.isArray(dispatchPlan.dispatches)?dispatchPlan.dispatches:[];
   const currentStatus=lowerText(status);
+  const requirementGateBlocked=requirementNeedsFurtherLockForUi(requirementSnapshot);
   const familyGateLabel=runtimeContext&&runtimeContext.gateApplies?familyGateStatusLabelForUi(runtimeContext.gateStatus):"";
   const summaryMap={};
   summaryMap.requirements=requirementSnapshot&&requirementSnapshot.hasRequirement
-    ?`${requirementSnapshot.contractStatusLabel?`状態 ${requirementSnapshot.contractStatusLabel} / `:""}目的解釈 ${requirementSnapshot.intentDirection||requirementSnapshot.explicitGoal||requirementSnapshot.implicitGoal||"固定済み"} / 受け入れ ${requirementSnapshot.acceptanceChecks.length||0} / 非対象 ${requirementSnapshot.nonGoals.length||0} / 前提 ${requirementSnapshot.assumptions.length||0}${requirementSnapshot.openQuestions.length?` / 未解決 ${requirementSnapshot.openQuestions.length}`:""}${requirementSnapshot.validationVerdictLabel?` / 検証 ${requirementSnapshot.validationVerdictLabel}`:""}`
+    ?`${requirementSnapshot.contractStatusLabel?`状態 ${requirementSnapshot.contractStatusLabel} / `:""}目的解釈 ${requirementSnapshot.headline||"整理中"} / 受け入れ ${requirementSnapshot.acceptanceChecks.length||0} / 非対象 ${requirementSnapshot.nonGoals.length||0} / 前提 ${requirementSnapshot.assumptions.length||0}${requirementSnapshot.displayAskNext&&requirementSnapshot.displayAskNext.length?` / 質問 ${requirementSnapshot.displayAskNext.length}`:requirementSnapshot.openQuestions.length?` / 未解決 ${requirementSnapshot.openQuestions.length}`:""}${requirementSnapshot.validationVerdictLabel?` / 検証 ${requirementSnapshot.validationVerdictLabel}`:""}`
     :`要件ロック待ち${currentStatus&&currentStatus!=="idle"?" / 依頼は送信済み":""}`;
-  if(displayedPlan&&displayedPlan.decision==="skip"){
+  if(requirementGateBlocked){
+    summaryMap.planning="要件整理が保留のため、計画には進まない";
+  }else if(displayedPlan&&displayedPlan.decision==="skip"){
     summaryMap.planning=planSkipReasonLabelForUi(displayedPlan.skipReason);
   }else if(planSteps.length){
     const completedCount=planSteps.filter((step)=>step.status==="completed").length;
@@ -1229,15 +1443,21 @@ function buildPhaseSummariesForUi({flowItems,requirementSnapshot,displayedPlan,e
   }else{
     summaryMap.planning="明示プラン待ち";
   }
-  if(currentStatus==="completed"){
+  if(requirementGateBlocked){
+    summaryMap.execution="要件整理が保留のため、実装・操作には進まない";
+  }else if(currentStatus==="completed"){
     summaryMap.execution=`実装・操作は完了 / タスク ${Number(evidence&&evidence.tasksDone)||0}`;
   }else if(currentStatus==="running"||currentStatus==="starting"||currentStatus==="needs_input"){
     summaryMap.execution=`実行中 / タスク ${Number(evidence&&evidence.tasksDone)||0}/${Number(evidence&&evidence.tasksTotal)||0}`;
   }else{
     summaryMap.execution="実装・検証はまだ始まっていません";
   }
-  summaryMap.quality=`テスト ${Number(evidence&&evidence.tests)||0} / レビュー ${Number(evidence&&evidence.reviews)||0} / ログ ${Number(evidence&&evidence.logs)||0}${familyGateLabel?` / family gate ${familyGateLabel}`:""}`;
-  summaryMap.report=currentStatus==="completed"
+  summaryMap.quality=requirementGateBlocked
+    ?"要件整理が保留のため、品証には進まない"
+    :`テスト ${Number(evidence&&evidence.tests)||0} / レビュー ${Number(evidence&&evidence.reviews)||0} / ログ ${Number(evidence&&evidence.logs)||0}${familyGateLabel?` / family gate ${familyGateLabel}`:""}`;
+  summaryMap.report=requirementGateBlocked
+    ?"要件整理の確定待ち"
+    :currentStatus==="completed"
     ?`最終判定 ${verdict&&verdict.label?verdict.label:"PASS"}${runtimeContext&&runtimeContext.gateApplies?` / gate ${familyGateLabel}`:""}`
     :currentStatus==="failed"||currentStatus==="interrupted"
       ?`報告前に停止 / ${verdict&&verdict.label?verdict.label:"FAIL"}`
@@ -1357,13 +1577,166 @@ const controlApiAllows=(action)=>{
   if(!wanted||!cfg||!Array.isArray(cfg.actionAllowlist))return false;
   return cfg.actionAllowlist.includes(wanted);
 };
+function normalizePathForUi(value){
+  const raw=typeof value==="string"?value.trim():"";
+  if(!raw)return"";
+  const normalized=raw.replace(/\//g,"\\");
+  if(/^[A-Za-z]:\\$/.test(normalized))return normalized.toLowerCase();
+  return normalized.replace(/\\+$/,"").toLowerCase();
+}
+function isPathWithinForUi(rootPath,candidatePath){
+  const root=normalizePathForUi(rootPath);
+  const candidate=normalizePathForUi(candidatePath);
+  if(!root||!candidate)return false;
+  if(candidate===root)return true;
+  return candidate.startsWith(`${root}\\`);
+}
+function workspaceGuardSnapshotForUi(){
+  const source=s.runtime&&(s.runtime.workspaceGuard||s.runtime.workspace_guard)&&typeof(s.runtime.workspaceGuard||s.runtime.workspace_guard)==="object"
+    ?(s.runtime.workspaceGuard||s.runtime.workspace_guard)
+    :{};
+  return{
+    locked:Boolean(source.locked),
+    lockedRoot:typeof source.lockedRoot==="string"&&source.lockedRoot.trim()?source.lockedRoot.trim():"",
+    requiredForSources:Array.isArray(source.requiredForSources)?source.requiredForSources.map((entry)=>String(entry||"").trim()).filter(Boolean):[],
+    rejectWhenUnlocked:Boolean(source.rejectWhenUnlocked),
+  };
+}
+function setWorkspaceGuardNotice(message,{tone=""}={}){
+  workspaceGuardUiState.message=t1(message||"",220).trim();
+  workspaceGuardUiState.tone=typeof tone==="string"?tone.trim():"";
+  renderWorkspaceGuardUi();
+}
+function clearWorkspaceGuardNotice(){
+  workspaceGuardUiState.message="";
+  workspaceGuardUiState.tone="";
+  renderWorkspaceGuardUi();
+}
+function workspaceGuardErrorInfoForUi(error){
+  const source=error&&error.payload&&typeof error.payload==="object"
+    ?error.payload
+    :(error&&error.cause&&error.cause.payload&&typeof error.cause.payload==="object"?error.cause.payload:null);
+  const code=source&&typeof source.code==="string"?source.code.trim():"";
+  const runtimeGuard=source&&source.workspaceGuard&&typeof source.workspaceGuard==="object"?source.workspaceGuard:{};
+  const selectedPath=selectedCwd();
+  if(code==="workspace_lock_required"){
+    const lockTarget=selectedPath||"現在のワークスペース";
+    return{
+      handled:true,
+      status:"needs_input",
+      tone:"warning",
+      detail:`この依頼は見た目変更を含むため、workspace lock が必要です。ワークスペース欄を確認し、「このパスで lock」を押してから再送してください。`,
+      inlineMessage:`この依頼はデザイン寄りの実行なので workspace lock が必要です。\n対象: ${lockTarget}\n操作: 設定の「このパスで lock」を押してから再送してください。`,
+      systemMessage:`送信保留: この依頼は workspace lock が必要です。対象フォルダを確認し、「このパスで lock」を押してから再送してください。`,
+      notice:`この依頼は workspace lock が必要です。対象フォルダを確認し、「このパスで lock」を押してから再送してください。`,
+      workspaceGuard:runtimeGuard,
+    };
+  }
+  if(code==="outside_locked_workspace"){
+    const lockedRoot=typeof runtimeGuard.lockedRoot==="string"&&runtimeGuard.lockedRoot.trim()?runtimeGuard.lockedRoot.trim():"(lock 未設定)";
+    return{
+      handled:true,
+      status:"needs_input",
+      tone:"warning",
+      detail:`選択中のワークスペースが現在の lock 範囲外です。lock 中のルートへ戻すか、unlock 後に正しいフォルダで lock し直してください。`,
+      inlineMessage:`選択中のワークスペースが lock 範囲外です。\n現在の lock: ${lockedRoot}\n操作: lock 中のフォルダ配下へ戻すか、unlock して正しいパスで lock し直してください。`,
+      systemMessage:`送信保留: 選択中のワークスペースが lock 範囲外です。`,
+      notice:`選択中のワークスペースが現在の lock 範囲外です。lock 中のルートへ戻すか、unlock して正しいパスで lock し直してください。`,
+      workspaceGuard:runtimeGuard,
+    };
+  }
+  return{handled:false};
+}
+function renderWorkspaceGuardUi(){
+  if(!e.workspaceStatus&&!e.workspaceLockBtn&&!e.workspaceUnlockBtn)return;
+  const snapshot=workspaceGuardSnapshotForUi();
+  const selectedPath=selectedCwd();
+  const hasToken=Boolean(controlApiToken());
+  const selectedInsideLock=snapshot.locked&&selectedPath?isPathWithinForUi(snapshot.lockedRoot,selectedPath):false;
+  let text="";
+  let tone="";
+  if(workspaceGuardUiState.message){
+    text=workspaceGuardUiState.message;
+    tone=workspaceGuardUiState.tone;
+  }else if(snapshot.locked){
+    text=selectedPath&&!selectedInsideLock
+      ?`Lock 中: ${snapshot.lockedRoot} / 現在の入力先は lock 範囲外です。`
+      :`Lock 中: ${snapshot.lockedRoot} / この配下だけ実行できます。`;
+    tone=selectedPath&&!selectedInsideLock?"warning":"locked";
+  }else{
+    const requiredSources=snapshot.requiredForSources.length?snapshot.requiredForSources.join(", "):"design-sensitive source";
+    text=selectedPath
+      ?`未固定: ${selectedPath} / ${requiredSources} では lock 後に送信します。`
+      :"未固定: ワークスペースを選ぶと、ここから lock できます。";
+    tone="warning";
+  }
+  if(e.workspaceStatus){
+    e.workspaceStatus.textContent=text;
+    e.workspaceStatus.classList.remove("locked","warning");
+    if(tone==="locked")e.workspaceStatus.classList.add("locked");
+    if(tone==="warning")e.workspaceStatus.classList.add("warning");
+  }
+  if(e.workspaceLockBtn){
+    e.workspaceLockBtn.disabled=!hasToken||!selectedPath||(snapshot.locked&&selectedInsideLock);
+    e.workspaceLockBtn.title=!hasToken
+      ?"control API token unavailable. refresh runtime first."
+      :!selectedPath
+        ?"lock するワークスペースを指定してください。"
+        :snapshot.locked&&selectedInsideLock
+          ?"このパスはすでに lock 済みです。"
+          :"";
+  }
+  if(e.workspaceUnlockBtn){
+    e.workspaceUnlockBtn.disabled=!hasToken||!snapshot.locked;
+    e.workspaceUnlockBtn.title=!hasToken
+      ?"control API token unavailable. refresh runtime first."
+      :!snapshot.locked
+        ?"現在 lock はありません。"
+        :"";
+  }
+  renderFocusPanel();
+}
+async function postWorkspaceGuardMutationForUi(pathname,payload){
+  const token=controlApiToken();
+  if(!token)throw new Error("control API token unavailable. refresh runtime first.");
+  const headers={"Content-Type":"application/json"};
+  headers[controlApiTokenHeader()]=token;
+  const response=await fetch(pathname,{method:"POST",headers,body:JSON.stringify(payload)});
+  const bodyText=await response.text();
+  const parsed=parseJsonSafe(bodyText)||{};
+  if(!response.ok||parsed.ok===false){
+    throw buildExecResponseError(response,bodyText);
+  }
+  return parsed;
+}
+async function lockSelectedWorkspaceForUi(){
+  const targetPath=selectedCwd();
+  if(!targetPath){
+    setWorkspaceGuardNotice("lock するワークスペースが未指定です。", {tone:"warning"});
+    return false;
+  }
+  const payload=await postWorkspaceGuardMutationForUi("/api/workspace/lock",{action:"lock_workspace_directory",path:targetPath});
+  if(s.runtime&&payload&&payload.workspaceGuard)s.runtime.workspaceGuard=payload.workspaceGuard;
+  setWorkspaceGuardNotice(`workspace を固定しました: ${targetPath}`,{tone:"locked"});
+  try{await loadRuntime({reconcilePending:false});}catch{}
+  refresh();
+  return true;
+}
+async function unlockWorkspaceForUi(){
+  const payload=await postWorkspaceGuardMutationForUi("/api/workspace/unlock",{action:"unlock_workspace_directory"});
+  if(s.runtime&&payload&&payload.workspaceGuard)s.runtime.workspaceGuard=payload.workspaceGuard;
+  setWorkspaceGuardNotice("workspace lock を解除しました。", {tone:"warning"});
+  try{await loadRuntime({reconcilePending:false});}catch{}
+  refresh();
+  return true;
+}
 const IMAGE_MAX_BYTES=10*1024*1024;
 const IMAGE_EXT_TO_MIME={".png":"image/png",".jpg":"image/jpeg",".jpeg":"image/jpeg",".webp":"image/webp",".gif":"image/gif"};
 const IMAGE_MIME_TO_EXT={"image/png":".png","image/jpeg":".jpg","image/webp":".webp","image/gif":".gif"};
 const IMAGE_ALLOWED_MIME=new Set(Object.values(IMAGE_EXT_TO_MIME));
 const IMAGE_ALLOWED_EXT=new Set(Object.keys(IMAGE_EXT_TO_MIME));
 const composerAttachment={items:[],error:"",nextId:1};
-const composerLayoutState={promptInputBaseHeight:0};
+const composerLayoutState={promptInputBaseHeight:0,viewportSyncFrame:0};
 function measurePromptInputBaseHeight(){
   if(!e.promptInput)return 0;
   const previousHeight=e.promptInput.style.height;
@@ -1382,9 +1755,13 @@ function syncPromptInputHeight({resetToBase=false,remeasureBase=false}={}){
     ?measurePromptInputBaseHeight()
     :composerLayoutState.promptInputBaseHeight;
   if(baseHeight>0)e.promptInput.style.height=`${baseHeight}px`;
-  if(resetToBase||!String(e.promptInput.value||"").length)return;
+  if(resetToBase||!String(e.promptInput.value||"").length){
+    scheduleComposerViewportSyncForUi();
+    return;
+  }
   const nextHeight=Math.max(baseHeight,Math.ceil(e.promptInput.scrollHeight));
   e.promptInput.style.height=`${nextHeight}px`;
+  scheduleComposerViewportSyncForUi();
 }
 function createHarnessSignals(){
   return{requirement:false,dispatch:false,turnStart:false,turnCompleted:false,plan:false,planInferred:false,delegation:false,quality:false};
@@ -1644,8 +2021,9 @@ function renderPerformanceIndicator(){
 function rAgents(){return s.runtime&&Array.isArray(s.runtime.agents)?s.runtime.agents:[]}
 function monitorTone(status){
   const v=String(status||"").toLowerCase();
-  if(v.includes("fail")||v.includes("error")||v.includes("abort")||v.includes("interrupt"))return"failed";
-  if(v.includes("run")||v.includes("busy")||v.includes("work")||v.includes("progress"))return"running";
+  if(v.includes("fail")||v.includes("error")||v.includes("abort")||v.includes("interrupt")||v.includes("needs_input")||v.includes("blocked"))return"failed";
+  if(v.includes("complete")||v.includes("done")||v.includes("pass")||v.includes("success")||v.includes("ready"))return"completed";
+  if(v.includes("spawn")||v.includes("run")||v.includes("busy")||v.includes("work")||v.includes("progress")||v.includes("stream"))return"running";
   return"idle";
 }
 function normalizeMonitorAgent(raw,index,{runtimeFallback=false}={}){
@@ -1683,6 +2061,10 @@ function normalizeMonitorAgent(raw,index,{runtimeFallback=false}={}){
     sessionRef:typeof item.sessionRef==="string"?item.sessionRef:"",
     isActive:Boolean(item.isActive),
     description:typeof item.description==="string"?item.description:"",
+    updatedAt:Number.isFinite(Number(item.updatedAt))?Math.max(0,Math.trunc(Number(item.updatedAt))):0,
+    completedAt:Number.isFinite(Number(item.completedAt))?Math.max(0,Math.trunc(Number(item.completedAt))):0,
+    parentThreadId:typeof item.parentThreadId==="string"?item.parentThreadId:"",
+    parentTurnId:typeof item.parentTurnId==="string"?item.parentTurnId:"",
     governance:item&&item.governance&&typeof item.governance==="object"?item.governance:{},
   };
 }
@@ -1918,6 +2300,347 @@ function stopAgentTopographyTicker(){
 function startAgentTopographyTicker(){
   stopAgentTopographyTicker();
   topographyState.timer=setInterval(()=>{loadAgentTopography().catch(()=>{});},TOPOGRAPHY_REFRESH_MS);
+}
+function scrollElementIntoViewForUi(target,{focus=false}={}){
+  if(!target||typeof target.scrollIntoView!=="function")return;
+  target.scrollIntoView({behavior:"smooth",block:"nearest"});
+  if(focus&&typeof target.focus==="function"){
+    try{
+      target.focus({preventScroll:true});
+    }catch{
+      target.focus();
+    }
+  }
+}
+function setFocusCardToneForUi(element,tone=""){
+  if(!element)return;
+  element.className=tone?`focus-card ${tone}`:"focus-card";
+}
+function decodeMessageHrefForUi(value){
+  const text=String(value||"");
+  if(!text)return"";
+  try{return decodeURIComponent(text)}catch{return text}
+}
+function messageReferenceLocationForUi(value){
+  const normalized=String(value||"").trim();
+  const match=normalized.match(/#L(\d+)(?:C(\d+))?$/i);
+  return{
+    line:match&&match[1]?match[1]:"",
+    column:match&&match[2]?match[2]:"",
+  };
+}
+function messageReferenceFileNameForUi(value){
+  const normalized=String(value||"").replace(/#.*$/,"").replace(/\\/g,"/").replace(/\/+$/,"");
+  if(!normalized)return"";
+  const parts=normalized.split("/");
+  return parts[parts.length-1]||normalized;
+}
+function messageReferenceDisplayPathForUi(value){
+  const normalized=String(value||"").replace(/#.*$/,"").replace(/\\/g,"/").replace(/\/+$/,"");
+  if(!normalized)return"";
+  const parts=normalized.split("/").filter(Boolean);
+  const repoMarkerIndex=parts.findIndex((part)=>/^codex_/i.test(part));
+  if(repoMarkerIndex>=0&&repoMarkerIndex<parts.length-1){
+    return parts.slice(repoMarkerIndex+1).join("/");
+  }
+  if(parts.length<=3)return parts.join("/");
+  return parts.slice(-3).join("/");
+}
+function parseMessageReferenceForUi(label,href){
+  const rawLabel=String(label||"").trim();
+  const rawHref=decodeMessageHrefForUi(href).trim();
+  const hrefWithoutHash=rawHref.replace(/#.*$/,"");
+  const hrefLocation=messageReferenceLocationForUi(rawHref);
+  const labelLocation=messageReferenceLocationForUi(rawLabel);
+  const line=hrefLocation.line||labelLocation.line||"";
+  const column=hrefLocation.column||labelLocation.column||"";
+  const localPath=/^\/[A-Za-z]:[\\/]/.test(hrefWithoutHash)||/^[A-Za-z]:[\\/]/.test(hrefWithoutHash)
+    ?hrefWithoutHash.replace(/^\//,"")
+    :"";
+  const displayPath=messageReferenceDisplayPathForUi(localPath);
+  const fileName=messageReferenceFileNameForUi(localPath||rawLabel||rawHref);
+  const visibleLabel=localPath?(fileName||rawLabel||rawHref):(rawLabel||rawHref);
+  const shortLabel=localPath
+    ?`${fileName}${line?`:${line}${column?`:${column}`:""}`:""}`
+    :(rawLabel||rawHref);
+  return{
+    kind:localPath?"local_file":(/^https?:\/\//i.test(rawHref)?"external_link":"generic_link"),
+    rawLabel,
+    rawHref,
+    localPath,
+    fileName,
+    displayPath,
+    line,
+    column,
+    visibleLabel:visibleLabel||fileName||rawHref||rawLabel,
+    shortLabel:shortLabel||fileName||rawHref||rawLabel,
+    title:localPath
+      ?`${displayPath||fileName}${line?` • L${line}${column?`C${column}`:""}`:""}`
+      :(rawHref||rawLabel),
+  };
+}
+function normalizeMessageReferencesForUi(text){
+  return String(text||"").replace(/\[([^\]]+)\]\(([^)\s]+)\)/g,(_,label,href)=>parseMessageReferenceForUi(label,href).visibleLabel);
+}
+function compactInlineTextForUi(text){
+  return normalizeMessageReferencesForUi(text).replace(/\s+/g," ").trim();
+}
+function extractStitchPromptContextForUi(prompt){
+  const text=String(prompt||"");
+  if(!/stitch/i.test(text))return null;
+  const lines=text.split(/\r?\n/);
+  let section="";
+  let projectTitle="";
+  let projectId="";
+  const screens=[];
+  let currentScreen=null;
+  for(const rawLine of lines){
+    const headingMatch=String(rawLine||"").match(/^\s{0,3}#{1,6}\s*(.+?)\s*$/);
+    if(headingMatch){
+      const heading=String(headingMatch[1]||"").trim().toLowerCase();
+      if(heading.includes("project"))section="project";
+      else if(heading.includes("screen"))section="screens";
+      else section="";
+      continue;
+    }
+    const line=String(rawLine||"").replace(/^\s*[-*+]\s*/,"").trim();
+    if(!line)continue;
+    const titleMatch=line.match(/^title\s*:\s*(.+)$/i);
+    if(titleMatch&&titleMatch[1]){
+      projectTitle=String(titleMatch[1]||"").trim();
+      continue;
+    }
+    const idMatch=line.match(/^id\s*:\s*([A-Za-z0-9_-]+)\s*$/i);
+    if(idMatch&&idMatch[1]){
+      if(section==="screens"&&currentScreen&&!currentScreen.id)currentScreen.id=idMatch[1];
+      else if(!projectId||section==="project")projectId=idMatch[1];
+      continue;
+    }
+    if(section==="screens"){
+      const screenTitle=line.replace(/^\s*\d+[.)]\s*/,"").trim();
+      if(!screenTitle||/^screens?\s*:/i.test(screenTitle)||/^use a utility/i.test(screenTitle))continue;
+      currentScreen={title:screenTitle,id:""};
+      screens.push(currentScreen);
+    }
+  }
+  const fetchImagesAndCode=/get the images and code|images and code/i.test(text);
+  const requiresHostedUrlDownload=/curl\s+-L/i.test(text)||/hosted urls?/i.test(text);
+  const strictRecreation=/(?:完全再現|忠実再現|pixel-?perfect|recreate(?: it)? exactly|match as closely as possible|same as the reference|verbatim recreation)/i.test(text);
+  if(!projectTitle&&!projectId&&!screens.length&&!fetchImagesAndCode&&!requiresHostedUrlDownload)return null;
+  return{
+    projectTitle,
+    projectId,
+    screens,
+    fetchImagesAndCode,
+    requiresHostedUrlDownload,
+    strictRecreation,
+  };
+}
+function renderStitchPromptContextForUi(element,stitchContext){
+  if(!element||!stitchContext||typeof stitchContext!=="object")return;
+  const context=stitchContext;
+  const primaryScreen=Array.isArray(context.screens)&&context.screens.length?context.screens[0]:null;
+  const rows=[];
+  if(context.projectTitle||context.projectId){
+    rows.push({label:"Project",text:[context.projectTitle,context.projectId?`ID ${context.projectId}`:""].filter(Boolean).join(" / ")});
+  }
+  if(primaryScreen&&primaryScreen.title){
+    const screenParts=[primaryScreen.title,primaryScreen.id?`ID ${primaryScreen.id}`:""];
+    if(Array.isArray(context.screens)&&context.screens.length>1)screenParts.push(`他 ${context.screens.length-1} 画面`);
+    rows.push({label:"Screen",text:screenParts.filter(Boolean).join(" / ")});
+  }
+  if(context.fetchImagesAndCode){
+    rows.push({label:"取得物",text:"画像とコードを取得して実装の基準にする"});
+  }
+  if(context.requiresHostedUrlDownload){
+    rows.push({label:"取得方法",text:"hosted URL は curl -L で取得する"});
+  }
+  if(context.strictRecreation){
+    rows.push({label:"再現方針",text:"完全再現を優先し、独自アレンジを混ぜない"});
+  }
+  if(!rows.length)return;
+  element.appendChild(document.createTextNode("\n\n"));
+  const card=document.createElement("span");
+  card.className="message-stitch-card";
+  const head=document.createElement("span");
+  head.className="message-stitch-head";
+  const title=document.createElement("span");
+  title.className="message-stitch-title";
+  title.textContent="Stitch参照";
+  head.appendChild(title);
+  card.appendChild(head);
+  rows.slice(0,4).forEach((entry)=>{
+    const row=document.createElement("span");
+    row.className="message-stitch-row";
+    const label=document.createElement("span");
+    label.className="message-stitch-label";
+    label.textContent=entry.label;
+    const text=document.createElement("span");
+    text.className="message-stitch-text";
+    text.textContent=entry.text;
+    row.appendChild(label);
+    row.appendChild(text);
+    card.appendChild(row);
+  });
+  element.appendChild(card);
+}
+function renderMessageContentForUi(element,text){
+  if(!element)return;
+  element.textContent="";
+  const source=String(text||"");
+  if(!source)return;
+  const pattern=/\[([^\]]+)\]\(([^)\s]+)\)/g;
+  let lastIndex=0;
+  let match=null;
+  while((match=pattern.exec(source))){
+    const before=source.slice(lastIndex,match.index);
+    if(before)element.appendChild(document.createTextNode(before));
+    const reference=parseMessageReferenceForUi(match[1],match[2]);
+    if(reference.kind==="local_file"){
+      const chip=document.createElement("span");
+      chip.className="message-ref-chip file";
+      chip.title=reference.title;
+      const name=document.createElement("span");
+      name.className="message-ref-name";
+      name.textContent=reference.visibleLabel||reference.fileName||reference.shortLabel;
+      chip.appendChild(name);
+      element.appendChild(chip);
+    }else{
+      const link=document.createElement("a");
+      link.className="message-ref-link";
+      link.href=reference.rawHref||"#";
+      link.target="_blank";
+      link.rel="noopener noreferrer";
+      link.title=reference.title;
+      link.textContent=reference.shortLabel;
+      element.appendChild(link);
+    }
+    lastIndex=pattern.lastIndex;
+  }
+  const after=source.slice(lastIndex);
+  if(after)element.appendChild(document.createTextNode(after));
+  renderStitchPromptContextForUi(element,extractStitchPromptContextForUi(source));
+}
+function conversationSnapshotForUi(chatRecord){
+  const messages=Array.isArray(chatRecord&&chatRecord.messages)?chatRecord.messages.filter((item)=>item&&typeof item==="object"):[];
+  const hasConversation=messages.some((item)=>item.role!=="system"&&compactInlineTextForUi(item.content));
+  return{
+    hasConversation,
+    messages:hasConversation?messages:[],
+  };
+}
+function latestConversationPreviewForUi(chatRecord){
+  const snapshot=conversationSnapshotForUi(chatRecord);
+  for(let index=snapshot.messages.length-1;index>=0;index-=1){
+    const item=snapshot.messages[index];
+    const text=compactInlineTextForUi(item&&item.content);
+    if(text)return t1(text,88);
+  }
+  return"まだ依頼はありません。";
+}
+function renderFocusPanel(){
+  if(!e.focusActionTitle||!e.focusChatValue||!e.focusWorkspaceValue||!e.focusSendValue)return;
+  const currentChat=active();
+  if(!currentChat)return;
+  const conversation=conversationSnapshotForUi(currentChat);
+  const snapshot=workspaceGuardSnapshotForUi();
+  const selectedPath=selectedCwd();
+  const currentPending=pendingCountForChat(currentChat.id);
+  const localPending=localPendingCountForChat(currentChat.id);
+  const selectedInsideLock=snapshot.locked&&selectedPath?isPathWithinForUi(snapshot.lockedRoot,selectedPath):false;
+  const agentLabel=displayAgentNameForUi(currentChat.agent,{includeScope:true});
+  const hasRuntime=Boolean(s.runtime);
+
+  let actionTitle="依頼を書いて送信";
+  let actionDetail="入力先を確認してから、やることと確認方法を書きます。";
+  let actionHint="同じチャットで追記すると、前の文脈を引き継いだまま続けられます。";
+  let actionTone="";
+
+  if(!hasRuntime){
+    actionTitle="ランタイム接続を待つ";
+    actionDetail="接続できると送信と進行状況の追跡が使えます。";
+    actionHint="接続が不安定なときは、保守ツールの再接続を使います。";
+    actionTone="warning";
+  }else if(currentPending>0){
+    actionTitle="実行が終わるまで待つ";
+    actionDetail=`このチャットで ${currentPending} 件実行中です。応答は下の会話欄へ追加されます。`;
+    actionHint=localPending>0
+      ?"途中で止める必要があるときだけ「停止」を使います。"
+      :"他のチャットからの実行も含めて完了を待っています。";
+    actionTone="running";
+  }else if(snapshot.locked&&selectedPath&&!selectedInsideLock){
+    actionTitle="入力先を lock 範囲に戻す";
+    actionDetail="現在のワークスペースが lock 中の範囲外です。";
+    actionHint="lock 中のフォルダ配下へ戻すか、unlock してから正しいパスで lock し直します。";
+    actionTone="warning";
+  }else if(!selectedPath){
+    actionTitle="ワークスペースを確認する";
+    actionDetail="まず入力先のフォルダを決めると、意図と変更先がずれにくくなります。";
+    actionHint="見た目変更や UI 改修では、必要に応じて lock してから送信します。";
+    actionTone="warning";
+  }else if(!conversation.hasConversation){
+    actionTitle="依頼を書いて送信";
+    actionDetail="準備ができています。下の入力欄に、やること・対象・確認方法を書いて送信します。";
+    actionHint=snapshot.locked
+      ?"ワークスペースは lock 済みです。安心してこの範囲で依頼できます。"
+      :"見た目変更を含む依頼なら、送信前に workspace lock をすると安全です。";
+  }else if(s.last&&s.last.cid===currentChat.id){
+    actionTitle="結果を見て次の依頼を書く";
+    actionDetail=s.last.type==="failed"
+      ?"直前の実行は失敗しました。原因を1つずつ切り分けて続行できます。"
+      :"直前の実行結果を確認しながら、追加修正や確認を続けられます。";
+    actionHint="同じチャットで追記すると、前の変更内容を踏まえた続きの依頼になります。";
+    actionTone=s.last.type==="failed"?"warning":"completed";
+  }
+
+  e.focusActionTitle.className=actionTone?`focus-action-title ${actionTone}`:"focus-action-title";
+  e.focusActionTitle.textContent=actionTitle;
+  e.focusActionDetail.textContent=actionDetail;
+  e.focusActionHint.textContent=actionHint;
+
+  setFocusCardToneForUi(e.focusChatCard,currentPending>0?"running":"ready");
+  e.focusChatValue.textContent=currentChat.title;
+  e.focusChatHint.textContent=conversation.hasConversation
+    ?`${agentLabel} / 会話 ${conversation.messages.length} 件`
+    :`${agentLabel} / まだ依頼はありません。`;
+
+  if(snapshot.locked&&selectedInsideLock){
+    setFocusCardToneForUi(e.focusWorkspaceCard,"ready");
+    e.focusWorkspaceValue.textContent="Lock 中";
+    e.focusWorkspaceHint.textContent=t1(snapshot.lockedRoot,88);
+  }else if(snapshot.locked&&!selectedInsideLock){
+    setFocusCardToneForUi(e.focusWorkspaceCard,"warning");
+    e.focusWorkspaceValue.textContent="範囲外";
+    e.focusWorkspaceHint.textContent=`lock: ${t1(snapshot.lockedRoot,44)} / 現在: ${t1(selectedPath||"(未指定)",32)}`;
+  }else if(selectedPath){
+    setFocusCardToneForUi(e.focusWorkspaceCard,"warning");
+    e.focusWorkspaceValue.textContent="未固定";
+    e.focusWorkspaceHint.textContent=t1(selectedPath,88);
+  }else{
+    setFocusCardToneForUi(e.focusWorkspaceCard,"warning");
+    e.focusWorkspaceValue.textContent="未選択";
+    e.focusWorkspaceHint.textContent="ワークスペース欄で入力先を確認してください。";
+  }
+
+  if(!hasRuntime){
+    setFocusCardToneForUi(e.focusSendCard,"warning");
+    e.focusSendValue.textContent="接続待ち";
+    e.focusSendHint.textContent="runtime が使えると送信できます。";
+  }else if(currentPending>0){
+    setFocusCardToneForUi(e.focusSendCard,"running");
+    e.focusSendValue.textContent="実行中";
+    e.focusSendHint.textContent=`${currentPending} 件進行中です。完了までは送信を待機します。`;
+  }else if(snapshot.locked&&selectedPath&&!selectedInsideLock){
+    setFocusCardToneForUi(e.focusSendCard,"warning");
+    e.focusSendValue.textContent="要修正";
+    e.focusSendHint.textContent="lock 範囲に戻すと送信できます。";
+  }else{
+    setFocusCardToneForUi(e.focusSendCard,"ready");
+    e.focusSendValue.textContent="送信できます";
+    e.focusSendHint.textContent=conversation.hasConversation
+      ?"追加の依頼も同じ入力欄から送れます。"
+      :"入力欄に依頼を書いて送信します。";
+  }
 }
 function scheduleTopographyRefreshSoon(delayMs=180){
   if(!e.agentTopographyList)return;
@@ -2204,6 +2927,7 @@ function renderAttachmentUi(){
     e.imageError.hidden=!err;
     e.imageError.textContent=err;
   }
+  scheduleComposerViewportSyncForUi();
 }
 function ensureHarnessSignals(h){
   if(!h||typeof h!=="object")return createHarnessSignals();
@@ -2461,6 +3185,8 @@ function syncHarnessFlow(c,mode=activeHarnessCheckMode()){
   const events=toArr(c.h.events);
   const signals=getHarnessSignals(c.h,checkMode);
   const planMeta=ensureHarnessPlanMeta(c.h);
+  const requirementSnapshot=buildRequirementLockSnapshotForUi(storedTurnSnapshotForUi(c.h));
+  const requirementGateBlocked=requirementNeedsFurtherLockForUi(requirementSnapshot);
   const hasPlanSkip=lowerText(planMeta.decision)==="skip";
   c.h.signals={...signals};
   const hasDispatch=signals.dispatch;
@@ -2483,23 +3209,25 @@ function syncHarnessFlow(c,mode=activeHarnessCheckMode()){
   const shouldHighlightStage=hasAnyProgressSignal||hasActiveTurnLikeStatus;
 
   let stageIndex=0;
-  if(checkMode===HARNESS_CHECK_MODES.RELAXED){
-    if(hasRequirement)stageIndex=1;
-    if(hasPlan||hasExecutionSignal)stageIndex=Math.max(stageIndex,2);
-    if(hasQualitySignal)stageIndex=Math.max(stageIndex,3);
-    if(status==="needs_input")stageIndex=Math.max(stageIndex,4);
-    if(hasTurnCompleted||status==="completed"||status==="failed"||status==="interrupted")stageIndex=4;
-  }else{
-    if(hasRequirement)stageIndex=1;
-    if(hasRequirement&&hasPlan)stageIndex=2;
-    if(hasRequirement&&hasPlan&&hasQualitySignal)stageIndex=3;
-    if(status==="needs_input")stageIndex=Math.max(stageIndex,2);
-    if(hasTurnCompleted&&hasRequirement&&hasPlan)stageIndex=4;
+  if(!requirementGateBlocked){
+    if(checkMode===HARNESS_CHECK_MODES.RELAXED){
+      if(hasRequirement)stageIndex=1;
+      if(hasPlan||hasExecutionSignal)stageIndex=Math.max(stageIndex,2);
+      if(hasQualitySignal)stageIndex=Math.max(stageIndex,3);
+      if(status==="needs_input")stageIndex=Math.max(stageIndex,4);
+      if(hasTurnCompleted||status==="completed"||status==="failed"||status==="interrupted")stageIndex=4;
+    }else{
+      if(hasRequirement)stageIndex=1;
+      if(hasRequirement&&hasPlan)stageIndex=2;
+      if(hasRequirement&&hasPlan&&hasQualitySignal)stageIndex=3;
+      if(status==="needs_input")stageIndex=Math.max(stageIndex,2);
+      if(hasTurnCompleted&&hasRequirement&&hasPlan)stageIndex=4;
+    }
   }
 
   const states=["todo","todo","todo","todo","todo"];
   if(status==="completed"){
-    const strictComplete=checkMode===HARNESS_CHECK_MODES.RELAXED||(hasRequirement&&hasPlan&&hasTurnCompleted);
+    const strictComplete=!requirementGateBlocked&&(checkMode===HARNESS_CHECK_MODES.RELAXED||(hasRequirement&&hasPlan&&hasTurnCompleted));
     if(strictComplete){
       for(let i=0;i<states.length;i+=1)states[i]="done";
     }else{
@@ -2519,9 +3247,20 @@ function syncHarnessFlow(c,mode=activeHarnessCheckMode()){
     phase.state=states[idx]||"todo";
   });
   const planningPhase=flow.find((phase)=>phase&&phase.id==="planning");
-  if(planningPhase&&hasPlanSkip&&planningPhase.state!=="failed"){
+  if(planningPhase&&hasPlanSkip&&planningPhase.state!=="failed"&&!requirementGateBlocked){
     planningPhase.state="skipped";
     planningPhase.detail="詳細 plan 省略";
+  }else if(planningPhase&&requirementGateBlocked){
+    planningPhase.detail="要件整理の確定待ち";
+  }
+  const executionPhase=flow.find((phase)=>phase&&phase.id==="execution");
+  const qualityPhase=flow.find((phase)=>phase&&phase.id==="quality");
+  const reportPhase=flow.find((phase)=>phase&&phase.id==="report");
+  if(requirementGateBlocked){
+    if(executionPhase)executionPhase.detail="要件整理の確定待ち";
+    if(qualityPhase)qualityPhase.detail="要件整理の確定待ち";
+    if(reportPhase)reportPhase.detail="要件整理の確定待ち";
+    applyRequirementPhaseStateForUi(flow,requirementSnapshot);
   }
   c.h.evidence=deriveHarnessEvidence(events);
 }
@@ -2671,6 +3410,32 @@ function planWorkToneForUi(status){
   if(status==="failed"||status==="interrupted"||status==="skipped")return status;
   return"idle";
 }
+function requirementGateBlockerTextForUi(snapshot,fallbackText="要件整理の保留を解消する"){
+  if(!snapshot||typeof snapshot!=="object")return fallbackText;
+  if(snapshot.displayAskNext&&snapshot.displayAskNext.length){
+    const firstAsk=String(snapshot.displayAskNext[0]||"").trim();
+    if(firstAsk)return`要確認: ${firstAsk}`;
+  }
+  const holdReason=String(snapshot.displayHoldReason||snapshot.contractStatusReason||"").trim();
+  return holdReason||fallbackText;
+}
+function requirementGatePlanPanelStateForUi(snapshot){
+  const blockedLabel=snapshot&&snapshot.contractStatusLabel?snapshot.contractStatusLabel:"保留";
+  const pendingCount=(snapshot&&snapshot.displayAskNext&&snapshot.displayAskNext.length)
+    ||(snapshot&&snapshot.openQuestions&&snapshot.openQuestions.length)
+    ||0;
+  const blockerText=requirementGateBlockerTextForUi(snapshot);
+  const detailParts=[`要件整理が${blockedLabel}のため、計画には進まない`];
+  if(pendingCount>0)detailParts.push(`要確認 ${pendingCount}`);
+  return{
+    metaText:`要件整理${blockedLabel}`,
+    currentStepText:blockerText,
+    currentDetailText:detailParts.join(" / "),
+    explanationText:"Step 1 の未解決を先に解消するまで、ここでは実行計画を表示しない。",
+    emptyText:"要件整理が固まると、ここに実行計画が表示されます。",
+    tone:"idle",
+  };
+}
 function derivePlanFocusForUi(planSteps,statusText=""){
   const steps=toArr(planSteps).map((step,index)=>{
     const explicitIndex=Number.isFinite(Number(step&&step.index))?Math.max(0,Math.trunc(Number(step.index))):index;
@@ -2793,7 +3558,43 @@ function deriveDisplayedPlanForUi(h,flowItems,statusText=""){
     explanation:"このチャットで plan/update または PLAN SKIP が届くと、ここに表示します。",
   };
 }
-function renderTimeline(){e.timeline.innerHTML="";const c=active();if(!c)return;c.messages.forEach(m=>{const f=e.messageTemplate.content.cloneNode(true);f.querySelector(".message").classList.add(m.role);f.querySelector(".meta").textContent=`${m.title} ${m.time}`;f.querySelector(".content").textContent=m.content||"";e.timeline.appendChild(f)});e.timeline.scrollTop=e.timeline.scrollHeight}
+function renderTimeline(){
+  e.timeline.innerHTML="";
+  const c=active();
+  if(!c){
+    if(e.conversationSummary)e.conversationSummary.textContent="チャットを選ぶと会話が表示されます。";
+    return;
+  }
+  const conversation=conversationSnapshotForUi(c);
+  const currentPending=pendingCountForChat(c.id);
+  if(e.conversationSummary){
+    if(currentPending>0){
+      e.conversationSummary.textContent="応答はここに追加されます。実行中の内容もこの欄で追えます。";
+    }else if(!conversation.hasConversation){
+      e.conversationSummary.textContent="まだ依頼は始まっていません。下の入力欄から始めます。";
+    }else{
+      e.conversationSummary.textContent=`このチャットのメッセージ ${conversation.messages.length} 件を表示しています。`;
+    }
+  }
+  if(!conversation.hasConversation){
+    const empty=document.createElement("article");
+    empty.className="timeline-empty-state";
+    empty.innerHTML="<h4 class=\"timeline-empty-title\">まだ依頼は始まっていません</h4><p class=\"timeline-empty-copy\">この欄には、送信した依頼と AI の応答が時系列で並びます。</p><ul class=\"timeline-empty-list\"><li>何を変えるか</li><li>どこを対象にするか</li><li>どう確認したいか</li></ul>";
+    e.timeline.appendChild(empty);
+    return;
+  }
+  const stack=document.createElement("div");
+  stack.className="timeline-stack";
+  conversation.messages.forEach((m)=>{
+    const f=e.messageTemplate.content.cloneNode(true);
+    f.querySelector(".message").classList.add(m.role);
+    f.querySelector(".meta").textContent=`${m.title} ${m.time}`;
+    renderMessageContentForUi(f.querySelector(".content"),m.content||"");
+    stack.appendChild(f);
+  });
+  e.timeline.appendChild(stack);
+  e.timeline.scrollTop=e.timeline.scrollHeight;
+}
 function renameChatTitle(chatId){
   const c=chat(chatId);
   if(!c)return;
@@ -2813,11 +3614,12 @@ function renderChatList(){
     const statusClass=activeCount>0?"running":"idle";
     const statusLabel=activeCount>0?`実行中 ${activeCount}`:"待機中";
     const agentLabel=displayAgentNameForUi(c.agent);
+    const preview=latestConversationPreviewForUi(c);
     const b=document.createElement("button");
     b.type="button";
     b.className=c.id===s.active?"chat-item active":"chat-item";
     b.title="ダブルクリックでタイトル変更 / Deleteで削除";
-    b.innerHTML=`<span class=\"chat-item-line\"><span class=\"chat-item-title\">${c.title}</span><span class=\"chat-item-meta\">${agentLabel}</span><span class=\"chat-item-status ${statusClass}\">${statusLabel}</span></span>`;
+    b.innerHTML=`<span class=\"chat-item-line\"><span class=\"chat-item-title\">${c.title}</span><span class=\"chat-item-meta\">${agentLabel}</span><span class=\"chat-item-status ${statusClass}\">${statusLabel}</span></span><span class=\"chat-item-preview\">${preview}</span>`;
     b.onclick=()=>{s.active=c.id;refresh()};
     b.ondblclick=(ev)=>{
       ev.preventDefault();
@@ -2842,6 +3644,8 @@ function renderHarness(){
   const c=active();
   if(!c)return;
   const checkMode=activeHarnessCheckMode();
+  const latestTurn=latestRuntimeTurnForChat(c);
+  if(latestTurn&&syncTurnSnapshotForUi(c,latestTurn))scheduleSaveChatState();
   syncHarnessFlow(c,checkMode);
   const h=c.h;
   const stageListEl=by("harnessJourneyList");
@@ -2860,6 +3664,7 @@ function renderHarness(){
   const phaseStateText=(phase)=>{
     const state=String(phase&&phase.state||"todo");
     if(state==="skipped")return"SKIP";
+    if(state==="blocked")return"保留";
     if(state==="active")return"進行中";
     if(state==="done")return"完了";
     if(state==="failed")return"失敗";
@@ -2868,6 +3673,7 @@ function renderHarness(){
   const phaseTone=(phase)=>{
     const state=String(phase&&phase.state||"todo");
     if(state==="skipped")return"skipped";
+    if(state==="blocked")return"blocked";
     if(state==="active")return"running";
     if(state==="done")return"completed";
     if(state==="failed")return"failed";
@@ -2879,11 +3685,11 @@ function renderHarness(){
     const detail=phase&&typeof phase.detail==="string"&&phase.detail?` / ${phase.detail}`:"";
     return`${base}${detail}`;
   };
-  const latestTurn=latestRuntimeTurnForChat(c);
-  if(latestTurn&&syncTurnSnapshotForUi(c,latestTurn))scheduleSaveChatState();
   const turnForUi=latestTurn||storedTurnSnapshotForUi(c.h);
   const requirementSnapshot=buildRequirementLockSnapshotForUi(turnForUi);
   const requirementGroups=requirementGroupsForUi(requirementSnapshot);
+  const requirementGateBlocked=requirementNeedsFurtherLockForUi(requirementSnapshot);
+  applyRequirementPhaseStateForUi(flowItems,requirementSnapshot);
 
   const latestEvent=toArr(h.events)[0];
   const verdict=evaluateHarnessVerdict(h,checkMode);
@@ -2938,7 +3744,10 @@ function renderHarness(){
     stageListEl.appendChild(card);
   });
 
-  let currentPhase=flowItems.find((phase)=>phase&&phase.state==="active")||flowItems.find((phase)=>phase&&phase.state==="failed")||null;
+  let currentPhase=flowItems.find((phase)=>phase&&phase.state==="active")
+    ||flowItems.find((phase)=>phase&&phase.state==="blocked")
+    ||flowItems.find((phase)=>phase&&phase.state==="failed")
+    ||null;
   if(!currentPhase){
     const donePhases=flowItems.filter((phase)=>phase&&(phase.state==="done"||phase.state==="skipped"));
     currentPhase=donePhases.length?donePhases[donePhases.length-1]:(flowItems[0]||null);
@@ -2946,7 +3755,14 @@ function renderHarness(){
   const currentPhaseSummary=currentPhase&&currentPhase.id?phaseSummaries[currentPhase.id]:"";
   stageEl.textContent=currentPhase?`${currentPhase.label} (${phaseStateText(currentPhase)})`:"未開始";
   stageEl.className=`harness-now-value ${phaseTone(currentPhase)}`;
-  if(planFocus){
+  if(requirementGateBlocked){
+    const blockerText=requirementGateBlockerTextForUi(
+      requirementSnapshot,
+      currentPhaseSummary||"要件整理の保留を解消する"
+    );
+    workEl.textContent=blockerText;
+    workEl.className="harness-now-value blocked";
+  }else if(planFocus){
     if(planDecision==="skip"){
       workEl.textContent=planSkipWorkLabelForUi(displayedPlan,planFocus);
     }else{
@@ -2963,15 +3779,15 @@ function renderHarness(){
     requirementMetaEl.textContent=requirementSnapshot.hasRequirement
       ?(requirementSnapshot.metaParts&&requirementSnapshot.metaParts.length
         ?requirementSnapshot.metaParts.join(" / ")
-        :"確定")
-      :"ロック待ち";
+        :requirementSnapshot.contractStatusLabel||"整理中")
+      :"整理前";
   }
   if(requirementHeadlineEl){
     requirementHeadlineEl.textContent=requirementSnapshot.hasRequirement
       ?requirementSnapshot.headline||"要件の主目的は固まりました。"
       :status==="running"||status==="starting"
-        ?"実行は始まっていますが、このチャットではまだ要件ロック内容を取得できていません。"
-        :"このチャットで要件がロックされると、AIがどこに向かって進むかと完成条件をここに表示します。";
+        ?"実行は始まっていますが、このチャットではまだ Plan 前の解釈カードを組み立てられていません。"
+        :"この欄には、Plan を立てる前に AI がいま何を目標に見ていて、どんな方針で進もうとしているかを簡潔に表示します。";
   }
   if(requirementSectionsEl){
     requirementSectionsEl.innerHTML="";
@@ -2979,11 +3795,11 @@ function renderHarness(){
       const empty=document.createElement("article");
       empty.className="harness-requirement-group empty";
       const title=document.createElement("h5");
-      title.textContent=requirementSnapshot.hasRequirement?"要約不足":"要件待ち";
+      title.textContent="AIの方針";
       const text=document.createElement("p");
       text.textContent=requirementSnapshot.hasRequirement
-        ?"要件ロックはありますが、表示できるサマリー項目が不足しています。"
-        :"AIの向かう先、受け入れ条件、非対象が固まると、この欄で読めるようになります。";
+        ?"要件は取れていますが、方針として短く出せるだけの材料がまだ不足しています。"
+        :"この依頼を AI がどう理解し、次にどう進めるつもりかだけをここに短く表示します。";
       empty.appendChild(title);
       empty.appendChild(text);
       requirementSectionsEl.appendChild(empty);
@@ -2993,22 +3809,51 @@ function renderHarness(){
         article.className="harness-requirement-group";
         const title=document.createElement("h5");
         title.textContent=group.title;
-        const list=document.createElement("ul");
-        list.className="harness-requirement-list";
-        group.items.forEach((entry)=>{
-          const item=document.createElement("li");
-          item.textContent=entry;
-          list.appendChild(item);
-        });
         article.appendChild(title);
-        article.appendChild(list);
+        if(group.summary){
+          const summary=document.createElement("p");
+          summary.className="harness-requirement-summary";
+          summary.textContent=group.summary;
+          article.appendChild(summary);
+        }
+        if(Array.isArray(group.rows)&&group.rows.length){
+          const rowList=document.createElement("div");
+          rowList.className="harness-requirement-rows";
+          group.rows.forEach((entry)=>{
+            if(!entry||typeof entry!=="object")return;
+            const row=document.createElement("div");
+            row.className="harness-requirement-row";
+            const label=document.createElement("span");
+            label.className="harness-requirement-row-label";
+            label.textContent=entry.label||"";
+            const text=document.createElement("p");
+            text.className="harness-requirement-row-text";
+            text.textContent=entry.text||"";
+            row.appendChild(label);
+            row.appendChild(text);
+            rowList.appendChild(row);
+          });
+          article.appendChild(rowList);
+        }else{
+          const list=document.createElement("ul");
+          list.className="harness-requirement-list";
+          group.items.forEach((entry)=>{
+            const item=document.createElement("li");
+            item.textContent=entry;
+            list.appendChild(item);
+          });
+          article.appendChild(list);
+        }
         requirementSectionsEl.appendChild(article);
       });
     }
   }
+  const requirementBlockedPlanState=requirementGateBlocked?requirementGatePlanPanelStateForUi(requirementSnapshot):null;
   if(e.harnessPlanMeta){
     const completedCount=planSteps.filter((step)=>step.status==="completed").length;
-    if(planDecision==="skip"){
+    if(requirementBlockedPlanState){
+      e.harnessPlanMeta.textContent=requirementBlockedPlanState.metaText;
+    }else if(planDecision==="skip"){
       e.harnessPlanMeta.textContent="PLAN SKIP";
     }else if(planSteps.length){
       const metaParts=[`${completedCount}/${planSteps.length} 完了`];
@@ -3019,14 +3864,18 @@ function renderHarness(){
     }
   }
   if(e.harnessPlanCurrentCard){
-    const tone=planFocus?planCardToneForUi(planFocus.status):"idle";
+    const tone=requirementBlockedPlanState?requirementBlockedPlanState.tone:(planFocus?planCardToneForUi(planFocus.status):"idle");
     e.harnessPlanCurrentCard.className=`harness-plan-current ${tone}`;
   }
   if(e.harnessPlanCurrentStep){
-    e.harnessPlanCurrentStep.textContent=planFocus?planFocus.text:"計画待ち";
+    e.harnessPlanCurrentStep.textContent=requirementBlockedPlanState
+      ?requirementBlockedPlanState.currentStepText
+      :(planFocus?planFocus.text:"計画待ち");
   }
   if(e.harnessPlanCurrentDetail){
-    if(planFocus){
+    if(requirementBlockedPlanState){
+      e.harnessPlanCurrentDetail.textContent=requirementBlockedPlanState.currentDetailText;
+    }else if(planFocus){
       if(planDecision==="skip"){
         const skipParts=[
           planSourceLabelForUi(planSource,planDecision),
@@ -3043,11 +3892,18 @@ function renderHarness(){
     }
   }
   if(e.harnessPlanExplanation){
-    e.harnessPlanExplanation.textContent=displayedPlan.explanation;
+    e.harnessPlanExplanation.textContent=requirementBlockedPlanState
+      ?requirementBlockedPlanState.explanationText
+      :displayedPlan.explanation;
   }
   if(e.harnessPlanList){
     e.harnessPlanList.innerHTML="";
-    if(!planSteps.length){
+    if(requirementBlockedPlanState){
+      const empty=document.createElement("li");
+      empty.className="harness-empty";
+      empty.textContent=requirementBlockedPlanState.emptyText;
+      e.harnessPlanList.appendChild(empty);
+    }else if(!planSteps.length){
       const empty=document.createElement("li");
       empty.className="harness-empty";
       empty.textContent="計画ステップはここに表示されます。";
@@ -3136,20 +3992,114 @@ function renderHarness(){
 }
 function inspect(){if(!e.agentInspector)return;const c=active();if(!c)return;const ra=rAgents().find(a=>a.name===c.agent);e.agentInspector.textContent=ra?`Agent: ${displayAgentNameForUi(ra.name,{includeScope:true})}\nActive: ${ra.isActive?"yes":"no"}\nSession: ${ra.sessionRef||"none"}`:`Agent: ${displayAgentNameForUi(c.agent,{includeScope:true})}\nRuntime metadata not available.`}
 function trace(type,agent,detail="",cid=s.active){s.trace.unshift({type,agent,cid:cid||"",detail:t1(detail,140),at:Date.now()});s.trace=s.trace.slice(0,180);flow()}
-function traceTone(type){if(type==="dispatch"||type==="streaming"||type==="running")return"running";if(type==="completed")return"completed";if(type==="failed"||type==="aborted")return"failed";return"idle"}
+function traceTone(type){
+  const normalized=lowerText(type).replace(/[\s-]+/g,"_");
+  if(normalized==="dispatch"||normalized==="streaming"||normalized==="running"||normalized==="working"||normalized==="spawned")return"running";
+  if(normalized==="completed"||normalized==="done"||normalized==="pass"||normalized==="success")return"completed";
+  if(normalized==="failed"||normalized==="aborted"||normalized==="interrupted"||normalized==="needs_input")return"failed";
+  return"idle";
+}
+function monitorRowEventAtForUi(row){
+  if(!row||typeof row!=="object")return 0;
+  if(Number.isFinite(Number(row.updatedAt))&&Number(row.updatedAt)>0)return Math.max(0,Math.trunc(Number(row.updatedAt)));
+  if(Number.isFinite(Number(row.completedAt))&&Number(row.completedAt)>0)return Math.max(0,Math.trunc(Number(row.completedAt)));
+  return 0;
+}
+function executionTraceBucketForUi({row=null,pendingCount=0,lastTrace=null}={}){
+  if(pendingCount>0)return"running";
+  if(lastTrace){
+    const traceBucket=traceTone(lastTrace.type);
+    if(traceBucket==="running"||traceBucket==="completed"||traceBucket==="failed")return traceBucket;
+  }
+  if(isRunningMonitorAgentForUi(row))return"running";
+  if(isFailedMonitorAgentForUi(row))return"failed";
+  if(isCompletedMonitorAgentForUi(row))return"completed";
+  return"idle";
+}
+function executionTraceStatusTextForUi({bucket,row=null,pendingCount=0,lastTrace=null}={}){
+  const status=lowerText(row&&row.status);
+  if(bucket==="running"){
+    if(status.includes("spawn"))return"初期化中";
+    return pendingCount>1?`実行中 (${pendingCount})`:"実行中";
+  }
+  if(bucket==="completed"){
+    if(status.includes("pass"))return"PASS";
+    return"完了";
+  }
+  if(bucket==="failed"){
+    if(status.includes("needs_input")||status.includes("input"))return"入力待ち";
+    if((lastTrace&&lastTrace.type==="aborted")||status.includes("interrupt")||status.includes("abort")||status.includes("cancel"))return"中断";
+    return"失敗";
+  }
+  return status==="configured"?"準備済み":"待機";
+}
+function executionTraceActivityForUi({row=null,lastTrace=null,pendingCount=0}={}){
+  const traceAt=lastTrace&&Number.isFinite(Number(lastTrace.at))?Number(lastTrace.at):0;
+  const rowAt=monitorRowEventAtForUi(row);
+  if(traceAt>=rowAt&&lastTrace){
+    return `${tt(traceAt)} ${lastTrace.type}${lastTrace.detail?` / ${lastTrace.detail}`:""}`;
+  }
+  const detail=row&&typeof row.syncDetail==="string"&&row.syncDetail.trim()
+    ?row.syncDetail.trim()
+    :(row&&typeof row.description==="string"&&row.description.trim()?t1(row.description,140):"");
+  const status=row&&typeof row.status==="string"&&row.status.trim()?row.status.trim():"";
+  if(rowAt>0&&(status||detail)){
+    return `${tt(rowAt)} ${status||"status"}${detail?` / ${detail}`:""}`;
+  }
+  if(pendingCount>0)return"実行リクエスト処理中";
+  return"待機中";
+}
+function executionTraceRoleLabelForUi(row,name=""){
+  if(row&&row.role==="parent")return"parent";
+  if(isVerificationAgentForUi(row&&row.name?row:{name}))return"verification";
+  return"specialist";
+}
+function synthesizeTraceRowsForUi(baseRows,topographyRows,pendingByAgent,currentChatId){
+  const rows=Array.isArray(baseRows)?baseRows.map((row)=>row&&typeof row==="object"?{...row}:row).filter(Boolean):[];
+  const seenKeys=new Set(rows.map((row)=>`${normalizeAgentNameForUi(row&&row.agent)}::${Number.isFinite(Number(row&&row.at))?Math.trunc(Number(row.at)):0}::${String(row&&row.type||"")}`));
+  toArr(topographyRows).forEach((row)=>{
+    if(!row||typeof row!=="object")return;
+    const bucket=executionTraceBucketForUi({row,pendingCount:pendingByAgent instanceof Map?(pendingByAgent.get(row.name)||0):0,lastTrace:null});
+    if(bucket==="idle")return;
+    const at=monitorRowEventAtForUi(row);
+    if(!at)return;
+    const type=bucket==="running"
+      ?(lowerText(row.status).includes("spawn")?"spawned":"running")
+      :bucket==="completed"
+        ?"completed"
+        :(lowerText(row.status).includes("needs_input")?"needs_input":lowerText(row.status).includes("interrupt")?"aborted":"failed");
+    const detail=executionTraceActivityForUi({row,pendingCount:0}).replace(/^\d{2}:\d{2}:\d{2}\s+/,"");
+    const key=`${normalizeAgentNameForUi(row.name)}::${at}::${type}`;
+    if(seenKeys.has(key))return;
+    seenKeys.add(key);
+    rows.push({type,agent:row.name,cid:currentChatId,detail,at});
+  });
+  rows.sort((left,right)=>Number(right&&right.at||0)-Number(left&&left.at||0));
+  return rows;
+}
 function flow(){
   const currentChat=active();
   const currentChatId=currentChat&&currentChat.id?currentChat.id:"";
   const traceRows=s.trace.filter((item)=>item&&item.cid===currentChatId);
+  const topographyRows=syncedTopographyRows(topographyState.agents);
+  const topographyByName=new Map();
+  topographyRows.forEach((row)=>{
+    if(!row||!row.name||isHiddenAgentForUi(row.name))return;
+    topographyByName.set(row.name,row);
+  });
   const names=new Set();
   if(currentChat&&currentChat.agent&&!isHiddenAgentForUi(currentChat.agent))names.add(currentChat.agent);
+  topographyRows.forEach((row)=>{
+    if(!row||!row.name||isHiddenAgentForUi(row.name))return;
+    names.add(row.name);
+  });
   s.req.forEach((r)=>{
     if(!r||r.cid!==currentChatId||!r.agent||isHiddenAgentForUi(r.agent))return;
-    names.add(r.agent);
+    names.add(resolveMonitorAgentNameForUi(r.agent,topographyByName)||r.agent);
   });
   traceRows.forEach((row)=>{
     if(!row||!row.agent||isHiddenAgentForUi(row.agent))return;
-    names.add(row.agent);
+    names.add(resolveMonitorAgentNameForUi(row.agent,topographyByName)||row.agent);
   });
   if(!names.size)names.add(DEFAULT_AGENT_NAME);
 
@@ -3161,9 +4111,16 @@ function flow(){
     const pendingByAgent=new Map();
     s.req.forEach((item)=>{
       if(!item||item.cid!==currentChatId||!item.agent||isHiddenAgentForUi(item.agent))return;
-      pendingByAgent.set(item.agent,(pendingByAgent.get(item.agent)||0)+1);
+      const name=resolveMonitorAgentNameForUi(item.agent,topographyByName)||item.agent;
+      pendingByAgent.set(name,(pendingByAgent.get(name)||0)+1);
     });
-    const runtimeByName=new Map(rAgents().map((item)=>[item.name,item]));
+    const runtimeByName=new Map();
+    rAgents().forEach((item,index)=>{
+      const normalized=normalizeMonitorAgent(item,index,{runtimeFallback:true});
+      const name=resolveMonitorAgentNameForUi(normalized&&normalized.name?normalized.name:"",topographyByName)||normalized.name;
+      if(!normalized||!name||isHiddenAgentForUi(name))return;
+      runtimeByName.set(name,{...normalized,name});
+    });
     runtimeByName.forEach((runtime,name)=>{
       if(!runtime||!name||isHiddenAgentForUi(name))return;
       const activeTurnId=typeof runtime.activeTurnId==="string"?runtime.activeTurnId.trim():"";
@@ -3171,19 +4128,20 @@ function flow(){
       pendingByAgent.set(name,Math.max(1,pendingByAgent.get(name)||0));
     });
     const latestTraceByAgent=new Map();
-    traceRows.forEach((item)=>{if(item&&item.agent&&!latestTraceByAgent.has(item.agent))latestTraceByAgent.set(item.agent,item)});
+    traceRows.forEach((item)=>{
+      const name=resolveMonitorAgentNameForUi(item&&item.agent?item.agent:"",topographyByName);
+      if(name&&!latestTraceByAgent.has(name))latestTraceByAgent.set(name,item);
+    });
 
     const buckets={idle:[],running:[],completed:[],failed:[]};
     list.forEach((name)=>{
       const runtime=runtimeByName.get(name)||null;
+      const monitorRow=topographyByName.get(name)||runtime||null;
       const pendingCount=pendingByAgent.get(name)||0;
       const lastTrace=latestTraceByAgent.get(name)||null;
-      const fromTrace=lastTrace?traceTone(lastTrace.type):"idle";
-      const tone=pendingCount>0
-        ?"running"
-        :(fromTrace==="idle"&&runtime&&runtime.isActive?"idle":fromTrace);
-      let statusText=tone==="running"?(pendingCount>0?`実行中 (${pendingCount})`:"実行中"):tone==="completed"?"完了":tone==="failed"?(lastTrace&&lastTrace.type==="aborted"?"中断":"失敗"):"待機";
-      let activity=lastTrace?`${tt(lastTrace.at)} ${lastTrace.type}${lastTrace.detail?` / ${lastTrace.detail}`:""}`:(pendingCount>0?"実行リクエスト処理中":"待機中");
+      const tone=executionTraceBucketForUi({row:monitorRow,pendingCount,lastTrace});
+      const statusText=executionTraceStatusTextForUi({bucket:tone,row:monitorRow,pendingCount,lastTrace});
+      const activity=executionTraceActivityForUi({row:monitorRow,lastTrace,pendingCount});
 
       const card=document.createElement("article");
       card.className="agent-flow-card";
@@ -3197,10 +4155,14 @@ function flow(){
       status.textContent=statusText;
       const role=document.createElement("p");
       role.className="agent-flow-meta";
-      role.textContent=`role: ${inferAgentRoleForUi(name)}`;
+      role.textContent=`role: ${executionTraceRoleLabelForUi(monitorRow,name)}`;
       const session=document.createElement("p");
       session.className="agent-flow-meta";
-      session.textContent=`session: ${runtime&&(runtime.sessionRef||runtime.threadId)?(runtime.sessionRef||runtime.threadId):"none"}`;
+      const sessionParts=[];
+      if(monitorRow&&(monitorRow.sessionRef||monitorRow.threadId))sessionParts.push(`session ${compactMonitorRefForUi(monitorRow.sessionRef||monitorRow.threadId)}`);
+      else if(runtime&&(runtime.sessionRef||runtime.threadId))sessionParts.push(`session ${compactMonitorRefForUi(runtime.sessionRef||runtime.threadId)}`);
+      if(monitorRow&&monitorRow.activeTurnId)sessionParts.push(`turn ${compactMonitorRefForUi(monitorRow.activeTurnId)}`);
+      session.textContent=sessionParts.length?sessionParts.join(" / "):"session: none";
       const work=document.createElement("p");
       work.className="agent-flow-meta";
       work.textContent=`last: ${activity}`;
@@ -3241,8 +4203,9 @@ function flow(){
     });
   }
 
-  e.agentTraceList.innerHTML=traceRows.length?"":'<li class="agent-trace-empty">まだトレースイベントはありません。</li>';
-  traceRows.slice(0,32).forEach(x=>{const tone=traceTone(x.type)==="failed"?(x.type==="aborted"?"aborted":"failed"):traceTone(x.type);const li=document.createElement("li");li.className=`agent-trace-item ${tone}`;li.innerHTML=`<span class=\"agent-trace-time\">${tt(x.at)}</span><span class=\"agent-trace-agent\">${displayAgentNameForUi(x.agent,{includeScope:true})}</span><span class=\"agent-trace-event\">${x.type}</span><span class=\"agent-trace-detail\">${x.detail||"-"}</span>`;e.agentTraceList.appendChild(li)});
+  const traceRowsForList=synthesizeTraceRowsForUi(traceRows,topographyRows,(function(){const map=new Map();s.req.forEach((item)=>{if(!item||item.cid!==currentChatId||!item.agent||isHiddenAgentForUi(item.agent))return;const name=resolveMonitorAgentNameForUi(item.agent,topographyByName)||item.agent;map.set(name,(map.get(name)||0)+1);});return map;})(),currentChatId);
+  e.agentTraceList.innerHTML=traceRowsForList.length?"":'<li class="agent-trace-empty">まだトレースイベントはありません。</li>';
+  traceRowsForList.slice(0,32).forEach(x=>{const tone=traceTone(x.type)==="failed"?(x.type==="aborted"?"aborted":"failed"):traceTone(x.type);const li=document.createElement("li");li.className=`agent-trace-item ${tone}`;li.innerHTML=`<span class=\"agent-trace-time\">${tt(x.at)}</span><span class=\"agent-trace-agent\">${displayAgentNameForUi(x.agent,{includeScope:true})}</span><span class=\"agent-trace-event\">${x.type}</span><span class=\"agent-trace-detail\">${x.detail||"-"}</span>`;e.agentTraceList.appendChild(li)});
   renderAgentTopography();
 }
 function live(){
@@ -3314,7 +4277,7 @@ function pending(){
     e.agentState.textContent=`チャット: ${c.title}${currentPending>0?` (${currentPending})`:""} / エージェント: ${agentLabel}`;
   }
 }
-function refresh(){renderTimeline();renderChatList();renderHarness();inspect();pending();live();renderPerformanceIndicator();renderAutomationStatus();syncRuntimePendingMonitor()}
+function refresh(){renderTimeline();renderChatList();renderHarness();inspect();pending();live();renderPerformanceIndicator();renderAutomationStatus();renderWorkspaceGuardUi();syncRuntimePendingMonitor()}
 function normalizeApprovalPolicyForUi(value,fallback="on-request"){
   const normalized=typeof value==="string"?value.trim().toLowerCase():"";
   if(normalized==="on-failure")return"on-request";
@@ -3802,6 +4765,7 @@ async function loadRuntime({reconcilePending=true}={}){
     e.openCmdBtn.disabled=!canOpenShell;
     e.openCmdBtn.title=canOpenShell?"":"Open CMD is disabled by runtime policy.";
   }
+  renderWorkspaceGuardUi();
   e.connectionState.textContent="接続中";
   e.connectionState.classList.add("connected");
   e.connectionState.classList.remove("disconnected");
@@ -4080,6 +5044,7 @@ function buildExecResponseError(response,bodyText){
   error.status=status;
   error.bodyText=bodyText||"";
   error.payload=payload;
+  error.code=payload&&typeof payload.code==="string"?payload.code.trim():"";
   error.isDuplicate=duplicate;
   error.isResolvedDuplicate=resolvedDuplicate;
   if(duplicate&&status===409){
@@ -4105,6 +5070,8 @@ function isTransientExecSubmitError(error){
 }
 function formatExecSubmitError(error){
   if(!error)return"unknown error";
+  const workspaceGuardError=workspaceGuardErrorInfoForUi(error);
+  if(workspaceGuardError.handled)return workspaceGuardError.detail;
   if(error.name==="TimeoutError")return"request timeout";
   return t1(String(error&&error.message?error.message:"runtime error").replace(/\s+/g," ").trim(),180)||"runtime error";
 }
@@ -4149,6 +5116,8 @@ async function submitExecRequestWithRetry({payload,signal,out,chatRecord}){
   throw lastError||new Error("request failed");
 }
 function formatRunPromptFailureMessage(error){
+  const workspaceGuardError=workspaceGuardErrorInfoForUi(error);
+  if(workspaceGuardError.handled)return workspaceGuardError.systemMessage;
   if(error&&error.isTransientSubmitFailure){
     const cause=error&&error.cause?error.cause:error;
     return`自動再試行後も送信できませんでした: ${formatExecSubmitError(cause)}`;
@@ -4238,6 +5207,7 @@ async function runPrompt(raw,cid=s.active,options={}){
     return;
   }
   clearAttachmentError();
+  clearWorkspaceGuardNotice();
   const dispatchDetail=composeDispatchDetail(prompt,imagePayloads);
   const shouldForceNewSession=Boolean(c.forceNewSession);
   if(shouldForceNewSession)c.perf=createPerformanceState();
@@ -4305,7 +5275,7 @@ async function runPrompt(raw,cid=s.active,options={}){
     const flush=(chunk,force=false)=>{if(chunk)buf+=chunk;while(true){const i=buf.indexOf("\n");if(i<0)break;const line=buf.slice(0,i);buf=buf.slice(i+1);onLine(line)}if(force&&buf.length){onLine(buf);buf=""}};
     while(true){const{value,done}=await reader.read();if(done)break;flush(decoder.decode(value,{stream:true}))}
     flush(decoder.decode(),true)
-  }catch(err){if(err&&err.name==="AbortError"){ttype="aborted";tdetail="user interrupted";madd(out,"\n[user interrupted]\n");hset(c,"interrupted");hpush(c,"turn/interrupt","user interrupt","failed");renderHarness();return}ttype="failed";tdetail=err&&err.message?err.message:"runtime error";mset(out,`[error] ${formatExecSubmitError(err&&err.cause?err.cause:err)}`);hset(c,"failed");hpush(c,"turn/error",t1(tdetail,180),"failed");renderHarness();throw err}finally{const reqMeta=s.req.get(rid);s.req.delete(rid);c.pending=Math.max(0,c.pending-1);syncRuntimePendingMonitor();if(ttype==="completed")hset(c,"completed");else if(ttype==="failed")hset(c,"failed");else if(ttype==="aborted")hset(c,"interrupted");else if(ttype==="needs_input")hset(c,"needs_input");hpush(c,"turn/end",t1(tdetail,180),ttype==="failed"?"failed":"info");s.last={type:ttype,detail:tdetail,at:Date.now(),agent:runAgent,chat:c.title,cid:c.id};trace(ttype,runAgent,tdetail,c.id);if(reqMeta&&reqMeta.notifyOnTerminal)void playNotificationTone(ttype);refresh();if(s.req.size===0){try{await loadRuntime()}catch(_e){e.connectionState.textContent="未接続";e.connectionState.classList.remove("connected");e.connectionState.classList.add("disconnected")}}scheduleSaveChatState();updateSearchDiag()}
+  }catch(err){if(err&&err.name==="AbortError"){ttype="aborted";tdetail="user interrupted";madd(out,"\n[user interrupted]\n");hset(c,"interrupted");hpush(c,"turn/interrupt","user interrupt","failed");renderHarness();return}const workspaceGuardError=workspaceGuardErrorInfoForUi(err&&err.cause?err.cause:err);if(workspaceGuardError.handled){ttype=workspaceGuardError.status||"needs_input";tdetail=workspaceGuardError.detail;mset(out,`[needs_input] ${workspaceGuardError.inlineMessage}`);hset(c,"needs_input");hpush(c,"turn/needs_input",t1(workspaceGuardError.detail,180),"info");setWorkspaceGuardNotice(workspaceGuardError.notice,{tone:workspaceGuardError.tone||"warning"});renderHarness();return}ttype="failed";tdetail=err&&err.message?err.message:"runtime error";mset(out,`[error] ${formatExecSubmitError(err&&err.cause?err.cause:err)}`);hset(c,"failed");hpush(c,"turn/error",t1(tdetail,180),"failed");renderHarness();throw err}finally{const reqMeta=s.req.get(rid);s.req.delete(rid);c.pending=Math.max(0,c.pending-1);syncRuntimePendingMonitor();if(ttype==="completed")hset(c,"completed");else if(ttype==="failed")hset(c,"failed");else if(ttype==="aborted")hset(c,"interrupted");else if(ttype==="needs_input")hset(c,"needs_input");hpush(c,"turn/end",t1(tdetail,180),ttype==="failed"?"failed":"info");s.last={type:ttype,detail:tdetail,at:Date.now(),agent:runAgent,chat:c.title,cid:c.id};trace(ttype,runAgent,tdetail,c.id);if(reqMeta&&reqMeta.notifyOnTerminal)void playNotificationTone(ttype);refresh();if(s.req.size===0){try{await loadRuntime()}catch(_e){e.connectionState.textContent="未接続";e.connectionState.classList.remove("connected");e.connectionState.classList.add("disconnected")}}scheduleSaveChatState();updateSearchDiag()}
 }
 function renderCommands(q=""){e.commandGrid.innerHTML="";const qq=q.trim().toLowerCase();const list=COMMANDS.filter(c=>!qq||c.toLowerCase().includes(qq));if(!list.length){e.commandGrid.innerHTML='<article class="command-empty">No matching commands.</article>';return}list.forEach(cmd=>{const f=e.commandTemplate.content.cloneNode(true);f.querySelector(".command-text").textContent=cmd;const b=f.querySelector(".command-badge");b.textContent="local";b.classList.add("local");f.querySelector(".command-desc").textContent="Quick insert/run command.";f.querySelector(".insert-btn").onclick=()=>{const cur=e.promptInput.value,p=cur&&!cur.endsWith("\n")?"\n":"";e.promptInput.value=`${cur}${p}${cmd} `;syncPromptInputHeight();e.promptInput.focus()};f.querySelector(".run-btn").onclick=async()=>{e.promptInput.value=cmd;syncPromptInputHeight();await runPrompt(e.promptInput.value,s.active).catch(er=>msg(s.active,"system","System",formatRunPromptFailureMessage(er)))};e.commandGrid.appendChild(f)})}
 function clearChat(){const c=active();if(!c)return;c.messages=[];c.h=createHarnessState();c.perf=createPerformanceState();c.forceNewSession=true;s.trace=s.trace.filter((item)=>item&&item.cid!==c.id);if(s.last&&s.last.cid===c.id)s.last=null;scheduleSaveChatState();refresh()}
@@ -4352,6 +5322,9 @@ function bind(){
   e.stopBtn.onclick=stop;
   e.newThreadBtn.onclick=clearChat;
   if(e.deleteChatBtn)e.deleteChatBtn.onclick=()=>deleteChat();
+  if(e.focusToTimelineBtn)e.focusToTimelineBtn.onclick=()=>scrollElementIntoViewForUi(e.timeline);
+  if(e.focusToComposerBtn)e.focusToComposerBtn.onclick=()=>scrollElementIntoViewForUi(e.promptInput,{focus:true});
+  if(e.jumpToComposerBtn)e.jumpToComposerBtn.onclick=()=>scrollElementIntoViewForUi(e.promptInput,{focus:true});
   if(e.imageAttachBtn)e.imageAttachBtn.onclick=()=>{clearAttachmentError();if(e.imageInput)e.imageInput.click();};
   if(e.imageInput)e.imageInput.onchange=()=>{const files=e.imageInput&&e.imageInput.files?e.imageInput.files:[];handleAttachmentPickFiles(files);};
   if(e.imageRemoveBtn)e.imageRemoveBtn.onclick=()=>removeAttachmentFromComposer();
@@ -4382,7 +5355,26 @@ function bind(){
       msg(s.active,"system","System",`Failed to open CMD: ${er&&er.message?er.message:"unknown"}`);
     }
   };
+  if(e.workspaceLockBtn)e.workspaceLockBtn.onclick=async()=>{
+    try{
+      await lockSelectedWorkspaceForUi();
+    }catch(er){
+      const detail=formatExecSubmitError(er&&er.cause?er.cause:er);
+      setWorkspaceGuardNotice(detail,{tone:"warning"});
+      msg(s.active,"system","System",`Workspace lock failed: ${detail}`);
+    }
+  };
+  if(e.workspaceUnlockBtn)e.workspaceUnlockBtn.onclick=async()=>{
+    try{
+      await unlockWorkspaceForUi();
+    }catch(er){
+      const detail=formatExecSubmitError(er&&er.cause?er.cause:er);
+      setWorkspaceGuardNotice(detail,{tone:"warning"});
+      msg(s.active,"system","System",`Workspace unlock failed: ${detail}`);
+    }
+  };
   e.reconnectBtn.onclick=async()=>{try{await loadRuntime();msg(s.active,"system","System","Runtime refreshed.")}catch(er){e.connectionState.textContent="未接続";e.connectionState.classList.remove("connected");e.connectionState.classList.add("disconnected");msg(s.active,"system","System",`Reconnect failed: ${er&&er.message?er.message:"unknown"}`)}};
+  if(e.uiReloadBtn)e.uiReloadBtn.onclick=()=>reloadUiShellForUi();
   e.refreshDiagBtn.onclick=async()=>{try{await loadDiag();msg(s.active,"system","System","Diagnostics refreshed.")}catch(er){msg(s.active,"system","System",`Diagnostics refresh failed: ${er&&er.message?er.message:"unknown"}`)}};
   e.newChatBtn.onclick=()=>{const c=mkChat({agent:DEFAULT_AGENT_NAME,forceNewSession:true});s.active=c.id;refresh()};
   e.clearAgentTraceBtn.onclick=()=>{const c=active();if(!c){s.trace=[];s.last=null;flow();return;}s.trace=s.trace.filter((item)=>item&&item.cid!==c.id);if(s.last&&s.last.cid===c.id)s.last=null;flow();msg(s.active,"system","System","Current chat trace cleared.")};
@@ -4403,8 +5395,13 @@ function bind(){
     e.promptInput.addEventListener("input",()=>syncPromptInputHeight());
     e.promptInput.addEventListener("paste",handlePromptPaste);
   }
+  document.querySelectorAll("[data-compose-preset]").forEach((btn)=>btn.onclick=()=>{
+    e.promptInput.value=btn.getAttribute("data-compose-preset")||"";
+    syncPromptInputHeight();
+    scrollElementIntoViewForUi(e.promptInput,{focus:true});
+  });
   document.querySelectorAll("[data-preset]").forEach(btn=>btn.onclick=()=>{e.promptInput.value=btn.getAttribute("data-preset")||"";syncPromptInputHeight();e.sendBtn.click()});
-  window.addEventListener("resize",()=>syncPromptInputHeight({remeasureBase:true}));
+  window.addEventListener("resize",()=>{syncPromptInputHeight({remeasureBase:true});scheduleComposerViewportSyncForUi();});
   if(e.commandFilter)e.commandFilter.oninput=()=>renderCommands(e.commandFilter.value);
   e.executionProfile.onchange=()=>{
     if(e.executionProfile.value==="custom"){profileSync();saveSettings();updateSearchDiag();return}
@@ -4416,7 +5413,8 @@ function bind(){
   [e.approvalPolicy,e.fastModeEnabled,e.automaticApprovalReviewEnabled,e.sandboxMode,e.webSearchMode].filter(Boolean).forEach(x=>x.onchange=()=>{profileSync();saveSettings();updateSearchDiag()});
   if(e.modelName)e.modelName.onchange=()=>{const normalizedModel=normalizeExecModelNameForUi(e.modelName.value,runtimeDefaultExecModel());e.modelName.value=ensureExecModelOptionForUi(normalizedModel)||normalizedModel;settingsState.hasStoredModel=true;saveSettings();};
   if(e.modelReasoningEffort)e.modelReasoningEffort.onchange=()=>{e.modelReasoningEffort.value=normalizeExecModelReasoningEffortForUi(e.modelReasoningEffort.value,runtimeDefaultExecModelReasoningEffort());settingsState.hasStoredModelReasoningEffort=true;saveSettings();};
-  e.workspacePath.onchange=()=>saveSettings();
+  if(e.workspacePath)e.workspacePath.oninput=()=>{workspaceGuardUiState.message="";workspaceGuardUiState.tone="";renderWorkspaceGuardUi();};
+  e.workspacePath.onchange=()=>{workspaceGuardUiState.message="";workspaceGuardUiState.tone="";saveSettings();renderWorkspaceGuardUi();};
   if(e.uiVisibility)e.uiVisibility.onchange=()=>{document.body.classList.toggle("telemetry-off",!e.uiVisibility.checked);saveSettings();};
   e.simpleViewToggle.onclick=()=>{const n=!document.body.classList.contains("simple-view");document.body.classList.toggle("simple-view",n);e.simpleViewToggle.textContent=n?"詳細表示":"要点表示";saveSettings()};
 }
@@ -4431,6 +5429,7 @@ async function boot(){
   if(!s.chats.length)mkChat({title:"Chat 1",agent:DEFAULT_AGENT_NAME});
   if(!chat(s.active))s.active=s.chats[0].id;
   syncPromptInputHeight({resetToBase:true,remeasureBase:true});
+  scheduleComposerViewportSyncForUi();
   refresh();
   e.modeState.textContent="Mode";
   e.connectionState.textContent="未接続";

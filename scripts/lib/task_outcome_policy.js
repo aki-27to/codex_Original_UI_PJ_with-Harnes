@@ -6,8 +6,19 @@ const path = require("path");
 const defaultTaskOutcomeContractPath = path.join(__dirname, "..", "config", "task_outcome_contract.json");
 
 const defaultTaskOutcomeContractDefinition = Object.freeze({
-  schema: "task-outcome-contract.v1",
-  version: "2026-03-13.r4",
+  schema: "task-outcome-contract.v2",
+  version: "2026-03-08.r1",
+  proofCarryingRequiredFields: [
+    "task_id",
+    "actor",
+    "status",
+    "claimed_work",
+    "changed_artifacts",
+    "evidence_refs",
+    "unresolved_items",
+    "acceptance_coverage",
+    "handoff_readiness",
+  ],
   statuses: [
     { id: "COMPLETED", class: "success", terminal: true },
     { id: "BLOCKED", class: "blocked", terminal: true },
@@ -33,19 +44,11 @@ const defaultTaskOutcomeContractDefinition = Object.freeze({
     path_out_of_scope: "BLOCKED",
     verification_scope_violation: "BLOCKED",
     agent_read_only_role: "BLOCKED",
+    parent_material_implementation_forbidden: "FAILED_VALIDATION",
     parent_dispatch_guard_block: "FAILED_VALIDATION",
     missing_required_evidence: "FAILED_VALIDATION",
-    intent_taste_memory_missing: "FAILED_VALIDATION",
-    intent_benchmark_missing: "FAILED_VALIDATION",
-    intent_workspace_lock_missing: "FAILED_VALIDATION",
-    intent_visual_review_missing: "FAILED_VALIDATION",
-    intent_reviewer_missing: "FAILED_VALIDATION",
-    intent_technical_verification_missing: "FAILED_VALIDATION",
-    intent_documentation_sync_missing: "FAILED_VALIDATION",
-    intent_first_gate_missing: "FAILED_VALIDATION",
-    workspace_lock_required: "NEEDS_INPUT",
-    visual_review_missing: "FAILED_VALIDATION",
-    benchmark_superiority_unproven: "FAILED_VALIDATION",
+    family_completion_gate_failed: "FAILED_VALIDATION",
+    "intent_*": "FAILED_VALIDATION",
     partial_delivery: "PARTIAL",
   },
 });
@@ -202,6 +205,9 @@ function normalizeTaskOutcomeContract(input) {
   return Object.freeze({
     schema: safeString(payload.schema, 120) || defaultTaskOutcomeContractDefinition.schema,
     version: safeString(payload.version, 120) || defaultTaskOutcomeContractDefinition.version,
+    proofCarryingRequiredFields: Array.isArray(payload.proofCarryingRequiredFields)
+      ? payload.proofCarryingRequiredFields.map((entry) => safeString(entry, 120)).filter(Boolean).slice(0, 24)
+      : defaultTaskOutcomeContractDefinition.proofCarryingRequiredFields.slice(),
     statuses: Object.freeze(statuses),
     turnStateDefaults: normalizeTurnStateDefaults(payload.turnStateDefaults, validStatusIds),
     turnStateHints: normalizeTurnStateHints(payload.turnStateHints, validStatusIds),
@@ -262,6 +268,7 @@ function summarizeTaskOutcomeContract(spec) {
   return {
     schema: contract.schema,
     version: contract.version,
+    proofCarryingRequiredFields: Array.isArray(contract.proofCarryingRequiredFields) ? contract.proofCarryingRequiredFields.slice(0, 24) : [],
     statuses: contract.statuses.map((entry) => entry.id),
     turnStateDefaults: contract.turnStateDefaults,
     turnStateHints: contract.turnStateHints,
@@ -285,9 +292,6 @@ function classifyErrorReason(errorText) {
   }
   if (text.includes("parent dispatch guard")) {
     return "parent_dispatch_guard_block";
-  }
-  if (text.includes("intent-first")) {
-    return "missing_required_evidence";
   }
   if (text.includes("missing evidence")) {
     return "missing_required_evidence";
@@ -337,6 +341,20 @@ function deriveTaskOutcome(input = {}) {
         status: contract.reasonMap[reason],
         reason,
         source: "reason_map",
+        turnState: normalizeTurnState(input.turnStatus),
+      };
+    }
+  }
+
+  for (const reason of reasonCandidates) {
+    const wildcardEntry = Object.entries(contract.reasonMap).find(([pattern]) =>
+      pattern.endsWith("*") && reason.startsWith(pattern.slice(0, -1))
+    );
+    if (wildcardEntry) {
+      return {
+        status: wildcardEntry[1],
+        reason,
+        source: "reason_map_wildcard",
         turnState: normalizeTurnState(input.turnStatus),
       };
     }

@@ -437,6 +437,209 @@ function inferQuestionAnswerGoal(prompt) {
   return `${joinTopicsForGoal(parts)}を説明する`;
 }
 
+function stripGoalLabelPrefix(text, max = 320) {
+  return safeString(text, max)
+    .replace(/^(?:goal|purpose|request|main objective)\s*[:：-]?\s*/i, "")
+    .replace(/^(?:依頼文|依頼|目的|主目的|製作目的)(?:は)?\s*[:：-]?\s*/u, "")
+    .trim();
+}
+
+function splitPromptRequirementSentences(text, max = 6) {
+  const sentences = safeString(text, 320).match(/[^.?!。！？]+(?:[.?!。！？]+|$)/gu) || [];
+  return sentences
+    .map((entry) => safeString(entry, 320))
+    .filter(Boolean)
+    .slice(0, max);
+}
+
+function stripRequirementLeadSentences(text) {
+  const sentences = splitPromptRequirementSentences(text, 8);
+  while (sentences.length > 0) {
+    const first = safeString(sentences[0], 320);
+    if (!first) {
+      sentences.shift();
+      continue;
+    }
+    if (!isGreetingOnlyLine(first) && !isComplaintLeadLine(first)) break;
+    sentences.shift();
+  }
+  return sentences.join("").trim();
+}
+
+function normalizePromptRequirementLine(text, max = 320) {
+  return stripRequirementLeadSentences(
+    safeString(text, max)
+    .replace(/^\s*[-*+]\s*/, "")
+    .replace(/^\s*\d+[.)．、]\s*/, "")
+    .replace(/^\s{0,3}#{1,6}\s*/, "")
+    .trim(),
+    max
+  );
+}
+
+function isGreetingOnlyLine(text) {
+  return /^(?:ありがとうございます|ありがとう|よろしくお願いします|お願いします|承知しました|了解です|すみません|失礼しました|お疲れさまです|お疲れ様です)(?:[。.!！…]|$)/u.test(safeString(text, 240));
+}
+
+function isComplaintLeadLine(text) {
+  const normalized = safeString(text, 320);
+  return /(?:思っていた.+違います|全然違います|おかしい仕様|おかしい表示|変な表示|ふざけた表示)/u.test(normalized);
+}
+
+function splitPromptIntoRequirementLines(prompt, max = 24) {
+  const out = [];
+  for (const rawLine of sanitizePromptForPolicyAnalysis(prompt).split(/\r?\n/)) {
+    const normalized = normalizePromptRequirementLine(rawLine, 320);
+    if (!normalized || out.includes(normalized)) continue;
+    out.push(normalized);
+    if (out.length >= max) break;
+  }
+  return out;
+}
+
+function scoreGoalCandidate(text) {
+  const normalized = normalizePromptRequirementLine(text, 320);
+  if (!normalized) return Number.NEGATIVE_INFINITY;
+  if (isGreetingOnlyLine(normalized)) return Number.NEGATIVE_INFINITY;
+  let score = 0;
+  if (isComplaintLeadLine(normalized)) score -= 6;
+  if (/(?:goal|purpose|request|main objective|目的|主目的|製作目的)/iu.test(text)) score += 6;
+  if (/^(?:以下|次|この)(?:の)?要件(?:で|を)/u.test(normalized)) score += 4;
+  if (/(?:してください|して下さい|したい|したく|したうえで|すること|とすること|を作る|を作成|を開発|を再構築|を修正|を更新|を改善|を説明|を起動|を調査|を実施)/u.test(normalized)) score += 4;
+  if (/(?:サイト|ページ|UI|アプリ|機能|採用|説明会|TOP|トップ)/iu.test(normalized)) score += 2;
+  if (/(?:ページ数|会社名|参考サイト|画像|フォント|問合せページ|問い合わせページ|配下で作業|空欄|配下)/u.test(normalized)) score -= 2;
+  if (/[?？]/u.test(normalized)) score -= 1;
+  if (normalized.length <= 6) score -= 3;
+  return score;
+}
+
+function selectBestGoalCandidate(candidates) {
+  let bestText = "";
+  let bestScore = 0;
+  for (const entry of Array.isArray(candidates) ? candidates : []) {
+    const normalized = normalizePromptRequirementLine(entry, 320);
+    const score = scoreGoalCandidate(entry);
+    if (score <= bestScore) continue;
+    bestScore = score;
+    const displayText = stripGoalLabelPrefix(normalized, 320);
+    bestText = displayText.length <= 180 ? displayText : firstSentence(displayText);
+  }
+  return bestText;
+}
+
+function inferBaselineScopeFromPrompt(prompt, explicitGoal = "", max = 24) {
+  const excluded = new Set([
+    normalizePromptRequirementLine(explicitGoal, 320).toLowerCase(),
+    stripGoalLabelPrefix(normalizePromptRequirementLine(explicitGoal, 320), 320).toLowerCase(),
+  ].filter(Boolean));
+  const inferred = [];
+  const stitchContext = extractStitchPromptContext(prompt);
+  if (stitchContext) {
+    const stitchScope = buildStitchBaselineScope(stitchContext);
+    for (const entry of stitchScope) {
+      if (!entry) continue;
+      inferred.push(entry);
+      if (inferred.length >= max) break;
+    }
+  }
+  for (const entry of splitPromptIntoRequirementLines(prompt, 48)) {
+    const normalized = normalizePromptRequirementLine(entry, 320);
+    if (!normalized) continue;
+    const normalizedKey = stripGoalLabelPrefix(normalized, 320).toLowerCase() || normalized.toLowerCase();
+    if (excluded.has(normalizedKey)) continue;
+    if (isGreetingOnlyLine(normalized) || isComplaintLeadLine(normalized)) continue;
+    if (/^(?:以下|次|この)(?:の)?要件(?:で|を)/u.test(normalized)) continue;
+    if (
+      isHardConstraintDirective(normalized)
+      || /(?:ページ数|会社名|参考サイト|画像|フォント|問合せページ|問い合わせページ|配下で作業|空欄|表示できる状態|作業を実施|含むこと|メインに|TOPにする|トップにする|準拠|配下|有限会社|株式会社|合同会社|https?:\/\/)/u.test(normalized)
+    ) {
+      inferred.push(normalized);
+    }
+    if (inferred.length >= max) break;
+  }
+  return uniqueStrings(inferred, max);
+}
+
+function extractStitchPromptContext(prompt = "") {
+  const text = safeString(prompt, 40000);
+  if (!/stitch/i.test(text)) return null;
+  const lines = text.split(/\r?\n/);
+  let section = "";
+  let projectTitle = "";
+  let projectId = "";
+  const screens = [];
+  let currentScreen = null;
+  for (const rawLine of lines) {
+    const headingMatch = safeString(rawLine, 240).match(/^\s{0,3}#{1,6}\s*(.+?)\s*$/);
+    if (headingMatch) {
+      const heading = normalizeHeadingLabel(headingMatch[1]);
+      if (heading.includes("project")) section = "project";
+      else if (heading.includes("screen")) section = "screens";
+      else section = "";
+      continue;
+    }
+    const line = safeString(rawLine, 240).replace(/^\s*[-*+]\s*/, "").trim();
+    if (!line) continue;
+    const titleMatch = line.match(/^title\s*:\s*(.+)$/i);
+    if (titleMatch && titleMatch[1]) {
+      projectTitle = normalizePromptRequirementLine(titleMatch[1], 200) || safeString(titleMatch[1], 200).trim();
+      continue;
+    }
+    const idMatch = line.match(/^id\s*:\s*([A-Za-z0-9_-]+)\s*$/i);
+    if (idMatch && idMatch[1]) {
+      if (section === "screens" && currentScreen && !currentScreen.id) currentScreen.id = idMatch[1];
+      else if (!projectId || section === "project") projectId = idMatch[1];
+      continue;
+    }
+    if (section === "screens") {
+      const screenTitle = safeString(line, 240).replace(/^\s*\d+[.)]\s*/, "").trim();
+      if (!screenTitle || /^screens?\s*:/i.test(screenTitle) || /^use a utility/i.test(screenTitle)) continue;
+      currentScreen = { title: screenTitle, id: "" };
+      screens.push(currentScreen);
+    }
+  }
+  const fetchImagesAndCode = /get the images and code|images and code/i.test(text);
+  const requiresHostedUrlDownload = /curl\s+-L/i.test(text) || /hosted urls?/i.test(text);
+  const strictRecreation = /(?:完全再現|忠実再現|recreate(?: it)? exactly|match as closely as possible|pixel-?perfect|verbatim recreation|same look|same as the reference)/i.test(text);
+  if (!projectTitle && !projectId && !screens.length && !fetchImagesAndCode) return null;
+  return {
+    projectTitle,
+    projectId,
+    screens,
+    fetchImagesAndCode,
+    requiresHostedUrlDownload,
+    strictRecreation,
+  };
+}
+
+function buildStitchRecreationGoal(stitchContext) {
+  const context = stitchContext && typeof stitchContext === "object" ? stitchContext : null;
+  if (!context) return "";
+  const primaryScreen = Array.isArray(context.screens) && context.screens.length ? context.screens[0] : null;
+  const projectPart = context.projectTitle ? `Stitch の「${context.projectTitle}」内の` : "Stitch の指定";
+  const screenPart = primaryScreen && primaryScreen.title ? `「${primaryScreen.title}」画面` : "screen";
+  const fetchPart = context.fetchImagesAndCode ? "の画像とコードを取得し、" : "を基準に、";
+  const actionPart = context.strictRecreation ? "WEB UI に忠実再現する" : "WEB UI に反映する";
+  return `${projectPart}${screenPart}${fetchPart}${actionPart}`;
+}
+
+function buildStitchBaselineScope(stitchContext) {
+  const context = stitchContext && typeof stitchContext === "object" ? stitchContext : null;
+  if (!context) return [];
+  const out = [];
+  if (context.projectTitle || context.projectId) {
+    out.push(`Stitch project: ${[context.projectTitle, context.projectId ? `ID ${context.projectId}` : ""].filter(Boolean).join(" / ")}`);
+  }
+  const primaryScreen = Array.isArray(context.screens) && context.screens.length ? context.screens[0] : null;
+  if (primaryScreen && primaryScreen.title) {
+    out.push(`Stitch screen: ${[primaryScreen.title, primaryScreen.id ? `ID ${primaryScreen.id}` : ""].filter(Boolean).join(" / ")}`);
+  }
+  if (context.fetchImagesAndCode) out.push("Stitch の画像とコードを取得して実装の基準にする");
+  if (context.requiresHostedUrlDownload) out.push("hosted URL は curl -L で取得する");
+  if (context.strictRecreation) out.push("指定 screen の再現を最優先にする");
+  return uniqueStrings(out, 6);
+}
+
 function uniqueStrings(values, max = 24) {
   const out = [];
   for (const entry of Array.isArray(values) ? values : []) {
@@ -531,11 +734,25 @@ function extractAcceptanceChecks(prompt, sections, contract) {
 }
 
 function extractExplicitGoal(prompt, sections, contract) {
+  const stitchGoal = buildStitchRecreationGoal(extractStitchPromptContext(prompt));
+  if (stitchGoal) return stitchGoal;
   const aliases = contract && contract.signals && contract.signals.sectionAliases ? contract.signals.sectionAliases.goal : [];
   const goalEntries = collectEntriesFromSections(collectSectionsByAlias(sections, aliases));
-  if (goalEntries.length) return firstSentence(goalEntries.join(" "));
+  const goalFromSections = selectBestGoalCandidate(goalEntries);
+  if (goalFromSections) return goalFromSections;
+  const goalFromPromptLines = selectBestGoalCandidate(safeString(prompt, 40000).split(/\r?\n/));
+  if (goalFromPromptLines) return goalFromPromptLines;
+  if (/[?？]/.test(safeString(prompt, 40000))) {
+    const inferredQuestionGoal = inferQuestionAnswerGoal(prompt);
+    if (inferredQuestionGoal) return inferredQuestionGoal;
+  }
   const paragraphs = extractPromptParagraphs(prompt);
-  return firstSentence(paragraphs[0] || prompt);
+  for (const paragraph of paragraphs) {
+    const candidate = normalizePromptRequirementLine(paragraph, 320);
+    if (!candidate || isGreetingOnlyLine(candidate) || isComplaintLeadLine(candidate)) continue;
+    return firstSentence(candidate);
+  }
+  return firstSentence(prompt);
 }
 
 function extractImplicitGoal(prompt, sections, contract) {
@@ -841,7 +1058,7 @@ function buildPlanningDecisionContract({ selection, assuranceSelection } = {}) {
   };
 }
 
-function buildRequirementContract({ prompt = "", options = {}, selection, assuranceSelection, contract } = {}) {
+function buildRequirementContract_legacy({ prompt = "", options = {}, selection, assuranceSelection, contract } = {}) {
   const normalizedSelection = selection && typeof selection === "object" ? selection : buildPlanningSelection({ prompt, options, contract });
   const normalizedAssurance = assuranceSelection && typeof assuranceSelection === "object" ? assuranceSelection : buildAssuranceSelection({ prompt, options, selection: normalizedSelection });
   const assumptions = [];
@@ -851,6 +1068,36 @@ function buildRequirementContract({ prompt = "", options = {}, selection, assura
   if (!normalizedSelection.extracted.nonGoals.length) {
     assumptions.push("Anything outside the explicit goal stays proposal-only unless the prompt says otherwise.");
   }
+  if (uniqueStrings(deferredQuestions.defaultable, 8).length) {
+    assumptions.push("Low-risk requirement gaps were defaulted against the locked goal, bounded scope, and inferred acceptance checks.");
+  }
+  if (uniqueStrings(deferredQuestions.taste, 8).length) {
+    assumptions.push("Taste-sensitive questions are deferred behind the anchored direction so they do not block the core path.");
+  }
+  if (uniqueStrings(deferredQuestions.defaultable, 8).length) {
+    assumptions.push("Low-risk requirement gaps were defaulted against the locked goal, bounded scope, and inferred acceptance checks.");
+  }
+  if (uniqueStrings(deferredQuestions.taste, 8).length) {
+    assumptions.push("Taste-sensitive questions are deferred behind the anchored direction so they do not block the core path.");
+  }
+  const userValueFrame = buildUserValueFrame({
+    prompt,
+    explicitGoal: normalizedSelection.extracted.explicitGoal,
+    implicitGoal: normalizedSelection.extracted.implicitGoal,
+    taskFamily: safeString(normalizedSelection.taskFamily, 80) || "deterministic_code",
+    baselineScope: normalizedSelection.extracted.baselineScope,
+    nonGoals: inferNonGoals(normalizedSelection.extracted.nonGoals, normalizedSelection.selectedMode),
+    acceptanceChecks: normalizedSelection.extracted.acceptanceChecks,
+    approvalBoundaryItems: normalizedSelection.extracted.approvalBoundaryItems,
+    benchmarkCandidates: normalizedSelection.extracted.benchmarkCandidates,
+  });
+  const intentInterpretation = buildRequirementIntentInterpretation({
+    prompt,
+    explicitGoal: normalizedSelection.extracted.explicitGoal,
+    implicitGoal: normalizedSelection.extracted.implicitGoal,
+    baselineScope: normalizedSelection.extracted.baselineScope,
+    userValueFrame,
+  });
   return {
     schema: "requirement-contract.v3",
     source: "runtime_inferred_pre_dispatch",
@@ -864,6 +1111,8 @@ function buildRequirementContract({ prompt = "", options = {}, selection, assura
     openQuestions: normalizedSelection.extracted.openQuestions,
     approvalBoundaryItems: normalizedSelection.extracted.approvalBoundaryItems,
     acceptanceChecks: normalizedSelection.extracted.acceptanceChecks,
+    userValueFrame,
+    intentInterpretation,
     selectedPlanningMode: normalizedSelection.selectedMode,
     selectedPlanningDepth: normalizedSelection.selectedPlanningDepth,
     selectedAssuranceDepth: normalizedAssurance.selectedAssuranceDepth,
@@ -872,14 +1121,14 @@ function buildRequirementContract({ prompt = "", options = {}, selection, assura
   };
 }
 
-function defaultOwnedPathsForRole(role, selection) {
+function defaultOwnedPathsForRole_legacy(role, selection) {
   const pathHints = Array.isArray(selection && selection.extracted && selection.extracted.pathHints) ? selection.extracted.pathHints : [];
   if (role === "frontend_worker") return pathHints.filter((entry) => entry.startsWith("web/")).length ? pathHints.filter((entry) => entry.startsWith("web/")) : ["web/"];
   if (role === "infra_worker") return pathHints.filter((entry) => entry.startsWith("docs/") || entry.endsWith(".md")).length ? pathHints.filter((entry) => entry.startsWith("docs/") || entry.endsWith(".md")) : ["docs/", "scripts/config/"];
   return pathHints.filter((entry) => entry === "server.js" || entry.startsWith("scripts/")).length ? pathHints.filter((entry) => entry === "server.js" || entry.startsWith("scripts/")) : ["server.js", "scripts/"];
 }
 
-function defaultToolsForRole(role) {
+function defaultToolsForRole_legacy(role) {
   switch (role) {
     case "frontend_worker":
       return ["apply_patch", "shell_command"];
@@ -893,7 +1142,7 @@ function defaultToolsForRole(role) {
   }
 }
 
-function defaultEvidenceForRole(role, assuranceSelection) {
+function defaultEvidenceForRole_legacy(role, assuranceSelection) {
   const signoff = assuranceSelection && assuranceSelection.selectedAssuranceDepth === "SIGNOFF_ASSURANCE";
   if (role === "reviewer") return ["findings_first_review", "reviewer_summary"];
   if (role === "tester") return ["test_run", "tester_summary"];
@@ -901,7 +1150,7 @@ function defaultEvidenceForRole(role, assuranceSelection) {
   return signoff ? ["file_change", "artifact_manifest", "doc_sync", "verification_command"] : ["file_change", "artifact_manifest"];
 }
 
-function buildDispatchPlan({ prompt = "", options = {}, selection, assuranceSelection, requirementContract, contract } = {}) {
+function buildDispatchPlan_legacy({ prompt = "", options = {}, selection, assuranceSelection, requirementContract, contract } = {}) {
   const normalizedSelection = selection && typeof selection === "object" ? selection : buildPlanningSelection({ prompt, options, contract });
   const normalizedAssurance = assuranceSelection && typeof assuranceSelection === "object" ? assuranceSelection : buildAssuranceSelection({ prompt, options, selection: normalizedSelection });
   const requirement = requirementContract && typeof requirementContract === "object"
@@ -977,7 +1226,7 @@ function buildDispatchPlan({ prompt = "", options = {}, selection, assuranceSele
   };
 }
 
-function buildPlanningArtifacts({ prompt = "", options = {}, contract } = {}) {
+function buildPlanningArtifacts_legacy({ prompt = "", options = {}, contract } = {}) {
   const contracts = loadAdaptiveContracts(contract);
   const selection = buildPlanningSelection({ prompt, options, contract: contracts.planning });
   const assuranceSelection = buildAssuranceSelection({ prompt, options, selection, contract: contracts.assurance });
@@ -998,7 +1247,7 @@ function buildPlanningArtifacts({ prompt = "", options = {}, contract } = {}) {
   };
 }
 
-function sanitizeAcceptanceChecks(value) {
+function sanitizeAcceptanceChecks_legacy(value) {
   return (Array.isArray(value) ? value : []).map((entry, index) => {
     const item = entry && typeof entry === "object" ? entry : {};
     const title = safeString(item.title, 240);
@@ -1012,7 +1261,7 @@ function sanitizeAcceptanceChecks(value) {
   }).filter(Boolean).slice(0, 16);
 }
 
-function sanitizeDispatches(value) {
+function sanitizeDispatches_legacy(value) {
   return (Array.isArray(value) ? value : []).map((entry, index) => {
     const item = entry && typeof entry === "object" ? entry : {};
     const ownerAgent = safeString(item.ownerAgent, 80);
@@ -1033,7 +1282,7 @@ function sanitizeDispatches(value) {
   }).filter(Boolean).slice(0, 16);
 }
 
-function sanitizePlanningArtifactsForRuntime(input) {
+function sanitizePlanningArtifactsForRuntime_legacy(input) {
   const payload = input && typeof input === "object" ? input : {};
   const selection = payload.selection && typeof payload.selection === "object" ? payload.selection : {};
   const assuranceSelection = payload.assuranceSelection && typeof payload.assuranceSelection === "object" ? payload.assuranceSelection : {};
@@ -1108,6 +1357,8 @@ function sanitizePlanningArtifactsForRuntime(input) {
       openQuestions: uniqueStrings(requirement.openQuestions, 12),
       approvalBoundaryItems: uniqueStrings(requirement.approvalBoundaryItems, 12),
       acceptanceChecks: sanitizeAcceptanceChecks(requirement.acceptanceChecks),
+      userValueFrame: sanitizeUserValueFrame(requirement.userValueFrame),
+      intentInterpretation: sanitizeRequirementIntentInterpretation(requirement.intentInterpretation),
       selectedPlanningMode: normalizedPlanningMode,
       selectedPlanningDepth: normalizedPlanningDepth,
       selectedAssuranceDepth: normalizedAssuranceDepth,
@@ -1136,7 +1387,7 @@ function sanitizePlanningArtifactsForRuntime(input) {
   };
 }
 
-module.exports = {
+const legacyPlanningModePolicyExports = {
   allowedAssuranceDepths: allowedAssuranceModes,
   allowedPlanningDepths,
   allowedPlanningModes,
@@ -1398,6 +1649,7 @@ function buildUserValueFrame({
   nonGoals = [],
   acceptanceChecks = [],
   approvalBoundaryItems = [],
+  benchmarkCandidates = [],
 } = {}) {
   const defaults = buildDefaultUserValueProfile(taskFamily);
   const promptSignals = inferPromptLevelUserValueSignals(prompt, taskFamily);
@@ -1446,7 +1698,10 @@ function buildUserValueFrame({
       [...defaults.qualityAxes, ...promptSignals.qualityAxes],
       10
     ),
-    benchmarkCandidates: extractReferenceUrls(prompt, 6),
+    benchmarkCandidates: uniqueStrings([
+      ...extractReferenceUrls(prompt, 6),
+      ...uniqueStrings(benchmarkCandidates, 6),
+    ], 6),
     completedMeans,
   };
 }
@@ -1462,6 +1717,1502 @@ function sanitizeUserValueFrame(value) {
     qualityAxes: uniqueStrings(source.qualityAxes, 10),
     benchmarkCandidates: uniqueStrings(source.benchmarkCandidates, 6),
     completedMeans: uniqueStrings(source.completedMeans, 10),
+  };
+}
+
+const allowedRequirementProvenanceSources = new Set(["user_explicit", "user_implied", "system_inferred", "policy_default"]);
+const allowedRequirementStatuses = new Set(["DRAFT", "BLOCKED", "LOCKED", "REVISED"]);
+const allowedRequirementValidationVerdicts = new Set(["PASS", "WARN", "BLOCK"]);
+
+function normalizeRequirementProvenanceSource(value, fallback = "system_inferred") {
+  const normalized = safeString(value, 40);
+  if (allowedRequirementProvenanceSources.has(normalized)) return normalized;
+  return allowedRequirementProvenanceSources.has(fallback) ? fallback : "system_inferred";
+}
+
+function normalizeRequirementStatus(value, fallback = "DRAFT") {
+  const normalized = safeString(value, 40).toUpperCase();
+  if (allowedRequirementStatuses.has(normalized)) return normalized;
+  return allowedRequirementStatuses.has(fallback) ? fallback : "DRAFT";
+}
+
+function normalizeRequirementValidationVerdict(value, fallback = "WARN") {
+  const normalized = safeString(value, 40).toUpperCase();
+  if (allowedRequirementValidationVerdicts.has(normalized)) return normalized;
+  return allowedRequirementValidationVerdicts.has(fallback) ? fallback : "WARN";
+}
+
+function buildRequirementFieldProvenance(source, reason = "") {
+  return {
+    source: normalizeRequirementProvenanceSource(source, "system_inferred"),
+    reason: safeString(reason, 120),
+  };
+}
+
+function normalizeRequirementProvenanceCompareKey(value) {
+  return safeString(value, 320)
+    .replace(/^explicit user approval is required before:\s*/i, "")
+    .replace(/[?？!！。．:：/／、,\s"'`()\-\[\]{}]+/g, "")
+    .toLowerCase();
+}
+
+function requirementProvenanceValuesOverlap(left, right, { minLength = 8 } = {}) {
+  const leftKey = normalizeRequirementProvenanceCompareKey(left);
+  const rightKey = normalizeRequirementProvenanceCompareKey(right);
+  if (!leftKey || !rightKey) return false;
+  if (leftKey === rightKey) return true;
+  if (leftKey.length >= minLength && rightKey.includes(leftKey)) return true;
+  if (rightKey.length >= minLength && leftKey.includes(rightKey)) return true;
+  return false;
+}
+
+function promptMentionsRequirementValue(prompt, value) {
+  const promptKey = normalizeRequirementProvenanceCompareKey(prompt);
+  const valueKey = normalizeRequirementProvenanceCompareKey(value);
+  if (!promptKey || !valueKey || valueKey.length < 8) return false;
+  return promptKey.includes(valueKey);
+}
+
+function buildRequirementValueProvenanceEntries(values, resolver, max = 16) {
+  const list = uniqueStrings(values, max);
+  return list.map((value) => {
+    const resolved = typeof resolver === "function" ? resolver(value) : {};
+    return {
+      value,
+      source: normalizeRequirementProvenanceSource(resolved && resolved.source, "system_inferred"),
+      reason: safeString(resolved && resolved.reason, 120),
+    };
+  });
+}
+
+function sanitizeRequirementFieldProvenance(value, fallbackSource = "system_inferred") {
+  const source = value && typeof value === "object" ? value : {};
+  return {
+    source: normalizeRequirementProvenanceSource(source.source, fallbackSource),
+    reason: safeString(source.reason, 120),
+  };
+}
+
+function sanitizeRequirementValueProvenanceEntries(values, fallbackSource = "system_inferred", max = 16) {
+  return (Array.isArray(values) ? values : []).map((entry) => {
+    const item = entry && typeof entry === "object" ? entry : {};
+    const value = safeString(item.value, 320);
+    if (!value) return null;
+    return {
+      value,
+      source: normalizeRequirementProvenanceSource(item.source, fallbackSource),
+      reason: safeString(item.reason, 120),
+    };
+  }).filter(Boolean).slice(0, max);
+}
+
+function findRequirementValueProvenanceSource(entries, value, fallbackSource = "system_inferred") {
+  const normalizedEntries = Array.isArray(entries) ? entries : [];
+  for (const entry of normalizedEntries) {
+    if (!entry || typeof entry !== "object") continue;
+    if (!requirementProvenanceValuesOverlap(entry.value, value)) continue;
+    return normalizeRequirementProvenanceSource(entry.source, fallbackSource);
+  }
+  return fallbackSource ? normalizeRequirementProvenanceSource(fallbackSource, "system_inferred") : "";
+}
+
+function getRequirementGoalAnchor(requirementContract) {
+  const requirement = requirementContract && typeof requirementContract === "object" ? requirementContract : {};
+  const hypotheses = sanitizeRequirementIntentHypotheses(requirement.intentHypotheses, requirement);
+  return safeString(requirement.lockedGoal, 320)
+    || safeString(requirement.explicitGoal, 320)
+    || safeString(requirement.implicitGoal, 320)
+    || safeString(hypotheses[0] && hypotheses[0].goal, 320)
+    || safeString(requirement.intentInterpretation && requirement.intentInterpretation.direction, 320);
+}
+
+function getRequirementGoalAnchorFieldRefs(requirementContract) {
+  const requirement = requirementContract && typeof requirementContract === "object" ? requirementContract : {};
+  const refs = [];
+  if (safeString(requirement.lockedGoal, 320)) refs.push("lockedGoal");
+  if (safeString(requirement.explicitGoal, 320)) refs.push("explicitGoal");
+  if (safeString(requirement.implicitGoal, 320)) refs.push("implicitGoal");
+  if (sanitizeRequirementIntentHypotheses(requirement.intentHypotheses, requirement).length) refs.push("intentHypotheses");
+  if (safeString(requirement.intentInterpretation && requirement.intentInterpretation.direction, 320)) refs.push("intentInterpretation.direction");
+  return refs.length ? uniqueStrings(refs, 5) : ["lockedGoal", "explicitGoal", "implicitGoal", "intentHypotheses", "intentInterpretation.direction"];
+}
+
+function requirementHasCoreData(requirementContract) {
+  const requirement = requirementContract && typeof requirementContract === "object" ? requirementContract : {};
+  return Boolean(
+    getRequirementGoalAnchor(requirement)
+    || uniqueStrings(requirement.baselineScope, 24).length
+    || uniqueStrings(requirement.overDeliveryScope, 16).length
+    || uniqueStrings(requirement.nonGoals, 16).length
+    || uniqueStrings(requirement.assumptions, 12).length
+    || uniqueStrings(requirement.openQuestions, 12).length
+    || sanitizeAcceptanceChecks(requirement.acceptanceChecks).length
+  );
+}
+
+function buildRequirementGoalProvenance({ prompt = "", sections = [], contract, explicitGoal = "", implicitGoal = "" } = {}) {
+  const aliases = contract && contract.signals && contract.signals.sectionAliases ? contract.signals.sectionAliases : {};
+  const goalEntries = collectEntriesFromSections(collectSectionsByAlias(sections, aliases.goal || []));
+  const backgroundEntries = collectEntriesFromSections(collectSectionsByAlias(sections, aliases.background || []));
+  let explicitSource = "policy_default";
+  let explicitReason = "missing";
+  if (explicitGoal) {
+    if (goalEntries.some((entry) => requirementProvenanceValuesOverlap(entry, explicitGoal))) {
+      explicitSource = "user_explicit";
+      explicitReason = "goal_section";
+    } else if (promptMentionsRequirementValue(prompt, explicitGoal) && !/[?？]/.test(safeString(prompt, 40000))) {
+      explicitSource = "user_explicit";
+      explicitReason = "prompt_line";
+    } else if (/[?？]/.test(safeString(prompt, 40000))) {
+      explicitSource = "system_inferred";
+      explicitReason = "question_interpretation";
+    } else if (promptMentionsRequirementValue(prompt, explicitGoal)) {
+      explicitSource = "user_implied";
+      explicitReason = "prompt_paragraph";
+    } else {
+      explicitSource = "system_inferred";
+      explicitReason = "fallback_inference";
+    }
+  }
+  let implicitSource = "policy_default";
+  let implicitReason = "missing";
+  if (implicitGoal) {
+    if (backgroundEntries.some((entry) => requirementProvenanceValuesOverlap(entry, implicitGoal))) {
+      implicitSource = "user_explicit";
+      implicitReason = "background_section";
+    } else if (promptMentionsRequirementValue(prompt, implicitGoal)) {
+      implicitSource = "user_implied";
+      implicitReason = "prompt_background";
+    } else {
+      implicitSource = "system_inferred";
+      implicitReason = "fallback_background_inference";
+    }
+  }
+  return {
+    explicitGoal: buildRequirementFieldProvenance(explicitSource, explicitReason),
+    implicitGoal: buildRequirementFieldProvenance(implicitSource, implicitReason),
+  };
+}
+
+function buildRequirementNonGoalProvenance({ prompt = "", explicitNonGoals = [], finalNonGoals = [] } = {}) {
+  const explicitList = uniqueStrings(explicitNonGoals, 16);
+  return buildRequirementValueProvenanceEntries(finalNonGoals, (value) => {
+    if (explicitList.some((entry) => requirementProvenanceValuesOverlap(entry, value))) {
+      return { source: "user_explicit", reason: "non_goal_section" };
+    }
+    if (promptMentionsRequirementValue(prompt, value)) {
+      return { source: "user_implied", reason: "prompt_non_goal" };
+    }
+    return { source: "policy_default", reason: "discovery_default_guardrail" };
+  }, 16);
+}
+
+function buildRequirementIntentProvenance(intentInterpretation = {}) {
+  const presentation = safeString(intentInterpretation.presentation, 40) === "progress_hypothesis" ? "progress_hypothesis" : "goal";
+  return {
+    presentation: buildRequirementFieldProvenance(
+      presentation === "progress_hypothesis" ? "system_inferred" : "policy_default",
+      presentation === "progress_hypothesis" ? "interpreted_question_presentation" : "default_goal_presentation"
+    ),
+    questionLike: buildRequirementFieldProvenance(
+      intentInterpretation && intentInterpretation.questionLike ? "system_inferred" : "policy_default",
+      intentInterpretation && intentInterpretation.questionLike ? "question_detector" : "not_question"
+    ),
+    direction: buildRequirementFieldProvenance(
+      safeString(intentInterpretation && intentInterpretation.direction, 320) ? "system_inferred" : "policy_default",
+      safeString(intentInterpretation && intentInterpretation.direction, 320) ? "direction_interpretation" : "no_direction_interpretation"
+    ),
+    hypothesis: buildRequirementFieldProvenance(
+      safeString(intentInterpretation && intentInterpretation.hypothesis, 320) ? "system_inferred" : "policy_default",
+      safeString(intentInterpretation && intentInterpretation.hypothesis, 320) ? "hypothesis_interpretation" : "no_hypothesis_interpretation"
+    ),
+  };
+}
+
+function buildRequirementLockedGoal({ requirementContract, selection, validation, status = "" } = {}) {
+  const requirement = requirementContract && typeof requirementContract === "object" ? requirementContract : {};
+  const currentSelection = selection && typeof selection === "object" ? selection : {};
+  const normalizedValidation = sanitizeRequirementValidation(validation, requirement);
+  const allowedStatus = safeString(status, 40).toUpperCase();
+  const canLock = (allowedStatus === "LOCKED" || allowedStatus === "REVISED")
+    || (
+      normalizedValidation.canProceed
+      && normalizePlanningMode(currentSelection.selectedMode || requirement.selectedPlanningMode, "NORMAL") !== "DISCOVERY"
+      && !currentSelection.needsInputRecommended
+    );
+  if (!canLock) return "";
+  const intent = sanitizeRequirementIntentInterpretation(requirement.intentInterpretation);
+  const candidates = [
+    intent.presentation === "progress_hypothesis" ? intent.direction : "",
+    requirement.explicitGoal,
+    intent.direction,
+    requirement.implicitGoal,
+    requirement.userValueFrame && requirement.userValueFrame.valueThesis,
+  ];
+  for (const candidate of candidates) {
+    const normalized = safeString(candidate, 320).trim();
+    if (!normalized || requirementLooksFragmentaryGoalText(normalized)) continue;
+    return normalized;
+  }
+  return "";
+}
+
+function buildRequirementIntentHypotheses({ requirementContract, selection, lockedGoal = "" } = {}) {
+  const requirement = requirementContract && typeof requirementContract === "object" ? requirementContract : {};
+  const currentSelection = selection && typeof selection === "object" ? selection : {};
+  const intent = sanitizeRequirementIntentInterpretation(requirement.intentInterpretation);
+  const userValueFrame = sanitizeUserValueFrame(requirement.userValueFrame);
+  const candidates = [];
+  const addCandidate = (goal, confidence, evidence = [], locked = false) => {
+    const normalizedGoal = safeString(goal, 320);
+    if (!normalizedGoal) return;
+    if (candidates.some((entry) => requirementIntentKeysOverlap(entry.goal, normalizedGoal, { minLength: 10 }))) return;
+    candidates.push({
+      id: `hypothesis_${candidates.length + 1}`,
+      goal: normalizedGoal,
+      confidence: clampInt(confidence, locked ? 100 : 0, 0, 100),
+      evidence: uniqueStrings(evidence, 6),
+      locked: Boolean(locked),
+    });
+  };
+  if (lockedGoal) {
+    addCandidate(lockedGoal, 100, ["locked_goal", "validated_contract"], true);
+  }
+  if (intent.presentation === "progress_hypothesis") {
+    addCandidate(intent.direction, currentSelection.needsInputRecommended ? 68 : 82, ["intent_direction", "question_interpretation"]);
+    addCandidate(intent.hypothesis, 58, ["intent_hypothesis", "question_interpretation"]);
+  }
+  addCandidate(
+    requirement.explicitGoal,
+    requirement.provenance && requirement.provenance.explicitGoal && requirement.provenance.explicitGoal.source === "user_explicit" ? 88 : 72,
+    [safeString(requirement.provenance && requirement.provenance.explicitGoal && requirement.provenance.explicitGoal.reason, 120) || "explicit_goal"]
+  );
+  addCandidate(requirement.implicitGoal, 56, ["implicit_goal"]);
+  addCandidate(userValueFrame.userWants[0], 52, ["user_value_frame"]);
+  return candidates.slice(0, 4);
+}
+
+function formatRequirementApprovalBoundary(entry) {
+  const normalized = safeString(entry, 240);
+  return normalized ? `Approval required before: ${normalized}` : "";
+}
+
+function buildRequirementChallengeReport({ requirementContract, selection } = {}) {
+  const requirement = requirementContract && typeof requirementContract === "object" ? requirementContract : {};
+  const currentSelection = selection && typeof selection === "object" ? selection : {};
+  const validation = sanitizeRequirementValidation(requirement.validation, requirement);
+  const findings = [];
+  const addFinding = (type, severity, detail, requirementRef) => {
+    const normalizedDetail = safeString(detail, 320);
+    if (!normalizedDetail) return;
+    findings.push({
+      id: `${type}_${findings.length + 1}`,
+      type,
+      severity: normalizeRequirementFindingSeverity(severity, "medium"),
+      detail: normalizedDetail,
+      requirementRef: safeString(requirementRef, 120),
+    });
+  };
+  if (!sanitizeAcceptanceChecks(requirement.acceptanceChecks).length) {
+    addFinding("missing_acceptance_check", "high", "Acceptance checks are still too weak to judge completion safely.", "acceptanceChecks");
+  }
+  uniqueStrings(requirement.openQuestions, 3).forEach((question) => {
+    addFinding("must_ask_question", "high", `Must confirm before implementation: ${question}`, "openQuestions");
+  });
+  uniqueStrings(requirement.assumptions, 2).forEach((entry) => {
+    addFinding("hidden_assumption", "medium", `Assumption still carries execution risk: ${entry}`, "assumptions");
+  });
+  if (!uniqueStrings(requirement.nonGoals, 4).length) {
+    addFinding("scope_gap", "medium", "Non-goals are not explicit yet, so scope drift risk remains.", "nonGoals");
+  }
+  if (sanitizeUserValueFrame(requirement.userValueFrame).benchmarkCandidates.length && currentSelection.taskFamily === "web_creative" && !uniqueStrings(requirement.openQuestions, 12).length) {
+    addFinding("likely_implicit_requirement", "medium", "Benchmark context suggests visual/taste expectations that may still need confirmation.", "userValueFrame.benchmarkCandidates");
+  }
+  uniqueStrings(requirement.approvalBoundaryItems, 2).forEach((entry) => {
+    addFinding("proceed_risk", "high", `Approval boundary still blocks safe execution: ${entry}`, "approvalBoundaryItems");
+  });
+  const contradictoryCheck = validation.checks.find((entry) => entry.id === "contract_consistency" && entry.status === "BLOCK");
+  if (contradictoryCheck) {
+    addFinding("contradiction", "high", contradictoryCheck.detail, "contract_consistency");
+  }
+  return sanitizeRequirementChallengeReport({
+    summary: findings[0] ? findings[0].detail : "",
+    proceedRisk: findings.some((entry) => entry.severity === "high")
+      ? "high"
+      : findings.some((entry) => entry.severity === "medium")
+        ? "medium"
+        : "low",
+    findings,
+  }, requirement);
+}
+
+function requirementLooksLikeQuestionText(value) {
+  const normalized = safeString(value, 320).trim();
+  if (!normalized) return false;
+  return /[?？]$/.test(normalized)
+    || /^(?:what|which|who|where|when|why|how|can|should|is|are|do|does|did|will|would|could)\b/i.test(normalized);
+}
+
+function ensureRequirementQuestionText(value, { fallbackLead = "Can you clarify" } = {}) {
+  const normalized = stripQuestionPunctuation(safeString(value, 320).trim());
+  if (!normalized) return "";
+  if (requirementLooksLikeQuestionText(value) || requirementLooksLikeQuestionText(normalized)) {
+    return `${normalized}?`;
+  }
+  const lead = safeString(fallbackLead, 40) || "Can you clarify";
+  const body = normalized.charAt(0).toLowerCase() + normalized.slice(1);
+  return `${lead} ${body}?`;
+}
+
+function buildRequirementQuestionFromFinding(finding) {
+  const normalizedFinding = finding && typeof finding === "object" ? finding : {};
+  const type = safeString(normalizedFinding.type, 80).toLowerCase();
+  const detail = safeString(normalizedFinding.detail, 320);
+  if (type === "missing_acceptance_check") {
+    return "What acceptance checks define success?";
+  }
+  if (type === "must_ask_question") {
+    return ensureRequirementQuestionText(
+      detail.replace(/^Must confirm before implementation:\s*/i, ""),
+      { fallbackLead: "Can you confirm" }
+    );
+  }
+  if (type === "proceed_risk") {
+    return "What approval is required before implementation?";
+  }
+  return "";
+}
+
+function requirementLooksFragmentaryGoalText(value) {
+  const normalized = safeString(value, 320).trim();
+  if (!normalized) return false;
+  if (/[?？]$/.test(normalized)) return true;
+  return /(?:とき|時|場合|際)(?:は|には)?$|(?:前に|後に|あとで|後で)$|(?:なら|ならば|したら)$/.test(normalized);
+}
+
+function classifyRequirementQuestionCategory(question, { taskFamily = "", approvalBoundaryItems = [] } = {}) {
+  const normalized = safeString(question, 320).toLowerCase();
+  if (!normalized) return "defaultable";
+  if ((Array.isArray(approvalBoundaryItems) ? approvalBoundaryItems : []).some((entry) => normalized.includes(String(entry || "").toLowerCase()))) {
+    return "blocking";
+  }
+  if (/(approval|permission|migrate|schema|delete|remove|install|account|security|port|credential|api key|before implementation|what acceptance|which specialist|goal|scope|non-goal|owner)/i.test(normalized)) {
+    return "blocking";
+  }
+  if (taskFamily === "web_creative"
+    && /(style|visual|ux|tone|brand|look|feel|preference|benchmark|reference|first impression|typography|color|motion|aesthetic|visual hierarchy|hero|emphasis|emphasize|emphasise)/i.test(normalized)) {
+    return "taste";
+  }
+  if (/(style|visual|ux|tone|brand|look|feel|preference|benchmark|reference|first impression|typography|color|motion|aesthetic|visual hierarchy|hero|emphasis|emphasize|emphasise)/i.test(normalized)) {
+    return "taste";
+  }
+  return "defaultable";
+}
+
+function buildAutonomousAcceptanceChecks({
+  prompt = "",
+  explicitGoal = "",
+  implicitGoal = "",
+  baselineScope = [],
+  nonGoals = [],
+  taskFamily = "",
+  benchmarkCandidates = [],
+  existingAcceptanceChecks = [],
+} = {}) {
+  const locked = sanitizeAcceptanceChecks(existingAcceptanceChecks);
+  if (locked.length) return locked;
+  const lowerPrompt = sanitizePromptForPolicyAnalysis(prompt).toLowerCase();
+  const stitchContext = extractStitchPromptContext(prompt);
+  if (/(?:acceptance checks?|acceptance criteria).*(?:not fixed|not clear|unclear|tbd|to be decided)/i.test(lowerPrompt)) {
+    return locked;
+  }
+  const checks = [];
+  const addCheck = (title, source, blocking = true) => {
+    const normalizedTitle = safeString(title, 240);
+    if (!normalizedTitle) return;
+    if (checks.some((entry) => requirementIntentKeysOverlap(entry.title, normalizedTitle, { minLength: 18 }))) return;
+    checks.push({
+      id: `ac-${checks.length + 1}`,
+      title: normalizedTitle,
+      source: safeString(source, 80) || "runtime_inferred",
+      blocking: blocking !== false,
+    });
+  };
+  const goalAnchor = firstSentence(safeString(explicitGoal || implicitGoal, 240));
+  const boundedScope = uniqueStrings(baselineScope, 6);
+  const primaryScreen = stitchContext && Array.isArray(stitchContext.screens) && stitchContext.screens.length
+    ? stitchContext.screens[0]
+    : null;
+  if (primaryScreen && primaryScreen.title) {
+    addCheck(
+      `Stitch の「${primaryScreen.title}」画面の構成と主要要素を WEB UI に再現する`,
+      "inferred_stitch_screen_reproduction",
+      true
+    );
+    if (stitchContext.fetchImagesAndCode) {
+      addCheck(
+        "取得した Stitch の画像とコードを基準に実装する",
+        "inferred_stitch_asset_replay",
+        true
+      );
+    }
+  }
+  if (goalAnchor && !requirementLooksLikeQuestionText(goalAnchor)) {
+    addCheck(
+      `Deliver the requested outcome without drifting from the goal: ${goalAnchor}`,
+      "inferred_goal_anchor",
+      true
+    );
+  }
+  if (boundedScope.length > 0 || uniqueStrings(nonGoals, 4).length > 0 || /\b(?:only|keep|preserve|without|do not|must not)\b/i.test(lowerPrompt)) {
+    addCheck(
+      "Keep the change bounded to the locked scope and avoid unrelated edits.",
+      "inferred_scope_guard",
+      true
+    );
+  }
+  if (safeString(taskFamily, 80).toLowerCase() === "web_creative") {
+    addCheck(
+      benchmarkCandidates.length > 0
+        ? "The result should satisfy the anchored visual direction while staying responsive."
+        : "The result should satisfy the intended visual direction and remain responsive.",
+      benchmarkCandidates.length > 0 ? "inferred_benchmark_direction" : "inferred_visual_direction",
+      true
+    );
+  } else if (boundedScope.length > 0 || goalAnchor) {
+    addCheck(
+      "The final state should be verifiable from the requested scope and user-visible outcome.",
+      "inferred_completion_check",
+      true
+    );
+  }
+  return checks.slice(0, 4);
+}
+
+function partitionRequirementQuestions({
+  openQuestions = [],
+  taskFamily = "",
+  approvalBoundaryItems = [],
+  acceptanceChecks = [],
+  baselineScope = [],
+  benchmarkCandidates = [],
+  prompt = "",
+} = {}) {
+  const blocking = [];
+  const defaultable = [];
+  const taste = [];
+  const addEntry = (list, question, reason = "") => {
+    const normalizedQuestion = safeString(question, 320);
+    if (!normalizedQuestion) return;
+    if ([...blocking, ...defaultable, ...taste].some((entry) => requirementIntentKeysOverlap(entry.question, normalizedQuestion, { minLength: 12 }))) {
+      return;
+    }
+    list.push({
+      question: normalizedQuestion,
+      reason: safeString(reason, 160),
+    });
+  };
+  const lowerPrompt = sanitizePromptForPolicyAnalysis(prompt).toLowerCase();
+  const directionAnchored =
+    (Array.isArray(benchmarkCandidates) ? benchmarkCandidates.length : 0) > 0
+    || (Array.isArray(acceptanceChecks) ? acceptanceChecks.length : 0) > 0
+    || (Array.isArray(baselineScope) ? baselineScope.length : 0) >= 2
+    || /(?:readability|clarity|premium|luxury|editorial|minimal|playful|serious|trust|safe|dense|information density|typography|spacing|mobile|responsive|benchmark|reference|suruga-k|ui|ux|look|feel|tone|brand)/i.test(lowerPrompt);
+  uniqueStrings(openQuestions, 12).forEach((question) => {
+    const normalizedQuestion = safeString(question, 320);
+    if (!normalizedQuestion) return;
+    const category = classifyRequirementQuestionCategory(normalizedQuestion, { taskFamily, approvalBoundaryItems });
+    if (/what acceptance checks define success\??/i.test(normalizedQuestion) && (Array.isArray(acceptanceChecks) ? acceptanceChecks.length : 0) > 0) {
+      addEntry(defaultable, normalizedQuestion, "autonomous_acceptance_tightening");
+      return;
+    }
+    if (category === "taste" && directionAnchored) {
+      addEntry(taste, normalizedQuestion, "direction_anchor_present");
+      return;
+    }
+    if (category === "defaultable") {
+      addEntry(defaultable, normalizedQuestion, "defaultable_under_locked_goal");
+      return;
+    }
+    addEntry(blocking, normalizedQuestion, "blocking_question");
+  });
+  return { blocking, defaultable, taste };
+}
+
+function buildRequirementQuestionPlan({ requirementContract, selection, challengeReport } = {}) {
+  const requirement = requirementContract && typeof requirementContract === "object" ? requirementContract : {};
+  const currentSelection = selection && typeof selection === "object" ? selection : {};
+  const report = sanitizeRequirementChallengeReport(challengeReport, requirement);
+  const blocking = [];
+  const defaultable = [];
+  const taste = [];
+  const hasQuestion = (question) => [...blocking, ...defaultable, ...taste].some((entry) => requirementIntentKeysOverlap(entry.question, question, { minLength: 12 }));
+  const pushCategorizedEntry = (question, category, reason = "") => {
+    const normalizedQuestion = safeString(question, 320);
+    if (!normalizedQuestion || hasQuestion(normalizedQuestion)) return;
+    const entry = {
+      question: normalizedQuestion,
+      category,
+      reason: safeString(reason, 200),
+    };
+    if (category === "blocking") blocking.push(entry);
+    else if (category === "taste") taste.push(entry);
+    else defaultable.push(entry);
+  };
+  const addQuestion = (question, reason = "") => {
+    const normalizedQuestion = safeString(question, 320);
+    if (!normalizedQuestion) return;
+    if (hasQuestion(normalizedQuestion)) return;
+    const category = classifyRequirementQuestionCategory(normalizedQuestion, {
+      taskFamily: safeString(currentSelection.taskFamily || requirement.taskFamily, 80),
+      approvalBoundaryItems: requirement.approvalBoundaryItems,
+    });
+    pushCategorizedEntry(normalizedQuestion, category, reason);
+  };
+  const deferredQuestions = currentSelection
+    && currentSelection.extracted
+    && currentSelection.extracted.deferredQuestions
+    && typeof currentSelection.extracted.deferredQuestions === "object"
+      ? currentSelection.extracted.deferredQuestions
+      : {};
+  uniqueStrings(requirement.openQuestions, 12).forEach((question) => addQuestion(question, "open_question"));
+  uniqueStrings(deferredQuestions.defaultable, 8).forEach((question) => pushCategorizedEntry(question, "defaultable", "deferred_defaultable"));
+  uniqueStrings(deferredQuestions.taste, 8).forEach((question) => pushCategorizedEntry(question, "taste", "deferred_taste"));
+  report.findings.forEach((finding) => {
+    if (finding.type === "must_ask_question" || finding.type === "missing_acceptance_check" || finding.type === "proceed_risk") {
+      addQuestion(buildRequirementQuestionFromFinding(finding), finding.type);
+    }
+  });
+  return sanitizeRequirementQuestionPlan({
+    summary: blocking.length
+      ? "Blocking questions must be resolved before execution."
+      : taste.length
+        ? "Taste questions can improve satisfaction after the core path is clear."
+        : defaultable.length
+          ? "Remaining questions can be handled with explicit assumptions."
+          : "",
+    blocking,
+    defaultable,
+    taste,
+    askNext: [...blocking, ...taste, ...defaultable].slice(0, 3),
+  }, requirement);
+}
+
+function buildRequirementDelightPlan({ requirementContract, selection } = {}) {
+  const requirement = requirementContract && typeof requirementContract === "object" ? requirementContract : {};
+  const currentSelection = selection && typeof selection === "object" ? selection : {};
+  const openQuestionsCount = uniqueStrings(requirement.openQuestions, 12).length;
+  const approvalBoundaryCount = uniqueStrings(requirement.approvalBoundaryItems, 12).length;
+  const candidates = uniqueStrings(requirement.overDeliveryScope, 6).map((title, index) => ({
+    id: `delight_${index + 1}`,
+    title,
+    reason: currentSelection.taskFamily === "web_creative" ? "separate_delight_lane_for_quality" : "optional_adjacent_value",
+    autoEligible: openQuestionsCount === 0 && approvalBoundaryCount === 0,
+  }));
+  return sanitizeRequirementDelightPlan({
+    summary: candidates.length ? "Optional adjacent value is tracked separately from the core contract." : "",
+    candidates,
+  }, requirement);
+}
+
+function buildRequirementDisplayContract({ requirementContract, selection, status = "", challengeReport, questionPlan, delightPlan, intentHypotheses, lockedGoal = "" } = {}) {
+  const requirement = requirementContract && typeof requirementContract === "object" ? requirementContract : {};
+  const currentSelection = selection && typeof selection === "object" ? selection : {};
+  const report = sanitizeRequirementChallengeReport(challengeReport, requirement);
+  const questions = sanitizeRequirementQuestionPlan(questionPlan, requirement);
+  const delight = sanitizeRequirementDelightPlan(delightPlan, requirement);
+  const hypotheses = sanitizeRequirementIntentHypotheses(intentHypotheses, requirement);
+  const normalizedStatus = safeString(status || requirement.status, 40).toUpperCase();
+  const stitchContext = currentSelection
+    && currentSelection.extracted
+    && currentSelection.extracted.stitchContext
+    && typeof currentSelection.extracted.stitchContext === "object"
+      ? currentSelection.extracted.stitchContext
+      : null;
+  const primaryScreen = stitchContext && Array.isArray(stitchContext.screens) && stitchContext.screens.length
+    ? stitchContext.screens[0]
+    : null;
+  const headline = [
+    safeString(lockedGoal, 320),
+    safeString(hypotheses[0] && hypotheses[0].goal, 320),
+    safeString(requirement.intentInterpretation && requirement.intentInterpretation.direction, 320),
+    safeString(requirement.explicitGoal, 320),
+    safeString(requirement.implicitGoal, 320),
+    safeString(requirement.userValueFrame && requirement.userValueFrame.valueThesis, 320),
+  ].find((entry) => entry && !requirementLooksFragmentaryGoalText(entry)) || "";
+  const goalMode = lockedGoal ? "locked" : headline ? "hypothesis" : "draft";
+  let nextAction = "";
+  if (questions.askNext.length) {
+    nextAction = `Clarify: ${questions.askNext[0].question}`;
+  } else if (stitchContext && primaryScreen && primaryScreen.title) {
+    const nextParts = [
+      stitchContext.fetchImagesAndCode
+        ? `まず Stitch の「${primaryScreen.title}」画面の画像とコードを取得する`
+        : `まず Stitch の「${primaryScreen.title}」画面を基準にする`,
+      "現UIとの差分を埋める",
+    ];
+    if (stitchContext.requiresHostedUrlDownload) nextParts.push("hosted URL は curl -L で取得する");
+    nextAction = nextParts.join("。");
+  } else if (sanitizeAcceptanceChecks(requirement.acceptanceChecks).length) {
+    nextAction = `Plan around ${sanitizeAcceptanceChecks(requirement.acceptanceChecks)[0].title}`;
+  } else if (uniqueStrings(requirement.baselineScope, 24).length) {
+    nextAction = `Stay inside ${uniqueStrings(requirement.baselineScope, 2)[0]}`;
+  } else {
+    nextAction = "Clarify the core contract before execution.";
+  }
+  const stitchBoundaries = [];
+  if (stitchContext && primaryScreen && primaryScreen.title) {
+    stitchBoundaries.push("指定された Stitch screen を基準にする");
+    if (stitchContext.strictRecreation) stitchBoundaries.push("完全再現から外れる独自アレンジを入れない");
+    stitchBoundaries.push("指定されていない screen へ広げない");
+  }
+  const holdReason = normalizedStatus === "BLOCKED"
+    ? safeString(requirement.statusReason, 320) || safeString(report.summary, 320)
+    : "";
+  const targetOutcome = stitchContext && primaryScreen && primaryScreen.title
+    ? `「${primaryScreen.title}」画面の構成と見た目が WEB UI で再現される`
+    : safeString(sanitizeUserValueFrame(requirement.userValueFrame).completedMeans[0], 320)
+      || safeString(sanitizeUserValueFrame(requirement.userValueFrame).valueThesis, 320)
+      || safeString(sanitizeAcceptanceChecks(requirement.acceptanceChecks)[0] && sanitizeAcceptanceChecks(requirement.acceptanceChecks)[0].title, 320);
+  return sanitizeRequirementDisplayContract({
+    headline,
+    goal: lockedGoal || headline,
+    goalMode,
+    goalLabel: lockedGoal ? "locked_goal" : "working_hypothesis",
+    nextAction,
+    holdReason,
+    targetOutcome,
+    boundaries: [
+      ...stitchBoundaries,
+      ...uniqueStrings(requirement.nonGoals, 3),
+      ...uniqueStrings(requirement.approvalBoundaryItems, 2).map((entry) => formatRequirementApprovalBoundary(entry)),
+      ...uniqueStrings(requirement.userValueFrame && requirement.userValueFrame.mustAvoid, 2),
+      ...uniqueStrings(requirement.userValueFrame && requirement.userValueFrame.hardConstraints, 2),
+    ],
+    askNext: questions.askNext,
+    delightTitles: delight.candidates.map((entry) => entry.title).slice(0, 3),
+    questionPlan: questions,
+    delightPlan: delight,
+  }, requirement);
+}
+
+function buildUserValueFrameProvenance({
+  prompt = "",
+  options = {},
+  explicitGoal = "",
+  implicitGoal = "",
+  taskFamily = "deterministic_code",
+  userValueFrame = {},
+  baselineScope = [],
+  acceptanceChecks = [],
+  approvalBoundaryItems = [],
+  benchmarkCandidates = [],
+  nonGoalProvenance = [],
+  goalProvenance = {},
+} = {}) {
+  const defaults = buildDefaultUserValueProfile(taskFamily);
+  const promptSignals = inferPromptLevelUserValueSignals(prompt, taskFamily);
+  const directiveAvoids = extractPromptDirectiveLines(prompt, isAvoidanceDirective, 8);
+  const directiveConstraints = extractPromptDirectiveLines(prompt, isHardConstraintDirective, 8);
+  const acceptanceTitles = (Array.isArray(acceptanceChecks) ? acceptanceChecks : [])
+    .map((entry) => safeString(entry && entry.title, 240))
+    .filter(Boolean);
+  const directBenchmarks = extractReferenceUrls(prompt, 6);
+  const previous = normalizePreviousPlanningContext(options);
+  const previousBenchmarkProvenance = previous
+    && previous.planningContext
+    && previous.planningContext.requirementContract
+    && previous.planningContext.requirementContract.provenance
+    && previous.planningContext.requirementContract.provenance.userValueFrame
+      ? previous.planningContext.requirementContract.provenance.userValueFrame.benchmarkCandidates
+      : [];
+  const explicitGoalSource = goalProvenance && goalProvenance.explicitGoal ? goalProvenance.explicitGoal.source : "system_inferred";
+  const implicitGoalSource = goalProvenance && goalProvenance.implicitGoal ? goalProvenance.implicitGoal.source : "system_inferred";
+  return {
+    valueThesis: buildRequirementFieldProvenance("policy_default", "task_family_default"),
+    userWants: buildRequirementValueProvenanceEntries(userValueFrame.userWants, (value) => {
+      if (requirementProvenanceValuesOverlap(value, explicitGoal)) return { source: explicitGoalSource, reason: "explicit_goal" };
+      if (requirementProvenanceValuesOverlap(value, implicitGoal)) return { source: implicitGoalSource, reason: "implicit_goal" };
+      if (baselineScope.some((entry) => requirementProvenanceValuesOverlap(entry, value))) {
+        return { source: promptMentionsRequirementValue(prompt, value) ? "user_explicit" : "user_implied", reason: "baseline_scope" };
+      }
+      return { source: promptMentionsRequirementValue(prompt, value) ? "user_explicit" : "user_implied", reason: "prompt_want" };
+    }, 8),
+    userShouldFeelGet: buildRequirementValueProvenanceEntries(userValueFrame.userShouldFeelGet, (value) => {
+      if ((promptSignals.userShouldFeelGet || []).some((entry) => requirementProvenanceValuesOverlap(entry, value))) {
+        return { source: "user_implied", reason: "prompt_value_signal" };
+      }
+      return { source: "policy_default", reason: "family_default_signal" };
+    }, 8),
+    mustAvoid: buildRequirementValueProvenanceEntries(userValueFrame.mustAvoid, (value) => {
+      if (directiveAvoids.some((entry) => requirementProvenanceValuesOverlap(entry, value))) {
+        return { source: "user_explicit", reason: "avoidance_directive" };
+      }
+      const inheritedNonGoalSource = findRequirementValueProvenanceSource(nonGoalProvenance, value, "");
+      if (inheritedNonGoalSource) {
+        return { source: inheritedNonGoalSource, reason: inheritedNonGoalSource === "policy_default" ? "default_non_goal" : "non_goal" };
+      }
+      if ((promptSignals.mustAvoid || []).some((entry) => requirementProvenanceValuesOverlap(entry, value))) {
+        return { source: "user_implied", reason: "prompt_avoid_signal" };
+      }
+      return { source: "policy_default", reason: "family_default_guardrail" };
+    }, 10),
+    hardConstraints: buildRequirementValueProvenanceEntries(userValueFrame.hardConstraints, (value) => {
+      if (directiveConstraints.some((entry) => requirementProvenanceValuesOverlap(entry, value))) {
+        return { source: "user_explicit", reason: "constraint_directive" };
+      }
+      if (acceptanceTitles.some((entry) => requirementProvenanceValuesOverlap(entry, value))) {
+        return { source: "user_explicit", reason: "acceptance_constraint" };
+      }
+      if (approvalBoundaryItems.some((entry) => value.includes(entry))) {
+        return { source: "system_inferred", reason: "approval_boundary_guardrail" };
+      }
+      return { source: "policy_default", reason: "default_constraint" };
+    }, 10),
+    qualityAxes: buildRequirementValueProvenanceEntries(userValueFrame.qualityAxes, (value) => {
+      if ((promptSignals.qualityAxes || []).some((entry) => requirementProvenanceValuesOverlap(entry, value))) {
+        return { source: "user_implied", reason: "prompt_quality_signal" };
+      }
+      return { source: "policy_default", reason: "family_default_quality_axis" };
+    }, 10),
+    benchmarkCandidates: buildRequirementValueProvenanceEntries(userValueFrame.benchmarkCandidates || benchmarkCandidates, (value) => {
+      if (directBenchmarks.some((entry) => requirementProvenanceValuesOverlap(entry, value))) {
+        return { source: "user_explicit", reason: "reference_url" };
+      }
+      const previousSource = findRequirementValueProvenanceSource(previousBenchmarkProvenance, value, "");
+      if (previousSource) {
+        return { source: previousSource, reason: "carried_forward_benchmark" };
+      }
+      return { source: "user_implied", reason: "followup_benchmark_context" };
+    }, 6),
+    completedMeans: buildRequirementValueProvenanceEntries(userValueFrame.completedMeans, (value) => {
+      if (acceptanceTitles.some((entry) => requirementProvenanceValuesOverlap(entry, value))) {
+        return { source: "user_explicit", reason: "acceptance_completion" };
+      }
+      if ((promptSignals.completedMeans || []).some((entry) => requirementProvenanceValuesOverlap(entry, value))) {
+        return { source: "user_implied", reason: "prompt_completion_signal" };
+      }
+      if ((defaults.completedMeans || []).some((entry) => requirementProvenanceValuesOverlap(entry, value))) {
+        return { source: "policy_default", reason: "family_default_completion" };
+      }
+      return { source: "system_inferred", reason: "completion_inference" };
+    }, 10),
+  };
+}
+
+function sanitizeRequirementProvenance(value, requirement = {}) {
+  const source = value && typeof value === "object" ? value : {};
+  const frame = requirement && requirement.userValueFrame && typeof requirement.userValueFrame === "object" ? requirement.userValueFrame : {};
+  const intent = requirement && requirement.intentInterpretation && typeof requirement.intentInterpretation === "object" ? requirement.intentInterpretation : {};
+  return {
+    explicitGoal: sanitizeRequirementFieldProvenance(source.explicitGoal, safeString(requirement.explicitGoal, 320) ? "system_inferred" : "policy_default"),
+    implicitGoal: sanitizeRequirementFieldProvenance(source.implicitGoal, safeString(requirement.implicitGoal, 320) ? "system_inferred" : "policy_default"),
+    nonGoals: sanitizeRequirementValueProvenanceEntries(source.nonGoals, "system_inferred", 16),
+    userValueFrame: {
+      valueThesis: sanitizeRequirementFieldProvenance(source.userValueFrame && source.userValueFrame.valueThesis, safeString(frame.valueThesis, 320) ? "policy_default" : "policy_default"),
+      userWants: sanitizeRequirementValueProvenanceEntries(source.userValueFrame && source.userValueFrame.userWants, "system_inferred", 8),
+      userShouldFeelGet: sanitizeRequirementValueProvenanceEntries(source.userValueFrame && source.userValueFrame.userShouldFeelGet, "policy_default", 8),
+      mustAvoid: sanitizeRequirementValueProvenanceEntries(source.userValueFrame && source.userValueFrame.mustAvoid, "system_inferred", 10),
+      hardConstraints: sanitizeRequirementValueProvenanceEntries(source.userValueFrame && source.userValueFrame.hardConstraints, "system_inferred", 10),
+      qualityAxes: sanitizeRequirementValueProvenanceEntries(source.userValueFrame && source.userValueFrame.qualityAxes, "policy_default", 10),
+      benchmarkCandidates: sanitizeRequirementValueProvenanceEntries(source.userValueFrame && source.userValueFrame.benchmarkCandidates, "system_inferred", 6),
+      completedMeans: sanitizeRequirementValueProvenanceEntries(source.userValueFrame && source.userValueFrame.completedMeans, "policy_default", 10),
+    },
+    intentInterpretation: {
+      presentation: sanitizeRequirementFieldProvenance(source.intentInterpretation && source.intentInterpretation.presentation, safeString(intent.presentation, 40) === "progress_hypothesis" ? "system_inferred" : "policy_default"),
+      questionLike: sanitizeRequirementFieldProvenance(source.intentInterpretation && source.intentInterpretation.questionLike, intent && intent.questionLike ? "system_inferred" : "policy_default"),
+      direction: sanitizeRequirementFieldProvenance(source.intentInterpretation && source.intentInterpretation.direction, safeString(intent.direction, 320) ? "system_inferred" : "policy_default"),
+      hypothesis: sanitizeRequirementFieldProvenance(source.intentInterpretation && source.intentInterpretation.hypothesis, safeString(intent.hypothesis, 320) ? "system_inferred" : "policy_default"),
+    },
+  };
+}
+
+function buildRequirementComparableSnapshot(requirementContract = {}) {
+  const requirement = requirementContract && typeof requirementContract === "object" ? requirementContract : {};
+  const frame = sanitizeUserValueFrame(requirement.userValueFrame);
+  const intent = sanitizeRequirementIntentInterpretation(requirement.intentInterpretation);
+  const questionPlan = sanitizeRequirementQuestionPlan(requirement.questionPlan, requirement);
+  const delightPlan = sanitizeRequirementDelightPlan(requirement.delightPlan, requirement);
+  return {
+    explicitGoal: safeString(requirement.explicitGoal, 320),
+    implicitGoal: safeString(requirement.implicitGoal, 320),
+    lockedGoal: safeString(requirement.lockedGoal, 320),
+    baselineScope: uniqueStrings(requirement.baselineScope, 24),
+    nonGoals: uniqueStrings(requirement.nonGoals, 16),
+    approvalBoundaryItems: uniqueStrings(requirement.approvalBoundaryItems, 12),
+    acceptanceChecks: sanitizeAcceptanceChecks(requirement.acceptanceChecks).map((entry) => ({ id: entry.id, title: entry.title, blocking: entry.blocking ? 1 : 0 })),
+    intentHypotheses: sanitizeRequirementIntentHypotheses(requirement.intentHypotheses, requirement).map((entry) => ({
+      goal: entry.goal,
+      confidence: entry.confidence,
+      locked: entry.locked ? 1 : 0,
+    })),
+    questionPlan: {
+      askNext: questionPlan.askNext.map((entry) => ({ question: entry.question, category: entry.category })),
+    },
+    delightPlan: {
+      candidates: delightPlan.candidates.map((entry) => ({ title: entry.title, autoEligible: entry.autoEligible ? 1 : 0 })),
+    },
+    userValueFrame: {
+      valueThesis: safeString(frame.valueThesis, 320),
+      userWants: uniqueStrings(frame.userWants, 8),
+      mustAvoid: uniqueStrings(frame.mustAvoid, 10),
+      hardConstraints: uniqueStrings(frame.hardConstraints, 10),
+      qualityAxes: uniqueStrings(frame.qualityAxes, 10),
+      benchmarkCandidates: uniqueStrings(frame.benchmarkCandidates, 6),
+      completedMeans: uniqueStrings(frame.completedMeans, 10),
+    },
+    intentInterpretation: intent,
+  };
+}
+
+function buildRequirementRevisionLedger({ requirementContract, options = {} } = {}) {
+  const currentRequirement = requirementContract && typeof requirementContract === "object" ? requirementContract : {};
+  const previous = normalizePreviousPlanningContext(options);
+  if (!previous || !previous.planningContext || !previous.planningContext.requirementContract) {
+    return {
+      revisionNumber: 1,
+      revised: false,
+      revisionKind: "initial",
+      changedFields: [],
+      previousPromptHash: "",
+      previousStatus: "",
+      requiresReapproval: false,
+      summary: "Initial requirement contract for this thread.",
+    };
+  }
+  const previousRequirement = previous.planningContext.requirementContract;
+  const currentComparable = buildRequirementComparableSnapshot(currentRequirement);
+  const previousComparable = buildRequirementComparableSnapshot(previousRequirement);
+  const fields = [
+    "explicitGoal",
+    "implicitGoal",
+    "lockedGoal",
+    "baselineScope",
+    "nonGoals",
+    "approvalBoundaryItems",
+    "acceptanceChecks",
+    "intentHypotheses",
+    "questionPlan.askNext",
+    "delightPlan.candidates",
+    "userValueFrame.valueThesis",
+    "userValueFrame.userWants",
+    "userValueFrame.mustAvoid",
+    "userValueFrame.hardConstraints",
+    "userValueFrame.qualityAxes",
+    "userValueFrame.benchmarkCandidates",
+    "userValueFrame.completedMeans",
+    "intentInterpretation.presentation",
+    "intentInterpretation.direction",
+    "intentInterpretation.hypothesis",
+  ];
+  const getByPath = (source, fieldPath) => fieldPath.split(".").reduce((acc, key) => (acc && typeof acc === "object" ? acc[key] : undefined), source);
+  const changedFields = fields.filter((fieldPath) => JSON.stringify(getByPath(currentComparable, fieldPath)) !== JSON.stringify(getByPath(previousComparable, fieldPath)));
+  const revised = changedFields.length > 0;
+  const previousRevisionNumber = clampInt(previousRequirement && previousRequirement.revisionLedger && previousRequirement.revisionLedger.revisionNumber, 1, 1, 999);
+  const previousApprovalItems = uniqueStrings(previousRequirement && previousRequirement.approvalBoundaryItems, 12);
+  const currentApprovalItems = uniqueStrings(currentRequirement && currentRequirement.approvalBoundaryItems, 12);
+  const approvalBoundaryExpanded = currentApprovalItems.some((entry) => !previousApprovalItems.some((previousEntry) => requirementProvenanceValuesOverlap(previousEntry, entry)));
+  const requiresReapproval = Boolean(revised && (approvalBoundaryExpanded || changedFields.includes("userValueFrame.hardConstraints")));
+  return {
+    revisionNumber: previousRevisionNumber + 1,
+    revised,
+    revisionKind: !revised ? "carryover_refresh" : "material_change",
+    changedFields,
+    previousPromptHash: safeString(previousRequirement && previousRequirement.promptHash, 80),
+    previousStatus: normalizeRequirementStatus(previousRequirement && previousRequirement.status, ""),
+    requiresReapproval,
+    summary: !revised
+      ? "Requirement contract matches the prior locked direction."
+      : requiresReapproval
+        ? `Requirement contract changed in ${changedFields.length} field(s) and tightened an approval or hard-constraint boundary.`
+        : `Requirement contract changed in ${changedFields.length} field(s) from the previous turn.`,
+  };
+}
+
+function sanitizeRequirementRevisionLedger(value) {
+  const source = value && typeof value === "object" ? value : {};
+  return {
+    revisionNumber: clampInt(source.revisionNumber, 1, 1, 999),
+    revised: Boolean(source.revised),
+    revisionKind: ["initial", "carryover_refresh", "material_change"].includes(safeString(source.revisionKind, 40))
+      ? safeString(source.revisionKind, 40)
+      : "initial",
+    changedFields: uniqueStrings(source.changedFields, 24),
+    previousPromptHash: safeString(source.previousPromptHash, 80),
+    previousStatus: normalizeRequirementStatus(source.previousStatus, ""),
+    requiresReapproval: Boolean(source.requiresReapproval),
+    summary: safeString(source.summary, 240),
+  };
+}
+
+function buildRequirementValidation({ requirementContract, selection } = {}) {
+  const requirement = requirementContract && typeof requirementContract === "object" ? requirementContract : {};
+  const currentSelection = selection && typeof selection === "object" ? selection : {};
+  const goalAnchor = getRequirementGoalAnchor(requirement);
+  const goalAnchorFieldRefs = getRequirementGoalAnchorFieldRefs(requirement);
+  const acceptanceChecks = sanitizeAcceptanceChecks(requirement.acceptanceChecks);
+  const baselineScope = uniqueStrings(requirement.baselineScope, 24);
+  const nonGoals = uniqueStrings(requirement.nonGoals, 16);
+  const openQuestions = uniqueStrings(requirement.openQuestions, 12);
+  const approvalBoundaryItems = uniqueStrings(requirement.approvalBoundaryItems, 12);
+  const userValueFrame = sanitizeUserValueFrame(requirement.userValueFrame);
+  const provenance = sanitizeRequirementProvenance(requirement.provenance, requirement);
+  const revisionLedger = sanitizeRequirementRevisionLedger(requirement.revisionLedger);
+  const checks = [];
+  const pushCheck = (id, title, status, detail, fieldRefs = []) => {
+    checks.push({
+      id,
+      title,
+      status: normalizeRequirementValidationVerdict(status, "WARN"),
+      detail: safeString(detail, 320),
+      fieldRefs: uniqueStrings(fieldRefs, 8),
+    });
+  };
+  pushCheck(
+    "goal_present",
+    "Primary goal is locked",
+    goalAnchor ? "PASS" : "BLOCK",
+    goalAnchor
+      ? "A concrete goal anchor exists for planning."
+      : "No goal anchor was locked from the requirement contract or its hypotheses.",
+    goalAnchorFieldRefs
+  );
+  const acceptanceStatus = acceptanceChecks.length > 0
+    ? "PASS"
+    : (safeString(currentSelection.taskFamily || requirement.taskFamily, 80) === "deterministic_code" && baselineScope.length === 0 ? "BLOCK" : "WARN");
+  pushCheck(
+    "acceptance_defined",
+    "Acceptance checks are concrete",
+    acceptanceStatus,
+    acceptanceChecks.length > 0
+      ? `Acceptance checks locked: ${acceptanceChecks.length}.`
+      : "Acceptance checks are missing or too weak for reliable completion judgment.",
+    ["acceptanceChecks", "baselineScope"]
+  );
+  pushCheck(
+    "blocking_questions_clear",
+    "Blocking open questions are cleared",
+    openQuestions.length > 0 ? "BLOCK" : "PASS",
+    openQuestions.length > 0
+      ? `Open questions remain: ${openQuestions.length}.`
+      : "No blocking open questions remain in the requirement contract.",
+    ["openQuestions"]
+  );
+  pushCheck(
+    "approval_boundary_clear",
+    "Approval boundaries are resolved",
+    approvalBoundaryItems.length > 0 ? "BLOCK" : "PASS",
+    approvalBoundaryItems.length > 0
+      ? `Approval-boundary items remain: ${approvalBoundaryItems.length}.`
+      : "No unresolved approval-boundary item remains.",
+    ["approvalBoundaryItems"]
+  );
+  const goalConflicts = goalAnchor
+    ? nonGoals.some((entry) => requirementProvenanceValuesOverlap(entry, goalAnchor))
+    : false;
+  const mustAvoidGoalConflict = sanitizeRequirementValueProvenanceEntries(
+    provenance && provenance.userValueFrame ? provenance.userValueFrame.mustAvoid : [],
+    "system_inferred",
+    10
+  ).some((entry) => entry.source !== "user_explicit" && goalAnchor && requirementProvenanceValuesOverlap(entry.value, goalAnchor));
+  pushCheck(
+    "contract_consistency",
+    "Goal and guardrails do not contradict each other",
+    goalConflicts || mustAvoidGoalConflict ? "BLOCK" : "PASS",
+    goalConflicts || mustAvoidGoalConflict
+      ? "At least one goal-like statement overlaps with a non-goal or must-avoid entry."
+      : "No direct contradiction was detected between goal, non-goals, and must-avoid guardrails.",
+    uniqueStrings([...goalAnchorFieldRefs, "nonGoals", "userValueFrame.mustAvoid"], 8)
+  );
+  pushCheck(
+    "provenance_coverage",
+    "Critical requirement fields record where they came from",
+    provenance.explicitGoal && provenance.userValueFrame && provenance.intentInterpretation ? "PASS" : "WARN",
+    provenance.explicitGoal && provenance.userValueFrame && provenance.intentInterpretation
+      ? "Goal, value frame, and intent interpretation carry provenance tags."
+      : "Some critical requirement fields are missing provenance tags.",
+    ["provenance"]
+  );
+  pushCheck(
+    "revision_safety",
+    "Revision history is legible",
+    revisionLedger.requiresReapproval ? "WARN" : "PASS",
+    revisionLedger.requiresReapproval
+      ? "Recent contract changes tightened approval or hard-constraint boundaries."
+      : revisionLedger.revised
+        ? "Recent contract changes were recorded in the revision ledger."
+        : "No material requirement revision was detected from the previous turn.",
+    ["revisionLedger"]
+  );
+  const summary = {
+    passCount: checks.filter((entry) => entry.status === "PASS").length,
+    warnCount: checks.filter((entry) => entry.status === "WARN").length,
+    blockCount: checks.filter((entry) => entry.status === "BLOCK").length,
+    total: checks.length,
+  };
+  return {
+    schema: "requirement-validation.v1",
+    source: "runtime_inferred_pre_dispatch",
+    verdict: summary.blockCount > 0 ? "BLOCK" : summary.warnCount > 0 ? "WARN" : "PASS",
+    canProceed: summary.blockCount === 0,
+    summary,
+    checks,
+  };
+}
+
+function sanitizeRequirementValidation(value, requirementContract = {}) {
+  const source = value && typeof value === "object" ? value : null;
+  if (!source) {
+    return buildRequirementValidation({ requirementContract, selection: {} });
+  }
+  const summary = source.summary && typeof source.summary === "object" ? source.summary : {};
+  return {
+    schema: safeString(source.schema, 80) || "requirement-validation.v1",
+    source: safeString(source.source, 80) || "runtime_inferred_pre_dispatch",
+    verdict: normalizeRequirementValidationVerdict(source.verdict, "WARN"),
+    canProceed: Boolean(source.canProceed),
+    summary: {
+      passCount: clampInt(summary.passCount, 0, 0, 24),
+      warnCount: clampInt(summary.warnCount, 0, 0, 24),
+      blockCount: clampInt(summary.blockCount, 0, 0, 24),
+      total: clampInt(summary.total, 0, 0, 24),
+    },
+    checks: (Array.isArray(source.checks) ? source.checks : []).map((entry, index) => {
+      const item = entry && typeof entry === "object" ? entry : {};
+      const title = safeString(item.title, 240);
+      if (!title) return null;
+      return {
+        id: safeString(item.id, 80) || `rv-${index + 1}`,
+        title,
+        status: normalizeRequirementValidationVerdict(item.status, "WARN"),
+        detail: safeString(item.detail, 320),
+        fieldRefs: uniqueStrings(item.fieldRefs, 8),
+      };
+    }).filter(Boolean).slice(0, 16),
+  };
+}
+
+function deriveRequirementStatus({ requirementContract, selection, validation, revisionLedger } = {}) {
+  const requirement = requirementContract && typeof requirementContract === "object" ? requirementContract : {};
+  const currentSelection = selection && typeof selection === "object" ? selection : {};
+  const normalizedValidation = sanitizeRequirementValidation(validation, requirement);
+  const normalizedRevisionLedger = sanitizeRequirementRevisionLedger(revisionLedger);
+  if (!requirementHasCoreData(requirement)) {
+    return {
+      status: "DRAFT",
+      statusReason: "Core requirement fields are not locked yet.",
+    };
+  }
+  if (
+    normalizedValidation.summary.blockCount > 0
+    || normalizePlanningMode(currentSelection.selectedMode || requirement.selectedPlanningMode, "NORMAL") === "DISCOVERY"
+    || Boolean(currentSelection.needsInputRecommended)
+  ) {
+    const blockingCheck = normalizedValidation.checks.find((entry) => entry.status === "BLOCK");
+    return {
+      status: "BLOCKED",
+      statusReason: blockingCheck ? blockingCheck.detail : "Requirement contract still has blocking ambiguity or approval boundaries.",
+    };
+  }
+  if (normalizedRevisionLedger.revised) {
+    return {
+      status: "REVISED",
+      statusReason: normalizedRevisionLedger.summary || "Requirement contract changed from the previous turn.",
+    };
+  }
+  return {
+    status: "LOCKED",
+    statusReason: "Requirement contract is validated enough to proceed into planning and specialist dispatch.",
+  };
+}
+
+function normalizeRequirementIntentCompareKey(value) {
+  return safeString(value, 320)
+    .replace(/^(?:質問に答える|次の点を説明する|Answer the user's question about|Explain these points)\s*:?\s*/i, "")
+    .replace(/[?？!！。．:：/／、,\s-]+/g, "")
+    .toLowerCase();
+}
+
+function requirementIntentKeysOverlap(left, right, { minLength = 12 } = {}) {
+  const leftKey = normalizeRequirementIntentCompareKey(left);
+  const rightKey = normalizeRequirementIntentCompareKey(right);
+  if (!leftKey || !rightKey) return false;
+  if (leftKey === rightKey) return true;
+  if (leftKey.length >= minLength && rightKey.includes(leftKey)) return true;
+  if (rightKey.length >= minLength && leftKey.includes(rightKey)) return true;
+  return false;
+}
+
+function stripQuestionLeadForIntent(value) {
+  return safeString(value, 320)
+    .replace(/^(?:質問に答える|次の点を説明する|Answer the user's question about|Explain these points)\s*:?\s*/i, "")
+    .replace(/[?？!！。．\s]+$/g, "")
+    .trim();
+}
+
+function joinIntentPhrases(parts) {
+  const phrases = uniqueStrings((Array.isArray(parts) ? parts : []).map((entry) => safeString(entry, 160)).filter(Boolean), 3);
+  if (!phrases.length) return "";
+  if (phrases.length === 1) return phrases[0];
+  return phrases.reduce((acc, entry, index) => {
+    if (index === 0) return entry;
+    return `${acc.replace(/する$/u, "し、")}${entry}`;
+  }, "");
+}
+
+function inferQuestionIntentDirection(text) {
+  const normalized = stripQuestionLeadForIntent(text);
+  if (!normalized) return "";
+  const appearanceOnly = /(?:ように見える|見えるだけ|だけでしょうか|だけなのか|見えているだけ)/u.test(normalized);
+  const literalVsInterpretation = /(?:そのまま受け取|literal|焼き直し|言い換え|オウム返し)/iu.test(normalized) && /(?:解釈|意図|仮説|要件)/u.test(normalized);
+  if (literalVsInterpretation && appearanceOnly) {
+    return "要件ロックが原文の反復に見える理由を、見え方と実際の挙動を切り分け、どこまで解釈できていてどこが原文寄りかを整理して説明する";
+  }
+  if (literalVsInterpretation && /(?:なぜ|なんで|理由|どうして)/u.test(normalized)) {
+    return "要件ロックが原文の反復に見える理由と、どこまで解釈できていてどこが原文寄りかを整理して説明する";
+  }
+  if (literalVsInterpretation) {
+    return "要件ロックが原文の反復に見える点を、どこまで解釈できていてどこが原文寄りかを整理する";
+  }
+  const recentLabel = /(?:最近|直近)/u.test(normalized) ? "最近の" : "今回の";
+  let topicLabel = "";
+  if (/要件/u.test(normalized) && /(?:修正|変更|直し|改善)/u.test(normalized)) topicLabel = `${recentLabel}要件まわりの修正について、`;
+  else if (/(?:表示|UI|画面|見た目)/iu.test(normalized) && /(?:修正|変更|直し|改善)/u.test(normalized)) topicLabel = `${recentLabel}表示まわりの修正について、`;
+  else if (/(?:修正|変更|直し|改善)/u.test(normalized)) topicLabel = `${recentLabel}修正について、`;
+  const actions = [];
+  if (/(?:ええかんじ|ええ感じ|いい感じ|良くなった|よくなった|改善|直った|問題|大丈夫|伝わりやす|見やす|自然|狙いどおり)/u.test(normalized)) {
+    actions.push("狙いどおり改善できたかを確認する");
+  }
+  if (/(?:どんな修正|どこを修正|何を修正|何を変えた|どこを変えた|変更点|修正したか|どう直した|どんな変更)/u.test(normalized)) {
+    actions.push("変更点を具体的に説明する");
+  }
+  if (/(?:なぜ|なんで|理由|どうして)/u.test(normalized)) {
+    actions.push("理由を説明する");
+  }
+  if (!actions.length && /(?:教えて|教えてください|説明して|説明してください|知りたい)/u.test(normalized)) {
+    actions.push("知りたいポイントを整理して説明する");
+  }
+  const actionText = joinIntentPhrases(actions);
+  return actionText ? `${topicLabel}${actionText}` : "";
+}
+
+function inferQuestionIntentHypothesis(text) {
+  const normalized = stripQuestionLeadForIntent(text);
+  if (!normalized) return "";
+  const appearanceOnly = /(?:ように見える|見えるだけ|だけでしょうか|だけなのか|見えているだけ)/u.test(normalized);
+  const literalVsInterpretation = /(?:そのまま受け取|literal|焼き直し|言い換え|オウム返し)/iu.test(normalized) && /(?:解釈|意図|仮説|要件)/u.test(normalized);
+  if (literalVsInterpretation && appearanceOnly) {
+    return "見え方だけの問題か、実際に意図解釈が弱いのかを切り分けて確かめたい";
+  }
+  if (literalVsInterpretation) {
+    return "原文固定と意図解釈のどちらが支配的かを確かめたい";
+  }
+  const improvementReview = /(?:ええかんじ|ええ感じ|いい感じ|良くなった|よくなった|改善|直った|問題|大丈夫|伝わりやす|見やす|自然|狙いどおり)/u.test(normalized);
+  const changeExplanation = /(?:どんな修正|どこを修正|何を修正|何を変えた|どこを変えた|変更点|修正したか|どう直した|どんな変更)/u.test(normalized);
+  if (improvementReview && changeExplanation) return "変更点だけでなく、改善の根拠まで短く把握したい";
+  if (changeExplanation) return "変更点とその意図のつながりを把握したい";
+  if (improvementReview) return "結果だけでなく、改善できた根拠まで把握したい";
+  return "";
+}
+
+function distinctRequirementIntentCandidate(value, { literalText = "", blockedValues = [] } = {}) {
+  const text = firstSentence(safeString(value, 320).trim());
+  if (!text || /[?？]/u.test(text)) return "";
+  if (literalText && requirementIntentKeysOverlap(text, literalText, { minLength: 10 })) return "";
+  for (const blocked of Array.isArray(blockedValues) ? blockedValues : []) {
+    if (requirementIntentKeysOverlap(text, blocked, { minLength: 10 })) return "";
+  }
+  return text;
+}
+
+function collectDistinctRequirementIntentCandidates(values, options = {}) {
+  const seen = new Set();
+  return (Array.isArray(values) ? values : [])
+    .map((entry) => distinctRequirementIntentCandidate(entry, options))
+    .filter((text) => {
+      const key = normalizeRequirementIntentCompareKey(text);
+      if (!key || seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    });
+}
+
+function extractPrimaryQuestionPromptText(prompt, explicitGoal = "") {
+  const promptLines = splitPromptIntoRequirementLines(prompt, 24).filter((entry) => /[?？]/u.test(entry));
+  if (promptLines.length) return safeString(promptLines[0], 320);
+  const paragraphs = extractPromptParagraphs(prompt);
+  const firstParagraph = safeString(paragraphs[0] || prompt || explicitGoal, 320).trim();
+  return firstParagraph;
+}
+
+function buildRequirementIntentInterpretation({
+  prompt = "",
+  explicitGoal = "",
+  implicitGoal = "",
+  baselineScope = [],
+  userValueFrame = {},
+} = {}) {
+  if (extractStitchPromptContext(prompt)) {
+    return {
+      presentation: "goal",
+      questionLike: false,
+      direction: "",
+      hypothesis: "",
+    };
+  }
+  const literalQuestionText = extractPrimaryQuestionPromptText(prompt, explicitGoal);
+  const questionLike = Boolean(literalQuestionText) && (
+    /[?？]/u.test(literalQuestionText)
+    || /^(?:質問に答える|次の点を説明する|Answer the user's question about|Explain these points)\s*:?\s*/iu.test(explicitGoal)
+    || /を説明する$/u.test(explicitGoal)
+  );
+  if (!questionLike) {
+    return {
+      presentation: "goal",
+      questionLike: false,
+      direction: "",
+      hypothesis: "",
+    };
+  }
+  const userWants = userValueFrame && Array.isArray(userValueFrame.userWants) ? userValueFrame.userWants : [];
+  const questionIntentDirection = inferQuestionIntentDirection(literalQuestionText);
+  const questionIntentHypothesis = inferQuestionIntentHypothesis(literalQuestionText);
+  const directionCandidates = collectDistinctRequirementIntentCandidates(
+    [questionIntentDirection, explicitGoal, ...userWants, ...baselineScope, implicitGoal],
+    { literalText: literalQuestionText }
+  );
+  const direction = directionCandidates[0] || "";
+  const hypothesisCandidates = collectDistinctRequirementIntentCandidates(
+    [questionIntentHypothesis, ...userWants, ...baselineScope, implicitGoal],
+    { literalText: literalQuestionText, blockedValues: [direction] }
+  );
+  const hypothesis = hypothesisCandidates[0] || "";
+  return {
+    presentation: direction || hypothesis ? "progress_hypothesis" : "goal",
+    questionLike: true,
+    direction,
+    hypothesis,
+  };
+}
+
+function sanitizeRequirementIntentInterpretation(value) {
+  const source = value && typeof value === "object" ? value : {};
+  const presentation = safeString(source.presentation, 40) === "progress_hypothesis" ? "progress_hypothesis" : "goal";
+  return {
+    presentation,
+    questionLike: Boolean(source.questionLike),
+    direction: safeString(source.direction, 320),
+    hypothesis: safeString(source.hypothesis, 320),
+  };
+}
+
+function normalizeRequirementQuestionCategory(value, fallback = "defaultable") {
+  const normalized = safeString(value, 40).toLowerCase();
+  if (normalized === "blocking" || normalized === "defaultable" || normalized === "taste") {
+    return normalized;
+  }
+  return fallback === "blocking" || fallback === "taste" ? fallback : "defaultable";
+}
+
+function normalizeRequirementRiskLevel(value, fallback = "medium") {
+  const normalized = safeString(value, 40).toLowerCase();
+  if (normalized === "low" || normalized === "medium" || normalized === "high") {
+    return normalized;
+  }
+  return fallback === "low" || fallback === "high" ? fallback : "medium";
+}
+
+function normalizeRequirementFindingSeverity(value, fallback = "medium") {
+  return normalizeRequirementRiskLevel(value, fallback);
+}
+
+function normalizeRequirementDisplayMode(value, fallback = "draft") {
+  const normalized = safeString(value, 40).toLowerCase();
+  if (normalized === "locked" || normalized === "hypothesis" || normalized === "draft") {
+    return normalized;
+  }
+  return fallback === "locked" || fallback === "hypothesis" ? fallback : "draft";
+}
+
+function sanitizeRequirementIntentHypotheses(value, requirement = {}) {
+  const source = Array.isArray(value) ? value : [];
+  const out = source.map((entry, index) => {
+    const item = entry && typeof entry === "object" ? entry : {};
+    const goal = safeString(item.goal, 320);
+    if (!goal) return null;
+    return {
+      id: safeString(item.id, 80) || `hypothesis_${index + 1}`,
+      goal,
+      confidence: clampInt(item.confidence, 0, 0, 100),
+      evidence: uniqueStrings(item.evidence, 6),
+      locked: Boolean(item.locked),
+    };
+  }).filter(Boolean).slice(0, 4);
+  if (out.length) return out;
+  const fallbackGoal = safeString(requirement.lockedGoal, 320)
+    || safeString(requirement.explicitGoal, 320)
+    || safeString(requirement.implicitGoal, 320)
+    || safeString(requirement.intentInterpretation && requirement.intentInterpretation.direction, 320);
+  if (!fallbackGoal) return [];
+  return [{
+    id: "hypothesis_1",
+    goal: fallbackGoal,
+    confidence: safeString(requirement.lockedGoal, 320) ? 100 : 60,
+    evidence: uniqueStrings([
+      safeString(requirement.lockedGoal, 320) ? "locked_goal" : "",
+      safeString(requirement.explicitGoal, 320) ? "explicit_goal" : "",
+      safeString(requirement.intentInterpretation && requirement.intentInterpretation.direction, 320) ? "intent_direction" : "",
+    ], 3),
+    locked: Boolean(safeString(requirement.lockedGoal, 320)),
+  }];
+}
+
+function sanitizeRequirementChallengeReport(value, requirement = {}) {
+  const source = value && typeof value === "object" ? value : {};
+  const findings = (Array.isArray(source.findings) ? source.findings : []).map((entry, index) => {
+    const item = entry && typeof entry === "object" ? entry : {};
+    const detail = safeString(item.detail, 320);
+    if (!detail) return null;
+    return {
+      id: safeString(item.id, 80) || `challenge_${index + 1}`,
+      type: safeString(item.type, 80) || "gap",
+      severity: normalizeRequirementFindingSeverity(item.severity, "medium"),
+      detail,
+      requirementRef: safeString(item.requirementRef, 120),
+    };
+  }).filter(Boolean).slice(0, 8);
+  const fallbackSummary = findings[0] ? findings[0].detail : "";
+  return {
+    summary: safeString(source.summary, 320) || fallbackSummary,
+    proceedRisk: normalizeRequirementRiskLevel(source.proceedRisk, findings.some((entry) => entry.severity === "high") ? "high" : "medium"),
+    findings,
+  };
+}
+
+function sanitizeRequirementQuestionEntries(values, fallbackCategory = "defaultable", max = 8) {
+  return (Array.isArray(values) ? values : []).map((entry) => {
+    if (typeof entry === "string") {
+      const question = safeString(entry, 320);
+      if (!question) return null;
+      return {
+        question,
+        category: normalizeRequirementQuestionCategory(fallbackCategory, fallbackCategory),
+        reason: "",
+      };
+    }
+    const item = entry && typeof entry === "object" ? entry : {};
+    const question = safeString(item.question || item.title, 320);
+    if (!question) return null;
+    return {
+      question,
+      category: normalizeRequirementQuestionCategory(item.category, fallbackCategory),
+      reason: safeString(item.reason, 200),
+    };
+  }).filter(Boolean).slice(0, max);
+}
+
+function sanitizeRequirementQuestionPlan(value, requirement = {}) {
+  const source = value && typeof value === "object" ? value : {};
+  const blocking = sanitizeRequirementQuestionEntries(source.blocking, "blocking", 8);
+  const defaultable = sanitizeRequirementQuestionEntries(source.defaultable, "defaultable", 8);
+  const taste = sanitizeRequirementQuestionEntries(source.taste, "taste", 8);
+  const askNext = sanitizeRequirementQuestionEntries(
+    source.askNext,
+    blocking.length ? "blocking" : defaultable.length ? "defaultable" : "taste",
+    3
+  );
+  if (blocking.length || defaultable.length || taste.length || askNext.length) {
+    return {
+      summary: safeString(source.summary, 320),
+      blocking,
+      defaultable,
+      taste,
+      askNext: askNext.length ? askNext : [...blocking, ...defaultable, ...taste].slice(0, 3),
+    };
+  }
+  const fallbackBlocking = uniqueStrings(requirement.openQuestions, 8).map((question) => ({ question, category: "blocking", reason: "" }));
+  return {
+    summary: "",
+    blocking: fallbackBlocking,
+    defaultable: [],
+    taste: [],
+    askNext: fallbackBlocking.slice(0, 3),
+  };
+}
+
+function sanitizeRequirementDelightPlan(value, requirement = {}) {
+  const source = value && typeof value === "object" ? value : {};
+  const candidates = (Array.isArray(source.candidates) ? source.candidates : []).map((entry, index) => {
+    const item = entry && typeof entry === "object" ? entry : {};
+    const title = safeString(item.title || item.value, 240);
+    if (!title) return null;
+    return {
+      id: safeString(item.id, 80) || `delight_${index + 1}`,
+      title,
+      reason: safeString(item.reason, 200),
+      autoEligible: Boolean(item.autoEligible),
+    };
+  }).filter(Boolean).slice(0, 6);
+  if (candidates.length) {
+    return {
+      summary: safeString(source.summary, 320),
+      candidates,
+    };
+  }
+  const fallbackCandidates = uniqueStrings(requirement.overDeliveryScope, 6).map((title, index) => ({
+    id: `delight_${index + 1}`,
+    title,
+    reason: "",
+    autoEligible: false,
+  }));
+  return {
+    summary: "",
+    candidates: fallbackCandidates,
+  };
+}
+
+function sanitizeRequirementDisplayContract(value, requirement = {}) {
+  const source = value && typeof value === "object" ? value : {};
+  const questionPlan = sanitizeRequirementQuestionPlan(source.questionPlan || requirement.questionPlan, requirement);
+  const delightPlan = sanitizeRequirementDelightPlan(source.delightPlan || requirement.delightPlan, requirement);
+  const boundaries = uniqueStrings(source.boundaries, 6);
+  const askNext = sanitizeRequirementQuestionEntries(source.askNext, "blocking", 3);
+  const normalizedStatus = safeString(requirement.status, 40).toUpperCase();
+  const fallbackGoal = [
+    safeString(requirement.lockedGoal, 320),
+    safeString(requirement.intentInterpretation && requirement.intentInterpretation.direction, 320),
+    safeString(requirement.explicitGoal, 320),
+    safeString(requirement.implicitGoal, 320),
+    safeString(requirement.userValueFrame && requirement.userValueFrame.valueThesis, 320),
+  ].find((entry) => entry && !requirementLooksFragmentaryGoalText(entry))
+    || safeString(requirement.intentInterpretation && requirement.intentInterpretation.direction, 320)
+    || safeString(requirement.explicitGoal, 320)
+    || safeString(requirement.implicitGoal, 320)
+    || safeString(requirement.userValueFrame && requirement.userValueFrame.valueThesis, 320);
+  const sourceHeadline = safeString(source.headline, 320);
+  const sourceGoal = safeString(source.goal, 320);
+  const effectiveLockedGoal = safeString(requirement.lockedGoal, 320) && normalizedStatus !== "BLOCKED"
+    ? safeString(requirement.lockedGoal, 320)
+    : "";
+  return {
+    headline: !requirementLooksFragmentaryGoalText(sourceHeadline) ? sourceHeadline || fallbackGoal : fallbackGoal,
+    goal: !requirementLooksFragmentaryGoalText(sourceGoal) ? sourceGoal || fallbackGoal : fallbackGoal,
+    goalMode: normalizeRequirementDisplayMode(source.goalMode, effectiveLockedGoal ? "locked" : fallbackGoal ? "hypothesis" : "draft"),
+    goalLabel: safeString(source.goalLabel, 80) || (effectiveLockedGoal ? "locked_goal" : "working_hypothesis"),
+    nextAction: safeString(source.nextAction, 320),
+    holdReason: safeString(source.holdReason, 320),
+    targetOutcome: safeString(source.targetOutcome, 320),
+    boundaries: uniqueStrings([
+      ...boundaries,
+      ...uniqueStrings(requirement.nonGoals, 4),
+      ...uniqueStrings(requirement.approvalBoundaryItems, 4).map((entry) => formatRequirementApprovalBoundary(entry)),
+      ...uniqueStrings(requirement.userValueFrame && requirement.userValueFrame.mustAvoid, 4),
+      ...uniqueStrings(requirement.userValueFrame && requirement.userValueFrame.hardConstraints, 4),
+    ], 6),
+    askNext: askNext.length ? askNext : questionPlan.askNext,
+    delightTitles: uniqueStrings(source.delightTitles, 4).length
+      ? uniqueStrings(source.delightTitles, 4)
+      : delightPlan.candidates.map((entry) => entry.title).slice(0, 4),
   };
 }
 
@@ -1662,14 +3413,24 @@ function extractAcceptanceChecks(prompt, sections, contract) {
 }
 
 function extractExplicitGoal(prompt, sections, contract) {
+  const stitchGoal = buildStitchRecreationGoal(extractStitchPromptContext(prompt));
+  if (stitchGoal) return stitchGoal;
   const aliases = contract && contract.signals && contract.signals.sectionAliases ? contract.signals.sectionAliases.goal : [];
   const goalEntries = collectEntriesFromSections(collectSectionsByAlias(sections, aliases));
-  if (goalEntries.length) return firstSentence(goalEntries.join(" "));
+  const goalFromSections = selectBestGoalCandidate(goalEntries);
+  if (goalFromSections) return goalFromSections;
+  const goalFromPromptLines = selectBestGoalCandidate(safeString(prompt, 40000).split(/\r?\n/));
+  if (goalFromPromptLines) return goalFromPromptLines;
   if (/[?？]/.test(safeString(prompt, 40000))) {
     const inferredQuestionGoal = inferQuestionAnswerGoal(prompt);
     if (inferredQuestionGoal) return inferredQuestionGoal;
   }
-  return firstSentence(extractPromptParagraphs(prompt)[0] || prompt);
+  for (const paragraph of extractPromptParagraphs(prompt)) {
+    const candidate = normalizePromptRequirementLine(paragraph, 320);
+    if (!candidate || isGreetingOnlyLine(candidate) || isComplaintLeadLine(candidate)) continue;
+    return firstSentence(candidate);
+  }
+  return "";
 }
 
 function extractImplicitGoal(prompt, sections, contract) {
@@ -1692,10 +3453,131 @@ function detectScopeAreas(prompt, baselineScope) {
   };
 }
 
+function normalizePreviousPlanningContext(options = {}) {
+  const raw = options && options.previousPlanningContext && typeof options.previousPlanningContext === "object"
+    ? options.previousPlanningContext
+    : null;
+  if (!raw) return null;
+  const sanitized = sanitizePlanningArtifactsForRuntime(raw);
+  const benchmarkCandidates = uniqueStrings(
+    sanitized
+    && sanitized.requirementContract
+    && sanitized.requirementContract.userValueFrame
+    && Array.isArray(sanitized.requirementContract.userValueFrame.benchmarkCandidates)
+      ? sanitized.requirementContract.userValueFrame.benchmarkCandidates
+      : [],
+    6
+  );
+  const taskFamily = safeString(sanitized && sanitized.selection && sanitized.selection.taskFamily, 80)
+    || safeString(sanitized && sanitized.requirementContract && sanitized.requirementContract.taskFamily, 80);
+  if (!taskFamily && benchmarkCandidates.length === 0) return null;
+  return {
+    planningContext: sanitized,
+    taskFamily,
+    familyProfileId: safeString(sanitized && sanitized.selection && sanitized.selection.familyProfileId, 80)
+      || safeString(sanitized && sanitized.requirementContract && sanitized.requirementContract.familyProfileId, 80)
+      || taskFamily,
+    familyProfile: sanitized && sanitized.selection && sanitized.selection.familyProfile && typeof sanitized.selection.familyProfile === "object"
+      ? sanitized.selection.familyProfile
+      : {},
+    benchmarkCandidates,
+  };
+}
+
+function promptLooksLikeWebCreativeFollowUp(prompt = "") {
+  const text = sanitizePromptForPolicyAnalysis(prompt);
+  if (!text) return false;
+  const explanationOnly =
+    /(?:why|reason|explain|what happened|なぜ|理由|どういうこと|解説|説明)/i.test(text)
+    && !/(?:fix|change|revise|adjust|match|recreate|redo|improve|closer|same|similar|copy|ほぼ同じ|完全再現|丸パクリ|再現|寄せ|似せ|修正|直して|改善|作り直|再構築)/i.test(text);
+  if (explanationOnly) return false;
+  return /(?:design|ui|ux|website|landing|page|hero|header|footer|layout|font|visual|style|screenshot|benchmark|reference|recreate|match|same|similar|closer|copy|pixel|suruga-k|トップ|ヘッダー|フッター|レイアウト|フォント|見た目|画面|サイト|ページ|参考|再現|寄せ|似せ|全然違う|気に入らん|もっと|修正|直して|改善|作り直|再構築|ほぼ同じ|完全再現|丸パクリ)/i.test(text);
+}
+
+function buildInheritedFamilySelection({ familySelection, prompt = "", options = {} } = {}) {
+  const current = familySelection && typeof familySelection === "object" ? familySelection : {};
+  const previous = normalizePreviousPlanningContext(options);
+  if (!previous) return current;
+  if (safeString(previous.taskFamily, 80).toLowerCase() !== "web_creative") return current;
+  if (!promptLooksLikeWebCreativeFollowUp(prompt)) return current;
+  return {
+    ...current,
+    taskFamily: "web_creative",
+    familyProfileId: previous.familyProfileId || "web_creative",
+    label: safeString(previous.familyProfile && previous.familyProfile.label, 120) || "Web Creative",
+    objective: safeString(previous.familyProfile && previous.familyProfile.objective, 80) || "wow_first",
+    minimumPlanningMode: normalizePlanningMode(previous.familyProfile && previous.familyProfile.minimumPlanningMode, "NORMAL"),
+    ambiguityHandling: safeString(previous.familyProfile && previous.familyProfile.ambiguityHandling, 80) || "expand_with_directions",
+    completionContract: safeString(previous.familyProfile && previous.familyProfile.completionContract, 80) || "design_acceptance",
+    reasons: uniqueStrings([
+      ...(Array.isArray(current.reasons) ? current.reasons : []),
+      "inheritedFamily=web_creative",
+      `inheritedBenchmarks=${previous.benchmarkCandidates.length}`,
+    ], 8),
+    keywordHits: uniqueStrings([
+      ...(Array.isArray(current.keywordHits) ? current.keywordHits : []),
+      ...previous.benchmarkCandidates,
+    ], 8),
+    executionSourceMatched: current.executionSourceMatched ? 1 : 0,
+  };
+}
+
+function extractEffectiveBenchmarkCandidates({ prompt = "", options = {}, selection = null } = {}) {
+  const direct = extractReferenceUrls(prompt, 6);
+  const fromSelection = Array.isArray(selection && selection.extracted && selection.extracted.benchmarkCandidates)
+    ? selection.extracted.benchmarkCandidates
+    : [];
+  const previous = normalizePreviousPlanningContext(options);
+  const inherited = previous && promptLooksLikeWebCreativeFollowUp(prompt)
+    ? previous.benchmarkCandidates
+    : [];
+  return uniqueStrings([...direct, ...fromSelection, ...inherited], 6);
+}
+
+function hasStrictBenchmarkRecreationIntent(text = "") {
+  return /(?:match (?:it|this|the reference) closely|match as closely as possible|recreate(?: it)? exactly|pixel-?perfect|verbatim recreation|copy it|same look|same as the reference|ほぼ同じ|完全再現|丸パクリ|できる限り同じ|そっくり|そのまま再現|できるだけ近く|限界まで寄せ|限界まで似せ)/i.test(text);
+}
+
+function normalizeOwnedPathFromWorkspace(cwd, relativePath) {
+  const normalizedCwd = safeString(cwd, 320);
+  const normalizedRelative = safeString(relativePath, 240).replace(/\\/g, "/");
+  if (!normalizedCwd || !normalizedRelative) return "";
+  const absolutePath = path.join(normalizedCwd, normalizedRelative.replace(/\//g, path.sep));
+  if (!fs.existsSync(absolutePath)) return "";
+  try {
+    return fs.statSync(absolutePath).isDirectory()
+      ? normalizedRelative.replace(/\/?$/, "/")
+      : normalizedRelative.replace(/\/+$/, "");
+  } catch {
+    return "";
+  }
+}
+
+function collectWorkspaceOwnedPaths(cwd, candidates, max = 6) {
+  return uniqueStrings(
+    (Array.isArray(candidates) ? candidates : [])
+      .map((entry) => normalizeOwnedPathFromWorkspace(cwd, entry))
+      .filter(Boolean),
+    max
+  );
+}
+
+function filterPromptOwnedPaths(prompt, pattern, max = 6) {
+  return uniqueStrings(
+    extractPathHints(prompt).filter((entry) => pattern.test(entry)),
+    max
+  );
+}
+
 function buildAssuranceSelection({ prompt, selection, assuranceContract }) {
   const analysisPrompt = sanitizePromptForPolicyAnalysis(prompt);
   const text = safeString(analysisPrompt, 40000);
   const areas = detectScopeAreas(analysisPrompt, selection.extracted.baselineScope);
+  const benchmarkCandidates = extractEffectiveBenchmarkCandidates({ prompt: analysisPrompt, selection });
+  const benchmarkedWebCreative =
+    safeString(selection && selection.taskFamily, 80).toLowerCase() === "web_creative"
+    && benchmarkCandidates.length > 0;
+  const strictBenchmarkRecreation = benchmarkedWebCreative && hasStrictBenchmarkRecreationIntent(text);
   const docsOnly = areas.docs && !areas.web && !areas.server && !areas.scripts && !areas.governance;
   const implementationBoundaryCount = Array.isArray(selection.signals && selection.signals.specialistOwners)
     ? selection.signals.specialistOwners.filter((role) => !["reviewer", "tester", "explorer"].includes(role)).length
@@ -1712,14 +3594,15 @@ function buildAssuranceSelection({ prompt, selection, assuranceContract }) {
   const governanceTouch = areas.governance;
   const userFacingImpact = userFacingHits.length > 0 || areas.web;
   const irreversibleRisk = irreversibleHits.length > 0 || selection.signals.approvalBoundaryTouched;
-  const reviewerSuggested = reviewHits.length > 0 || selection.signals.specialistBoundaryCount > 1;
-  const testerSuggested = testerHits.length > 0 || runtimeTouch || protocolTouch || selection.signals.overDeliveryRisk === "high";
+  const reviewerSuggested = strictBenchmarkRecreation || benchmarkedWebCreative || reviewHits.length > 0 || selection.signals.specialistBoundaryCount > 1;
+  const testerSuggested = strictBenchmarkRecreation || testerHits.length > 0 || runtimeTouch || protocolTouch || selection.signals.overDeliveryRisk === "high";
   const signoffImportant =
+    strictBenchmarkRecreation ||
     signoffHits.length > 0 ||
     protocolTouch ||
     governanceTouch ||
     (runtimeTouch && (irreversibleRisk || implementationBoundaryCount > 1 || selection.signals.overDeliveryRisk === "high"));
-  const newLogicRisk = newLogicHits.length > 0 || selection.signals.overDeliveryRisk === "high";
+  const newLogicRisk = strictBenchmarkRecreation || newLogicHits.length > 0 || selection.signals.overDeliveryRisk === "high";
   const regressionRiskScore = runtimeTouch || selection.signals.specialistBoundaryCount > 1 ? 2 : userFacingImpact ? 1 : 0;
   const userFacingImpactScore = userFacingImpact ? 1 : 0;
   const microTask =
@@ -1740,6 +3623,7 @@ function buildAssuranceSelection({ prompt, selection, assuranceContract }) {
     selection.signals.specialistBoundaryCount <= assuranceContract.thresholds.light.maxSpecialistBoundaries &&
     regressionRiskScore <= assuranceContract.thresholds.light.maxRegressionRiskScore &&
     userFacingImpactScore <= assuranceContract.thresholds.light.maxUserFacingImpactScore &&
+    !benchmarkedWebCreative &&
     !irreversibleRisk &&
     !signoffImportant &&
     !reviewerSuggested &&
@@ -1760,11 +3644,16 @@ function buildAssuranceSelection({ prompt, selection, assuranceContract }) {
     irreversibleRisk ||
     riskScore >= assuranceContract.thresholds.signoff.minRiskScore ||
     (newLogicRisk && regressionRiskScore >= assuranceContract.thresholds.signoff.minRegressionRiskScore);
-  let selectedAssuranceDepth = signoffRequired
+  let selectedAssuranceDepth = strictBenchmarkRecreation
+    ? "SIGNOFF_ASSURANCE"
+    : signoffRequired
     ? "SIGNOFF_ASSURANCE"
     : lightEligible
       ? "LIGHT_ASSURANCE"
       : mapAssuranceScoreToDepth(assuranceScoreBreakdown.total);
+  if (benchmarkedWebCreative && selectedAssuranceDepth === "LIGHT_ASSURANCE") {
+    selectedAssuranceDepth = "STANDARD_ASSURANCE";
+  }
   if (selection.selectedPlanningDepth === "DISCOVERY_PLANNING" && selectedAssuranceDepth === "LIGHT_ASSURANCE") {
     selectedAssuranceDepth = "STANDARD_ASSURANCE";
   }
@@ -1778,6 +3667,8 @@ function buildAssuranceSelection({ prompt, selection, assuranceContract }) {
       `reviewerSuggested=${reviewerSuggested ? "yes" : "no"}`,
       `testerSuggested=${testerSuggested ? "yes" : "no"}`,
       `signoffImportance=${signoffImportant ? "high" : "normal"}`,
+      `benchmarkAnchored=${benchmarkedWebCreative ? "yes" : "no"}`,
+      `strictBenchmarkRecreation=${strictBenchmarkRecreation ? "yes" : "no"}`,
       `irreversibleRisk=${irreversibleRisk ? "yes" : "no"}`,
       `newLogicRisk=${newLogicRisk ? "yes" : "no"}`,
       `regressionRisk=${regressionRiskScore >= 2 ? "high" : regressionRiskScore === 1 ? "medium" : "low"}`,
@@ -1792,6 +3683,8 @@ function buildAssuranceSelection({ prompt, selection, assuranceContract }) {
       reviewerSuggested: reviewerSuggested ? 1 : 0,
       testerSuggested: testerSuggested ? 1 : 0,
       signoffImportant: signoffImportant ? 1 : 0,
+      benchmarkAnchored: benchmarkedWebCreative ? 1 : 0,
+      strictBenchmarkRecreation: strictBenchmarkRecreation ? 1 : 0,
       newLogicRisk: newLogicRisk ? 1 : 0,
       regressionRiskScore,
       riskScore,
@@ -1807,6 +3700,7 @@ function buildClarificationDecision({
   explicitUserDecisionRequired = false,
   acceptanceChecks = [],
   baselineScope = [],
+  benchmarkCandidates = [],
 } = {}) {
   const normalizedPrompt = sanitizePromptForPolicyAnalysis(prompt);
   const lower = normalizedPrompt.toLowerCase();
@@ -1839,7 +3733,8 @@ function buildClarificationDecision({
     };
   }
   const benchmarkAnchored =
-    extractReferenceUrls(normalizedPrompt, 6).length > 0
+    (Array.isArray(benchmarkCandidates) ? benchmarkCandidates.length : 0) > 0
+    || extractReferenceUrls(normalizedPrompt, 6).length > 0
     || /(?:benchmark|reference|inspired by|modeled after|match(?: the)? style|参考|参照|ベンチマーク|寄せて|雰囲気を合わせ|似せて|suruga-k|dribbble|figma)/i.test(normalizedPrompt);
   const directionAnchored =
     /(?:readability|clarity|conversion|premium|luxury|editorial|minimal|playful|serious|trust|safe|dense|information density|typography|spacing|operator|developer|enterprise|mobile|responsive|高級|上品|見やす|読みやす|安心|信頼|情報量|余白|タイポ|可読|ブランド|世界観|印象|雰囲気|開発者向け|運用者向け|社内向け|スマホ|モバイル|レスポンシブ)/i.test(normalizedPrompt);
@@ -1871,37 +3766,66 @@ function buildPlanningSelection({ prompt = "", options = {}, contract } = {}) {
   const contracts = loadAdaptiveContracts(contract);
   const analysisPrompt = sanitizePromptForPolicyAnalysis(prompt);
   const sections = parsePromptSections(analysisPrompt);
+  const stitchContext = extractStitchPromptContext(analysisPrompt);
   const aliases = contracts.planning.signals.sectionAliases;
-  const acceptanceChecks = extractAcceptanceChecks(analysisPrompt, sections, contracts.planning);
+  const explicitGoal = extractExplicitGoal(analysisPrompt, sections, contracts.planning);
+  const implicitGoal = extractImplicitGoal(analysisPrompt, sections, contracts.planning);
   const baselineScope = uniqueStrings([
     ...collectEntriesFromSections(collectSectionsByAlias(sections, aliases.baseline)),
     ...collectEntriesFromSections(collectSectionsByAlias(sections, aliases.constraints)),
+    ...inferBaselineScopeFromPrompt(analysisPrompt, explicitGoal),
   ], 24);
   const nonGoals = collectEntriesFromSections(collectSectionsByAlias(sections, aliases.nonGoals));
+  const extractedAcceptanceChecks = extractAcceptanceChecks(analysisPrompt, sections, contracts.planning);
+  const familySelection = buildInheritedFamilySelection({
+    familySelection: selectTaskFamilyProfile({
+      prompt: analysisPrompt,
+      options,
+      contract: contracts.familyProfiles,
+    }),
+    prompt: analysisPrompt,
+    options,
+  });
+  const benchmarkCandidates = extractEffectiveBenchmarkCandidates({ prompt: analysisPrompt, options });
+  const acceptanceChecks = buildAutonomousAcceptanceChecks({
+    prompt: analysisPrompt,
+    explicitGoal,
+    implicitGoal,
+    baselineScope,
+    nonGoals,
+    taskFamily: familySelection.taskFamily,
+    benchmarkCandidates,
+    existingAcceptanceChecks: extractedAcceptanceChecks,
+  });
   const questionCandidates = extractQuestionCandidates(analysisPrompt, contracts.planning.signals.openQuestionKeywords);
-  const rawOpenQuestions = uniqueStrings([
+  const initialOpenQuestions = uniqueStrings([
     ...filterBlockingOpenQuestions(questionCandidates),
     ...inferOpenQuestionsFromAmbiguity(analysisPrompt),
   ], 12);
   const approvalBoundaryItems = detectApprovalBoundaryItems(analysisPrompt, contracts.planning.signals.approvalBoundaryKeywords);
   const explicitUserDecisionRequired =
     approvalBoundaryItems.length > 0 || hasAnyKeyword(analysisPrompt, contracts.planning.signals.userDecisionKeywords);
-  const familySelection = selectTaskFamilyProfile({
+  const questionPartition = partitionRequirementQuestions({
+    openQuestions: initialOpenQuestions,
+    taskFamily: familySelection.taskFamily,
+    approvalBoundaryItems,
+    acceptanceChecks,
+    baselineScope,
+    benchmarkCandidates,
     prompt: analysisPrompt,
-    options,
-    contract: contracts.familyProfiles,
   });
   const clarificationDecision = buildClarificationDecision({
     prompt: analysisPrompt,
     taskFamily: familySelection.taskFamily,
-    openQuestions: rawOpenQuestions,
+    openQuestions: questionPartition.blocking.map((entry) => entry.question),
     approvalBoundaryItems,
     explicitUserDecisionRequired,
-    acceptanceChecks,
+    acceptanceChecks: extractedAcceptanceChecks,
     baselineScope,
+    benchmarkCandidates,
   });
   const openQuestions = uniqueStrings([
-    ...rawOpenQuestions,
+    ...questionPartition.blocking.map((entry) => entry.question),
     clarificationDecision.action === "ask_user_once" ? clarificationDecision.question : "",
   ], 12);
   const fastModeEnabled = normalizeBooleanOption(options && options.fastModeEnabled, false);
@@ -1998,6 +3922,7 @@ function buildPlanningSelection({ prompt = "", options = {}, contract } = {}) {
     `userDecisionRequired=${userDecisionRequired ? "yes" : "no"}`,
     `clarificationAction=${clarificationDecision.action}`,
     `clarificationReason=${clarificationDecision.reason}`,
+    `benchmarkCandidates=${benchmarkCandidates.length}`,
     `assumptionDependence=${assumptionDependence.id}`,
     `existingSpecClarity=${existingSpecClarity.id}`,
     `changeScopeClarity=${changeScopeClarity.id}`,
@@ -2055,14 +3980,20 @@ function buildPlanningSelection({ prompt = "", options = {}, contract } = {}) {
       ambiguityInventoryCount: openQuestions.length + approvalBoundaryItems.length,
     },
     extracted: {
-      explicitGoal: extractExplicitGoal(analysisPrompt, sections, contracts.planning),
-      implicitGoal: extractImplicitGoal(analysisPrompt, sections, contracts.planning),
+      explicitGoal,
+      implicitGoal,
       baselineScope,
       overDeliveryScope: overDeliveryRisk.hits,
       nonGoals,
       acceptanceChecks,
       openQuestions,
       approvalBoundaryItems,
+      benchmarkCandidates,
+      stitchContext,
+      deferredQuestions: {
+        defaultable: questionPartition.defaultable.map((entry) => entry.question),
+        taste: questionPartition.taste.map((entry) => entry.question),
+      },
     },
     runtime: {
       agentName: safeString(options && options.agentName, 80),
@@ -2090,6 +4021,12 @@ function buildRequirementContract({ prompt = "", options = {}, selection, contra
   const explicitGoal = extractExplicitGoal(analysisPrompt, sections, normalizedContracts.planning);
   const implicitGoal = extractImplicitGoal(analysisPrompt, sections, normalizedContracts.planning);
   const inferredNonGoals = inferNonGoals(normalizedSelection.extracted.nonGoals, normalizedSelection.selectedMode);
+  const deferredQuestions = normalizedSelection
+    && normalizedSelection.extracted
+    && normalizedSelection.extracted.deferredQuestions
+    && typeof normalizedSelection.extracted.deferredQuestions === "object"
+      ? normalizedSelection.extracted.deferredQuestions
+      : {};
   const assumptions = [];
   if (normalizedSelection.signals.assumptionDependence !== "low") {
     assumptions.push(
@@ -2108,13 +4045,54 @@ function buildRequirementContract({ prompt = "", options = {}, selection, contra
     nonGoals: inferredNonGoals,
     acceptanceChecks: normalizedSelection.extracted.acceptanceChecks,
     approvalBoundaryItems: normalizedSelection.extracted.approvalBoundaryItems,
+    benchmarkCandidates: normalizedSelection.extracted.benchmarkCandidates,
   });
-  return {
-    schema: "requirement-contract.v3",
+  const intentInterpretation = buildRequirementIntentInterpretation({
+    prompt: analysisPrompt,
+    explicitGoal,
+    implicitGoal,
+    baselineScope: normalizedSelection.extracted.baselineScope,
+    userValueFrame,
+  });
+  const goalProvenance = buildRequirementGoalProvenance({
+    prompt: analysisPrompt,
+    sections,
+    contract: normalizedContracts.planning,
+    explicitGoal,
+    implicitGoal,
+  });
+  const nonGoalProvenance = buildRequirementNonGoalProvenance({
+    prompt: analysisPrompt,
+    explicitNonGoals: normalizedSelection.extracted.nonGoals,
+    finalNonGoals: inferredNonGoals,
+  });
+  const provenance = {
+    explicitGoal: goalProvenance.explicitGoal,
+    implicitGoal: goalProvenance.implicitGoal,
+    nonGoals: nonGoalProvenance,
+    userValueFrame: buildUserValueFrameProvenance({
+      prompt: analysisPrompt,
+      options,
+      explicitGoal,
+      implicitGoal,
+      taskFamily: safeString(normalizedSelection.taskFamily, 80) || "deterministic_code",
+      userValueFrame,
+      baselineScope: normalizedSelection.extracted.baselineScope,
+      acceptanceChecks: normalizedSelection.extracted.acceptanceChecks,
+      approvalBoundaryItems: normalizedSelection.extracted.approvalBoundaryItems,
+      benchmarkCandidates: normalizedSelection.extracted.benchmarkCandidates,
+      nonGoalProvenance,
+      goalProvenance,
+    }),
+    intentInterpretation: buildRequirementIntentProvenance(intentInterpretation),
+  };
+  const requirementContract = {
+    schema: "requirement-contract.v5",
     source: "runtime_inferred_pre_dispatch",
     promptHash: normalizedSelection.promptHash,
     explicitGoal,
     implicitGoal,
+    lockedGoal: "",
     taskFamily: safeString(normalizedSelection.taskFamily, 80) || "deterministic_code",
     familyProfileId: safeString(normalizedSelection.familyProfileId, 80) || safeString(normalizedSelection.taskFamily, 80) || "deterministic_code",
     baselineScope: normalizedSelection.extracted.baselineScope,
@@ -2125,23 +4103,151 @@ function buildRequirementContract({ prompt = "", options = {}, selection, contra
     approvalBoundaryItems: normalizedSelection.extracted.approvalBoundaryItems,
     acceptanceChecks: normalizedSelection.extracted.acceptanceChecks,
     userValueFrame,
+    intentInterpretation,
+    provenance,
+    intentHypotheses: [],
+    challengeReport: { summary: "", proceedRisk: "medium", findings: [] },
+    questionPlan: { summary: "", blocking: [], defaultable: [], taste: [], askNext: [] },
+    delightPlan: { summary: "", candidates: [] },
+    displayContract: {
+      headline: "",
+      goal: "",
+      goalMode: "draft",
+      goalLabel: "working_hypothesis",
+      nextAction: "",
+      holdReason: "",
+      targetOutcome: "",
+      boundaries: [],
+      askNext: [],
+      delightTitles: [],
+    },
     selectedPlanningMode: normalizedSelection.selectedMode,
     selectedPlanningDepth: normalizedSelection.selectedPlanningDepth,
     selectedAssuranceDepth: normalizedSelection.selectedAssuranceDepth,
     planningModeReasons: normalizedSelection.planningReasons,
     assuranceDepthReasons: normalizedSelection.assuranceReasons,
   };
+  const validation = buildRequirementValidation({ requirementContract, selection: normalizedSelection });
+  requirementContract.validation = validation;
+  requirementContract.lockedGoal = buildRequirementLockedGoal({
+    requirementContract,
+    selection: normalizedSelection,
+    validation,
+  });
+  requirementContract.intentHypotheses = buildRequirementIntentHypotheses({
+    requirementContract,
+    selection: normalizedSelection,
+    lockedGoal: requirementContract.lockedGoal,
+  });
+  requirementContract.challengeReport = buildRequirementChallengeReport({
+    requirementContract,
+    selection: normalizedSelection,
+  });
+  requirementContract.questionPlan = buildRequirementQuestionPlan({
+    requirementContract,
+    selection: normalizedSelection,
+    challengeReport: requirementContract.challengeReport,
+  });
+  requirementContract.delightPlan = buildRequirementDelightPlan({
+    requirementContract,
+    selection: normalizedSelection,
+  });
+  requirementContract.displayContract = buildRequirementDisplayContract({
+    requirementContract,
+    selection: normalizedSelection,
+    status: validation.canProceed ? "LOCKED" : "BLOCKED",
+    challengeReport: requirementContract.challengeReport,
+    questionPlan: requirementContract.questionPlan,
+    delightPlan: requirementContract.delightPlan,
+    intentHypotheses: requirementContract.intentHypotheses,
+    lockedGoal: requirementContract.lockedGoal,
+  });
+  const revisionLedger = buildRequirementRevisionLedger({ requirementContract, options });
+  requirementContract.revisionLedger = revisionLedger;
+  const statusDecision = deriveRequirementStatus({
+    requirementContract,
+    selection: normalizedSelection,
+    validation,
+    revisionLedger,
+  });
+  requirementContract.status = statusDecision.status;
+  requirementContract.statusReason = statusDecision.statusReason;
+  requirementContract.lockedGoal = buildRequirementLockedGoal({
+    requirementContract,
+    selection: normalizedSelection,
+    validation,
+    status: statusDecision.status,
+  });
+  requirementContract.intentHypotheses = buildRequirementIntentHypotheses({
+    requirementContract,
+    selection: normalizedSelection,
+    lockedGoal: requirementContract.lockedGoal,
+  });
+  requirementContract.displayContract = buildRequirementDisplayContract({
+    requirementContract,
+    selection: normalizedSelection,
+    status: statusDecision.status,
+    challengeReport: requirementContract.challengeReport,
+    questionPlan: requirementContract.questionPlan,
+    delightPlan: requirementContract.delightPlan,
+    intentHypotheses: requirementContract.intentHypotheses,
+    lockedGoal: requirementContract.lockedGoal,
+  });
+  return requirementContract;
 }
 
-function defaultOwnedPathsForRole(role, prompt) {
+function defaultOwnedPathsForRole(role, prompt, options = {}) {
   const lower = sanitizePromptForPolicyAnalysis(prompt).toLowerCase();
+  const cwd = safeString(options && options.cwd, 320);
   switch (role) {
-    case "frontend_worker":
-      return ["web/"];
-    case "backend_worker":
+    case "frontend_worker": {
+      const promptOwnedPaths = filterPromptOwnedPaths(prompt, /^(?:web\/|resources\/(?:views|css|js)\/?|routes\/web\.php|public\/|src\/|pages\/|components\/|app\/View\/)/i, 6);
+      if (promptOwnedPaths.length) return promptOwnedPaths;
+      const workspaceOwnedPaths = collectWorkspaceOwnedPaths(cwd, [
+        "resources/views",
+        "resources/css",
+        "resources/js",
+        "routes/web.php",
+        "web",
+        "src",
+        "pages",
+        "components",
+        "public",
+      ], 6);
+      return workspaceOwnedPaths.length ? workspaceOwnedPaths : ["web/"];
+    }
+    case "backend_worker": {
+      const promptOwnedPaths = filterPromptOwnedPaths(prompt, /^(?:server\.js|scripts\/|app\/|routes\/|config\/|database\/|bootstrap\/)/i, 6);
+      if (promptOwnedPaths.length) return promptOwnedPaths;
+      const workspaceOwnedPaths = collectWorkspaceOwnedPaths(cwd, [
+        "server.js",
+        "scripts",
+        "app",
+        "routes",
+        "config",
+        "database",
+        "bootstrap",
+      ], 6);
+      if (workspaceOwnedPaths.length) return workspaceOwnedPaths;
       return lower.includes("server.js") ? ["server.js", "scripts/"] : ["scripts/", "server.js"];
-    case "infra_worker":
-      return ["docs/", "scripts/config/"];
+    }
+    case "infra_worker": {
+      const promptOwnedPaths = filterPromptOwnedPaths(prompt, /^(?:docs\/|scripts\/config\/|docker-compose\.yml|docker-compose\.yaml|composer\.json|package\.json|vite\.config\.[cm]?js|\.env(?:\.example)?)/i, 6);
+      if (promptOwnedPaths.length) return promptOwnedPaths;
+      const workspaceOwnedPaths = collectWorkspaceOwnedPaths(cwd, [
+        "docs",
+        "scripts/config",
+        "docker-compose.yml",
+        "docker-compose.yaml",
+        "composer.json",
+        "package.json",
+        "vite.config.js",
+        "vite.config.mjs",
+        "vite.config.cjs",
+        ".env.example",
+      ], 6);
+      return workspaceOwnedPaths.length ? workspaceOwnedPaths : ["docs/", "scripts/config/"];
+    }
     default:
       return [];
   }
@@ -2221,7 +4327,7 @@ function buildDispatchPlan({ prompt = "", options = {}, selection, requirementCo
       dispatches.push({
         dispatchId: `dispatch-${index++}-${role}`,
         ownerAgent: role,
-        ownedPaths: defaultOwnedPathsForRole(role, prompt),
+        ownedPaths: defaultOwnedPathsForRole(role, prompt, options),
         taskSummary: role === "infra_worker"
           ? "\u5951\u7d04\u3001docs sync\u3001runtime \u53ef\u89b3\u6e2c\u6027\u3001signoff \u5411\u3051\u8a3c\u8de1\u66f4\u65b0\u3092\u62c5\u5f53\u3059\u308b\u3002"
           : role === "backend_worker"
@@ -2463,11 +4569,12 @@ function sanitizePlanningArtifactsForRuntime(input) {
       assuranceSignals: planningDecisionContract.assuranceSignals && typeof planningDecisionContract.assuranceSignals === "object" ? planningDecisionContract.assuranceSignals : selection.assuranceSignals && typeof selection.assuranceSignals === "object" ? selection.assuranceSignals : {},
     },
     requirementContract: {
-      schema: safeString(requirement.schema, 80) || "requirement-contract.v3",
+      schema: safeString(requirement.schema, 80) || "requirement-contract.v5",
       source: safeString(requirement.source, 80) || "runtime_inferred_pre_dispatch",
       promptHash: safeString(requirement.promptHash, 80) || safeString(selection.promptHash, 80),
       explicitGoal: safeString(requirement.explicitGoal, 320),
       implicitGoal: safeString(requirement.implicitGoal, 320),
+      lockedGoal: safeString(requirement.lockedGoal, 320),
       taskFamily,
       familyProfileId,
       baselineScope: uniqueStrings(requirement.baselineScope, 24),
@@ -2478,6 +4585,24 @@ function sanitizePlanningArtifactsForRuntime(input) {
       approvalBoundaryItems: uniqueStrings(requirement.approvalBoundaryItems, 12),
       acceptanceChecks: sanitizeAcceptanceChecks(requirement.acceptanceChecks),
       userValueFrame: sanitizeUserValueFrame(requirement.userValueFrame),
+      intentInterpretation: sanitizeRequirementIntentInterpretation(requirement.intentInterpretation),
+      intentHypotheses: sanitizeRequirementIntentHypotheses(requirement.intentHypotheses, requirement),
+      challengeReport: sanitizeRequirementChallengeReport(requirement.challengeReport, requirement),
+      questionPlan: sanitizeRequirementQuestionPlan(requirement.questionPlan, requirement),
+      delightPlan: sanitizeRequirementDelightPlan(requirement.delightPlan, requirement),
+      displayContract: sanitizeRequirementDisplayContract(requirement.displayContract, requirement),
+      status: normalizeRequirementStatus(
+        requirement.status,
+        !requirementHasCoreData(requirement)
+          ? "DRAFT"
+          : normalizePlanningMode(requirement.selectedPlanningMode || selectedMode, "NORMAL") === "DISCOVERY"
+            ? "BLOCKED"
+            : "LOCKED"
+      ),
+      statusReason: safeString(requirement.statusReason, 240),
+      provenance: sanitizeRequirementProvenance(requirement.provenance, requirement),
+      validation: sanitizeRequirementValidation(requirement.validation, requirement),
+      revisionLedger: sanitizeRequirementRevisionLedger(requirement.revisionLedger),
       selectedPlanningMode: normalizePlanningMode(requirement.selectedPlanningMode || selectedMode, "NORMAL"),
       selectedPlanningDepth: normalizePlanningDepth(requirement.selectedPlanningDepth || selectedPlanningDepth, "STANDARD_PLANNING"),
       selectedAssuranceDepth: normalizeAssuranceMode(requirement.selectedAssuranceDepth || selectedAssuranceDepth, "STANDARD_ASSURANCE"),

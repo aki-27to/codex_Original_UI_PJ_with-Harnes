@@ -70,6 +70,16 @@ function testExactReplyContractMismatch() {
   assert(hasFinding, "exact reply mismatch should be flagged");
 }
 
+function testFinalReplyContractSuppressesCitationStyleFindings() {
+  const review = buildAdversarialShadowReview({
+    prompt: "Final reply must be exactly: SIGNOFF_TASK_OK path/to/file\nReviewer evidence is required.",
+    answer: "SIGNOFF_TASK_OK path/to/file",
+    status: "completed",
+  });
+  const hasCitationFinding = review.red.findings.some((finding) => finding.id === "citation_requested_but_missing");
+  assert(!hasCitationFinding, "exact-reply contracts should not require citation-style text");
+}
+
 function testStrictJsonContractMismatch() {
   const review = buildAdversarialShadowReview({
     prompt: "Return strict JSON only: {\"status\":\"COMPLETED\",\"reason\":\"baseline_delivered\"}",
@@ -90,6 +100,34 @@ function testInternalProcessLeakageFinding() {
   assert(hasFinding, "internal process leakage should be flagged");
 }
 
+function testCompletionClaimBeforeValidationFinding() {
+  const review = buildAdversarialShadowReview({
+    prompt: "Summarize the current state.",
+    answer: "done. I already fixed it.",
+    status: "completed",
+    taskOutcomeStatus: "FAILED_VALIDATION",
+  });
+  const hasFinding = review.red.findings.some((finding) => finding.id === "completion_claim_before_validation");
+  assert(hasFinding, "non-completed outcomes should not claim completion");
+  assert(review.decision === "needs_improvement", "premature completion claim should fail the shadow review");
+}
+
+function testUnsolicitedFollowUpClosingFinding() {
+  const review = buildAdversarialShadowReview({
+    prompt: "最新のアップデート情報を教えてください。",
+    answer: [
+      "最新は 2026-03-19 時点の作業ツリー更新です。",
+      "",
+      "必要なら次に「UI更新だけ」「サーバー更新だけ」で切って整理します。",
+    ].join("\n"),
+    status: "completed",
+    taskOutcomeStatus: "COMPLETED",
+  });
+  const hasFinding = review.red.findings.some((finding) => finding.id === "unsolicited_followup_closing");
+  assert(hasFinding, "unsolicited closing proposal should be flagged");
+  assert(review.decision === "needs_improvement", "unsolicited closing proposal should fail the shadow review");
+}
+
 function run() {
   const tests = [
     ["terminal status finding", testIncompleteTerminalStatus],
@@ -98,8 +136,11 @@ function run() {
     ["dangerous command finding", testDangerousCommandForcesLowScore],
     ["healthy answer pass", testHealthyAnswerPasses],
     ["exact reply mismatch", testExactReplyContractMismatch],
+    ["final reply contract suppresses citation finding", testFinalReplyContractSuppressesCitationStyleFindings],
     ["strict json mismatch", testStrictJsonContractMismatch],
     ["internal process leakage", testInternalProcessLeakageFinding],
+    ["completion claim before validation", testCompletionClaimBeforeValidationFinding],
+    ["unsolicited follow-up closing", testUnsolicitedFollowUpClosingFinding],
   ];
   let passed = 0;
   for (const [name, fn] of tests) {

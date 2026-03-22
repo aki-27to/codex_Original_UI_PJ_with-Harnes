@@ -47,11 +47,10 @@ Recommended read order:
   - `scripts/config/skill_catalog.json`
   - `scripts/config/eval_suite_default.json`
 - Runtime evidence / proof / signoff:
-  - `logs/turns/`
-  - `logs/harness_execution_memory.json`
-  - `logs/eval_runs.jsonl`
-  - `logs/proofs/`
-  - `logs/signoff-bundles/`
+  - `logs/current/`
+  - `logs/bundles/`
+  - `logs/archive/`
+  - `docs/HARNESS_LOGGING_MAP.md`
 
 ## 3) Parent And Child Responsibilities
 
@@ -131,7 +130,7 @@ Contract files:
 - Step 2 `Dispatch Planning`
   - Look at `dispatch_plan.json` and `scripts/config/dispatch_plan.schema.json`.
 - Step 3 `Specialist Execution`
-  - Look at `logs/turns/<run>/items.ndjson`, `events.ndjson`, and child `Owned paths:` evidence.
+  - Start with `logs/current/operator_summary.json`, then move to `logs/current/latest_run_summary.json` only when the top-line summary is insufficient.
 - Step 4 `Quality Gate`
   - Look at `evidence_manifest.json`, `review_load_breakdown.json`, reviewer/tester evidence, and `docs/EVIDENCE_CONTRACT.md`.
 - Step 5 `Final Outcome`
@@ -149,15 +148,16 @@ Runtime invariants to keep in mind:
   - `docs/CURRENT_ARCHITECTURE.md`
   - `docs/ARCHITECTURE_CHANGELOG.md`
 - Per-run execution trace:
-  - `logs/turns/`
+  - `logs/current/operator_summary.json`
+  - `logs/current/latest_run_summary.json`
 - Aggregated execution memory:
-  - `logs/harness_execution_memory.json`
+  - `logs/archive/raw/runtime_state/harness_execution_memory.json`
 - Eval history:
-  - `logs/eval_runs.jsonl`
+  - `logs/archive/raw/runtime_state/eval_runs.jsonl`
 - Proof artifacts:
-  - `logs/proofs/`
+  - `logs/bundles/proof/`
 - Signoff bundles:
-  - `logs/signoff-bundles/`
+  - `logs/bundles/signoff/`
 
 Most useful per-run files after the planning-mode upgrade:
 - `planning_decision_contract.json`
@@ -170,7 +170,7 @@ Most useful per-run files after the planning-mode upgrade:
 - `signoff_summary.json`
 
 Comparison artifacts:
-- `logs/baseline-comparison/`
+- `logs/archive/legacy/baseline_comparison/`
 - `baseline_comparison_report.json`
 - `speed_vs_assurance_report.md`
 - New bundles also include `measured_baseline_summary.json` plus `baseline_*_task_trace_summary.json` so speed/dispatch/review/evidence comparisons are based on measured runs instead of a prose-only approximation.

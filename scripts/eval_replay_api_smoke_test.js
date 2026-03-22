@@ -3,9 +3,11 @@
 const fs = require("fs");
 const http = require("http");
 const path = require("path");
-const { spawn } = require("child_process");
+const { startInProcessHarnessServer } = require("./lib/in_process_harness_server");
+const { getLoggingSurfacePaths } = require("./lib/logging_surface");
 
 const workspaceRoot = path.resolve(__dirname, "..");
+const loggingSurfacePaths = getLoggingSurfacePaths(workspaceRoot);
 
 function requestJson({ port, path, method = "GET", headers = {}, body = null, timeoutMs = 15000 }) {
   return new Promise((resolve, reject) => {
@@ -85,30 +87,23 @@ async function waitForReplayTurns({ port, headers, minCount = 1, maxMs = 20000 }
 
 async function run() {
   const port = 57560;
-  const proofRoot = path.join(workspaceRoot, "logs", "test-proofs", `eval-replay-api-smoke-${Date.now()}`);
+  const proofRoot = path.join(loggingSurfacePaths.archiveTestProofsRoot, `eval-replay-api-smoke-${Date.now()}`);
   const harnessMemoryPath = path.join(proofRoot, "harness_execution_memory.json");
   const evalHistoryPath = path.join(proofRoot, "eval_runs.jsonl");
   const turnArtifactsDir = path.join(proofRoot, "turns");
   fs.mkdirSync(proofRoot, { recursive: true });
   const env = {
-    ...process.env,
     CODEX_UI_PORT: String(port),
     CODEX_AUTO_OPEN_BROWSER: "0",
     CODEX_DEFAULT_EXEC_AGENT: "default",
+    CODEX_LOGGING_MODE: "DEBUG",
     CODEX_REQUEST_USER_INPUT_POLICY: "",
     CODEX_HARNESS_MEMORY_PATH: harnessMemoryPath,
     CODEX_EVAL_HISTORY_PATH: evalHistoryPath,
     CODEX_TURN_ARTIFACTS_DIR: turnArtifactsDir,
+    CODEX_APP_SERVER_TRANSPORT: "mock-fixture",
   };
-  const child = spawn(process.execPath, ["server.js"], {
-    env,
-    stdio: ["ignore", "pipe", "pipe"],
-    windowsHide: true,
-  });
-
-  const logs = [];
-  child.stdout.on("data", (chunk) => logs.push(chunk.toString("utf8")));
-  child.stderr.on("data", (chunk) => logs.push(chunk.toString("utf8")));
+  const handle = await startInProcessHarnessServer(env);
 
   try {
     const runtime = await waitRuntime(port);
@@ -174,8 +169,81 @@ async function run() {
       method: "POST",
       headers: authHeaders,
       body: {
-        maxCases: 11,
         caseTimeoutMs: 120000,
+        suite: {
+          suiteId: "eval-replay-api-smoke.v1",
+          description: "Smoke suite for eval + replay surfaces",
+          cases: [
+            {
+              id: "exact_ack",
+              title: "Exact ACK contract",
+              driver: "exec",
+              prompt: "Reply with exactly: ACK",
+              expect: { mode: "exact", value: "ACK" },
+            },
+            {
+              id: "retired_worker_rejected",
+              title: "Retired worker cannot be selected as runtime agent",
+              driver: "agent_registry_probe",
+              input: { agentName: "worker" },
+              expect: {
+                mode: "json_fields",
+                fields: { ok: false, reason: "agent_not_configured", agentName: "worker" },
+              },
+            },
+            {
+              id: "parent_dispatch_guard_violation",
+              title: "Parent completion without child dispatch is blocked",
+              driver: "parent_dispatch_guard_probe",
+              input: {
+                mode: "enforce",
+                agentName: "default",
+                executionProfile: "full-runtime",
+                finalStatus: "completed",
+                fileChanges: 1,
+                dispatchCount: 0,
+                dispatchSuccessCount: 0,
+                dispatchFailureCount: 0,
+                collabCalls: 0,
+                attempt: 0,
+                maxRetries: 1,
+              },
+              expect: {
+                mode: "json_fields",
+                fields: { violation: 1, reason: "dispatch_not_attempted", retry: 1 },
+              },
+            },
+            {
+              id: "idempotency_failed_outcome_bridge",
+              title: "Idempotency duplicate bridge keeps lifecycle and failed outcome separate",
+              driver: "idempotency_bridge_probe",
+              input: {
+                state: "failed",
+                outcomeStatus: "failed",
+                taskOutcomeStatus: "FAILED_VALIDATION",
+                taskOutcomeReason: "parent_dispatch_guard_block",
+                errorText: "probe failure",
+              },
+              expect: {
+                mode: "json_fields",
+                fields: {
+                  lifecycleState: "failed",
+                  terminalStatus: "failed",
+                  outcomeStatus: "failed",
+                  duplicateOk: false,
+                  internalExecStatus: "failed",
+                },
+              },
+            },
+            {
+              id: "turn_task_outcome_bridge_blocked",
+              title: "Failed turn accepts BLOCKED outcome",
+              driver: "turn_task_outcome_probe",
+              input: { turnStatus: "failed", taskOutcomeStatus: "BLOCKED" },
+              expect: { mode: "json_fields", fields: { ok: true, reason: "compatible" } },
+            },
+          ],
+        },
         variants: [
           {
             label: "A",
@@ -353,11 +421,7 @@ async function run() {
     console.log("[eval-replay-api-smoke] PASS endpoints respond and runtime exposes new surfaces");
     console.log("PASS");
   } finally {
-    child.kill("SIGTERM");
-    await new Promise((resolve) => setTimeout(resolve, 1500));
-    if (!child.killed) {
-      child.kill("SIGKILL");
-    }
+    await handle.stop();
   }
 }
 

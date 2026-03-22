@@ -1,10 +1,8 @@
 # Runtime evidence artifacts and local operation logs
 logs/
-logs/harness_execution_memory.json
-logs/eval_runs.jsonl
-logs/user_taste_memory.json
-logs/turns/
-logs/codex_ops*.jsonl
+logs/archive/raw/runtime_state/
+logs/archive/raw/turns/
+logs/archive/raw/operation_logs/
 logs/archive/
 .npm-cache/
 .pw-browsers/
@@ -13,3 +11,6 @@ tools/piper/*
 !tools/piper/README.md
 tools/kokoro-fastapi/cache/
 tools/kokoro-fastapi/.env
+.resume_home/
+output/appserver_tui_demo_home/
+output/tmp_harnesui_retry_bootstrap.js

@@ -87,7 +87,7 @@ This document contains tier-1 operating rules referenced by `AGENTS.md`.
 
 ## 4) Parent Runtime Posture
 - Config-backed parent defaults:
-  - `default`: `sandbox_mode = "workspace-write"`, `approval_policy = "never"`
+  - `default`: `sandbox_mode = "danger-full-access"`, `approval_policy = "never"`
   - `intake`: `sandbox_mode = "read-only"`, `approval_policy = "never"`
   - `release_manager`: `sandbox_mode = "read-only"`, `approval_policy = "never"`
 - Request-user-input posture:
@@ -104,9 +104,9 @@ This document contains tier-1 operating rules referenced by `AGENTS.md`.
 ## 6) Skill Assignment Policy
 - `default` (Parent Orchestrator):
   - `openai-docs`, `skill-creator-master`, `skill-creator`, `skill-installer`,
-  - `spec-sync-assistant`, `parent-dispatch-guard`, `feedback-promotion-governor`, `red-requirement-auditor`
+  - `spec-sync-assistant`, `parent-dispatch-guard`, `feedback-promotion-governor`, `red-requirement-auditor`, `web-designer-master`
 - `intake` (Parent Planner):
-  - `openai-docs`, `parent-dispatch-guard`, `feedback-promotion-governor`, `red-requirement-auditor`
+  - `openai-docs`, `parent-dispatch-guard`, `feedback-promotion-governor`, `red-requirement-auditor`, `web-designer-master`
 - `release_manager` (Parent Gate):
   - `openai-docs`, `spreadsheet`, `turn-log-auditor`, `release-evidence-gate`,
   - `spec-sync-assistant`, `parent-dispatch-guard`, `feedback-promotion-governor`, `red-requirement-auditor`
@@ -139,6 +139,7 @@ This document contains tier-1 operating rules referenced by `AGENTS.md`.
   - Blue draft -> Red audit (`$red-requirement-auditor`) -> Judge verdict.
 - Red findings without `requirement_ref` must be discarded by Judge.
 - Frontend verification requiring browser operation must use `playwright` (and optionally `screenshot`) through `frontend_worker` or `tester`.
+- Stitch project/screen intake or Stitch accessibility checks must use `web-designer-master` and prefer authenticated Stitch connector/tool results over generic MCP resource listing or raw `curl`.
 - Design-sensitive `web/` work must explicitly plan for:
   - benchmark comparison
   - desktop/mobile visual review

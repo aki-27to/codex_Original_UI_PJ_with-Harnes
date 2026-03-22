@@ -19,9 +19,13 @@ const configuredPolicyPath = (() => {
 })();
 
 const defaultPolicyDefinition = Object.freeze({
-  schema: "agent-governance.v1",
-    version: "2026-03-07.r1",
+  schema: "agent-governance.v2",
+    version: "2026-03-08.r1",
   parentAgents: ["default", "intake", "release_manager"],
+  parentPolicy: {
+    materialImplementationForbidden: true,
+    allowedOperations: ["read", "route", "dispatch", "aggregate", "review", "signoff_package"],
+  },
   contracts: {
     frontend_worker: {
       id: "frontend_worker",
@@ -308,6 +312,12 @@ function normalizePolicyDefinition(rawDefinition, { source = "builtin", policyPa
     source,
     policyPath,
     parentAgents,
+    parentPolicy: Object.freeze({
+      materialImplementationForbidden: normalizeBoolean(definition.parentPolicy && definition.parentPolicy.materialImplementationForbidden, true),
+      allowedOperations: Object.freeze(Array.isArray(definition.parentPolicy && definition.parentPolicy.allowedOperations)
+        ? definition.parentPolicy.allowedOperations.map((entry) => safeString(entry, 80)).filter(Boolean).slice(0, 16)
+        : defaultPolicyDefinition.parentPolicy.allowedOperations.slice()),
+    }),
     contracts: Object.freeze(normalizedContracts),
     exceptions: normalizeExceptionPolicy(definition.exceptions, defaultPolicyDefinition.exceptions),
   });
@@ -469,6 +479,22 @@ function evaluateAgentGovernance({ agentName, operation, changedPaths, override 
   const normalizedOperation = typeof operation === "string" ? operation : "unknown";
   const normalizedPaths = uniqueNormalizedPaths(changedPaths);
   const overrideResult = evaluateParentOverride({ override, policy });
+  const normalizedAgent = normalizeAgentName(agentName);
+  const normalizedComparableAgent = resolveScopedAgentName(normalizedAgent, buildKnownAgentSet(policy));
+  const parentAgent = policy.parentAgents.has(normalizedComparableAgent);
+  const materialImplementationObserved = normalizedOperation === "fileChange" && normalizedPaths.length > 0;
+
+  if (parentAgent && policy.parentPolicy.materialImplementationForbidden && materialImplementationObserved) {
+    return {
+      decision: "deny",
+      reason: "parent_material_implementation_forbidden",
+      operation: normalizedOperation,
+      contract,
+      violationCount: normalizedPaths.length || 1,
+      violations: normalizedPaths.map((entry) => ({ path: entry, reason: "parent_material_implementation_forbidden" })).slice(0, 24),
+      override: overrideResult,
+    };
+  }
 
   if (!contract.enforced) {
     return {
@@ -610,6 +636,10 @@ function getAgentGovernancePolicySnapshot() {
         enabled: Boolean(policy.exceptions.parentOverride.enabled),
         reasonMinLength: policy.exceptions.parentOverride.reasonMinLength,
       },
+    },
+    parentPolicy: {
+      materialImplementationForbidden: Boolean(policy.parentPolicy.materialImplementationForbidden),
+      allowedOperations: Array.isArray(policy.parentPolicy.allowedOperations) ? policy.parentPolicy.allowedOperations.slice(0, 16) : [],
     },
     contracts,
   };

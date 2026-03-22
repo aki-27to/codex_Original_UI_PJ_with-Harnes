@@ -565,17 +565,19 @@ function buildRequirementGuardPrompt(
     : "- Preferred over-delivery scope: bug fixes, refactoring, safety hardening, tests, and docs updates.";
   const planningRules =
     selectedPlanningDepth === "FAST_PLANNING"
-      ? [
-          "1) Keep Step 1/2 concise: lock user value, the goal, acceptance checks, and specialist owner quickly, then execute.",
-          "2) Do not ask follow-up questions unless correctness is blocked by a real missing decision.",
-          "3) Use native specialist dispatch if implementation crosses the parent-only boundary.",
-          "4) Preserve the baseline scope and avoid speculative extras.",
-        ]
+        ? [
+            "1) Keep Step 1/2 concise: lock user value, the goal, acceptance checks, and specialist owner quickly, then execute.",
+            "2) Do not ask follow-up questions unless correctness is blocked by a real missing decision.",
+            "3) Use native specialist dispatch if implementation crosses the parent-only boundary.",
+            "4) Preserve the baseline scope and avoid speculative extras.",
+            "5) For short fact/status answers, lead with the direct answer and close in place without unsolicited next-step offers.",
+          ]
       : [
           "1) Before execution, briefly lock the user-value frame, explicit goal, non-goals, assumptions, and acceptance checks.",
           "2) Make the dispatch plan explicit before implementation when multiple specialists are implicated.",
           "3) If blocking ambiguity remains, stop with STATUS: NEED_USER_INPUT instead of guessing.",
           "4) Keep over-delivery adjacent, bounded, and separately reported.",
+          "5) For short fact/status answers, lead with the direct answer and close in place without unsolicited next-step offers.",
         ];
   const assuranceRules =
     selectedAssuranceDepth === "LIGHT_ASSURANCE"
@@ -606,6 +608,10 @@ function buildRequirementGuardPrompt(
     "7) Deliver all explicit user requirements first.",
     "8) Optimize for the user-value frame first; evidence and acceptance checks confirm the work but are not the creative or technical ceiling.",
     "9) Report baseline delivery, over-delivery items, and residual risks.",
+    "10) Do not claim the task is complete, fixed, or already reflected unless the required evidence gates for this run are actually satisfied.",
+    taskFamily === "web_creative"
+      ? "11) If benchmark candidates are present, keep them fixed across follow-up corrections until the user explicitly replaces them."
+      : "",
     `- Task family: ${taskFamily}`,
     typeof familyProfile.objective === "string" && familyProfile.objective
       ? `- Family objective: ${familyProfile.objective}`

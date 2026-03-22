@@ -1,0 +1,89 @@
+{
+  "schema": "conformance-invariants.v1",
+  "version": "2026-03-08.r1",
+  "sourceOfTruthHierarchy": [
+    "constitution",
+    "machine_readable_contracts",
+    "policy_code",
+    "agent_configuration",
+    "runtime_proof_artifacts",
+    "narrative_docs"
+  ],
+  "invariants": [
+    {
+      "id": "control.parent_no_material_implementation",
+      "plane": "control",
+      "statement": "Parent must not perform material implementation."
+    },
+    {
+      "id": "control.material_change_maps_to_dispatch",
+      "plane": "control",
+      "statement": "Every material change must map to a dispatched child task."
+    },
+    {
+      "id": "control.routing_before_child_execution",
+      "plane": "control",
+      "statement": "RoutingDecision must exist before child execution."
+    },
+    {
+      "id": "control.retired_worker_not_runtime",
+      "plane": "control",
+      "statement": "Retired worker must not be used in normal runtime."
+    },
+    {
+      "id": "execution.blocked_user_input_posture",
+      "plane": "execution",
+      "statement": "Blocked request-user-input posture must never be violated."
+    },
+    {
+      "id": "execution.task_outcome_required",
+      "plane": "execution",
+      "statement": "No child task may complete without TaskOutcome."
+    },
+    {
+      "id": "execution.delivery_evidence_per_material_claim",
+      "plane": "execution",
+      "statement": "DELIVERY runs must have evidence for each material claim."
+    },
+    {
+      "id": "execution.discovery_boundary_outputs",
+      "plane": "execution",
+      "statement": "DISCOVERY runs must emit assumptions, open questions, and decision boundary."
+    },
+    {
+      "id": "assurance.review_bundle_required",
+      "plane": "assurance",
+      "statement": "No release decision without ReviewBundle."
+    },
+    {
+      "id": "assurance.signoff_requires_evidence_classes",
+      "plane": "assurance",
+      "statement": "No signoff release without required evidence classes."
+    },
+    {
+      "id": "assurance.depth_requirements_satisfied",
+      "plane": "assurance",
+      "statement": "Assurance depth requirements must be satisfied."
+    },
+    {
+      "id": "assurance.business_terminal_state_only",
+      "plane": "assurance",
+      "statement": "Top-level terminal state must be a business decision state, not generic completed."
+    },
+    {
+      "id": "audit.replay_lineage_reconstructible",
+      "plane": "audit",
+      "statement": "Replay lineage must be reconstructible."
+    },
+    {
+      "id": "audit.blockers_and_risk_explicit",
+      "plane": "audit",
+      "statement": "Run must expose blockers and residual risks explicitly."
+    },
+    {
+      "id": "audit.acceptance_coverage_inspectable",
+      "plane": "audit",
+      "statement": "Acceptance coverage must be inspectable."
+    }
+  ]
+}

@@ -7,6 +7,7 @@
     "schema",
     "source",
     "explicitGoal",
+    "lockedGoal",
     "baselineScope",
     "nonGoals",
     "assumptions",
@@ -14,18 +15,109 @@
     "approvalBoundaryItems",
     "acceptanceChecks",
     "userValueFrame",
+    "intentInterpretation",
+    "intentHypotheses",
+    "challengeReport",
+    "questionPlan",
+    "delightPlan",
+    "displayContract",
+    "status",
+    "statusReason",
+    "provenance",
+    "validation",
+    "revisionLedger",
     "selectedPlanningDepth",
     "selectedAssuranceDepth",
     "selectedPlanningMode",
     "planningModeReasons",
     "assuranceDepthReasons"
   ],
+  "$defs": {
+    "provenanceSource": {
+      "type": "string",
+      "enum": ["user_explicit", "user_implied", "system_inferred", "policy_default"]
+    },
+    "fieldProvenance": {
+      "type": "object",
+      "required": ["source"],
+      "properties": {
+        "source": { "$ref": "#/$defs/provenanceSource" },
+        "reason": { "type": "string" }
+      },
+      "additionalProperties": false
+    },
+    "valueProvenance": {
+      "type": "object",
+      "required": ["value", "source"],
+      "properties": {
+        "value": { "type": "string" },
+        "source": { "$ref": "#/$defs/provenanceSource" },
+        "reason": { "type": "string" }
+      },
+      "additionalProperties": false
+    },
+    "hypothesisEntry": {
+      "type": "object",
+      "required": ["id", "goal", "confidence", "evidence", "locked"],
+      "properties": {
+        "id": { "type": "string", "minLength": 1 },
+        "goal": { "type": "string", "minLength": 1 },
+        "confidence": { "type": "integer", "minimum": 0, "maximum": 100 },
+        "evidence": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "locked": { "type": "boolean" }
+      },
+      "additionalProperties": false
+    },
+    "challengeFinding": {
+      "type": "object",
+      "required": ["id", "type", "severity", "detail", "requirementRef"],
+      "properties": {
+        "id": { "type": "string", "minLength": 1 },
+        "type": { "type": "string", "minLength": 1 },
+        "severity": {
+          "type": "string",
+          "enum": ["low", "medium", "high"]
+        },
+        "detail": { "type": "string", "minLength": 1 },
+        "requirementRef": { "type": "string" }
+      },
+      "additionalProperties": false
+    },
+    "questionEntry": {
+      "type": "object",
+      "required": ["question", "category", "reason"],
+      "properties": {
+        "question": { "type": "string", "minLength": 1 },
+        "category": {
+          "type": "string",
+          "enum": ["blocking", "defaultable", "taste"]
+        },
+        "reason": { "type": "string" }
+      },
+      "additionalProperties": false
+    },
+    "delightCandidate": {
+      "type": "object",
+      "required": ["id", "title", "reason", "autoEligible"],
+      "properties": {
+        "id": { "type": "string", "minLength": 1 },
+        "title": { "type": "string", "minLength": 1 },
+        "reason": { "type": "string" },
+        "autoEligible": { "type": "boolean" }
+      },
+      "additionalProperties": false
+    }
+  },
   "properties": {
-    "schema": { "const": "requirement-contract.v3" },
+    "schema": { "const": "requirement-contract.v5" },
     "source": { "type": "string", "minLength": 1 },
     "promptHash": { "type": "string" },
-    "explicitGoal": { "type": "string", "minLength": 1 },
+    "explicitGoal": { "type": "string" },
     "implicitGoal": { "type": "string" },
+    "lockedGoal": { "type": "string" },
     "taskFamily": { "type": "string", "minLength": 1 },
     "familyProfileId": { "type": "string", "minLength": 1 },
     "baselineScope": { "type": "array", "items": { "type": "string" } },
@@ -69,6 +161,273 @@
         "qualityAxes": { "type": "array", "items": { "type": "string" } },
         "benchmarkCandidates": { "type": "array", "items": { "type": "string" } },
         "completedMeans": { "type": "array", "items": { "type": "string" } }
+      },
+      "additionalProperties": false
+    },
+    "intentInterpretation": {
+      "type": "object",
+      "required": [
+        "presentation",
+        "questionLike",
+        "direction",
+        "hypothesis"
+      ],
+      "properties": {
+        "presentation": {
+          "type": "string",
+          "enum": ["goal", "progress_hypothesis"]
+        },
+        "questionLike": { "type": "boolean" },
+        "direction": { "type": "string" },
+        "hypothesis": { "type": "string" }
+      },
+      "additionalProperties": false
+    },
+    "intentHypotheses": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/hypothesisEntry" }
+    },
+    "challengeReport": {
+      "type": "object",
+      "required": ["summary", "proceedRisk", "findings"],
+      "properties": {
+        "summary": { "type": "string" },
+        "proceedRisk": {
+          "type": "string",
+          "enum": ["low", "medium", "high"]
+        },
+        "findings": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/challengeFinding" }
+        }
+      },
+      "additionalProperties": false
+    },
+    "questionPlan": {
+      "type": "object",
+      "required": ["summary", "blocking", "defaultable", "taste", "askNext"],
+      "properties": {
+        "summary": { "type": "string" },
+        "blocking": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/questionEntry" }
+        },
+        "defaultable": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/questionEntry" }
+        },
+        "taste": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/questionEntry" }
+        },
+        "askNext": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/questionEntry" }
+        }
+      },
+      "additionalProperties": false
+    },
+    "delightPlan": {
+      "type": "object",
+      "required": ["summary", "candidates"],
+      "properties": {
+        "summary": { "type": "string" },
+        "candidates": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/delightCandidate" }
+        }
+      },
+      "additionalProperties": false
+    },
+    "displayContract": {
+      "type": "object",
+      "required": [
+        "headline",
+        "goal",
+        "goalMode",
+        "goalLabel",
+        "nextAction",
+        "holdReason",
+        "targetOutcome",
+        "boundaries",
+        "askNext",
+        "delightTitles"
+      ],
+      "properties": {
+        "headline": { "type": "string" },
+        "goal": { "type": "string" },
+        "goalMode": {
+          "type": "string",
+          "enum": ["draft", "hypothesis", "locked"]
+        },
+        "goalLabel": { "type": "string" },
+        "nextAction": { "type": "string" },
+        "holdReason": { "type": "string" },
+        "targetOutcome": { "type": "string" },
+        "boundaries": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "askNext": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/questionEntry" }
+        },
+        "delightTitles": {
+          "type": "array",
+          "items": { "type": "string" }
+        }
+      },
+      "additionalProperties": false
+    },
+    "status": {
+      "type": "string",
+      "enum": ["DRAFT", "BLOCKED", "LOCKED", "REVISED"]
+    },
+    "statusReason": { "type": "string" },
+    "provenance": {
+      "type": "object",
+      "required": [
+        "explicitGoal",
+        "implicitGoal",
+        "nonGoals",
+        "userValueFrame",
+        "intentInterpretation"
+      ],
+      "properties": {
+        "explicitGoal": { "$ref": "#/$defs/fieldProvenance" },
+        "implicitGoal": { "$ref": "#/$defs/fieldProvenance" },
+        "nonGoals": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/valueProvenance" }
+        },
+        "userValueFrame": {
+          "type": "object",
+          "required": [
+            "valueThesis",
+            "userWants",
+            "userShouldFeelGet",
+            "mustAvoid",
+            "hardConstraints",
+            "qualityAxes",
+            "benchmarkCandidates",
+            "completedMeans"
+          ],
+          "properties": {
+            "valueThesis": { "$ref": "#/$defs/fieldProvenance" },
+            "userWants": {
+              "type": "array",
+              "items": { "$ref": "#/$defs/valueProvenance" }
+            },
+            "userShouldFeelGet": {
+              "type": "array",
+              "items": { "$ref": "#/$defs/valueProvenance" }
+            },
+            "mustAvoid": {
+              "type": "array",
+              "items": { "$ref": "#/$defs/valueProvenance" }
+            },
+            "hardConstraints": {
+              "type": "array",
+              "items": { "$ref": "#/$defs/valueProvenance" }
+            },
+            "qualityAxes": {
+              "type": "array",
+              "items": { "$ref": "#/$defs/valueProvenance" }
+            },
+            "benchmarkCandidates": {
+              "type": "array",
+              "items": { "$ref": "#/$defs/valueProvenance" }
+            },
+            "completedMeans": {
+              "type": "array",
+              "items": { "$ref": "#/$defs/valueProvenance" }
+            }
+          },
+          "additionalProperties": false
+        },
+        "intentInterpretation": {
+          "type": "object",
+          "required": [
+            "presentation",
+            "questionLike",
+            "direction",
+            "hypothesis"
+          ],
+          "properties": {
+            "presentation": { "$ref": "#/$defs/fieldProvenance" },
+            "questionLike": { "$ref": "#/$defs/fieldProvenance" },
+            "direction": { "$ref": "#/$defs/fieldProvenance" },
+            "hypothesis": { "$ref": "#/$defs/fieldProvenance" }
+          },
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false
+    },
+    "validation": {
+      "type": "object",
+      "required": ["schema", "source", "verdict", "canProceed", "summary", "checks"],
+      "properties": {
+        "schema": { "const": "requirement-validation.v1" },
+        "source": { "type": "string", "minLength": 1 },
+        "verdict": { "type": "string", "enum": ["PASS", "WARN", "BLOCK"] },
+        "canProceed": { "type": "boolean" },
+        "summary": {
+          "type": "object",
+          "required": ["passCount", "warnCount", "blockCount", "total"],
+          "properties": {
+            "passCount": { "type": "integer", "minimum": 0 },
+            "warnCount": { "type": "integer", "minimum": 0 },
+            "blockCount": { "type": "integer", "minimum": 0 },
+            "total": { "type": "integer", "minimum": 0 }
+          },
+          "additionalProperties": false
+        },
+        "checks": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["id", "title", "status", "detail", "fieldRefs"],
+            "properties": {
+              "id": { "type": "string", "minLength": 1 },
+              "title": { "type": "string", "minLength": 1 },
+              "status": { "type": "string", "enum": ["PASS", "WARN", "BLOCK"] },
+              "detail": { "type": "string" },
+              "fieldRefs": {
+                "type": "array",
+                "items": { "type": "string" }
+              }
+            },
+            "additionalProperties": false
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    "revisionLedger": {
+      "type": "object",
+      "required": [
+        "revisionNumber",
+        "revised",
+        "revisionKind",
+        "changedFields",
+        "previousPromptHash",
+        "previousStatus",
+        "requiresReapproval",
+        "summary"
+      ],
+      "properties": {
+        "revisionNumber": { "type": "integer", "minimum": 1 },
+        "revised": { "type": "boolean" },
+        "revisionKind": { "type": "string", "enum": ["initial", "carryover_refresh", "material_change"] },
+        "changedFields": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "previousPromptHash": { "type": "string" },
+        "previousStatus": { "type": "string" },
+        "requiresReapproval": { "type": "boolean" },
+        "summary": { "type": "string" }
       },
       "additionalProperties": false
     },

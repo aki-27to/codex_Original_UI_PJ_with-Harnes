@@ -1,5 +1,6 @@
 {
-  "schema": "harness-turn-contract.v1",
+  "schema": "harness-turn-contract.v2",
+  "version": "2026-03-08.r1",
   "turn": {
     "states": [
       "in_progress",
@@ -19,6 +20,13 @@
       { "from": "in_progress", "to": "failed" }
     ]
   },
+  "releaseDecisionStates": [
+    "RELEASE_APPROVED",
+    "RELEASE_APPROVED_WITH_ASSUMPTIONS",
+    "RELEASE_BLOCKED",
+    "EXTERNAL_ACTION_REQUIRED",
+    "HARNESS_FAILURE"
+  ],
   "taskOutcomeBridge": {
     "allowedByTurnState": {
       "completed": [
@@ -35,5 +43,15 @@
         "NEEDS_INPUT"
       ]
     }
+  },
+  "runDecisionBridge": {
+    "allowedTerminalStates": [
+      "RELEASE_APPROVED",
+      "RELEASE_APPROVED_WITH_ASSUMPTIONS",
+      "RELEASE_BLOCKED",
+      "EXTERNAL_ACTION_REQUIRED",
+      "HARNESS_FAILURE"
+    ],
+    "completedTaskOutcomeDoesNotImplyReleaseApproved": true
   }
 }

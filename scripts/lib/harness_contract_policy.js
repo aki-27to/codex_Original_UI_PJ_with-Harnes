@@ -91,7 +91,8 @@ function normalizeHarnessTurnContractSpec(input) {
   const transitions = normalizeTransitionList(turn.transitions);
 
   return {
-    schema: "harness-turn-contract.v1",
+    schema: safeString(payload.schema, 120) || "harness-turn-contract.v2",
+    version: safeString(payload.version, 120) || "2026-03-08.r1",
     turn: {
       states,
       terminalStates,
@@ -100,7 +101,16 @@ function normalizeHarnessTurnContractSpec(input) {
         ? transitions
         : terminalStates.map((terminal) => ({ from: "in_progress", to: terminal })),
     },
+    releaseDecisionStates: Array.isArray(payload.releaseDecisionStates)
+      ? payload.releaseDecisionStates.map((entry) => safeString(entry, 80).toUpperCase()).filter(Boolean).slice(0, 12)
+      : ["RELEASE_APPROVED", "RELEASE_APPROVED_WITH_ASSUMPTIONS", "RELEASE_BLOCKED", "EXTERNAL_ACTION_REQUIRED", "HARNESS_FAILURE"],
     taskOutcomeBridge: normalizeTaskOutcomeBridge(payload.taskOutcomeBridge),
+    runDecisionBridge: payload.runDecisionBridge && typeof payload.runDecisionBridge === "object"
+      ? payload.runDecisionBridge
+      : {
+          allowedTerminalStates: ["RELEASE_APPROVED", "RELEASE_APPROVED_WITH_ASSUMPTIONS", "RELEASE_BLOCKED", "EXTERNAL_ACTION_REQUIRED", "HARNESS_FAILURE"],
+          completedTaskOutcomeDoesNotImplyReleaseApproved: true,
+        },
   };
 }
 
@@ -172,10 +182,23 @@ function validateTurnTaskOutcomeContract({ turnStatus, taskOutcomeStatus, spec }
   };
 }
 
+function validateReleaseDecisionState({ terminalState, spec }) {
+  const contract = normalizeHarnessTurnContractSpec(spec);
+  const normalized = safeString(terminalState, 80).toUpperCase();
+  const allowed = Array.isArray(contract.releaseDecisionStates) ? contract.releaseDecisionStates : [];
+  return {
+    ok: allowed.includes(normalized),
+    reason: allowed.includes(normalized) ? "ok" : "release_decision_state_not_allowed",
+    terminalState: normalized,
+    allowedStates: allowed,
+  };
+}
+
 module.exports = {
   defaultHarnessTurnContractSpecPath,
   normalizeHarnessTurnContractSpec,
   loadHarnessTurnContractSpec,
+  validateReleaseDecisionState,
   validateTurnTransition,
   validateTurnTerminalContract,
   validateTurnTaskOutcomeContract,

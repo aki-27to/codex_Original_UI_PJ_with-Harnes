@@ -4064,6 +4064,139 @@ const liveCollabChildCatalogByThread=new Map();
 const liveCollabChildActivityByThread=new Map();
 const liveCollabChildStaleMs=15*60*1000;
 
+function normalizeLiveCollabChildStatus(value,fallback="working"){
+  const raw=safeString(value,80).toLowerCase().replace(/[\s-]+/g,"_");
+  const normalized=raw||safeString(fallback,80).toLowerCase().replace(/[\s-]+/g,"_");
+  if(!normalized)return"working";
+  if(
+    normalized==="spawned"
+    ||normalized==="spawning"
+    ||normalized==="queued"
+    ||normalized==="initializing"
+  )return"spawned";
+  if(
+    normalized==="working"
+    ||normalized==="running"
+    ||normalized==="busy"
+    ||normalized==="streaming"
+    ||normalized==="active"
+    ||normalized==="in_progress"
+    ||normalized==="inprogress"
+    ||normalized==="progress"
+  )return"working";
+  if(
+    normalized==="completed"
+    ||normalized==="complete"
+    ||normalized==="done"
+    ||normalized==="success"
+    ||normalized==="succeeded"
+    ||normalized==="ok"
+    ||normalized==="pass"
+    ||normalized==="passed"
+    ||normalized==="ready"
+  )return"completed";
+  if(
+    normalized==="failed"
+    ||normalized==="fail"
+    ||normalized==="error"
+    ||normalized==="declined"
+  )return"failed";
+  if(
+    normalized==="interrupted"
+    ||normalized==="interrupt"
+    ||normalized==="aborted"
+    ||normalized==="abort"
+    ||normalized==="cancelled"
+    ||normalized==="canceled"
+    ||normalized==="closed"
+  )return"interrupted";
+  if(
+    normalized==="needs_input"
+    ||normalized==="need_input"
+    ||normalized==="input_required"
+    ||normalized==="requires_input"
+    ||normalized==="waiting_input"
+    ||normalized==="blocked"
+  )return"needs_input";
+  if(normalized==="configured"||normalized==="idle")return"idle";
+  return normalized;
+}
+function isLiveCollabChildActiveStatus(status){
+  const normalized=normalizeLiveCollabChildStatus(status,"working");
+  return normalized==="spawned"||normalized==="working";
+}
+function isLiveCollabChildTerminalStatus(status){
+  const normalized=normalizeLiveCollabChildStatus(status,"working");
+  return normalized==="completed"||normalized==="failed"||normalized==="interrupted"||normalized==="needs_input";
+}
+function inferLiveCollabChildStatusFromText(value){
+  const text=safeString(value,1200).toLowerCase();
+  if(!text)return"";
+  if(
+    text.includes("[needs_input]")
+    ||text.includes("needs_input")
+    ||text.includes("need user input")
+    ||text.includes("user input required")
+    ||text.includes("approval required")
+  )return"needs_input";
+  if(
+    text.includes("interrupted")
+    ||text.includes("aborted")
+    ||text.includes("cancelled")
+    ||text.includes("canceled")
+  )return"interrupted";
+  if(
+    text.includes("failed")
+    ||text.includes("error")
+    ||text.includes("declined")
+    ||text.includes("no authenticated account")
+  )return"failed";
+  if(
+    text.includes("completed")
+    ||text.includes("done")
+    ||text.includes("success")
+    ||text.includes("pass")
+    ||text.includes("no findings")
+  )return"completed";
+  return"";
+}
+function extractCollabReceiverStateSummaries(item,max=4){
+  if(!item||typeof item!=="object")return[];
+  const receiverIds=extractCollabReceiverThreadIds(item,max);
+  const stateMap=item.agentsStates&&typeof item.agentsStates==="object"?item.agentsStates:{};
+  const orderedReceiverIds=[...receiverIds];
+  for(const rawId of Object.keys(stateMap)){
+    const receiverId=safeString(rawId,120);
+    if(!receiverId||orderedReceiverIds.includes(receiverId))continue;
+    orderedReceiverIds.push(receiverId);
+    if(orderedReceiverIds.length>=max)break;
+  }
+  return orderedReceiverIds.map((receiverId)=>{
+    const state=stateMap&&typeof stateMap[receiverId]==="object"?stateMap[receiverId]:{};
+    const detail=firstNonEmptyString([
+      state&&state.message,
+      state&&state.detail,
+      state&&state.summary,
+    ],240);
+    const inferredStatus=inferLiveCollabChildStatusFromText(detail);
+    const rawStatus=firstNonEmptyString([
+      state&&state.status,
+      state&&state.phase,
+      state&&state.state,
+      state&&state.outcomeStatus,
+      state&&state.result,
+      state&&state.decision,
+      inferredStatus,
+      item&&item.status,
+    ],80);
+    return{
+      receiverId,
+      status:normalizeLiveCollabChildStatus(rawStatus,item&&item.status?item.status:"completed"),
+      detail,
+    };
+  }).slice(0,max);
+}
+
 function pruneLiveCollabChildState(nowMs=Date.now()){
   const now=Number.isFinite(Number(nowMs))?Number(nowMs):Date.now();
   for(const[threadId,entry]of liveCollabChildActivityByThread.entries()){
@@ -4171,6 +4304,16 @@ function inferLiveCollabChildName({item,tracker}={}){
   const direct=normalizeAgentName(trace&&trace.child?trace.child:"");
   if(direct&&direct!=="unknown"&&!looksLikeCollabThreadId(direct))return direct;
   const receiverIds=extractCollabReceiverThreadIds(item,1);
+  if(!receiverIds.length){
+    const itemId=safeString(item&&item.id,120);
+    const cached=itemId&&tracker&&tracker.receiverIdsByCallId instanceof Map
+      ?tracker.receiverIdsByCallId.get(itemId)
+      :null;
+    if(Array.isArray(cached)&&cached.length){
+      const cachedId=normalizeAgentName(cached[0]);
+      if(cachedId)receiverIds.push(cachedId);
+    }
+  }
   for(const receiverId of receiverIds){
     const mapped=tracker&&tracker.childNameByThread instanceof Map?normalizeAgentName(tracker.childNameByThread.get(receiverId)):"";
     if(mapped)return mapped;
@@ -4211,6 +4354,13 @@ function ensureLiveCollabChildCatalog(threadId,{name="",tracker=null}={}){
     parentAgentName:tracker&&tracker.parentAgentName?tracker.parentAgentName:"",
     parentThreadId:tracker&&tracker.parentThreadId?tracker.parentThreadId:"",
     parentTurnId:tracker&&tracker.parentTurnId?tracker.parentTurnId:"",
+    status:"",
+    detail:"",
+    isActive:false,
+    activeTurnId:"",
+    sessionRef:normalizedThreadId,
+    lastActiveAt:0,
+    completedAt:0,
     updatedAt:Date.now(),
   };
   const existing=liveCollabChildCatalogByThread.get(normalizedThreadId);
@@ -4221,35 +4371,65 @@ function ensureLiveCollabChildCatalog(threadId,{name="",tracker=null}={}){
   }
   return merged;
 }
-function setLiveCollabChildActivity(threadId,{name="",status="running",detail="",tracker=null}={}){
+function upsertLiveCollabChildSnapshot(threadId,{name="",status="working",detail="",tracker=null,isActive=false}={}){
   const catalog=ensureLiveCollabChildCatalog(threadId,{name,tracker});
   if(!catalog)return null;
   const updatedAt=Date.now();
+  const normalizedStatus=normalizeLiveCollabChildStatus(status,isActive?"working":"completed");
   const entry={
     ...catalog,
     source:"collab",
-    sessionRef:catalog.threadId,
-    activeTurnId:catalog.parentTurnId||"",
-    isActive:true,
-    status:safeString(status,80)||"running",
-    detail:safeString(detail,240)||"",
+    sessionRef:safeString(catalog.sessionRef,160)||catalog.threadId,
+    activeTurnId:isActive?(safeString(catalog.parentTurnId,160)||safeString(catalog.activeTurnId,160)||""):"",
+    isActive:Boolean(isActive||isLiveCollabChildActiveStatus(normalizedStatus)),
+    status:normalizedStatus,
+    detail:safeString(detail,240)||safeString(catalog.detail,240)||"",
+    lastActiveAt:isActive?updatedAt:(Number.isFinite(Number(catalog.lastActiveAt))?Number(catalog.lastActiveAt):0),
+    completedAt:!isActive&&isLiveCollabChildTerminalStatus(normalizedStatus)
+      ?updatedAt
+      :(Number.isFinite(Number(catalog.completedAt))?Number(catalog.completedAt):0),
     updatedAt,
   };
-  liveCollabChildCatalogByThread.set(catalog.threadId,{...catalog,updatedAt});
-  liveCollabChildActivityByThread.set(catalog.threadId,entry);
+  liveCollabChildCatalogByThread.set(catalog.threadId,entry);
+  if(entry.isActive){
+    liveCollabChildActivityByThread.set(catalog.threadId,entry);
+  }else{
+    liveCollabChildActivityByThread.delete(catalog.threadId);
+  }
   return entry;
+}
+function setLiveCollabChildActivity(threadId,{name="",status="running",detail="",tracker=null}={}){
+  return upsertLiveCollabChildSnapshot(threadId,{name,status,detail,tracker,isActive:true});
+}
+function settleLiveCollabChildActivity(threadId,{name="",status="completed",detail="",tracker=null}={}){
+  return upsertLiveCollabChildSnapshot(threadId,{name,status,detail,tracker,isActive:false});
 }
 function clearLiveCollabChildActivity(threadId){
   const normalizedThreadId=safeString(threadId,160);
   if(!normalizedThreadId)return false;
-  return liveCollabChildActivityByThread.delete(normalizedThreadId);
+  const deleted=liveCollabChildActivityByThread.delete(normalizedThreadId);
+  const catalog=liveCollabChildCatalogByThread.get(normalizedThreadId);
+  if(catalog&&catalog.isActive){
+    liveCollabChildCatalogByThread.set(normalizedThreadId,{
+      ...catalog,
+      isActive:false,
+      activeTurnId:"",
+      updatedAt:Date.now(),
+    });
+  }
+  return deleted;
 }
-function clearLiveCollabChildActivityForTurn(turnId){
+function clearLiveCollabChildActivityForTurn(turnId,{status="interrupted",detail=""}={}){
   const normalizedTurnId=safeString(turnId,160);
   if(!normalizedTurnId)return;
+  const fallbackStatus=normalizeLiveCollabChildStatus(status,"interrupted");
   for(const[threadId,entry]of liveCollabChildActivityByThread.entries()){
     if(safeString(entry&&entry.parentTurnId,160)!==normalizedTurnId)continue;
-    liveCollabChildActivityByThread.delete(threadId);
+    settleLiveCollabChildActivity(threadId,{
+      name:safeString(entry&&entry.name,120)||"",
+      status:fallbackStatus,
+      detail:safeString(detail,240)||safeString(entry&&entry.detail,240)||"",
+    });
   }
 }
 function liveCollabReceiverIdsForItem(item,tracker,max=4){
@@ -4302,7 +4482,24 @@ function observeLiveCollabItem({item,phase="",tracker=null}={}){
       });
     }
     if(normalizedPhase==="completed"&&receiverIds.length){
-      receiverIds.forEach((receiverId)=>clearLiveCollabChildActivity(receiverId));
+      const receiverStates=extractCollabReceiverStateSummaries(item,receiverIds.length||4);
+      receiverIds.forEach((receiverId)=>{
+        const receiverState=receiverStates.find((entry)=>entry&&entry.receiverId===receiverId)||null;
+        childName=childName||inferLiveCollabChildName({item,tracker});
+        settleLiveCollabChildActivity(receiverId,{
+          name:childName,
+          status:receiverState&&receiverState.status?receiverState.status:item.status||"completed",
+          detail:receiverState&&receiverState.detail
+            ?receiverState.detail
+            :(safeString(item&&item.status,80).toLowerCase()==="completed"
+              ?"子agentが完了"
+              :firstNonEmptyString([
+                ...extractCollabStateMessages(item,2),
+                "子agentが終了",
+              ],240)),
+          tracker,
+        });
+      });
       if(itemId&&tracker&&tracker.receiverIdsByCallId instanceof Map){
         tracker.receiverIdsByCallId.delete(itemId);
       }
@@ -4329,8 +4526,18 @@ function observeLiveCollabItem({item,phase="",tracker=null}={}){
   if(tool==="closeagent"){
     if(normalizedPhase==="completed"&&receiverIds.length){
       receiverIds.forEach((receiverId)=>{
-        clearLiveCollabChildActivity(receiverId);
-        liveCollabChildCatalogByThread.delete(receiverId);
+        const existing=liveCollabChildCatalogByThread.get(receiverId);
+        const existingStatus=normalizeLiveCollabChildStatus(existing&&existing.status?existing.status:"","");
+        if(existing&&isLiveCollabChildTerminalStatus(existingStatus)){
+          clearLiveCollabChildActivity(receiverId);
+        }else{
+          settleLiveCollabChildActivity(receiverId,{
+            name:safeString(existing&&existing.name,120)||"",
+            status:"interrupted",
+            detail:"closeagent 完了 / 子agentを停止",
+            tracker,
+          });
+        }
         if(tracker&&tracker.childNameByThread instanceof Map){
           tracker.childNameByThread.delete(receiverId);
         }
@@ -4345,18 +4552,27 @@ function observeLiveCollabItem({item,phase="",tracker=null}={}){
 }
 function getLiveCollabChildRows(){
   pruneLiveCollabChildState();
-  return Array.from(liveCollabChildActivityByThread.values()).map((entry)=>({
-    name:safeString(entry&&entry.name,120)||normalizeLiveCollabFallbackName(entry&&entry.threadId?entry.threadId:""),
-    description:safeString(entry&&entry.detail,240)||safeString(entry&&entry.description,400)||"",
-    role:safeString(entry&&entry.role,80)||inferAgentRole(safeString(entry&&entry.name,120)||"",safeString(entry&&entry.description,400)||""),
-    source:"collab",
-    isActive:true,
-    selected:false,
-    threadId:safeString(entry&&entry.threadId,160)||null,
-    activeTurnId:safeString(entry&&entry.activeTurnId,160)||null,
-    sessionRef:safeString(entry&&entry.sessionRef,160)||safeString(entry&&entry.threadId,160)||null,
-    status:safeString(entry&&entry.status,80)||"running",
-  }));
+  return Array.from(liveCollabChildCatalogByThread.values()).map((entry)=>{
+    const normalizedStatus=normalizeLiveCollabChildStatus(entry&&entry.status?entry.status:"working",entry&&entry.isActive?"working":"completed");
+    const isActive=Boolean(entry&&entry.isActive)&&isLiveCollabChildActiveStatus(normalizedStatus);
+    if(!isActive&&!safeString(entry&&entry.status,80)&&!safeString(entry&&entry.detail,240))return null;
+    return{
+      name:safeString(entry&&entry.name,120)||normalizeLiveCollabFallbackName(entry&&entry.threadId?entry.threadId:""),
+      description:safeString(entry&&entry.detail,240)||safeString(entry&&entry.description,400)||"",
+      role:safeString(entry&&entry.role,80)||inferAgentRole(safeString(entry&&entry.name,120)||"",safeString(entry&&entry.description,400)||""),
+      source:"collab",
+      isActive,
+      selected:false,
+      threadId:safeString(entry&&entry.threadId,160)||null,
+      activeTurnId:isActive?(safeString(entry&&entry.activeTurnId,160)||null):null,
+      sessionRef:safeString(entry&&entry.sessionRef,160)||safeString(entry&&entry.threadId,160)||null,
+      status:normalizedStatus||"working",
+      updatedAt:Number.isFinite(Number(entry&&entry.updatedAt))?Math.trunc(Number(entry.updatedAt)):0,
+      completedAt:Number.isFinite(Number(entry&&entry.completedAt))?Math.trunc(Number(entry.completedAt)):0,
+      parentTurnId:safeString(entry&&entry.parentTurnId,160)||null,
+      parentThreadId:safeString(entry&&entry.parentThreadId,160)||null,
+    };
+  }).filter(Boolean);
 }
 
 let latestTurnSnapshot=null;
@@ -6217,6 +6433,20 @@ function resolveTopographyStatus(source,runtime){
   }
   return source==="configured"?"configured":"idle";
 }
+function pickPreferredTopographyLiveRow(existing,next){
+  if(!next)return existing||null;
+  if(!existing)return next;
+  const existingActive=Boolean(existing.isActive||safeString(existing.activeTurnId,160));
+  const nextActive=Boolean(next.isActive||safeString(next.activeTurnId,160));
+  if(existingActive!==nextActive)return nextActive?next:existing;
+  const existingUpdatedAt=Number.isFinite(Number(existing.updatedAt))?Number(existing.updatedAt):0;
+  const nextUpdatedAt=Number.isFinite(Number(next.updatedAt))?Number(next.updatedAt):0;
+  if(existingUpdatedAt!==nextUpdatedAt)return nextUpdatedAt>existingUpdatedAt?next:existing;
+  const existingCompletedAt=Number.isFinite(Number(existing.completedAt))?Number(existing.completedAt):0;
+  const nextCompletedAt=Number.isFinite(Number(next.completedAt))?Number(next.completedAt):0;
+  if(existingCompletedAt!==nextCompletedAt)return nextCompletedAt>existingCompletedAt?next:existing;
+  return next;
+}
 function getAgentTopographySnapshot(){
   const configured=parseConfiguredAgentsFromCodexConfig();
   const runtime=listAgentsSnapshot();
@@ -6231,7 +6461,7 @@ function getAgentTopographySnapshot(){
   for(const item of liveCollabRows){
     const name=normalizeAgentName(item&&item.name);
     if(!name)continue;
-    liveByName.set(name,item);
+    liveByName.set(name,pickPreferredTopographyLiveRow(liveByName.get(name)||null,item));
   }
   const merged=[];
   for(const configuredAgent of configured){
@@ -6249,12 +6479,13 @@ function getAgentTopographySnapshot(){
       role:liveState&&liveState.role?liveState.role:configuredAgent.role,
       governance:summarizeAgentGovernance(configuredAgent.name),
       source:effectiveSource,
-      isActive:liveState?true:(runtimeState?Boolean(runtimeState.isActive):false),
+      isActive:liveState?Boolean(liveState.isActive):(runtimeState?Boolean(runtimeState.isActive):false),
       selected:liveState?false:(runtimeState?Boolean(runtimeState.isActive):false),
       threadId:liveState&&liveState.threadId?liveState.threadId:(runtimeState&&runtimeState.threadId?runtimeState.threadId:null),
       activeTurnId:liveState&&liveState.activeTurnId?liveState.activeTurnId:(runtimeState&&runtimeState.activeTurnId?runtimeState.activeTurnId:null),
       sessionRef:liveState&&liveState.sessionRef?liveState.sessionRef:(runtimeState&&runtimeState.sessionRef?runtimeState.sessionRef:null),
       status:liveState&&liveState.status?liveState.status:resolveTopographyStatus("configured",runtimeState),
+      updatedAt:liveState&&Number.isFinite(Number(liveState.updatedAt))?Math.trunc(Number(liveState.updatedAt)):0,
     });
   }
   for(const runtimeState of runtimeByName.values()){
@@ -6269,12 +6500,13 @@ function getAgentTopographySnapshot(){
       role:liveState&&liveState.role?liveState.role:inferAgentRole(name,""),
       governance:summarizeAgentGovernance(name),
       source:liveState?"runtime+collab":"runtime",
-      isActive:liveState?true:Boolean(runtimeState.isActive),
+      isActive:liveState?Boolean(liveState.isActive):Boolean(runtimeState.isActive),
       selected:liveState?false:Boolean(runtimeState.isActive),
       threadId:liveState&&liveState.threadId?liveState.threadId:(runtimeState&&runtimeState.threadId?runtimeState.threadId:null),
       activeTurnId:liveState&&liveState.activeTurnId?liveState.activeTurnId:(runtimeState&&runtimeState.activeTurnId?runtimeState.activeTurnId:null),
       sessionRef:liveState&&liveState.sessionRef?liveState.sessionRef:(runtimeState&&runtimeState.sessionRef?runtimeState.sessionRef:null),
       status:liveState&&liveState.status?liveState.status:resolveTopographyStatus("runtime",runtimeState),
+      updatedAt:liveState&&Number.isFinite(Number(liveState.updatedAt))?Math.trunc(Number(liveState.updatedAt)):0,
     });
   }
   for(const liveState of liveByName.values()){
@@ -6287,12 +6519,13 @@ function getAgentTopographySnapshot(){
       role:liveState&&liveState.role?liveState.role:inferAgentRole(name,""),
       governance:summarizeAgentGovernance(name),
       source:"collab",
-      isActive:true,
+      isActive:Boolean(liveState&&liveState.isActive),
       selected:false,
       threadId:liveState&&liveState.threadId?liveState.threadId:null,
       activeTurnId:liveState&&liveState.activeTurnId?liveState.activeTurnId:null,
       sessionRef:liveState&&liveState.sessionRef?liveState.sessionRef:null,
       status:liveState&&liveState.status?liveState.status:"running",
+      updatedAt:liveState&&Number.isFinite(Number(liveState.updatedAt))?Math.trunc(Number(liveState.updatedAt)):0,
     });
   }
   return merged;
@@ -9300,11 +9533,16 @@ async function executeTurnStreaming(res,prompt,agentName,options){
     turnFinalized=true;
     clearDisconnectTimer();
     cleanup();
-    clearLiveCollabChildActivityForTurn(turnId);
-    state.activeTurnId=null;
     const normalizedStatus=normalizeExecutionState(turnStatus,{terminalFallback:true});
     let finalStatus=normalizedStatus==="in_progress"?"failed":normalizedStatus;
     let finalErrorText=safeString(maybeErrorText||errorText,4000);
+    clearLiveCollabChildActivityForTurn(turnId,{
+      status:finalStatus,
+      detail:finalStatus==="completed"
+        ?"親turn完了に合わせて子agentを確定"
+        :`親turn ${finalStatus} により子agentを終了`,
+    });
+    state.activeTurnId=null;
     const debugFinalize=(step)=>{
       if(!debugFinalizeSteps)return;
       console.log(`[turn-finalize] ${step} turn=${turnId} thread=${threadId} status=${finalStatus}`);

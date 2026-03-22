@@ -1,0 +1,31 @@
+{
+  "schema": "routing-decision-contract.v1",
+  "version": "2026-03-08.r1",
+  "artifactName": "RoutingDecision",
+  "requiredFields": [
+    "lane",
+    "planning_depth",
+    "assurance_depth",
+    "dispatch_graph",
+    "agent_assignments",
+    "required_evidence_classes",
+    "review_requirements",
+    "routing_rationale",
+    "planning_score",
+    "assurance_score"
+  ],
+  "lanes": [
+    "DELIVERY",
+    "DISCOVERY"
+  ],
+  "planningDepths": [
+    "FAST_PLANNING",
+    "STANDARD_PLANNING",
+    "DISCOVERY_PLANNING"
+  ],
+  "assuranceDepths": [
+    "LIGHT_ASSURANCE",
+    "STANDARD_ASSURANCE",
+    "SIGNOFF_ASSURANCE"
+  ]
+}

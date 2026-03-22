@@ -7,7 +7,7 @@
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Ccircle cx='32' cy='32' r='28' fill='%231db86a'/%3E%3Ccircle cx='32' cy='32' r='12' fill='%23050b16'/%3E%3C/svg%3E">
   <link rel="stylesheet" href="./styles.css">
 </head>
-<body>
+<body class="composer-static">
   <div class="bg-layer"></div>
   <div class="app-shell">
     <header class="topbar">
@@ -20,6 +20,7 @@
       </div>
       <div class="state-pills">
         <button id="simpleViewToggle" class="btn mini secondary view-toggle" type="button">詳細表示</button>
+        <button id="uiReloadBtn" class="btn mini secondary" type="button">UI更新</button>
         <span id="connectionState" class="pill disconnected">未接続</span>
         <span id="modeState" class="pill neutral">モード</span>
         <span id="agentState" class="pill neutral">チャット未選択</span>
@@ -54,6 +55,7 @@
               <button id="deleteChatBtn" class="btn mini danger" type="button">削除</button>
             </div>
           </div>
+          <p class="chat-manager-note">会話を切り替える場所です。`F2` で名前変更、`Delete` で削除できます。</p>
           <div id="chatList" class="chat-list">
             <article class="chat-item active">
               <span class="chat-item-line">
@@ -71,13 +73,13 @@
           <div class="settings-grid">
             <article class="settings-mode-card">
               <span class="settings-mode-eyebrow">現在の権限モード</span>
-              <strong id="executionProfileHeadline" class="settings-mode-title">Guardian Approvals</strong>
-              <p id="executionProfileDescription" class="settings-mode-detail">Workspace 書き込みを維持しつつ、eligible な承認要求を guardian reviewer に回します。</p>
+              <strong id="executionProfileHeadline" class="settings-mode-title">Agent (Full Access)</strong>
+              <p id="executionProfileDescription" class="settings-mode-detail">サンドボックスも承認も外し、workspace 外アクセスと live Web検索を許可します。注意して使ってください。</p>
               <div class="settings-chip-row" aria-live="polite">
-                <span id="executionProfileApprovalChip" class="settings-chip">approval_policy</span>
-                <span id="executionProfileSandboxChip" class="settings-chip">sandbox_mode</span>
-                <span id="executionProfileSearchChip" class="settings-chip">web_search</span>
-                <span id="executionProfileGuardianChip" class="settings-chip">guardian</span>
+                <span id="executionProfileApprovalChip" class="settings-chip">Approval: never</span>
+                <span id="executionProfileSandboxChip" class="settings-chip">Sandbox: danger-full-access</span>
+                <span id="executionProfileSearchChip" class="settings-chip">Web: live</span>
+                <span id="executionProfileGuardianChip" class="settings-chip">Guardian: inactive</span>
               </div>
             </article>
             <label>
@@ -86,7 +88,7 @@
                 <option value="auto">Agent (Auto)</option>
                 <option value="read-only">Chat (Read Only)</option>
                 <option value="guardian">Guardian Approvals</option>
-                <option value="full-access">Agent (Full Access)</option>
+                <option value="full-access" selected>Agent (Full Access)</option>
                 <option value="custom">Custom (config.toml)</option>
               </select>
             </label>
@@ -112,7 +114,7 @@
               Web検索
               <select id="webSearchMode">
                 <option value="cached">Cached</option>
-                <option value="live">Live</option>
+                <option value="live" selected>Live</option>
                 <option value="disabled">Disabled</option>
               </select>
             </label>
@@ -135,28 +137,35 @@
                   <select id="approvalPolicy">
                     <option value="on-request">on-request</option>
                     <option value="untrusted">untrusted</option>
-                    <option value="never">never</option>
+                    <option value="never" selected>never</option>
                   </select>
                 </label>
                 <label class="settings-toggle">
                   <span>Guardian approvals</span>
-                  <input id="automaticApprovalReviewEnabled" type="checkbox" checked>
+                  <input id="automaticApprovalReviewEnabled" type="checkbox">
                 </label>
                 <label>
                   sandbox_mode
                   <select id="sandboxMode">
                     <option value="workspace-write">workspace-write</option>
                     <option value="read-only">read-only</option>
-                    <option value="danger-full-access">danger-full-access</option>
+                    <option value="danger-full-access" selected>danger-full-access</option>
                   </select>
                 </label>
               </div>
               <p id="permissionsAdvancedHint" class="settings-advanced-hint">Custom を選ぶと、この欄の設定がそのまま request payload に反映されます。</p>
             </details>
-            <label class="workspace">
-              ワークスペース
-              <input id="workspacePath" type="text" placeholder="C:\path\to\workdir">
-            </label>
+            <div class="workspace-shell">
+              <label class="workspace">
+                ワークスペース
+                <input id="workspacePath" type="text" placeholder="C:\path\to\workdir">
+              </label>
+              <div class="workspace-tools">
+                <button id="workspaceLockBtn" class="btn secondary mini" type="button">このパスで lock</button>
+                <button id="workspaceUnlockBtn" class="btn secondary mini" type="button">unlock</button>
+              </div>
+              <p id="workspaceStatus" class="workspace-status">workspace lock 状態を読み込み中です。</p>
+            </div>
           </div>
         </section>
       </aside>
@@ -169,6 +178,40 @@
             <span id="liveStatusElapsed" class="live-status-elapsed">--:--</span>
           </div>
           <p id="liveStatusDetail" class="live-status-detail">まだ要求はありません。</p>
+        </section>
+
+        <section class="focus-panel" aria-live="polite">
+          <div class="focus-head">
+            <div>
+              <h3>次にやること</h3>
+              <p id="focusActionDetail" class="focus-action-detail">入力先を確認してから、依頼を書いて送信します。</p>
+            </div>
+            <div class="focus-head-tools">
+              <button id="focusToTimelineBtn" class="btn mini secondary" type="button">会話へ</button>
+              <button id="focusToComposerBtn" class="btn mini secondary" type="button">入力欄へ</button>
+            </div>
+          </div>
+          <article class="focus-summary-card">
+            <strong id="focusActionTitle" class="focus-action-title">依頼を書いて送信</strong>
+            <p id="focusActionHint" class="focus-action-hint">やること、対象、確認方法を書くと、AIが迷いにくくなります。</p>
+          </article>
+          <div class="focus-grid">
+            <article id="focusChatCard" class="focus-card">
+              <span class="focus-card-label">チャット</span>
+              <strong id="focusChatValue" class="focus-card-value">Chat 1</strong>
+              <p id="focusChatHint" class="focus-card-hint">まだ依頼はありません。</p>
+            </article>
+            <article id="focusWorkspaceCard" class="focus-card">
+              <span class="focus-card-label">ワークスペース</span>
+              <strong id="focusWorkspaceValue" class="focus-card-value">未選択</strong>
+              <p id="focusWorkspaceHint" class="focus-card-hint">入力先を確認すると安全です。</p>
+            </article>
+            <article id="focusSendCard" class="focus-card">
+              <span class="focus-card-label">送信状態</span>
+              <strong id="focusSendValue" class="focus-card-value">送信できます</strong>
+              <p id="focusSendHint" class="focus-card-hint">依頼が決まったら下の入力欄から送信します。</p>
+            </article>
+          </div>
         </section>
 
         <section class="harness-panel" aria-live="polite">
@@ -228,15 +271,15 @@
             <div class="harness-requirement-head">
               <div>
                 <h4>要件ロック</h4>
-                <p>Step 1 で何が確定したかを、以降の計画と実装より先に確認します。</p>
+                <p>Plan を立てる前に、AI がこの依頼をどう解釈し、どの方向で進もうとしているかを確認します。</p>
               </div>
-              <span id="harnessRequirementMeta" class="harness-plan-meta">ロック待ち</span>
+              <span id="harnessRequirementMeta" class="harness-plan-meta">整理前</span>
             </div>
-            <p id="harnessRequirementHeadline" class="harness-requirement-headline">このチャットで要件がロックされると、AIがどこに向かって進むかと完成条件をここに表示します。</p>
+            <p id="harnessRequirementHeadline" class="harness-requirement-headline">この欄には、Plan を立てる前に AI がいま何を目標に見ていて、どんな方針で進もうとしているかを簡潔に表示します。</p>
             <div id="harnessRequirementSections" class="harness-requirement-sections">
               <article class="harness-requirement-group empty">
-                <h5>要件待ち</h5>
-                <p>AIの向かう先、受け入れ条件、非対象が固まると、この欄で読めるようになります。</p>
+                <h5>AIの方針</h5>
+                <p>この依頼を AI がどう理解し、次にどう進めるつもりかだけをここに短く表示します。</p>
               </article>
             </div>
           </section>
@@ -353,10 +396,31 @@
             </div>
           </details>
         </section>
-        <section id="timeline" class="timeline" aria-live="polite"></section>
+        <section class="conversation-panel" aria-live="polite">
+          <div class="conversation-head">
+            <div>
+              <h3>会話</h3>
+              <p id="conversationSummary" class="conversation-summary">依頼内容と応答はここに表示されます。</p>
+            </div>
+            <button id="jumpToComposerBtn" class="btn mini secondary" type="button">入力欄へ</button>
+          </div>
+          <section id="timeline" class="timeline" aria-live="polite"></section>
+        </section>
 
-        <footer class="composer">
+        <footer id="composer" class="composer">
           <section class="composer-input" aria-label="Chat input">
+            <div class="composer-head">
+              <div>
+                <h3>依頼を書く</h3>
+                <p class="composer-guide">やること・対象・確認方法を書くと、意図が伝わりやすくなります。</p>
+              </div>
+              <div class="composer-shortcuts" aria-label="依頼テンプレート">
+                <button class="btn mini secondary composer-preset" type="button" data-compose-preset="不具合の原因を調べて修正し、関連テストまで更新してください。">バグ修正</button>
+                <button class="btn mini secondary composer-preset" type="button" data-compose-preset="このUIを、わかりやすさと使いやすさを優先して改善してください。">UI改善</button>
+                <button class="btn mini secondary composer-preset" type="button" data-compose-preset="現在の挙動を確認し、迷いやすい操作を減らしてください。">使い勝手改善</button>
+              </div>
+            </div>
+            <p class="composer-tip">例: `web/01.HarnesUI` の入力欄を使いやすくし、見た目と挙動を確認してください。</p>
             <textarea id="promptInput" rows="3" placeholder="依頼を入力してください。例: チャット削除を実装し、API の挙動をテストで確認してください。"></textarea>
             <div class="composer-tools">
               <input id="imageInput" type="file" accept=".png,.jpg,.jpeg,.webp,.gif,image/png,image/jpeg,image/webp,image/gif" multiple hidden>

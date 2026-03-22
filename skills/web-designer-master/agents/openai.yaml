@@ -1,7 +1,7 @@
 interface:
   display_name: "Web Designer Master"
-  short_description: "Create premium, non-generic websites with strong visual direction and production polish."
-  default_prompt: "Use $web-designer-master to design a client-ready website with a unique visual identity."
+  short_description: "Use Stitch-first intake to import, adapt, and ship web UI inside the repo."
+  default_prompt: "Use $web-designer-master to inspect Stitch through the strongest available authenticated path first, then pull web UI direction from Stitch when possible and adapt it into production-ready frontend code."
 
 policy:
   allow_implicit_invocation: true

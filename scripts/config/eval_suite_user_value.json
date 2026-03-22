@@ -1,0 +1,64 @@
+{
+  "suiteId": "user-value-coding.v1",
+  "kind": "user_value",
+  "description": "Textual user-value regression suite for coding and web-creative outputs.",
+  "scoring": {
+    "weights": {
+      "correctness": 0.4,
+      "completeness": 0.2,
+      "specificity": 0.15,
+      "actionability": 0.15,
+      "followUpCorrectionPressure": 0.1
+    },
+    "correctnessVeto": true,
+    "winThreshold": 0.05
+  },
+  "cases": [
+    {
+      "id": "repo_code_review_findings_first",
+      "title": "Code review answers should lead with concrete findings",
+      "driver": "user_value_probe",
+      "prompt": "Review the patch and report the most important defects first.",
+      "weight": 1,
+      "expect": { "mode": "includes", "value": "finding" },
+      "userValue": {
+        "taskClass": "coding_repo",
+        "criticalPatterns": ["finding", "risk"],
+        "coveragePatterns": ["file", "line", "test"],
+        "specificityPatterns": ["server.js", "scripts/", "node scripts/"],
+        "actionabilityPatterns": ["fix", "add test", "verify"]
+      }
+    },
+    {
+      "id": "repo_fix_with_verification",
+      "title": "Fix proposals should include verification",
+      "driver": "user_value_probe",
+      "prompt": "Fix the runtime issue and explain how to verify it.",
+      "weight": 1,
+      "expect": { "mode": "includes", "value": "verify" },
+      "userValue": {
+        "taskClass": "coding_repo",
+        "criticalPatterns": ["fix", "verify"],
+        "coveragePatterns": ["fix", "verify", "test"],
+        "specificityPatterns": ["server.js", "app_server_smoke_test.js"],
+        "actionabilityPatterns": ["run", "verify", "update"]
+      }
+    },
+    {
+      "id": "web_creative_quality_brief",
+      "title": "Web creative prompts should reference benchmark, hierarchy, and responsive proof",
+      "driver": "user_value_probe",
+      "prompt": "Plan a premium landing page implementation with high design quality.",
+      "weight": 1,
+      "expect": { "mode": "includes", "value": "benchmark" },
+      "userValue": {
+        "taskClass": "web_ui",
+        "taskFamily": "web_creative",
+        "criticalPatterns": ["benchmark", "layout"],
+        "coveragePatterns": ["benchmark", "typography", "desktop", "mobile"],
+        "specificityPatterns": ["hero", "section rhythm", "responsive"],
+        "actionabilityPatterns": ["implement", "review", "responsive"]
+      }
+    }
+  ]
+}

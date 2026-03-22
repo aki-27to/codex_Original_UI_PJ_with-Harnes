@@ -1,5 +1,8 @@
 # Codex Standard Harness
 
+HTML guide:
+- `http://127.0.0.1:57525/01.HarnesUI/guide.html`
+
 このリポジトリは `codex app-server` 用のローカル開発ハーネスです。  
 役割は Web UI、`server.js` による Node アダプタ、`codex app-server` との JSONL stdio 連携をまとめて扱うことです。
 
@@ -10,7 +13,7 @@
 
 リポジトリ配置:
 - 現役の runtime / docs / scripts / tools / web UI は root に置きます。
-- 旧資料、サンプル、手動生成物は `archive/` に退避しています。
+- 旧資料・サンプル・手動生成物のうち未参照だったものは整理で削除しました。
 
 ## クイックスタート
 
@@ -21,8 +24,8 @@
 
 ## English Conversation App
 
-1. `start_english_conversation_app.bat` を実行
-2. `http://127.0.0.1:57525/english-conversation-app/index.html` が開く
+1. `start_codex_ui.bat` を実行
+2. `http://127.0.0.1:57525/english-conversation-app/index.html` を開く
 3. 静的ファイルは次の優先順で解決されます
    - `CODEX_ENGLISH_CONVERSATION_APP_ROOT`
    - sibling repo `../english-conversation-app/`
@@ -110,7 +113,6 @@ node scripts/piper_runtime_doctor.js --model en_US-lessac-high
 
 launcher 側で自動参照されます:
 - `start_codex_ui.bat`
-- `start_english_conversation_app.bat`
 
 doctor 実行時にダウンロードを許可するなら `--allow-download` を追加してください。
 
@@ -159,7 +161,7 @@ powershell -ExecutionPolicy Bypass -File .\tools\kokoro-fastapi\smoke_test_speec
 
 English Conversation App 連携:
 - `http://127.0.0.1:57525/english-conversation-app/index.html` を開く
-- sibling repo があれば `start_english_conversation_app.bat` が `CODEX_ENGLISH_CONVERSATION_APP_ROOT` を自動設定
+- sibling repo があればサーバーが `CODEX_ENGLISH_CONVERSATION_APP_ROOT` 未設定時に自動で優先します
 - 明示 override は `CODEX_ENGLISH_CONVERSATION_APP_ROOT=/abs/path/to/english-conversation-app`
 - 初回 split は `bootstrap_english_conversation_app_repo.bat`
 - `TTS Engine` を `Kokoro FastAPI (local)` に設定
@@ -181,7 +183,7 @@ English Conversation App 連携:
 - 対象 repo は常にその turn の `cwd`
 - baseline が dirty の repo には自動 commit / push しない
 - remote 未設定または detached HEAD の場合は push しない
-- 対象がこのハーネス repo の場合は `logs/harness_execution_memory.json` と `logs/eval_runs.jsonl` を baseline 判定から除外する
+- 対象がこのハーネス repo の場合は `logs/archive/raw/runtime_state/harness_execution_memory.json` と `logs/archive/raw/runtime_state/eval_runs.jsonl` を baseline 判定から除外する
 
 ## 補足
 
@@ -209,9 +211,9 @@ English Conversation App 連携:
 - smoke harness の可視性固定値:
   - `CODEX_EXECUTION_PROFILE=smoke-test`
 - turn artifact は `manifest.json.execution.meta` と `manifest.json.execution.observed` を含みます
-- idempotency と turn memory は `logs/harness_execution_memory.json`
-- eval history は `logs/eval_runs.jsonl`
-- `logs/harness_execution_memory.json` と `logs/eval_runs.jsonl` はローカル runtime state として Git 追跡対象から外しています
+- idempotency と turn memory は `logs/archive/raw/runtime_state/harness_execution_memory.json`
+- eval history は `logs/archive/raw/runtime_state/eval_runs.jsonl`
+- `logs/archive/raw/runtime_state/harness_execution_memory.json` と `logs/archive/raw/runtime_state/eval_runs.jsonl` はローカル runtime state として Git 追跡対象から外しています
 - `executionProfile=repro` は `webSearch=0`、`forceNewSession=1`、`requestUserInputPolicy=blocked`
 - operation log を日次分割する場合は `CODEX_OPERATION_LOG_DAILY_SPLIT=1`
 - Requirement Lock は既定で無効

@@ -1,0 +1,65 @@
+{
+  "schema": "evidence-contract.v1",
+  "version": "2026-03-08.r1",
+  "sourceDoc": "docs/EVIDENCE_CONTRACT.md",
+  "evidenceClasses": {
+    "implementation": [
+      "changed_file_refs",
+      "created_artifacts"
+    ],
+    "verification": [
+      "test_commands",
+      "lint_or_check_commands",
+      "manual_review_steps"
+    ],
+    "runtime": [
+      "api_responses",
+      "protocol_lifecycle_results",
+      "terminal_status_or_log_summaries",
+      "stage_timeline",
+      "flow_trace"
+    ],
+    "documentation": [
+      "docs/CURRENT_ARCHITECTURE.md",
+      "docs/ARCHITECTURE_CHANGELOG.md",
+      "traceable_sync_note"
+    ],
+    "risk": [
+      "skipped_checks",
+      "failed_checks",
+      "residual_risk_statements"
+    ]
+  },
+  "minimumEvidenceByChangeType": {
+    "docs_only_policy_change": [
+      "manual_consistency_review",
+      "updated_policy_file_refs",
+      "architecture_spec_sync"
+    ],
+    "server_or_scripts_change": [
+      "node scripts/app_server_smoke_test.js"
+    ],
+    "eval_or_workflow_policy_change": [
+      "node scripts/eval_replay_api_smoke_test.js"
+    ],
+    "web_change": [
+      "launch_ui",
+      "GET /api/runtime = 200"
+    ],
+    "skill_assignment_or_package_change": [
+      "node scripts/skill_portfolio_audit.js"
+    ],
+    "new_logic_over_delivery": [
+      "dedicated_automated_tests"
+    ]
+  },
+  "requiredTurnArtifacts": [
+    "requirement_contract.json",
+    "requirement_validation.json",
+    "dispatch_plan.json",
+    "evidence_manifest.json",
+    "stage_timeline.json",
+    "flow_trace_summary.json",
+    "review_load_breakdown.json"
+  ]
+}

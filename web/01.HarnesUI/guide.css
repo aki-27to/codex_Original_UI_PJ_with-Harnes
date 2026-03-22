@@ -1,0 +1,194 @@
+.guide-shell {
+  max-width: 1500px;
+}
+
+.guide-layout {
+  gap: 16px;
+}
+
+.guide-topbar {
+  align-items: flex-start;
+}
+
+.guide-anchor-nav {
+  position: sticky;
+  top: 12px;
+  z-index: 5;
+}
+
+.guide-hero {
+  grid-template-columns: minmax(0, 1.35fr) minmax(280px, 0.65fr);
+}
+
+.guide-section {
+  display: grid;
+  gap: 12px;
+}
+
+.guide-grid {
+  display: grid;
+  gap: 12px;
+}
+
+.guide-grid-2 {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.guide-grid-3 {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.guide-grid-5 {
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+}
+
+.guide-card {
+  padding: 16px;
+  display: grid;
+  gap: 10px;
+}
+
+.guide-card h4 {
+  margin: 0;
+  font-size: 18px;
+  line-height: 1.15;
+}
+
+.guide-card p {
+  margin: 0;
+  color: #dbe7ff;
+  line-height: 1.7;
+  font-size: 14px;
+}
+
+.guide-card code {
+  font-family: "Consolas", "Cascadia Code", monospace;
+  font-size: 0.95em;
+  color: #d2f6df;
+}
+
+.guide-note {
+  color: #9ec7ff;
+  font-size: 13px;
+}
+
+.guide-list {
+  margin: 0;
+  padding-left: 18px;
+  color: #dbe7ff;
+  display: grid;
+  gap: 8px;
+  line-height: 1.65;
+  font-size: 14px;
+}
+
+.guide-numbered {
+  padding-left: 20px;
+}
+
+.guide-flow-strip {
+  display: grid;
+  grid-template-columns: repeat(9, minmax(0, auto));
+  gap: 10px;
+  align-items: stretch;
+}
+
+.guide-flow-node {
+  min-height: 160px;
+  border: 1px solid #29487d;
+  border-radius: 16px;
+  padding: 14px;
+  background:
+    radial-gradient(220px 120px at 100% 0%, rgba(53, 126, 214, 0.18), transparent 70%),
+    linear-gradient(180deg, rgba(17, 29, 53, 0.96), rgba(11, 19, 35, 0.96));
+  display: grid;
+  gap: 10px;
+  justify-items: start;
+}
+
+.guide-flow-node span {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  border-radius: 999px;
+  background: rgba(29, 184, 106, 0.16);
+  border: 1px solid rgba(29, 184, 106, 0.4);
+  color: #bff4d1;
+  font-weight: 800;
+}
+
+.guide-flow-node strong {
+  font-size: 16px;
+  line-height: 1.25;
+}
+
+.guide-flow-node p {
+  color: #bad0ef;
+}
+
+.guide-flow-arrow {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #7db0f2;
+  font-size: 26px;
+  font-weight: 800;
+}
+
+.guide-warning {
+  border-color: rgba(244, 174, 43, 0.45);
+  background:
+    radial-gradient(280px 160px at 90% 0%, rgba(244, 174, 43, 0.15), transparent 70%),
+    linear-gradient(180deg, rgba(24, 24, 36, 0.96), rgba(15, 17, 28, 0.96));
+}
+
+.guide-note-card {
+  border-color: rgba(95, 146, 224, 0.42);
+}
+
+.guide-summary {
+  border-color: rgba(47, 191, 113, 0.4);
+  background:
+    radial-gradient(320px 160px at 100% 0%, rgba(47, 191, 113, 0.14), transparent 68%),
+    linear-gradient(180deg, rgba(16, 26, 47, 0.95), rgba(9, 17, 31, 0.96));
+}
+
+@media (max-width: 1200px) {
+  .guide-grid-5,
+  .guide-grid-3,
+  .guide-grid-2 {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .guide-flow-strip {
+    grid-template-columns: 1fr;
+  }
+
+  .guide-flow-arrow {
+    transform: rotate(90deg);
+    min-height: 24px;
+  }
+}
+
+@media (max-width: 760px) {
+  .guide-grid-5,
+  .guide-grid-3,
+  .guide-grid-2,
+  .guide-hero {
+    grid-template-columns: 1fr;
+  }
+
+  .guide-anchor-nav {
+    position: static;
+  }
+
+  .guide-card {
+    padding: 14px;
+  }
+
+  .guide-card h4 {
+    font-size: 17px;
+  }
+}

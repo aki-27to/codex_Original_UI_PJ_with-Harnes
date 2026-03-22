@@ -2,6 +2,13 @@
 
 const fs = require("fs");
 const path = require("path");
+const {
+  buildUserValueRunSummary,
+  compareUserValueRuns,
+  normalizeUserValueRubric,
+  normalizeUserValueScoring,
+  scoreUserValueResponse,
+} = require("./user_value_policy");
 
 const defaultEvalSuitePath = path.join(__dirname, "..", "config", "eval_suite_default.json");
 const allowedExpectModes = new Set(["exact", "includes", "regex", "json_fields"]);
@@ -19,6 +26,7 @@ const allowedEvalDrivers = new Set([
   "planning_contract_probe",
   "adversarial_shadow_probe",
   "adversarial_loop_probe",
+  "user_value_probe",
 ]);
 
 function safeString(value, max = 2000) {
@@ -124,6 +132,9 @@ function normalizeEvalCase(entry, index) {
     input: payload.input && typeof payload.input === "object" ? sanitizeJsonValue(payload.input) : {},
     weight,
     expect: normalizeExpectation(payload.expect),
+    userValue: payload.userValue && typeof payload.userValue === "object"
+      ? normalizeUserValueRubric(payload.userValue)
+      : null,
   };
 }
 
@@ -143,8 +154,11 @@ function normalizeEvalSuite(input, { fallbackId = "default-v1" } = {}) {
   return {
     schema: "harness-eval-suite.v1",
     suiteId: safeString(payload.suiteId, 120) || fallbackId,
+    kind: safeString(payload.kind, 80).toLowerCase() || "conformance",
     description: safeString(payload.description, 400) || "Harness evaluation suite",
+    constitutionAligned: true,
     outputSchema: payload.outputSchema && typeof payload.outputSchema === "object" ? payload.outputSchema : {},
+    scoring: normalizeUserValueScoring(payload.scoring),
     cases,
   };
 }
@@ -254,7 +268,7 @@ function evaluateEvalCaseOutput(finalText, expectation) {
   };
 }
 
-function summarizeEvalCaseResult({ evalCase, outputText, latencyMs, status, errorText, taskOutcomeStatus, taskOutcomeReason }) {
+function summarizeEvalCaseResult({ suite, evalCase, outputText, latencyMs, status, errorText, taskOutcomeStatus, taskOutcomeReason }) {
   const verdict = evaluateEvalCaseOutput(outputText, evalCase.expect);
   const passed = Boolean(verdict.passed);
   const weight = Number(evalCase.weight) || 1;
@@ -279,6 +293,14 @@ function summarizeEvalCaseResult({ evalCase, outputText, latencyMs, status, erro
   const normalizedTaskOutcomeReason = safeString(taskOutcomeReason, 120);
   result.taskOutcomeStatus = normalizedTaskOutcomeStatus;
   result.taskOutcomeReason = normalizedTaskOutcomeReason;
+  if ((suite && suite.kind === "user_value") || evalCase.userValue) {
+    result.userValue = scoreUserValueResponse({
+      prompt: evalCase && typeof evalCase.prompt === "string" ? evalCase.prompt : "",
+      response: typeof outputText === "string" ? outputText : "",
+      rubric: evalCase.userValue || {},
+      scoring: suite && suite.scoring ? suite.scoring : {},
+    });
+  }
   return result;
 }
 
@@ -295,6 +317,7 @@ function buildEvalRunSummary({ suite, variant, caseResults, startedAt, completed
 
   return {
     suiteId: suite.suiteId,
+    kind: safeString(suite && suite.kind, 80).toLowerCase() || "conformance",
     variant,
     startedAt,
     completedAt,
@@ -308,14 +331,19 @@ function buildEvalRunSummary({ suite, variant, caseResults, startedAt, completed
     scoreRate: maxScore > 0 ? Number((score / maxScore).toFixed(4)) : 0,
     avgLatencyMs,
     cases: results,
+    userValue: buildUserValueRunSummary({ caseResults: results, suite }),
   };
 }
 
-function compareEvalRuns(runA, runB) {
+function compareEvalRuns(runA, runB, suiteScoring) {
   const left = runA && typeof runA === "object" ? runA : null;
   const right = runB && typeof runB === "object" ? runB : null;
   if (!left || !right) {
     return { winner: "unknown", reason: "missing_run" };
+  }
+  const userValueComparison = compareUserValueRuns(left, right, suiteScoring);
+  if (userValueComparison) {
+    return userValueComparison;
   }
   if (left.scoreRate !== right.scoreRate) {
     return {

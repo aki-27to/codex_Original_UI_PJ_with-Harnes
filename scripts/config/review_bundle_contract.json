@@ -1,0 +1,28 @@
+{
+  "schema": "review-bundle-contract.v1",
+  "version": "2026-03-08.r1",
+  "artifactName": "ReviewBundle",
+  "requiredFields": [
+    "acceptance_coverage_matrix",
+    "reviewer_findings",
+    "severity",
+    "residual_risk",
+    "missing_evidence",
+    "pass_fail_per_criterion",
+    "recommended_release_state"
+  ],
+  "recommendedReleaseStates": [
+    "RELEASE_APPROVED",
+    "RELEASE_APPROVED_WITH_ASSUMPTIONS",
+    "RELEASE_BLOCKED",
+    "EXTERNAL_ACTION_REQUIRED",
+    "HARNESS_FAILURE"
+  ],
+  "severityLevels": [
+    "none",
+    "low",
+    "medium",
+    "high",
+    "critical"
+  ]
+}

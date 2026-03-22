@@ -4,7 +4,7 @@
 const assert = require("assert");
 const http = require("http");
 const path = require("path");
-const { spawn } = require("child_process");
+const { startInProcessHarnessServer } = require("./lib/in_process_harness_server");
 
 const workspaceRoot = path.resolve(__dirname, "..");
 
@@ -66,26 +66,6 @@ async function waitRuntime(port, maxMs = 45000) {
   throw new Error("runtime not ready");
 }
 
-function spawnNodeScript(scriptPath, { cwd, env, stdio = ["ignore", "pipe", "pipe"] } = {}) {
-  const options = {
-    cwd,
-    env,
-    stdio,
-    windowsHide: true,
-  };
-  if (process.platform !== "win32") {
-    return spawn(process.execPath, [scriptPath], options);
-  }
-  try {
-    return spawn(process.execPath, [scriptPath], options);
-  } catch (error) {
-    if (!/EPERM/i.test(String(error && error.message ? error.message : error))) {
-      throw error;
-    }
-  }
-  return spawn(`"${process.execPath}" ${scriptPath}`, [], { ...options, shell: true });
-}
-
 async function run() {
   const port = 57567;
   const env = {
@@ -94,11 +74,7 @@ async function run() {
     CODEX_AUTO_OPEN_BROWSER: "0",
     CODEX_DEFAULT_EXEC_AGENT: "default",
   };
-  const child = spawnNodeScript("server.js", {
-    cwd: workspaceRoot,
-    env,
-    stdio: ["ignore", "pipe", "pipe"],
-  });
+  const harness = await startInProcessHarnessServer(env);
 
   try {
     const runtime = await waitRuntime(port);
@@ -175,7 +151,7 @@ async function run() {
 
     console.log("PASS intent_first_runtime_test");
   } finally {
-    child.kill();
+    await harness.stop();
   }
 }
 

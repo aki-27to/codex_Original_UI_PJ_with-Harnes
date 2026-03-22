@@ -28,8 +28,8 @@ Policy source of truth:
 
 | Role | Assigned Skills | Class Mix | Requirement Check |
 |---|---|---|---|
-| `default` | `openai-docs`, `skill-creator-master`, `skill-creator`, `skill-installer`, `spec-sync-assistant`, `parent-dispatch-guard`, `feedback-promotion-governor`, `red-requirement-auditor` | `G:1 / R:6 / S:0 / E:1` | PASS |
-| `intake` | `openai-docs`, `parent-dispatch-guard`, `feedback-promotion-governor`, `red-requirement-auditor` | `G:1 / R:3 / S:0 / E:0` | PASS |
+| `default` | `openai-docs`, `skill-creator-master`, `skill-creator`, `skill-installer`, `spec-sync-assistant`, `parent-dispatch-guard`, `feedback-promotion-governor`, `red-requirement-auditor`, `web-designer-master` | `G:1 / R:6 / S:0 / E:2` | PASS |
+| `intake` | `openai-docs`, `parent-dispatch-guard`, `feedback-promotion-governor`, `red-requirement-auditor`, `web-designer-master` | `G:1 / R:3 / S:0 / E:1` | PASS |
 | `release_manager` | `openai-docs`, `spreadsheet`, `turn-log-auditor`, `release-evidence-gate`, `spec-sync-assistant`, `parent-dispatch-guard`, `feedback-promotion-governor`, `red-requirement-auditor` | `G:1 / R:5 / S:2 / E:0` | PASS |
 | `frontend_worker` | `playwright`, `screenshot`, `ui-regression-diff` | `G:0 / R:1 / S:2 / E:0` | PASS |
 | `backend_worker` | `openai-docs`, `pdf`, `spreadsheet`, `appserver-protocol-debugger`, `api-contract-testgen` | `G:1 / R:0 / S:4 / E:0` | PASS |

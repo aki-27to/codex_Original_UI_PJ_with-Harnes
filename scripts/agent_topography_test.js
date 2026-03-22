@@ -21,6 +21,7 @@ function resolveHarnessAppJsPath() {
 }
 const appJsPath = resolveHarnessAppJsPath();
 const serverJsPath = path.join(workspaceRoot, "server.js");
+const serverModule = require(serverJsPath);
 
 function sleep(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms));
@@ -193,6 +194,15 @@ async function main() {
   const checks = [];
 
   checks.push(
+    runCheck("topography no longer keeps floating-panel collapse state", () => {
+      assert.ok(
+        !/TOPOGRAPHY_COLLAPSED_KEY|loadTopographyUiState|saveTopographyUiState|setTopographyCollapsed|agentTopographyToggleBtn/.test(appJsSource),
+        "floating-panel collapse state should be removed from app.js"
+      );
+    })
+  );
+
+  checks.push(
     runCheck("topography refresh interval constant is 10000ms", () => {
       assertRegex(
         appJsSource,
@@ -233,6 +243,25 @@ async function main() {
   );
 
   checks.push(
+    runCheck("renderAgentTopography groups rows into kanban lanes", () => {
+      assertRegex(
+        appJsSource,
+        /const\s+lanes=groupTopographyRowsForUi\(rows\);[\s\S]*?laneSection\.className=`agent-topography-lane agent-topography-lane-\$\{lane\.id\}`;[\s\S]*?laneTitle\.textContent=lane\.label;/,
+        "renderAgentTopography does not render topography rows as kanban lanes"
+      );
+    })
+  );
+
+  checks.push(
+    runCheck("topography rows do not foreground planned task signals", () => {
+      assert.ok(
+        !/buildTopographyTaskSignalsForUi|topographyTaskSignalsForRow|このターン担当|agent-topography-signal/.test(appJsSource),
+        "planned task-signal overlay logic should not remain in app.js"
+      );
+    })
+  );
+
+  checks.push(
     runCheck("active chat topography context derives match names from current chat traces and harness events", () => {
       assertRegex(
         appJsSource,
@@ -256,9 +285,173 @@ async function main() {
     runCheck("server collab item detail includes child agent hints for monitor filtering", () => {
       assertRegex(
         serverJsSource,
-        /if\(isCollabToolItemType\(type\)\)\{[\s\S]*?const\s+dispatchTrace=buildAgentDispatchTrace\(item,\"\"\);[\s\S]*?detailParts\.push\(`child=\$\{dispatchTrace\.child\}`\);/,
+        /if\(isCollabToolItemType\(type\)\)\{[\s\S]*?const\s+hintedChild=safeString\(context&&context\.childName,120\);[\s\S]*?detailParts\.push\(`child=\$\{childName\}`\);/,
         "server collab item detail does not include child=... hints"
       );
+    })
+  );
+
+  checks.push(
+    runCheck("execution trace flow merges topography rows into lifecycle lanes", () => {
+      assertRegex(
+        appJsSource,
+        /const\s+topographyRows=syncedTopographyRows\(topographyState\.agents\);[\s\S]*?const\s+topographyByName=new Map\(\);[\s\S]*?const\s+tone=executionTraceBucketForUi\(\{row:monitorRow,pendingCount,lastTrace\}\);/,
+        "flow() does not merge synced topography rows into the execution-trace lane state"
+      );
+      assertRegex(
+        appJsSource,
+        /function\s+synthesizeTraceRowsForUi\s*\([\s\S]*?const\s+traceRowsForList=synthesizeTraceRowsForUi\(traceRows,topographyRows,/,
+        "execution trace list does not synthesize child lifecycle rows from topography data"
+      );
+    })
+  );
+
+  checks.push(
+    runCheck("live collab child rows retain terminal outcomes after wait completes", () => {
+      const topographyApi = serverModule && serverModule.__topography;
+      assert(topographyApi && typeof topographyApi.createLiveCollabTurnTracker === "function", "__topography helpers unavailable");
+      topographyApi.clearLiveCollabChildState();
+      const tracker = topographyApi.createLiveCollabTurnTracker({
+        parentAgentName: "default",
+        parentThreadId: "thread-parent-1",
+        parentTurnId: "turn-parent-1",
+        planningContext: {
+          dispatchPlan: {
+            dispatches: [{ ownerAgent: "backend_worker" }],
+          },
+        },
+      });
+
+      topographyApi.observeLiveCollabItem({
+        phase: "completed",
+        tracker,
+        item: {
+          type: "collabAgentToolCall",
+          id: "spawn-1",
+          tool: "spawnAgent",
+          status: "completed",
+          receiverThreadIds: ["child-thread-1"],
+        },
+      });
+      const runningRows = topographyApi.getAgentTopographySnapshot();
+      const spawnedRow = runningRows.find((row) => row && row.name === "backend_worker");
+      assert(spawnedRow, "spawned backend_worker row not found in topography snapshot");
+      assert.strictEqual(spawnedRow.threadId, "child-thread-1", "spawned backend_worker should expose child thread id");
+      assert.strictEqual(spawnedRow.activeTurnId, "turn-parent-1", "spawned backend_worker should stay tied to the parent turn while active");
+      assert(
+        /spawned|working|running/i.test(String(spawnedRow.status || "")),
+        `spawned backend_worker should look active, got status=${spawnedRow.status || "(empty)"}`
+      );
+
+      topographyApi.observeLiveCollabItem({
+        phase: "started",
+        tracker,
+        item: {
+          type: "collabAgentToolCall",
+          id: "wait-1",
+          tool: "wait",
+          status: "inProgress",
+          receiverThreadIds: ["child-thread-1"],
+        },
+      });
+      topographyApi.observeLiveCollabItem({
+        phase: "completed",
+        tracker,
+        item: {
+          type: "collabAgentToolCall",
+          id: "wait-1",
+          tool: "wait",
+          status: "completed",
+          receiverThreadIds: [],
+        },
+      });
+      const settledRows = topographyApi.getAgentTopographySnapshot();
+      const settledBackendRow = settledRows.find((row) => row && row.name === "backend_worker");
+      assert(settledBackendRow, "backend_worker row should remain after wait completes");
+      assert(
+        !settledBackendRow.activeTurnId,
+        `backend_worker should leave live mode after wait completes, got activeTurnId=${settledBackendRow.activeTurnId}`
+      );
+      assert.strictEqual(
+        settledBackendRow.threadId,
+        "child-thread-1",
+        "backend_worker should retain the child thread id as terminal evidence after wait completes"
+      );
+      assert.strictEqual(
+        String(settledBackendRow.status || "").toLowerCase(),
+        "completed",
+        `backend_worker should remain visible as completed, got status=${settledBackendRow.status || "(empty)"}`
+      );
+
+      topographyApi.clearLiveCollabChildState();
+      const failedTracker = topographyApi.createLiveCollabTurnTracker({
+        parentAgentName: "default",
+        parentThreadId: "thread-parent-2",
+        parentTurnId: "turn-parent-2",
+        planningContext: {
+          dispatchPlan: {
+            dispatches: [{ ownerAgent: "reviewer" }],
+          },
+        },
+      });
+      topographyApi.observeLiveCollabItem({
+        phase: "completed",
+        tracker: failedTracker,
+        item: {
+          type: "collabAgentToolCall",
+          id: "spawn-review-1",
+          tool: "spawnAgent",
+          status: "completed",
+          receiverThreadIds: ["review-thread-1"],
+        },
+      });
+      topographyApi.observeLiveCollabItem({
+        phase: "started",
+        tracker: failedTracker,
+        item: {
+          type: "collabAgentToolCall",
+          id: "wait-review-1",
+          tool: "wait",
+          status: "inProgress",
+          receiverThreadIds: ["review-thread-1"],
+        },
+      });
+      topographyApi.observeLiveCollabItem({
+        phase: "completed",
+        tracker: failedTracker,
+        item: {
+          type: "collabAgentToolCall",
+          id: "wait-review-1",
+          tool: "wait",
+          status: "completed",
+          receiverThreadIds: [],
+          agentsStates: {
+            "review-thread-1": {
+              status: "failed",
+              message: "FAIL: review found blocking issues",
+            },
+          },
+        },
+      });
+      const failedRows = topographyApi.getAgentTopographySnapshot();
+      const reviewerRow = failedRows.find((row) => row && row.name === "reviewer");
+      assert(reviewerRow, "reviewer row should remain visible after a failed wait outcome");
+      assert(
+        !reviewerRow.activeTurnId,
+        `reviewer should leave live mode after a failed wait outcome, got activeTurnId=${reviewerRow.activeTurnId}`
+      );
+      assert.strictEqual(
+        reviewerRow.threadId,
+        "review-thread-1",
+        "reviewer should retain the child thread id when surfacing a failed terminal outcome"
+      );
+      assert.strictEqual(
+        String(reviewerRow.status || "").toLowerCase(),
+        "failed",
+        `reviewer should expose the failed wait outcome, got status=${reviewerRow.status || "(empty)"}`
+      );
+
+      topographyApi.clearLiveCollabChildState();
     })
   );
 

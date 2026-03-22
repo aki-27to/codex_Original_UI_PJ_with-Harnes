@@ -109,12 +109,12 @@
       "explorer": ["explore", "investigate", "fact-find", "discovery"]
     },
     "sectionAliases": {
-      "goal": ["request", "goal", "purpose", "目的", "主目的"],
-      "baseline": ["implementation", "implementation requirements", "deliverables", "baseline scope", "scope", "実装要求", "期待する成果物"],
-      "acceptance": ["acceptance", "acceptance criteria", "success criteria", "受け入れ条件"],
-      "nonGoals": ["non-goal", "non goal", "non-goals", "非目標"],
-      "background": ["background", "context", "why", "背景", "背景認識"],
-      "constraints": ["constraint", "constraints", "guardrails", "制約", "重要制約"]
+      "goal": ["request", "goal", "purpose", "目的", "主目的", "依頼", "依頼文", "製作目的"],
+      "baseline": ["implementation", "implementation requirements", "deliverables", "baseline scope", "scope", "実装要求", "期待する成果物", "要件", "実装要件", "ページ構成", "ページ数", "必須項目"],
+      "acceptance": ["acceptance", "acceptance criteria", "success criteria", "受け入れ条件", "完成条件", "成功条件"],
+      "nonGoals": ["non-goal", "non goal", "non-goals", "非目標", "非対象", "対象外"],
+      "background": ["background", "context", "why", "背景", "背景認識", "前提", "補足", "参考", "参考サイト"],
+      "constraints": ["constraint", "constraints", "guardrails", "制約", "重要制約", "条件", "注意事項"]
     }
   }
 }
