@@ -313,6 +313,8 @@ const evalRunHistoryPath=resolveWorkspaceScopedPathOverride(
   evalRunHistoryPathEnvKey,
   loggingSurfacePaths.evalHistoryPath
 );
+const requirementFoundationV1PhaseExitPath=path.join(workspaceRoot,"output","phase_exit_requirement_foundation_v1.json");
+const requirementFoundationV1PhaseExitMarkdownPath=path.join(workspaceRoot,"output","phase_exit_requirement_foundation_v1.md");
 const runtimeProofsRoot=loggingSurfacePaths.proofBundlesRoot;
 const signoffBundlesRoot=loggingSurfacePaths.signoffBundlesRoot;
 const replayBundlesRoot=loggingSurfacePaths.replayBundlesRoot;
@@ -11831,6 +11833,41 @@ function buildSignoffBundleSnapshot(candidate){
     },
   };
 }
+function buildRequirementFoundationV1PhaseStatus(){
+  const auditReportPath=repoRelativePath(workspaceRoot,requirementFoundationV1PhaseExitPath);
+  const markdownReportPath=repoRelativePath(workspaceRoot,requirementFoundationV1PhaseExitMarkdownPath);
+  const fallback={
+    requirementFoundationV1:"not_done",
+    completedAt:"",
+    auditReportPath,
+    markdownReportPath,
+    lastAuditStatus:"MISSING",
+    failedCheckIds:[],
+  };
+  const summary=readJsonObjectFile(requirementFoundationV1PhaseExitPath);
+  if(!summary||typeof summary!=="object")return fallback;
+  const passedCount=Number.isFinite(Number(summary&&summary.summary&&summary.summary.passedCount))
+    ?Math.max(0,Math.trunc(Number(summary.summary.passedCount)))
+    :0;
+  const totalCount=Number.isFinite(Number(summary&&summary.summary&&summary.summary.totalCount))
+    ?Math.max(0,Math.trunc(Number(summary.summary.totalCount)))
+    :0;
+  const lastAuditStatus=safeString(summary&&summary.status,24).toUpperCase()||"UNKNOWN";
+  const failedCheckIds=Array.isArray(summary&&summary.phaseStatus&&summary.phaseStatus.failedCheckIds)
+    ?summary.phaseStatus.failedCheckIds.map((entry)=>safeString(entry,16)).filter(Boolean).slice(0,16)
+    :Array.isArray(summary&&summary.checks)
+      ?summary.checks.filter((entry)=>safeString(entry&&entry.status,16).toUpperCase()!=="PASS").map((entry)=>safeString(entry&&entry.id,16)).filter(Boolean).slice(0,16)
+      :[];
+  const done=lastAuditStatus==="PASS"&&passedCount===8&&totalCount===8;
+  return{
+    requirementFoundationV1:done?"done":"not_done",
+    completedAt:done?(safeString(summary&&summary.phaseStatus&&summary.phaseStatus.completedAt,80)||safeString(summary&&summary.generatedAt,80)):"",
+    auditReportPath,
+    markdownReportPath,
+    lastAuditStatus,
+    failedCheckIds,
+  };
+}
 function buildBundleOverview(rootDir,summaryFileName,buildSnapshot){
   const candidates=listBundleSummaryCandidates(rootDir,summaryFileName);
   return{
@@ -12114,6 +12151,7 @@ function buildRuntimeApiSnapshot(){
   };
   const fullUtilization=buildFullUtilizationDefaultsSnapshot();
   const parentDispatchGuard=buildParentDispatchGuardDefaultsSnapshot();
+  const phaseStatus=buildRequirementFoundationV1PhaseStatus();
   const executionVisibility={
     profile:runtimeExecutionProfile,
     envKey:executionProfileEnvKey,
@@ -12177,6 +12215,8 @@ function buildRuntimeApiSnapshot(){
     slo,
     evalHarness,
     eval_harness:evalHarness,
+    phaseStatus,
+    phase_status:phaseStatus,
     contractSpec:{
       schema:safeString(harnessTurnContractSpec&&harnessTurnContractSpec.schema,80)||"harness-turn-contract.v1",
       path:summarizePathForOperationLog(harnessTurnContractSpecPath,220),

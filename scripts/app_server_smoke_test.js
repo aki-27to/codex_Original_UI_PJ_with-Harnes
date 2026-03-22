@@ -920,6 +920,15 @@ async function run() {
     if (runtimeReady.requirementGuard.enabled !== false) {
       throw new Error("runtime requirementGuard.enabled was not false");
     }
+    if (!runtimeReady.phase_status || typeof runtimeReady.phase_status !== "object") {
+      throw new Error("runtime did not expose phase_status");
+    }
+    if (typeof runtimeReady.phase_status.requirementFoundationV1 !== "string" || !runtimeReady.phase_status.requirementFoundationV1) {
+      throw new Error("runtime phase_status did not expose requirementFoundationV1");
+    }
+    if (typeof runtimeReady.phase_status.auditReportPath !== "string" || !runtimeReady.phase_status.auditReportPath) {
+      throw new Error("runtime phase_status did not expose auditReportPath");
+    }
     if (!runtimeReady.adversarialShadow || typeof runtimeReady.adversarialShadow !== "object") {
       throw new Error("runtime did not expose adversarialShadow snapshot");
     }

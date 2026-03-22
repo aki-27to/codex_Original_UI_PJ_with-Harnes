@@ -243,6 +243,14 @@ function createOverviewPayload(overrides = {}) {
         familyProfilePath: "scripts/config/task_family_profiles.json",
         families: ["deterministic_code", "web_creative", "research_analysis", "planning_design"],
       },
+      phaseStatus: {
+        requirementFoundationV1: "done",
+        completedAt: "2026-03-22T12:00:00.000Z",
+        auditReportPath: "output/phase_exit_requirement_foundation_v1.json",
+        markdownReportPath: "output/phase_exit_requirement_foundation_v1.md",
+        lastAuditStatus: "PASS",
+        failedCheckIds: [],
+      },
       latestTurn: {
         turn_id: "turn-002",
         status: "failed",
@@ -766,6 +774,13 @@ function assertRenderedOverviewMatchesPayload(payload, elements) {
     assertContains(elements.healthCard.innerHTML, String(familyCompletionGate.status || "pending"), "health card must render family completion gate status");
     assertContains(elements.healthCard.innerHTML, String(familyCompletionGate.completionContract || "contract"), "health card must render family completion gate contract");
   }
+  const phaseStatus = payload && payload.runtime && payload.runtime.phaseStatus && typeof payload.runtime.phaseStatus === "object"
+    ? payload.runtime.phaseStatus
+    : null;
+  if (phaseStatus) {
+    assertContains(elements.healthCard.innerHTML, String(phaseStatus.requirementFoundationV1 || "not_done"), "health card must render requirement foundation phase status");
+    assertContains(elements.healthCard.innerHTML, String(phaseStatus.auditReportPath || "output/phase_exit_requirement_foundation_v1.json"), "health card must render requirement foundation audit report path");
+  }
   const traceabilityClauses = payload && payload.traceability && Array.isArray(payload.traceability.clauses)
     ? payload.traceability.clauses
     : [];
@@ -961,6 +976,8 @@ async function runIntegrationCheck() {
     assert.strictEqual(overviewJson.mode, "harness-overview", "overview mode mismatch");
     assert(overviewJson.runtime && typeof overviewJson.runtime === "object", "overview runtime missing");
     assert(overviewJson.runtime.activeAgent, "overview runtime must expose activeAgent");
+    assert(overviewJson.runtime.phaseStatus && typeof overviewJson.runtime.phaseStatus === "object", "overview runtime must expose phaseStatus");
+    assert(typeof overviewJson.runtime.phaseStatus.requirementFoundationV1 === "string", "overview runtime phaseStatus must expose requirementFoundationV1");
     assert(overviewJson.topology && typeof overviewJson.topology === "object", "overview topology missing");
     assert(overviewJson.contracts && typeof overviewJson.contracts === "object", "overview contracts missing");
     assert(overviewJson.evidence && typeof overviewJson.evidence === "object", "overview evidence missing");

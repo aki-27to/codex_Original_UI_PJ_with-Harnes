@@ -338,6 +338,11 @@ function renderMetrics(payload) {
 function renderRuntime(payload) {
   const runtime = payload && payload.runtime ? payload.runtime : {};
   const health = payload && payload.health ? payload.health : {};
+  const phaseStatus = runtime && runtime.phaseStatus && typeof runtime.phaseStatus === "object"
+    ? runtime.phaseStatus
+    : runtime && runtime.phase_status && typeof runtime.phase_status === "object"
+      ? runtime.phase_status
+      : {};
   const latestTurn = runtime && runtime.latestTurn && typeof runtime.latestTurn === "object"
     ? runtime.latestTurn
     : health && health.latestTurn && typeof health.latestTurn === "object"
@@ -353,6 +358,11 @@ function renderRuntime(payload) {
     .filter(Boolean)
     .slice(0, 2)
     .join(", ");
+  const phaseDetail = [
+    safeText(phaseStatus.completedAt, ""),
+    safeText(phaseStatus.auditReportPath, ""),
+    toArr(phaseStatus.failedCheckIds).length ? `missing ${toArr(phaseStatus.failedCheckIds).join(", ")}` : "",
+  ].filter(Boolean).join(" / ");
   elements.runtimePostureCard.innerHTML = factRowsHtml([
     { label: "Execution Profile", value: safeText(runtime.executionProfile, "unknown"), detail: `active agent ${runtimeActiveAgent(runtime)} / default exec ${runtimeDefaultExecAgent(runtime)}` },
     { label: "Request User Input", value: safeText(runtime.nonInteractiveUserInput && runtime.nonInteractiveUserInput.policy, "unknown"), detail: safeText(runtime.nonInteractiveUserInput && runtime.nonInteractiveUserInput.envKey, "") },
@@ -374,6 +384,7 @@ function renderRuntime(payload) {
   elements.healthCard.innerHTML = factRowsHtml([
     { label: "SLO Status", value: safeText(health.slo && health.slo.status, "insufficient_data"), detail: `${formatInteger(num(health.slo && health.slo.sampleSize, 0))} turns in window` },
     { label: "Failure Rate", value: formatPercent(health.slo && health.slo.metrics && health.slo.metrics.failureRate), detail: `p95 ${formatInteger(num(health.slo && health.slo.metrics && health.slo.metrics.p95LatencyMs, 0))}ms` },
+    { label: "Requirement Foundation V1", value: safeText(phaseStatus.requirementFoundationV1, "not_done"), detail: phaseDetail || "Run the phase exit audit to publish the freeze status." },
     { label: "Latest Turn", value: safeText(health.latestTurn && health.latestTurn.turn_id, "none"), detail: `${safeText(health.latestTurn && health.latestTurn.status, "idle")} / ${safeText(health.latestTurn && health.latestTurn.task_outcome_status, "n/a")} / ${safeText(health.latestTurn && health.latestTurn.planning_depth, "planning: n/a")} / ${safeText(health.latestTurn && health.latestTurn.assurance_depth, "assurance: n/a")}` },
     { label: "Family Gate", value: safeText(familyCompletionGate.status, familyCompletionGate.applies ? "pending" : "n/a"), detail: familyCompletionGate.applies ? `${safeText(familyCompletionGate.taskFamily, "family")} / ${safeText(familyCompletionGate.completionContract, "contract")} / ${familyGateMissing || safeText(familyCompletionGate.summary, "")}` : "No family-specific completion gate on latest turn." },
     { label: "Latest Turn Agent", value: safeText(health.latestTurn && health.latestTurn.agent_name, "none"), detail: safeText(health.latestTurn && health.latestTurn.execution_profile, "") },
