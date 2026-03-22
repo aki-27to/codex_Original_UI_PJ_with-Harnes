@@ -73,6 +73,13 @@ const defaultPlanningModeContractDefinition = Object.freeze({
       "delete",
       "remove dependency",
       "install",
+      "approval",
+      "explicit approval",
+      "git push",
+      "push to github",
+      "external write",
+      "credential",
+      "api key",
       "permission",
       "security boundary",
       "external service",
@@ -2567,24 +2574,70 @@ function normalizeRequestCoverageDropReasonCode(value, fallback = "deferred_nonb
       : "deferred_nonblocking";
 }
 
-function buildPromptDerivedRequestCoverageSeed({ prompt = "", selection } = {}) {
+function buildPromptDerivedRequestContext({ prompt = "", taskFamily = "deterministic_code", contract } = {}) {
+  const planningContract = normalizePlanningModeContract(contract);
+  const analysisPrompt = sanitizePromptForPolicyAnalysis(prompt);
+  const sections = parsePromptSections(analysisPrompt);
+  const explicitGoal = extractExplicitGoal(analysisPrompt, sections, planningContract);
+  const implicitGoal = extractImplicitGoal(analysisPrompt, sections, planningContract);
+  const baselineScope = uniqueStrings([
+    ...collectEntriesFromSections(collectSectionsByAlias(sections, planningContract.signals.sectionAliases.baseline)),
+    ...collectEntriesFromSections(collectSectionsByAlias(sections, planningContract.signals.sectionAliases.constraints)),
+    ...inferBaselineScopeFromPrompt(analysisPrompt, explicitGoal),
+  ], 24);
+  const acceptanceChecks = extractAcceptanceChecks(analysisPrompt, sections, planningContract);
+  const benchmarkCandidates = uniqueStrings([
+    ...extractReferenceUrls(analysisPrompt, 6),
+    ...extractPromptDirectiveLines(
+      analysisPrompt,
+      (entry) => /\b(?:benchmark|reference|style|look|feel|tone|visual|aesthetic)\b/i.test(entry) || /https?:\/\//i.test(entry),
+      6
+    ),
+  ], 6);
+  const approvalBoundaryItems = detectApprovalBoundaryItems(analysisPrompt, planningContract.signals.approvalBoundaryKeywords);
+  const questionCandidates = extractQuestionCandidates(analysisPrompt, planningContract.signals.openQuestionKeywords);
+  const initialOpenQuestions = uniqueStrings([
+    ...filterBlockingOpenQuestions(questionCandidates),
+    ...inferOpenQuestionsFromAmbiguity(analysisPrompt),
+  ], 12);
+  const questionPartition = partitionRequirementQuestions({
+    openQuestions: initialOpenQuestions,
+    taskFamily,
+    approvalBoundaryItems,
+    acceptanceChecks,
+    baselineScope,
+    benchmarkCandidates,
+    prompt: analysisPrompt,
+  });
+  return {
+    prompt: analysisPrompt,
+    explicitGoal,
+    implicitGoal,
+    baselineScope,
+    nonGoals: collectEntriesFromSections(collectSectionsByAlias(sections, planningContract.signals.sectionAliases.nonGoals)),
+    acceptanceChecks,
+    benchmarkCandidates,
+    approvalBoundaryItems,
+    promptSignals: inferPromptLevelUserValueSignals(analysisPrompt, taskFamily),
+    deferredQuestions: {
+      defaultable: questionPartition.defaultable.map((entry) => entry.question),
+      taste: questionPartition.taste.map((entry) => entry.question),
+    },
+  };
+}
+
+function buildPromptDerivedRequestCoverageSeed({ prompt = "", selection, contract } = {}) {
   const currentSelection = selection && typeof selection === "object" ? selection : {};
-  const extracted = currentSelection.extracted && typeof currentSelection.extracted === "object"
-    ? currentSelection.extracted
-    : {};
   const taskFamily = safeString(currentSelection.taskFamily, 80) || "deterministic_code";
-  const promptSignals = inferPromptLevelUserValueSignals(prompt, taskFamily);
-  const acceptanceChecks = sanitizeAcceptanceChecks(extracted.acceptanceChecks).filter((entry) => {
+  const promptDerived = buildPromptDerivedRequestContext({ prompt, taskFamily, contract });
+  const acceptanceChecks = sanitizeAcceptanceChecks(promptDerived.acceptanceChecks).filter((entry) => {
     const source = safeString(entry.source, 80);
     return source === "prompt_section" || source === "exact_reply_contract";
   });
-  const deferredQuestions = extracted.deferredQuestions && typeof extracted.deferredQuestions === "object"
-    ? extracted.deferredQuestions
+  const deferredQuestions = promptDerived.deferredQuestions && typeof promptDerived.deferredQuestions === "object"
+    ? promptDerived.deferredQuestions
     : {};
-  const benchmarkCandidates = uniqueStrings([
-    ...extractReferenceUrls(prompt, 6),
-    ...uniqueStrings(extracted.benchmarkCandidates, 6).filter((entry) => promptMentionsRequirementValue(prompt, entry)),
-  ], 6);
+  const benchmarkCandidates = uniqueStrings(promptDerived.benchmarkCandidates, 6);
   const clauses = [];
   const classifyPromptClause = (text, fallbackKind = "explicit_request", fallbackLane = "core") => {
     const normalized = safeString(text, 320);
@@ -2595,12 +2648,12 @@ function buildPromptDerivedRequestCoverageSeed({ prompt = "", selection } = {}) 
       };
     }
     if (
-      uniqueStrings(extracted.approvalBoundaryItems, 8).some((entry) => requirementProvenanceValuesOverlap(entry, normalized))
+      uniqueStrings(promptDerived.approvalBoundaryItems, 8).some((entry) => requirementProvenanceValuesOverlap(entry, normalized))
       || /(?:approval|approve|permission|git\s*push|push to github|github|account|credential|api key)/i.test(normalized)
     ) {
       return { kind: "constraint", lane: "unsafe_or_approval" };
     }
-    if (/(?:benchmark|reference|style|look|feel|tone|visual|aesthetic)/i.test(normalized) || /https?:\/\//i.test(normalized)) {
+    if (/\b(?:benchmark|reference|style|look|feel|tone|visual|aesthetic)\b/i.test(normalized) || /https?:\/\//i.test(normalized)) {
       return { kind: "taste_value", lane: "taste" };
     }
     if (isHardConstraintDirective(normalized)) return { kind: "constraint", lane: "core" };
@@ -2630,12 +2683,12 @@ function buildPromptDerivedRequestCoverageSeed({ prompt = "", selection } = {}) 
     }
     return requirementLooksFragmentaryGoalText(normalized) ? "" : normalized;
   };
-  const explicitGoal = normalizeGoalSeed(extracted.explicitGoal);
-  const implicitGoal = normalizeGoalSeed(extracted.implicitGoal);
+  const explicitGoal = normalizeGoalSeed(promptDerived.explicitGoal);
+  const implicitGoal = normalizeGoalSeed(promptDerived.implicitGoal);
   if (explicitGoal) addClauses({ values: [explicitGoal], kind: "explicit_request", lane: "core" });
   else if (implicitGoal) addClauses({ values: [implicitGoal], kind: "explicit_request", lane: "core" });
 
-  uniqueStrings(extracted.baselineScope, 24).forEach((entry) => {
+  uniqueStrings(promptDerived.baselineScope, 24).forEach((entry) => {
     addClauses({
       values: [entry],
       kind: isHardConstraintDirective(entry) ? "constraint" : "explicit_request",
@@ -2643,7 +2696,7 @@ function buildPromptDerivedRequestCoverageSeed({ prompt = "", selection } = {}) 
     });
   });
   addClauses({
-    values: uniqueStrings(extracted.nonGoals, 16),
+    values: uniqueStrings(promptDerived.nonGoals, 16),
     kind: "non_target",
     lane: "core",
   });
@@ -2663,22 +2716,22 @@ function buildPromptDerivedRequestCoverageSeed({ prompt = "", selection } = {}) 
     lane: "core",
   });
   addClauses({
-    values: promptSignals.completedMeans,
+    values: promptDerived.promptSignals.completedMeans,
     kind: "verification_method",
     lane: "core",
   });
   addClauses({
-    values: promptSignals.mustAvoid,
+    values: promptDerived.promptSignals.mustAvoid,
     kind: "non_target",
     lane: "core",
   });
   addClauses({
-    values: promptSignals.userShouldFeelGet,
+    values: promptDerived.promptSignals.userShouldFeelGet,
     kind: "taste_value",
     lane: "taste",
   });
   addClauses({
-    values: promptSignals.qualityAxes,
+    values: promptDerived.promptSignals.qualityAxes,
     kind: "taste_value",
     lane: "taste",
   });
@@ -2688,7 +2741,7 @@ function buildPromptDerivedRequestCoverageSeed({ prompt = "", selection } = {}) 
     lane: "taste",
   });
   addClauses({
-    values: uniqueStrings(extracted.approvalBoundaryItems, 8),
+    values: uniqueStrings(promptDerived.approvalBoundaryItems, 8),
     kind: "constraint",
     lane: "unsafe_or_approval",
   });
@@ -2864,7 +2917,7 @@ function sanitizeRequirementRequestCoverage(value, requirement = {}) {
   };
 }
 
-function buildRequirementRequestCoverage({ prompt = "", requirementContract, selection } = {}) {
+function buildRequirementRequestCoverage({ prompt = "", requirementContract, selection, contract } = {}) {
   const requirement = requirementContract && typeof requirementContract === "object" ? requirementContract : {};
   const currentSelection = selection && typeof selection === "object" ? selection : {};
   const acceptanceChecks = sanitizeAcceptanceChecks(requirement.acceptanceChecks);
@@ -2914,12 +2967,6 @@ function buildRequirementRequestCoverage({ prompt = "", requirementContract, sel
     clause.lane = "core";
     if (!coreObligations.includes(clause.id)) coreObligations.push(clause.id);
   };
-  const addMappedClause = ({ text, kind, lane = "core", requirementRefs = [] } = {}) => {
-    const clause = ensureClause({ text, kind, lane });
-    if (!clause) return;
-    if (lane === "core") markCore(clause);
-    addMapping(clause, requirementRefs);
-  };
   const addParkedItem = ({ clause, reason = "", requirementRefs = [] } = {}) => {
     if (!clause || !clause.id) return;
     const refs = uniqueStrings(requirementRefs, 8);
@@ -2946,7 +2993,7 @@ function buildRequirementRequestCoverage({ prompt = "", requirementContract, sel
     });
   };
 
-  buildPromptDerivedRequestCoverageSeed({ prompt, selection: currentSelection }).forEach((entry) => {
+  buildPromptDerivedRequestCoverageSeed({ prompt, selection: currentSelection, contract }).forEach((entry) => {
     const clause = ensureClause(entry);
     if (!clause) return;
     if (clause.lane === "core") markCore(clause);
@@ -3811,7 +3858,18 @@ function filterBlockingOpenQuestions(candidates) {
 }
 
 function detectApprovalBoundaryItems(prompt, keywords) {
-  return uniqueStrings(matchingKeywords(prompt, keywords, 12), 12);
+  const matches = [];
+  for (const line of safeString(prompt, 40000).split(/\r?\n/)) {
+    const normalized = stripPolicyControlLine(line).replace(/^\s*[-*+]\s*/, "").trim();
+    if (!normalized) continue;
+    if (
+      hasAnyKeyword(normalized, keywords)
+      || /(?:approval|explicit approval|approve|permission|git\s*push|push to github|account write|external write|credential|api key)/i.test(normalized)
+    ) {
+      matches.push(normalized);
+    }
+  }
+  return uniqueStrings(matches, 12);
 }
 
 function detectSpecialistOwners(prompt, keywordMap) {
@@ -4715,6 +4773,7 @@ function buildRequirementContract({ prompt = "", options = {}, selection, contra
     prompt: analysisPrompt,
     requirementContract,
     selection: normalizedSelection,
+    contract: normalizedContracts.planning,
   });
   const validation = buildRequirementValidation({ requirementContract, selection: normalizedSelection });
   requirementContract.validation = validation;

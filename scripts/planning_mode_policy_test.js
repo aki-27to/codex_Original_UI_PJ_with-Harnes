@@ -167,12 +167,21 @@ function run() {
   const benchmarkClause = traceCoverage.rawRequestClauses.find((entry) => entry.text === "Use https://example.com/reference as a style benchmark.");
   const benchmarkUrlClause = traceCoverage.rawRequestClauses.find((entry) => entry.text === "https://example.com/reference");
   assert.ok(
+    Array.isArray(traceArtifacts.selection.extracted.approvalBoundaryItems)
+      && traceArtifacts.selection.extracted.approvalBoundaryItems.includes("Push to GitHub only after explicit approval."),
+    "approval boundary extraction should preserve the raw prompt line instead of only keyword labels"
+  );
+  assert.ok(
     approvalClause && approvalClause.lane === "unsafe_or_approval",
     "request coverage should seed approval-sensitive clauses directly from the raw prompt"
   );
   assert.ok(
     benchmarkClause && benchmarkClause.kind === "taste_value" && benchmarkClause.lane === "taste",
     "request coverage should preserve prompt-derived benchmark clauses as taste/value items"
+  );
+  assert.ok(
+    approvalClause && traceCoverage.mappedRequirements.some((entry) => entry.clauseId === approvalClause.id && entry.requirementRefs.includes("approvalBoundaryItems")),
+    "approval-sensitive clauses should map into approvalBoundaryItems when the raw prompt provides that boundary"
   );
   assert.ok(
     benchmarkUrlClause && traceCoverage.droppedItems.some((entry) => entry.clauseId === benchmarkUrlClause.id && entry.reasonCode === "deferred_nonblocking"),
@@ -185,8 +194,16 @@ function run() {
       validation: undefined,
       requestCoverage: {
         ...traceCoverage,
-        mappedRequirements: traceCoverage.mappedRequirements.filter((entry) => !benchmarkClause || entry.clauseId !== benchmarkClause.id),
-        droppedItems: traceCoverage.droppedItems.filter((entry) => !benchmarkClause || entry.clauseId !== benchmarkClause.id),
+        mappedRequirements: traceCoverage.mappedRequirements.filter((entry) => {
+          if (approvalClause && entry.clauseId === approvalClause.id) return false;
+          if (benchmarkClause && entry.clauseId === benchmarkClause.id) return false;
+          return true;
+        }),
+        droppedItems: traceCoverage.droppedItems.filter((entry) => {
+          if (approvalClause && entry.clauseId === approvalClause.id) return false;
+          if (benchmarkClause && entry.clauseId === benchmarkClause.id) return false;
+          return true;
+        }),
       },
     },
   });
