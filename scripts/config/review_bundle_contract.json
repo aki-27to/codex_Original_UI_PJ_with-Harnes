@@ -9,6 +9,7 @@
     "residual_risk",
     "missing_evidence",
     "pass_fail_per_criterion",
+    "clause_completion_scorecard",
     "recommended_release_state"
   ],
   "recommendedReleaseStates": [

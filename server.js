@@ -129,6 +129,13 @@ const {
   loadConfigJson:loadConstitutionConfigJson,
 }=require("./scripts/lib/constitution_conformance");
 const {
+  buildClauseCompletionScorecard,
+  buildRuntimeRevisionGateDecision,
+  collectRequirementRevisionProposalsFromTexts,
+  sanitizeRequirementRevisionGate,
+  sanitizeRequirementRevisionProposal,
+}=require("./scripts/lib/requirement_revision_policy");
+const {
   defaultPiperModelId,
   preparePiperModel,
   speakWithPiper,
@@ -5931,7 +5938,7 @@ function normalizeExecOptionsForRun(options){
   const previousPlanningContext=source.previousPlanningContext&&typeof source.previousPlanningContext==="object"
     ?sanitizePlanningArtifactsForRuntime(source.previousPlanningContext)
     :null;
-  const planningContext=sanitizePlanningArtifactsForRuntime(
+  let planningContext=sanitizePlanningArtifactsForRuntime(
     source.planningContext&&typeof source.planningContext==="object"
       ?source.planningContext
       :buildPlanningArtifacts({
@@ -8829,7 +8836,7 @@ function rewriteClientFinalTextForOutcome(text,{taskOutcomeStatus="",prompt=""}=
           :"未完了です。";
   return softened?`${lead}\n\n${softened}`:lead;
 }
-function buildFlowTraceSummary({planningContext,observedSignals,parentDispatchGuard,taskOutcomeStatus,taskOutcomeReason,finalStatus,childEvidenceLedger,docSyncEvidence,acceptanceResults,familyCompletionGate=null,agentName=""}={}){
+function buildFlowTraceSummary({planningContext,observedSignals,parentDispatchGuard,taskOutcomeStatus,taskOutcomeReason,finalStatus,childEvidenceLedger,docSyncEvidence,acceptanceResults,familyCompletionGate=null,agentName="",postLockDriftSnapshot=null,runtimeRevisionGate=null,clauseCompletionScorecard=null}={}){
   const usedAgents=Array.from(new Set([
     safeString(agentName,80)||"",
     ...(Array.isArray(childEvidenceLedger)?childEvidenceLedger.map((entry)=>safeString(entry&&entry.agent,80)).filter(Boolean):[]),
@@ -8841,7 +8848,9 @@ function buildFlowTraceSummary({planningContext,observedSignals,parentDispatchGu
   )).slice(0,16);
   const passCount=Array.isArray(acceptanceResults)?acceptanceResults.filter((entry)=>entry&&entry.status==="PASS").length:0;
   const failCount=Array.isArray(acceptanceResults)?acceptanceResults.filter((entry)=>entry&&entry.status==="FAIL").length:0;
-  const postLockDrift=buildPostLockDriftSnapshot({planningContext,agentName});
+  const postLockDrift=postLockDriftSnapshot&&typeof postLockDriftSnapshot==="object"
+    ?postLockDriftSnapshot
+    :buildPostLockDriftSnapshot({planningContext,agentName});
   return{
     schema:"flow-trace-summary.v1",
     generatedAt:toIsoTimestamp(Date.now()),
@@ -8888,7 +8897,9 @@ function buildFlowTraceSummary({planningContext,observedSignals,parentDispatchGu
     childEvidenceLedger:Array.isArray(childEvidenceLedger)?childEvidenceLedger:[],
     docSyncEvidence:docSyncEvidence&&typeof docSyncEvidence==="object"?docSyncEvidence:null,
     familyCompletionGate:familyCompletionGate&&typeof familyCompletionGate==="object"?familyCompletionGate:null,
+    runtimeRevisionGate:runtimeRevisionGate&&typeof runtimeRevisionGate==="object"?runtimeRevisionGate:null,
     postLockDrift,
+    clauseCompletionScorecard:clauseCompletionScorecard&&typeof clauseCompletionScorecard==="object"?clauseCompletionScorecard:null,
     residualRiskSummary:Array.isArray(planningContext&&planningContext.dispatchPlan&&planningContext.dispatchPlan.residualRisks)
       ?planningContext.dispatchPlan.residualRisks
       :[],
@@ -9771,41 +9782,178 @@ async function executeTurnStreaming(res,prompt,agentName,options){
         detail:safeString(familyCompletionGate.summary,1200),
       });
     }
-    turnRecord.status=finalStatus;
-    setTurnTerminalState(turnRecord,finalStatus,{terminalEvent:"turn/completed",errorText:finalErrorText});
-    debugFinalize("after_outcome_terminal_state");
-    const taskOutcome=deriveTurnTaskOutcome({
+    let explicitTaskOutcomeStatus=planningNeedsInput
+      ?"NEEDS_INPUT"
+      :(familyCompletionGate.applies&&familyCompletionGate.status==="failed_validation"?"FAILED_VALIDATION":"");
+    let explicitTaskOutcomeReason=planningNeedsInput
+      ?(safeString(planningContext&&planningContext.selection&&planningContext.selection.signals&&planningContext.selection.signals.clarificationAction,40)==="ask_user_once"
+        ?"clarification_required_before_implementation"
+        :"interactive_approval_unavailable")
+      :(familyCompletionGate.applies&&familyCompletionGate.status==="failed_validation"
+        ?safeString(familyCompletionGate.missingHard&&familyCompletionGate.missingHard[0]&&familyCompletionGate.missingHard[0].reason,120)||"family_completion_gate_failed"
+        :"");
+    const revisionProposalTexts=[
+      {text:authoritativeFinalText,fallbackAgent:agentName},
+      ...observedItemRecords.flatMap((record)=>{
+        const item=record&&record.item&&typeof record.item==="object"?record.item:{};
+        const entries=[];
+        if(item.type==="agentMessage"&&typeof item.text==="string"){
+          entries.push({text:item.text,fallbackAgent:agentName});
+        }
+        const childTrace=buildAgentDispatchTrace(item,agentName);
+        const fallbackAgent=safeString(childTrace&&childTrace.child,80)||agentName;
+        for(const message of extractCollabStateMessages(item,8)){
+          entries.push({text:message,fallbackAgent});
+        }
+        return entries;
+      }),
+    ];
+    const observedRevisionProposals=collectRequirementRevisionProposalsFromTexts(revisionProposalTexts,{
+      fallbackAgent:agentName,
+    });
+    let runtimeRevisionGate=buildRuntimeRevisionGateDecision({
+      activeRevisionProposal:planningContext&&planningContext.requirementContract?planningContext.requirementContract.activeRevisionProposal:null,
+      revisionGate:planningContext&&planningContext.requirementContract?planningContext.requirementContract.revisionGate:null,
+      observedRevisionProposals,
+      agentName,
+      ownerAgent:safeString(planningContext&&planningContext.requirementContract&&planningContext.requirementContract.owner,80)||"intake",
+    });
+    if(runtimeRevisionGate.status==="BLOCK"||runtimeRevisionGate.status==="RETURN_TO_INTAKE"){
+      const currentRequirement=planningContext&&planningContext.requirementContract&&typeof planningContext.requirementContract==="object"
+        ?planningContext.requirementContract
+        :null;
+      if(currentRequirement){
+        const nextRequirement={
+          ...currentRequirement,
+          activeRevisionProposal:sanitizeRequirementRevisionProposal(runtimeRevisionGate.proposal,{
+            fallbackAgent:agentName,
+            fallbackStatus: runtimeRevisionGate.status==="RETURN_TO_INTAKE" ? "pending" : "",
+          }),
+          revisionGate:sanitizeRequirementRevisionGate({
+            ...currentRequirement.revisionGate,
+            status:runtimeRevisionGate.status==="RETURN_TO_INTAKE"?"pending_intake_confirmation":"proposal_required",
+            reason:runtimeRevisionGate.status==="RETURN_TO_INTAKE"
+              ?"Downstream requested a locked requirement revision. Intake must issue the revised contract version before downstream work continues."
+              :"Locked requirement meaning changed downstream without a revision proposal.",
+            authoritativeOwner:safeString(currentRequirement.owner,80)||"intake",
+            currentAgent:safeString(agentName,80).toLowerCase()||"",
+            blockingProposalId:runtimeRevisionGate.proposal&&runtimeRevisionGate.proposal.proposalId?runtimeRevisionGate.proposal.proposalId:"",
+            returnToIntake:runtimeRevisionGate.status==="RETURN_TO_INTAKE",
+            changedFields:Array.isArray(runtimeRevisionGate.proposal&&runtimeRevisionGate.proposal.changedFields)
+              ?runtimeRevisionGate.proposal.changedFields
+              :[],
+          },{
+            fallbackOwner:safeString(currentRequirement.owner,80)||"intake",
+            fallbackAgent:agentName,
+            fallbackStatus:runtimeRevisionGate.status==="RETURN_TO_INTAKE"?"pending_intake_confirmation":"proposal_required",
+          }),
+        };
+        planningContext=sanitizePlanningArtifactsForRuntime({
+          ...planningContext,
+          requirementContract:nextRequirement,
+        });
+        state.lastPlanningContext=planningContext;
+        turnRecord.planningContext=planningContext;
+      }
+      if(finalStatus==="completed"){
+        finalStatus=runtimeRevisionGate.enforceFinalStatus||finalStatus;
+        explicitTaskOutcomeStatus=runtimeRevisionGate.taskOutcomeStatus||explicitTaskOutcomeStatus;
+        explicitTaskOutcomeReason=runtimeRevisionGate.taskOutcomeReason||explicitTaskOutcomeReason;
+        if(!finalErrorText){
+          finalErrorText=runtimeRevisionGate.status==="RETURN_TO_INTAKE"
+            ?"[blocked] return to intake to confirm the locked requirement revision proposal"
+            :"[error] locked requirement rewrite attempted without a revision proposal";
+        }
+        safeWriteEvent({
+          type:"activity",
+          label:runtimeRevisionGate.status==="RETURN_TO_INTAKE"?"runtime_revision_proposal_pending":"runtime_revision_gate_block",
+          detail:safeString(finalErrorText,1200),
+        });
+      }
+    }
+    let postLockDriftSnapshot=buildPostLockDriftSnapshot({planningContext,agentName});
+    if(
+      !proposalOnly
+      &&finalStatus==="completed"
+      &&(postLockDriftSnapshot.status==="FAIL"||postLockDriftSnapshot.status==="LOCK_INCOMPLETE")
+    ){
+      const driftNeedsReturn=observedRevisionProposals.length>0;
+      finalStatus=driftNeedsReturn?"interrupted":"failed";
+      explicitTaskOutcomeStatus=driftNeedsReturn?"BLOCKED":"FAILED_VALIDATION";
+      explicitTaskOutcomeReason=driftNeedsReturn?"return_to_intake_required":"runtime_post_lock_drift_failed";
+      if(!finalErrorText){
+        finalErrorText=driftNeedsReturn
+          ?"[blocked] downstream drift requires intake revision before completion"
+          :`[error] runtime post-lock drift detected (${postLockDriftSnapshot.reason||"downstream_clause_gap"})`;
+      }
+      safeWriteEvent({
+        type:"activity",
+        label:driftNeedsReturn?"runtime_post_lock_drift_return_to_intake":"runtime_post_lock_drift_block",
+        detail:safeString(finalErrorText,1200),
+      });
+    }
+    const buildCurrentTaskOutcome=()=>deriveTurnTaskOutcome({
       finalStatus,
       finalErrorText,
       approvalAudits:approvalAuditTrail,
       parentDispatchGuard,
-      explicitStatus:planningNeedsInput
-        ?"NEEDS_INPUT"
-        :(familyCompletionGate.applies&&familyCompletionGate.status==="failed_validation"?"FAILED_VALIDATION":""),
-      reason:planningNeedsInput
-        ?(safeString(planningContext&&planningContext.selection&&planningContext.selection.signals&&planningContext.selection.signals.clarificationAction,40)==="ask_user_once"
-          ?"clarification_required_before_implementation"
-          :"interactive_approval_unavailable")
-        :(familyCompletionGate.applies&&familyCompletionGate.status==="failed_validation"
-          ?safeString(familyCompletionGate.missingHard&&familyCompletionGate.missingHard[0]&&familyCompletionGate.missingHard[0].reason,120)||"family_completion_gate_failed"
-          :""),
+      explicitStatus:explicitTaskOutcomeStatus,
+      reason:explicitTaskOutcomeReason,
       missingEvidence:missingRequiredEvidence.length>0,
     });
-    const acceptanceResults=buildAcceptanceCheckResults({
+    const buildCurrentAcceptanceResults=(taskOutcomeStatus)=>buildAcceptanceCheckResults({
       requirementContract:planningContext&&planningContext.requirementContract?planningContext.requirementContract:null,
       observedSignals,
-      taskOutcomeStatus:taskOutcome.status,
+      taskOutcomeStatus,
       needsInputRecommended:planningContext&&planningContext.selection&&planningContext.selection.needsInputRecommended,
       docSyncEvidence,
       childEvidenceLedger,
       familyCompletionGate,
     });
+    let taskOutcome=buildCurrentTaskOutcome();
+    let acceptanceResults=buildCurrentAcceptanceResults(taskOutcome.status);
+    let clauseCompletionScorecard=buildClauseCompletionScorecard({
+      clauses:buildPlanningTraceabilityData({planningContext,agentName}).clauses,
+      acceptanceResults,
+      postLockDrift:postLockDriftSnapshot,
+      finalStatus,
+      taskOutcomeStatus:taskOutcome.status,
+      docSyncEvidence,
+      childEvidenceLedger,
+    });
+    if(!proposalOnly&&finalStatus==="completed"&&clauseCompletionScorecard.status==="FAIL"){
+      finalStatus="failed";
+      explicitTaskOutcomeStatus="FAILED_VALIDATION";
+      explicitTaskOutcomeReason="release_clause_unsatisfied";
+      if(!finalErrorText){
+        finalErrorText="[error] one or more core request clauses remain unsatisfied at release";
+      }
+      safeWriteEvent({
+        type:"activity",
+        label:"release_clause_scorecard_block",
+        detail:safeString(finalErrorText,1200),
+      });
+      taskOutcome=buildCurrentTaskOutcome();
+      acceptanceResults=buildCurrentAcceptanceResults(taskOutcome.status);
+      clauseCompletionScorecard=buildClauseCompletionScorecard({
+        clauses:buildPlanningTraceabilityData({planningContext,agentName}).clauses,
+        acceptanceResults,
+        postLockDrift:postLockDriftSnapshot,
+        finalStatus,
+        taskOutcomeStatus:taskOutcome.status,
+        docSyncEvidence,
+        childEvidenceLedger,
+      });
+    }
     const evidenceSummary={
       passCount:acceptanceResults.filter((entry)=>entry&&entry.status==="PASS").length,
       failCount:acceptanceResults.filter((entry)=>entry&&entry.status==="FAIL").length,
       skippedCount:acceptanceResults.filter((entry)=>entry&&entry.status==="SKIPPED").length,
       total:acceptanceResults.length,
     };
+    turnRecord.status=finalStatus;
+    setTurnTerminalState(turnRecord,finalStatus,{terminalEvent:"turn/completed",errorText:finalErrorText});
+    debugFinalize("after_outcome_terminal_state");
     const stageTimeline=buildStageTimeline({
       startedAt:turnRecord.startedAt,
       completedAt:Number.isFinite(Number(turnRecord.completedAt))?turnRecord.completedAt:Date.now(),
@@ -9836,6 +9984,9 @@ async function executeTurnStreaming(res,prompt,agentName,options){
       acceptanceResults,
       familyCompletionGate,
       agentName,
+      postLockDriftSnapshot,
+      runtimeRevisionGate,
+      clauseCompletionScorecard,
     });
     debugFinalize("after_evidence_aggregation");
     const evidenceManifest={
@@ -9852,6 +10003,9 @@ async function executeTurnStreaming(res,prompt,agentName,options){
       dispatchPlan:planningContext&&planningContext.dispatchPlan?planningContext.dispatchPlan:null,
       acceptanceChecks:acceptanceResults,
       acceptanceSummary:evidenceSummary,
+      runtimeRevisionGate,
+      clauseCompletionScorecard,
+      postLockDrift:postLockDriftSnapshot,
       docSyncEvidence,
       childEvidenceLedger,
       familyCompletionGate,
@@ -9893,6 +10047,9 @@ async function executeTurnStreaming(res,prompt,agentName,options){
         ?planningContext.requirementContract.assumptions
         :[],
       parentMaterialImplementationObserved,
+      clauseCompletionScorecard,
+      runtimeRevisionGate,
+      postLockDrift:postLockDriftSnapshot,
     };
     const routingDecision=buildRoutingDecision({
       selection:planningContext&&planningContext.selection?planningContext.selection:{},
@@ -9914,6 +10071,7 @@ async function executeTurnStreaming(res,prompt,agentName,options){
       residualRisks:currentTurnSummaryForConformance.residualRisks,
       assumptions:currentTurnSummaryForConformance.assumptions,
       finalOutcome:currentTurnSummaryForConformance.finalOutcome,
+      clauseCompletionScorecard,
     });
     const releaseDecision=buildReleaseDecision({
       finalOutcome:currentTurnSummaryForConformance.finalOutcome,
@@ -9923,6 +10081,7 @@ async function executeTurnStreaming(res,prompt,agentName,options){
       residualRisks:currentTurnSummaryForConformance.residualRisks,
       assumptions:currentTurnSummaryForConformance.assumptions,
       missingEvidence:missingRequiredEvidence,
+      clauseCompletionScorecard,
       rationaleNotes:[
         `turn_status=${finalStatus}`,
         `task_outcome_status=${taskOutcome.status}`,
@@ -10000,6 +10159,9 @@ async function executeTurnStreaming(res,prompt,agentName,options){
     turnRecord.stageTimeline=stageTimeline;
     turnRecord.flowTraceSummary=flowTraceSummary;
     turnRecord.reviewLoadBreakdown=reviewLoadBreakdown;
+    turnRecord.runtimeRevisionGate=runtimeRevisionGate;
+    turnRecord.postLockDrift=postLockDriftSnapshot;
+    turnRecord.clauseCompletionScorecard=clauseCompletionScorecard;
     turnRecord.fullUtilizationObserved=(observedSignals.collabCalls>0||observedSignals.dispatchCount>0)?1:0;
     debugFinalize("before_observed_snapshot");
     publishLatestTurnSnapshot(turnRecord,"turn_completed_observed");
@@ -11210,6 +11372,9 @@ function snapshotTurnRecord(record){
     parent_material_implementation_observed:record.parentMaterialImplementationObserved?1:0,
     planning:record.planningContext&&typeof record.planningContext==="object"?record.planningContext:null,
     family_completion_gate:record.familyCompletionGate&&typeof record.familyCompletionGate==="object"?record.familyCompletionGate:null,
+    runtime_revision_gate:record.runtimeRevisionGate&&typeof record.runtimeRevisionGate==="object"?record.runtimeRevisionGate:null,
+    post_lock_drift:record.postLockDrift&&typeof record.postLockDrift==="object"?record.postLockDrift:null,
+    clause_completion_scorecard:record.clauseCompletionScorecard&&typeof record.clauseCompletionScorecard==="object"?record.clauseCompletionScorecard:null,
     visibility:turnVisibility,
     status,
     terminal_status:terminalStatus,

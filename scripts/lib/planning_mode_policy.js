@@ -9,6 +9,12 @@ const {
   normalizeTaskFamilyProfilesContract,
   selectTaskFamilyProfile,
 } = require("./task_family_profile_policy");
+const {
+  buildRequirementRevisionGate,
+  buildRequirementRevisionProposal,
+  sanitizeRequirementRevisionGate,
+  sanitizeRequirementRevisionProposal,
+} = require("./requirement_revision_policy");
 
 const planningModePolicyVersion = "adaptive-execution-policy.v2";
 const allowedPlanningModes = Object.freeze(["FAST", "NORMAL", "DISCOVERY"]);
@@ -2329,6 +2335,14 @@ function buildRequirementDisplayContract({ requirementContract, selection, statu
   const questions = sanitizeRequirementQuestionPlan(questionPlan, requirement);
   const delight = sanitizeRequirementDelightPlan(delightPlan, requirement);
   const hypotheses = sanitizeRequirementIntentHypotheses(intentHypotheses, requirement);
+  const revisionGate = sanitizeRequirementRevisionGate(requirement.revisionGate, {
+    fallbackOwner: "intake",
+    fallbackAgent: safeString(currentSelection && currentSelection.agentName, 80),
+  });
+  const activeRevisionProposal = sanitizeRequirementRevisionProposal(requirement.activeRevisionProposal, {
+    fallbackAgent: revisionGate.currentAgent,
+    fallbackStatus: "",
+  });
   const normalizedStatus = safeString(status || requirement.status, 40).toUpperCase();
   const stitchContext = currentSelection
     && currentSelection.extracted
@@ -2349,7 +2363,11 @@ function buildRequirementDisplayContract({ requirementContract, selection, statu
   ].find((entry) => entry && !requirementLooksFragmentaryGoalText(entry)) || "";
   const goalMode = lockedGoal ? "locked" : headline ? "hypothesis" : "draft";
   let nextAction = "";
-  if (questions.askNext.length) {
+  if (revisionGate.status === "proposal_required") {
+    nextAction = `Return to intake with a revision proposal before changing ${activeRevisionProposal.changedFields.slice(0, 3).join(", ") || "the locked requirement contract"}.`;
+  } else if (revisionGate.status === "pending_intake_confirmation") {
+    nextAction = "Wait for intake to issue the revised requirement contract before continuing downstream work.";
+  } else if (questions.askNext.length) {
     nextAction = `Clarify: ${questions.askNext[0].question}`;
   } else if (stitchContext && primaryScreen && primaryScreen.title) {
     const nextParts = [
@@ -2374,7 +2392,7 @@ function buildRequirementDisplayContract({ requirementContract, selection, statu
     stitchBoundaries.push("指定されていない screen へ広げない");
   }
   const holdReason = normalizedStatus === "BLOCKED"
-    ? safeString(requirement.statusReason, 320) || safeString(report.summary, 320)
+    ? safeString(revisionGate.reason, 320) || safeString(requirement.statusReason, 320) || safeString(report.summary, 320)
     : "";
   const targetOutcome = stitchContext && primaryScreen && primaryScreen.title
     ? `「${primaryScreen.title}」画面の構成と見た目が WEB UI で再現される`
@@ -3154,9 +3172,16 @@ function buildRequirementRevisionLedger({ requirementContract, options = {} } = 
       previousStatus: "",
       requiresReapproval: false,
       summary: "Initial requirement contract for this thread.",
+      approvedProposalId: "",
+      approvedProposalOriginatingAgent: "",
     };
   }
   const previousRequirement = previous.planningContext.requirementContract;
+  const currentAgent = safeString(options && options.agentName, 80).toLowerCase();
+  const previousProposal = sanitizeRequirementRevisionProposal(previousRequirement && previousRequirement.activeRevisionProposal, {
+    fallbackAgent: currentAgent,
+    fallbackStatus: "",
+  });
   const currentComparable = buildRequirementComparableSnapshot(currentRequirement);
   const previousComparable = buildRequirementComparableSnapshot(previousRequirement);
   const fields = [
@@ -3189,6 +3214,9 @@ function buildRequirementRevisionLedger({ requirementContract, options = {} } = 
   const currentApprovalItems = uniqueStrings(currentRequirement && currentRequirement.approvalBoundaryItems, 12);
   const approvalBoundaryExpanded = currentApprovalItems.some((entry) => !previousApprovalItems.some((previousEntry) => requirementProvenanceValuesOverlap(previousEntry, entry)));
   const requiresReapproval = Boolean(revised && (approvalBoundaryExpanded || changedFields.includes("userValueFrame.hardConstraints")));
+  const approvedProposal = currentAgent === "intake" && revised && previousProposal && previousProposal.proposalId
+    ? previousProposal
+    : null;
   return {
     revisionNumber: previousRevisionNumber + 1,
     revised,
@@ -3202,6 +3230,8 @@ function buildRequirementRevisionLedger({ requirementContract, options = {} } = 
       : requiresReapproval
         ? `Requirement contract changed in ${changedFields.length} field(s) and tightened an approval or hard-constraint boundary.`
         : `Requirement contract changed in ${changedFields.length} field(s) from the previous turn.`,
+    approvedProposalId: approvedProposal ? approvedProposal.proposalId : "",
+    approvedProposalOriginatingAgent: approvedProposal ? approvedProposal.originatingAgent : "",
   };
 }
 
@@ -3218,6 +3248,8 @@ function sanitizeRequirementRevisionLedger(value) {
     previousStatus: normalizeRequirementStatus(source.previousStatus, ""),
     requiresReapproval: Boolean(source.requiresReapproval),
     summary: safeString(source.summary, 240),
+    approvedProposalId: safeString(source.approvedProposalId, 120),
+    approvedProposalOriginatingAgent: safeString(source.approvedProposalOriginatingAgent, 80).toLowerCase(),
   };
 }
 
@@ -3236,6 +3268,14 @@ function buildRequirementValidation({ requirementContract, selection } = {}) {
   const userValueFrame = sanitizeUserValueFrame(requirement.userValueFrame);
   const provenance = sanitizeRequirementProvenance(requirement.provenance, requirement);
   const revisionLedger = sanitizeRequirementRevisionLedger(requirement.revisionLedger);
+  const revisionGate = sanitizeRequirementRevisionGate(requirement.revisionGate, {
+    fallbackOwner: "intake",
+    fallbackAgent: safeString(currentSelection && currentSelection.agentName, 80),
+  });
+  const activeRevisionProposal = sanitizeRequirementRevisionProposal(requirement.activeRevisionProposal, {
+    fallbackAgent: revisionGate.currentAgent,
+    fallbackStatus: "",
+  });
   const checks = [];
   const pushCheck = (id, title, status, detail, fieldRefs = []) => {
     checks.push({
@@ -3246,6 +3286,20 @@ function buildRequirementValidation({ requirementContract, selection } = {}) {
       fieldRefs: uniqueStrings(fieldRefs, 8),
     });
   };
+  if (revisionGate.status === "proposal_required" || revisionGate.status === "pending_intake_confirmation") {
+    const changedFieldsLabel = activeRevisionProposal.changedFields.length
+      ? ` (${activeRevisionProposal.changedFields.slice(0, 4).join(", ")})`
+      : "";
+    pushCheck(
+      "runtime_revision_gate",
+      "Locked requirement revisions stay intake-owned",
+      "BLOCK",
+      revisionGate.status === "pending_intake_confirmation"
+        ? `A downstream revision proposal is pending intake confirmation${changedFieldsLabel}.`
+        : `Locked requirement meaning cannot change downstream without an intake-owned revision proposal${changedFieldsLabel}.`,
+      ["revisionGate", "activeRevisionProposal"]
+    );
+  }
   pushCheck(
     "goal_present",
     "Primary goal is locked",
@@ -4640,8 +4694,25 @@ function buildPlanningSelection({ prompt = "", options = {}, contract } = {}) {
 
 function buildRequirementContract({ prompt = "", options = {}, selection, contract } = {}) {
   const normalizedSelection = selection && typeof selection === "object" ? selection : buildPlanningSelection({ prompt, options, contract });
+  const currentAgentName = safeString(options && options.agentName, 80).toLowerCase() || "default";
+  const selectionWithAgent = { ...normalizedSelection, agentName: currentAgentName };
   const normalizedContracts = loadAdaptiveContracts(contract);
   const analysisPrompt = sanitizePromptForPolicyAnalysis(prompt);
+  const previous = normalizePreviousPlanningContext(options);
+  const previousRequirement = previous
+    && previous.planningContext
+    && previous.planningContext.requirementContract
+    && typeof previous.planningContext.requirementContract === "object"
+      ? previous.planningContext.requirementContract
+      : null;
+  const previousRevisionProposal = sanitizeRequirementRevisionProposal(previousRequirement && previousRequirement.activeRevisionProposal, {
+    fallbackAgent: currentAgentName,
+    fallbackStatus: "",
+  });
+  const previousRevisionGate = sanitizeRequirementRevisionGate(previousRequirement && previousRequirement.revisionGate, {
+    fallbackOwner: "intake",
+    fallbackAgent: currentAgentName,
+  });
   const sections = parsePromptSections(analysisPrompt);
   const explicitGoal = extractExplicitGoal(analysisPrompt, sections, normalizedContracts.planning);
   const implicitGoal = extractImplicitGoal(analysisPrompt, sections, normalizedContracts.planning);
@@ -4763,6 +4834,14 @@ function buildRequirementContract({ prompt = "", options = {}, selection, contra
       askNext: [],
       delightTitles: [],
     },
+    activeRevisionProposal: sanitizeRequirementRevisionProposal(null, {
+      fallbackAgent: currentAgentName,
+      fallbackStatus: "",
+    }),
+    revisionGate: sanitizeRequirementRevisionGate(null, {
+      fallbackOwner: "intake",
+      fallbackAgent: currentAgentName,
+    }),
     selectedPlanningMode: normalizedSelection.selectedMode,
     selectedPlanningDepth: normalizedSelection.selectedPlanningDepth,
     selectedAssuranceDepth: normalizedSelection.selectedAssuranceDepth,
@@ -4775,7 +4854,7 @@ function buildRequirementContract({ prompt = "", options = {}, selection, contra
     selection: normalizedSelection,
     contract: normalizedContracts.planning,
   });
-  const validation = buildRequirementValidation({ requirementContract, selection: normalizedSelection });
+  const validation = buildRequirementValidation({ requirementContract, selection: selectionWithAgent });
   requirementContract.validation = validation;
   requirementContract.lockedGoal = buildRequirementLockedGoal({
     requirementContract,
@@ -4802,7 +4881,7 @@ function buildRequirementContract({ prompt = "", options = {}, selection, contra
   });
   requirementContract.displayContract = buildRequirementDisplayContract({
     requirementContract,
-    selection: normalizedSelection,
+    selection: selectionWithAgent,
     status: validation.canProceed ? "LOCKED" : "BLOCKED",
     challengeReport: requirementContract.challengeReport,
     questionPlan: requirementContract.questionPlan,
@@ -4810,11 +4889,17 @@ function buildRequirementContract({ prompt = "", options = {}, selection, contra
     intentHypotheses: requirementContract.intentHypotheses,
     lockedGoal: requirementContract.lockedGoal,
   });
-  const revisionLedger = buildRequirementRevisionLedger({ requirementContract, options });
+  const revisionLedger = buildRequirementRevisionLedger({
+    requirementContract,
+    options: {
+      ...options,
+      agentName: currentAgentName,
+    },
+  });
   requirementContract.revisionLedger = revisionLedger;
   const statusDecision = deriveRequirementStatus({
     requirementContract,
-    selection: normalizedSelection,
+    selection: selectionWithAgent,
     validation,
     revisionLedger,
   });
@@ -4822,7 +4907,7 @@ function buildRequirementContract({ prompt = "", options = {}, selection, contra
   requirementContract.statusReason = statusDecision.statusReason;
   requirementContract.lockedGoal = buildRequirementLockedGoal({
     requirementContract,
-    selection: normalizedSelection,
+    selection: selectionWithAgent,
     validation,
     status: statusDecision.status,
   });
@@ -4833,7 +4918,7 @@ function buildRequirementContract({ prompt = "", options = {}, selection, contra
   });
   requirementContract.displayContract = buildRequirementDisplayContract({
     requirementContract,
-    selection: normalizedSelection,
+    selection: selectionWithAgent,
     status: statusDecision.status,
     challengeReport: requirementContract.challengeReport,
     questionPlan: requirementContract.questionPlan,
@@ -4841,7 +4926,164 @@ function buildRequirementContract({ prompt = "", options = {}, selection, contra
     intentHypotheses: requirementContract.intentHypotheses,
     lockedGoal: requirementContract.lockedGoal,
   });
-  return requirementContract;
+  const cloneRequirementContract = (value) => {
+    if (!value || typeof value !== "object") return {};
+    try {
+      return JSON.parse(JSON.stringify(value));
+    } catch {
+      return { ...value };
+    }
+  };
+  const rebuildRequirementDerivedState = (value) => {
+    const nextRequirement = cloneRequirementContract(value);
+    nextRequirement.activeRevisionProposal = sanitizeRequirementRevisionProposal(nextRequirement.activeRevisionProposal, {
+      fallbackAgent: currentAgentName,
+      fallbackStatus: "",
+    });
+    nextRequirement.revisionGate = sanitizeRequirementRevisionGate(nextRequirement.revisionGate, {
+      fallbackOwner: "intake",
+      fallbackAgent: currentAgentName,
+    });
+    nextRequirement.validation = buildRequirementValidation({
+      requirementContract: nextRequirement,
+      selection: selectionWithAgent,
+    });
+    const nextStatusDecision = deriveRequirementStatus({
+      requirementContract: nextRequirement,
+      selection: selectionWithAgent,
+      validation: nextRequirement.validation,
+      revisionLedger: nextRequirement.revisionLedger,
+    });
+    nextRequirement.status = nextStatusDecision.status;
+    nextRequirement.statusReason = nextStatusDecision.statusReason;
+    nextRequirement.lockedGoal = buildRequirementLockedGoal({
+      requirementContract: nextRequirement,
+      selection: selectionWithAgent,
+      validation: nextRequirement.validation,
+      status: nextRequirement.status,
+    });
+    nextRequirement.intentHypotheses = buildRequirementIntentHypotheses({
+      requirementContract: nextRequirement,
+      selection: normalizedSelection,
+      lockedGoal: nextRequirement.lockedGoal,
+    });
+    nextRequirement.displayContract = buildRequirementDisplayContract({
+      requirementContract: nextRequirement,
+      selection: selectionWithAgent,
+      status: nextRequirement.status,
+      challengeReport: nextRequirement.challengeReport,
+      questionPlan: nextRequirement.questionPlan,
+      delightPlan: nextRequirement.delightPlan,
+      intentHypotheses: nextRequirement.intentHypotheses,
+      lockedGoal: nextRequirement.lockedGoal,
+    });
+    return nextRequirement;
+  };
+  const previousLockedRequirement = previousRequirement
+    && requirementHasCoreData(previousRequirement)
+    && ["LOCKED", "REVISED", "BLOCKED"].includes(normalizeRequirementStatus(previousRequirement.status, ""))
+      ? previousRequirement
+      : null;
+  if (!previousLockedRequirement) {
+    return rebuildRequirementDerivedState(requirementContract);
+  }
+  if (currentAgentName !== "intake") {
+    if (previousRevisionGate.status === "pending_intake_confirmation" || (previousRevisionProposal.proposalId && previousRevisionProposal.status === "pending")) {
+      const authoritativeRequirement = cloneRequirementContract(previousLockedRequirement);
+      authoritativeRequirement.activeRevisionProposal = previousRevisionProposal;
+      authoritativeRequirement.revisionGate = buildRequirementRevisionGate({
+        status: "pending_intake_confirmation",
+        reason: "A downstream revision proposal is already pending intake confirmation.",
+        authoritativeOwner: "intake",
+        currentAgent: currentAgentName,
+        blockingProposalId: previousRevisionProposal.proposalId,
+        returnToIntake: true,
+        changedFields: previousRevisionProposal.changedFields,
+      });
+      return rebuildRequirementDerivedState(authoritativeRequirement);
+    }
+    if (revisionLedger.revised) {
+      const proposal = buildRequirementRevisionProposal({
+        proposalId: previousRevisionProposal.proposalId || `revision-${currentAgentName}-${Math.max(1, revisionLedger.revisionNumber)}`,
+        changedFields: revisionLedger.changedFields,
+        reason: revisionLedger.summary || "Downstream requested a locked requirement revision.",
+        evidence: uniqueStrings([
+          ...revisionLedger.changedFields.map((entry) => `requirement:${entry}`),
+          safeString(normalizedSelection.promptHash, 120) ? `promptHash:${safeString(normalizedSelection.promptHash, 120)}` : "",
+        ], 12),
+        requiresReapproval: revisionLedger.requiresReapproval,
+        originatingAgent: currentAgentName,
+        previousPromptHash: safeString(previousLockedRequirement.promptHash, 120),
+        currentPromptHash: safeString(normalizedSelection.promptHash, 120),
+        createdFromRevisionNumber: Math.max(
+          1,
+          Math.trunc(Number(
+            previousLockedRequirement
+            && previousLockedRequirement.revisionLedger
+            && previousLockedRequirement.revisionLedger.revisionNumber
+          ) || 1)
+        ),
+        status: "pending",
+        summary: revisionLedger.summary || "Downstream requested changes to the locked requirement contract.",
+      });
+      const authoritativeRequirement = cloneRequirementContract(previousLockedRequirement);
+      authoritativeRequirement.activeRevisionProposal = proposal;
+      authoritativeRequirement.revisionGate = buildRequirementRevisionGate({
+        status: "proposal_required",
+        reason: "Locked requirement meaning cannot change downstream without a revision proposal for intake.",
+        authoritativeOwner: "intake",
+        currentAgent: currentAgentName,
+        blockingProposalId: proposal.proposalId,
+        returnToIntake: true,
+        changedFields: proposal.changedFields,
+      });
+      return rebuildRequirementDerivedState(authoritativeRequirement);
+    }
+  }
+  if (currentAgentName === "intake" && previousRevisionProposal.proposalId && previousRevisionProposal.status === "pending") {
+    if (revisionLedger.revised) {
+      requirementContract.activeRevisionProposal = sanitizeRequirementRevisionProposal({
+        ...previousRevisionProposal,
+        status: "accepted",
+        reviewedBy: "intake",
+        reviewedAt: new Date().toISOString(),
+      }, {
+        fallbackAgent: previousRevisionProposal.originatingAgent || currentAgentName,
+      });
+      requirementContract.revisionGate = buildRequirementRevisionGate({
+        status: "accepted_by_intake",
+        reason: "Intake issued a revised requirement contract version.",
+        authoritativeOwner: "intake",
+        currentAgent: currentAgentName,
+        blockingProposalId: previousRevisionProposal.proposalId,
+        returnToIntake: false,
+        changedFields: previousRevisionProposal.changedFields,
+      });
+      return rebuildRequirementDerivedState(requirementContract);
+    }
+    const authoritativeRequirement = cloneRequirementContract(previousLockedRequirement);
+    authoritativeRequirement.activeRevisionProposal = previousRevisionProposal;
+    authoritativeRequirement.revisionGate = buildRequirementRevisionGate({
+      status: "pending_intake_confirmation",
+      reason: "Intake must issue a revised requirement contract version before downstream work can proceed.",
+      authoritativeOwner: "intake",
+      currentAgent: currentAgentName,
+      blockingProposalId: previousRevisionProposal.proposalId,
+      returnToIntake: true,
+      changedFields: previousRevisionProposal.changedFields,
+    });
+    return rebuildRequirementDerivedState(authoritativeRequirement);
+  }
+  requirementContract.activeRevisionProposal = sanitizeRequirementRevisionProposal(null, {
+    fallbackAgent: currentAgentName,
+    fallbackStatus: "",
+  });
+  requirementContract.revisionGate = sanitizeRequirementRevisionGate(null, {
+    fallbackOwner: "intake",
+    fallbackAgent: currentAgentName,
+    fallbackStatus: "clear",
+  });
+  return rebuildRequirementDerivedState(requirementContract);
 }
 
 function defaultOwnedPathsForRole(role, prompt, options = {}) {
@@ -5294,6 +5536,15 @@ function sanitizePlanningArtifactsForRuntime(input) {
       provenance: sanitizeRequirementProvenance(requirement.provenance, requirement),
       validation: sanitizeRequirementValidation(requirement.validation, requirement),
       revisionLedger: sanitizeRequirementRevisionLedger(requirement.revisionLedger),
+      activeRevisionProposal: sanitizeRequirementRevisionProposal(requirement.activeRevisionProposal, {
+        fallbackAgent: safeString(requirement.owner, 80) || "intake",
+        fallbackStatus: "",
+      }),
+      revisionGate: sanitizeRequirementRevisionGate(requirement.revisionGate, {
+        fallbackOwner: safeString(requirement.owner, 80) || "intake",
+        fallbackAgent: "",
+        fallbackStatus: "clear",
+      }),
       selectedPlanningMode: normalizePlanningMode(requirement.selectedPlanningMode || selectedMode, "NORMAL"),
       selectedPlanningDepth: normalizePlanningDepth(requirement.selectedPlanningDepth || selectedPlanningDepth, "STANDARD_PLANNING"),
       selectedAssuranceDepth: normalizeAssuranceMode(requirement.selectedAssuranceDepth || selectedAssuranceDepth, "STANDARD_ASSURANCE"),

@@ -1383,6 +1383,12 @@ async function run() {
     if (typeof singleExecLatest.task_outcome_status !== "string" || !singleExecLatest.task_outcome_status) {
       throw new Error("latest_turn did not expose task_outcome_status");
     }
+    if (!singleExecLatest.post_lock_drift || typeof singleExecLatest.post_lock_drift !== "object") {
+      throw new Error("latest_turn did not expose post_lock_drift");
+    }
+    if (!singleExecLatest.clause_completion_scorecard || typeof singleExecLatest.clause_completion_scorecard !== "object") {
+      throw new Error("latest_turn did not expose clause_completion_scorecard");
+    }
 
     console.log("[smoke] 20/25 verify full turn artifact manifest exists");
     const artifactRecord = findTurnArtifactManifest(singleExecTurnId, {

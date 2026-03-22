@@ -27,6 +27,8 @@
     "provenance",
     "validation",
     "revisionLedger",
+    "activeRevisionProposal",
+    "revisionGate",
     "selectedPlanningDepth",
     "selectedAssuranceDepth",
     "selectedPlanningMode",
@@ -167,6 +169,65 @@
           "type": "array",
           "items": { "type": "string", "minLength": 1 }
         }
+      },
+      "additionalProperties": false
+    },
+    "revisionProposal": {
+      "type": "object",
+      "required": [
+        "proposalId",
+        "changedFields",
+        "reason",
+        "evidence",
+        "requiresReapproval",
+        "originatingAgent",
+        "status",
+        "summary",
+        "previousPromptHash",
+        "currentPromptHash",
+        "createdFromRevisionNumber",
+        "reviewedBy",
+        "reviewedAt"
+      ],
+      "properties": {
+        "proposalId": { "type": "string" },
+        "changedFields": { "type": "array", "items": { "type": "string" } },
+        "reason": { "type": "string" },
+        "evidence": { "type": "array", "items": { "type": "string" } },
+        "requiresReapproval": { "type": "boolean" },
+        "originatingAgent": { "type": "string" },
+        "status": { "type": "string", "enum": ["", "pending", "accepted", "rejected"] },
+        "summary": { "type": "string" },
+        "previousPromptHash": { "type": "string" },
+        "currentPromptHash": { "type": "string" },
+        "createdFromRevisionNumber": { "type": "integer", "minimum": 0 },
+        "reviewedBy": { "type": "string" },
+        "reviewedAt": { "type": "string" }
+      },
+      "additionalProperties": false
+    },
+    "revisionGate": {
+      "type": "object",
+      "required": [
+        "status",
+        "reason",
+        "authoritativeOwner",
+        "currentAgent",
+        "blockingProposalId",
+        "returnToIntake",
+        "changedFields"
+      ],
+      "properties": {
+        "status": {
+          "type": "string",
+          "enum": ["clear", "proposal_required", "pending_intake_confirmation", "accepted_by_intake"]
+        },
+        "reason": { "type": "string" },
+        "authoritativeOwner": { "type": "string" },
+        "currentAgent": { "type": "string" },
+        "blockingProposalId": { "type": "string" },
+        "returnToIntake": { "type": "boolean" },
+        "changedFields": { "type": "array", "items": { "type": "string" } }
       },
       "additionalProperties": false
     }
@@ -544,10 +605,14 @@
         "previousPromptHash": { "type": "string" },
         "previousStatus": { "type": "string" },
         "requiresReapproval": { "type": "boolean" },
-        "summary": { "type": "string" }
+        "summary": { "type": "string" },
+        "approvedProposalId": { "type": "string" },
+        "approvedProposalOriginatingAgent": { "type": "string" }
       },
       "additionalProperties": false
     },
+    "activeRevisionProposal": { "$ref": "#/$defs/revisionProposal" },
+    "revisionGate": { "$ref": "#/$defs/revisionGate" },
     "selectedPlanningDepth": {
       "type": "string",
       "enum": ["FAST_PLANNING", "STANDARD_PLANNING", "DISCOVERY_PLANNING"]

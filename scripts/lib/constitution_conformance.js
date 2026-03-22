@@ -288,8 +288,13 @@ function collectReviewerFindings(childEvidenceLedger) {
   return findings.slice(0, 24);
 }
 
-function deriveRecommendedReleaseState({ finalOutcome, missingEvidence, residualRisks, assumptions }) {
+function deriveRecommendedReleaseState({ finalOutcome, missingEvidence, residualRisks, assumptions, clauseCompletionScorecard }) {
   const outcomeStatus = safeString(finalOutcome && finalOutcome.taskOutcomeStatus, 80).toUpperCase();
+  const clauseScorecard = clauseCompletionScorecard && typeof clauseCompletionScorecard === "object" ? clauseCompletionScorecard : {};
+  const clauseSummary = clauseScorecard.summary && typeof clauseScorecard.summary === "object" ? clauseScorecard.summary : {};
+  if (toCount(clauseSummary.unsatisfiedCount) > 0) {
+    return "HARNESS_FAILURE";
+  }
   if (outcomeStatus === "FAILED_VALIDATION") {
     return "HARNESS_FAILURE";
   }
@@ -315,6 +320,7 @@ function buildReviewBundle({
   residualRisks,
   assumptions,
   finalOutcome,
+  clauseCompletionScorecard,
 } = {}) {
   const coverage = (Array.isArray(acceptanceResults) ? acceptanceResults : []).map((entry) => ({
     criterion_id: safeString(entry && entry.id, 80),
@@ -329,18 +335,34 @@ function buildReviewBundle({
     missingEvidence,
     residualRisks,
     assumptions,
+    clauseCompletionScorecard,
   });
   return {
     schema: "ReviewBundle.v1",
     acceptance_coverage_matrix: coverage,
     reviewer_findings: findings,
-    severity: missingEvidence.length > 0 ? "high" : findings.length > 0 ? "medium" : "none",
+    severity: clauseCompletionScorecard && clauseCompletionScorecard.summary && toCount(clauseCompletionScorecard.summary.unsatisfiedCount) > 0
+      ? "critical"
+      : missingEvidence.length > 0
+        ? "high"
+        : findings.length > 0
+          ? "medium"
+          : "none",
     residual_risk: uniqueStrings(residualRisks, 16),
     missing_evidence: missingEvidence,
     pass_fail_per_criterion: coverage.map((entry) => ({
       criterion_id: entry.criterion_id,
       status: entry.status,
     })),
+    clause_completion_scorecard: clauseCompletionScorecard && typeof clauseCompletionScorecard === "object"
+      ? clauseCompletionScorecard
+      : {
+          schema: "clause-completion-scorecard.v1",
+          status: "PASS",
+          reason: "all_core_clauses_satisfied",
+          summary: { coreTotal: 0, satisfiedCount: 0, unsatisfiedCount: 0, waivedCount: 0 },
+          clauses: [],
+        },
     recommended_release_state: recommended,
   };
 }
@@ -375,12 +397,28 @@ function buildReleaseDecision({
   residualRisks,
   assumptions,
   missingEvidence,
+  clauseCompletionScorecard,
   rationaleNotes,
 } = {}) {
   const recommended = safeString(reviewBundle && reviewBundle.recommended_release_state, 80);
   const terminalState = normalizeReleaseState(
-    recommended || deriveRecommendedReleaseState({ finalOutcome, missingEvidence, residualRisks, assumptions })
+    recommended || deriveRecommendedReleaseState({ finalOutcome, missingEvidence, residualRisks, assumptions, clauseCompletionScorecard })
   );
+  const clauseScorecard = clauseCompletionScorecard && typeof clauseCompletionScorecard === "object"
+    ? clauseCompletionScorecard
+    : reviewBundle && reviewBundle.clause_completion_scorecard && typeof reviewBundle.clause_completion_scorecard === "object"
+      ? reviewBundle.clause_completion_scorecard
+      : {};
+  const unsatisfiedClauses = Array.isArray(clauseScorecard.clauses)
+    ? clauseScorecard.clauses
+        .filter((entry) => safeString(entry && entry.status, 40) === "unsatisfied")
+        .map((entry) => {
+          const clauseId = safeString(entry && entry.clauseId, 80);
+          const text = safeString(entry && entry.text, 160);
+          return clauseId && text ? `${clauseId}: ${text}` : clauseId || text;
+        })
+        .filter(Boolean)
+    : [];
   return {
     schema: "ReleaseDecision.v1",
     terminal_state: terminalState,
@@ -393,6 +431,7 @@ function buildReleaseDecision({
     blocker_list: terminalState === "RELEASE_BLOCKED" || terminalState === "HARNESS_FAILURE"
       ? uniqueStrings([
           ...(Array.isArray(missingEvidence) ? missingEvidence : []),
+          ...unsatisfiedClauses,
           ...(Array.isArray(residualRisks) ? residualRisks : []),
         ], 16)
       : [],
@@ -440,6 +479,9 @@ function buildOperatorViewSummary({
           ? review.acceptance_coverage_matrix.filter((entry) => safeString(entry && entry.status, 40).toUpperCase() === "PASS").length
           : 0
       ),
+      core_clause_total: toCount(review && review.clause_completion_scorecard && review.clause_completion_scorecard.summary && review.clause_completion_scorecard.summary.coreTotal),
+      core_clause_satisfied: toCount(review && review.clause_completion_scorecard && review.clause_completion_scorecard.summary && review.clause_completion_scorecard.summary.satisfiedCount),
+      core_clause_unsatisfied: toCount(review && review.clause_completion_scorecard && review.clause_completion_scorecard.summary && review.clause_completion_scorecard.summary.unsatisfiedCount),
     },
     residual_risk: uniqueStrings(review.residual_risk, 16),
     release_state: safeString(release.terminal_state, 80) || "HARNESS_FAILURE",

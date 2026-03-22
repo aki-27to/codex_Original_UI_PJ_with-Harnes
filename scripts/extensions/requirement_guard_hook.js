@@ -14,6 +14,9 @@ const {
   normalizePlanningModeContract,
   sanitizePlanningArtifactsForRuntime,
 } = require("../lib/planning_mode_policy");
+const {
+  REVISION_PROPOSAL_MARKER,
+} = require("../lib/requirement_revision_policy");
 
 const ORIGINAL_REQUIREMENT = "?????3?????";
 const MATCH_VALUE_ENV_KEY = "REQUIREMENT_GUARD_MATCH_VALUE";
@@ -502,6 +505,14 @@ function buildRequirementGuardPrompt(
     selection.familyProfile && typeof selection.familyProfile === "object"
       ? selection.familyProfile
       : {};
+  const revisionGate =
+    requirement && requirement.revisionGate && typeof requirement.revisionGate === "object"
+      ? requirement.revisionGate
+      : {};
+  const activeRevisionProposal =
+    requirement && requirement.activeRevisionProposal && typeof requirement.activeRevisionProposal === "object"
+      ? requirement.activeRevisionProposal
+      : {};
   const familyExecutionRules =
     taskFamily === "web_creative"
       ? [
@@ -563,6 +574,17 @@ function buildRequirementGuardPrompt(
   const expansionHint = !expansionConfig.enabled
     ? "- Expansion controls are unavailable."
     : "- Preferred over-delivery scope: bug fixes, refactoring, safety hardening, tests, and docs updates.";
+  const revisionRules =
+    revisionGate.status === "proposal_required" || revisionGate.status === "pending_intake_confirmation"
+      ? [
+          "- The locked requirement contract remains intake-owned. Do not silently rewrite it downstream.",
+          `- Stop downstream execution and end with ${REVISION_PROPOSAL_MARKER} followed by one JSON object containing changedFields, reason, evidence, requiresReapproval, and originatingAgent.`,
+          `- Intake must issue the revised contract version before downstream work continues.${Array.isArray(activeRevisionProposal.changedFields) && activeRevisionProposal.changedFields.length ? ` Requested fields: ${activeRevisionProposal.changedFields.slice(0, 4).join(", ")}.` : ""}`,
+        ]
+      : [
+          "- If you need to change the meaning of the locked requirement contract, do not rewrite it silently.",
+          `- Instead, end with ${REVISION_PROPOSAL_MARKER} followed by one JSON object containing changedFields, reason, evidence, requiresReapproval, and originatingAgent.`,
+        ];
   const planningRules =
     selectedPlanningDepth === "FAST_PLANNING"
         ? [
@@ -622,6 +644,7 @@ function buildRequirementGuardPrompt(
     acceptanceChecks ? "Acceptance checks:\n".concat(acceptanceChecks) : "",
     expansionControlRule,
     expansionHint,
+    ...revisionRules,
     finishRule,
     "",
     "User request (verbatim):",

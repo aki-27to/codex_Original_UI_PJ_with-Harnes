@@ -215,6 +215,83 @@ function run() {
     benchmarkClause && autoDroppedCoverageSanitized.requirementContract.requestCoverage.droppedItems.some((entry) => entry.clauseId === benchmarkClause.id && entry.reasonCode === "deferred_nonblocking"),
     "taste clauses should auto-drop when their mapping disappears from the locked contract"
   );
+  const lockedRevisionPrompt = [
+    "# Goal",
+    "Update only docs/CURRENT_ARCHITECTURE.md wording for the operator plan section.",
+    "# Acceptance Criteria",
+    "- Change only docs/CURRENT_ARCHITECTURE.md.",
+    "- Do not modify runtime behavior.",
+  ].join("\n");
+  const lockedRevisionArtifacts = buildPlanningArtifacts({
+    prompt: lockedRevisionPrompt,
+    options: { agentName: "default" },
+    contract,
+  });
+  const downstreamRevisionPrompt = [
+    "# Goal",
+    "Update server.js and docs/CURRENT_ARCHITECTURE.md so the runtime exposes a new revision gate.",
+    "# Acceptance Criteria",
+    "- Update server.js runtime behavior.",
+    "- Update docs/CURRENT_ARCHITECTURE.md.",
+  ].join("\n");
+  const downstreamRevisionArtifacts = buildPlanningArtifacts({
+    prompt: downstreamRevisionPrompt,
+    options: {
+      agentName: "default",
+      previousPlanningContext: lockedRevisionArtifacts,
+    },
+    contract,
+  });
+  assert.strictEqual(
+    downstreamRevisionArtifacts.requirementContract.status,
+    "BLOCKED",
+    "non-intake follow-up revisions should block until intake approves a revision proposal"
+  );
+  assert.strictEqual(
+    downstreamRevisionArtifacts.requirementContract.revisionGate.status,
+    "proposal_required",
+    "downstream meaning changes should mark the contract with proposal_required"
+  );
+  assert.ok(
+    downstreamRevisionArtifacts.requirementContract.validation.checks.some((entry) => entry.id === "runtime_revision_gate" && entry.status === "BLOCK"),
+    "requirement validation should expose the runtime revision gate as a blocking check"
+  );
+  assert.ok(
+    downstreamRevisionArtifacts.requirementContract.activeRevisionProposal
+      && Array.isArray(downstreamRevisionArtifacts.requirementContract.activeRevisionProposal.changedFields)
+      && downstreamRevisionArtifacts.requirementContract.activeRevisionProposal.changedFields.length >= 1,
+    "downstream revision requests should record a structured proposal payload"
+  );
+  assert.ok(
+    downstreamRevisionArtifacts.requirementContract.baselineScope.every((entry) => !entry.includes("server.js")),
+    "downstream revision requests must not silently rewrite the authoritative locked contract"
+  );
+  const intakeRevisionArtifacts = buildPlanningArtifacts({
+    prompt: downstreamRevisionPrompt,
+    options: {
+      agentName: "intake",
+      previousPlanningContext: downstreamRevisionArtifacts,
+    },
+    contract,
+  });
+  assert.strictEqual(
+    intakeRevisionArtifacts.requirementContract.revisionGate.status,
+    "accepted_by_intake",
+    "intake should be the only role that can confirm a locked requirement revision"
+  );
+  assert.ok(
+    intakeRevisionArtifacts.requirementContract.status === "REVISED" || intakeRevisionArtifacts.requirementContract.status === "LOCKED",
+    "intake-approved revisions should reissue a proceedable requirement contract"
+  );
+  assert.strictEqual(
+    intakeRevisionArtifacts.requirementContract.revisionLedger.approvedProposalId,
+    downstreamRevisionArtifacts.requirementContract.activeRevisionProposal.proposalId,
+    "intake revisions should record which proposal was approved"
+  );
+  assert.ok(
+    intakeRevisionArtifacts.requirementContract.acceptanceChecks.some((entry) => entry && typeof entry.title === "string" && entry.title.includes("server.js")),
+    "intake-approved revisions should publish the revised requirement content"
+  );
 
   const normalPrompt = [
     "# Goal",
@@ -510,11 +587,20 @@ function run() {
     followUpArtifacts.requirementContract.userValueFrame.benchmarkCandidates.includes("https://www.suruga-k.jp/"),
     "follow-up prompt should inherit the locked benchmark URL"
   );
-  assert.strictEqual(followUpArtifacts.requirementContract.status, "REVISED", "follow-up contract changes should surface as a revised requirement contract");
+  assert.strictEqual(
+    followUpArtifacts.requirementContract.status,
+    "BLOCKED",
+    "non-intake follow-up changes should stop at the revision gate instead of silently rewriting the locked contract"
+  );
+  assert.strictEqual(
+    followUpArtifacts.requirementContract.revisionGate.status,
+    "proposal_required",
+    "non-intake follow-up changes should require an intake-owned revision proposal"
+  );
   assert.ok(
-    Array.isArray(followUpArtifacts.requirementContract.revisionLedger.changedFields)
-      && followUpArtifacts.requirementContract.revisionLedger.changedFields.length >= 1,
-    "follow-up prompt should record changed requirement fields in the revision ledger"
+    Array.isArray(followUpArtifacts.requirementContract.activeRevisionProposal.changedFields)
+      && followUpArtifacts.requirementContract.activeRevisionProposal.changedFields.length >= 1,
+    "follow-up prompt should record changed requirement fields in the revision proposal payload"
   );
 
   const tempWorkspace = fs.mkdtempSync(path.join(os.tmpdir(), "planning-owned-paths-"));
