@@ -199,6 +199,31 @@ function run() {
           qualityAxes: ["clarity"],
           completedMeans: ["The UI shows a locked goal and the next question plan"],
         },
+        requestCoverage: {
+          rawRequestClauses: [
+            { id: "req-1", text: "A cleaner requirement summary", kind: "explicit_request", lane: "core" },
+            { id: "req-2", text: "Do not widen execution scope", kind: "non_target", lane: "core" },
+            { id: "req-3", text: "Which area should the UI emphasize first?", kind: "taste_value", lane: "taste" },
+            { id: "req-4", text: "Show the next question plan", kind: "verification_method", lane: "core" },
+            { id: "req-5", text: "Delay the delight lane if needed", kind: "taste_value", lane: "defaultable" },
+          ],
+          coreObligations: ["req-1", "req-2", "req-4"],
+          mappedRequirements: [
+            { clauseId: "req-1", requirementRefs: ["userValueFrame.userWants"] },
+            { clauseId: "req-2", requirementRefs: ["nonGoals"] },
+          ],
+          parkedItems: [{ clauseId: "req-3", reason: "Taste stays outside the locked core contract." }],
+          droppedItems: [{ clauseId: "req-5", reasonCode: "deferred_nonblocking", reason: "Not needed for the first lock." }],
+          coverageSummary: {
+            totalClauses: 5,
+            mappedCount: 2,
+            coreTotal: 3,
+            coreMapped: 2,
+            coreUnmapped: 1,
+            parkedCount: 1,
+            droppedCount: 1,
+          },
+        },
         displayContract: {
           headline: "validated requirement contract goal",
           goal: "validated requirement contract goal",
@@ -218,6 +243,9 @@ function run() {
   assert.strictEqual(displayContractSnapshot.displayGoalMode, "locked", "display contract should carry the locked goal mode into the snapshot");
   assert.deepStrictEqual(displayContractSnapshot.displayAskNext, ["Which area should the UI emphasize first?"], "display contract should surface the prioritized next question");
   assert.deepStrictEqual(displayContractSnapshot.delightTitles, ["Add a delight lane"], "display contract should preserve the delight lane titles");
+  assert.ok(displayContractSnapshot.metaParts.includes("依頼反映 2 / 3"), "Requirement Lock should summarize mapped core request coverage");
+  assert.ok(displayContractSnapshot.metaParts.includes("保留 1"), "Requirement Lock should summarize parked request items");
+  assert.ok(displayContractSnapshot.metaParts.includes("除外 1"), "Requirement Lock should summarize dropped request items");
   assert.strictEqual(displayGroups[0].summary, "validated requirement contract goal", "display contract should let the UI foreground the locked goal");
   assertRowLabel(displayGroups[0].rows, "進め方", "display contract should still produce a clear next action row");
 

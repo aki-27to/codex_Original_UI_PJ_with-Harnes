@@ -2527,6 +2527,402 @@ function sanitizeRequirementProvenance(value, requirement = {}) {
   };
 }
 
+function normalizeRequestCoverageClauseKind(value, fallback = "explicit_request") {
+  const normalized = safeString(value, 80).toLowerCase();
+  if (normalized === "explicit_request"
+    || normalized === "constraint"
+    || normalized === "non_target"
+    || normalized === "verification_method"
+    || normalized === "taste_value") {
+    return normalized;
+  }
+  return fallback === "constraint"
+    || fallback === "non_target"
+    || fallback === "verification_method"
+    || fallback === "taste_value"
+      ? fallback
+      : "explicit_request";
+}
+
+function normalizeRequestCoverageLane(value, fallback = "core") {
+  const normalized = safeString(value, 80).toLowerCase();
+  if (normalized === "core" || normalized === "defaultable" || normalized === "taste" || normalized === "unsafe_or_approval") {
+    return normalized;
+  }
+  return fallback === "defaultable" || fallback === "taste" || fallback === "unsafe_or_approval"
+    ? fallback
+    : "core";
+}
+
+function normalizeRequestCoverageDropReasonCode(value, fallback = "deferred_nonblocking") {
+  const normalized = safeString(value, 80).toLowerCase();
+  if (normalized === "out_of_scope"
+    || normalized === "contradiction"
+    || normalized === "unsafe_or_approval"
+    || normalized === "deferred_nonblocking") {
+    return normalized;
+  }
+  return fallback === "out_of_scope" || fallback === "contradiction" || fallback === "unsafe_or_approval"
+    ? fallback
+    : "deferred_nonblocking";
+}
+
+function sanitizeRequirementRequestCoverageClauses(value) {
+  return (Array.isArray(value) ? value : []).map((entry, index) => {
+    const item = entry && typeof entry === "object" ? entry : {};
+    const text = safeString(item.text, 320);
+    if (!text) return null;
+    return {
+      id: safeString(item.id, 80) || `req-${index + 1}`,
+      text,
+      kind: normalizeRequestCoverageClauseKind(item.kind, "explicit_request"),
+      lane: normalizeRequestCoverageLane(item.lane, "core"),
+    };
+  }).filter(Boolean).slice(0, 32);
+}
+
+function sanitizeRequirementRequestCoverageMappings(value) {
+  return (Array.isArray(value) ? value : []).map((entry) => {
+    const item = entry && typeof entry === "object" ? entry : {};
+    const clauseId = safeString(item.clauseId, 80);
+    if (!clauseId) return null;
+    const requirementRefs = uniqueStrings(item.requirementRefs, 8);
+    if (!requirementRefs.length) return null;
+    return {
+      clauseId,
+      requirementRefs,
+    };
+  }).filter(Boolean).slice(0, 32);
+}
+
+function sanitizeRequirementRequestCoverageParkedItems(value) {
+  return (Array.isArray(value) ? value : []).map((entry) => {
+    const item = entry && typeof entry === "object" ? entry : {};
+    const clauseId = safeString(item.clauseId, 80);
+    if (!clauseId) return null;
+    return {
+      clauseId,
+      reason: safeString(item.reason, 240),
+      requirementRefs: uniqueStrings(item.requirementRefs, 8),
+    };
+  }).filter(Boolean).slice(0, 16);
+}
+
+function sanitizeRequirementRequestCoverageDroppedItems(value) {
+  return (Array.isArray(value) ? value : []).map((entry) => {
+    const item = entry && typeof entry === "object" ? entry : {};
+    const clauseId = safeString(item.clauseId, 80);
+    if (!clauseId) return null;
+    return {
+      clauseId,
+      reasonCode: normalizeRequestCoverageDropReasonCode(item.reasonCode, "deferred_nonblocking"),
+      reason: safeString(item.reason, 240),
+      requirementRefs: uniqueStrings(item.requirementRefs, 8),
+    };
+  }).filter(Boolean).slice(0, 16);
+}
+
+function buildRequirementRequestCoverageSummary({
+  rawRequestClauses = [],
+  coreObligations = [],
+  mappedRequirements = [],
+  parkedItems = [],
+  droppedItems = [],
+} = {}) {
+  const clauseIds = new Set(sanitizeRequirementRequestCoverageClauses(rawRequestClauses).map((entry) => entry.id));
+  const normalizedCore = uniqueStrings(coreObligations, 32).filter((id) => clauseIds.has(id));
+  const mappedIds = new Set(
+    sanitizeRequirementRequestCoverageMappings(mappedRequirements)
+      .filter((entry) => clauseIds.has(entry.clauseId))
+      .map((entry) => entry.clauseId)
+  );
+  return {
+    totalClauses: clauseIds.size,
+    mappedCount: mappedIds.size,
+    coreTotal: normalizedCore.length,
+    coreMapped: normalizedCore.filter((id) => mappedIds.has(id)).length,
+    coreUnmapped: normalizedCore.filter((id) => !mappedIds.has(id)).length,
+    parkedCount: sanitizeRequirementRequestCoverageParkedItems(parkedItems).length,
+    droppedCount: sanitizeRequirementRequestCoverageDroppedItems(droppedItems).length,
+  };
+}
+
+function sanitizeRequirementRequestCoverage(value, requirement = {}) {
+  const source = value && typeof value === "object" ? value : {};
+  const rawRequestClauses = sanitizeRequirementRequestCoverageClauses(source.rawRequestClauses);
+  const knownClauseIds = new Set(rawRequestClauses.map((entry) => entry.id));
+  const coreObligations = uniqueStrings(source.coreObligations, 32).filter((id) => knownClauseIds.has(id));
+  const mappedRequirements = sanitizeRequirementRequestCoverageMappings(source.mappedRequirements).filter((entry) => knownClauseIds.has(entry.clauseId));
+  const parkedItems = sanitizeRequirementRequestCoverageParkedItems(source.parkedItems).filter((entry) => knownClauseIds.has(entry.clauseId));
+  const droppedItems = sanitizeRequirementRequestCoverageDroppedItems(source.droppedItems).filter((entry) => knownClauseIds.has(entry.clauseId));
+  const coverageSummary = buildRequirementRequestCoverageSummary({
+    rawRequestClauses,
+    coreObligations,
+    mappedRequirements,
+    parkedItems,
+    droppedItems,
+  });
+  if (rawRequestClauses.length || requirementHasCoreData(requirement)) {
+    return {
+      rawRequestClauses,
+      coreObligations,
+      mappedRequirements,
+      parkedItems,
+      droppedItems,
+      coverageSummary,
+    };
+  }
+  return {
+    rawRequestClauses: [],
+    coreObligations: [],
+    mappedRequirements: [],
+    parkedItems: [],
+    droppedItems: [],
+    coverageSummary,
+  };
+}
+
+function buildRequirementRequestCoverage({ prompt = "", requirementContract, selection } = {}) {
+  const requirement = requirementContract && typeof requirementContract === "object" ? requirementContract : {};
+  const currentSelection = selection && typeof selection === "object" ? selection : {};
+  const provenance = sanitizeRequirementProvenance(requirement.provenance, requirement);
+  const acceptanceChecks = sanitizeAcceptanceChecks(requirement.acceptanceChecks);
+  const rawRequestClauses = [];
+  const mappedRequirements = [];
+  const coreObligations = [];
+  const parkedItems = [];
+  const droppedItems = [];
+  const clauseIndex = new Map();
+  const clauseOrder = [];
+  const lanePriority = Object.freeze({ defaultable: 1, taste: 2, unsafe_or_approval: 3, core: 4 });
+  const hasUserSource = (entry) => {
+    const normalized = entry && typeof entry === "object" ? normalizeRequirementProvenanceSource(entry.source, "") : "";
+    return normalized === "user_explicit" || normalized === "user_implied";
+  };
+  const ensureClause = ({ text, kind = "explicit_request", lane = "core" } = {}) => {
+    const normalizedText = safeString(text, 320).trim();
+    const key = normalizeRequirementProvenanceCompareKey(normalizedText);
+    if (!normalizedText || !key) return null;
+    if (clauseIndex.has(key)) {
+      const existing = clauseIndex.get(key);
+      if ((lanePriority[normalizeRequestCoverageLane(lane, "core")] || 0) > (lanePriority[existing.lane] || 0)) {
+        existing.lane = normalizeRequestCoverageLane(lane, existing.lane);
+      }
+      return existing;
+    }
+    const clause = {
+      id: `req-${clauseOrder.length + 1}`,
+      text: normalizedText,
+      kind: normalizeRequestCoverageClauseKind(kind, "explicit_request"),
+      lane: normalizeRequestCoverageLane(lane, "core"),
+    };
+    clauseIndex.set(key, clause);
+    clauseOrder.push(clause);
+    rawRequestClauses.push(clause);
+    return clause;
+  };
+  const addMapping = (clause, requirementRefs = []) => {
+    if (!clause || !clause.id) return;
+    const refs = uniqueStrings(requirementRefs, 8);
+    if (!refs.length) return;
+    const existing = mappedRequirements.find((entry) => entry.clauseId === clause.id);
+    if (existing) {
+      existing.requirementRefs = uniqueStrings([...existing.requirementRefs, ...refs], 8);
+      return;
+    }
+    mappedRequirements.push({ clauseId: clause.id, requirementRefs: refs });
+  };
+  const markCore = (clause) => {
+    if (!clause || !clause.id) return;
+    clause.lane = "core";
+    if (!coreObligations.includes(clause.id)) coreObligations.push(clause.id);
+  };
+  const addMappedClause = ({ text, kind, lane = "core", requirementRefs = [] } = {}) => {
+    const clause = ensureClause({ text, kind, lane });
+    if (!clause) return;
+    if (lane === "core") markCore(clause);
+    addMapping(clause, requirementRefs);
+  };
+
+  const goalClauseText = safeString(requirement.explicitGoal, 320)
+    ? (
+      provenance.explicitGoal && provenance.explicitGoal.source === "system_inferred" && sanitizeRequirementIntentInterpretation(requirement.intentInterpretation).questionLike
+        ? extractPrimaryQuestionPromptText(prompt, requirement.explicitGoal) || safeString(requirement.explicitGoal, 320)
+        : safeString(requirement.explicitGoal, 320)
+    )
+    : "";
+  if (goalClauseText) {
+    const goalRefs = [
+      "explicitGoal",
+      safeString(requirement.lockedGoal, 320) && requirementProvenanceValuesOverlap(goalClauseText, requirement.lockedGoal) ? "lockedGoal" : "",
+      safeString(requirement.intentInterpretation && requirement.intentInterpretation.direction, 320)
+        && requirementProvenanceValuesOverlap(goalClauseText, requirement.intentInterpretation.direction)
+        ? "intentInterpretation.direction"
+        : "",
+    ];
+    addMappedClause({
+      text: goalClauseText,
+      kind: "explicit_request",
+      lane: "core",
+      requirementRefs: goalRefs,
+    });
+  }
+
+  uniqueStrings(requirement.baselineScope, 12)
+    .filter((entry) => promptMentionsRequirementValue(prompt, entry))
+    .forEach((entry) => {
+      addMappedClause({
+        text: entry,
+        kind: isHardConstraintDirective(entry) ? "constraint" : "explicit_request",
+        lane: "core",
+        requirementRefs: ["baselineScope"],
+      });
+    });
+
+  acceptanceChecks.forEach((entry) => {
+    const source = safeString(entry.source, 80);
+    const userAnchored = promptMentionsRequirementValue(prompt, entry.title)
+      || source === "prompt_section"
+      || source === "exact_reply_contract";
+    if (!userAnchored) return;
+    addMappedClause({
+      text: entry.title,
+      kind: "verification_method",
+      lane: entry.blocking === false ? "defaultable" : "core",
+      requirementRefs: ["acceptanceChecks"],
+    });
+  });
+
+  provenance.nonGoals.filter(hasUserSource).forEach((entry) => {
+    addMappedClause({
+      text: entry.value,
+      kind: "non_target",
+      lane: "core",
+      requirementRefs: ["nonGoals"],
+    });
+  });
+
+  const frameProvenance = provenance.userValueFrame && typeof provenance.userValueFrame === "object" ? provenance.userValueFrame : {};
+  sanitizeRequirementValueProvenanceEntries(frameProvenance.userWants, "system_inferred", 8)
+    .filter(hasUserSource)
+    .forEach((entry) => {
+      addMappedClause({
+        text: entry.value,
+        kind: "explicit_request",
+        lane: "core",
+        requirementRefs: ["userValueFrame.userWants"],
+      });
+    });
+  sanitizeRequirementValueProvenanceEntries(frameProvenance.hardConstraints, "system_inferred", 10)
+    .filter(hasUserSource)
+    .forEach((entry) => {
+      addMappedClause({
+        text: entry.value,
+        kind: "constraint",
+        lane: "core",
+        requirementRefs: ["userValueFrame.hardConstraints"],
+      });
+    });
+  sanitizeRequirementValueProvenanceEntries(frameProvenance.mustAvoid, "system_inferred", 10)
+    .filter(hasUserSource)
+    .forEach((entry) => {
+      addMappedClause({
+        text: entry.value,
+        kind: "non_target",
+        lane: "core",
+        requirementRefs: ["userValueFrame.mustAvoid"],
+      });
+    });
+  sanitizeRequirementValueProvenanceEntries(frameProvenance.completedMeans, "policy_default", 10)
+    .filter(hasUserSource)
+    .forEach((entry) => {
+      addMappedClause({
+        text: entry.value,
+        kind: "verification_method",
+        lane: "core",
+        requirementRefs: ["userValueFrame.completedMeans"],
+      });
+    });
+  sanitizeRequirementValueProvenanceEntries(frameProvenance.userShouldFeelGet, "policy_default", 8)
+    .filter(hasUserSource)
+    .forEach((entry) => {
+      addMappedClause({
+        text: entry.value,
+        kind: "taste_value",
+        lane: "taste",
+        requirementRefs: ["userValueFrame.userShouldFeelGet"],
+      });
+    });
+  sanitizeRequirementValueProvenanceEntries(frameProvenance.qualityAxes, "policy_default", 10)
+    .filter(hasUserSource)
+    .forEach((entry) => {
+      addMappedClause({
+        text: entry.value,
+        kind: "taste_value",
+        lane: "taste",
+        requirementRefs: ["userValueFrame.qualityAxes"],
+      });
+    });
+  sanitizeRequirementValueProvenanceEntries(frameProvenance.benchmarkCandidates, "system_inferred", 6)
+    .filter(hasUserSource)
+    .forEach((entry) => {
+      addMappedClause({
+        text: entry.value,
+        kind: "taste_value",
+        lane: "taste",
+        requirementRefs: ["userValueFrame.benchmarkCandidates"],
+      });
+    });
+
+  uniqueStrings(requirement.approvalBoundaryItems, 8)
+    .filter((entry) => promptMentionsRequirementValue(prompt, entry))
+    .forEach((entry) => {
+      addMappedClause({
+        text: entry,
+        kind: "constraint",
+        lane: "unsafe_or_approval",
+        requirementRefs: ["approvalBoundaryItems"],
+      });
+    });
+
+  const deferredQuestions = currentSelection
+    && currentSelection.extracted
+    && currentSelection.extracted.deferredQuestions
+    && typeof currentSelection.extracted.deferredQuestions === "object"
+      ? currentSelection.extracted.deferredQuestions
+      : {};
+  uniqueStrings(deferredQuestions.defaultable, 6)
+    .filter((entry) => promptMentionsRequirementValue(prompt, entry))
+    .forEach((entry) => {
+      const clause = ensureClause({ text: entry, kind: "explicit_request", lane: "defaultable" });
+      if (!clause) return;
+      parkedItems.push({
+        clauseId: clause.id,
+        reason: "A lower-risk detail is deferred under the locked core contract.",
+        requirementRefs: ["openQuestions"],
+      });
+    });
+  uniqueStrings(deferredQuestions.taste, 6)
+    .filter((entry) => promptMentionsRequirementValue(prompt, entry))
+    .forEach((entry) => {
+      const clause = ensureClause({ text: entry, kind: "taste_value", lane: "taste" });
+      if (!clause) return;
+      parkedItems.push({
+        clauseId: clause.id,
+        reason: "Taste refinement stays outside the core obligation lane until the core path is stable.",
+        requirementRefs: ["questionPlan.taste"],
+      });
+    });
+
+  return sanitizeRequirementRequestCoverage({
+    rawRequestClauses,
+    coreObligations,
+    mappedRequirements,
+    parkedItems,
+    droppedItems,
+  }, requirement);
+}
+
 function buildRequirementComparableSnapshot(requirementContract = {}) {
   const requirement = requirementContract && typeof requirementContract === "object" ? requirementContract : {};
   const frame = sanitizeUserValueFrame(requirement.userValueFrame);
@@ -2648,6 +3044,8 @@ function sanitizeRequirementRevisionLedger(value) {
 function buildRequirementValidation({ requirementContract, selection } = {}) {
   const requirement = requirementContract && typeof requirementContract === "object" ? requirementContract : {};
   const currentSelection = selection && typeof selection === "object" ? selection : {};
+  const rawCoverage = requirement.requestCoverage && typeof requirement.requestCoverage === "object" ? requirement.requestCoverage : {};
+  const requestCoverage = sanitizeRequirementRequestCoverage(requirement.requestCoverage, requirement);
   const goalAnchor = getRequirementGoalAnchor(requirement);
   const goalAnchorFieldRefs = getRequirementGoalAnchorFieldRefs(requirement);
   const acceptanceChecks = sanitizeAcceptanceChecks(requirement.acceptanceChecks);
@@ -2732,6 +3130,42 @@ function buildRequirementValidation({ requirementContract, selection } = {}) {
       ? "Goal, value frame, and intent interpretation carry provenance tags."
       : "Some critical requirement fields are missing provenance tags.",
     ["provenance"]
+  );
+  pushCheck(
+    "request_coverage_core_mapped",
+    "Core request obligations are mapped into the contract",
+    requestCoverage.coverageSummary.coreUnmapped > 0 ? "BLOCK" : "PASS",
+    requestCoverage.coverageSummary.coreUnmapped > 0
+      ? `Core request obligations remain unmapped: ${requestCoverage.coverageSummary.coreUnmapped}.`
+      : `Core request obligations mapped: ${requestCoverage.coverageSummary.coreMapped}/${requestCoverage.coverageSummary.coreTotal}.`,
+    ["requestCoverage.coreObligations", "requestCoverage.mappedRequirements", "requestCoverage.coverageSummary"]
+  );
+  const parkedReasonFailures = (Array.isArray(rawCoverage.parkedItems) ? rawCoverage.parkedItems : []).filter((entry) => {
+    return !safeString(entry && entry.reason, 240);
+  }).length;
+  pushCheck(
+    "request_coverage_parked_reasoned",
+    "Parked request items explain why they are parked",
+    parkedReasonFailures > 0 ? "BLOCK" : "PASS",
+    parkedReasonFailures > 0
+      ? `Parked request items without a reason: ${parkedReasonFailures}.`
+      : "Every parked request item records why it is deferred.",
+    ["requestCoverage.parkedItems"]
+  );
+  const droppedReasonFailures = (Array.isArray(rawCoverage.droppedItems) ? rawCoverage.droppedItems : []).filter((entry) => {
+    const reasonCode = safeString(entry && entry.reasonCode, 80);
+    const reason = safeString(entry && entry.reason, 240);
+    if (!reason) return true;
+    return !["out_of_scope", "contradiction", "unsafe_or_approval", "deferred_nonblocking"].includes(reasonCode);
+  }).length;
+  pushCheck(
+    "request_coverage_dropped_reasoned",
+    "Dropped request items explain the exclusion",
+    droppedReasonFailures > 0 ? "BLOCK" : "PASS",
+    droppedReasonFailures > 0
+      ? `Dropped request items missing a valid reasonCode or reason: ${droppedReasonFailures}.`
+      : "Every dropped request item records a machine-readable reasonCode and explanation.",
+    ["requestCoverage.droppedItems"]
   );
   pushCheck(
     "revision_safety",
@@ -4089,6 +4523,7 @@ function buildRequirementContract({ prompt = "", options = {}, selection, contra
   const requirementContract = {
     schema: "requirement-contract.v5",
     source: "runtime_inferred_pre_dispatch",
+    owner: "intake",
     promptHash: normalizedSelection.promptHash,
     explicitGoal,
     implicitGoal,
@@ -4109,6 +4544,22 @@ function buildRequirementContract({ prompt = "", options = {}, selection, contra
     challengeReport: { summary: "", proceedRisk: "medium", findings: [] },
     questionPlan: { summary: "", blocking: [], defaultable: [], taste: [], askNext: [] },
     delightPlan: { summary: "", candidates: [] },
+    requestCoverage: {
+      rawRequestClauses: [],
+      coreObligations: [],
+      mappedRequirements: [],
+      parkedItems: [],
+      droppedItems: [],
+      coverageSummary: {
+        totalClauses: 0,
+        mappedCount: 0,
+        coreTotal: 0,
+        coreMapped: 0,
+        coreUnmapped: 0,
+        parkedCount: 0,
+        droppedCount: 0,
+      },
+    },
     displayContract: {
       headline: "",
       goal: "",
@@ -4127,6 +4578,11 @@ function buildRequirementContract({ prompt = "", options = {}, selection, contra
     planningModeReasons: normalizedSelection.planningReasons,
     assuranceDepthReasons: normalizedSelection.assuranceReasons,
   };
+  requirementContract.requestCoverage = buildRequirementRequestCoverage({
+    prompt: analysisPrompt,
+    requirementContract,
+    selection: normalizedSelection,
+  });
   const validation = buildRequirementValidation({ requirementContract, selection: normalizedSelection });
   requirementContract.validation = validation;
   requirementContract.lockedGoal = buildRequirementLockedGoal({
@@ -4286,10 +4742,42 @@ function defaultEvidenceForRole(role, assuranceDepth, dedicatedTestsRequired) {
   }
 }
 
+function buildDispatchTraceReferenceLedger(requirementContract) {
+  const requirement = requirementContract && typeof requirementContract === "object" ? requirementContract : {};
+  const requestCoverage = sanitizeRequirementRequestCoverage(requirement.requestCoverage, requirement);
+  const mappedByClause = new Map();
+  for (const entry of Array.isArray(requestCoverage.mappedRequirements) ? requestCoverage.mappedRequirements : []) {
+    const clauseId = safeString(entry && entry.clauseId, 80);
+    if (!clauseId) continue;
+    mappedByClause.set(
+      clauseId,
+      uniqueStrings([
+        ...(mappedByClause.get(clauseId) || []),
+        ...(Array.isArray(entry && entry.requirementRefs) ? entry.requirementRefs : []),
+      ], 12)
+    );
+  }
+  const coreClauseRefs = uniqueStrings(requestCoverage.coreObligations, 24);
+  const mappedClauseRefs = uniqueStrings(
+    (Array.isArray(requestCoverage.mappedRequirements) ? requestCoverage.mappedRequirements : []).map((entry) => safeString(entry && entry.clauseId, 80)),
+    24
+  );
+  const requestClauseRefs = coreClauseRefs.length ? coreClauseRefs : mappedClauseRefs;
+  return {
+    requestClauseRefs,
+    requirementRefs: uniqueStrings(
+      requestClauseRefs.flatMap((clauseId) => mappedByClause.get(clauseId) || []),
+      24
+    ),
+  };
+}
+
 function buildDispatchPlan({ prompt = "", options = {}, selection, requirementContract, contract } = {}) {
   const normalizedSelection = selection && typeof selection === "object" ? selection : buildPlanningSelection({ prompt, options, contract });
   const requirement = requirementContract && typeof requirementContract === "object" ? requirementContract : buildRequirementContract({ prompt, options, selection: normalizedSelection, contract });
   const acceptanceIds = Array.isArray(requirement.acceptanceChecks) ? requirement.acceptanceChecks.map((entry) => safeString(entry && entry.id, 60)).filter(Boolean) : [];
+  const dispatchTrace = buildDispatchTraceReferenceLedger(requirement);
+  const acceptanceCheckRefs = uniqueStrings(acceptanceIds, 16);
   const roles = normalizedSelection.signals.specialistOwners.filter((role) => !["reviewer", "tester", "explorer"].includes(role));
   const assuranceDepth = normalizeAssuranceMode(normalizedSelection.selectedAssuranceDepth, "STANDARD_ASSURANCE");
   const reviewerRequired = assuranceDepth === "SIGNOFF_ASSURANCE" || Boolean(normalizedSelection.assuranceSignals && normalizedSelection.assuranceSignals.reviewerSuggested);
@@ -4310,6 +4798,9 @@ function buildDispatchPlan({ prompt = "", options = {}, selection, requirementCo
         : clarificationAction === "needs_input"
           ? "\u5b9f\u88c5\u524d\u306b\u5fc5\u8981\u306a\u30e6\u30fc\u30b6\u30fc\u5224\u65ad\u307e\u305f\u306f\u627f\u8a8d\u304c\u63c3\u3046\u307e\u3067\u5b9f\u884c\u3092\u505c\u6b62\u3059\u308b\u3002"
           : "\u5b9f\u88c5\u306b\u5165\u308b\u524d\u306b\u3001\u672a\u89e3\u6c7a\u306e\u8981\u4ef6\u3001\u975e\u5bfe\u8c61\u7bc4\u56f2\u3001\u524d\u63d0\u3001\u627f\u8a8d\u5883\u754c\u3092\u6574\u7406\u3059\u308b\u3002",
+      requestClauseRefs: dispatchTrace.requestClauseRefs,
+      requirementRefs: dispatchTrace.requirementRefs,
+      acceptanceCheckRefs,
       acceptanceChecks: acceptanceIds,
       toolsMcpRequirements: ["planning_contract", "read_only_analysis"],
       reviewerRequired: 0,
@@ -4335,6 +4826,9 @@ function buildDispatchPlan({ prompt = "", options = {}, selection, requirementCo
             : role === "frontend_worker"
               ? "UI \u3068\u30aa\u30da\u30ec\u30fc\u30bf\u30fc\u5411\u3051 Web \u5909\u66f4\u3092\u62c5\u5f53\u3059\u308b\u3002"
               : "\u9078\u629e\u3055\u308c\u305f\u7bc4\u56f2\u306e specialist \u5b9f\u884c\u3092\u62c5\u5f53\u3059\u308b\u3002",
+        requestClauseRefs: dispatchTrace.requestClauseRefs,
+        requirementRefs: dispatchTrace.requirementRefs,
+        acceptanceCheckRefs,
         acceptanceChecks: acceptanceIds,
         toolsMcpRequirements: defaultToolsForRole(role),
         reviewerRequired: reviewerRequired ? 1 : 0,
@@ -4424,6 +4918,9 @@ function sanitizeDispatches(value) {
       ownerAgent,
       ownedPaths: uniqueStrings(item.ownedPaths, 12),
       taskSummary,
+      requestClauseRefs: uniqueStrings(item.requestClauseRefs, 24),
+      requirementRefs: uniqueStrings(item.requirementRefs, 24),
+      acceptanceCheckRefs: uniqueStrings(item.acceptanceCheckRefs, 16),
       acceptanceChecks: uniqueStrings(item.acceptanceChecks, 16),
       toolsMcpRequirements: uniqueStrings(item.toolsMcpRequirements, 16),
       reviewerRequired: item.reviewerRequired ? 1 : 0,
@@ -4571,6 +5068,7 @@ function sanitizePlanningArtifactsForRuntime(input) {
     requirementContract: {
       schema: safeString(requirement.schema, 80) || "requirement-contract.v5",
       source: safeString(requirement.source, 80) || "runtime_inferred_pre_dispatch",
+      owner: safeString(requirement.owner, 80) || "intake",
       promptHash: safeString(requirement.promptHash, 80) || safeString(selection.promptHash, 80),
       explicitGoal: safeString(requirement.explicitGoal, 320),
       implicitGoal: safeString(requirement.implicitGoal, 320),
@@ -4590,6 +5088,7 @@ function sanitizePlanningArtifactsForRuntime(input) {
       challengeReport: sanitizeRequirementChallengeReport(requirement.challengeReport, requirement),
       questionPlan: sanitizeRequirementQuestionPlan(requirement.questionPlan, requirement),
       delightPlan: sanitizeRequirementDelightPlan(requirement.delightPlan, requirement),
+      requestCoverage: sanitizeRequirementRequestCoverage(requirement.requestCoverage, requirement),
       displayContract: sanitizeRequirementDisplayContract(requirement.displayContract, requirement),
       status: normalizeRequirementStatus(
         requirement.status,

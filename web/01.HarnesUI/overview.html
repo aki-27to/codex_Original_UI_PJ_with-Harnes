@@ -23,7 +23,7 @@
         <a class="btn secondary mini" href="./index.html">Console</a>
         <a class="btn secondary mini" href="./guide.html">Guide</a>
         <button id="overviewRefreshBtn" class="btn mini" type="button">Refresh</button>
-        <span id="overviewRefreshState" class="pill idle">Loading</span>
+        <span id="overviewRefreshState" class="pill idle">読込中</span>
         <span id="overviewGeneratedAt" class="pill neutral">Snapshot --:--:--</span>
       </div>
     </header>
@@ -32,6 +32,7 @@
       <a href="#runtimeSection">Runtime</a>
       <a href="#topologySection">Topology</a>
       <a href="#contractsSection">Contracts</a>
+      <a href="#traceSection">Trace</a>
       <a href="#evidenceSection">Evidence</a>
       <a href="#memorySection">Memory</a>
     </nav>
@@ -153,6 +154,25 @@
               <p>Parent set, retired lanes, and override policy.</p>
             </div>
             <div id="governanceCard"></div>
+          </article>
+        </div>
+      </section>
+
+      <section id="traceSection" class="overview-section">
+        <div class="overview-section-head">
+          <div>
+            <p class="overview-kicker">Traceability</p>
+            <h3>User request to requirement and plan links</h3>
+          </div>
+          <p class="overview-section-copy">This view keeps the main console lightweight while exposing which request clauses were mapped, parked, dropped, and tied to plan steps.</p>
+        </div>
+        <div class="overview-grid overview-grid-2">
+          <article class="side-card overview-panel">
+            <div class="overview-panel-head">
+              <h4>Specification Trace</h4>
+              <p>Original clauses, mapped requirement refs, plan step refs, and parked or dropped reasons.</p>
+            </div>
+            <div id="traceabilityCard"></div>
           </article>
         </div>
       </section>

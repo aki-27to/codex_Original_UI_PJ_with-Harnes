@@ -20,6 +20,7 @@
     "challengeReport",
     "questionPlan",
     "delightPlan",
+    "requestCoverage",
     "displayContract",
     "status",
     "statusReason",
@@ -109,11 +110,71 @@
         "autoEligible": { "type": "boolean" }
       },
       "additionalProperties": false
+    },
+    "requestCoverageClause": {
+      "type": "object",
+      "required": ["id", "text", "kind", "lane"],
+      "properties": {
+        "id": { "type": "string", "minLength": 1 },
+        "text": { "type": "string", "minLength": 1 },
+        "kind": {
+          "type": "string",
+          "enum": ["explicit_request", "constraint", "non_target", "verification_method", "taste_value"]
+        },
+        "lane": {
+          "type": "string",
+          "enum": ["core", "defaultable", "taste", "unsafe_or_approval"]
+        }
+      },
+      "additionalProperties": false
+    },
+    "requestCoverageMapping": {
+      "type": "object",
+      "required": ["clauseId", "requirementRefs"],
+      "properties": {
+        "clauseId": { "type": "string", "minLength": 1 },
+        "requirementRefs": {
+          "type": "array",
+          "items": { "type": "string", "minLength": 1 }
+        }
+      },
+      "additionalProperties": false
+    },
+    "requestCoverageParked": {
+      "type": "object",
+      "required": ["clauseId", "reason"],
+      "properties": {
+        "clauseId": { "type": "string", "minLength": 1 },
+        "reason": { "type": "string", "minLength": 1 },
+        "requirementRefs": {
+          "type": "array",
+          "items": { "type": "string", "minLength": 1 }
+        }
+      },
+      "additionalProperties": false
+    },
+    "requestCoverageDropped": {
+      "type": "object",
+      "required": ["clauseId", "reasonCode", "reason"],
+      "properties": {
+        "clauseId": { "type": "string", "minLength": 1 },
+        "reasonCode": {
+          "type": "string",
+          "enum": ["out_of_scope", "contradiction", "unsafe_or_approval", "deferred_nonblocking"]
+        },
+        "reason": { "type": "string", "minLength": 1 },
+        "requirementRefs": {
+          "type": "array",
+          "items": { "type": "string", "minLength": 1 }
+        }
+      },
+      "additionalProperties": false
     }
   },
   "properties": {
     "schema": { "const": "requirement-contract.v5" },
     "source": { "type": "string", "minLength": 1 },
+    "owner": { "type": "string", "minLength": 1 },
     "promptHash": { "type": "string" },
     "explicitGoal": { "type": "string" },
     "implicitGoal": { "type": "string" },
@@ -235,6 +296,62 @@
         "candidates": {
           "type": "array",
           "items": { "$ref": "#/$defs/delightCandidate" }
+        }
+      },
+      "additionalProperties": false
+    },
+    "requestCoverage": {
+      "type": "object",
+      "required": [
+        "rawRequestClauses",
+        "coreObligations",
+        "mappedRequirements",
+        "parkedItems",
+        "droppedItems",
+        "coverageSummary"
+      ],
+      "properties": {
+        "rawRequestClauses": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/requestCoverageClause" }
+        },
+        "coreObligations": {
+          "type": "array",
+          "items": { "type": "string", "minLength": 1 }
+        },
+        "mappedRequirements": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/requestCoverageMapping" }
+        },
+        "parkedItems": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/requestCoverageParked" }
+        },
+        "droppedItems": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/requestCoverageDropped" }
+        },
+        "coverageSummary": {
+          "type": "object",
+          "required": [
+            "totalClauses",
+            "mappedCount",
+            "coreTotal",
+            "coreMapped",
+            "coreUnmapped",
+            "parkedCount",
+            "droppedCount"
+          ],
+          "properties": {
+            "totalClauses": { "type": "integer", "minimum": 0 },
+            "mappedCount": { "type": "integer", "minimum": 0 },
+            "coreTotal": { "type": "integer", "minimum": 0 },
+            "coreMapped": { "type": "integer", "minimum": 0 },
+            "coreUnmapped": { "type": "integer", "minimum": 0 },
+            "parkedCount": { "type": "integer", "minimum": 0 },
+            "droppedCount": { "type": "integer", "minimum": 0 }
+          },
+          "additionalProperties": false
         }
       },
       "additionalProperties": false

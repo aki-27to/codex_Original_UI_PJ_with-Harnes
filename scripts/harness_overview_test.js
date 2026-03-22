@@ -400,6 +400,10 @@ function createOverviewPayload(overrides = {}) {
         reasonMapKeys: ["parent_dispatch_guard_block", "approval_required"],
         path: "scripts/config/task_outcome_contract.json",
       },
+      designAcceptance: {
+        schema: "design-acceptance-contract.v1",
+        path: "scripts/config/design_acceptance_contract.json",
+      },
       governance: {
         path: "scripts/config/agent_governance_contracts.json",
         parentAgents: ["default", "intake", "release_manager"],
@@ -492,6 +496,11 @@ function createOverviewPayload(overrides = {}) {
       ],
     },
     memory: {
+      taste: {
+        activeProfileId: "default",
+        profileCount: 1,
+        memoryPath: "logs/intent-memory/taste_memory.json",
+      },
       execution: {
         recent: [
           {
@@ -540,6 +549,65 @@ function createOverviewPayload(overrides = {}) {
           },
         ],
       },
+    },
+    traceability: {
+      owner: "intake",
+      summary: {
+        totalClauses: 3,
+        mappedCount: 2,
+        coreTotal: 2,
+        coreMapped: 2,
+        coreUnmapped: 0,
+        parkedCount: 1,
+        droppedCount: 0,
+        dispatchCount: 1,
+        planStepCount: 3,
+      },
+      plan: {
+        decision: "plan",
+        planningDepth: "STANDARD_PLANNING",
+        assuranceDepth: "SIGNOFF_ASSURANCE",
+        flowPath: "NORMAL_PATH",
+      },
+      clauses: [
+        {
+          clauseId: "req-1",
+          text: "Update server.js runtime output.",
+          kind: "explicit_request",
+          lane: "core",
+          core: true,
+          state: "mapped",
+          requirementRefs: ["lockedGoal", "baselineScope"],
+          dispatchIds: ["dispatch-1-backend_worker"],
+          planStepIds: ["execution", "quality", "report"],
+          acceptanceCheckRefs: ["ac-1"],
+        },
+        {
+          clauseId: "req-2",
+          text: "Tester evidence is required.",
+          kind: "verification_method",
+          lane: "core",
+          core: true,
+          state: "mapped",
+          requirementRefs: ["acceptanceChecks"],
+          dispatchIds: ["dispatch-1-backend_worker"],
+          planStepIds: ["quality", "report"],
+          acceptanceCheckRefs: ["ac-2"],
+        },
+        {
+          clauseId: "req-3",
+          text: "Benchmark tone can wait until core runtime output is stable.",
+          kind: "taste_value",
+          lane: "taste",
+          core: false,
+          state: "parked",
+          requirementRefs: ["questionPlan.taste"],
+          dispatchIds: [],
+          planStepIds: [],
+          acceptanceCheckRefs: [],
+          parkedReason: "Taste refinement stays outside the core lane until the core path is stable.",
+        },
+      ],
     },
     skillPortfolio: {
       status: "PASS",
@@ -697,6 +765,14 @@ function assertRenderedOverviewMatchesPayload(payload, elements) {
   if (familyCompletionGate && familyCompletionGate.applies) {
     assertContains(elements.healthCard.innerHTML, String(familyCompletionGate.status || "pending"), "health card must render family completion gate status");
     assertContains(elements.healthCard.innerHTML, String(familyCompletionGate.completionContract || "contract"), "health card must render family completion gate contract");
+  }
+  const traceabilityClauses = payload && payload.traceability && Array.isArray(payload.traceability.clauses)
+    ? payload.traceability.clauses
+    : [];
+  if (traceabilityClauses.length) {
+    const clause = traceabilityClauses[0];
+    assertContains(elements.traceabilityCard.innerHTML, String(clause.text || clause.clauseId || "req"), "traceability card must render the latest request clause");
+    assertContains(elements.traceabilityCard.innerHTML, String((clause.requirementRefs && clause.requirementRefs[0]) || "lockedGoal"), "traceability card must render requirement refs");
   }
 }
 
@@ -905,6 +981,8 @@ async function runIntegrationCheck() {
     assert(Array.isArray(overviewJson.contracts.taskOutcome && overviewJson.contracts.taskOutcome.reasonMapKeys), "overview taskOutcome reasonMapKeys must be an array");
     assert(overviewJson.contracts.designAcceptance && typeof overviewJson.contracts.designAcceptance === "object", "overview designAcceptance contract missing");
     assert(overviewJson.memory.taste && typeof overviewJson.memory.taste === "object", "overview taste memory missing");
+    assert(overviewJson.traceability && typeof overviewJson.traceability === "object", "overview traceability missing");
+    assert(Array.isArray(overviewJson.traceability.clauses), "overview traceability clauses must be an array");
     const signoffLatest = overviewJson.evidence && overviewJson.evidence.signoff && overviewJson.evidence.signoff.latest;
     const signoffRecent = overviewJson.evidence && overviewJson.evidence.signoff && Array.isArray(overviewJson.evidence.signoff.recent)
       ? overviewJson.evidence.signoff.recent
@@ -926,7 +1004,7 @@ async function runIntegrationCheck() {
 
     const htmlRes = await httpRequest(port, "/01.HarnesUI/overview.html");
     assert.strictEqual(htmlRes.statusCode, 200, "GET /01.HarnesUI/overview.html must return 200");
-    assert(htmlRes.raw.includes("ハーネス概要"), "served overview html should include title text");
+    assert(htmlRes.raw.includes("Harness Overview"), "served overview html should include title text");
     assert(htmlRes.raw.includes("./overview.js"), "served overview html must reference ./overview.js");
     const overviewJsRes = await httpRequest(port, "/01.HarnesUI/overview.js");
     assert.strictEqual(overviewJsRes.statusCode, 200, "GET /01.HarnesUI/overview.js must return 200");
@@ -1011,6 +1089,7 @@ async function main() {
     runCheck("overview html declares primary panels", () => {
       assertRegex(overviewHtml, /id=\"overviewMetrics\"/, "overviewMetrics container missing");
       assertRegex(overviewHtml, /id=\"topologyParentLane\"/, "topologyParentLane container missing");
+      assertRegex(overviewHtml, /id=\"traceabilityCard\"/, "traceabilityCard container missing");
       assertRegex(overviewHtml, /id=\"overviewRawSnapshot\"/, "overviewRawSnapshot container missing");
       assertRegex(overviewHtml, /src=\"\.\/overview\.js\"/, "overview.html must reference ./overview.js");
     })
@@ -1032,6 +1111,7 @@ async function main() {
       assertRegex(overviewJs, /const OVERVIEW_REFRESH_MS = 20000;/, "overview refresh interval missing");
       assertRegex(overviewJs, /setInterval\(\(\) => \{\s*loadOverview\(\)\.catch\(\(\) => \{\}\);/s, "overview auto-refresh ticker missing");
       assertRegex(overviewJs, /reasonMapKeys/, "overview.js does not read taskOutcome.reasonMapKeys");
+      assertRegex(overviewJs, /renderTraceability/, "overview.js does not render traceability");
     })
   );
   checks.push(

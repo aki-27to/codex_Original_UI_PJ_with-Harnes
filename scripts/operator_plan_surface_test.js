@@ -25,10 +25,9 @@ function run() {
     agentName: "default",
   });
   assert(directQuestionEvent, "direct-response planning event should exist");
-  assert.strictEqual(directQuestionEvent.decision, "skip", "direct-response turn should surface PLAN SKIP");
-  assert.strictEqual(directQuestionEvent.steps.length, 1, "PLAN SKIP should collapse to one visible step");
-  assert.strictEqual(directQuestionEvent.steps[0].status, "skipped", "PLAN SKIP step should use skipped status");
-  assert.strictEqual(directQuestionEvent.steps[0].phase, "planning", "PLAN SKIP should stay in planning phase");
+  assert.strictEqual(directQuestionEvent.decision, "plan", "simple prompt should still surface a visible plan under the current policy");
+  assert.strictEqual(directQuestionEvent.steps[0].phase, "execution", "simple prompt should start in execution phase");
+  assert(Array.isArray(directQuestionEvent.steps[0].requestClauseRefs) && directQuestionEvent.steps[0].requestClauseRefs.length >= 1, "simple plan should still surface trace refs");
   assert(
     !directQuestionEvent.explanation.includes("PLAN SKIP:"),
     "PLAN SKIP explanation should avoid a duplicated prefix"
@@ -62,6 +61,8 @@ function run() {
     docsEvent.steps[0].step.includes("Update only docs/CURRENT_ARCHITECTURE.md with one wording fix"),
     "docs execution step should surface the concrete user goal"
   );
+  assert(Array.isArray(docsEvent.steps[0].requestClauseRefs) && docsEvent.steps[0].requestClauseRefs.length >= 1, "execution step should carry requestClauseRefs");
+  assert(Array.isArray(docsEvent.steps[0].requirementRefs) && docsEvent.steps[0].requirementRefs.length >= 1, "execution step should carry requirementRefs");
   assert.strictEqual(docsEvent.steps[docsEvent.steps.length - 1].phase, "report", "plan should end with report phase");
   assert(
     docsEvent.explanation.includes("FAST_PLANNING"),
@@ -89,18 +90,16 @@ function run() {
   });
   assert(normalEvent, "normal plan event should exist");
   assert.strictEqual(normalEvent.decision, "plan", "normal change should not be skipped");
-  assert(
-    normalEvent.steps.some((step) => step && step.phase === "quality"),
-    "normal signoff plan should include a quality step"
-  );
-  assert(
-    normalEvent.steps.some((step) => step && step.phase === "report"),
-    "normal signoff plan should include a report step"
-  );
+  const qualityStep = normalEvent.steps.find((step) => step && step.phase === "quality");
+  const reportStep = normalEvent.steps.find((step) => step && step.phase === "report");
+  assert(qualityStep, "normal signoff plan should include a quality step");
+  assert(reportStep, "normal signoff plan should include a report step");
+  assert(Array.isArray(qualityStep.acceptanceCheckRefs) && qualityStep.acceptanceCheckRefs.length >= 1, "quality step should carry acceptanceCheckRefs");
+  assert(Array.isArray(reportStep.requestClauseRefs) && reportStep.requestClauseRefs.length >= 1, "report step should retain request trace refs");
 
   const clarificationPrompt = [
     "# Goal",
-    "このUI、ユーザーの好みにちゃんと合うように改善して。",
+    "UI とユーザーの好みにちゃんと沿うように改善して。",
   ].join("\n");
   const clarificationArtifacts = buildPlanningArtifacts({
     prompt: clarificationPrompt,
@@ -117,9 +116,10 @@ function run() {
   assert.strictEqual(clarificationEvent.steps[0].phase, "planning", "clarification-first step should stay in planning phase");
   assert.strictEqual(clarificationEvent.steps[1].kind, "needs_input", "clarification-first plan should surface the wait state");
   assert(
-    clarificationEvent.steps[0].step.includes("確認質問"),
+    clarificationEvent.steps[0].step.includes("確認質問を 1 つ"),
     "clarification-first step should explain the single-question action in Japanese"
   );
+  assert(Array.isArray(clarificationEvent.steps[0].requestClauseRefs), "clarification step should keep request trace refs");
 
   const discoveryPrompt = [
     "# Goal",
@@ -144,10 +144,7 @@ function run() {
   assert.strictEqual(discoveryEvent.decision, "plan", "meaningful discovery work should remain a visible plan");
   assert.strictEqual(discoveryEvent.steps[0].phase, "planning", "discovery step should stay in planning phase");
   assert.strictEqual(discoveryEvent.steps[1].kind, "needs_input", "discovery plan should surface the stop condition");
-  assert(
-    discoveryEvent.steps[0].step.includes("User decision is required before implementation"),
-    "discovery step should surface the concrete unresolved question instead of only a governance rule"
-  );
+  assert(Array.isArray(discoveryEvent.steps[0].requestClauseRefs), "discovery step should keep trace refs");
 
   const concreteNeedsInputEvent = buildOperatorPlanEvent({
     planningContext: {
@@ -163,14 +160,37 @@ function run() {
           {
             dispatchId: "dispatch-default-discovery",
             ownerAgent: "default",
-            taskSummary: "実装前に必要なユーザー判断または承認が揃うまで実行を停止する。",
+            taskSummary: "実装に入る前に、未解決の要件、非対象範囲、前提、承認境界を整理する。",
+            requestClauseRefs: ["req-1"],
+            requirementRefs: ["lockedGoal"],
+            acceptanceCheckRefs: ["ac-1"],
           },
         ],
       },
       requirementContract: {
-        explicitGoal: "Web UI の権限設定を v0.116 相当に更新する。",
-        openQuestions: ["Guardian Approvals を既定として見せるかを確認する。"],
-        acceptanceChecks: [{ id: "ac-1", title: "権限モード表示が最新 UI と一致すること。" }],
+        explicitGoal: "Web UI の設定導線を v0.116 向けに更新する。",
+        openQuestions: ["Guardian Approvals を別導線として見せるかを確認する。"],
+        acceptanceChecks: [{ id: "ac-1", title: "設定モーダル表示が新 UI と一致すること。" }],
+        requestCoverage: {
+          rawRequestClauses: [
+            { id: "req-1", text: "Web UI の設定導線を v0.116 向けに更新する。", kind: "explicit_request", lane: "core" },
+          ],
+          coreObligations: ["req-1"],
+          mappedRequirements: [
+            { clauseId: "req-1", requirementRefs: ["lockedGoal"] },
+          ],
+          parkedItems: [],
+          droppedItems: [],
+          coverageSummary: {
+            totalClauses: 1,
+            mappedCount: 1,
+            coreTotal: 1,
+            coreMapped: 1,
+            coreUnmapped: 0,
+            parkedCount: 0,
+            droppedCount: 0,
+          },
+        },
       },
     },
     agentName: "default",
@@ -178,13 +198,15 @@ function run() {
   assert(concreteNeedsInputEvent, "manual discovery policy-plan event should exist");
   assert.strictEqual(concreteNeedsInputEvent.decision, "plan", "manual discovery policy-plan should remain visible");
   assert(
-    concreteNeedsInputEvent.steps[0].step.includes("Web UI の権限設定を v0.116 相当に更新する"),
+    concreteNeedsInputEvent.steps[0].step.includes("Web UI の設定導線を v0.116 向けに更新する"),
     "discovery step should reuse the explicit goal when taskSummary is generic"
   );
   assert(
-    concreteNeedsInputEvent.steps[1].step.includes("Guardian Approvals を既定として見せるかを確認する"),
+    concreteNeedsInputEvent.steps[1].step.includes("Guardian Approvals を別導線として見せるかを確認する"),
     "needs_input step should surface the specific unresolved question"
   );
+  assert.deepStrictEqual(concreteNeedsInputEvent.steps[0].requestClauseRefs, ["req-1"], "manual discovery step should preserve requestClauseRefs");
+  assert.deepStrictEqual(concreteNeedsInputEvent.steps[0].acceptanceCheckRefs, ["ac-1"], "manual discovery step should preserve acceptanceCheckRefs");
 }
 
 try {

@@ -60,10 +60,10 @@ function joinOwnerLabels(labels) {
 
 function translateQualityLabel(label) {
   const normalized = safeString(label, 80).toLowerCase();
-  if (normalized === "reviewer") return "\u30ec\u30d3\u30e5\u30fc";
-  if (normalized === "tester") return "\u30c6\u30b9\u30c8";
-  if (normalized === "dedicated tests") return "\u5c02\u7528\u30c6\u30b9\u30c8";
-  if (normalized === "signoff") return "\u627f\u8a8d\u7528\u30c1\u30a7\u30c3\u30af";
+  if (normalized === "reviewer") return "レビュー";
+  if (normalized === "tester") return "テスト";
+  if (normalized === "dedicated tests") return "専用テスト";
+  if (normalized === "signoff") return "承認用チェック";
   return safeString(label, 80);
 }
 
@@ -91,9 +91,46 @@ function normalizeDispatches(dispatchPlan) {
       ownerAgent: formatOwnerLabel(item.ownerAgent),
       taskSummary: safeString(item.taskSummary, 240),
       ownedPaths: uniqueStrings(item.ownedPaths, 8),
+      requestClauseRefs: uniqueStrings(item.requestClauseRefs, 16),
+      requirementRefs: uniqueStrings(item.requirementRefs, 16),
+      acceptanceCheckRefs: uniqueStrings(item.acceptanceCheckRefs, 16),
       acceptanceChecks: uniqueStrings(item.acceptanceChecks, 8),
     };
   }).filter((dispatch) => dispatch.ownerAgent || dispatch.taskSummary || dispatch.ownedPaths.length > 0);
+}
+
+function normalizeAcceptanceIds(requirementContract) {
+  return toArray(requirementContract && requirementContract.acceptanceChecks).map((entry) => {
+    if (entry && typeof entry === "object" && entry.id) {
+      return safeString(entry.id, 120);
+    }
+    return "";
+  }).filter(Boolean);
+}
+
+function buildTraceRefs({ dispatches = [], requirementContract } = {}) {
+  const requirement = requirementContract && typeof requirementContract === "object" ? requirementContract : {};
+  const requestCoverage = requirement.requestCoverage && typeof requirement.requestCoverage === "object"
+    ? requirement.requestCoverage
+    : {};
+  const mappedRequirementRefs = toArray(requestCoverage.mappedRequirements).flatMap((entry) => uniqueStrings(entry && entry.requirementRefs, 8));
+  const requestClauseRefs = uniqueStrings(toArray(dispatches).flatMap((dispatch) => toArray(dispatch && dispatch.requestClauseRefs)), 24);
+  const requirementRefs = uniqueStrings(toArray(dispatches).flatMap((dispatch) => toArray(dispatch && dispatch.requirementRefs)), 24);
+  const acceptanceCheckRefs = uniqueStrings(toArray(dispatches).flatMap((dispatch) => toArray(dispatch && dispatch.acceptanceCheckRefs)), 16);
+  return {
+    requestClauseRefs: requestClauseRefs.length ? requestClauseRefs : uniqueStrings(requestCoverage.coreObligations, 24),
+    requirementRefs: requirementRefs.length ? requirementRefs : uniqueStrings(mappedRequirementRefs, 24),
+    acceptanceCheckRefs: acceptanceCheckRefs.length ? acceptanceCheckRefs : uniqueStrings(normalizeAcceptanceIds(requirement), 16),
+  };
+}
+
+function withTraceRefs(step, refs) {
+  return {
+    ...step,
+    requestClauseRefs: uniqueStrings(refs && refs.requestClauseRefs, 24),
+    requirementRefs: uniqueStrings(refs && refs.requirementRefs, 24),
+    acceptanceCheckRefs: uniqueStrings(refs && refs.acceptanceCheckRefs, 16),
+  };
 }
 
 function normalizeAcceptanceTitles(requirementContract) {
@@ -106,7 +143,7 @@ function normalizeAcceptanceTitles(requirementContract) {
 }
 
 function stripTerminalPunctuation(text) {
-  return safeString(text, 240).replace(/[。．.!！?？]+$/u, "").trim();
+  return safeString(text, 240).replace(/[。.!?]+$/u, "").trim();
 }
 
 function buildGoalSummary(requirementContract) {
@@ -144,13 +181,11 @@ function isGenericTaskSummary(text) {
     || normalized === "own runtime, server, protocol, and orchestration behavior changes"
     || normalized === "own ui and operator-facing web changes"
     || normalized === "own contracts, docs sync, and operator-visible harness wiring"
-    || normalized.includes("未解決の要件")
-    || normalized.includes("未解決の確認事項")
-    || normalized.includes("ユーザー判断または承認が揃うまで実行を停止する")
-    || normalized.includes("契約、docs sync")
-    || normalized.includes("サーバー側のオーケストレーション")
-    || normalized.includes("ui とオペレーター向け web 変更")
-    || normalized.includes("specialist 実行");
+    || normalized === "実装に入る前に、未解決の要件、非対象範囲、前提、承認境界を整理する"
+    || normalized === "契約、docs sync、runtime 可観測性、signoff 向け証跡更新を担当する"
+    || normalized === "サーバー側のオーケストレーション、ポリシー、runtime 振る舞い変更を担当する"
+    || normalized === "ui とオペレーター向け web 変更を担当する"
+    || normalized === "選択された範囲の specialist 実行を担当する";
 }
 
 function summarizeOwnedPaths(dispatches) {
@@ -211,85 +246,88 @@ function shouldSkipDetailedPlan({ selection, dispatchPlan, requirementContract, 
 }
 
 function buildSkipExplanation(summary) {
-  return `\u3053\u306e\u76f4\u63a5\u5fdc\u7b54\u30bf\u30fc\u30f3\u3067\u306f\u3001\u8a73\u7d30\u306a\u5b9f\u884c\u8a08\u753b\u3092\u7701\u7565\u3057\u307e\u3057\u305f (${summary.planningDepth} / ${summary.assuranceDepth})\u3002`;
+  return `この直接応答ターンでは、詳細な実行計画を省略しました (${summary.planningDepth} / ${summary.assuranceDepth})。`;
 }
 
-function buildSkipStep() {
-  return {
+function buildSkipStep(requirementContract) {
+  return withTraceRefs({
     stepId: "plan-skip",
-    step: "\u591a\u6bb5\u306e\u5b9f\u884c\u8a08\u753b\u306f\u4f5c\u3089\u305a\u3001\u305d\u306e\u307e\u307e\u56de\u7b54\u307e\u305f\u306f\u78ba\u8a8d\u3092\u884c\u3044\u307e\u3059\u3002",
+    step: "多段の実行計画は作らず、そのまま回答または確認を行います。",
     status: "skipped",
     phase: "planning",
     kind: "skip",
     ownerAgent: "default",
-  };
+  }, buildTraceRefs({ requirementContract }));
 }
 
 function buildDiscoverySteps(dispatches, requirementContract) {
   const primary = dispatches[0] || {};
+  const traceRefs = buildTraceRefs({ dispatches: [primary], requirementContract });
   const goal = stripTerminalPunctuation(buildGoalSummary(requirementContract));
   const openQuestion = stripTerminalPunctuation(buildPrimaryOpenQuestion(requirementContract));
   const concreteTaskSummary = isGenericTaskSummary(primary.taskSummary) ? "" : stripTerminalPunctuation(primary.taskSummary);
   const firstStepText = concreteTaskSummary
     || (goal && openQuestion
-      ? `依頼「${goal}」を進める前に、未解決の確認事項を整理します。最優先論点: ${openQuestion}。`
+      ? `目標「${goal}」を進める前に、未解決の確認事項を整理します。主要な確認点: ${openQuestion}。`
       : goal
-        ? `依頼「${goal}」を実装可能な形にするため、未解決の確認事項を整理します。`
+        ? `目標「${goal}」を安全な形にするため、未解決の確認事項を整理します。`
         : openQuestion
-          ? `未解決の確認事項を整理します。最優先論点: ${openQuestion}。`
-          : "\u5b9f\u88c5\u306b\u5165\u308b\u524d\u306b\u3001\u672a\u89e3\u6c7a\u306e\u8981\u4ef6\u3001\u524d\u63d0\u3001\u30e6\u30fc\u30b6\u30fc\u5224\u65ad\u5883\u754c\u3092\u6574\u7406\u3057\u307e\u3059\u3002");
+          ? `未解決の確認事項を整理します。主要な確認点: ${openQuestion}。`
+          : "実装に入る前に、未解決の要件、前提、ユーザー判断境界を整理します。");
   const waitStepText = openQuestion
-    ? `確認待ち: ${openQuestion}。回答が揃うまで実装は止めます。`
+    ? `確認待ち: ${openQuestion}。回答が揃うまで実装には進みません。`
     : goal
-      ? `確認待ち: 「${goal}」に必要なユーザー判断が揃うまで実装は止めます。`
-      : "\u672a\u89e3\u6c7a\u306e\u78ba\u8a8d\u4e8b\u9805\u304c\u6b8b\u308b\u5834\u5408\u306f\u3001\u5b9f\u88c5\u524d\u306b\u30e6\u30fc\u30b6\u30fc\u5165\u529b\u3092\u6c42\u3081\u3066\u505c\u6b62\u3057\u307e\u3059\u3002";
+      ? `確認待ち: 「${goal}」に必要なユーザー判断が揃うまで実装には進みません。`
+      : "未解決の確認事項が残る場合は、実装前にユーザー入力を求めて停止します。";
   return [
-    {
+    withTraceRefs({
       stepId: primary.dispatchId || "discovery-clarify",
       step: firstStepText,
       status: "in_progress",
       phase: "planning",
       kind: "discovery",
       ownerAgent: primary.ownerAgent || "default",
-    },
-    {
+    }, traceRefs),
+    withTraceRefs({
       stepId: "needs-input-stop",
       step: waitStepText,
       status: "pending",
       phase: "report",
       kind: "needs_input",
       ownerAgent: primary.ownerAgent || "default",
-    },
+    }, traceRefs),
   ];
 }
 
 function buildClarificationSteps(clarification, dispatches, requirementContract) {
   const primary = dispatches[0] || {};
+  const traceRefs = buildTraceRefs({ dispatches: [primary], requirementContract });
   const goal = stripTerminalPunctuation(buildGoalSummary(requirementContract));
   const question = clarification && clarification.question
     ? clarification.question
-    : "\u5b9f\u88c5\u524d\u306b\u78ba\u8a8d\u8cea\u554f\u30921\u3064\u884c\u3044\u307e\u3059\u3002";
+    : "実装前に確認質問を 1 つ行います。";
   return [
-    {
+    withTraceRefs({
       stepId: primary.dispatchId || "clarification-question",
-      step: `\u5b9f\u88c5\u524d\u306b\u78ba\u8a8d\u8cea\u554f\u30921\u3064\u884c\u3044\u307e\u3059\u3002${goal ? ` 対象: 「${goal}」。` : ""} ${question}`,
+      step: `実装前に確認質問を 1 つ行います。${goal ? ` 目標: 「${goal}」。` : ""} ${question}`,
       status: "in_progress",
       phase: "planning",
       kind: "clarification",
       ownerAgent: primary.ownerAgent || "default",
-    },
-    {
+    }, traceRefs),
+    withTraceRefs({
       stepId: "clarification-wait",
-      step: `回答待ち: ${stripTerminalPunctuation(question)}。回答を起点に実行計画を組み直します。`,
+      step: `回答待ち: ${stripTerminalPunctuation(question)}。回答を受け取り次第、実行計画を更新します。`,
       status: "pending",
       phase: "report",
       kind: "needs_input",
       ownerAgent: primary.ownerAgent || "default",
-    },
+    }, traceRefs),
   ];
 }
 
 function buildExecutionStep(dispatches, requirementContract) {
+  const traceRefs = buildTraceRefs({ dispatches, requirementContract });
   const owners = joinOwnerLabels(dispatches.map((dispatch) => dispatch.ownerAgent));
   const concreteSummaries = uniqueStrings(
     dispatches
@@ -303,23 +341,23 @@ function buildExecutionStep(dispatches, requirementContract) {
   const workSummary = concreteSummaries.length
     ? concreteSummaries.join(" / ")
     : goal
-      ? `「${goal}」を満たす変更`
-      : "\u62c5\u5f53\u7bc4\u56f2\u306e\u5909\u66f4";
+      ? `「${goal}」を形にする実装`
+      : "担当範囲の変更";
   const details = [];
   if (ownedPaths) details.push(`対象: ${ownedPaths}`);
   if (acceptanceTitles.length) details.push(`完了条件: ${acceptanceTitles.join(" / ")}`);
-  const detail = details.length ? ` ${details.join("。")}。` : "";
-  return {
+  const detail = details.length ? ` ${details.join(" / ")}。` : "";
+  return withTraceRefs({
     stepId: "execution",
-    step: `\u5b9f\u884c: ${owners} \u304c ${workSummary} \u3092\u9032\u3081\u307e\u3059\u3002${detail}`,
+    step: `実行: ${owners} が ${workSummary} を進めます。${detail}`,
     status: "in_progress",
     phase: "execution",
     kind: "execution",
     ownerAgent: owners,
-  };
+  }, traceRefs);
 }
 
-function buildQualityStep(dispatchPlan) {
+function buildQualityStep(dispatchPlan, requirementContract) {
   const labels = [];
   if (dispatchPlan && dispatchPlan.reviewerRequired) {
     labels.push(translateQualityLabel("reviewer"));
@@ -336,28 +374,28 @@ function buildQualityStep(dispatchPlan) {
   if (!labels.length) {
     return null;
   }
-  return {
+  return withTraceRefs({
     stepId: "quality",
-    step: `\u54c1\u8cea\u30b2\u30fc\u30c8: \u6700\u7d42\u5831\u544a\u306e\u524d\u306b ${labels.join("\u3001")} \u306e\u8a3c\u8de1\u3092\u63c3\u3048\u307e\u3059\u3002`,
+    step: `品質ゲート: 最終報告の前に ${labels.join("、")} の証跡を揃えます。`,
     status: "pending",
     phase: "quality",
     kind: "quality",
     ownerAgent: labels.join(", "),
-  };
+  }, buildTraceRefs({ dispatches: normalizeDispatches(dispatchPlan), requirementContract }));
 }
 
-function buildReportStep(requirementContract) {
+function buildReportStep(dispatches, requirementContract) {
   const goal = stripTerminalPunctuation(buildGoalSummary(requirementContract));
-  return {
+  return withTraceRefs({
     stepId: "report",
     step: goal
-      ? `\u6700\u7d42\u5831\u544a: 「${goal}」\u3078\u306e\u5bfe\u5fdc\u7d50\u679c\u3001\u8a3c\u8de1\u306e\u8981\u7d04\u3001\u6b8b\u308b\u30ea\u30b9\u30af\u3092\u307e\u3068\u3081\u307e\u3059\u3002`
-      : "\u6700\u7d42\u7d50\u679c\u3001\u8a3c\u8de1\u306e\u8981\u7d04\u3001\u6b8b\u308b\u30ea\u30b9\u30af\u3092\u30aa\u30da\u30ec\u30fc\u30bf\u30fc\u306b\u5831\u544a\u3057\u307e\u3059\u3002",
+      ? `最終報告: 「${goal}」への対応結果、証跡の要約、残るリスクをまとめます。`
+      : "最終結果、証跡の要約、残るリスクをオペレーターに報告します。",
     status: "pending",
     phase: "report",
     kind: "report",
     ownerAgent: "default",
-  };
+  }, buildTraceRefs({ dispatches, requirementContract }));
 }
 
 function buildPlanExplanation(summary, dispatches, dispatchPlan, requirementContract) {
@@ -376,8 +414,8 @@ function buildPlanExplanation(summary, dispatches, dispatchPlan, requirementCont
   if (dispatchPlan && dispatchPlan.signoffRequired) {
     flags.push(translateQualityLabel("signoff"));
   }
-  const qualitySummary = flags.length ? `\u54c1\u8cea=${flags.join("\u3001")}` : "\u54c1\u8cea=\u306a\u3057";
-  return `\u30dd\u30ea\u30b7\u30fc\u30d7\u30e9\u30f3\u3092\u78ba\u5b9a\u3057\u307e\u3057\u305f (${summary.planningMode} / ${summary.planningDepth} / ${summary.assuranceDepth} / ${summary.flowPath})\u3002${goal ? ` 対象=${goal};` : ""} \u62c5\u5f53=${owners}; ${qualitySummary}\u3002`;
+  const qualitySummary = flags.length ? `品質=${flags.join("、")}` : "品質=なし";
+  return `ポリシープランを確定しました (${summary.planningMode} / ${summary.planningDepth} / ${summary.assuranceDepth} / ${summary.flowPath})。${goal ? ` 目標=${goal};` : ""} 担当=${owners}; ${qualitySummary}。`;
 }
 
 function buildOperatorPlanEvent({ planningContext, agentName = "default" } = {}) {
@@ -399,7 +437,7 @@ function buildOperatorPlanEvent({ planningContext, agentName = "default" } = {})
   if (shouldSkipDetailedPlan({ selection, dispatchPlan, requirementContract, agentName })) {
     decision = "skip";
     skipReason = "direct_response_only";
-    steps = [buildSkipStep()];
+    steps = [buildSkipStep(requirementContract)];
     explanation = buildSkipExplanation(summary);
   } else if (clarification.action === "ask_user_once") {
     steps = buildClarificationSteps(clarification, dispatches, requirementContract);
@@ -411,11 +449,11 @@ function buildOperatorPlanEvent({ planningContext, agentName = "default" } = {})
     explanation = buildPlanExplanation(summary, dispatches, dispatchPlan, requirementContract);
   } else {
     steps = [buildExecutionStep(dispatches, requirementContract)];
-    const qualityStep = buildQualityStep(dispatchPlan);
+    const qualityStep = buildQualityStep(dispatchPlan, requirementContract);
     if (qualityStep) {
       steps.push(qualityStep);
     }
-    steps.push(buildReportStep(requirementContract));
+    steps.push(buildReportStep(dispatches, requirementContract));
     explanation = buildPlanExplanation(summary, dispatches, dispatchPlan, requirementContract);
   }
 

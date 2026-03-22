@@ -1091,6 +1091,8 @@ function buildRequirementLockSnapshotForUi(turn){
   const displayContract=requirement.displayContract&&typeof requirement.displayContract==="object"?requirement.displayContract:{};
   const questionPlan=requirement.questionPlan&&typeof requirement.questionPlan==="object"?requirement.questionPlan:{};
   const delightPlan=requirement.delightPlan&&typeof requirement.delightPlan==="object"?requirement.delightPlan:{};
+  const requestCoverage=requirement.requestCoverage&&typeof requirement.requestCoverage==="object"?requirement.requestCoverage:{};
+  const coverageSummary=requestCoverage.coverageSummary&&typeof requestCoverage.coverageSummary==="object"?requestCoverage.coverageSummary:{};
   const provenance=requirement.provenance&&typeof requirement.provenance==="object"?requirement.provenance:{};
   const validation=requirement.validation&&typeof requirement.validation==="object"?requirement.validation:{};
   const revisionLedger=requirement.revisionLedger&&typeof requirement.revisionLedger==="object"?requirement.revisionLedger:{};
@@ -1206,7 +1208,28 @@ function buildRequirementLockSnapshotForUi(turn){
   if(assumptions.length)riskSummaryParts.push(`assumption ${assumptions.length}`);
   if(openQuestions.length)riskSummaryParts.push(`open ${openQuestions.length}`);
   if(approvalBoundaryItems.length)riskSummaryParts.push(`approval ${approvalBoundaryItems.length}`);
+  const requestCoverageSummary={
+    totalClauses:Number(coverageSummary.totalClauses||0),
+    mappedCount:Number(coverageSummary.mappedCount||0),
+    coreTotal:Number(coverageSummary.coreTotal||0),
+    coreMapped:Number(coverageSummary.coreMapped||0),
+    coreUnmapped:Number(coverageSummary.coreUnmapped||0),
+    parkedCount:Number(coverageSummary.parkedCount||0),
+    droppedCount:Number(coverageSummary.droppedCount||0),
+  };
+  const requestCoverageParts=[
+    requestCoverageSummary.coreTotal||requestCoverageSummary.parkedCount||requestCoverageSummary.droppedCount||requestCoverageSummary.totalClauses
+      ?`依頼反映 ${requestCoverageSummary.coreMapped} / ${requestCoverageSummary.coreTotal}`
+      :"",
+    requestCoverageSummary.coreTotal||requestCoverageSummary.parkedCount||requestCoverageSummary.droppedCount||requestCoverageSummary.totalClauses
+      ?`保留 ${requestCoverageSummary.parkedCount}`
+      :"",
+    requestCoverageSummary.coreTotal||requestCoverageSummary.parkedCount||requestCoverageSummary.droppedCount||requestCoverageSummary.totalClauses
+      ?`除外 ${requestCoverageSummary.droppedCount}`
+      :"",
+  ].filter(Boolean);
   const conciseMetaParts=[
+    ...requestCoverageParts,
     contractStatus?requirementStatusLabelForUi(contractStatus):"",
     contractStatus==="BLOCKED"&&(displayAskNext.length||questionPlanAskNext.length||openQuestions.length)
       ?`要確認 ${displayAskNext.length||questionPlanAskNext.length||openQuestions.length}`
@@ -1264,6 +1287,7 @@ function buildRequirementLockSnapshotForUi(turn){
       validationBlocks.length?validationBlocks.map((entry)=>entry.detail):validationWarnings.map((entry)=>entry.detail),
       {maxItems:3,maxChars:180,transform:requirementTextLabelForUi}
     ),
+    requestCoverageSummary,
     revision:{
       revisionNumber:Number(revisionLedger.revisionNumber||1),
       revised:Boolean(revisionLedger.revised),
@@ -3114,6 +3138,9 @@ function happly(c,ev){
       kind:typeof x.kind==="string"?x.kind:"",
       ownerAgent:typeof x.ownerAgent==="string"?x.ownerAgent:"",
       stepId:typeof x.stepId==="string"?x.stepId:"",
+      requestClauseRefs:Array.isArray(x.requestClauseRefs)?x.requestClauseRefs.map((entry)=>String(entry||"").trim()).filter(Boolean).slice(0,24):[],
+      requirementRefs:Array.isArray(x.requirementRefs)?x.requirementRefs.map((entry)=>String(entry||"").trim()).filter(Boolean).slice(0,24):[],
+      acceptanceCheckRefs:Array.isArray(x.acceptanceCheckRefs)?x.acceptanceCheckRefs.map((entry)=>String(entry||"").trim()).filter(Boolean).slice(0,16):[],
     })).filter((x)=>x.step).slice(0,16);
     const planEventParts=[
       lowerText(planMeta.decision)==="skip"?"PLAN SKIP":`${c.h.plan.length} steps`,

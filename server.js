@@ -12064,6 +12064,163 @@ function sanitizeRuntimeSnapshotForOverview(runtimeSnapshot){
   }
   return cloned;
 }
+function uniqueOverviewStrings(values,max=8){
+  const seen=new Set();
+  const result=[];
+  const items=Array.isArray(values)?values:[];
+  for(const value of items){
+    const text=safeString(String(value||""),160);
+    if(!text||seen.has(text))continue;
+    seen.add(text);
+    result.push(text);
+    if(result.length>=max)break;
+  }
+  return result;
+}
+function clampOverviewInt(value,fallback=0,min=0,max=999){
+  const parsed=Number(value);
+  const normalized=Number.isFinite(parsed)?Math.trunc(parsed):fallback;
+  return Math.min(max,Math.max(min,normalized));
+}
+function buildHarnessTraceabilitySnapshot(planningContext,agentName="default"){
+  const sanitizedPlanning=sanitizePlanningArtifactsForRuntime(planningContext&&typeof planningContext==="object"?planningContext:{});
+  const requirement=sanitizedPlanning.requirementContract&&typeof sanitizedPlanning.requirementContract==="object"
+    ?sanitizedPlanning.requirementContract
+    :{};
+  const requestCoverage=requirement.requestCoverage&&typeof requirement.requestCoverage==="object"
+    ?requirement.requestCoverage
+    :{};
+  const rawRequestClauses=Array.isArray(requestCoverage.rawRequestClauses)
+    ?requestCoverage.rawRequestClauses
+    :[];
+  const mappedRequirements=Array.isArray(requestCoverage.mappedRequirements)
+    ?requestCoverage.mappedRequirements
+    :[];
+  const parkedItems=Array.isArray(requestCoverage.parkedItems)
+    ?requestCoverage.parkedItems
+    :[];
+  const droppedItems=Array.isArray(requestCoverage.droppedItems)
+    ?requestCoverage.droppedItems
+    :[];
+  const summary=requestCoverage.coverageSummary&&typeof requestCoverage.coverageSummary==="object"
+    ?requestCoverage.coverageSummary
+    :{};
+  const coreObligations=new Set(uniqueOverviewStrings(requestCoverage.coreObligations,32));
+  const mappedByClause=new Map();
+  const parkedByClause=new Map();
+  const droppedByClause=new Map();
+  const dispatchIdsByClause=new Map();
+  const planStepIdsByClause=new Map();
+  const acceptanceRefsByClause=new Map();
+  const pushMapValues=(map,key,values,max=24)=>{
+    const normalizedKey=safeString(key,80);
+    if(!normalizedKey)return;
+    map.set(normalizedKey,uniqueOverviewStrings([...(map.get(normalizedKey)||[]),...(Array.isArray(values)?values:[])],max));
+  };
+  mappedRequirements.forEach((entry)=>{
+    const clauseId=safeString(entry&&entry.clauseId,80);
+    if(!clauseId)return;
+    mappedByClause.set(clauseId,uniqueOverviewStrings(entry&&entry.requirementRefs,16));
+  });
+  parkedItems.forEach((entry)=>{
+    const clauseId=safeString(entry&&entry.clauseId,80);
+    if(!clauseId)return;
+    parkedByClause.set(clauseId,{
+      reason:safeString(entry&&entry.reason,240),
+      requirementRefs:uniqueOverviewStrings(entry&&entry.requirementRefs,16),
+    });
+  });
+  droppedItems.forEach((entry)=>{
+    const clauseId=safeString(entry&&entry.clauseId,80);
+    if(!clauseId)return;
+    droppedByClause.set(clauseId,{
+      reasonCode:safeString(entry&&entry.reasonCode,80),
+      reason:safeString(entry&&entry.reason,240),
+      requirementRefs:uniqueOverviewStrings(entry&&entry.requirementRefs,16),
+    });
+  });
+  const dispatches=Array.isArray(sanitizedPlanning.dispatchPlan&&sanitizedPlanning.dispatchPlan.dispatches)
+    ?sanitizedPlanning.dispatchPlan.dispatches
+    :[];
+  dispatches.forEach((dispatch,index)=>{
+    const dispatchId=safeString(dispatch&&dispatch.dispatchId,120)||`dispatch-${index+1}`;
+    const clauseRefs=uniqueOverviewStrings(dispatch&&dispatch.requestClauseRefs,24);
+    const acceptanceRefs=uniqueOverviewStrings(dispatch&&dispatch.acceptanceCheckRefs,16);
+    clauseRefs.forEach((clauseId)=>{
+      pushMapValues(dispatchIdsByClause,clauseId,[dispatchId],12);
+      pushMapValues(acceptanceRefsByClause,clauseId,acceptanceRefs,16);
+    });
+  });
+  const operatorPlanEvent=buildOperatorPlanEvent({
+    planningContext:sanitizedPlanning,
+    agentName:safeString(agentName,80)||"default",
+  });
+  const planSteps=Array.isArray(operatorPlanEvent&&operatorPlanEvent.steps)
+    ?operatorPlanEvent.steps
+    :[];
+  planSteps.forEach((step,index)=>{
+    const stepId=safeString(step&&step.stepId,120)||`plan-${index+1}`;
+    const clauseRefs=uniqueOverviewStrings(step&&step.requestClauseRefs,24);
+    const acceptanceRefs=uniqueOverviewStrings(step&&step.acceptanceCheckRefs,16);
+    clauseRefs.forEach((clauseId)=>{
+      pushMapValues(planStepIdsByClause,clauseId,[stepId],16);
+      pushMapValues(acceptanceRefsByClause,clauseId,acceptanceRefs,16);
+    });
+  });
+  return{
+    owner:safeString(requirement&&requirement.owner,80)||"intake",
+    summary:{
+      totalClauses:clampOverviewInt(summary.totalClauses,rawRequestClauses.length,0,999),
+      mappedCount:clampOverviewInt(summary.mappedCount,mappedRequirements.length,0,999),
+      coreTotal:clampOverviewInt(summary.coreTotal,coreObligations.size,0,999),
+      coreMapped:clampOverviewInt(summary.coreMapped,0,0,999),
+      coreUnmapped:clampOverviewInt(summary.coreUnmapped,0,0,999),
+      parkedCount:clampOverviewInt(summary.parkedCount,parkedItems.length,0,999),
+      droppedCount:clampOverviewInt(summary.droppedCount,droppedItems.length,0,999),
+      dispatchCount:dispatches.length,
+      planStepCount:planSteps.length,
+    },
+    plan:{
+      decision:safeString(operatorPlanEvent&&operatorPlanEvent.decision,40)||"",
+      planningDepth:safeString(operatorPlanEvent&&operatorPlanEvent.planningDepth,80)||safeString(sanitizedPlanning.selection&&sanitizedPlanning.selection.selectedPlanningDepth,80),
+      assuranceDepth:safeString(operatorPlanEvent&&operatorPlanEvent.assuranceDepth,80)||safeString(sanitizedPlanning.selection&&sanitizedPlanning.selection.selectedAssuranceDepth,80),
+      flowPath:safeString(operatorPlanEvent&&operatorPlanEvent.flowPath,80)||safeString(sanitizedPlanning.selection&&sanitizedPlanning.selection.flowPath,80),
+    },
+    clauses:rawRequestClauses.map((entry,index)=>{
+      const clauseId=safeString(entry&&entry.id,80)||`req-${index+1}`;
+      const mappedRefs=uniqueOverviewStrings(mappedByClause.get(clauseId)||[],16);
+      const parked=parkedByClause.get(clauseId)||null;
+      const dropped=droppedByClause.get(clauseId)||null;
+      return{
+        clauseId,
+        text:safeString(entry&&entry.text,320),
+        kind:safeString(entry&&entry.kind,80)||"explicit_request",
+        lane:safeString(entry&&entry.lane,80)||"core",
+        core:coreObligations.has(clauseId),
+        state:dropped
+          ?"dropped"
+          :parked
+            ?"parked"
+            :mappedRefs.length
+              ?"mapped"
+              :coreObligations.has(clauseId)
+                ?"unmapped"
+                :"tracked",
+        requirementRefs:uniqueOverviewStrings([
+          ...mappedRefs,
+          ...(parked&&Array.isArray(parked.requirementRefs)?parked.requirementRefs:[]),
+          ...(dropped&&Array.isArray(dropped.requirementRefs)?dropped.requirementRefs:[]),
+        ],16),
+        dispatchIds:uniqueOverviewStrings(dispatchIdsByClause.get(clauseId)||[],12),
+        planStepIds:uniqueOverviewStrings(planStepIdsByClause.get(clauseId)||[],16),
+        acceptanceCheckRefs:uniqueOverviewStrings(acceptanceRefsByClause.get(clauseId)||[],16),
+        parkedReason:parked&&parked.reason?parked.reason:"",
+        droppedReasonCode:dropped&&dropped.reasonCode?dropped.reasonCode:"",
+        droppedReason:dropped&&dropped.reason?dropped.reason:"",
+      };
+    }),
+  };
+}
 function buildHarnessOverviewSnapshot(){
   if(!harnessMemoryLoaded){
     loadHarnessExecutionMemoryStore();
@@ -12098,6 +12255,7 @@ function buildHarnessOverviewSnapshot(){
       turn:runtime.contractSpec,
       taskOutcome:runtime.taskOutcomeContract,
       planning:runtime.planningContracts,
+      designAcceptance:runtime.intentFirst&&runtime.intentFirst.contract?runtime.intentFirst.contract:{},
     },
     evidence:{
       current:{
@@ -12118,11 +12276,20 @@ function buildHarnessOverviewSnapshot(){
     },
     memory:{
       harness:runtime.harnessMemory,
+      taste:runtime.intentFirst&&runtime.intentFirst.tasteMemory?runtime.intentFirst.tasteMemory:{},
       execution:buildExecutionMemoryOverview({limit:10,window:60}),
       replay:{
         recent:listReplayMemorySnapshots({limit:6}),
       },
     },
+    traceability:buildHarnessTraceabilitySnapshot(
+      runtime&&runtime.latestTurn&&runtime.latestTurn.planning&&typeof runtime.latestTurn.planning==="object"
+        ?runtime.latestTurn.planning
+        :{},
+      safeString(runtime&&runtime.latestTurn&&runtime.latestTurn.agent_name,80)
+        ||safeString(runtime&&runtime.activeAgent,80)
+        ||"default"
+    ),
     health:{
       latestTurn:runtime.latestTurn,
       fullUtilization:runtime.fullUtilization,

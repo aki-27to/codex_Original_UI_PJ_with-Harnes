@@ -25,6 +25,7 @@ const elements = {
   turnContractCard: by("turnContractCard"),
   taskOutcomeCard: by("taskOutcomeCard"),
   governanceCard: by("governanceCard"),
+  traceabilityCard: by("traceabilityCard"),
   signoffEvidenceCard: by("signoffEvidenceCard"),
   runtimeProofCard: by("runtimeProofCard"),
   evalRunsCard: by("evalRunsCard"),
@@ -427,6 +428,69 @@ function renderContracts(payload) {
   ]);
 }
 
+function traceStateTone(state) {
+  const normalized = lower(state);
+  if (normalized === "mapped") return "pass";
+  if (normalized === "parked") return "warn";
+  if (normalized === "dropped" || normalized === "unmapped") return "fail";
+  return "neutral";
+}
+
+function traceLaneTone(lane) {
+  const normalized = lower(lane);
+  if (normalized === "core") return "pass";
+  if (normalized === "unsafe_or_approval") return "warn";
+  if (normalized === "taste") return "neutral";
+  return "info";
+}
+
+function renderTraceability(payload) {
+  if (!elements.traceabilityCard) {
+    return;
+  }
+  const traceability = payload && payload.traceability ? payload.traceability : {};
+  const summary = traceability.summary || {};
+  const plan = traceability.plan || {};
+  const clauseItems = toArr(traceability.clauses).map((entry) => {
+    const lines = [
+      toArr(entry.requirementRefs).length ? `requirements=${toArr(entry.requirementRefs).join(", ")}` : "",
+      toArr(entry.dispatchIds).length ? `dispatch=${toArr(entry.dispatchIds).join(", ")}` : "",
+      toArr(entry.planStepIds).length ? `plan=${toArr(entry.planStepIds).join(", ")}` : "",
+      toArr(entry.acceptanceCheckRefs).length ? `acceptance=${toArr(entry.acceptanceCheckRefs).join(", ")}` : "",
+    ].filter(Boolean);
+    const detailParts = [
+      safeText(entry.text, ""),
+      safeText(entry.parkedReason, ""),
+      entry.droppedReasonCode ? `${safeText(entry.droppedReasonCode, "")}${entry.droppedReason ? `: ${safeText(entry.droppedReason, "")}` : ""}` : "",
+    ].filter(Boolean);
+    return {
+      title: `${safeText(entry.clauseId, "req")} ${safeText(entry.text, "")}`.trim(),
+      tags: [
+        { label: safeText(entry.state, "tracked"), tone: traceStateTone(entry.state) },
+        { label: safeText(entry.lane, "lane"), tone: traceLaneTone(entry.lane) },
+        { label: safeText(entry.kind, "clause"), tone: "neutral" },
+        entry.core ? { label: "core", tone: "pass" } : null,
+      ].filter(Boolean),
+      detail: detailParts.join(" / "),
+      lines,
+    };
+  });
+  elements.traceabilityCard.innerHTML = `
+    <div class="overview-inline-tags">
+      ${tagHtml(`owner ${safeText(traceability.owner, "intake")}`, "info")}
+      ${tagHtml(`依頼反映 ${formatInteger(num(summary.coreMapped, 0))}/${formatInteger(num(summary.coreTotal, 0))}`, num(summary.coreUnmapped, 0) > 0 ? "warn" : "pass")}
+      ${tagHtml(`保留 ${formatInteger(num(summary.parkedCount, 0))}`, num(summary.parkedCount, 0) > 0 ? "warn" : "neutral")}
+      ${tagHtml(`除外 ${formatInteger(num(summary.droppedCount, 0))}`, num(summary.droppedCount, 0) > 0 ? "fail" : "neutral")}
+      ${tagHtml(`steps ${formatInteger(num(summary.planStepCount, 0))}`, "info")}
+    </div>
+    ${factRowsHtml([
+      { label: "Plan Decision", value: safeText(plan.decision, "n/a"), detail: `${safeText(plan.planningDepth, "")} / ${safeText(plan.assuranceDepth, "")} / ${safeText(plan.flowPath, "")}` },
+      { label: "Tracked Clauses", value: formatInteger(num(summary.totalClauses, 0)), detail: `dispatch ${formatInteger(num(summary.dispatchCount, 0))} / mapped ${formatInteger(num(summary.mappedCount, 0))}` },
+    ])}
+    ${itemListHtml(clauseItems, "No request trace is available for the latest turn.")}
+  `;
+}
+
 function evidenceCardHtml(title, tags, entries, recentItems, emptyText) {
   const rows = [
     `<div class="overview-inline-tags">${toArr(tags).map((tag) => tagHtml(tag.label, tag.tone)).join("")}</div>`,
@@ -595,6 +659,7 @@ function renderOverview(payload) {
   renderRuntime(payload);
   renderTopology(payload);
   renderContracts(payload);
+  renderTraceability(payload);
   renderEvidence(payload);
   renderMemory(payload);
   renderRawSnapshot(payload);
@@ -606,7 +671,7 @@ function renderOverview(payload) {
 async function loadOverview({ manual = false } = {}) {
   const requestId = ++state.requestId;
   setError("");
-  setRefreshState(manual ? "Refreshing" : "Loading", "waiting");
+  setRefreshState(manual ? "更新中" : "読込中", "waiting");
   try {
     const response = await fetch("/api/harness/overview", { cache: "no-store" });
     if (!response.ok) {
@@ -618,12 +683,12 @@ async function loadOverview({ manual = false } = {}) {
     }
     state.payload = payload;
     renderOverview(payload);
-    setRefreshState("Live", "connected");
+    setRefreshState("最新", "connected");
   } catch (error) {
     if (requestId !== state.requestId) {
       return;
     }
-    setRefreshState("Error", "disconnected");
+    setRefreshState("エラー", "disconnected");
     setError(`Overview refresh failed: ${error && error.message ? error.message : "unknown error"}`);
   }
 }
@@ -658,6 +723,6 @@ async function boot() {
 }
 
 boot().catch((error) => {
-  setRefreshState("Error", "disconnected");
+  setRefreshState("エラー", "disconnected");
   setError(`Overview bootstrap failed: ${error && error.message ? error.message : "unknown error"}`);
 });

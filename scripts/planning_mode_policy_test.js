@@ -49,6 +49,42 @@ function run() {
     "user_explicit",
     "explicit goal provenance should capture direct user wording for structured prompts"
   );
+  assert.strictEqual(fastArtifacts.requirementContract.owner, "intake", "requirement contracts should identify intake as the Step 1 owner");
+  assert.ok(
+    fastArtifacts.requirementContract.requestCoverage
+      && Array.isArray(fastArtifacts.requirementContract.requestCoverage.rawRequestClauses)
+      && fastArtifacts.requirementContract.requestCoverage.rawRequestClauses.length >= 1,
+    "requirement contracts should persist a request-coverage ledger"
+  );
+  assert.ok(
+    Array.isArray(fastArtifacts.requirementContract.requestCoverage.coreObligations)
+      && fastArtifacts.requirementContract.requestCoverage.coreObligations.length >= 1,
+    "request coverage should track at least one core obligation for a bounded task"
+  );
+  assert.ok(
+    Array.isArray(fastArtifacts.requirementContract.requestCoverage.mappedRequirements)
+      && fastArtifacts.requirementContract.requestCoverage.mappedRequirements.length >= 1,
+    "request coverage should map user clauses into the requirement contract"
+  );
+  assert.strictEqual(
+    fastArtifacts.requirementContract.requestCoverage.coverageSummary.coreMapped,
+    fastArtifacts.requirementContract.requestCoverage.coverageSummary.coreTotal,
+    "bounded FAST tasks should fully map their core request obligations"
+  );
+  assert.ok(
+    Array.isArray(fastArtifacts.dispatchPlan.dispatches[0].requestClauseRefs)
+      && fastArtifacts.dispatchPlan.dispatches[0].requestClauseRefs.length >= 1,
+    "dispatch plans should carry requestClauseRefs from Step 1 coverage"
+  );
+  assert.ok(
+    Array.isArray(fastArtifacts.dispatchPlan.dispatches[0].requirementRefs)
+      && fastArtifacts.dispatchPlan.dispatches[0].requirementRefs.length >= 1,
+    "dispatch plans should carry requirementRefs back to the requirement contract"
+  );
+  assert.ok(
+    Array.isArray(fastArtifacts.dispatchPlan.dispatches[0].acceptanceCheckRefs),
+    "dispatch plans should always expose acceptanceCheckRefs"
+  );
   const lockedOnlySanitized = sanitizePlanningArtifactsForRuntime({
     ...fastArtifacts,
     requirementContract: {
@@ -70,6 +106,51 @@ function run() {
     lockedOnlySanitized.requirementContract.status,
     "LOCKED",
     "runtime sanitization should treat lockedGoal or intent hypotheses as core requirement data"
+  );
+  const unmappedCoverageSanitized = sanitizePlanningArtifactsForRuntime({
+    ...fastArtifacts,
+    requirementContract: {
+      ...fastArtifacts.requirementContract,
+      validation: undefined,
+      requestCoverage: {
+        ...fastArtifacts.requirementContract.requestCoverage,
+        rawRequestClauses: [
+          ...fastArtifacts.requirementContract.requestCoverage.rawRequestClauses,
+          { id: "req-unmapped-core", text: "Keep the current wording tone intact.", kind: "constraint", lane: "core" },
+        ],
+        coreObligations: [...fastArtifacts.requirementContract.requestCoverage.coreObligations, "req-unmapped-core"],
+      },
+    },
+  });
+  assert.strictEqual(
+    unmappedCoverageSanitized.requirementContract.validation.verdict,
+    "BLOCK",
+    "core obligations should not proceed when the request ledger leaves one unmapped"
+  );
+  assert.ok(
+    unmappedCoverageSanitized.requirementContract.validation.checks.some((entry) => entry.id === "request_coverage_core_mapped" && entry.status === "BLOCK"),
+    "validation should expose a machine-readable check for unmapped core obligations"
+  );
+  const coverageClauseId = fastArtifacts.requirementContract.requestCoverage.rawRequestClauses[0].id;
+  const malformedCoverageSanitized = sanitizePlanningArtifactsForRuntime({
+    ...fastArtifacts,
+    requirementContract: {
+      ...fastArtifacts.requirementContract,
+      validation: undefined,
+      requestCoverage: {
+        ...fastArtifacts.requirementContract.requestCoverage,
+        parkedItems: [{ clauseId: coverageClauseId }],
+        droppedItems: [{ clauseId: coverageClauseId, reason: "Removed without a machine-readable code." }],
+      },
+    },
+  });
+  assert.ok(
+    malformedCoverageSanitized.requirementContract.validation.checks.some((entry) => entry.id === "request_coverage_parked_reasoned" && entry.status === "BLOCK"),
+    "parked request items should fail validation when no reason is recorded"
+  );
+  assert.ok(
+    malformedCoverageSanitized.requirementContract.validation.checks.some((entry) => entry.id === "request_coverage_dropped_reasoned" && entry.status === "BLOCK"),
+    "dropped request items should fail validation when no valid reasonCode is recorded"
   );
 
   const normalPrompt = [
@@ -636,6 +717,11 @@ function run() {
   assert.strictEqual(sanitized.requirementContract.validation.verdict, "BLOCK", "sanitized artifacts should preserve requirement validation verdict");
   assert.ok(Array.isArray(sanitized.requirementContract.intentHypotheses), "sanitized artifacts should preserve intent hypotheses");
   assert.ok(sanitized.requirementContract.displayContract && typeof sanitized.requirementContract.displayContract === "object", "sanitized artifacts should preserve the display contract");
+  assert.ok(
+    sanitized.requirementContract.requestCoverage
+      && typeof sanitized.requirementContract.requestCoverage.coverageSummary === "object",
+    "sanitized artifacts should preserve request coverage"
+  );
 }
 
 try {
