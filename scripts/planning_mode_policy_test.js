@@ -152,6 +152,52 @@ function run() {
     malformedCoverageSanitized.requirementContract.validation.checks.some((entry) => entry.id === "request_coverage_dropped_reasoned" && entry.status === "BLOCK"),
     "dropped request items should fail validation when no valid reasonCode is recorded"
   );
+  const tracePrompt = [
+    "# Goal",
+    "Refresh only docs/CURRENT_ARCHITECTURE.md wording.",
+    "# Constraints",
+    "- Do not change runtime behavior.",
+    "- Push to GitHub only after explicit approval.",
+    "# Preferences",
+    "- Use https://example.com/reference as a style benchmark.",
+  ].join("\n");
+  const traceArtifacts = buildPlanningArtifacts({ prompt: tracePrompt, options: { agentName: "default" }, contract });
+  const traceCoverage = traceArtifacts.requirementContract.requestCoverage;
+  const approvalClause = traceCoverage.rawRequestClauses.find((entry) => entry.text === "Push to GitHub only after explicit approval.");
+  const benchmarkClause = traceCoverage.rawRequestClauses.find((entry) => entry.text === "Use https://example.com/reference as a style benchmark.");
+  const benchmarkUrlClause = traceCoverage.rawRequestClauses.find((entry) => entry.text === "https://example.com/reference");
+  assert.ok(
+    approvalClause && approvalClause.lane === "unsafe_or_approval",
+    "request coverage should seed approval-sensitive clauses directly from the raw prompt"
+  );
+  assert.ok(
+    benchmarkClause && benchmarkClause.kind === "taste_value" && benchmarkClause.lane === "taste",
+    "request coverage should preserve prompt-derived benchmark clauses as taste/value items"
+  );
+  assert.ok(
+    benchmarkUrlClause && traceCoverage.droppedItems.some((entry) => entry.clauseId === benchmarkUrlClause.id && entry.reasonCode === "deferred_nonblocking"),
+    "unmapped taste clauses should auto-populate droppedItems"
+  );
+  const autoDroppedCoverageSanitized = sanitizePlanningArtifactsForRuntime({
+    ...traceArtifacts,
+    requirementContract: {
+      ...traceArtifacts.requirementContract,
+      validation: undefined,
+      requestCoverage: {
+        ...traceCoverage,
+        mappedRequirements: traceCoverage.mappedRequirements.filter((entry) => !benchmarkClause || entry.clauseId !== benchmarkClause.id),
+        droppedItems: traceCoverage.droppedItems.filter((entry) => !benchmarkClause || entry.clauseId !== benchmarkClause.id),
+      },
+    },
+  });
+  assert.ok(
+    approvalClause && autoDroppedCoverageSanitized.requirementContract.requestCoverage.droppedItems.some((entry) => entry.clauseId === approvalClause.id && entry.reasonCode === "unsafe_or_approval"),
+    "approval-lane clauses should auto-drop with an unsafe_or_approval reason when they are not mapped"
+  );
+  assert.ok(
+    benchmarkClause && autoDroppedCoverageSanitized.requirementContract.requestCoverage.droppedItems.some((entry) => entry.clauseId === benchmarkClause.id && entry.reasonCode === "deferred_nonblocking"),
+    "taste clauses should auto-drop when their mapping disappears from the locked contract"
+  );
 
   const normalPrompt = [
     "# Goal",

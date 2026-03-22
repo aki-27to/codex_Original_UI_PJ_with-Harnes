@@ -2563,8 +2563,146 @@ function normalizeRequestCoverageDropReasonCode(value, fallback = "deferred_nonb
     return normalized;
   }
   return fallback === "out_of_scope" || fallback === "contradiction" || fallback === "unsafe_or_approval"
-    ? fallback
-    : "deferred_nonblocking";
+      ? fallback
+      : "deferred_nonblocking";
+}
+
+function buildPromptDerivedRequestCoverageSeed({ prompt = "", selection } = {}) {
+  const currentSelection = selection && typeof selection === "object" ? selection : {};
+  const extracted = currentSelection.extracted && typeof currentSelection.extracted === "object"
+    ? currentSelection.extracted
+    : {};
+  const taskFamily = safeString(currentSelection.taskFamily, 80) || "deterministic_code";
+  const promptSignals = inferPromptLevelUserValueSignals(prompt, taskFamily);
+  const acceptanceChecks = sanitizeAcceptanceChecks(extracted.acceptanceChecks).filter((entry) => {
+    const source = safeString(entry.source, 80);
+    return source === "prompt_section" || source === "exact_reply_contract";
+  });
+  const deferredQuestions = extracted.deferredQuestions && typeof extracted.deferredQuestions === "object"
+    ? extracted.deferredQuestions
+    : {};
+  const benchmarkCandidates = uniqueStrings([
+    ...extractReferenceUrls(prompt, 6),
+    ...uniqueStrings(extracted.benchmarkCandidates, 6).filter((entry) => promptMentionsRequirementValue(prompt, entry)),
+  ], 6);
+  const clauses = [];
+  const classifyPromptClause = (text, fallbackKind = "explicit_request", fallbackLane = "core") => {
+    const normalized = safeString(text, 320);
+    if (!normalized) {
+      return {
+        kind: normalizeRequestCoverageClauseKind(fallbackKind, "explicit_request"),
+        lane: normalizeRequestCoverageLane(fallbackLane, "core"),
+      };
+    }
+    if (
+      uniqueStrings(extracted.approvalBoundaryItems, 8).some((entry) => requirementProvenanceValuesOverlap(entry, normalized))
+      || /(?:approval|approve|permission|git\s*push|push to github|github|account|credential|api key)/i.test(normalized)
+    ) {
+      return { kind: "constraint", lane: "unsafe_or_approval" };
+    }
+    if (/(?:benchmark|reference|style|look|feel|tone|visual|aesthetic)/i.test(normalized) || /https?:\/\//i.test(normalized)) {
+      return { kind: "taste_value", lane: "taste" };
+    }
+    if (isHardConstraintDirective(normalized)) return { kind: "constraint", lane: "core" };
+    if (isAvoidanceDirective(normalized)) return { kind: "non_target", lane: "core" };
+    return {
+      kind: normalizeRequestCoverageClauseKind(fallbackKind, "explicit_request"),
+      lane: normalizeRequestCoverageLane(fallbackLane, "core"),
+    };
+  };
+  const addClauses = ({ values = [], kind = "explicit_request", lane = "core" } = {}) => {
+    uniqueStrings(values, 12).forEach((entry) => {
+      const text = safeString(entry, 320);
+      if (!text) return;
+      const classification = classifyPromptClause(text, kind, lane);
+      clauses.push({
+        text,
+        kind: classification.kind,
+        lane: classification.lane,
+      });
+    });
+  };
+
+  const normalizeGoalSeed = (value) => {
+    const normalized = normalizePromptRequirementLine(value, 320);
+    if (!normalized || /[\r\n]/.test(normalized) || /(?:#\s*[a-z]|goal\s*\n|constraints?\s*\n|preferences?\s*\n)/i.test(normalized)) {
+      return "";
+    }
+    return requirementLooksFragmentaryGoalText(normalized) ? "" : normalized;
+  };
+  const explicitGoal = normalizeGoalSeed(extracted.explicitGoal);
+  const implicitGoal = normalizeGoalSeed(extracted.implicitGoal);
+  if (explicitGoal) addClauses({ values: [explicitGoal], kind: "explicit_request", lane: "core" });
+  else if (implicitGoal) addClauses({ values: [implicitGoal], kind: "explicit_request", lane: "core" });
+
+  uniqueStrings(extracted.baselineScope, 24).forEach((entry) => {
+    addClauses({
+      values: [entry],
+      kind: isHardConstraintDirective(entry) ? "constraint" : "explicit_request",
+      lane: "core",
+    });
+  });
+  addClauses({
+    values: uniqueStrings(extracted.nonGoals, 16),
+    kind: "non_target",
+    lane: "core",
+  });
+  addClauses({
+    values: acceptanceChecks.map((entry) => entry.title),
+    kind: "verification_method",
+    lane: "core",
+  });
+  addClauses({
+    values: extractPromptDirectiveLines(prompt, isHardConstraintDirective, 8),
+    kind: "constraint",
+    lane: "core",
+  });
+  addClauses({
+    values: extractPromptDirectiveLines(prompt, isAvoidanceDirective, 8),
+    kind: "non_target",
+    lane: "core",
+  });
+  addClauses({
+    values: promptSignals.completedMeans,
+    kind: "verification_method",
+    lane: "core",
+  });
+  addClauses({
+    values: promptSignals.mustAvoid,
+    kind: "non_target",
+    lane: "core",
+  });
+  addClauses({
+    values: promptSignals.userShouldFeelGet,
+    kind: "taste_value",
+    lane: "taste",
+  });
+  addClauses({
+    values: promptSignals.qualityAxes,
+    kind: "taste_value",
+    lane: "taste",
+  });
+  addClauses({
+    values: benchmarkCandidates,
+    kind: "taste_value",
+    lane: "taste",
+  });
+  addClauses({
+    values: uniqueStrings(extracted.approvalBoundaryItems, 8),
+    kind: "constraint",
+    lane: "unsafe_or_approval",
+  });
+  addClauses({
+    values: uniqueStrings(deferredQuestions.defaultable, 8),
+    kind: "explicit_request",
+    lane: "defaultable",
+  });
+  addClauses({
+    values: uniqueStrings(deferredQuestions.taste, 8),
+    kind: "taste_value",
+    lane: "taste",
+  });
+  return clauses;
 }
 
 function sanitizeRequirementRequestCoverageClauses(value) {
@@ -2647,6 +2785,44 @@ function buildRequirementRequestCoverageSummary({
   };
 }
 
+function buildInferredRequestCoverageDroppedItems({
+  rawRequestClauses = [],
+  coreObligations = [],
+  mappedRequirements = [],
+  parkedItems = [],
+  droppedItems = [],
+} = {}) {
+  const clauses = sanitizeRequirementRequestCoverageClauses(rawRequestClauses);
+  const coreIds = new Set(uniqueStrings(coreObligations, 32));
+  const mappedIds = new Set(sanitizeRequirementRequestCoverageMappings(mappedRequirements).map((entry) => entry.clauseId));
+  const parkedIds = new Set(sanitizeRequirementRequestCoverageParkedItems(parkedItems).map((entry) => entry.clauseId));
+  const explicitDrops = sanitizeRequirementRequestCoverageDroppedItems(droppedItems);
+  const droppedIds = new Set(explicitDrops.map((entry) => entry.clauseId));
+  const inferredDrops = [];
+  clauses.forEach((clause) => {
+    if (!clause || !clause.id || droppedIds.has(clause.id) || mappedIds.has(clause.id) || parkedIds.has(clause.id)) return;
+    if (coreIds.has(clause.id) || clause.lane === "core") return;
+    let reasonCode = "deferred_nonblocking";
+    let reason = "This non-core request clause was not promoted into the locked proceed path.";
+    if (clause.lane === "unsafe_or_approval") {
+      reasonCode = "unsafe_or_approval";
+      reason = "This clause stays outside the locked contract until the required approval is available.";
+    } else if (clause.kind === "non_target") {
+      reasonCode = "out_of_scope";
+      reason = "This clause was classified outside the current locked scope.";
+    } else if (clause.lane === "taste") {
+      reason = "This taste-oriented clause remains outside the current core contract.";
+    }
+    inferredDrops.push({
+      clauseId: clause.id,
+      reasonCode,
+      reason,
+      requirementRefs: [],
+    });
+  });
+  return [...explicitDrops, ...inferredDrops].slice(0, 16);
+}
+
 function sanitizeRequirementRequestCoverage(value, requirement = {}) {
   const source = value && typeof value === "object" ? value : {};
   const rawRequestClauses = sanitizeRequirementRequestCoverageClauses(source.rawRequestClauses);
@@ -2654,7 +2830,13 @@ function sanitizeRequirementRequestCoverage(value, requirement = {}) {
   const coreObligations = uniqueStrings(source.coreObligations, 32).filter((id) => knownClauseIds.has(id));
   const mappedRequirements = sanitizeRequirementRequestCoverageMappings(source.mappedRequirements).filter((entry) => knownClauseIds.has(entry.clauseId));
   const parkedItems = sanitizeRequirementRequestCoverageParkedItems(source.parkedItems).filter((entry) => knownClauseIds.has(entry.clauseId));
-  const droppedItems = sanitizeRequirementRequestCoverageDroppedItems(source.droppedItems).filter((entry) => knownClauseIds.has(entry.clauseId));
+  const droppedItems = buildInferredRequestCoverageDroppedItems({
+    rawRequestClauses,
+    coreObligations,
+    mappedRequirements,
+    parkedItems,
+    droppedItems: sanitizeRequirementRequestCoverageDroppedItems(source.droppedItems).filter((entry) => knownClauseIds.has(entry.clauseId)),
+  }).filter((entry) => knownClauseIds.has(entry.clauseId));
   const coverageSummary = buildRequirementRequestCoverageSummary({
     rawRequestClauses,
     coreObligations,
@@ -2685,7 +2867,6 @@ function sanitizeRequirementRequestCoverage(value, requirement = {}) {
 function buildRequirementRequestCoverage({ prompt = "", requirementContract, selection } = {}) {
   const requirement = requirementContract && typeof requirementContract === "object" ? requirementContract : {};
   const currentSelection = selection && typeof selection === "object" ? selection : {};
-  const provenance = sanitizeRequirementProvenance(requirement.provenance, requirement);
   const acceptanceChecks = sanitizeAcceptanceChecks(requirement.acceptanceChecks);
   const rawRequestClauses = [];
   const mappedRequirements = [];
@@ -2695,10 +2876,6 @@ function buildRequirementRequestCoverage({ prompt = "", requirementContract, sel
   const clauseIndex = new Map();
   const clauseOrder = [];
   const lanePriority = Object.freeze({ defaultable: 1, taste: 2, unsafe_or_approval: 3, core: 4 });
-  const hasUserSource = (entry) => {
-    const normalized = entry && typeof entry === "object" ? normalizeRequirementProvenanceSource(entry.source, "") : "";
-    return normalized === "user_explicit" || normalized === "user_implied";
-  };
   const ensureClause = ({ text, kind = "explicit_request", lane = "core" } = {}) => {
     const normalizedText = safeString(text, 320).trim();
     const key = normalizeRequirementProvenanceCompareKey(normalizedText);
@@ -2743,147 +2920,105 @@ function buildRequirementRequestCoverage({ prompt = "", requirementContract, sel
     if (lane === "core") markCore(clause);
     addMapping(clause, requirementRefs);
   };
-
-  const goalClauseText = safeString(requirement.explicitGoal, 320)
-    ? (
-      provenance.explicitGoal && provenance.explicitGoal.source === "system_inferred" && sanitizeRequirementIntentInterpretation(requirement.intentInterpretation).questionLike
-        ? extractPrimaryQuestionPromptText(prompt, requirement.explicitGoal) || safeString(requirement.explicitGoal, 320)
-        : safeString(requirement.explicitGoal, 320)
-    )
-    : "";
-  if (goalClauseText) {
-    const goalRefs = [
-      "explicitGoal",
-      safeString(requirement.lockedGoal, 320) && requirementProvenanceValuesOverlap(goalClauseText, requirement.lockedGoal) ? "lockedGoal" : "",
-      safeString(requirement.intentInterpretation && requirement.intentInterpretation.direction, 320)
-        && requirementProvenanceValuesOverlap(goalClauseText, requirement.intentInterpretation.direction)
-        ? "intentInterpretation.direction"
-        : "",
-    ];
-    addMappedClause({
-      text: goalClauseText,
-      kind: "explicit_request",
-      lane: "core",
-      requirementRefs: goalRefs,
+  const addParkedItem = ({ clause, reason = "", requirementRefs = [] } = {}) => {
+    if (!clause || !clause.id) return;
+    const refs = uniqueStrings(requirementRefs, 8);
+    const existing = parkedItems.find((entry) => entry.clauseId === clause.id);
+    if (existing) {
+      existing.reason = existing.reason || safeString(reason, 240);
+      existing.requirementRefs = uniqueStrings([...(existing.requirementRefs || []), ...refs], 8);
+      return;
+    }
+    parkedItems.push({
+      clauseId: clause.id,
+      reason: safeString(reason, 240),
+      requirementRefs: refs,
     });
-  }
-
-  uniqueStrings(requirement.baselineScope, 12)
-    .filter((entry) => promptMentionsRequirementValue(prompt, entry))
-    .forEach((entry) => {
-      addMappedClause({
-        text: entry,
-        kind: isHardConstraintDirective(entry) ? "constraint" : "explicit_request",
-        lane: "core",
-        requirementRefs: ["baselineScope"],
+  };
+  const mapFieldValues = ({ values = [], requirementRefs = [], clauseFilter = null } = {}) => {
+    uniqueStrings(values, 16).forEach((entry) => {
+      const clause = clauseOrder.find((candidate) => {
+        if (!requirementProvenanceValuesOverlap(candidate.text, entry)) return false;
+        return typeof clauseFilter === "function" ? clauseFilter(candidate) : true;
       });
+      if (!clause) return;
+      addMapping(clause, requirementRefs);
     });
+  };
 
-  acceptanceChecks.forEach((entry) => {
-    const source = safeString(entry.source, 80);
-    const userAnchored = promptMentionsRequirementValue(prompt, entry.title)
-      || source === "prompt_section"
-      || source === "exact_reply_contract";
-    if (!userAnchored) return;
-    addMappedClause({
-      text: entry.title,
-      kind: "verification_method",
-      lane: entry.blocking === false ? "defaultable" : "core",
-      requirementRefs: ["acceptanceChecks"],
-    });
+  buildPromptDerivedRequestCoverageSeed({ prompt, selection: currentSelection }).forEach((entry) => {
+    const clause = ensureClause(entry);
+    if (!clause) return;
+    if (clause.lane === "core") markCore(clause);
   });
 
-  provenance.nonGoals.filter(hasUserSource).forEach((entry) => {
-    addMappedClause({
-      text: entry.value,
-      kind: "non_target",
-      lane: "core",
-      requirementRefs: ["nonGoals"],
-    });
+  mapFieldValues({
+    values: uniqueStrings([
+      safeString(requirement.explicitGoal, 320),
+      safeString(requirement.lockedGoal, 320),
+      safeString(requirement.intentInterpretation && requirement.intentInterpretation.direction, 320),
+      safeString(requirement.intentInterpretation && requirement.intentInterpretation.hypothesis, 320),
+      ...sanitizeRequirementIntentHypotheses(requirement.intentHypotheses, requirement).map((entry) => entry.goal),
+    ], 6),
+    requirementRefs: getRequirementGoalAnchorFieldRefs(requirement),
+    clauseFilter: (candidate) => candidate.lane === "core",
   });
-
-  const frameProvenance = provenance.userValueFrame && typeof provenance.userValueFrame === "object" ? provenance.userValueFrame : {};
-  sanitizeRequirementValueProvenanceEntries(frameProvenance.userWants, "system_inferred", 8)
-    .filter(hasUserSource)
-    .forEach((entry) => {
-      addMappedClause({
-        text: entry.value,
-        kind: "explicit_request",
-        lane: "core",
-        requirementRefs: ["userValueFrame.userWants"],
-      });
-    });
-  sanitizeRequirementValueProvenanceEntries(frameProvenance.hardConstraints, "system_inferred", 10)
-    .filter(hasUserSource)
-    .forEach((entry) => {
-      addMappedClause({
-        text: entry.value,
-        kind: "constraint",
-        lane: "core",
-        requirementRefs: ["userValueFrame.hardConstraints"],
-      });
-    });
-  sanitizeRequirementValueProvenanceEntries(frameProvenance.mustAvoid, "system_inferred", 10)
-    .filter(hasUserSource)
-    .forEach((entry) => {
-      addMappedClause({
-        text: entry.value,
-        kind: "non_target",
-        lane: "core",
-        requirementRefs: ["userValueFrame.mustAvoid"],
-      });
-    });
-  sanitizeRequirementValueProvenanceEntries(frameProvenance.completedMeans, "policy_default", 10)
-    .filter(hasUserSource)
-    .forEach((entry) => {
-      addMappedClause({
-        text: entry.value,
-        kind: "verification_method",
-        lane: "core",
-        requirementRefs: ["userValueFrame.completedMeans"],
-      });
-    });
-  sanitizeRequirementValueProvenanceEntries(frameProvenance.userShouldFeelGet, "policy_default", 8)
-    .filter(hasUserSource)
-    .forEach((entry) => {
-      addMappedClause({
-        text: entry.value,
-        kind: "taste_value",
-        lane: "taste",
-        requirementRefs: ["userValueFrame.userShouldFeelGet"],
-      });
-    });
-  sanitizeRequirementValueProvenanceEntries(frameProvenance.qualityAxes, "policy_default", 10)
-    .filter(hasUserSource)
-    .forEach((entry) => {
-      addMappedClause({
-        text: entry.value,
-        kind: "taste_value",
-        lane: "taste",
-        requirementRefs: ["userValueFrame.qualityAxes"],
-      });
-    });
-  sanitizeRequirementValueProvenanceEntries(frameProvenance.benchmarkCandidates, "system_inferred", 6)
-    .filter(hasUserSource)
-    .forEach((entry) => {
-      addMappedClause({
-        text: entry.value,
-        kind: "taste_value",
-        lane: "taste",
-        requirementRefs: ["userValueFrame.benchmarkCandidates"],
-      });
-    });
-
-  uniqueStrings(requirement.approvalBoundaryItems, 8)
-    .filter((entry) => promptMentionsRequirementValue(prompt, entry))
-    .forEach((entry) => {
-      addMappedClause({
-        text: entry,
-        kind: "constraint",
-        lane: "unsafe_or_approval",
-        requirementRefs: ["approvalBoundaryItems"],
-      });
-    });
+  mapFieldValues({
+    values: uniqueStrings(requirement.baselineScope, 24),
+    requirementRefs: ["baselineScope"],
+    clauseFilter: (candidate) => candidate.lane === "core",
+  });
+  mapFieldValues({
+    values: acceptanceChecks.map((entry) => entry.title),
+    requirementRefs: ["acceptanceChecks"],
+    clauseFilter: (candidate) => candidate.lane === "core",
+  });
+  mapFieldValues({
+    values: uniqueStrings(requirement.nonGoals, 16),
+    requirementRefs: ["nonGoals"],
+    clauseFilter: (candidate) => candidate.lane === "core",
+  });
+  const frame = sanitizeUserValueFrame(requirement.userValueFrame);
+  mapFieldValues({
+    values: frame.userWants,
+    requirementRefs: ["userValueFrame.userWants"],
+    clauseFilter: (candidate) => candidate.lane === "core",
+  });
+  mapFieldValues({
+    values: frame.hardConstraints,
+    requirementRefs: ["userValueFrame.hardConstraints"],
+    clauseFilter: (candidate) => candidate.lane === "core",
+  });
+  mapFieldValues({
+    values: frame.mustAvoid,
+    requirementRefs: ["userValueFrame.mustAvoid"],
+    clauseFilter: (candidate) => candidate.lane === "core",
+  });
+  mapFieldValues({
+    values: frame.completedMeans,
+    requirementRefs: ["userValueFrame.completedMeans"],
+    clauseFilter: (candidate) => candidate.lane === "core",
+  });
+  mapFieldValues({
+    values: frame.userShouldFeelGet,
+    requirementRefs: ["userValueFrame.userShouldFeelGet"],
+    clauseFilter: (candidate) => candidate.lane === "taste",
+  });
+  mapFieldValues({
+    values: frame.qualityAxes,
+    requirementRefs: ["userValueFrame.qualityAxes"],
+    clauseFilter: (candidate) => candidate.lane === "taste",
+  });
+  mapFieldValues({
+    values: frame.benchmarkCandidates,
+    requirementRefs: ["userValueFrame.benchmarkCandidates"],
+    clauseFilter: (candidate) => candidate.lane === "taste",
+  });
+  mapFieldValues({
+    values: uniqueStrings(requirement.approvalBoundaryItems, 8),
+    requirementRefs: ["approvalBoundaryItems"],
+    clauseFilter: (candidate) => candidate.lane === "unsafe_or_approval",
+  });
 
   const deferredQuestions = currentSelection
     && currentSelection.extracted
@@ -2892,23 +3027,21 @@ function buildRequirementRequestCoverage({ prompt = "", requirementContract, sel
       ? currentSelection.extracted.deferredQuestions
       : {};
   uniqueStrings(deferredQuestions.defaultable, 6)
-    .filter((entry) => promptMentionsRequirementValue(prompt, entry))
     .forEach((entry) => {
       const clause = ensureClause({ text: entry, kind: "explicit_request", lane: "defaultable" });
       if (!clause) return;
-      parkedItems.push({
-        clauseId: clause.id,
+      addParkedItem({
+        clause,
         reason: "A lower-risk detail is deferred under the locked core contract.",
-        requirementRefs: ["openQuestions"],
+        requirementRefs: ["questionPlan.defaultable"],
       });
     });
   uniqueStrings(deferredQuestions.taste, 6)
-    .filter((entry) => promptMentionsRequirementValue(prompt, entry))
     .forEach((entry) => {
       const clause = ensureClause({ text: entry, kind: "taste_value", lane: "taste" });
       if (!clause) return;
-      parkedItems.push({
-        clauseId: clause.id,
+      addParkedItem({
+        clause,
         reason: "Taste refinement stays outside the core obligation lane until the core path is stable.",
         requirementRefs: ["questionPlan.taste"],
       });
