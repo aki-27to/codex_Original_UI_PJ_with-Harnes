@@ -144,6 +144,8 @@ async function run() {
     assert(defaultSuite.caseIds.includes("parent_dispatch_guard_violation"), "default eval suite should include parent dispatch guard workflow coverage");
     assert(defaultSuite.caseIds.includes("idempotency_failed_outcome_bridge"), "default eval suite should include idempotency lifecycle bridge coverage");
     assert(defaultSuite.caseIds.includes("turn_task_outcome_bridge_blocked"), "default eval suite should include blocked task outcome bridge coverage");
+    assert(defaultSuite.caseIds.includes("post_lock_drift_clean_trace"), "default eval suite should include post-lock drift pass coverage");
+    assert(defaultSuite.caseIds.includes("post_lock_drift_detects_missing_downstream_refs"), "default eval suite should include post-lock drift detection coverage");
 
     const sloRes = await requestJson({ port, path: "/api/slo/status" });
     assert(sloRes.statusCode === 200 && sloRes.json && sloRes.json.ok === true, "slo status endpoint should return ok");
@@ -242,6 +244,44 @@ async function run() {
               input: { turnStatus: "failed", taskOutcomeStatus: "BLOCKED" },
               expect: { mode: "json_fields", fields: { ok: true, reason: "compatible" } },
             },
+            {
+              id: "post_lock_drift_clean_trace",
+              title: "Post-lock drift probe passes when traceability stays intact",
+              driver: "post_lock_drift_probe",
+              input: {
+                prompt: "# Goal\nUpdate server.js and docs/CURRENT_ARCHITECTURE.md to expose the selected execution flow in runtime output.\n# Implementation Requirements\n- Update server.js runtime output.\n- Update docs/CURRENT_ARCHITECTURE.md.\n# Acceptance Criteria\n- Reviewer evidence is required.\n- Tester evidence is required.",
+                options: { agentName: "default" },
+              },
+              expect: {
+                mode: "json_fields",
+                fields: {
+                  status: "PASS",
+                  reason: "no_drift",
+                  "counts.orphanPlanStepCount": 0,
+                },
+              },
+            },
+            {
+              id: "post_lock_drift_detects_missing_downstream_refs",
+              title: "Post-lock drift probe fails on downstream trace gaps",
+              driver: "post_lock_drift_probe",
+              input: {
+                prompt: "# Goal\nUpdate server.js and docs/CURRENT_ARCHITECTURE.md to expose the selected execution flow in runtime output.\n# Implementation Requirements\n- Update server.js runtime output.\n- Update docs/CURRENT_ARCHITECTURE.md.\n# Acceptance Criteria\n- Reviewer evidence is required.\n- Tester evidence is required.",
+                options: { agentName: "default" },
+                mutate: {
+                  dropDispatchTraceRefs: true,
+                  injectOrphanPlanStep: true,
+                },
+              },
+              expect: {
+                mode: "json_fields",
+                fields: {
+                  status: "FAIL",
+                  reason: "downstream_clause_gap",
+                  "counts.orphanPlanStepCount": 1,
+                },
+              },
+            },
           ],
         },
         variants: [
@@ -274,6 +314,10 @@ async function run() {
     assert(idempotencyBridgeCase && idempotencyBridgeCase.passed === true, "idempotency lifecycle bridge eval probe should pass");
     const blockedBridgeCase = firstRun.cases.find((entry) => entry && entry.caseId === "turn_task_outcome_bridge_blocked");
     assert(blockedBridgeCase && blockedBridgeCase.passed === true, "blocked task outcome bridge eval probe should pass");
+    const postLockDriftPassCase = firstRun.cases.find((entry) => entry && entry.caseId === "post_lock_drift_clean_trace");
+    assert(postLockDriftPassCase && postLockDriftPassCase.passed === true, "post-lock drift pass probe should pass");
+    const postLockDriftFailCase = firstRun.cases.find((entry) => entry && entry.caseId === "post_lock_drift_detects_missing_downstream_refs");
+    assert(postLockDriftFailCase && postLockDriftFailCase.passed === true, "post-lock drift detection probe should pass");
 
     const persistedEvalRes = await requestJson({
       port,

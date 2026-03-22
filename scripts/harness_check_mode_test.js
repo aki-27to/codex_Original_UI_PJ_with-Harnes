@@ -266,11 +266,45 @@ async function runIntegration() {
       const cPlan = active();
       cPlan.h = createHarnessState();
       hset(cPlan, "running");
+      cPlan.h.turnSnapshot = {
+        planning: {
+          requirementContract: {
+            acceptanceChecks: [
+              { id: "ac-1", title: "Render the Execution Plan purpose in the main UI" },
+              { id: "ac-2", title: "Verify browser rendering and documentation sync" },
+            ],
+            requestCoverage: {
+              rawRequestClauses: [
+                { id: "req-1", text: "Lock requirement and acceptance checks", kind: "explicit_request", lane: "core" },
+                { id: "req-2", text: "Render execution plan panel in the main UI", kind: "explicit_request", lane: "core" },
+                { id: "req-3", text: "Verify browser rendering and update docs", kind: "explicit_request", lane: "core" },
+              ],
+              coreObligations: ["req-1", "req-2", "req-3"],
+              mappedRequirements: [
+                { clauseId: "req-1", requirementRefs: ["acceptanceChecks"] },
+                { clauseId: "req-2", requirementRefs: ["baselineScope"] },
+                { clauseId: "req-3", requirementRefs: ["acceptanceChecks"] },
+              ],
+              parkedItems: [],
+              droppedItems: [],
+              coverageSummary: {
+                totalClauses: 3,
+                mappedCount: 3,
+                coreTotal: 3,
+                coreMapped: 3,
+                coreUnmapped: 0,
+                parkedCount: 0,
+                droppedCount: 0,
+              },
+            },
+          },
+        },
+      };
       cPlan.h.planExp = "Parent locks the requirement, then exposes each implementation step and current progress.";
       cPlan.h.plan = [
-        { step: "Lock requirement and acceptance checks", status: "completed" },
-        { step: "Render execution plan panel in the main UI", status: "in_progress" },
-        { step: "Verify browser rendering and update docs", status: "pending" },
+        { step: "Lock requirement and acceptance checks", status: "completed", requestClauseRefs: ["req-1"], requirementRefs: ["acceptanceChecks"] },
+        { step: "Render execution plan panel in the main UI", status: "in_progress", requestClauseRefs: ["req-2"], acceptanceCheckRefs: ["ac-1"] },
+        { step: "Verify browser rendering and update docs", status: "pending", requestClauseRefs: ["req-3"], acceptanceCheckRefs: ["ac-2"] },
       ];
       hpush(cPlan, "plan/update", "3 steps", "info");
       renderHarness();
@@ -282,10 +316,13 @@ async function runIntegration() {
         currentLabel: currentLabel?.textContent || "",
         currentCardClass: currentCard?.className || "",
         currentStep: document.querySelector("#harnessPlanCurrentStep")?.textContent || "",
+        currentPurpose: document.querySelector("#harnessPlanCurrentPurpose")?.textContent || "",
         currentDetail: document.querySelector("#harnessPlanCurrentDetail")?.textContent || "",
+        currentWork: document.querySelector("#harnessJourneyWork")?.textContent || "",
         explanation: document.querySelector("#harnessPlanExplanation")?.textContent || "",
         renderedStatuses: rows.map((row) => row.querySelector(".harness-plan-step-status")?.textContent || ""),
         renderedSteps: rows.map((row) => row.querySelector(".harness-plan-step-text")?.textContent || ""),
+        renderedPurposes: rows.map((row) => row.querySelector(".harness-plan-step-purpose")?.textContent || ""),
         focusedStep: document.querySelector("#harnessPlanList .harness-plan-step.focus .harness-plan-step-text")?.textContent || "",
         focusedStatusClass:
           document.querySelector("#harnessPlanList .harness-plan-step.focus .harness-plan-step-status")?.className || "",
@@ -374,6 +411,159 @@ async function runIntegration() {
           Array.from(document.querySelectorAll("#harnessJourneyList .harness-journey-step"))[2]?.querySelector(".harness-journey-summary")?.textContent || "",
         planMeta: document.querySelector("#harnessPlanMeta")?.textContent || "",
         phaseClasses: phases,
+      };
+    });
+
+    const requirementUiSnapshot = await page.evaluate(() => {
+      const cReq = active();
+      cReq.h = createHarnessState();
+      cReq.h.turnSnapshot = {
+        planning: {
+          selection: {
+            taskFamily: "deterministic_code",
+          },
+          dispatchPlan: {
+            dispatches: [
+              { ownerAgent: "backend_worker" },
+              { ownerAgent: "tester" },
+            ],
+          },
+          requirementContract: {
+            explicitGoal: "Show what was locked in Step 1",
+            acceptanceChecks: [
+              { id: "ac-1", title: "Requirement lock summary is visible in Harness Status." },
+              { id: "ac-2", title: "Current Work prefers the active plan step." },
+            ],
+            nonGoals: ["Generic progress-only cards"],
+            assumptions: [],
+            status: "LOCKED",
+            statusReason: "Ready to proceed.",
+            validation: {
+              verdict: "PASS",
+              summary: { passCount: 3, warnCount: 0, blockCount: 0, total: 3 },
+              checks: [{ status: "PASS", detail: "Core contract is ready." }],
+            },
+            requestCoverage: {
+              rawRequestClauses: [
+                { id: "req-1", text: "Implement UI", kind: "explicit_request", lane: "core" },
+              ],
+              coreObligations: ["req-1"],
+              mappedRequirements: [
+                { clauseId: "req-1", requirementRefs: ["explicitGoal"] },
+              ],
+              parkedItems: [],
+              droppedItems: [],
+              coverageSummary: {
+                totalClauses: 1,
+                mappedCount: 1,
+                coreTotal: 1,
+                coreMapped: 1,
+                coreUnmapped: 0,
+                parkedCount: 0,
+                droppedCount: 0,
+              },
+            },
+            userValueFrame: {
+              mustAvoid: ["Generic progress-only cards"],
+              qualityAxes: ["bounded_scope"],
+              completedMeans: ["Requirement lock summary is visible in Harness Status."],
+            },
+            displayContract: {
+              headline: "Show what was locked in Step 1",
+              goal: "Show what was locked in Step 1",
+              goalMode: "locked",
+              boundaries: ["Generic progress-only cards"],
+              nextAction: "Implement UI",
+            },
+          },
+        },
+        family_completion_gate: {
+          applies: true,
+          status: "pass",
+          summary: "family gate pass",
+        },
+      };
+      cReq.h.evidence = { tasksDone: 1, tasksTotal: 2, tests: 1, reviews: 1, logs: 0 };
+      cReq.h.planExp = "Keep the current requirement visible while the active step runs.";
+      cReq.h.plan = [
+        { step: "Implement UI", status: "in_progress", requestClauseRefs: ["req-1"] },
+        { step: "Verify docs", status: "pending" },
+      ];
+      hset(cReq, "running");
+      hpush(cReq, "plan/update", "2 steps", "info");
+      renderHarness();
+      const phaseCards = Array.from(document.querySelectorAll("#harnessJourneyList .harness-journey-step"));
+      const requirementRows = Array.from(
+        document.querySelectorAll("#harnessRequirementSections .harness-requirement-row")
+      ).map((row) => ({
+        label: row.querySelector(".harness-requirement-row-label")?.textContent || "",
+        text: row.querySelector(".harness-requirement-row-text")?.textContent || "",
+      }));
+      return {
+        requirementMeta: document.querySelector("#harnessRequirementMeta")?.textContent || "",
+        requirementHeadline: document.querySelector("#harnessRequirementHeadline")?.textContent || "",
+        sectionTitles: Array.from(
+          document.querySelectorAll("#harnessRequirementSections .harness-requirement-group h5")
+        ).map((el) => el.textContent || ""),
+        sectionSummaries: Array.from(
+          document.querySelectorAll("#harnessRequirementSections .harness-requirement-summary")
+        ).map((el) => el.textContent || ""),
+        rowEntries: requirementRows,
+        rowTexts: requirementRows.map((entry) => entry.text),
+        firstPhaseSummary: phaseCards[0]?.querySelector(".harness-journey-summary")?.textContent || "",
+        secondPhaseSummary: phaseCards[1]?.querySelector(".harness-journey-summary")?.textContent || "",
+        thirdPhaseSummary: phaseCards[2]?.querySelector(".harness-journey-summary")?.textContent || "",
+        fourthPhaseSummary: phaseCards[3]?.querySelector(".harness-journey-summary")?.textContent || "",
+        currentWork: document.querySelector("#harnessJourneyWork")?.textContent || "",
+      };
+    });
+
+    const skipUiSnapshot = await page.evaluate(() => {
+      const cSkip = active();
+      cSkip.h = createHarnessState();
+      cSkip.h.turnSnapshot = {
+        planning: {
+          requirementContract: {
+            explicitGoal: "Reply directly",
+            acceptanceChecks: [],
+            nonGoals: [],
+            assumptions: [],
+            status: "LOCKED",
+            statusReason: "Ready to proceed.",
+            validation: {
+              verdict: "PASS",
+              summary: { passCount: 1, warnCount: 0, blockCount: 0, total: 1 },
+              checks: [{ status: "PASS", detail: "Direct response is allowed." }],
+            },
+            displayContract: {
+              headline: "Reply directly",
+              goal: "Reply directly",
+              goalMode: "locked",
+            },
+          },
+        },
+      };
+      cSkip.h.planExp = "Skip the detailed execution plan and answer inline.";
+      cSkip.h.plan = [
+        { step: "Respond inline without a detailed execution plan", status: "pending" },
+      ];
+      const skipMeta = ensureHarnessPlanMeta(cSkip.h);
+      skipMeta.source = "policy";
+      skipMeta.decision = "skip";
+      skipMeta.skipReason = "direct_response_only";
+      skipMeta.planningDepth = "FAST_PLANNING";
+      hset(cSkip, "running");
+      hpush(cSkip, "plan/update", "PLAN SKIP / FAST_PLANNING", "info");
+      renderHarness();
+      const phaseCards = Array.from(document.querySelectorAll("#harnessJourneyList .harness-journey-step"));
+      return {
+        planMeta: document.querySelector("#harnessPlanMeta")?.textContent || "",
+        currentCardClass: document.querySelector("#harnessPlanCurrentCard")?.className || "",
+        currentDetail: document.querySelector("#harnessPlanCurrentDetail")?.textContent || "",
+        currentWork: document.querySelector("#harnessJourneyWork")?.textContent || "",
+        planningCardClass: phaseCards[1]?.className || "",
+        planningCardText: phaseCards[1]?.querySelector(".harness-journey-summary")?.textContent || "",
+        renderedStatus: document.querySelector("#harnessPlanList .harness-plan-step-status")?.textContent || "",
       };
     });
 
@@ -565,11 +755,17 @@ async function runIntegration() {
       "current plan card should surface the in-progress step text"
     );
     assert(
+      planUiSnapshot.currentPurpose.includes("支える依頼")
+        && planUiSnapshot.currentPurpose.includes("Render execution plan panel in the main UI"),
+      "current plan card should foreground which request clause the focused step serves"
+    );
+    assert(
       planUiSnapshot.currentDetail.includes("進行中"),
       "current plan detail should expose the in-progress status label"
     );
     assert(
-      planUiSnapshot.currentDetail.includes("step 2 of 3"),
+      planUiSnapshot.currentDetail.includes("step 2 of 3")
+        || planUiSnapshot.currentDetail.includes("2 / 3"),
       "current plan detail should expose the focused step index"
     );
     assert(
@@ -599,6 +795,15 @@ async function runIntegration() {
       ],
       "plan list should render every plan step in order"
     );
+    assert.deepStrictEqual(
+      planUiSnapshot.renderedPurposes,
+      [
+        "支える依頼: Lock requirement and acceptance checks",
+        "支える依頼: Render execution plan panel in the main UI",
+        "支える依頼: Verify browser rendering and update docs",
+      ],
+      "plan list should foreground the user-request purpose of every step"
+    );
     assert.strictEqual(
       planUiSnapshot.focusedStep,
       "Render execution plan panel in the main UI",
@@ -609,25 +814,33 @@ async function runIntegration() {
       "focused plan step should carry the in_progress status class"
     );
     assert(
-      requirementUiSnapshot.requirementMeta.includes("受け入れ 2"),
-      "requirement lock meta should expose the acceptance check count"
+      requirementUiSnapshot.requirementMeta.includes("依頼反映 1 / 1")
+        && requirementUiSnapshot.requirementMeta.includes("確定"),
+      "requirement lock meta should expose request coverage and locked status"
     );
     assert(
       requirementUiSnapshot.requirementHeadline.includes("Show what was locked in Step 1"),
       "requirement lock headline should surface the explicit goal"
     );
-    assert.deepStrictEqual(
-      requirementUiSnapshot.groupTitles,
-      ["ゴール", "受け入れ条件", "スコープ", "非対象・前提", "価値基準"],
-      "requirement lock panel should render the expected summary groups"
+    assert(
+      requirementUiSnapshot.sectionTitles.includes("AIの方針"),
+      "requirement lock panel should render the current AI policy section"
     );
     assert(
-      requirementUiSnapshot.groupItems.some((entry) => entry.includes("Requirement lock summary is visible in Harness Status.")),
-      "requirement lock panel should render acceptance checks"
+      requirementUiSnapshot.sectionSummaries.some((entry) => entry.includes("Show what was locked in Step 1")),
+      "requirement lock panel should summarize the locked interpretation"
     );
     assert(
-      requirementUiSnapshot.groupItems.some((entry) => entry.includes("Generic progress-only cards")),
-      "requirement lock panel should render must-avoid guidance"
+      requirementUiSnapshot.rowEntries.some(
+        (entry) => entry.label === "進め方" && entry.text.includes("Implement UI")
+      ),
+      "requirement lock panel should render the next-action guidance"
+    );
+    assert(
+      requirementUiSnapshot.rowEntries.some(
+        (entry) => entry.label === "守る線" && entry.text.includes("Generic progress-only cards")
+      ),
+      "requirement lock panel should render the must-avoid guidance"
     );
     assert(
       requirementUiSnapshot.firstPhaseSummary.includes("受け入れ 2"),
@@ -667,15 +880,15 @@ async function runIntegration() {
       "skip plan detail should expose planning depth"
     );
     assert(
-      skipUiSnapshot.currentWork.includes("PLAN SKIP"),
-      "Current Work should surface PLAN SKIP when planning is intentionally omitted"
+      skipUiSnapshot.currentWork.includes("詳細な実行計画は省略"),
+      "Current Work should explain why planning is intentionally omitted"
     );
     assert(
       skipUiSnapshot.planningCardClass.includes("skipped"),
       "planning journey card should show skipped state"
     );
     assert(
-      skipUiSnapshot.planningCardText.includes("詳細 plan 省略"),
+      skipUiSnapshot.planningCardText.includes("詳細な実行計画は省略"),
       "planning journey card should explain the skip state"
     );
     assert.strictEqual(

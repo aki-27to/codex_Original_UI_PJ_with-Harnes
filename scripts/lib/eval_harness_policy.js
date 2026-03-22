@@ -24,6 +24,7 @@ const allowedEvalDrivers = new Set([
   "requirement_rbj_probe",
   "planning_mode_probe",
   "planning_contract_probe",
+  "post_lock_drift_probe",
   "adversarial_shadow_probe",
   "adversarial_loop_probe",
   "user_value_probe",

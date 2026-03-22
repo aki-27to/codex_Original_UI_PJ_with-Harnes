@@ -1951,6 +1951,13 @@ body.simple-view .harness-check-hint {
   color: #ffc0cc;
 }
 
+.harness-plan-current-purpose {
+  margin: 0;
+  font-size: 12px;
+  line-height: 1.45;
+  color: #d6e5ff;
+}
+
 .harness-plan-current-detail {
   margin: 0;
   font-size: 12px;
@@ -2350,6 +2357,13 @@ body.simple-view .harness-check-hint {
   font-size: 12px;
   line-height: 1.45;
   color: #d6e5ff;
+}
+
+.harness-plan-step-purpose {
+  margin: 0;
+  font-size: 11px;
+  line-height: 1.45;
+  color: #9fb6da;
 }
 
 .harness-diff {

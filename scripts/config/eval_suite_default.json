@@ -1,7 +1,7 @@
 {
   "schema": "harness-eval-suite.v1",
   "suiteId": "core-harness-workflow.v5",
-  "description": "Regression suite covering live exec behavior plus deterministic workflow-policy probes for retired worker rejection, parent-dispatch guard enforcement, frozen constitution routing/depth selection, task outcomes, and adversarial review.",
+  "description": "Regression suite covering live exec behavior plus deterministic workflow-policy probes for retired worker rejection, parent-dispatch guard enforcement, request-to-plan traceability, post-lock drift detection, frozen constitution routing/depth selection, task outcomes, and adversarial review.",
   "outputSchema": {
     "type": "object",
     "required": ["status", "latencyMs", "passed", "score", "reason"],
@@ -199,6 +199,47 @@
           "dispatchCount": 1,
           "ownerAgents": ["backend_worker"],
           "contextLeakageRisk": 0
+        }
+      }
+    },
+    {
+      "id": "post_lock_drift_clean_trace",
+      "title": "Post-lock drift probe passes when locked clauses stay connected downstream",
+      "driver": "post_lock_drift_probe",
+      "input": {
+        "prompt": "# Goal\nUpdate server.js and docs/CURRENT_ARCHITECTURE.md to expose the selected execution flow in runtime output.\n# Implementation Requirements\n- Update server.js runtime output.\n- Update docs/CURRENT_ARCHITECTURE.md.\n# Acceptance Criteria\n- Reviewer evidence is required.\n- Tester evidence is required.",
+        "options": { "agentName": "default" }
+      },
+      "weight": 2,
+      "expect": {
+        "mode": "json_fields",
+        "fields": {
+          "status": "PASS",
+          "reason": "no_drift",
+          "counts.orphanDispatchCount": 0,
+          "counts.orphanPlanStepCount": 0
+        }
+      }
+    },
+    {
+      "id": "post_lock_drift_detects_missing_downstream_refs",
+      "title": "Post-lock drift probe flags downstream trace gaps",
+      "driver": "post_lock_drift_probe",
+      "input": {
+        "prompt": "# Goal\nUpdate server.js and docs/CURRENT_ARCHITECTURE.md to expose the selected execution flow in runtime output.\n# Implementation Requirements\n- Update server.js runtime output.\n- Update docs/CURRENT_ARCHITECTURE.md.\n# Acceptance Criteria\n- Reviewer evidence is required.\n- Tester evidence is required.",
+        "options": { "agentName": "default" },
+        "mutate": {
+          "dropDispatchTraceRefs": true,
+          "injectOrphanPlanStep": true
+        }
+      },
+      "weight": 2,
+      "expect": {
+        "mode": "json_fields",
+        "fields": {
+          "status": "FAIL",
+          "reason": "downstream_clause_gap",
+          "counts.orphanPlanStepCount": 1
         }
       }
     },

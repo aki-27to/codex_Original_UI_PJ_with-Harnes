@@ -41,6 +41,14 @@ function testLoadSuite() {
   assert(contextLeakCase && contextLeakCase.driver === "planning_contract_probe", "suite should cover context leakage guard");
   const dedicatedTestCase = suite.cases.find((entry) => entry && entry.id === "dedicated_test_required_for_new_logic");
   assert(dedicatedTestCase && dedicatedTestCase.driver === "planning_contract_probe", "suite should cover dedicated test requirement");
+  const postLockDriftCase = suite.cases.find((entry) => entry && entry.id === "post_lock_drift_clean_trace");
+  assert(postLockDriftCase && postLockDriftCase.driver === "post_lock_drift_probe", "suite should cover post-lock drift without downstream gaps");
+  const driftDetectionCase = suite.cases.find((entry) => entry && entry.id === "post_lock_drift_detects_missing_downstream_refs");
+  assert(driftDetectionCase && driftDetectionCase.driver === "post_lock_drift_probe", "suite should cover post-lock drift detection");
+  assert(
+    driftDetectionCase && driftDetectionCase.input && driftDetectionCase.input.mutate && driftDetectionCase.input.mutate.dropDispatchTraceRefs === true,
+    "suite should preserve the post-lock drift probe mutation payload"
+  );
 }
 
 function testLoadUserValueSuite() {

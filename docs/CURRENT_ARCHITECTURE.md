@@ -107,6 +107,7 @@ This document is the active architecture spec for the Codex App Server integrati
 - `web/01.HarnesUI/app.js` still keeps Step 1 contract quality visible, but now does it with a concise meta badge plus the single narrative card rather than splitting status, scope, and value into separate boxes. Status (`下書き / 保留 / 確定 / 改訂`), validator verdict (`PASS / WARN / BLOCK`), provenance mix (`明示 / 含意 / 推定 / 既定`), revision signals, prioritized next questions, and optional delight-lane candidates remain available without turning the panel into a contract dashboard.
 - The same single-card Requirement Lock meta now includes `依頼反映 x / y`, `保留 n`, and `除外 n` from `requestCoverage.coverageSummary`, so operators can see whether Step 1 is actually carrying the user's core request without reviving the old multi-box dashboard.
 - `dispatch-plan.v2` now carries machine-readable request-trace refs on each dispatch: `requestClauseRefs`, `requirementRefs`, and `acceptanceCheckRefs`. Downstream operator-plan steps inherit the same refs, so Step 2 can explain which core user clauses and acceptance checks each visible stage is serving instead of surfacing only governance wording.
+- The main `Execution Plan` surface now foregrounds those refs instead of hiding them behind the overview page: the current-step card and every rendered plan row show a short purpose line (`支える依頼`, `支える受け入れ`, or `支える要件`) derived from `requestClauseRefs`, `acceptanceCheckRefs`, and `requirementRefs`, so operators can see why each step exists without leaving `Harness Status`.
 - `GET /api/harness/overview` now exposes a dedicated `traceability` snapshot derived from `latestTurn.planning`. The overview page keeps the main console lightweight, but the deeper `Traceability` section can now follow `rawRequestClauses` through mapped requirement refs, dispatch ids, plan-step ids, and any parked or dropped reason on the latest turn.
 - Step 1 now tries to tighten bounded ambiguity before it falls back to `BLOCKED`. `scripts/lib/planning_mode_policy.js` infers a small acceptance gate set from the goal/scope/direction when the request is otherwise executable, partitions unresolved questions into `blocking` versus deferred (`defaultable` / `taste`) lanes before planning mode selection, and carries the deferred questions into `questionPlan` plus explicit assumptions so the harness can keep visible ambiguity without unnecessarily stopping execution-ready work.
 - Step 1 now treats structured Stitch replay briefs as a first-class requirement shape instead of flattening them into generic `UI refresh` wording. When the prompt names a Stitch project/screen and asks for reproduction, `scripts/lib/planning_mode_policy.js` locks the goal around the actual project/screen replay objective, carries the project/screen ids plus asset-download instructions into `baselineScope`, and gives `displayContract` a concrete next action (`画像とコードを取得する`) plus replay boundaries (`指定 screen を基準にする`, `独自アレンジを入れない`) so `Requirement Lock` can foreground the real implementation target.
@@ -119,12 +120,9 @@ This document is the active architecture spec for the Codex App Server integrati
 - The main `web/01.HarnesUI/index.html` execution console now exposes a dedicated `Execution Plan` panel inside `Harness Status`, showing:
   - the latest plan summary from streamed `plan` events, including harness-emitted policy-plan / `PLAN SKIP` events at turn start
   - the current plan step card
+  - a purpose line on the current step card that explains which locked request/acceptance/requirement the step serves
   - a `Current Work` surface synchronized to the same plan focus
-  - the full step list with localized status badges (`pending`, `in_progress`, `completed`, `failed`, `interrupted`, `skipped`)
-- `Execution Plan` 邵ｺ・ｯ隴丞ｮ茨ｽ､・ｺ騾ｧ繝ｻ竊鷹坎閧ｲ蛻､隴厄ｽｴ隴・ｽｰ邵ｺ謔溘・邵ｺ・ｪ邵ｺ繝ｻ縺｡郢晢ｽｼ郢晢ｽｳ邵ｺ・ｧ郢ｧ繧・竏･ctive chat 邵ｺ・ｮ harness flow 邵ｺ荵晢ｽ芽ｬ暦ｽｨ陞ｳ繝ｻplan 郢ｧ螳夲ｽ｡・ｨ驕会ｽｺ邵ｺ蜉ｱﾂ竏壹′郢晏｣ｹﾎ樒ｹ晢ｽｼ郢ｧ・ｿ郢晢ｽｼ邵ｺ譴ｧ辟秘ｬ・・・ｰ繝ｻ・ｺ荳岩・鬨ｾ・ｲ隰仙干・帝恆・ｽ邵ｺ蛹ｻ・狗ｹｧ蛹ｻ竕ｧ邵ｺ・ｫ邵ｺ蜉ｱ竏ｪ邵ｺ蜷ｶﾂ繝ｻ- The main `web/01.HarnesUI/index.html` execution console now exposes a dedicated `Execution Plan` panel inside `Harness Status`, showing:
-  - the latest plan summary from streamed `plan` events
-  - the current plan step card
-  - the full step list with localized status badges (`pending`, `in_progress`, `completed`, `failed`, `interrupted`)
+  - the full step list with localized status badges (`pending`, `in_progress`, `completed`, `failed`, `interrupted`, `skipped`) plus the same purpose line on each row
   - plan-focus fallback ordering of explicit `in_progress`, then blocked step, then next pending step while running, then last completed step
 
 ## 3) Collaboration-First Agent Topology
@@ -279,6 +277,7 @@ This document is the active architecture spec for the Codex App Server integrati
 - `POST /api/eval/run`
   - accepts opt-in eval probe persistence via `persistProbeResultsToMemory` or legacy alias `persistProbeResults`
   - when enabled, synthetic probe outcomes are appended into harness execution memory through `persistProbeResultsToMemory` / `persistProbeResults`
+  - supports workflow probes such as `post_lock_drift_probe`, which replays the locked planning artifacts, can inject downstream trace mutations, and returns a machine-readable post-lock drift verdict without needing a live end-to-end turn
 - `GET /api/replay/turns`
 - `GET /api/replay/turn/:turnId`
 - `POST /api/replay/turn`
@@ -363,6 +362,7 @@ This document is the active architecture spec for the Codex App Server integrati
 - `review_load_breakdown.json` now also captures evidence-collection time, reviewer/tester/doc-sync timing estimates, retry-loop count, outcome-conversion time, total Step 4 duration, and dominant bottleneck.
 - Both turn-level and current `review_load_breakdown.json` summaries now state their timing model explicitly, including that component estimates may overlap and that `dominantBottleneck` is the largest estimated bucket rather than an additive share of `totalStep4DurationMs`.
 - `stage_timeline.json` and `flow_trace_summary.json` make it explicit which flow, planning depth, assurance depth, agents, contracts, and evidence sources were involved in the run.
+- `flow_trace_summary.json` now also carries a `postLockDrift` snapshot that scores whether locked core request clauses still remain connected to downstream dispatches and plan steps, reports orphan downstream refs, and surfaces drift/gap rates for post-lock evaluation.
 - `scripts/generate_signoff_evidence.js` resolves the natural-task proof turn from persisted execution memory on the shared thread, so post-completion adversarial retries do not replace the implementation-bearing trace.
 - Adversarial retry prompts now preserve execution-task semantics for signoff-style work, and exact-reply contracts suppress citation/date style findings when extra prose would violate the contract.
 - Live DISCOVERY samples may still delegate proposal-only investigation; the evaluation gate now accepts those runs when they avoid implementation edits, satisfy the parent-dispatch guard, and terminate as either `NEEDS_INPUT` or proposal-only `COMPLETED`.

@@ -65,6 +65,7 @@ function main() {
   assertRegex(indexHtml, /id="uiReloadBtn"/, "console must expose the quick UI reload action");
   assertRegex(indexHtml, /id="conversationSummary"/, "conversation panel must expose the summary line");
   assertRegex(indexHtml, /id="jumpToComposerBtn"/, "conversation panel must expose the jump-to-composer action");
+  assertRegex(indexHtml, /id="harnessPlanCurrentPurpose"/, "execution plan current card must expose the request-purpose line");
   assertRegex(indexHtml, /data-compose-preset=/, "composer must expose prompt preset shortcuts");
   assertRegex(indexHtml, /<section class="agent-flow-panel"[\s\S]*?id="agentFlowLane"[\s\S]*?id="agentTopographyPanel"[\s\S]*?id="agentTraceList"/, "execution trace must embed the agent topography section");
   assert.ok(!/AIエージェントかんばん/.test(indexHtml), "console must remove the standalone AIエージェントかんばん heading");
@@ -97,11 +98,14 @@ function main() {
   assertRegex(stylesCss, /body\.simple-view \.settings-grid > :not\(\.workspace-shell\)[\s\S]*?display:\s*none;/, "simple view must collapse settings to the workspace lock surface");
   assertRegex(stylesCss, /\.workspace-status\.locked[\s\S]*?color:/, "workspace lock status styling must expose the locked tone");
   assertRegex(stylesCss, /\.workspace-status\.warning[\s\S]*?color:/, "workspace lock status styling must expose the warning tone");
+  assertRegex(stylesCss, /\.harness-plan-current-purpose[\s\S]*?color:/, "execution plan current card must style the request-purpose line");
+  assertRegex(stylesCss, /\.harness-plan-step-purpose[\s\S]*?color:/, "execution plan step list must style request-purpose lines");
 
   assertRegex(appJs, /function\s+deriveRuntimeTurnContextForUi\s*\(/, "runtime turn context helper must exist");
   assertRegex(appJs, /function\s+buildRequirementLockSnapshotForUi\s*\(/, "requirement lock snapshot helper must exist");
   assertRegex(appJs, /function\s+requirementGroupsForUi\s*\(/, "requirement group helper must exist");
   assertRegex(appJs, /function\s+requirementGatePlanPanelStateForUi\s*\(/, "execution plan panel must expose a requirement-gated hold helper");
+  assertRegex(appJs, /function\s+planPurposeSummaryForUi\s*\(/, "execution plan panel must expose a request-purpose summary helper");
   assertRegex(appJs, /function\s+workspaceGuardSnapshotForUi\s*\(/, "workspace guard snapshot helper must exist");
   assertRegex(appJs, /function\s+workspaceGuardErrorInfoForUi\s*\(/, "workspace guard error helper must exist");
   assertRegex(appJs, /function\s+renderWorkspaceGuardUi\s*\(/, "workspace guard renderer must exist");

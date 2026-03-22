@@ -78,7 +78,7 @@ const TASK_FAMILY_LABELS=Object.freeze({
   planning:"設計・整理",
 });
 const topographyState={agents:[],source:"",error:"",usingFallback:false,lastUpdated:0,loading:false,timer:null,refreshSoonTimer:null,reqId:0};
-const e={connectionState:by("connectionState"),modeState:by("modeState"),agentState:by("agentState"),pendingState:by("pendingState"),simpleViewToggle:by("simpleViewToggle"),uiReloadBtn:by("uiReloadBtn"),runtimeAgent:by("runtimeAgent"),runtimeSession:by("runtimeSession"),runtimeExperimental:by("runtimeExperimental"),runtimeAgentCount:by("runtimeAgentCount"),workspacePath:by("workspacePath"),workspaceLockBtn:by("workspaceLockBtn"),workspaceUnlockBtn:by("workspaceUnlockBtn"),workspaceStatus:by("workspaceStatus"),modelName:by("modelName"),modelReasoningEffort:by("modelReasoningEffort"),executionProfileHeadline:by("executionProfileHeadline"),executionProfileDescription:by("executionProfileDescription"),executionProfileApprovalChip:by("executionProfileApprovalChip"),executionProfileSandboxChip:by("executionProfileSandboxChip"),executionProfileSearchChip:by("executionProfileSearchChip"),executionProfileGuardianChip:by("executionProfileGuardianChip"),approvalPolicy:by("approvalPolicy"),fastModeEnabled:by("fastModeEnabled"),automaticApprovalReviewEnabled:by("automaticApprovalReviewEnabled"),sandboxMode:by("sandboxMode"),executionProfile:by("executionProfile"),permissionsAdvanced:by("permissionsAdvanced"),permissionsAdvancedHint:by("permissionsAdvancedHint"),uiVisibility:by("uiVisibility"),webSearchMode:by("webSearchMode"),commandFilter:by("commandFilter"),commandGrid:by("commandGrid"),commandTemplate:by("commandTemplate"),messageTemplate:by("messageTemplate"),chatList:by("chatList"),newChatBtn:by("newChatBtn"),deleteChatBtn:by("deleteChatBtn"),timeline:by("timeline"),promptInput:by("promptInput"),imageInput:by("imageInput"),imageAttachBtn:by("imageAttachBtn"),imageError:by("imageError"),imagePreview:by("imagePreview"),imagePreviewThumb:by("imagePreviewThumb"),imagePreviewName:by("imagePreviewName"),imagePreviewMeta:by("imagePreviewMeta"),imageRemoveBtn:by("imageRemoveBtn"),sendBtn:by("sendBtn"),stopBtn:by("stopBtn"),reconnectBtn:by("reconnectBtn"),refreshDiagBtn:by("refreshDiagBtn"),newThreadBtn:by("newThreadBtn"),openCmdBtn:by("openCmdBtn"),liveStatus:by("liveStatus"),liveStatusLabel:by("liveStatusLabel"),liveStatusElapsed:by("liveStatusElapsed"),liveStatusDetail:by("liveStatusDetail"),performancePanel:by("performancePanel"),perfSessionRef:by("perfSessionRef"),perfUpdatedAt:by("perfUpdatedAt"),perfTokenValue:by("perfTokenValue"),perfTokenDetail:by("perfTokenDetail"),perfTokenSpark:by("perfTokenSpark"),perfTimeValue:by("perfTimeValue"),perfTimeDetail:by("perfTimeDetail"),perfTimeSpark:by("perfTimeSpark"),agentInspector:by("agentInspector"),agentFlowLane:by("agentFlowLane"),agentTraceList:by("agentTraceList"),clearAgentTraceBtn:by("clearAgentTraceBtn"),agentTopographyPanel:by("agentTopographyPanel"),agentTopographyMeta:by("agentTopographyMeta"),agentTopographyList:by("agentTopographyList"),agentTopographyRefreshBtn:by("agentTopographyRefreshBtn"),diagCodexState:by("diagCodexState"),diagCodexDetail:by("diagCodexDetail"),diagNodeState:by("diagNodeState"),diagNodeDetail:by("diagNodeDetail"),diagSearchState:by("diagSearchState"),diagSearchDetail:by("diagSearchDetail"),diagSummaryText:by("diagSummaryText"),diagDetails:by("diagDetails"),diagDetailsSummary:by("diagDetailsSummary"),harnessStatus:by("harnessStatus"),harnessThreadId:by("harnessThreadId"),harnessTurnId:by("harnessTurnId"),harnessUpdatedAt:by("harnessUpdatedAt"),harnessItemList:by("harnessItemList"),harnessPlanMeta:by("harnessPlanMeta"),harnessPlanCurrentCard:by("harnessPlanCurrentCard"),harnessPlanCurrentStep:by("harnessPlanCurrentStep"),harnessPlanCurrentDetail:by("harnessPlanCurrentDetail"),harnessPlanExplanation:by("harnessPlanExplanation"),harnessPlanList:by("harnessPlanList"),harnessTokenUsage:by("harnessTokenUsage"),harnessDiffPreview:by("harnessDiffPreview"),harnessPhaseList:by("harnessPhaseList"),harnessEvidenceTasks:by("harnessEvidenceTasks"),harnessEvidenceTests:by("harnessEvidenceTests"),harnessEvidenceReviews:by("harnessEvidenceReviews"),harnessEvidenceLogs:by("harnessEvidenceLogs")};
+const e={connectionState:by("connectionState"),modeState:by("modeState"),agentState:by("agentState"),pendingState:by("pendingState"),simpleViewToggle:by("simpleViewToggle"),uiReloadBtn:by("uiReloadBtn"),runtimeAgent:by("runtimeAgent"),runtimeSession:by("runtimeSession"),runtimeExperimental:by("runtimeExperimental"),runtimeAgentCount:by("runtimeAgentCount"),workspacePath:by("workspacePath"),workspaceLockBtn:by("workspaceLockBtn"),workspaceUnlockBtn:by("workspaceUnlockBtn"),workspaceStatus:by("workspaceStatus"),modelName:by("modelName"),modelReasoningEffort:by("modelReasoningEffort"),executionProfileHeadline:by("executionProfileHeadline"),executionProfileDescription:by("executionProfileDescription"),executionProfileApprovalChip:by("executionProfileApprovalChip"),executionProfileSandboxChip:by("executionProfileSandboxChip"),executionProfileSearchChip:by("executionProfileSearchChip"),executionProfileGuardianChip:by("executionProfileGuardianChip"),approvalPolicy:by("approvalPolicy"),fastModeEnabled:by("fastModeEnabled"),automaticApprovalReviewEnabled:by("automaticApprovalReviewEnabled"),sandboxMode:by("sandboxMode"),executionProfile:by("executionProfile"),permissionsAdvanced:by("permissionsAdvanced"),permissionsAdvancedHint:by("permissionsAdvancedHint"),uiVisibility:by("uiVisibility"),webSearchMode:by("webSearchMode"),commandFilter:by("commandFilter"),commandGrid:by("commandGrid"),commandTemplate:by("commandTemplate"),messageTemplate:by("messageTemplate"),chatList:by("chatList"),newChatBtn:by("newChatBtn"),deleteChatBtn:by("deleteChatBtn"),timeline:by("timeline"),promptInput:by("promptInput"),imageInput:by("imageInput"),imageAttachBtn:by("imageAttachBtn"),imageError:by("imageError"),imagePreview:by("imagePreview"),imagePreviewThumb:by("imagePreviewThumb"),imagePreviewName:by("imagePreviewName"),imagePreviewMeta:by("imagePreviewMeta"),imageRemoveBtn:by("imageRemoveBtn"),sendBtn:by("sendBtn"),stopBtn:by("stopBtn"),reconnectBtn:by("reconnectBtn"),refreshDiagBtn:by("refreshDiagBtn"),newThreadBtn:by("newThreadBtn"),openCmdBtn:by("openCmdBtn"),liveStatus:by("liveStatus"),liveStatusLabel:by("liveStatusLabel"),liveStatusElapsed:by("liveStatusElapsed"),liveStatusDetail:by("liveStatusDetail"),performancePanel:by("performancePanel"),perfSessionRef:by("perfSessionRef"),perfUpdatedAt:by("perfUpdatedAt"),perfTokenValue:by("perfTokenValue"),perfTokenDetail:by("perfTokenDetail"),perfTokenSpark:by("perfTokenSpark"),perfTimeValue:by("perfTimeValue"),perfTimeDetail:by("perfTimeDetail"),perfTimeSpark:by("perfTimeSpark"),agentInspector:by("agentInspector"),agentFlowLane:by("agentFlowLane"),agentTraceList:by("agentTraceList"),clearAgentTraceBtn:by("clearAgentTraceBtn"),agentTopographyPanel:by("agentTopographyPanel"),agentTopographyMeta:by("agentTopographyMeta"),agentTopographyList:by("agentTopographyList"),agentTopographyRefreshBtn:by("agentTopographyRefreshBtn"),diagCodexState:by("diagCodexState"),diagCodexDetail:by("diagCodexDetail"),diagNodeState:by("diagNodeState"),diagNodeDetail:by("diagNodeDetail"),diagSearchState:by("diagSearchState"),diagSearchDetail:by("diagSearchDetail"),diagSummaryText:by("diagSummaryText"),diagDetails:by("diagDetails"),diagDetailsSummary:by("diagDetailsSummary"),harnessStatus:by("harnessStatus"),harnessThreadId:by("harnessThreadId"),harnessTurnId:by("harnessTurnId"),harnessUpdatedAt:by("harnessUpdatedAt"),harnessItemList:by("harnessItemList"),harnessPlanMeta:by("harnessPlanMeta"),harnessPlanCurrentCard:by("harnessPlanCurrentCard"),harnessPlanCurrentStep:by("harnessPlanCurrentStep"),harnessPlanCurrentPurpose:by("harnessPlanCurrentPurpose"),harnessPlanCurrentDetail:by("harnessPlanCurrentDetail"),harnessPlanExplanation:by("harnessPlanExplanation"),harnessPlanList:by("harnessPlanList"),harnessTokenUsage:by("harnessTokenUsage"),harnessDiffPreview:by("harnessDiffPreview"),harnessPhaseList:by("harnessPhaseList"),harnessEvidenceTasks:by("harnessEvidenceTasks"),harnessEvidenceTests:by("harnessEvidenceTests"),harnessEvidenceReviews:by("harnessEvidenceReviews"),harnessEvidenceLogs:by("harnessEvidenceLogs")};
 e.harnessCheckMode=by("harnessCheckMode");
 e.harnessCheckModeHint=by("harnessCheckModeHint");
 e.focusActionDetail=by("focusActionDetail");
@@ -1106,7 +1106,41 @@ function buildRequirementLockSnapshotForUi(turn){
   const revisionSummary=typeof revisionLedger.summary==="string"?t1(revisionLedger.summary,220).trim():"";
   const revisionChangedFields=compactTextListForUi(revisionLedger.changedFields,{transform:requirementFieldLabelForUi,maxItems:6,maxChars:80});
   const provenanceSummary=summarizeRequirementProvenanceForUi(provenance);
-  const acceptanceChecks=acceptanceCheckLabelsForUi(requirement.acceptanceChecks).map(requirementTextLabelForUi);
+  const acceptanceCheckEntries=toArr(requirement.acceptanceChecks).map((entry,index)=>{
+    if(entry&&typeof entry==="object"){
+      const id=typeof entry.id==="string"&&entry.id.trim()?entry.id.trim():`ac-${index+1}`;
+      const title=typeof entry.title==="string"&&entry.title.trim()?entry.title.trim():"";
+      const text=requirementTextLabelForUi(t1(title||id||`check-${index+1}`,180).trim());
+      if(!text)return null;
+      return{id,text};
+    }
+    const text=requirementTextLabelForUi(t1(entry,180).trim());
+    if(!text)return null;
+    return{id:`ac-${index+1}`,text};
+  }).filter(Boolean);
+  const acceptanceChecks=acceptanceCheckEntries.map((entry)=>entry.text);
+  const acceptanceCheckTextById=acceptanceCheckEntries.reduce((acc,entry)=>{
+    if(!entry||typeof entry!=="object"||!entry.id||!entry.text)return acc;
+    acc[entry.id]=entry.text;
+    return acc;
+  },{});
+  const requestClauseEntries=toArr(requestCoverage.rawRequestClauses).map((entry,index)=>{
+    if(!entry||typeof entry!=="object")return null;
+    const id=typeof entry.id==="string"&&entry.id.trim()?entry.id.trim():`req-${index+1}`;
+    const text=requirementTextLabelForUi(t1(entry.text||id,240).trim());
+    if(!text)return null;
+    return{
+      id,
+      text,
+      kind:typeof entry.kind==="string"&&entry.kind.trim()?entry.kind.trim():"explicit_request",
+      lane:typeof entry.lane==="string"&&entry.lane.trim()?entry.lane.trim():"core",
+    };
+  }).filter(Boolean);
+  const requestClauseTextById=requestClauseEntries.reduce((acc,entry)=>{
+    if(!entry||typeof entry!=="object"||!entry.id||!entry.text)return acc;
+    acc[entry.id]=entry.text;
+    return acc;
+  },{});
   const baselineScope=compactTextListForUi(requirement.baselineScope,{transform:requirementTextLabelForUi});
   const overDeliveryScope=compactTextListForUi(requirement.overDeliveryScope,{transform:requirementTextLabelForUi});
   const nonGoals=compactTextListForUi(requirement.nonGoals,{transform:requirementTextLabelForUi});
@@ -1288,6 +1322,9 @@ function buildRequirementLockSnapshotForUi(turn){
       {maxItems:3,maxChars:180,transform:requirementTextLabelForUi}
     ),
     requestCoverageSummary,
+    requestClauseEntries,
+    requestClauseTextById,
+    acceptanceCheckTextById,
     revision:{
       revisionNumber:Number(revisionLedger.revisionNumber||1),
       revised:Boolean(revisionLedger.revised),
@@ -3457,11 +3494,42 @@ function requirementGatePlanPanelStateForUi(snapshot){
   return{
     metaText:`要件整理${blockedLabel}`,
     currentStepText:blockerText,
+    currentPurposeText:"支える依頼: まず Step 1 の保留を解消する",
     currentDetailText:detailParts.join(" / "),
     explanationText:"Step 1 の未解決を先に解消するまで、ここでは実行計画を表示しない。",
     emptyText:"要件整理が固まると、ここに実行計画が表示されます。",
     tone:"idle",
   };
+}
+function normalizePlanTraceRefsForUi(value,max=24){
+  return Array.isArray(value)
+    ?value.map((entry)=>String(entry||"").trim()).filter(Boolean).slice(0,max)
+    :[];
+}
+function planPurposeSummaryForUi(step,requirementSnapshot){
+  const snapshot=requirementSnapshot&&typeof requirementSnapshot==="object"?requirementSnapshot:{};
+  const requestClauseTextById=snapshot.requestClauseTextById&&typeof snapshot.requestClauseTextById==="object"
+    ?snapshot.requestClauseTextById
+    :{};
+  const acceptanceCheckTextById=snapshot.acceptanceCheckTextById&&typeof snapshot.acceptanceCheckTextById==="object"
+    ?snapshot.acceptanceCheckTextById
+    :{};
+  const clauseTexts=compactTextListForUi(
+    normalizePlanTraceRefsForUi(step&&step.requestClauseRefs,24).map((entry)=>requestClauseTextById[entry]||""),
+    {maxItems:2,maxChars:96,transform:requirementTextLabelForUi}
+  );
+  if(clauseTexts.length)return`支える依頼: ${summarizeInlineListForUi(clauseTexts,{maxItems:2})}`;
+  const acceptanceTexts=compactTextListForUi(
+    normalizePlanTraceRefsForUi(step&&step.acceptanceCheckRefs,16).map((entry)=>acceptanceCheckTextById[entry]||""),
+    {maxItems:2,maxChars:96,transform:requirementTextLabelForUi}
+  );
+  if(acceptanceTexts.length)return`支える受け入れ: ${summarizeInlineListForUi(acceptanceTexts,{maxItems:2})}`;
+  const requirementRefs=compactTextListForUi(
+    normalizePlanTraceRefsForUi(step&&step.requirementRefs,24).map((entry)=>requirementFieldLabelForUi(entry)),
+    {maxItems:2,maxChars:96}
+  );
+  if(requirementRefs.length)return`支える要件: ${summarizeInlineListForUi(requirementRefs,{maxItems:2})}`;
+  return"支える依頼: 参照未接続";
 }
 function derivePlanFocusForUi(planSteps,statusText=""){
   const steps=toArr(planSteps).map((step,index)=>{
@@ -3469,7 +3537,7 @@ function derivePlanFocusForUi(planSteps,statusText=""){
     const text=step&&typeof step.text==="string"
       ?step.text.trim()
       :(step&&typeof step.step==="string"?step.step.trim():"");
-    return{text,index:explicitIndex,status:normalizePlanStepStatusForUi(step&&step.status),raw:step};
+    return{...(step&&typeof step==="object"?step:{}),text,index:explicitIndex,status:normalizePlanStepStatusForUi(step&&step.status),raw:step};
   }).filter((step)=>step.text);
   if(!steps.length)return null;
   const turnStatus=lowerText(statusText);
@@ -3527,6 +3595,9 @@ function normalizePlanEntryForUi(step,index){
     kind:step&&typeof step.kind==="string"?step.kind.trim():"",
     ownerAgent:step&&typeof step.ownerAgent==="string"?step.ownerAgent.trim():"",
     stepId:step&&typeof step.stepId==="string"?step.stepId.trim():"",
+    requestClauseRefs:normalizePlanTraceRefsForUi(step&&step.requestClauseRefs,24),
+    requirementRefs:normalizePlanTraceRefsForUi(step&&step.requirementRefs,24),
+    acceptanceCheckRefs:normalizePlanTraceRefsForUi(step&&step.acceptanceCheckRefs,16),
   };
 }
 function projectExplicitPlanProgressForUi(rawSteps,flowItems,statusText="",planMeta=null){
@@ -3899,6 +3970,15 @@ function renderHarness(){
       ?requirementBlockedPlanState.currentStepText
       :(planFocus?planFocus.text:"計画待ち");
   }
+  if(e.harnessPlanCurrentPurpose){
+    if(requirementBlockedPlanState){
+      e.harnessPlanCurrentPurpose.textContent=requirementBlockedPlanState.currentPurposeText;
+    }else if(planFocus){
+      e.harnessPlanCurrentPurpose.textContent=planPurposeSummaryForUi(planFocus,requirementSnapshot);
+    }else{
+      e.harnessPlanCurrentPurpose.textContent="支える依頼: plan/update 待ち";
+    }
+  }
   if(e.harnessPlanCurrentDetail){
     if(requirementBlockedPlanState){
       e.harnessPlanCurrentDetail.textContent=requirementBlockedPlanState.currentDetailText;
@@ -3953,8 +4033,12 @@ function renderHarness(){
         const text=document.createElement("p");
         text.className="harness-plan-step-text";
         text.textContent=step.text;
+        const purpose=document.createElement("p");
+        purpose.className="harness-plan-step-purpose";
+        purpose.textContent=planPurposeSummaryForUi(step,requirementSnapshot);
         item.appendChild(head);
         item.appendChild(text);
+        item.appendChild(purpose);
         e.harnessPlanList.appendChild(item);
       });
     }
@@ -4457,6 +4541,9 @@ function normalizeSavedHarnessPlanStep(raw){
     kind:typeof raw.kind==="string"?raw.kind:"",
     ownerAgent:typeof raw.ownerAgent==="string"?raw.ownerAgent:"",
     stepId:typeof raw.stepId==="string"?raw.stepId:"",
+    requestClauseRefs:normalizePlanTraceRefsForUi(raw.requestClauseRefs,24),
+    requirementRefs:normalizePlanTraceRefsForUi(raw.requirementRefs,24),
+    acceptanceCheckRefs:normalizePlanTraceRefsForUi(raw.acceptanceCheckRefs,16),
   };
 }
 function normalizeSavedHarnessState(raw){
