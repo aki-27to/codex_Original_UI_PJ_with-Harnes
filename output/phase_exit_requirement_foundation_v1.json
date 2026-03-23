@@ -2,7 +2,7 @@
   "schema": "phase-exit-requirement-foundation-v1.v1",
   "phaseId": "requirement_foundation_v1",
   "phaseName": "Requirement-Driven Foundation V1",
-  "generatedAt": "2026-03-22T14:19:42.534Z",
+  "generatedAt": "2026-03-23T12:24:37.511Z",
   "auditCommand": "node scripts/phase_exit_requirement_foundation_v1.js",
   "purpose": "Declare the Requirement-Driven Foundation V1 complete and frozen only when the agreed Step 1/2 foundation checks remain intact.",
   "freezePolicy": "bug_fix_only",
@@ -14,7 +14,7 @@
   },
   "phaseStatus": {
     "requirementFoundationV1": "done",
-    "completedAt": "2026-03-22T14:19:42.534Z",
+    "completedAt": "2026-03-23T12:24:37.511Z",
     "auditReportPath": "output/phase_exit_requirement_foundation_v1.json",
     "markdownReportPath": "output/phase_exit_requirement_foundation_v1.md",
     "failedCheckIds": []
@@ -30,7 +30,7 @@
         {
           "sourceType": "file",
           "path": "docs/CURRENT_ARCHITECTURE.md",
-          "line": 97,
+          "line": 98,
           "excerpt": "Requirement Lock` panel inside `Harness Status`, so the active chat can read the locked Step 1 contract directly from `latestTurn.planning.requirementContract` instead of inferring it from later plan or trace rows. - The `Requirement Lock` "
         },
         {
@@ -77,7 +77,7 @@
         {
           "sourceType": "file",
           "path": "docs/CURRENT_ARCHITECTURE.md",
-          "line": 101,
+          "line": 102,
           "excerpt": "re-parses the sanitized user prompt directly for clause seeding instead of backfilling from the requirement contract"
         },
         {
@@ -176,7 +176,7 @@
         {
           "sourceType": "file",
           "path": "server.js",
-          "line": 9823,
+          "line": 9850,
           "excerpt": "runtimeRevisionGate.status===\"BLOCK\"||runtimeRevisionGate.status===\"RETURN_TO_INTAKE\"){ const currentRequirement=planningContext&&planningContext.requirementContract&&typeof planningContext.requirementContract===\"object\" ?planningContext.re"
         },
         {
@@ -197,7 +197,7 @@
         {
           "sourceType": "file",
           "path": "server.js",
-          "line": 9926,
+          "line": 9953,
           "excerpt": "finalStatus===\"completed\"&&clauseCompletionScorecard.status===\"FAIL\"){ finalStatus=\"failed\"; explicitTaskOutcomeStatus=\"FAILED_VALIDATION\"; explicitTaskOutcomeReason=\"release_clause_unsatisfied\""
         },
         {

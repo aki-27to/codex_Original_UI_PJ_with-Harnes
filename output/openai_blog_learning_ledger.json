@@ -1,0 +1,301 @@
+{
+  "schema": "openai-blog-learning-ledger.v1",
+  "generatedAt": "2026-03-23T12:24:56.934Z",
+  "lastRunAt": "2026-03-23T12:24:56.934Z",
+  "lastSuccessAt": "2026-03-23T12:24:56.934Z",
+  "lastStatus": "PASS",
+  "lastReason": "",
+  "summary": {
+    "trackedArticles": 6,
+    "newArticlesThisRun": 0,
+    "pendingProposals": 6,
+    "blockedTargets": 0,
+    "promotedDocUpdates": 6
+  },
+  "articles": [
+    {
+      "schema": "openai-blog-learning-article.v1",
+      "articleId": "designing-delightful-frontends-with-gpt-5-4",
+      "url": "https://developers.openai.com/blog/designing-delightful-frontends-with-gpt-5-4",
+      "canonicalUrl": "https://developers.openai.com/blog/designing-delightful-frontends-with-gpt-5-4",
+      "title": "Designing delightful frontends with GPT-5.4 | OpenAI Developers",
+      "description": "Practical techniques for steering GPT-5.4 toward polished, production-ready frontend designs.",
+      "indexDateLabel": "Mar 20",
+      "topicLabel": "General",
+      "discoveredAt": "2026-03-23T12:18:19.240Z",
+      "firstReadAt": "2026-03-23T12:18:19.240Z",
+      "lastReadAt": "2026-03-23T12:18:19.240Z",
+      "contentHash": "58f0a0775f4e2893c8d4c5ec3055e92da6e71f29091be7710c933ff12a08a5c1",
+      "summary": "Practical techniques for steering GPT-5.4 toward polished, production-ready frontend designs.",
+      "guidance": [
+        "stronger image understanding throughout the design process",
+        "more functionally complete apps and websites",
+        "better use of tools to inspect, test, and verify its own work",
+        "Select low reasoning level to begin with.",
+        "Define your design system and constraints upfront (i.e., typography, color palette, layout).",
+        "Provide visual references or a mood board (i.e., attach a screenshot) to provide visual guardrails for the model."
+      ],
+      "headings": [
+        "Model Improvements",
+        "Practical tips quickstart",
+        "Techniques for better designs",
+        "Bringing it all together with the Frontend Skill",
+        "Key Takeaway",
+        "Image understanding and tool use",
+        "Functionality improvements",
+        "Computer Use and Verification"
+      ],
+      "topicTags": [
+        "context",
+        "evals",
+        "frontend",
+        "general",
+        "safety",
+        "skills"
+      ],
+      "relevance": "high",
+      "promotedToDocs": [
+        "docs/OPENAI_DEVELOPER_LEARNINGS.md"
+      ],
+      "proposalIds": [
+        "openai-blog-designing-delightful-frontends-with-gpt-5-4"
+      ]
+    },
+    {
+      "schema": "openai-blog-learning-article.v1",
+      "articleId": "one-year-of-responses",
+      "url": "https://developers.openai.com/blog/one-year-of-responses",
+      "canonicalUrl": "https://developers.openai.com/blog/one-year-of-responses",
+      "title": "From prompts to products: One year of Responses | OpenAI Developers",
+      "description": "Five stories from developers building agentic products with the Responses API in its first year.",
+      "indexDateLabel": "Mar 11",
+      "topicLabel": "API",
+      "discoveredAt": "2026-03-23T12:18:19.240Z",
+      "firstReadAt": "2026-03-23T12:18:19.240Z",
+      "lastReadAt": "2026-03-23T12:18:19.240Z",
+      "contentHash": "2f099ae287b09d9499ecc694dddff5a0e183784e70860493249198b24f0c5548",
+      "summary": "Five stories from developers building agentic products with the Responses API in its first year.",
+      "guidance": [
+        "Agent behavior monitoring",
+        "Failure detection and alerting",
+        "Developer investigation and debugging tools",
+        "Tracking behavior changes across agent versions",
+        "Identifying which prompt or system changes triggered failures",
+        "Examining reasoning traces and tool calls"
+      ],
+      "headings": [
+        "Detecting and fixing failures in AI agents",
+        "Deep reasoning workflows for complex data",
+        "A conversational interface for vinyl record collectors",
+        "Turning screen recordings into interactive product demos",
+        "Measuring and improving brand visibility in AI outputs",
+        "Wrapping up",
+        "Monitoring architecture",
+        "1. Agent behavior monitoring"
+      ],
+      "topicTags": [
+        "agents",
+        "api",
+        "automation",
+        "codex",
+        "context",
+        "evals",
+        "frontend"
+      ],
+      "relevance": "high",
+      "promotedToDocs": [
+        "docs/OPENAI_DEVELOPER_LEARNINGS.md"
+      ],
+      "proposalIds": [
+        "openai-blog-one-year-of-responses"
+      ]
+    },
+    {
+      "schema": "openai-blog-learning-article.v1",
+      "articleId": "skills-agents-sdk",
+      "url": "https://developers.openai.com/blog/skills-agents-sdk",
+      "canonicalUrl": "https://developers.openai.com/blog/skills-agents-sdk",
+      "title": "Using skills to accelerate OSS maintenance | OpenAI Developers",
+      "description": "Using skills and GitHub Actions to optimize Codex workflows in the OpenAI Agents SDK repos.",
+      "indexDateLabel": "Mar 9",
+      "topicLabel": "Codex",
+      "discoveredAt": "2026-03-23T12:18:19.240Z",
+      "firstReadAt": "2026-03-23T12:18:19.240Z",
+      "lastReadAt": "2026-03-23T12:18:19.240Z",
+      "contentHash": "e8d2e93b4b7b8551359241c98a07ab75502b9d3516f2ed78d5e612f937a60f81",
+      "summary": "Using skills and GitHub Actions to optimize Codex workflows in the OpenAI Agents SDK repos.",
+      "guidance": [
+        "repository policy in AGENTS.md",
+        "repo-local skills in .agents/skills/",
+        "optional scripts and references inside those skills",
+        "Codex GitHub Action when the same workflow should run in CI",
+        "it sees metadata such as name and description first",
+        "it loads SKILL.md only when the skill is selected"
+      ],
+      "headings": [
+        "Keep workflows in the repo",
+        "Make workflows mandatory",
+        "Write better descriptions",
+        "Put mechanics in scripts",
+        "Automate integration tests",
+        "Add release checks",
+        "Run workflows in CI",
+        "Use Codex in PR review"
+      ],
+      "topicTags": [
+        "agents",
+        "automation",
+        "codex",
+        "context",
+        "evals",
+        "frontend",
+        "skills"
+      ],
+      "relevance": "high",
+      "promotedToDocs": [
+        "docs/OPENAI_DEVELOPER_LEARNINGS.md"
+      ],
+      "proposalIds": [
+        "openai-blog-skills-agents-sdk"
+      ]
+    },
+    {
+      "schema": "openai-blog-learning-article.v1",
+      "articleId": "building-frontend-uis-with-codex-and-figma",
+      "url": "https://developers.openai.com/blog/building-frontend-uis-with-codex-and-figma",
+      "canonicalUrl": "https://developers.openai.com/blog/building-frontend-uis-with-codex-and-figma",
+      "title": "Building frontend UIs with Codex and Figma | OpenAI Developers",
+      "description": "Use Codex and Figma to bring real, running interfaces into Figma, refine them, and bring changes back to Codex.",
+      "indexDateLabel": "Feb 26",
+      "topicLabel": "Codex",
+      "discoveredAt": "2026-03-23T12:18:19.240Z",
+      "firstReadAt": "2026-03-23T12:18:19.240Z",
+      "lastReadAt": "2026-03-23T12:18:19.240Z",
+      "contentHash": "47d49b9f4de580ab8c6dff971b8ede3442eef9092af61c61c7ee87ad05b1b881",
+      "summary": "Use Codex and Figma to bring real, running interfaces into Figma, refine them, and bring changes back to Codex.",
+      "guidance": [
+        "Decide to either create a new Figma file or use an existing one.",
+        "Determine which workspace to place the file in.",
+        "Set up the application for UI capture.",
+        "Open a new browser session of your application.",
+        "Adding design system components",
+        "Updating styles, fonts, and colors to variables"
+      ],
+      "headings": [
+        "Starting an app from a design",
+        "From code to canvas",
+        "There and back again, an MCP story"
+      ],
+      "topicTags": [
+        "agents",
+        "codex",
+        "context",
+        "frontend"
+      ],
+      "relevance": "high",
+      "promotedToDocs": [
+        "docs/OPENAI_DEVELOPER_LEARNINGS.md"
+      ],
+      "proposalIds": [
+        "openai-blog-building-frontend-uis-with-codex-and-figma"
+      ]
+    },
+    {
+      "schema": "openai-blog-learning-article.v1",
+      "articleId": "run-long-horizon-tasks-with-codex",
+      "url": "https://developers.openai.com/blog/run-long-horizon-tasks-with-codex",
+      "canonicalUrl": "https://developers.openai.com/blog/run-long-horizon-tasks-with-codex",
+      "title": "Run long horizon tasks with Codex | OpenAI Developers",
+      "description": "OpenAI Developer Blog",
+      "indexDateLabel": "Feb 23",
+      "topicLabel": "Codex",
+      "discoveredAt": "2026-03-23T12:18:19.240Z",
+      "firstReadAt": "2026-03-23T12:18:19.240Z",
+      "lastReadAt": "2026-03-23T12:18:19.240Z",
+      "contentHash": "a8918bcb0557f24d57de4f33b2bdbb503d7835b6ecd8caee72e1a28d7c980912",
+      "summary": "OpenAI Developer Blog",
+      "guidance": [
+        "It’s better at multi-step execution (plan → implement → validate → repair).",
+        "It’s easier to steer mid-flight without resetting the whole run (course corrections don’t wipe progress).",
+        "Plan",
+        "Edit code",
+        "Run tools (tests/build/lint)",
+        "Observe results"
+      ],
+      "headings": [
+        "What a long-run Codex session looks like",
+        "The real shift is time horizon",
+        "Why Codex can stay coherent on long tasks",
+        "My setup for the test",
+        "The key idea: durable project memory",
+        "What the agent built",
+        "Takeaways for long-horizon Codex tasks",
+        "Try Codex on your own long-running task"
+      ],
+      "topicTags": [
+        "agents",
+        "automation",
+        "codex",
+        "context",
+        "evals",
+        "frontend",
+        "skills"
+      ],
+      "relevance": "high",
+      "promotedToDocs": [
+        "docs/OPENAI_DEVELOPER_LEARNINGS.md"
+      ],
+      "proposalIds": [
+        "openai-blog-run-long-horizon-tasks-with-codex"
+      ]
+    },
+    {
+      "schema": "openai-blog-learning-article.v1",
+      "articleId": "skills-shell-tips",
+      "url": "https://developers.openai.com/blog/skills-shell-tips",
+      "canonicalUrl": "https://developers.openai.com/blog/skills-shell-tips",
+      "title": "Shell + Skills + Compaction: Tips for long-running agents that do real work | OpenAI Developers",
+      "description": "Practical patterns for building with skills, hosted shell, and server-side compaction in the Responses API.",
+      "indexDateLabel": "Feb 11",
+      "topicLabel": "API",
+      "discoveredAt": "2026-03-23T12:18:19.240Z",
+      "firstReadAt": "2026-03-23T12:18:19.240Z",
+      "lastReadAt": "2026-03-23T12:18:19.240Z",
+      "contentHash": "18a476366a7d98f6a87dda1da8bc3f9f0c763752eaaddcbf2970c79b26f53a26",
+      "summary": "Practical patterns for building with skills, hosted shell, and server-side compaction in the Responses API.",
+      "guidance": [
+        "Skills (aligned with the Agent Skills open standard): reusable, versioned instructions you can mount into containers so that agents can execute tasks more reliably.",
+        "Upgraded shell tool: an OpenAI hosted container with controlled internet access, where an agent can install dependencies, run scripts, and write outputs (for example, reports and artifacts).",
+        "Server-side compaction : an easy way to automatically compact long agentic runs so that you never hit context limits.",
+        "Hosted containers managed by OpenAI.",
+        "A local shell runtime you execute yourself (same tool semantics, but you control the machine).",
+        "Server-side compaction (new): When context crosses the threshold, compaction runs automatically in-stream, so there’s no separate compaction call."
+      ],
+      "headings": [
+        "A brief mental model",
+        "Tips and tricks",
+        "Three build patterns",
+        "Build once, run anywhere",
+        "Skills: “Procedures” the model can load on demand",
+        "Shell tool: “Execution” for agents",
+        "Compaction: Keep long runs moving",
+        "Why they’re better together"
+      ],
+      "topicTags": [
+        "agents",
+        "api",
+        "codex",
+        "context",
+        "frontend",
+        "skills"
+      ],
+      "relevance": "high",
+      "promotedToDocs": [
+        "docs/OPENAI_DEVELOPER_LEARNINGS.md"
+      ],
+      "proposalIds": [
+        "openai-blog-skills-shell-tips"
+      ]
+    }
+  ]
+}

@@ -1,0 +1,652 @@
+{
+  "schema": "openai-blog-learning-digest.v1",
+  "generatedAt": "2026-03-23T12:24:56.934Z",
+  "source": {
+    "name": "OpenAI Developers Blog",
+    "indexUrl": "https://developers.openai.com/blog"
+  },
+  "summary": {
+    "trackedArticles": 6,
+    "newArticlesThisRun": 0,
+    "pendingProposals": 6,
+    "blockedTargets": 0,
+    "promotedDocUpdates": 6
+  },
+  "topics": {
+    "context": [
+      {
+        "articleId": "designing-delightful-frontends-with-gpt-5-4",
+        "title": "Designing delightful frontends with GPT-5.4 | OpenAI Developers",
+        "url": "https://developers.openai.com/blog/designing-delightful-frontends-with-gpt-5-4",
+        "relevance": "high",
+        "indexDateLabel": "Mar 20",
+        "summary": "Practical techniques for steering GPT-5.4 toward polished, production-ready frontend designs.",
+        "guidance": [
+          "stronger image understanding throughout the design process",
+          "more functionally complete apps and websites",
+          "better use of tools to inspect, test, and verify its own work",
+          "Select low reasoning level to begin with."
+        ]
+      },
+      {
+        "articleId": "one-year-of-responses",
+        "title": "From prompts to products: One year of Responses | OpenAI Developers",
+        "url": "https://developers.openai.com/blog/one-year-of-responses",
+        "relevance": "high",
+        "indexDateLabel": "Mar 11",
+        "summary": "Five stories from developers building agentic products with the Responses API in its first year.",
+        "guidance": [
+          "Agent behavior monitoring",
+          "Failure detection and alerting",
+          "Developer investigation and debugging tools",
+          "Tracking behavior changes across agent versions"
+        ]
+      },
+      {
+        "articleId": "skills-agents-sdk",
+        "title": "Using skills to accelerate OSS maintenance | OpenAI Developers",
+        "url": "https://developers.openai.com/blog/skills-agents-sdk",
+        "relevance": "high",
+        "indexDateLabel": "Mar 9",
+        "summary": "Using skills and GitHub Actions to optimize Codex workflows in the OpenAI Agents SDK repos.",
+        "guidance": [
+          "repository policy in AGENTS.md",
+          "repo-local skills in .agents/skills/",
+          "optional scripts and references inside those skills",
+          "Codex GitHub Action when the same workflow should run in CI"
+        ]
+      },
+      {
+        "articleId": "building-frontend-uis-with-codex-and-figma",
+        "title": "Building frontend UIs with Codex and Figma | OpenAI Developers",
+        "url": "https://developers.openai.com/blog/building-frontend-uis-with-codex-and-figma",
+        "relevance": "high",
+        "indexDateLabel": "Feb 26",
+        "summary": "Use Codex and Figma to bring real, running interfaces into Figma, refine them, and bring changes back to Codex.",
+        "guidance": [
+          "Decide to either create a new Figma file or use an existing one.",
+          "Determine which workspace to place the file in.",
+          "Set up the application for UI capture.",
+          "Open a new browser session of your application."
+        ]
+      },
+      {
+        "articleId": "run-long-horizon-tasks-with-codex",
+        "title": "Run long horizon tasks with Codex | OpenAI Developers",
+        "url": "https://developers.openai.com/blog/run-long-horizon-tasks-with-codex",
+        "relevance": "high",
+        "indexDateLabel": "Feb 23",
+        "summary": "OpenAI Developer Blog",
+        "guidance": [
+          "It’s better at multi-step execution (plan → implement → validate → repair).",
+          "It’s easier to steer mid-flight without resetting the whole run (course corrections don’t wipe progress).",
+          "Plan",
+          "Edit code"
+        ]
+      },
+      {
+        "articleId": "skills-shell-tips",
+        "title": "Shell + Skills + Compaction: Tips for long-running agents that do real work | OpenAI Developers",
+        "url": "https://developers.openai.com/blog/skills-shell-tips",
+        "relevance": "high",
+        "indexDateLabel": "Feb 11",
+        "summary": "Practical patterns for building with skills, hosted shell, and server-side compaction in the Responses API.",
+        "guidance": [
+          "Skills (aligned with the Agent Skills open standard): reusable, versioned instructions you can mount into containers so that agents can execute tasks more reliably.",
+          "Upgraded shell tool: an OpenAI hosted container with controlled internet access, where an agent can install dependencies, run scripts, and write outputs (for example, reports and artifacts).",
+          "Server-side compaction : an easy way to automatically compact long agentic runs so that you never hit context limits.",
+          "Hosted containers managed by OpenAI."
+        ]
+      }
+    ],
+    "evals": [
+      {
+        "articleId": "designing-delightful-frontends-with-gpt-5-4",
+        "title": "Designing delightful frontends with GPT-5.4 | OpenAI Developers",
+        "url": "https://developers.openai.com/blog/designing-delightful-frontends-with-gpt-5-4",
+        "relevance": "high",
+        "indexDateLabel": "Mar 20",
+        "summary": "Practical techniques for steering GPT-5.4 toward polished, production-ready frontend designs.",
+        "guidance": [
+          "stronger image understanding throughout the design process",
+          "more functionally complete apps and websites",
+          "better use of tools to inspect, test, and verify its own work",
+          "Select low reasoning level to begin with."
+        ]
+      },
+      {
+        "articleId": "one-year-of-responses",
+        "title": "From prompts to products: One year of Responses | OpenAI Developers",
+        "url": "https://developers.openai.com/blog/one-year-of-responses",
+        "relevance": "high",
+        "indexDateLabel": "Mar 11",
+        "summary": "Five stories from developers building agentic products with the Responses API in its first year.",
+        "guidance": [
+          "Agent behavior monitoring",
+          "Failure detection and alerting",
+          "Developer investigation and debugging tools",
+          "Tracking behavior changes across agent versions"
+        ]
+      },
+      {
+        "articleId": "skills-agents-sdk",
+        "title": "Using skills to accelerate OSS maintenance | OpenAI Developers",
+        "url": "https://developers.openai.com/blog/skills-agents-sdk",
+        "relevance": "high",
+        "indexDateLabel": "Mar 9",
+        "summary": "Using skills and GitHub Actions to optimize Codex workflows in the OpenAI Agents SDK repos.",
+        "guidance": [
+          "repository policy in AGENTS.md",
+          "repo-local skills in .agents/skills/",
+          "optional scripts and references inside those skills",
+          "Codex GitHub Action when the same workflow should run in CI"
+        ]
+      },
+      {
+        "articleId": "run-long-horizon-tasks-with-codex",
+        "title": "Run long horizon tasks with Codex | OpenAI Developers",
+        "url": "https://developers.openai.com/blog/run-long-horizon-tasks-with-codex",
+        "relevance": "high",
+        "indexDateLabel": "Feb 23",
+        "summary": "OpenAI Developer Blog",
+        "guidance": [
+          "It’s better at multi-step execution (plan → implement → validate → repair).",
+          "It’s easier to steer mid-flight without resetting the whole run (course corrections don’t wipe progress).",
+          "Plan",
+          "Edit code"
+        ]
+      }
+    ],
+    "frontend": [
+      {
+        "articleId": "designing-delightful-frontends-with-gpt-5-4",
+        "title": "Designing delightful frontends with GPT-5.4 | OpenAI Developers",
+        "url": "https://developers.openai.com/blog/designing-delightful-frontends-with-gpt-5-4",
+        "relevance": "high",
+        "indexDateLabel": "Mar 20",
+        "summary": "Practical techniques for steering GPT-5.4 toward polished, production-ready frontend designs.",
+        "guidance": [
+          "stronger image understanding throughout the design process",
+          "more functionally complete apps and websites",
+          "better use of tools to inspect, test, and verify its own work",
+          "Select low reasoning level to begin with."
+        ]
+      },
+      {
+        "articleId": "one-year-of-responses",
+        "title": "From prompts to products: One year of Responses | OpenAI Developers",
+        "url": "https://developers.openai.com/blog/one-year-of-responses",
+        "relevance": "high",
+        "indexDateLabel": "Mar 11",
+        "summary": "Five stories from developers building agentic products with the Responses API in its first year.",
+        "guidance": [
+          "Agent behavior monitoring",
+          "Failure detection and alerting",
+          "Developer investigation and debugging tools",
+          "Tracking behavior changes across agent versions"
+        ]
+      },
+      {
+        "articleId": "skills-agents-sdk",
+        "title": "Using skills to accelerate OSS maintenance | OpenAI Developers",
+        "url": "https://developers.openai.com/blog/skills-agents-sdk",
+        "relevance": "high",
+        "indexDateLabel": "Mar 9",
+        "summary": "Using skills and GitHub Actions to optimize Codex workflows in the OpenAI Agents SDK repos.",
+        "guidance": [
+          "repository policy in AGENTS.md",
+          "repo-local skills in .agents/skills/",
+          "optional scripts and references inside those skills",
+          "Codex GitHub Action when the same workflow should run in CI"
+        ]
+      },
+      {
+        "articleId": "building-frontend-uis-with-codex-and-figma",
+        "title": "Building frontend UIs with Codex and Figma | OpenAI Developers",
+        "url": "https://developers.openai.com/blog/building-frontend-uis-with-codex-and-figma",
+        "relevance": "high",
+        "indexDateLabel": "Feb 26",
+        "summary": "Use Codex and Figma to bring real, running interfaces into Figma, refine them, and bring changes back to Codex.",
+        "guidance": [
+          "Decide to either create a new Figma file or use an existing one.",
+          "Determine which workspace to place the file in.",
+          "Set up the application for UI capture.",
+          "Open a new browser session of your application."
+        ]
+      },
+      {
+        "articleId": "run-long-horizon-tasks-with-codex",
+        "title": "Run long horizon tasks with Codex | OpenAI Developers",
+        "url": "https://developers.openai.com/blog/run-long-horizon-tasks-with-codex",
+        "relevance": "high",
+        "indexDateLabel": "Feb 23",
+        "summary": "OpenAI Developer Blog",
+        "guidance": [
+          "It’s better at multi-step execution (plan → implement → validate → repair).",
+          "It’s easier to steer mid-flight without resetting the whole run (course corrections don’t wipe progress).",
+          "Plan",
+          "Edit code"
+        ]
+      },
+      {
+        "articleId": "skills-shell-tips",
+        "title": "Shell + Skills + Compaction: Tips for long-running agents that do real work | OpenAI Developers",
+        "url": "https://developers.openai.com/blog/skills-shell-tips",
+        "relevance": "high",
+        "indexDateLabel": "Feb 11",
+        "summary": "Practical patterns for building with skills, hosted shell, and server-side compaction in the Responses API.",
+        "guidance": [
+          "Skills (aligned with the Agent Skills open standard): reusable, versioned instructions you can mount into containers so that agents can execute tasks more reliably.",
+          "Upgraded shell tool: an OpenAI hosted container with controlled internet access, where an agent can install dependencies, run scripts, and write outputs (for example, reports and artifacts).",
+          "Server-side compaction : an easy way to automatically compact long agentic runs so that you never hit context limits.",
+          "Hosted containers managed by OpenAI."
+        ]
+      }
+    ],
+    "safety": [
+      {
+        "articleId": "designing-delightful-frontends-with-gpt-5-4",
+        "title": "Designing delightful frontends with GPT-5.4 | OpenAI Developers",
+        "url": "https://developers.openai.com/blog/designing-delightful-frontends-with-gpt-5-4",
+        "relevance": "high",
+        "indexDateLabel": "Mar 20",
+        "summary": "Practical techniques for steering GPT-5.4 toward polished, production-ready frontend designs.",
+        "guidance": [
+          "stronger image understanding throughout the design process",
+          "more functionally complete apps and websites",
+          "better use of tools to inspect, test, and verify its own work",
+          "Select low reasoning level to begin with."
+        ]
+      }
+    ],
+    "skills": [
+      {
+        "articleId": "designing-delightful-frontends-with-gpt-5-4",
+        "title": "Designing delightful frontends with GPT-5.4 | OpenAI Developers",
+        "url": "https://developers.openai.com/blog/designing-delightful-frontends-with-gpt-5-4",
+        "relevance": "high",
+        "indexDateLabel": "Mar 20",
+        "summary": "Practical techniques for steering GPT-5.4 toward polished, production-ready frontend designs.",
+        "guidance": [
+          "stronger image understanding throughout the design process",
+          "more functionally complete apps and websites",
+          "better use of tools to inspect, test, and verify its own work",
+          "Select low reasoning level to begin with."
+        ]
+      },
+      {
+        "articleId": "skills-agents-sdk",
+        "title": "Using skills to accelerate OSS maintenance | OpenAI Developers",
+        "url": "https://developers.openai.com/blog/skills-agents-sdk",
+        "relevance": "high",
+        "indexDateLabel": "Mar 9",
+        "summary": "Using skills and GitHub Actions to optimize Codex workflows in the OpenAI Agents SDK repos.",
+        "guidance": [
+          "repository policy in AGENTS.md",
+          "repo-local skills in .agents/skills/",
+          "optional scripts and references inside those skills",
+          "Codex GitHub Action when the same workflow should run in CI"
+        ]
+      },
+      {
+        "articleId": "run-long-horizon-tasks-with-codex",
+        "title": "Run long horizon tasks with Codex | OpenAI Developers",
+        "url": "https://developers.openai.com/blog/run-long-horizon-tasks-with-codex",
+        "relevance": "high",
+        "indexDateLabel": "Feb 23",
+        "summary": "OpenAI Developer Blog",
+        "guidance": [
+          "It’s better at multi-step execution (plan → implement → validate → repair).",
+          "It’s easier to steer mid-flight without resetting the whole run (course corrections don’t wipe progress).",
+          "Plan",
+          "Edit code"
+        ]
+      },
+      {
+        "articleId": "skills-shell-tips",
+        "title": "Shell + Skills + Compaction: Tips for long-running agents that do real work | OpenAI Developers",
+        "url": "https://developers.openai.com/blog/skills-shell-tips",
+        "relevance": "high",
+        "indexDateLabel": "Feb 11",
+        "summary": "Practical patterns for building with skills, hosted shell, and server-side compaction in the Responses API.",
+        "guidance": [
+          "Skills (aligned with the Agent Skills open standard): reusable, versioned instructions you can mount into containers so that agents can execute tasks more reliably.",
+          "Upgraded shell tool: an OpenAI hosted container with controlled internet access, where an agent can install dependencies, run scripts, and write outputs (for example, reports and artifacts).",
+          "Server-side compaction : an easy way to automatically compact long agentic runs so that you never hit context limits.",
+          "Hosted containers managed by OpenAI."
+        ]
+      }
+    ],
+    "agents": [
+      {
+        "articleId": "one-year-of-responses",
+        "title": "From prompts to products: One year of Responses | OpenAI Developers",
+        "url": "https://developers.openai.com/blog/one-year-of-responses",
+        "relevance": "high",
+        "indexDateLabel": "Mar 11",
+        "summary": "Five stories from developers building agentic products with the Responses API in its first year.",
+        "guidance": [
+          "Agent behavior monitoring",
+          "Failure detection and alerting",
+          "Developer investigation and debugging tools",
+          "Tracking behavior changes across agent versions"
+        ]
+      },
+      {
+        "articleId": "skills-agents-sdk",
+        "title": "Using skills to accelerate OSS maintenance | OpenAI Developers",
+        "url": "https://developers.openai.com/blog/skills-agents-sdk",
+        "relevance": "high",
+        "indexDateLabel": "Mar 9",
+        "summary": "Using skills and GitHub Actions to optimize Codex workflows in the OpenAI Agents SDK repos.",
+        "guidance": [
+          "repository policy in AGENTS.md",
+          "repo-local skills in .agents/skills/",
+          "optional scripts and references inside those skills",
+          "Codex GitHub Action when the same workflow should run in CI"
+        ]
+      },
+      {
+        "articleId": "building-frontend-uis-with-codex-and-figma",
+        "title": "Building frontend UIs with Codex and Figma | OpenAI Developers",
+        "url": "https://developers.openai.com/blog/building-frontend-uis-with-codex-and-figma",
+        "relevance": "high",
+        "indexDateLabel": "Feb 26",
+        "summary": "Use Codex and Figma to bring real, running interfaces into Figma, refine them, and bring changes back to Codex.",
+        "guidance": [
+          "Decide to either create a new Figma file or use an existing one.",
+          "Determine which workspace to place the file in.",
+          "Set up the application for UI capture.",
+          "Open a new browser session of your application."
+        ]
+      },
+      {
+        "articleId": "run-long-horizon-tasks-with-codex",
+        "title": "Run long horizon tasks with Codex | OpenAI Developers",
+        "url": "https://developers.openai.com/blog/run-long-horizon-tasks-with-codex",
+        "relevance": "high",
+        "indexDateLabel": "Feb 23",
+        "summary": "OpenAI Developer Blog",
+        "guidance": [
+          "It’s better at multi-step execution (plan → implement → validate → repair).",
+          "It’s easier to steer mid-flight without resetting the whole run (course corrections don’t wipe progress).",
+          "Plan",
+          "Edit code"
+        ]
+      },
+      {
+        "articleId": "skills-shell-tips",
+        "title": "Shell + Skills + Compaction: Tips for long-running agents that do real work | OpenAI Developers",
+        "url": "https://developers.openai.com/blog/skills-shell-tips",
+        "relevance": "high",
+        "indexDateLabel": "Feb 11",
+        "summary": "Practical patterns for building with skills, hosted shell, and server-side compaction in the Responses API.",
+        "guidance": [
+          "Skills (aligned with the Agent Skills open standard): reusable, versioned instructions you can mount into containers so that agents can execute tasks more reliably.",
+          "Upgraded shell tool: an OpenAI hosted container with controlled internet access, where an agent can install dependencies, run scripts, and write outputs (for example, reports and artifacts).",
+          "Server-side compaction : an easy way to automatically compact long agentic runs so that you never hit context limits.",
+          "Hosted containers managed by OpenAI."
+        ]
+      }
+    ],
+    "automation": [
+      {
+        "articleId": "one-year-of-responses",
+        "title": "From prompts to products: One year of Responses | OpenAI Developers",
+        "url": "https://developers.openai.com/blog/one-year-of-responses",
+        "relevance": "high",
+        "indexDateLabel": "Mar 11",
+        "summary": "Five stories from developers building agentic products with the Responses API in its first year.",
+        "guidance": [
+          "Agent behavior monitoring",
+          "Failure detection and alerting",
+          "Developer investigation and debugging tools",
+          "Tracking behavior changes across agent versions"
+        ]
+      },
+      {
+        "articleId": "skills-agents-sdk",
+        "title": "Using skills to accelerate OSS maintenance | OpenAI Developers",
+        "url": "https://developers.openai.com/blog/skills-agents-sdk",
+        "relevance": "high",
+        "indexDateLabel": "Mar 9",
+        "summary": "Using skills and GitHub Actions to optimize Codex workflows in the OpenAI Agents SDK repos.",
+        "guidance": [
+          "repository policy in AGENTS.md",
+          "repo-local skills in .agents/skills/",
+          "optional scripts and references inside those skills",
+          "Codex GitHub Action when the same workflow should run in CI"
+        ]
+      },
+      {
+        "articleId": "run-long-horizon-tasks-with-codex",
+        "title": "Run long horizon tasks with Codex | OpenAI Developers",
+        "url": "https://developers.openai.com/blog/run-long-horizon-tasks-with-codex",
+        "relevance": "high",
+        "indexDateLabel": "Feb 23",
+        "summary": "OpenAI Developer Blog",
+        "guidance": [
+          "It’s better at multi-step execution (plan → implement → validate → repair).",
+          "It’s easier to steer mid-flight without resetting the whole run (course corrections don’t wipe progress).",
+          "Plan",
+          "Edit code"
+        ]
+      }
+    ],
+    "codex": [
+      {
+        "articleId": "one-year-of-responses",
+        "title": "From prompts to products: One year of Responses | OpenAI Developers",
+        "url": "https://developers.openai.com/blog/one-year-of-responses",
+        "relevance": "high",
+        "indexDateLabel": "Mar 11",
+        "summary": "Five stories from developers building agentic products with the Responses API in its first year.",
+        "guidance": [
+          "Agent behavior monitoring",
+          "Failure detection and alerting",
+          "Developer investigation and debugging tools",
+          "Tracking behavior changes across agent versions"
+        ]
+      },
+      {
+        "articleId": "skills-agents-sdk",
+        "title": "Using skills to accelerate OSS maintenance | OpenAI Developers",
+        "url": "https://developers.openai.com/blog/skills-agents-sdk",
+        "relevance": "high",
+        "indexDateLabel": "Mar 9",
+        "summary": "Using skills and GitHub Actions to optimize Codex workflows in the OpenAI Agents SDK repos.",
+        "guidance": [
+          "repository policy in AGENTS.md",
+          "repo-local skills in .agents/skills/",
+          "optional scripts and references inside those skills",
+          "Codex GitHub Action when the same workflow should run in CI"
+        ]
+      },
+      {
+        "articleId": "building-frontend-uis-with-codex-and-figma",
+        "title": "Building frontend UIs with Codex and Figma | OpenAI Developers",
+        "url": "https://developers.openai.com/blog/building-frontend-uis-with-codex-and-figma",
+        "relevance": "high",
+        "indexDateLabel": "Feb 26",
+        "summary": "Use Codex and Figma to bring real, running interfaces into Figma, refine them, and bring changes back to Codex.",
+        "guidance": [
+          "Decide to either create a new Figma file or use an existing one.",
+          "Determine which workspace to place the file in.",
+          "Set up the application for UI capture.",
+          "Open a new browser session of your application."
+        ]
+      },
+      {
+        "articleId": "run-long-horizon-tasks-with-codex",
+        "title": "Run long horizon tasks with Codex | OpenAI Developers",
+        "url": "https://developers.openai.com/blog/run-long-horizon-tasks-with-codex",
+        "relevance": "high",
+        "indexDateLabel": "Feb 23",
+        "summary": "OpenAI Developer Blog",
+        "guidance": [
+          "It’s better at multi-step execution (plan → implement → validate → repair).",
+          "It’s easier to steer mid-flight without resetting the whole run (course corrections don’t wipe progress).",
+          "Plan",
+          "Edit code"
+        ]
+      },
+      {
+        "articleId": "skills-shell-tips",
+        "title": "Shell + Skills + Compaction: Tips for long-running agents that do real work | OpenAI Developers",
+        "url": "https://developers.openai.com/blog/skills-shell-tips",
+        "relevance": "high",
+        "indexDateLabel": "Feb 11",
+        "summary": "Practical patterns for building with skills, hosted shell, and server-side compaction in the Responses API.",
+        "guidance": [
+          "Skills (aligned with the Agent Skills open standard): reusable, versioned instructions you can mount into containers so that agents can execute tasks more reliably.",
+          "Upgraded shell tool: an OpenAI hosted container with controlled internet access, where an agent can install dependencies, run scripts, and write outputs (for example, reports and artifacts).",
+          "Server-side compaction : an easy way to automatically compact long agentic runs so that you never hit context limits.",
+          "Hosted containers managed by OpenAI."
+        ]
+      }
+    ]
+  },
+  "latestArticles": [
+    {
+      "articleId": "designing-delightful-frontends-with-gpt-5-4",
+      "title": "Designing delightful frontends with GPT-5.4 | OpenAI Developers",
+      "url": "https://developers.openai.com/blog/designing-delightful-frontends-with-gpt-5-4",
+      "relevance": "high",
+      "topicTags": [
+        "context",
+        "evals",
+        "frontend",
+        "general",
+        "safety",
+        "skills"
+      ],
+      "summary": "Practical techniques for steering GPT-5.4 toward polished, production-ready frontend designs.",
+      "indexDateLabel": "Mar 20"
+    },
+    {
+      "articleId": "one-year-of-responses",
+      "title": "From prompts to products: One year of Responses | OpenAI Developers",
+      "url": "https://developers.openai.com/blog/one-year-of-responses",
+      "relevance": "high",
+      "topicTags": [
+        "agents",
+        "api",
+        "automation",
+        "codex",
+        "context",
+        "evals",
+        "frontend"
+      ],
+      "summary": "Five stories from developers building agentic products with the Responses API in its first year.",
+      "indexDateLabel": "Mar 11"
+    },
+    {
+      "articleId": "skills-agents-sdk",
+      "title": "Using skills to accelerate OSS maintenance | OpenAI Developers",
+      "url": "https://developers.openai.com/blog/skills-agents-sdk",
+      "relevance": "high",
+      "topicTags": [
+        "agents",
+        "automation",
+        "codex",
+        "context",
+        "evals",
+        "frontend",
+        "skills"
+      ],
+      "summary": "Using skills and GitHub Actions to optimize Codex workflows in the OpenAI Agents SDK repos.",
+      "indexDateLabel": "Mar 9"
+    },
+    {
+      "articleId": "building-frontend-uis-with-codex-and-figma",
+      "title": "Building frontend UIs with Codex and Figma | OpenAI Developers",
+      "url": "https://developers.openai.com/blog/building-frontend-uis-with-codex-and-figma",
+      "relevance": "high",
+      "topicTags": [
+        "agents",
+        "codex",
+        "context",
+        "frontend"
+      ],
+      "summary": "Use Codex and Figma to bring real, running interfaces into Figma, refine them, and bring changes back to Codex.",
+      "indexDateLabel": "Feb 26"
+    },
+    {
+      "articleId": "run-long-horizon-tasks-with-codex",
+      "title": "Run long horizon tasks with Codex | OpenAI Developers",
+      "url": "https://developers.openai.com/blog/run-long-horizon-tasks-with-codex",
+      "relevance": "high",
+      "topicTags": [
+        "agents",
+        "automation",
+        "codex",
+        "context",
+        "evals",
+        "frontend",
+        "skills"
+      ],
+      "summary": "OpenAI Developer Blog",
+      "indexDateLabel": "Feb 23"
+    },
+    {
+      "articleId": "skills-shell-tips",
+      "title": "Shell + Skills + Compaction: Tips for long-running agents that do real work | OpenAI Developers",
+      "url": "https://developers.openai.com/blog/skills-shell-tips",
+      "relevance": "high",
+      "topicTags": [
+        "agents",
+        "api",
+        "codex",
+        "context",
+        "frontend",
+        "skills"
+      ],
+      "summary": "Practical patterns for building with skills, hosted shell, and server-side compaction in the Responses API.",
+      "indexDateLabel": "Feb 11"
+    }
+  ],
+  "pendingProposals": [
+    {
+      "proposalId": "openai-blog-designing-delightful-frontends-with-gpt-5-4",
+      "articleId": "designing-delightful-frontends-with-gpt-5-4",
+      "title": "Designing delightful frontends with GPT-5.4 | OpenAI Developers",
+      "target": "docs/CONTEXT_MEMORY_POLICY.md",
+      "status": "proposal_only"
+    },
+    {
+      "proposalId": "openai-blog-one-year-of-responses",
+      "articleId": "one-year-of-responses",
+      "title": "From prompts to products: One year of Responses | OpenAI Developers",
+      "target": "docs/CONTEXT_MEMORY_POLICY.md",
+      "status": "proposal_only"
+    },
+    {
+      "proposalId": "openai-blog-skills-agents-sdk",
+      "articleId": "skills-agents-sdk",
+      "title": "Using skills to accelerate OSS maintenance | OpenAI Developers",
+      "target": "docs/CONTEXT_MEMORY_POLICY.md",
+      "status": "proposal_only"
+    },
+    {
+      "proposalId": "openai-blog-building-frontend-uis-with-codex-and-figma",
+      "articleId": "building-frontend-uis-with-codex-and-figma",
+      "title": "Building frontend UIs with Codex and Figma | OpenAI Developers",
+      "target": "docs/CONTEXT_MEMORY_POLICY.md",
+      "status": "proposal_only"
+    },
+    {
+      "proposalId": "openai-blog-run-long-horizon-tasks-with-codex",
+      "articleId": "run-long-horizon-tasks-with-codex",
+      "title": "Run long horizon tasks with Codex | OpenAI Developers",
+      "target": "docs/CONTEXT_MEMORY_POLICY.md",
+      "status": "proposal_only"
+    },
+    {
+      "proposalId": "openai-blog-skills-shell-tips",
+      "articleId": "skills-shell-tips",
+      "title": "Shell + Skills + Compaction: Tips for long-running agents that do real work | OpenAI Developers",
+      "target": "docs/CONTEXT_MEMORY_POLICY.md",
+      "status": "proposal_only"
+    }
+  ]
+}

@@ -251,6 +251,50 @@ function createOverviewPayload(overrides = {}) {
         lastAuditStatus: "PASS",
         failedCheckIds: [],
       },
+      externalLearning: {
+        enabled: true,
+        running: false,
+        mode: "observe_propose_and_doc_sync",
+        sourceName: "OpenAI Developers Blog",
+        sourceUrl: "https://developers.openai.com/blog",
+        allowedHosts: ["developers.openai.com"],
+        intervalMinutes: 360,
+        lastRunAt: "2026-03-23T00:00:00.000Z",
+        lastSuccessAt: "2026-03-23T00:00:00.000Z",
+        nextRunAt: "2026-03-23T06:00:00.000Z",
+        lastStatus: "PASS",
+        lastReason: "startup",
+        trackedArticles: 4,
+        newArticlesThisRun: 1,
+        pendingProposalCount: 2,
+        blockedTargetCount: 0,
+        promotedDocUpdates: 4,
+        ledgerPath: "output/openai_blog_learning_ledger.json",
+        digestPath: "output/openai_blog_learning_digest.json",
+        reportPath: "output/openai_blog_learning_report.md",
+        curatedDocPath: "docs/OPENAI_DEVELOPER_LEARNINGS.md",
+        recentArticles: [
+          {
+            articleId: "run-long-horizon-tasks-with-codex",
+            title: "Run long horizon tasks with Codex",
+            url: "https://developers.openai.com/blog/run-long-horizon-tasks-with-codex",
+            relevance: "high",
+            indexDateLabel: "Feb 23",
+            topicTags: ["codex", "automation"],
+          },
+        ],
+        pendingProposals: [
+          {
+            title: "Run long horizon tasks with Codex",
+            target: "docs/CONTEXT_MEMORY_POLICY.md",
+            status: "proposal_only",
+          },
+        ],
+        freezeAware: {
+          requirementFoundationV1: "bug_fix_only",
+          blockedApplyTargets: ["AGENTS.md"],
+        },
+      },
       latestTurn: {
         turn_id: "turn-002",
         status: "failed",
@@ -508,6 +552,37 @@ function createOverviewPayload(overrides = {}) {
         activeProfileId: "default",
         profileCount: 1,
         memoryPath: "logs/intent-memory/taste_memory.json",
+      },
+      externalLearning: {
+        enabled: true,
+        lastStatus: "PASS",
+        sourceName: "OpenAI Developers Blog",
+        sourceUrl: "https://developers.openai.com/blog",
+        intervalMinutes: 360,
+        nextRunAt: "2026-03-23T06:00:00.000Z",
+        ledgerPath: "output/openai_blog_learning_ledger.json",
+        digestPath: "output/openai_blog_learning_digest.json",
+        curatedDocPath: "docs/OPENAI_DEVELOPER_LEARNINGS.md",
+        recentArticles: [
+          {
+            title: "Run long horizon tasks with Codex",
+            url: "https://developers.openai.com/blog/run-long-horizon-tasks-with-codex",
+            relevance: "high",
+            indexDateLabel: "Feb 23",
+            topicTags: ["codex", "automation"],
+          },
+        ],
+        pendingProposals: [
+          {
+            title: "Run long horizon tasks with Codex",
+            target: "docs/CONTEXT_MEMORY_POLICY.md",
+            status: "proposal_only",
+          },
+        ],
+        freezeAware: {
+          requirementFoundationV1: "bug_fix_only",
+          blockedApplyTargets: ["AGENTS.md"],
+        },
       },
       execution: {
         recent: [
@@ -781,6 +856,16 @@ function assertRenderedOverviewMatchesPayload(payload, elements) {
     assertContains(elements.healthCard.innerHTML, String(phaseStatus.requirementFoundationV1 || "not_done"), "health card must render requirement foundation phase status");
     assertContains(elements.healthCard.innerHTML, String(phaseStatus.auditReportPath || "output/phase_exit_requirement_foundation_v1.json"), "health card must render requirement foundation audit report path");
   }
+  const externalLearning = payload && payload.runtime && payload.runtime.externalLearning && typeof payload.runtime.externalLearning === "object"
+    ? payload.runtime.externalLearning
+    : null;
+  if (externalLearning) {
+    const externalLearningCardHtml = elements.externalLearningCard ? elements.externalLearningCard.innerHTML : "";
+    assertContains(externalLearningCardHtml, String(externalLearning.sourceName || "OpenAI Developers Blog"), "external learning card must render source name");
+    assertContains(externalLearningCardHtml, String((externalLearning.recentArticles && externalLearning.recentArticles[0] && externalLearning.recentArticles[0].title) || "article"), "external learning card must render recent article title");
+    const metricsHtml = elements.overviewMetrics ? elements.overviewMetrics.innerHTML : "";
+    assertContains(metricsHtml, String(externalLearning.lastStatus || "PASS"), "metrics must render external learning status");
+  }
   const traceabilityClauses = payload && payload.traceability && Array.isArray(payload.traceability.clauses)
     ? payload.traceability.clauses
     : [];
@@ -965,6 +1050,7 @@ async function runIntegrationCheck() {
     CODEX_AUTO_OPEN_BROWSER: "0",
     CODEX_PAUSE_ON_EXIT: "0",
     CODEX_APP_SERVER_TRANSPORT: "mock-fixture",
+    CODEX_OPENAI_BLOG_LEARNING_ENABLED: "0",
   });
 
   try {
@@ -978,6 +1064,8 @@ async function runIntegrationCheck() {
     assert(overviewJson.runtime.activeAgent, "overview runtime must expose activeAgent");
     assert(overviewJson.runtime.phaseStatus && typeof overviewJson.runtime.phaseStatus === "object", "overview runtime must expose phaseStatus");
     assert(typeof overviewJson.runtime.phaseStatus.requirementFoundationV1 === "string", "overview runtime phaseStatus must expose requirementFoundationV1");
+    assert(overviewJson.runtime.externalLearning && typeof overviewJson.runtime.externalLearning === "object", "overview runtime must expose externalLearning");
+    assert(overviewJson.memory.externalLearning && typeof overviewJson.memory.externalLearning === "object", "overview memory must expose externalLearning");
     assert(overviewJson.topology && typeof overviewJson.topology === "object", "overview topology missing");
     assert(overviewJson.contracts && typeof overviewJson.contracts === "object", "overview contracts missing");
     assert(overviewJson.evidence && typeof overviewJson.evidence === "object", "overview evidence missing");

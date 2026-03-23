@@ -148,6 +148,12 @@ const {
   getLoggingSurfacePaths,
   repoRelative:repoRelativePath,
 }=require("./scripts/lib/logging_surface");
+const {
+  defaultOpenAIBlogLearningPolicyPath,
+  loadOpenAIBlogLearningPolicy,
+  buildRuntimeSnapshotFromArtifacts:buildOpenAIBlogLearningRuntimeSnapshot,
+  runOpenAIBlogLearningCycle,
+}=require("./scripts/lib/openai_blog_learning");
 
 const workspaceRoot=__dirname;
 const workspaceParentRoot=path.dirname(workspaceRoot);
@@ -188,6 +194,27 @@ const fastModeDefaultEnvKey="CODEX_FAST_MODE_DEFAULT";
 const nonInteractiveRequestUserInputPolicy=normalizeRequestUserInputPolicy(process.env[requestUserInputPolicyEnvKey],"blocked");
 const automaticApprovalReviewDefault=parseBooleanEnv(automaticApprovalReviewEnvKey,true);
 const fastModeDefault=parseBooleanEnv(fastModeDefaultEnvKey,false);
+const openAIBlogLearningEnabledEnvKey="CODEX_OPENAI_BLOG_LEARNING_ENABLED";
+const openAIBlogLearningIntervalEnvKey="CODEX_OPENAI_BLOG_LEARNING_INTERVAL_MINUTES";
+const openAIBlogLearningPolicy=loadOpenAIBlogLearningPolicy(defaultOpenAIBlogLearningPolicyPath);
+const openAIBlogLearningEnabled=parseBooleanEnv(openAIBlogLearningEnabledEnvKey,true);
+const openAIBlogLearningIntervalMinutes=Math.max(
+  15,
+  Math.min(
+    1440,
+    Math.trunc(Number(process.env[openAIBlogLearningIntervalEnvKey]||openAIBlogLearningPolicy.cadence.intervalMinutes)||openAIBlogLearningPolicy.cadence.intervalMinutes)
+  )
+);
+const openAIBlogLearningRuntimeState={
+  enabled:openAIBlogLearningEnabled,
+  running:false,
+  lastRunAt:"",
+  lastSuccessAt:"",
+  nextRunAt:"",
+  lastStatus:openAIBlogLearningEnabled?"IDLE":"DISABLED",
+  lastReason:"",
+};
+let openAIBlogLearningTimer=null;
 const gitAutomationConfig=buildGitAutomationConfig(process.env);
 const gitAutomationWorkspaceIgnoredPaths=Object.freeze([
   "logs/archive/raw/harness_execution_memory.json",
@@ -11868,6 +11895,95 @@ function buildRequirementFoundationV1PhaseStatus(){
     failedCheckIds,
   };
 }
+function clearOpenAIBlogLearningTimer(){
+  if(openAIBlogLearningTimer){
+    clearTimeout(openAIBlogLearningTimer);
+    openAIBlogLearningTimer=null;
+  }
+}
+function scheduleOpenAIBlogLearningCycle(delayMs){
+  if(!openAIBlogLearningEnabled||shuttingDown)return;
+  clearOpenAIBlogLearningTimer();
+  const normalizedDelay=Math.max(1000,Math.trunc(Number(delayMs)||openAIBlogLearningIntervalMinutes*60*1000));
+  openAIBlogLearningRuntimeState.nextRunAt=new Date(Date.now()+normalizedDelay).toISOString();
+  openAIBlogLearningTimer=setTimeout(()=>{
+    openAIBlogLearningTimer=null;
+    executeOpenAIBlogLearningCycle("interval").catch(error=>{
+      logOperation("openai_blog_learning.run_failed",{
+        reason:"interval",
+        err:summarizeErrorForOperationLog(error,220),
+      });
+    });
+  },normalizedDelay);
+  if(openAIBlogLearningTimer&&typeof openAIBlogLearningTimer.unref==="function"){
+    openAIBlogLearningTimer.unref();
+  }
+}
+async function executeOpenAIBlogLearningCycle(reason="manual"){
+  if(!openAIBlogLearningEnabled||shuttingDown)return null;
+  if(openAIBlogLearningRuntimeState.running){
+    return null;
+  }
+  openAIBlogLearningRuntimeState.running=true;
+  openAIBlogLearningRuntimeState.lastRunAt=new Date().toISOString();
+  openAIBlogLearningRuntimeState.lastStatus="RUNNING";
+  openAIBlogLearningRuntimeState.lastReason=safeString(reason,80)||"manual";
+  try{
+    const policy={
+      ...openAIBlogLearningPolicy,
+      cadence:{
+        ...openAIBlogLearningPolicy.cadence,
+        intervalMinutes:openAIBlogLearningIntervalMinutes,
+      },
+    };
+    const result=await runOpenAIBlogLearningCycle({policy});
+    openAIBlogLearningRuntimeState.lastRunAt=safeString(result&&result.report&&result.report.generatedAt,40)||new Date().toISOString();
+    openAIBlogLearningRuntimeState.lastSuccessAt=openAIBlogLearningRuntimeState.lastRunAt;
+    openAIBlogLearningRuntimeState.lastStatus=safeString(result&&result.report&&result.report.status,20).toUpperCase()||"PASS";
+    openAIBlogLearningRuntimeState.lastReason=safeString(reason,80)||"manual";
+    logOperation("openai_blog_learning.run_completed",{
+      reason:openAIBlogLearningRuntimeState.lastReason,
+      status:openAIBlogLearningRuntimeState.lastStatus,
+      trackedArticles:result&&result.report&&result.report.summary?Number(result.report.summary.trackedArticles)||0:0,
+      newArticlesThisRun:result&&result.report&&result.report.summary?Number(result.report.summary.newArticlesThisRun)||0:0,
+      pendingProposals:result&&result.report&&result.report.summary?Number(result.report.summary.pendingProposals)||0:0,
+    });
+    return result;
+  }catch(error){
+    openAIBlogLearningRuntimeState.lastStatus="FAIL";
+    openAIBlogLearningRuntimeState.lastReason=`${safeString(reason,80)||"manual"}: ${safeString(error&&error.message?error.message:String(error),200)}`;
+    logOperation("openai_blog_learning.run_failed",{
+      reason:safeString(reason,80)||"manual",
+      err:summarizeErrorForOperationLog(error,220),
+    });
+    return null;
+  }finally{
+    openAIBlogLearningRuntimeState.running=false;
+    scheduleOpenAIBlogLearningCycle(openAIBlogLearningIntervalMinutes*60*1000);
+  }
+}
+function startOpenAIBlogLearningLoop(){
+  if(!openAIBlogLearningEnabled)return;
+  scheduleOpenAIBlogLearningCycle(openAIBlogLearningPolicy.cadence.startupDelayMs);
+}
+function buildOpenAIBlogLearningRuntimeStateSnapshot(){
+  const policy={
+    ...openAIBlogLearningPolicy,
+    cadence:{
+      ...openAIBlogLearningPolicy.cadence,
+      intervalMinutes:openAIBlogLearningIntervalMinutes,
+    },
+  };
+  return buildOpenAIBlogLearningRuntimeSnapshot(policy,{
+    enabled:openAIBlogLearningEnabled,
+    running:openAIBlogLearningRuntimeState.running,
+    lastRunAt:openAIBlogLearningRuntimeState.lastRunAt,
+    lastSuccessAt:openAIBlogLearningRuntimeState.lastSuccessAt,
+    nextRunAt:openAIBlogLearningRuntimeState.nextRunAt,
+    lastStatus:openAIBlogLearningRuntimeState.lastStatus,
+    lastReason:openAIBlogLearningRuntimeState.lastReason,
+  });
+}
 function buildBundleOverview(rootDir,summaryFileName,buildSnapshot){
   const candidates=listBundleSummaryCandidates(rootDir,summaryFileName);
   return{
@@ -12152,6 +12268,7 @@ function buildRuntimeApiSnapshot(){
   const fullUtilization=buildFullUtilizationDefaultsSnapshot();
   const parentDispatchGuard=buildParentDispatchGuardDefaultsSnapshot();
   const phaseStatus=buildRequirementFoundationV1PhaseStatus();
+  const externalLearning=buildOpenAIBlogLearningRuntimeStateSnapshot();
   const executionVisibility={
     profile:runtimeExecutionProfile,
     envKey:executionProfileEnvKey,
@@ -12217,6 +12334,8 @@ function buildRuntimeApiSnapshot(){
     eval_harness:evalHarness,
     phaseStatus,
     phase_status:phaseStatus,
+    externalLearning,
+    external_learning:externalLearning,
     contractSpec:{
       schema:safeString(harnessTurnContractSpec&&harnessTurnContractSpec.schema,80)||"harness-turn-contract.v1",
       path:summarizePathForOperationLog(harnessTurnContractSpecPath,220),
@@ -12695,6 +12814,7 @@ function buildHarnessOverviewSnapshot(){
       harness:runtime.harnessMemory,
       taste:runtime.intentFirst&&runtime.intentFirst.tasteMemory?runtime.intentFirst.tasteMemory:{},
       execution:buildExecutionMemoryOverview({limit:10,window:60}),
+      externalLearning:runtime.externalLearning&&typeof runtime.externalLearning==="object"?runtime.externalLearning:{},
       replay:{
         recent:listReplayMemorySnapshots({limit:6}),
       },
@@ -15485,6 +15605,7 @@ async function stopHarnessServer(){
   if(shuttingDown)return;
   shuttingDown=true;
   clearPocSchedulerTimer();
+  clearOpenAIBlogLearningTimer();
   pocSchedulerState.enabled=false;
   pocSchedulerState.nextTickAt=0;
   persistHarnessExecutionMemoryStore({reason:"shutdown"});
@@ -15588,8 +15709,15 @@ async function main(){const preferredPort=Number.isInteger(forcedUiPort)&&forced
       schema:safeString(harnessTurnContractSpec&&harnessTurnContractSpec.schema,80)||"harness-turn-contract.v1",
       path:summarizePathForOperationLog(harnessTurnContractSpecPath,220),
     },
+    externalLearning:{
+      enabled:openAIBlogLearningEnabled?1:0,
+      intervalMinutes:openAIBlogLearningIntervalMinutes,
+      policyPath:summarizePathForOperationLog(defaultOpenAIBlogLearningPolicyPath,220),
+      sourceUrl:safeString(openAIBlogLearningPolicy&&openAIBlogLearningPolicy.source&&openAIBlogLearningPolicy.source.indexUrl,220),
+    },
   });
   updateCurrentLogSurface({trigger:"server_started"});
+  startOpenAIBlogLearningLoop();
 }
 
 async function startHarnessServer(){

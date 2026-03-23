@@ -1,0 +1,74 @@
+{
+  "schema": "openai-blog-learning-proposal.v1",
+  "proposalId": "openai-blog-one-year-of-responses",
+  "createdAt": "2026-03-23T12:24:56.934Z",
+  "articleId": "one-year-of-responses",
+  "title": "From prompts to products: One year of Responses | OpenAI Developers",
+  "sourceUrl": "https://developers.openai.com/blog/one-year-of-responses",
+  "relevance": "high",
+  "summary": "Five stories from developers building agentic products with the Responses API in its first year.",
+  "guidance": [
+    "Agent behavior monitoring",
+    "Failure detection and alerting",
+    "Developer investigation and debugging tools",
+    "Tracking behavior changes across agent versions",
+    "Identifying which prompt or system changes triggered failures",
+    "Examining reasoning traces and tool calls"
+  ],
+  "topicTags": [
+    "agents",
+    "api",
+    "automation",
+    "codex",
+    "context",
+    "evals",
+    "frontend"
+  ],
+  "actions": [
+    {
+      "id": "learning-doc-sync",
+      "target": "docs/OPENAI_DEVELOPER_LEARNINGS.md",
+      "rationale": "Sync official learnings into a retrieval-first, non-constitutional document.",
+      "status": "auto_doc_sync",
+      "riskFlags": [
+        "doc_only"
+      ]
+    },
+    {
+      "id": "context-memory-note",
+      "target": "docs/CONTEXT_MEMORY_POLICY.md",
+      "rationale": "Potential retrieval and compaction guidance; requires governed review before changing runtime behavior.",
+      "status": "proposal_only",
+      "riskFlags": [
+        "governed_promotion_required"
+      ]
+    },
+    {
+      "id": "frontend-quality-note",
+      "target": "skills/web-designer-master/references/quality-gate.md",
+      "rationale": "Potential frontend quality guidance; keep proposal-only until independently validated.",
+      "status": "proposal_only",
+      "riskFlags": [
+        "governed_promotion_required"
+      ]
+    },
+    {
+      "id": "eval-coverage-proposal",
+      "target": "scripts/config/eval_suite_default.json",
+      "rationale": "Potential eval coverage change; requires explicit validation and proposal review.",
+      "status": "proposal_only",
+      "riskFlags": [
+        "governed_promotion_required"
+      ]
+    },
+    {
+      "id": "operator-rules-note",
+      "target": "docs/AGENT_OPERATING_RULES.md",
+      "rationale": "Potential agent workflow guidance; keep proposal-only to avoid silent runtime drift.",
+      "status": "proposal_only",
+      "riskFlags": [
+        "governed_promotion_required"
+      ]
+    }
+  ]
+}

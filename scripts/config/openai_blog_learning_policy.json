@@ -1,0 +1,53 @@
+{
+  "schema": "openai-blog-learning-policy.v1",
+  "source": {
+    "name": "OpenAI Developers Blog",
+    "indexUrl": "https://developers.openai.com/blog",
+    "allowedHosts": [
+      "developers.openai.com"
+    ]
+  },
+  "cadence": {
+    "intervalMinutes": 360,
+    "startupDelayMs": 5000,
+    "requestTimeoutMs": 15000,
+    "maxArticlesPerRun": 6,
+    "maxGuidanceItemsPerArticle": 6
+  },
+  "governance": {
+    "mode": "observe_propose_and_doc_sync",
+    "autoPromoteDocs": true,
+    "autoPromoteDocPath": "docs/OPENAI_DEVELOPER_LEARNINGS.md",
+    "blockedApplyTargets": [
+      "AGENTS.md"
+    ],
+    "proposalOnlyTargets": [
+      "docs/AGENT_OPERATING_RULES.md",
+      "docs/AGENT_SKILL_MATRIX.md",
+      "docs/CONTEXT_MEMORY_POLICY.md",
+      "docs/EVIDENCE_CONTRACT.md",
+      "scripts/config/eval_suite_default.json",
+      "skills/web-designer-master/references/quality-gate.md"
+    ],
+    "frozenFoundationTargets": [
+      "docs/PHASE_REQUIREMENT_FOUNDATION_V1.md",
+      "scripts/lib/planning_mode_policy.js",
+      "scripts/config/requirement_contract.schema.json",
+      "scripts/config/dispatch_plan.schema.json",
+      "scripts/lib/requirement_revision_policy.js"
+    ]
+  },
+  "retrieval": {
+    "maxTopicEntries": 6,
+    "allowedTopics": [
+      "agents",
+      "automation",
+      "codex",
+      "context",
+      "evals",
+      "frontend",
+      "safety",
+      "skills"
+    ]
+  }
+}

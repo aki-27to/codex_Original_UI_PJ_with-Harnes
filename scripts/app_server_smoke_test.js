@@ -901,6 +901,7 @@ async function run() {
       port: harnessPort,
       extraEnv: {
         CODEX_REQUIREMENT_GUARD_ENABLED: "0",
+        CODEX_OPENAI_BLOG_LEARNING_ENABLED: "0",
       },
     });
     const runtimeReady = await waitForRuntimeCondition((runtime) => runtime && runtime.mode === "app-server", {
@@ -928,6 +929,15 @@ async function run() {
     }
     if (typeof runtimeReady.phase_status.auditReportPath !== "string" || !runtimeReady.phase_status.auditReportPath) {
       throw new Error("runtime phase_status did not expose auditReportPath");
+    }
+    if (!runtimeReady.external_learning || typeof runtimeReady.external_learning !== "object") {
+      throw new Error("runtime did not expose external_learning");
+    }
+    if (runtimeReady.external_learning.enabled !== false) {
+      throw new Error("runtime external_learning.enabled was not false when disabled by env");
+    }
+    if (typeof runtimeReady.external_learning.ledgerPath !== "string" || !runtimeReady.external_learning.ledgerPath) {
+      throw new Error("runtime external_learning did not expose ledgerPath");
     }
     if (!runtimeReady.adversarialShadow || typeof runtimeReady.adversarialShadow !== "object") {
       throw new Error("runtime did not expose adversarialShadow snapshot");

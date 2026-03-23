@@ -3,7 +3,7 @@
 - Status: PASS
 - Score: 8/8
 - requirementFoundationV1: done
-- completedAt: 2026-03-22T14:19:42.534Z
+- completedAt: 2026-03-23T12:24:37.511Z
 - auditReportPath: output/phase_exit_requirement_foundation_v1.json
 - markdownReportPath: output/phase_exit_requirement_foundation_v1.md
 - freezePolicy: bug_fix_only
@@ -12,7 +12,7 @@
 
 - [PASS] A. Requirement Lock is contract-driven single-card
   - Detail: All required evidence was found.
-  - Evidence: docs/CURRENT_ARCHITECTURE.md:97 :: Requirement Lock` panel inside `Harness Status`, so the active chat can read the locked Step 1 contract directly from `latestTurn.planning.requirementContract` instead of inferring it from later plan or trace rows. - The `Requirement Lock` 
+  - Evidence: docs/CURRENT_ARCHITECTURE.md:98 :: Requirement Lock` panel inside `Harness Status`, so the active chat can read the locked Step 1 contract directly from `latestTurn.planning.requirementContract` instead of inferring it from later plan or trace rows. - The `Requirement Lock` 
   - Evidence: web/01.HarnesUI/app.js:1457 :: title:"AIの方針"
   - Evidence: web/01.HarnesUI/app.js:1424 :: label:"進め方",text:`${approachParts.join("。")}。`}); } const holdReason=snapshot.contractStatus==="BLOCKED" ?( snapshot.displayHoldReason || snapshot.contractStatusReason || ((snapshot.validationHighlights&&snapshot.validationHighlights.length
   - Evidence: scripts/harnesui_requirement_summary_test.js:130 :: assert.strictEqual(progressGroups[0].title, "AIの方針", "the single requirement card should focus on the AI's direction"); assert.strictEqual(progressGroups[0].summary, "既存UIを大きく崩さず、AIの進行方向が一目で読めるようにする", "the summary should foreground the esse
@@ -21,7 +21,7 @@
   - Evidence: scripts/config/requirement_contract.schema.json :: schema=requirement-contract.v5 required=lockedGoal, intentHypotheses, questionPlan, delightPlan, displayContract
 - [PASS] C. requestCoverage is prompt-derived and carries core / parked / dropped lanes
   - Detail: All required evidence was found.
-  - Evidence: docs/CURRENT_ARCHITECTURE.md:101 :: re-parses the sanitized user prompt directly for clause seeding instead of backfilling from the requirement contract
+  - Evidence: docs/CURRENT_ARCHITECTURE.md:102 :: re-parses the sanitized user prompt directly for clause seeding instead of backfilling from the requirement contract
   - Evidence: scripts/planning_mode_policy_test.js:55 :: requestCoverage.rawRequestClauses) && fastArtifacts.requirementContract.requestCoverage.rawRequestClauses.length >= 1, "requirement contracts should persist a request-coverage ledger" ); assert.ok( Array.isArray(fastArtifacts.requirementCon
   - Evidence: scripts/config/requirement_contract.schema.json :: requestCoverage.required=rawRequestClauses, coreObligations, mappedRequirements, parkedItems, droppedItems, coverageSummary
 - [PASS] D. Unmapped core clauses are blocked
@@ -40,9 +40,9 @@
   - Evidence: scripts/eval_replay_api_smoke_test.js:147 :: post_lock_drift_clean_trace"), "default eval suite should include post-lock drift pass coverage"); assert(defaultSuite.caseIds.includes("post_lock_drift_detects_missing_downstream_refs"), "default eval suite should include post-lock drift d
 - [PASS] G. runtime revisionGate blocks silent rewrite and can RETURN_TO_INTAKE
   - Detail: All required evidence was found.
-  - Evidence: server.js:9823 :: runtimeRevisionGate.status==="BLOCK"||runtimeRevisionGate.status==="RETURN_TO_INTAKE"){ const currentRequirement=planningContext&&planningContext.requirementContract&&typeof planningContext.requirementContract==="object" ?planningContext.re
+  - Evidence: server.js:9850 :: runtimeRevisionGate.status==="BLOCK"||runtimeRevisionGate.status==="RETURN_TO_INTAKE"){ const currentRequirement=planningContext&&planningContext.requirementContract&&typeof planningContext.requirementContract==="object" ?planningContext.re
   - Evidence: scripts/requirement_revision_policy_test.js:61 :: silent rewrite attempts should BLOCK"); assert.strictEqual( silentRewrite.taskOutcomeReason, "silent_requirement_rewrite", "silent rewrite attempts should map to silent_requirement_rewrite" ); const downstreamProposal = buildRuntimeRevision
 - [PASS] H. clauseCompletionScorecard rejects final completion when core clauses are still unmet
   - Detail: All required evidence was found.
-  - Evidence: server.js:9926 :: finalStatus==="completed"&&clauseCompletionScorecard.status==="FAIL"){ finalStatus="failed"; explicitTaskOutcomeStatus="FAILED_VALIDATION"; explicitTaskOutcomeReason="release_clause_unsatisfied"
+  - Evidence: server.js:9953 :: finalStatus==="completed"&&clauseCompletionScorecard.status==="FAIL"){ finalStatus="failed"; explicitTaskOutcomeStatus="FAILED_VALIDATION"; explicitTaskOutcomeReason="release_clause_unsatisfied"
   - Evidence: scripts/requirement_revision_policy_test.js:148 :: clauseCompletionScorecard.status, "FAIL", "missing dispatch coverage for a core clause should fail the scorecard" ); assert.strictEqual( clauseCompletionScorecard.summary.unsatisfiedCount, 1, "exactly one core clause should remain unsatisfi

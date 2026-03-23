@@ -1,6 +1,6 @@
 # CONTEXT_MEMORY_POLICY
 
-Updated: 2026-03-07
+Updated: 2026-03-23
 
 ## 1) Purpose
 
@@ -52,7 +52,14 @@ Define how the harness preserves, summarizes, shares, and externalizes context s
 - Prefer file references over copied blocks when the information already exists in the repository.
 - The intent-first harness keeps user taste memory in a dedicated persisted store instead of smearing those preferences across arbitrary prompts.
 
-## 6) Safety and Privacy
+## 6) External Learning Memory
+
+- Official external learnings must be ingested into dedicated artifacts such as `output/openai_blog_learning_ledger.json`, `output/openai_blog_learning_digest.json`, and `docs/OPENAI_DEVELOPER_LEARNINGS.md` rather than copied into every prompt.
+- Retrieval must stay selective: only inject learnings that match the current task family or subsystem, and cap the number of promoted guidance items.
+- External learnings are advisory memory, not constitutional truth. They must not silently override `AGENTS.md` or frozen Step 1/2 behavior.
+- Promotion from external learning into runtime behavior must stay governed and regression-checked; collecting or summarizing a learning does not authorize automatic policy drift.
+
+## 7) Safety and Privacy
 
 - Do not copy secrets, credentials, tokens, or unnecessary personal data into summaries, child prompts, or artifacts unless the task explicitly requires it and the approval boundary allows it.
 - Scope shared context to the minimum needed for the receiving role to complete its task safely.

@@ -33,6 +33,7 @@ const elements = {
   executionMemoryCard: by("executionMemoryCard"),
   replayPatternsCard: by("replayPatternsCard"),
   skillPortfolioCard: by("skillPortfolioCard"),
+  externalLearningCard: by("externalLearningCard"),
   roleChecksCard: by("roleChecksCard"),
   rawSnapshot: by("overviewRawSnapshot"),
 };
@@ -294,6 +295,7 @@ function renderMetrics(payload) {
   const runtimeProof = evidence.runtimeProof && evidence.runtimeProof.latest ? evidence.runtimeProof.latest : null;
   const recentRuns = payload && payload.eval ? toArr(payload.eval.recentRuns) : [];
   const latestRun = recentRuns[0] || null;
+  const externalLearning = runtime && runtime.externalLearning ? runtime.externalLearning : {};
   const cards = [
     {
       label: "Active Agent",
@@ -330,6 +332,12 @@ function renderMetrics(payload) {
       value: signoff && signoff.assertions && signoff.assertions.allPassed ? "PASS" : "PENDING",
       detail: signoff ? `${formatInteger(num(signoff.coreHarnessWorkflow && signoff.coreHarnessWorkflow.passedCases, 0))}/${formatInteger(num(signoff.coreHarnessWorkflow && signoff.coreHarnessWorkflow.sampleSize, 0))} suite cases passed` : "No signoff bundle.",
       tags: [{ label: signoff ? safeText(signoff.name, "signoff") : "missing", tone: signoff ? "pass" : "warn" }],
+    },
+    {
+      label: "External Learning",
+      value: safeText(externalLearning.lastStatus, externalLearning.enabled ? "IDLE" : "DISABLED"),
+      detail: `${formatInteger(num(externalLearning.trackedArticles, 0))} articles / ${formatInteger(num(externalLearning.pendingProposalCount, 0))} pending proposals`,
+      tags: [{ label: externalLearning.enabled ? "official-blog" : "paused", tone: externalLearning.enabled ? "info" : "warn" }],
     },
   ];
   elements.metrics.innerHTML = cards.map(metricCardHtml).join("");
@@ -583,6 +591,7 @@ function renderEvidence(payload) {
 function renderMemory(payload) {
   const memory = payload && payload.memory ? payload.memory : {};
   const execution = memory.execution || {};
+  const externalLearning = memory.externalLearning || (payload && payload.runtime && payload.runtime.externalLearning) || {};
   const recentTurns = toArr(execution.recent).slice(0, 5).map((entry) => ({
     title: `${safeText(entry.agentName, "agent")} / ${safeText(entry.taskOutcomeStatus || entry.status, "status")}`,
     tags: [
@@ -646,6 +655,35 @@ function renderMemory(payload) {
     ])}
     ${itemListHtml(missingProposals.slice(0, 4), "No missing skill proposals are registered.")}
   `;
+  const learningArticles = toArr(externalLearning.recentArticles).map((entry) => ({
+    title: safeText(entry.title, "article"),
+    tags: [
+      { label: safeText(entry.relevance, "unknown"), tone: safeText(entry.relevance, "low") === "high" ? "pass" : safeText(entry.relevance, "low") === "medium" ? "warn" : "neutral" },
+      { label: toArr(entry.topicTags).slice(0, 2).join(" / ") || "topic", tone: "info" },
+    ],
+    detail: `${safeText(entry.indexDateLabel, "-")} / ${safeText(entry.url, "")}`,
+  }));
+  const learningProposals = toArr(externalLearning.pendingProposals).map((entry) => ({
+    title: safeText(entry.title, "proposal"),
+    detail: `${safeText(entry.target, "")} / ${safeText(entry.status, "proposal_only")}`,
+  }));
+  if (elements.externalLearningCard) {
+    elements.externalLearningCard.innerHTML = `
+      <div class="overview-inline-tags">
+        ${tagHtml(`status ${safeText(externalLearning.lastStatus, externalLearning.enabled ? "IDLE" : "DISABLED")}`, toneForTaskOutcome(externalLearning.lastStatus))}
+        ${tagHtml(`mode ${safeText(externalLearning.mode, "observe")}`, "info")}
+        ${tagHtml(`hosts ${formatInteger(toArr(externalLearning.allowedHosts).length)}`, "neutral")}
+      </div>
+      ${factRowsHtml([
+        { label: "Source", value: safeText(externalLearning.sourceName, "OpenAI Developers Blog"), detail: safeText(externalLearning.sourceUrl, "") },
+        { label: "Cadence", value: `${formatInteger(num(externalLearning.intervalMinutes, 0))} min`, detail: `next ${safeText(externalLearning.nextRunAt, "-")}` },
+        { label: "Artifacts", value: safeText(externalLearning.ledgerPath, "output/openai_blog_learning_ledger.json"), detail: `${safeText(externalLearning.digestPath, "")} / ${safeText(externalLearning.curatedDocPath, "")}` },
+        { label: "Freeze Guard", value: safeText(externalLearning.freezeAware && externalLearning.freezeAware.requirementFoundationV1, "bug_fix_only"), detail: `blocked ${toArr(externalLearning.freezeAware && externalLearning.freezeAware.blockedApplyTargets).join(", ") || "-"}` },
+      ])}
+      ${itemListHtml(learningArticles.slice(0, 4), "No recent official learning articles are tracked yet.")}
+      ${itemListHtml(learningProposals.slice(0, 4), "No governed promotion proposals are pending.")}
+    `;
+  }
   const roleCheckItems = toArr(skillPortfolio.roleChecks).map((entry) => ({
     title: safeText(entry.role, "role"),
     tags: [

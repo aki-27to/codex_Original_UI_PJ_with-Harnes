@@ -1,0 +1,73 @@
+{
+  "schema": "openai-blog-learning-proposal.v1",
+  "proposalId": "openai-blog-skills-shell-tips",
+  "createdAt": "2026-03-23T12:24:56.934Z",
+  "articleId": "skills-shell-tips",
+  "title": "Shell + Skills + Compaction: Tips for long-running agents that do real work | OpenAI Developers",
+  "sourceUrl": "https://developers.openai.com/blog/skills-shell-tips",
+  "relevance": "high",
+  "summary": "Practical patterns for building with skills, hosted shell, and server-side compaction in the Responses API.",
+  "guidance": [
+    "Skills (aligned with the Agent Skills open standard): reusable, versioned instructions you can mount into containers so that agents can execute tasks more reliably.",
+    "Upgraded shell tool: an OpenAI hosted container with controlled internet access, where an agent can install dependencies, run scripts, and write outputs (for example, reports and artifacts).",
+    "Server-side compaction : an easy way to automatically compact long agentic runs so that you never hit context limits.",
+    "Hosted containers managed by OpenAI.",
+    "A local shell runtime you execute yourself (same tool semantics, but you control the machine).",
+    "Server-side compaction (new): When context crosses the threshold, compaction runs automatically in-stream, so there’s no separate compaction call."
+  ],
+  "topicTags": [
+    "agents",
+    "api",
+    "codex",
+    "context",
+    "frontend",
+    "skills"
+  ],
+  "actions": [
+    {
+      "id": "learning-doc-sync",
+      "target": "docs/OPENAI_DEVELOPER_LEARNINGS.md",
+      "rationale": "Sync official learnings into a retrieval-first, non-constitutional document.",
+      "status": "auto_doc_sync",
+      "riskFlags": [
+        "doc_only"
+      ]
+    },
+    {
+      "id": "context-memory-note",
+      "target": "docs/CONTEXT_MEMORY_POLICY.md",
+      "rationale": "Potential retrieval and compaction guidance; requires governed review before changing runtime behavior.",
+      "status": "proposal_only",
+      "riskFlags": [
+        "governed_promotion_required"
+      ]
+    },
+    {
+      "id": "frontend-quality-note",
+      "target": "skills/web-designer-master/references/quality-gate.md",
+      "rationale": "Potential frontend quality guidance; keep proposal-only until independently validated.",
+      "status": "proposal_only",
+      "riskFlags": [
+        "governed_promotion_required"
+      ]
+    },
+    {
+      "id": "operator-rules-note",
+      "target": "docs/AGENT_OPERATING_RULES.md",
+      "rationale": "Potential agent workflow guidance; keep proposal-only to avoid silent runtime drift.",
+      "status": "proposal_only",
+      "riskFlags": [
+        "governed_promotion_required"
+      ]
+    },
+    {
+      "id": "skill-matrix-note",
+      "target": "docs/AGENT_SKILL_MATRIX.md",
+      "rationale": "Potential specialist coverage update; keep proposal-only until the need is validated.",
+      "status": "proposal_only",
+      "riskFlags": [
+        "governed_promotion_required"
+      ]
+    }
+  ]
+}

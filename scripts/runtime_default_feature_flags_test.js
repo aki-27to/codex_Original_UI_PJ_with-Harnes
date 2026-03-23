@@ -77,6 +77,7 @@ async function testRuntimeSnapshotReflectsDefaultFastAndGuardianFeatures() {
     CODEX_REQUEST_USER_INPUT_POLICY: "blocked",
     CODEX_ADVERSARIAL_SHADOW_ENABLED: "0",
     CODEX_ADVERSARIAL_LOOP_ENABLED: "0",
+    CODEX_OPENAI_BLOG_LEARNING_ENABLED: "0",
   });
   try {
     const runtime = await requestRuntime(handle.port);

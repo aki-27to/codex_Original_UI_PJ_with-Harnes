@@ -1,0 +1,83 @@
+{
+  "schema": "openai-blog-learning-proposal.v1",
+  "proposalId": "openai-blog-run-long-horizon-tasks-with-codex",
+  "createdAt": "2026-03-23T12:24:56.934Z",
+  "articleId": "run-long-horizon-tasks-with-codex",
+  "title": "Run long horizon tasks with Codex | OpenAI Developers",
+  "sourceUrl": "https://developers.openai.com/blog/run-long-horizon-tasks-with-codex",
+  "relevance": "high",
+  "summary": "OpenAI Developer Blog",
+  "guidance": [
+    "It’s better at multi-step execution (plan → implement → validate → repair).",
+    "It’s easier to steer mid-flight without resetting the whole run (course corrections don’t wipe progress).",
+    "Plan",
+    "Edit code",
+    "Run tools (tests/build/lint)",
+    "Observe results"
+  ],
+  "topicTags": [
+    "agents",
+    "automation",
+    "codex",
+    "context",
+    "evals",
+    "frontend",
+    "skills"
+  ],
+  "actions": [
+    {
+      "id": "learning-doc-sync",
+      "target": "docs/OPENAI_DEVELOPER_LEARNINGS.md",
+      "rationale": "Sync official learnings into a retrieval-first, non-constitutional document.",
+      "status": "auto_doc_sync",
+      "riskFlags": [
+        "doc_only"
+      ]
+    },
+    {
+      "id": "context-memory-note",
+      "target": "docs/CONTEXT_MEMORY_POLICY.md",
+      "rationale": "Potential retrieval and compaction guidance; requires governed review before changing runtime behavior.",
+      "status": "proposal_only",
+      "riskFlags": [
+        "governed_promotion_required"
+      ]
+    },
+    {
+      "id": "frontend-quality-note",
+      "target": "skills/web-designer-master/references/quality-gate.md",
+      "rationale": "Potential frontend quality guidance; keep proposal-only until independently validated.",
+      "status": "proposal_only",
+      "riskFlags": [
+        "governed_promotion_required"
+      ]
+    },
+    {
+      "id": "eval-coverage-proposal",
+      "target": "scripts/config/eval_suite_default.json",
+      "rationale": "Potential eval coverage change; requires explicit validation and proposal review.",
+      "status": "proposal_only",
+      "riskFlags": [
+        "governed_promotion_required"
+      ]
+    },
+    {
+      "id": "operator-rules-note",
+      "target": "docs/AGENT_OPERATING_RULES.md",
+      "rationale": "Potential agent workflow guidance; keep proposal-only to avoid silent runtime drift.",
+      "status": "proposal_only",
+      "riskFlags": [
+        "governed_promotion_required"
+      ]
+    },
+    {
+      "id": "skill-matrix-note",
+      "target": "docs/AGENT_SKILL_MATRIX.md",
+      "rationale": "Potential specialist coverage update; keep proposal-only until the need is validated.",
+      "status": "proposal_only",
+      "riskFlags": [
+        "governed_promotion_required"
+      ]
+    }
+  ]
+}

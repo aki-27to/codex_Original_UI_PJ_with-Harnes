@@ -1,0 +1,62 @@
+{
+  "schema": "openai-blog-learning-proposal.v1",
+  "proposalId": "openai-blog-building-frontend-uis-with-codex-and-figma",
+  "createdAt": "2026-03-23T12:24:56.934Z",
+  "articleId": "building-frontend-uis-with-codex-and-figma",
+  "title": "Building frontend UIs with Codex and Figma | OpenAI Developers",
+  "sourceUrl": "https://developers.openai.com/blog/building-frontend-uis-with-codex-and-figma",
+  "relevance": "high",
+  "summary": "Use Codex and Figma to bring real, running interfaces into Figma, refine them, and bring changes back to Codex.",
+  "guidance": [
+    "Decide to either create a new Figma file or use an existing one.",
+    "Determine which workspace to place the file in.",
+    "Set up the application for UI capture.",
+    "Open a new browser session of your application.",
+    "Adding design system components",
+    "Updating styles, fonts, and colors to variables"
+  ],
+  "topicTags": [
+    "agents",
+    "codex",
+    "context",
+    "frontend"
+  ],
+  "actions": [
+    {
+      "id": "learning-doc-sync",
+      "target": "docs/OPENAI_DEVELOPER_LEARNINGS.md",
+      "rationale": "Sync official learnings into a retrieval-first, non-constitutional document.",
+      "status": "auto_doc_sync",
+      "riskFlags": [
+        "doc_only"
+      ]
+    },
+    {
+      "id": "context-memory-note",
+      "target": "docs/CONTEXT_MEMORY_POLICY.md",
+      "rationale": "Potential retrieval and compaction guidance; requires governed review before changing runtime behavior.",
+      "status": "proposal_only",
+      "riskFlags": [
+        "governed_promotion_required"
+      ]
+    },
+    {
+      "id": "frontend-quality-note",
+      "target": "skills/web-designer-master/references/quality-gate.md",
+      "rationale": "Potential frontend quality guidance; keep proposal-only until independently validated.",
+      "status": "proposal_only",
+      "riskFlags": [
+        "governed_promotion_required"
+      ]
+    },
+    {
+      "id": "operator-rules-note",
+      "target": "docs/AGENT_OPERATING_RULES.md",
+      "rationale": "Potential agent workflow guidance; keep proposal-only to avoid silent runtime drift.",
+      "status": "proposal_only",
+      "riskFlags": [
+        "governed_promotion_required"
+      ]
+    }
+  ]
+}

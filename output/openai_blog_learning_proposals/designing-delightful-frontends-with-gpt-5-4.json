@@ -1,0 +1,73 @@
+{
+  "schema": "openai-blog-learning-proposal.v1",
+  "proposalId": "openai-blog-designing-delightful-frontends-with-gpt-5-4",
+  "createdAt": "2026-03-23T12:24:56.934Z",
+  "articleId": "designing-delightful-frontends-with-gpt-5-4",
+  "title": "Designing delightful frontends with GPT-5.4 | OpenAI Developers",
+  "sourceUrl": "https://developers.openai.com/blog/designing-delightful-frontends-with-gpt-5-4",
+  "relevance": "high",
+  "summary": "Practical techniques for steering GPT-5.4 toward polished, production-ready frontend designs.",
+  "guidance": [
+    "stronger image understanding throughout the design process",
+    "more functionally complete apps and websites",
+    "better use of tools to inspect, test, and verify its own work",
+    "Select low reasoning level to begin with.",
+    "Define your design system and constraints upfront (i.e., typography, color palette, layout).",
+    "Provide visual references or a mood board (i.e., attach a screenshot) to provide visual guardrails for the model."
+  ],
+  "topicTags": [
+    "context",
+    "evals",
+    "frontend",
+    "general",
+    "safety",
+    "skills"
+  ],
+  "actions": [
+    {
+      "id": "learning-doc-sync",
+      "target": "docs/OPENAI_DEVELOPER_LEARNINGS.md",
+      "rationale": "Sync official learnings into a retrieval-first, non-constitutional document.",
+      "status": "auto_doc_sync",
+      "riskFlags": [
+        "doc_only"
+      ]
+    },
+    {
+      "id": "context-memory-note",
+      "target": "docs/CONTEXT_MEMORY_POLICY.md",
+      "rationale": "Potential retrieval and compaction guidance; requires governed review before changing runtime behavior.",
+      "status": "proposal_only",
+      "riskFlags": [
+        "governed_promotion_required"
+      ]
+    },
+    {
+      "id": "frontend-quality-note",
+      "target": "skills/web-designer-master/references/quality-gate.md",
+      "rationale": "Potential frontend quality guidance; keep proposal-only until independently validated.",
+      "status": "proposal_only",
+      "riskFlags": [
+        "governed_promotion_required"
+      ]
+    },
+    {
+      "id": "eval-coverage-proposal",
+      "target": "scripts/config/eval_suite_default.json",
+      "rationale": "Potential eval coverage change; requires explicit validation and proposal review.",
+      "status": "proposal_only",
+      "riskFlags": [
+        "governed_promotion_required"
+      ]
+    },
+    {
+      "id": "skill-matrix-note",
+      "target": "docs/AGENT_SKILL_MATRIX.md",
+      "rationale": "Potential specialist coverage update; keep proposal-only until the need is validated.",
+      "status": "proposal_only",
+      "riskFlags": [
+        "governed_promotion_required"
+      ]
+    }
+  ]
+}
