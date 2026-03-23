@@ -6,6 +6,8 @@ const fs = require("fs");
 const os = require("os");
 const path = require("path");
 const {
+  buildRuntimeLearningSelection,
+  buildRuntimePromptInjection,
   normalizeOpenAIBlogLearningPolicy,
   runOpenAIBlogLearningCycle,
   buildRuntimeSnapshotFromArtifacts,
@@ -109,6 +111,16 @@ async function run() {
       maxTopicEntries: 4,
       allowedTopics: ["codex", "frontend", "context", "automation", "skills", "agents", "evals"],
     },
+    runtimeRetrieval: {
+      enabled: true,
+      shadowMode: false,
+      applyToAgents: ["default", "frontend_worker"],
+      applyToTaskFamilies: ["web_creative"],
+      topicPriority: ["frontend", "evals", "context", "codex", "skills", "automation"],
+      maxArticles: 2,
+      maxGuidanceItemsPerArticle: 2,
+      maxPromptBlockChars: 1200,
+    },
   }, { policyPath });
 
   const fetchText = async (url) => {
@@ -155,8 +167,49 @@ async function run() {
   assert.strictEqual(runtime.trackedArticles, 2, "runtime snapshot should surface tracked article count");
   assert(runtime.curatedDocPath.endsWith("docs/OPENAI_DEVELOPER_LEARNINGS.md"), "runtime snapshot should surface curated doc path");
   assert(runtime.pendingProposalCount >= 1, "runtime snapshot should surface pending proposal count");
+  assert(runtime.runtimeRetrieval && runtime.runtimeRetrieval.enabled === true, "runtime snapshot should surface runtime retrieval posture");
 
-  console.log("[openai-blog-learning-test] PASS run cycle, re-run dedupe, and runtime snapshot");
+  const planningContext = {
+    selection: {
+      taskFamily: "web_creative",
+      signals: {
+        specialistOwners: ["frontend_worker"],
+      },
+      selectedPlanningDepth: "STANDARD_PLANNING",
+      selectedAssuranceDepth: "STANDARD_ASSURANCE",
+    },
+    dispatchPlan: {
+      reviewerRequired: true,
+      testerRequired: true,
+      dispatches: [
+        { ownerAgent: "frontend_worker" },
+      ],
+    },
+    requirementContract: {
+      taskFamily: "web_creative",
+    },
+  };
+  const selection = buildRuntimeLearningSelection({
+    prompt: "Build a benchmarked landing page in React and verify the final UI with screenshots.",
+    agentName: "default",
+    planningContext,
+    policy,
+  });
+  assert.strictEqual(selection.status, "ready", "frontend web task should resolve runtime learning articles");
+  assert(selection.matchedTopics.includes("frontend"), "frontend runtime retrieval should match frontend topic");
+  assert(selection.articles.length >= 1, "runtime retrieval should select at least one article");
+
+  const injection = buildRuntimePromptInjection({
+    prompt: "Build a benchmarked landing page in React and verify the final UI with screenshots.",
+    agentName: "default",
+    planningContext,
+    policy,
+  });
+  assert.strictEqual(injection.status, "applied", "guarded runtime retrieval should apply a prompt block");
+  assert(injection.prompt.includes("[HARNESS_EXTERNAL_LEARNING_CONTEXT_V1]"), "injected prompt should include the learning marker");
+  assert(injection.prompt.includes("Designing delightful frontends with GPT-5.4"), "injected prompt should reference the matched official article");
+
+  console.log("[openai-blog-learning-test] PASS cycle, dedupe, runtime snapshot, and runtime retrieval injection");
   console.log("PASS");
 }
 

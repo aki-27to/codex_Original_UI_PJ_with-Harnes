@@ -444,6 +444,22 @@ function normalizeOpenAIBlogLearningPolicy(policy, { policyPath = defaultOpenAIB
         ? source.retrieval.allowedTopics.map((entry) => safeString(entry, 80).toLowerCase()).filter(Boolean)
         : [],
     },
+    runtimeRetrieval: {
+      enabled: Boolean(source && source.runtimeRetrieval && source.runtimeRetrieval.enabled),
+      shadowMode: Boolean(source && source.runtimeRetrieval && source.runtimeRetrieval.shadowMode),
+      applyToAgents: Array.isArray(source && source.runtimeRetrieval && source.runtimeRetrieval.applyToAgents)
+        ? source.runtimeRetrieval.applyToAgents.map((entry) => safeString(entry, 80)).filter(Boolean)
+        : ["default", "frontend_worker"],
+      applyToTaskFamilies: Array.isArray(source && source.runtimeRetrieval && source.runtimeRetrieval.applyToTaskFamilies)
+        ? source.runtimeRetrieval.applyToTaskFamilies.map((entry) => safeString(entry, 80).toLowerCase()).filter(Boolean)
+        : ["web_creative"],
+      topicPriority: Array.isArray(source && source.runtimeRetrieval && source.runtimeRetrieval.topicPriority)
+        ? source.runtimeRetrieval.topicPriority.map((entry) => safeString(entry, 80).toLowerCase()).filter(Boolean)
+        : ["frontend", "evals", "context", "codex", "skills", "automation", "agents", "safety"],
+      maxArticles: Math.max(1, Math.min(6, Math.trunc(Number(source && source.runtimeRetrieval && source.runtimeRetrieval.maxArticles) || 2))),
+      maxGuidanceItemsPerArticle: Math.max(1, Math.min(4, Math.trunc(Number(source && source.runtimeRetrieval && source.runtimeRetrieval.maxGuidanceItemsPerArticle) || 3))),
+      maxPromptBlockChars: Math.max(300, Math.min(4000, Math.trunc(Number(source && source.runtimeRetrieval && source.runtimeRetrieval.maxPromptBlockChars) || 1800))),
+    },
   };
   normalized.paths = {
     ledgerPath: path.join(workspaceRoot, "output", "openai_blog_learning_ledger.json"),
@@ -522,6 +538,7 @@ function buildCuratedDoc(digest, policy) {
     `- Source is locked to ${safeString(policy && policy.source && policy.source.indexUrl, 240)} and official hosts only.`,
     "- High-risk targets stay proposal-only until separately reviewed and validated.",
     "- Requirement-Driven Foundation V1 remains frozen; external learnings cannot silently expand Step 1/2.",
+    "- Runtime retrieval may inject a small advisory block only for targeted runtime paths such as `default` / `frontend_worker` web tasks.",
     "",
   ];
   const orderedTopics = Object.keys(topics).sort();
@@ -621,6 +638,266 @@ function selectTopicEntries(articles, policy) {
   return topics;
 }
 
+function uniqueStringList(values, limit = 8) {
+  const seen = new Set();
+  const results = [];
+  for (const value of Array.isArray(values) ? values : []) {
+    const text = safeString(value, 80);
+    const key = text.toLowerCase();
+    if (!text || seen.has(key)) {
+      continue;
+    }
+    seen.add(key);
+    results.push(text);
+    if (results.length >= limit) {
+      break;
+    }
+  }
+  return results;
+}
+
+function inferRuntimeRetrievalTopics({ prompt = "", agentName = "", planningContext = null, policy } = {}) {
+  const promptText = safeString(prompt, 12000);
+  const lower = promptText.toLowerCase();
+  const context = planningContext && typeof planningContext === "object" ? planningContext : {};
+  const selection = context.selection && typeof context.selection === "object" ? context.selection : {};
+  const requirement = context.requirementContract && typeof context.requirementContract === "object" ? context.requirementContract : {};
+  const dispatchPlan = context.dispatchPlan && typeof context.dispatchPlan === "object" ? context.dispatchPlan : {};
+  const dispatches = Array.isArray(dispatchPlan.dispatches) ? dispatchPlan.dispatches : [];
+  const specialistOwners = uniqueStringList(
+    [
+      ...((Array.isArray(selection.signals && selection.signals.specialistOwners) ? selection.signals.specialistOwners : [])),
+      ...dispatches.map((entry) => safeString(entry && entry.ownerAgent, 80)),
+      safeString(agentName, 80),
+    ],
+    12
+  ).map((entry) => entry.toLowerCase());
+  const taskFamily = safeString(selection.taskFamily || requirement.taskFamily, 80).toLowerCase();
+  const tags = [];
+  const addTag = (tag) => {
+    const normalized = safeString(tag, 80).toLowerCase();
+    if (!normalized || tags.includes(normalized)) {
+      return;
+    }
+    const allowedTopics = new Set(Array.isArray(policy && policy.retrieval && policy.retrieval.allowedTopics) ? policy.retrieval.allowedTopics : []);
+    if (allowedTopics.size && !allowedTopics.has(normalized)) {
+      return;
+    }
+    tags.push(normalized);
+  };
+
+  const isFrontendTask =
+    taskFamily === "web_creative" ||
+    specialistOwners.includes("frontend_worker") ||
+    /(?:frontend|landing page|hero section|website|web app|ui\b|ux\b|html|css|react|component|layout|design system|figma|browser|tailwind)/i.test(lower);
+
+  if (isFrontendTask) {
+    addTag("frontend");
+  }
+  if (
+    isFrontendTask ||
+    /(?:benchmark|verify|verification|acceptance|tester|review|screenshot|visual diff|regression|eval|test plan|compare)/i.test(lower) ||
+    dispatchPlan.reviewerRequired ||
+    dispatchPlan.testerRequired
+  ) {
+    addTag("evals");
+  }
+  if (
+    isFrontendTask ||
+    /(?:plan|repair|checkpoint|runbook|multi-step|long horizon|iterate|course correction|workflow)/i.test(lower) ||
+    /ASSURANCE|PLANNING/i.test(`${safeString(selection.selectedPlanningDepth, 80)} ${safeString(selection.selectedAssuranceDepth, 80)}`)
+  ) {
+    addTag("codex");
+  }
+  if (
+    /(?:context|memory|retrieval|history|compaction|prompt budget)/i.test(lower) ||
+    (isFrontendTask && promptText.length >= 600)
+  ) {
+    addTag("context");
+  }
+  if (/(?:skill|figma|stitch|tooling|workflow asset)/i.test(lower)) {
+    addTag("skills");
+  }
+  if (/(?:automation|background loop|github action|scheduled|cron)/i.test(lower)) {
+    addTag("automation");
+  }
+  if (/(?:guardrail|approval|risk|safety)/i.test(lower)) {
+    addTag("safety");
+  }
+  return {
+    taskFamily: taskFamily || "deterministic_code",
+    specialistOwners,
+    topics: tags,
+  };
+}
+
+function buildRuntimeLearningSelection({ prompt = "", agentName = "", planningContext = null, policy } = {}) {
+  const normalizedPolicy = normalizeOpenAIBlogLearningPolicy(policy, { policyPath: policy && policy.policyPath ? policy.policyPath : defaultOpenAIBlogLearningPolicyPath });
+  const runtimeRetrieval = normalizedPolicy.runtimeRetrieval || {};
+  const digest = readJsonIfExists(normalizedPolicy.paths.digestPath);
+  if (!runtimeRetrieval.enabled) {
+    return {
+      status: "disabled",
+      reason: "runtime_retrieval_disabled",
+      taskFamily: "",
+      matchedTopics: [],
+      articles: [],
+    };
+  }
+  if (!digest || !digest.topics || typeof digest.topics !== "object") {
+    return {
+      status: "skipped",
+      reason: "digest_missing",
+      taskFamily: "",
+      matchedTopics: [],
+      articles: [],
+    };
+  }
+  const inferred = inferRuntimeRetrievalTopics({ prompt, agentName, planningContext, policy: normalizedPolicy });
+  const targetAgents = new Set(Array.isArray(runtimeRetrieval.applyToAgents) ? runtimeRetrieval.applyToAgents.map((entry) => safeString(entry, 80)) : []);
+  const targetFamilies = new Set(Array.isArray(runtimeRetrieval.applyToTaskFamilies) ? runtimeRetrieval.applyToTaskFamilies.map((entry) => safeString(entry, 80).toLowerCase()) : []);
+  const normalizedAgent = safeString(agentName, 80);
+  if (targetAgents.size && normalizedAgent && !targetAgents.has(normalizedAgent)) {
+    return {
+      status: "skipped",
+      reason: "agent_not_targeted",
+      taskFamily: inferred.taskFamily,
+      matchedTopics: inferred.topics,
+      articles: [],
+    };
+  }
+  if (targetFamilies.size && inferred.taskFamily && !targetFamilies.has(inferred.taskFamily)) {
+    return {
+      status: "skipped",
+      reason: "task_family_not_targeted",
+      taskFamily: inferred.taskFamily,
+      matchedTopics: inferred.topics,
+      articles: [],
+    };
+  }
+  if (!inferred.topics.length) {
+    return {
+      status: "skipped",
+      reason: "no_topic_match",
+      taskFamily: inferred.taskFamily,
+      matchedTopics: [],
+      articles: [],
+    };
+  }
+
+  const digestTopics = digest.topics;
+  const priority = Array.isArray(runtimeRetrieval.topicPriority) ? runtimeRetrieval.topicPriority : [];
+  const priorityWeight = new Map(priority.map((entry, index) => [entry, Math.max(1, priority.length - index)]));
+  const articleById = new Map();
+  inferred.topics.forEach((topic) => {
+    const entries = Array.isArray(digestTopics[topic]) ? digestTopics[topic] : [];
+    const topicWeight = priorityWeight.get(topic) || 1;
+    entries.forEach((entry, index) => {
+      const articleId = safeString(entry && entry.articleId, 120);
+      if (!articleId) {
+        return;
+      }
+      const current = articleById.get(articleId) || {
+        articleId,
+        title: safeString(entry && entry.title, 200),
+        url: safeString(entry && entry.url, 320),
+        relevance: safeString(entry && entry.relevance, 20) || "medium",
+        indexDateLabel: safeString(entry && entry.indexDateLabel, 40),
+        summary: safeString(entry && entry.summary, 320),
+        guidance: Array.isArray(entry && entry.guidance) ? entry.guidance.map((item) => safeString(item, 240)).filter(Boolean) : [],
+        matchedTopics: [],
+        score: 0,
+      };
+      if (!current.matchedTopics.includes(topic)) {
+        current.matchedTopics.push(topic);
+      }
+      current.score += topicWeight * 10 - index;
+      articleById.set(articleId, current);
+    });
+  });
+  const articles = Array.from(articleById.values())
+    .sort((left, right) => right.score - left.score || left.title.localeCompare(right.title))
+    .slice(0, runtimeRetrieval.maxArticles)
+    .map((entry) => ({
+      articleId: entry.articleId,
+      title: entry.title,
+      url: entry.url,
+      relevance: entry.relevance,
+      indexDateLabel: entry.indexDateLabel,
+      summary: entry.summary,
+      matchedTopics: entry.matchedTopics.slice(0, 4),
+      guidance: entry.guidance.slice(0, runtimeRetrieval.maxGuidanceItemsPerArticle),
+    }));
+  return {
+    status: articles.length ? "ready" : "skipped",
+    reason: articles.length ? "matched_official_articles" : "no_article_match",
+    taskFamily: inferred.taskFamily,
+    matchedTopics: inferred.topics,
+    articles,
+  };
+}
+
+function buildRuntimePromptInjection({ prompt = "", agentName = "", planningContext = null, policy } = {}) {
+  const normalizedPrompt = safeString(prompt, 20000);
+  const normalizedPolicy = normalizeOpenAIBlogLearningPolicy(policy, { policyPath: policy && policy.policyPath ? policy.policyPath : defaultOpenAIBlogLearningPolicyPath });
+  const runtimeRetrieval = normalizedPolicy.runtimeRetrieval || {};
+  const selection = buildRuntimeLearningSelection({
+    prompt: normalizedPrompt,
+    agentName,
+    planningContext,
+    policy: normalizedPolicy,
+  });
+  const base = {
+    schema: "openai-blog-runtime-retrieval.v1",
+    status: selection.status,
+    reason: selection.reason,
+    applied: false,
+    shadowMode: Boolean(runtimeRetrieval.shadowMode),
+    prompt: normalizedPrompt,
+    promptBlock: "",
+    promptBlockChars: 0,
+    taskFamily: selection.taskFamily || "",
+    matchedTopics: selection.matchedTopics || [],
+    articles: selection.articles || [],
+  };
+  if (selection.status !== "ready") {
+    return base;
+  }
+  const lines = [
+    "",
+    "[HARNESS_EXTERNAL_LEARNING_CONTEXT_V1]",
+    "Advisory only. Use these official learnings only when they directly improve the current implementation.",
+    "Do not override the locked requirement contract, approval boundaries, or frozen Step 1/2 behavior.",
+    `Matched topics: ${(selection.matchedTopics || []).join(", ")}`,
+    "Official learnings:",
+  ];
+  selection.articles.forEach((article, index) => {
+    lines.push(`${index + 1}. ${safeString(article.title, 180)}`);
+    if (safeString(article.summary, 220)) {
+      lines.push(`   Summary: ${safeString(article.summary, 220)}`);
+    }
+    article.guidance.forEach((item) => {
+      lines.push(`   - ${safeString(item, 220)}`);
+    });
+  });
+  lines.push("[/HARNESS_EXTERNAL_LEARNING_CONTEXT_V1]");
+  let promptBlock = lines.join("\n");
+  if (promptBlock.length > runtimeRetrieval.maxPromptBlockChars) {
+    promptBlock = safeString(promptBlock, runtimeRetrieval.maxPromptBlockChars - 24);
+    promptBlock = `${promptBlock}\n[/HARNESS_EXTERNAL_LEARNING_CONTEXT_V1]`;
+  }
+  const applied = !runtimeRetrieval.shadowMode;
+  return {
+    ...base,
+    status: applied ? "applied" : "shadow",
+    reason: applied ? "guarded_runtime_injection" : "shadow_runtime_injection",
+    applied,
+    promptBlock,
+    promptBlockChars: promptBlock.length,
+    prompt: applied ? `${normalizedPrompt}${promptBlock}` : normalizedPrompt,
+  };
+}
+
 function buildRuntimeSnapshotFromArtifacts(policy, runtimeState = {}) {
   const ledger = readJsonIfExists(policy.paths.ledgerPath) || {};
   const digest = readJsonIfExists(policy.paths.digestPath) || {};
@@ -667,6 +944,26 @@ function buildRuntimeSnapshotFromArtifacts(policy, runtimeState = {}) {
     latestArticle: recentArticles[0] || null,
     recentArticles,
     pendingProposals,
+    runtimeRetrieval: {
+      enabled: Boolean(policy && policy.runtimeRetrieval && policy.runtimeRetrieval.enabled),
+      shadowMode: Boolean(policy && policy.runtimeRetrieval && policy.runtimeRetrieval.shadowMode),
+      applyToAgents: Array.isArray(policy && policy.runtimeRetrieval && policy.runtimeRetrieval.applyToAgents)
+        ? policy.runtimeRetrieval.applyToAgents.slice(0, 8)
+        : [],
+      applyToTaskFamilies: Array.isArray(policy && policy.runtimeRetrieval && policy.runtimeRetrieval.applyToTaskFamilies)
+        ? policy.runtimeRetrieval.applyToTaskFamilies.slice(0, 8)
+        : [],
+      maxArticles: Number(policy && policy.runtimeRetrieval && policy.runtimeRetrieval.maxArticles) || 0,
+      maxGuidanceItemsPerArticle: Number(policy && policy.runtimeRetrieval && policy.runtimeRetrieval.maxGuidanceItemsPerArticle) || 0,
+      lastStatus: safeString(runtimeState.lastRetrievalStatus, 24) || (policy && policy.runtimeRetrieval && policy.runtimeRetrieval.enabled ? "IDLE" : "DISABLED"),
+      lastReason: safeString(runtimeState.lastRetrievalReason, 200),
+      lastAppliedAt: safeString(runtimeState.lastRetrievalAt, 40),
+      lastAgentName: safeString(runtimeState.lastRetrievalAgent, 80),
+      lastTaskFamily: safeString(runtimeState.lastRetrievalTaskFamily, 80),
+      lastMatchedTopics: Array.isArray(runtimeState.lastRetrievalTopics) ? runtimeState.lastRetrievalTopics.slice(0, 6) : [],
+      lastArticleIds: Array.isArray(runtimeState.lastRetrievalArticleIds) ? runtimeState.lastRetrievalArticleIds.slice(0, 6) : [],
+      lastPromptBlockChars: Number(runtimeState.lastRetrievalPromptBlockChars) || 0,
+    },
     freezeAware: {
       requirementFoundationV1: "bug_fix_only",
       blockedApplyTargets: Array.isArray(policy && policy.governance && policy.governance.blockedApplyTargets)
@@ -825,6 +1122,8 @@ async function runOpenAIBlogLearningCycle({
 }
 
 module.exports = {
+  buildRuntimeLearningSelection,
+  buildRuntimePromptInjection,
   defaultOpenAIBlogLearningPolicyPath,
   loadOpenAIBlogLearningPolicy,
   normalizeOpenAIBlogLearningPolicy,

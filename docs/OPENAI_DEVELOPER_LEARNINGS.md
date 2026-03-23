@@ -1,6 +1,6 @@
 # OPENAI_DEVELOPER_LEARNINGS
 
-Updated: 2026-03-23T12:24:56.934Z
+Updated: 2026-03-23T13:40:11.170Z
 
 This file is auto-synced from the official OpenAI Developers blog learning lane.
 It is not constitutional guidance and does not silently override `AGENTS.md` or frozen Step 1/2 behavior.
@@ -11,6 +11,7 @@ It is not constitutional guidance and does not silently override `AGENTS.md` or 
 - Source is locked to https://developers.openai.com/blog and official hosts only.
 - High-risk targets stay proposal-only until separately reviewed and validated.
 - Requirement-Driven Foundation V1 remains frozen; external learnings cannot silently expand Step 1/2.
+- Runtime retrieval may inject a small advisory block only for targeted runtime paths such as `default` / `frontend_worker` web tasks.
 
 ## Topic: agents
 

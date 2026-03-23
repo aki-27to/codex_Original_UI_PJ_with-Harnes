@@ -273,6 +273,20 @@ function createOverviewPayload(overrides = {}) {
         digestPath: "output/openai_blog_learning_digest.json",
         reportPath: "output/openai_blog_learning_report.md",
         curatedDocPath: "docs/OPENAI_DEVELOPER_LEARNINGS.md",
+        runtimeRetrieval: {
+          enabled: true,
+          shadowMode: false,
+          applyToAgents: ["default", "frontend_worker"],
+          applyToTaskFamilies: ["web_creative"],
+          lastStatus: "APPLIED",
+          lastReason: "guarded_runtime_injection",
+          lastAppliedAt: "2026-03-23T00:10:00.000Z",
+          lastAgentName: "default",
+          lastTaskFamily: "web_creative",
+          lastMatchedTopics: ["frontend", "evals"],
+          lastArticleIds: ["designing-delightful-frontends-with-gpt-5-4"],
+          lastPromptBlockChars: 612,
+        },
         recentArticles: [
           {
             articleId: "run-long-horizon-tasks-with-codex",
@@ -563,6 +577,14 @@ function createOverviewPayload(overrides = {}) {
         ledgerPath: "output/openai_blog_learning_ledger.json",
         digestPath: "output/openai_blog_learning_digest.json",
         curatedDocPath: "docs/OPENAI_DEVELOPER_LEARNINGS.md",
+        runtimeRetrieval: {
+          enabled: true,
+          shadowMode: false,
+          applyToAgents: ["default", "frontend_worker"],
+          applyToTaskFamilies: ["web_creative"],
+          lastStatus: "APPLIED",
+          lastMatchedTopics: ["frontend", "evals"],
+        },
         recentArticles: [
           {
             title: "Run long horizon tasks with Codex",
@@ -863,6 +885,10 @@ function assertRenderedOverviewMatchesPayload(payload, elements) {
     const externalLearningCardHtml = elements.externalLearningCard ? elements.externalLearningCard.innerHTML : "";
     assertContains(externalLearningCardHtml, String(externalLearning.sourceName || "OpenAI Developers Blog"), "external learning card must render source name");
     assertContains(externalLearningCardHtml, String((externalLearning.recentArticles && externalLearning.recentArticles[0] && externalLearning.recentArticles[0].title) || "article"), "external learning card must render recent article title");
+    if (externalLearning.runtimeRetrieval && typeof externalLearning.runtimeRetrieval === "object") {
+      assertContains(externalLearningCardHtml, String(externalLearning.runtimeRetrieval.lastStatus || "IDLE"), "external learning card must render runtime retrieval status");
+      assertContains(externalLearningCardHtml, String((externalLearning.runtimeRetrieval.lastMatchedTopics && externalLearning.runtimeRetrieval.lastMatchedTopics[0]) || "frontend"), "external learning card must render runtime retrieval topics");
+    }
     const metricsHtml = elements.overviewMetrics ? elements.overviewMetrics.innerHTML : "";
     assertContains(metricsHtml, String(externalLearning.lastStatus || "PASS"), "metrics must render external learning status");
   }

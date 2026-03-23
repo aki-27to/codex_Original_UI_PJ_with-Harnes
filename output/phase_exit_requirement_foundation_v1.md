@@ -3,7 +3,7 @@
 - Status: PASS
 - Score: 8/8
 - requirementFoundationV1: done
-- completedAt: 2026-03-23T12:24:37.511Z
+- completedAt: 2026-03-23T13:40:11.163Z
 - auditReportPath: output/phase_exit_requirement_foundation_v1.json
 - markdownReportPath: output/phase_exit_requirement_foundation_v1.md
 - freezePolicy: bug_fix_only
@@ -40,9 +40,9 @@
   - Evidence: scripts/eval_replay_api_smoke_test.js:147 :: post_lock_drift_clean_trace"), "default eval suite should include post-lock drift pass coverage"); assert(defaultSuite.caseIds.includes("post_lock_drift_detects_missing_downstream_refs"), "default eval suite should include post-lock drift d
 - [PASS] G. runtime revisionGate blocks silent rewrite and can RETURN_TO_INTAKE
   - Detail: All required evidence was found.
-  - Evidence: server.js:9850 :: runtimeRevisionGate.status==="BLOCK"||runtimeRevisionGate.status==="RETURN_TO_INTAKE"){ const currentRequirement=planningContext&&planningContext.requirementContract&&typeof planningContext.requirementContract==="object" ?planningContext.re
+  - Evidence: server.js:9922 :: runtimeRevisionGate.status==="BLOCK"||runtimeRevisionGate.status==="RETURN_TO_INTAKE"){ const currentRequirement=planningContext&&planningContext.requirementContract&&typeof planningContext.requirementContract==="object" ?planningContext.re
   - Evidence: scripts/requirement_revision_policy_test.js:61 :: silent rewrite attempts should BLOCK"); assert.strictEqual( silentRewrite.taskOutcomeReason, "silent_requirement_rewrite", "silent rewrite attempts should map to silent_requirement_rewrite" ); const downstreamProposal = buildRuntimeRevision
 - [PASS] H. clauseCompletionScorecard rejects final completion when core clauses are still unmet
   - Detail: All required evidence was found.
-  - Evidence: server.js:9953 :: finalStatus==="completed"&&clauseCompletionScorecard.status==="FAIL"){ finalStatus="failed"; explicitTaskOutcomeStatus="FAILED_VALIDATION"; explicitTaskOutcomeReason="release_clause_unsatisfied"
+  - Evidence: server.js:10025 :: finalStatus==="completed"&&clauseCompletionScorecard.status==="FAIL"){ finalStatus="failed"; explicitTaskOutcomeStatus="FAILED_VALIDATION"; explicitTaskOutcomeReason="release_clause_unsatisfied"
   - Evidence: scripts/requirement_revision_policy_test.js:148 :: clauseCompletionScorecard.status, "FAIL", "missing dispatch coverage for a core clause should fail the scorecard" ); assert.strictEqual( clauseCompletionScorecard.summary.unsatisfiedCount, 1, "exactly one core clause should remain unsatisfi

@@ -149,6 +149,7 @@ const {
   repoRelative:repoRelativePath,
 }=require("./scripts/lib/logging_surface");
 const {
+  buildRuntimePromptInjection,
   defaultOpenAIBlogLearningPolicyPath,
   loadOpenAIBlogLearningPolicy,
   buildRuntimeSnapshotFromArtifacts:buildOpenAIBlogLearningRuntimeSnapshot,
@@ -196,8 +197,18 @@ const automaticApprovalReviewDefault=parseBooleanEnv(automaticApprovalReviewEnvK
 const fastModeDefault=parseBooleanEnv(fastModeDefaultEnvKey,false);
 const openAIBlogLearningEnabledEnvKey="CODEX_OPENAI_BLOG_LEARNING_ENABLED";
 const openAIBlogLearningIntervalEnvKey="CODEX_OPENAI_BLOG_LEARNING_INTERVAL_MINUTES";
+const openAIBlogLearningRuntimeRetrievalEnabledEnvKey="CODEX_OPENAI_BLOG_RUNTIME_RETRIEVAL_ENABLED";
+const openAIBlogLearningRuntimeRetrievalShadowModeEnvKey="CODEX_OPENAI_BLOG_RUNTIME_RETRIEVAL_SHADOW_MODE";
 const openAIBlogLearningPolicy=loadOpenAIBlogLearningPolicy(defaultOpenAIBlogLearningPolicyPath);
 const openAIBlogLearningEnabled=parseBooleanEnv(openAIBlogLearningEnabledEnvKey,true);
+const openAIBlogLearningRuntimeRetrievalEnabled=parseBooleanEnv(
+  openAIBlogLearningRuntimeRetrievalEnabledEnvKey,
+  openAIBlogLearningEnabled&&Boolean(openAIBlogLearningPolicy&&openAIBlogLearningPolicy.runtimeRetrieval&&openAIBlogLearningPolicy.runtimeRetrieval.enabled)
+);
+const openAIBlogLearningRuntimeRetrievalShadowMode=parseBooleanEnv(
+  openAIBlogLearningRuntimeRetrievalShadowModeEnvKey,
+  Boolean(openAIBlogLearningPolicy&&openAIBlogLearningPolicy.runtimeRetrieval&&openAIBlogLearningPolicy.runtimeRetrieval.shadowMode)
+);
 const openAIBlogLearningIntervalMinutes=Math.max(
   15,
   Math.min(
@@ -213,6 +224,16 @@ const openAIBlogLearningRuntimeState={
   nextRunAt:"",
   lastStatus:openAIBlogLearningEnabled?"IDLE":"DISABLED",
   lastReason:"",
+  lastRetrievalStatus:openAIBlogLearningRuntimeRetrievalEnabled
+    ?(openAIBlogLearningRuntimeRetrievalShadowMode?"SHADOW_IDLE":"IDLE")
+    :"DISABLED",
+  lastRetrievalReason:"",
+  lastRetrievalAt:"",
+  lastRetrievalAgent:"",
+  lastRetrievalTaskFamily:"",
+  lastRetrievalTopics:[],
+  lastRetrievalArticleIds:[],
+  lastRetrievalPromptBlockChars:0,
 };
 let openAIBlogLearningTimer=null;
 const gitAutomationConfig=buildGitAutomationConfig(process.env);
@@ -9191,6 +9212,7 @@ async function ensureAgentThread(agentName,options){
 
 async function executeTurnStreaming(res,prompt,agentName,options){
   const state=getOrCreateAgentState(agentName);
+  const originalPrompt=safeString(prompt,defaultPromptCharLimit);
   const sandboxMode=normalizeSandboxMode(options&&options.sandboxMode);
   const approvalPolicy=normalizeApprovalPolicy(options&&options.approvalPolicy);
   const webSearchMode=normalizeWebSearchMode(options&&Object.prototype.hasOwnProperty.call(options||{},"webSearchMode")?options.webSearchMode:options&&options.webSearch,"disabled");
@@ -9207,26 +9229,26 @@ async function executeTurnStreaming(res,prompt,agentName,options){
   state.fastModeEnabled=fastModeEnabled;
   state.automaticApprovalReviewEnabled=automaticApprovalReviewEnabled;
   const gitAutomationIgnoredPaths=isPathWithin(workspaceRoot,cwd)?gitAutomationWorkspaceIgnoredPaths:[];
-  const promptSummary=summarizeTextForOperationLog(prompt,24000);
+  const promptSummary=summarizeTextForOperationLog(originalPrompt,24000);
   const promptAuditSource=options&&options.promptAudit&&typeof options.promptAudit==="object"?options.promptAudit:{};
   const promptAudit={
     limit:Number.isFinite(Number(promptAuditSource.limit))?Math.max(0,Math.trunc(Number(promptAuditSource.limit))):defaultPromptCharLimit,
-    inputLength:Number.isFinite(Number(promptAuditSource.inputLength))?Math.max(0,Math.trunc(Number(promptAuditSource.inputLength))):safeString(prompt,defaultPromptCharLimit).length,
-    outputLength:Number.isFinite(Number(promptAuditSource.outputLength))?Math.max(0,Math.trunc(Number(promptAuditSource.outputLength))):safeString(prompt,defaultPromptCharLimit).length,
+    inputLength:Number.isFinite(Number(promptAuditSource.inputLength))?Math.max(0,Math.trunc(Number(promptAuditSource.inputLength))):originalPrompt.length,
+    outputLength:Number.isFinite(Number(promptAuditSource.outputLength))?Math.max(0,Math.trunc(Number(promptAuditSource.outputLength))):originalPrompt.length,
     truncated:Boolean(promptAuditSource.truncated),
   };
   const adversarialAttempt=Number.isFinite(Number(options&&options.adversarialAttempt))
     ?Math.max(0,Math.trunc(Number(options.adversarialAttempt)))
     :0;
   const adversarialRootPrompt=safeString(
-    options&&typeof options.adversarialRootPrompt==="string"?options.adversarialRootPrompt:prompt,
+    options&&typeof options.adversarialRootPrompt==="string"?options.adversarialRootPrompt:originalPrompt,
     defaultPromptCharLimit
   );
   const parentDispatchAttempt=Number.isFinite(Number(options&&options.parentDispatchAttempt))
     ?Math.max(0,Math.trunc(Number(options.parentDispatchAttempt)))
     :0;
   const parentDispatchRootPrompt=safeString(
-    options&&typeof options.parentDispatchRootPrompt==="string"?options.parentDispatchRootPrompt:prompt,
+    options&&typeof options.parentDispatchRootPrompt==="string"?options.parentDispatchRootPrompt:originalPrompt,
     defaultPromptCharLimit
   );
   const executionProfile=normalizeExecutionProfile(options&&options.executionProfile,runtimeExecutionProfile);
@@ -9235,7 +9257,7 @@ async function executeTurnStreaming(res,prompt,agentName,options){
     options&&options.planningContext&&typeof options.planningContext==="object"
       ?options.planningContext
       :buildPlanningArtifacts({
-        prompt,
+        prompt:originalPrompt,
         options:{
           ...options,
           agentName,
@@ -9249,6 +9271,21 @@ async function executeTurnStreaming(res,prompt,agentName,options){
       })
   );
   state.lastPlanningContext=planningContext;
+  const externalLearningPolicy=buildResolvedOpenAIBlogLearningPolicy();
+  const externalLearningRetrieval=buildRuntimePromptInjection({
+    prompt:originalPrompt,
+    agentName,
+    planningContext,
+    policy:externalLearningPolicy,
+  });
+  rememberOpenAIBlogLearningRetrievalDecision({
+    ...externalLearningRetrieval,
+    agentName,
+  });
+  const effectivePrompt=typeof externalLearningRetrieval.prompt==="string"&&externalLearningRetrieval.prompt
+    ?externalLearningRetrieval.prompt
+    :originalPrompt;
+  promptAudit.outputLength=Math.max(promptAudit.outputLength,effectivePrompt.length);
   const turnVisibility=buildTurnVisibilitySnapshot({
     requestProfile:executionProfile,
     executionIntent,
@@ -9311,7 +9348,7 @@ async function executeTurnStreaming(res,prompt,agentName,options){
   }
 
   const images=options&&Array.isArray(options.images)?options.images:[];
-  const inputCandidates=buildTurnInputCandidates(prompt,images);
+  const inputCandidates=buildTurnInputCandidates(effectivePrompt,images);
   if(!inputCandidates.length){
     logOperation("turn.invalid_input",{
       a:safeString(agentName,80),
@@ -9461,7 +9498,7 @@ async function executeTurnStreaming(res,prompt,agentName,options){
     turnId,
     threadId,
     agentName,
-    prompt,
+    prompt:effectivePrompt,
     sandboxMode,
     approvalPolicy,
     cwd,
@@ -9491,6 +9528,21 @@ async function executeTurnStreaming(res,prompt,agentName,options){
           ticket:safeString(options.governanceOverride.ticket,120)||"",
         }
         :null,
+      externalLearning:{
+        status:safeString(externalLearningRetrieval.status,24)||"SKIPPED",
+        reason:safeString(externalLearningRetrieval.reason,120)||"",
+        applied:externalLearningRetrieval.applied?1:0,
+        shadowMode:externalLearningRetrieval.shadowMode?1:0,
+        promptBlockChars:Number.isFinite(Number(externalLearningRetrieval.promptBlockChars))?Math.max(0,Math.trunc(Number(externalLearningRetrieval.promptBlockChars))):0,
+        matchedTopics:Array.isArray(externalLearningRetrieval.matchedTopics)?externalLearningRetrieval.matchedTopics:[],
+        articles:Array.isArray(externalLearningRetrieval.articles)
+          ?externalLearningRetrieval.articles.map((entry)=>({
+            articleId:safeString(entry&&entry.articleId,120)||"",
+            title:safeString(entry&&entry.title,200)||"",
+            matchedTopics:Array.isArray(entry&&entry.matchedTopics)?entry.matchedTopics.slice(0,4):[],
+          }))
+          :[],
+      },
       promptAudit:{
         limit:promptAudit.limit,
         inputLength:promptAudit.inputLength,
@@ -9510,8 +9562,9 @@ async function executeTurnStreaming(res,prompt,agentName,options){
     });
   }
   const replaySeed={
-    prompt:safeString(prompt,replayPromptMaxChars),
-    promptSha256:hashSha256Hex(prompt),
+    prompt:safeString(effectivePrompt,replayPromptMaxChars),
+    promptSha256:hashSha256Hex(effectivePrompt),
+    operatorPromptSha256:hashSha256Hex(originalPrompt),
     sandboxMode:safeString(sandboxMode,40)||"workspace-write",
     approvalPolicy:safeString(approvalPolicy,40)||"never",
     webSearch:webSearchEnabled?1:0,
@@ -9529,6 +9582,17 @@ async function executeTurnStreaming(res,prompt,agentName,options){
     planningDepth:safeString(planningContext&&planningContext.selection&&planningContext.selection.selectedPlanningDepth,60)||"STANDARD_PLANNING",
     assuranceDepth:safeString(planningContext&&planningContext.selection&&planningContext.selection.selectedAssuranceDepth,60)||"STANDARD_ASSURANCE",
     flowPath:safeString(planningContext&&planningContext.selection&&planningContext.selection.flowPath,80)||"NORMAL_PATH",
+    externalLearning:{
+      status:safeString(externalLearningRetrieval.status,24)||"SKIPPED",
+      reason:safeString(externalLearningRetrieval.reason,120)||"",
+      applied:externalLearningRetrieval.applied?1:0,
+      shadowMode:externalLearningRetrieval.shadowMode?1:0,
+      promptBlockChars:Number.isFinite(Number(externalLearningRetrieval.promptBlockChars))?Math.max(0,Math.trunc(Number(externalLearningRetrieval.promptBlockChars))):0,
+      matchedTopics:Array.isArray(externalLearningRetrieval.matchedTopics)?externalLearningRetrieval.matchedTopics:[],
+      articleIds:Array.isArray(externalLearningRetrieval.articles)
+        ?externalLearningRetrieval.articles.map((entry)=>safeString(entry&&entry.articleId,120)).filter(Boolean)
+        :[],
+    },
   };
 
   let clientClosed=false;
@@ -9619,6 +9683,14 @@ async function executeTurnStreaming(res,prompt,agentName,options){
   };
 
   safeWriteEvent({type:"turn",phase:"started",agentName,threadId,turnId});
+  if(externalLearningRetrieval&&safeString(externalLearningRetrieval.status,24)&&safeString(externalLearningRetrieval.status,24)!=="skipped"){
+    const modeLabel=externalLearningRetrieval.applied?"applied":"shadow";
+    safeWriteEvent({
+      type:"activity",
+      label:"external_learning",
+      detail:`external learning ${modeLabel} / topics=${Array.isArray(externalLearningRetrieval.matchedTopics)?externalLearningRetrieval.matchedTopics.join("|"):"-"} / articles=${Array.isArray(externalLearningRetrieval.articles)?externalLearningRetrieval.articles.length:0}`,
+    });
+  }
   const operatorPlanEvent=buildOperatorPlanEvent({planningContext,agentName});
   if(operatorPlanEvent){
     safeWriteEvent(operatorPlanEvent);
@@ -11966,14 +12038,44 @@ function startOpenAIBlogLearningLoop(){
   if(!openAIBlogLearningEnabled)return;
   scheduleOpenAIBlogLearningCycle(openAIBlogLearningPolicy.cadence.startupDelayMs);
 }
-function buildOpenAIBlogLearningRuntimeStateSnapshot(){
-  const policy={
+function buildResolvedOpenAIBlogLearningPolicy(){
+  return{
     ...openAIBlogLearningPolicy,
     cadence:{
       ...openAIBlogLearningPolicy.cadence,
       intervalMinutes:openAIBlogLearningIntervalMinutes,
     },
+    runtimeRetrieval:{
+      ...(openAIBlogLearningPolicy&&openAIBlogLearningPolicy.runtimeRetrieval&&typeof openAIBlogLearningPolicy.runtimeRetrieval==="object"
+        ?openAIBlogLearningPolicy.runtimeRetrieval
+        :{}),
+      enabled:openAIBlogLearningRuntimeRetrievalEnabled,
+      shadowMode:openAIBlogLearningRuntimeRetrievalShadowMode,
+    },
   };
+}
+function rememberOpenAIBlogLearningRetrievalDecision(decision){
+  const normalized=decision&&typeof decision==="object"?decision:{};
+  openAIBlogLearningRuntimeState.lastRetrievalStatus=safeString(normalized.status,24).toUpperCase()
+    ||(openAIBlogLearningRuntimeRetrievalEnabled
+      ?(openAIBlogLearningRuntimeRetrievalShadowMode?"SHADOW_IDLE":"IDLE")
+      :"DISABLED");
+  openAIBlogLearningRuntimeState.lastRetrievalReason=safeString(normalized.reason,200)||"";
+  openAIBlogLearningRuntimeState.lastRetrievalAt=new Date().toISOString();
+  openAIBlogLearningRuntimeState.lastRetrievalAgent=safeString(normalized.agentName,80)||"";
+  openAIBlogLearningRuntimeState.lastRetrievalTaskFamily=safeString(normalized.taskFamily,80)||"";
+  openAIBlogLearningRuntimeState.lastRetrievalTopics=Array.isArray(normalized.matchedTopics)
+    ?normalized.matchedTopics.map((entry)=>safeString(entry,80)).filter(Boolean).slice(0,6)
+    :[];
+  openAIBlogLearningRuntimeState.lastRetrievalArticleIds=Array.isArray(normalized.articles)
+    ?normalized.articles.map((entry)=>safeString(entry&&entry.articleId,120)).filter(Boolean).slice(0,6)
+    :[];
+  openAIBlogLearningRuntimeState.lastRetrievalPromptBlockChars=Number.isFinite(Number(normalized.promptBlockChars))
+    ?Math.max(0,Math.trunc(Number(normalized.promptBlockChars)))
+    :0;
+}
+function buildOpenAIBlogLearningRuntimeStateSnapshot(){
+  const policy=buildResolvedOpenAIBlogLearningPolicy();
   return buildOpenAIBlogLearningRuntimeSnapshot(policy,{
     enabled:openAIBlogLearningEnabled,
     running:openAIBlogLearningRuntimeState.running,
@@ -11982,6 +12084,14 @@ function buildOpenAIBlogLearningRuntimeStateSnapshot(){
     nextRunAt:openAIBlogLearningRuntimeState.nextRunAt,
     lastStatus:openAIBlogLearningRuntimeState.lastStatus,
     lastReason:openAIBlogLearningRuntimeState.lastReason,
+    lastRetrievalStatus:openAIBlogLearningRuntimeState.lastRetrievalStatus,
+    lastRetrievalReason:openAIBlogLearningRuntimeState.lastRetrievalReason,
+    lastRetrievalAt:openAIBlogLearningRuntimeState.lastRetrievalAt,
+    lastRetrievalAgent:openAIBlogLearningRuntimeState.lastRetrievalAgent,
+    lastRetrievalTaskFamily:openAIBlogLearningRuntimeState.lastRetrievalTaskFamily,
+    lastRetrievalTopics:openAIBlogLearningRuntimeState.lastRetrievalTopics,
+    lastRetrievalArticleIds:openAIBlogLearningRuntimeState.lastRetrievalArticleIds,
+    lastRetrievalPromptBlockChars:openAIBlogLearningRuntimeState.lastRetrievalPromptBlockChars,
   });
 }
 function buildBundleOverview(rootDir,summaryFileName,buildSnapshot){
@@ -15714,6 +15824,8 @@ async function main(){const preferredPort=Number.isInteger(forcedUiPort)&&forced
       intervalMinutes:openAIBlogLearningIntervalMinutes,
       policyPath:summarizePathForOperationLog(defaultOpenAIBlogLearningPolicyPath,220),
       sourceUrl:safeString(openAIBlogLearningPolicy&&openAIBlogLearningPolicy.source&&openAIBlogLearningPolicy.source.indexUrl,220),
+      runtimeRetrievalEnabled:openAIBlogLearningRuntimeRetrievalEnabled?1:0,
+      runtimeRetrievalShadowMode:openAIBlogLearningRuntimeRetrievalShadowMode?1:0,
     },
   });
   updateCurrentLogSurface({trigger:"server_started"});

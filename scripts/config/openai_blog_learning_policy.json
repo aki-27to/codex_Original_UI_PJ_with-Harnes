@@ -49,5 +49,29 @@
       "safety",
       "skills"
     ]
+  },
+  "runtimeRetrieval": {
+    "enabled": true,
+    "shadowMode": false,
+    "applyToAgents": [
+      "default",
+      "frontend_worker"
+    ],
+    "applyToTaskFamilies": [
+      "web_creative"
+    ],
+    "topicPriority": [
+      "frontend",
+      "evals",
+      "context",
+      "codex",
+      "skills",
+      "automation",
+      "agents",
+      "safety"
+    ],
+    "maxArticles": 2,
+    "maxGuidanceItemsPerArticle": 3,
+    "maxPromptBlockChars": 1800
   }
 }

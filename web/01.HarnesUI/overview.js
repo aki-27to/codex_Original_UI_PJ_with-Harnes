@@ -668,16 +668,21 @@ function renderMemory(payload) {
     detail: `${safeText(entry.target, "")} / ${safeText(entry.status, "proposal_only")}`,
   }));
   if (elements.externalLearningCard) {
+    const runtimeRetrieval = externalLearning.runtimeRetrieval && typeof externalLearning.runtimeRetrieval === "object"
+      ? externalLearning.runtimeRetrieval
+      : {};
     elements.externalLearningCard.innerHTML = `
       <div class="overview-inline-tags">
         ${tagHtml(`status ${safeText(externalLearning.lastStatus, externalLearning.enabled ? "IDLE" : "DISABLED")}`, toneForTaskOutcome(externalLearning.lastStatus))}
         ${tagHtml(`mode ${safeText(externalLearning.mode, "observe")}`, "info")}
         ${tagHtml(`hosts ${formatInteger(toArr(externalLearning.allowedHosts).length)}`, "neutral")}
+        ${tagHtml(`retrieval ${safeText(runtimeRetrieval.lastStatus, runtimeRetrieval.enabled ? "IDLE" : "DISABLED")}`, runtimeRetrieval.enabled ? "info" : "warn")}
       </div>
       ${factRowsHtml([
         { label: "Source", value: safeText(externalLearning.sourceName, "OpenAI Developers Blog"), detail: safeText(externalLearning.sourceUrl, "") },
         { label: "Cadence", value: `${formatInteger(num(externalLearning.intervalMinutes, 0))} min`, detail: `next ${safeText(externalLearning.nextRunAt, "-")}` },
         { label: "Artifacts", value: safeText(externalLearning.ledgerPath, "output/openai_blog_learning_ledger.json"), detail: `${safeText(externalLearning.digestPath, "")} / ${safeText(externalLearning.curatedDocPath, "")}` },
+        { label: "Runtime Retrieval", value: safeText(runtimeRetrieval.lastStatus, runtimeRetrieval.enabled ? "IDLE" : "DISABLED"), detail: `${toArr(runtimeRetrieval.applyToAgents).join(", ") || "-"} / ${toArr(runtimeRetrieval.lastMatchedTopics).join(", ") || "-"}` },
         { label: "Freeze Guard", value: safeText(externalLearning.freezeAware && externalLearning.freezeAware.requirementFoundationV1, "bug_fix_only"), detail: `blocked ${toArr(externalLearning.freezeAware && externalLearning.freezeAware.blockedApplyTargets).join(", ") || "-"}` },
       ])}
       ${itemListHtml(learningArticles.slice(0, 4), "No recent official learning articles are tracked yet.")}

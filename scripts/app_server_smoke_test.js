@@ -939,6 +939,12 @@ async function run() {
     if (typeof runtimeReady.external_learning.ledgerPath !== "string" || !runtimeReady.external_learning.ledgerPath) {
       throw new Error("runtime external_learning did not expose ledgerPath");
     }
+    if (!runtimeReady.external_learning.runtimeRetrieval || typeof runtimeReady.external_learning.runtimeRetrieval !== "object") {
+      throw new Error("runtime external_learning did not expose runtimeRetrieval");
+    }
+    if (runtimeReady.external_learning.runtimeRetrieval.enabled !== false) {
+      throw new Error("runtime external_learning.runtimeRetrieval.enabled was not false when global learning was disabled");
+    }
     if (!runtimeReady.adversarialShadow || typeof runtimeReady.adversarialShadow !== "object") {
       throw new Error("runtime did not expose adversarialShadow snapshot");
     }
