@@ -1,0 +1,52 @@
+{
+  "schema": "self-improvement-proposal.v1",
+  "proposalId": "anthropic-engineering-harness-design-long-running-apps-self-improvement",
+  "createdAt": "2026-03-25T12:37:59.498Z",
+  "sourceLane": "Anthropic Engineering",
+  "sourceTier": "secondary",
+  "articleId": "harness-design-long-running-apps",
+  "title": "Harness design for long-running application development",
+  "sourceUrl": "https://www.anthropic.com/engineering/harness-design-long-running-apps",
+  "relevance": "high",
+  "portability": "portable",
+  "changeClass": "eval_extension",
+  "target": "scripts/config/eval_suite_default.json",
+  "objective": "Propose eval-strengthening guidance based on Harness design for long-running application development.",
+  "evidence": {
+    "summary": "Harness design is key to performance at the frontier of agentic coding. Here's how we pushed Claude further in frontend design and long-running autonomous software engineering.",
+    "guidance": [
+      "This work originated with earlier efforts on our frontend design skill and long-running coding agent harness ,",
+      "We've previously shown that harness design has a substantial impact on the effectiveness of long running agentic coding. In an earlier experiment , we used an initializer agent to decompose a product spec into a task list, and a coding agen",
+      "We've previously shown that harness design has a substantial impact on the effectiveness of long running agentic coding.",
+      "I then applied these techniques to long-running autonomous coding, carrying over two lessons from our earlier harness work: decomposing the build into tractable chunks, and using structured artifacts to hand off context between sessions. Th",
+      "To break through, I sought out novel AI engineering approaches that held across two quite different domains, one defined by subjective taste, the other by verifiable correctness and usability. Taking inspiration from Generative Adversarial "
+    ],
+    "topicTags": [
+      "agents",
+      "context",
+      "evals",
+      "frontend",
+      "skills"
+    ],
+    "articleProposalId": "anthropic-engineering-harness-design-long-running-apps"
+  },
+  "candidateChange": {
+    "note": "Harness design is key to performance at the frontier of agentic coding. Here's how we pushed Claude further in frontend design and long-running autonomous software engineering."
+  },
+  "promotion": {
+    "decision": "proposal_only",
+    "rationale": "governed_review_required",
+    "riskFlags": [
+      "governed_review_required"
+    ]
+  },
+  "gate": {
+    "required": false,
+    "status": "not_applicable",
+    "caseIds": [
+      "web_creative_benchmark",
+      "frontend_context_iteration",
+      "backend_non_targeted"
+    ]
+  }
+}

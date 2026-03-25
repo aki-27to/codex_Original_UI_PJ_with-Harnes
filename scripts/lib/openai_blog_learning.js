@@ -13,6 +13,12 @@ const defaultOpenAIBlogLearningPolicyPath = path.join(
   "config",
   "openai_blog_learning_policy.json"
 );
+const defaultSelfImprovementPromotionPolicyPath = path.join(
+  workspaceRootDefault,
+  "scripts",
+  "config",
+  "self_improvement_promotion_policy.json"
+);
 
 function safeString(value, maxLength = 0) {
   const text = typeof value === "string" ? value.trim() : value == null ? "" : String(value).trim();
@@ -669,6 +675,297 @@ function buildArticleProposal(article, policy, nowIso) {
   };
 }
 
+function normalizeSelfImprovementPromotionPolicy(policy, workspaceRoot = workspaceRootDefault) {
+  const source = policy && typeof policy === "object" ? policy : {};
+  return {
+    schema: safeString(source.schema, 120) || "self-improvement-promotion-policy.v1",
+    mode: safeString(source.mode, 80) || "machine_guarded_autonomy",
+    autoApply: {
+      changeClasses: Array.isArray(source && source.autoApply && source.autoApply.changeClasses)
+        ? source.autoApply.changeClasses.map((entry) => safeString(entry, 120)).filter(Boolean)
+        : ["runtime_retrieval_hint"],
+      requireGatePass: source && source.autoApply && Object.prototype.hasOwnProperty.call(source.autoApply, "requireGatePass")
+        ? Boolean(source.autoApply.requireGatePass)
+        : true,
+      maxAutoApplyPerLane: Math.max(1, Math.min(40, Math.trunc(Number(source && source.autoApply && source.autoApply.maxAutoApplyPerLane) || 12))),
+    },
+    proposalOnly: {
+      targets: Array.isArray(source && source.proposalOnly && source.proposalOnly.targets)
+        ? source.proposalOnly.targets.map((entry) => safeString(entry, 260)).filter(Boolean)
+        : [],
+      changeClasses: Array.isArray(source && source.proposalOnly && source.proposalOnly.changeClasses)
+        ? source.proposalOnly.changeClasses.map((entry) => safeString(entry, 120)).filter(Boolean)
+        : [],
+    },
+    blocked: {
+      targets: Array.isArray(source && source.blocked && source.blocked.targets)
+        ? source.blocked.targets.map((entry) => safeString(entry, 260)).filter(Boolean)
+        : [],
+    },
+    evalGate: {
+      schema: safeString(source && source.evalGate && source.evalGate.schema, 120) || "self-improvement-eval-gate.v1",
+      cases: Array.isArray(source && source.evalGate && source.evalGate.cases)
+        ? source.evalGate.cases.map((entry, index) => ({
+          caseId: safeString(entry && entry.caseId, 120) || `case_${index + 1}`,
+          agentName: safeString(entry && entry.agentName, 80),
+          taskFamily: safeString(entry && entry.taskFamily, 80).toLowerCase() || "deterministic_code",
+          prompt: safeString(entry && entry.prompt, 600),
+          requiredTopics: Array.isArray(entry && entry.requiredTopics)
+            ? entry.requiredTopics.map((item) => safeString(item, 80).toLowerCase()).filter(Boolean)
+            : [],
+          forbiddenTopics: Array.isArray(entry && entry.forbiddenTopics)
+            ? entry.forbiddenTopics.map((item) => safeString(item, 80).toLowerCase()).filter(Boolean)
+            : [],
+          maxTopics: Math.max(1, Math.min(12, Math.trunc(Number(entry && entry.maxTopics) || 6))),
+          workspaceRoot: repoRelative(workspaceRoot, workspaceRoot),
+        }))
+        : [],
+    },
+  };
+}
+
+function loadSelfImprovementPromotionPolicy(policy) {
+  const normalizedPolicy = normalizeOpenAIBlogLearningPolicy(policy, {
+    policyPath: policy && policy.policyPath ? policy.policyPath : defaultOpenAIBlogLearningPolicyPath,
+  });
+  const filePath = normalizedPolicy.selfImprovement && normalizedPolicy.selfImprovement.promotionPolicyPath
+    ? normalizedPolicy.selfImprovement.promotionPolicyPath
+    : defaultSelfImprovementPromotionPolicyPath;
+  const parsed = readJsonIfExists(filePath);
+  return {
+    path: filePath,
+    policy: normalizeSelfImprovementPromotionPolicy(parsed, normalizedPolicy.workspaceRoot),
+  };
+}
+
+function buildLearningActionClass(article, policy) {
+  const tags = Array.isArray(article && article.topicTags) ? article.topicTags : [];
+  const isPrimary = safeString(policy && policy.source && policy.source.tier, 40) !== "secondary";
+  const runtimeRetrievalEnabled = Boolean(policy && policy.runtimeRetrieval && policy.runtimeRetrieval.enabled);
+  const runtimeTopics = new Set(Array.isArray(policy && policy.runtimeRetrieval && policy.runtimeRetrieval.topicPriority)
+    ? policy.runtimeRetrieval.topicPriority
+    : []);
+  const supportsRuntimeHint = isPrimary && runtimeRetrievalEnabled && tags.some((tag) => runtimeTopics.has(tag));
+  if (supportsRuntimeHint && safeString(article && article.relevance, 20) === "high") {
+    return "runtime_retrieval_hint";
+  }
+  if (tags.includes("evals")) {
+    return "eval_extension";
+  }
+  if (tags.includes("frontend")) {
+    return "frontend_quality_note";
+  }
+  if (tags.some((tag) => ["context", "automation", "skills"].includes(tag))) {
+    return "memory_policy_note";
+  }
+  return "operator_policy_note";
+}
+
+function buildLearningActionTarget(changeClass) {
+  switch (safeString(changeClass, 120)) {
+    case "runtime_retrieval_hint":
+      return "runtime/external-learning/runtime-retrieval";
+    case "eval_extension":
+      return "scripts/config/eval_suite_default.json";
+    case "frontend_quality_note":
+      return "skills/web-designer-master/references/quality-gate.md";
+    case "operator_policy_note":
+      return "docs/AGENT_OPERATING_RULES.md";
+    case "runtime_policy_tuning":
+      return "scripts/config/openai_blog_learning_policy.json";
+    case "memory_policy_note":
+    default:
+      return "docs/CONTEXT_MEMORY_POLICY.md";
+  }
+}
+
+function buildLearningObjective(article, changeClass) {
+  const title = safeString(article && article.title, 200) || "learning";
+  switch (safeString(changeClass, 120)) {
+    case "runtime_retrieval_hint":
+      return `Improve runtime retrieval targeting using article-specific guidance from ${title}.`;
+    case "eval_extension":
+      return `Propose eval-strengthening guidance based on ${title}.`;
+    case "frontend_quality_note":
+      return `Propose frontend quality guidance based on ${title}.`;
+    case "operator_policy_note":
+      return `Propose operator policy guidance based on ${title}.`;
+    default:
+      return `Propose context/memory guidance based on ${title}.`;
+  }
+}
+
+function deriveLexicalTriggers(article, topics, limit = 4) {
+  const topicCatalog = {
+    frontend: ["landing page", "design system", "mood board", "typography", "motion", "visual reference"],
+    evals: ["acceptance criteria", "benchmark", "screenshot", "verification", "grader", "transcript"],
+    codex: ["spec file", "checkpoint", "runbook", "audit log", "long horizon", "workflow"],
+    context: ["prompt budget", "working state", "retrieve only", "context", "memory", "handoff"],
+    automation: ["background loop", "scheduled", "cron", "automation", "workflow"],
+    agents: ["planner", "generator", "evaluator", "subagent", "worker", "handoff"],
+    skills: ["skill", "tooling", "figma", "stitch"],
+    safety: ["approval boundary", "guardrail", "risk", "safety"],
+  };
+  const body = [
+    safeString(article && article.title, 240),
+    safeString(article && article.summary, 320),
+    ...(Array.isArray(article && article.guidance) ? article.guidance.slice(0, 6) : []),
+  ].join(" ").toLowerCase();
+  const matches = [];
+  for (const topic of Array.isArray(topics) ? topics : []) {
+    const candidates = Array.isArray(topicCatalog[topic]) ? topicCatalog[topic] : [];
+    for (const candidate of candidates) {
+      if (!candidate) {
+        continue;
+      }
+      if (body.includes(candidate.toLowerCase())) {
+        matches.push(candidate);
+      }
+    }
+  }
+  const fallback = [];
+  for (const topic of Array.isArray(topics) ? topics : []) {
+    const candidates = Array.isArray(topicCatalog[topic]) ? topicCatalog[topic] : [];
+    fallback.push(...candidates);
+  }
+  return dedupeTexts([...matches, ...fallback], Math.max(1, Math.trunc(Number(limit) || 4)));
+}
+
+function buildRuntimeRetrievalHint(article, policy) {
+  const topics = uniqueStringList(
+    (Array.isArray(article && article.topicTags) ? article.topicTags : []).filter((topic) => {
+      const allowedTopics = new Set(Array.isArray(policy && policy.retrieval && policy.retrieval.allowedTopics)
+        ? policy.retrieval.allowedTopics
+        : []);
+      return !allowedTopics.size || allowedTopics.has(topic);
+    }),
+    4
+  ).map((entry) => entry.toLowerCase());
+  return {
+    hintId: `${safeString(article && article.articleId, 120)}-runtime-retrieval`,
+    appliesToAgents: Array.isArray(policy && policy.runtimeRetrieval && policy.runtimeRetrieval.applyToAgents)
+      ? policy.runtimeRetrieval.applyToAgents.slice(0, 8)
+      : [],
+    appliesToTaskFamilies: Array.isArray(policy && policy.runtimeRetrieval && policy.runtimeRetrieval.applyToTaskFamilies)
+      ? policy.runtimeRetrieval.applyToTaskFamilies.slice(0, 8)
+      : [],
+    topics,
+    lexicalTriggers: deriveLexicalTriggers(article, topics, policy && policy.selfImprovement && policy.selfImprovement.maxLexicalTriggersPerProposal),
+    preferredArticleIds: [safeString(article && article.articleId, 120)].filter(Boolean),
+    topicBoost: 3,
+    articleBoost: 8,
+  };
+}
+
+function classifySelfImprovementPromotion({ changeClass = "", target = "", lanePolicy, promotionPolicy }) {
+  const normalizedTarget = safeString(target, 260);
+  const normalizedClass = safeString(changeClass, 120);
+  const governance = lanePolicy && lanePolicy.governance ? lanePolicy.governance : {};
+  const blockedTargets = new Set([
+    ...(Array.isArray(governance.blockedApplyTargets) ? governance.blockedApplyTargets : []),
+    ...(Array.isArray(governance.frozenFoundationTargets) ? governance.frozenFoundationTargets : []),
+    ...(promotionPolicy && promotionPolicy.blocked && Array.isArray(promotionPolicy.blocked.targets) ? promotionPolicy.blocked.targets : []),
+  ].map((entry) => safeString(entry, 260)).filter(Boolean));
+  const proposalOnlyTargets = new Set([
+    ...(Array.isArray(governance.proposalOnlyTargets) ? governance.proposalOnlyTargets : []),
+    ...(promotionPolicy && promotionPolicy.proposalOnly && Array.isArray(promotionPolicy.proposalOnly.targets) ? promotionPolicy.proposalOnly.targets : []),
+  ].map((entry) => safeString(entry, 260)).filter(Boolean));
+  const autoApplyClasses = new Set(
+    promotionPolicy && promotionPolicy.autoApply && Array.isArray(promotionPolicy.autoApply.changeClasses)
+      ? promotionPolicy.autoApply.changeClasses.map((entry) => safeString(entry, 120)).filter(Boolean)
+      : []
+  );
+  const proposalOnlyClasses = new Set(
+    promotionPolicy && promotionPolicy.proposalOnly && Array.isArray(promotionPolicy.proposalOnly.changeClasses)
+      ? promotionPolicy.proposalOnly.changeClasses.map((entry) => safeString(entry, 120)).filter(Boolean)
+      : []
+  );
+  if (!normalizedTarget) {
+    return {
+      decision: "blocked",
+      rationale: "missing_target",
+      riskFlags: ["missing_target"],
+    };
+  }
+  if (blockedTargets.has(normalizedTarget)) {
+    return {
+      decision: "blocked",
+      rationale: "boundary_blocked",
+      riskFlags: ["constitutional_or_frozen_boundary"],
+    };
+  }
+  if (proposalOnlyTargets.has(normalizedTarget) || proposalOnlyClasses.has(normalizedClass)) {
+    return {
+      decision: "proposal_only",
+      rationale: "governed_review_required",
+      riskFlags: ["governed_review_required"],
+    };
+  }
+  if (autoApplyClasses.has(normalizedClass)) {
+    return {
+      decision: "auto_apply_candidate",
+      rationale: "bounded_low_risk_runtime_hint",
+      riskFlags: ["machine_gate_required"],
+    };
+  }
+  return {
+    decision: "proposal_only",
+    rationale: "manual_target_default",
+    riskFlags: ["manual_review"],
+  };
+}
+
+function buildSelfImprovementProposal(article, lanePolicy, promotionPolicy, nowIso) {
+  const changeClass = buildLearningActionClass(article, lanePolicy);
+  const target = buildLearningActionTarget(changeClass);
+  const promotion = classifySelfImprovementPromotion({
+    changeClass,
+    target,
+    lanePolicy,
+    promotionPolicy,
+  });
+  const runtimeRetrievalHint = changeClass === "runtime_retrieval_hint"
+    ? buildRuntimeRetrievalHint(article, lanePolicy)
+    : null;
+  const caseIds = Array.isArray(promotionPolicy && promotionPolicy.evalGate && promotionPolicy.evalGate.cases)
+    ? promotionPolicy.evalGate.cases.map((entry) => safeString(entry && entry.caseId, 120)).filter(Boolean)
+    : [];
+  return {
+    schema: safeString(lanePolicy && lanePolicy.selfImprovement && lanePolicy.selfImprovement.proposalSchema, 120) || "self-improvement-proposal.v1",
+    proposalId: `${safeString(lanePolicy && lanePolicy.artifacts && lanePolicy.artifacts.proposalIdPrefix, 120) || "learning"}-${safeString(article && article.articleId, 120)}-self-improvement`,
+    createdAt: nowIso,
+    sourceLane: safeString(lanePolicy && lanePolicy.source && lanePolicy.source.name, 120) || "external_learning",
+    sourceTier: safeString(lanePolicy && lanePolicy.source && lanePolicy.source.tier, 40) || "primary",
+    articleId: safeString(article && article.articleId, 120),
+    title: safeString(article && article.title, 200),
+    sourceUrl: safeString(article && article.url, 320),
+    relevance: safeString(article && article.relevance, 20) || "medium",
+    portability: safeString(article && article.portability, 40) || "portable",
+    changeClass,
+    target,
+    objective: buildLearningObjective(article, changeClass),
+    evidence: {
+      summary: safeString(article && article.summary, 320),
+      guidance: Array.isArray(article && article.guidance) ? article.guidance.slice(0, 6).map((entry) => safeString(entry, 240)).filter(Boolean) : [],
+      topicTags: Array.isArray(article && article.topicTags) ? article.topicTags.slice(0, 8) : [],
+      articleProposalId: Array.isArray(article && article.proposalIds) ? safeString(article.proposalIds[0], 160) : "",
+    },
+    candidateChange: runtimeRetrievalHint
+      ? {
+        runtimeRetrievalHint,
+      }
+      : {
+        note: safeString(article && article.summary, 320),
+      },
+    promotion,
+    gate: {
+      required: promotion.decision === "auto_apply_candidate" && Boolean(promotionPolicy && promotionPolicy.autoApply && promotionPolicy.autoApply.requireGatePass),
+      status: promotion.decision === "auto_apply_candidate" ? "pending" : "not_applicable",
+      caseIds,
+    },
+  };
+}
+
 function extractArticleInsights(articleHtml, maxGuidanceItems) {
   const html = String(articleHtml || "");
   const mainHtml = extractPreferredMainHtml(html);
@@ -719,6 +1016,10 @@ function loadOpenAIBlogLearningPolicy(policyPath = defaultOpenAIBlogLearningPoli
 function normalizeOpenAIBlogLearningPolicy(policy, { policyPath = defaultOpenAIBlogLearningPolicyPath } = {}) {
   const source = policy && typeof policy === "object" ? policy : {};
   const workspaceRoot = path.resolve(path.dirname(policyPath), "..", "..");
+  const artifactPrefix = safeString(source && source.artifacts && source.artifacts.proposalIdPrefix, 120)
+    || safeString(source && source.source && source.source.name, 120).toLowerCase().replace(/[^a-z0-9]+/g, "_")
+    || "openai_blog";
+  const normalizedArtifactPrefix = artifactPrefix.replace(/-+/g, "_").replace(/^_+|_+$/g, "") || "openai_blog";
   const normalized = {
     schema: safeString(source.schema, 120) || "openai-blog-learning-policy.v1",
     policyPath,
@@ -788,6 +1089,21 @@ function normalizeOpenAIBlogLearningPolicy(policy, { policyPath = defaultOpenAIB
       maxGuidanceItemsPerArticle: Math.max(1, Math.min(4, Math.trunc(Number(source && source.runtimeRetrieval && source.runtimeRetrieval.maxGuidanceItemsPerArticle) || 3))),
       maxPromptBlockChars: Math.max(300, Math.min(4000, Math.trunc(Number(source && source.runtimeRetrieval && source.runtimeRetrieval.maxPromptBlockChars) || 1800))),
     },
+    selfImprovement: {
+      enabled: source && source.selfImprovement && Object.prototype.hasOwnProperty.call(source.selfImprovement, "enabled")
+        ? Boolean(source.selfImprovement.enabled)
+        : true,
+      proposalSchema: safeString(source && source.selfImprovement && source.selfImprovement.proposalSchema, 120) || "self-improvement-proposal.v1",
+      stateSchema: safeString(source && source.selfImprovement && source.selfImprovement.stateSchema, 120) || "self-improvement-state.v1",
+      gateSchema: safeString(source && source.selfImprovement && source.selfImprovement.gateSchema, 120) || "self-improvement-eval-gate.v1",
+      maxLexicalTriggersPerProposal: Math.max(1, Math.min(8, Math.trunc(Number(source && source.selfImprovement && source.selfImprovement.maxLexicalTriggersPerProposal) || 4))),
+      maxAppliedHints: Math.max(1, Math.min(20, Math.trunc(Number(source && source.selfImprovement && source.selfImprovement.maxAppliedHints) || 12))),
+      promotionPolicyPath: resolveWorkspacePath(
+        workspaceRoot,
+        source && source.selfImprovement && source.selfImprovement.promotionPolicyPath,
+        repoRelative(workspaceRoot, defaultSelfImprovementPromotionPolicyPath)
+      ),
+    },
     presentation: {
       curatedDocTitle: safeString(source && source.presentation && source.presentation.curatedDocTitle, 120) || "OPENAI_DEVELOPER_LEARNINGS",
       reportTitle: safeString(source && source.presentation && source.presentation.reportTitle, 120) || "OPENAI_BLOG_LEARNING_REPORT",
@@ -810,6 +1126,9 @@ function normalizeOpenAIBlogLearningPolicy(policy, { policyPath = defaultOpenAIB
     reportPath: resolveWorkspacePath(workspaceRoot, source && source.paths && source.paths.reportPath, "output/openai_blog_learning_report.md"),
     proposalDir: resolveWorkspacePath(workspaceRoot, source && source.paths && source.paths.proposalDir, "output/openai_blog_learning_proposals"),
     curatedDocPath: resolveWorkspacePath(workspaceRoot, source && source.paths && source.paths.curatedDocPath, normalized.governance.autoPromoteDocPath),
+    selfImprovementProposalDir: resolveWorkspacePath(workspaceRoot, source && source.paths && source.paths.selfImprovementProposalDir, `output/${normalizedArtifactPrefix}_self_improvement_proposals`),
+    selfImprovementStatePath: resolveWorkspacePath(workspaceRoot, source && source.paths && source.paths.selfImprovementStatePath, `output/${normalizedArtifactPrefix}_self_improvement_state.json`),
+    selfImprovementGatePath: resolveWorkspacePath(workspaceRoot, source && source.paths && source.paths.selfImprovementGatePath, `output/${normalizedArtifactPrefix}_self_improvement_gate.json`),
   };
   return normalized;
 }
@@ -938,6 +1257,8 @@ function buildMarkdownReport(report) {
     `- digestPath: ${safeString(report && report.paths && report.paths.digestPath, 240) || "-"}`,
     `- reportPath: ${safeString(report && report.paths && report.paths.reportPath, 240) || "-"}`,
     `- curatedDocPath: ${safeString(report && report.paths && report.paths.curatedDocPath, 240) || "-"}`,
+    `- selfImprovementStatePath: ${safeString(report && report.paths && report.paths.selfImprovementStatePath, 240) || "-"}`,
+    `- selfImprovementGatePath: ${safeString(report && report.paths && report.paths.selfImprovementGatePath, 240) || "-"}`,
     "",
     "## Recent Articles",
     "",
@@ -958,6 +1279,17 @@ function buildMarkdownReport(report) {
     for (const proposal of pending) {
       lines.push(`- ${safeString(proposal.title, 200)} -> ${safeString(proposal.target, 240)} (${safeString(proposal.status, 40)})`);
     }
+  }
+  const selfImprovement = report && report.selfImprovement && typeof report.selfImprovement === "object" ? report.selfImprovement : null;
+  lines.push("", "## Self Improvement", "");
+  if (!selfImprovement) {
+    lines.push("No self-improvement state was generated.");
+  } else {
+    lines.push(`- gateStatus: ${safeString(selfImprovement.gateStatus, 20) || "UNKNOWN"}`);
+    lines.push(`- appliedDecision: ${safeString(selfImprovement.appliedDecision, 40) || "none"}`);
+    lines.push(`- appliedHintCount: ${Number(selfImprovement.appliedHintCount) || 0}`);
+    lines.push(`- proposalOnlyCount: ${Number(selfImprovement.proposalOnlyCount) || 0}`);
+    lines.push(`- blockedCount: ${Number(selfImprovement.blockedCount) || 0}`);
   }
   return `${lines.join("\n")}\n`;
 }
@@ -1010,7 +1342,64 @@ function uniqueStringList(values, limit = 8) {
   return results;
 }
 
-function inferRuntimeRetrievalTopics({ prompt = "", agentName = "", planningContext = null, policy } = {}) {
+function compileSelfImprovementRuntimeHints(selfImprovementState) {
+  const state = selfImprovementState && typeof selfImprovementState === "object" ? selfImprovementState : {};
+  const appliedHints = Array.isArray(state.appliedHints)
+    ? state.appliedHints
+    : (Array.isArray(state.candidateHints)
+      ? state.candidateHints
+      : (state.runtimeHints && Array.isArray(state.runtimeHints.appliedHints) ? state.runtimeHints.appliedHints : []));
+  const normalizedHints = [];
+  for (const entry of appliedHints) {
+    const hint = entry && typeof entry === "object" && entry.runtimeRetrievalHint && typeof entry.runtimeRetrievalHint === "object"
+      ? entry.runtimeRetrievalHint
+      : entry;
+    const hintId = safeString(hint && hint.hintId, 160);
+    const topics = Array.isArray(hint && hint.topics)
+      ? hint.topics.map((item) => safeString(item, 80).toLowerCase()).filter(Boolean)
+      : [];
+    if (!hintId || !topics.length) {
+      continue;
+    }
+    normalizedHints.push({
+      hintId,
+      appliesToAgents: Array.isArray(hint && hint.appliesToAgents) ? hint.appliesToAgents.map((item) => safeString(item, 80)).filter(Boolean) : [],
+      appliesToTaskFamilies: Array.isArray(hint && hint.appliesToTaskFamilies) ? hint.appliesToTaskFamilies.map((item) => safeString(item, 80).toLowerCase()).filter(Boolean) : [],
+      topics,
+      lexicalTriggers: Array.isArray(hint && hint.lexicalTriggers) ? hint.lexicalTriggers.map((item) => safeString(item, 120).toLowerCase()).filter(Boolean) : [],
+      preferredArticleIds: Array.isArray(hint && hint.preferredArticleIds) ? hint.preferredArticleIds.map((item) => safeString(item, 120)).filter(Boolean) : [],
+      topicBoost: Math.max(1, Math.min(12, Math.trunc(Number(hint && hint.topicBoost) || 3))),
+      articleBoost: Math.max(1, Math.min(20, Math.trunc(Number(hint && hint.articleBoost) || 8))),
+    });
+  }
+  return normalizedHints;
+}
+
+function hintAppliesToRuntimeTarget(hint, { agentName = "", taskFamily = "" } = {}) {
+  const normalizedAgent = safeString(agentName, 80);
+  const normalizedTaskFamily = safeString(taskFamily, 80).toLowerCase();
+  const targetAgents = new Set(Array.isArray(hint && hint.appliesToAgents) ? hint.appliesToAgents : []);
+  const targetFamilies = new Set(Array.isArray(hint && hint.appliesToTaskFamilies) ? hint.appliesToTaskFamilies : []);
+  if (targetAgents.size && normalizedAgent && !targetAgents.has(normalizedAgent)) {
+    return false;
+  }
+  if (targetFamilies.size && normalizedTaskFamily && !targetFamilies.has(normalizedTaskFamily)) {
+    return false;
+  }
+  return true;
+}
+
+function loadSelfImprovementState(policy) {
+  const normalizedPolicy = normalizeOpenAIBlogLearningPolicy(policy, {
+    policyPath: policy && policy.policyPath ? policy.policyPath : defaultOpenAIBlogLearningPolicyPath,
+  });
+  if (!normalizedPolicy.selfImprovement || !normalizedPolicy.selfImprovement.enabled) {
+    return null;
+  }
+  return readJsonIfExists(normalizedPolicy.paths.selfImprovementStatePath);
+}
+
+function inferRuntimeRetrievalTopics({ prompt = "", agentName = "", planningContext = null, policy, selfImprovementState = null } = {}) {
   const promptText = safeString(prompt, 12000);
   const lower = promptText.toLowerCase();
   const context = planningContext && typeof planningContext === "object" ? planningContext : {};
@@ -1028,6 +1417,7 @@ function inferRuntimeRetrievalTopics({ prompt = "", agentName = "", planningCont
   ).map((entry) => entry.toLowerCase());
   const taskFamily = safeString(selection.taskFamily || requirement.taskFamily, 80).toLowerCase();
   const tags = [];
+  const matchedHintIds = [];
   const addTag = (tag) => {
     const normalized = safeString(tag, 80).toLowerCase();
     if (!normalized || tags.includes(normalized)) {
@@ -1078,17 +1468,37 @@ function inferRuntimeRetrievalTopics({ prompt = "", agentName = "", planningCont
   if (/(?:guardrail|approval|risk|safety)/i.test(lower)) {
     addTag("safety");
   }
+  const appliedHints = compileSelfImprovementRuntimeHints(selfImprovementState);
+  for (const hint of appliedHints) {
+    if (!hintAppliesToRuntimeTarget(hint, { agentName, taskFamily })) {
+      continue;
+    }
+    const lexicalHit = Array.isArray(hint.lexicalTriggers)
+      ? hint.lexicalTriggers.some((trigger) => trigger && lower.includes(trigger))
+      : false;
+    if (!lexicalHit) {
+      continue;
+    }
+    hint.topics.forEach((topic) => addTag(topic));
+    if (!matchedHintIds.includes(hint.hintId)) {
+      matchedHintIds.push(hint.hintId);
+    }
+  }
   return {
     taskFamily: taskFamily || "deterministic_code",
     specialistOwners,
     topics: tags,
+    matchedHintIds,
   };
 }
 
-function buildRuntimeLearningSelection({ prompt = "", agentName = "", planningContext = null, policy } = {}) {
+function buildRuntimeLearningSelection({ prompt = "", agentName = "", planningContext = null, policy, digestOverride = null, selfImprovementState = undefined } = {}) {
   const normalizedPolicy = normalizeOpenAIBlogLearningPolicy(policy, { policyPath: policy && policy.policyPath ? policy.policyPath : defaultOpenAIBlogLearningPolicyPath });
   const runtimeRetrieval = normalizedPolicy.runtimeRetrieval || {};
-  const digest = readJsonIfExists(normalizedPolicy.paths.digestPath);
+  const digest = digestOverride && typeof digestOverride === "object" ? digestOverride : readJsonIfExists(normalizedPolicy.paths.digestPath);
+  const resolvedSelfImprovementState = selfImprovementState === undefined
+    ? loadSelfImprovementState(normalizedPolicy)
+    : selfImprovementState;
   if (!runtimeRetrieval.enabled) {
     return {
       status: "disabled",
@@ -1096,6 +1506,7 @@ function buildRuntimeLearningSelection({ prompt = "", agentName = "", planningCo
       taskFamily: "",
       matchedTopics: [],
       articles: [],
+      matchedHintIds: [],
     };
   }
   if (!digest || !digest.topics || typeof digest.topics !== "object") {
@@ -1105,9 +1516,16 @@ function buildRuntimeLearningSelection({ prompt = "", agentName = "", planningCo
       taskFamily: "",
       matchedTopics: [],
       articles: [],
+      matchedHintIds: [],
     };
   }
-  const inferred = inferRuntimeRetrievalTopics({ prompt, agentName, planningContext, policy: normalizedPolicy });
+  const inferred = inferRuntimeRetrievalTopics({
+    prompt,
+    agentName,
+    planningContext,
+    policy: normalizedPolicy,
+    selfImprovementState: resolvedSelfImprovementState,
+  });
   const targetAgents = new Set(Array.isArray(runtimeRetrieval.applyToAgents) ? runtimeRetrieval.applyToAgents.map((entry) => safeString(entry, 80)) : []);
   const targetFamilies = new Set(Array.isArray(runtimeRetrieval.applyToTaskFamilies) ? runtimeRetrieval.applyToTaskFamilies.map((entry) => safeString(entry, 80).toLowerCase()) : []);
   const normalizedAgent = safeString(agentName, 80);
@@ -1118,6 +1536,7 @@ function buildRuntimeLearningSelection({ prompt = "", agentName = "", planningCo
       taskFamily: inferred.taskFamily,
       matchedTopics: inferred.topics,
       articles: [],
+      matchedHintIds: inferred.matchedHintIds || [],
     };
   }
   if (targetFamilies.size && inferred.taskFamily && !targetFamilies.has(inferred.taskFamily)) {
@@ -1127,6 +1546,7 @@ function buildRuntimeLearningSelection({ prompt = "", agentName = "", planningCo
       taskFamily: inferred.taskFamily,
       matchedTopics: inferred.topics,
       articles: [],
+      matchedHintIds: inferred.matchedHintIds || [],
     };
   }
   if (!inferred.topics.length) {
@@ -1136,16 +1556,29 @@ function buildRuntimeLearningSelection({ prompt = "", agentName = "", planningCo
       taskFamily: inferred.taskFamily,
       matchedTopics: [],
       articles: [],
+      matchedHintIds: inferred.matchedHintIds || [],
     };
   }
 
   const digestTopics = digest.topics;
   const priority = Array.isArray(runtimeRetrieval.topicPriority) ? runtimeRetrieval.topicPriority : [];
   const priorityWeight = new Map(priority.map((entry, index) => [entry, Math.max(1, priority.length - index)]));
+  const activeHints = compileSelfImprovementRuntimeHints(resolvedSelfImprovementState)
+    .filter((hint) => hintAppliesToRuntimeTarget(hint, { agentName, taskFamily: inferred.taskFamily }));
+  const topicBoosts = new Map();
+  const articleBoosts = new Map();
+  activeHints.forEach((hint) => {
+    hint.topics.forEach((topic) => {
+      topicBoosts.set(topic, (topicBoosts.get(topic) || 0) + Number(hint.topicBoost || 0));
+    });
+    hint.preferredArticleIds.forEach((articleId) => {
+      articleBoosts.set(articleId, (articleBoosts.get(articleId) || 0) + Number(hint.articleBoost || 0));
+    });
+  });
   const articleById = new Map();
   inferred.topics.forEach((topic) => {
     const entries = Array.isArray(digestTopics[topic]) ? digestTopics[topic] : [];
-    const topicWeight = priorityWeight.get(topic) || 1;
+    const topicWeight = (priorityWeight.get(topic) || 1) + (topicBoosts.get(topic) || 0);
     entries.forEach((entry, index) => {
       const articleId = safeString(entry && entry.articleId, 120);
       if (!articleId) {
@@ -1166,6 +1599,7 @@ function buildRuntimeLearningSelection({ prompt = "", agentName = "", planningCo
         current.matchedTopics.push(topic);
       }
       current.score += topicWeight * 10 - index;
+      current.score += articleBoosts.get(articleId) || 0;
       articleById.set(articleId, current);
     });
   });
@@ -1182,11 +1616,18 @@ function buildRuntimeLearningSelection({ prompt = "", agentName = "", planningCo
       matchedTopics: entry.matchedTopics.slice(0, 4),
       guidance: entry.guidance.slice(0, runtimeRetrieval.maxGuidanceItemsPerArticle),
     }));
+  const matchedHintIds = uniqueStringList([
+    ...(Array.isArray(inferred.matchedHintIds) ? inferred.matchedHintIds : []),
+    ...activeHints
+      .filter((hint) => hint.topics.some((topic) => inferred.topics.includes(topic)) || hint.preferredArticleIds.some((articleId) => articles.some((entry) => entry.articleId === articleId)))
+      .map((hint) => hint.hintId),
+  ], 8);
   return {
     status: articles.length ? "ready" : "skipped",
     reason: articles.length ? "matched_official_articles" : "no_article_match",
     taskFamily: inferred.taskFamily,
     matchedTopics: inferred.topics,
+    matchedHintIds,
     articles,
   };
 }
@@ -1212,6 +1653,7 @@ function buildRuntimePromptInjection({ prompt = "", agentName = "", planningCont
     promptBlockChars: 0,
     taskFamily: selection.taskFamily || "",
     matchedTopics: selection.matchedTopics || [],
+    matchedHintIds: selection.matchedHintIds || [],
     articles: selection.articles || [],
   };
   if (selection.status !== "ready") {
@@ -1252,9 +1694,291 @@ function buildRuntimePromptInjection({ prompt = "", agentName = "", planningCont
   };
 }
 
+function buildGatePlanningContext(testCase) {
+  const agentName = safeString(testCase && testCase.agentName, 80);
+  const taskFamily = safeString(testCase && testCase.taskFamily, 80).toLowerCase() || "deterministic_code";
+  return {
+    selection: {
+      taskFamily,
+      signals: {
+        specialistOwners: agentName ? [agentName] : [],
+      },
+      selectedPlanningDepth: "STANDARD_PLANNING",
+      selectedAssuranceDepth: "STANDARD_ASSURANCE",
+    },
+    dispatchPlan: {
+      reviewerRequired: Array.isArray(testCase && testCase.requiredTopics) && testCase.requiredTopics.includes("evals"),
+      testerRequired: Array.isArray(testCase && testCase.requiredTopics) && testCase.requiredTopics.includes("evals"),
+      dispatches: agentName ? [{ ownerAgent: agentName }] : [],
+    },
+    requirementContract: {
+      taskFamily,
+    },
+  };
+}
+
+function evaluateSelfImprovementCase(testCase, { policy, digest, candidateState }) {
+  const baseline = buildRuntimeLearningSelection({
+    prompt: safeString(testCase && testCase.prompt, 600),
+    agentName: safeString(testCase && testCase.agentName, 80),
+    planningContext: buildGatePlanningContext(testCase),
+    policy,
+    digestOverride: digest,
+    selfImprovementState: null,
+  });
+  const candidate = buildRuntimeLearningSelection({
+    prompt: safeString(testCase && testCase.prompt, 600),
+    agentName: safeString(testCase && testCase.agentName, 80),
+    planningContext: buildGatePlanningContext(testCase),
+    policy,
+    digestOverride: digest,
+    selfImprovementState: candidateState,
+  });
+  const failures = [];
+  const requiredTopics = Array.isArray(testCase && testCase.requiredTopics) ? testCase.requiredTopics : [];
+  const forbiddenTopics = Array.isArray(testCase && testCase.forbiddenTopics) ? testCase.forbiddenTopics : [];
+  requiredTopics.forEach((topic) => {
+    if (!candidate.matchedTopics.includes(topic)) {
+      failures.push(`missing_required_topic:${topic}`);
+    }
+  });
+  forbiddenTopics.forEach((topic) => {
+    if (candidate.matchedTopics.includes(topic)) {
+      failures.push(`forbidden_topic_present:${topic}`);
+    }
+  });
+  if (Number.isFinite(Number(testCase && testCase.maxTopics)) && candidate.matchedTopics.length > Number(testCase.maxTopics)) {
+    failures.push(`topic_budget_exceeded:${candidate.matchedTopics.length}`);
+  }
+  if (safeString(baseline.status, 40) === "ready" && safeString(candidate.status, 40) !== "ready") {
+    failures.push("baseline_ready_regressed");
+  }
+  const lostBaselineTopics = Array.isArray(baseline.matchedTopics)
+    ? baseline.matchedTopics.filter((topic) => !candidate.matchedTopics.includes(topic))
+    : [];
+  if (lostBaselineTopics.length) {
+    failures.push(`baseline_topics_lost:${lostBaselineTopics.join("|")}`);
+  }
+  return {
+    caseId: safeString(testCase && testCase.caseId, 120),
+    pass: failures.length === 0,
+    failures,
+    baseline: {
+      status: safeString(baseline.status, 40),
+      reason: safeString(baseline.reason, 120),
+      matchedTopics: Array.isArray(baseline.matchedTopics) ? baseline.matchedTopics.slice(0, 8) : [],
+      articleIds: Array.isArray(baseline.articles) ? baseline.articles.map((entry) => safeString(entry && entry.articleId, 120)).filter(Boolean).slice(0, 6) : [],
+    },
+    candidate: {
+      status: safeString(candidate.status, 40),
+      reason: safeString(candidate.reason, 120),
+      matchedTopics: Array.isArray(candidate.matchedTopics) ? candidate.matchedTopics.slice(0, 8) : [],
+      matchedHintIds: Array.isArray(candidate.matchedHintIds) ? candidate.matchedHintIds.slice(0, 8) : [],
+      articleIds: Array.isArray(candidate.articles) ? candidate.articles.map((entry) => safeString(entry && entry.articleId, 120)).filter(Boolean).slice(0, 6) : [],
+    },
+  };
+}
+
+function buildCandidateSelfImprovementState({ policy, promotionPolicy, proposals, nowIso }) {
+  const autoApplyCandidates = [];
+  const proposalOnly = [];
+  const blocked = [];
+  for (const proposal of Array.isArray(proposals) ? proposals : []) {
+    const decision = safeString(proposal && proposal.promotion && proposal.promotion.decision, 40);
+    if (decision === "auto_apply_candidate" && proposal && proposal.candidateChange && proposal.candidateChange.runtimeRetrievalHint) {
+      autoApplyCandidates.push(proposal);
+    } else if (decision === "blocked") {
+      blocked.push(proposal);
+    } else {
+      proposalOnly.push(proposal);
+    }
+  }
+  const maxAutoApply = Math.max(
+    1,
+    Math.min(
+      Number(policy && policy.selfImprovement && policy.selfImprovement.maxAppliedHints) || 12,
+      Number(promotionPolicy && promotionPolicy.autoApply && promotionPolicy.autoApply.maxAutoApplyPerLane) || 12
+    )
+  );
+  const candidateHints = autoApplyCandidates.slice(0, maxAutoApply).map((proposal) => ({
+    proposalId: safeString(proposal && proposal.proposalId, 160),
+    articleId: safeString(proposal && proposal.articleId, 120),
+    title: safeString(proposal && proposal.title, 200),
+    runtimeRetrievalHint: proposal && proposal.candidateChange ? proposal.candidateChange.runtimeRetrievalHint : null,
+  })).filter((entry) => entry.runtimeRetrievalHint);
+  return {
+    schema: safeString(policy && policy.selfImprovement && policy.selfImprovement.stateSchema, 120) || "self-improvement-state.v1",
+    generatedAt: nowIso,
+    sourceName: safeString(policy && policy.source && policy.source.name, 120),
+    sourceTier: safeString(policy && policy.source && policy.source.tier, 40) || "primary",
+    autoApplyCandidateCount: autoApplyCandidates.length,
+    proposalOnlyCount: proposalOnly.length,
+    blockedCount: blocked.length,
+    candidateHints,
+    proposalSummaries: (Array.isArray(proposals) ? proposals : []).map((proposal) => ({
+      proposalId: safeString(proposal && proposal.proposalId, 160),
+      articleId: safeString(proposal && proposal.articleId, 120),
+      title: safeString(proposal && proposal.title, 200),
+      changeClass: safeString(proposal && proposal.changeClass, 120),
+      target: safeString(proposal && proposal.target, 260),
+      decision: safeString(proposal && proposal.promotion && proposal.promotion.decision, 40),
+    })),
+  };
+}
+
+function evaluateSelfImprovementGate({ policy, promotionPolicy, digest, candidateState, nowIso }) {
+  const cases = Array.isArray(promotionPolicy && promotionPolicy.evalGate && promotionPolicy.evalGate.cases)
+    ? promotionPolicy.evalGate.cases
+    : [];
+  if (!candidateState || !Array.isArray(candidateState.candidateHints) || !candidateState.candidateHints.length) {
+    return {
+      schema: safeString(policy && policy.selfImprovement && policy.selfImprovement.gateSchema, 120) || "self-improvement-eval-gate.v1",
+      generatedAt: nowIso,
+      status: "PASS",
+      reason: "no_auto_apply_candidates",
+      passedCount: cases.length,
+      failedCount: 0,
+      failedCaseIds: [],
+      results: cases.map((entry) => ({
+        caseId: safeString(entry && entry.caseId, 120),
+        pass: true,
+        failures: [],
+        baseline: { status: "skipped", reason: "no_auto_apply_candidates", matchedTopics: [], articleIds: [] },
+        candidate: { status: "skipped", reason: "no_auto_apply_candidates", matchedTopics: [], matchedHintIds: [], articleIds: [] },
+      })),
+    };
+  }
+  const results = cases.map((entry) => evaluateSelfImprovementCase(entry, { policy, digest, candidateState }));
+  const failed = results.filter((entry) => !entry.pass);
+  return {
+    schema: safeString(policy && policy.selfImprovement && policy.selfImprovement.gateSchema, 120) || "self-improvement-eval-gate.v1",
+    generatedAt: nowIso,
+    status: failed.length ? "FAIL" : "PASS",
+    reason: failed.length ? "non_regression_failed" : "all_cases_passed",
+    passedCount: results.length - failed.length,
+    failedCount: failed.length,
+    failedCaseIds: failed.map((entry) => safeString(entry && entry.caseId, 120)).filter(Boolean),
+    results,
+  };
+}
+
+function buildAppliedSelfImprovementState({ policy, promotionPolicy, candidateState, gate, previousState, nowIso }) {
+  const previous = previousState && typeof previousState === "object" ? previousState : {};
+  const previousAppliedHints = Array.isArray(previous.appliedHints) ? previous.appliedHints : [];
+  let appliedHints = [];
+  let appliedDecision = "none";
+  if (safeString(gate && gate.status, 20) === "PASS" && Array.isArray(candidateState && candidateState.candidateHints) && candidateState.candidateHints.length) {
+    appliedHints = candidateState.candidateHints;
+    appliedDecision = "applied";
+  } else if (safeString(previous && previous.gateStatus, 20) === "PASS" && previousAppliedHints.length) {
+    appliedHints = previousAppliedHints;
+    appliedDecision = "retained_previous_pass";
+  }
+  return {
+    schema: safeString(policy && policy.selfImprovement && policy.selfImprovement.stateSchema, 120) || "self-improvement-state.v1",
+    generatedAt: nowIso,
+    sourceName: safeString(policy && policy.source && policy.source.name, 120),
+    sourceTier: safeString(policy && policy.source && policy.source.tier, 40) || "primary",
+    promotionMode: safeString(promotionPolicy && promotionPolicy.mode, 80) || "machine_guarded_autonomy",
+    gateStatus: safeString(gate && gate.status, 20) || "FAIL",
+    gateReason: safeString(gate && gate.reason, 120) || "",
+    appliedDecision,
+    appliedHintCount: appliedHints.length,
+    appliedHintIds: appliedHints.map((entry) => safeString(entry && entry.runtimeRetrievalHint && entry.runtimeRetrievalHint.hintId, 160)).filter(Boolean),
+    autoApplyCandidateCount: Number(candidateState && candidateState.autoApplyCandidateCount) || 0,
+    proposalOnlyCount: Number(candidateState && candidateState.proposalOnlyCount) || 0,
+    blockedCount: Number(candidateState && candidateState.blockedCount) || 0,
+    failedCaseIds: Array.isArray(gate && gate.failedCaseIds) ? gate.failedCaseIds.slice(0, 8) : [],
+    promotionPolicyPath: repoRelative(policy.workspaceRoot, policy.selfImprovement.promotionPolicyPath),
+    statePath: repoRelative(policy.workspaceRoot, policy.paths.selfImprovementStatePath),
+    gatePath: repoRelative(policy.workspaceRoot, policy.paths.selfImprovementGatePath),
+    proposalDir: repoRelative(policy.workspaceRoot, policy.paths.selfImprovementProposalDir),
+    appliedHints,
+    proposalSummaries: Array.isArray(candidateState && candidateState.proposalSummaries) ? candidateState.proposalSummaries.slice(0, 16) : [],
+  };
+}
+
+function refreshSelfImprovementArtifacts({ policy, ledger = null, digest = null, now = new Date() } = {}) {
+  const normalizedPolicy = normalizeOpenAIBlogLearningPolicy(policy, {
+    policyPath: policy && policy.policyPath ? policy.policyPath : defaultOpenAIBlogLearningPolicyPath,
+  });
+  if (!normalizedPolicy.selfImprovement || !normalizedPolicy.selfImprovement.enabled) {
+    return null;
+  }
+  const nowIso = new Date(now).toISOString();
+  const resolvedLedger = ledger && typeof ledger === "object" ? ledger : readJsonIfExists(normalizedPolicy.paths.ledgerPath);
+  const resolvedDigest = digest && typeof digest === "object" ? digest : readJsonIfExists(normalizedPolicy.paths.digestPath);
+  if (!resolvedLedger || !Array.isArray(resolvedLedger.articles) || !resolvedDigest || typeof resolvedDigest.topics !== "object") {
+    throw new Error("learning artifacts missing before self-improvement refresh");
+  }
+  const promotionInfo = loadSelfImprovementPromotionPolicy(normalizedPolicy);
+  const promotionPolicy = promotionInfo.policy;
+  const previousState = readJsonIfExists(normalizedPolicy.paths.selfImprovementStatePath) || {};
+  const proposals = resolvedLedger.articles.map((article) => buildSelfImprovementProposal(article, normalizedPolicy, promotionPolicy, nowIso));
+  const writtenProposalPaths = new Set();
+  proposals.forEach((proposal) => {
+    const proposalPath = path.join(normalizedPolicy.paths.selfImprovementProposalDir, `${safeString(proposal && proposal.articleId, 120)}.json`);
+    writeJson(proposalPath, proposal);
+    writtenProposalPaths.add(path.normalize(proposalPath));
+  });
+  if (fs.existsSync(normalizedPolicy.paths.selfImprovementProposalDir)) {
+    for (const entry of fs.readdirSync(normalizedPolicy.paths.selfImprovementProposalDir, { withFileTypes: true })) {
+      if (!entry.isFile() || !/\.json$/i.test(entry.name)) {
+        continue;
+      }
+      const filePath = path.join(normalizedPolicy.paths.selfImprovementProposalDir, entry.name);
+      if (writtenProposalPaths.has(path.normalize(filePath))) {
+        continue;
+      }
+      try {
+        fs.unlinkSync(filePath);
+      } catch {
+        // Ignore cleanup failures.
+      }
+    }
+  }
+  const candidateState = buildCandidateSelfImprovementState({
+    policy: normalizedPolicy,
+    promotionPolicy,
+    proposals,
+    nowIso,
+  });
+  const gate = evaluateSelfImprovementGate({
+    policy: normalizedPolicy,
+    promotionPolicy,
+    digest: resolvedDigest,
+    candidateState,
+    nowIso,
+  });
+  const state = buildAppliedSelfImprovementState({
+    policy: normalizedPolicy,
+    promotionPolicy,
+    candidateState,
+    gate,
+    previousState,
+    nowIso,
+  });
+  writeJson(normalizedPolicy.paths.selfImprovementGatePath, gate);
+  writeJson(normalizedPolicy.paths.selfImprovementStatePath, state);
+  return {
+    proposals,
+    gate,
+    state,
+    promotionPolicy,
+    paths: {
+      proposalDir: repoRelative(normalizedPolicy.workspaceRoot, normalizedPolicy.paths.selfImprovementProposalDir),
+      statePath: repoRelative(normalizedPolicy.workspaceRoot, normalizedPolicy.paths.selfImprovementStatePath),
+      gatePath: repoRelative(normalizedPolicy.workspaceRoot, normalizedPolicy.paths.selfImprovementGatePath),
+      promotionPolicyPath: repoRelative(normalizedPolicy.workspaceRoot, promotionInfo.path),
+    },
+  };
+}
+
 function buildRuntimeSnapshotFromArtifacts(policy, runtimeState = {}) {
   const ledger = readJsonIfExists(policy.paths.ledgerPath) || {};
   const digest = readJsonIfExists(policy.paths.digestPath) || {};
+  const selfImprovementState = readJsonIfExists(policy.paths.selfImprovementStatePath) || {};
+  const selfImprovementGate = readJsonIfExists(policy.paths.selfImprovementGatePath) || {};
   const summary = ledger && ledger.summary && typeof ledger.summary === "object" ? ledger.summary : {};
   const articles = Array.isArray(ledger && ledger.articles) ? ledger.articles : [];
   const recentArticles = articles.slice(0, 4).map((article) => ({
@@ -1318,7 +2042,29 @@ function buildRuntimeSnapshotFromArtifacts(policy, runtimeState = {}) {
       lastTaskFamily: safeString(runtimeState.lastRetrievalTaskFamily, 80),
       lastMatchedTopics: Array.isArray(runtimeState.lastRetrievalTopics) ? runtimeState.lastRetrievalTopics.slice(0, 6) : [],
       lastArticleIds: Array.isArray(runtimeState.lastRetrievalArticleIds) ? runtimeState.lastRetrievalArticleIds.slice(0, 6) : [],
+      lastHintIds: Array.isArray(runtimeState.lastRetrievalHintIds) ? runtimeState.lastRetrievalHintIds.slice(0, 8) : [],
       lastPromptBlockChars: Number(runtimeState.lastRetrievalPromptBlockChars) || 0,
+    },
+    selfImprovement: {
+      enabled: Boolean(runtimeState.enabled) && Boolean(policy && policy.selfImprovement && policy.selfImprovement.enabled),
+      promotionMode: safeString(selfImprovementState && selfImprovementState.promotionMode, 80) || "machine_guarded_autonomy",
+      gateStatus: safeString(selfImprovementState && selfImprovementState.gateStatus, 20) || safeString(selfImprovementGate && selfImprovementGate.status, 20) || "NOT_RUN",
+      gateReason: safeString(selfImprovementState && selfImprovementState.gateReason, 120) || safeString(selfImprovementGate && selfImprovementGate.reason, 120),
+      appliedDecision: safeString(selfImprovementState && selfImprovementState.appliedDecision, 40) || "none",
+      appliedHintCount: Number(selfImprovementState && selfImprovementState.appliedHintCount) || 0,
+      autoApplyCandidateCount: Number(selfImprovementState && selfImprovementState.autoApplyCandidateCount) || 0,
+      proposalOnlyCount: Number(selfImprovementState && selfImprovementState.proposalOnlyCount) || 0,
+      blockedCount: Number(selfImprovementState && selfImprovementState.blockedCount) || 0,
+      failedCaseIds: Array.isArray(selfImprovementState && selfImprovementState.failedCaseIds)
+        ? selfImprovementState.failedCaseIds.slice(0, 8)
+        : (Array.isArray(selfImprovementGate && selfImprovementGate.failedCaseIds) ? selfImprovementGate.failedCaseIds.slice(0, 8) : []),
+      appliedHintIds: Array.isArray(selfImprovementState && selfImprovementState.appliedHintIds) ? selfImprovementState.appliedHintIds.slice(0, 8) : [],
+      proposalDir: repoRelative(policy.workspaceRoot, policy.paths.selfImprovementProposalDir),
+      statePath: repoRelative(policy.workspaceRoot, policy.paths.selfImprovementStatePath),
+      gatePath: repoRelative(policy.workspaceRoot, policy.paths.selfImprovementGatePath),
+      promotionPolicyPath: policy && policy.selfImprovement && policy.selfImprovement.promotionPolicyPath
+        ? repoRelative(policy.workspaceRoot, policy.selfImprovement.promotionPolicyPath)
+        : repoRelative(policy.workspaceRoot, defaultSelfImprovementPromotionPolicyPath),
     },
     freezeAware: {
       requirementFoundationV1: "bug_fix_only",
@@ -1500,6 +2246,12 @@ async function runOpenAIBlogLearningCycle({
   };
   writeJson(normalizedPolicy.paths.ledgerPath, ledger);
   writeJson(normalizedPolicy.paths.digestPath, digest);
+  const selfImprovement = refreshSelfImprovementArtifacts({
+    policy: normalizedPolicy,
+    ledger,
+    digest,
+    now: nowIso,
+  });
   writeText(normalizedPolicy.paths.curatedDocPath, buildCuratedDoc(digest, normalizedPolicy));
   const report = {
     title: safeString(normalizedPolicy && normalizedPolicy.presentation && normalizedPolicy.presentation.reportTitle, 120) || "OPENAI_BLOG_LEARNING_REPORT",
@@ -1513,7 +2265,19 @@ async function runOpenAIBlogLearningCycle({
       digestPath: repoRelative(normalizedPolicy.workspaceRoot, normalizedPolicy.paths.digestPath),
       reportPath: repoRelative(normalizedPolicy.workspaceRoot, normalizedPolicy.paths.reportPath),
       curatedDocPath: repoRelative(normalizedPolicy.workspaceRoot, normalizedPolicy.paths.curatedDocPath),
+      selfImprovementProposalDir: selfImprovement && selfImprovement.paths ? selfImprovement.paths.proposalDir : repoRelative(normalizedPolicy.workspaceRoot, normalizedPolicy.paths.selfImprovementProposalDir),
+      selfImprovementStatePath: selfImprovement && selfImprovement.paths ? selfImprovement.paths.statePath : repoRelative(normalizedPolicy.workspaceRoot, normalizedPolicy.paths.selfImprovementStatePath),
+      selfImprovementGatePath: selfImprovement && selfImprovement.paths ? selfImprovement.paths.gatePath : repoRelative(normalizedPolicy.workspaceRoot, normalizedPolicy.paths.selfImprovementGatePath),
     },
+    selfImprovement: selfImprovement && selfImprovement.state
+      ? {
+        gateStatus: safeString(selfImprovement.state.gateStatus, 20),
+        appliedDecision: safeString(selfImprovement.state.appliedDecision, 40),
+        appliedHintCount: Number(selfImprovement.state.appliedHintCount) || 0,
+        proposalOnlyCount: Number(selfImprovement.state.proposalOnlyCount) || 0,
+        blockedCount: Number(selfImprovement.state.blockedCount) || 0,
+      }
+      : null,
   };
   writeText(normalizedPolicy.paths.reportPath, buildMarkdownReport(report));
   return {
@@ -1521,18 +2285,25 @@ async function runOpenAIBlogLearningCycle({
     ledger,
     digest,
     report,
+    selfImprovement,
   };
 }
 
 module.exports = {
+  buildCandidateSelfImprovementState,
+  buildAppliedSelfImprovementState,
+  evaluateSelfImprovementGate,
   buildRuntimeLearningSelection,
   buildRuntimePromptInjection,
   defaultOpenAIBlogLearningPolicyPath,
+  defaultSelfImprovementPromotionPolicyPath,
   loadOpenAIBlogLearningPolicy,
+  loadSelfImprovementPromotionPolicy,
   normalizeOpenAIBlogLearningPolicy,
   parseIndexCards,
   extractArticleInsights,
   buildRuntimeSnapshotFromArtifacts,
+  refreshSelfImprovementArtifacts,
   runOpenAIBlogLearningCycle,
   httpFetchText,
 };

@@ -946,6 +946,12 @@ async function run() {
     if (runtimeReady.external_learning.runtimeRetrieval.enabled !== false) {
       throw new Error("runtime external_learning.runtimeRetrieval.enabled was not false when global learning was disabled");
     }
+    if (!runtimeReady.external_learning.selfImprovement || typeof runtimeReady.external_learning.selfImprovement !== "object") {
+      throw new Error("runtime external_learning did not expose selfImprovement");
+    }
+    if (runtimeReady.external_learning.selfImprovement.enabled !== false) {
+      throw new Error("runtime external_learning.selfImprovement.enabled was not false when global learning was disabled");
+    }
     if (!runtimeReady.secondary_learning || typeof runtimeReady.secondary_learning !== "object") {
       throw new Error("runtime did not expose secondary_learning");
     }
@@ -957,6 +963,12 @@ async function run() {
     }
     if (typeof runtimeReady.secondary_learning.anthropic_engineering.curatedDocPath !== "string" || !runtimeReady.secondary_learning.anthropic_engineering.curatedDocPath) {
       throw new Error("runtime secondary_learning.anthropic_engineering did not expose curatedDocPath");
+    }
+    if (!runtimeReady.secondary_learning.anthropic_engineering.selfImprovement || typeof runtimeReady.secondary_learning.anthropic_engineering.selfImprovement !== "object") {
+      throw new Error("runtime secondary_learning.anthropic_engineering did not expose selfImprovement");
+    }
+    if (runtimeReady.secondary_learning.anthropic_engineering.selfImprovement.enabled !== false) {
+      throw new Error("runtime secondary_learning.anthropic_engineering.selfImprovement.enabled was not false when disabled by env");
     }
     if (!runtimeReady.adversarialShadow || typeof runtimeReady.adversarialShadow !== "object") {
       throw new Error("runtime did not expose adversarialShadow snapshot");

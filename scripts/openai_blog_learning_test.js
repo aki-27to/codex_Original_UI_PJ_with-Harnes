@@ -121,6 +121,18 @@ async function run() {
       maxGuidanceItemsPerArticle: 2,
       maxPromptBlockChars: 1200,
     },
+    selfImprovement: {
+      enabled: true,
+      promotionPolicyPath: path.resolve(__dirname, "config", "self_improvement_promotion_policy.json"),
+    },
+    artifacts: {
+      proposalIdPrefix: "openai-blog",
+    },
+    paths: {
+      selfImprovementProposalDir: "output/openai_blog_self_improvement_proposals",
+      selfImprovementStatePath: "output/openai_blog_self_improvement_state.json",
+      selfImprovementGatePath: "output/openai_blog_self_improvement_gate.json",
+    },
   }, { policyPath });
 
   const fetchText = async (url) => {
@@ -148,10 +160,16 @@ async function run() {
   assert(first.digest.topics.codex && first.digest.topics.codex.length >= 1, "codex topic should be indexed");
   assert(fs.existsSync(path.join(workspaceRoot, "docs", "OPENAI_DEVELOPER_LEARNINGS.md")), "curated doc should be written");
   assert(fs.existsSync(path.join(workspaceRoot, "output", "openai_blog_learning_proposals", "run-long-horizon-tasks-with-codex.json")), "proposal artifact should be written");
+  assert(fs.existsSync(path.join(workspaceRoot, "output", "openai_blog_self_improvement_proposals", "designing-delightful-frontends-with-gpt-5-4.json")), "self improvement proposal artifact should be written");
+  assert(fs.existsSync(path.join(workspaceRoot, "output", "openai_blog_self_improvement_state.json")), "self improvement state artifact should be written");
+  assert(fs.existsSync(path.join(workspaceRoot, "output", "openai_blog_self_improvement_gate.json")), "self improvement gate artifact should be written");
   const longHorizonArticle = first.ledger.articles.find((entry) => entry.articleId === "run-long-horizon-tasks-with-codex");
   assert(longHorizonArticle, "run-long-horizon article should be present in the ledger");
   assert.notStrictEqual(longHorizonArticle.summary, "OpenAI Developer Blog", "summary should not keep the boilerplate page description");
   assert(/specs, checkpoints, and verification|spec file and clear acceptance criteria/i.test(longHorizonArticle.summary), "summary should retain article-specific long-horizon guidance");
+  assert(first.selfImprovement && first.selfImprovement.state, "self improvement state should be returned");
+  assert.strictEqual(first.selfImprovement.gate.status, "PASS", "self improvement gate should pass fixture coverage");
+  assert(first.selfImprovement.state.appliedHintCount >= 1, "primary lane should auto-apply at least one bounded runtime hint");
 
   const second = await runOpenAIBlogLearningCycle({
     policy,
@@ -172,6 +190,8 @@ async function run() {
   assert(runtime.curatedDocPath.endsWith("docs/OPENAI_DEVELOPER_LEARNINGS.md"), "runtime snapshot should surface curated doc path");
   assert(runtime.pendingProposalCount >= 1, "runtime snapshot should surface pending proposal count");
   assert(runtime.runtimeRetrieval && runtime.runtimeRetrieval.enabled === true, "runtime snapshot should surface runtime retrieval posture");
+  assert(runtime.selfImprovement && runtime.selfImprovement.gateStatus === "PASS", "runtime snapshot should surface self improvement gate status");
+  assert(Number(runtime.selfImprovement.appliedHintCount) >= 1, "runtime snapshot should surface applied hint count");
 
   const planningContext = {
     selection: {
@@ -202,6 +222,7 @@ async function run() {
   assert.strictEqual(selection.status, "ready", "frontend web task should resolve runtime learning articles");
   assert(selection.matchedTopics.includes("frontend"), "frontend runtime retrieval should match frontend topic");
   assert(selection.articles.length >= 1, "runtime retrieval should select at least one article");
+  assert(selection.matchedHintIds.length >= 1, "runtime retrieval should record self improvement hint usage");
 
   const injection = buildRuntimePromptInjection({
     prompt: "Build a benchmarked landing page in React and verify the final UI with screenshots.",
@@ -212,8 +233,9 @@ async function run() {
   assert.strictEqual(injection.status, "applied", "guarded runtime retrieval should apply a prompt block");
   assert(injection.prompt.includes("[HARNESS_EXTERNAL_LEARNING_CONTEXT_V1]"), "injected prompt should include the learning marker");
   assert(injection.prompt.includes("Designing delightful frontends with GPT-5.4"), "injected prompt should reference the matched official article");
+  assert(Array.isArray(injection.matchedHintIds) && injection.matchedHintIds.length >= 1, "prompt injection should surface matched self improvement hints");
 
-  console.log("[openai-blog-learning-test] PASS cycle, dedupe, runtime snapshot, and runtime retrieval injection");
+  console.log("[openai-blog-learning-test] PASS cycle, self-improvement gate, runtime snapshot, and runtime retrieval injection");
   console.log("PASS");
 }
 

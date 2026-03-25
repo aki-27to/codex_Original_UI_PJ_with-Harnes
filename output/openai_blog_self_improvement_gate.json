@@ -1,0 +1,115 @@
+{
+  "schema": "self-improvement-eval-gate.v1",
+  "generatedAt": "2026-03-25T12:37:59.488Z",
+  "status": "PASS",
+  "reason": "all_cases_passed",
+  "passedCount": 3,
+  "failedCount": 0,
+  "failedCaseIds": [],
+  "results": [
+    {
+      "caseId": "web_creative_benchmark",
+      "pass": true,
+      "failures": [],
+      "baseline": {
+        "status": "ready",
+        "reason": "matched_official_articles",
+        "matchedTopics": [
+          "frontend",
+          "evals",
+          "codex"
+        ],
+        "articleIds": [
+          "one-year-of-responses",
+          "skills-agents-sdk"
+        ]
+      },
+      "candidate": {
+        "status": "ready",
+        "reason": "matched_official_articles",
+        "matchedTopics": [
+          "frontend",
+          "evals",
+          "codex"
+        ],
+        "matchedHintIds": [
+          "designing-delightful-frontends-with-gpt-5-4-runtime-retrieval",
+          "one-year-of-responses-runtime-retrieval",
+          "skills-agents-sdk-runtime-retrieval",
+          "building-frontend-uis-with-codex-and-figma-runtime-retrieval",
+          "run-long-horizon-tasks-with-codex-runtime-retrieval",
+          "skills-shell-tips-runtime-retrieval"
+        ],
+        "articleIds": [
+          "one-year-of-responses",
+          "skills-agents-sdk"
+        ]
+      }
+    },
+    {
+      "caseId": "frontend_context_iteration",
+      "pass": true,
+      "failures": [],
+      "baseline": {
+        "status": "ready",
+        "reason": "matched_official_articles",
+        "matchedTopics": [
+          "frontend",
+          "evals",
+          "codex",
+          "context"
+        ],
+        "articleIds": [
+          "one-year-of-responses",
+          "skills-agents-sdk"
+        ]
+      },
+      "candidate": {
+        "status": "ready",
+        "reason": "matched_official_articles",
+        "matchedTopics": [
+          "frontend",
+          "evals",
+          "codex",
+          "context",
+          "safety",
+          "agents"
+        ],
+        "matchedHintIds": [
+          "designing-delightful-frontends-with-gpt-5-4-runtime-retrieval",
+          "building-frontend-uis-with-codex-and-figma-runtime-retrieval",
+          "one-year-of-responses-runtime-retrieval",
+          "skills-agents-sdk-runtime-retrieval",
+          "run-long-horizon-tasks-with-codex-runtime-retrieval",
+          "skills-shell-tips-runtime-retrieval"
+        ],
+        "articleIds": [
+          "one-year-of-responses",
+          "skills-agents-sdk"
+        ]
+      }
+    },
+    {
+      "caseId": "backend_non_targeted",
+      "pass": true,
+      "failures": [],
+      "baseline": {
+        "status": "skipped",
+        "reason": "agent_not_targeted",
+        "matchedTopics": [
+          "codex"
+        ],
+        "articleIds": []
+      },
+      "candidate": {
+        "status": "skipped",
+        "reason": "agent_not_targeted",
+        "matchedTopics": [
+          "codex"
+        ],
+        "matchedHintIds": [],
+        "articleIds": []
+      }
+    }
+  ]
+}

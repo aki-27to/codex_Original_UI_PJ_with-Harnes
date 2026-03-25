@@ -269,6 +269,8 @@ async function run() {
   assert(first.digest.topics.evals && first.digest.topics.evals.length >= 1, "eval topic should be indexed");
   assert(fs.existsSync(path.join(workspaceRoot, "docs", "ANTHROPIC_ENGINEERING_LEARNINGS.md")), "curated doc should be written");
   assert(fs.existsSync(path.join(workspaceRoot, "output", "anthropic_engineering_learning_proposals", "demystifying-evals-for-ai-agents.json")), "proposal artifact should be written");
+  assert(fs.existsSync(path.join(workspaceRoot, "output", "anthropic_engineering_self_improvement_state.json")), "secondary self improvement state artifact should be written");
+  assert(fs.existsSync(path.join(workspaceRoot, "output", "anthropic_engineering_self_improvement_gate.json")), "secondary self improvement gate artifact should be written");
   assert(!fs.existsSync(path.join(workspaceRoot, "output", "anthropic_engineering_learning_proposals", "eval-awareness-browsecomp.json")), "vendor specific article should be excluded");
   const harnessArticle = first.ledger.articles.find((entry) => entry.articleId === "harness-design-long-running-apps");
   assert(harnessArticle, "harness design article should be present in the ledger");
@@ -276,6 +278,9 @@ async function run() {
   assert(/Harness design is key to performance/i.test(harnessArticle.summary), "summary should use the harness-specific hero summary");
   assert(harnessArticle.guidance.some((entry) => /structured artifacts|planner, generator, and evaluator/i.test(entry)), "guidance should retain harness-specific principles");
   assert(!harnessArticle.guidance.some((entry) => /^Design quality:/i.test(entry)), "guidance should not be led by unrelated frontend rubric noise");
+  assert(first.selfImprovement && first.selfImprovement.state, "secondary self improvement state should be returned");
+  assert.strictEqual(first.selfImprovement.gate.status, "PASS", "secondary self improvement gate should pass");
+  assert.strictEqual(Number(first.selfImprovement.state.appliedHintCount) || 0, 0, "secondary lane should not auto-apply runtime hints");
 
   const runtime = buildAnthropicEngineeringRuntimeSnapshot(policy, {
     enabled: true,
@@ -289,8 +294,9 @@ async function run() {
   assert.strictEqual(runtime.portabilityMode, "portable_principles_only", "runtime snapshot should expose portability mode");
   assert(runtime.curatedDocPath.endsWith("docs/ANTHROPIC_ENGINEERING_LEARNINGS.md"), "runtime snapshot should surface anthropic curated doc path");
   assert(runtime.runtimeRetrieval && runtime.runtimeRetrieval.enabled === false, "secondary lane runtime retrieval should stay disabled");
+  assert(runtime.selfImprovement && runtime.selfImprovement.appliedDecision === "none", "secondary runtime snapshot should expose proposal-first self improvement state");
 
-  console.log("[anthropic-engineering-learning-test] PASS cycle, portability filter, and runtime snapshot");
+  console.log("[anthropic-engineering-learning-test] PASS cycle, portability filter, self-improvement state, and runtime snapshot");
   console.log("PASS");
 }
 

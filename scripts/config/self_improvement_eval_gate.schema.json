@@ -1,0 +1,68 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "self-improvement-eval-gate.v1",
+  "title": "Self Improvement Eval Gate",
+  "type": "object",
+  "required": [
+    "schema",
+    "generatedAt",
+    "status",
+    "reason",
+    "passedCount",
+    "failedCount",
+    "failedCaseIds",
+    "results"
+  ],
+  "properties": {
+    "schema": {
+      "const": "self-improvement-eval-gate.v1"
+    },
+    "generatedAt": {
+      "type": "string"
+    },
+    "status": {
+      "type": "string",
+      "enum": ["PASS", "FAIL"]
+    },
+    "reason": {
+      "type": "string"
+    },
+    "passedCount": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "failedCount": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "failedCaseIds": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "results": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["caseId", "pass", "failures", "baseline", "candidate"],
+        "properties": {
+          "caseId": { "type": "string" },
+          "pass": { "type": "boolean" },
+          "failures": {
+            "type": "array",
+            "items": { "type": "string" }
+          },
+          "baseline": {
+            "type": "object"
+          },
+          "candidate": {
+            "type": "object"
+          }
+        },
+        "additionalProperties": true
+      }
+    }
+  },
+  "additionalProperties": true
+}

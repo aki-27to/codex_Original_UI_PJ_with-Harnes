@@ -61,6 +61,7 @@ Define how the harness preserves, summarizes, shares, and externalizes context s
 - Runtime retrieval must stay bounded and gated: apply only to explicitly allowed agents/task families, keep a kill switch, and prefer shadow/proposal modes before widening the scope.
 - External learnings are advisory memory, not constitutional truth. They must not silently override `AGENTS.md` or frozen Step 1/2 behavior.
 - Promotion from external learning into runtime behavior must stay governed and regression-checked; collecting or summarizing a learning does not authorize automatic policy drift.
+- Self-improvement promotion is machine-readable and tiered: low-risk runtime retrieval hints may auto-apply only after the self-improvement eval gate passes, while policy/config/runtime-core targets remain proposal-only or blocked according to `docs/SELF_IMPROVEMENT_POLICY.md` and `scripts/config/self_improvement_promotion_policy.json`.
 
 ## 7) Safety and Privacy
 

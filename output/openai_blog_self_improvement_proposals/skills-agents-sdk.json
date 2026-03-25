@@ -1,0 +1,81 @@
+{
+  "schema": "self-improvement-proposal.v1",
+  "proposalId": "openai-blog-skills-agents-sdk-self-improvement",
+  "createdAt": "2026-03-25T12:37:59.488Z",
+  "sourceLane": "OpenAI Developers Blog",
+  "sourceTier": "primary",
+  "articleId": "skills-agents-sdk",
+  "title": "Using skills to accelerate OSS maintenance | OpenAI Developers",
+  "sourceUrl": "https://developers.openai.com/blog/skills-agents-sdk",
+  "relevance": "high",
+  "portability": "portable",
+  "changeClass": "runtime_retrieval_hint",
+  "target": "runtime/external-learning/runtime-retrieval",
+  "objective": "Improve runtime retrieval targeting using article-specific guidance from Using skills to accelerate OSS maintenance | OpenAI Developers.",
+  "evidence": {
+    "summary": "Using skills and GitHub Actions to optimize Codex workflows in the OpenAI Agents SDK repos.",
+    "guidance": [
+      "repo-local skills in .agents/skills/",
+      "Repo-local skills, AGENTS.md , and GitHub Actions let us turn recurring engineering work, such as verification, release preparation, integration testing for examples, and PR review, into repeatable workflows.",
+      "In these repos, we use skills to capture repository-specific workflows. A skill is a small package of operational knowledge: a SKILL.md manifest, plus optional scripts/ , references/ , and assets/ . The Codex customization docs describe why",
+      "repository policy in AGENTS.md",
+      "In these repos, we use skills to capture repository-specific workflows.",
+      "optional scripts and references inside those skills"
+    ],
+    "topicTags": [
+      "agents",
+      "automation",
+      "codex",
+      "context",
+      "evals",
+      "frontend",
+      "skills"
+    ],
+    "articleProposalId": "openai-blog-skills-agents-sdk"
+  },
+  "candidateChange": {
+    "runtimeRetrievalHint": {
+      "hintId": "skills-agents-sdk-runtime-retrieval",
+      "appliesToAgents": [
+        "default",
+        "frontend_worker"
+      ],
+      "appliesToTaskFamilies": [
+        "web_creative"
+      ],
+      "topics": [
+        "agents",
+        "automation",
+        "codex",
+        "context"
+      ],
+      "lexicalTriggers": [
+        "workflow",
+        "planner",
+        "generator",
+        "evaluator"
+      ],
+      "preferredArticleIds": [
+        "skills-agents-sdk"
+      ],
+      "topicBoost": 3,
+      "articleBoost": 8
+    }
+  },
+  "promotion": {
+    "decision": "auto_apply_candidate",
+    "rationale": "bounded_low_risk_runtime_hint",
+    "riskFlags": [
+      "machine_gate_required"
+    ]
+  },
+  "gate": {
+    "required": true,
+    "status": "pending",
+    "caseIds": [
+      "web_creative_benchmark",
+      "frontend_context_iteration",
+      "backend_non_targeted"
+    ]
+  }
+}

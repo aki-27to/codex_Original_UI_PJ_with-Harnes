@@ -1,0 +1,80 @@
+{
+  "schema": "self-improvement-promotion-policy.v1",
+  "mode": "machine_guarded_autonomy",
+  "autoApply": {
+    "changeClasses": [
+      "runtime_retrieval_hint"
+    ],
+    "requireGatePass": true,
+    "maxAutoApplyPerLane": 12
+  },
+  "proposalOnly": {
+    "targets": [
+      "docs/AGENT_OPERATING_RULES.md",
+      "docs/AGENT_SKILL_MATRIX.md",
+      "docs/CONTEXT_MEMORY_POLICY.md",
+      "docs/EVIDENCE_CONTRACT.md",
+      "scripts/config/eval_suite_default.json",
+      "scripts/config/openai_blog_learning_policy.json",
+      "scripts/config/anthropic_engineering_learning_policy.json",
+      "skills/web-designer-master/references/quality-gate.md",
+      "server.js"
+    ],
+    "changeClasses": [
+      "memory_policy_note",
+      "eval_extension",
+      "operator_policy_note",
+      "frontend_quality_note",
+      "runtime_policy_tuning"
+    ]
+  },
+  "blocked": {
+    "targets": [
+      "AGENTS.md",
+      "docs/PHASE_REQUIREMENT_FOUNDATION_V1.md",
+      "scripts/lib/planning_mode_policy.js",
+      "scripts/config/requirement_contract.schema.json",
+      "scripts/config/dispatch_plan.schema.json",
+      "scripts/lib/requirement_revision_policy.js"
+    ]
+  },
+  "evalGate": {
+    "schema": "self-improvement-eval-gate.v1",
+    "cases": [
+      {
+        "caseId": "web_creative_benchmark",
+        "agentName": "default",
+        "taskFamily": "web_creative",
+        "prompt": "Build a benchmarked landing page in React and verify the final UI with screenshots.",
+        "requiredTopics": [
+          "frontend",
+          "evals",
+          "codex"
+        ],
+        "maxTopics": 6
+      },
+      {
+        "caseId": "frontend_context_iteration",
+        "agentName": "frontend_worker",
+        "taskFamily": "web_creative",
+        "prompt": "Refine the design system, manage prompt budget across revisions, and keep the UI coherent.",
+        "requiredTopics": [
+          "frontend",
+          "context"
+        ],
+        "maxTopics": 6
+      },
+      {
+        "caseId": "backend_non_targeted",
+        "agentName": "backend_worker",
+        "taskFamily": "deterministic_code",
+        "prompt": "Fix the JSON parsing bug in the API route and add unit tests.",
+        "forbiddenTopics": [
+          "frontend",
+          "skills"
+        ],
+        "maxTopics": 3
+      }
+    ]
+  }
+}

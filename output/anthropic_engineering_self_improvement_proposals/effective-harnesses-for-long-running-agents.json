@@ -1,0 +1,49 @@
+{
+  "schema": "self-improvement-proposal.v1",
+  "proposalId": "anthropic-engineering-effective-harnesses-for-long-running-agents-self-improvement",
+  "createdAt": "2026-03-25T12:37:59.498Z",
+  "sourceLane": "Anthropic Engineering",
+  "sourceTier": "secondary",
+  "articleId": "effective-harnesses-for-long-running-agents",
+  "title": "Effective harnesses for long-running agents",
+  "sourceUrl": "https://www.anthropic.com/engineering/effective-harnesses-for-long-running-agents",
+  "relevance": "high",
+  "portability": "mixed",
+  "changeClass": "frontend_quality_note",
+  "target": "skills/web-designer-master/references/quality-gate.md",
+  "objective": "Propose frontend quality guidance based on Effective harnesses for long-running agents.",
+  "evidence": {
+    "summary": "Agents still face challenges working across many context windows. We looked to human engineers for inspiration in creating a more effective harness for long-running agents.",
+    "guidance": [
+      "The core challenge of long-running agents is that they must work in discrete sessions, and each new session begins with no memory of what came before.",
+      "The core challenge of long-running agents is that they must work in discrete sessions, and each new session begins with no memory of what came before. Imagine a software project staffed by engineers working in shifts, where each new enginee",
+      "However, getting agents to make consistent progress across multiple context windows remains an open problem.",
+      "As AI agents become more capable, developers are increasingly asking them to take on complex tasks requiring work that spans hours, or even days."
+    ],
+    "topicTags": [
+      "agents",
+      "context",
+      "frontend"
+    ],
+    "articleProposalId": "anthropic-engineering-effective-harnesses-for-long-running-agents"
+  },
+  "candidateChange": {
+    "note": "Agents still face challenges working across many context windows. We looked to human engineers for inspiration in creating a more effective harness for long-running agents."
+  },
+  "promotion": {
+    "decision": "proposal_only",
+    "rationale": "governed_review_required",
+    "riskFlags": [
+      "governed_review_required"
+    ]
+  },
+  "gate": {
+    "required": false,
+    "status": "not_applicable",
+    "caseIds": [
+      "web_creative_benchmark",
+      "frontend_context_iteration",
+      "backend_non_targeted"
+    ]
+  }
+}

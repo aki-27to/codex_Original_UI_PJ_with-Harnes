@@ -1,0 +1,80 @@
+{
+  "schema": "self-improvement-proposal.v1",
+  "proposalId": "openai-blog-skills-shell-tips-self-improvement",
+  "createdAt": "2026-03-25T12:37:59.488Z",
+  "sourceLane": "OpenAI Developers Blog",
+  "sourceTier": "primary",
+  "articleId": "skills-shell-tips",
+  "title": "Shell + Skills + Compaction: Tips for long-running agents that do real work | OpenAI Developers",
+  "sourceUrl": "https://developers.openai.com/blog/skills-shell-tips",
+  "relevance": "high",
+  "portability": "portable",
+  "changeClass": "runtime_retrieval_hint",
+  "target": "runtime/external-learning/runtime-retrieval",
+  "objective": "Improve runtime retrieval targeting using article-specific guidance from Shell + Skills + Compaction: Tips for long-running agents that do real work | OpenAI Developers.",
+  "evidence": {
+    "summary": "Practical patterns for building with skills, hosted shell, and server-side compaction in the Responses API.",
+    "guidance": [
+      "Skills (aligned with the Agent Skills open standard): reusable, versioned instructions you can mount into containers so that agents can execute tasks more reliably.",
+      "We’re shifting from single-turn assistants to long-running agents that handle real knowledge work: reading large datasets, updating files, and writing apps.",
+      "Based on developer feedback and our own experience building Codex and internal agents, we’re releasing a new set of agentic primitives that make long-horizon work more practical:",
+      "This post focuses on the nonobvious tips and patterns we’ve seen work best so far, both in our work at OpenAI and in production at Glean, an early skills customer.",
+      "The docs and API reference cover each item above individually. This post focuses on the nonobvious tips and patterns we’ve seen work best so far, both in our work at OpenAI and in production at Glean, an early skills customer.",
+      "Server-side compaction (new): When context crosses the threshold, compaction runs automatically in-stream, so there’s no separate compaction call."
+    ],
+    "topicTags": [
+      "agents",
+      "api",
+      "codex",
+      "context",
+      "frontend",
+      "skills"
+    ],
+    "articleProposalId": "openai-blog-skills-shell-tips"
+  },
+  "candidateChange": {
+    "runtimeRetrievalHint": {
+      "hintId": "skills-shell-tips-runtime-retrieval",
+      "appliesToAgents": [
+        "default",
+        "frontend_worker"
+      ],
+      "appliesToTaskFamilies": [
+        "web_creative"
+      ],
+      "topics": [
+        "agents",
+        "codex",
+        "context",
+        "frontend"
+      ],
+      "lexicalTriggers": [
+        "context",
+        "planner",
+        "generator",
+        "evaluator"
+      ],
+      "preferredArticleIds": [
+        "skills-shell-tips"
+      ],
+      "topicBoost": 3,
+      "articleBoost": 8
+    }
+  },
+  "promotion": {
+    "decision": "auto_apply_candidate",
+    "rationale": "bounded_low_risk_runtime_hint",
+    "riskFlags": [
+      "machine_gate_required"
+    ]
+  },
+  "gate": {
+    "required": true,
+    "status": "pending",
+    "caseIds": [
+      "web_creative_benchmark",
+      "frontend_context_iteration",
+      "backend_non_targeted"
+    ]
+  }
+}

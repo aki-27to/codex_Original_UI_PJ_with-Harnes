@@ -1,0 +1,271 @@
+{
+  "schema": "self-improvement-state.v1",
+  "generatedAt": "2026-03-25T12:37:59.488Z",
+  "sourceName": "OpenAI Developers Blog",
+  "sourceTier": "primary",
+  "promotionMode": "machine_guarded_autonomy",
+  "gateStatus": "PASS",
+  "gateReason": "all_cases_passed",
+  "appliedDecision": "applied",
+  "appliedHintCount": 6,
+  "appliedHintIds": [
+    "designing-delightful-frontends-with-gpt-5-4-runtime-retrieval",
+    "one-year-of-responses-runtime-retrieval",
+    "skills-agents-sdk-runtime-retrieval",
+    "building-frontend-uis-with-codex-and-figma-runtime-retrieval",
+    "run-long-horizon-tasks-with-codex-runtime-retrieval",
+    "skills-shell-tips-runtime-retrieval"
+  ],
+  "autoApplyCandidateCount": 6,
+  "proposalOnlyCount": 0,
+  "blockedCount": 0,
+  "failedCaseIds": [],
+  "promotionPolicyPath": "scripts/config/self_improvement_promotion_policy.json",
+  "statePath": "output/openai_blog_self_improvement_state.json",
+  "gatePath": "output/openai_blog_self_improvement_gate.json",
+  "proposalDir": "output/openai_blog_self_improvement_proposals",
+  "appliedHints": [
+    {
+      "proposalId": "openai-blog-designing-delightful-frontends-with-gpt-5-4-self-improvement",
+      "articleId": "designing-delightful-frontends-with-gpt-5-4",
+      "title": "Designing delightful frontends with GPT-5.4 | OpenAI Developers",
+      "runtimeRetrievalHint": {
+        "hintId": "designing-delightful-frontends-with-gpt-5-4-runtime-retrieval",
+        "appliesToAgents": [
+          "default",
+          "frontend_worker"
+        ],
+        "appliesToTaskFamilies": [
+          "web_creative"
+        ],
+        "topics": [
+          "context",
+          "evals",
+          "frontend",
+          "safety"
+        ],
+        "lexicalTriggers": [
+          "design system",
+          "typography",
+          "prompt budget",
+          "working state"
+        ],
+        "preferredArticleIds": [
+          "designing-delightful-frontends-with-gpt-5-4"
+        ],
+        "topicBoost": 3,
+        "articleBoost": 8
+      }
+    },
+    {
+      "proposalId": "openai-blog-one-year-of-responses-self-improvement",
+      "articleId": "one-year-of-responses",
+      "title": "From prompts to products: One year of Responses | OpenAI Developers",
+      "runtimeRetrievalHint": {
+        "hintId": "one-year-of-responses-runtime-retrieval",
+        "appliesToAgents": [
+          "default",
+          "frontend_worker"
+        ],
+        "appliesToTaskFamilies": [
+          "web_creative"
+        ],
+        "topics": [
+          "agents",
+          "automation",
+          "codex",
+          "context"
+        ],
+        "lexicalTriggers": [
+          "planner",
+          "generator",
+          "evaluator",
+          "subagent"
+        ],
+        "preferredArticleIds": [
+          "one-year-of-responses"
+        ],
+        "topicBoost": 3,
+        "articleBoost": 8
+      }
+    },
+    {
+      "proposalId": "openai-blog-skills-agents-sdk-self-improvement",
+      "articleId": "skills-agents-sdk",
+      "title": "Using skills to accelerate OSS maintenance | OpenAI Developers",
+      "runtimeRetrievalHint": {
+        "hintId": "skills-agents-sdk-runtime-retrieval",
+        "appliesToAgents": [
+          "default",
+          "frontend_worker"
+        ],
+        "appliesToTaskFamilies": [
+          "web_creative"
+        ],
+        "topics": [
+          "agents",
+          "automation",
+          "codex",
+          "context"
+        ],
+        "lexicalTriggers": [
+          "workflow",
+          "planner",
+          "generator",
+          "evaluator"
+        ],
+        "preferredArticleIds": [
+          "skills-agents-sdk"
+        ],
+        "topicBoost": 3,
+        "articleBoost": 8
+      }
+    },
+    {
+      "proposalId": "openai-blog-building-frontend-uis-with-codex-and-figma-self-improvement",
+      "articleId": "building-frontend-uis-with-codex-and-figma",
+      "title": "Building frontend UIs with Codex and Figma | OpenAI Developers",
+      "runtimeRetrievalHint": {
+        "hintId": "building-frontend-uis-with-codex-and-figma-runtime-retrieval",
+        "appliesToAgents": [
+          "default",
+          "frontend_worker"
+        ],
+        "appliesToTaskFamilies": [
+          "web_creative"
+        ],
+        "topics": [
+          "agents",
+          "codex",
+          "context",
+          "frontend"
+        ],
+        "lexicalTriggers": [
+          "context",
+          "design system",
+          "planner",
+          "generator"
+        ],
+        "preferredArticleIds": [
+          "building-frontend-uis-with-codex-and-figma"
+        ],
+        "topicBoost": 3,
+        "articleBoost": 8
+      }
+    },
+    {
+      "proposalId": "openai-blog-run-long-horizon-tasks-with-codex-self-improvement",
+      "articleId": "run-long-horizon-tasks-with-codex",
+      "title": "Run long horizon tasks with Codex | OpenAI Developers",
+      "runtimeRetrievalHint": {
+        "hintId": "run-long-horizon-tasks-with-codex-runtime-retrieval",
+        "appliesToAgents": [
+          "default",
+          "frontend_worker"
+        ],
+        "appliesToTaskFamilies": [
+          "web_creative"
+        ],
+        "topics": [
+          "agents",
+          "automation",
+          "codex",
+          "context"
+        ],
+        "lexicalTriggers": [
+          "long horizon",
+          "planner",
+          "generator",
+          "evaluator"
+        ],
+        "preferredArticleIds": [
+          "run-long-horizon-tasks-with-codex"
+        ],
+        "topicBoost": 3,
+        "articleBoost": 8
+      }
+    },
+    {
+      "proposalId": "openai-blog-skills-shell-tips-self-improvement",
+      "articleId": "skills-shell-tips",
+      "title": "Shell + Skills + Compaction: Tips for long-running agents that do real work | OpenAI Developers",
+      "runtimeRetrievalHint": {
+        "hintId": "skills-shell-tips-runtime-retrieval",
+        "appliesToAgents": [
+          "default",
+          "frontend_worker"
+        ],
+        "appliesToTaskFamilies": [
+          "web_creative"
+        ],
+        "topics": [
+          "agents",
+          "codex",
+          "context",
+          "frontend"
+        ],
+        "lexicalTriggers": [
+          "context",
+          "planner",
+          "generator",
+          "evaluator"
+        ],
+        "preferredArticleIds": [
+          "skills-shell-tips"
+        ],
+        "topicBoost": 3,
+        "articleBoost": 8
+      }
+    }
+  ],
+  "proposalSummaries": [
+    {
+      "proposalId": "openai-blog-designing-delightful-frontends-with-gpt-5-4-self-improvement",
+      "articleId": "designing-delightful-frontends-with-gpt-5-4",
+      "title": "Designing delightful frontends with GPT-5.4 | OpenAI Developers",
+      "changeClass": "runtime_retrieval_hint",
+      "target": "runtime/external-learning/runtime-retrieval",
+      "decision": "auto_apply_candidate"
+    },
+    {
+      "proposalId": "openai-blog-one-year-of-responses-self-improvement",
+      "articleId": "one-year-of-responses",
+      "title": "From prompts to products: One year of Responses | OpenAI Developers",
+      "changeClass": "runtime_retrieval_hint",
+      "target": "runtime/external-learning/runtime-retrieval",
+      "decision": "auto_apply_candidate"
+    },
+    {
+      "proposalId": "openai-blog-skills-agents-sdk-self-improvement",
+      "articleId": "skills-agents-sdk",
+      "title": "Using skills to accelerate OSS maintenance | OpenAI Developers",
+      "changeClass": "runtime_retrieval_hint",
+      "target": "runtime/external-learning/runtime-retrieval",
+      "decision": "auto_apply_candidate"
+    },
+    {
+      "proposalId": "openai-blog-building-frontend-uis-with-codex-and-figma-self-improvement",
+      "articleId": "building-frontend-uis-with-codex-and-figma",
+      "title": "Building frontend UIs with Codex and Figma | OpenAI Developers",
+      "changeClass": "runtime_retrieval_hint",
+      "target": "runtime/external-learning/runtime-retrieval",
+      "decision": "auto_apply_candidate"
+    },
+    {
+      "proposalId": "openai-blog-run-long-horizon-tasks-with-codex-self-improvement",
+      "articleId": "run-long-horizon-tasks-with-codex",
+      "title": "Run long horizon tasks with Codex | OpenAI Developers",
+      "changeClass": "runtime_retrieval_hint",
+      "target": "runtime/external-learning/runtime-retrieval",
+      "decision": "auto_apply_candidate"
+    },
+    {
+      "proposalId": "openai-blog-skills-shell-tips-self-improvement",
+      "articleId": "skills-shell-tips",
+      "title": "Shell + Skills + Compaction: Tips for long-running agents that do real work | OpenAI Developers",
+      "changeClass": "runtime_retrieval_hint",
+      "target": "runtime/external-learning/runtime-retrieval",
+      "decision": "auto_apply_candidate"
+    }
+  ]
+}

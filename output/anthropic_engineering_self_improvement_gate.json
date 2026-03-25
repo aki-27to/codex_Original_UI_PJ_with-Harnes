@@ -1,0 +1,65 @@
+{
+  "schema": "self-improvement-eval-gate.v1",
+  "generatedAt": "2026-03-25T12:37:59.498Z",
+  "status": "PASS",
+  "reason": "no_auto_apply_candidates",
+  "passedCount": 3,
+  "failedCount": 0,
+  "failedCaseIds": [],
+  "results": [
+    {
+      "caseId": "web_creative_benchmark",
+      "pass": true,
+      "failures": [],
+      "baseline": {
+        "status": "skipped",
+        "reason": "no_auto_apply_candidates",
+        "matchedTopics": [],
+        "articleIds": []
+      },
+      "candidate": {
+        "status": "skipped",
+        "reason": "no_auto_apply_candidates",
+        "matchedTopics": [],
+        "matchedHintIds": [],
+        "articleIds": []
+      }
+    },
+    {
+      "caseId": "frontend_context_iteration",
+      "pass": true,
+      "failures": [],
+      "baseline": {
+        "status": "skipped",
+        "reason": "no_auto_apply_candidates",
+        "matchedTopics": [],
+        "articleIds": []
+      },
+      "candidate": {
+        "status": "skipped",
+        "reason": "no_auto_apply_candidates",
+        "matchedTopics": [],
+        "matchedHintIds": [],
+        "articleIds": []
+      }
+    },
+    {
+      "caseId": "backend_non_targeted",
+      "pass": true,
+      "failures": [],
+      "baseline": {
+        "status": "skipped",
+        "reason": "no_auto_apply_candidates",
+        "matchedTopics": [],
+        "articleIds": []
+      },
+      "candidate": {
+        "status": "skipped",
+        "reason": "no_auto_apply_candidates",
+        "matchedTopics": [],
+        "matchedHintIds": [],
+        "articleIds": []
+      }
+    }
+  ]
+}

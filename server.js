@@ -250,6 +250,7 @@ const openAIBlogLearningRuntimeState={
   lastRetrievalTaskFamily:"",
   lastRetrievalTopics:[],
   lastRetrievalArticleIds:[],
+  lastRetrievalHintIds:[],
   lastRetrievalPromptBlockChars:0,
 };
 const anthropicEngineeringLearningRuntimeState={
@@ -9562,6 +9563,7 @@ async function executeTurnStreaming(res,prompt,agentName,options){
         shadowMode:externalLearningRetrieval.shadowMode?1:0,
         promptBlockChars:Number.isFinite(Number(externalLearningRetrieval.promptBlockChars))?Math.max(0,Math.trunc(Number(externalLearningRetrieval.promptBlockChars))):0,
         matchedTopics:Array.isArray(externalLearningRetrieval.matchedTopics)?externalLearningRetrieval.matchedTopics:[],
+        matchedHintIds:Array.isArray(externalLearningRetrieval.matchedHintIds)?externalLearningRetrieval.matchedHintIds:[],
         articles:Array.isArray(externalLearningRetrieval.articles)
           ?externalLearningRetrieval.articles.map((entry)=>({
             articleId:safeString(entry&&entry.articleId,120)||"",
@@ -9616,6 +9618,7 @@ async function executeTurnStreaming(res,prompt,agentName,options){
       shadowMode:externalLearningRetrieval.shadowMode?1:0,
       promptBlockChars:Number.isFinite(Number(externalLearningRetrieval.promptBlockChars))?Math.max(0,Math.trunc(Number(externalLearningRetrieval.promptBlockChars))):0,
       matchedTopics:Array.isArray(externalLearningRetrieval.matchedTopics)?externalLearningRetrieval.matchedTopics:[],
+      matchedHintIds:Array.isArray(externalLearningRetrieval.matchedHintIds)?externalLearningRetrieval.matchedHintIds:[],
       articleIds:Array.isArray(externalLearningRetrieval.articles)
         ?externalLearningRetrieval.articles.map((entry)=>safeString(entry&&entry.articleId,120)).filter(Boolean)
         :[],
@@ -12097,6 +12100,9 @@ function rememberOpenAIBlogLearningRetrievalDecision(decision){
   openAIBlogLearningRuntimeState.lastRetrievalArticleIds=Array.isArray(normalized.articles)
     ?normalized.articles.map((entry)=>safeString(entry&&entry.articleId,120)).filter(Boolean).slice(0,6)
     :[];
+  openAIBlogLearningRuntimeState.lastRetrievalHintIds=Array.isArray(normalized.matchedHintIds)
+    ?normalized.matchedHintIds.map((entry)=>safeString(entry,160)).filter(Boolean).slice(0,8)
+    :[];
   openAIBlogLearningRuntimeState.lastRetrievalPromptBlockChars=Number.isFinite(Number(normalized.promptBlockChars))
     ?Math.max(0,Math.trunc(Number(normalized.promptBlockChars)))
     :0;
@@ -12118,6 +12124,7 @@ function buildOpenAIBlogLearningRuntimeStateSnapshot(){
     lastRetrievalTaskFamily:openAIBlogLearningRuntimeState.lastRetrievalTaskFamily,
     lastRetrievalTopics:openAIBlogLearningRuntimeState.lastRetrievalTopics,
     lastRetrievalArticleIds:openAIBlogLearningRuntimeState.lastRetrievalArticleIds,
+    lastRetrievalHintIds:openAIBlogLearningRuntimeState.lastRetrievalHintIds,
     lastRetrievalPromptBlockChars:openAIBlogLearningRuntimeState.lastRetrievalPromptBlockChars,
   });
 }

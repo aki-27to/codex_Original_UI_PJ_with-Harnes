@@ -16,6 +16,11 @@ async function main() {
   console.log(`[anthropic-engineering-learning] digest=${result.report.paths.digestPath}`);
   console.log(`[anthropic-engineering-learning] report=${result.report.paths.reportPath}`);
   console.log(`[anthropic-engineering-learning] curatedDoc=${result.report.paths.curatedDocPath}`);
+  if (result.selfImprovement && result.selfImprovement.state) {
+    console.log(`[anthropic-engineering-learning] selfImprovementGate=${result.selfImprovement.gate.status} applied=${Number(result.selfImprovement.state.appliedHintCount) || 0} proposalOnly=${Number(result.selfImprovement.state.proposalOnlyCount) || 0}`);
+    console.log(`[anthropic-engineering-learning] selfImprovementState=${result.selfImprovement.paths.statePath}`);
+    console.log(`[anthropic-engineering-learning] selfImprovementGatePath=${result.selfImprovement.paths.gatePath}`);
+  }
 }
 
 main().catch((error) => {

@@ -73,5 +73,24 @@
     "maxArticles": 2,
     "maxGuidanceItemsPerArticle": 3,
     "maxPromptBlockChars": 1800
+  },
+  "selfImprovement": {
+    "enabled": true,
+    "proposalSchema": "self-improvement-proposal.v1",
+    "stateSchema": "self-improvement-state.v1",
+    "gateSchema": "self-improvement-eval-gate.v1",
+    "maxLexicalTriggersPerProposal": 4,
+    "maxAppliedHints": 12,
+    "promotionPolicyPath": "scripts/config/self_improvement_promotion_policy.json"
+  },
+  "paths": {
+    "ledgerPath": "output/openai_blog_learning_ledger.json",
+    "digestPath": "output/openai_blog_learning_digest.json",
+    "reportPath": "output/openai_blog_learning_report.md",
+    "proposalDir": "output/openai_blog_learning_proposals",
+    "curatedDocPath": "docs/OPENAI_DEVELOPER_LEARNINGS.md",
+    "selfImprovementProposalDir": "output/openai_blog_self_improvement_proposals",
+    "selfImprovementStatePath": "output/openai_blog_self_improvement_state.json",
+    "selfImprovementGatePath": "output/openai_blog_self_improvement_gate.json"
   }
 }

@@ -1,0 +1,80 @@
+{
+  "schema": "self-improvement-proposal.v1",
+  "proposalId": "openai-blog-designing-delightful-frontends-with-gpt-5-4-self-improvement",
+  "createdAt": "2026-03-25T12:37:59.488Z",
+  "sourceLane": "OpenAI Developers Blog",
+  "sourceTier": "primary",
+  "articleId": "designing-delightful-frontends-with-gpt-5-4",
+  "title": "Designing delightful frontends with GPT-5.4 | OpenAI Developers",
+  "sourceUrl": "https://developers.openai.com/blog/designing-delightful-frontends-with-gpt-5-4",
+  "relevance": "high",
+  "portability": "portable",
+  "changeClass": "runtime_retrieval_hint",
+  "target": "runtime/external-learning/runtime-retrieval",
+  "objective": "Improve runtime retrieval targeting using article-specific guidance from Designing delightful frontends with GPT-5.4 | OpenAI Developers.",
+  "evidence": {
+    "summary": "Practical techniques for steering GPT-5.4 toward polished, production-ready frontend designs.",
+    "guidance": [
+      "better use of tools to inspect, test, and verify its own work",
+      "stronger image understanding throughout the design process",
+      "GPT-5.4 has learned this wide spectrum of design approaches and understands many different ways a website can be built.",
+      "Define your design system and constraints upfront (i.e., typography, color palette, layout).",
+      "more functionally complete apps and websites",
+      "Web design can produce a large surface area of outcomes. Great design balances restraint with invention—drawing from patterns that have stood the test of time while introducing something new. GPT-5.4 has learned this wide spectrum of design"
+    ],
+    "topicTags": [
+      "context",
+      "evals",
+      "frontend",
+      "general",
+      "safety",
+      "skills"
+    ],
+    "articleProposalId": "openai-blog-designing-delightful-frontends-with-gpt-5-4"
+  },
+  "candidateChange": {
+    "runtimeRetrievalHint": {
+      "hintId": "designing-delightful-frontends-with-gpt-5-4-runtime-retrieval",
+      "appliesToAgents": [
+        "default",
+        "frontend_worker"
+      ],
+      "appliesToTaskFamilies": [
+        "web_creative"
+      ],
+      "topics": [
+        "context",
+        "evals",
+        "frontend",
+        "safety"
+      ],
+      "lexicalTriggers": [
+        "design system",
+        "typography",
+        "prompt budget",
+        "working state"
+      ],
+      "preferredArticleIds": [
+        "designing-delightful-frontends-with-gpt-5-4"
+      ],
+      "topicBoost": 3,
+      "articleBoost": 8
+    }
+  },
+  "promotion": {
+    "decision": "auto_apply_candidate",
+    "rationale": "bounded_low_risk_runtime_hint",
+    "riskFlags": [
+      "machine_gate_required"
+    ]
+  },
+  "gate": {
+    "required": true,
+    "status": "pending",
+    "caseIds": [
+      "web_creative_benchmark",
+      "frontend_context_iteration",
+      "backend_non_targeted"
+    ]
+  }
+}

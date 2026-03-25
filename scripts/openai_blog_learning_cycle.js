@@ -16,6 +16,11 @@ async function main() {
   console.log(`[openai-blog-learning] digest=${result.report.paths.digestPath}`);
   console.log(`[openai-blog-learning] report=${result.report.paths.reportPath}`);
   console.log(`[openai-blog-learning] curatedDoc=${result.report.paths.curatedDocPath}`);
+  if (result.selfImprovement && result.selfImprovement.state) {
+    console.log(`[openai-blog-learning] selfImprovementGate=${result.selfImprovement.gate.status} applied=${Number(result.selfImprovement.state.appliedHintCount) || 0} proposalOnly=${Number(result.selfImprovement.state.proposalOnlyCount) || 0}`);
+    console.log(`[openai-blog-learning] selfImprovementState=${result.selfImprovement.paths.statePath}`);
+    console.log(`[openai-blog-learning] selfImprovementGatePath=${result.selfImprovement.paths.gatePath}`);
+  }
 }
 
 main().catch((error) => {

@@ -287,6 +287,23 @@ function createOverviewPayload(overrides = {}) {
           lastArticleIds: ["designing-delightful-frontends-with-gpt-5-4"],
           lastPromptBlockChars: 612,
         },
+        selfImprovement: {
+          enabled: true,
+          promotionMode: "machine_guarded_autonomy",
+          gateStatus: "PASS",
+          gateReason: "all_cases_passed",
+          appliedDecision: "applied",
+          appliedHintCount: 2,
+          autoApplyCandidateCount: 2,
+          proposalOnlyCount: 1,
+          blockedCount: 0,
+          failedCaseIds: [],
+          appliedHintIds: ["designing-delightful-frontends-with-gpt-5-4-runtime-retrieval"],
+          proposalDir: "output/openai_blog_self_improvement_proposals",
+          statePath: "output/openai_blog_self_improvement_state.json",
+          gatePath: "output/openai_blog_self_improvement_gate.json",
+          promotionPolicyPath: "scripts/config/self_improvement_promotion_policy.json",
+        },
         recentArticles: [
           {
             articleId: "run-long-horizon-tasks-with-codex",
@@ -337,6 +354,18 @@ function createOverviewPayload(overrides = {}) {
               status: "proposal_only",
             },
           ],
+          selfImprovement: {
+            enabled: true,
+            promotionMode: "machine_guarded_autonomy",
+            gateStatus: "PASS",
+            gateReason: "no_auto_apply_candidates",
+            appliedDecision: "none",
+            appliedHintCount: 0,
+            autoApplyCandidateCount: 0,
+            proposalOnlyCount: 2,
+            blockedCount: 0,
+            failedCaseIds: [],
+          },
         },
       },
       latestTurn: {
@@ -615,6 +644,13 @@ function createOverviewPayload(overrides = {}) {
           lastStatus: "APPLIED",
           lastMatchedTopics: ["frontend", "evals"],
         },
+        selfImprovement: {
+          enabled: true,
+          gateStatus: "PASS",
+          appliedDecision: "applied",
+          appliedHintCount: 2,
+          failedCaseIds: [],
+        },
         recentArticles: [
           {
             title: "Run long horizon tasks with Codex",
@@ -663,6 +699,12 @@ function createOverviewPayload(overrides = {}) {
               status: "proposal_only",
             },
           ],
+          selfImprovement: {
+            enabled: true,
+            gateStatus: "PASS",
+            appliedDecision: "none",
+            appliedHintCount: 0,
+          },
         },
       },
       execution: {
@@ -948,6 +990,10 @@ function assertRenderedOverviewMatchesPayload(payload, elements) {
       assertContains(externalLearningCardHtml, String(externalLearning.runtimeRetrieval.lastStatus || "IDLE"), "external learning card must render runtime retrieval status");
       assertContains(externalLearningCardHtml, String((externalLearning.runtimeRetrieval.lastMatchedTopics && externalLearning.runtimeRetrieval.lastMatchedTopics[0]) || "frontend"), "external learning card must render runtime retrieval topics");
     }
+    if (externalLearning.selfImprovement && typeof externalLearning.selfImprovement === "object") {
+      assertContains(externalLearningCardHtml, String(externalLearning.selfImprovement.gateStatus || "NOT_RUN"), "external learning card must render self improvement gate status");
+      assertContains(externalLearningCardHtml, String(externalLearning.selfImprovement.appliedDecision || "none"), "external learning card must render self improvement applied decision");
+    }
     const metricsHtml = elements.overviewMetrics ? elements.overviewMetrics.innerHTML : "";
     assertContains(metricsHtml, String(externalLearning.lastStatus || "PASS"), "metrics must render external learning status");
   }
@@ -959,6 +1005,9 @@ function assertRenderedOverviewMatchesPayload(payload, elements) {
     assertContains(externalLearningCardHtml, String(secondaryLearning.anthropicEngineering.sourceName || "Anthropic Engineering"), "external learning card must render secondary source name");
     assertContains(externalLearningCardHtml, String((secondaryLearning.anthropicEngineering.recentArticles && secondaryLearning.anthropicEngineering.recentArticles[0] && secondaryLearning.anthropicEngineering.recentArticles[0].title) || "article"), "external learning card must render secondary article title");
     assertContains(externalLearningCardHtml, String(secondaryLearning.anthropicEngineering.portabilityMode || "portable_principles_only"), "external learning card must render secondary portability mode");
+    if (secondaryLearning.anthropicEngineering.selfImprovement && typeof secondaryLearning.anthropicEngineering.selfImprovement === "object") {
+      assertContains(externalLearningCardHtml, String(secondaryLearning.anthropicEngineering.selfImprovement.gateStatus || "NOT_RUN"), "external learning card must render secondary self improvement gate status");
+    }
   }
   const traceabilityClauses = payload && payload.traceability && Array.isArray(payload.traceability.clauses)
     ? payload.traceability.clauses

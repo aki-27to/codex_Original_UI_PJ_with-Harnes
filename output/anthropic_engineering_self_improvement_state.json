@@ -1,0 +1,63 @@
+{
+  "schema": "self-improvement-state.v1",
+  "generatedAt": "2026-03-25T12:37:59.498Z",
+  "sourceName": "Anthropic Engineering",
+  "sourceTier": "secondary",
+  "promotionMode": "machine_guarded_autonomy",
+  "gateStatus": "PASS",
+  "gateReason": "no_auto_apply_candidates",
+  "appliedDecision": "none",
+  "appliedHintCount": 0,
+  "appliedHintIds": [],
+  "autoApplyCandidateCount": 0,
+  "proposalOnlyCount": 5,
+  "blockedCount": 0,
+  "failedCaseIds": [],
+  "promotionPolicyPath": "scripts/config/self_improvement_promotion_policy.json",
+  "statePath": "output/anthropic_engineering_self_improvement_state.json",
+  "gatePath": "output/anthropic_engineering_self_improvement_gate.json",
+  "proposalDir": "output/anthropic_engineering_self_improvement_proposals",
+  "appliedHints": [],
+  "proposalSummaries": [
+    {
+      "proposalId": "anthropic-engineering-infrastructure-noise-self-improvement",
+      "articleId": "infrastructure-noise",
+      "title": "Quantifying infrastructure noise in agentic coding evals",
+      "changeClass": "eval_extension",
+      "target": "scripts/config/eval_suite_default.json",
+      "decision": "proposal_only"
+    },
+    {
+      "proposalId": "anthropic-engineering-harness-design-long-running-apps-self-improvement",
+      "articleId": "harness-design-long-running-apps",
+      "title": "Harness design for long-running application development",
+      "changeClass": "eval_extension",
+      "target": "scripts/config/eval_suite_default.json",
+      "decision": "proposal_only"
+    },
+    {
+      "proposalId": "anthropic-engineering-AI-resistant-technical-evaluations-self-improvement",
+      "articleId": "AI-resistant-technical-evaluations",
+      "title": "Designing AI resistant technical evaluations",
+      "changeClass": "eval_extension",
+      "target": "scripts/config/eval_suite_default.json",
+      "decision": "proposal_only"
+    },
+    {
+      "proposalId": "anthropic-engineering-demystifying-evals-for-ai-agents-self-improvement",
+      "articleId": "demystifying-evals-for-ai-agents",
+      "title": "Demystifying evals for AI agents",
+      "changeClass": "eval_extension",
+      "target": "scripts/config/eval_suite_default.json",
+      "decision": "proposal_only"
+    },
+    {
+      "proposalId": "anthropic-engineering-effective-harnesses-for-long-running-agents-self-improvement",
+      "articleId": "effective-harnesses-for-long-running-agents",
+      "title": "Effective harnesses for long-running agents",
+      "changeClass": "frontend_quality_note",
+      "target": "skills/web-designer-master/references/quality-gate.md",
+      "decision": "proposal_only"
+    }
+  ]
+}

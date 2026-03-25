@@ -1,0 +1,194 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "self-improvement-proposal.v1",
+  "title": "Self Improvement Proposal",
+  "type": "object",
+  "required": [
+    "schema",
+    "proposalId",
+    "createdAt",
+    "sourceLane",
+    "sourceTier",
+    "articleId",
+    "title",
+    "sourceUrl",
+    "changeClass",
+    "target",
+    "objective",
+    "evidence",
+    "candidateChange",
+    "promotion",
+    "gate"
+  ],
+  "properties": {
+    "schema": {
+      "const": "self-improvement-proposal.v1"
+    },
+    "proposalId": {
+      "type": "string",
+      "minLength": 1
+    },
+    "createdAt": {
+      "type": "string",
+      "minLength": 1
+    },
+    "sourceLane": {
+      "type": "string",
+      "minLength": 1
+    },
+    "sourceTier": {
+      "type": "string",
+      "enum": ["primary", "secondary"]
+    },
+    "articleId": {
+      "type": "string",
+      "minLength": 1
+    },
+    "title": {
+      "type": "string",
+      "minLength": 1
+    },
+    "sourceUrl": {
+      "type": "string",
+      "minLength": 1
+    },
+    "relevance": {
+      "type": "string"
+    },
+    "portability": {
+      "type": "string"
+    },
+    "changeClass": {
+      "type": "string",
+      "enum": [
+        "runtime_retrieval_hint",
+        "memory_policy_note",
+        "eval_extension",
+        "operator_policy_note",
+        "frontend_quality_note",
+        "runtime_policy_tuning"
+      ]
+    },
+    "target": {
+      "type": "string",
+      "minLength": 1
+    },
+    "objective": {
+      "type": "string",
+      "minLength": 1
+    },
+    "evidence": {
+      "type": "object",
+      "required": ["summary", "guidance", "topicTags"],
+      "properties": {
+        "summary": {
+          "type": "string"
+        },
+        "guidance": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "topicTags": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "articleProposalId": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": true
+    },
+    "candidateChange": {
+      "type": "object",
+      "properties": {
+        "runtimeRetrievalHint": {
+          "type": "object",
+          "required": [
+            "hintId",
+            "appliesToAgents",
+            "appliesToTaskFamilies",
+            "topics",
+            "lexicalTriggers",
+            "preferredArticleIds",
+            "topicBoost",
+            "articleBoost"
+          ],
+          "properties": {
+            "hintId": { "type": "string" },
+            "appliesToAgents": {
+              "type": "array",
+              "items": { "type": "string" }
+            },
+            "appliesToTaskFamilies": {
+              "type": "array",
+              "items": { "type": "string" }
+            },
+            "topics": {
+              "type": "array",
+              "items": { "type": "string" }
+            },
+            "lexicalTriggers": {
+              "type": "array",
+              "items": { "type": "string" }
+            },
+            "preferredArticleIds": {
+              "type": "array",
+              "items": { "type": "string" }
+            },
+            "topicBoost": { "type": "number" },
+            "articleBoost": { "type": "number" }
+          },
+          "additionalProperties": true
+        },
+        "note": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": true
+    },
+    "promotion": {
+      "type": "object",
+      "required": ["decision", "rationale", "riskFlags"],
+      "properties": {
+        "decision": {
+          "type": "string",
+          "enum": ["auto_apply_candidate", "proposal_only", "blocked"]
+        },
+        "rationale": {
+          "type": "string"
+        },
+        "riskFlags": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      },
+      "additionalProperties": true
+    },
+    "gate": {
+      "type": "object",
+      "required": ["required", "status", "caseIds"],
+      "properties": {
+        "required": {
+          "type": "boolean"
+        },
+        "status": {
+          "type": "string"
+        },
+        "caseIds": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      },
+      "additionalProperties": true
+    }
+  },
+  "additionalProperties": true
+}

@@ -89,6 +89,15 @@
     "maxGuidanceItemsPerArticle": 0,
     "maxPromptBlockChars": 600
   },
+  "selfImprovement": {
+    "enabled": true,
+    "proposalSchema": "self-improvement-proposal.v1",
+    "stateSchema": "self-improvement-state.v1",
+    "gateSchema": "self-improvement-eval-gate.v1",
+    "maxLexicalTriggersPerProposal": 4,
+    "maxAppliedHints": 8,
+    "promotionPolicyPath": "scripts/config/self_improvement_promotion_policy.json"
+  },
   "presentation": {
     "curatedDocTitle": "ANTHROPIC_ENGINEERING_LEARNINGS",
     "reportTitle": "ANTHROPIC_ENGINEERING_LEARNING_REPORT",
@@ -110,6 +119,9 @@
     "digestPath": "output/anthropic_engineering_learning_digest.json",
     "reportPath": "output/anthropic_engineering_learning_report.md",
     "proposalDir": "output/anthropic_engineering_learning_proposals",
-    "curatedDocPath": "docs/ANTHROPIC_ENGINEERING_LEARNINGS.md"
+    "curatedDocPath": "docs/ANTHROPIC_ENGINEERING_LEARNINGS.md",
+    "selfImprovementProposalDir": "output/anthropic_engineering_self_improvement_proposals",
+    "selfImprovementStatePath": "output/anthropic_engineering_self_improvement_state.json",
+    "selfImprovementGatePath": "output/anthropic_engineering_self_improvement_gate.json"
   }
 }
