@@ -132,11 +132,11 @@ function joinUrl(baseUrl, relativePath) {
 
 function extractMetaContent(html, attributeName, attributeValue) {
   const expression = new RegExp(
-    `<meta[^>]+${attributeName}=["']${attributeValue.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}["'][^>]+content=["']([^"']+)["'][^>]*>`,
+    `<meta[^>]+${attributeName}=(["'])${attributeValue.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}\\1[^>]+content=(["'])([\\s\\S]*?)\\2[^>]*>`,
     "i"
   );
   const match = expression.exec(String(html || ""));
-  return match ? decodeHtmlEntities(match[1]).trim() : "";
+  return match ? decodeHtmlEntities(match[3]).trim() : "";
 }
 
 function extractTitle(html) {
@@ -237,6 +237,185 @@ function dedupeTexts(values, limit = 6) {
     }
   }
   return results;
+}
+
+function sanitizeHtmlForExtraction(html) {
+  return String(html || "")
+    .replace(/<script[\s\S]*?<\/script>/gi, " ")
+    .replace(/<style[\s\S]*?<\/style>/gi, " ")
+    .replace(/<!--[\s\S]*?-->/g, " ");
+}
+
+function findFirstMatchText(html, patterns) {
+  for (const pattern of Array.isArray(patterns) ? patterns : []) {
+    const match = pattern.exec(String(html || ""));
+    const text = match ? stripHtml(match[1]) : "";
+    if (text) {
+      return text;
+    }
+  }
+  return "";
+}
+
+function extractPreferredMainHtml(articleHtml) {
+  const cleanedHtml = sanitizeHtmlForExtraction(articleHtml);
+  const patterns = [
+    /<div[^>]+class="[^"]*Body-module[^"]*__body[^"]*"[^>]*>([\s\S]*?)<\/div>/i,
+    /<article id="mainContent"[^>]*>([\s\S]*?)<\/article>/i,
+    /<article[^>]*>([\s\S]*?)<\/article>/i,
+    /<main[^>]*>([\s\S]*?)<\/main>/i,
+  ];
+  for (const pattern of patterns) {
+    const match = pattern.exec(cleanedHtml);
+    if (match && safeString(match[1], 20)) {
+      return match[1];
+    }
+  }
+  return cleanedHtml;
+}
+
+function isLikelyBoilerplateSummary(value, { sourceName = "", title = "" } = {}) {
+  const text = safeString(value, 400).toLowerCase();
+  if (!text) {
+    return true;
+  }
+  const normalizedSource = safeString(sourceName, 200).toLowerCase();
+  const normalizedTitle = safeString(title, 200).toLowerCase();
+  if (text === normalizedSource || text === normalizedTitle) {
+    return true;
+  }
+  if (/^openai developers? blog$/i.test(text)) {
+    return true;
+  }
+  if (/^anthropic is an ai safety and research company/i.test(text)) {
+    return true;
+  }
+  if (/reliable, interpretable, and steerable ai systems/i.test(text)) {
+    return true;
+  }
+  if (/^(research|company|resources|news|learn)$/i.test(text)) {
+    return true;
+  }
+  return false;
+}
+
+function selectSubstantiveParagraphs(paragraphs, limit = 8) {
+  return dedupeTexts(
+    (Array.isArray(paragraphs) ? paragraphs : []).filter((entry) => {
+      const text = safeString(entry, 400);
+      if (!text) {
+        return false;
+      }
+      if (text.length < 40) {
+        return false;
+      }
+      if (/^written by\b/i.test(text)) {
+        return false;
+      }
+      if (/^published\b/i.test(text)) {
+        return false;
+      }
+      if (/^skip to\b/i.test(text)) {
+        return false;
+      }
+      return true;
+    }),
+    limit
+  );
+}
+
+function extractFocusTokens(title) {
+  const stopwords = new Set([
+    "the", "and", "for", "with", "from", "into", "that", "this", "your", "using", "use", "how", "our",
+    "their", "over", "under", "about", "more", "less", "than", "then", "when", "only", "also", "here",
+    "blog", "developers", "developer", "engineering", "openai", "anthropic", "tasks", "task"
+  ]);
+  return Array.from(new Set(
+    safeString(title, 400)
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, " ")
+      .split(/\s+/)
+      .filter((entry) => entry.length >= 4 && !stopwords.has(entry))
+  ));
+}
+
+function scoreGuidanceCandidate(text, { title = "", source = "", index = 0 } = {}) {
+  const candidate = safeString(text, 400);
+  if (!candidate) {
+    return -999;
+  }
+  let score = 0;
+  const focusTokens = extractFocusTokens(title);
+  const lower = candidate.toLowerCase();
+  const sourceWeights = {
+    list: 12,
+    sentence: 10,
+    paragraph: 8,
+    heading: 6,
+  };
+  score += sourceWeights[source] || 0;
+  focusTokens.forEach((token) => {
+    score += countSubstringMatches(lower, token) * 5;
+  });
+  if (/(harness|long[- ]running|checkpoint|runbook|artifact|handoff|context|planner|generator|evaluator|verification|verify|retrieval|memory|eval|transcript|spec|acceptance|workflow|agent|application development|coding)/i.test(candidate)) {
+    score += 4;
+  }
+  if (/^(use|start with|treat|store|keep|define|provide|read|monitor|check)\b/i.test(candidate)) {
+    score += 4;
+  }
+  if (/^(design quality|originality|craft|functionality):/i.test(candidate)) {
+    score += /\b(frontend|ui|ux)\b/i.test(title) ? -1 : -10;
+  }
+  if (isLikelyBoilerplateSummary(candidate, { title })) {
+    score -= 20;
+  }
+  score -= Math.min(8, index);
+  return score;
+}
+
+function rankGuidanceCandidates(candidates, { title = "", maxItems = 6 } = {}) {
+  const ranked = (Array.isArray(candidates) ? candidates : [])
+    .map((candidate, index) => ({
+      text: collapseSentence(candidate && candidate.text),
+      source: safeString(candidate && candidate.source, 40),
+      index: Number(candidate && candidate.index) || index,
+    }))
+    .filter((candidate) => candidate.text)
+    .map((candidate) => ({
+      ...candidate,
+      score: scoreGuidanceCandidate(candidate.text, {
+        title,
+        source: candidate.source,
+        index: candidate.index,
+      }),
+    }))
+    .sort((left, right) => right.score - left.score || left.index - right.index);
+  return dedupeTexts(ranked.map((entry) => entry.text), Math.max(1, Math.trunc(Number(maxItems) || 6)));
+}
+
+function selectArticleSummary({
+  title = "",
+  sourceName = "",
+  metaDescription = "",
+  heroSummary = "",
+  cardDescription = "",
+  paragraphs = [],
+} = {}) {
+  const substantiveParagraphs = selectSubstantiveParagraphs(paragraphs, 8);
+  const candidates = [
+    heroSummary,
+    metaDescription,
+    cardDescription,
+    ...substantiveParagraphs,
+  ];
+  for (const candidate of candidates) {
+    const text = safeString(candidate, 320);
+    if (!text || isLikelyBoilerplateSummary(text, { sourceName, title })) {
+      continue;
+    }
+    return text;
+  }
+  return safeString(cardDescription || metaDescription || substantiveParagraphs[0] || "", 320);
 }
 
 function parseIndexCards(indexHtml, sourceUrl) {
@@ -492,28 +671,36 @@ function buildArticleProposal(article, policy, nowIso) {
 
 function extractArticleInsights(articleHtml, maxGuidanceItems) {
   const html = String(articleHtml || "");
-  const mainMatch = /<article id="mainContent"[^>]*>([\s\S]*?)<\/article>/i.exec(html)
-    || /<article[^>]*>([\s\S]*?)<\/article>/i.exec(html)
-    || /<main[^>]*>([\s\S]*?)<\/main>/i.exec(html);
-  const mainHtml = mainMatch ? mainMatch[1] : html;
+  const mainHtml = extractPreferredMainHtml(html);
   const headings = dedupeTexts([
+    ...collectTagTexts(mainHtml, "h1", 4),
     ...collectTagTexts(mainHtml, "h2", 8),
     ...collectTagTexts(mainHtml, "h3", 8),
   ], 8);
   const paragraphs = dedupeTexts(collectTagTexts(mainHtml, "p", 16), 16);
   const listItems = dedupeTexts(collectTagTexts(mainHtml, "li", 18), 18);
-  const guidance = dedupeTexts(
-    [
-      ...listItems,
-      ...sentenceCandidatesFromParagraphs(paragraphs),
-      ...headings.map((entry) => `Section focus: ${entry}`),
-      ...paragraphs.slice(0, 4),
-    ],
-    Math.max(1, Math.trunc(Number(maxGuidanceItems) || 6))
-  );
+  const title = extractMetaContent(articleHtml, "property", "og:title")
+    || extractMetaContent(articleHtml, "name", "title")
+    || extractTitle(articleHtml)
+    || headings[0]
+    || "";
+  const guidanceCandidates = [
+    ...listItems.map((entry, index) => ({ text: entry, source: "list", index })),
+    ...sentenceCandidatesFromParagraphs(paragraphs).map((entry, index) => ({ text: entry, source: "sentence", index })),
+    ...headings.map((entry, index) => ({ text: `Section focus: ${entry}`, source: "heading", index })),
+    ...selectSubstantiveParagraphs(paragraphs, 6).map((entry, index) => ({ text: entry, source: "paragraph", index })),
+  ];
+  const guidance = rankGuidanceCandidates(guidanceCandidates, {
+    title,
+    maxItems: Math.max(1, Math.trunc(Number(maxGuidanceItems) || 6)),
+  });
   return {
-    title: extractMetaContent(articleHtml, "property", "og:title") || extractMetaContent(articleHtml, "name", "title") || extractTitle(articleHtml),
+    title,
     description: extractMetaContent(articleHtml, "name", "description") || extractMetaContent(articleHtml, "property", "og:description"),
+    heroSummary: findFirstMatchText(html, [
+      /<p[^>]+class="[^"]*summary[^"]*"[^>]*>([\s\S]*?)<\/p>/i,
+      /<p[^>]+class="[^"]*hero[^"]*"[^>]*>([\s\S]*?)<\/p>/i,
+    ]),
     canonicalUrl: normalizeUrl(
       (/rel="canonical" href="([^"]+)"/i.exec(String(articleHtml || "")) || [])[1] || ""
     ),
@@ -1173,21 +1360,35 @@ async function runOpenAIBlogLearningCycle({
     const insights = extractArticleInsights(articleHtml, normalizedPolicy.cadence.maxGuidanceItemsPerArticle);
     const topicTags = classifyTopics({
       title: insights.title || card.title,
-      description: insights.description || card.description,
+      description: selectArticleSummary({
+        title: insights.title || card.title,
+        sourceName: normalizedPolicy.source.name,
+        metaDescription: insights.description,
+        heroSummary: insights.heroSummary,
+        cardDescription: card.description,
+        paragraphs: insights.paragraphs,
+      }) || card.description,
       topicLabel: card.topicLabel,
       headings: insights.headings,
       listItems: insights.listItems,
       paragraphs: insights.paragraphs,
     });
     const relevance = deriveRelevance(topicTags);
-    const summary = safeString(insights.description, 320) || safeString(insights.paragraphs[0], 320) || safeString(card.description, 320);
+    const summary = selectArticleSummary({
+      title: insights.title || card.title,
+      sourceName: normalizedPolicy.source.name,
+      metaDescription: insights.description,
+      heroSummary: insights.heroSummary,
+      cardDescription: card.description,
+      paragraphs: insights.paragraphs,
+    });
     const article = {
       schema: safeString(normalizedPolicy && normalizedPolicy.artifacts && normalizedPolicy.artifacts.articleSchema, 120) || "openai-blog-learning-article.v1",
       articleId: card.articleId,
       url: normalizeUrl(card.url),
       canonicalUrl: normalizeUrl(insights.canonicalUrl) || normalizeUrl(card.url),
       title: safeString(insights.title || card.title, 200),
-      description: safeString(insights.description || card.description, 320),
+      description: safeString(summary || card.description || insights.description, 320),
       indexDateLabel: safeString(card.indexDateLabel, 40),
       topicLabel: safeString(card.topicLabel, 80),
       discoveredAt: nowIso,

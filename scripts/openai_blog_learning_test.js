@@ -148,6 +148,10 @@ async function run() {
   assert(first.digest.topics.codex && first.digest.topics.codex.length >= 1, "codex topic should be indexed");
   assert(fs.existsSync(path.join(workspaceRoot, "docs", "OPENAI_DEVELOPER_LEARNINGS.md")), "curated doc should be written");
   assert(fs.existsSync(path.join(workspaceRoot, "output", "openai_blog_learning_proposals", "run-long-horizon-tasks-with-codex.json")), "proposal artifact should be written");
+  const longHorizonArticle = first.ledger.articles.find((entry) => entry.articleId === "run-long-horizon-tasks-with-codex");
+  assert(longHorizonArticle, "run-long-horizon article should be present in the ledger");
+  assert.notStrictEqual(longHorizonArticle.summary, "OpenAI Developer Blog", "summary should not keep the boilerplate page description");
+  assert(/specs, checkpoints, and verification|spec file and clear acceptance criteria/i.test(longHorizonArticle.summary), "summary should retain article-specific long-horizon guidance");
 
   const second = await runOpenAIBlogLearningCycle({
     policy,

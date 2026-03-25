@@ -31,6 +31,15 @@ function sampleIndexHtml() {
       </a>
     </article>
     <article class="ArticleList-module__article">
+      <a class="ArticleList-module__cardLink" href="/engineering/harness-design-long-running-apps">
+        <div class="ArticleList-module__content">
+          <h3 class="headline-4">Harness design for long-running application development</h3>
+          <p>Harness design guidance for long-running application development.</p>
+          <div class="ArticleList-module__date">Mar 24, 2026</div>
+        </div>
+      </a>
+    </article>
+    <article class="ArticleList-module__article">
       <a class="ArticleList-module__cardLink" href="/engineering/demystifying-evals-for-ai-agents">
         <div class="ArticleList-module__content">
           <h3 class="headline-4">Demystifying evals for AI agents</h3>
@@ -68,6 +77,37 @@ function sampleContextArticleHtml() {
               <h2>Portable practices</h2>
               <li>Treat context like application state that must be curated each turn.</li>
               <li>Store large artifacts outside the prompt and retrieve only what is needed.</li>
+            </div>
+          </article>
+        </main>
+      </body>
+    </html>
+  `;
+}
+
+function sampleHarnessArticleHtml() {
+  return `
+    <html>
+      <head>
+        <title>Harness design for long-running application development | Anthropic</title>
+        <meta name="description" content="Anthropic is an AI safety and research company that's working to build reliable, interpretable, and steerable AI systems.">
+        <link rel="canonical" href="https://www.anthropic.com/engineering/harness-design-long-running-apps" />
+      </head>
+      <body>
+        <main id="main-content">
+          <section>
+            <p class="HeroEngineering-summary">Harness design is key to performance at the frontier of agentic coding.</p>
+          </section>
+          <article>
+            <div class="Body-module-scss-module__body">
+              <p>Over the past several months I have been working on long-running autonomous coding and structured handoffs between sessions.</p>
+              <p>I designed a multi-agent structure with a generator and evaluator agent, then carried over structured artifacts to hand off context between sessions.</p>
+              <h2>Frontend grading rubric</h2>
+              <li>Design quality: Does the design feel like a coherent whole rather than a collection of parts?</li>
+              <li>Originality: Is there evidence of custom decisions, or is this template layouts and library defaults?</li>
+              <h2>Harness design</h2>
+              <li>Use structured artifacts to hand off context between sessions.</li>
+              <li>Use a planner, generator, and evaluator so the evaluator grades the work independently.</li>
             </div>
           </article>
         </main>
@@ -205,6 +245,9 @@ async function run() {
     if (url.includes("effective-context-engineering-for-ai-agents")) {
       return sampleContextArticleHtml();
     }
+    if (url.includes("harness-design-long-running-apps")) {
+      return sampleHarnessArticleHtml();
+    }
     if (url.includes("demystifying-evals-for-ai-agents")) {
       return sampleEvalArticleHtml();
     }
@@ -220,13 +263,19 @@ async function run() {
     now: new Date("2026-03-25T00:00:00.000Z"),
   });
   assert.strictEqual(first.report.status, "PASS", "first cycle should pass");
-  assert.strictEqual(first.report.summary.trackedArticles, 2, "portable filter should retain only two articles");
-  assert.strictEqual(first.report.summary.newArticlesThisRun, 2, "both retained articles should be new");
+  assert.strictEqual(first.report.summary.trackedArticles, 3, "portable filter should retain the three portable articles");
+  assert.strictEqual(first.report.summary.newArticlesThisRun, 3, "all retained articles should be new");
   assert(first.digest.topics.context && first.digest.topics.context.length >= 1, "context topic should be indexed");
   assert(first.digest.topics.evals && first.digest.topics.evals.length >= 1, "eval topic should be indexed");
   assert(fs.existsSync(path.join(workspaceRoot, "docs", "ANTHROPIC_ENGINEERING_LEARNINGS.md")), "curated doc should be written");
   assert(fs.existsSync(path.join(workspaceRoot, "output", "anthropic_engineering_learning_proposals", "demystifying-evals-for-ai-agents.json")), "proposal artifact should be written");
   assert(!fs.existsSync(path.join(workspaceRoot, "output", "anthropic_engineering_learning_proposals", "eval-awareness-browsecomp.json")), "vendor specific article should be excluded");
+  const harnessArticle = first.ledger.articles.find((entry) => entry.articleId === "harness-design-long-running-apps");
+  assert(harnessArticle, "harness design article should be present in the ledger");
+  assert.notStrictEqual(harnessArticle.summary, "Anthropic is an AI safety and research company that's working to build reliable, interpretable, and steerable AI systems.", "summary should not keep the generic Anthropic site description");
+  assert(/Harness design is key to performance/i.test(harnessArticle.summary), "summary should use the harness-specific hero summary");
+  assert(harnessArticle.guidance.some((entry) => /structured artifacts|planner, generator, and evaluator/i.test(entry)), "guidance should retain harness-specific principles");
+  assert(!harnessArticle.guidance.some((entry) => /^Design quality:/i.test(entry)), "guidance should not be led by unrelated frontend rubric noise");
 
   const runtime = buildAnthropicEngineeringRuntimeSnapshot(policy, {
     enabled: true,

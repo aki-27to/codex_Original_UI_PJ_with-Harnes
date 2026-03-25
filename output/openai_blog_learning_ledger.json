@@ -1,8 +1,8 @@
 {
   "schema": "openai-blog-learning-ledger.v1",
-  "generatedAt": "2026-03-23T13:40:11.170Z",
-  "lastRunAt": "2026-03-23T13:40:11.170Z",
-  "lastSuccessAt": "2026-03-23T13:40:11.170Z",
+  "generatedAt": "2026-03-25T11:25:33.023Z",
+  "lastRunAt": "2026-03-25T11:25:33.023Z",
+  "lastSuccessAt": "2026-03-25T11:25:33.023Z",
   "lastStatus": "PASS",
   "lastReason": "",
   "summary": {
@@ -24,16 +24,16 @@
       "topicLabel": "General",
       "discoveredAt": "2026-03-23T12:18:19.240Z",
       "firstReadAt": "2026-03-23T12:18:19.240Z",
-      "lastReadAt": "2026-03-23T12:18:19.240Z",
-      "contentHash": "58f0a0775f4e2893c8d4c5ec3055e92da6e71f29091be7710c933ff12a08a5c1",
+      "lastReadAt": "2026-03-24T20:54:17.335Z",
+      "contentHash": "54c3ffd564d22e83e0ec7d25c8faa7fcbb0175fcf2d4e15910c054e3a0f94cc6",
       "summary": "Practical techniques for steering GPT-5.4 toward polished, production-ready frontend designs.",
       "guidance": [
-        "stronger image understanding throughout the design process",
-        "more functionally complete apps and websites",
         "better use of tools to inspect, test, and verify its own work",
-        "Select low reasoning level to begin with.",
+        "stronger image understanding throughout the design process",
+        "GPT-5.4 has learned this wide spectrum of design approaches and understands many different ways a website can be built.",
         "Define your design system and constraints upfront (i.e., typography, color palette, layout).",
-        "Provide visual references or a mood board (i.e., attach a screenshot) to provide visual guardrails for the model."
+        "more functionally complete apps and websites",
+        "Web design can produce a large surface area of outcomes. Great design balances restraint with invention—drawing from patterns that have stood the test of time while introducing something new. GPT-5.4 has learned this wide spectrum of design approaches and understands many different ways a website can be built."
       ],
       "headings": [
         "Model Improvements",
@@ -54,6 +54,7 @@
         "skills"
       ],
       "relevance": "high",
+      "portability": "portable",
       "promotedToDocs": [
         "docs/OPENAI_DEVELOPER_LEARNINGS.md"
       ],
@@ -72,16 +73,16 @@
       "topicLabel": "API",
       "discoveredAt": "2026-03-23T12:18:19.240Z",
       "firstReadAt": "2026-03-23T12:18:19.240Z",
-      "lastReadAt": "2026-03-23T12:18:19.240Z",
-      "contentHash": "2f099ae287b09d9499ecc694dddff5a0e183784e70860493249198b24f0c5548",
+      "lastReadAt": "2026-03-24T20:54:17.335Z",
+      "contentHash": "a32627ab711301653721b47660b780f2b3cf58722b54988586f5bf74e2a86fac",
       "summary": "Five stories from developers building agentic products with the Responses API in its first year.",
       "guidance": [
+        "One year ago, we introduced the Responses API — a foundation for developers and enterprises to build useful and reliable agents. Equipping models with a set of hosted tools allowed AI to evolve from chat assistants to systems that can take action on your behalf. Today, the Responses API supports a number of tools to po",
         "Agent behavior monitoring",
-        "Failure detection and alerting",
-        "Developer investigation and debugging tools",
+        "One year ago, we introduced the Responses API — a foundation for developers and enterprises to build useful and reliable agents.",
         "Tracking behavior changes across agent versions",
-        "Identifying which prompt or system changes triggered failures",
-        "Examining reasoning traces and tool calls"
+        "Thousands of developers are building with the Responses API today to accelerate productivity across industries like customer support , legal , life sciences , travel , and more. Having shared many success stories from those industries, today we’re celebrating five lesser-told stories of the developers who have built on",
+        "Raindrop is the monitoring platform behind the world’s most ambitious AI companies to catch when their agents go off the rails in production."
       ],
       "headings": [
         "Detecting and fixing failures in AI agents",
@@ -103,6 +104,7 @@
         "frontend"
       ],
       "relevance": "high",
+      "portability": "portable",
       "promotedToDocs": [
         "docs/OPENAI_DEVELOPER_LEARNINGS.md"
       ],
@@ -121,16 +123,16 @@
       "topicLabel": "Codex",
       "discoveredAt": "2026-03-23T12:18:19.240Z",
       "firstReadAt": "2026-03-23T12:18:19.240Z",
-      "lastReadAt": "2026-03-23T12:18:19.240Z",
-      "contentHash": "e8d2e93b4b7b8551359241c98a07ab75502b9d3516f2ed78d5e612f937a60f81",
+      "lastReadAt": "2026-03-24T20:54:17.335Z",
+      "contentHash": "e5e4c700e7dadf7a160ec85df5ba3618c8d58560042fbdf169a73a584246bd34",
       "summary": "Using skills and GitHub Actions to optimize Codex workflows in the OpenAI Agents SDK repos.",
       "guidance": [
-        "repository policy in AGENTS.md",
         "repo-local skills in .agents/skills/",
-        "optional scripts and references inside those skills",
-        "Codex GitHub Action when the same workflow should run in CI",
-        "it sees metadata such as name and description first",
-        "it loads SKILL.md only when the skill is selected"
+        "Repo-local skills, AGENTS.md , and GitHub Actions let us turn recurring engineering work, such as verification, release preparation, integration testing for examples, and PR review, into repeatable workflows.",
+        "In these repos, we use skills to capture repository-specific workflows. A skill is a small package of operational knowledge: a SKILL.md manifest, plus optional scripts/ , references/ , and assets/ . The Codex customization docs describe why this works well: skills are a good fit for repeatable workflows because they ca",
+        "repository policy in AGENTS.md",
+        "In these repos, we use skills to capture repository-specific workflows.",
+        "optional scripts and references inside those skills"
       ],
       "headings": [
         "Keep workflows in the repo",
@@ -152,6 +154,7 @@
         "skills"
       ],
       "relevance": "high",
+      "portability": "portable",
       "promotedToDocs": [
         "docs/OPENAI_DEVELOPER_LEARNINGS.md"
       ],
@@ -170,16 +173,16 @@
       "topicLabel": "Codex",
       "discoveredAt": "2026-03-23T12:18:19.240Z",
       "firstReadAt": "2026-03-23T12:18:19.240Z",
-      "lastReadAt": "2026-03-23T12:18:19.240Z",
-      "contentHash": "47d49b9f4de580ab8c6dff971b8ede3442eef9092af61c61c7ee87ad05b1b881",
+      "lastReadAt": "2026-03-24T20:54:17.335Z",
+      "contentHash": "721c8e4b68439b6a5f259323d19df9a2ad261202a2c521dedee320d79ecfa63d",
       "summary": "Use Codex and Figma to bring real, running interfaces into Figma, refine them, and bring changes back to Codex.",
       "guidance": [
-        "Decide to either create a new Figma file or use an existing one.",
-        "Determine which workspace to place the file in.",
-        "Set up the application for UI capture.",
-        "Open a new browser session of your application.",
-        "Adding design system components",
-        "Updating styles, fonts, and colors to variables"
+        "One of the core use cases of the Figma MCP server is retrieving context from Figma files and using that context in code generation. The Figma MCP server can capture information from Figma Design, Make, and FigJam files and pass it to Codex as part of the building process.",
+        "The Figma MCP server can capture information from Figma Design, Make, and FigJam files and pass it to Codex as part of the building process.",
+        "These selection URLs are linked directly to a frame or node on the Figma canvas. They could be a single element or a collection of components, but essentially it’s the source data that an agent will use for code generation. Selections can come from Figma Design, Make, or FigJam files. Once you have the URL, open Codex",
+        "help me implement this Figma design in code, use my existing design system components as much as possible. Your browser does not support the video tag. Prompts like this will instruct the agent to call the get_design_context tool from the Figma MCP server. This tool helps extract critical design information from Figma",
+        "The Codex desktop application is purpose-built for agentic coding. It provides a focused interface for managing multiple agents in parallel across projects, tracking progress without losing context, and integrating external tools. That kind of fluidity feels familiar. In Figma, teams move just as easily. The canvas is",
+        "Starting today, you can generate Figma design files from Codex using the Figma MCP server. The MCP server is built to support movement in both directions, bringing working UI onto the Figma canvas and back into code just as easily, so you can build on your best ideas, not just your first."
       ],
       "headings": [
         "Starting an app from a design",
@@ -193,6 +196,7 @@
         "frontend"
       ],
       "relevance": "high",
+      "portability": "portable",
       "promotedToDocs": [
         "docs/OPENAI_DEVELOPER_LEARNINGS.md"
       ],
@@ -206,21 +210,21 @@
       "url": "https://developers.openai.com/blog/run-long-horizon-tasks-with-codex",
       "canonicalUrl": "https://developers.openai.com/blog/run-long-horizon-tasks-with-codex",
       "title": "Run long horizon tasks with Codex | OpenAI Developers",
-      "description": "OpenAI Developer Blog",
+      "description": "In September 2025, OpenAI introduced GPT-5-Codex as the first version of GPT-5 optimized for agentic coding. In December 2025, we launched 5.2 which was the moment that people began to believe that using autonomous coding agents could be reliable. In particular, we saw a huge jump in how long the model could reliably f",
       "indexDateLabel": "Feb 23",
       "topicLabel": "Codex",
       "discoveredAt": "2026-03-23T12:18:19.240Z",
       "firstReadAt": "2026-03-23T12:18:19.240Z",
-      "lastReadAt": "2026-03-23T12:18:19.240Z",
-      "contentHash": "a8918bcb0557f24d57de4f33b2bdbb503d7835b6ecd8caee72e1a28d7c980912",
-      "summary": "OpenAI Developer Blog",
+      "lastReadAt": "2026-03-24T20:54:17.335Z",
+      "contentHash": "3e7f0df8df531c9ced520fdeebc4fb11f8e13933109c78c4bce3c6b78392a93c",
+      "summary": "In September 2025, OpenAI introduced GPT-5-Codex as the first version of GPT-5 optimized for agentic coding. In December 2025, we launched 5.2 which was the moment that people began to believe that using autonomous coding agents could be reliable. In particular, we saw a huge jump in how long the model could reliably f",
       "guidance": [
-        "It’s better at multi-step execution (plan → implement → validate → repair).",
-        "It’s easier to steer mid-flight without resetting the whole run (course corrections don’t wipe progress).",
-        "Plan",
-        "Edit code",
-        "Run tools (tests/build/lint)",
-        "Observe results"
+        "I wanted to stress-test that threshold. So I gave Codex a blank repo, full access, and one job: build a design tool from scratch. Then I let it run with GPT-5.3-Codex at “Extra High” reasoning. Codex ran for about 25 hours uninterrupted, used about 13M tokens, and generated about 30k lines of code.",
+        "This was an experiment, not a production rollout. But it performed well on the parts that matter for long-horizon work: following the spec, staying on task, running verification, and repairing failures as it went.",
+        "These screenshots are useful because they make the core shift visible: agentic coding is increasingly about time horizon, not just one-shot intelligence.",
+        "Section focus: Takeaways for long-horizon Codex tasks",
+        "Section focus: Why Codex can stay coherent on long tasks",
+        "This is not only “models got smarter.” The practical change is that agents can stay coherent for longer, complete larger chunks of work end-to-end, and recover from errors without losing the thread."
       ],
       "headings": [
         "What a long-run Codex session looks like",
@@ -242,6 +246,7 @@
         "skills"
       ],
       "relevance": "high",
+      "portability": "portable",
       "promotedToDocs": [
         "docs/OPENAI_DEVELOPER_LEARNINGS.md"
       ],
@@ -260,15 +265,15 @@
       "topicLabel": "API",
       "discoveredAt": "2026-03-23T12:18:19.240Z",
       "firstReadAt": "2026-03-23T12:18:19.240Z",
-      "lastReadAt": "2026-03-23T12:18:19.240Z",
-      "contentHash": "18a476366a7d98f6a87dda1da8bc3f9f0c763752eaaddcbf2970c79b26f53a26",
+      "lastReadAt": "2026-03-24T20:54:17.335Z",
+      "contentHash": "168d27740eefef0f9f39750ec75f3d56d70dd8a45339f20fc351fb138ea5462c",
       "summary": "Practical patterns for building with skills, hosted shell, and server-side compaction in the Responses API.",
       "guidance": [
         "Skills (aligned with the Agent Skills open standard): reusable, versioned instructions you can mount into containers so that agents can execute tasks more reliably.",
-        "Upgraded shell tool: an OpenAI hosted container with controlled internet access, where an agent can install dependencies, run scripts, and write outputs (for example, reports and artifacts).",
-        "Server-side compaction : an easy way to automatically compact long agentic runs so that you never hit context limits.",
-        "Hosted containers managed by OpenAI.",
-        "A local shell runtime you execute yourself (same tool semantics, but you control the machine).",
+        "We’re shifting from single-turn assistants to long-running agents that handle real knowledge work: reading large datasets, updating files, and writing apps.",
+        "Based on developer feedback and our own experience building Codex and internal agents, we’re releasing a new set of agentic primitives that make long-horizon work more practical:",
+        "This post focuses on the nonobvious tips and patterns we’ve seen work best so far, both in our work at OpenAI and in production at Glean, an early skills customer.",
+        "The docs and API reference cover each item above individually. This post focuses on the nonobvious tips and patterns we’ve seen work best so far, both in our work at OpenAI and in production at Glean, an early skills customer.",
         "Server-side compaction (new): When context crosses the threshold, compaction runs automatically in-stream, so there’s no separate compaction call."
       ],
       "headings": [
@@ -290,6 +295,7 @@
         "skills"
       ],
       "relevance": "high",
+      "portability": "portable",
       "promotedToDocs": [
         "docs/OPENAI_DEVELOPER_LEARNINGS.md"
       ],

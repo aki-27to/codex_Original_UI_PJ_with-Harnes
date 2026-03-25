@@ -1,19 +1,19 @@
 {
   "schema": "openai-blog-learning-proposal.v1",
   "proposalId": "openai-blog-skills-agents-sdk",
-  "createdAt": "2026-03-23T13:40:11.170Z",
+  "createdAt": "2026-03-25T11:25:33.023Z",
   "articleId": "skills-agents-sdk",
   "title": "Using skills to accelerate OSS maintenance | OpenAI Developers",
   "sourceUrl": "https://developers.openai.com/blog/skills-agents-sdk",
   "relevance": "high",
   "summary": "Using skills and GitHub Actions to optimize Codex workflows in the OpenAI Agents SDK repos.",
   "guidance": [
-    "repository policy in AGENTS.md",
     "repo-local skills in .agents/skills/",
-    "optional scripts and references inside those skills",
-    "Codex GitHub Action when the same workflow should run in CI",
-    "it sees metadata such as name and description first",
-    "it loads SKILL.md only when the skill is selected"
+    "Repo-local skills, AGENTS.md , and GitHub Actions let us turn recurring engineering work, such as verification, release preparation, integration testing for examples, and PR review, into repeatable workflows.",
+    "In these repos, we use skills to capture repository-specific workflows. A skill is a small package of operational knowledge: a SKILL.md manifest, plus optional scripts/ , references/ , and assets/ . The Codex customization docs describe why this works well: skills are a good fit for repeatable workflows because they ca",
+    "repository policy in AGENTS.md",
+    "In these repos, we use skills to capture repository-specific workflows.",
+    "optional scripts and references inside those skills"
   ],
   "topicTags": [
     "agents",
@@ -28,7 +28,7 @@
     {
       "id": "learning-doc-sync",
       "target": "docs/OPENAI_DEVELOPER_LEARNINGS.md",
-      "rationale": "Sync official learnings into a retrieval-first, non-constitutional document.",
+      "rationale": "Sync learnings into a retrieval-first, non-constitutional document.",
       "status": "auto_doc_sync",
       "riskFlags": [
         "doc_only"

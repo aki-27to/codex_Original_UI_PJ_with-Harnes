@@ -1,19 +1,19 @@
 {
   "schema": "anthropic-engineering-learning-proposal.v1",
   "proposalId": "anthropic-engineering-demystifying-evals-for-ai-agents",
-  "createdAt": "2026-03-25T11:02:27.227Z",
+  "createdAt": "2026-03-25T11:25:33.281Z",
   "articleId": "demystifying-evals-for-ai-agents",
   "title": "Demystifying evals for AI agents",
   "sourceUrl": "https://www.anthropic.com/engineering/demystifying-evals-for-ai-agents",
   "relevance": "high",
-  "summary": "Demystifying evals for AI agents",
+  "summary": "The capabilities that make agents useful also make them difficult to evaluate. The strategies that work across deployments combine techniques to match the complexity of the systems they measure.",
   "guidance": [
-    "A task (a.k.a problem or test case ) is a single test with defined inputs and success criteria.",
-    "Each attempt at a task is a trial . Because model outputs vary between runs, we run multiple trials to produce more consistent results.",
-    "A grader is logic that scores some aspect of the agent’s performance. A task can have multiple graders, each containing multiple assertions (sometimes called checks ) .",
-    "A transcript (also called a trace or trajectory ) is the complete record of a trial, including outputs, tool calls, reasoning, intermediate results, and any other interactions. For the Anthropic API, this is the full messages array at the end of an eval run - containing all the calls to the API and all of the returned",
-    "The outcome is the final state in the environment at the end of the trial. A flight-booking agent might say “Your flight has been booked” at the end of the transcript, but the outcome is whether a reservation exists in the environment’s SQL database.",
-    "An evaluation harness is the infrastructure that runs evals end-to-end. It provides instructions and tools, runs tasks concurrently, records all the steps, grades outputs, and aggregates results."
+    "As we described in Building effective agents , agents operate over many turns: calling tools, modifying state, and adapting based on intermediate results. These same capabilities that make AI agents useful—autonomy, intelligence, and flexibility—also make them harder to evaluate.",
+    "As we described in Building effective agents , agents operate over many turns: calling tools, modifying state, and adapting based on intermediate results.",
+    "Through our internal work and with customers at the frontier of agent development, we’ve learned how to design more rigorous and useful evals for agents. Here's what's worked across a range of agent architectures and use cases in real-world deployment.",
+    "Through our internal work and with customers at the frontier of agent development, we’ve learned how to design more rigorous and useful evals for agents.",
+    "Good evaluations help teams ship AI agents more confidently.",
+    "Evals make problems and behavioral changes visible before they affect users, and their value compounds over the lifecycle of an"
   ],
   "topicTags": [
     "agents",

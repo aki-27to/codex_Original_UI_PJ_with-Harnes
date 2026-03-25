@@ -1,6 +1,6 @@
 # ANTHROPIC_ENGINEERING_LEARNINGS
 
-Updated: 2026-03-25T11:02:27.227Z
+Updated: 2026-03-25T11:25:33.281Z
 
 This file is auto-synced from the Anthropic Engineering secondary learning lane.
 Only portable agent-engineering principles are retained here; Claude-specific mechanics do not become runtime policy.
@@ -20,12 +20,12 @@ Only portable agent-engineering principles are retained here; Claude-specific me
 - Source: https://www.anthropic.com/engineering/infrastructure-noise
 - Relevance: high
 - Portability: portable
-- Summary: Anthropic is an AI safety and research company that's working to build reliable, interpretable, and steerable AI systems.
+- Summary: Infrastructure configuration can swing agentic coding benchmarks by several percentage points—sometimes more than the leaderboard gap between top models.
 - Guidance:
-  - Agentic coding benchmarks like SWE-bench and Terminal-Bench are commonly used to compare the software engineering capabilities of frontier models—with top spots on leaderboards often separated by just a few percentage points.
   - Agentic coding evals are different: models are given a full environment where they write programs, run tests, install dependencies, and iterate over multiple turns.
-  - Eval developers have begun accounting for this.
-  - Terminal-Bench 2.0, for instance, specifies recommended CPU and RAM on a per-task basis in their latest 2.0 release.
+  - Static benchmarks score a model's output directly—the runtime environment doesn’t factor into the result. Agentic coding evals are different: models are given a full environment where they write programs, run tests, install dependencies, and iterate over multiple turns. The runtime is no longer a passive container, but
+  - Agentic coding benchmarks like SWE-bench and Terminal-Bench are commonly used to compare the software engineering capabilities of frontier models—with top spots on leaderboards often separated by just a few percentage points.
+  - Agentic coding benchmarks like SWE-bench and Terminal-Bench are commonly used to compare the software engineering capabilities of frontier models—with top spots on leaderboards often separated by just a few percentage points. These scores are often treated as precise measurements of relative model capability and increa
 
 ### Harness design for long-running application development
 
@@ -33,25 +33,25 @@ Only portable agent-engineering principles are retained here; Claude-specific me
 - Relevance: high
 - Portability: portable
 - Blog card date: Mar 24, 2026
-- Summary: Anthropic is an AI safety and research company that's working to build reliable, interpretable, and steerable AI systems.
+- Summary: Harness design is key to performance at the frontier of agentic coding. Here's how we pushed Claude further in frontend design and long-running autonomous software engineering.
 - Guidance:
-  - Design quality: Does the design feel like a coherent whole rather than a collection of parts? Strong work here means the colors, typography, layout, imagery, and other details combine to create a distinct mood and identity.
-  - Originality: Is there evidence of custom decisions, or is this template layouts, library defaults, and AI-generated patterns? A human designer should recognize deliberate creative choices. Unmodified stock components—or telltale signs of AI generation like purple gradients over white cards—fail here.
-  - Craft: Technical execution: typography hierarchy, spacing consistency, color harmony, contrast ratios. This is a competence check rather than a creativity check. Most reasonable implementations do fine here by default; failing means broken fundamentals.
-  - Functionality: Usability independent of aesthetics. Can users understand what the interface does, find primary actions, and complete tasks without guessing?
+  - This work originated with earlier efforts on our frontend design skill and long-running coding agent harness ,
+  - We've previously shown that harness design has a substantial impact on the effectiveness of long running agentic coding. In an earlier experiment , we used an initializer agent to decompose a product spec into a task list, and a coding agent that implemented the tasks one feature at a time before handing off artifacts
+  - We've previously shown that harness design has a substantial impact on the effectiveness of long running agentic coding.
+  - I then applied these techniques to long-running autonomous coding, carrying over two lessons from our earlier harness work: decomposing the build into tractable chunks, and using structured artifacts to hand off context between sessions. The final result was a three-agent architecture—planner, generator, and evaluator—
 
 ### Demystifying evals for AI agents
 
 - Source: https://www.anthropic.com/engineering/demystifying-evals-for-ai-agents
 - Relevance: high
-- Portability: mixed
+- Portability: portable
 - Blog card date: Jan 09, 2026
-- Summary: Demystifying evals for AI agents
+- Summary: The capabilities that make agents useful also make them difficult to evaluate. The strategies that work across deployments combine techniques to match the complexity of the systems they measure.
 - Guidance:
-  - A task (a.k.a problem or test case ) is a single test with defined inputs and success criteria.
-  - Each attempt at a task is a trial . Because model outputs vary between runs, we run multiple trials to produce more consistent results.
-  - A grader is logic that scores some aspect of the agent’s performance. A task can have multiple graders, each containing multiple assertions (sometimes called checks ) .
-  - A transcript (also called a trace or trajectory ) is the complete record of a trial, including outputs, tool calls, reasoning, intermediate results, and any other interactions. For the Anthropic API, this is the full messages array at the end of an eval run - containing all the calls to the API and all of the returned
+  - As we described in Building effective agents , agents operate over many turns: calling tools, modifying state, and adapting based on intermediate results. These same capabilities that make AI agents useful—autonomy, intelligence, and flexibility—also make them harder to evaluate.
+  - As we described in Building effective agents , agents operate over many turns: calling tools, modifying state, and adapting based on intermediate results.
+  - Through our internal work and with customers at the frontier of agent development, we’ve learned how to design more rigorous and useful evals for agents. Here's what's worked across a range of agent architectures and use cases in real-world deployment.
+  - Through our internal work and with customers at the frontier of agent development, we’ve learned how to design more rigorous and useful evals for agents.
 
 ### Effective harnesses for long-running agents
 
@@ -59,12 +59,12 @@ Only portable agent-engineering principles are retained here; Claude-specific me
 - Relevance: high
 - Portability: mixed
 - Blog card date: Nov 26, 2025
-- Summary: Anthropic is an AI safety and research company that's working to build reliable, interpretable, and steerable AI systems.
+- Summary: Agents still face challenges working across many context windows. We looked to human engineers for inspiration in creating a more effective harness for long-running agents.
 - Guidance:
-  - Coding agent: Every subsequent session asks the model to make incremental progress, then leave structured updates. 1
-  - Run pwd to see the directory you’re working in. You’ll only be able to edit files in this directory.
-  - Read the git logs and progress files to get up to speed on what was recently worked on.
-  - Read the features list file and choose the highest-priority feature that’s not yet done to work on.
+  - The core challenge of long-running agents is that they must work in discrete sessions, and each new session begins with no memory of what came before.
+  - The core challenge of long-running agents is that they must work in discrete sessions, and each new session begins with no memory of what came before. Imagine a software project staffed by engineers working in shifts, where each new engineer arrives with no memory of what happened on the previous shift. Because context
+  - However, getting agents to make consistent progress across multiple context windows remains an open problem.
+  - As AI agents become more capable, developers are increasingly asking them to take on complex tasks requiring work that spans hours, or even days.
 
 ## Topic: context
 
@@ -74,25 +74,25 @@ Only portable agent-engineering principles are retained here; Claude-specific me
 - Relevance: high
 - Portability: portable
 - Blog card date: Mar 24, 2026
-- Summary: Anthropic is an AI safety and research company that's working to build reliable, interpretable, and steerable AI systems.
+- Summary: Harness design is key to performance at the frontier of agentic coding. Here's how we pushed Claude further in frontend design and long-running autonomous software engineering.
 - Guidance:
-  - Design quality: Does the design feel like a coherent whole rather than a collection of parts? Strong work here means the colors, typography, layout, imagery, and other details combine to create a distinct mood and identity.
-  - Originality: Is there evidence of custom decisions, or is this template layouts, library defaults, and AI-generated patterns? A human designer should recognize deliberate creative choices. Unmodified stock components—or telltale signs of AI generation like purple gradients over white cards—fail here.
-  - Craft: Technical execution: typography hierarchy, spacing consistency, color harmony, contrast ratios. This is a competence check rather than a creativity check. Most reasonable implementations do fine here by default; failing means broken fundamentals.
-  - Functionality: Usability independent of aesthetics. Can users understand what the interface does, find primary actions, and complete tasks without guessing?
+  - This work originated with earlier efforts on our frontend design skill and long-running coding agent harness ,
+  - We've previously shown that harness design has a substantial impact on the effectiveness of long running agentic coding. In an earlier experiment , we used an initializer agent to decompose a product spec into a task list, and a coding agent that implemented the tasks one feature at a time before handing off artifacts
+  - We've previously shown that harness design has a substantial impact on the effectiveness of long running agentic coding.
+  - I then applied these techniques to long-running autonomous coding, carrying over two lessons from our earlier harness work: decomposing the build into tractable chunks, and using structured artifacts to hand off context between sessions. The final result was a three-agent architecture—planner, generator, and evaluator—
 
 ### Demystifying evals for AI agents
 
 - Source: https://www.anthropic.com/engineering/demystifying-evals-for-ai-agents
 - Relevance: high
-- Portability: mixed
+- Portability: portable
 - Blog card date: Jan 09, 2026
-- Summary: Demystifying evals for AI agents
+- Summary: The capabilities that make agents useful also make them difficult to evaluate. The strategies that work across deployments combine techniques to match the complexity of the systems they measure.
 - Guidance:
-  - A task (a.k.a problem or test case ) is a single test with defined inputs and success criteria.
-  - Each attempt at a task is a trial . Because model outputs vary between runs, we run multiple trials to produce more consistent results.
-  - A grader is logic that scores some aspect of the agent’s performance. A task can have multiple graders, each containing multiple assertions (sometimes called checks ) .
-  - A transcript (also called a trace or trajectory ) is the complete record of a trial, including outputs, tool calls, reasoning, intermediate results, and any other interactions. For the Anthropic API, this is the full messages array at the end of an eval run - containing all the calls to the API and all of the returned
+  - As we described in Building effective agents , agents operate over many turns: calling tools, modifying state, and adapting based on intermediate results. These same capabilities that make AI agents useful—autonomy, intelligence, and flexibility—also make them harder to evaluate.
+  - As we described in Building effective agents , agents operate over many turns: calling tools, modifying state, and adapting based on intermediate results.
+  - Through our internal work and with customers at the frontier of agent development, we’ve learned how to design more rigorous and useful evals for agents. Here's what's worked across a range of agent architectures and use cases in real-world deployment.
+  - Through our internal work and with customers at the frontier of agent development, we’ve learned how to design more rigorous and useful evals for agents.
 
 ### Effective harnesses for long-running agents
 
@@ -100,12 +100,12 @@ Only portable agent-engineering principles are retained here; Claude-specific me
 - Relevance: high
 - Portability: mixed
 - Blog card date: Nov 26, 2025
-- Summary: Anthropic is an AI safety and research company that's working to build reliable, interpretable, and steerable AI systems.
+- Summary: Agents still face challenges working across many context windows. We looked to human engineers for inspiration in creating a more effective harness for long-running agents.
 - Guidance:
-  - Coding agent: Every subsequent session asks the model to make incremental progress, then leave structured updates. 1
-  - Run pwd to see the directory you’re working in. You’ll only be able to edit files in this directory.
-  - Read the git logs and progress files to get up to speed on what was recently worked on.
-  - Read the features list file and choose the highest-priority feature that’s not yet done to work on.
+  - The core challenge of long-running agents is that they must work in discrete sessions, and each new session begins with no memory of what came before.
+  - The core challenge of long-running agents is that they must work in discrete sessions, and each new session begins with no memory of what came before. Imagine a software project staffed by engineers working in shifts, where each new engineer arrives with no memory of what happened on the previous shift. Because context
+  - However, getting agents to make consistent progress across multiple context windows remains an open problem.
+  - As AI agents become more capable, developers are increasingly asking them to take on complex tasks requiring work that spans hours, or even days.
 
 ## Topic: evals
 
@@ -114,12 +114,12 @@ Only portable agent-engineering principles are retained here; Claude-specific me
 - Source: https://www.anthropic.com/engineering/infrastructure-noise
 - Relevance: high
 - Portability: portable
-- Summary: Anthropic is an AI safety and research company that's working to build reliable, interpretable, and steerable AI systems.
+- Summary: Infrastructure configuration can swing agentic coding benchmarks by several percentage points—sometimes more than the leaderboard gap between top models.
 - Guidance:
-  - Agentic coding benchmarks like SWE-bench and Terminal-Bench are commonly used to compare the software engineering capabilities of frontier models—with top spots on leaderboards often separated by just a few percentage points.
   - Agentic coding evals are different: models are given a full environment where they write programs, run tests, install dependencies, and iterate over multiple turns.
-  - Eval developers have begun accounting for this.
-  - Terminal-Bench 2.0, for instance, specifies recommended CPU and RAM on a per-task basis in their latest 2.0 release.
+  - Static benchmarks score a model's output directly—the runtime environment doesn’t factor into the result. Agentic coding evals are different: models are given a full environment where they write programs, run tests, install dependencies, and iterate over multiple turns. The runtime is no longer a passive container, but
+  - Agentic coding benchmarks like SWE-bench and Terminal-Bench are commonly used to compare the software engineering capabilities of frontier models—with top spots on leaderboards often separated by just a few percentage points.
+  - Agentic coding benchmarks like SWE-bench and Terminal-Bench are commonly used to compare the software engineering capabilities of frontier models—with top spots on leaderboards often separated by just a few percentage points. These scores are often treated as precise measurements of relative model capability and increa
 
 ### Harness design for long-running application development
 
@@ -127,12 +127,12 @@ Only portable agent-engineering principles are retained here; Claude-specific me
 - Relevance: high
 - Portability: portable
 - Blog card date: Mar 24, 2026
-- Summary: Anthropic is an AI safety and research company that's working to build reliable, interpretable, and steerable AI systems.
+- Summary: Harness design is key to performance at the frontier of agentic coding. Here's how we pushed Claude further in frontend design and long-running autonomous software engineering.
 - Guidance:
-  - Design quality: Does the design feel like a coherent whole rather than a collection of parts? Strong work here means the colors, typography, layout, imagery, and other details combine to create a distinct mood and identity.
-  - Originality: Is there evidence of custom decisions, or is this template layouts, library defaults, and AI-generated patterns? A human designer should recognize deliberate creative choices. Unmodified stock components—or telltale signs of AI generation like purple gradients over white cards—fail here.
-  - Craft: Technical execution: typography hierarchy, spacing consistency, color harmony, contrast ratios. This is a competence check rather than a creativity check. Most reasonable implementations do fine here by default; failing means broken fundamentals.
-  - Functionality: Usability independent of aesthetics. Can users understand what the interface does, find primary actions, and complete tasks without guessing?
+  - This work originated with earlier efforts on our frontend design skill and long-running coding agent harness ,
+  - We've previously shown that harness design has a substantial impact on the effectiveness of long running agentic coding. In an earlier experiment , we used an initializer agent to decompose a product spec into a task list, and a coding agent that implemented the tasks one feature at a time before handing off artifacts
+  - We've previously shown that harness design has a substantial impact on the effectiveness of long running agentic coding.
+  - I then applied these techniques to long-running autonomous coding, carrying over two lessons from our earlier harness work: decomposing the build into tractable chunks, and using structured artifacts to hand off context between sessions. The final result was a three-agent architecture—planner, generator, and evaluator—
 
 ### Designing AI resistant technical evaluations
 
@@ -141,59 +141,39 @@ Only portable agent-engineering principles are retained here; Claude-specific me
 - Portability: mixed
 - Blog card date: Jan 21, 2026
 - Summary: What we learned from three iterations of a performance engineering take-home that Claude keeps beating.
+- Guidance:
+  - Evaluating technical candidates becomes harder as AI capabilities improve.
+  - I've now iterated through three versions of our take-home in an attempt to ensure it still carries signal. Each time, I’ve learned something new about what makes evaluations robust to AI assistance and what doesn't.
+  - Each time, I’ve learned something new about what makes evaluations robust to AI assistance and what doesn't.
+  - A take-home that distinguishes well between human skill levels today may be trivially solved by models tomorrow—rendering it useless for evaluation.
 
 ### Demystifying evals for AI agents
 
 - Source: https://www.anthropic.com/engineering/demystifying-evals-for-ai-agents
 - Relevance: high
-- Portability: mixed
+- Portability: portable
 - Blog card date: Jan 09, 2026
-- Summary: Demystifying evals for AI agents
+- Summary: The capabilities that make agents useful also make them difficult to evaluate. The strategies that work across deployments combine techniques to match the complexity of the systems they measure.
 - Guidance:
-  - A task (a.k.a problem or test case ) is a single test with defined inputs and success criteria.
-  - Each attempt at a task is a trial . Because model outputs vary between runs, we run multiple trials to produce more consistent results.
-  - A grader is logic that scores some aspect of the agent’s performance. A task can have multiple graders, each containing multiple assertions (sometimes called checks ) .
-  - A transcript (also called a trace or trajectory ) is the complete record of a trial, including outputs, tool calls, reasoning, intermediate results, and any other interactions. For the Anthropic API, this is the full messages array at the end of an eval run - containing all the calls to the API and all of the returned
-
-### Effective harnesses for long-running agents
-
-- Source: https://www.anthropic.com/engineering/effective-harnesses-for-long-running-agents
-- Relevance: high
-- Portability: mixed
-- Blog card date: Nov 26, 2025
-- Summary: Anthropic is an AI safety and research company that's working to build reliable, interpretable, and steerable AI systems.
-- Guidance:
-  - Coding agent: Every subsequent session asks the model to make incremental progress, then leave structured updates. 1
-  - Run pwd to see the directory you’re working in. You’ll only be able to edit files in this directory.
-  - Read the git logs and progress files to get up to speed on what was recently worked on.
-  - Read the features list file and choose the highest-priority feature that’s not yet done to work on.
+  - As we described in Building effective agents , agents operate over many turns: calling tools, modifying state, and adapting based on intermediate results. These same capabilities that make AI agents useful—autonomy, intelligence, and flexibility—also make them harder to evaluate.
+  - As we described in Building effective agents , agents operate over many turns: calling tools, modifying state, and adapting based on intermediate results.
+  - Through our internal work and with customers at the frontier of agent development, we’ve learned how to design more rigorous and useful evals for agents. Here's what's worked across a range of agent architectures and use cases in real-world deployment.
+  - Through our internal work and with customers at the frontier of agent development, we’ve learned how to design more rigorous and useful evals for agents.
 
 ## Topic: frontend
 
-### Quantifying infrastructure noise in agentic coding evals
-
-- Source: https://www.anthropic.com/engineering/infrastructure-noise
-- Relevance: high
-- Portability: portable
-- Summary: Anthropic is an AI safety and research company that's working to build reliable, interpretable, and steerable AI systems.
-- Guidance:
-  - Agentic coding benchmarks like SWE-bench and Terminal-Bench are commonly used to compare the software engineering capabilities of frontier models—with top spots on leaderboards often separated by just a few percentage points.
-  - Agentic coding evals are different: models are given a full environment where they write programs, run tests, install dependencies, and iterate over multiple turns.
-  - Eval developers have begun accounting for this.
-  - Terminal-Bench 2.0, for instance, specifies recommended CPU and RAM on a per-task basis in their latest 2.0 release.
-
 ### Harness design for long-running application development
 
 - Source: https://www.anthropic.com/engineering/harness-design-long-running-apps
 - Relevance: high
 - Portability: portable
 - Blog card date: Mar 24, 2026
-- Summary: Anthropic is an AI safety and research company that's working to build reliable, interpretable, and steerable AI systems.
+- Summary: Harness design is key to performance at the frontier of agentic coding. Here's how we pushed Claude further in frontend design and long-running autonomous software engineering.
 - Guidance:
-  - Design quality: Does the design feel like a coherent whole rather than a collection of parts? Strong work here means the colors, typography, layout, imagery, and other details combine to create a distinct mood and identity.
-  - Originality: Is there evidence of custom decisions, or is this template layouts, library defaults, and AI-generated patterns? A human designer should recognize deliberate creative choices. Unmodified stock components—or telltale signs of AI generation like purple gradients over white cards—fail here.
-  - Craft: Technical execution: typography hierarchy, spacing consistency, color harmony, contrast ratios. This is a competence check rather than a creativity check. Most reasonable implementations do fine here by default; failing means broken fundamentals.
-  - Functionality: Usability independent of aesthetics. Can users understand what the interface does, find primary actions, and complete tasks without guessing?
+  - This work originated with earlier efforts on our frontend design skill and long-running coding agent harness ,
+  - We've previously shown that harness design has a substantial impact on the effectiveness of long running agentic coding. In an earlier experiment , we used an initializer agent to decompose a product spec into a task list, and a coding agent that implemented the tasks one feature at a time before handing off artifacts
+  - We've previously shown that harness design has a substantial impact on the effectiveness of long running agentic coding.
+  - I then applied these techniques to long-running autonomous coding, carrying over two lessons from our earlier harness work: decomposing the build into tractable chunks, and using structured artifacts to hand off context between sessions. The final result was a three-agent architecture—planner, generator, and evaluator—
 
 ### Designing AI resistant technical evaluations
 
@@ -202,19 +182,24 @@ Only portable agent-engineering principles are retained here; Claude-specific me
 - Portability: mixed
 - Blog card date: Jan 21, 2026
 - Summary: What we learned from three iterations of a performance engineering take-home that Claude keeps beating.
+- Guidance:
+  - Evaluating technical candidates becomes harder as AI capabilities improve.
+  - I've now iterated through three versions of our take-home in an attempt to ensure it still carries signal. Each time, I’ve learned something new about what makes evaluations robust to AI assistance and what doesn't.
+  - Each time, I’ve learned something new about what makes evaluations robust to AI assistance and what doesn't.
+  - A take-home that distinguishes well between human skill levels today may be trivially solved by models tomorrow—rendering it useless for evaluation.
 
 ### Demystifying evals for AI agents
 
 - Source: https://www.anthropic.com/engineering/demystifying-evals-for-ai-agents
 - Relevance: high
-- Portability: mixed
+- Portability: portable
 - Blog card date: Jan 09, 2026
-- Summary: Demystifying evals for AI agents
+- Summary: The capabilities that make agents useful also make them difficult to evaluate. The strategies that work across deployments combine techniques to match the complexity of the systems they measure.
 - Guidance:
-  - A task (a.k.a problem or test case ) is a single test with defined inputs and success criteria.
-  - Each attempt at a task is a trial . Because model outputs vary between runs, we run multiple trials to produce more consistent results.
-  - A grader is logic that scores some aspect of the agent’s performance. A task can have multiple graders, each containing multiple assertions (sometimes called checks ) .
-  - A transcript (also called a trace or trajectory ) is the complete record of a trial, including outputs, tool calls, reasoning, intermediate results, and any other interactions. For the Anthropic API, this is the full messages array at the end of an eval run - containing all the calls to the API and all of the returned
+  - As we described in Building effective agents , agents operate over many turns: calling tools, modifying state, and adapting based on intermediate results. These same capabilities that make AI agents useful—autonomy, intelligence, and flexibility—also make them harder to evaluate.
+  - As we described in Building effective agents , agents operate over many turns: calling tools, modifying state, and adapting based on intermediate results.
+  - Through our internal work and with customers at the frontier of agent development, we’ve learned how to design more rigorous and useful evals for agents. Here's what's worked across a range of agent architectures and use cases in real-world deployment.
+  - Through our internal work and with customers at the frontier of agent development, we’ve learned how to design more rigorous and useful evals for agents.
 
 ### Effective harnesses for long-running agents
 
@@ -222,52 +207,12 @@ Only portable agent-engineering principles are retained here; Claude-specific me
 - Relevance: high
 - Portability: mixed
 - Blog card date: Nov 26, 2025
-- Summary: Anthropic is an AI safety and research company that's working to build reliable, interpretable, and steerable AI systems.
+- Summary: Agents still face challenges working across many context windows. We looked to human engineers for inspiration in creating a more effective harness for long-running agents.
 - Guidance:
-  - Coding agent: Every subsequent session asks the model to make incremental progress, then leave structured updates. 1
-  - Run pwd to see the directory you’re working in. You’ll only be able to edit files in this directory.
-  - Read the git logs and progress files to get up to speed on what was recently worked on.
-  - Read the features list file and choose the highest-priority feature that’s not yet done to work on.
-
-## Topic: safety
-
-### Quantifying infrastructure noise in agentic coding evals
-
-- Source: https://www.anthropic.com/engineering/infrastructure-noise
-- Relevance: high
-- Portability: portable
-- Summary: Anthropic is an AI safety and research company that's working to build reliable, interpretable, and steerable AI systems.
-- Guidance:
-  - Agentic coding benchmarks like SWE-bench and Terminal-Bench are commonly used to compare the software engineering capabilities of frontier models—with top spots on leaderboards often separated by just a few percentage points.
-  - Agentic coding evals are different: models are given a full environment where they write programs, run tests, install dependencies, and iterate over multiple turns.
-  - Eval developers have begun accounting for this.
-  - Terminal-Bench 2.0, for instance, specifies recommended CPU and RAM on a per-task basis in their latest 2.0 release.
-
-### Harness design for long-running application development
-
-- Source: https://www.anthropic.com/engineering/harness-design-long-running-apps
-- Relevance: high
-- Portability: portable
-- Blog card date: Mar 24, 2026
-- Summary: Anthropic is an AI safety and research company that's working to build reliable, interpretable, and steerable AI systems.
-- Guidance:
-  - Design quality: Does the design feel like a coherent whole rather than a collection of parts? Strong work here means the colors, typography, layout, imagery, and other details combine to create a distinct mood and identity.
-  - Originality: Is there evidence of custom decisions, or is this template layouts, library defaults, and AI-generated patterns? A human designer should recognize deliberate creative choices. Unmodified stock components—or telltale signs of AI generation like purple gradients over white cards—fail here.
-  - Craft: Technical execution: typography hierarchy, spacing consistency, color harmony, contrast ratios. This is a competence check rather than a creativity check. Most reasonable implementations do fine here by default; failing means broken fundamentals.
-  - Functionality: Usability independent of aesthetics. Can users understand what the interface does, find primary actions, and complete tasks without guessing?
-
-### Effective harnesses for long-running agents
-
-- Source: https://www.anthropic.com/engineering/effective-harnesses-for-long-running-agents
-- Relevance: high
-- Portability: mixed
-- Blog card date: Nov 26, 2025
-- Summary: Anthropic is an AI safety and research company that's working to build reliable, interpretable, and steerable AI systems.
-- Guidance:
-  - Coding agent: Every subsequent session asks the model to make incremental progress, then leave structured updates. 1
-  - Run pwd to see the directory you’re working in. You’ll only be able to edit files in this directory.
-  - Read the git logs and progress files to get up to speed on what was recently worked on.
-  - Read the features list file and choose the highest-priority feature that’s not yet done to work on.
+  - The core challenge of long-running agents is that they must work in discrete sessions, and each new session begins with no memory of what came before.
+  - The core challenge of long-running agents is that they must work in discrete sessions, and each new session begins with no memory of what came before. Imagine a software project staffed by engineers working in shifts, where each new engineer arrives with no memory of what happened on the previous shift. Because context
+  - However, getting agents to make consistent progress across multiple context windows remains an open problem.
+  - As AI agents become more capable, developers are increasingly asking them to take on complex tasks requiring work that spans hours, or even days.
 
 ## Topic: skills
 
@@ -277,12 +222,12 @@ Only portable agent-engineering principles are retained here; Claude-specific me
 - Relevance: high
 - Portability: portable
 - Blog card date: Mar 24, 2026
-- Summary: Anthropic is an AI safety and research company that's working to build reliable, interpretable, and steerable AI systems.
+- Summary: Harness design is key to performance at the frontier of agentic coding. Here's how we pushed Claude further in frontend design and long-running autonomous software engineering.
 - Guidance:
-  - Design quality: Does the design feel like a coherent whole rather than a collection of parts? Strong work here means the colors, typography, layout, imagery, and other details combine to create a distinct mood and identity.
-  - Originality: Is there evidence of custom decisions, or is this template layouts, library defaults, and AI-generated patterns? A human designer should recognize deliberate creative choices. Unmodified stock components—or telltale signs of AI generation like purple gradients over white cards—fail here.
-  - Craft: Technical execution: typography hierarchy, spacing consistency, color harmony, contrast ratios. This is a competence check rather than a creativity check. Most reasonable implementations do fine here by default; failing means broken fundamentals.
-  - Functionality: Usability independent of aesthetics. Can users understand what the interface does, find primary actions, and complete tasks without guessing?
+  - This work originated with earlier efforts on our frontend design skill and long-running coding agent harness ,
+  - We've previously shown that harness design has a substantial impact on the effectiveness of long running agentic coding. In an earlier experiment , we used an initializer agent to decompose a product spec into a task list, and a coding agent that implemented the tasks one feature at a time before handing off artifacts
+  - We've previously shown that harness design has a substantial impact on the effectiveness of long running agentic coding.
+  - I then applied these techniques to long-running autonomous coding, carrying over two lessons from our earlier harness work: decomposing the build into tractable chunks, and using structured artifacts to hand off context between sessions. The final result was a three-agent architecture—planner, generator, and evaluator—
 
 ### Designing AI resistant technical evaluations
 
@@ -291,4 +236,9 @@ Only portable agent-engineering principles are retained here; Claude-specific me
 - Portability: mixed
 - Blog card date: Jan 21, 2026
 - Summary: What we learned from three iterations of a performance engineering take-home that Claude keeps beating.
+- Guidance:
+  - Evaluating technical candidates becomes harder as AI capabilities improve.
+  - I've now iterated through three versions of our take-home in an attempt to ensure it still carries signal. Each time, I’ve learned something new about what makes evaluations robust to AI assistance and what doesn't.
+  - Each time, I’ve learned something new about what makes evaluations robust to AI assistance and what doesn't.
+  - A take-home that distinguishes well between human skill levels today may be trivially solved by models tomorrow—rendering it useless for evaluation.
 

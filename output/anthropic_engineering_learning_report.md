@@ -1,7 +1,7 @@
 # ANTHROPIC_ENGINEERING_LEARNING_REPORT
 
 - status: PASS
-- generatedAt: 2026-03-25T11:02:27.227Z
+- generatedAt: 2026-03-25T11:25:33.281Z
 - trackedArticles: 5
 - newArticlesThisRun: 0
 - pendingProposals: 5
@@ -21,7 +21,7 @@
 
 ## Pending Proposals
 
-- Quantifying infrastructure noise in agentic coding evals -> skills/web-designer-master/references/quality-gate.md (proposal_only)
+- Quantifying infrastructure noise in agentic coding evals -> scripts/config/eval_suite_default.json (proposal_only)
 - Harness design for long-running application development -> docs/CONTEXT_MEMORY_POLICY.md (proposal_only)
 - Designing AI resistant technical evaluations -> docs/CONTEXT_MEMORY_POLICY.md (proposal_only)
 - Demystifying evals for AI agents -> docs/CONTEXT_MEMORY_POLICY.md (proposal_only)
