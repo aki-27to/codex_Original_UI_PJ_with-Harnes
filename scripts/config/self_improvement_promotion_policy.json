@@ -3,7 +3,8 @@
   "mode": "machine_guarded_autonomy",
   "autoApply": {
     "changeClasses": [
-      "runtime_retrieval_hint"
+      "runtime_retrieval_hint",
+      "frontend_quality_note"
     ],
     "requireGatePass": true,
     "maxAutoApplyPerLane": 12
@@ -24,7 +25,6 @@
       "memory_policy_note",
       "eval_extension",
       "operator_policy_note",
-      "frontend_quality_note",
       "runtime_policy_tuning"
     ]
   },

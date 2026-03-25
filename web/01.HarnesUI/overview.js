@@ -704,7 +704,7 @@ function renderMemory(payload) {
         { label: "Cadence", value: `${formatInteger(num(externalLearning.intervalMinutes, 0))} min`, detail: `next ${safeText(externalLearning.nextRunAt, "-")}` },
         { label: "Artifacts", value: safeText(externalLearning.ledgerPath, "output/openai_blog_learning_ledger.json"), detail: `${safeText(externalLearning.digestPath, "")} / ${safeText(externalLearning.curatedDocPath, "")}` },
         { label: "Runtime Retrieval", value: safeText(runtimeRetrieval.lastStatus, runtimeRetrieval.enabled ? "IDLE" : "DISABLED"), detail: `${toArr(runtimeRetrieval.applyToAgents).join(", ") || "-"} / ${toArr(runtimeRetrieval.lastMatchedTopics).join(", ") || "-"}` },
-        { label: "Self Improvement", value: safeText(selfImprovement.gateStatus, "NOT_RUN"), detail: `${safeText(selfImprovement.appliedDecision, "none")} / hints ${formatInteger(num(selfImprovement.appliedHintCount, 0))} / failed ${toArr(selfImprovement.failedCaseIds).join(", ") || "-"}` },
+        { label: "Self Improvement", value: safeText(selfImprovement.gateStatus, "NOT_RUN"), detail: `${safeText(selfImprovement.appliedDecision, "none")} / hints ${formatInteger(num(selfImprovement.appliedHintCount, 0))} / notes ${formatInteger(num(selfImprovement.appliedFrontendQualityNoteCount, 0))} / failed ${toArr(selfImprovement.failedCaseIds).join(", ") || "-"}` },
         { label: "Freeze Guard", value: safeText(externalLearning.freezeAware && externalLearning.freezeAware.requirementFoundationV1, "bug_fix_only"), detail: `blocked ${toArr(externalLearning.freezeAware && externalLearning.freezeAware.blockedApplyTargets).join(", ") || "-"}` },
       ])}
       ${itemListHtml(learningArticles.slice(0, 4), "No recent official learning articles are tracked yet.")}

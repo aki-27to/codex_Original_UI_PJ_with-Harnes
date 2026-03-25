@@ -62,6 +62,7 @@ Define how the harness preserves, summarizes, shares, and externalizes context s
 - External learnings are advisory memory, not constitutional truth. They must not silently override `AGENTS.md` or frozen Step 1/2 behavior.
 - Promotion from external learning into runtime behavior must stay governed and regression-checked; collecting or summarizing a learning does not authorize automatic policy drift.
 - Self-improvement promotion is machine-readable and tiered: low-risk runtime retrieval hints may auto-apply only after the self-improvement eval gate passes, while policy/config/runtime-core targets remain proposal-only or blocked according to `docs/SELF_IMPROVEMENT_POLICY.md` and `scripts/config/self_improvement_promotion_policy.json`.
+- Repeated successful `web_creative` turns may reinforce a bounded `frontend_quality_note` into the mutable `docs/FRONTEND_QUALITY_PLAYBOOK.md`, but that playbook remains non-constitutional and machine-gated.
 
 ## 7) Safety and Privacy
 

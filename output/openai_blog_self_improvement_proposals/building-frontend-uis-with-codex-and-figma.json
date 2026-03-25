@@ -1,7 +1,7 @@
 {
   "schema": "self-improvement-proposal.v1",
   "proposalId": "openai-blog-building-frontend-uis-with-codex-and-figma-self-improvement",
-  "createdAt": "2026-03-25T12:37:59.488Z",
+  "createdAt": "2026-03-25T14:31:59.958Z",
   "sourceLane": "OpenAI Developers Blog",
   "sourceTier": "primary",
   "articleId": "building-frontend-uis-with-codex-and-figma",
@@ -57,6 +57,39 @@
       ],
       "topicBoost": 3,
       "articleBoost": 8
+    },
+    "frontendQualityNote": {
+      "noteId": "building-frontend-uis-with-codex-and-figma-frontend-quality",
+      "appliesToAgents": [
+        "default",
+        "frontend_worker"
+      ],
+      "appliesToTaskFamilies": [
+        "web_creative"
+      ],
+      "topics": [
+        "agents",
+        "codex",
+        "context",
+        "frontend"
+      ],
+      "lexicalTriggers": [
+        "context",
+        "design system",
+        "planner",
+        "generator"
+      ],
+      "preferredArticleIds": [
+        "building-frontend-uis-with-codex-and-figma"
+      ],
+      "qualityAxes": [
+        "responsive_quality"
+      ],
+      "guidance": [
+        "One of the core use cases of the Figma MCP server is retrieving context from Figma files and using that context in code generation. The Figma MCP server can capture information from Figma Design, Make, and FigJam files a",
+        "The Figma MCP server can capture information from Figma Design, Make, and FigJam files and pass it to Codex as part of the building process.",
+        "These selection URLs are linked directly to a frame or node on the Figma canvas. They could be a single element or a collection of components, but essentially it’s the source data that an agent will use for code generati"
+      ]
     }
   },
   "promotion": {

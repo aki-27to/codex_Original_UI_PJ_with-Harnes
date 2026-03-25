@@ -1,7 +1,7 @@
 {
   "schema": "self-improvement-proposal.v1",
   "proposalId": "openai-blog-skills-shell-tips-self-improvement",
-  "createdAt": "2026-03-25T12:37:59.488Z",
+  "createdAt": "2026-03-25T14:31:59.958Z",
   "sourceLane": "OpenAI Developers Blog",
   "sourceTier": "primary",
   "articleId": "skills-shell-tips",
@@ -59,6 +59,39 @@
       ],
       "topicBoost": 3,
       "articleBoost": 8
+    },
+    "frontendQualityNote": {
+      "noteId": "skills-shell-tips-frontend-quality",
+      "appliesToAgents": [
+        "default",
+        "frontend_worker"
+      ],
+      "appliesToTaskFamilies": [
+        "web_creative"
+      ],
+      "topics": [
+        "agents",
+        "codex",
+        "context",
+        "frontend"
+      ],
+      "lexicalTriggers": [
+        "context",
+        "planner",
+        "generator",
+        "evaluator"
+      ],
+      "preferredArticleIds": [
+        "skills-shell-tips"
+      ],
+      "qualityAxes": [
+        "reference_discipline"
+      ],
+      "guidance": [
+        "Skills (aligned with the Agent Skills open standard): reusable, versioned instructions you can mount into containers so that agents can execute tasks more reliably.",
+        "We’re shifting from single-turn assistants to long-running agents that handle real knowledge work: reading large datasets, updating files, and writing apps.",
+        "Based on developer feedback and our own experience building Codex and internal agents, we’re releasing a new set of agentic primitives that make long-horizon work more practical:"
+      ]
     }
   },
   "promotion": {

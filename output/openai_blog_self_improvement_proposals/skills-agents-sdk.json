@@ -1,7 +1,7 @@
 {
   "schema": "self-improvement-proposal.v1",
   "proposalId": "openai-blog-skills-agents-sdk-self-improvement",
-  "createdAt": "2026-03-25T12:37:59.488Z",
+  "createdAt": "2026-03-25T14:31:59.958Z",
   "sourceLane": "OpenAI Developers Blog",
   "sourceTier": "primary",
   "articleId": "skills-agents-sdk",
@@ -60,6 +60,39 @@
       ],
       "topicBoost": 3,
       "articleBoost": 8
+    },
+    "frontendQualityNote": {
+      "noteId": "skills-agents-sdk-frontend-quality",
+      "appliesToAgents": [
+        "default",
+        "frontend_worker"
+      ],
+      "appliesToTaskFamilies": [
+        "web_creative"
+      ],
+      "topics": [
+        "agents",
+        "automation",
+        "codex",
+        "context"
+      ],
+      "lexicalTriggers": [
+        "workflow",
+        "planner",
+        "generator",
+        "evaluator"
+      ],
+      "preferredArticleIds": [
+        "skills-agents-sdk"
+      ],
+      "qualityAxes": [
+        "reference_discipline"
+      ],
+      "guidance": [
+        "repo-local skills in .agents/skills/",
+        "Repo-local skills, AGENTS.md , and GitHub Actions let us turn recurring engineering work, such as verification, release preparation, integration testing for examples, and PR review, into repeatable workflows.",
+        "In these repos, we use skills to capture repository-specific workflows. A skill is a small package of operational knowledge: a SKILL.md manifest, plus optional scripts/ , references/ , and assets/ . The Codex customizati"
+      ]
     }
   },
   "promotion": {

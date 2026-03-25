@@ -1,7 +1,7 @@
 {
   "schema": "self-improvement-proposal.v1",
   "proposalId": "openai-blog-one-year-of-responses-self-improvement",
-  "createdAt": "2026-03-25T12:37:59.488Z",
+  "createdAt": "2026-03-25T14:31:59.958Z",
   "sourceLane": "OpenAI Developers Blog",
   "sourceTier": "primary",
   "articleId": "one-year-of-responses",
@@ -60,6 +60,39 @@
       ],
       "topicBoost": 3,
       "articleBoost": 8
+    },
+    "frontendQualityNote": {
+      "noteId": "one-year-of-responses-frontend-quality",
+      "appliesToAgents": [
+        "default",
+        "frontend_worker"
+      ],
+      "appliesToTaskFamilies": [
+        "web_creative"
+      ],
+      "topics": [
+        "agents",
+        "automation",
+        "codex",
+        "context"
+      ],
+      "lexicalTriggers": [
+        "planner",
+        "generator",
+        "evaluator",
+        "subagent"
+      ],
+      "preferredArticleIds": [
+        "one-year-of-responses"
+      ],
+      "qualityAxes": [
+        "frontend_quality"
+      ],
+      "guidance": [
+        "One year ago, we introduced the Responses API — a foundation for developers and enterprises to build useful and reliable agents. Equipping models with a set of hosted tools allowed AI to evolve from chat assistants to sy",
+        "Agent behavior monitoring",
+        "One year ago, we introduced the Responses API — a foundation for developers and enterprises to build useful and reliable agents."
+      ]
     }
   },
   "promotion": {

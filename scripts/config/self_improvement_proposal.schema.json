@@ -144,6 +144,51 @@
           },
           "additionalProperties": true
         },
+        "frontendQualityNote": {
+          "type": "object",
+          "required": [
+            "noteId",
+            "appliesToAgents",
+            "appliesToTaskFamilies",
+            "topics",
+            "lexicalTriggers",
+            "preferredArticleIds",
+            "qualityAxes",
+            "guidance"
+          ],
+          "properties": {
+            "noteId": { "type": "string" },
+            "appliesToAgents": {
+              "type": "array",
+              "items": { "type": "string" }
+            },
+            "appliesToTaskFamilies": {
+              "type": "array",
+              "items": { "type": "string" }
+            },
+            "topics": {
+              "type": "array",
+              "items": { "type": "string" }
+            },
+            "lexicalTriggers": {
+              "type": "array",
+              "items": { "type": "string" }
+            },
+            "preferredArticleIds": {
+              "type": "array",
+              "items": { "type": "string" }
+            },
+            "qualityAxes": {
+              "type": "array",
+              "items": { "type": "string" }
+            },
+            "guidance": {
+              "type": "array",
+              "items": { "type": "string" }
+            }
+          },
+          "additionalProperties": true
+        },
         "note": {
           "type": "string"
         }

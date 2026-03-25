@@ -74,6 +74,22 @@
     "maxGuidanceItemsPerArticle": 3,
     "maxPromptBlockChars": 1800
   },
+  "stabilization": {
+    "enabled": true,
+    "playbookTitle": "FRONTEND_QUALITY_PLAYBOOK",
+    "applyToAgents": [
+      "default",
+      "frontend_worker"
+    ],
+    "applyToTaskFamilies": [
+      "web_creative"
+    ],
+    "minSuccessfulTurnsForPromotion": 2,
+    "minSuccessRate": 0.67,
+    "maxPromotedNotes": 4,
+    "maxGuidanceItemsPerNote": 3,
+    "maxPromptNotes": 2
+  },
   "selfImprovement": {
     "enabled": true,
     "proposalSchema": "self-improvement-proposal.v1",
@@ -91,6 +107,8 @@
     "curatedDocPath": "docs/OPENAI_DEVELOPER_LEARNINGS.md",
     "selfImprovementProposalDir": "output/openai_blog_self_improvement_proposals",
     "selfImprovementStatePath": "output/openai_blog_self_improvement_state.json",
-    "selfImprovementGatePath": "output/openai_blog_self_improvement_gate.json"
+    "selfImprovementGatePath": "output/openai_blog_self_improvement_gate.json",
+    "stabilizationMemoryPath": "output/openai_blog_reinforcement_memory.json",
+    "stabilizationPlaybookPath": "docs/FRONTEND_QUALITY_PLAYBOOK.md"
   }
 }

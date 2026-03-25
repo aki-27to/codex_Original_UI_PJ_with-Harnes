@@ -153,6 +153,7 @@ const {
   defaultOpenAIBlogLearningPolicyPath,
   loadOpenAIBlogLearningPolicy,
   buildRuntimeSnapshotFromArtifacts:buildOpenAIBlogLearningRuntimeSnapshot,
+  recordOpenAIBlogLearningObservation,
   runOpenAIBlogLearningCycle,
 }=require("./scripts/lib/openai_blog_learning");
 const {
@@ -10331,6 +10332,25 @@ async function executeTurnStreaming(res,prompt,agentName,options){
       observedSignals,
       parentDispatchGuard,
     },{persist:false});
+    try{
+      recordOpenAIBlogLearningObservation({
+        policy:buildResolvedOpenAIBlogLearningPolicy(),
+        turnId,
+        threadId,
+        agentName,
+        finalStatus,
+        taskOutcomeStatus:taskOutcome.status,
+        planningContext,
+        familyCompletionGate,
+        externalLearning:externalLearningRetrieval,
+        now:Date.now(),
+      });
+    }catch(error){
+      logOperation("openai_blog_learning.observation_failed",{
+        turn:safeString(turnId,120),
+        err:summarizeErrorForOperationLog(error,220),
+      });
+    }
     debugFinalize("after_execution_memory");
     const completedAt=Number.isFinite(Number(turnRecord.completedAt))?Math.max(0,Math.trunc(Number(turnRecord.completedAt))):nowTs();
     const turnDurationMs=Math.max(0,completedAt-Number(turnRecord.startedAt||completedAt));

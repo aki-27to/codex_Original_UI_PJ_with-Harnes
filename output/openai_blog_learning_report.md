@@ -1,7 +1,7 @@
 # OPENAI_BLOG_LEARNING_REPORT
 
 - status: PASS
-- generatedAt: 2026-03-25T11:25:33.023Z
+- generatedAt: 2026-03-25T14:28:48.485Z
 - trackedArticles: 6
 - newArticlesThisRun: 0
 - pendingProposals: 6
@@ -10,6 +10,8 @@
 - digestPath: output/openai_blog_learning_digest.json
 - reportPath: output/openai_blog_learning_report.md
 - curatedDocPath: docs/OPENAI_DEVELOPER_LEARNINGS.md
+- selfImprovementStatePath: output/openai_blog_self_improvement_state.json
+- selfImprovementGatePath: output/openai_blog_self_improvement_gate.json
 
 ## Recent Articles
 
@@ -28,3 +30,12 @@
 - Building frontend UIs with Codex and Figma | OpenAI Developers -> docs/CONTEXT_MEMORY_POLICY.md (proposal_only)
 - Run long horizon tasks with Codex | OpenAI Developers -> docs/CONTEXT_MEMORY_POLICY.md (proposal_only)
 - Shell + Skills + Compaction: Tips for long-running agents that do real work | OpenAI Developers -> docs/CONTEXT_MEMORY_POLICY.md (proposal_only)
+
+## Self Improvement
+
+- gateStatus: PASS
+- appliedDecision: applied
+- appliedHintCount: 6
+- appliedFrontendQualityNoteCount: 0
+- proposalOnlyCount: 0
+- blockedCount: 0

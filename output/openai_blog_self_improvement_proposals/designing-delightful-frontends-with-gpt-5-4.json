@@ -1,7 +1,7 @@
 {
   "schema": "self-improvement-proposal.v1",
   "proposalId": "openai-blog-designing-delightful-frontends-with-gpt-5-4-self-improvement",
-  "createdAt": "2026-03-25T12:37:59.488Z",
+  "createdAt": "2026-03-25T14:31:59.958Z",
   "sourceLane": "OpenAI Developers Blog",
   "sourceTier": "primary",
   "articleId": "designing-delightful-frontends-with-gpt-5-4",
@@ -59,6 +59,40 @@
       ],
       "topicBoost": 3,
       "articleBoost": 8
+    },
+    "frontendQualityNote": {
+      "noteId": "designing-delightful-frontends-with-gpt-5-4-frontend-quality",
+      "appliesToAgents": [
+        "default",
+        "frontend_worker"
+      ],
+      "appliesToTaskFamilies": [
+        "web_creative"
+      ],
+      "topics": [
+        "context",
+        "evals",
+        "frontend",
+        "safety"
+      ],
+      "lexicalTriggers": [
+        "design system",
+        "typography",
+        "prompt budget",
+        "working state"
+      ],
+      "preferredArticleIds": [
+        "designing-delightful-frontends-with-gpt-5-4"
+      ],
+      "qualityAxes": [
+        "typography",
+        "hierarchy"
+      ],
+      "guidance": [
+        "better use of tools to inspect, test, and verify its own work",
+        "stronger image understanding throughout the design process",
+        "GPT-5.4 has learned this wide spectrum of design approaches and understands many different ways a website can be built."
+      ]
     }
   },
   "promotion": {

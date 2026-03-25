@@ -9,6 +9,7 @@ const {
   buildRuntimeLearningSelection,
   buildRuntimePromptInjection,
   normalizeOpenAIBlogLearningPolicy,
+  recordOpenAIBlogLearningObservation,
   runOpenAIBlogLearningCycle,
   buildRuntimeSnapshotFromArtifacts,
 } = require("./lib/openai_blog_learning");
@@ -121,6 +122,16 @@ async function run() {
       maxGuidanceItemsPerArticle: 2,
       maxPromptBlockChars: 1200,
     },
+    stabilization: {
+      enabled: true,
+      applyToAgents: ["default", "frontend_worker"],
+      applyToTaskFamilies: ["web_creative"],
+      minSuccessfulTurnsForPromotion: 2,
+      minSuccessRate: 0.67,
+      maxPromotedNotes: 4,
+      maxGuidanceItemsPerNote: 3,
+      maxPromptNotes: 2,
+    },
     selfImprovement: {
       enabled: true,
       promotionPolicyPath: path.resolve(__dirname, "config", "self_improvement_promotion_policy.json"),
@@ -132,6 +143,8 @@ async function run() {
       selfImprovementProposalDir: "output/openai_blog_self_improvement_proposals",
       selfImprovementStatePath: "output/openai_blog_self_improvement_state.json",
       selfImprovementGatePath: "output/openai_blog_self_improvement_gate.json",
+      stabilizationMemoryPath: "output/openai_blog_reinforcement_memory.json",
+      stabilizationPlaybookPath: "docs/FRONTEND_QUALITY_PLAYBOOK.md",
     },
   }, { policyPath });
 
@@ -163,6 +176,7 @@ async function run() {
   assert(fs.existsSync(path.join(workspaceRoot, "output", "openai_blog_self_improvement_proposals", "designing-delightful-frontends-with-gpt-5-4.json")), "self improvement proposal artifact should be written");
   assert(fs.existsSync(path.join(workspaceRoot, "output", "openai_blog_self_improvement_state.json")), "self improvement state artifact should be written");
   assert(fs.existsSync(path.join(workspaceRoot, "output", "openai_blog_self_improvement_gate.json")), "self improvement gate artifact should be written");
+  assert(fs.existsSync(path.join(workspaceRoot, "docs", "FRONTEND_QUALITY_PLAYBOOK.md")), "frontend quality playbook should be written");
   const longHorizonArticle = first.ledger.articles.find((entry) => entry.articleId === "run-long-horizon-tasks-with-codex");
   assert(longHorizonArticle, "run-long-horizon article should be present in the ledger");
   assert.notStrictEqual(longHorizonArticle.summary, "OpenAI Developer Blog", "summary should not keep the boilerplate page description");
@@ -170,6 +184,7 @@ async function run() {
   assert(first.selfImprovement && first.selfImprovement.state, "self improvement state should be returned");
   assert.strictEqual(first.selfImprovement.gate.status, "PASS", "self improvement gate should pass fixture coverage");
   assert(first.selfImprovement.state.appliedHintCount >= 1, "primary lane should auto-apply at least one bounded runtime hint");
+  assert.strictEqual(Number(first.selfImprovement.state.appliedFrontendQualityNoteCount) || 0, 0, "frontend quality notes should not auto-apply before reinforcement");
 
   const second = await runOpenAIBlogLearningCycle({
     policy,
@@ -192,6 +207,7 @@ async function run() {
   assert(runtime.runtimeRetrieval && runtime.runtimeRetrieval.enabled === true, "runtime snapshot should surface runtime retrieval posture");
   assert(runtime.selfImprovement && runtime.selfImprovement.gateStatus === "PASS", "runtime snapshot should surface self improvement gate status");
   assert(Number(runtime.selfImprovement.appliedHintCount) >= 1, "runtime snapshot should surface applied hint count");
+  assert.strictEqual(Number(runtime.selfImprovement.appliedFrontendQualityNoteCount) || 0, 0, "runtime snapshot should not claim reinforced notes before observations");
 
   const planningContext = {
     selection: {
@@ -234,8 +250,48 @@ async function run() {
   assert(injection.prompt.includes("[HARNESS_EXTERNAL_LEARNING_CONTEXT_V1]"), "injected prompt should include the learning marker");
   assert(injection.prompt.includes("Designing delightful frontends with GPT-5.4"), "injected prompt should reference the matched official article");
   assert(Array.isArray(injection.matchedHintIds) && injection.matchedHintIds.length >= 1, "prompt injection should surface matched self improvement hints");
+  assert(Array.isArray(injection.matchedFrontendQualityNoteIds) && injection.matchedFrontendQualityNoteIds.length === 0, "frontend quality notes should not appear before reinforcement");
 
-  console.log("[openai-blog-learning-test] PASS cycle, self-improvement gate, runtime snapshot, and runtime retrieval injection");
+  recordOpenAIBlogLearningObservation({
+    policy,
+    turnId: "turn-001",
+    threadId: "thread-001",
+    agentName: "default",
+    finalStatus: "completed",
+    taskOutcomeStatus: "COMPLETED",
+    planningContext,
+    familyCompletionGate: { applies: true, status: "passed" },
+    externalLearning: injection,
+    now: new Date("2026-03-23T07:00:00.000Z"),
+  });
+  const reinforcementResult = recordOpenAIBlogLearningObservation({
+    policy,
+    turnId: "turn-002",
+    threadId: "thread-001",
+    agentName: "default",
+    finalStatus: "completed",
+    taskOutcomeStatus: "COMPLETED",
+    planningContext,
+    familyCompletionGate: { applies: true, status: "passed" },
+    externalLearning: injection,
+    now: new Date("2026-03-23T08:00:00.000Z"),
+  });
+  assert(reinforcementResult && reinforcementResult.skipped === false, "second reinforcement observation should be recorded");
+  assert(fs.existsSync(path.join(workspaceRoot, "output", "openai_blog_reinforcement_memory.json")), "reinforcement memory should be written");
+  const reinforcedState = JSON.parse(fs.readFileSync(path.join(workspaceRoot, "output", "openai_blog_self_improvement_state.json"), "utf8"));
+  assert(Number(reinforcedState.appliedFrontendQualityNoteCount) >= 1, "reinforced frontend quality note should auto-apply after repeated successful turns");
+  const reinforcedPlaybook = fs.readFileSync(path.join(workspaceRoot, "docs", "FRONTEND_QUALITY_PLAYBOOK.md"), "utf8");
+  assert(/designing-delightful-frontends-with-gpt-5-4-frontend-quality/i.test(reinforcedPlaybook), "playbook should contain the promoted frontend quality note id");
+  const reinforcedInjection = buildRuntimePromptInjection({
+    prompt: "Build a benchmarked landing page in React and verify the final UI with screenshots.",
+    agentName: "default",
+    planningContext,
+    policy,
+  });
+  assert(Array.isArray(reinforcedInjection.matchedFrontendQualityNoteIds) && reinforcedInjection.matchedFrontendQualityNoteIds.length >= 1, "reinforced runtime injection should surface frontend quality note ids");
+  assert(/Harness-stabilized frontend quality notes:/i.test(reinforcedInjection.prompt), "reinforced runtime injection should include the stabilized playbook block");
+
+  console.log("[openai-blog-learning-test] PASS cycle, reinforcement, self-improvement gate, runtime snapshot, and runtime retrieval injection");
   console.log("PASS");
 }
 
