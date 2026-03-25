@@ -213,6 +213,9 @@ async function run() {
       maxGuidanceItemsPerArticle: 1,
       maxPromptBlockChars: 600,
     },
+    stabilization: {
+      enabled: false,
+    },
     presentation: {
       curatedDocTitle: "ANTHROPIC_ENGINEERING_LEARNINGS",
       reportTitle: "ANTHROPIC_ENGINEERING_LEARNING_REPORT",
@@ -271,6 +274,8 @@ async function run() {
   assert(fs.existsSync(path.join(workspaceRoot, "output", "anthropic_engineering_learning_proposals", "demystifying-evals-for-ai-agents.json")), "proposal artifact should be written");
   assert(fs.existsSync(path.join(workspaceRoot, "output", "anthropic_engineering_self_improvement_state.json")), "secondary self improvement state artifact should be written");
   assert(fs.existsSync(path.join(workspaceRoot, "output", "anthropic_engineering_self_improvement_gate.json")), "secondary self improvement gate artifact should be written");
+  assert(!fs.existsSync(path.join(workspaceRoot, "docs", "FRONTEND_QUALITY_PLAYBOOK.md")), "secondary lane should not write the primary frontend quality playbook");
+  assert(!fs.existsSync(path.join(workspaceRoot, "output", "anthropic_engineering_reinforcement_memory.json")), "secondary lane should not write reinforcement memory when stabilization is disabled");
   assert(!fs.existsSync(path.join(workspaceRoot, "output", "anthropic_engineering_learning_proposals", "eval-awareness-browsecomp.json")), "vendor specific article should be excluded");
   const harnessArticle = first.ledger.articles.find((entry) => entry.articleId === "harness-design-long-running-apps");
   assert(harnessArticle, "harness design article should be present in the ledger");
@@ -295,6 +300,8 @@ async function run() {
   assert(runtime.curatedDocPath.endsWith("docs/ANTHROPIC_ENGINEERING_LEARNINGS.md"), "runtime snapshot should surface anthropic curated doc path");
   assert(runtime.runtimeRetrieval && runtime.runtimeRetrieval.enabled === false, "secondary lane runtime retrieval should stay disabled");
   assert(runtime.selfImprovement && runtime.selfImprovement.appliedDecision === "none", "secondary runtime snapshot should expose proposal-first self improvement state");
+  assert.strictEqual(runtime.selfImprovement.playbookPath, "", "secondary runtime snapshot should not expose a primary playbook path");
+  assert.strictEqual(runtime.selfImprovement.reinforcementMemoryPath, "", "secondary runtime snapshot should not expose reinforcement memory when stabilization is disabled");
 
   console.log("[anthropic-engineering-learning-test] PASS cycle, portability filter, self-improvement state, and runtime snapshot");
   console.log("PASS");

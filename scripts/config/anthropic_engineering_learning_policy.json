@@ -89,6 +89,9 @@
     "maxGuidanceItemsPerArticle": 0,
     "maxPromptBlockChars": 600
   },
+  "stabilization": {
+    "enabled": false
+  },
   "selfImprovement": {
     "enabled": true,
     "proposalSchema": "self-improvement-proposal.v1",

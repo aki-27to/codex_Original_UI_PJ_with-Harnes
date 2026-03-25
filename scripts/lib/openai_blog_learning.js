@@ -1148,7 +1148,7 @@ function normalizeOpenAIBlogLearningPolicy(policy, { policyPath = defaultOpenAIB
     stabilization: {
       enabled: source && source.stabilization && Object.prototype.hasOwnProperty.call(source.stabilization, "enabled")
         ? Boolean(source.stabilization.enabled)
-        : true,
+        : false,
       playbookTitle: safeString(source && source.stabilization && source.stabilization.playbookTitle, 120) || "FRONTEND_QUALITY_PLAYBOOK",
       applyToAgents: Array.isArray(source && source.stabilization && source.stabilization.applyToAgents)
         ? source.stabilization.applyToAgents.map((entry) => safeString(entry, 80)).filter(Boolean)
@@ -1203,7 +1203,7 @@ function normalizeOpenAIBlogLearningPolicy(policy, { policyPath = defaultOpenAIB
     selfImprovementStatePath: resolveWorkspacePath(workspaceRoot, source && source.paths && source.paths.selfImprovementStatePath, `output/${normalizedArtifactPrefix}_self_improvement_state.json`),
     selfImprovementGatePath: resolveWorkspacePath(workspaceRoot, source && source.paths && source.paths.selfImprovementGatePath, `output/${normalizedArtifactPrefix}_self_improvement_gate.json`),
     stabilizationMemoryPath: resolveWorkspacePath(workspaceRoot, source && source.paths && source.paths.stabilizationMemoryPath, `output/${normalizedArtifactPrefix}_reinforcement_memory.json`),
-    stabilizationPlaybookPath: resolveWorkspacePath(workspaceRoot, source && source.paths && source.paths.stabilizationPlaybookPath, "docs/FRONTEND_QUALITY_PLAYBOOK.md"),
+    stabilizationPlaybookPath: resolveWorkspacePath(workspaceRoot, source && source.paths && source.paths.stabilizationPlaybookPath, `docs/${normalizedArtifactPrefix}_quality_playbook.md`),
   };
   return normalized;
 }
@@ -2350,7 +2350,8 @@ function refreshSelfImprovementArtifacts({ policy, ledger = null, digest = null,
   const promotionInfo = loadSelfImprovementPromotionPolicy(normalizedPolicy);
   const promotionPolicy = promotionInfo.policy;
   const previousState = readJsonIfExists(normalizedPolicy.paths.selfImprovementStatePath) || {};
-  const reinforcementMemory = loadStabilizationMemory(normalizedPolicy);
+  const stabilizationEnabled = Boolean(normalizedPolicy.stabilization && normalizedPolicy.stabilization.enabled);
+  const reinforcementMemory = stabilizationEnabled ? loadStabilizationMemory(normalizedPolicy) : null;
   const proposals = resolvedLedger.articles.map((article) => buildSelfImprovementProposal(article, normalizedPolicy, promotionPolicy, nowIso));
   const writtenProposalPaths = new Set();
   proposals.forEach((proposal) => {
@@ -2398,15 +2399,17 @@ function refreshSelfImprovementArtifacts({ policy, ledger = null, digest = null,
   });
   writeJson(normalizedPolicy.paths.selfImprovementGatePath, gate);
   writeJson(normalizedPolicy.paths.selfImprovementStatePath, state);
-  writeJson(normalizedPolicy.paths.stabilizationMemoryPath, reinforcementMemory);
-  writeText(
-    normalizedPolicy.paths.stabilizationPlaybookPath,
-    buildFrontendQualityPlaybook({
-      policy: normalizedPolicy,
-      selfImprovementState: state,
-      reinforcementMemory,
-    })
-  );
+  if (stabilizationEnabled) {
+    writeJson(normalizedPolicy.paths.stabilizationMemoryPath, reinforcementMemory);
+    writeText(
+      normalizedPolicy.paths.stabilizationPlaybookPath,
+      buildFrontendQualityPlaybook({
+        policy: normalizedPolicy,
+        selfImprovementState: state,
+        reinforcementMemory,
+      })
+    );
+  }
   return {
     proposals,
     gate,
@@ -2418,8 +2421,8 @@ function refreshSelfImprovementArtifacts({ policy, ledger = null, digest = null,
       statePath: repoRelative(normalizedPolicy.workspaceRoot, normalizedPolicy.paths.selfImprovementStatePath),
       gatePath: repoRelative(normalizedPolicy.workspaceRoot, normalizedPolicy.paths.selfImprovementGatePath),
       promotionPolicyPath: repoRelative(normalizedPolicy.workspaceRoot, promotionInfo.path),
-      stabilizationMemoryPath: repoRelative(normalizedPolicy.workspaceRoot, normalizedPolicy.paths.stabilizationMemoryPath),
-      stabilizationPlaybookPath: repoRelative(normalizedPolicy.workspaceRoot, normalizedPolicy.paths.stabilizationPlaybookPath),
+      stabilizationMemoryPath: stabilizationEnabled ? repoRelative(normalizedPolicy.workspaceRoot, normalizedPolicy.paths.stabilizationMemoryPath) : "",
+      stabilizationPlaybookPath: stabilizationEnabled ? repoRelative(normalizedPolicy.workspaceRoot, normalizedPolicy.paths.stabilizationPlaybookPath) : "",
     },
   };
 }
@@ -2429,7 +2432,8 @@ function buildRuntimeSnapshotFromArtifacts(policy, runtimeState = {}) {
   const digest = readJsonIfExists(policy.paths.digestPath) || {};
   const selfImprovementState = readJsonIfExists(policy.paths.selfImprovementStatePath) || {};
   const selfImprovementGate = readJsonIfExists(policy.paths.selfImprovementGatePath) || {};
-  const reinforcementMemory = readJsonIfExists(policy.paths.stabilizationMemoryPath) || {};
+  const stabilizationEnabled = Boolean(policy && policy.stabilization && policy.stabilization.enabled);
+  const reinforcementMemory = stabilizationEnabled ? (readJsonIfExists(policy.paths.stabilizationMemoryPath) || {}) : {};
   const summary = ledger && ledger.summary && typeof ledger.summary === "object" ? ledger.summary : {};
   const articles = Array.isArray(ledger && ledger.articles) ? ledger.articles : [];
   const recentArticles = articles.slice(0, 4).map((article) => ({
@@ -2520,10 +2524,10 @@ function buildRuntimeSnapshotFromArtifacts(policy, runtimeState = {}) {
       appliedFrontendQualityNoteIds: Array.isArray(selfImprovementState && selfImprovementState.appliedFrontendQualityNoteIds)
         ? selfImprovementState.appliedFrontendQualityNoteIds.slice(0, 8)
         : [],
-      playbookPath: repoRelative(policy.workspaceRoot, policy.paths.stabilizationPlaybookPath),
-      reinforcementMemoryPath: repoRelative(policy.workspaceRoot, policy.paths.stabilizationMemoryPath),
-      lastObservedAt: safeString(reinforcementMemory && reinforcementMemory.lastObservedAt, 40),
-      observationCount: Math.max(0, Math.trunc(Number(reinforcementMemory && reinforcementMemory.observationCount) || 0)),
+      playbookPath: stabilizationEnabled ? repoRelative(policy.workspaceRoot, policy.paths.stabilizationPlaybookPath) : "",
+      reinforcementMemoryPath: stabilizationEnabled ? repoRelative(policy.workspaceRoot, policy.paths.stabilizationMemoryPath) : "",
+      lastObservedAt: stabilizationEnabled ? safeString(reinforcementMemory && reinforcementMemory.lastObservedAt, 40) : "",
+      observationCount: stabilizationEnabled ? Math.max(0, Math.trunc(Number(reinforcementMemory && reinforcementMemory.observationCount) || 0)) : 0,
     },
     freezeAware: {
       requirementFoundationV1: "bug_fix_only",

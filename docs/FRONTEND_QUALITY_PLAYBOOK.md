@@ -3,9 +3,9 @@
 Generated, machine-gated, and non-constitutional.
 Only reinforced web-creative frontend quality notes are promoted here.
 
-- source: Anthropic Engineering
-- generatedAt: 2026-03-25T14:31:59.974Z
+- source: OpenAI Developers Blog
+- generatedAt: 2026-03-25T14:36:54.603Z
 - promotedNotes: 0
-- memoryPath: output/anthropic_engineering_reinforcement_memory.json
+- memoryPath: output/openai_blog_reinforcement_memory.json
 
 No reinforced frontend quality notes have crossed the promotion threshold yet.
