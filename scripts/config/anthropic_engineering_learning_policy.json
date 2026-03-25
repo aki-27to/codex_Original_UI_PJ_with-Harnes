@@ -1,0 +1,115 @@
+{
+  "schema": "anthropic-engineering-learning-policy.v1",
+  "source": {
+    "name": "Anthropic Engineering",
+    "indexUrl": "https://www.anthropic.com/engineering",
+    "tier": "secondary",
+    "userAgent": "codex-harness-anthropic-engineering-learning/1.0",
+    "allowedHosts": [
+      "www.anthropic.com",
+      "anthropic.com"
+    ]
+  },
+  "cadence": {
+    "intervalMinutes": 1440,
+    "startupDelayMs": 15000,
+    "requestTimeoutMs": 15000,
+    "maxArticlesPerRun": 8,
+    "maxGuidanceItemsPerArticle": 6
+  },
+  "governance": {
+    "mode": "observe_propose_and_secondary_doc_sync",
+    "autoPromoteDocs": true,
+    "autoPromoteDocPath": "docs/ANTHROPIC_ENGINEERING_LEARNINGS.md",
+    "blockedApplyTargets": [
+      "AGENTS.md"
+    ],
+    "proposalOnlyTargets": [
+      "docs/AGENT_OPERATING_RULES.md",
+      "docs/AGENT_SKILL_MATRIX.md",
+      "docs/CONTEXT_MEMORY_POLICY.md",
+      "docs/EVIDENCE_CONTRACT.md",
+      "scripts/config/eval_suite_default.json",
+      "skills/web-designer-master/references/quality-gate.md"
+    ],
+    "frozenFoundationTargets": [
+      "docs/PHASE_REQUIREMENT_FOUNDATION_V1.md",
+      "scripts/lib/planning_mode_policy.js",
+      "scripts/config/requirement_contract.schema.json",
+      "scripts/config/dispatch_plan.schema.json",
+      "scripts/lib/requirement_revision_policy.js"
+    ]
+  },
+  "retrieval": {
+    "maxTopicEntries": 6,
+    "allowedTopics": [
+      "agents",
+      "automation",
+      "codex",
+      "context",
+      "evals",
+      "frontend",
+      "safety",
+      "skills"
+    ]
+  },
+  "filters": {
+    "requirePortablePrinciples": true,
+    "portableGuidanceOnly": true,
+    "excludeTitlePatterns": [
+      "Claude",
+      "BrowseComp",
+      "Developer Platform",
+      "SWE-bench Verified with Claude"
+    ],
+    "vendorTerms": [
+      "claude",
+      "claude code",
+      "claude opus",
+      "claude sonnet",
+      "claude haiku"
+    ]
+  },
+  "runtimeRetrieval": {
+    "enabled": false,
+    "shadowMode": false,
+    "applyToAgents": [],
+    "applyToTaskFamilies": [],
+    "topicPriority": [
+      "context",
+      "evals",
+      "agents",
+      "automation",
+      "safety",
+      "codex",
+      "frontend",
+      "skills"
+    ],
+    "maxArticles": 0,
+    "maxGuidanceItemsPerArticle": 0,
+    "maxPromptBlockChars": 600
+  },
+  "presentation": {
+    "curatedDocTitle": "ANTHROPIC_ENGINEERING_LEARNINGS",
+    "reportTitle": "ANTHROPIC_ENGINEERING_LEARNING_REPORT",
+    "introLines": [
+      "This file is auto-synced from the Anthropic Engineering secondary learning lane.",
+      "Only portable agent-engineering principles are retained here; Claude-specific mechanics do not become runtime policy."
+    ]
+  },
+  "artifacts": {
+    "proposalIdPrefix": "anthropic-engineering",
+    "articleSchema": "anthropic-engineering-learning-article.v1",
+    "digestSchema": "anthropic-engineering-learning-digest.v1",
+    "ledgerSchema": "anthropic-engineering-learning-ledger.v1",
+    "proposalSchema": "anthropic-engineering-learning-proposal.v1",
+    "runtimeSchema": "anthropic-engineering-learning-runtime.v1"
+  },
+  "paths": {
+    "ledgerPath": "output/anthropic_engineering_learning_ledger.json",
+    "digestPath": "output/anthropic_engineering_learning_digest.json",
+    "reportPath": "output/anthropic_engineering_learning_report.md",
+    "proposalDir": "output/anthropic_engineering_learning_proposals",
+    "curatedDocPath": "docs/ANTHROPIC_ENGINEERING_LEARNINGS.md"
+  }
+}

@@ -902,6 +902,7 @@ async function run() {
       extraEnv: {
         CODEX_REQUIREMENT_GUARD_ENABLED: "0",
         CODEX_OPENAI_BLOG_LEARNING_ENABLED: "0",
+        CODEX_ANTHROPIC_ENGINEERING_LEARNING_ENABLED: "0",
       },
     });
     const runtimeReady = await waitForRuntimeCondition((runtime) => runtime && runtime.mode === "app-server", {
@@ -944,6 +945,18 @@ async function run() {
     }
     if (runtimeReady.external_learning.runtimeRetrieval.enabled !== false) {
       throw new Error("runtime external_learning.runtimeRetrieval.enabled was not false when global learning was disabled");
+    }
+    if (!runtimeReady.secondary_learning || typeof runtimeReady.secondary_learning !== "object") {
+      throw new Error("runtime did not expose secondary_learning");
+    }
+    if (!runtimeReady.secondary_learning.anthropic_engineering || typeof runtimeReady.secondary_learning.anthropic_engineering !== "object") {
+      throw new Error("runtime secondary_learning did not expose anthropic_engineering");
+    }
+    if (runtimeReady.secondary_learning.anthropic_engineering.enabled !== false) {
+      throw new Error("runtime secondary_learning.anthropic_engineering.enabled was not false when disabled by env");
+    }
+    if (typeof runtimeReady.secondary_learning.anthropic_engineering.curatedDocPath !== "string" || !runtimeReady.secondary_learning.anthropic_engineering.curatedDocPath) {
+      throw new Error("runtime secondary_learning.anthropic_engineering did not expose curatedDocPath");
     }
     if (!runtimeReady.adversarialShadow || typeof runtimeReady.adversarialShadow !== "object") {
       throw new Error("runtime did not expose adversarialShadow snapshot");

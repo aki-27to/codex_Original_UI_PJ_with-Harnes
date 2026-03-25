@@ -592,6 +592,8 @@ function renderMemory(payload) {
   const memory = payload && payload.memory ? payload.memory : {};
   const execution = memory.execution || {};
   const externalLearning = memory.externalLearning || (payload && payload.runtime && payload.runtime.externalLearning) || {};
+  const secondaryLearning = memory.secondaryLearning || (payload && payload.runtime && payload.runtime.secondaryLearning) || {};
+  const anthropicEngineering = secondaryLearning.anthropicEngineering || secondaryLearning.anthropic_engineering || {};
   const recentTurns = toArr(execution.recent).slice(0, 5).map((entry) => ({
     title: `${safeText(entry.agentName, "agent")} / ${safeText(entry.taskOutcomeStatus || entry.status, "status")}`,
     tags: [
@@ -667,6 +669,18 @@ function renderMemory(payload) {
     title: safeText(entry.title, "proposal"),
     detail: `${safeText(entry.target, "")} / ${safeText(entry.status, "proposal_only")}`,
   }));
+  const anthropicArticles = toArr(anthropicEngineering.recentArticles).map((entry) => ({
+    title: safeText(entry.title, "article"),
+    tags: [
+      { label: safeText(entry.relevance, "unknown"), tone: safeText(entry.relevance, "low") === "high" ? "pass" : safeText(entry.relevance, "low") === "medium" ? "warn" : "neutral" },
+      { label: safeText(entry.portability, anthropicEngineering.portabilityMode === "portable_principles_only" ? "portable" : "mixed"), tone: safeText(entry.portability, "portable") === "portable" ? "pass" : "warn" },
+    ],
+    detail: `${safeText(entry.indexDateLabel, "-")} / ${safeText(entry.url, "")}`,
+  }));
+  const anthropicProposals = toArr(anthropicEngineering.pendingProposals).map((entry) => ({
+    title: safeText(entry.title, "proposal"),
+    detail: `${safeText(entry.target, "")} / ${safeText(entry.status, "proposal_only")}`,
+  }));
   if (elements.externalLearningCard) {
     const runtimeRetrieval = externalLearning.runtimeRetrieval && typeof externalLearning.runtimeRetrieval === "object"
       ? externalLearning.runtimeRetrieval
@@ -687,6 +701,16 @@ function renderMemory(payload) {
       ])}
       ${itemListHtml(learningArticles.slice(0, 4), "No recent official learning articles are tracked yet.")}
       ${itemListHtml(learningProposals.slice(0, 4), "No governed promotion proposals are pending.")}
+      ${anthropicEngineering && (anthropicEngineering.sourceName || anthropicEngineering.enabled !== undefined) ? `
+      <h4>Secondary Source</h4>
+      ${factRowsHtml([
+        { label: "Source", value: safeText(anthropicEngineering.sourceName, "Anthropic Engineering"), detail: safeText(anthropicEngineering.sourceUrl, "") },
+        { label: "Cadence", value: `${formatInteger(num(anthropicEngineering.intervalMinutes, 0))} min`, detail: `next ${safeText(anthropicEngineering.nextRunAt, "-")}` },
+        { label: "Mode", value: safeText(anthropicEngineering.portabilityMode, "portable_principles_only"), detail: safeText(anthropicEngineering.curatedDocPath, "") },
+      ])}
+      ${itemListHtml(anthropicArticles.slice(0, 3), "No secondary learning articles are tracked yet.")}
+      ${itemListHtml(anthropicProposals.slice(0, 3), "No secondary learning proposals are pending.")}
+      ` : ""}
     `;
   }
   const roleCheckItems = toArr(skillPortfolio.roleChecks).map((entry) => ({

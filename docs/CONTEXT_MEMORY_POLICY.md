@@ -55,6 +55,8 @@ Define how the harness preserves, summarizes, shares, and externalizes context s
 ## 6) External Learning Memory
 
 - Official external learnings must be ingested into dedicated artifacts such as `output/openai_blog_learning_ledger.json`, `output/openai_blog_learning_digest.json`, and `docs/OPENAI_DEVELOPER_LEARNINGS.md` rather than copied into every prompt.
+- Secondary external learnings may be ingested from non-OpenAI sources only when they are explicitly labeled as secondary, stored in separate artifacts, and prevented from outranking the primary OpenAI lane.
+- Secondary sources must retain only portable agent-engineering principles. Vendor-specific mechanics, model-marketing claims, and model-family-specific benchmark notes do not become runtime policy.
 - Retrieval must stay selective: only inject learnings that match the current task family or subsystem, and cap the number of promoted guidance items.
 - Runtime retrieval must stay bounded and gated: apply only to explicitly allowed agents/task families, keep a kill switch, and prefer shadow/proposal modes before widening the scope.
 - External learnings are advisory memory, not constitutional truth. They must not silently override `AGENTS.md` or frozen Step 1/2 behavior.

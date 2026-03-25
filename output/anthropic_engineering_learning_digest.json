@@ -1,0 +1,455 @@
+{
+  "schema": "anthropic-engineering-learning-digest.v1",
+  "generatedAt": "2026-03-25T11:02:27.227Z",
+  "source": {
+    "name": "Anthropic Engineering",
+    "indexUrl": "https://www.anthropic.com/engineering"
+  },
+  "summary": {
+    "trackedArticles": 5,
+    "newArticlesThisRun": 0,
+    "pendingProposals": 5,
+    "blockedTargets": 0,
+    "promotedDocUpdates": 5
+  },
+  "topics": {
+    "agents": [
+      {
+        "articleId": "infrastructure-noise",
+        "title": "Quantifying infrastructure noise in agentic coding evals",
+        "url": "https://www.anthropic.com/engineering/infrastructure-noise",
+        "relevance": "high",
+        "indexDateLabel": "",
+        "summary": "Anthropic is an AI safety and research company that's working to build reliable, interpretable, and steerable AI systems.",
+        "guidance": [
+          "Agentic coding benchmarks like SWE-bench and Terminal-Bench are commonly used to compare the software engineering capabilities of frontier models—with top spots on leaderboards often separated by just a few percentage points.",
+          "Agentic coding evals are different: models are given a full environment where they write programs, run tests, install dependencies, and iterate over multiple turns.",
+          "Eval developers have begun accounting for this.",
+          "Terminal-Bench 2.0, for instance, specifies recommended CPU and RAM on a per-task basis in their latest 2.0 release."
+        ],
+        "portability": "portable"
+      },
+      {
+        "articleId": "harness-design-long-running-apps",
+        "title": "Harness design for long-running application development",
+        "url": "https://www.anthropic.com/engineering/harness-design-long-running-apps",
+        "relevance": "high",
+        "indexDateLabel": "Mar 24, 2026",
+        "summary": "Anthropic is an AI safety and research company that's working to build reliable, interpretable, and steerable AI systems.",
+        "guidance": [
+          "Design quality: Does the design feel like a coherent whole rather than a collection of parts? Strong work here means the colors, typography, layout, imagery, and other details combine to create a distinct mood and identity.",
+          "Originality: Is there evidence of custom decisions, or is this template layouts, library defaults, and AI-generated patterns? A human designer should recognize deliberate creative choices. Unmodified stock components—or telltale signs of AI generation like purple gradients over white cards—fail here.",
+          "Craft: Technical execution: typography hierarchy, spacing consistency, color harmony, contrast ratios. This is a competence check rather than a creativity check. Most reasonable implementations do fine here by default; failing means broken fundamentals.",
+          "Functionality: Usability independent of aesthetics. Can users understand what the interface does, find primary actions, and complete tasks without guessing?"
+        ],
+        "portability": "portable"
+      },
+      {
+        "articleId": "demystifying-evals-for-ai-agents",
+        "title": "Demystifying evals for AI agents",
+        "url": "https://www.anthropic.com/engineering/demystifying-evals-for-ai-agents",
+        "relevance": "high",
+        "indexDateLabel": "Jan 09, 2026",
+        "summary": "Demystifying evals for AI agents",
+        "guidance": [
+          "A task (a.k.a problem or test case ) is a single test with defined inputs and success criteria.",
+          "Each attempt at a task is a trial . Because model outputs vary between runs, we run multiple trials to produce more consistent results.",
+          "A grader is logic that scores some aspect of the agent’s performance. A task can have multiple graders, each containing multiple assertions (sometimes called checks ) .",
+          "A transcript (also called a trace or trajectory ) is the complete record of a trial, including outputs, tool calls, reasoning, intermediate results, and any other interactions. For the Anthropic API, this is the full messages array at the end of an eval run - containing all the calls to the API and all of the returned"
+        ],
+        "portability": "mixed"
+      },
+      {
+        "articleId": "effective-harnesses-for-long-running-agents",
+        "title": "Effective harnesses for long-running agents",
+        "url": "https://www.anthropic.com/engineering/effective-harnesses-for-long-running-agents",
+        "relevance": "high",
+        "indexDateLabel": "Nov 26, 2025",
+        "summary": "Anthropic is an AI safety and research company that's working to build reliable, interpretable, and steerable AI systems.",
+        "guidance": [
+          "Coding agent: Every subsequent session asks the model to make incremental progress, then leave structured updates. 1",
+          "Run pwd to see the directory you’re working in. You’ll only be able to edit files in this directory.",
+          "Read the git logs and progress files to get up to speed on what was recently worked on.",
+          "Read the features list file and choose the highest-priority feature that’s not yet done to work on."
+        ],
+        "portability": "mixed"
+      }
+    ],
+    "evals": [
+      {
+        "articleId": "infrastructure-noise",
+        "title": "Quantifying infrastructure noise in agentic coding evals",
+        "url": "https://www.anthropic.com/engineering/infrastructure-noise",
+        "relevance": "high",
+        "indexDateLabel": "",
+        "summary": "Anthropic is an AI safety and research company that's working to build reliable, interpretable, and steerable AI systems.",
+        "guidance": [
+          "Agentic coding benchmarks like SWE-bench and Terminal-Bench are commonly used to compare the software engineering capabilities of frontier models—with top spots on leaderboards often separated by just a few percentage points.",
+          "Agentic coding evals are different: models are given a full environment where they write programs, run tests, install dependencies, and iterate over multiple turns.",
+          "Eval developers have begun accounting for this.",
+          "Terminal-Bench 2.0, for instance, specifies recommended CPU and RAM on a per-task basis in their latest 2.0 release."
+        ],
+        "portability": "portable"
+      },
+      {
+        "articleId": "harness-design-long-running-apps",
+        "title": "Harness design for long-running application development",
+        "url": "https://www.anthropic.com/engineering/harness-design-long-running-apps",
+        "relevance": "high",
+        "indexDateLabel": "Mar 24, 2026",
+        "summary": "Anthropic is an AI safety and research company that's working to build reliable, interpretable, and steerable AI systems.",
+        "guidance": [
+          "Design quality: Does the design feel like a coherent whole rather than a collection of parts? Strong work here means the colors, typography, layout, imagery, and other details combine to create a distinct mood and identity.",
+          "Originality: Is there evidence of custom decisions, or is this template layouts, library defaults, and AI-generated patterns? A human designer should recognize deliberate creative choices. Unmodified stock components—or telltale signs of AI generation like purple gradients over white cards—fail here.",
+          "Craft: Technical execution: typography hierarchy, spacing consistency, color harmony, contrast ratios. This is a competence check rather than a creativity check. Most reasonable implementations do fine here by default; failing means broken fundamentals.",
+          "Functionality: Usability independent of aesthetics. Can users understand what the interface does, find primary actions, and complete tasks without guessing?"
+        ],
+        "portability": "portable"
+      },
+      {
+        "articleId": "AI-resistant-technical-evaluations",
+        "title": "Designing AI resistant technical evaluations",
+        "url": "https://www.anthropic.com/engineering/AI-resistant-technical-evaluations",
+        "relevance": "high",
+        "indexDateLabel": "Jan 21, 2026",
+        "summary": "What we learned from three iterations of a performance engineering take-home that Claude keeps beating.",
+        "guidance": [],
+        "portability": "mixed"
+      },
+      {
+        "articleId": "demystifying-evals-for-ai-agents",
+        "title": "Demystifying evals for AI agents",
+        "url": "https://www.anthropic.com/engineering/demystifying-evals-for-ai-agents",
+        "relevance": "high",
+        "indexDateLabel": "Jan 09, 2026",
+        "summary": "Demystifying evals for AI agents",
+        "guidance": [
+          "A task (a.k.a problem or test case ) is a single test with defined inputs and success criteria.",
+          "Each attempt at a task is a trial . Because model outputs vary between runs, we run multiple trials to produce more consistent results.",
+          "A grader is logic that scores some aspect of the agent’s performance. A task can have multiple graders, each containing multiple assertions (sometimes called checks ) .",
+          "A transcript (also called a trace or trajectory ) is the complete record of a trial, including outputs, tool calls, reasoning, intermediate results, and any other interactions. For the Anthropic API, this is the full messages array at the end of an eval run - containing all the calls to the API and all of the returned"
+        ],
+        "portability": "mixed"
+      },
+      {
+        "articleId": "effective-harnesses-for-long-running-agents",
+        "title": "Effective harnesses for long-running agents",
+        "url": "https://www.anthropic.com/engineering/effective-harnesses-for-long-running-agents",
+        "relevance": "high",
+        "indexDateLabel": "Nov 26, 2025",
+        "summary": "Anthropic is an AI safety and research company that's working to build reliable, interpretable, and steerable AI systems.",
+        "guidance": [
+          "Coding agent: Every subsequent session asks the model to make incremental progress, then leave structured updates. 1",
+          "Run pwd to see the directory you’re working in. You’ll only be able to edit files in this directory.",
+          "Read the git logs and progress files to get up to speed on what was recently worked on.",
+          "Read the features list file and choose the highest-priority feature that’s not yet done to work on."
+        ],
+        "portability": "mixed"
+      }
+    ],
+    "frontend": [
+      {
+        "articleId": "infrastructure-noise",
+        "title": "Quantifying infrastructure noise in agentic coding evals",
+        "url": "https://www.anthropic.com/engineering/infrastructure-noise",
+        "relevance": "high",
+        "indexDateLabel": "",
+        "summary": "Anthropic is an AI safety and research company that's working to build reliable, interpretable, and steerable AI systems.",
+        "guidance": [
+          "Agentic coding benchmarks like SWE-bench and Terminal-Bench are commonly used to compare the software engineering capabilities of frontier models—with top spots on leaderboards often separated by just a few percentage points.",
+          "Agentic coding evals are different: models are given a full environment where they write programs, run tests, install dependencies, and iterate over multiple turns.",
+          "Eval developers have begun accounting for this.",
+          "Terminal-Bench 2.0, for instance, specifies recommended CPU and RAM on a per-task basis in their latest 2.0 release."
+        ],
+        "portability": "portable"
+      },
+      {
+        "articleId": "harness-design-long-running-apps",
+        "title": "Harness design for long-running application development",
+        "url": "https://www.anthropic.com/engineering/harness-design-long-running-apps",
+        "relevance": "high",
+        "indexDateLabel": "Mar 24, 2026",
+        "summary": "Anthropic is an AI safety and research company that's working to build reliable, interpretable, and steerable AI systems.",
+        "guidance": [
+          "Design quality: Does the design feel like a coherent whole rather than a collection of parts? Strong work here means the colors, typography, layout, imagery, and other details combine to create a distinct mood and identity.",
+          "Originality: Is there evidence of custom decisions, or is this template layouts, library defaults, and AI-generated patterns? A human designer should recognize deliberate creative choices. Unmodified stock components—or telltale signs of AI generation like purple gradients over white cards—fail here.",
+          "Craft: Technical execution: typography hierarchy, spacing consistency, color harmony, contrast ratios. This is a competence check rather than a creativity check. Most reasonable implementations do fine here by default; failing means broken fundamentals.",
+          "Functionality: Usability independent of aesthetics. Can users understand what the interface does, find primary actions, and complete tasks without guessing?"
+        ],
+        "portability": "portable"
+      },
+      {
+        "articleId": "AI-resistant-technical-evaluations",
+        "title": "Designing AI resistant technical evaluations",
+        "url": "https://www.anthropic.com/engineering/AI-resistant-technical-evaluations",
+        "relevance": "high",
+        "indexDateLabel": "Jan 21, 2026",
+        "summary": "What we learned from three iterations of a performance engineering take-home that Claude keeps beating.",
+        "guidance": [],
+        "portability": "mixed"
+      },
+      {
+        "articleId": "demystifying-evals-for-ai-agents",
+        "title": "Demystifying evals for AI agents",
+        "url": "https://www.anthropic.com/engineering/demystifying-evals-for-ai-agents",
+        "relevance": "high",
+        "indexDateLabel": "Jan 09, 2026",
+        "summary": "Demystifying evals for AI agents",
+        "guidance": [
+          "A task (a.k.a problem or test case ) is a single test with defined inputs and success criteria.",
+          "Each attempt at a task is a trial . Because model outputs vary between runs, we run multiple trials to produce more consistent results.",
+          "A grader is logic that scores some aspect of the agent’s performance. A task can have multiple graders, each containing multiple assertions (sometimes called checks ) .",
+          "A transcript (also called a trace or trajectory ) is the complete record of a trial, including outputs, tool calls, reasoning, intermediate results, and any other interactions. For the Anthropic API, this is the full messages array at the end of an eval run - containing all the calls to the API and all of the returned"
+        ],
+        "portability": "mixed"
+      },
+      {
+        "articleId": "effective-harnesses-for-long-running-agents",
+        "title": "Effective harnesses for long-running agents",
+        "url": "https://www.anthropic.com/engineering/effective-harnesses-for-long-running-agents",
+        "relevance": "high",
+        "indexDateLabel": "Nov 26, 2025",
+        "summary": "Anthropic is an AI safety and research company that's working to build reliable, interpretable, and steerable AI systems.",
+        "guidance": [
+          "Coding agent: Every subsequent session asks the model to make incremental progress, then leave structured updates. 1",
+          "Run pwd to see the directory you’re working in. You’ll only be able to edit files in this directory.",
+          "Read the git logs and progress files to get up to speed on what was recently worked on.",
+          "Read the features list file and choose the highest-priority feature that’s not yet done to work on."
+        ],
+        "portability": "mixed"
+      }
+    ],
+    "safety": [
+      {
+        "articleId": "infrastructure-noise",
+        "title": "Quantifying infrastructure noise in agentic coding evals",
+        "url": "https://www.anthropic.com/engineering/infrastructure-noise",
+        "relevance": "high",
+        "indexDateLabel": "",
+        "summary": "Anthropic is an AI safety and research company that's working to build reliable, interpretable, and steerable AI systems.",
+        "guidance": [
+          "Agentic coding benchmarks like SWE-bench and Terminal-Bench are commonly used to compare the software engineering capabilities of frontier models—with top spots on leaderboards often separated by just a few percentage points.",
+          "Agentic coding evals are different: models are given a full environment where they write programs, run tests, install dependencies, and iterate over multiple turns.",
+          "Eval developers have begun accounting for this.",
+          "Terminal-Bench 2.0, for instance, specifies recommended CPU and RAM on a per-task basis in their latest 2.0 release."
+        ],
+        "portability": "portable"
+      },
+      {
+        "articleId": "harness-design-long-running-apps",
+        "title": "Harness design for long-running application development",
+        "url": "https://www.anthropic.com/engineering/harness-design-long-running-apps",
+        "relevance": "high",
+        "indexDateLabel": "Mar 24, 2026",
+        "summary": "Anthropic is an AI safety and research company that's working to build reliable, interpretable, and steerable AI systems.",
+        "guidance": [
+          "Design quality: Does the design feel like a coherent whole rather than a collection of parts? Strong work here means the colors, typography, layout, imagery, and other details combine to create a distinct mood and identity.",
+          "Originality: Is there evidence of custom decisions, or is this template layouts, library defaults, and AI-generated patterns? A human designer should recognize deliberate creative choices. Unmodified stock components—or telltale signs of AI generation like purple gradients over white cards—fail here.",
+          "Craft: Technical execution: typography hierarchy, spacing consistency, color harmony, contrast ratios. This is a competence check rather than a creativity check. Most reasonable implementations do fine here by default; failing means broken fundamentals.",
+          "Functionality: Usability independent of aesthetics. Can users understand what the interface does, find primary actions, and complete tasks without guessing?"
+        ],
+        "portability": "portable"
+      },
+      {
+        "articleId": "effective-harnesses-for-long-running-agents",
+        "title": "Effective harnesses for long-running agents",
+        "url": "https://www.anthropic.com/engineering/effective-harnesses-for-long-running-agents",
+        "relevance": "high",
+        "indexDateLabel": "Nov 26, 2025",
+        "summary": "Anthropic is an AI safety and research company that's working to build reliable, interpretable, and steerable AI systems.",
+        "guidance": [
+          "Coding agent: Every subsequent session asks the model to make incremental progress, then leave structured updates. 1",
+          "Run pwd to see the directory you’re working in. You’ll only be able to edit files in this directory.",
+          "Read the git logs and progress files to get up to speed on what was recently worked on.",
+          "Read the features list file and choose the highest-priority feature that’s not yet done to work on."
+        ],
+        "portability": "mixed"
+      }
+    ],
+    "context": [
+      {
+        "articleId": "harness-design-long-running-apps",
+        "title": "Harness design for long-running application development",
+        "url": "https://www.anthropic.com/engineering/harness-design-long-running-apps",
+        "relevance": "high",
+        "indexDateLabel": "Mar 24, 2026",
+        "summary": "Anthropic is an AI safety and research company that's working to build reliable, interpretable, and steerable AI systems.",
+        "guidance": [
+          "Design quality: Does the design feel like a coherent whole rather than a collection of parts? Strong work here means the colors, typography, layout, imagery, and other details combine to create a distinct mood and identity.",
+          "Originality: Is there evidence of custom decisions, or is this template layouts, library defaults, and AI-generated patterns? A human designer should recognize deliberate creative choices. Unmodified stock components—or telltale signs of AI generation like purple gradients over white cards—fail here.",
+          "Craft: Technical execution: typography hierarchy, spacing consistency, color harmony, contrast ratios. This is a competence check rather than a creativity check. Most reasonable implementations do fine here by default; failing means broken fundamentals.",
+          "Functionality: Usability independent of aesthetics. Can users understand what the interface does, find primary actions, and complete tasks without guessing?"
+        ],
+        "portability": "portable"
+      },
+      {
+        "articleId": "demystifying-evals-for-ai-agents",
+        "title": "Demystifying evals for AI agents",
+        "url": "https://www.anthropic.com/engineering/demystifying-evals-for-ai-agents",
+        "relevance": "high",
+        "indexDateLabel": "Jan 09, 2026",
+        "summary": "Demystifying evals for AI agents",
+        "guidance": [
+          "A task (a.k.a problem or test case ) is a single test with defined inputs and success criteria.",
+          "Each attempt at a task is a trial . Because model outputs vary between runs, we run multiple trials to produce more consistent results.",
+          "A grader is logic that scores some aspect of the agent’s performance. A task can have multiple graders, each containing multiple assertions (sometimes called checks ) .",
+          "A transcript (also called a trace or trajectory ) is the complete record of a trial, including outputs, tool calls, reasoning, intermediate results, and any other interactions. For the Anthropic API, this is the full messages array at the end of an eval run - containing all the calls to the API and all of the returned"
+        ],
+        "portability": "mixed"
+      },
+      {
+        "articleId": "effective-harnesses-for-long-running-agents",
+        "title": "Effective harnesses for long-running agents",
+        "url": "https://www.anthropic.com/engineering/effective-harnesses-for-long-running-agents",
+        "relevance": "high",
+        "indexDateLabel": "Nov 26, 2025",
+        "summary": "Anthropic is an AI safety and research company that's working to build reliable, interpretable, and steerable AI systems.",
+        "guidance": [
+          "Coding agent: Every subsequent session asks the model to make incremental progress, then leave structured updates. 1",
+          "Run pwd to see the directory you’re working in. You’ll only be able to edit files in this directory.",
+          "Read the git logs and progress files to get up to speed on what was recently worked on.",
+          "Read the features list file and choose the highest-priority feature that’s not yet done to work on."
+        ],
+        "portability": "mixed"
+      }
+    ],
+    "skills": [
+      {
+        "articleId": "harness-design-long-running-apps",
+        "title": "Harness design for long-running application development",
+        "url": "https://www.anthropic.com/engineering/harness-design-long-running-apps",
+        "relevance": "high",
+        "indexDateLabel": "Mar 24, 2026",
+        "summary": "Anthropic is an AI safety and research company that's working to build reliable, interpretable, and steerable AI systems.",
+        "guidance": [
+          "Design quality: Does the design feel like a coherent whole rather than a collection of parts? Strong work here means the colors, typography, layout, imagery, and other details combine to create a distinct mood and identity.",
+          "Originality: Is there evidence of custom decisions, or is this template layouts, library defaults, and AI-generated patterns? A human designer should recognize deliberate creative choices. Unmodified stock components—or telltale signs of AI generation like purple gradients over white cards—fail here.",
+          "Craft: Technical execution: typography hierarchy, spacing consistency, color harmony, contrast ratios. This is a competence check rather than a creativity check. Most reasonable implementations do fine here by default; failing means broken fundamentals.",
+          "Functionality: Usability independent of aesthetics. Can users understand what the interface does, find primary actions, and complete tasks without guessing?"
+        ],
+        "portability": "portable"
+      },
+      {
+        "articleId": "AI-resistant-technical-evaluations",
+        "title": "Designing AI resistant technical evaluations",
+        "url": "https://www.anthropic.com/engineering/AI-resistant-technical-evaluations",
+        "relevance": "high",
+        "indexDateLabel": "Jan 21, 2026",
+        "summary": "What we learned from three iterations of a performance engineering take-home that Claude keeps beating.",
+        "guidance": [],
+        "portability": "mixed"
+      }
+    ]
+  },
+  "latestArticles": [
+    {
+      "articleId": "infrastructure-noise",
+      "title": "Quantifying infrastructure noise in agentic coding evals",
+      "url": "https://www.anthropic.com/engineering/infrastructure-noise",
+      "relevance": "high",
+      "topicTags": [
+        "agents",
+        "evals",
+        "frontend",
+        "safety"
+      ],
+      "summary": "Anthropic is an AI safety and research company that's working to build reliable, interpretable, and steerable AI systems.",
+      "indexDateLabel": ""
+    },
+    {
+      "articleId": "harness-design-long-running-apps",
+      "title": "Harness design for long-running application development",
+      "url": "https://www.anthropic.com/engineering/harness-design-long-running-apps",
+      "relevance": "high",
+      "topicTags": [
+        "agents",
+        "context",
+        "evals",
+        "frontend",
+        "safety",
+        "skills"
+      ],
+      "summary": "Anthropic is an AI safety and research company that's working to build reliable, interpretable, and steerable AI systems.",
+      "indexDateLabel": "Mar 24, 2026"
+    },
+    {
+      "articleId": "AI-resistant-technical-evaluations",
+      "title": "Designing AI resistant technical evaluations",
+      "url": "https://www.anthropic.com/engineering/AI-resistant-technical-evaluations",
+      "relevance": "high",
+      "topicTags": [
+        "evals",
+        "frontend",
+        "skills"
+      ],
+      "summary": "What we learned from three iterations of a performance engineering take-home that Claude keeps beating.",
+      "indexDateLabel": "Jan 21, 2026"
+    },
+    {
+      "articleId": "demystifying-evals-for-ai-agents",
+      "title": "Demystifying evals for AI agents",
+      "url": "https://www.anthropic.com/engineering/demystifying-evals-for-ai-agents",
+      "relevance": "high",
+      "topicTags": [
+        "agents",
+        "context",
+        "evals",
+        "frontend"
+      ],
+      "summary": "Demystifying evals for AI agents",
+      "indexDateLabel": "Jan 09, 2026"
+    },
+    {
+      "articleId": "effective-harnesses-for-long-running-agents",
+      "title": "Effective harnesses for long-running agents",
+      "url": "https://www.anthropic.com/engineering/effective-harnesses-for-long-running-agents",
+      "relevance": "high",
+      "topicTags": [
+        "agents",
+        "context",
+        "evals",
+        "frontend",
+        "safety"
+      ],
+      "summary": "Anthropic is an AI safety and research company that's working to build reliable, interpretable, and steerable AI systems.",
+      "indexDateLabel": "Nov 26, 2025"
+    }
+  ],
+  "pendingProposals": [
+    {
+      "proposalId": "anthropic-engineering-infrastructure-noise",
+      "articleId": "infrastructure-noise",
+      "title": "Quantifying infrastructure noise in agentic coding evals",
+      "target": "skills/web-designer-master/references/quality-gate.md",
+      "status": "proposal_only"
+    },
+    {
+      "proposalId": "anthropic-engineering-harness-design-long-running-apps",
+      "articleId": "harness-design-long-running-apps",
+      "title": "Harness design for long-running application development",
+      "target": "docs/CONTEXT_MEMORY_POLICY.md",
+      "status": "proposal_only"
+    },
+    {
+      "proposalId": "anthropic-engineering-AI-resistant-technical-evaluations",
+      "articleId": "AI-resistant-technical-evaluations",
+      "title": "Designing AI resistant technical evaluations",
+      "target": "docs/CONTEXT_MEMORY_POLICY.md",
+      "status": "proposal_only"
+    },
+    {
+      "proposalId": "anthropic-engineering-demystifying-evals-for-ai-agents",
+      "articleId": "demystifying-evals-for-ai-agents",
+      "title": "Demystifying evals for AI agents",
+      "target": "docs/CONTEXT_MEMORY_POLICY.md",
+      "status": "proposal_only"
+    },
+    {
+      "proposalId": "anthropic-engineering-effective-harnesses-for-long-running-agents",
+      "articleId": "effective-harnesses-for-long-running-agents",
+      "title": "Effective harnesses for long-running agents",
+      "target": "docs/CONTEXT_MEMORY_POLICY.md",
+      "status": "proposal_only"
+    }
+  ]
+}

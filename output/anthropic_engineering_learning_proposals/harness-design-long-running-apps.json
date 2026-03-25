@@ -1,0 +1,81 @@
+{
+  "schema": "anthropic-engineering-learning-proposal.v1",
+  "proposalId": "anthropic-engineering-harness-design-long-running-apps",
+  "createdAt": "2026-03-25T11:02:27.227Z",
+  "articleId": "harness-design-long-running-apps",
+  "title": "Harness design for long-running application development",
+  "sourceUrl": "https://www.anthropic.com/engineering/harness-design-long-running-apps",
+  "relevance": "high",
+  "summary": "Anthropic is an AI safety and research company that's working to build reliable, interpretable, and steerable AI systems.",
+  "guidance": [
+    "Design quality: Does the design feel like a coherent whole rather than a collection of parts? Strong work here means the colors, typography, layout, imagery, and other details combine to create a distinct mood and identity.",
+    "Originality: Is there evidence of custom decisions, or is this template layouts, library defaults, and AI-generated patterns? A human designer should recognize deliberate creative choices. Unmodified stock components—or telltale signs of AI generation like purple gradients over white cards—fail here.",
+    "Craft: Technical execution: typography hierarchy, spacing consistency, color harmony, contrast ratios. This is a competence check rather than a creativity check. Most reasonable implementations do fine here by default; failing means broken fundamentals.",
+    "Functionality: Usability independent of aesthetics. Can users understand what the interface does, find primary actions, and complete tasks without guessing?",
+    "This work originated with earlier efforts on our frontend design skill and long-running coding agent harness ,"
+  ],
+  "topicTags": [
+    "agents",
+    "context",
+    "evals",
+    "frontend",
+    "safety",
+    "skills"
+  ],
+  "actions": [
+    {
+      "id": "learning-doc-sync",
+      "target": "docs/ANTHROPIC_ENGINEERING_LEARNINGS.md",
+      "rationale": "Sync learnings into a retrieval-first, non-constitutional document.",
+      "status": "auto_doc_sync",
+      "riskFlags": [
+        "doc_only"
+      ]
+    },
+    {
+      "id": "context-memory-note",
+      "target": "docs/CONTEXT_MEMORY_POLICY.md",
+      "rationale": "Potential retrieval and compaction guidance; requires governed review before changing runtime behavior.",
+      "status": "proposal_only",
+      "riskFlags": [
+        "governed_promotion_required"
+      ]
+    },
+    {
+      "id": "frontend-quality-note",
+      "target": "skills/web-designer-master/references/quality-gate.md",
+      "rationale": "Potential frontend quality guidance; keep proposal-only until independently validated.",
+      "status": "proposal_only",
+      "riskFlags": [
+        "governed_promotion_required"
+      ]
+    },
+    {
+      "id": "eval-coverage-proposal",
+      "target": "scripts/config/eval_suite_default.json",
+      "rationale": "Potential eval coverage change; requires explicit validation and proposal review.",
+      "status": "proposal_only",
+      "riskFlags": [
+        "governed_promotion_required"
+      ]
+    },
+    {
+      "id": "operator-rules-note",
+      "target": "docs/AGENT_OPERATING_RULES.md",
+      "rationale": "Potential agent workflow guidance; keep proposal-only to avoid silent runtime drift.",
+      "status": "proposal_only",
+      "riskFlags": [
+        "governed_promotion_required"
+      ]
+    },
+    {
+      "id": "skill-matrix-note",
+      "target": "docs/AGENT_SKILL_MATRIX.md",
+      "rationale": "Potential specialist coverage update; keep proposal-only until the need is validated.",
+      "status": "proposal_only",
+      "riskFlags": [
+        "governed_promotion_required"
+      ]
+    }
+  ]
+}

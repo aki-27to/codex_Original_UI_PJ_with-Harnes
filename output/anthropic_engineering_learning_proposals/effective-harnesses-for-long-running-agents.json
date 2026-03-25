@@ -1,0 +1,71 @@
+{
+  "schema": "anthropic-engineering-learning-proposal.v1",
+  "proposalId": "anthropic-engineering-effective-harnesses-for-long-running-agents",
+  "createdAt": "2026-03-25T11:02:27.227Z",
+  "articleId": "effective-harnesses-for-long-running-agents",
+  "title": "Effective harnesses for long-running agents",
+  "sourceUrl": "https://www.anthropic.com/engineering/effective-harnesses-for-long-running-agents",
+  "relevance": "high",
+  "summary": "Anthropic is an AI safety and research company that's working to build reliable, interpretable, and steerable AI systems.",
+  "guidance": [
+    "Coding agent: Every subsequent session asks the model to make incremental progress, then leave structured updates. 1",
+    "Run pwd to see the directory you’re working in. You’ll only be able to edit files in this directory.",
+    "Read the git logs and progress files to get up to speed on what was recently worked on.",
+    "Read the features list file and choose the highest-priority feature that’s not yet done to work on.",
+    "As AI agents become more capable, developers are increasingly asking them to take on complex tasks requiring work that spans hours, or even days."
+  ],
+  "topicTags": [
+    "agents",
+    "context",
+    "evals",
+    "frontend",
+    "safety"
+  ],
+  "actions": [
+    {
+      "id": "learning-doc-sync",
+      "target": "docs/ANTHROPIC_ENGINEERING_LEARNINGS.md",
+      "rationale": "Sync learnings into a retrieval-first, non-constitutional document.",
+      "status": "auto_doc_sync",
+      "riskFlags": [
+        "doc_only"
+      ]
+    },
+    {
+      "id": "context-memory-note",
+      "target": "docs/CONTEXT_MEMORY_POLICY.md",
+      "rationale": "Potential retrieval and compaction guidance; requires governed review before changing runtime behavior.",
+      "status": "proposal_only",
+      "riskFlags": [
+        "governed_promotion_required"
+      ]
+    },
+    {
+      "id": "frontend-quality-note",
+      "target": "skills/web-designer-master/references/quality-gate.md",
+      "rationale": "Potential frontend quality guidance; keep proposal-only until independently validated.",
+      "status": "proposal_only",
+      "riskFlags": [
+        "governed_promotion_required"
+      ]
+    },
+    {
+      "id": "eval-coverage-proposal",
+      "target": "scripts/config/eval_suite_default.json",
+      "rationale": "Potential eval coverage change; requires explicit validation and proposal review.",
+      "status": "proposal_only",
+      "riskFlags": [
+        "governed_promotion_required"
+      ]
+    },
+    {
+      "id": "operator-rules-note",
+      "target": "docs/AGENT_OPERATING_RULES.md",
+      "rationale": "Potential agent workflow guidance; keep proposal-only to avoid silent runtime drift.",
+      "status": "proposal_only",
+      "riskFlags": [
+        "governed_promotion_required"
+      ]
+    }
+  ]
+}

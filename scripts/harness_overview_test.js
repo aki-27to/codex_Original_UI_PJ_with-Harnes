@@ -309,6 +309,36 @@ function createOverviewPayload(overrides = {}) {
           blockedApplyTargets: ["AGENTS.md"],
         },
       },
+      secondaryLearning: {
+        anthropicEngineering: {
+          enabled: true,
+          running: false,
+          sourceTier: "secondary",
+          sourceName: "Anthropic Engineering",
+          sourceUrl: "https://www.anthropic.com/engineering",
+          intervalMinutes: 1440,
+          nextRunAt: "2026-03-24T00:00:00.000Z",
+          lastStatus: "PASS",
+          portabilityMode: "portable_principles_only",
+          curatedDocPath: "docs/ANTHROPIC_ENGINEERING_LEARNINGS.md",
+          recentArticles: [
+            {
+              title: "Demystifying evals for AI agents",
+              url: "https://www.anthropic.com/engineering/demystifying-evals-for-ai-agents",
+              relevance: "high",
+              portability: "portable",
+              indexDateLabel: "Jan 09, 2026",
+            },
+          ],
+          pendingProposals: [
+            {
+              title: "Demystifying evals for AI agents",
+              target: "docs/CONTEXT_MEMORY_POLICY.md",
+              status: "proposal_only",
+            },
+          ],
+        },
+      },
       latestTurn: {
         turn_id: "turn-002",
         status: "failed",
@@ -606,6 +636,35 @@ function createOverviewPayload(overrides = {}) {
           blockedApplyTargets: ["AGENTS.md"],
         },
       },
+      secondaryLearning: {
+        anthropicEngineering: {
+          enabled: true,
+          sourceTier: "secondary",
+          sourceName: "Anthropic Engineering",
+          sourceUrl: "https://www.anthropic.com/engineering",
+          intervalMinutes: 1440,
+          nextRunAt: "2026-03-24T00:00:00.000Z",
+          lastStatus: "PASS",
+          portabilityMode: "portable_principles_only",
+          curatedDocPath: "docs/ANTHROPIC_ENGINEERING_LEARNINGS.md",
+          recentArticles: [
+            {
+              title: "Demystifying evals for AI agents",
+              url: "https://www.anthropic.com/engineering/demystifying-evals-for-ai-agents",
+              relevance: "high",
+              portability: "portable",
+              indexDateLabel: "Jan 09, 2026",
+            },
+          ],
+          pendingProposals: [
+            {
+              title: "Demystifying evals for AI agents",
+              target: "docs/CONTEXT_MEMORY_POLICY.md",
+              status: "proposal_only",
+            },
+          ],
+        },
+      },
       execution: {
         recent: [
           {
@@ -891,6 +950,15 @@ function assertRenderedOverviewMatchesPayload(payload, elements) {
     }
     const metricsHtml = elements.overviewMetrics ? elements.overviewMetrics.innerHTML : "";
     assertContains(metricsHtml, String(externalLearning.lastStatus || "PASS"), "metrics must render external learning status");
+  }
+  const secondaryLearning = payload && payload.runtime && payload.runtime.secondaryLearning && typeof payload.runtime.secondaryLearning === "object"
+    ? payload.runtime.secondaryLearning
+    : null;
+  if (secondaryLearning && secondaryLearning.anthropicEngineering) {
+    const externalLearningCardHtml = elements.externalLearningCard ? elements.externalLearningCard.innerHTML : "";
+    assertContains(externalLearningCardHtml, String(secondaryLearning.anthropicEngineering.sourceName || "Anthropic Engineering"), "external learning card must render secondary source name");
+    assertContains(externalLearningCardHtml, String((secondaryLearning.anthropicEngineering.recentArticles && secondaryLearning.anthropicEngineering.recentArticles[0] && secondaryLearning.anthropicEngineering.recentArticles[0].title) || "article"), "external learning card must render secondary article title");
+    assertContains(externalLearningCardHtml, String(secondaryLearning.anthropicEngineering.portabilityMode || "portable_principles_only"), "external learning card must render secondary portability mode");
   }
   const traceabilityClauses = payload && payload.traceability && Array.isArray(payload.traceability.clauses)
     ? payload.traceability.clauses

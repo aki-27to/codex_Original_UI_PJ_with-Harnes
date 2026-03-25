@@ -1,0 +1,62 @@
+{
+  "schema": "anthropic-engineering-learning-proposal.v1",
+  "proposalId": "anthropic-engineering-infrastructure-noise",
+  "createdAt": "2026-03-25T11:02:27.227Z",
+  "articleId": "infrastructure-noise",
+  "title": "Quantifying infrastructure noise in agentic coding evals",
+  "sourceUrl": "https://www.anthropic.com/engineering/infrastructure-noise",
+  "relevance": "high",
+  "summary": "Anthropic is an AI safety and research company that's working to build reliable, interpretable, and steerable AI systems.",
+  "guidance": [
+    "Agentic coding benchmarks like SWE-bench and Terminal-Bench are commonly used to compare the software engineering capabilities of frontier models—with top spots on leaderboards often separated by just a few percentage points.",
+    "Agentic coding evals are different: models are given a full environment where they write programs, run tests, install dependencies, and iterate over multiple turns.",
+    "Eval developers have begun accounting for this.",
+    "Terminal-Bench 2.0, for instance, specifies recommended CPU and RAM on a per-task basis in their latest 2.0 release.",
+    "This finding raised a larger question: how much does resource configuration impact evaluation scores?",
+    "The agent explores, hits a resource wall, and gets preempted, but it was never on a path to a correct solution."
+  ],
+  "topicTags": [
+    "agents",
+    "evals",
+    "frontend",
+    "safety"
+  ],
+  "actions": [
+    {
+      "id": "learning-doc-sync",
+      "target": "docs/ANTHROPIC_ENGINEERING_LEARNINGS.md",
+      "rationale": "Sync learnings into a retrieval-first, non-constitutional document.",
+      "status": "auto_doc_sync",
+      "riskFlags": [
+        "doc_only"
+      ]
+    },
+    {
+      "id": "frontend-quality-note",
+      "target": "skills/web-designer-master/references/quality-gate.md",
+      "rationale": "Potential frontend quality guidance; keep proposal-only until independently validated.",
+      "status": "proposal_only",
+      "riskFlags": [
+        "governed_promotion_required"
+      ]
+    },
+    {
+      "id": "eval-coverage-proposal",
+      "target": "scripts/config/eval_suite_default.json",
+      "rationale": "Potential eval coverage change; requires explicit validation and proposal review.",
+      "status": "proposal_only",
+      "riskFlags": [
+        "governed_promotion_required"
+      ]
+    },
+    {
+      "id": "operator-rules-note",
+      "target": "docs/AGENT_OPERATING_RULES.md",
+      "rationale": "Potential agent workflow guidance; keep proposal-only to avoid silent runtime drift.",
+      "status": "proposal_only",
+      "riskFlags": [
+        "governed_promotion_required"
+      ]
+    }
+  ]
+}

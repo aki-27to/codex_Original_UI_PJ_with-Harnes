@@ -54,6 +54,14 @@ function repoRelative(workspaceRoot, targetPath) {
   return path.relative(workspaceRoot, targetPath).replace(/\\/g, "/");
 }
 
+function resolveWorkspacePath(workspaceRoot, rawPath, fallbackRelativePath) {
+  const raw = safeString(rawPath, 400) || safeString(fallbackRelativePath, 400);
+  if (!raw) {
+    return "";
+  }
+  return path.isAbsolute(raw) ? path.normalize(raw) : path.join(workspaceRoot, raw);
+}
+
 function sha256Hex(value) {
   return crypto.createHash("sha256").update(String(value || ""), "utf8").digest("hex");
 }
@@ -154,6 +162,48 @@ function collapseSentence(value) {
   return safeString(String(value == null ? "" : value).replace(/\s+/g, " "), 320);
 }
 
+function countSubstringMatches(haystack, needle) {
+  const source = safeString(haystack, 40000).toLowerCase();
+  const target = safeString(needle, 120).toLowerCase();
+  if (!source || !target) {
+    return 0;
+  }
+  let count = 0;
+  let searchIndex = 0;
+  while (searchIndex < source.length) {
+    const matchIndex = source.indexOf(target, searchIndex);
+    if (matchIndex < 0) {
+      break;
+    }
+    count += 1;
+    searchIndex = matchIndex + target.length;
+  }
+  return count;
+}
+
+function textMatchesPatterns(value, patterns) {
+  const source = safeString(value, 20000);
+  if (!source) {
+    return false;
+  }
+  for (const pattern of Array.isArray(patterns) ? patterns : []) {
+    const text = safeString(pattern, 200);
+    if (!text) {
+      continue;
+    }
+    try {
+      if (new RegExp(text, "i").test(source)) {
+        return true;
+      }
+    } catch {
+      if (source.toLowerCase().includes(text.toLowerCase())) {
+        return true;
+      }
+    }
+  }
+  return false;
+}
+
 function sentenceCandidatesFromParagraphs(paragraphs) {
   const candidates = [];
   for (const paragraph of paragraphs) {
@@ -191,8 +241,9 @@ function dedupeTexts(values, limit = 6) {
 
 function parseIndexCards(indexHtml, sourceUrl) {
   const cards = [];
-  const expression = /<a class="resource-item[\s\S]*?href="([^"]+)"[\s\S]*?<\/a>/gi;
-  let match = expression.exec(String(indexHtml || ""));
+  const html = String(indexHtml || "");
+  const openAiExpression = /<a class="resource-item[\s\S]*?href="([^"]+)"[\s\S]*?<\/a>/gi;
+  let match = openAiExpression.exec(html);
   while (match) {
     const href = safeString(match[1], 400);
     const cardHtml = match[0];
@@ -216,7 +267,32 @@ function parseIndexCards(indexHtml, sourceUrl) {
         });
       }
     }
-    match = expression.exec(String(indexHtml || ""));
+    match = openAiExpression.exec(html);
+  }
+  const anthropicExpression = /<a[^>]+class="[^"]*cardLink[^"]*"[^>]+href="([^"]+)"[\s\S]*?<\/a>/gi;
+  match = anthropicExpression.exec(html);
+  while (match) {
+    const href = safeString(match[1], 400);
+    const cardHtml = match[0];
+    if (/^\/engineering\/[^"/?#]+$/i.test(href) && !/\/engineering\/?$/i.test(href)) {
+      const url = joinUrl(sourceUrl, href);
+      const titleFromHeadingMatch = /<(?:h2|h3)[^>]*>([\s\S]*?)<\/(?:h2|h3)>/i.exec(cardHtml);
+      const titleFromAltMatch = /<img[^>]+alt="([^"]+)"/i.exec(cardHtml);
+      const descriptionMatch = /<p[^>]*>([\s\S]*?)<\/p>/i.exec(cardHtml);
+      const dateMatch = /__date[^>]*>([\s\S]*?)<\/div>/i.exec(cardHtml);
+      const title = stripHtml((titleFromHeadingMatch && titleFromHeadingMatch[1]) || (titleFromAltMatch && titleFromAltMatch[1]) || "");
+      if (url && title) {
+        cards.push({
+          articleId: safeString(url.split("/").pop(), 120),
+          url,
+          title,
+          description: stripHtml(descriptionMatch && descriptionMatch[1] ? descriptionMatch[1] : ""),
+          indexDateLabel: safeString(stripHtml(dateMatch && dateMatch[1] ? dateMatch[1] : ""), 40),
+          topicLabel: "",
+        });
+      }
+    }
+    match = anthropicExpression.exec(html);
   }
   const deduped = [];
   const seen = new Set();
@@ -264,7 +340,7 @@ function inferSuggestedActions(topicTags) {
     {
       id: "learning-doc-sync",
       target: "docs/OPENAI_DEVELOPER_LEARNINGS.md",
-      rationale: "Sync official learnings into a retrieval-first, non-constitutional document.",
+      rationale: "Sync learnings into a retrieval-first, non-constitutional document.",
     },
   ];
   if (tags.some((entry) => ["context", "automation", "codex", "skills"].includes(entry))) {
@@ -303,6 +379,48 @@ function inferSuggestedActions(topicTags) {
     });
   }
   return actions;
+}
+
+function derivePortability({ title = "", description = "", headings = [], listItems = [], paragraphs = [] } = {}, policy) {
+  const filters = policy && policy.filters && typeof policy.filters === "object" ? policy.filters : {};
+  const vendorTerms = Array.isArray(filters.vendorTerms) ? filters.vendorTerms : [];
+  if (!vendorTerms.length) {
+    return "portable";
+  }
+  const combined = [title, description, headings.join(" "), listItems.slice(0, 10).join(" "), paragraphs.slice(0, 8).join(" ")].join(" ");
+  const vendorHits = vendorTerms.reduce((sum, term) => sum + countSubstringMatches(combined, term), 0);
+  const portableSignals = /(harness|eval|context|tool|agent|workflow|security|autonomy|runbook|checkpoint|transcript|grading|retrieval|memory|approval|verification|infrastructure|application development|coding eval)/i.test(combined);
+  const vendorSpecificSignals = /(browsecomp|sonnet|opus|haiku|claude\s+\d|claude code|model performance|parallel claudes|claude developer platform)/i.test(combined);
+  if (vendorSpecificSignals || vendorHits >= 6) {
+    return portableSignals ? "mixed" : "vendor_specific";
+  }
+  if (vendorHits >= 2) {
+    return portableSignals ? "mixed" : "vendor_specific";
+  }
+  return "portable";
+}
+
+function filterGuidanceForPortability(guidance, policy) {
+  const filters = policy && policy.filters && typeof policy.filters === "object" ? policy.filters : {};
+  const vendorTerms = Array.isArray(filters.vendorTerms) ? filters.vendorTerms : [];
+  if (!filters.portableGuidanceOnly || !vendorTerms.length) {
+    return Array.isArray(guidance) ? guidance : [];
+  }
+  return (Array.isArray(guidance) ? guidance : []).filter((item) => !vendorTerms.some((term) => countSubstringMatches(item, term) > 0));
+}
+
+function shouldSkipLearningArticle(article, policy) {
+  const filters = policy && policy.filters && typeof policy.filters === "object" ? policy.filters : {};
+  if (textMatchesPatterns(article && article.url, filters.excludeUrlPatterns)) {
+    return true;
+  }
+  if (textMatchesPatterns(article && article.title, filters.excludeTitlePatterns)) {
+    return true;
+  }
+  if (filters.requirePortablePrinciples && safeString(article && article.portability, 40) === "vendor_specific") {
+    return true;
+  }
+  return false;
 }
 
 function governSuggestedActions(actions, policy) {
@@ -351,10 +469,15 @@ function governSuggestedActions(actions, policy) {
 }
 
 function buildArticleProposal(article, policy, nowIso) {
-  const governedActions = governSuggestedActions(inferSuggestedActions(article.topicTags), policy);
+  const suggestedActions = inferSuggestedActions(article.topicTags).map((action) => (
+    action && action.id === "learning-doc-sync"
+      ? { ...action, target: safeString(policy && policy.governance && policy.governance.autoPromoteDocPath, 260) || action.target }
+      : action
+  ));
+  const governedActions = governSuggestedActions(suggestedActions, policy);
   return {
-    schema: "openai-blog-learning-proposal.v1",
-    proposalId: `openai-blog-${article.articleId}`,
+    schema: safeString(policy && policy.artifacts && policy.artifacts.proposalSchema, 120) || "openai-blog-learning-proposal.v1",
+    proposalId: `${safeString(policy && policy.artifacts && policy.artifacts.proposalIdPrefix, 120) || "openai-blog"}-${article.articleId}`,
     createdAt: nowIso,
     articleId: article.articleId,
     title: article.title,
@@ -368,8 +491,11 @@ function buildArticleProposal(article, policy, nowIso) {
 }
 
 function extractArticleInsights(articleHtml, maxGuidanceItems) {
-  const mainMatch = /<article id="mainContent"[^>]*>([\s\S]*?)<\/article>/i.exec(String(articleHtml || ""));
-  const mainHtml = mainMatch ? mainMatch[1] : "";
+  const html = String(articleHtml || "");
+  const mainMatch = /<article id="mainContent"[^>]*>([\s\S]*?)<\/article>/i.exec(html)
+    || /<article[^>]*>([\s\S]*?)<\/article>/i.exec(html)
+    || /<main[^>]*>([\s\S]*?)<\/main>/i.exec(html);
+  const mainHtml = mainMatch ? mainMatch[1] : html;
   const headings = dedupeTexts([
     ...collectTagTexts(mainHtml, "h2", 8),
     ...collectTagTexts(mainHtml, "h3", 8),
@@ -413,6 +539,8 @@ function normalizeOpenAIBlogLearningPolicy(policy, { policyPath = defaultOpenAIB
     source: {
       name: safeString(source && source.source && source.source.name, 120) || "OpenAI Developers Blog",
       indexUrl: normalizeUrl(source && source.source && source.source.indexUrl) || "https://developers.openai.com/blog",
+      tier: safeString(source && source.source && source.source.tier, 40) || "primary",
+      userAgent: safeString(source && source.source && source.source.userAgent, 200) || "codex-harness-external-learning/1.0",
       allowedHosts: Array.isArray(source && source.source && source.source.allowedHosts)
         ? source.source.allowedHosts.map((entry) => safeString(entry, 120)).filter(Boolean)
         : ["developers.openai.com"],
@@ -444,6 +572,19 @@ function normalizeOpenAIBlogLearningPolicy(policy, { policyPath = defaultOpenAIB
         ? source.retrieval.allowedTopics.map((entry) => safeString(entry, 80).toLowerCase()).filter(Boolean)
         : [],
     },
+    filters: {
+      requirePortablePrinciples: Boolean(source && source.filters && source.filters.requirePortablePrinciples),
+      portableGuidanceOnly: Boolean(source && source.filters && source.filters.portableGuidanceOnly),
+      excludeUrlPatterns: Array.isArray(source && source.filters && source.filters.excludeUrlPatterns)
+        ? source.filters.excludeUrlPatterns.map((entry) => safeString(entry, 200)).filter(Boolean)
+        : [],
+      excludeTitlePatterns: Array.isArray(source && source.filters && source.filters.excludeTitlePatterns)
+        ? source.filters.excludeTitlePatterns.map((entry) => safeString(entry, 200)).filter(Boolean)
+        : [],
+      vendorTerms: Array.isArray(source && source.filters && source.filters.vendorTerms)
+        ? source.filters.vendorTerms.map((entry) => safeString(entry, 120).toLowerCase()).filter(Boolean)
+        : [],
+    },
     runtimeRetrieval: {
       enabled: Boolean(source && source.runtimeRetrieval && source.runtimeRetrieval.enabled),
       shadowMode: Boolean(source && source.runtimeRetrieval && source.runtimeRetrieval.shadowMode),
@@ -460,18 +601,33 @@ function normalizeOpenAIBlogLearningPolicy(policy, { policyPath = defaultOpenAIB
       maxGuidanceItemsPerArticle: Math.max(1, Math.min(4, Math.trunc(Number(source && source.runtimeRetrieval && source.runtimeRetrieval.maxGuidanceItemsPerArticle) || 3))),
       maxPromptBlockChars: Math.max(300, Math.min(4000, Math.trunc(Number(source && source.runtimeRetrieval && source.runtimeRetrieval.maxPromptBlockChars) || 1800))),
     },
+    presentation: {
+      curatedDocTitle: safeString(source && source.presentation && source.presentation.curatedDocTitle, 120) || "OPENAI_DEVELOPER_LEARNINGS",
+      reportTitle: safeString(source && source.presentation && source.presentation.reportTitle, 120) || "OPENAI_BLOG_LEARNING_REPORT",
+      introLines: Array.isArray(source && source.presentation && source.presentation.introLines)
+        ? source.presentation.introLines.map((entry) => safeString(entry, 320)).filter(Boolean)
+        : [],
+    },
+    artifacts: {
+      proposalIdPrefix: safeString(source && source.artifacts && source.artifacts.proposalIdPrefix, 120) || "openai-blog",
+      articleSchema: safeString(source && source.artifacts && source.artifacts.articleSchema, 120) || "openai-blog-learning-article.v1",
+      digestSchema: safeString(source && source.artifacts && source.artifacts.digestSchema, 120) || "openai-blog-learning-digest.v1",
+      ledgerSchema: safeString(source && source.artifacts && source.artifacts.ledgerSchema, 120) || "openai-blog-learning-ledger.v1",
+      proposalSchema: safeString(source && source.artifacts && source.artifacts.proposalSchema, 120) || "openai-blog-learning-proposal.v1",
+      runtimeSchema: safeString(source && source.artifacts && source.artifacts.runtimeSchema, 120) || "openai-blog-learning-runtime.v1",
+    },
   };
   normalized.paths = {
-    ledgerPath: path.join(workspaceRoot, "output", "openai_blog_learning_ledger.json"),
-    digestPath: path.join(workspaceRoot, "output", "openai_blog_learning_digest.json"),
-    reportPath: path.join(workspaceRoot, "output", "openai_blog_learning_report.md"),
-    proposalDir: path.join(workspaceRoot, "output", "openai_blog_learning_proposals"),
-    curatedDocPath: path.join(workspaceRoot, normalized.governance.autoPromoteDocPath),
+    ledgerPath: resolveWorkspacePath(workspaceRoot, source && source.paths && source.paths.ledgerPath, "output/openai_blog_learning_ledger.json"),
+    digestPath: resolveWorkspacePath(workspaceRoot, source && source.paths && source.paths.digestPath, "output/openai_blog_learning_digest.json"),
+    reportPath: resolveWorkspacePath(workspaceRoot, source && source.paths && source.paths.reportPath, "output/openai_blog_learning_report.md"),
+    proposalDir: resolveWorkspacePath(workspaceRoot, source && source.paths && source.paths.proposalDir, "output/openai_blog_learning_proposals"),
+    curatedDocPath: resolveWorkspacePath(workspaceRoot, source && source.paths && source.paths.curatedDocPath, normalized.governance.autoPromoteDocPath),
   };
   return normalized;
 }
 
-function httpFetchText(rawUrl, { timeoutMs = 15000, allowedHosts = [] } = {}) {
+function httpFetchText(rawUrl, { timeoutMs = 15000, allowedHosts = [], userAgent = "codex-harness-external-learning/1.0" } = {}) {
   const normalizedUrl = normalizeUrl(rawUrl);
   if (!normalizedUrl) {
     return Promise.reject(new Error("invalid url"));
@@ -487,7 +643,7 @@ function httpFetchText(rawUrl, { timeoutMs = 15000, allowedHosts = [] } = {}) {
       {
         method: "GET",
         headers: {
-          "User-Agent": "codex-harness-openai-blog-learning/1.0",
+          "User-Agent": safeString(userAgent, 200) || "codex-harness-external-learning/1.0",
           "Accept": "text/html,application/xhtml+xml",
         },
       },
@@ -524,21 +680,28 @@ function httpFetchText(rawUrl, { timeoutMs = 15000, allowedHosts = [] } = {}) {
 
 function buildCuratedDoc(digest, policy) {
   const topics = digest && digest.topics && typeof digest.topics === "object" ? digest.topics : {};
+  const introLines = Array.isArray(policy && policy.presentation && policy.presentation.introLines) && policy.presentation.introLines.length
+    ? policy.presentation.introLines
+    : [
+      `This file is auto-synced from ${safeString(policy && policy.source && policy.source.name, 120) || "the external learning lane"}.`,
+      "It is not constitutional guidance and does not silently override `AGENTS.md` or frozen Step 1/2 behavior.",
+    ];
   const lines = [
-    "# OPENAI_DEVELOPER_LEARNINGS",
+    `# ${safeString(policy && policy.presentation && policy.presentation.curatedDocTitle, 120) || "OPENAI_DEVELOPER_LEARNINGS"}`,
     "",
     `Updated: ${safeString(digest && digest.generatedAt, 40) || "-"}`,
     "",
-    "This file is auto-synced from the official OpenAI Developers blog learning lane.",
-    "It is not constitutional guidance and does not silently override `AGENTS.md` or frozen Step 1/2 behavior.",
+    ...introLines,
     "",
     "## How to use",
     "",
     "- Treat these notes as retrieval-first working memory, not as automatic runtime policy.",
-    `- Source is locked to ${safeString(policy && policy.source && policy.source.indexUrl, 240)} and official hosts only.`,
+    `- Source is locked to ${safeString(policy && policy.source && policy.source.indexUrl, 240)} and the configured allowlist only.`,
     "- High-risk targets stay proposal-only until separately reviewed and validated.",
     "- Requirement-Driven Foundation V1 remains frozen; external learnings cannot silently expand Step 1/2.",
-    "- Runtime retrieval may inject a small advisory block only for targeted runtime paths such as `default` / `frontend_worker` web tasks.",
+    policy && policy.runtimeRetrieval && policy.runtimeRetrieval.enabled
+      ? "- Runtime retrieval may inject a small advisory block only for targeted runtime paths."
+      : "- Runtime retrieval is disabled for this lane unless separately enabled and validated.",
     "",
   ];
   const orderedTopics = Object.keys(topics).sort();
@@ -553,6 +716,9 @@ function buildCuratedDoc(digest, policy) {
       lines.push("");
       lines.push(`- Source: ${safeString(entry.url, 300)}`);
       lines.push(`- Relevance: ${safeString(entry.relevance, 40)}`);
+      if (safeString(entry.portability, 40)) {
+        lines.push(`- Portability: ${safeString(entry.portability, 40)}`);
+      }
       if (safeString(entry.indexDateLabel)) {
         lines.push(`- Blog card date: ${safeString(entry.indexDateLabel, 40)}`);
       }
@@ -573,7 +739,7 @@ function buildCuratedDoc(digest, policy) {
 
 function buildMarkdownReport(report) {
   const lines = [
-    "# OPENAI_BLOG_LEARNING_REPORT",
+    `# ${safeString(report && report.title, 120) || "OPENAI_BLOG_LEARNING_REPORT"}`,
     "",
     `- status: ${safeString(report && report.status, 20) || "UNKNOWN"}`,
     `- generatedAt: ${safeString(report && report.generatedAt, 40) || "-"}`,
@@ -632,6 +798,7 @@ function selectTopicEntries(articles, policy) {
         indexDateLabel: article.indexDateLabel,
         summary: article.summary,
         guidance: article.guidance.slice(0, 4),
+        portability: safeString(article.portability, 40) || "portable",
       });
     }
   }
@@ -919,12 +1086,13 @@ function buildRuntimeSnapshotFromArtifacts(policy, runtimeState = {}) {
     }))
     : [];
   return {
-    schema: "openai-blog-learning-runtime.v1",
+    schema: safeString(policy && policy.artifacts && policy.artifacts.runtimeSchema, 120) || "openai-blog-learning-runtime.v1",
     enabled: Boolean(runtimeState.enabled),
     running: Boolean(runtimeState.running),
     mode: safeString(policy && policy.governance && policy.governance.mode, 80) || "observe_propose_and_doc_sync",
     sourceName: safeString(policy && policy.source && policy.source.name, 120) || "OpenAI Developers Blog",
     sourceUrl: safeString(policy && policy.source && policy.source.indexUrl, 260),
+    sourceTier: safeString(policy && policy.source && policy.source.tier, 40) || "primary",
     allowedHosts: Array.isArray(policy && policy.source && policy.source.allowedHosts) ? policy.source.allowedHosts.slice(0, 8) : [],
     intervalMinutes: Number(policy && policy.cadence && policy.cadence.intervalMinutes) || 1440,
     lastRunAt: safeString(runtimeState.lastRunAt || ledger.lastRunAt, 40),
@@ -937,6 +1105,7 @@ function buildRuntimeSnapshotFromArtifacts(policy, runtimeState = {}) {
     pendingProposalCount: Number(summary.pendingProposals) || 0,
     blockedTargetCount: Number(summary.blockedTargets) || 0,
     promotedDocUpdates: Number(summary.promotedDocUpdates) || 0,
+    portabilityMode: policy && policy.filters && policy.filters.requirePortablePrinciples ? "portable_principles_only" : "all_articles",
     ledgerPath: repoRelative(policy.workspaceRoot, policy.paths.ledgerPath),
     digestPath: repoRelative(policy.workspaceRoot, policy.paths.digestPath),
     reportPath: repoRelative(policy.workspaceRoot, policy.paths.reportPath),
@@ -986,10 +1155,12 @@ async function runOpenAIBlogLearningCycle({
   const indexHtml = await fetchText(normalizedPolicy.source.indexUrl, {
     timeoutMs: normalizedPolicy.cadence.requestTimeoutMs,
     allowedHosts: normalizedPolicy.source.allowedHosts,
+    userAgent: normalizedPolicy.source.userAgent,
   });
   const cards = parseIndexCards(indexHtml, normalizedPolicy.source.indexUrl).slice(0, normalizedPolicy.cadence.maxArticlesPerRun);
   const nextArticles = [];
   const proposalSummaries = [];
+  const writtenProposalPaths = new Set();
   let newArticlesThisRun = 0;
   let promotedDocUpdates = 0;
   let blockedTargets = 0;
@@ -997,6 +1168,7 @@ async function runOpenAIBlogLearningCycle({
     const articleHtml = await fetchText(card.url, {
       timeoutMs: normalizedPolicy.cadence.requestTimeoutMs,
       allowedHosts: normalizedPolicy.source.allowedHosts,
+      userAgent: normalizedPolicy.source.userAgent,
     });
     const insights = extractArticleInsights(articleHtml, normalizedPolicy.cadence.maxGuidanceItemsPerArticle);
     const topicTags = classifyTopics({
@@ -1010,7 +1182,7 @@ async function runOpenAIBlogLearningCycle({
     const relevance = deriveRelevance(topicTags);
     const summary = safeString(insights.description, 320) || safeString(insights.paragraphs[0], 320) || safeString(card.description, 320);
     const article = {
-      schema: "openai-blog-learning-article.v1",
+      schema: safeString(normalizedPolicy && normalizedPolicy.artifacts && normalizedPolicy.artifacts.articleSchema, 120) || "openai-blog-learning-article.v1",
       articleId: card.articleId,
       url: normalizeUrl(card.url),
       canonicalUrl: normalizeUrl(insights.canonicalUrl) || normalizeUrl(card.url),
@@ -1027,9 +1199,20 @@ async function runOpenAIBlogLearningCycle({
       headings: Array.isArray(insights.headings) ? insights.headings.slice(0, 8) : [],
       topicTags,
       relevance,
+      portability: derivePortability({
+        title: insights.title || card.title,
+        description: insights.description || card.description,
+        headings: insights.headings,
+        listItems: insights.listItems,
+        paragraphs: insights.paragraphs,
+      }, normalizedPolicy),
       promotedToDocs: [],
       proposalIds: [],
     };
+    article.guidance = filterGuidanceForPortability(article.guidance, normalizedPolicy).slice(0, normalizedPolicy.cadence.maxGuidanceItemsPerArticle);
+    if (shouldSkipLearningArticle(article, normalizedPolicy)) {
+      continue;
+    }
     const previous = previousByUrl.get(article.url);
     if (previous) {
       article.discoveredAt = safeString(previous.discoveredAt, 40) || nowIso;
@@ -1057,11 +1240,29 @@ async function runOpenAIBlogLearningCycle({
       target: proposal.actions.find((entry) => entry.status !== "auto_doc_sync")?.target || proposal.actions[0]?.target || "",
       status: proposal.actions.find((entry) => entry.status !== "auto_doc_sync")?.status || proposal.actions[0]?.status || "proposal_only",
     });
-    writeJson(path.join(normalizedPolicy.paths.proposalDir, `${article.articleId}.json`), proposal);
+    const proposalPath = path.join(normalizedPolicy.paths.proposalDir, `${article.articleId}.json`);
+    writeJson(proposalPath, proposal);
+    writtenProposalPaths.add(path.normalize(proposalPath));
     nextArticles.push(article);
   }
+  if (fs.existsSync(normalizedPolicy.paths.proposalDir)) {
+    for (const entry of fs.readdirSync(normalizedPolicy.paths.proposalDir, { withFileTypes: true })) {
+      if (!entry.isFile() || !/\.json$/i.test(entry.name)) {
+        continue;
+      }
+      const proposalPath = path.join(normalizedPolicy.paths.proposalDir, entry.name);
+      if (writtenProposalPaths.has(path.normalize(proposalPath))) {
+        continue;
+      }
+      try {
+        fs.unlinkSync(proposalPath);
+      } catch {
+        // Ignore proposal cleanup failures; the next cycle can retry.
+      }
+    }
+  }
   const digest = {
-    schema: "openai-blog-learning-digest.v1",
+    schema: safeString(normalizedPolicy && normalizedPolicy.artifacts && normalizedPolicy.artifacts.digestSchema, 120) || "openai-blog-learning-digest.v1",
     generatedAt: nowIso,
     source: {
       name: normalizedPolicy.source.name,
@@ -1087,7 +1288,7 @@ async function runOpenAIBlogLearningCycle({
     pendingProposals: proposalSummaries.filter((entry) => entry.status === "proposal_only"),
   };
   const ledger = {
-    schema: "openai-blog-learning-ledger.v1",
+    schema: safeString(normalizedPolicy && normalizedPolicy.artifacts && normalizedPolicy.artifacts.ledgerSchema, 120) || "openai-blog-learning-ledger.v1",
     generatedAt: nowIso,
     lastRunAt: nowIso,
     lastSuccessAt: nowIso,
@@ -1100,6 +1301,7 @@ async function runOpenAIBlogLearningCycle({
   writeJson(normalizedPolicy.paths.digestPath, digest);
   writeText(normalizedPolicy.paths.curatedDocPath, buildCuratedDoc(digest, normalizedPolicy));
   const report = {
+    title: safeString(normalizedPolicy && normalizedPolicy.presentation && normalizedPolicy.presentation.reportTitle, 120) || "OPENAI_BLOG_LEARNING_REPORT",
     status: "PASS",
     generatedAt: nowIso,
     summary: digest.summary,

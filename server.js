@@ -155,6 +155,12 @@ const {
   buildRuntimeSnapshotFromArtifacts:buildOpenAIBlogLearningRuntimeSnapshot,
   runOpenAIBlogLearningCycle,
 }=require("./scripts/lib/openai_blog_learning");
+const {
+  defaultAnthropicEngineeringLearningPolicyPath,
+  loadAnthropicEngineeringLearningPolicy,
+  buildAnthropicEngineeringRuntimeSnapshot,
+  runAnthropicEngineeringLearningCycle,
+}=require("./scripts/lib/anthropic_engineering_learning");
 
 const workspaceRoot=__dirname;
 const workspaceParentRoot=path.dirname(workspaceRoot);
@@ -199,8 +205,12 @@ const openAIBlogLearningEnabledEnvKey="CODEX_OPENAI_BLOG_LEARNING_ENABLED";
 const openAIBlogLearningIntervalEnvKey="CODEX_OPENAI_BLOG_LEARNING_INTERVAL_MINUTES";
 const openAIBlogLearningRuntimeRetrievalEnabledEnvKey="CODEX_OPENAI_BLOG_RUNTIME_RETRIEVAL_ENABLED";
 const openAIBlogLearningRuntimeRetrievalShadowModeEnvKey="CODEX_OPENAI_BLOG_RUNTIME_RETRIEVAL_SHADOW_MODE";
+const anthropicEngineeringLearningEnabledEnvKey="CODEX_ANTHROPIC_ENGINEERING_LEARNING_ENABLED";
+const anthropicEngineeringLearningIntervalEnvKey="CODEX_ANTHROPIC_ENGINEERING_LEARNING_INTERVAL_MINUTES";
 const openAIBlogLearningPolicy=loadOpenAIBlogLearningPolicy(defaultOpenAIBlogLearningPolicyPath);
+const anthropicEngineeringLearningPolicy=loadAnthropicEngineeringLearningPolicy(defaultAnthropicEngineeringLearningPolicyPath);
 const openAIBlogLearningEnabled=parseBooleanEnv(openAIBlogLearningEnabledEnvKey,true);
+const anthropicEngineeringLearningEnabled=parseBooleanEnv(anthropicEngineeringLearningEnabledEnvKey,true);
 const openAIBlogLearningRuntimeRetrievalEnabled=parseBooleanEnv(
   openAIBlogLearningRuntimeRetrievalEnabledEnvKey,
   openAIBlogLearningEnabled&&Boolean(openAIBlogLearningPolicy&&openAIBlogLearningPolicy.runtimeRetrieval&&openAIBlogLearningPolicy.runtimeRetrieval.enabled)
@@ -214,6 +224,13 @@ const openAIBlogLearningIntervalMinutes=Math.max(
   Math.min(
     1440,
     Math.trunc(Number(process.env[openAIBlogLearningIntervalEnvKey]||openAIBlogLearningPolicy.cadence.intervalMinutes)||openAIBlogLearningPolicy.cadence.intervalMinutes)
+  )
+);
+const anthropicEngineeringLearningIntervalMinutes=Math.max(
+  15,
+  Math.min(
+    1440,
+    Math.trunc(Number(process.env[anthropicEngineeringLearningIntervalEnvKey]||anthropicEngineeringLearningPolicy.cadence.intervalMinutes)||anthropicEngineeringLearningPolicy.cadence.intervalMinutes)
   )
 );
 const openAIBlogLearningRuntimeState={
@@ -235,7 +252,17 @@ const openAIBlogLearningRuntimeState={
   lastRetrievalArticleIds:[],
   lastRetrievalPromptBlockChars:0,
 };
+const anthropicEngineeringLearningRuntimeState={
+  enabled:anthropicEngineeringLearningEnabled,
+  running:false,
+  lastRunAt:"",
+  lastSuccessAt:"",
+  nextRunAt:"",
+  lastStatus:anthropicEngineeringLearningEnabled?"IDLE":"DISABLED",
+  lastReason:"",
+};
 let openAIBlogLearningTimer=null;
+let anthropicEngineeringLearningTimer=null;
 const gitAutomationConfig=buildGitAutomationConfig(process.env);
 const gitAutomationWorkspaceIgnoredPaths=Object.freeze([
   "logs/archive/raw/harness_execution_memory.json",
@@ -12094,6 +12121,98 @@ function buildOpenAIBlogLearningRuntimeStateSnapshot(){
     lastRetrievalPromptBlockChars:openAIBlogLearningRuntimeState.lastRetrievalPromptBlockChars,
   });
 }
+function clearAnthropicEngineeringLearningTimer(){
+  if(anthropicEngineeringLearningTimer){
+    clearTimeout(anthropicEngineeringLearningTimer);
+    anthropicEngineeringLearningTimer=null;
+  }
+}
+function scheduleAnthropicEngineeringLearningCycle(delayMs){
+  if(!anthropicEngineeringLearningEnabled||shuttingDown)return;
+  clearAnthropicEngineeringLearningTimer();
+  const normalizedDelay=Math.max(1000,Math.trunc(Number(delayMs)||anthropicEngineeringLearningIntervalMinutes*60*1000));
+  anthropicEngineeringLearningRuntimeState.nextRunAt=new Date(Date.now()+normalizedDelay).toISOString();
+  anthropicEngineeringLearningTimer=setTimeout(()=>{
+    anthropicEngineeringLearningTimer=null;
+    executeAnthropicEngineeringLearningCycle("interval").catch(error=>{
+      logOperation("anthropic_engineering_learning.run_failed",{
+        reason:"interval",
+        err:summarizeErrorForOperationLog(error,220),
+      });
+    });
+  },normalizedDelay);
+  if(anthropicEngineeringLearningTimer&&typeof anthropicEngineeringLearningTimer.unref==="function"){
+    anthropicEngineeringLearningTimer.unref();
+  }
+}
+async function executeAnthropicEngineeringLearningCycle(reason="manual"){
+  if(!anthropicEngineeringLearningEnabled||shuttingDown)return null;
+  if(anthropicEngineeringLearningRuntimeState.running){
+    return null;
+  }
+  anthropicEngineeringLearningRuntimeState.running=true;
+  anthropicEngineeringLearningRuntimeState.lastRunAt=new Date().toISOString();
+  anthropicEngineeringLearningRuntimeState.lastStatus="RUNNING";
+  anthropicEngineeringLearningRuntimeState.lastReason=safeString(reason,80)||"manual";
+  try{
+    const policy={
+      ...anthropicEngineeringLearningPolicy,
+      cadence:{
+        ...anthropicEngineeringLearningPolicy.cadence,
+        intervalMinutes:anthropicEngineeringLearningIntervalMinutes,
+      },
+    };
+    const result=await runAnthropicEngineeringLearningCycle({policy});
+    anthropicEngineeringLearningRuntimeState.lastRunAt=safeString(result&&result.report&&result.report.generatedAt,40)||new Date().toISOString();
+    anthropicEngineeringLearningRuntimeState.lastSuccessAt=anthropicEngineeringLearningRuntimeState.lastRunAt;
+    anthropicEngineeringLearningRuntimeState.lastStatus=safeString(result&&result.report&&result.report.status,20).toUpperCase()||"PASS";
+    anthropicEngineeringLearningRuntimeState.lastReason=safeString(reason,80)||"manual";
+    logOperation("anthropic_engineering_learning.run_completed",{
+      reason:anthropicEngineeringLearningRuntimeState.lastReason,
+      status:anthropicEngineeringLearningRuntimeState.lastStatus,
+      trackedArticles:result&&result.report&&result.report.summary?Number(result.report.summary.trackedArticles)||0:0,
+      newArticlesThisRun:result&&result.report&&result.report.summary?Number(result.report.summary.newArticlesThisRun)||0:0,
+      pendingProposals:result&&result.report&&result.report.summary?Number(result.report.summary.pendingProposals)||0:0,
+    });
+    return result;
+  }catch(error){
+    anthropicEngineeringLearningRuntimeState.lastStatus="FAIL";
+    anthropicEngineeringLearningRuntimeState.lastReason=`${safeString(reason,80)||"manual"}: ${safeString(error&&error.message?error.message:String(error),200)}`;
+    logOperation("anthropic_engineering_learning.run_failed",{
+      reason:safeString(reason,80)||"manual",
+      err:summarizeErrorForOperationLog(error,220),
+    });
+    return null;
+  }finally{
+    anthropicEngineeringLearningRuntimeState.running=false;
+    scheduleAnthropicEngineeringLearningCycle(anthropicEngineeringLearningIntervalMinutes*60*1000);
+  }
+}
+function startAnthropicEngineeringLearningLoop(){
+  if(!anthropicEngineeringLearningEnabled)return;
+  scheduleAnthropicEngineeringLearningCycle(anthropicEngineeringLearningPolicy.cadence.startupDelayMs);
+}
+function buildResolvedAnthropicEngineeringLearningPolicy(){
+  return{
+    ...anthropicEngineeringLearningPolicy,
+    cadence:{
+      ...anthropicEngineeringLearningPolicy.cadence,
+      intervalMinutes:anthropicEngineeringLearningIntervalMinutes,
+    },
+  };
+}
+function buildAnthropicEngineeringLearningRuntimeStateSnapshot(){
+  const policy=buildResolvedAnthropicEngineeringLearningPolicy();
+  return buildAnthropicEngineeringRuntimeSnapshot(policy,{
+    enabled:anthropicEngineeringLearningEnabled,
+    running:anthropicEngineeringLearningRuntimeState.running,
+    lastRunAt:anthropicEngineeringLearningRuntimeState.lastRunAt,
+    lastSuccessAt:anthropicEngineeringLearningRuntimeState.lastSuccessAt,
+    nextRunAt:anthropicEngineeringLearningRuntimeState.nextRunAt,
+    lastStatus:anthropicEngineeringLearningRuntimeState.lastStatus,
+    lastReason:anthropicEngineeringLearningRuntimeState.lastReason,
+  });
+}
 function buildBundleOverview(rootDir,summaryFileName,buildSnapshot){
   const candidates=listBundleSummaryCandidates(rootDir,summaryFileName);
   return{
@@ -12379,6 +12498,9 @@ function buildRuntimeApiSnapshot(){
   const parentDispatchGuard=buildParentDispatchGuardDefaultsSnapshot();
   const phaseStatus=buildRequirementFoundationV1PhaseStatus();
   const externalLearning=buildOpenAIBlogLearningRuntimeStateSnapshot();
+  const secondaryLearning={
+    anthropicEngineering:buildAnthropicEngineeringLearningRuntimeStateSnapshot(),
+  };
   const executionVisibility={
     profile:runtimeExecutionProfile,
     envKey:executionProfileEnvKey,
@@ -12446,6 +12568,11 @@ function buildRuntimeApiSnapshot(){
     phase_status:phaseStatus,
     externalLearning,
     external_learning:externalLearning,
+    secondaryLearning,
+    secondary_learning:{
+      anthropicEngineering:secondaryLearning.anthropicEngineering,
+      anthropic_engineering:secondaryLearning.anthropicEngineering,
+    },
     contractSpec:{
       schema:safeString(harnessTurnContractSpec&&harnessTurnContractSpec.schema,80)||"harness-turn-contract.v1",
       path:summarizePathForOperationLog(harnessTurnContractSpecPath,220),
@@ -12925,6 +13052,7 @@ function buildHarnessOverviewSnapshot(){
       taste:runtime.intentFirst&&runtime.intentFirst.tasteMemory?runtime.intentFirst.tasteMemory:{},
       execution:buildExecutionMemoryOverview({limit:10,window:60}),
       externalLearning:runtime.externalLearning&&typeof runtime.externalLearning==="object"?runtime.externalLearning:{},
+      secondaryLearning:runtime.secondaryLearning&&typeof runtime.secondaryLearning==="object"?runtime.secondaryLearning:{},
       replay:{
         recent:listReplayMemorySnapshots({limit:6}),
       },
@@ -15716,6 +15844,7 @@ async function stopHarnessServer(){
   shuttingDown=true;
   clearPocSchedulerTimer();
   clearOpenAIBlogLearningTimer();
+  clearAnthropicEngineeringLearningTimer();
   pocSchedulerState.enabled=false;
   pocSchedulerState.nextTickAt=0;
   persistHarnessExecutionMemoryStore({reason:"shutdown"});
@@ -15827,9 +15956,19 @@ async function main(){const preferredPort=Number.isInteger(forcedUiPort)&&forced
       runtimeRetrievalEnabled:openAIBlogLearningRuntimeRetrievalEnabled?1:0,
       runtimeRetrievalShadowMode:openAIBlogLearningRuntimeRetrievalShadowMode?1:0,
     },
+    secondaryLearning:{
+      anthropicEngineering:{
+        enabled:anthropicEngineeringLearningEnabled?1:0,
+        intervalMinutes:anthropicEngineeringLearningIntervalMinutes,
+        policyPath:summarizePathForOperationLog(defaultAnthropicEngineeringLearningPolicyPath,220),
+        sourceUrl:safeString(anthropicEngineeringLearningPolicy&&anthropicEngineeringLearningPolicy.source&&anthropicEngineeringLearningPolicy.source.indexUrl,220),
+        portabilityMode:anthropicEngineeringLearningPolicy&&anthropicEngineeringLearningPolicy.filters&&anthropicEngineeringLearningPolicy.filters.requirePortablePrinciples?1:0,
+      },
+    },
   });
   updateCurrentLogSurface({trigger:"server_started"});
   startOpenAIBlogLearningLoop();
+  startAnthropicEngineeringLearningLoop();
 }
 
 async function startHarnessServer(){
