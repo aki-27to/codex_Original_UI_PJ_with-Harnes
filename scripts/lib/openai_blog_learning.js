@@ -418,7 +418,7 @@ function normalizeOpenAIBlogLearningPolicy(policy, { policyPath = defaultOpenAIB
         : ["developers.openai.com"],
     },
     cadence: {
-      intervalMinutes: Math.max(15, Math.min(1440, Math.trunc(Number(source && source.cadence && source.cadence.intervalMinutes) || 360))),
+      intervalMinutes: Math.max(15, Math.min(1440, Math.trunc(Number(source && source.cadence && source.cadence.intervalMinutes) || 1440))),
       startupDelayMs: Math.max(0, Math.min(600000, Math.trunc(Number(source && source.cadence && source.cadence.startupDelayMs) || 5000))),
       requestTimeoutMs: Math.max(2000, Math.min(120000, Math.trunc(Number(source && source.cadence && source.cadence.requestTimeoutMs) || 15000))),
       maxArticlesPerRun: Math.max(1, Math.min(20, Math.trunc(Number(source && source.cadence && source.cadence.maxArticlesPerRun) || 6))),
@@ -926,7 +926,7 @@ function buildRuntimeSnapshotFromArtifacts(policy, runtimeState = {}) {
     sourceName: safeString(policy && policy.source && policy.source.name, 120) || "OpenAI Developers Blog",
     sourceUrl: safeString(policy && policy.source && policy.source.indexUrl, 260),
     allowedHosts: Array.isArray(policy && policy.source && policy.source.allowedHosts) ? policy.source.allowedHosts.slice(0, 8) : [],
-    intervalMinutes: Number(policy && policy.cadence && policy.cadence.intervalMinutes) || 360,
+    intervalMinutes: Number(policy && policy.cadence && policy.cadence.intervalMinutes) || 1440,
     lastRunAt: safeString(runtimeState.lastRunAt || ledger.lastRunAt, 40),
     lastSuccessAt: safeString(runtimeState.lastSuccessAt || ledger.lastSuccessAt, 40),
     nextRunAt: safeString(runtimeState.nextRunAt, 40),

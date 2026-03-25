@@ -93,7 +93,7 @@ async function run() {
       allowedHosts: ["developers.openai.com"],
     },
     cadence: {
-      intervalMinutes: 360,
+      intervalMinutes: 1440,
       startupDelayMs: 1000,
       requestTimeoutMs: 5000,
       maxArticlesPerRun: 4,

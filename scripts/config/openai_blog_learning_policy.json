@@ -8,7 +8,7 @@
     ]
   },
   "cadence": {
-    "intervalMinutes": 360,
+    "intervalMinutes": 1440,
     "startupDelayMs": 5000,
     "requestTimeoutMs": 15000,
     "maxArticlesPerRun": 6,
