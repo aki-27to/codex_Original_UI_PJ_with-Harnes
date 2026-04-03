@@ -1,0 +1,31 @@
+{
+  "schema": "non-interactive-execution-profile.v1",
+  "version": "2026-03-31.r1",
+  "profileId": "auto_no_hitl",
+  "requestUserInputPolicy": "blocked",
+  "approvalPolicyExpectation": "never",
+  "sandboxExpectation": "danger-full-access",
+  "networkExpectation": "enabled",
+  "defaultPassStatus": "AUTO_PASS",
+  "defaultFailStatus": "AUTO_FAIL",
+  "blockedStatusMap": {
+    "policy": "BLOCKED_BY_POLICY",
+    "environment": "BLOCKED_BY_ENV",
+    "external_evidence": "EXTERNAL_EVIDENCE_PENDING",
+    "validation": "AUTO_FAIL"
+  },
+  "failClosedCategories": [
+    "protected_path",
+    "secret_access",
+    "sensitive_tool",
+    "external_write"
+  ],
+  "naturalLanguageNeedsInputSuppression": true,
+  "recommendedInvocation": {
+    "command": "node scripts/run_externalization_nohitl.js full",
+    "notes": [
+      "non-interactive profile returns structured statuses",
+      "external-only evidence remains pending until imported"
+    ]
+  }
+}

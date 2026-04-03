@@ -1,0 +1,46 @@
+{
+  "schema": "agi-readiness-suite.v1",
+  "version": "2026-03-30.r1",
+  "suiteId": "agi_readiness_holdout_suite",
+  "description": "Protected holdout AGI-readiness suite.",
+  "cases": [
+    {
+      "id": "holdout-coding",
+      "title": "Holdout coding bounded flow",
+      "familyId": "coding",
+      "difficultyTier": "advanced",
+      "modalityTags": ["text", "code"],
+      "structureTags": ["implementation", "bounded_multi_agent"],
+      "objective": "complete protected coding holdout flow",
+      "acceptanceCriteria": ["deliverable recorded", "verifier passes"],
+      "orchestrationMode": "multi_agent_required",
+      "workflow": [
+        { "role": "planner", "objective": "plan holdout coding work", "expectedDeliverable": "plan delta", "acceptanceSubset": ["deliverable recorded"] },
+        { "role": "executor", "objective": "produce protected coding deliverable", "expectedDeliverable": "holdout deliverable", "acceptanceSubset": ["deliverable recorded"], "payload": { "deliverableSummary": "Protected coding artifact", "changedSurface": ["scripts/config/agi_readiness_public_suite.json"] } },
+        { "role": "verifier", "objective": "verify protected coding deliverable", "expectedDeliverable": "verifier report", "acceptanceSubset": ["verifier passes"], "targetRole": "executor" }
+      ]
+    },
+    {
+      "id": "holdout-business-ops",
+      "title": "Holdout business ops artifact",
+      "familyId": "business_ops",
+      "difficultyTier": "advanced",
+      "modalityTags": ["text", "structured_artifact"],
+      "structureTags": ["ops", "handoff"],
+      "objective": "complete protected ops artifact flow",
+      "acceptanceCriteria": ["operator artifact recorded"],
+      "orchestrationMode": "single_agent_fallback"
+    },
+    {
+      "id": "holdout-multimodal-docs",
+      "title": "Holdout multimodal docs flow",
+      "familyId": "multimodal_docs",
+      "difficultyTier": "advanced",
+      "modalityTags": ["document", "layout"],
+      "structureTags": ["multimodal", "artifact"],
+      "objective": "complete protected multimodal docs flow",
+      "acceptanceCriteria": ["document artifact recorded"],
+      "orchestrationMode": "single_agent_fallback"
+    }
+  ]
+}

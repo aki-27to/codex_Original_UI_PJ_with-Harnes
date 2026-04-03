@@ -1,0 +1,29 @@
+{
+  "schema": "model-routing-policy.v1",
+  "version": "2026-03-30.r1",
+  "models": [
+    { "id": "gpt-5.4", "costTier": "high", "latencyTier": "medium", "reliabilityTier": "high" },
+    { "id": "gpt-5.4-mini", "costTier": "low", "latencyTier": "low", "reliabilityTier": "medium" },
+    { "id": "gpt-5.3-codex", "costTier": "medium", "latencyTier": "medium", "reliabilityTier": "high" },
+    { "id": "gpt-5.3-codex-spark", "costTier": "low", "latencyTier": "low", "reliabilityTier": "medium" }
+  ],
+  "roleDefaults": {
+    "planner": "gpt-5.4-mini",
+    "researcher": "gpt-5.4",
+    "executor": "gpt-5.3-codex",
+    "verifier": "gpt-5.4-mini",
+    "coordinator": "gpt-5.4"
+  },
+  "familyOverrides": {
+    "coding": { "executor": "gpt-5.3-codex", "verifier": "gpt-5.4-mini" },
+    "research": { "researcher": "gpt-5.4", "verifier": "gpt-5.4-mini" },
+    "planning": { "planner": "gpt-5.4-mini", "coordinator": "gpt-5.4" },
+    "debugging_incident_response": { "executor": "gpt-5.3-codex", "verifier": "gpt-5.4" }
+  },
+  "budgetPolicies": {
+    "cheap": { "preferred": "gpt-5.4-mini", "fallback": "gpt-5.3-codex-spark" },
+    "standard": { "preferred": "gpt-5.3-codex", "fallback": "gpt-5.4-mini" },
+    "high": { "preferred": "gpt-5.4", "fallback": "gpt-5.3-codex" }
+  },
+  "fallbackModel": "gpt-5.4-mini"
+}

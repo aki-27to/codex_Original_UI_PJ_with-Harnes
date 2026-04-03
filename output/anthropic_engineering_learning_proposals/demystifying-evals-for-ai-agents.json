@@ -1,19 +1,19 @@
 {
   "schema": "anthropic-engineering-learning-proposal.v1",
   "proposalId": "anthropic-engineering-demystifying-evals-for-ai-agents",
-  "createdAt": "2026-03-25T11:25:33.281Z",
+  "createdAt": "2026-04-03T23:11:46.706Z",
   "articleId": "demystifying-evals-for-ai-agents",
   "title": "Demystifying evals for AI agents",
   "sourceUrl": "https://www.anthropic.com/engineering/demystifying-evals-for-ai-agents",
   "relevance": "high",
   "summary": "The capabilities that make agents useful also make them difficult to evaluate. The strategies that work across deployments combine techniques to match the complexity of the systems they measure.",
   "guidance": [
-    "As we described in Building effective agents , agents operate over many turns: calling tools, modifying state, and adapting based on intermediate results. These same capabilities that make AI agents useful—autonomy, intelligence, and flexibility—also make them harder to evaluate.",
     "As we described in Building effective agents , agents operate over many turns: calling tools, modifying state, and adapting based on intermediate results.",
-    "Through our internal work and with customers at the frontier of agent development, we’ve learned how to design more rigorous and useful evals for agents. Here's what's worked across a range of agent architectures and use cases in real-world deployment.",
     "Through our internal work and with customers at the frontier of agent development, we’ve learned how to design more rigorous and useful evals for agents.",
     "Good evaluations help teams ship AI agents more confidently.",
-    "Evals make problems and behavioral changes visible before they affect users, and their value compounds over the lifecycle of an"
+    "These same capabilities that make AI agents useful—autonomy, intelligence, and flexibility—also make them harder to evaluate.",
+    "An evaluation (“eval”) is a test for an AI system: give an AI an input, then apply grading logic to its output to measure success. In this post, we focus on automated evals that can be run during development without real users.",
+    "In this post, we focus on automated evals that can be run during development without real users."
   ],
   "topicTags": [
     "agents",

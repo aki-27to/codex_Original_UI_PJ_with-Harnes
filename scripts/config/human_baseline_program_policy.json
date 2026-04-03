@@ -1,0 +1,23 @@
+{
+  "schema": "human-baseline-program-policy.v1",
+  "version": "2026-03-31.r1",
+  "trialRoot": "logs/archive/raw/human_baseline",
+  "trialManifestPath": "logs/archive/raw/human_baseline/human_baseline_trial_manifest.json",
+  "trialHistoryPath": "logs/archive/raw/human_baseline/trial_history.jsonl",
+  "resultImportHistoryPath": "logs/archive/raw/human_baseline/result_import_history.jsonl",
+  "adjudicationRoot": "logs/archive/raw/human_baseline/adjudication",
+  "minimumObservedRunsForClaim": 12,
+  "allowedObservationKinds": [
+    "human_observed",
+    "mock_fixture",
+    "synthetic"
+  ],
+  "requiredFields": [
+    "taskId",
+    "familyId",
+    "timeLimitMinutes",
+    "allowedTools",
+    "deniedTools",
+    "submissionFormat"
+  ]
+}

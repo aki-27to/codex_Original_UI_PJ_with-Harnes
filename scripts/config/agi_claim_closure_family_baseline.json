@@ -1,0 +1,17 @@
+{
+  "schema": "agi-claim-closure-family-baseline.v1",
+  "families": [
+    "coding",
+    "research",
+    "planning",
+    "analysis",
+    "business_ops",
+    "multimodal_docs",
+    "spreadsheets_structured_artifacts",
+    "web_tool_use",
+    "debugging_incident_response",
+    "tool_learning_or_new_tool_adoption",
+    "operations",
+    "document_workflow"
+  ]
+}

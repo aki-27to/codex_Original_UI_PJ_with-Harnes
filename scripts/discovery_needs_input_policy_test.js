@@ -122,8 +122,8 @@ function run(){
       planningMode:"DISCOVERY",
       observedSignals:{fileChanges:0,dispatchSuccessCount:0},
     }),
-    true,
-    "approval-boundary discovery should still auto interrupt"
+    false,
+    "approval-boundary metadata alone should not auto interrupt"
   );
 
   assert.strictEqual(

@@ -1,0 +1,44 @@
+{
+  "suiteId": "open_world_blackbox_suite",
+  "description": "Protected blackbox open-world readiness tasks.",
+  "cases": [
+    {
+      "id": "ow-blackbox-multimodal-artifact-handling",
+      "title": "Blackbox multimodal artifact handling",
+      "familyId": "multimodal_or_semi_structured_artifact_handling",
+      "difficultyTier": "expert",
+      "modalityTags": ["multimodal", "semi_structured"],
+      "structureTags": ["blackbox", "open_world"],
+      "orchestrationMode": "multi_agent_required",
+      "objective": "Handle a bounded multimodal artifact task and produce a trustworthy structured summary.",
+      "acceptanceCriteria": [
+        "structured summary produced",
+        "verifier-ready evidence included"
+      ],
+      "valueProxy": "artifact_processing_value",
+      "simulatedDurationMinutes": 410,
+      "payload": {
+        "kind": "multimodal_artifact"
+      }
+    },
+    {
+      "id": "ow-blackbox-unseen-tool-adoption",
+      "title": "Blackbox unseen tool adoption",
+      "familyId": "tool_learning_or_new_tool_adoption",
+      "difficultyTier": "expert",
+      "modalityTags": ["tooling"],
+      "structureTags": ["blackbox", "open_world"],
+      "orchestrationMode": "single_agent_fallback",
+      "objective": "Safely characterize an unseen tool and produce a bounded adoption memo without violating policy.",
+      "acceptanceCriteria": [
+        "adoption memo produced",
+        "policy boundary preserved"
+      ],
+      "valueProxy": "tool_adoption_value",
+      "simulatedDurationMinutes": 370,
+      "payload": {
+        "kind": "unseen_tool"
+      }
+    }
+  ]
+}

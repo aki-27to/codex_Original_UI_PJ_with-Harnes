@@ -13,12 +13,13 @@ function assert(condition, message) {
 }
 
 function testNormalizePolicy() {
-  assert(normalizeRequestUserInputPolicy(undefined, "blocked") === "blocked", "default policy should be blocked");
+  assert(normalizeRequestUserInputPolicy(undefined, "auto-default") === "auto-default", "default policy should be autonomy-first");
   assert(
-    normalizeRequestUserInputPolicy("auto_default", "blocked") === "auto-default",
+    normalizeRequestUserInputPolicy("auto_default", "auto-default") === "auto-default",
     "auto_default alias should normalize"
   );
-  assert(normalizeRequestUserInputPolicy("empty", "blocked") === "auto-empty", "empty alias should normalize");
+  assert(normalizeRequestUserInputPolicy("autonomy-first", "blocked") === "auto-default", "autonomy-first alias should normalize");
+  assert(normalizeRequestUserInputPolicy("empty", "auto-default") === "auto-empty", "empty alias should normalize");
   assert(
     normalizeRequestUserInputPolicy("unknown", "auto-default") === "auto-default",
     "invalid policy should use fallback"
@@ -37,15 +38,16 @@ function testBlockedPolicy() {
   assert(resolution.answeredCount === 0, "blocked policy should not answer");
 }
 
-function testImplicitDefaultPolicyIsBlocked() {
+function testImplicitDefaultPolicyIsAutoDefault() {
   const resolution = resolveNonInteractiveUserInput({
     params: {
       questions: [{ id: "q1", options: [{ label: "yes", value: "yes" }] }],
     },
   });
-  assert(resolution.policy === "blocked", "implicit policy should normalize to blocked");
-  assert(resolution.decision === "blocked", "implicit policy should block");
-  assert(resolution.reason === "blocked_non_interactive_user_input_policy", "implicit policy should expose blocked reason");
+  assert(resolution.policy === "auto-default", "implicit policy should normalize to auto-default");
+  assert(resolution.decision === "auto_default", "implicit policy should auto-answer");
+  assert(resolution.answers.q1 === "yes", "implicit auto-default should pick the first available option");
+  assert(resolution.reason === "auto_default_user_input_policy", "implicit policy should expose auto-default reason");
 }
 
 function testAutoEmptyPolicy() {
@@ -115,7 +117,7 @@ function run() {
   const tests = [
     ["normalize policy aliases", testNormalizePolicy],
     ["blocked policy behavior", testBlockedPolicy],
-    ["implicit default policy is blocked", testImplicitDefaultPolicyIsBlocked],
+    ["implicit default policy is auto-default", testImplicitDefaultPolicyIsAutoDefault],
     ["auto-empty behavior", testAutoEmptyPolicy],
     ["auto-default explicit default", testAutoDefaultExplicitDefault],
     ["auto-default recommended option", testAutoDefaultRecommendedOption],

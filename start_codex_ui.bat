@@ -42,10 +42,11 @@ if "%CODEX_UI_PORT%"=="" set "CODEX_UI_PORT=57525"
 if "%CODEX_AUTO_OPEN_BROWSER%"=="" set "CODEX_AUTO_OPEN_BROWSER=1"
 set "LAUNCHER_AUTO_OPEN_BROWSER=%CODEX_AUTO_OPEN_BROWSER%"
 if "%CODEX_AUTO_OPEN_PATH%"=="" set "CODEX_AUTO_OPEN_PATH=/01.HarnesUI/index.html"
-if "%CODEX_RESTART_EXISTING_HARNESS%"=="" set "CODEX_RESTART_EXISTING_HARNESS=1"
+if "%CODEX_RESTART_EXISTING_HARNESS%"=="" set "CODEX_RESTART_EXISTING_HARNESS=0"
+if "%CODEX_FORCE_ACTIVE_RESTART%"=="" set "CODEX_FORCE_ACTIVE_RESTART=0"
 if "%CODEX_SANDBOX_NETWORK_DISABLED%"=="" set "CODEX_SANDBOX_NETWORK_DISABLED=0"
 if "%CODEX_DEFAULT_EXEC_AGENT%"=="" set "CODEX_DEFAULT_EXEC_AGENT=default"
-if "%CODEX_REQUEST_USER_INPUT_POLICY%"=="" set "CODEX_REQUEST_USER_INPUT_POLICY=blocked"
+if "%CODEX_REQUEST_USER_INPUT_POLICY%"=="" set "CODEX_REQUEST_USER_INPUT_POLICY=auto-default"
 if "%CODEX_AUTOMATIC_APPROVAL_REVIEW%"=="" set "CODEX_AUTOMATIC_APPROVAL_REVIEW=1"
 if "%CODEX_FAST_MODE_DEFAULT%"=="" set "CODEX_FAST_MODE_DEFAULT=0"
 if "%CODEX_SERVER_RESTART_MAX_RETRIES%"=="" set "CODEX_SERVER_RESTART_MAX_RETRIES=4"
@@ -71,19 +72,21 @@ if "%CODEX_EDGE_EXE%"=="" if exist "%ProgramFiles(x86)%\Microsoft\Edge\Applicati
 if "%CODEX_EDGE_EXE%"=="" if exist "%ProgramFiles%\Microsoft\Edge\Application\msedge.exe" set "CODEX_EDGE_EXE=%ProgramFiles%\Microsoft\Edge\Application\msedge.exe"
 if "%CODEX_EDGE_EXE%"=="" if exist "%LOCALAPPDATA%\Microsoft\Edge\Application\msedge.exe" set "CODEX_EDGE_EXE=%LOCALAPPDATA%\Microsoft\Edge\Application\msedge.exe"
 set "UI_URL=http://127.0.0.1:%CODEX_UI_PORT%%CODEX_AUTO_OPEN_PATH%"
+set "CODEX_EXISTING_HARNESS_REUSED=0"
 
-if not "%CODEX_RESTART_EXISTING_HARNESS%"=="0" (
-  echo [launcher] checking for existing harness on port %CODEX_UI_PORT%...
-  powershell -NoProfile -ExecutionPolicy Bypass -Command ^
-    "$port=[int]$env:CODEX_UI_PORT; $runtimeUrl='http://127.0.0.1:'+$port+'/api/runtime'; $runtime=$null; try { $response=Invoke-WebRequest -UseBasicParsing -Uri $runtimeUrl -TimeoutSec 2; if($response.StatusCode -eq 200){ $runtime=$response.Content | ConvertFrom-Json } } catch {}; if(-not $runtime -or $runtime.mode -ne 'app-server'){ exit 0 }; $pids=@(); try { if(Get-Command Get-NetTCPConnection -ErrorAction SilentlyContinue){ $pids=@(Get-NetTCPConnection -LocalAddress '127.0.0.1' -LocalPort $port -State Listen -ErrorAction SilentlyContinue | Select-Object -ExpandProperty OwningProcess -Unique) } } catch {}; if(-not $pids -or $pids.Count -eq 0){ $pattern=':'+$port+'\s+.*LISTENING\s+(\d+)$'; $rows=@(netstat -ano -p tcp | Select-String -Pattern $pattern); foreach($row in $rows){ if($row.Matches.Count -gt 0){ $pids+=[int]$row.Matches[0].Groups[1].Value } }; $pids=@($pids | Select-Object -Unique) }; if(-not $pids -or $pids.Count -eq 0){ Write-Output ('[launcher] existing harness detected on port '+$port+', but owning PID was not resolved.'); exit 2 }; Write-Output ('[launcher] stopping existing harness on port '+$port+' (PID '+(($pids -join ', '))+')...'); foreach($candidatePid in $pids){ try { Stop-Process -Id $candidatePid -Force -ErrorAction Stop } catch { Write-Output ('[launcher] failed to stop PID '+$candidatePid+': '+$_.Exception.Message); exit 2 } }; $deadline=(Get-Date).AddSeconds(10); while((Get-Date) -lt $deadline){ Start-Sleep -Milliseconds 250; $stillRunning=$false; foreach($candidatePid in $pids){ if(Get-Process -Id $candidatePid -ErrorAction SilentlyContinue){ $stillRunning=$true; break } }; if(-not $stillRunning){ Write-Output ('[launcher] existing harness stopped.'); exit 0 } }; Write-Output ('[launcher] existing harness did not stop within timeout.'); exit 2"
-  if errorlevel 1 (
-    echo [ERROR] failed to stop the existing harness on port %CODEX_UI_PORT%.
-    if "%CODEX_PAUSE_ON_EXIT%"=="1" (
-      echo [launcher] press any key to close this window...
-      pause >nul
-    )
-    exit /b 1
+echo [launcher] checking for existing harness on port %CODEX_UI_PORT%...
+powershell -NoProfile -ExecutionPolicy Bypass -Command ^
+  "$port=[int]$env:CODEX_UI_PORT; $restart=$env:CODEX_RESTART_EXISTING_HARNESS; $forceActive=$env:CODEX_FORCE_ACTIVE_RESTART; $runtimeUrl='http://127.0.0.1:'+$port+'/api/runtime'; $runtime=$null; try { $response=Invoke-WebRequest -UseBasicParsing -Uri $runtimeUrl -TimeoutSec 2; if($response.StatusCode -eq 200){ $runtime=$response.Content | ConvertFrom-Json } } catch {}; if(-not $runtime -or $runtime.mode -ne 'app-server'){ exit 0 }; $activeExec=0; try { $activeExec=[int]($runtime.activeExecRequests) } catch {}; $latestStatus=''; try { $latestStatus=''+$runtime.latestTurn.status } catch {}; $hasActive=($activeExec -gt 0) -or ($latestStatus -eq 'in_progress'); if($restart -eq '0'){ Write-Output ('[launcher] existing harness detected on port '+$port+'; reusing without restart.'); exit 10 }; if($hasActive -and $forceActive -ne '1'){ Write-Output ('[launcher] existing harness has active /api/exec work; refusing restart while work is in progress.'); exit 11 }; $pids=@(); try { if(Get-Command Get-NetTCPConnection -ErrorAction SilentlyContinue){ $pids=@(Get-NetTCPConnection -LocalAddress '127.0.0.1' -LocalPort $port -State Listen -ErrorAction SilentlyContinue | Select-Object -ExpandProperty OwningProcess -Unique) } } catch {}; if(-not $pids -or $pids.Count -eq 0){ $pattern=':'+$port+'\s+.*LISTENING\s+(\d+)$'; $rows=@(netstat -ano -p tcp | Select-String -Pattern $pattern); foreach($row in $rows){ if($row.Matches.Count -gt 0){ $pids+=[int]$row.Matches[0].Groups[1].Value } }; $pids=@($pids | Select-Object -Unique) }; if(-not $pids -or $pids.Count -eq 0){ Write-Output ('[launcher] existing harness detected on port '+$port+', but owning PID was not resolved.'); exit 2 }; Write-Output ('[launcher] stopping existing harness on port '+$port+' (PID '+(($pids -join ', '))+')...'); foreach($candidatePid in $pids){ try { Stop-Process -Id $candidatePid -Force -ErrorAction Stop } catch { Write-Output ('[launcher] failed to stop PID '+$candidatePid+': '+$_.Exception.Message); exit 2 } }; $deadline=(Get-Date).AddSeconds(10); while((Get-Date) -lt $deadline){ Start-Sleep -Milliseconds 250; $stillRunning=$false; foreach($candidatePid in $pids){ if(Get-Process -Id $candidatePid -ErrorAction SilentlyContinue){ $stillRunning=$true; break } }; if(-not $stillRunning){ Write-Output ('[launcher] existing harness stopped.'); exit 0 } }; Write-Output ('[launcher] existing harness did not stop within timeout.'); exit 2"
+set "HARNESS_PROBE_EXIT=%errorlevel%"
+if "%HARNESS_PROBE_EXIT%"=="10" set "CODEX_EXISTING_HARNESS_REUSED=1"
+if "%HARNESS_PROBE_EXIT%"=="11" set "CODEX_EXISTING_HARNESS_REUSED=1"
+if not "%HARNESS_PROBE_EXIT%"=="0" if not "%HARNESS_PROBE_EXIT%"=="10" if not "%HARNESS_PROBE_EXIT%"=="11" (
+  echo [ERROR] failed to reconcile the existing harness on port %CODEX_UI_PORT%.
+  if "%CODEX_PAUSE_ON_EXIT%"=="1" (
+    echo [launcher] press any key to close this window...
+    pause >nul
   )
+  exit /b 1
 )
 
 if "%LAUNCHER_AUTO_OPEN_BROWSER%"=="0" (
@@ -96,6 +99,16 @@ if "%LAUNCHER_AUTO_OPEN_BROWSER%"=="0" (
   )
   echo [launcher] browser should open automatically.
   echo [launcher] fallback URL: %UI_URL%
+)
+
+if "%CODEX_EXISTING_HARNESS_REUSED%"=="1" (
+  if not "%LAUNCHER_AUTO_OPEN_BROWSER%"=="0" (
+    echo [launcher] opening browser against the existing harness...
+    start "" /b powershell -NoProfile -ExecutionPolicy Bypass -WindowStyle Hidden -Command ^
+      "$url='%UI_URL%'; $edge='%CODEX_EDGE_EXE%'; if($edge -and (Test-Path $edge)){ Start-Process -FilePath $edge -ArgumentList $url | Out-Null } else { Start-Process $url | Out-Null }"
+  )
+  echo [launcher] existing harness reused; no restart was performed.
+  endlocal & exit /b 0
 )
 
 echo [launcher] starting UI server...

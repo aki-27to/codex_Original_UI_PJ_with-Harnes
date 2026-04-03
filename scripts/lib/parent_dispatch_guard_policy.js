@@ -78,6 +78,17 @@ function isSmokeLikeProfile(profile) {
   return normalized.includes("smoke") || normalized.includes("test") || normalized.includes("ci");
 }
 
+function isDispatchGuardExemptProfile(profile) {
+  if (typeof profile !== "string") {
+    return false;
+  }
+  const normalized = profile.trim().toLowerCase();
+  if (!normalized) {
+    return false;
+  }
+  return normalized === "conversation-app-server";
+}
+
 function detectImplementationWork({
   fileChanges = 0,
   changedFiles = 0,
@@ -143,6 +154,7 @@ function evaluateParentDispatchGuard({
   const normalizedAgent = normalizeParentComparableAgentName(normalizedAgentRaw, parentSet);
   const parentAgent = parentSet.has(normalizedAgent);
   const smokeLike = isSmokeLikeProfile(executionProfile);
+  const guardExemptProfile = isDispatchGuardExemptProfile(executionProfile);
   const normalizedStatus = typeof finalStatus === "string" ? finalStatus.trim().toLowerCase() : "";
   const completedLike = normalizedStatus === "completed";
   const attempts = toNonNegativeInt(dispatchCount);
@@ -161,7 +173,14 @@ function evaluateParentDispatchGuard({
   const plannedExecution = plannedDispatches > 0 && !proposalOnly;
 
   const enabled = normalizedMode !== "off";
-  const required = Boolean(enabled && parentAgent && !smokeLike && completedLike && (work.observed || plannedExecution));
+  const required = Boolean(
+    enabled &&
+    parentAgent &&
+    !smokeLike &&
+    !guardExemptProfile &&
+    completedLike &&
+    (work.observed || plannedExecution)
+  );
   const routingSatisfied = !required || Boolean(routingDecisionPresent);
   const dispatchSatisfied = !required || successes > 0;
   const satisfied = routingSatisfied && dispatchSatisfied;
@@ -181,6 +200,7 @@ function evaluateParentDispatchGuard({
     reason,
     parentAgent: parentAgent ? 1 : 0,
     smokeLikeProfile: smokeLike ? 1 : 0,
+    guardExemptProfile: guardExemptProfile ? 1 : 0,
     implementationWorkObserved: work.observed ? 1 : 0,
     plannedExecution: plannedExecution ? 1 : 0,
     finalStatus: normalizedStatus || "unknown",

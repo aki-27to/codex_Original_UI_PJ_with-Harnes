@@ -1,0 +1,63 @@
+{
+  "schema": "repo-local-skill-catalog.v1",
+  "version": "2026-03-30.r1",
+  "skillsRoot": ".agents/skills",
+  "skills": [
+    {
+      "id": "code-change-verification",
+      "path": ".agents/skills/code-change-verification/SKILL.md",
+      "description": "Use after code edits when verifier, regression, and changed-surface evidence must be synchronized.",
+      "useWhen": [
+        "code changed locally",
+        "verification evidence must be refreshed",
+        "closeout needs changed surface + verifier status"
+      ],
+      "avoidWhen": [
+        "no code or config changes occurred",
+        "task is pure research without repo mutation"
+      ],
+      "expectedArtifacts": [
+        "verification_status",
+        "changed_surface"
+      ]
+    },
+    {
+      "id": "handoff-artifact-generation",
+      "path": ".agents/skills/handoff-artifact-generation/SKILL.md",
+      "description": "Use when closing or pausing a long-running task and a carry-forward bundle is required.",
+      "useWhen": [
+        "session is ending",
+        "task will be resumed later",
+        "operator needs a concise continuation bundle"
+      ],
+      "avoidWhen": [
+        "turn-local scratch work does not need persistence"
+      ],
+      "expectedArtifacts": [
+        "task_summary",
+        "next_session_brief",
+        "open_issues",
+        "verification_status",
+        "durable_learnings"
+      ]
+    },
+    {
+      "id": "long-run-session-closeout",
+      "path": ".agents/skills/long-run-session-closeout/SKILL.md",
+      "description": "Use before declaring a long-running task session complete or paused to prevent false completion.",
+      "useWhen": [
+        "session is being closed",
+        "completion is claimed",
+        "verifier findings must be checked before handoff"
+      ],
+      "avoidWhen": [
+        "task initialization only"
+      ],
+      "expectedArtifacts": [
+        "sprint_contract",
+        "verification_status",
+        "next_session_brief"
+      ]
+    }
+  ]
+}

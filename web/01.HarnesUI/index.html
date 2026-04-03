@@ -15,7 +15,7 @@
         <span class="brand-dot"></span>
         <div>
           <h1>Codex Harness OS</h1>
-          <p>今どの段階で、何が進み、何が残っているかを一目で追うための実行 UI。</p>
+          <p>AGI に目的・境界・証拠を渡し、実行の現在地まで一目で追うための操作 UI。</p>
         </div>
       </div>
       <div class="state-pills">
@@ -183,18 +183,47 @@
         <section class="focus-panel" aria-live="polite">
           <div class="focus-head">
             <div>
-              <h3>次にやること</h3>
-              <p id="focusActionDetail" class="focus-action-detail">入力先を確認してから、依頼を書いて送信します。</p>
+              <h3>Mission Brief</h3>
+              <p id="focusActionDetail" class="focus-action-detail">目的・対象・制約・完了条件が見える形で依頼を整えます。</p>
             </div>
             <div class="focus-head-tools">
               <button id="focusToTimelineBtn" class="btn mini secondary" type="button">会話へ</button>
               <button id="focusToComposerBtn" class="btn mini secondary" type="button">入力欄へ</button>
             </div>
           </div>
-          <article class="focus-summary-card">
-            <strong id="focusActionTitle" class="focus-action-title">依頼を書いて送信</strong>
-            <p id="focusActionHint" class="focus-action-hint">やること、対象、確認方法を書くと、AIが迷いにくくなります。</p>
-          </article>
+          <div class="focus-brief-grid">
+            <article class="focus-summary-card">
+              <strong id="focusActionTitle" class="focus-action-title">依頼を書いて送信</strong>
+              <p id="focusActionHint" class="focus-action-hint">やること、対象、確認方法を書くと、AI が長く安定して動きやすくなります。</p>
+            </article>
+            <article class="mission-draft-card" aria-live="polite">
+              <div class="mission-draft-head">
+                <div>
+                  <h4>依頼の骨子</h4>
+                  <p id="missionDraftStatus" class="mission-draft-status">未入力</p>
+                </div>
+                <p class="mission-draft-copy">入力中の草案か、直前の依頼から AGI が拾う骨子をここで確認できます。</p>
+              </div>
+              <div class="mission-draft-grid">
+                <article class="mission-draft-row">
+                  <span class="mission-draft-label">Goal</span>
+                  <strong id="missionGoalValue" class="mission-draft-value">何を実現したいかを書きます。</strong>
+                </article>
+                <article class="mission-draft-row">
+                  <span class="mission-draft-label">Scope</span>
+                  <strong id="missionScopeValue" class="mission-draft-value">対象のファイル、画面、または範囲を書きます。</strong>
+                </article>
+                <article class="mission-draft-row">
+                  <span class="mission-draft-label">Constraints</span>
+                  <strong id="missionConstraintValue" class="mission-draft-value">守るべき制約や避けたいことを書きます。</strong>
+                </article>
+                <article class="mission-draft-row">
+                  <span class="mission-draft-label">Done When</span>
+                  <strong id="missionDoneValue" class="mission-draft-value">どう確認できたら完了かを書きます。</strong>
+                </article>
+              </div>
+            </article>
+          </div>
           <div class="focus-grid">
             <article id="focusChatCard" class="focus-card">
               <span class="focus-card-label">チャット</span>
@@ -212,6 +241,55 @@
               <p id="focusSendHint" class="focus-card-hint">依頼が決まったら下の入力欄から送信します。</p>
             </article>
           </div>
+        </section>
+
+        <footer id="composer" class="composer">
+          <section class="composer-input" aria-label="Chat input">
+            <div class="composer-head">
+              <div>
+                <h3>Mission</h3>
+                <p class="composer-guide">目的 / 対象 / 制約 / 完了条件 を短く書くと、AGI が長時間でも意図を崩しにくくなります。</p>
+              </div>
+              <div class="composer-shortcuts" aria-label="依頼テンプレート">
+                <button class="btn mini secondary composer-preset" type="button" data-compose-preset="目的:\n対象:\n制約:\n完了条件:\n">骨子テンプレート</button>
+                <button class="btn mini secondary composer-preset" type="button" data-compose-preset="目的: UIを改善する\n対象: web/01.HarnesUI\n制約: 既存の /api/exec 経路とローカル優先運用は維持する\n完了条件: desktop/mobile で見た目と操作を確認し、関連 docs も同期する\n">UI改善</button>
+                <button class="btn mini secondary composer-preset" type="button" data-compose-preset="目的: 不具合を直す\n対象:\n制約: 原因を切り分けて、不要な変更は増やさない\n完了条件: 原因説明、修正、関連テスト更新まで終える\n">不具合修正</button>
+              </div>
+            </div>
+            <div id="composerRuntimeStrip" class="composer-runtime-strip" aria-live="polite">
+              <span id="composerModeChip" class="composer-runtime-chip">Mode</span>
+              <span id="composerModelChip" class="composer-runtime-chip">Model</span>
+              <span id="composerWorkspaceChip" class="composer-runtime-chip">Workspace</span>
+              <span id="composerAttachmentChip" class="composer-runtime-chip">Attachments</span>
+            </div>
+            <p class="composer-tip">例: 目的 / 対象ファイル / 制約 / 完了条件 を書いてから送ると、要件ロックと検証が安定します。</p>
+            <textarea id="promptInput" rows="3" placeholder="依頼を入力してください。例: 目的: 現行UIをAGI向けに改善する / 対象: web/01.HarnesUI / 制約: /api/exec 経路維持 / 完了条件: desktop/mobile で確認"></textarea>
+            <div class="composer-tools">
+              <input id="imageInput" type="file" accept=".png,.jpg,.jpeg,.webp,.gif,image/png,image/jpeg,image/webp,image/gif" multiple hidden>
+              <button id="imageAttachBtn" class="btn secondary mini" type="button">画像を添付</button>
+              <p id="imageError" class="composer-error" role="status" aria-live="polite" hidden></p>
+            </div>
+            <article id="imagePreview" class="image-preview" hidden>
+              <p id="imagePreviewSummary" class="image-preview-summary"></p>
+              <div id="imagePreviewList" class="image-preview-list"></div>
+              <button id="imageRemoveBtn" class="btn mini secondary" type="button">すべて外す</button>
+            </article>
+          </section>
+          <div class="composer-actions">
+            <button id="stopBtn" class="btn danger" disabled>停止</button>
+            <button id="sendBtn" class="btn primary">送信</button>
+          </div>
+        </footer>
+
+        <section class="conversation-panel" aria-live="polite">
+          <div class="conversation-head">
+            <div>
+              <h3>会話と結果</h3>
+              <p id="conversationSummary" class="conversation-summary">依頼内容、途中経過、最終結果をここで追います。</p>
+            </div>
+            <button id="jumpToComposerBtn" class="btn mini secondary" type="button">入力欄へ</button>
+          </div>
+          <section id="timeline" class="timeline" aria-live="polite"></section>
         </section>
 
         <section class="harness-panel" aria-live="polite">
@@ -311,134 +389,97 @@
           </ul>
         </section>
 
-        <section id="performancePanel" class="performance-panel" aria-live="polite">
-          <div class="performance-head">
-            <div>
-              <h3>セッション指標</h3>
-              <p>このチャットで使ったトークン数と処理時間の合計です。</p>
-            </div>
-            <div class="performance-meta">
-              <p class="performance-meta-line">セッション/スレッド: <span id="perfSessionRef">none</span></p>
-              <p class="performance-meta-line">更新: <span id="perfUpdatedAt">--:--:--</span></p>
-            </div>
-          </div>
-          <div class="performance-grid">
-            <article class="performance-card token">
-              <p class="performance-label">総トークン</p>
-              <p id="perfTokenValue" class="performance-value">0</p>
-              <p id="perfTokenDetail" class="performance-detail">in-flight +0</p>
-              <svg id="perfTokenSpark" class="performance-spark" viewBox="0 0 100 28" preserveAspectRatio="none" aria-label="トークン推移"></svg>
-            </article>
-            <article class="performance-card time">
-              <p class="performance-label">処理時間 (ms)</p>
-              <p id="perfTimeValue" class="performance-value">0</p>
-              <p id="perfTimeDetail" class="performance-detail">in-flight +0ms</p>
-              <svg id="perfTimeSpark" class="performance-spark" viewBox="0 0 100 28" preserveAspectRatio="none" aria-label="時間推移"></svg>
-            </article>
-          </div>
-        </section>
-
-        <section class="agent-flow-panel" aria-live="polite">
-          <div class="agent-flow-head">
-            <div>
-              <h3>実行トレース</h3>
-              <p>待機 / 実行 / 完了 / 失敗の流れを時系列で表示します。</p>
-            </div>
-            <button id="clearAgentTraceBtn" class="btn mini secondary" type="button">消去</button>
-          </div>
-          <div id="agentFlowLane" class="agent-flow-lane">
-            <article class="agent-flow-empty">まだエージェント状態はありません。</article>
-          </div>
-          <section id="agentTopographyPanel" class="agent-topography-panel" aria-live="polite">
-            <div class="agent-topography-head">
-              <div>
-                <h4>担当エージェント</h4>
-                <p class="agent-topography-copy"><code>/api/agent-topography</code> とこのチャットの trace を重ねて、今どの役割が動いているかを表示します。</p>
+        <details id="opsDeck" class="ops-deck" data-advanced="true">
+          <summary>詳細トレース / メトリクス / 診断</summary>
+          <div class="ops-deck-body">
+            <section id="performancePanel" class="performance-panel" aria-live="polite">
+              <div class="performance-head">
+                <div>
+                  <h3>セッション指標</h3>
+                  <p>このチャットで使ったトークン数と処理時間の合計です。</p>
+                </div>
+                <div class="performance-meta">
+                  <p class="performance-meta-line">セッション/スレッド: <span id="perfSessionRef">none</span></p>
+                  <p class="performance-meta-line">更新: <span id="perfUpdatedAt">--:--:--</span></p>
+                </div>
               </div>
-              <button id="agentTopographyRefreshBtn" class="btn mini secondary" type="button">更新</button>
-            </div>
-            <p id="agentTopographyMeta" class="agent-topography-meta">読み込み中...</p>
-            <div id="agentTopographyList" class="agent-topography-list">
-              <div class="agent-topography-empty">エージェント情報を読み込み中...</div>
-            </div>
-          </section>
-          <div class="agent-trace-subhead">
-            <h4>イベント履歴</h4>
-            <p>このチャットの直近 32 件を表示します。</p>
-          </div>
-          <ol id="agentTraceList" class="agent-trace-list">
-            <li class="agent-trace-empty">まだトレースイベントはありません。</li>
-          </ol>
-        </section>
-
-        <section class="diagnostics-panel" aria-live="polite">
-          <div class="diagnostics-head">
-            <h3>診断</h3>
-            <p id="diagSummaryText" class="diag-summary-text">診断を読み込み中...</p>
-          </div>
-          <details id="diagDetails" class="diagnostics-details">
-            <summary id="diagDetailsSummary">詳細を表示</summary>
-            <div class="diag-grid">
-              <article class="diag-card">
-                <h4>Codex CLI</h4>
-                <p id="diagCodexState" class="diag-state pending">未確認</p>
-                <p id="diagCodexDetail" class="diag-detail">まだ確認していません。</p>
-              </article>
-              <article class="diag-card">
-                <h4>Node</h4>
-                <p id="diagNodeState" class="diag-state pending">未確認</p>
-                <p id="diagNodeDetail" class="diag-detail">まだ確認していません。</p>
-              </article>
-              <article class="diag-card">
-                <h4>Web検索</h4>
-                <p id="diagSearchState" class="diag-state off">OFF</p>
-                <p id="diagSearchDetail" class="diag-detail">ポリシーで無効です。</p>
-              </article>
-            </div>
-          </details>
-        </section>
-        <section class="conversation-panel" aria-live="polite">
-          <div class="conversation-head">
-            <div>
-              <h3>会話</h3>
-              <p id="conversationSummary" class="conversation-summary">依頼内容と応答はここに表示されます。</p>
-            </div>
-            <button id="jumpToComposerBtn" class="btn mini secondary" type="button">入力欄へ</button>
-          </div>
-          <section id="timeline" class="timeline" aria-live="polite"></section>
-        </section>
-
-        <footer id="composer" class="composer">
-          <section class="composer-input" aria-label="Chat input">
-            <div class="composer-head">
-              <div>
-                <h3>依頼を書く</h3>
-                <p class="composer-guide">やること・対象・確認方法を書くと、意図が伝わりやすくなります。</p>
+              <div class="performance-grid">
+                <article class="performance-card token">
+                  <p class="performance-label">総トークン</p>
+                  <p id="perfTokenValue" class="performance-value">0</p>
+                  <p id="perfTokenDetail" class="performance-detail">in-flight +0</p>
+                  <svg id="perfTokenSpark" class="performance-spark" viewBox="0 0 100 28" preserveAspectRatio="none" aria-label="トークン推移"></svg>
+                </article>
+                <article class="performance-card time">
+                  <p class="performance-label">処理時間 (ms)</p>
+                  <p id="perfTimeValue" class="performance-value">0</p>
+                  <p id="perfTimeDetail" class="performance-detail">in-flight +0ms</p>
+                  <svg id="perfTimeSpark" class="performance-spark" viewBox="0 0 100 28" preserveAspectRatio="none" aria-label="時間推移"></svg>
+                </article>
               </div>
-              <div class="composer-shortcuts" aria-label="依頼テンプレート">
-                <button class="btn mini secondary composer-preset" type="button" data-compose-preset="不具合の原因を調べて修正し、関連テストまで更新してください。">バグ修正</button>
-                <button class="btn mini secondary composer-preset" type="button" data-compose-preset="このUIを、わかりやすさと使いやすさを優先して改善してください。">UI改善</button>
-                <button class="btn mini secondary composer-preset" type="button" data-compose-preset="現在の挙動を確認し、迷いやすい操作を減らしてください。">使い勝手改善</button>
+            </section>
+
+            <section class="agent-flow-panel" aria-live="polite">
+              <div class="agent-flow-head">
+                <div>
+                  <h3>実行トレース</h3>
+                  <p>待機 / 実行 / 完了 / 失敗の流れを時系列で表示します。</p>
+                </div>
+                <button id="clearAgentTraceBtn" class="btn mini secondary" type="button">消去</button>
               </div>
-            </div>
-            <p class="composer-tip">例: `web/01.HarnesUI` の入力欄を使いやすくし、見た目と挙動を確認してください。</p>
-            <textarea id="promptInput" rows="3" placeholder="依頼を入力してください。例: チャット削除を実装し、API の挙動をテストで確認してください。"></textarea>
-            <div class="composer-tools">
-              <input id="imageInput" type="file" accept=".png,.jpg,.jpeg,.webp,.gif,image/png,image/jpeg,image/webp,image/gif" multiple hidden>
-              <button id="imageAttachBtn" class="btn secondary mini" type="button">画像を添付</button>
-              <p id="imageError" class="composer-error" role="status" aria-live="polite" hidden></p>
-            </div>
-            <article id="imagePreview" class="image-preview" hidden>
-              <p id="imagePreviewSummary" class="image-preview-summary"></p>
-              <div id="imagePreviewList" class="image-preview-list"></div>
-              <button id="imageRemoveBtn" class="btn mini secondary" type="button">すべて外す</button>
-            </article>
-          </section>
-          <div class="composer-actions">
-            <button id="stopBtn" class="btn danger" disabled>停止</button>
-            <button id="sendBtn" class="btn primary">送信</button>
+              <div id="agentFlowLane" class="agent-flow-lane">
+                <article class="agent-flow-empty">まだエージェント状態はありません。</article>
+              </div>
+              <section id="agentTopographyPanel" class="agent-topography-panel" aria-live="polite">
+                <div class="agent-topography-head">
+                  <div>
+                    <h4>担当エージェント</h4>
+                    <p class="agent-topography-copy"><code>/api/agent-topography</code> とこのチャットの trace を重ねて、今どの役割が動いているかを表示します。</p>
+                  </div>
+                  <button id="agentTopographyRefreshBtn" class="btn mini secondary" type="button">更新</button>
+                </div>
+                <p id="agentTopographyMeta" class="agent-topography-meta">読み込み中...</p>
+                <div id="agentTopographyList" class="agent-topography-list">
+                  <div class="agent-topography-empty">エージェント情報を読み込み中...</div>
+                </div>
+              </section>
+              <div class="agent-trace-subhead">
+                <h4>イベント履歴</h4>
+                <p>このチャットの直近 32 件を表示します。</p>
+              </div>
+              <ol id="agentTraceList" class="agent-trace-list">
+                <li class="agent-trace-empty">まだトレースイベントはありません。</li>
+              </ol>
+            </section>
+
+            <section class="diagnostics-panel" aria-live="polite">
+              <div class="diagnostics-head">
+                <h3>診断</h3>
+                <p id="diagSummaryText" class="diag-summary-text">診断を読み込み中...</p>
+              </div>
+              <details id="diagDetails" class="diagnostics-details">
+                <summary id="diagDetailsSummary">詳細を表示</summary>
+                <div class="diag-grid">
+                  <article class="diag-card">
+                    <h4>Codex CLI</h4>
+                    <p id="diagCodexState" class="diag-state pending">未確認</p>
+                    <p id="diagCodexDetail" class="diag-detail">まだ確認していません。</p>
+                  </article>
+                  <article class="diag-card">
+                    <h4>Node</h4>
+                    <p id="diagNodeState" class="diag-state pending">未確認</p>
+                    <p id="diagNodeDetail" class="diag-detail">まだ確認していません。</p>
+                  </article>
+                  <article class="diag-card">
+                    <h4>Web検索</h4>
+                    <p id="diagSearchState" class="diag-state off">OFF</p>
+                    <p id="diagSearchDetail" class="diag-detail">ポリシーで無効です。</p>
+                  </article>
+                </div>
+              </details>
+            </section>
           </div>
-        </footer>
+        </details>
       </section>
     </main>
   </div>

@@ -60,6 +60,11 @@ function main() {
   assertRegex(indexHtml, /id="harnessRequirementMeta"/, "harness status must expose requirement lock meta");
   assertRegex(indexHtml, /id="harnessRequirementSections"/, "harness status must expose requirement lock sections");
   assertRegex(indexHtml, /id="focusActionTitle"/, "console must expose the next-action focus headline");
+  assertRegex(indexHtml, /id="missionDraftStatus"/, "console must expose the mission draft status");
+  assertRegex(indexHtml, /id="missionGoalValue"/, "console must expose the mission goal value");
+  assertRegex(indexHtml, /id="missionScopeValue"/, "console must expose the mission scope value");
+  assertRegex(indexHtml, /id="missionConstraintValue"/, "console must expose the mission constraint value");
+  assertRegex(indexHtml, /id="missionDoneValue"/, "console must expose the mission completion value");
   assertRegex(indexHtml, /id="focusWorkspaceValue"/, "console must expose the workspace focus summary");
   assertRegex(indexHtml, /id="focusSendValue"/, "console must expose the send readiness summary");
   assertRegex(indexHtml, /id="uiReloadBtn"/, "console must expose the quick UI reload action");
@@ -67,6 +72,12 @@ function main() {
   assertRegex(indexHtml, /id="jumpToComposerBtn"/, "conversation panel must expose the jump-to-composer action");
   assertRegex(indexHtml, /id="harnessPlanCurrentPurpose"/, "execution plan current card must expose the request-purpose line");
   assertRegex(indexHtml, /data-compose-preset=/, "composer must expose prompt preset shortcuts");
+  assertRegex(indexHtml, /id="composerRuntimeStrip"/, "composer must expose the runtime strip");
+  assertRegex(indexHtml, /id="composerModeChip"/, "composer must expose the mode chip");
+  assertRegex(indexHtml, /id="composerModelChip"/, "composer must expose the model chip");
+  assertRegex(indexHtml, /id="composerWorkspaceChip"/, "composer must expose the workspace chip");
+  assertRegex(indexHtml, /id="composerAttachmentChip"/, "composer must expose the attachment chip");
+  assertRegex(indexHtml, /id="opsDeck"/, "advanced telemetry must move behind the ops deck");
   assertRegex(indexHtml, /<section class="agent-flow-panel"[\s\S]*?id="agentFlowLane"[\s\S]*?id="agentTopographyPanel"[\s\S]*?id="agentTraceList"/, "execution trace must embed the agent topography section");
   assert.ok(!/AIエージェントかんばん/.test(indexHtml), "console must remove the standalone AIエージェントかんばん heading");
   assert.ok(!/agentTopographyToggleBtn/.test(indexHtml), "execution trace topography must remove the standalone collapse toggle");
@@ -75,6 +86,9 @@ function main() {
   assert.ok(!/body\.telemetry-off \.harness-panel/.test(stylesCss), "telemetry-off must not hide the main harness panel");
   assertRegex(stylesCss, /\.work-panel[\s\S]*?grid-template-rows:\s*auto;/, "main work panel must let content rows size naturally to avoid overlap");
   assertRegex(stylesCss, /\.focus-panel[\s\S]*?display:\s*grid;/, "console must style the next-action focus panel");
+  assertRegex(stylesCss, /\.mission-draft-card[\s\S]*?display:\s*grid;/, "console must style the mission brief card");
+  assertRegex(stylesCss, /\.composer-runtime-strip[\s\S]*?display:\s*flex;/, "console must style the composer runtime strip");
+  assertRegex(stylesCss, /\.ops-deck[\s\S]*?border:/, "console must style the advanced ops deck");
   assertRegex(stylesCss, /\.conversation-panel[\s\S]*?display:\s*grid;/, "console must style the conversation wrapper panel");
   assertRegex(stylesCss, /\.timeline[\s\S]*?display:\s*flex;[\s\S]*?flex-direction:\s*column;/, "conversation timeline must support bottom-aligned transcript flow");
   assertRegex(stylesCss, /\.timeline-stack[\s\S]*?margin-top:\s*auto;/, "conversation timeline must expose a bottom-align stack wrapper");
@@ -116,6 +130,11 @@ function main() {
   assert.ok(!/message-ref-line/.test(appJs), "conversation transcript must not render a separate line-marker chip");
   assertRegex(appJs, /function\s+conversationSnapshotForUi\s*\(/, "conversation snapshot helper must exist");
   assertRegex(appJs, /function\s+latestConversationPreviewForUi\s*\(/, "chat preview helper must exist");
+  assertRegex(appJs, /function\s+missionDraftSourceForUi\s*\(/, "mission draft source helper must exist");
+  assertRegex(appJs, /function\s+deriveMissionDraftForUi\s*\(/, "mission draft derivation helper must exist");
+  assertRegex(appJs, /function\s+renderMissionDraftPanel\s*\(/, "mission draft renderer must exist");
+  assertRegex(appJs, /function\s+renderComposerRuntimeStrip\s*\(/, "composer runtime renderer must exist");
+  assertRegex(appJs, /function\s+renderMissionSupportUi\s*\(/, "mission support renderer must exist");
   assertRegex(appJs, /const\s+stack=document\.createElement\("div"\);[\s\S]*?stack\.className="timeline-stack";[\s\S]*?stack\.appendChild\(f\);[\s\S]*?e\.timeline\.appendChild\(stack\);/, "conversation transcript must render messages through the bottom-align stack wrapper");
   assertRegex(appJs, /function\s+renderFocusPanel\s*\(/, "next-action focus renderer must exist");
   assertRegex(appJs, /function\s+shouldUseStickyComposerForUi\s*\(/, "composer sticky viewport helper must exist");

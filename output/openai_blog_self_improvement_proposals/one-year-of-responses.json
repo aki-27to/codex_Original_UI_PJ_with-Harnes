@@ -1,7 +1,7 @@
 {
   "schema": "self-improvement-proposal.v1",
   "proposalId": "openai-blog-one-year-of-responses-self-improvement",
-  "createdAt": "2026-03-25T14:31:59.958Z",
+  "createdAt": "2026-04-03T23:30:47.228Z",
   "sourceLane": "OpenAI Developers Blog",
   "sourceTier": "primary",
   "articleId": "one-year-of-responses",
@@ -15,12 +15,12 @@
   "evidence": {
     "summary": "Five stories from developers building agentic products with the Responses API in its first year.",
     "guidance": [
-      "One year ago, we introduced the Responses API — a foundation for developers and enterprises to build useful and reliable agents. Equipping models with a set of hosted tools allowed AI to evolve from chat assistants to systems that can take ",
       "Agent behavior monitoring",
       "One year ago, we introduced the Responses API — a foundation for developers and enterprises to build useful and reliable agents.",
       "Tracking behavior changes across agent versions",
-      "Thousands of developers are building with the Responses API today to accelerate productivity across industries like customer support , legal , life sciences , travel , and more. Having shared many success stories from those industries, toda",
-      "Raindrop is the monitoring platform behind the world’s most ambitious AI companies to catch when their agents go off the rails in production."
+      "Raindrop is the monitoring platform behind the world’s most ambitious AI companies to catch when their agents go off the rails in production.",
+      "Failure detection and alerting",
+      "As agents have gotten more complex, these failures have become more critical."
     ],
     "topicTags": [
       "agents",
@@ -89,9 +89,9 @@
         "frontend_quality"
       ],
       "guidance": [
-        "One year ago, we introduced the Responses API — a foundation for developers and enterprises to build useful and reliable agents. Equipping models with a set of hosted tools allowed AI to evolve from chat assistants to sy",
         "Agent behavior monitoring",
-        "One year ago, we introduced the Responses API — a foundation for developers and enterprises to build useful and reliable agents."
+        "One year ago, we introduced the Responses API — a foundation for developers and enterprises to build useful and reliable agents.",
+        "Tracking behavior changes across agent versions"
       ]
     }
   },

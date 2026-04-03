@@ -430,7 +430,7 @@ function run() {
     },
   });
   assert.ok(
-    approvalBoundaryFallbackSnapshot.displayBoundaries.some((entry) => String(entry).includes("Approval required before: remove the legacy summary card")),
+    approvalBoundaryFallbackSnapshot.displayBoundaries.some((entry) => String(entry).includes("Boundary note: remove the legacy summary card")),
     "UI fallback boundaries should surface approval-boundary items even without displayContract boundaries"
   );
 

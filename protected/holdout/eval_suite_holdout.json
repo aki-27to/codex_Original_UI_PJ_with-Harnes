@@ -1,0 +1,77 @@
+{
+  "schema": "harness-eval-suite.v1",
+  "suiteId": "hidden-holdout.v1",
+  "kind": "conformance",
+  "description": "Protected holdout regression lane for release and promotion decisions.",
+  "cases": [
+    {
+      "id": "holdout_turn_bridge_completed",
+      "title": "Completed turn remains compatible with COMPLETED outcome",
+      "driver": "turn_task_outcome_probe",
+      "input": {
+        "turnStatus": "completed",
+        "taskOutcomeStatus": "COMPLETED"
+      },
+      "expect": {
+        "mode": "json_fields",
+        "fields": {
+          "ok": true,
+          "reason": "compatible"
+        }
+      },
+      "weight": 1
+    },
+    {
+      "id": "holdout_parent_dispatch_enforced",
+      "title": "Parent dispatch guard still blocks undispatched completion",
+      "driver": "parent_dispatch_guard_probe",
+      "input": {
+        "mode": "enforce",
+        "agentName": "default",
+        "executionProfile": "full-runtime",
+        "finalStatus": "completed",
+        "fileChanges": 1,
+        "dispatchCount": 0,
+        "dispatchSuccessCount": 0,
+        "dispatchFailureCount": 0,
+        "collabCalls": 0,
+        "attempt": 0,
+        "maxRetries": 1
+      },
+      "expect": {
+        "mode": "json_fields",
+        "fields": {
+          "violation": 1,
+          "reason": "dispatch_not_attempted",
+          "retry": 1
+        }
+      },
+      "weight": 1
+    },
+    {
+      "id": "holdout_request_user_input_blocked",
+      "title": "Non-interactive request_user_input remains blocked",
+      "driver": "request_user_input_probe",
+      "input": {
+        "policy": "blocked",
+        "params": {
+          "questions": [
+            {
+              "id": "approval",
+              "header": "Approval",
+              "question": "Continue?"
+            }
+          ]
+        }
+      },
+      "expect": {
+        "mode": "json_fields",
+        "fields": {
+          "decision": "blocked",
+          "reason": "blocked_non_interactive_user_input_policy"
+        }
+      },
+      "weight": 1
+    }
+  ]
+}

@@ -1,0 +1,254 @@
+{
+  "schema": "eval-lane-policy.v1",
+  "version": "2026-03-29.r1",
+  "publicLaneId": "public_regression",
+  "aggregateOutputPath": "output/eval_lane_aggregate.json",
+  "protectedPaths": [
+    "protected/holdout",
+    "protected/blackbox"
+  ],
+  "lanes": [
+    {
+      "id": "public_regression",
+      "visibility": "public",
+      "suitePaths": [
+        "scripts/config/public_regression_overlay.json",
+        "scripts/config/eval_suite_default.json"
+      ],
+      "outputPath": "output/public_regression_latest.json",
+      "historyPath": "logs/archive/raw/public_regression_runs.jsonl",
+      "summaryPath": "output/public_regression_summary.json",
+      "allowedActors": [
+        "developer",
+        "ci",
+        "release",
+        "optimizer",
+        "runtime"
+      ],
+      "verifierPolicy": {
+        "requireAllCasesPass": true,
+        "minPassRate": 1,
+        "minScoreRate": 1,
+        "blockedTaskOutcomeStatuses": [
+          "FAILED_VALIDATION",
+          "NEEDS_INPUT",
+          "PARTIAL",
+          "BLOCKED"
+        ],
+        "allowedExecutorStatuses": [
+          "completed"
+        ]
+      }
+    },
+    {
+      "id": "hidden_holdout",
+      "visibility": "protected",
+      "suitePaths": [
+        "protected/holdout/eval_suite_holdout.json"
+      ],
+      "outputPath": "protected/holdout/output/holdout_regression_latest.json",
+      "summaryPath": "output/holdout_eval_summary.json",
+      "allowedActors": [
+        "developer",
+        "release",
+        "protected_ci"
+      ],
+      "unlockEnvKey": "CODEX_HOLDOUT_EVAL_UNLOCK",
+      "verifierPolicy": {
+        "requireAllCasesPass": true,
+        "minPassRate": 1,
+        "minScoreRate": 1,
+        "blockedTaskOutcomeStatuses": [
+          "FAILED_VALIDATION",
+          "NEEDS_INPUT",
+          "PARTIAL",
+          "BLOCKED"
+        ],
+        "allowedExecutorStatuses": [
+          "completed"
+        ]
+      }
+    },
+    {
+      "id": "agi_readiness_public",
+      "visibility": "public",
+      "suitePaths": [
+        "scripts/config/agi_readiness_public_suite.json"
+      ],
+      "outputPath": "output/agi_readiness_public_latest.json",
+      "summaryPath": "output/agi_readiness_public_summary.json",
+      "historyPath": "logs/archive/raw/agi_readiness_public_runs.jsonl",
+      "allowedActors": [
+        "developer",
+        "ci",
+        "release",
+        "optimizer",
+        "runtime"
+      ],
+      "verifierPolicy": {
+        "requireAllCasesPass": false,
+        "minPassRate": 0.65,
+        "minScoreRate": 0.65,
+        "blockedTaskOutcomeStatuses": [
+          "FAILED_VALIDATION",
+          "NEEDS_INPUT",
+          "PARTIAL",
+          "BLOCKED"
+        ],
+        "allowedExecutorStatuses": [
+          "completed"
+        ]
+      }
+    },
+    {
+      "id": "agi_readiness_holdout",
+      "visibility": "protected",
+      "suitePaths": [
+        "protected/holdout/agi_readiness_holdout_suite.json"
+      ],
+      "outputPath": "protected/holdout/output/agi_readiness_holdout_latest.json",
+      "summaryPath": "output/agi_readiness_holdout_summary.json",
+      "historyPath": "logs/archive/raw/agi_readiness_holdout_runs.jsonl",
+      "allowedActors": [
+        "developer",
+        "release",
+        "protected_ci"
+      ],
+      "unlockEnvKey": "CODEX_HOLDOUT_EVAL_UNLOCK",
+      "verifierPolicy": {
+        "requireAllCasesPass": false,
+        "minPassRate": 0.65,
+        "minScoreRate": 0.65,
+        "blockedTaskOutcomeStatuses": [
+          "FAILED_VALIDATION",
+          "NEEDS_INPUT",
+          "PARTIAL",
+          "BLOCKED"
+        ],
+        "allowedExecutorStatuses": [
+          "completed"
+        ]
+      }
+    },
+    {
+      "id": "blackbox_readiness",
+      "visibility": "protected",
+      "suitePaths": [
+        "protected/blackbox/agi_readiness_blackbox_suite.json"
+      ],
+      "outputPath": "protected/blackbox/output/agi_readiness_blackbox_latest.json",
+      "summaryPath": "output/agi_readiness_blackbox_summary.json",
+      "historyPath": "logs/archive/raw/agi_readiness_blackbox_runs.jsonl",
+      "allowedActors": [
+        "developer",
+        "release",
+        "protected_ci"
+      ],
+      "unlockEnvKey": "CODEX_BLACKBOX_EVAL_UNLOCK",
+      "verifierPolicy": {
+        "requireAllCasesPass": false,
+        "minPassRate": 0.6,
+        "minScoreRate": 0.6,
+        "blockedTaskOutcomeStatuses": [
+          "FAILED_VALIDATION",
+          "NEEDS_INPUT",
+          "PARTIAL",
+          "BLOCKED"
+        ],
+        "allowedExecutorStatuses": [
+          "completed"
+        ]
+      }
+    },
+    {
+      "id": "open_world_public",
+      "visibility": "public",
+      "suitePaths": [
+        "scripts/config/open_world_public_suite.json"
+      ],
+      "outputPath": "output/open_world_public_latest.json",
+      "summaryPath": "output/open_world_public_summary.json",
+      "historyPath": "logs/archive/raw/open_world_public_runs.jsonl",
+      "allowedActors": [
+        "developer",
+        "ci",
+        "release",
+        "runtime"
+      ],
+      "verifierPolicy": {
+        "requireAllCasesPass": false,
+        "minPassRate": 0.6,
+        "minScoreRate": 0.6,
+        "blockedTaskOutcomeStatuses": [
+          "FAILED_VALIDATION",
+          "NEEDS_INPUT",
+          "PARTIAL",
+          "BLOCKED"
+        ],
+        "allowedExecutorStatuses": [
+          "completed"
+        ]
+      }
+    },
+    {
+      "id": "open_world_holdout",
+      "visibility": "protected",
+      "suitePaths": [
+        "protected/holdout/open_world_holdout_suite.json"
+      ],
+      "outputPath": "protected/holdout/output/open_world_holdout_latest.json",
+      "summaryPath": "output/open_world_holdout_summary.json",
+      "historyPath": "logs/archive/raw/open_world_holdout_runs.jsonl",
+      "allowedActors": [
+        "developer",
+        "release",
+        "protected_ci"
+      ],
+      "unlockEnvKey": "CODEX_HOLDOUT_EVAL_UNLOCK",
+      "verifierPolicy": {
+        "requireAllCasesPass": false,
+        "minPassRate": 0.6,
+        "minScoreRate": 0.6,
+        "blockedTaskOutcomeStatuses": [
+          "FAILED_VALIDATION",
+          "NEEDS_INPUT",
+          "PARTIAL",
+          "BLOCKED"
+        ],
+        "allowedExecutorStatuses": [
+          "completed"
+        ]
+      }
+    },
+    {
+      "id": "open_world_blackbox",
+      "visibility": "protected",
+      "suitePaths": [
+        "protected/blackbox/open_world_blackbox_suite.json"
+      ],
+      "outputPath": "protected/blackbox/output/open_world_blackbox_latest.json",
+      "summaryPath": "output/open_world_blackbox_summary.json",
+      "historyPath": "logs/archive/raw/open_world_blackbox_runs.jsonl",
+      "allowedActors": [
+        "developer",
+        "release",
+        "protected_ci"
+      ],
+      "unlockEnvKey": "CODEX_BLACKBOX_EVAL_UNLOCK",
+      "verifierPolicy": {
+        "requireAllCasesPass": false,
+        "minPassRate": 0.6,
+        "minScoreRate": 0.6,
+        "blockedTaskOutcomeStatuses": [
+          "FAILED_VALIDATION",
+          "NEEDS_INPUT",
+          "PARTIAL",
+          "BLOCKED"
+        ],
+        "allowedExecutorStatuses": [
+          "completed"
+        ]
+      }
+    }
+  ]
+}

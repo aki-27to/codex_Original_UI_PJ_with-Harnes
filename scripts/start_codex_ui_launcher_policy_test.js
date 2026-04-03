@@ -12,14 +12,21 @@ function main() {
 
   assert(/^@echo off\r?\nsetlocal\r?\nif "%CODEX_PAUSE_ON_EXIT%"=="" set "CODEX_PAUSE_ON_EXIT=1"/.test(launcher), "launcher must default CODEX_PAUSE_ON_EXIT before early-exit checks");
   assert(/set "LAUNCHER_AUTO_OPEN_BROWSER=%CODEX_AUTO_OPEN_BROWSER%"/.test(launcher), "launcher must snapshot browser auto-open ownership before starting server.js");
-  assert(/if "%CODEX_RESTART_EXISTING_HARNESS%"=="" set "CODEX_RESTART_EXISTING_HARNESS=1"/.test(launcher), "launcher must default restart-existing-harness behavior on");
+  assert(/if "%CODEX_RESTART_EXISTING_HARNESS%"=="" set "CODEX_RESTART_EXISTING_HARNESS=0"/.test(launcher), "launcher must default restart-existing-harness behavior off");
+  assert(/if "%CODEX_FORCE_ACTIVE_RESTART%"=="" set "CODEX_FORCE_ACTIVE_RESTART=0"/.test(launcher), "launcher must default forced active restart off");
   assert(/if "%CODEX_FAST_MODE_DEFAULT%"=="" set "CODEX_FAST_MODE_DEFAULT=0"/.test(launcher), "launcher must default fast mode off");
   assert(/if "%CODEX_SERVER_RESTART_MAX_RETRIES%"=="" set "CODEX_SERVER_RESTART_MAX_RETRIES=4"/.test(launcher), "launcher must define a bounded auto-restart budget");
   assert(/if "%CODEX_SERVER_RESTART_DELAY_MS%"=="" set "CODEX_SERVER_RESTART_DELAY_MS=1500"/.test(launcher), "launcher must define a restart backoff");
   assert(/if "%CODEX_SERVER_STABLE_WINDOW_SECONDS%"=="" set "CODEX_SERVER_STABLE_WINDOW_SECONDS=30"/.test(launcher), "launcher must define a stability reset window");
   assert(/\[launcher\] checking for existing harness on port %CODEX_UI_PORT%/.test(launcher), "launcher must check for an existing harness before startup");
   assert(/runtimeUrl='http:\/\/127\.0\.0\.1:'\+\$port\+'\/api\/runtime'/.test(launcher), "launcher must probe the local runtime endpoint before restarting");
-  assert(/Stop-Process -Id \$candidatePid -Force -ErrorAction Stop/.test(launcher), "launcher must stop the existing harness process when it owns the configured port");
+  assert(/if\(\$restart -eq '0'\)\{ Write-Output \('\[launcher\] existing harness detected on port '\+\$port\+'; reusing without restart\.'\); exit 10 \}/.test(launcher), "launcher must reuse an existing harness by default");
+  assert(/if\(\$hasActive -and \$forceActive -ne '1'\)\{ Write-Output \('\[launcher\] existing harness has active \/api\/exec work; refusing restart while work is in progress\.'\); exit 11 \}/.test(launcher), "launcher must refuse to restart while active exec work is in progress unless forced");
+  assert(/Stop-Process -Id \$candidatePid -Force -ErrorAction Stop/.test(launcher), "launcher must still stop the existing harness process when an explicit restart is allowed");
+  assert(/if "%HARNESS_PROBE_EXIT%"=="10" set "CODEX_EXISTING_HARNESS_REUSED=1"/.test(launcher), "launcher must track the reused-harness state for default reuse exits");
+  assert(/if "%HARNESS_PROBE_EXIT%"=="11" set "CODEX_EXISTING_HARNESS_REUSED=1"/.test(launcher), "launcher must track the reused-harness state for active-turn restart refusal exits");
+  assert(/if "%CODEX_EXISTING_HARNESS_REUSED%"=="1" \(/.test(launcher), "launcher must short-circuit into reuse mode when the existing harness is kept");
+  assert(/echo \[launcher\] existing harness reused; no restart was performed\./.test(launcher), "launcher must report when it reuses the existing harness");
   assert(/set "CODEX_AUTO_OPEN_BROWSER=0"/.test(launcher), "launcher must disable server-side browser auto-open before entering the server loop");
   assert(/:launcher_server_run[\s\S]*node "%~dp0server\.js"/.test(launcher), "launcher must run server.js from a dedicated restart loop label");
   assert(/CODEX_SERVER_RESTART_ATTEMPT\+=1/.test(launcher), "launcher must increment the restart attempt counter");

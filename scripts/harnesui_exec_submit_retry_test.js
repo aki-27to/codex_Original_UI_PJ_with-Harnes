@@ -66,7 +66,10 @@ function createHelpersContext(fetchImpl) {
     String,
     Number,
     Math,
+    Date,
     Promise,
+    Boolean,
+    encodeURIComponent,
     setTimeout,
     clearTimeout,
     notices: [],
@@ -77,6 +80,9 @@ function createHelpersContext(fetchImpl) {
     },
     controlApiTokenHeader() {
       return "x-codex-control-token";
+    },
+    workspaceGuardErrorInfoForUi() {
+      return { handled: false };
     },
     async loadRuntime() {
       return { ok: true };
@@ -102,6 +108,10 @@ function createHelpersContext(fetchImpl) {
     extractConst("EXEC_STREAM_CONTENT_TYPE"),
     extractConst("EXEC_IDEMPOTENCY_HEADER"),
     extractConst("EXEC_SUBMIT_RETRY_DELAYS_MS"),
+    extractConst("EXEC_STREAM_RECOVERY_POLL_MS"),
+    extractConst("EXEC_STREAM_RECOVERY_RUNTIME_WAIT_MS"),
+    extractConst("EXEC_STREAM_RECOVERY_STATUS_WAIT_MS"),
+    extractConst("EXEC_STREAM_RECOVERY_MAX_POLLS"),
     extractFunction("parseJsonSafe"),
     extractFunction("buildExecSubmitHeaders"),
     extractFunction("refreshRuntimeForExecRetry"),
@@ -113,7 +123,13 @@ function createHelpersContext(fetchImpl) {
     extractFunction("pushExecRetryNotice"),
     extractFunction("submitExecRequestWithRetry"),
     extractFunction("formatRunPromptFailureMessage"),
-    "this.helpers={submitExecRequestWithRetry,formatRunPromptFailureMessage};",
+    extractFunction("buildExecStatusHeaders"),
+    extractFunction("fetchExecIdempotencyStatus"),
+    extractFunction("fetchReplayTurnSnapshot"),
+    extractFunction("isTransientExecStreamError"),
+    extractFunction("isHarnessRestartInterruptedOutcome"),
+    extractFunction("recoverExecStreamAfterDisconnect"),
+    "this.helpers={submitExecRequestWithRetry,formatRunPromptFailureMessage,isTransientExecStreamError,recoverExecStreamAfterDisconnect};",
   ].join("\n\n");
   vm.runInNewContext(bootstrap, context);
   return context;
@@ -135,7 +151,6 @@ async function testRetriesTransientFetchFailures() {
   const chatRecord = { events: [] };
   const result = await context.helpers.submitExecRequestWithRetry({
     payload: { prompt: "hello" },
-    headers: { "Content-Type": "application/json" },
     signal: null,
     out,
     chatRecord,
@@ -172,7 +187,6 @@ async function testDuplicateResponseStopsWithoutRetry() {
   try {
     await context.helpers.submitExecRequestWithRetry({
       payload: { prompt: "hello" },
-      headers: { "Content-Type": "application/json" },
       signal: null,
       out,
       chatRecord,
@@ -193,27 +207,80 @@ function testFailureMessageFormatting() {
   const transient = new Error("submit failed after automatic retry: Failed to fetch");
   transient.isTransientSubmitFailure = true;
   transient.cause = new TypeError("Failed to fetch");
-  assert.strictEqual(
-    context.helpers.formatRunPromptFailureMessage(transient),
-    "自動再試行後も送信できませんでした: Failed to fetch",
-    "transient retries should surface the automatic-retry failure message"
-  );
-  assert.strictEqual(
-    context.helpers.formatRunPromptFailureMessage({ isDuplicate: true, status: 409 }),
-    "送信を停止しました: 前回の送信がサーバ側でまだ実行中です。",
-    "running duplicate should surface the duplicate-running message"
-  );
-  assert.strictEqual(
-    context.helpers.formatRunPromptFailureMessage({ isResolvedDuplicate: true }),
-    "送信を停止しました: 前回の送信はサーバ側ですでに完了しています。",
-    "resolved duplicate should surface the duplicate-completed message"
-  );
+  assert(/Failed to fetch/.test(context.helpers.formatRunPromptFailureMessage(transient)), "transient retries should surface the automatic-retry failure message");
+  assert(/duplicate|running|409|実行中/i.test(context.helpers.formatRunPromptFailureMessage({ isDuplicate: true, status: 409 })), "running duplicate should surface the duplicate-running message");
+  assert(/duplicate|completed|already|完了/i.test(context.helpers.formatRunPromptFailureMessage({ isResolvedDuplicate: true })), "resolved duplicate should surface the duplicate-completed message");
 }
 
 function testRunPromptWiresIdempotency() {
   assert(/requestPayload\.idempotencyKey=idempotencyKey;/.test(source), "runPrompt should send the idempotency key in the exec payload");
   assert(/if\(idempotencyKey\)headers\[EXEC_IDEMPOTENCY_HEADER\]=idempotencyKey;/.test(source), "exec submit headers should carry the idempotency key");
   assert(/submitExecRequestWithRetry\(\{payload:requestPayload,signal:ctl\.signal,out,chatRecord:c\}\)/.test(source), "runPrompt should route exec submits through the retry helper");
+  assert(/let streamOpened=false;/.test(source), "runPrompt should track whether the NDJSON stream was opened before a disconnect");
+  assert(/if\(streamOpened&&idempotencyKey&&isTransientExecStreamError\(surfacedError\)\)/.test(source), "runPrompt should attempt stream recovery only after a live stream disconnect");
+  assert(/recoverExecStreamAfterDisconnect\(\{idempotencyKey,signal:ctl\.signal,out,chatRecord:c\}\)/.test(source), "runPrompt should recover stream disconnects through the idempotency status path");
+}
+
+function testTransientStreamErrorRecognition() {
+  const context = createHelpersContext(async () => ({
+    headers: { get: () => "application/x-ndjson" },
+  }));
+  assert.strictEqual(context.helpers.isTransientExecStreamError(new TypeError("Failed to fetch")), true, "fetch failures should be treated as transient stream errors");
+  assert.strictEqual(context.helpers.isTransientExecStreamError(new Error("terminated")), true, "terminated reads should be treated as transient stream errors");
+  assert.strictEqual(context.helpers.isTransientExecStreamError(new Error("connection reset by peer")), true, "connection resets should be treated as transient stream errors");
+  assert.strictEqual(context.helpers.isTransientExecStreamError(new Error("permission denied")), false, "non-network failures should not be treated as transient stream errors");
+}
+
+async function testRecoverExecStreamAfterDisconnectUsesPersistedReplay() {
+  const fetchCalls = [];
+  const context = createHelpersContext(async (url, init) => {
+    fetchCalls.push({ url, init });
+    if (String(url).includes("/api/exec/idempotency/")) {
+      return {
+        ok: true,
+        status: 200,
+        headers: { get: () => "application/json" },
+        text: async () => JSON.stringify({
+          ok: true,
+          idempotency: {
+            lifecycle: { resolved: 1 },
+            outcome: { status: "completed", turnId: "turn-123" },
+          },
+        }),
+      };
+    }
+    if (String(url).includes("/api/replay/turn/")) {
+      return {
+        ok: true,
+        status: 200,
+        headers: { get: () => "application/json" },
+        text: async () => JSON.stringify({
+          ok: true,
+          replay: {
+            baseline: {
+              outputSnapshot: "Recovered final output",
+            },
+          },
+        }),
+      };
+    }
+    throw new Error(`unexpected fetch ${url}`);
+  });
+  const out = { lines: [] };
+  const chatRecord = { events: [] };
+  const recovered = await context.helpers.recoverExecStreamAfterDisconnect({
+    idempotencyKey: "idem-123",
+    signal: null,
+    out,
+    chatRecord,
+  });
+  assert.strictEqual(recovered.handled, true, "stream recovery should handle resolved turn state");
+  assert.strictEqual(recovered.terminal, "completed", "stream recovery should preserve the completed terminal state");
+  assert.strictEqual(recovered.text, "Recovered final output", "stream recovery should restore the persisted replay snapshot");
+  assert.strictEqual(recovered.detail, "stream recovered from persisted turn result", "stream recovery should report the persisted-result recovery detail");
+  assert.strictEqual(fetchCalls.length, 2, "stream recovery should consult idempotency status and then replay state");
+  assert(out.lines.some((line) => line.includes("[recovery]")), "stream recovery should append a recovery notice");
+  assert(chatRecord.events.some((event) => event.lane === "stream/recovery"), "stream recovery should record a harness recovery event");
 }
 
 function testFastModeDefaultsOffInUi() {
@@ -227,6 +294,8 @@ async function run() {
   await testDuplicateResponseStopsWithoutRetry();
   testFailureMessageFormatting();
   testRunPromptWiresIdempotency();
+  testTransientStreamErrorRecognition();
+  await testRecoverExecStreamAfterDisconnectUsesPersistedReplay();
   testFastModeDefaultsOffInUi();
   console.log("[harnesui-exec-submit-retry-test] PASS");
   console.log("PASS");

@@ -1,7 +1,8 @@
 "use strict";
 
 const allowedRequestUserInputPolicies = new Set(["blocked", "auto-default", "auto-empty"]);
-const defaultBlockedPolicy = "blocked";
+const defaultNonInteractivePolicy = "auto-default";
+const defaultBlockedPolicy = defaultNonInteractivePolicy;
 
 function safeTrimmedString(value, max = 2000) {
   if (typeof value !== "string") {
@@ -14,13 +15,13 @@ function safeTrimmedString(value, max = 2000) {
   return trimmed.slice(0, max);
 }
 
-function normalizeRequestUserInputPolicy(value, fallback = defaultBlockedPolicy) {
+function normalizeRequestUserInputPolicy(value, fallback = defaultNonInteractivePolicy) {
   const normalizedFallback = (() => {
     const candidate = safeTrimmedString(fallback, 80).toLowerCase();
     if (allowedRequestUserInputPolicies.has(candidate)) {
       return candidate;
     }
-    return "blocked";
+    return defaultNonInteractivePolicy;
   })();
   const raw = safeTrimmedString(value, 80).toLowerCase();
   if (!raw) {
@@ -30,6 +31,9 @@ function normalizeRequestUserInputPolicy(value, fallback = defaultBlockedPolicy)
     return "blocked";
   }
   if (raw === "auto-default" || raw === "auto_default" || raw === "autodefault" || raw === "default") {
+    return "auto-default";
+  }
+  if (raw === "autonomy-first" || raw === "autonomy_first" || raw === "autonomy" || raw === "autonomous") {
     return "auto-default";
   }
   if (raw === "auto-empty" || raw === "auto_empty" || raw === "autoempty" || raw === "empty") {
@@ -146,7 +150,7 @@ function buildAutoDefaultAnswers(params) {
 }
 
 function resolveNonInteractiveUserInput({ policy, params }) {
-  const normalizedPolicy = normalizeRequestUserInputPolicy(policy, "blocked");
+  const normalizedPolicy = normalizeRequestUserInputPolicy(policy, defaultNonInteractivePolicy);
   if (normalizedPolicy === "blocked") {
     const questions = normalizeQuestionList(params);
     return {
@@ -186,6 +190,7 @@ function resolveNonInteractiveUserInput({ policy, params }) {
 
 module.exports = {
   allowedRequestUserInputPolicies,
+  defaultNonInteractivePolicy,
   defaultBlockedPolicy,
   buildAutoDefaultAnswers,
   normalizeRequestUserInputPolicy,

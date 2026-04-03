@@ -294,11 +294,57 @@ function createOverviewPayload(overrides = {}) {
           gateReason: "all_cases_passed",
           appliedDecision: "applied",
           appliedHintCount: 2,
+          rawAutoApplyChangeCount: 3,
           autoApplyCandidateCount: 2,
+          observationStatus: "starved",
+          observationCount: 0,
+          lastObservedAt: "",
+          requiredObservationSuccesses: 2,
+          requiredObservationSuccessRate: 0.67,
+          awaitingObservationCount: 1,
+          awaitingReinforcementCount: 0,
+          policyDisabledCandidateCount: 0,
           proposalOnlyCount: 1,
           blockedCount: 0,
           failedCaseIds: [],
           appliedHintIds: ["designing-delightful-frontends-with-gpt-5-4-runtime-retrieval"],
+          nextPriority: {
+            title: "Designing delightful frontends with GPT-5.4 | OpenAI Developers",
+            readinessStatus: "awaiting_observations",
+            gatingReason: "awaiting_runtime_observations",
+            nextAction: "Record 2 successful targeted observations before promotion.",
+            blastRadius: "low",
+            reinforcement: {
+              successCount: 0,
+              observedCount: 0,
+              requiredSuccesses: 2,
+              requiredSuccessRate: 0.67,
+              remainingSuccesses: 2,
+              successRate: 0,
+              lastObservedAt: "",
+              status: "unobserved",
+            },
+          },
+          priorityBacklog: [
+            {
+              title: "Designing delightful frontends with GPT-5.4 | OpenAI Developers",
+              changeType: "frontend_quality_note",
+                readinessStatus: "awaiting_observations",
+                gatingReason: "awaiting_runtime_observations",
+                nextAction: "Record 2 successful targeted observations before promotion.",
+                blastRadius: "low",
+                reinforcement: {
+                  successCount: 0,
+                  observedCount: 0,
+                  requiredSuccesses: 2,
+                  requiredSuccessRate: 0.67,
+                  remainingSuccesses: 2,
+                  successRate: 0,
+                  lastObservedAt: "",
+                  status: "unobserved",
+                },
+              },
+            ],
           proposalDir: "output/openai_blog_self_improvement_proposals",
           statePath: "output/openai_blog_self_improvement_state.json",
           gatePath: "output/openai_blog_self_improvement_gate.json",
@@ -362,9 +408,30 @@ function createOverviewPayload(overrides = {}) {
             appliedDecision: "none",
             appliedHintCount: 0,
             autoApplyCandidateCount: 0,
+            rawAutoApplyChangeCount: 1,
+            awaitingObservationCount: 0,
+            awaitingReinforcementCount: 0,
+            policyDisabledCandidateCount: 1,
             proposalOnlyCount: 2,
             blockedCount: 0,
             failedCaseIds: [],
+            nextPriority: {
+              title: "Effective harnesses for long-running agents",
+              readinessStatus: "policy_disabled",
+              gatingReason: "stabilization_disabled",
+              nextAction: "Enable stabilization for this lane or keep the note proposal-only.",
+              blastRadius: "low",
+            },
+            priorityBacklog: [
+              {
+                title: "Effective harnesses for long-running agents",
+                changeType: "frontend_quality_note",
+                readinessStatus: "policy_disabled",
+                gatingReason: "stabilization_disabled",
+                nextAction: "Enable stabilization for this lane or keep the note proposal-only.",
+                blastRadius: "low",
+              },
+            ],
           },
         },
       },
@@ -649,6 +716,53 @@ function createOverviewPayload(overrides = {}) {
           gateStatus: "PASS",
           appliedDecision: "applied",
           appliedHintCount: 2,
+          rawAutoApplyChangeCount: 3,
+          autoApplyCandidateCount: 2,
+          observationStatus: "starved",
+          observationCount: 0,
+          lastObservedAt: "",
+          requiredObservationSuccesses: 2,
+          requiredObservationSuccessRate: 0.67,
+          awaitingObservationCount: 1,
+          awaitingReinforcementCount: 0,
+          policyDisabledCandidateCount: 0,
+          nextPriority: {
+            title: "Designing delightful frontends with GPT-5.4 | OpenAI Developers",
+            readinessStatus: "awaiting_observations",
+            gatingReason: "awaiting_runtime_observations",
+            nextAction: "Record 2 successful targeted observations before promotion.",
+            blastRadius: "low",
+            reinforcement: {
+              successCount: 0,
+              observedCount: 0,
+              requiredSuccesses: 2,
+              requiredSuccessRate: 0.67,
+              remainingSuccesses: 2,
+              successRate: 0,
+              lastObservedAt: "",
+              status: "unobserved",
+            },
+          },
+          priorityBacklog: [
+            {
+              title: "Designing delightful frontends with GPT-5.4 | OpenAI Developers",
+              changeType: "frontend_quality_note",
+              readinessStatus: "awaiting_observations",
+              gatingReason: "awaiting_runtime_observations",
+              nextAction: "Record 2 successful targeted observations before promotion.",
+              blastRadius: "low",
+              reinforcement: {
+                successCount: 0,
+                observedCount: 0,
+                requiredSuccesses: 2,
+                requiredSuccessRate: 0.67,
+                remainingSuccesses: 2,
+                successRate: 0,
+                lastObservedAt: "",
+                status: "unobserved",
+              },
+            },
+          ],
           failedCaseIds: [],
         },
         recentArticles: [
@@ -671,6 +785,72 @@ function createOverviewPayload(overrides = {}) {
           requirementFoundationV1: "bug_fix_only",
           blockedApplyTargets: ["AGENTS.md"],
         },
+      },
+      manualSelfImprovement: {
+        status: "ready",
+        schema: "manual-self-improvement-capture.v1",
+        generatedAt: "2026-04-03T00:00:00+09:00",
+        artifactPath: "output/manual_self_improvement/latest.json",
+        source: {
+          kind: "manual_turn_capture",
+          request: "Handle the request and self-improve in the same turn.",
+        },
+        entryCount: 2,
+        proposalOnlyCount: 1,
+        blockedCount: 1,
+        autoApplyCandidateCount: 0,
+        runtimeHintCount: 1,
+        qualityNoteCount: 1,
+        skillCandidateCount: 0,
+        entries: [
+          {
+            lessonSummary: "Lock the lesson contract before deciding promotion or storage.",
+            classification: "runtime hint",
+            promotionDecision: "proposal-only",
+            evidenceSummary: "Policy-backed promotion is separate, so the lesson stays proposal-only.",
+            supportingArtifacts: ["docs/SELF_IMPROVEMENT_POLICY.md", "scripts/config/manual_self_improvement_capture_policy.json"],
+            appliesTo: {
+              agent: ["default", "intake"],
+              taskFamily: ["manual_self_improvement"],
+              triggers: ["self-improve", "promotion decision"],
+            },
+          },
+          {
+            lessonSummary: "Block design note promotion without visual evidence.",
+            classification: "quality note",
+            promotionDecision: "blocked",
+            evidenceSummary: "Design-sensitive notes require visual review and independent review.",
+            supportingArtifacts: ["docs/EVIDENCE_CONTRACT.md"],
+            appliesTo: {
+              agent: ["frontend_worker"],
+              taskFamily: ["web_creative"],
+              triggers: ["design quality"],
+            },
+          },
+        ],
+      },
+      agiImprovementFlywheel: {
+        status: "ready",
+        schema: "harness-agi-improvement-flywheel.v1",
+        strategy: "bounded_measured_compounding",
+        boundedLoopsOnly: true,
+        northStar: "Increase evidence-backed autonomous completion across broad task families without policy or constitution drift.",
+        antiGoal: "Do not rely on unbounded self-reinforcing loops or ungated self-modification.",
+        loopCount: 6,
+        kpiCount: 7,
+        failureModeCount: 6,
+        promotionPath: ["proposal_only", "eval_gated_candidate", "limited_rollout", "observed_promotion"],
+        loops: [
+          {
+            id: "execution",
+            name: "Execution Loop",
+            objective: "Finish real tasks end-to-end with artifacts and evidence.",
+            stopConditionCount: 3,
+            rollbackTriggerCount: 2,
+          },
+        ],
+        kpis: ["completion_rate", "regression_rate"],
+        failureModes: ["noise_learning_from_unbounded_loops"],
       },
       secondaryLearning: {
         anthropicEngineering: {
@@ -704,6 +884,43 @@ function createOverviewPayload(overrides = {}) {
             gateStatus: "PASS",
             appliedDecision: "none",
             appliedHintCount: 0,
+            rawAutoApplyChangeCount: 1,
+            autoApplyCandidateCount: 0,
+            observationStatus: "disabled",
+            observationCount: 0,
+            lastObservedAt: "",
+            requiredObservationSuccesses: 2,
+            requiredObservationSuccessRate: 0.67,
+            awaitingObservationCount: 0,
+            awaitingReinforcementCount: 0,
+            policyDisabledCandidateCount: 1,
+            nextPriority: {
+              title: "Effective harnesses for long-running agents",
+              readinessStatus: "policy_disabled",
+              gatingReason: "stabilization_disabled",
+              nextAction: "Enable stabilization for this lane or keep the note proposal-only.",
+              blastRadius: "low",
+              reinforcement: {
+                successCount: 0,
+                observedCount: 0,
+                requiredSuccesses: 2,
+                requiredSuccessRate: 0.67,
+                remainingSuccesses: 2,
+                successRate: 0,
+                lastObservedAt: "",
+                status: "unobserved",
+              },
+            },
+            priorityBacklog: [
+              {
+                title: "Effective harnesses for long-running agents",
+                changeType: "frontend_quality_note",
+                readinessStatus: "policy_disabled",
+                gatingReason: "stabilization_disabled",
+                nextAction: "Enable stabilization for this lane or keep the note proposal-only.",
+                blastRadius: "low",
+              },
+            ],
           },
         },
       },
@@ -860,13 +1077,12 @@ async function createOverviewVmHarness(bootstrapPayload, { htmlSource = "", scri
     elements[id] = createElementStub();
   }
   elements.overviewErrorBanner.classList.add("hidden");
-  const requests = [
-    async () => ({
-      ok: true,
-      status: 200,
-      json: async () => bootstrapPayload,
-    }),
-  ];
+  const makeSuccessResponse = async () => ({
+    ok: true,
+    status: 200,
+    json: async () => bootstrapPayload,
+  });
+  const requests = [makeSuccessResponse, makeSuccessResponse, makeSuccessResponse];
   const context = {
     console,
     Date,
@@ -907,6 +1123,9 @@ async function createOverviewVmHarness(bootstrapPayload, { htmlSource = "", scri
   await flushMicrotasks();
   const hooks = context.__overviewTestHooks;
   assert(hooks && typeof hooks.loadOverview === "function", "overview test hooks missing");
+  await hooks.loadOverview({ manual: true });
+  await flushMicrotasks();
+  await flushMicrotasks();
   return { elements, hooks, requests };
 }
 
@@ -982,6 +1201,9 @@ function assertRenderedOverviewMatchesPayload(payload, elements) {
   const externalLearning = payload && payload.runtime && payload.runtime.externalLearning && typeof payload.runtime.externalLearning === "object"
     ? payload.runtime.externalLearning
     : null;
+  const agiImprovementFlywheel = payload && payload.runtime && payload.runtime.agiImprovementFlywheel && typeof payload.runtime.agiImprovementFlywheel === "object"
+    ? payload.runtime.agiImprovementFlywheel
+    : null;
   if (externalLearning) {
     const externalLearningCardHtml = elements.externalLearningCard ? elements.externalLearningCard.innerHTML : "";
     assertContains(externalLearningCardHtml, String(externalLearning.sourceName || "OpenAI Developers Blog"), "external learning card must render source name");
@@ -993,9 +1215,29 @@ function assertRenderedOverviewMatchesPayload(payload, elements) {
     if (externalLearning.selfImprovement && typeof externalLearning.selfImprovement === "object") {
       assertContains(externalLearningCardHtml, String(externalLearning.selfImprovement.gateStatus || "NOT_RUN"), "external learning card must render self improvement gate status");
       assertContains(externalLearningCardHtml, String(externalLearning.selfImprovement.appliedDecision || "none"), "external learning card must render self improvement applied decision");
+      assertContains(externalLearningCardHtml, String(externalLearning.selfImprovement.observationStatus || "starved"), "external learning card must render self improvement observation status");
+      if (externalLearning.selfImprovement.nextPriority && typeof externalLearning.selfImprovement.nextPriority === "object") {
+        assertContains(externalLearningCardHtml, String(externalLearning.selfImprovement.nextPriority.title || "candidate"), "external learning card must render next-cycle priority title");
+        if (externalLearning.selfImprovement.nextPriority.reinforcement && typeof externalLearning.selfImprovement.nextPriority.reinforcement === "object") {
+          assertContains(externalLearningCardHtml, String(externalLearning.selfImprovement.nextPriority.reinforcement.requiredSuccesses || "2"), "external learning card must render next-cycle reinforcement threshold");
+        }
+      }
+    }
+    if (payload.runtime && payload.runtime.manualSelfImprovement) {
+      assertContains(externalLearningCardHtml, "Manual Capture", "external learning card must render manual capture section");
+      assertContains(externalLearningCardHtml, "manual-self-improvement-capture.v1", "external learning card must render manual capture schema");
+      assertContains(externalLearningCardHtml, "proposal 1", "external learning card must render manual capture decision counts");
+      assertContains(externalLearningCardHtml, "Lock the lesson contract before deciding promotion or storage.", "external learning card must render manual capture lesson summaries");
+      assertContains(externalLearningCardHtml, "Policy-backed promotion is separate, so the lesson stays proposal-only.", "external learning card must render manual capture evidence summaries");
+      assertContains(externalLearningCardHtml, "docs/SELF_IMPROVEMENT_POLICY.md", "external learning card must render manual capture supporting artifacts");
     }
     const metricsHtml = elements.overviewMetrics ? elements.overviewMetrics.innerHTML : "";
     assertContains(metricsHtml, String(externalLearning.lastStatus || "PASS"), "metrics must render external learning status");
+  }
+  if (agiImprovementFlywheel) {
+    assert.strictEqual(agiImprovementFlywheel.boundedLoopsOnly, true, "agi flywheel must reject unbounded loops");
+    assert(agiImprovementFlywheel.loopCount >= 1, "agi flywheel must expose loops");
+    assert(agiImprovementFlywheel.kpiCount >= 1, "agi flywheel must expose KPIs");
   }
   const secondaryLearning = payload && payload.runtime && payload.runtime.secondaryLearning && typeof payload.runtime.secondaryLearning === "object"
     ? payload.runtime.secondaryLearning
@@ -1007,6 +1249,10 @@ function assertRenderedOverviewMatchesPayload(payload, elements) {
     assertContains(externalLearningCardHtml, String(secondaryLearning.anthropicEngineering.portabilityMode || "portable_principles_only"), "external learning card must render secondary portability mode");
     if (secondaryLearning.anthropicEngineering.selfImprovement && typeof secondaryLearning.anthropicEngineering.selfImprovement === "object") {
       assertContains(externalLearningCardHtml, String(secondaryLearning.anthropicEngineering.selfImprovement.gateStatus || "NOT_RUN"), "external learning card must render secondary self improvement gate status");
+      assertContains(externalLearningCardHtml, String(secondaryLearning.anthropicEngineering.selfImprovement.observationStatus || "disabled"), "external learning card must render secondary observation status");
+      if (secondaryLearning.anthropicEngineering.selfImprovement.nextPriority && typeof secondaryLearning.anthropicEngineering.selfImprovement.nextPriority === "object") {
+        assertContains(externalLearningCardHtml, String(secondaryLearning.anthropicEngineering.selfImprovement.nextPriority.title || "candidate"), "external learning card must render secondary next-cycle priority title");
+      }
     }
   }
   const traceabilityClauses = payload && payload.traceability && Array.isArray(payload.traceability.clauses)
@@ -1208,7 +1454,13 @@ async function runIntegrationCheck() {
     assert(overviewJson.runtime.phaseStatus && typeof overviewJson.runtime.phaseStatus === "object", "overview runtime must expose phaseStatus");
     assert(typeof overviewJson.runtime.phaseStatus.requirementFoundationV1 === "string", "overview runtime phaseStatus must expose requirementFoundationV1");
     assert(overviewJson.runtime.externalLearning && typeof overviewJson.runtime.externalLearning === "object", "overview runtime must expose externalLearning");
+    assert(overviewJson.runtime.manualSelfImprovement && typeof overviewJson.runtime.manualSelfImprovement === "object", "overview runtime must expose manualSelfImprovement");
+    assert(typeof overviewJson.runtime.manualSelfImprovement.status === "string", "overview runtime manualSelfImprovement must expose status");
+    assert(overviewJson.runtime.agiImprovementFlywheel && typeof overviewJson.runtime.agiImprovementFlywheel === "object", "overview runtime must expose agiImprovementFlywheel");
+    assert.strictEqual(Boolean(overviewJson.runtime.agiImprovementFlywheel.boundedLoopsOnly), true, "overview runtime agiImprovementFlywheel must reject unbounded loops");
     assert(overviewJson.memory.externalLearning && typeof overviewJson.memory.externalLearning === "object", "overview memory must expose externalLearning");
+    assert(overviewJson.memory.manualSelfImprovement && typeof overviewJson.memory.manualSelfImprovement === "object", "overview memory must expose manualSelfImprovement");
+    assert(overviewJson.memory.agiImprovementFlywheel && typeof overviewJson.memory.agiImprovementFlywheel === "object", "overview memory must expose agiImprovementFlywheel");
     assert(overviewJson.topology && typeof overviewJson.topology === "object", "overview topology missing");
     assert(overviewJson.contracts && typeof overviewJson.contracts === "object", "overview contracts missing");
     assert(overviewJson.evidence && typeof overviewJson.evidence === "object", "overview evidence missing");
@@ -1339,6 +1591,8 @@ async function main() {
       assertRegex(overviewHtml, /id=\"topologyParentLane\"/, "topologyParentLane container missing");
       assertRegex(overviewHtml, /id=\"traceabilityCard\"/, "traceabilityCard container missing");
       assertRegex(overviewHtml, /id=\"overviewRawSnapshot\"/, "overviewRawSnapshot container missing");
+      assertRegex(overviewHtml, /class=\"overview-section-shell\"/, "overview sections must expose collapsible shells");
+      assertRegex(overviewHtml, /class=\"overview-section-summary\"/, "overview sections must expose collapsible summaries");
       assertRegex(overviewHtml, /src=\"\.\/overview\.js\"/, "overview.html must reference ./overview.js");
     })
   );

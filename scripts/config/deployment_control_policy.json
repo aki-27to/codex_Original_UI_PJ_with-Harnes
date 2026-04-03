@@ -1,0 +1,26 @@
+{
+  "schema": "deployment-control-policy.v1",
+  "version": "2026-03-31.r1",
+  "statePath": "logs/archive/raw/deployment_controls/closure_control_state.json",
+  "tiers": [
+    "dev",
+    "sandbox",
+    "staging",
+    "production_like",
+    "restricted_high_risk"
+  ],
+  "approvalMatrix": [
+    { "taskFamily": "coding", "toolClass": "local_write", "environment": "dev", "approvalRequired": false },
+    { "taskFamily": "tool_learning_or_new_tool_adoption", "toolClass": "tool_adopt", "environment": "sandbox", "approvalRequired": false },
+    { "taskFamily": "operations", "toolClass": "deploy", "environment": "staging", "approvalRequired": true },
+    { "taskFamily": "operations", "toolClass": "deploy", "environment": "production_like", "approvalRequired": true },
+    { "taskFamily": "debugging_incident_response", "toolClass": "secrets", "environment": "restricted_high_risk", "approvalRequired": true }
+  ],
+  "freezeControls": [
+    "adaptation",
+    "tool_adoption",
+    "self_improvement",
+    "multi_agent_delegation",
+    "read_only_mode"
+  ]
+}

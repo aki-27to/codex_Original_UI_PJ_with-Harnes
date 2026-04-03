@@ -1,7 +1,7 @@
 {
   "schema": "self-improvement-proposal.v1",
   "proposalId": "openai-blog-skills-agents-sdk-self-improvement",
-  "createdAt": "2026-03-25T14:31:59.958Z",
+  "createdAt": "2026-04-03T23:30:47.228Z",
   "sourceLane": "OpenAI Developers Blog",
   "sourceTier": "primary",
   "articleId": "skills-agents-sdk",
@@ -17,10 +17,10 @@
     "guidance": [
       "repo-local skills in .agents/skills/",
       "Repo-local skills, AGENTS.md , and GitHub Actions let us turn recurring engineering work, such as verification, release preparation, integration testing for examples, and PR review, into repeatable workflows.",
-      "In these repos, we use skills to capture repository-specific workflows. A skill is a small package of operational knowledge: a SKILL.md manifest, plus optional scripts/ , references/ , and assets/ . The Codex customization docs describe why",
       "repository policy in AGENTS.md",
       "In these repos, we use skills to capture repository-specific workflows.",
-      "optional scripts and references inside those skills"
+      "optional scripts and references inside those skills",
+      ".agents/skills in openai-agents-python"
     ],
     "topicTags": [
       "agents",
@@ -91,7 +91,7 @@
       "guidance": [
         "repo-local skills in .agents/skills/",
         "Repo-local skills, AGENTS.md , and GitHub Actions let us turn recurring engineering work, such as verification, release preparation, integration testing for examples, and PR review, into repeatable workflows.",
-        "In these repos, we use skills to capture repository-specific workflows. A skill is a small package of operational knowledge: a SKILL.md manifest, plus optional scripts/ , references/ , and assets/ . The Codex customizati"
+        "repository policy in AGENTS.md"
       ]
     }
   },

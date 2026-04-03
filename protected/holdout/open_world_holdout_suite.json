@@ -1,0 +1,44 @@
+{
+  "suiteId": "open_world_holdout_suite",
+  "description": "Protected holdout open-world tasks.",
+  "cases": [
+    {
+      "id": "ow-holdout-doc-workflow",
+      "title": "Holdout document workflow",
+      "familyId": "document_workflow",
+      "difficultyTier": "expert",
+      "modalityTags": ["docs", "semi_structured"],
+      "structureTags": ["multi_step", "holdout"],
+      "orchestrationMode": "single_agent_fallback",
+      "objective": "Assemble a bounded document workflow package with verifier-ready checklist.",
+      "acceptanceCriteria": [
+        "document package produced",
+        "checklist included"
+      ],
+      "valueProxy": "review_cycles_saved",
+      "simulatedDurationMinutes": 380,
+      "payload": {
+        "kind": "open_world_doc"
+      }
+    },
+    {
+      "id": "ow-holdout-cross-tool-orchestration",
+      "title": "Holdout cross-tool orchestration",
+      "familyId": "cross_tool_orchestration",
+      "difficultyTier": "expert",
+      "modalityTags": ["web", "spreadsheet", "docs"],
+      "structureTags": ["multi_step", "holdout"],
+      "orchestrationMode": "multi_agent_required",
+      "objective": "Coordinate a bounded cross-tool workflow and return an integration summary.",
+      "acceptanceCriteria": [
+        "integration summary produced",
+        "tool boundary respected"
+      ],
+      "valueProxy": "workflow_completion_value",
+      "simulatedDurationMinutes": 450,
+      "payload": {
+        "kind": "cross_tool_workflow"
+      }
+    }
+  ]
+}

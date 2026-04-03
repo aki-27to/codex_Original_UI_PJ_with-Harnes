@@ -1,0 +1,26 @@
+{
+  "schema": "agi-claim-gate-policy.v1",
+  "version": "2026-03-30.r1",
+  "thresholds": {
+    "performanceScore": 75,
+    "generalityScore": 70,
+    "autonomyScore": 65,
+    "familyCoverageScore": 80,
+    "heldOutRobustnessScore": 70,
+    "verifierReliabilityScore": 85,
+    "regressionStabilityScore": 90,
+    "humanBaselineComparisonScore": 70
+  },
+  "requiredArtifacts": [
+    "benchmark_manifest",
+    "scoring_logic_summary",
+    "human_baseline_protocol",
+    "safety_policy_summary",
+    "architecture_summary",
+    "reproducibility_runbook",
+    "known_limitations"
+  ],
+  "blackboxRequired": true,
+  "humanBaselineRequiresObservedRuns": true,
+  "catastrophicWeaknessCap": 0
+}

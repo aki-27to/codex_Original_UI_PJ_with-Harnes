@@ -1,0 +1,28 @@
+{
+  "schema": "harness-eval-suite.v1",
+  "suiteId": "public-regression-overlay.v1",
+  "kind": "conformance",
+  "description": "Phase 1 hardening overlay cases for public regression.",
+  "cases": [
+    {
+      "id": "phase1_overlay_task_outcome_green",
+      "title": "Phase 1 overlay baseline stays green",
+      "driver": "task_outcome_probe",
+      "input": {
+        "turnStatus": "completed"
+      },
+      "expect": {
+        "mode": "json_fields",
+        "fields": {
+          "status": "COMPLETED",
+          "reason": "completed_default"
+        }
+      },
+      "weight": 1,
+      "tags": [
+        "phase1",
+        "overlay"
+      ]
+    }
+  ]
+}

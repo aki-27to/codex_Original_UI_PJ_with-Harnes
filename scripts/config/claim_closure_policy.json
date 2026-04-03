@@ -1,0 +1,30 @@
+{
+  "schema": "claim-closure-policy.v1",
+  "version": "2026-03-31.r1",
+  "internalThresholds": {
+    "performanceScore": 70,
+    "generalityScore": 70,
+    "autonomyScore": 65,
+    "heldOutRobustnessScore": 65,
+    "verifierReliabilityScore": 70,
+    "regressionStabilityScore": 100
+  },
+  "hardPublicBlockers": [
+    "synthetic_baseline_only",
+    "external_audit_not_executed",
+    "blackbox_internal_only",
+    "secret_provider_stub_only",
+    "adaptation_not_executed",
+    "open_world_long_duration_insufficient",
+    "confidence_interval_missing"
+  ],
+  "claimStates": [
+    "NOT_READY",
+    "INTERNAL_PARTIAL_READINESS",
+    "INTERNAL_CLAIM_READY",
+    "CLAIM_READY_FOR_EXTERNAL_REVIEW",
+    "EXTERNAL_VALIDATION_PENDING",
+    "EXTERNALLY_VALIDATED_NO_PUBLIC_AGI_CLAIM",
+    "PUBLIC_AGI_CLAIM_BLOCKED"
+  ]
+}

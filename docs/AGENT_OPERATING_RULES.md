@@ -31,25 +31,26 @@ This document contains tier-1 operating rules referenced by `AGENTS.md`.
   - existing-scope change
   - specialist ownership is clear
   - acceptance checks are already concrete
-  - no approval-boundary contact
+  - no explicit user-decision gate
   - open questions are effectively zero
 - `NORMAL`:
   - bounded but cross-specialist work
   - reviewer/tester evidence matters
+  - approval-boundary markers may exist if the path stays local, reversible, and evidence-backed
   - assumptions exist but do not block execution
 - `DISCOVERY`:
   - requirements or non-goals are still ambiguous
-  - approval-boundary contact or explicit user decision exists
+  - explicit user decision exists
   - open questions or assumption load are high enough that speculative implementation would create rework
 - Selection inputs are explicit and machine-readable:
   - open question count
   - acceptance-check clarity
   - specialist-boundary count
-  - approval-boundary contact
+  - explicit user-decision signal
   - over-delivery risk
   - user-decision requirement
   - assumption dependence
-- `DISCOVERY` must surface unresolved decisions as `EXTERNAL_ACTION_REQUIRED` or proposal-only `RELEASE_BLOCKED`; risky over-delivery stays proposal-only.
+- `DISCOVERY` must surface unresolved explicit decisions as `EXTERNAL_ACTION_REQUIRED` or proposal-only `RELEASE_BLOCKED`; heuristic boundary markers alone do not force that state.
 - `FAST` keeps the previous harness bias toward speed, but only when the selector says the task is actually low-risk.
 - Planning output must exist before child execution as a machine-readable `RoutingDecision`.
 
@@ -91,9 +92,9 @@ This document contains tier-1 operating rules referenced by `AGENTS.md`.
   - `intake`: `sandbox_mode = "read-only"`, `approval_policy = "never"`
   - `release_manager`: `sandbox_mode = "read-only"`, `approval_policy = "never"`
 - Request-user-input posture:
-  - parent roles must not self-answer real user decisions just because a runtime offers `auto-*` request-user-input behavior
-  - AGENTS approval-boundary items must surface as `EXTERNAL_ACTION_REQUIRED` or `RELEASE_BLOCKED`
-  - `intake` records unresolved questions, `release_manager` blocks on unresolved decisions, and `default` owns the final user-facing handoff
+  - parent roles must not fabricate human checkpoints from heuristic boundary markers just because a runtime offers `request-user-input`
+  - explicit user decisions and narrow irreversible external actions may surface as `EXTERNAL_ACTION_REQUIRED` or `RELEASE_BLOCKED`
+  - `intake` records unresolved decisions, `release_manager` blocks only when those decisions remain explicit and material, and `default` owns autonomous continuation otherwise
 
 ## 5) Tool/MCP Assignment Policy
 - Browser-centric tooling (for example Playwright/screenshot) routes to `frontend_worker`.
@@ -178,7 +179,7 @@ This document contains tier-1 operating rules referenced by `AGENTS.md`.
 - This rule activates only when the user explicitly authorizes adjacent improvements beyond the baseline request.
 - Parent may allow autonomous adjacent improvements only when they stay within the same touched subsystem, acceptance surface, or operator workflow already in scope.
 - Do not reinterpret that permission as approval for unrelated cleanup, roadmap work, architecture churn, or independent feature expansion.
-- AGENTS approval-boundary rules still win. Dependency additions, environment changes, permission/safety boundary changes, destructive actions, migrations, and external writes still require explicit user input.
+- Explicit user-decision clauses and narrow irreversible external actions still win. Boundary markers alone do not cancel autonomous adjacent improvements.
 - Any adjacent improvement that adds or changes logic must carry dedicated tests or equivalent evidence.
 - Final reporting must separate the baseline result from the user-authorized adjacent improvement result.
 
@@ -209,7 +210,7 @@ This document contains tier-1 operating rules referenced by `AGENTS.md`.
 ## 12) User-Facing Response Contract
 - Substantive answers and final reports must optimize for reach precision on the asked question before conversational smoothness or expansion.
 - Do not spend closing lines on next-step proposals, option menus, follow-up fishing, or sales-like prompts unless the user explicitly asked for them or the task is genuinely blocked.
-- When information is incomplete but the gap is not fatal, state the assumption briefly and continue with the best answer; ask a confirmation question only when safety, approval boundary, or correctness would otherwise be materially at risk.
+- When information is incomplete but the gap is not fatal, state the assumption briefly and continue with the best answer; ask a confirmation question only when safety, an explicit user-decision clause, or correctness would otherwise be materially at risk.
 - Surplus answer budget should go to:
   - issue decomposition
   - counterarguments / refutation
@@ -242,9 +243,9 @@ This document contains tier-1 operating rules referenced by `AGENTS.md`.
     - recommended option first
     - comparison axes and decisive tradeoffs next
     - disqualifiers or exception conditions after that
-  - blocked / approval-boundary state:
-    - blocking fact first
-    - why it blocks correctness or safety
-    - exact missing decision or artifact
+- blocked / explicit-decision or operator-escalation state:
+  - blocking fact first
+  - why it blocks correctness or safety
+  - exact missing decision or artifact
 - Do not mechanically emit section headers when they lower precision or make short answers heavier than the task warrants.
 - The response should close in-place. Do not end by reopening the conversation unless required by task state.

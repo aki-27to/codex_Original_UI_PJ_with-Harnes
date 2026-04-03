@@ -1,6 +1,6 @@
 # CONTEXT_MEMORY_POLICY
 
-Updated: 2026-03-23
+Updated: 2026-04-03
 
 ## 1) Purpose
 
@@ -63,6 +63,7 @@ Define how the harness preserves, summarizes, shares, and externalizes context s
 - Promotion from external learning into runtime behavior must stay governed and regression-checked; collecting or summarizing a learning does not authorize automatic policy drift.
 - Self-improvement promotion is machine-readable and tiered: low-risk runtime retrieval hints may auto-apply only after the self-improvement eval gate passes, while policy/config/runtime-core targets remain proposal-only or blocked according to `docs/SELF_IMPROVEMENT_POLICY.md` and `scripts/config/self_improvement_promotion_policy.json`.
 - Repeated successful `web_creative` turns may reinforce a bounded `frontend_quality_note` into the mutable `docs/FRONTEND_QUALITY_PLAYBOOK.md`, but that playbook remains non-constitutional and machine-gated.
+- Manual self-improvement capture is artifact-first and compressed: store only the latest bounded lesson set at `output/manual_self_improvement/latest.json`, keep it proposal-first by default, and retrieve it only when a later turn actually needs the same task-family guidance.
 
 ## 7) Safety and Privacy
 

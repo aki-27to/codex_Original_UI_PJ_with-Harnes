@@ -1,0 +1,29 @@
+{
+  "schema": "knowledge-system-policy.v1",
+  "version": "2026-03-30.r1",
+  "rootPath": "logs/archive/raw/knowledge_store",
+  "indexPath": "logs/archive/raw/knowledge_store/knowledge_index.json",
+  "archivePath": "logs/archive/raw/knowledge_store/archive/knowledge_archive.jsonl",
+  "journalPath": "logs/archive/raw/knowledge_store/knowledge_journal.jsonl",
+  "retrievalEvalHistoryPath": "logs/archive/raw/knowledge_store/retrieval_eval_history.jsonl",
+  "defaultFreshnessDays": 30,
+  "defaultTrustLevel": "medium",
+  "readWritePolicy": {
+    "readableBy": ["developer", "ci", "release", "runtime", "optimizer"],
+    "writableBy": ["developer", "ci", "release", "runtime"]
+  },
+  "promotionPolicy": {
+    "allowStatuses": ["validated", "working"],
+    "archiveStatuses": ["stale", "superseded", "invalidated"]
+  },
+  "retrieval": {
+    "defaultLimit": 5,
+    "maxChars": 1800,
+    "staleAfterDays": 90
+  },
+  "generatedSkillRegistryPath": "scripts/config/generated_skill_registry.json",
+  "generatedSkillsRoot": ".agents/skills/generated",
+  "generatedSkillArchivePath": "logs/archive/raw/knowledge_store/archive/generated_skill_archive.jsonl",
+  "toolRegistryStatePath": "logs/archive/raw/tool_registry/runtime_tool_registry.json",
+  "toolRegistryHistoryPath": "logs/archive/raw/tool_registry/tool_registry_history.jsonl"
+}

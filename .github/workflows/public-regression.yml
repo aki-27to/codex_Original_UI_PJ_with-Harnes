@@ -1,0 +1,39 @@
+name: public-regression
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+
+jobs:
+  public-regression:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run public regression gate
+        run: node scripts/run_public_regression.js
+
+      - name: Upload public regression artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: public-regression-artifacts
+          if-no-files-found: warn
+          path: |
+            output/public_regression_latest.json
+            output/public_regression_summary.json
+            logs/archive/raw/public_regression_runs.jsonl

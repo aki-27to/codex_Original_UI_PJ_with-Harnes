@@ -219,6 +219,12 @@ function sentenceCandidatesFromParagraphs(paragraphs) {
       if (!text) {
         continue;
       }
+      if (hasExtractionBoilerplate(text)) {
+        continue;
+      }
+      if (isLikelyTruncatedText(text)) {
+        continue;
+      }
       if (/(should|must|start with|define|provide|reuse|verify|checkpoint|runbook|acceptance|eval|test|guide|prompt|design|skill|workflow|agent)/i.test(text)) {
         candidates.push(text);
       }
@@ -312,7 +318,16 @@ function selectSubstantiveParagraphs(paragraphs, limit = 8) {
       if (!text) {
         return false;
       }
+      if (hasExtractionBoilerplate(text)) {
+        return false;
+      }
       if (text.length < 40) {
+        return false;
+      }
+      if (text.length >= 240 && countSentenceLikeSegments(text) >= 3) {
+        return false;
+      }
+      if (isLikelyTruncatedText(text)) {
         return false;
       }
       if (/^written by\b/i.test(text)) {
@@ -345,12 +360,74 @@ function extractFocusTokens(title) {
   ));
 }
 
+function countSentenceLikeSegments(value) {
+  return safeString(value, 1200)
+    .split(/(?<=[.!?])\s+/)
+    .map((entry) => safeString(entry, 400))
+    .filter(Boolean)
+    .length;
+}
+
+function hasExtractionBoilerplate(value) {
+  const text = safeString(value, 800).toLowerCase();
+  if (!text) {
+    return false;
+  }
+  return [
+    "your browser does not support the video tag",
+    "skip to main content",
+    "skip to content",
+    "share this article",
+    "subscribe to",
+    "sign up for updates",
+  ].some((pattern) => text.includes(pattern));
+}
+
+function isLikelyTruncatedText(value) {
+  const text = safeString(value, 400);
+  if (!text || text.length < 80) {
+    return false;
+  }
+  if (/[.!?]["')\]]?$/.test(text)) {
+    return false;
+  }
+  if (/[—-]$/.test(text)) {
+    return true;
+  }
+  if (/[:;,]$/.test(text)) {
+    return true;
+  }
+  if (text.length >= 100 && /[a-z]$/i.test(text) && countSentenceLikeSegments(text) >= 1) {
+    return true;
+  }
+  return /\b(?:the|and|or|but|with|without|because|that|which|where|when|while|to|of|for|in|on|at|from|by|as|into|than|then|it|they|we|you|he|she|this|these|those|is|are|was|were|be|been|being|can|could|should|would|will|may|might|must|have|has|had|do|does|did|an?|our|their)\b$/i.test(text);
+}
+
+function areNearDuplicateGuidanceTexts(left, right) {
+  const normalizedLeft = safeString(left, 400).toLowerCase();
+  const normalizedRight = safeString(right, 400).toLowerCase();
+  if (!normalizedLeft || !normalizedRight) {
+    return false;
+  }
+  if (normalizedLeft === normalizedRight) {
+    return true;
+  }
+  const shorter = normalizedLeft.length <= normalizedRight.length ? normalizedLeft : normalizedRight;
+  const longer = normalizedLeft.length > normalizedRight.length ? normalizedLeft : normalizedRight;
+  if (shorter.length < 48) {
+    return false;
+  }
+  const trimmedShorter = shorter.replace(/[.!?;:,]+$/g, "");
+  return longer.startsWith(shorter) || (trimmedShorter.length >= 48 && longer.startsWith(trimmedShorter));
+}
+
 function scoreGuidanceCandidate(text, { title = "", source = "", index = 0 } = {}) {
   const candidate = safeString(text, 400);
   if (!candidate) {
     return -999;
   }
   let score = 0;
+  const sentenceCount = countSentenceLikeSegments(candidate);
   const focusTokens = extractFocusTokens(title);
   const lower = candidate.toLowerCase();
   const sourceWeights = {
@@ -372,6 +449,18 @@ function scoreGuidanceCandidate(text, { title = "", source = "", index = 0 } = {
   if (/^(design quality|originality|craft|functionality):/i.test(candidate)) {
     score += /\b(frontend|ui|ux)\b/i.test(title) ? -1 : -10;
   }
+  if (hasExtractionBoilerplate(candidate)) {
+    score -= 24;
+  }
+  if (isLikelyTruncatedText(candidate)) {
+    score -= 10;
+  }
+  if (source === "paragraph" && candidate.length >= 240) {
+    score -= 6;
+  }
+  if (source === "paragraph" && sentenceCount >= 3) {
+    score -= 4;
+  }
   if (isLikelyBoilerplateSummary(candidate, { title })) {
     score -= 20;
   }
@@ -387,6 +476,8 @@ function rankGuidanceCandidates(candidates, { title = "", maxItems = 6 } = {}) {
       index: Number(candidate && candidate.index) || index,
     }))
     .filter((candidate) => candidate.text)
+    .filter((candidate) => !hasExtractionBoilerplate(candidate.text))
+    .filter((candidate) => !isLikelyTruncatedText(candidate.text))
     .map((candidate) => ({
       ...candidate,
       score: scoreGuidanceCandidate(candidate.text, {
@@ -396,7 +487,29 @@ function rankGuidanceCandidates(candidates, { title = "", maxItems = 6 } = {}) {
       }),
     }))
     .sort((left, right) => right.score - left.score || left.index - right.index);
-  return dedupeTexts(ranked.map((entry) => entry.text), Math.max(1, Math.trunc(Number(maxItems) || 6)));
+  const distinct = [];
+  for (const candidate of ranked) {
+    const duplicateIndex = distinct.findIndex((entry) => areNearDuplicateGuidanceTexts(entry.text, candidate.text));
+    if (duplicateIndex >= 0) {
+      const existing = distinct[duplicateIndex];
+      if (
+        candidate.score > existing.score
+        || (
+          candidate.score === existing.score
+          && isLikelyTruncatedText(existing.text)
+          && !isLikelyTruncatedText(candidate.text)
+        )
+      ) {
+        distinct[duplicateIndex] = candidate;
+      }
+      continue;
+    }
+    distinct.push(candidate);
+    if (distinct.length >= Math.max(1, Math.trunc(Number(maxItems) || 6))) {
+      continue;
+    }
+  }
+  return distinct.slice(0, Math.max(1, Math.trunc(Number(maxItems) || 6))).map((entry) => entry.text);
 }
 
 function selectArticleSummary({
@@ -416,7 +529,12 @@ function selectArticleSummary({
   ];
   for (const candidate of candidates) {
     const text = safeString(candidate, 320);
-    if (!text || isLikelyBoilerplateSummary(text, { sourceName, title })) {
+    if (
+      !text
+      || hasExtractionBoilerplate(text)
+      || isLikelyBoilerplateSummary(text, { sourceName, title })
+      || isLikelyTruncatedText(text)
+    ) {
       continue;
     }
     return text;
@@ -717,6 +835,7 @@ function normalizeSelfImprovementPromotionPolicy(policy, workspaceRoot = workspa
             ? entry.forbiddenTopics.map((item) => safeString(item, 80).toLowerCase()).filter(Boolean)
             : [],
           maxTopics: Math.max(1, Math.min(12, Math.trunc(Number(entry && entry.maxTopics) || 6))),
+          maxPromptBlockChars: Math.max(0, Math.min(12000, Math.trunc(Number(entry && entry.maxPromptBlockChars) || 0))),
           workspaceRoot: repoRelative(workspaceRoot, workspaceRoot),
         }))
         : [],
@@ -1364,8 +1483,23 @@ function buildMarkdownReport(report) {
     lines.push(`- appliedDecision: ${safeString(selfImprovement.appliedDecision, 40) || "none"}`);
     lines.push(`- appliedHintCount: ${Number(selfImprovement.appliedHintCount) || 0}`);
     lines.push(`- appliedFrontendQualityNoteCount: ${Number(selfImprovement.appliedFrontendQualityNoteCount) || 0}`);
+    lines.push(`- observationStatus: ${safeString(selfImprovement.observationStatus, 40) || "-"}`);
+    lines.push(`- observationCount: ${Number(selfImprovement.observationCount) || 0}`);
+    lines.push(`- lastObservedAt: ${safeString(selfImprovement.lastObservedAt, 40) || "-"}`);
+    lines.push(`- rawAutoApplyChangeCount: ${Number(selfImprovement.rawAutoApplyChangeCount) || 0}`);
+    lines.push(`- readyAutoApplyChangeCount: ${Number(selfImprovement.autoApplyCandidateCount) || 0}`);
+    lines.push(`- awaitingObservationCount: ${Number(selfImprovement.awaitingObservationCount) || 0}`);
+    lines.push(`- awaitingReinforcementCount: ${Number(selfImprovement.awaitingReinforcementCount) || 0}`);
+    lines.push(`- policyDisabledCandidateCount: ${Number(selfImprovement.policyDisabledCandidateCount) || 0}`);
     lines.push(`- proposalOnlyCount: ${Number(selfImprovement.proposalOnlyCount) || 0}`);
     lines.push(`- blockedCount: ${Number(selfImprovement.blockedCount) || 0}`);
+    if (selfImprovement.nextPriority && typeof selfImprovement.nextPriority === "object") {
+      lines.push(`- nextPriority: ${safeString(selfImprovement.nextPriority.title, 200) || "-"} / ${safeString(selfImprovement.nextPriority.readinessStatus, 80) || "-"}`);
+      lines.push(`- nextPriorityAction: ${safeString(selfImprovement.nextPriority.nextAction, 240) || "-"}`);
+      if (selfImprovement.nextPriority.reinforcement && typeof selfImprovement.nextPriority.reinforcement === "object") {
+        lines.push(`- nextPriorityProgress: success ${Number(selfImprovement.nextPriority.reinforcement.successCount) || 0}/${Number(selfImprovement.nextPriority.reinforcement.requiredSuccesses) || 0} / observed ${Number(selfImprovement.nextPriority.reinforcement.observedCount) || 0} / rate ${Number(selfImprovement.nextPriority.reinforcement.successRate) || 0}`);
+      }
+    }
   }
   return `${lines.join("\n")}\n`;
 }
@@ -1802,26 +1936,6 @@ function buildRuntimeLearningSelection({ prompt = "", agentName = "", planningCo
   const resolvedSelfImprovementState = selfImprovementState === undefined
     ? loadSelfImprovementState(normalizedPolicy)
     : selfImprovementState;
-  if (!runtimeRetrieval.enabled) {
-    return {
-      status: "disabled",
-      reason: "runtime_retrieval_disabled",
-      taskFamily: "",
-      matchedTopics: [],
-      articles: [],
-      matchedHintIds: [],
-    };
-  }
-  if (!digest || !digest.topics || typeof digest.topics !== "object") {
-    return {
-      status: "skipped",
-      reason: "digest_missing",
-      taskFamily: "",
-      matchedTopics: [],
-      articles: [],
-      matchedHintIds: [],
-    };
-  }
   const inferred = inferRuntimeRetrievalTopics({
     prompt,
     agentName,
@@ -1829,6 +1943,26 @@ function buildRuntimeLearningSelection({ prompt = "", agentName = "", planningCo
     policy: normalizedPolicy,
     selfImprovementState: resolvedSelfImprovementState,
   });
+  if (!runtimeRetrieval.enabled) {
+    return {
+      status: "disabled",
+      reason: "runtime_retrieval_disabled",
+      taskFamily: inferred.taskFamily,
+      matchedTopics: inferred.topics,
+      articles: [],
+      matchedHintIds: inferred.matchedHintIds || [],
+    };
+  }
+  if (!digest || !digest.topics || typeof digest.topics !== "object") {
+    return {
+      status: "skipped",
+      reason: "digest_missing",
+      taskFamily: inferred.taskFamily,
+      matchedTopics: inferred.topics,
+      articles: [],
+      matchedHintIds: inferred.matchedHintIds || [],
+    };
+  }
   const targetAgents = new Set(Array.isArray(runtimeRetrieval.applyToAgents) ? runtimeRetrieval.applyToAgents.map((entry) => safeString(entry, 80)) : []);
   const targetFamilies = new Set(Array.isArray(runtimeRetrieval.applyToTaskFamilies) ? runtimeRetrieval.applyToTaskFamilies.map((entry) => safeString(entry, 80).toLowerCase()) : []);
   const normalizedAgent = safeString(agentName, 80);
@@ -2070,6 +2204,135 @@ function buildGatePlanningContext(testCase) {
   };
 }
 
+function inferSelfImprovementBlastRadius(changeClass, target) {
+  const normalizedClass = safeString(changeClass, 120);
+  const normalizedTarget = safeString(target, 260);
+  if (normalizedClass === "runtime_retrieval_hint" || normalizedTarget === "runtime/external-learning/runtime-retrieval") {
+    return "low";
+  }
+  if (normalizedClass === "frontend_quality_note" || normalizedTarget === "docs/FRONTEND_QUALITY_PLAYBOOK.md") {
+    return "low";
+  }
+  if (normalizedClass === "eval_extension" || normalizedClass === "memory_policy_note" || normalizedClass === "operator_policy_note") {
+    return "medium";
+  }
+  return "high";
+}
+
+function buildFrontendReinforcementProgress(stats, { requiredSuccesses = 2, requiredSuccessRate = 0.67 } = {}) {
+  const source = stats && typeof stats === "object" ? stats : {};
+  const successCount = Math.max(0, Math.trunc(Number(source.successCount) || 0));
+  const failureCount = Math.max(0, Math.trunc(Number(source.failureCount) || 0));
+  const observedCount = successCount + failureCount;
+  const currentSuccessRate = observedCount > 0 ? successCount / observedCount : 0;
+  const roundedCurrentSuccessRate = Number.isFinite(currentSuccessRate) ? Number(currentSuccessRate.toFixed(4)) : 0;
+  const roundedRequiredSuccessRate = Number.isFinite(Number(requiredSuccessRate)) ? Number(Number(requiredSuccessRate).toFixed(4)) : 0.67;
+  const remainingSuccesses = Math.max(0, Math.trunc(Number(requiredSuccesses) || 0) - successCount);
+  let status = "unobserved";
+  if (observedCount <= 0) {
+    status = "unobserved";
+  } else if (remainingSuccesses > 0) {
+    status = "building_evidence";
+  } else if (roundedCurrentSuccessRate < roundedRequiredSuccessRate) {
+    status = "needs_cleaner_wins";
+  } else {
+    status = "eligible";
+  }
+  return {
+    successCount,
+    failureCount,
+    observedCount,
+    successRate: roundedCurrentSuccessRate,
+    requiredSuccesses: Math.max(1, Math.trunc(Number(requiredSuccesses) || 2)),
+    requiredSuccessRate: roundedRequiredSuccessRate,
+    remainingSuccesses,
+    lastObservedAt: safeString(source.lastObservedAt, 40),
+    lastOutcome: safeString(source.lastOutcome, 20),
+    sampleTurnIds: Array.isArray(source.sampleTurnIds) ? source.sampleTurnIds.map((entry) => safeString(entry, 160)).filter(Boolean).slice(0, 6) : [],
+    status,
+  };
+}
+
+function deriveSelfImprovementObservationStatus({
+  stabilizationEnabled = false,
+  observationCount = 0,
+  awaitingObservationCount = 0,
+  awaitingReinforcementCount = 0,
+  readyFrontendNoteCount = 0,
+  appliedFrontendQualityNoteCount = 0,
+} = {}) {
+  if (!stabilizationEnabled) {
+    return "disabled";
+  }
+  if (Number(appliedFrontendQualityNoteCount) > 0 || Number(readyFrontendNoteCount) > 0) {
+    return "reinforced";
+  }
+  if (Number(awaitingObservationCount) > 0) {
+    return Number(observationCount) > 0 ? "collecting" : "starved";
+  }
+  if (Number(awaitingReinforcementCount) > 0) {
+    return "collecting";
+  }
+  return Number(observationCount) > 0 ? "idle" : "unobserved";
+}
+
+function buildSelfImprovementChangeEntry({
+  proposal,
+  changeType,
+  changeTarget,
+  changePayload,
+  readinessStatus,
+  gatingReason,
+  nextAction,
+  reinforcement = null,
+} = {}) {
+  const rawDecision = safeString(proposal && proposal.promotion && proposal.promotion.decision, 40) || "proposal_only";
+  const blastRadius = inferSelfImprovementBlastRadius(changeType, changeTarget);
+  const isPrimary = safeString(proposal && proposal.sourceTier, 40) !== "secondary";
+  const readinessWeights = {
+    ready_to_gate: 100,
+    awaiting_reinforcement: 80,
+    awaiting_observations: 70,
+    policy_disabled: 45,
+    proposal_only: 35,
+    blocked: 10,
+  };
+  const blastRadiusPenalty = blastRadius === "low" ? 0 : blastRadius === "medium" ? 10 : 25;
+  const priorityScore = Math.max(
+    0,
+    (readinessWeights[readinessStatus] || 20)
+      + (safeString(proposal && proposal.relevance, 20) === "high" ? 8 : 0)
+      + (isPrimary ? 6 : 0)
+      + (changeType === "runtime_retrieval_hint" ? 6 : 0)
+      + (changeType === "frontend_quality_note" ? 4 : 0)
+      - blastRadiusPenalty
+  );
+  return {
+    changeId: safeString(
+      changePayload && (changePayload.hintId || changePayload.noteId),
+      160
+    ) || `${safeString(proposal && proposal.proposalId, 160)}:${changeType}`,
+    proposalId: safeString(proposal && proposal.proposalId, 160),
+    articleId: safeString(proposal && proposal.articleId, 120),
+    title: safeString(proposal && proposal.title, 200),
+    sourceTier: safeString(proposal && proposal.sourceTier, 40) || "primary",
+    rawDecision,
+    readinessStatus,
+    gatingReason: safeString(gatingReason, 160),
+    changeType: safeString(changeType, 120),
+    target: safeString(changeTarget, 260),
+    blastRadius,
+    nextAction: safeString(nextAction, 240),
+    priorityScore,
+    reinforcement: changeType === "frontend_quality_note"
+      ? buildFrontendReinforcementProgress(reinforcement, {
+        requiredSuccesses: reinforcement && reinforcement.requiredSuccesses,
+        requiredSuccessRate: reinforcement && reinforcement.requiredSuccessRate,
+      })
+      : null,
+  };
+}
+
 function evaluateSelfImprovementCase(testCase, { policy, digest, candidateState }) {
   const prompt = safeString(testCase && testCase.prompt, 600);
   const agentName = safeString(testCase && testCase.agentName, 80);
@@ -2139,6 +2402,10 @@ function evaluateSelfImprovementCase(testCase, { policy, digest, candidateState 
   if (candidateFrontendQualityNoteIds.length > noteBudget) {
     failures.push(`frontend_note_budget_exceeded:${candidateFrontendQualityNoteIds.length}`);
   }
+  const maxPromptBlockChars = Math.max(0, Math.trunc(Number(testCase && testCase.maxPromptBlockChars) || 0));
+  if (maxPromptBlockChars > 0 && Number(candidatePromptInjection.promptBlockChars) > maxPromptBlockChars) {
+    failures.push(`prompt_block_budget_exceeded:${Number(candidatePromptInjection.promptBlockChars)}`);
+  }
   return {
     caseId: safeString(testCase && testCase.caseId, 120),
     pass: failures.length === 0,
@@ -2151,6 +2418,9 @@ function evaluateSelfImprovementCase(testCase, { policy, digest, candidateState 
       matchedFrontendQualityNoteIds: Array.isArray(baselinePromptInjection.matchedFrontendQualityNoteIds)
         ? baselinePromptInjection.matchedFrontendQualityNoteIds.slice(0, 6)
         : [],
+      promptBlockChars: Number.isFinite(Number(baselinePromptInjection.promptBlockChars))
+        ? Math.max(0, Math.trunc(Number(baselinePromptInjection.promptBlockChars)))
+        : 0,
     },
     candidate: {
       status: safeString(candidate.status, 40),
@@ -2163,52 +2433,124 @@ function evaluateSelfImprovementCase(testCase, { policy, digest, candidateState 
         ? Math.max(0, Math.trunc(Number(candidatePromptInjection.promptBlockChars)))
         : 0,
     },
+    limits: {
+      maxPromptBlockChars,
+    },
   };
 }
 
 function buildCandidateSelfImprovementState({ policy, promotionPolicy, proposals, reinforcementMemory = null, nowIso }) {
-  const autoApplyCandidates = [];
-  const proposalOnly = [];
-  const blocked = [];
-  const reinforcedFrontendNotes = [];
+  const readyHintCandidates = [];
+  const readyFrontendNoteCandidates = [];
+  const changeQueue = [];
   const reinforcement = reinforcementMemory && typeof reinforcementMemory === "object" ? reinforcementMemory : {};
   const articleStats = reinforcement.articleStats && typeof reinforcement.articleStats === "object" ? reinforcement.articleStats : {};
   const requiredSuccesses = Math.max(1, Number(policy && policy.stabilization && policy.stabilization.minSuccessfulTurnsForPromotion) || 2);
   const requiredSuccessRate = Math.max(0.5, Number(policy && policy.stabilization && policy.stabilization.minSuccessRate) || 0.67);
   for (const proposal of Array.isArray(proposals) ? proposals : []) {
-    const decision = safeString(proposal && proposal.promotion && proposal.promotion.decision, 40);
-    if (decision === "blocked") {
-      blocked.push(proposal);
-      continue;
-    }
+    const decision = safeString(proposal && proposal.promotion && proposal.promotion.decision, 40) || "proposal_only";
     const hasRuntimeHint = Boolean(proposal && proposal.candidateChange && proposal.candidateChange.runtimeRetrievalHint);
     const hasFrontendQualityNote = Boolean(proposal && proposal.candidateChange && proposal.candidateChange.frontendQualityNote);
-    const stats = articleStats[safeString(proposal && proposal.articleId, 120)] || {};
-    const successCount = Math.max(0, Math.trunc(Number(stats.successCount) || 0));
-    const failureCount = Math.max(0, Math.trunc(Number(stats.failureCount) || 0));
-    const total = successCount + failureCount;
-    const successRate = total > 0 ? successCount / total : 0;
+    const reinforcementProgress = buildFrontendReinforcementProgress(
+      articleStats[safeString(proposal && proposal.articleId, 120)] || {},
+      { requiredSuccesses, requiredSuccessRate }
+    );
+    const successCount = reinforcementProgress.successCount;
+    const failureCount = reinforcementProgress.failureCount;
+    const total = reinforcementProgress.observedCount;
+    const successRate = reinforcementProgress.successRate;
     const frontendEligible = hasFrontendQualityNote
       && successCount >= requiredSuccesses
       && successRate >= requiredSuccessRate;
-    if (decision === "auto_apply_candidate" && hasRuntimeHint) {
-      autoApplyCandidates.push(proposal);
+    let emittedChange = false;
+    if (hasRuntimeHint) {
+      emittedChange = true;
+      let readinessStatus = "proposal_only";
+      let gatingReason = "promotion_policy_proposal_only";
+      let nextAction = "Keep this runtime hint proposal gated behind machine review.";
+      if (decision === "blocked") {
+        readinessStatus = "blocked";
+        gatingReason = "blocked_target";
+        nextAction = "Leave this target outside self-improvement auto-promotion.";
+      } else if (decision === "auto_apply_candidate") {
+        readinessStatus = "ready_to_gate";
+        gatingReason = "runtime_hint_ready";
+        nextAction = "Retain only if the eval gate stays PASS.";
+        readyHintCandidates.push({
+          proposalId: safeString(proposal && proposal.proposalId, 160),
+          articleId: safeString(proposal && proposal.articleId, 120),
+          title: safeString(proposal && proposal.title, 200),
+          runtimeRetrievalHint: proposal && proposal.candidateChange ? proposal.candidateChange.runtimeRetrievalHint : null,
+        });
+      }
+      changeQueue.push(buildSelfImprovementChangeEntry({
+        proposal,
+        changeType: "runtime_retrieval_hint",
+        changeTarget: "runtime/external-learning/runtime-retrieval",
+        changePayload: proposal && proposal.candidateChange ? proposal.candidateChange.runtimeRetrievalHint : null,
+        readinessStatus,
+        gatingReason,
+        nextAction,
+      }));
     }
-    if (decision === "auto_apply_candidate" && frontendEligible) {
-      reinforcedFrontendNotes.push({
-        proposalId: safeString(proposal && proposal.proposalId, 160),
-        articleId: safeString(proposal && proposal.articleId, 120),
-        title: safeString(proposal && proposal.title, 200),
-        frontendQualityNote: proposal.candidateChange.frontendQualityNote,
-        reinforcement: {
-          successCount,
-          failureCount,
-          successRate: Number(successRate.toFixed(4)),
-        },
-      });
+    if (hasFrontendQualityNote) {
+      emittedChange = true;
+      let readinessStatus = "proposal_only";
+      let gatingReason = "promotion_policy_proposal_only";
+      let nextAction = "Keep this frontend quality note as proposal-only guidance.";
+      if (decision === "blocked") {
+        readinessStatus = "blocked";
+        gatingReason = "blocked_target";
+        nextAction = "Leave this target outside self-improvement auto-promotion.";
+      } else if (decision === "auto_apply_candidate" && !(policy && policy.stabilization && policy.stabilization.enabled)) {
+        readinessStatus = "policy_disabled";
+        gatingReason = "stabilization_disabled";
+        nextAction = "Enable stabilization for this lane or keep the note proposal-only.";
+      } else if (decision === "auto_apply_candidate" && total <= 0) {
+        readinessStatus = "awaiting_observations";
+        gatingReason = "awaiting_runtime_observations";
+        nextAction = `Record ${requiredSuccesses} successful targeted observations before promotion.`;
+      } else if (decision === "auto_apply_candidate" && !frontendEligible) {
+        readinessStatus = "awaiting_reinforcement";
+        gatingReason = "reinforcement_below_threshold";
+        nextAction = `Need success>=${requiredSuccesses} and successRate>=${requiredSuccessRate.toFixed(2)} before promotion.`;
+      } else if (decision === "auto_apply_candidate" && frontendEligible) {
+        readinessStatus = "ready_to_gate";
+        gatingReason = "frontend_note_ready";
+        nextAction = "Retain only if the eval gate stays PASS and the note remains reinforced.";
+        readyFrontendNoteCandidates.push({
+          proposalId: safeString(proposal && proposal.proposalId, 160),
+          articleId: safeString(proposal && proposal.articleId, 120),
+          title: safeString(proposal && proposal.title, 200),
+          frontendQualityNote: proposal.candidateChange.frontendQualityNote,
+          reinforcement: reinforcementProgress,
+        });
+      }
+      changeQueue.push(buildSelfImprovementChangeEntry({
+        proposal,
+        changeType: "frontend_quality_note",
+        changeTarget: "docs/FRONTEND_QUALITY_PLAYBOOK.md",
+        changePayload: proposal && proposal.candidateChange ? proposal.candidateChange.frontendQualityNote : null,
+        readinessStatus,
+        gatingReason,
+        nextAction,
+        reinforcement: reinforcementProgress,
+      }));
     }
-    if (!(decision === "auto_apply_candidate" && (hasRuntimeHint || frontendEligible))) {
-      proposalOnly.push(proposal);
+    if (!emittedChange) {
+      changeQueue.push(buildSelfImprovementChangeEntry({
+        proposal,
+        changeType: safeString(proposal && proposal.changeClass, 120) || "proposal_note",
+        changeTarget: safeString(proposal && proposal.target, 260),
+        changePayload: { id: safeString(proposal && proposal.proposalId, 160) },
+        readinessStatus: decision === "blocked" ? "blocked" : decision === "auto_apply_candidate" ? "ready_to_gate" : "proposal_only",
+        gatingReason: decision === "blocked" ? "blocked_target" : decision === "auto_apply_candidate" ? "proposal_ready" : "promotion_policy_proposal_only",
+        nextAction: decision === "blocked"
+          ? "Leave this target outside self-improvement auto-promotion."
+          : decision === "auto_apply_candidate"
+            ? "Retain only if the eval gate stays PASS."
+            : "Keep this proposal in the review backlog until explicitly promoted.",
+      }));
     }
   }
   const maxAutoApply = Math.max(
@@ -2218,26 +2560,83 @@ function buildCandidateSelfImprovementState({ policy, promotionPolicy, proposals
       Number(promotionPolicy && promotionPolicy.autoApply && promotionPolicy.autoApply.maxAutoApplyPerLane) || 12
     )
   );
-  const candidateHints = autoApplyCandidates.slice(0, maxAutoApply).map((proposal) => ({
-    proposalId: safeString(proposal && proposal.proposalId, 160),
-    articleId: safeString(proposal && proposal.articleId, 120),
-    title: safeString(proposal && proposal.title, 200),
-    runtimeRetrievalHint: proposal && proposal.candidateChange ? proposal.candidateChange.runtimeRetrievalHint : null,
-  })).filter((entry) => entry.runtimeRetrievalHint);
+  const candidateHints = readyHintCandidates
+    .filter((entry) => entry.runtimeRetrievalHint)
+    .slice(0, maxAutoApply);
+  const candidateFrontendQualityNotes = readyFrontendNoteCandidates
+    .slice(0, Math.max(1, Number(policy && policy.stabilization && policy.stabilization.maxPromotedNotes) || 4));
+  const sortedQueue = changeQueue
+    .slice()
+    .sort((left, right) => (Number(right && right.priorityScore) || 0) - (Number(left && left.priorityScore) || 0)
+      || safeString(left && left.changeId, 160).localeCompare(safeString(right && right.changeId, 160)));
+  const priorityBacklog = sortedQueue.slice(0, 8).map((entry) => ({
+    changeId: safeString(entry && entry.changeId, 160),
+    proposalId: safeString(entry && entry.proposalId, 160),
+    articleId: safeString(entry && entry.articleId, 120),
+    title: safeString(entry && entry.title, 200),
+    changeType: safeString(entry && entry.changeType, 120),
+    readinessStatus: safeString(entry && entry.readinessStatus, 80),
+    gatingReason: safeString(entry && entry.gatingReason, 160),
+    nextAction: safeString(entry && entry.nextAction, 240),
+    blastRadius: safeString(entry && entry.blastRadius, 40),
+    priorityScore: Math.max(0, Math.trunc(Number(entry && entry.priorityScore) || 0)),
+    reinforcement: entry && entry.reinforcement && typeof entry.reinforcement === "object"
+      ? {
+        successCount: Math.max(0, Math.trunc(Number(entry.reinforcement.successCount) || 0)),
+        failureCount: Math.max(0, Math.trunc(Number(entry.reinforcement.failureCount) || 0)),
+        observedCount: Math.max(0, Math.trunc(Number(entry.reinforcement.observedCount) || 0)),
+        successRate: Number.isFinite(Number(entry.reinforcement.successRate)) ? Number(Number(entry.reinforcement.successRate).toFixed(4)) : 0,
+        requiredSuccesses: Math.max(0, Math.trunc(Number(entry.reinforcement.requiredSuccesses) || 0)),
+        requiredSuccessRate: Number.isFinite(Number(entry.reinforcement.requiredSuccessRate)) ? Number(Number(entry.reinforcement.requiredSuccessRate).toFixed(4)) : 0,
+        remainingSuccesses: Math.max(0, Math.trunc(Number(entry.reinforcement.remainingSuccesses) || 0)),
+        lastObservedAt: safeString(entry.reinforcement.lastObservedAt, 40),
+        lastOutcome: safeString(entry.reinforcement.lastOutcome, 20),
+        status: safeString(entry.reinforcement.status, 40),
+        sampleTurnIds: Array.isArray(entry.reinforcement.sampleTurnIds)
+          ? entry.reinforcement.sampleTurnIds.map((item) => safeString(item, 160)).filter(Boolean).slice(0, 6)
+          : [],
+      }
+      : null,
+  }));
+  const readinessCounts = changeQueue.reduce((counts, entry) => {
+    const key = safeString(entry && entry.readinessStatus, 80);
+    if (key) {
+      counts[key] = (counts[key] || 0) + 1;
+    }
+    return counts;
+  }, {});
+  const observationCount = Math.max(0, Math.trunc(Number(reinforcement && reinforcement.observationCount) || 0));
+  const lastObservedAt = safeString(reinforcement && reinforcement.lastObservedAt, 40);
   return {
     schema: safeString(policy && policy.selfImprovement && policy.selfImprovement.stateSchema, 120) || "self-improvement-state.v1",
     generatedAt: nowIso,
     sourceName: safeString(policy && policy.source && policy.source.name, 120),
     sourceTier: safeString(policy && policy.source && policy.source.tier, 40) || "primary",
-    autoApplyCandidateCount: autoApplyCandidates.length,
-    autoApplyFrontendQualityNoteCount: reinforcedFrontendNotes.length,
-    proposalOnlyCount: proposalOnly.length,
-    blockedCount: blocked.length,
+    rawAutoApplyChangeCount: changeQueue.filter((entry) => safeString(entry && entry.rawDecision, 40) === "auto_apply_candidate").length,
+    autoApplyCandidateCount: changeQueue.filter((entry) => safeString(entry && entry.readinessStatus, 80) === "ready_to_gate").length,
+    readyHintCandidateCount: candidateHints.length,
+    autoApplyFrontendQualityNoteCount: candidateFrontendQualityNotes.length,
+    observationStatus: deriveSelfImprovementObservationStatus({
+      stabilizationEnabled: Boolean(policy && policy.stabilization && policy.stabilization.enabled),
+      observationCount,
+      awaitingObservationCount: Number(readinessCounts.awaiting_observations) || 0,
+      awaitingReinforcementCount: Number(readinessCounts.awaiting_reinforcement) || 0,
+      readyFrontendNoteCount: candidateFrontendQualityNotes.length,
+      appliedFrontendQualityNoteCount: 0,
+    }),
+    observationCount,
+    lastObservedAt,
+    requiredObservationSuccesses: requiredSuccesses,
+    requiredObservationSuccessRate: Number(requiredSuccessRate.toFixed(4)),
+    awaitingObservationCount: Number(readinessCounts.awaiting_observations) || 0,
+    awaitingReinforcementCount: Number(readinessCounts.awaiting_reinforcement) || 0,
+    policyDisabledCandidateCount: Number(readinessCounts.policy_disabled) || 0,
+    proposalOnlyCount: Number(readinessCounts.proposal_only) || 0,
+    blockedCount: Number(readinessCounts.blocked) || 0,
     candidateHints,
-    candidateFrontendQualityNotes: reinforcedFrontendNotes.slice(
-      0,
-      Math.max(1, Number(policy && policy.stabilization && policy.stabilization.maxPromotedNotes) || 4)
-    ),
+    candidateFrontendQualityNotes,
+    nextPriority: priorityBacklog[0] || null,
+    priorityBacklog,
     proposalSummaries: (Array.isArray(proposals) ? proposals : []).map((proposal) => ({
       proposalId: safeString(proposal && proposal.proposalId, 160),
       articleId: safeString(proposal && proposal.articleId, 120),
@@ -2253,7 +2652,9 @@ function evaluateSelfImprovementGate({ policy, promotionPolicy, digest, candidat
   const cases = Array.isArray(promotionPolicy && promotionPolicy.evalGate && promotionPolicy.evalGate.cases)
     ? promotionPolicy.evalGate.cases
     : [];
-  if (!candidateState || !Array.isArray(candidateState.candidateHints) || !candidateState.candidateHints.length) {
+  const hasReadyHints = Boolean(candidateState && Array.isArray(candidateState.candidateHints) && candidateState.candidateHints.length);
+  const hasReadyFrontendNotes = Boolean(candidateState && Array.isArray(candidateState.candidateFrontendQualityNotes) && candidateState.candidateFrontendQualityNotes.length);
+  if (!hasReadyHints && !hasReadyFrontendNotes) {
     return {
       schema: safeString(policy && policy.selfImprovement && policy.selfImprovement.gateSchema, 120) || "self-improvement-eval-gate.v1",
       generatedAt: nowIso,
@@ -2292,12 +2693,14 @@ function buildAppliedSelfImprovementState({ policy, promotionPolicy, candidateSt
   let appliedHints = [];
   let appliedFrontendQualityNotes = [];
   let appliedDecision = "none";
-  if (safeString(gate && gate.status, 20) === "PASS" && Array.isArray(candidateState && candidateState.candidateHints) && candidateState.candidateHints.length) {
-    appliedHints = candidateState.candidateHints;
+  const readyHints = Array.isArray(candidateState && candidateState.candidateHints) ? candidateState.candidateHints : [];
+  const readyFrontendNotes = Array.isArray(candidateState && candidateState.candidateFrontendQualityNotes)
+    ? candidateState.candidateFrontendQualityNotes
+    : [];
+  if (safeString(gate && gate.status, 20) === "PASS" && (readyHints.length || readyFrontendNotes.length)) {
+    appliedHints = readyHints;
+    appliedFrontendQualityNotes = readyFrontendNotes;
     appliedDecision = "applied";
-    appliedFrontendQualityNotes = Array.isArray(candidateState && candidateState.candidateFrontendQualityNotes)
-      ? candidateState.candidateFrontendQualityNotes
-      : [];
   } else if (
     safeString(previous && previous.gateStatus, 20) === "PASS"
     && (previousAppliedHints.length || previousAppliedFrontendQualityNotes.length)
@@ -2306,6 +2709,13 @@ function buildAppliedSelfImprovementState({ policy, promotionPolicy, candidateSt
     appliedFrontendQualityNotes = previousAppliedFrontendQualityNotes;
     appliedDecision = "retained_previous_pass";
   }
+  const appliedChangeIds = new Set([
+    ...appliedHints.map((entry) => safeString(entry && entry.runtimeRetrievalHint && entry.runtimeRetrievalHint.hintId, 160)).filter(Boolean),
+    ...appliedFrontendQualityNotes.map((entry) => safeString(entry && entry.frontendQualityNote && entry.frontendQualityNote.noteId, 160)).filter(Boolean),
+  ]);
+  const pendingPriorityBacklog = (Array.isArray(candidateState && candidateState.priorityBacklog) ? candidateState.priorityBacklog : [])
+    .filter((entry) => !appliedChangeIds.has(safeString(entry && entry.changeId, 160)))
+    .slice(0, 8);
   return {
     schema: safeString(policy && policy.selfImprovement && policy.selfImprovement.stateSchema, 120) || "self-improvement-state.v1",
     generatedAt: nowIso,
@@ -2319,8 +2729,27 @@ function buildAppliedSelfImprovementState({ policy, promotionPolicy, candidateSt
     appliedFrontendQualityNoteCount: appliedFrontendQualityNotes.length,
     appliedHintIds: appliedHints.map((entry) => safeString(entry && entry.runtimeRetrievalHint && entry.runtimeRetrievalHint.hintId, 160)).filter(Boolean),
     appliedFrontendQualityNoteIds: appliedFrontendQualityNotes.map((entry) => safeString(entry && entry.frontendQualityNote && entry.frontendQualityNote.noteId, 160)).filter(Boolean),
+    rawAutoApplyChangeCount: Number(candidateState && candidateState.rawAutoApplyChangeCount) || 0,
     autoApplyCandidateCount: Number(candidateState && candidateState.autoApplyCandidateCount) || 0,
+    readyHintCandidateCount: Number(candidateState && candidateState.readyHintCandidateCount) || 0,
     autoApplyFrontendQualityNoteCount: Number(candidateState && candidateState.autoApplyFrontendQualityNoteCount) || 0,
+    observationStatus: deriveSelfImprovementObservationStatus({
+      stabilizationEnabled: Boolean(policy && policy.stabilization && policy.stabilization.enabled),
+      observationCount: Number(candidateState && candidateState.observationCount) || 0,
+      awaitingObservationCount: Number(candidateState && candidateState.awaitingObservationCount) || 0,
+      awaitingReinforcementCount: Number(candidateState && candidateState.awaitingReinforcementCount) || 0,
+      readyFrontendNoteCount: Number(candidateState && candidateState.autoApplyFrontendQualityNoteCount) || 0,
+      appliedFrontendQualityNoteCount: appliedFrontendQualityNotes.length,
+    }),
+    observationCount: Number(candidateState && candidateState.observationCount) || 0,
+    lastObservedAt: safeString(candidateState && candidateState.lastObservedAt, 40),
+    requiredObservationSuccesses: Number(candidateState && candidateState.requiredObservationSuccesses) || 0,
+    requiredObservationSuccessRate: Number.isFinite(Number(candidateState && candidateState.requiredObservationSuccessRate))
+      ? Number(Number(candidateState.requiredObservationSuccessRate).toFixed(4))
+      : 0,
+    awaitingObservationCount: Number(candidateState && candidateState.awaitingObservationCount) || 0,
+    awaitingReinforcementCount: Number(candidateState && candidateState.awaitingReinforcementCount) || 0,
+    policyDisabledCandidateCount: Number(candidateState && candidateState.policyDisabledCandidateCount) || 0,
     proposalOnlyCount: Number(candidateState && candidateState.proposalOnlyCount) || 0,
     blockedCount: Number(candidateState && candidateState.blockedCount) || 0,
     failedCaseIds: Array.isArray(gate && gate.failedCaseIds) ? gate.failedCaseIds.slice(0, 8) : [],
@@ -2330,6 +2759,8 @@ function buildAppliedSelfImprovementState({ policy, promotionPolicy, candidateSt
     proposalDir: repoRelative(policy.workspaceRoot, policy.paths.selfImprovementProposalDir),
     appliedHints,
     appliedFrontendQualityNotes,
+    nextPriority: pendingPriorityBacklog.length ? pendingPriorityBacklog[0] : null,
+    priorityBacklog: pendingPriorityBacklog,
     proposalSummaries: Array.isArray(candidateState && candidateState.proposalSummaries) ? candidateState.proposalSummaries.slice(0, 16) : [],
   };
 }
@@ -2507,13 +2938,72 @@ function buildRuntimeSnapshotFromArtifacts(policy, runtimeState = {}) {
       gateReason: safeString(selfImprovementState && selfImprovementState.gateReason, 120) || safeString(selfImprovementGate && selfImprovementGate.reason, 120),
       appliedDecision: safeString(selfImprovementState && selfImprovementState.appliedDecision, 40) || "none",
       appliedHintCount: Number(selfImprovementState && selfImprovementState.appliedHintCount) || 0,
+      rawAutoApplyChangeCount: Number(selfImprovementState && selfImprovementState.rawAutoApplyChangeCount) || 0,
       autoApplyCandidateCount: Number(selfImprovementState && selfImprovementState.autoApplyCandidateCount) || 0,
+      readyHintCandidateCount: Number(selfImprovementState && selfImprovementState.readyHintCandidateCount) || 0,
       proposalOnlyCount: Number(selfImprovementState && selfImprovementState.proposalOnlyCount) || 0,
       blockedCount: Number(selfImprovementState && selfImprovementState.blockedCount) || 0,
+      observationStatus: safeString(selfImprovementState && selfImprovementState.observationStatus, 40) || "unobserved",
+      observationCount: stabilizationEnabled ? Math.max(0, Math.trunc(Number(selfImprovementState && selfImprovementState.observationCount) || Number(reinforcementMemory && reinforcementMemory.observationCount) || 0)) : 0,
+      lastObservedAt: stabilizationEnabled
+        ? safeString(selfImprovementState && selfImprovementState.lastObservedAt, 40) || safeString(reinforcementMemory && reinforcementMemory.lastObservedAt, 40)
+        : "",
+      requiredObservationSuccesses: Number(selfImprovementState && selfImprovementState.requiredObservationSuccesses) || Math.max(1, Number(policy && policy.stabilization && policy.stabilization.minSuccessfulTurnsForPromotion) || 2),
+      requiredObservationSuccessRate: Number.isFinite(Number(selfImprovementState && selfImprovementState.requiredObservationSuccessRate))
+        ? Number(Number(selfImprovementState.requiredObservationSuccessRate).toFixed(4))
+        : Number(Number(policy && policy.stabilization && policy.stabilization.minSuccessRate || 0.67).toFixed(4)),
+      awaitingObservationCount: Number(selfImprovementState && selfImprovementState.awaitingObservationCount) || 0,
+      awaitingReinforcementCount: Number(selfImprovementState && selfImprovementState.awaitingReinforcementCount) || 0,
+      policyDisabledCandidateCount: Number(selfImprovementState && selfImprovementState.policyDisabledCandidateCount) || 0,
       failedCaseIds: Array.isArray(selfImprovementState && selfImprovementState.failedCaseIds)
         ? selfImprovementState.failedCaseIds.slice(0, 8)
         : (Array.isArray(selfImprovementGate && selfImprovementGate.failedCaseIds) ? selfImprovementGate.failedCaseIds.slice(0, 8) : []),
       appliedHintIds: Array.isArray(selfImprovementState && selfImprovementState.appliedHintIds) ? selfImprovementState.appliedHintIds.slice(0, 8) : [],
+      nextPriority: selfImprovementState && selfImprovementState.nextPriority && typeof selfImprovementState.nextPriority === "object"
+        ? {
+          title: safeString(selfImprovementState.nextPriority.title, 200),
+          readinessStatus: safeString(selfImprovementState.nextPriority.readinessStatus, 80),
+          gatingReason: safeString(selfImprovementState.nextPriority.gatingReason, 160),
+          nextAction: safeString(selfImprovementState.nextPriority.nextAction, 240),
+          blastRadius: safeString(selfImprovementState.nextPriority.blastRadius, 40),
+          reinforcement: selfImprovementState.nextPriority.reinforcement && typeof selfImprovementState.nextPriority.reinforcement === "object"
+            ? {
+              successCount: Math.max(0, Math.trunc(Number(selfImprovementState.nextPriority.reinforcement.successCount) || 0)),
+              failureCount: Math.max(0, Math.trunc(Number(selfImprovementState.nextPriority.reinforcement.failureCount) || 0)),
+              observedCount: Math.max(0, Math.trunc(Number(selfImprovementState.nextPriority.reinforcement.observedCount) || 0)),
+              successRate: Number.isFinite(Number(selfImprovementState.nextPriority.reinforcement.successRate)) ? Number(Number(selfImprovementState.nextPriority.reinforcement.successRate).toFixed(4)) : 0,
+              requiredSuccesses: Math.max(0, Math.trunc(Number(selfImprovementState.nextPriority.reinforcement.requiredSuccesses) || 0)),
+              requiredSuccessRate: Number.isFinite(Number(selfImprovementState.nextPriority.reinforcement.requiredSuccessRate)) ? Number(Number(selfImprovementState.nextPriority.reinforcement.requiredSuccessRate).toFixed(4)) : 0,
+              remainingSuccesses: Math.max(0, Math.trunc(Number(selfImprovementState.nextPriority.reinforcement.remainingSuccesses) || 0)),
+              lastObservedAt: safeString(selfImprovementState.nextPriority.reinforcement.lastObservedAt, 40),
+              status: safeString(selfImprovementState.nextPriority.reinforcement.status, 40),
+            }
+            : null,
+        }
+        : null,
+      priorityBacklog: Array.isArray(selfImprovementState && selfImprovementState.priorityBacklog)
+        ? selfImprovementState.priorityBacklog.slice(0, 5).map((entry) => ({
+          title: safeString(entry && entry.title, 200),
+          changeType: safeString(entry && entry.changeType, 120),
+          readinessStatus: safeString(entry && entry.readinessStatus, 80),
+          gatingReason: safeString(entry && entry.gatingReason, 160),
+          nextAction: safeString(entry && entry.nextAction, 240),
+          blastRadius: safeString(entry && entry.blastRadius, 40),
+          reinforcement: entry && entry.reinforcement && typeof entry.reinforcement === "object"
+            ? {
+              successCount: Math.max(0, Math.trunc(Number(entry.reinforcement.successCount) || 0)),
+              failureCount: Math.max(0, Math.trunc(Number(entry.reinforcement.failureCount) || 0)),
+              observedCount: Math.max(0, Math.trunc(Number(entry.reinforcement.observedCount) || 0)),
+              successRate: Number.isFinite(Number(entry.reinforcement.successRate)) ? Number(Number(entry.reinforcement.successRate).toFixed(4)) : 0,
+              requiredSuccesses: Math.max(0, Math.trunc(Number(entry.reinforcement.requiredSuccesses) || 0)),
+              requiredSuccessRate: Number.isFinite(Number(entry.reinforcement.requiredSuccessRate)) ? Number(Number(entry.reinforcement.requiredSuccessRate).toFixed(4)) : 0,
+              remainingSuccesses: Math.max(0, Math.trunc(Number(entry.reinforcement.remainingSuccesses) || 0)),
+              lastObservedAt: safeString(entry.reinforcement.lastObservedAt, 40),
+              status: safeString(entry.reinforcement.status, 40),
+            }
+            : null,
+        }))
+        : [],
       proposalDir: repoRelative(policy.workspaceRoot, policy.paths.selfImprovementProposalDir),
       statePath: repoRelative(policy.workspaceRoot, policy.paths.selfImprovementStatePath),
       gatePath: repoRelative(policy.workspaceRoot, policy.paths.selfImprovementGatePath),
@@ -2736,10 +3226,37 @@ async function runOpenAIBlogLearningCycle({
       ? {
         gateStatus: safeString(selfImprovement.state.gateStatus, 20),
         appliedDecision: safeString(selfImprovement.state.appliedDecision, 40),
+        rawAutoApplyChangeCount: Number(selfImprovement.state.rawAutoApplyChangeCount) || 0,
+        autoApplyCandidateCount: Number(selfImprovement.state.autoApplyCandidateCount) || 0,
         appliedHintCount: Number(selfImprovement.state.appliedHintCount) || 0,
         appliedFrontendQualityNoteCount: Number(selfImprovement.state.appliedFrontendQualityNoteCount) || 0,
+        observationStatus: safeString(selfImprovement.state.observationStatus, 40) || "unobserved",
+        observationCount: Number(selfImprovement.state.observationCount) || 0,
+        lastObservedAt: safeString(selfImprovement.state.lastObservedAt, 40),
+        awaitingObservationCount: Number(selfImprovement.state.awaitingObservationCount) || 0,
+        awaitingReinforcementCount: Number(selfImprovement.state.awaitingReinforcementCount) || 0,
+        policyDisabledCandidateCount: Number(selfImprovement.state.policyDisabledCandidateCount) || 0,
         proposalOnlyCount: Number(selfImprovement.state.proposalOnlyCount) || 0,
         blockedCount: Number(selfImprovement.state.blockedCount) || 0,
+        nextPriority: selfImprovement.state.nextPriority && typeof selfImprovement.state.nextPriority === "object"
+          ? {
+            title: safeString(selfImprovement.state.nextPriority.title, 200),
+            readinessStatus: safeString(selfImprovement.state.nextPriority.readinessStatus, 80),
+            nextAction: safeString(selfImprovement.state.nextPriority.nextAction, 240),
+            reinforcement: selfImprovement.state.nextPriority.reinforcement && typeof selfImprovement.state.nextPriority.reinforcement === "object"
+              ? {
+                successCount: Math.max(0, Math.trunc(Number(selfImprovement.state.nextPriority.reinforcement.successCount) || 0)),
+                observedCount: Math.max(0, Math.trunc(Number(selfImprovement.state.nextPriority.reinforcement.observedCount) || 0)),
+                requiredSuccesses: Math.max(0, Math.trunc(Number(selfImprovement.state.nextPriority.reinforcement.requiredSuccesses) || 0)),
+                remainingSuccesses: Math.max(0, Math.trunc(Number(selfImprovement.state.nextPriority.reinforcement.remainingSuccesses) || 0)),
+                successRate: Number.isFinite(Number(selfImprovement.state.nextPriority.reinforcement.successRate)) ? Number(Number(selfImprovement.state.nextPriority.reinforcement.successRate).toFixed(4)) : 0,
+                requiredSuccessRate: Number.isFinite(Number(selfImprovement.state.nextPriority.reinforcement.requiredSuccessRate)) ? Number(Number(selfImprovement.state.nextPriority.reinforcement.requiredSuccessRate).toFixed(4)) : 0,
+                lastObservedAt: safeString(selfImprovement.state.nextPriority.reinforcement.lastObservedAt, 40),
+                status: safeString(selfImprovement.state.nextPriority.reinforcement.status, 40),
+              }
+              : null,
+          }
+          : null,
       }
       : null,
   };

@@ -69,8 +69,10 @@ Updated: 2026-03-08
 
 - `defaultExecAgentIsDefault`
   - confirms the canonical parent entrypoint is still `default`
+- `runtimeRequestUserInputPolicyAutonomyFirst`
+  - confirms the live runtime default remains autonomy-first (`auto-default` / `auto-empty`)
 - `requestUserInputPolicyBlocked`
-  - confirms non-interactive request-user-input posture is blocked by default
+  - confirms the strict signoff/proof lane still pins non-interactive request-user-input posture to `blocked`
 - `parentDispatchGuardEnforced`
   - confirms parent completion still requires expected specialist dispatch
 - `retiredWorkerNotRoutable`

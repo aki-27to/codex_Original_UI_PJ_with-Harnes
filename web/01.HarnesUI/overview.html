@@ -52,230 +52,260 @@
       <section id="overviewMetrics" class="overview-metrics" aria-live="polite"></section>
 
       <section id="runtimeSection" class="overview-section">
-        <div class="overview-section-head">
-          <div>
-            <p class="overview-kicker">Runtime</p>
-            <h3>Posture and control plane</h3>
+        <details class="overview-section-shell" open>
+          <summary class="overview-section-summary">
+            <div class="overview-section-head">
+              <div>
+                <p class="overview-kicker">Runtime</p>
+                <h3>Posture and control plane</h3>
+              </div>
+              <p class="overview-section-copy">The page below mirrors live defaults and operator-facing APIs instead of inferring them from docs.</p>
+            </div>
+          </summary>
+          <div class="overview-section-body overview-grid overview-grid-3">
+            <article class="side-card overview-panel">
+              <div class="overview-panel-head">
+                <h4>Runtime Posture</h4>
+                <p>Execution defaults, parent posture, and live session state.</p>
+              </div>
+              <div id="runtimePostureCard"></div>
+            </article>
+            <article class="side-card overview-panel">
+              <div class="overview-panel-head">
+                <h4>Guard Rails</h4>
+                <p>Dispatch, user-input, requirement, and adversarial policies.</p>
+              </div>
+              <div id="guardrailCard"></div>
+            </article>
+            <article class="side-card overview-panel">
+              <div class="overview-panel-head">
+                <h4>Health</h4>
+                <p>SLO view plus the latest terminal turn.</p>
+              </div>
+              <div id="healthCard"></div>
+            </article>
           </div>
-          <p class="overview-section-copy">The page below mirrors live defaults and operator-facing APIs instead of inferring them from docs.</p>
-        </div>
-        <div class="overview-grid overview-grid-3">
-          <article class="side-card overview-panel">
-            <div class="overview-panel-head">
-              <h4>Runtime Posture</h4>
-              <p>Execution defaults, parent posture, and live session state.</p>
-            </div>
-            <div id="runtimePostureCard"></div>
-          </article>
-          <article class="side-card overview-panel">
-            <div class="overview-panel-head">
-              <h4>Guard Rails</h4>
-              <p>Dispatch, user-input, requirement, and adversarial policies.</p>
-            </div>
-            <div id="guardrailCard"></div>
-          </article>
-          <article class="side-card overview-panel">
-            <div class="overview-panel-head">
-              <h4>Health</h4>
-              <p>SLO view plus the latest terminal turn.</p>
-            </div>
-            <div id="healthCard"></div>
-          </article>
-        </div>
+        </details>
       </section>
 
       <section id="topologySection" class="overview-section">
-        <div class="overview-section-head">
-          <div>
-            <p class="overview-kicker">Topology</p>
-            <h3>Configured roles and runtime lanes</h3>
+        <details class="overview-section-shell">
+          <summary class="overview-section-summary">
+            <div class="overview-section-head">
+              <div>
+                <p class="overview-kicker">Topology</p>
+                <h3>Configured roles and runtime lanes</h3>
+              </div>
+              <p class="overview-section-copy">Parents, specialists, verification roles, and retired compatibility lanes are separated so the orchestration model is visible.</p>
+            </div>
+          </summary>
+          <div class="overview-section-body">
+            <div id="topologySummary" class="overview-inline-stat-grid"></div>
+            <div class="overview-grid overview-grid-4">
+              <article class="side-card overview-panel overview-lane-panel lane-parent">
+                <div class="overview-panel-head">
+                  <h4>Parents</h4>
+                  <p>Orchestrators and scoped runtime variants.</p>
+                </div>
+                <div id="topologyParentLane" class="overview-lane-list"></div>
+              </article>
+              <article class="side-card overview-panel overview-lane-panel lane-specialist">
+                <div class="overview-panel-head">
+                  <h4>Specialists</h4>
+                  <p>Frontend, backend, and infra execution lanes.</p>
+                </div>
+                <div id="topologySpecialistLane" class="overview-lane-list"></div>
+              </article>
+              <article class="side-card overview-panel overview-lane-panel lane-verification">
+                <div class="overview-panel-head">
+                  <h4>Verification</h4>
+                  <p>Tester, reviewer, and explorer coverage.</p>
+                </div>
+                <div id="topologyVerificationLane" class="overview-lane-list"></div>
+              </article>
+              <article class="side-card overview-panel overview-lane-panel lane-retired">
+                <div class="overview-panel-head">
+                  <h4>Retired</h4>
+                  <p>Compatibility artifacts that should not drive normal routing.</p>
+                </div>
+                <div id="topologyRetiredLane" class="overview-lane-list"></div>
+              </article>
+            </div>
           </div>
-          <p class="overview-section-copy">Parents, specialists, verification roles, and retired compatibility lanes are separated so the orchestration model is visible.</p>
-        </div>
-        <div id="topologySummary" class="overview-inline-stat-grid"></div>
-        <div class="overview-grid overview-grid-4">
-          <article class="side-card overview-panel overview-lane-panel lane-parent">
-            <div class="overview-panel-head">
-              <h4>Parents</h4>
-              <p>Orchestrators and scoped runtime variants.</p>
-            </div>
-            <div id="topologyParentLane" class="overview-lane-list"></div>
-          </article>
-          <article class="side-card overview-panel overview-lane-panel lane-specialist">
-            <div class="overview-panel-head">
-              <h4>Specialists</h4>
-              <p>Frontend, backend, and infra execution lanes.</p>
-            </div>
-            <div id="topologySpecialistLane" class="overview-lane-list"></div>
-          </article>
-          <article class="side-card overview-panel overview-lane-panel lane-verification">
-            <div class="overview-panel-head">
-              <h4>Verification</h4>
-              <p>Tester, reviewer, and explorer coverage.</p>
-            </div>
-            <div id="topologyVerificationLane" class="overview-lane-list"></div>
-          </article>
-          <article class="side-card overview-panel overview-lane-panel lane-retired">
-            <div class="overview-panel-head">
-              <h4>Retired</h4>
-              <p>Compatibility artifacts that should not drive normal routing.</p>
-            </div>
-            <div id="topologyRetiredLane" class="overview-lane-list"></div>
-          </article>
-        </div>
+        </details>
       </section>
 
       <section id="contractsSection" class="overview-section">
-        <div class="overview-section-head">
-          <div>
-            <p class="overview-kicker">Contracts</p>
-            <h3>What the runtime says must happen</h3>
+        <details class="overview-section-shell">
+          <summary class="overview-section-summary">
+            <div class="overview-section-head">
+              <div>
+                <p class="overview-kicker">Contracts</p>
+                <h3>What the runtime says must happen</h3>
+              </div>
+              <p class="overview-section-copy">The turn lifecycle, task outcomes, and governance scope are shown as machine-readable snapshots.</p>
+            </div>
+          </summary>
+          <div class="overview-section-body overview-grid overview-grid-3">
+            <article class="side-card overview-panel">
+              <div class="overview-panel-head">
+                <h4>Turn Contract</h4>
+                <p>Lifecycle and task-outcome bridge.</p>
+              </div>
+              <div id="turnContractCard"></div>
+            </article>
+            <article class="side-card overview-panel">
+              <div class="overview-panel-head">
+                <h4>Task Outcomes</h4>
+                <p>Terminal states and reason coverage.</p>
+              </div>
+              <div id="taskOutcomeCard"></div>
+            </article>
+            <article class="side-card overview-panel">
+              <div class="overview-panel-head">
+                <h4>Governance</h4>
+                <p>Parent set, retired lanes, and override policy.</p>
+              </div>
+              <div id="governanceCard"></div>
+            </article>
           </div>
-          <p class="overview-section-copy">The turn lifecycle, task outcomes, and governance scope are shown as machine-readable snapshots.</p>
-        </div>
-        <div class="overview-grid overview-grid-3">
-          <article class="side-card overview-panel">
-            <div class="overview-panel-head">
-              <h4>Turn Contract</h4>
-              <p>Lifecycle and task-outcome bridge.</p>
-            </div>
-            <div id="turnContractCard"></div>
-          </article>
-          <article class="side-card overview-panel">
-            <div class="overview-panel-head">
-              <h4>Task Outcomes</h4>
-              <p>Terminal states and reason coverage.</p>
-            </div>
-            <div id="taskOutcomeCard"></div>
-          </article>
-          <article class="side-card overview-panel">
-            <div class="overview-panel-head">
-              <h4>Governance</h4>
-              <p>Parent set, retired lanes, and override policy.</p>
-            </div>
-            <div id="governanceCard"></div>
-          </article>
-        </div>
+        </details>
       </section>
 
       <section id="traceSection" class="overview-section">
-        <div class="overview-section-head">
-          <div>
-            <p class="overview-kicker">Traceability</p>
-            <h3>User request to requirement and plan links</h3>
-          </div>
-          <p class="overview-section-copy">This view keeps the main console lightweight while exposing which request clauses were mapped, parked, dropped, and tied to plan steps.</p>
-        </div>
-        <div class="overview-grid overview-grid-2">
-          <article class="side-card overview-panel">
-            <div class="overview-panel-head">
-              <h4>Specification Trace</h4>
-              <p>Original clauses, mapped requirement refs, plan step refs, and parked or dropped reasons.</p>
+        <details class="overview-section-shell">
+          <summary class="overview-section-summary">
+            <div class="overview-section-head">
+              <div>
+                <p class="overview-kicker">Traceability</p>
+                <h3>User request to requirement and plan links</h3>
+              </div>
+              <p class="overview-section-copy">This view keeps the main console lightweight while exposing which request clauses were mapped, parked, dropped, and tied to plan steps.</p>
             </div>
-            <div id="traceabilityCard"></div>
-          </article>
-        </div>
+          </summary>
+          <div class="overview-section-body overview-grid overview-grid-2">
+            <article class="side-card overview-panel">
+              <div class="overview-panel-head">
+                <h4>Specification Trace</h4>
+                <p>Original clauses, mapped requirement refs, plan step refs, and parked or dropped reasons.</p>
+              </div>
+              <div id="traceabilityCard"></div>
+            </article>
+          </div>
+        </details>
       </section>
 
       <section id="evidenceSection" class="overview-section">
-        <div class="overview-section-head">
-          <div>
-            <p class="overview-kicker">Evidence</p>
-            <h3>Fresh proof and regression outcomes</h3>
+        <details class="overview-section-shell" open>
+          <summary class="overview-section-summary">
+            <div class="overview-section-head">
+              <div>
+                <p class="overview-kicker">Evidence</p>
+                <h3>Fresh proof and regression outcomes</h3>
+              </div>
+              <p class="overview-section-copy">The newest signoff bundle, runtime proof bundle, and eval history are summarized without leaving the UI.</p>
+            </div>
+          </summary>
+          <div class="overview-section-body">
+            <div class="overview-grid overview-grid-2">
+              <article class="side-card overview-panel">
+                <div class="overview-panel-head">
+                  <h4>Latest Signoff</h4>
+                  <p>Full suite plus natural-task trace.</p>
+                </div>
+                <div id="signoffEvidenceCard"></div>
+              </article>
+              <article class="side-card overview-panel">
+                <div class="overview-panel-head">
+                  <h4>Latest Runtime Proof</h4>
+                  <p>Guard enforcement and probe persistence.</p>
+                </div>
+                <div id="runtimeProofCard"></div>
+              </article>
+            </div>
+            <div class="overview-grid overview-grid-2">
+              <article class="side-card overview-panel">
+                <div class="overview-panel-head">
+                  <h4>Recent Eval Runs</h4>
+                  <p>Newest suite executions recorded by the harness.</p>
+                </div>
+                <div id="evalRunsCard"></div>
+              </article>
+              <article class="side-card overview-panel">
+                <div class="overview-panel-head">
+                  <h4>API Surfaces</h4>
+                  <p>Overview, runtime, replay, eval, and conversation endpoints.</p>
+                </div>
+                <div id="apiSurfacesCard"></div>
+              </article>
+            </div>
           </div>
-          <p class="overview-section-copy">The newest signoff bundle, runtime proof bundle, and eval history are summarized without leaving the UI.</p>
-        </div>
-        <div class="overview-grid overview-grid-2">
-          <article class="side-card overview-panel">
-            <div class="overview-panel-head">
-              <h4>Latest Signoff</h4>
-              <p>Full suite plus natural-task trace.</p>
-            </div>
-            <div id="signoffEvidenceCard"></div>
-          </article>
-          <article class="side-card overview-panel">
-            <div class="overview-panel-head">
-              <h4>Latest Runtime Proof</h4>
-              <p>Guard enforcement and probe persistence.</p>
-            </div>
-            <div id="runtimeProofCard"></div>
-          </article>
-        </div>
-        <div class="overview-grid overview-grid-2">
-          <article class="side-card overview-panel">
-            <div class="overview-panel-head">
-              <h4>Recent Eval Runs</h4>
-              <p>Newest suite executions recorded by the harness.</p>
-            </div>
-            <div id="evalRunsCard"></div>
-          </article>
-          <article class="side-card overview-panel">
-            <div class="overview-panel-head">
-              <h4>API Surfaces</h4>
-              <p>Overview, runtime, replay, eval, and conversation endpoints.</p>
-            </div>
-            <div id="apiSurfacesCard"></div>
-          </article>
-        </div>
+        </details>
       </section>
 
       <section id="memorySection" class="overview-section">
-        <div class="overview-section-head">
-          <div>
-            <p class="overview-kicker">Memory</p>
-            <h3>Persistence, replay, and skill coverage</h3>
+        <details class="overview-section-shell">
+          <summary class="overview-section-summary">
+            <div class="overview-section-head">
+              <div>
+                <p class="overview-kicker">Memory</p>
+                <h3>Persistence, replay, and skill coverage</h3>
+              </div>
+              <p class="overview-section-copy">Recent execution memory, replay state, recurring patterns, and skill portfolio checks live together here.</p>
+            </div>
+          </summary>
+          <div class="overview-section-body">
+            <div class="overview-grid overview-grid-3">
+              <article class="side-card overview-panel">
+                <div class="overview-panel-head">
+                  <h4>Execution Memory</h4>
+                  <p>Recent outcomes and parent-dispatch evidence.</p>
+                </div>
+                <div id="executionMemoryCard"></div>
+              </article>
+              <article class="side-card overview-panel">
+                <div class="overview-panel-head">
+                  <h4>Replay and Patterns</h4>
+                  <p>Repro traces and recurring failure signatures.</p>
+                </div>
+                <div id="replayPatternsCard"></div>
+              </article>
+              <article class="side-card overview-panel">
+                <div class="overview-panel-head">
+                  <h4>Skill Portfolio</h4>
+                  <p>Role coverage, missing proposals, and audit status.</p>
+                </div>
+                <div id="skillPortfolioCard"></div>
+              </article>
+            </div>
+            <div class="overview-grid overview-grid-3">
+              <article class="side-card overview-panel">
+                <div class="overview-panel-head">
+                  <h4>External Learning</h4>
+                  <p>Official blog ingestion, governed promotion, and freeze-aware status.</p>
+                </div>
+                <div id="externalLearningCard"></div>
+              </article>
+              <article class="side-card overview-panel">
+                <div class="overview-panel-head">
+                  <h4>Role Checks</h4>
+                  <p>Per-role assignment coverage from the skill portfolio audit.</p>
+                </div>
+                <div id="roleChecksCard"></div>
+              </article>
+              <article class="side-card overview-panel">
+                <div class="overview-panel-head">
+                  <h4>Raw Snapshot</h4>
+                  <p>Full JSON payload for operator inspection or debugging.</p>
+                </div>
+                <details class="overview-raw-details">
+                  <summary>Raw `/api/harness/overview` を表示</summary>
+                  <pre id="overviewRawSnapshot" class="overview-raw-snapshot"></pre>
+                </details>
+              </article>
+            </div>
           </div>
-          <p class="overview-section-copy">Recent execution memory, replay state, recurring patterns, and skill portfolio checks live together here.</p>
-        </div>
-        <div class="overview-grid overview-grid-3">
-          <article class="side-card overview-panel">
-            <div class="overview-panel-head">
-              <h4>Execution Memory</h4>
-              <p>Recent outcomes and parent-dispatch evidence.</p>
-            </div>
-            <div id="executionMemoryCard"></div>
-          </article>
-          <article class="side-card overview-panel">
-            <div class="overview-panel-head">
-              <h4>Replay and Patterns</h4>
-              <p>Repro traces and recurring failure signatures.</p>
-            </div>
-            <div id="replayPatternsCard"></div>
-          </article>
-          <article class="side-card overview-panel">
-            <div class="overview-panel-head">
-              <h4>Skill Portfolio</h4>
-              <p>Role coverage, missing proposals, and audit status.</p>
-            </div>
-            <div id="skillPortfolioCard"></div>
-          </article>
-        </div>
-        <div class="overview-grid overview-grid-3">
-          <article class="side-card overview-panel">
-            <div class="overview-panel-head">
-              <h4>External Learning</h4>
-              <p>Official blog ingestion, governed promotion, and freeze-aware status.</p>
-            </div>
-            <div id="externalLearningCard"></div>
-          </article>
-          <article class="side-card overview-panel">
-            <div class="overview-panel-head">
-              <h4>Role Checks</h4>
-              <p>Per-role assignment coverage from the skill portfolio audit.</p>
-            </div>
-            <div id="roleChecksCard"></div>
-          </article>
-          <article class="side-card overview-panel">
-            <div class="overview-panel-head">
-              <h4>Raw Snapshot</h4>
-              <p>Full JSON payload for operator inspection or debugging.</p>
-            </div>
-            <details class="overview-raw-details" open>
-              <summary>Show raw `/api/harness/overview` snapshot</summary>
-              <pre id="overviewRawSnapshot" class="overview-raw-snapshot"></pre>
-            </details>
-          </article>
-        </div>
+        </details>
       </section>
     </main>
   </div>

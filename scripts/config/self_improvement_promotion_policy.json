@@ -51,7 +51,8 @@
           "evals",
           "codex"
         ],
-        "maxTopics": 6
+        "maxTopics": 6,
+        "maxPromptBlockChars": 1700
       },
       {
         "caseId": "frontend_context_iteration",
@@ -62,7 +63,8 @@
           "frontend",
           "context"
         ],
-        "maxTopics": 6
+        "maxTopics": 6,
+        "maxPromptBlockChars": 1700
       },
       {
         "caseId": "backend_non_targeted",
@@ -73,7 +75,8 @@
           "frontend",
           "skills"
         ],
-        "maxTopics": 3
+        "maxTopics": 3,
+        "maxPromptBlockChars": 400
       }
     ]
   }

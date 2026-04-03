@@ -1,0 +1,347 @@
+{
+  "schema": "agent-role-contract-manifest.v1",
+  "version": "2026-03-30.r1",
+  "defaultRole": "coordinator",
+  "singleAgentFallback": {
+    "stepThreshold": 1,
+    "acceptanceThreshold": 1,
+    "maxDelegationsPerStep": 2
+  },
+  "protectedStateScopes": [
+    "root.hidden_holdout",
+    "root.global_acceptance_contract",
+    "root.policy",
+    "root.task_contract_manifest"
+  ],
+  "roles": [
+    {
+      "id": "planner",
+      "objective": "Generate and update executable plan artifacts and bounded replans.",
+      "allowedInputs": [
+        "task_spec",
+        "plan_state",
+        "acceptance_contract",
+        "verifier_state",
+        "handoff_context"
+      ],
+      "requiredInputs": [
+        "task_spec",
+        "plan_state"
+      ],
+      "expectedOutputs": [
+        "plan_delta",
+        "replan_summary",
+        "checkpoint_expectations"
+      ],
+      "allowedTools": [
+        "read_state",
+        "write_plan",
+        "write_replan"
+      ],
+      "deniedTools": [
+        "holdout_eval_lane",
+        "external_write",
+        "destructive_delete_without_approval"
+      ],
+      "writableStateScope": [
+        "child.plan_state",
+        "child.artifact_index",
+        "parent.replan",
+        "parent.integration_summary"
+      ],
+      "readableStateScope": [
+        "parent.task_spec",
+        "parent.plan_state",
+        "parent.acceptance_contract",
+        "parent.verifier_state",
+        "parent.integration_summary"
+      ],
+      "timeBudget": {
+        "targetMs": 45000,
+        "hardStopMs": 180000,
+        "maxSteps": 6
+      },
+      "stopConditions": [
+        "plan_delta_written",
+        "replan_reason_explicit"
+      ],
+      "escalationConditions": [
+        "missing_task_spec",
+        "blocked_acceptance_contract"
+      ],
+      "handoff": {
+        "preconditions": [
+          "parent_task_exists",
+          "current_step_selected"
+        ],
+        "postconditions": [
+          "plan_artifact_updated",
+          "integration_summary_updated"
+        ]
+      }
+    },
+    {
+      "id": "researcher",
+      "objective": "Collect bounded evidence, compare options, and summarize findings with citations.",
+      "allowedInputs": [
+        "task_spec",
+        "plan_state",
+        "context_slice",
+        "source_materials"
+      ],
+      "requiredInputs": [
+        "task_spec",
+        "context_slice"
+      ],
+      "expectedOutputs": [
+        "research_summary",
+        "citations",
+        "comparison_table"
+      ],
+      "allowedTools": [
+        "read_state",
+        "web_search",
+        "read_artifact",
+        "write_child_artifact"
+      ],
+      "deniedTools": [
+        "apply_patch",
+        "holdout_eval_lane",
+        "external_write"
+      ],
+      "writableStateScope": [
+        "child.session_memory",
+        "child.artifact_index",
+        "child.raw_output"
+      ],
+      "readableStateScope": [
+        "parent.task_spec",
+        "parent.plan_state",
+        "parent.global_memory",
+        "parent.acceptance_contract"
+      ],
+      "timeBudget": {
+        "targetMs": 60000,
+        "hardStopMs": 240000,
+        "maxSteps": 8
+      },
+      "stopConditions": [
+        "research_summary_written",
+        "citations_recorded"
+      ],
+      "escalationConditions": [
+        "no_evidence_available",
+        "source_conflict_unresolved"
+      ],
+      "handoff": {
+        "preconditions": [
+          "bounded_question_explicit",
+          "context_slice_available"
+        ],
+        "postconditions": [
+          "normalized_result_written",
+          "integration_summary_updated"
+        ]
+      }
+    },
+    {
+      "id": "executor",
+      "objective": "Produce the delegated deliverable or bounded implementation artifact.",
+      "allowedInputs": [
+        "task_spec",
+        "plan_step",
+        "acceptance_subset",
+        "context_slice"
+      ],
+      "requiredInputs": [
+        "task_spec",
+        "expected_deliverable"
+      ],
+      "expectedOutputs": [
+        "deliverable",
+        "changed_surface",
+        "execution_notes"
+      ],
+      "allowedTools": [
+        "read_state",
+        "api_exec",
+        "shell",
+        "apply_patch",
+        "write_child_artifact"
+      ],
+      "deniedTools": [
+        "holdout_eval_lane",
+        "external_write",
+        "root_policy_write"
+      ],
+      "writableStateScope": [
+        "child.task_state",
+        "child.session_memory",
+        "child.artifact_index",
+        "child.raw_output"
+      ],
+      "readableStateScope": [
+        "parent.task_spec",
+        "parent.plan_state",
+        "parent.acceptance_contract",
+        "parent.global_memory"
+      ],
+      "timeBudget": {
+        "targetMs": 90000,
+        "hardStopMs": 360000,
+        "maxSteps": 10
+      },
+      "stopConditions": [
+        "deliverable_written",
+        "execution_notes_recorded"
+      ],
+      "escalationConditions": [
+        "tool_denied",
+        "budget_exhausted",
+        "blocked_dependency"
+      ],
+      "handoff": {
+        "preconditions": [
+          "deliverable_explicit",
+          "acceptance_subset_explicit"
+        ],
+        "postconditions": [
+          "normalized_result_written",
+          "parent_integration_pending"
+        ]
+      }
+    },
+    {
+      "id": "verifier",
+      "objective": "Independently validate delegated results against acceptance and verifier requirements.",
+      "allowedInputs": [
+        "task_spec",
+        "acceptance_contract",
+        "child_result",
+        "context_slice"
+      ],
+      "requiredInputs": [
+        "task_spec",
+        "child_result"
+      ],
+      "expectedOutputs": [
+        "verifier_report",
+        "acceptance_checklist",
+        "remaining_work"
+      ],
+      "allowedTools": [
+        "read_state",
+        "run_verifier",
+        "read_artifact",
+        "write_verifier_report"
+      ],
+      "deniedTools": [
+        "apply_patch",
+        "holdout_eval_lane",
+        "external_write"
+      ],
+      "writableStateScope": [
+        "child.verifier_state",
+        "child.artifact_index",
+        "parent.integration_summary"
+      ],
+      "readableStateScope": [
+        "parent.task_spec",
+        "parent.acceptance_contract",
+        "parent.plan_state",
+        "child.raw_output",
+        "child.normalized_result"
+      ],
+      "timeBudget": {
+        "targetMs": 45000,
+        "hardStopMs": 180000,
+        "maxSteps": 6
+      },
+      "stopConditions": [
+        "verifier_report_written",
+        "acceptance_items_classified"
+      ],
+      "escalationConditions": [
+        "deliverable_missing",
+        "acceptance_ambiguous"
+      ],
+      "handoff": {
+        "preconditions": [
+          "target_child_result_available"
+        ],
+        "postconditions": [
+          "verifier_report_written",
+          "parent_can_replan_or_close"
+        ]
+      }
+    },
+    {
+      "id": "coordinator",
+      "objective": "Dispatch bounded child work, merge results, manage fallback, and contain failures.",
+      "allowedInputs": [
+        "task_spec",
+        "plan_state",
+        "acceptance_contract",
+        "child_results",
+        "integration_summary"
+      ],
+      "requiredInputs": [
+        "task_spec",
+        "plan_state"
+      ],
+      "expectedOutputs": [
+        "handoff_bundle",
+        "integration_summary",
+        "closeout_readiness"
+      ],
+      "allowedTools": [
+        "dispatch_child",
+        "merge_results",
+        "read_state",
+        "write_parent_artifact"
+      ],
+      "deniedTools": [
+        "holdout_eval_lane",
+        "external_write",
+        "destructive_delete_without_approval"
+      ],
+      "writableStateScope": [
+        "parent.task_state",
+        "parent.plan_state",
+        "parent.artifact_index",
+        "parent.integration_summary",
+        "parent.agent_graph"
+      ],
+      "readableStateScope": [
+        "parent.task_spec",
+        "parent.acceptance_contract",
+        "parent.verifier_state",
+        "parent.global_memory",
+        "children.all"
+      ],
+      "timeBudget": {
+        "targetMs": 60000,
+        "hardStopMs": 240000,
+        "maxSteps": 8
+      },
+      "stopConditions": [
+        "all_required_child_results_integrated_or_blocked"
+      ],
+      "escalationConditions": [
+        "child_failure_without_recovery",
+        "orphan_child_detected",
+        "budget_overflow"
+      ],
+      "handoff": {
+        "preconditions": [
+          "parent_plan_available",
+          "role_contract_loaded"
+        ],
+        "postconditions": [
+          "agent_graph_updated",
+          "handoff_history_recorded"
+        ]
+      }
+    }
+  ]
+}

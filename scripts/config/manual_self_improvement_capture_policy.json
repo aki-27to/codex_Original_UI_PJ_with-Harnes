@@ -1,0 +1,36 @@
+{
+  "schema": "manual-self-improvement-capture-policy.v1",
+  "laneId": "manual_self_improvement_capture",
+  "mode": "manual_capture_only",
+  "artifactPath": "output/manual_self_improvement/latest.json",
+  "entrySchema": "manual-self-improvement-capture.v1",
+  "requiredEntryFields": [
+    "lessonSummary",
+    "classification",
+    "appliesTo",
+    "evidence",
+    "promotionDecision"
+  ],
+  "compression": {
+    "strategy": "latest_only",
+    "required": true,
+    "retrievalMode": "on_demand"
+  },
+  "promotion": {
+    "defaultDecision": "proposal-only",
+    "allowedDecisions": [
+      "proposal-only",
+      "blocked"
+    ],
+    "governedOverrideRequired": true,
+    "notes": [
+      "This lane does not authorize auto-apply by itself.",
+      "Any auto-apply interpretation must come from a separate governed lane and eval gate."
+    ]
+  },
+  "scope": {
+    "nonConstitutional": true,
+    "autoChangePolicyOrConstitution": false,
+    "runtimeMutationAllowed": false
+  }
+}

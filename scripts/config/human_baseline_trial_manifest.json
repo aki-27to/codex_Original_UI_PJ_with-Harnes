@@ -1,0 +1,42 @@
+{
+  "schema": "human-baseline-trial-policy.v1",
+  "version": "2026-03-31.r1",
+  "trialRoot": "output/human_baseline",
+  "packetRoot": "output/human_baseline/task_packets",
+  "resultImportRoot": "output/human_baseline/imports",
+  "reportRoot": "output/human_baseline/reports",
+  "adjudicationRoot": "output/human_baseline/adjudication",
+  "requiredFields": [
+    "trialId",
+    "participantId",
+    "caseId",
+    "familyId",
+    "timeSpentMinutes",
+    "success",
+    "qualityScore",
+    "costEstimate",
+    "notes"
+  ],
+  "scoring": {
+    "qualityWeight": 0.55,
+    "timeWeight": 0.2,
+    "costWeight": 0.1,
+    "successWeight": 0.15
+  },
+  "observedSourceTypes": [
+    "human_observed",
+    "human_adjudicated"
+  ],
+  "nonObservedSourceTypes": [
+    "synthetic",
+    "fixture",
+    "mock_observed_fixture"
+  ],
+  "reviewRubric": [
+    "success_criteria_met",
+    "deliverable_quality",
+    "policy_compliance",
+    "tool_use_compliance",
+    "time_budget_respected"
+  ]
+}

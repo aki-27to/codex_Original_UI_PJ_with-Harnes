@@ -1,0 +1,56 @@
+name: holdout-protected
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "17 3 * * *"
+
+jobs:
+  holdout-protected:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    env:
+      CODEX_HOLDOUT_EVAL_UNLOCK: ${{ secrets.CODEX_HOLDOUT_EVAL_UNLOCK }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+
+      - name: Validate protected unlock
+        run: |
+          if [ -z "${CODEX_HOLDOUT_EVAL_UNLOCK}" ]; then
+            echo "CODEX_HOLDOUT_EVAL_UNLOCK secret is required for holdout lane" >&2
+            exit 1
+          fi
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run public regression baseline
+        run: node scripts/run_public_regression.js
+
+      - name: Run hidden holdout regression
+        run: node scripts/run_holdout_eval.js
+
+      - name: Aggregate lane status
+        run: node scripts/aggregate_eval_lanes.js
+
+      - name: Upload protected regression artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: holdout-protected-artifacts
+          if-no-files-found: warn
+          path: |
+            output/public_regression_latest.json
+            output/public_regression_summary.json
+            output/holdout_eval_summary.json
+            output/eval_lane_aggregate.json
+            protected/holdout/output/holdout_regression_latest.json
+            logs/archive/raw/public_regression_runs.jsonl

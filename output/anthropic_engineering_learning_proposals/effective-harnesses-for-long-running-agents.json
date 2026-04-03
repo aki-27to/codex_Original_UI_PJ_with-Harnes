@@ -1,7 +1,7 @@
 {
   "schema": "anthropic-engineering-learning-proposal.v1",
   "proposalId": "anthropic-engineering-effective-harnesses-for-long-running-agents",
-  "createdAt": "2026-03-25T11:25:33.281Z",
+  "createdAt": "2026-04-03T23:11:46.706Z",
   "articleId": "effective-harnesses-for-long-running-agents",
   "title": "Effective harnesses for long-running agents",
   "sourceUrl": "https://www.anthropic.com/engineering/effective-harnesses-for-long-running-agents",
@@ -9,7 +9,6 @@
   "summary": "Agents still face challenges working across many context windows. We looked to human engineers for inspiration in creating a more effective harness for long-running agents.",
   "guidance": [
     "The core challenge of long-running agents is that they must work in discrete sessions, and each new session begins with no memory of what came before.",
-    "The core challenge of long-running agents is that they must work in discrete sessions, and each new session begins with no memory of what came before. Imagine a software project staffed by engineers working in shifts, where each new engineer arrives with no memory of what happened on the previous shift. Because context",
     "However, getting agents to make consistent progress across multiple context windows remains an open problem.",
     "As AI agents become more capable, developers are increasingly asking them to take on complex tasks requiring work that spans hours, or even days."
   ],

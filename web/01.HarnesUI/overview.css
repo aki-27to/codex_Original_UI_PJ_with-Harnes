@@ -161,6 +161,53 @@
   gap: 12px;
 }
 
+.overview-section-shell {
+  border: 1px solid rgba(40, 68, 112, 0.82);
+  border-radius: 16px;
+  padding: 14px;
+  background: linear-gradient(180deg, rgba(13, 23, 42, 0.92), rgba(9, 17, 32, 0.92));
+  box-shadow: 0 16px 32px rgba(3, 8, 18, 0.22);
+}
+
+.overview-section-summary {
+  list-style: none;
+  cursor: pointer;
+}
+
+.overview-section-summary::-webkit-details-marker {
+  display: none;
+}
+
+.overview-section-summary::after {
+  content: "展開";
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 28px;
+  margin-top: 10px;
+  padding: 4px 10px;
+  border-radius: 999px;
+  border: 1px solid rgba(115, 150, 205, 0.4);
+  color: #d7e4ff;
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+}
+
+.overview-section-shell[open] .overview-section-summary::after {
+  content: "折りたたむ";
+}
+
+.overview-section-shell[open] .overview-section-summary {
+  padding-bottom: 0;
+}
+
+.overview-section-body {
+  margin-top: 12px;
+  display: grid;
+  gap: 12px;
+}
+
 .overview-section-head {
   display: flex;
   justify-content: space-between;
@@ -326,6 +373,26 @@
   color: #a3b7d9;
   font-size: 12px;
   line-height: 1.5;
+}
+
+.overview-subsection {
+  display: grid;
+  gap: 10px;
+  padding-top: 2px;
+}
+
+.overview-subsection-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.overview-subsection-head h4 {
+  margin: 0;
+  font-size: 13px;
+  color: #dfe9fb;
 }
 
 .overview-empty {

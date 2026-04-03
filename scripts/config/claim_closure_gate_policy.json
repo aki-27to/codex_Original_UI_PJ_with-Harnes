@@ -1,0 +1,63 @@
+{
+  "schema": "claim-closure-gate-policy.v1",
+  "version": "2026-03-31.r1",
+  "internalThresholds": {
+    "performanceScore": 70,
+    "generalityScore": 70,
+    "autonomyScore": 65,
+    "heldOutRobustnessScore": 70,
+    "verifierReliabilityScore": 80,
+    "regressionStabilityScore": 90
+  },
+  "externalReviewReadinessRequirements": {
+    "humanTrialHarnessReady": true,
+    "externalAuditPackReady": true,
+    "openWorldTrialReady": true,
+    "adaptationExecutionReady": true,
+    "freezeControlReady": true
+  },
+  "internalPrivateGovernance": {
+    "humanBaselineRole": "calibration_only_for_private_governance",
+    "minimumTaskBreadth": 6,
+    "minimumLongDurationTrials": 3,
+    "minimumAdaptationGain": 1,
+    "minimumToolReliabilityScore": 65,
+    "states": {
+      "operational": "PRIVATE_LOOP_OPERATIONAL",
+      "stabilizing": "PRIVATE_LOOP_STABILIZING",
+      "insufficient": "PRIVATE_LOOP_INSUFFICIENT"
+    },
+    "primarySignals": [
+      "task_breadth",
+      "long_duration_resilience",
+      "adaptation_gain",
+      "tool_learning_reliability",
+      "regression_stability",
+      "freeze_safety"
+    ]
+  },
+  "publicEvidenceThresholds": {
+    "observedHumanCountMin": 12,
+    "observedExternalAuditCountMin": 3,
+    "productionLikeObservedCountMin": 3,
+    "blackboxObservedCountMin": 2,
+    "minimumTaskBreadth": 6,
+    "minimumLongDurationTrials": 3,
+    "maximumIncidentRateMean": 0.2
+  },
+  "publicClaimHardBlocks": [
+    "synthetic_only_baseline",
+    "external_audit_not_executed",
+    "blackbox_internal_only",
+    "secret_provider_stub_only",
+    "adaptation_not_executed",
+    "observed_human_evidence_below_threshold",
+    "observed_external_audit_below_threshold",
+    "production_like_evidence_below_threshold",
+    "blackbox_observed_evidence_below_threshold",
+    "task_breadth_insufficient",
+    "incident_threshold_exceeded",
+    "long_duration_trial_missing",
+    "confidence_interval_missing"
+  ]
+}

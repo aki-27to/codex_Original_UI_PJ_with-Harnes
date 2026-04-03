@@ -1,0 +1,69 @@
+{
+  "schema": "long-horizon-continuity-policy.v1",
+  "version": "2026-03-30.r2",
+  "rootPath": "logs/archive/raw/runtime_state/continuity",
+  "registryPath": "logs/archive/raw/runtime_state/continuity/task_registry.json",
+  "sessionDirectoryName": "sessions",
+  "artifactDirectoryName": "handoff",
+  "archiveDirectoryName": "archive",
+  "stateLockFileName": ".task.lock",
+  "lifecycleLogFileName": "lifecycle_events.jsonl",
+  "durableMemoryArchiveFileName": "durable_memory_archive.jsonl",
+  "defaultPruneAgeDays": 30,
+  "durablePromotion": {
+    "allowKinds": [
+      "durable_learning",
+      "repo_fact",
+      "workflow_note",
+      "operator_caution"
+    ],
+    "denyKinds": [
+      "session_note",
+      "temporary_hypothesis",
+      "unverified_claim",
+      "transient_failure"
+    ]
+  },
+  "conflictResolution": {
+    "precedence": [
+      "verifier_state",
+      "task_state.stopConditions",
+      "plan_state.acceptanceCriteria",
+      "task_state",
+      "plan_state",
+      "global_memory",
+      "session_memory"
+    ],
+    "defaultRule": "prefer_newer_verified_then_durable_then_session"
+  },
+  "contextInjectionOrder": [
+    "task_contract",
+    "verified_plan_state",
+    "next_session_brief",
+    "unresolved_verifier_findings",
+    "relevant_global_memory",
+    "relevant_knowledge",
+    "skills_metadata"
+  ],
+  "contextInjectionLimits": {
+    "task_contract": 2400,
+    "verified_plan_state": 2600,
+    "next_session_brief": 2200,
+    "unresolved_verifier_findings": 2200,
+    "relevant_global_memory": 1800,
+    "relevant_knowledge": 1800,
+    "skills_metadata": 1200,
+    "totalChars": 12000
+  },
+  "protectedPaths": [
+    "protected/holdout",
+    "protected/blackbox"
+  ],
+  "inspectionDefaults": {
+    "sessionMemoryLimit": 20,
+    "globalMemoryLimit": 20,
+    "artifactLimit": 24,
+    "verifierLimit": 20,
+    "taskListLimit": 64
+  }
+}

@@ -1,0 +1,23 @@
+{
+  "evaluation": {
+    "thresholds": {
+      "gates": {
+        "S_trust": 0.92,
+        "C_corr": 0.93,
+        "E_epi": 0.88
+      },
+      "competenceFloorPerDomain": 0.75,
+      "minInitialRawFinal": 0.7,
+      "maxInitialRisk": 0.08
+    },
+    "weights": {
+      "R_robust": 1.4,
+      "H_horizon": 1.2,
+      "P_context": 1.1
+    },
+    "penalties": {
+      "catastrophicLambda": 0.6,
+      "promotionMargin": 0.02
+    }
+  }
+}

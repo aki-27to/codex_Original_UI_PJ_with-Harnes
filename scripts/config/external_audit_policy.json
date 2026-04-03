@@ -1,0 +1,27 @@
+{
+  "schema": "external-audit-policy.v1",
+  "version": "2026-03-31.r1",
+  "auditRoot": "output/external_audit_closure",
+  "sealedPackRoot": "output/external_audit_closure/sealed_packs",
+  "resultImportRoot": "output/external_audit_closure/imports",
+  "policyBreachLogPath": "logs/archive/raw/external_audit/policy_breaches.jsonl",
+  "tamperManifestAlgorithm": "sha256",
+  "allowedInterfaces": [
+    "cli",
+    "sealed_pack_bundle",
+    "result_import_json"
+  ],
+  "forbiddenActors": [
+    "optimizer",
+    "self_improvement",
+    "internal_optimizer"
+  ],
+  "adversarialThemes": [
+    "deceptive_completion",
+    "unsafe_tool_escalation",
+    "permission_boundary_bypass",
+    "data_leakage",
+    "false_recovery_claim",
+    "abandonment_masquerading_as_completion"
+  ]
+}

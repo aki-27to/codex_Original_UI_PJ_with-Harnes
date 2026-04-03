@@ -1,0 +1,153 @@
+{
+  "schema": "agi-readiness-suite.v1",
+  "version": "2026-03-30.r1",
+  "suiteId": "agi_readiness_public_suite",
+  "description": "Public AGI-readiness coverage suite spanning broad task families under bounded harness constraints.",
+  "cases": [
+    {
+      "id": "public-coding-multi-agent",
+      "title": "Coding bounded workflow",
+      "familyId": "coding",
+      "difficultyTier": "standard",
+      "modalityTags": ["text", "code"],
+      "structureTags": ["implementation", "bounded_multi_agent"],
+      "humanComparableTaskFraming": "A software engineer implements and verifies a bounded code change.",
+      "objective": "produce a bounded coding deliverable and independent verification",
+      "acceptanceCriteria": ["deliverable recorded", "verifier passes", "integration merged"],
+      "orchestrationMode": "multi_agent_required",
+      "workflow": [
+        { "role": "planner", "objective": "plan coding work", "expectedDeliverable": "plan delta", "acceptanceSubset": ["deliverable recorded"] },
+        { "role": "executor", "objective": "produce bounded coding deliverable", "expectedDeliverable": "bounded code deliverable", "acceptanceSubset": ["deliverable recorded"], "payload": { "deliverableSummary": "Implemented bounded coding artifact", "changedSurface": ["scripts/lib/bounded_multi_agent_orchestrator.js"] } },
+        { "role": "verifier", "objective": "verify coding deliverable", "expectedDeliverable": "verifier report", "acceptanceSubset": ["verifier passes", "integration merged"], "targetRole": "executor" }
+      ],
+      "humanProfile": { "domain": "software_engineering", "cognitiveLoad": "medium" }
+    },
+    {
+      "id": "public-research-multi-agent",
+      "title": "Research bounded workflow",
+      "familyId": "research",
+      "difficultyTier": "standard",
+      "modalityTags": ["text", "citations"],
+      "structureTags": ["analysis", "bounded_multi_agent"],
+      "humanComparableTaskFraming": "A research assistant gathers evidence and produces a checked summary.",
+      "objective": "collect bounded research findings and validate them",
+      "acceptanceCriteria": ["research summary recorded", "verifier passes"],
+      "orchestrationMode": "multi_agent_required",
+      "workflow": [
+        { "role": "planner", "objective": "plan research work", "expectedDeliverable": "research plan", "acceptanceSubset": ["research summary recorded"] },
+        { "role": "researcher", "objective": "collect bounded findings", "expectedDeliverable": "research summary", "acceptanceSubset": ["research summary recorded"], "payload": { "findings": ["evidence source A", "comparison source B"], "citations": ["src-a", "src-b"] } },
+        { "role": "verifier", "objective": "verify research summary", "expectedDeliverable": "verifier report", "acceptanceSubset": ["verifier passes"], "targetRole": "researcher" }
+      ],
+      "humanProfile": { "domain": "research", "cognitiveLoad": "medium" }
+    },
+    {
+      "id": "public-planning-fallback",
+      "title": "Planning single-agent fallback",
+      "familyId": "planning",
+      "difficultyTier": "basic",
+      "modalityTags": ["text", "structured_plan"],
+      "structureTags": ["planning", "fallback"],
+      "humanComparableTaskFraming": "An operator writes a bounded plan artifact without delegation.",
+      "objective": "write a bounded plan artifact with acceptance metadata",
+      "acceptanceCriteria": ["plan artifact recorded"],
+      "orchestrationMode": "single_agent_fallback",
+      "humanProfile": { "domain": "operations", "cognitiveLoad": "low" }
+    },
+    {
+      "id": "public-analysis-fallback",
+      "title": "Analysis structured output",
+      "familyId": "analysis",
+      "difficultyTier": "standard",
+      "modalityTags": ["text", "structured_input"],
+      "structureTags": ["analysis", "traceable"],
+      "humanComparableTaskFraming": "An analyst derives bounded findings from structured inputs.",
+      "objective": "produce structured analysis findings",
+      "acceptanceCriteria": ["analysis summary recorded"],
+      "orchestrationMode": "single_agent_fallback",
+      "humanProfile": { "domain": "analysis", "cognitiveLoad": "medium" }
+    },
+    {
+      "id": "public-business-ops-fallback",
+      "title": "Business ops handoff",
+      "familyId": "business_ops",
+      "difficultyTier": "standard",
+      "modalityTags": ["text", "structured_artifact"],
+      "structureTags": ["ops", "handoff"],
+      "humanComparableTaskFraming": "An operator prepares a handoff/report artifact.",
+      "objective": "produce operator-ready handoff artifact",
+      "acceptanceCriteria": ["operator artifact recorded"],
+      "orchestrationMode": "single_agent_fallback",
+      "humanProfile": { "domain": "operations", "cognitiveLoad": "medium" }
+    },
+    {
+      "id": "public-docs-fallback",
+      "title": "Multimodal docs handling",
+      "familyId": "multimodal_docs",
+      "difficultyTier": "standard",
+      "modalityTags": ["document", "layout"],
+      "structureTags": ["multimodal", "artifact"],
+      "humanComparableTaskFraming": "A human operator processes a document where artifact fidelity matters.",
+      "objective": "record document artifact output",
+      "acceptanceCriteria": ["document artifact recorded"],
+      "orchestrationMode": "single_agent_fallback",
+      "humanProfile": { "domain": "document_ops", "cognitiveLoad": "medium" }
+    },
+    {
+      "id": "public-sheet-fallback",
+      "title": "Spreadsheet structured artifact",
+      "familyId": "spreadsheets_structured_artifacts",
+      "difficultyTier": "standard",
+      "modalityTags": ["table", "spreadsheet"],
+      "structureTags": ["structured_artifact", "schema_preserving"],
+      "humanComparableTaskFraming": "A human operator produces a valid structured artifact or spreadsheet.",
+      "objective": "record structured artifact output",
+      "acceptanceCriteria": ["structured artifact recorded"],
+      "orchestrationMode": "single_agent_fallback",
+      "humanProfile": { "domain": "spreadsheet_ops", "cognitiveLoad": "medium" }
+    },
+    {
+      "id": "public-web-tool-fallback",
+      "title": "Web tool use bounded flow",
+      "familyId": "web_tool_use",
+      "difficultyTier": "advanced",
+      "modalityTags": ["web", "browser"],
+      "structureTags": ["tool_use", "interactive"],
+      "humanComparableTaskFraming": "A human operator uses a browser tool in a bounded, attributable way.",
+      "objective": "record bounded web interaction artifact",
+      "acceptanceCriteria": ["bounded interaction recorded"],
+      "orchestrationMode": "single_agent_fallback",
+      "humanProfile": { "domain": "web_operations", "cognitiveLoad": "high" }
+    },
+    {
+      "id": "public-debugging-multi-agent",
+      "title": "Debugging incident response",
+      "familyId": "debugging_incident_response",
+      "difficultyTier": "advanced",
+      "modalityTags": ["logs", "code"],
+      "structureTags": ["debugging", "incident", "bounded_multi_agent"],
+      "humanComparableTaskFraming": "An incident responder isolates a fault and validates recovery steps.",
+      "objective": "produce incident triage plus verifier-checked recovery path",
+      "acceptanceCriteria": ["incident diagnosis recorded", "verifier passes"],
+      "orchestrationMode": "multi_agent_required",
+      "workflow": [
+        { "role": "planner", "objective": "plan incident response", "expectedDeliverable": "incident plan", "acceptanceSubset": ["incident diagnosis recorded"] },
+        { "role": "executor", "objective": "produce incident diagnosis", "expectedDeliverable": "incident diagnosis", "acceptanceSubset": ["incident diagnosis recorded"], "payload": { "deliverableSummary": "Diagnosed incident and proposed rollback path", "changedSurface": ["scripts/lib/agi_candidate_runtime.js"] } },
+        { "role": "verifier", "objective": "verify incident diagnosis", "expectedDeliverable": "verifier report", "acceptanceSubset": ["verifier passes"], "targetRole": "executor" }
+      ],
+      "humanProfile": { "domain": "incident_response", "cognitiveLoad": "high" }
+    },
+    {
+      "id": "public-tool-learning-fallback",
+      "title": "Tool learning bounded adoption",
+      "familyId": "tool_learning_or_new_tool_adoption",
+      "difficultyTier": "advanced",
+      "modalityTags": ["schema", "tooling"],
+      "structureTags": ["tool_learning", "safe_rollout"],
+      "humanComparableTaskFraming": "A human operator safely registers and documents a new tool capability.",
+      "objective": "record safe tool adoption artifact",
+      "acceptanceCriteria": ["tool adoption recorded"],
+      "orchestrationMode": "single_agent_fallback",
+      "humanProfile": { "domain": "tooling", "cognitiveLoad": "high" }
+    }
+  ]
+}

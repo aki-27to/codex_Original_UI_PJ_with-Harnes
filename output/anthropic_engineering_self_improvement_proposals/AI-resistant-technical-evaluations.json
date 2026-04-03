@@ -1,7 +1,7 @@
 {
   "schema": "self-improvement-proposal.v1",
   "proposalId": "anthropic-engineering-AI-resistant-technical-evaluations-self-improvement",
-  "createdAt": "2026-03-25T12:37:59.498Z",
+  "createdAt": "2026-04-03T23:11:46.706Z",
   "sourceLane": "Anthropic Engineering",
   "sourceTier": "secondary",
   "articleId": "AI-resistant-technical-evaluations",
@@ -20,7 +20,7 @@
       "Each time, I’ve learned something new about what makes evaluations robust to AI assistance and what doesn't.",
       "A take-home that distinguishes well between human skill levels today may be trivially solved by models tomorrow—rendering it useless for evaluation.",
       "Tristan designed—and redesigned—the take-home test that's helped Anthropic hire dozens of performance engineers.",
-      "Evaluating technical candidates becomes harder as AI capabilities improve. A take-home that distinguishes well between human skill levels today may be trivially solved by models tomorrow—rendering it useless for evaluation."
+      "We needed a way to evaluate candidates more efficiently. So, I took two weeks to design a take-home test that could adequately capture the demands of the role and identify the most capable applicants."
     ],
     "topicTags": [
       "evals",
@@ -30,7 +30,38 @@
     "articleProposalId": "anthropic-engineering-AI-resistant-technical-evaluations"
   },
   "candidateChange": {
-    "note": "What we learned from three iterations of a performance engineering take-home that Claude keeps beating."
+    "frontendQualityNote": {
+      "noteId": "AI-resistant-technical-evaluations-frontend-quality",
+      "appliesToAgents": [
+        "default",
+        "frontend_worker"
+      ],
+      "appliesToTaskFamilies": [
+        "web_creative"
+      ],
+      "topics": [
+        "evals",
+        "frontend",
+        "skills"
+      ],
+      "lexicalTriggers": [
+        "skill",
+        "acceptance criteria",
+        "benchmark",
+        "screenshot"
+      ],
+      "preferredArticleIds": [
+        "AI-resistant-technical-evaluations"
+      ],
+      "qualityAxes": [
+        "frontend_quality"
+      ],
+      "guidance": [
+        "Evaluating technical candidates becomes harder as AI capabilities improve.",
+        "I've now iterated through three versions of our take-home in an attempt to ensure it still carries signal. Each time, I’ve learned something new about what makes evaluations robust to AI assistance and what doesn't.",
+        "Each time, I’ve learned something new about what makes evaluations robust to AI assistance and what doesn't."
+      ]
+    }
   },
   "promotion": {
     "decision": "proposal_only",

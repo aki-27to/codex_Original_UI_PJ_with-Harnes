@@ -1,0 +1,25 @@
+{
+  "schema": "knowledge-backend-policy.v1",
+  "version": "2026-03-31.r1",
+  "defaultBackend": "local_file",
+  "localBackend": {
+    "id": "local_file",
+    "kind": "file_backed",
+    "indexPath": "logs/archive/raw/knowledge_store/knowledge_index.json"
+  },
+  "externalBackendStub": {
+    "id": "external_stub",
+    "kind": "remote_stub",
+    "status": "not_configured",
+    "endpointEnvVar": "CODEX_KNOWLEDGE_BACKEND_URL"
+  },
+  "remoteAdapterSlot": {
+    "id": "remote_adapter",
+    "kind": "provider_adapter",
+    "status": "adapter_slot_ready",
+    "endpointEnvVar": "CODEX_KNOWLEDGE_BACKEND_URL",
+    "tokenEnvVar": "CODEX_KNOWLEDGE_BACKEND_TOKEN",
+    "healthcheckPath": "/healthz"
+  },
+  "retrievalSafetyMetricsPath": "logs/archive/raw/knowledge_store/retrieval_safety_metrics.jsonl"
+}

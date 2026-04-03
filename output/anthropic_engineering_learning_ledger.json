@@ -1,8 +1,8 @@
 {
   "schema": "anthropic-engineering-learning-ledger.v1",
-  "generatedAt": "2026-03-25T11:25:33.281Z",
-  "lastRunAt": "2026-03-25T11:25:33.281Z",
-  "lastSuccessAt": "2026-03-25T11:25:33.281Z",
+  "generatedAt": "2026-04-03T23:11:46.706Z",
+  "lastRunAt": "2026-04-03T23:11:46.706Z",
+  "lastSuccessAt": "2026-04-03T23:11:46.706Z",
   "lastStatus": "PASS",
   "lastReason": "",
   "summary": {
@@ -24,16 +24,16 @@
       "topicLabel": "",
       "discoveredAt": "2026-03-25T10:58:32.280Z",
       "firstReadAt": "2026-03-25T10:58:32.280Z",
-      "lastReadAt": "2026-03-25T11:25:33.281Z",
-      "contentHash": "7dd8f2b4f41fad8c3d7995a4624f105eae099aab11ad5d37b8552bfe0b9252b4",
+      "lastReadAt": "2026-04-03T23:11:46.706Z",
+      "contentHash": "00df7021adee6b901a969fc0cc8d9e7acee37533ea035400b29f4122e70044a1",
       "summary": "Infrastructure configuration can swing agentic coding benchmarks by several percentage points—sometimes more than the leaderboard gap between top models.",
       "guidance": [
         "Agentic coding evals are different: models are given a full environment where they write programs, run tests, install dependencies, and iterate over multiple turns.",
-        "Static benchmarks score a model's output directly—the runtime environment doesn’t factor into the result. Agentic coding evals are different: models are given a full environment where they write programs, run tests, install dependencies, and iterate over multiple turns. The runtime is no longer a passive container, but",
         "Agentic coding benchmarks like SWE-bench and Terminal-Bench are commonly used to compare the software engineering capabilities of frontier models—with top spots on leaderboards often separated by just a few percentage points.",
-        "Agentic coding benchmarks like SWE-bench and Terminal-Bench are commonly used to compare the software engineering capabilities of frontier models—with top spots on leaderboards often separated by just a few percentage points. These scores are often treated as precise measurements of relative model capability and increa",
         "Eval developers have begun accounting for this.",
-        "Terminal-Bench 2.0, for instance, specifies recommended CPU and RAM on a per-task basis in their latest 2.0 release."
+        "Terminal-Bench 2.0, for instance, specifies recommended CPU and RAM on a per-task basis in their latest 2.0 release.",
+        "We also tested whether this pattern holds on evals outside Terminal-Bench by running a crossover experiment on SWE-bench.",
+        "This finding raised a larger question: how much does resource configuration impact evaluation scores?"
       ],
       "headings": [
         "How we got here",
@@ -63,15 +63,15 @@
       "topicLabel": "",
       "discoveredAt": "2026-03-25T10:58:32.280Z",
       "firstReadAt": "2026-03-25T10:58:32.280Z",
-      "lastReadAt": "2026-03-25T11:25:33.281Z",
-      "contentHash": "048a09c2c2e447d4e5773b2cb7dc57fcb8ebfed3d5de7ca4e17e4b0e45d3e0e2",
+      "lastReadAt": "2026-04-03T23:11:46.706Z",
+      "contentHash": "34bfc1eef438d128f10625169f478e569fb63500753106078176d8b75e10c81e",
       "summary": "Harness design is key to performance at the frontier of agentic coding. Here's how we pushed Claude further in frontend design and long-running autonomous software engineering.",
       "guidance": [
-        "This work originated with earlier efforts on our frontend design skill and long-running coding agent harness ,",
-        "We've previously shown that harness design has a substantial impact on the effectiveness of long running agentic coding. In an earlier experiment , we used an initializer agent to decompose a product spec into a task list, and a coding agent that implemented the tasks one feature at a time before handing off artifacts",
         "We've previously shown that harness design has a substantial impact on the effectiveness of long running agentic coding.",
-        "I then applied these techniques to long-running autonomous coding, carrying over two lessons from our earlier harness work: decomposing the build into tractable chunks, and using structured artifacts to hand off context between sessions. The final result was a three-agent architecture—planner, generator, and evaluator—",
-        "To break through, I sought out novel AI engineering approaches that held across two quite different domains, one defined by subjective taste, the other by verifiable correctness and usability. Taking inspiration from Generative Adversarial Networks (GANs), I designed a multi-agent structure with a generator and evaluat"
+        "Two insights shaped the harness I built for frontend design.",
+        "Design quality: Does the design feel like a coherent whole rather than a collection of parts? Strong work here means the colors, typography, layout, imagery, and other details combine to create a distinct mood and identity.",
+        "For more complex tasks, the agent still tends to go off the rails over time.",
+        "I started by experimenting on frontend design, where the self-evaluation issue was most visible."
       ],
       "headings": [
         "Why naive implementations fall short",
@@ -104,8 +104,8 @@
       "topicLabel": "",
       "discoveredAt": "2026-03-25T10:58:32.280Z",
       "firstReadAt": "2026-03-25T10:58:32.280Z",
-      "lastReadAt": "2026-03-25T11:25:33.281Z",
-      "contentHash": "0323a36c6cb188d15d4e351a95b580231a0dfb5c9683636cfc860d8f8520d23b",
+      "lastReadAt": "2026-04-03T23:11:46.706Z",
+      "contentHash": "ac4d374714305b52514d84481c746c537db1603964d65239fb2c4e93b7a738b4",
       "summary": "What we learned from three iterations of a performance engineering take-home that Claude keeps beating.",
       "guidance": [
         "Evaluating technical candidates becomes harder as AI capabilities improve.",
@@ -113,7 +113,7 @@
         "Each time, I’ve learned something new about what makes evaluations robust to AI assistance and what doesn't.",
         "A take-home that distinguishes well between human skill levels today may be trivially solved by models tomorrow—rendering it useless for evaluation.",
         "Tristan designed—and redesigned—the take-home test that's helped Anthropic hire dozens of performance engineers.",
-        "Evaluating technical candidates becomes harder as AI capabilities improve. A take-home that distinguishes well between human skill levels today may be trivially solved by models tomorrow—rendering it useless for evaluation."
+        "We needed a way to evaluate candidates more efficiently. So, I took two weeks to design a take-home test that could adequately capture the demands of the role and identify the most capable applicants."
       ],
       "headings": [
         "The origin of the take-home",
@@ -145,16 +145,16 @@
       "topicLabel": "",
       "discoveredAt": "2026-03-25T10:58:32.280Z",
       "firstReadAt": "2026-03-25T10:58:32.280Z",
-      "lastReadAt": "2026-03-25T11:25:33.281Z",
-      "contentHash": "c50d520953b100716e4af2ac466d1cdd3709e2b20daf0f07c617b3308e29f3bb",
+      "lastReadAt": "2026-04-03T23:11:46.706Z",
+      "contentHash": "41d617e50d48c9e56e414343ea749eac79510b1fe6342e3491e9dd73ecf2e3f5",
       "summary": "The capabilities that make agents useful also make them difficult to evaluate. The strategies that work across deployments combine techniques to match the complexity of the systems they measure.",
       "guidance": [
-        "As we described in Building effective agents , agents operate over many turns: calling tools, modifying state, and adapting based on intermediate results. These same capabilities that make AI agents useful—autonomy, intelligence, and flexibility—also make them harder to evaluate.",
         "As we described in Building effective agents , agents operate over many turns: calling tools, modifying state, and adapting based on intermediate results.",
-        "Through our internal work and with customers at the frontier of agent development, we’ve learned how to design more rigorous and useful evals for agents. Here's what's worked across a range of agent architectures and use cases in real-world deployment.",
         "Through our internal work and with customers at the frontier of agent development, we’ve learned how to design more rigorous and useful evals for agents.",
         "Good evaluations help teams ship AI agents more confidently.",
-        "Evals make problems and behavioral changes visible before they affect users, and their value compounds over the lifecycle of an"
+        "These same capabilities that make AI agents useful—autonomy, intelligence, and flexibility—also make them harder to evaluate.",
+        "An evaluation (“eval”) is a test for an AI system: give an AI an input, then apply grading logic to its output to measure success. In this post, we focus on automated evals that can be run during development without real users.",
+        "In this post, we focus on automated evals that can be run during development without real users."
       ],
       "headings": [
         "Introduction",
@@ -186,12 +186,11 @@
       "topicLabel": "",
       "discoveredAt": "2026-03-25T10:58:32.280Z",
       "firstReadAt": "2026-03-25T10:58:32.280Z",
-      "lastReadAt": "2026-03-25T11:25:33.281Z",
-      "contentHash": "67dc39b963a18399540108f0ddf21054969cb3a1f34309c41e583c43225b89fa",
+      "lastReadAt": "2026-04-03T23:11:46.706Z",
+      "contentHash": "6a46ff6ed8e9b8482b127b23e428b59eb17d38762b8c848fab122b162d8df659",
       "summary": "Agents still face challenges working across many context windows. We looked to human engineers for inspiration in creating a more effective harness for long-running agents.",
       "guidance": [
         "The core challenge of long-running agents is that they must work in discrete sessions, and each new session begins with no memory of what came before.",
-        "The core challenge of long-running agents is that they must work in discrete sessions, and each new session begins with no memory of what came before. Imagine a software project staffed by engineers working in shifts, where each new engineer arrives with no memory of what happened on the previous shift. Because context",
         "However, getting agents to make consistent progress across multiple context windows remains an open problem.",
         "As AI agents become more capable, developers are increasingly asking them to take on complex tasks requiring work that spans hours, or even days."
       ],

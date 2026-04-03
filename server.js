@@ -8,7 +8,11 @@ const {EventEmitter}=require("events");
 const {spawn,spawnSync}=require("child_process");
 const {runBatchJob,getRunnerCapabilities}=require("./scripts/poc_batch_runner");
 const {buildMockFixtureScenario}=require("./scripts/lib/mock_app_server_fixture");
-const {normalizeRequestUserInputPolicy,resolveNonInteractiveUserInput}=require("./scripts/lib/request_user_input_policy");
+const {
+  defaultNonInteractivePolicy,
+  normalizeRequestUserInputPolicy,
+  resolveNonInteractiveUserInput,
+}=require("./scripts/lib/request_user_input_policy");
 const {
   evaluateAgentGovernance,
   getAgentGovernancePolicySnapshot,
@@ -60,6 +64,18 @@ const {
   buildEvalRunSummary,
   compareEvalRuns,
 }=require("./scripts/lib/eval_harness_policy");
+const {
+  loadAgiV1ProfileConfig,
+  captureManifestSnapshot,
+  buildCandidateBundle,
+  expandAgiV1Variants,
+  loadAgiBundleFromPath,
+}=require("./scripts/lib/agi_v1_profile");
+const {
+  defaultEvalLanePolicyPath,
+  loadEvalLanePolicy,
+  summarizeEvalLane,
+}=require("./scripts/lib/eval_lane_policy");
 const {
   defaultHarnessTurnContractSpecPath,
   loadHarnessTurnContractSpec,
@@ -114,8 +130,19 @@ const {
   evaluateFamilyCompletion,
 }=require("./scripts/lib/family_completion_policy");
 const {
+  defaultTaskContractManifestPath,
+  loadTaskContractManifest,
+  summarizeTaskContract,
+}=require("./scripts/lib/task_contract_policy");
+const {
+  inspectTask:inspectContinuityTask,
+}=require("./scripts/lib/long_horizon_continuity");
+const {
   shouldAutoInterruptForDiscoveryNeedsInput,
 }=require("./scripts/lib/discovery_needs_input_policy");
+const {
+  buildIndependentVerifierReport,
+}=require("./scripts/lib/independent_verifier");
 const {
   buildOperatorPlanEvent,
 }=require("./scripts/lib/operator_plan_surface");
@@ -162,6 +189,12 @@ const {
   buildAnthropicEngineeringRuntimeSnapshot,
   runAnthropicEngineeringLearningCycle,
 }=require("./scripts/lib/anthropic_engineering_learning");
+const {
+  buildManualSelfImprovementRuntimeSummary,
+}=require("./scripts/lib/manual_self_improvement_runtime");
+const {
+  buildHarnessAgiImprovementFlywheelRuntimeSummary,
+}=require("./scripts/lib/agi_improvement_flywheel_runtime");
 
 const workspaceRoot=__dirname;
 const workspaceParentRoot=path.dirname(workspaceRoot);
@@ -199,7 +232,7 @@ const approvalRiskRuleIds=Object.freeze({
 const requestUserInputPolicyEnvKey="CODEX_REQUEST_USER_INPUT_POLICY";
 const automaticApprovalReviewEnvKey="CODEX_AUTOMATIC_APPROVAL_REVIEW";
 const fastModeDefaultEnvKey="CODEX_FAST_MODE_DEFAULT";
-const nonInteractiveRequestUserInputPolicy=normalizeRequestUserInputPolicy(process.env[requestUserInputPolicyEnvKey],"blocked");
+const nonInteractiveRequestUserInputPolicy=normalizeRequestUserInputPolicy(process.env[requestUserInputPolicyEnvKey],defaultNonInteractivePolicy);
 const automaticApprovalReviewDefault=parseBooleanEnv(automaticApprovalReviewEnvKey,true);
 const fastModeDefault=parseBooleanEnv(fastModeDefaultEnvKey,false);
 const openAIBlogLearningEnabledEnvKey="CODEX_OPENAI_BLOG_LEARNING_ENABLED";
@@ -362,6 +395,8 @@ const conversationApiRequiredContentType="application/json";
 const conversationRequestBodyLimitBytes=parsePositiveIntEnv("CODEX_CONVERSATION_REQUEST_BODY_LIMIT_BYTES",256*1024,8*1024,2*1024*1024);
 const conversationRequestTimeoutMs=parsePositiveIntEnv("CODEX_CONVERSATION_REQUEST_TIMEOUT_MS",45000,3000,120000);
 const conversationDefaultMaxTokens=parsePositiveIntEnv("CODEX_CONVERSATION_MAX_TOKENS",220,64,1200);
+const conversationExecModelName=tryNormalizeExecModelId(process.env.CODEX_CONVERSATION_EXEC_MODEL)||defaultExecModelName;
+const conversationExecModelReasoningEffort=tryNormalizeExecModelReasoningEffort(process.env.CODEX_CONVERSATION_MODEL_REASONING_EFFORT)||"low";
 const piperVoiceRequestBodyLimitBytes=parsePositiveIntEnv("CODEX_PIPER_REQUEST_BODY_LIMIT_BYTES",256*1024,8*1024,2*1024*1024);
 const kokoroVoiceRequestBodyLimitBytes=parsePositiveIntEnv("CODEX_KOKORO_REQUEST_BODY_LIMIT_BYTES",256*1024,8*1024,2*1024*1024);
 const kokoroVoiceRequestTimeoutMs=parsePositiveIntEnv("CODEX_KOKORO_REQUEST_TIMEOUT_MS",45000,3000,120000);
@@ -409,6 +444,8 @@ const userFacingResponseContractPath=defaultUserFacingResponseContractPath;
 const planningModeContractPath=path.join(workspaceRoot,"scripts","config","planning_mode_contract.json");
 const assuranceModeContractPath=path.join(workspaceRoot,"scripts","config","assurance_depth_contract.json");
 const taskFamilyProfilesPath=path.join(workspaceRoot,"scripts","config","task_family_profiles.json");
+const taskContractManifestPath=path.join(workspaceRoot,"scripts","config","task_contract_manifest.json");
+const evalLanePolicyPath=path.join(workspaceRoot,"scripts","config","eval_lane_policy.json");
 const designAcceptanceContractPath=defaultDesignAcceptanceContractPath;
 const userFacingResponseContract=loadUserFacingResponseContract(userFacingResponseContractPath);
 const tasteMemorySeedPath=defaultTasteMemorySeedPath;
@@ -429,7 +466,7 @@ const pocSchedulerDefaultIntervalSec=120;
 const pocSchedulerDefaultPrompt="nightly batch: summarize CI failures and list top 3 follow-ups";
 const allowedPocBatchModes=new Set(["mock","sdk"]);
 const conversationProvider="app-server";
-const conversationAppServerModel="codex-app-server";
+const conversationAppServerModel=conversationExecModelName;
 const conversationPersonaMemoryPath=loggingSurfacePaths.conversationPersonaMemoryPath;
 const conversationPersonaMemoryContextFacts=5;
 const conversationPersonaMemoryContextTopics=3;
@@ -439,6 +476,8 @@ const taskOutcomeContract=loadTaskOutcomeContractSafely();
 const planningModeContract=loadPlanningModeContractSafely();
 const assuranceModeContract=loadAssuranceModeContractSafely();
 const taskFamilyProfilesContract=loadTaskFamilyProfilesContractSafely();
+const taskContractManifest=loadTaskContractManifestSafely();
+const evalLanePolicy=loadEvalLanePolicySafely();
 const designAcceptanceContract=loadDesignAcceptanceContractSafely();
 let tasteMemoryStore=loadTasteMemoryStoreSafely();
 let workspaceGuardLockedRoot="";
@@ -644,6 +683,42 @@ function loadTaskFamilyProfilesContractSafely(){
         version:"",
         defaultFamily:"deterministic_code",
         families:[],
+      };
+    }
+  }
+}
+function loadTaskContractManifestSafely(){
+  try{
+    return loadTaskContractManifest(taskContractManifestPath);
+  }catch(error){
+    console.warn(`[contract] failed to load task contract manifest from ${taskContractManifestPath}: ${error&&error.message?error.message:String(error)}`);
+    try{
+      return loadTaskContractManifest(defaultTaskContractManifestPath);
+    }catch{
+      return{
+        schema:"task-contract-manifest.v1",
+        version:"",
+        defaultFamily:"deterministic_code",
+        contracts:[],
+      };
+    }
+  }
+}
+function loadEvalLanePolicySafely(){
+  try{
+    return loadEvalLanePolicy(evalLanePolicyPath,{workspaceRoot});
+  }catch(error){
+    console.warn(`[eval] failed to load eval lane policy from ${evalLanePolicyPath}: ${error&&error.message?error.message:String(error)}`);
+    try{
+      return loadEvalLanePolicy(defaultEvalLanePolicyPath,{workspaceRoot});
+    }catch{
+      return{
+        schema:"eval-lane-policy.v1",
+        version:"",
+        publicLaneId:"public_regression",
+        aggregateOutputPath:path.join(workspaceRoot,"output","eval_lane_aggregate.json"),
+        protectedPaths:[],
+        lanes:[],
       };
     }
   }
@@ -2076,8 +2151,15 @@ async function runInternalExecRequest(payload,{timeoutMs=evalCaseTimeoutMs}={}){
 function normalizeEvalVariant(input,index){
   const payload=input&&typeof input==="object"?input:{};
   const fallbackLabel=index===0?"A":index===1?"B":`variant-${index+1}`;
+  const rawMode=safeString(payload.mode,40).toLowerCase();
+  const modeExplicit=rawMode==="standard"||rawMode==="elicited";
   return{
     label:safeString(payload.label,40)||fallbackLabel,
+    candidateId:safeString(payload.candidateId,120)||safeString(payload.label,40)||fallbackLabel,
+    mode:rawMode==="elicited"?"elicited":"standard",
+    modeExplicit,
+    promptPrefix:safeString(payload.promptPrefix,2000)||"",
+    seed:safeString(payload.seed,120)||"",
     agentName:normalizeAgentName(payload.agentName)||defaultExecAgentName,
     model:normalizeExecModel(payload.model,defaultExecModelName),
     modelReasoningEffort:normalizeExecModelReasoningEffort(payload.modelReasoningEffort,defaultExecModelReasoningEffort),
@@ -2095,6 +2177,23 @@ function executeEvalProbeCase(evalCase,variant){
   const input=evalCase&&evalCase.input&&typeof evalCase.input==="object"?evalCase.input:{};
   const driver=safeString(evalCase&&evalCase.driver,80).toLowerCase()||"exec";
   switch(driver){
+  case "agi_metric_probe":{
+    const metricSource=input.metricResult&&typeof input.metricResult==="object"?input.metricResult:{};
+    const fixedMode=safeString(metricSource.mode,40).toLowerCase();
+    const variantMode=safeString(variant&&variant.mode,40).toLowerCase()||"standard";
+    const modeMismatch=fixedMode&&(fixedMode==="standard"||fixedMode==="elicited")&&fixedMode!==variantMode;
+    const metricResult={
+      ...metricSource,
+      mode:fixedMode==="standard"||fixedMode==="elicited"?fixedMode:variantMode,
+      supportStatus:modeMismatch?"not_applicable":safeString(metricSource.supportStatus,80)||safeString(metricSource.status,80)||"supported",
+      relevant:modeMismatch?false:(Object.prototype.hasOwnProperty.call(metricSource,"relevant")?Boolean(metricSource.relevant):true),
+      pass_fail:modeMismatch?true:metricSource.pass_fail,
+    };
+    return{
+      metricResult,
+      scenario:safeString(input.scenario,160)||safeString(evalCase&&evalCase.id,120),
+    };
+  }
   case "agent_governance_probe":
     return evaluateAgentGovernance({
       agentName:safeString(input.agentName,120)||variant.agentName,
@@ -2378,10 +2477,12 @@ function buildEvalSuiteSummary(suite){
   return{
     schema:safeString(normalized.schema,80)||"harness-eval-suite.v1",
     suiteId:safeString(normalized.suiteId,120)||"unknown",
+    kind:safeString(normalized.kind,80)||"conformance",
     description:safeString(normalized.description,400)||"",
     caseCount:Array.isArray(normalized.cases)?normalized.cases.length:0,
     caseIds:Array.isArray(normalized.cases)?normalized.cases.map((entry)=>safeString(entry&&entry.id,120)).filter(Boolean):[],
     outputSchema:normalized.outputSchema&&typeof normalized.outputSchema==="object"?normalized.outputSchema:{},
+    evaluation:normalized.evaluation&&typeof normalized.evaluation==="object"?normalized.evaluation:{},
   };
 }
 function buildEvalProbeSyntheticTurnId({evalRunId,variantLabel,caseId}={}){
@@ -2570,8 +2671,10 @@ async function executeEvalVariantOnSuite({variant,suite,maxCases,timeoutMs,evalR
     let pendingProbeMemoryRecord=null;
     try{
       if((safeString(evalCase&&evalCase.driver,80).toLowerCase()||"exec")==="exec"){
+        const promptPrefix=safeString(variant&&variant.promptPrefix,2000);
+        const effectivePrompt=promptPrefix?`${promptPrefix}\n\n${evalCase.prompt}`:evalCase.prompt;
         const requestBody={
-          prompt:evalCase.prompt,
+          prompt:effectivePrompt,
           sandboxMode:variant.sandboxMode,
           approvalPolicy:variant.approvalPolicy,
           webSearch:variant.webSearch?1:0,
@@ -2601,6 +2704,7 @@ async function executeEvalVariantOnSuite({variant,suite,maxCases,timeoutMs,evalR
           taskOutcomeStatus:"",
           taskOutcomeReason:"",
           turnId:"",
+          probeResult,
         };
         status="completed";
         finalText=safeString(execResult.finalText,12000)||"";
@@ -2644,6 +2748,11 @@ async function executeEvalVariantOnSuite({variant,suite,maxCases,timeoutMs,evalR
       taskOutcomeReason:execResult&&typeof execResult.taskOutcomeReason==="string"?execResult.taskOutcomeReason:"",
     });
     caseResult.turnId=execResult&&typeof execResult.turnId==="string"?safeString(execResult.turnId,160):"";
+    caseResult.candidateId=safeString(variant&&variant.candidateId,120);
+    caseResult.mode=safeString(variant&&variant.mode,40)||"standard";
+    if(execResult&&execResult.probeResult&&typeof execResult.probeResult==="object"){
+      caseResult.probeResult=sanitizeJsonValue(execResult.probeResult);
+    }
     caseResults.push(caseResult);
   }
   const summary=buildEvalRunSummary({
@@ -2921,13 +3030,14 @@ function buildParentDispatchGuardDefaultsSnapshot(){
 function buildFullUtilizationDefaultsSnapshot(){
   const orchestratorDefault=defaultExecAgentName==="default";
   const requestUserInputBlocked=nonInteractiveRequestUserInputPolicy==="blocked";
+  const requestUserInputAutonomous=!requestUserInputBlocked;
   const shadowActive=Boolean(adversarialShadowEnabled);
   const loopActive=Boolean(adversarialShadowEnabled&&adversarialLoopEnabled);
-  const ready=Boolean(orchestratorDefault&&requestUserInputBlocked&&shadowActive&&loopActive);
+  const ready=Boolean(orchestratorDefault&&requestUserInputAutonomous&&shadowActive&&loopActive);
   return{
     expected:{
       defaultExecAgent:"default",
-      requestUserInputPolicy:"blocked",
+      requestUserInputPolicy:defaultNonInteractivePolicy,
       adversarialShadowEnabled:1,
       adversarialLoopEnabled:1,
     },
@@ -3000,18 +3110,31 @@ function buildTurnVisibilitySnapshot(input={}){
   const requestUserInputPolicy=normalizeRequestUserInputPolicy(meta.requestUserInputPolicy,nonInteractiveRequestUserInputPolicy);
   const turnAgentName=safeString(meta.agentName,120)||defaultExecAgentName;
   const reproProfile=isReproExecutionProfile(requestProfile);
+  const strictUserInputLane=Boolean(
+    reproProfile
+    ||requestProfile==="proof-runtime"
+    ||executionIntent.includes("signoff")
+    ||executionIntent.includes("proof")
+  );
+  const requestUserInputAutonomous=requestUserInputPolicy!=="blocked";
+  const requestUserInputMatchesLane=strictUserInputLane
+    ?requestUserInputPolicy==="blocked"
+    :requestUserInputAutonomous;
   const defaultsSnapshot=buildFullUtilizationDefaultsSnapshot();
   const parentDispatchGuard=buildParentDispatchGuardDefaultsSnapshot();
   const planningContext=sanitizePlanningArtifactsForRuntime(meta.planningContext&&typeof meta.planningContext==="object"?meta.planningContext:{});
   const turnChecks={
     agentIsDefault:turnAgentName==="default"?1:0,
     requestUserInputBlocked:requestUserInputPolicy==="blocked"?1:0,
+    requestUserInputAutonomous:requestUserInputAutonomous?1:0,
+    strictUserInputLane:strictUserInputLane?1:0,
+    requestUserInputMatchesLane:requestUserInputMatchesLane?1:0,
     adversarialShadowEnabled:adversarialShadowEnabled?1:0,
     adversarialLoopEnabled:adversarialShadowEnabled&&adversarialLoopEnabled?1:0,
   };
   const turnReady=Boolean(
     turnChecks.agentIsDefault
-    &&turnChecks.requestUserInputBlocked
+    &&turnChecks.requestUserInputMatchesLane
     &&turnChecks.adversarialShadowEnabled
     &&turnChecks.adversarialLoopEnabled
   );
@@ -4732,11 +4855,25 @@ function getLiveCollabChildRows(){
 let latestTurnSnapshot=null;
 let latestGitAutomationSnapshot=null;
 let latestAdversarialShadowReview=null;
+const serverProcessStartedAt=Date.now();
+let activeExecRequestCount=0;
 const sessionPerformanceLimits=Object.freeze({
   maxSessions:48,
   maxSamples:120,
 });
 const sessionPerformanceByRef=new Map();
+
+function incrementActiveExecRequestCount(){
+  activeExecRequestCount+=1;
+  return activeExecRequestCount;
+}
+function decrementActiveExecRequestCount(){
+  activeExecRequestCount=Math.max(0,activeExecRequestCount-1);
+  return activeExecRequestCount;
+}
+function getActiveExecRequestCount(){
+  return Math.max(0,Math.trunc(Number(activeExecRequestCount)||0));
+}
 
 function toNonNegativeInt(value){
   const parsed=Number(value);
@@ -5367,6 +5504,7 @@ function getConversationRuntimeSnapshot(){
     mode:"app-server",
     provider:conversationProvider,
     model:conversationAppServerModel,
+    modelReasoningEffort:conversationExecModelReasoningEffort,
     configured:conversationApiConfigured(),
     setupHint:"",
     originCheck:true,
@@ -5388,6 +5526,10 @@ function getConversationRuntimeSnapshot(){
       timeoutMs:conversationRequestTimeoutMs,
       maxTokens:conversationDefaultMaxTokens,
       historyItems:14,
+    },
+    policies:{
+      requestUserInput:"blocked",
+      parentDispatchGuardExemptProfile:"conversation-app-server",
     },
   };
 }
@@ -5711,8 +5853,10 @@ async function runConversationViaAppServer({message,history,level,topic,mode,mem
       agentName:"default",
       approvalPolicy:"never",
       webSearch:false,
+      model:conversationExecModelName,
+      modelReasoningEffort:conversationExecModelReasoningEffort,
       cwd:workspaceRoot,
-      requestUserInputPolicy:"auto-default",
+      requestUserInputPolicy:"blocked",
       forceNewSession:true,
       disableSlashRouter:true,
       executionProfile:"conversation-app-server",
@@ -8008,6 +8152,18 @@ class CodexAppServerClient{
 }
 
 const appServer=new CodexAppServerClient(workspaceRoot);
+function buildAppServerTransportRuntimeSnapshot(){
+  return{
+    transportMode:safeString(appServer&&appServer.transportMode,40)||"unknown",
+    childRunning:Boolean(appServer&&appServer.child)?1:0,
+    childTerminated:Boolean(appServer&&appServer.childTerminated)?1:0,
+    pendingRpcCount:appServer&&appServer.pending instanceof Map?appServer.pending.size:0,
+    activeTurnWatcherCount:appServer&&appServer.turnWatchers instanceof Map?appServer.turnWatchers.size:0,
+    activeTurnContextCount:appServer&&appServer.turnContexts instanceof Map?appServer.turnContexts.size:0,
+    activeMockTurnCount:appServer&&appServer.mockTurns instanceof Map?appServer.mockTurns.size:0,
+    terminatedTransportError:safeString(appServer&&appServer.terminatedTransportError&&appServer.terminatedTransportError.message,220)||"",
+  };
+}
 function handleSlashAgentCommand(res,argsText){
   const arg=(argsText||"").trim();
   if(!arg||arg==="list"){
@@ -9282,7 +9438,7 @@ async function executeTurnStreaming(res,prompt,agentName,options){
   );
   const executionProfile=normalizeExecutionProfile(options&&options.executionProfile,runtimeExecutionProfile);
   const executionIntent=normalizeExecutionIntent(options&&options.executionIntent,"interactive");
-  const planningContext=sanitizePlanningArtifactsForRuntime(
+  let planningContext=sanitizePlanningArtifactsForRuntime(
     options&&options.planningContext&&typeof options.planningContext==="object"
       ?options.planningContext
       :buildPlanningArtifacts({
@@ -11241,6 +11397,26 @@ function safeString(value,max=12000){
   if(!trimmed)return"";
   return trimmed.slice(0,max);
 }
+function sanitizeJsonValue(value,depth=0){
+  if(value===null||value===undefined)return null;
+  if(depth>6)return"[max-depth]";
+  const valueType=typeof value;
+  if(valueType==="string")return safeString(value,4000);
+  if(valueType==="number"||valueType==="boolean")return value;
+  if(Array.isArray(value)){
+    return value.slice(0,40).map((entry)=>sanitizeJsonValue(entry,depth+1));
+  }
+  if(valueType==="object"){
+    const out={};
+    for(const [key,entry] of Object.entries(value).slice(0,80)){
+      const normalizedKey=safeString(String(key||""),120);
+      if(!normalizedKey)continue;
+      out[normalizedKey]=sanitizeJsonValue(entry,depth+1);
+    }
+    return out;
+  }
+  return safeString(String(value),4000);
+}
 function normalizePocBatchMode(value){
   const raw=typeof value==="string"?value.trim().toLowerCase():"";
   return allowedPocBatchModes.has(raw)?raw:"mock";
@@ -12240,6 +12416,11 @@ function buildAnthropicEngineeringLearningRuntimeStateSnapshot(){
     lastReason:anthropicEngineeringLearningRuntimeState.lastReason,
   });
 }
+function buildManualSelfImprovementRuntimeStateSnapshot(){
+  return buildManualSelfImprovementRuntimeSummary({
+    workspaceRoot,
+  });
+}
 function buildBundleOverview(rootDir,summaryFileName,buildSnapshot){
   const candidates=listBundleSummaryCandidates(rootDir,summaryFileName);
   return{
@@ -12515,6 +12696,11 @@ function buildRuntimeApiSnapshot(){
   const evalHarness={
     suite:buildEvalSuiteSummary(defaultEvalSuite),
     configPath:summarizePathForOperationLog(evalSuiteConfigPath,220),
+    lanePolicyPath:summarizePathForOperationLog(evalLanePolicyPath,220),
+    publicLaneId:safeString(evalLanePolicy&&evalLanePolicy.publicLaneId,80)||"public_regression",
+    lanes:Array.isArray(evalLanePolicy&&evalLanePolicy.lanes)
+      ?evalLanePolicy.lanes.map((entry)=>summarizeEvalLane(entry))
+      :[],
     historyPath:summarizePathForOperationLog(evalRunHistoryPath,220),
     historyEnvKey:evalRunHistoryPathEnvKey,
     maxCases:evalMaxCases,
@@ -12525,6 +12711,10 @@ function buildRuntimeApiSnapshot(){
   const parentDispatchGuard=buildParentDispatchGuardDefaultsSnapshot();
   const phaseStatus=buildRequirementFoundationV1PhaseStatus();
   const externalLearning=buildOpenAIBlogLearningRuntimeStateSnapshot();
+  const manualSelfImprovement=buildManualSelfImprovementRuntimeStateSnapshot();
+  const agiImprovementFlywheel=buildHarnessAgiImprovementFlywheelRuntimeSummary({
+    workspaceRoot,
+  });
   const secondaryLearning={
     anthropicEngineering:buildAnthropicEngineeringLearningRuntimeStateSnapshot(),
   };
@@ -12554,6 +12744,30 @@ function buildRuntimeApiSnapshot(){
     latest_turn:latestTurn,
     sessionPerformance,
     session_performance:sessionPerformance,
+    serverProcess:{
+      pid:process.pid,
+      startedAt:serverProcessStartedAt,
+      uptimeMs:Math.max(0,Date.now()-serverProcessStartedAt),
+      activeExecRequests:getActiveExecRequestCount(),
+      restartProtection:{
+        activeExecRequests:getActiveExecRequestCount(),
+        restartBlocked:getActiveExecRequestCount()>0?1:0,
+      },
+    },
+    server_process:{
+      pid:process.pid,
+      startedAt:serverProcessStartedAt,
+      uptimeMs:Math.max(0,Date.now()-serverProcessStartedAt),
+      activeExecRequests:getActiveExecRequestCount(),
+      restartProtection:{
+        activeExecRequests:getActiveExecRequestCount(),
+        restartBlocked:getActiveExecRequestCount()>0?1:0,
+      },
+    },
+    activeExecRequests:getActiveExecRequestCount(),
+    active_exec_requests:getActiveExecRequestCount(),
+    appServerTransport:buildAppServerTransportRuntimeSnapshot(),
+    app_server_transport:buildAppServerTransportRuntimeSnapshot(),
     operationLog:operationLog.runtimeSnapshot(),
     loggingSurface:{
       mode:loggingMode,
@@ -12595,6 +12809,10 @@ function buildRuntimeApiSnapshot(){
     phase_status:phaseStatus,
     externalLearning,
     external_learning:externalLearning,
+    manualSelfImprovement,
+    manual_self_improvement:manualSelfImprovement,
+    agiImprovementFlywheel,
+    agi_improvement_flywheel:agiImprovementFlywheel,
     secondaryLearning,
     secondary_learning:{
       anthropicEngineering:secondaryLearning.anthropicEngineering,
@@ -12627,6 +12845,9 @@ function buildRuntimeApiSnapshot(){
       familyProfileSchema:safeString(taskFamilyProfilesContract&&taskFamilyProfilesContract.schema,80)||"task-family-profiles.v1",
       familyProfileVersion:safeString(taskFamilyProfilesContract&&taskFamilyProfilesContract.version,80)||"",
       familyProfilePath:summarizePathForOperationLog(taskFamilyProfilesPath,220),
+      taskContractSchema:safeString(taskContractManifest&&taskContractManifest.schema,80)||"task-contract-manifest.v1",
+      taskContractVersion:safeString(taskContractManifest&&taskContractManifest.version,80)||"",
+      taskContractPath:summarizePathForOperationLog(taskContractManifestPath,220),
       planningDecisionSchemaPath:summarizePathForOperationLog(planningDecisionContractSchemaPath,220),
       requirementSchemaPath:summarizePathForOperationLog(requirementContractSchemaPath,220),
       dispatchSchemaPath:summarizePathForOperationLog(dispatchPlanSchemaPath,220),
@@ -12641,6 +12862,9 @@ function buildRuntimeApiSnapshot(){
       assuranceModes:Array.isArray(assuranceModeContract&&assuranceModeContract.modes)?assuranceModeContract.modes:[],
       families:Array.isArray(taskFamilyProfilesContract&&taskFamilyProfilesContract.families)
         ?taskFamilyProfilesContract.families.map((entry)=>safeString(entry&&entry.id,80)).filter(Boolean)
+        :[],
+      taskContracts:Array.isArray(taskContractManifest&&taskContractManifest.contracts)
+        ?taskContractManifest.contracts.map((entry)=>summarizeTaskContract(entry))
         :[],
     },
     intentFirst:{
@@ -13079,6 +13303,8 @@ function buildHarnessOverviewSnapshot(){
       taste:runtime.intentFirst&&runtime.intentFirst.tasteMemory?runtime.intentFirst.tasteMemory:{},
       execution:buildExecutionMemoryOverview({limit:10,window:60}),
       externalLearning:runtime.externalLearning&&typeof runtime.externalLearning==="object"?runtime.externalLearning:{},
+      manualSelfImprovement:runtime.manualSelfImprovement&&typeof runtime.manualSelfImprovement==="object"?runtime.manualSelfImprovement:{},
+      agiImprovementFlywheel:runtime.agiImprovementFlywheel&&typeof runtime.agiImprovementFlywheel==="object"?runtime.agiImprovementFlywheel:{},
       secondaryLearning:runtime.secondaryLearning&&typeof runtime.secondaryLearning==="object"?runtime.secondaryLearning:{},
       replay:{
         recent:listReplayMemorySnapshots({limit:6}),
@@ -13852,6 +14078,7 @@ function normalizeCurrentLatestSignoffSummary(latestSignoffSummary){
 function normalizeCurrentDesignConformanceSummary(designConformanceSummary){
   const keys=[
     "defaultExecAgentIsDefault",
+    "runtimeRequestUserInputPolicyAutonomyFirst",
     "requestUserInputPolicyBlocked",
     "parentDispatchGuardEnforced",
     "retiredWorkerNotRoutable",
@@ -14152,6 +14379,7 @@ function buildCurrentDesignConformanceSummary({runtimeSnapshot,latestRunSummary,
     evidenceRef,
   });
   const latestRunEvidenceRef=repoRelativePath(workspaceRoot,loggingSurfacePaths.currentLatestRunSummaryPath);
+  const operatorEvidenceRef=repoRelativePath(workspaceRoot,loggingSurfacePaths.currentOperatorSummaryPath);
   const signoffEvidenceRef=latestSignoffSummary
     ?repoRelativePath(workspaceRoot,loggingSurfacePaths.currentLatestSignoffSummaryPath)
     :latestRunEvidenceRef;
@@ -14167,6 +14395,7 @@ function buildCurrentDesignConformanceSummary({runtimeSnapshot,latestRunSummary,
   const naturalTaskAssertions=naturalTask.assertions&&typeof naturalTask.assertions==="object"?naturalTask.assertions:{};
   const latestTurnTerminalStatus=safeString(latestTurn.terminalStatus,40)||safeString(latestTurn.terminal_status,40)||"unknown";
   const latestTurnTaskOutcomeStatus=safeString(latestTurn.taskOutcomeStatus,80)||safeString(latestTurn.task_outcome_status,80)||"unknown";
+  const runtimeRequestUserInputPolicy=safeString(runtimeSnapshot&&runtimeSnapshot.posture&&runtimeSnapshot.posture.requestUserInputPolicy&&runtimeSnapshot.posture.requestUserInputPolicy.policy,40).toLowerCase();
   const coreHarnessWorkflowRun=readWorkspaceJsonArtifact(signoffBundleSummary.paths&&signoffBundleSummary.paths.coreHarnessWorkflowRun)||{};
   const requestUserInputBlocked=getWorkflowCaseById(coreHarnessWorkflowRun,"needs_input_blocked_policy");
   const workerRejected=getWorkflowCaseById(coreHarnessWorkflowRun,"retired_worker_rejected");
@@ -14185,6 +14414,13 @@ function buildCurrentDesignConformanceSummary({runtimeSnapshot,latestRunSummary,
         ?"default exec agent is 'default'"
         :`default exec agent is '${defaultExecAgentName}'`,
       signoffEvidenceRef
+    ),
+    runtimeRequestUserInputPolicyAutonomyFirst:check(
+      runtimeRequestUserInputPolicy==="auto-default"||runtimeRequestUserInputPolicy==="auto-empty",
+      runtimeRequestUserInputPolicy==="auto-default"||runtimeRequestUserInputPolicy==="auto-empty"
+        ?`live non-interactive request-user-input policy is '${runtimeRequestUserInputPolicy}'`
+        :`live non-interactive request-user-input policy is '${runtimeRequestUserInputPolicy||"unknown"}'`,
+      operatorEvidenceRef||latestRunEvidenceRef
     ),
     requestUserInputPolicyBlocked:check(
       signoffRuntime&&signoffRuntime.nonInteractiveUserInput&&signoffRuntime.nonInteractiveUserInput.policy==="blocked"&&Boolean(requestUserInputBlocked&&requestUserInputBlocked.passed),
@@ -14275,7 +14511,7 @@ function buildCurrentDesignConformanceSummary({runtimeSnapshot,latestRunSummary,
   };
   const allPass=Object.values(checks).every((entry)=>entry&&entry.status==="pass");
   return{
-    schema:"design-conformance-summary.v2",
+    schema:"design-conformance-summary.v3",
     generatedAt:toIsoTimestamp(Date.now()),
     ...checks,
     overallDesignConformance:{
@@ -14370,9 +14606,9 @@ function buildCurrentOperatorSummaryFile({runtimeSnapshot,latestRunSummary,lates
     openOnlyIfNeeded:Object.values(refs).filter(Boolean),
     postureSummary:{
       loggingMode:"OPERATOR",
-      requestUserInputPolicy:postureSafe?"blocked":(safeString(runtimePosture.requestUserInputPolicy&&runtimePosture.requestUserInputPolicy.policy,40)||"unknown"),
-      parentDispatchGuardMode:postureSafe?"enforce":(safeString(runtimePosture.parentDispatchGuard&&runtimePosture.parentDispatchGuard.mode,40)||"unknown"),
-      defaultExecAgent:designConformant?"default":(safeString(runtimeSnapshot&&runtimeSnapshot.defaultExecAgent,80)||defaultExecAgentName||"unknown"),
+      requestUserInputPolicy:safeString(runtimePosture.requestUserInputPolicy&&runtimePosture.requestUserInputPolicy.policy,40)||"unknown",
+      parentDispatchGuardMode:safeString(runtimePosture.parentDispatchGuard&&runtimePosture.parentDispatchGuard.mode,40)||"unknown",
+      defaultExecAgent:safeString(runtimeSnapshot&&runtimeSnapshot.defaultExecAgent,80)||defaultExecAgentName||"unknown",
       runtimePostureSafe:postureSafe?true:false,
     },
     refs,
@@ -14450,6 +14686,7 @@ function updateCurrentLogSurface({trigger=""}={}){
   const conformanceReport=buildConformanceReport({
     latestRunSummary:latestRunSummaryRaw,
     signoffSummary:latestSignoffSummaryRaw,
+    runtimeRequestUserInputPolicy:safeString(runtimeSnapshot&&runtimeSnapshot.posture&&runtimeSnapshot.posture.requestUserInputPolicy&&runtimeSnapshot.posture.requestUserInputPolicy.policy,40)||"",
     childEvidenceLedger:latestRunSummaryRaw&&Array.isArray(latestRunSummaryRaw.childEvidenceLedger)?latestRunSummaryRaw.childEvidenceLedger:[],
     requiredEvidenceFailures:reviewLoadBreakdownRaw&&Array.isArray(reviewLoadBreakdownRaw.requiredEvidenceFailures)?reviewLoadBreakdownRaw.requiredEvidenceFailures:[],
     evidenceRefs:[
@@ -14676,6 +14913,81 @@ async function requestHandler(req,res){
     return;
   }
 
+  if(req.method==="GET"&&pathname==="/api/continuity/task"){
+    try{
+      const taskId=safeString(url.searchParams.get("task_id")||url.searchParams.get("taskId"),120);
+      if(!taskId){
+        sendJson(res,400,{ok:false,error:"task_id is required"});
+        return;
+      }
+      const sessionId=safeString(url.searchParams.get("session_id")||url.searchParams.get("sessionId"),120);
+      const requestedMode=safeString(url.searchParams.get("mode"),80)||"operating_summary";
+      const limitRaw=Number(url.searchParams.get("limit"));
+      const limit=Number.isFinite(limitRaw)?Math.max(1,Math.min(256,Math.trunc(limitRaw))):null;
+      const payload=inspectContinuityTask({
+        workspaceRoot,
+        taskId,
+        sessionId,
+        mode:requestedMode,
+        limit,
+      });
+      if(payload&&payload.ok===false){
+        const errorCode=safeString(payload.errorCode,120);
+        const statusCode=errorCode.startsWith("continuity_task_not_found")?404:409;
+        sendJson(res,statusCode,payload);
+        return;
+      }
+      sendJson(res,200,{
+        ok:true,
+        taskId,
+        sessionId:sessionId||"",
+        mode:requestedMode,
+        payload,
+      });
+    }catch(error){
+      const message=safeString(error&&error.message?error.message:String(error),600);
+      const statusCode=message.startsWith("continuity_task_not_found")?404:400;
+      sendJson(res,statusCode,{ok:false,error:message});
+    }
+    return;
+  }
+
+  if(req.method==="GET"&&pathname==="/api/continuity/tasks"){
+    try{
+      const requestedState=safeString(url.searchParams.get("state"),80)||"all";
+      const requestedMode=safeString(url.searchParams.get("mode"),80);
+      const limitRaw=Number(url.searchParams.get("limit"));
+      const limit=Number.isFinite(limitRaw)?Math.max(1,Math.min(256,Math.trunc(limitRaw))):null;
+      const modeMap={
+        all:"registry",
+        active:"active_tasks",
+        blocked:"blocked_tasks",
+        verifier_failed:"verifier_failed_tasks",
+        abandoned:"abandoned_tasks",
+        archived:"archived_tasks",
+      };
+      const mode=modeMap[requestedState]||requestedMode||"registry";
+      const payload=inspectContinuityTask({
+        workspaceRoot,
+        mode,
+        limit,
+      });
+      if(payload&&payload.ok===false){
+        sendJson(res,409,payload);
+        return;
+      }
+      sendJson(res,200,{
+        ok:true,
+        state:requestedState,
+        mode,
+        payload,
+      });
+    }catch(error){
+      sendJson(res,400,{ok:false,error:error&&error.message?error.message:String(error)});
+    }
+    return;
+  }
+
   if(req.method==="GET"&&pathname==="/api/batch/status"){
     sendJson(res,200,getPocStatusSnapshot());
     return;
@@ -14770,6 +15082,9 @@ async function requestHandler(req,res){
     sendJson(res,200,{
       ok:true,
       suites:[buildEvalSuiteSummary(defaultEvalSuite)],
+      lanes:Array.isArray(evalLanePolicy&&evalLanePolicy.lanes)
+        ?evalLanePolicy.lanes.map((entry)=>summarizeEvalLane(entry))
+        :[],
       defaults:{
         maxCases:evalMaxCases,
         maxVariants:evalDefaultMaxVariants,
@@ -14816,6 +15131,32 @@ async function requestHandler(req,res){
         sendJson(res,400,{ok:false,error:`unknown suiteId: ${safeString(body.suiteId,120)}`});
         return;
       }
+      const evaluationOptions=body&&body.evaluation&&typeof body.evaluation==="object"?body.evaluation:{};
+      const requestedEvaluationProfile=safeString(
+        evaluationOptions.profile
+        ||body.profile
+        ||(suite&&suite.evaluation&&typeof suite.evaluation==="object"?suite.evaluation.profile:""),
+        80
+      ).toLowerCase();
+      const agiProfile=requestedEvaluationProfile==="agi_v1"
+        ?loadAgiV1ProfileConfig(
+          safeString(evaluationOptions.profileConfigPath,260)||undefined,
+          {
+            workspaceRoot,
+            overrides:evaluationOptions.profileConfig&&typeof evaluationOptions.profileConfig==="object"
+              ?evaluationOptions.profileConfig
+              :null,
+          }
+        )
+        :null;
+      if(agiProfile&&agiProfile.validation&&agiProfile.validation.ok===false){
+        sendJson(res,400,{
+          ok:false,
+          error:"invalid agi_v1 profile configuration",
+          validation:agiProfile.validation,
+        });
+        return;
+      }
       const variantsInput=Array.isArray(body.variants)
         ?body.variants
         :[
@@ -14835,9 +15176,20 @@ async function requestHandler(req,res){
         executionIntent:"eval",
         executionSource:"eval_harness",
       };
-      const normalizedVariants=(variantsInput.length?variantsInput:[fallbackVariant])
+      const baseNormalizedVariants=(variantsInput.length?variantsInput:[fallbackVariant])
         .slice(0,evalDefaultMaxVariants)
         .map((entry,index)=>normalizeEvalVariant(entry,index));
+      const normalizedVariants=(agiProfile
+        ?expandAgiV1Variants(baseNormalizedVariants,agiProfile)
+        :baseNormalizedVariants
+      ).slice(0,agiProfile?evalDefaultMaxVariants*2:evalDefaultMaxVariants);
+      if(agiProfile){
+        const uniqueCandidateIds=Array.from(new Set(normalizedVariants.map((entry)=>safeString(entry&&entry.candidateId,120)).filter(Boolean)));
+        if(uniqueCandidateIds.length>1){
+          sendJson(res,400,{ok:false,error:"agi_v1 accepts one candidateId per run; compare against an incumbent bundle instead of parallel candidates"});
+          return;
+        }
+      }
       const maxCasesRaw=Number(body.maxCases);
       const maxCases=Number.isFinite(maxCasesRaw)?Math.max(1,Math.min(evalMaxCases,Math.trunc(maxCasesRaw))):Math.min(evalMaxCases,suite.cases.length);
       const timeoutRaw=Number(body.caseTimeoutMs);
@@ -14847,7 +15199,21 @@ async function requestHandler(req,res){
           ?body.persistProbeResultsToMemory
           :body.persistProbeResults
       );
+      const laneId=safeString(body&&body.laneId,80).toLowerCase().replace(/[\s-]+/g,"_")||safeString(evalLanePolicy&&evalLanePolicy.publicLaneId,80).toLowerCase()||"public_regression";
       const reportId=`eval-${Date.now()}-${crypto.randomBytes(4).toString("hex")}`;
+      const manifestInput=agiProfile&&evaluationOptions.manifest&&typeof evaluationOptions.manifest==="object"
+        ?evaluationOptions.manifest
+        :{};
+      const manifestTrackedPaths=agiProfile
+        ?Array.from(new Set([
+          ...(Array.isArray(manifestInput.suitePaths)?manifestInput.suitePaths:[]),
+          ...(Array.isArray(manifestInput.evaluatorPaths)?manifestInput.evaluatorPaths:[]),
+          ...(Array.isArray(manifestInput.datasetPaths)?manifestInput.datasetPaths:[]),
+          ...(Array.isArray(manifestInput.promptTemplatePaths)?manifestInput.promptTemplatePaths:[]),
+          ...(Array.isArray(manifestInput.trackedPaths)?manifestInput.trackedPaths:[]),
+        ].map((entry)=>safeString(entry,260)).filter(Boolean)))
+        :[];
+      const manifestPre=agiProfile?captureManifestSnapshot({workspaceRoot,paths:manifestTrackedPaths}):[];
       const runs=[];
       for(const variant of normalizedVariants){
         const summary=await executeEvalVariantOnSuite({
@@ -14860,6 +15226,7 @@ async function requestHandler(req,res){
         });
         runs.push(summary);
       }
+      const manifestPost=agiProfile?captureManifestSnapshot({workspaceRoot,paths:manifestTrackedPaths}):[];
       const persistedProbeRecords=runs.reduce((acc,run)=>{
         const records=run&&run.probePersistence&&Array.isArray(run.probePersistence.records)?run.probePersistence.records:[];
         if(records.length)acc.push(...records);
@@ -14869,20 +15236,55 @@ async function requestHandler(req,res){
         persistHarnessExecutionMemoryStore({reason:"eval_probe_results"});
       }
       const comparison=runs.length>=2?compareEvalRuns(runs[0],runs[1]):{winner:"single",reason:"single_variant"};
+      const laneVerifierPolicy=Array.isArray(evalLanePolicy&&evalLanePolicy.lanes)
+        ?(evalLanePolicy.lanes.find((entry)=>safeString(entry&&entry.id,80)===laneId)||null)
+        :null;
+      const verifier=buildIndependentVerifierReport({
+        laneId,
+        suite,
+        runs,
+        policy:laneVerifierPolicy&&laneVerifierPolicy.verifierPolicy?laneVerifierPolicy.verifierPolicy:null,
+        source:"api_eval_run",
+      });
+      let agiV1Report=null;
+      if(agiProfile){
+        const incumbentBundlePath=safeString(evaluationOptions&&evaluationOptions.promotion&&evaluationOptions.promotion.incumbentBundlePath,400);
+        const incumbentBundle=incumbentBundlePath
+          ?loadAgiBundleFromPath(path.isAbsolute(incumbentBundlePath)?incumbentBundlePath:path.join(workspaceRoot,incumbentBundlePath))
+          :(evaluationOptions&&evaluationOptions.promotion&&evaluationOptions.promotion.incumbentBundle&&typeof evaluationOptions.promotion.incumbentBundle==="object"
+            ?evaluationOptions.promotion.incumbentBundle
+            :null);
+        agiV1Report=buildCandidateBundle({
+          workspaceRoot,
+          suite,
+          runs,
+          profile:agiProfile,
+          evaluationOptions,
+          runId:reportId,
+          laneId,
+          manifestPre,
+          manifestPost,
+          incumbentBundle,
+          artifactOutputRoot:path.join(workspaceRoot,"output","agi_v1",reportId),
+        });
+      }
       const report={
         runId:reportId,
         generatedAt:Date.now(),
+        laneId,
         suite:buildEvalSuiteSummary(suite),
         maxCases,
         timeoutMs,
         runs,
         comparison,
+        verifier,
         probePersistence:{
           requested:persistProbeResults?1:0,
           persistedRecords:persistedProbeRecords.length,
           storage:summarizePathForOperationLog(harnessMemoryPath,220),
           records:persistedProbeRecords,
         },
+        agiV1:agiV1Report,
       };
       appendEvalRunHistory(report);
       sendJson(res,200,{ok:true,report});
@@ -15815,10 +16217,21 @@ async function requestHandler(req,res){
         return;
       }
       execOptions.idempotencyKey=idempotencyKey;
+      let activeExecReleased=false;
+      const releaseActiveExec=()=>{
+        if(activeExecReleased)return;
+        activeExecReleased=true;
+        decrementActiveExecRequestCount();
+      };
+      incrementActiveExecRequestCount();
       execOptions.onTerminal=(terminal)=>{
-        finalizeExecIdempotencyKey(idempotencyKey,terminal&&typeof terminal==="object"
-          ?terminal
-          :{status:"failed",error:"missing terminal outcome"});
+        try{
+          finalizeExecIdempotencyKey(idempotencyKey,terminal&&typeof terminal==="object"
+            ?terminal
+            :{status:"failed",error:"missing terminal outcome"});
+        }finally{
+          releaseActiveExec();
+        }
       };
       res.writeHead(200,{"Content-Type":"application/x-ndjson; charset=utf-8","Cache-Control":"no-store","Transfer-Encoding":"chunked"});
       res.once("close",()=>{
@@ -15834,6 +16247,7 @@ async function requestHandler(req,res){
           status:"failed",
           error:error&&error.message?error.message:String(error),
         });
+        releaseActiveExec();
         if(res.writableEnded)return;
         writeChunk(res,`${JSON.stringify({type:"error",text:`[error] ${error.message}`})}\n`);
         try{
@@ -16006,11 +16420,53 @@ async function startHarnessServer(){
   return{port:webPort};
 }
 
+function isBrokenPipeLikeError(error){
+  if(!error)return false;
+  const code=safeString(error&&error.code?String(error.code):"",40).toUpperCase();
+  if(code==="EPIPE"||code==="EOF")return true;
+  const message=safeString(error&&error.message?String(error.message):String(error),240).toLowerCase();
+  return message.includes("epipe")
+    ||message.includes("broken pipe")
+    ||message.includes("write eof");
+}
+
+function attachProcessPipeErrorGuard(stream,label){
+  if(!stream||typeof stream.on!=="function")return;
+  stream.on("error",error=>{
+    if(isBrokenPipeLikeError(error)){
+      logOperation("server.process_pipe_ignored",{
+        stream:safeString(label,40)||"unknown",
+        err:summarizeErrorForOperationLog(error,220),
+      });
+      return;
+    }
+    logOperation("server.process_pipe_error",{
+      stream:safeString(label,40)||"unknown",
+      err:summarizeErrorForOperationLog(error,220),
+    });
+  });
+}
+
+function handleFatalServerProcessError(kind,error){
+  if(isBrokenPipeLikeError(error)){
+    logOperation("server.broken_pipe_ignored",{
+      source:safeString(kind,40)||"unknown",
+      err:summarizeErrorForOperationLog(error,220),
+    });
+    return;
+  }
+  logOperation(kind,{err:summarizeErrorForOperationLog(error,220)});
+  console.error("[server] fatal process error:",error);
+  shutdown(1);
+}
+
 if(require.main===module){
+  attachProcessPipeErrorGuard(process.stdout,"stdout");
+  attachProcessPipeErrorGuard(process.stderr,"stderr");
   process.on("SIGINT",()=>shutdown(0));
   process.on("SIGTERM",()=>shutdown(0));
-  process.on("uncaughtException",error=>{logOperation("server.uncaught_exception",{err:summarizeErrorForOperationLog(error,220)});console.error("[server] uncaught exception:",error);shutdown(1);});
-  process.on("unhandledRejection",error=>{logOperation("server.unhandled_rejection",{err:summarizeErrorForOperationLog(error,220)});console.error("[server] unhandled rejection:",error);shutdown(1);});
+  process.on("uncaughtException",error=>handleFatalServerProcessError("server.uncaught_exception",error));
+  process.on("unhandledRejection",error=>handleFatalServerProcessError("server.unhandled_rejection",error));
 
   main().catch(error=>{logOperation("server.start_failed",{err:summarizeErrorForOperationLog(error,220)});console.error("[launcher] failed to start:",error);process.exit(1);});
 }
@@ -16068,6 +16524,10 @@ module.exports={
     isWebSearchEnabledForMode,
     normalizeWebSearchMode,
     normalizeCodexServiceTier,
+  },
+  __runtimeVisibility:{
+    buildFullUtilizationDefaultsSnapshot,
+    buildTurnVisibilitySnapshot,
   },
   __topography:{
     createLiveCollabTurnTracker,

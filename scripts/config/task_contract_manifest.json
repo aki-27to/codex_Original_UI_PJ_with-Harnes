@@ -1,0 +1,349 @@
+{
+  "schema": "task-contract-manifest.v2",
+  "version": "2026-03-30.r2",
+  "defaultFamily": "deterministic_code",
+  "contracts": [
+    {
+      "id": "deterministic_code",
+      "familyId": "deterministic_code",
+      "humanComparableTaskFraming": "Implement or fix deterministic code behavior with executable verification.",
+      "successCriteria": [
+        "requested behavior is implemented or the requested factual answer is produced",
+        "applicable tests, probes, or executable verification pass",
+        "required evidence artifacts are written before completion is claimed"
+      ],
+      "timeBudget": { "targetMs": 120000, "warnMs": 300000, "hardStopMs": 900000 },
+      "allowedTools": ["api_exec", "batch", "shell", "apply_patch", "replay", "eval_public"],
+      "deniedTools": ["request_user_input_unless_required", "external_write", "holdout_eval_lane", "blackbox_eval_lane", "destructive_delete_without_approval"],
+      "stopConditions": ["requirements_satisfied", "verification_recorded", "no_unapproved_scope_expansion"],
+      "approvalBoundary": { "requiredWhen": ["destructive_delete", "dependency_add", "permission_change", "external_write", "schema_migration"] },
+      "difficultyTiers": ["basic", "standard", "advanced"],
+      "modalityTags": ["text", "code", "filesystem"],
+      "structureTags": ["deterministic", "repo_local"],
+      "verifierRequirements": ["tests_or_probes", "task_outcome_contract"]
+    },
+    {
+      "id": "coding",
+      "familyId": "coding",
+      "humanComparableTaskFraming": "Perform coding tasks that a software engineer could complete under the same repo-local constraints.",
+      "successCriteria": [
+        "behavior change or implementation is correct",
+        "verification artifacts are present",
+        "changed surface is attributable"
+      ],
+      "timeBudget": { "targetMs": 150000, "warnMs": 360000, "hardStopMs": 900000 },
+      "allowedTools": ["api_exec", "batch", "shell", "apply_patch", "replay", "eval_public"],
+      "deniedTools": ["external_write", "holdout_eval_lane", "blackbox_eval_lane", "destructive_delete_without_approval"],
+      "stopConditions": ["deliverable_verified", "acceptance_items_green"],
+      "approvalBoundary": { "requiredWhen": ["destructive_delete", "dependency_add", "permission_change", "external_write", "schema_migration"] },
+      "difficultyTiers": ["basic", "standard", "advanced", "expert"],
+      "modalityTags": ["text", "code", "filesystem"],
+      "structureTags": ["deterministic", "implementation"],
+      "verifierRequirements": ["tests_or_probes", "independent_verifier"]
+    },
+    {
+      "id": "web_creative",
+      "familyId": "web_creative",
+      "humanComparableTaskFraming": "Create or refine design-sensitive web UI work where visual quality matters in addition to correctness.",
+      "successCriteria": [
+        "visual intent is matched, not only functional correctness",
+        "screenshot or visual evidence is captured when design-sensitive",
+        "reviewer or tester evidence exists when the quality gate requires it"
+      ],
+      "timeBudget": { "targetMs": 180000, "warnMs": 420000, "hardStopMs": 1200000 },
+      "allowedTools": ["api_exec", "batch", "shell", "apply_patch", "playwright", "screenshot", "eval_public"],
+      "deniedTools": ["holdout_eval_lane", "blackbox_eval_lane", "external_write", "destructive_delete_without_approval"],
+      "stopConditions": ["visual_acceptance_satisfied_or_failed_validation", "required_visual_proof_recorded", "workspace_lock_respected_when_required"],
+      "approvalBoundary": { "requiredWhen": ["external_write", "dependency_add", "permission_change"] },
+      "difficultyTiers": ["standard", "advanced", "expert"],
+      "modalityTags": ["text", "html_css_js", "image"],
+      "structureTags": ["design_sensitive", "visual_proof_required"],
+      "verifierRequirements": ["visual_proof", "reviewer_or_tester"]
+    },
+    {
+      "id": "research_analysis",
+      "familyId": "research_analysis",
+      "humanComparableTaskFraming": "Investigate, compare, and summarize evidence-backed findings with explicit uncertainty.",
+      "successCriteria": [
+        "claims are evidence-backed",
+        "sources are attributable when required",
+        "open questions and uncertainty are surfaced explicitly"
+      ],
+      "timeBudget": { "targetMs": 120000, "warnMs": 360000, "hardStopMs": 900000 },
+      "allowedTools": ["api_exec", "shell", "web_search", "eval_public", "replay"],
+      "deniedTools": ["holdout_eval_lane", "blackbox_eval_lane", "external_write", "destructive_delete_without_approval"],
+      "stopConditions": ["coverage_sufficient_for_requested_scope", "unsupported_claims_removed_or_marked_unknown", "evidence_summary_recorded"],
+      "approvalBoundary": { "requiredWhen": ["external_write", "permission_change"] },
+      "difficultyTiers": ["basic", "standard", "advanced"],
+      "modalityTags": ["text", "citations"],
+      "structureTags": ["evidence_backed", "analysis"],
+      "verifierRequirements": ["citation_check", "unsupported_claim_filter"]
+    },
+    {
+      "id": "research",
+      "familyId": "research",
+      "humanComparableTaskFraming": "Gather and synthesize external or repo-local evidence comparable to a research assistant workflow.",
+      "successCriteria": [
+        "evidence is gathered for the requested scope",
+        "summary preserves uncertainty and provenance",
+        "verification can inspect source mapping"
+      ],
+      "timeBudget": { "targetMs": 120000, "warnMs": 360000, "hardStopMs": 900000 },
+      "allowedTools": ["api_exec", "shell", "web_search", "eval_public", "replay"],
+      "deniedTools": ["holdout_eval_lane", "blackbox_eval_lane", "external_write"],
+      "stopConditions": ["evidence_summary_recorded", "sources_mapped"],
+      "approvalBoundary": { "requiredWhen": ["external_write", "permission_change"] },
+      "difficultyTiers": ["basic", "standard", "advanced"],
+      "modalityTags": ["text", "citations"],
+      "structureTags": ["evidence_backed", "comparison"],
+      "verifierRequirements": ["citation_check", "summary_consistency"]
+    },
+    {
+      "id": "planning_design",
+      "familyId": "planning_design",
+      "humanComparableTaskFraming": "Produce bounded plans, specs, or decision support that another operator can execute.",
+      "successCriteria": [
+        "goal, non-goals, constraints, and decision points are explicit",
+        "recommended next actions are executable and bounded",
+        "acceptance and evidence expectations are stated"
+      ],
+      "timeBudget": { "targetMs": 90000, "warnMs": 240000, "hardStopMs": 600000 },
+      "allowedTools": ["api_exec", "shell", "docs", "eval_public", "replay"],
+      "deniedTools": ["holdout_eval_lane", "blackbox_eval_lane", "external_write", "destructive_delete_without_approval"],
+      "stopConditions": ["decision_support_ready", "required_open_questions_listed", "execution_can_resume_without_hidden_assumptions"],
+      "approvalBoundary": { "requiredWhen": ["external_write", "permission_change"] },
+      "difficultyTiers": ["basic", "standard", "advanced"],
+      "modalityTags": ["text", "structured_plan"],
+      "structureTags": ["planning", "acceptance_contract"],
+      "verifierRequirements": ["plan_acceptance_check", "closeout_contract"]
+    },
+    {
+      "id": "planning",
+      "familyId": "planning",
+      "humanComparableTaskFraming": "Create operationally useful plans with milestones, blockers, and evidence expectations.",
+      "successCriteria": [
+        "ordered plan and deliverables are explicit",
+        "acceptance and blockers are machine-readable",
+        "execution can resume from the artifact"
+      ],
+      "timeBudget": { "targetMs": 90000, "warnMs": 240000, "hardStopMs": 600000 },
+      "allowedTools": ["api_exec", "shell", "docs", "eval_public", "replay"],
+      "deniedTools": ["holdout_eval_lane", "blackbox_eval_lane", "external_write"],
+      "stopConditions": ["plan_artifact_ready", "acceptance_defined"],
+      "approvalBoundary": { "requiredWhen": ["external_write", "permission_change"] },
+      "difficultyTiers": ["basic", "standard", "advanced"],
+      "modalityTags": ["text", "structured_plan"],
+      "structureTags": ["planning", "resume_ready"],
+      "verifierRequirements": ["acceptance_contract"]
+    },
+    {
+      "id": "analysis",
+      "familyId": "analysis",
+      "humanComparableTaskFraming": "Analyze structured inputs, derive findings, and present bounded conclusions.",
+      "successCriteria": [
+        "findings are traceable to inputs",
+        "remaining uncertainty is explicit",
+        "output is structured enough for downstream use"
+      ],
+      "timeBudget": { "targetMs": 120000, "warnMs": 300000, "hardStopMs": 720000 },
+      "allowedTools": ["api_exec", "shell", "eval_public", "replay"],
+      "deniedTools": ["holdout_eval_lane", "blackbox_eval_lane", "external_write"],
+      "stopConditions": ["analysis_summary_recorded", "finding_traceability_present"],
+      "approvalBoundary": { "requiredWhen": ["external_write", "permission_change"] },
+      "difficultyTiers": ["basic", "standard", "advanced"],
+      "modalityTags": ["text", "structured_input"],
+      "structureTags": ["analysis", "traceable"],
+      "verifierRequirements": ["finding_traceability", "consistency_check"]
+    },
+    {
+      "id": "business_ops",
+      "familyId": "business_ops",
+      "humanComparableTaskFraming": "Handle bounded operations-style tasks such as summaries, handoffs, reports, and operational decision support.",
+      "successCriteria": [
+        "operator-ready artifact is produced",
+        "open items and approvals are explicit",
+        "handoff can continue without hidden assumptions"
+      ],
+      "timeBudget": { "targetMs": 90000, "warnMs": 240000, "hardStopMs": 600000 },
+      "allowedTools": ["api_exec", "shell", "docs", "eval_public", "replay"],
+      "deniedTools": ["holdout_eval_lane", "blackbox_eval_lane", "external_write", "destructive_delete_without_approval"],
+      "stopConditions": ["operator_artifact_ready", "approval_boundary_respected"],
+      "approvalBoundary": { "requiredWhen": ["external_write", "permission_change", "cross_project_config_change"] },
+      "difficultyTiers": ["basic", "standard", "advanced"],
+      "modalityTags": ["text", "structured_artifact"],
+      "structureTags": ["ops", "handoff"],
+      "verifierRequirements": ["handoff_readiness", "acceptance_contract"]
+    },
+    {
+      "id": "operations",
+      "familyId": "operations",
+      "humanComparableTaskFraming": "Handle economically relevant operations tasks such as rollout plans, migrations, and operator-facing coordination artifacts.",
+      "successCriteria": [
+        "operator-ready artifact is produced",
+        "risks, approvals, and checkpoints are explicit",
+        "handoff can continue without hidden assumptions"
+      ],
+      "timeBudget": { "targetMs": 120000, "warnMs": 300000, "hardStopMs": 720000 },
+      "allowedTools": ["api_exec", "shell", "docs", "spreadsheet", "eval_public", "replay"],
+      "deniedTools": ["holdout_eval_lane", "blackbox_eval_lane", "external_write", "destructive_delete_without_approval"],
+      "stopConditions": ["operator_artifact_ready", "approval_boundary_respected", "checkpoint_plan_recorded"],
+      "approvalBoundary": { "requiredWhen": ["external_write", "permission_change", "cross_project_config_change", "deploy"] },
+      "difficultyTiers": ["standard", "advanced", "expert"],
+      "modalityTags": ["text", "structured_artifact", "ops"],
+      "structureTags": ["ops", "handoff", "economically_relevant"],
+      "verifierRequirements": ["handoff_readiness", "checkpoint_integrity", "acceptance_contract"]
+    },
+    {
+      "id": "multimodal_docs",
+      "familyId": "multimodal_docs",
+      "humanComparableTaskFraming": "Work with documents where layout, extracted content, or multimodal structure matters.",
+      "successCriteria": [
+        "document content or layout requirement is satisfied",
+        "document-specific evidence is captured",
+        "output can be inspected without replaying the full interaction"
+      ],
+      "timeBudget": { "targetMs": 150000, "warnMs": 360000, "hardStopMs": 900000 },
+      "allowedTools": ["api_exec", "shell", "pdf", "eval_public", "replay"],
+      "deniedTools": ["holdout_eval_lane", "blackbox_eval_lane", "external_write"],
+      "stopConditions": ["document_artifact_ready", "document_evidence_recorded"],
+      "approvalBoundary": { "requiredWhen": ["external_write", "permission_change"] },
+      "difficultyTiers": ["standard", "advanced"],
+      "modalityTags": ["text", "document", "layout"],
+      "structureTags": ["multimodal", "artifact"],
+      "verifierRequirements": ["document_check", "artifact_presence"]
+    },
+    {
+      "id": "document_workflow",
+      "familyId": "document_workflow",
+      "humanComparableTaskFraming": "Assemble bounded document workflow packages where checklist, review readiness, and artifact integrity matter.",
+      "successCriteria": [
+        "document workflow package is complete",
+        "review checklist is included",
+        "artifact integrity is inspectable"
+      ],
+      "timeBudget": { "targetMs": 150000, "warnMs": 360000, "hardStopMs": 900000 },
+      "allowedTools": ["api_exec", "shell", "pdf", "docs", "eval_public", "replay"],
+      "deniedTools": ["holdout_eval_lane", "blackbox_eval_lane", "external_write"],
+      "stopConditions": ["document_package_ready", "review_checklist_present"],
+      "approvalBoundary": { "requiredWhen": ["external_write", "permission_change"] },
+      "difficultyTiers": ["standard", "advanced", "expert"],
+      "modalityTags": ["document", "layout", "text"],
+      "structureTags": ["workflow", "artifact", "review_ready"],
+      "verifierRequirements": ["document_check", "artifact_presence", "review_checklist"]
+    },
+    {
+      "id": "multimodal_or_semi_structured_artifact_handling",
+      "familyId": "multimodal_or_semi_structured_artifact_handling",
+      "humanComparableTaskFraming": "Handle multimodal or semi-structured artifacts and convert them into bounded, verifiable outputs.",
+      "successCriteria": [
+        "artifact is interpreted without losing critical structure",
+        "output is inspectable and bounded",
+        "evidence links back to source artifact"
+      ],
+      "timeBudget": { "targetMs": 180000, "warnMs": 420000, "hardStopMs": 1200000 },
+      "allowedTools": ["api_exec", "shell", "pdf", "spreadsheet", "eval_public", "replay"],
+      "deniedTools": ["holdout_eval_lane", "blackbox_eval_lane", "external_write"],
+      "stopConditions": ["artifact_summary_ready", "source_traceability_present"],
+      "approvalBoundary": { "requiredWhen": ["external_write", "permission_change"] },
+      "difficultyTiers": ["advanced", "expert"],
+      "modalityTags": ["multimodal", "semi_structured", "artifact"],
+      "structureTags": ["artifact_handling", "traceable"],
+      "verifierRequirements": ["artifact_presence", "source_traceability"]
+    },
+    {
+      "id": "spreadsheets_structured_artifacts",
+      "familyId": "spreadsheets_structured_artifacts",
+      "humanComparableTaskFraming": "Create or analyze spreadsheets and structured artifacts with preserved references or schema.",
+      "successCriteria": [
+        "structured artifact is valid",
+        "schema or formula expectations are preserved",
+        "verification can inspect resulting structure"
+      ],
+      "timeBudget": { "targetMs": 150000, "warnMs": 360000, "hardStopMs": 900000 },
+      "allowedTools": ["api_exec", "shell", "spreadsheet", "eval_public", "replay"],
+      "deniedTools": ["holdout_eval_lane", "blackbox_eval_lane", "external_write"],
+      "stopConditions": ["structured_artifact_valid", "artifact_index_updated"],
+      "approvalBoundary": { "requiredWhen": ["external_write", "permission_change"] },
+      "difficultyTiers": ["standard", "advanced"],
+      "modalityTags": ["text", "table", "spreadsheet"],
+      "structureTags": ["structured_artifact", "schema_preserving"],
+      "verifierRequirements": ["schema_check", "artifact_presence"]
+    },
+    {
+      "id": "web_tool_use",
+      "familyId": "web_tool_use",
+      "humanComparableTaskFraming": "Use bounded browser or web tools to gather, verify, or interact with task-relevant information.",
+      "successCriteria": [
+        "web interaction stays within task scope",
+        "captured result is attributable to the interaction",
+        "unsafe or denied actions are blocked"
+      ],
+      "timeBudget": { "targetMs": 150000, "warnMs": 360000, "hardStopMs": 900000 },
+      "allowedTools": ["api_exec", "shell", "web_search", "playwright", "eval_public"],
+      "deniedTools": ["holdout_eval_lane", "blackbox_eval_lane", "external_write", "destructive_delete_without_approval"],
+      "stopConditions": ["bounded_interaction_complete", "evidence_recorded"],
+      "approvalBoundary": { "requiredWhen": ["external_write", "permission_change", "cross_site_write"] },
+      "difficultyTiers": ["standard", "advanced"],
+      "modalityTags": ["web", "text", "browser"],
+      "structureTags": ["tool_use", "interactive"],
+      "verifierRequirements": ["interaction_trace", "tool_guard"]
+    },
+    {
+      "id": "cross_tool_orchestration",
+      "familyId": "cross_tool_orchestration",
+      "humanComparableTaskFraming": "Coordinate a bounded workflow that spans multiple tools while preserving permissions, integration evidence, and operator clarity.",
+      "successCriteria": [
+        "multi-tool workflow remains bounded",
+        "integration summary is produced",
+        "tool boundaries and failures are explicit"
+      ],
+      "timeBudget": { "targetMs": 180000, "warnMs": 420000, "hardStopMs": 1200000 },
+      "allowedTools": ["api_exec", "shell", "web_search", "playwright", "spreadsheet", "docs", "eval_public", "replay"],
+      "deniedTools": ["holdout_eval_lane", "blackbox_eval_lane", "external_write", "destructive_delete_without_approval"],
+      "stopConditions": ["integration_summary_ready", "tool_boundaries_preserved", "evidence_recorded"],
+      "approvalBoundary": { "requiredWhen": ["external_write", "permission_change", "cross_site_write"] },
+      "difficultyTiers": ["advanced", "expert"],
+      "modalityTags": ["web", "document", "spreadsheet"],
+      "structureTags": ["cross_tool", "integration", "handoff"],
+      "verifierRequirements": ["integration_summary", "tool_guard", "handoff_readiness"]
+    },
+    {
+      "id": "debugging_incident_response",
+      "familyId": "debugging_incident_response",
+      "humanComparableTaskFraming": "Diagnose failures, identify root causes, and produce bounded incident-response outputs.",
+      "successCriteria": [
+        "symptom, root cause, and next action are separated",
+        "verification or rollback path is explicit",
+        "closeout does not overclaim recovery"
+      ],
+      "timeBudget": { "targetMs": 150000, "warnMs": 360000, "hardStopMs": 900000 },
+      "allowedTools": ["api_exec", "shell", "apply_patch", "eval_public", "replay"],
+      "deniedTools": ["holdout_eval_lane", "blackbox_eval_lane", "external_write", "destructive_delete_without_approval"],
+      "stopConditions": ["incident_state_understood", "next_action_recorded", "verification_or_rollback_path_present"],
+      "approvalBoundary": { "requiredWhen": ["dependency_add", "external_write", "destructive_delete", "permission_change"] },
+      "difficultyTiers": ["standard", "advanced", "expert"],
+      "modalityTags": ["text", "logs", "code"],
+      "structureTags": ["debugging", "incident"],
+      "verifierRequirements": ["root_cause_check", "rollback_path_check"]
+    },
+    {
+      "id": "tool_learning_or_new_tool_adoption",
+      "familyId": "tool_learning_or_new_tool_adoption",
+      "humanComparableTaskFraming": "Safely register, learn, and evaluate a new tool or wrapper under bounded rollout controls.",
+      "successCriteria": [
+        "tool capability is described and normalized",
+        "usage examples or demonstrations exist",
+        "safe rollout and fallback are explicit"
+      ],
+      "timeBudget": { "targetMs": 180000, "warnMs": 420000, "hardStopMs": 1200000 },
+      "allowedTools": ["api_exec", "shell", "docs", "eval_public", "replay"],
+      "deniedTools": ["holdout_eval_lane", "blackbox_eval_lane", "external_write", "destructive_delete_without_approval"],
+      "stopConditions": ["tool_registration_ready", "tool_eval_recorded", "fallback_defined"],
+      "approvalBoundary": { "requiredWhen": ["dependency_add", "external_write", "permission_change", "cross_project_config_change"] },
+      "difficultyTiers": ["standard", "advanced", "expert"],
+      "modalityTags": ["text", "schema", "tooling"],
+      "structureTags": ["tool_learning", "safe_rollout"],
+      "verifierRequirements": ["tool_registry_check", "fallback_check"]
+    }
+  ]
+}

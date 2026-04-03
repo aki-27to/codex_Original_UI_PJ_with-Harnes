@@ -1,0 +1,44 @@
+{
+  "schema": "no-hitl-blocked-reason-taxonomy.v1",
+  "version": "2026-03-31.r1",
+  "statuses": [
+    "AUTO_PASS",
+    "AUTO_FAIL",
+    "BLOCKED_BY_ENV",
+    "BLOCKED_BY_POLICY",
+    "EXTERNAL_EVIDENCE_PENDING",
+    "BLOCKED_BY_CONFIG"
+  ],
+  "categories": [
+    {
+      "id": "approval_or_sandbox_policy",
+      "machineStatus": "BLOCKED_BY_CONFIG",
+      "description": "Host approval or sandbox settings do not match the non-interactive profile."
+    },
+    {
+      "id": "protected_path_or_secret_policy",
+      "machineStatus": "BLOCKED_BY_POLICY",
+      "description": "Protected path, secret, or sensitive action is intentionally fail-closed."
+    },
+    {
+      "id": "external_human_evidence_missing",
+      "machineStatus": "EXTERNAL_EVIDENCE_PENDING",
+      "description": "Observed human baseline has not been imported yet."
+    },
+    {
+      "id": "external_audit_missing",
+      "machineStatus": "EXTERNAL_EVIDENCE_PENDING",
+      "description": "Observed external audit evidence has not been imported yet."
+    },
+    {
+      "id": "provider_not_connected",
+      "machineStatus": "BLOCKED_BY_ENV",
+      "description": "Production-like provider adapter exists but environment connection is absent."
+    },
+    {
+      "id": "implementation_gap",
+      "machineStatus": "AUTO_FAIL",
+      "description": "Required automation path is not implemented or not producing machine-readable output."
+    }
+  ]
+}

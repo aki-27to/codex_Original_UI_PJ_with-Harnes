@@ -1,7 +1,7 @@
 # OPENAI_BLOG_LEARNING_REPORT
 
 - status: PASS
-- generatedAt: 2026-03-25T14:28:48.485Z
+- generatedAt: 2026-04-03T23:30:47.228Z
 - trackedArticles: 6
 - newArticlesThisRun: 0
 - pendingProposals: 6
@@ -15,21 +15,21 @@
 
 ## Recent Articles
 
+- How Perplexity Brought Voice Search to Millions Using the Realtime API | OpenAI Developers | high | https://developers.openai.com/blog/realtime-perplexity-computer
 - Designing delightful frontends with GPT-5.4 | OpenAI Developers | high | https://developers.openai.com/blog/designing-delightful-frontends-with-gpt-5-4
 - From prompts to products: One year of Responses | OpenAI Developers | high | https://developers.openai.com/blog/one-year-of-responses
 - Using skills to accelerate OSS maintenance | OpenAI Developers | high | https://developers.openai.com/blog/skills-agents-sdk
 - Building frontend UIs with Codex and Figma | OpenAI Developers | high | https://developers.openai.com/blog/building-frontend-uis-with-codex-and-figma
 - Run long horizon tasks with Codex | OpenAI Developers | high | https://developers.openai.com/blog/run-long-horizon-tasks-with-codex
-- Shell + Skills + Compaction: Tips for long-running agents that do real work | OpenAI Developers | high | https://developers.openai.com/blog/skills-shell-tips
 
 ## Pending Proposals
 
+- How Perplexity Brought Voice Search to Millions Using the Realtime API | OpenAI Developers -> docs/CONTEXT_MEMORY_POLICY.md (proposal_only)
 - Designing delightful frontends with GPT-5.4 | OpenAI Developers -> docs/CONTEXT_MEMORY_POLICY.md (proposal_only)
 - From prompts to products: One year of Responses | OpenAI Developers -> docs/CONTEXT_MEMORY_POLICY.md (proposal_only)
 - Using skills to accelerate OSS maintenance | OpenAI Developers -> docs/CONTEXT_MEMORY_POLICY.md (proposal_only)
 - Building frontend UIs with Codex and Figma | OpenAI Developers -> docs/CONTEXT_MEMORY_POLICY.md (proposal_only)
 - Run long horizon tasks with Codex | OpenAI Developers -> docs/CONTEXT_MEMORY_POLICY.md (proposal_only)
-- Shell + Skills + Compaction: Tips for long-running agents that do real work | OpenAI Developers -> docs/CONTEXT_MEMORY_POLICY.md (proposal_only)
 
 ## Self Improvement
 
@@ -37,5 +37,16 @@
 - appliedDecision: applied
 - appliedHintCount: 6
 - appliedFrontendQualityNoteCount: 0
+- observationStatus: starved
+- observationCount: 0
+- lastObservedAt: -
+- rawAutoApplyChangeCount: 12
+- readyAutoApplyChangeCount: 6
+- awaitingObservationCount: 6
+- awaitingReinforcementCount: 0
+- policyDisabledCandidateCount: 0
 - proposalOnlyCount: 0
 - blockedCount: 0
+- nextPriority: Building frontend UIs with Codex and Figma | OpenAI Developers / awaiting_observations
+- nextPriorityAction: Record 2 successful targeted observations before promotion.
+- nextPriorityProgress: success 0/2 / observed 0 / rate 0

@@ -1,7 +1,7 @@
 # ANTHROPIC_ENGINEERING_LEARNING_REPORT
 
 - status: PASS
-- generatedAt: 2026-03-25T11:25:33.281Z
+- generatedAt: 2026-04-03T23:11:46.706Z
 - trackedArticles: 5
 - newArticlesThisRun: 0
 - pendingProposals: 5
@@ -10,6 +10,8 @@
 - digestPath: output/anthropic_engineering_learning_digest.json
 - reportPath: output/anthropic_engineering_learning_report.md
 - curatedDocPath: docs/ANTHROPIC_ENGINEERING_LEARNINGS.md
+- selfImprovementStatePath: output/anthropic_engineering_self_improvement_state.json
+- selfImprovementGatePath: output/anthropic_engineering_self_improvement_gate.json
 
 ## Recent Articles
 
@@ -26,3 +28,23 @@
 - Designing AI resistant technical evaluations -> docs/CONTEXT_MEMORY_POLICY.md (proposal_only)
 - Demystifying evals for AI agents -> docs/CONTEXT_MEMORY_POLICY.md (proposal_only)
 - Effective harnesses for long-running agents -> docs/CONTEXT_MEMORY_POLICY.md (proposal_only)
+
+## Self Improvement
+
+- gateStatus: PASS
+- appliedDecision: none
+- appliedHintCount: 0
+- appliedFrontendQualityNoteCount: 0
+- observationStatus: disabled
+- observationCount: 0
+- lastObservedAt: -
+- rawAutoApplyChangeCount: 1
+- readyAutoApplyChangeCount: 0
+- awaitingObservationCount: 0
+- awaitingReinforcementCount: 0
+- policyDisabledCandidateCount: 1
+- proposalOnlyCount: 4
+- blockedCount: 0
+- nextPriority: Effective harnesses for long-running agents / policy_disabled
+- nextPriorityAction: Enable stabilization for this lane or keep the note proposal-only.
+- nextPriorityProgress: success 0/2 / observed 0 / rate 0

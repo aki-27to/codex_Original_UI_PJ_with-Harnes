@@ -1,7 +1,7 @@
 {
   "schema": "openai-blog-learning-proposal.v1",
   "proposalId": "openai-blog-designing-delightful-frontends-with-gpt-5-4",
-  "createdAt": "2026-03-25T11:25:33.023Z",
+  "createdAt": "2026-04-03T23:30:47.228Z",
   "articleId": "designing-delightful-frontends-with-gpt-5-4",
   "title": "Designing delightful frontends with GPT-5.4 | OpenAI Developers",
   "sourceUrl": "https://developers.openai.com/blog/designing-delightful-frontends-with-gpt-5-4",
@@ -13,7 +13,7 @@
     "GPT-5.4 has learned this wide spectrum of design approaches and understands many different ways a website can be built.",
     "Define your design system and constraints upfront (i.e., typography, color palette, layout).",
     "more functionally complete apps and websites",
-    "Web design can produce a large surface area of outcomes. Great design balances restraint with invention—drawing from patterns that have stood the test of time while introducing something new. GPT-5.4 has learned this wide spectrum of design approaches and understands many different ways a website can be built."
+    "When prompts are underspecified, models often fall back to high-frequency patterns from the training data."
   ],
   "topicTags": [
     "context",

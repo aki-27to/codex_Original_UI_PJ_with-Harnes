@@ -14,6 +14,7 @@ const defaultEvalSuitePath = path.join(__dirname, "..", "config", "eval_suite_de
 const allowedExpectModes = new Set(["exact", "includes", "regex", "json_fields"]);
 const allowedEvalDrivers = new Set([
   "exec",
+  "agi_metric_probe",
   "agent_governance_probe",
   "agent_registry_probe",
   "idempotency_bridge_probe",
@@ -133,6 +134,21 @@ function normalizeEvalCase(entry, index) {
     input: payload.input && typeof payload.input === "object" ? sanitizeJsonValue(payload.input) : {},
     weight,
     expect: normalizeExpectation(payload.expect),
+    familyId: safeString(payload.familyId, 120),
+    difficultyTier: safeString(payload.difficultyTier, 80),
+    modalityTags: Array.isArray(payload.modalityTags)
+      ? payload.modalityTags.map((tag) => safeString(tag, 40).toLowerCase()).filter(Boolean).slice(0, 16)
+      : [],
+    structureTags: Array.isArray(payload.structureTags)
+      ? payload.structureTags.map((tag) => safeString(tag, 40).toLowerCase()).filter(Boolean).slice(0, 16)
+      : [],
+    orchestrationMode: safeString(payload.orchestrationMode, 80),
+    humanComparableTaskFraming: safeString(payload.humanComparableTaskFraming, 2000),
+    objective: safeString(payload.objective, 2000),
+    acceptanceCriteria: Array.isArray(payload.acceptanceCriteria)
+      ? payload.acceptanceCriteria.map((entry) => safeString(entry, 200)).filter(Boolean).slice(0, 24)
+      : [],
+    agiV1: payload.agiV1 && typeof payload.agiV1 === "object" ? sanitizeJsonValue(payload.agiV1) : null,
     userValue: payload.userValue && typeof payload.userValue === "object"
       ? normalizeUserValueRubric(payload.userValue)
       : null,
@@ -159,6 +175,7 @@ function normalizeEvalSuite(input, { fallbackId = "default-v1" } = {}) {
     description: safeString(payload.description, 400) || "Harness evaluation suite",
     constitutionAligned: true,
     outputSchema: payload.outputSchema && typeof payload.outputSchema === "object" ? payload.outputSchema : {},
+    evaluation: payload.evaluation && typeof payload.evaluation === "object" ? sanitizeJsonValue(payload.evaluation) : {},
     scoring: normalizeUserValueScoring(payload.scoring),
     cases,
   };

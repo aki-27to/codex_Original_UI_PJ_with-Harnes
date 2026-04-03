@@ -1,7 +1,7 @@
 {
   "schema": "openai-blog-learning-proposal.v1",
   "proposalId": "openai-blog-building-frontend-uis-with-codex-and-figma",
-  "createdAt": "2026-03-25T11:25:33.023Z",
+  "createdAt": "2026-04-03T23:30:47.228Z",
   "articleId": "building-frontend-uis-with-codex-and-figma",
   "title": "Building frontend UIs with Codex and Figma | OpenAI Developers",
   "sourceUrl": "https://developers.openai.com/blog/building-frontend-uis-with-codex-and-figma",
@@ -10,10 +10,10 @@
   "guidance": [
     "One of the core use cases of the Figma MCP server is retrieving context from Figma files and using that context in code generation. The Figma MCP server can capture information from Figma Design, Make, and FigJam files and pass it to Codex as part of the building process.",
     "The Figma MCP server can capture information from Figma Design, Make, and FigJam files and pass it to Codex as part of the building process.",
-    "These selection URLs are linked directly to a frame or node on the Figma canvas. They could be a single element or a collection of components, but essentially it’s the source data that an agent will use for code generation. Selections can come from Figma Design, Make, or FigJam files. Once you have the URL, open Codex",
-    "help me implement this Figma design in code, use my existing design system components as much as possible. Your browser does not support the video tag. Prompts like this will instruct the agent to call the get_design_context tool from the Figma MCP server. This tool helps extract critical design information from Figma",
-    "The Codex desktop application is purpose-built for agentic coding. It provides a focused interface for managing multiple agents in parallel across projects, tracking progress without losing context, and integrating external tools. That kind of fluidity feels familiar. In Figma, teams move just as easily. The canvas is",
-    "Starting today, you can generate Figma design files from Codex using the Figma MCP server. The MCP server is built to support movement in both directions, bringing working UI onto the Figma canvas and back into code just as easily, so you can build on your best ideas, not just your first."
+    "The Codex desktop application is purpose-built for agentic coding.",
+    "Decide to either create a new Figma file or use an existing one.",
+    "Starting today, you can generate Figma design files from Codex using the Figma MCP server.",
+    "It provides a focused interface for managing multiple agents in parallel across projects, tracking progress without losing context, and integrating external tools."
   ],
   "topicTags": [
     "agents",

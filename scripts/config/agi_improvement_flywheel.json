@@ -1,0 +1,123 @@
+{
+  "schema": "harness-agi-improvement-flywheel.v1",
+  "strategy": "autonomy_first_compounding",
+  "northStar": {
+    "objective": "Compound real-task capability across breadth, depth, self-correction, user-perceived quality, and non-functional quality without collapsing into benchmark gaming.",
+    "antiGoal": "Do not optimize only for easy-to-measure scores, synthetic loops, or shallow eval wins."
+  },
+  "guardrails": {
+    "unboundedLoopsAllowed": false,
+    "autoMutatePolicy": false,
+    "autoMutateConstitution": false,
+    "requiresEvalGateForPromotion": true,
+    "requiresRollbackPath": true
+  },
+  "loops": [
+    {
+      "id": "execution",
+      "name": "Execution Loop",
+      "objective": "Finish real tasks end-to-end with artifacts and evidence.",
+      "stopConditions": [
+        "requirement_blocked",
+        "explicit_operator_escalation",
+        "verification_complete"
+      ],
+      "rollbackTriggers": [
+        "release_gate_failed",
+        "task_outcome_failed_validation"
+      ]
+    },
+    {
+      "id": "failure-learning",
+      "name": "Failure Learning Loop",
+      "objective": "Compress real failures into reusable lessons with evidence.",
+      "stopConditions": [
+        "lesson_captured",
+        "evidence_missing"
+      ],
+      "rollbackTriggers": [
+        "lesson_not_reproducible"
+      ]
+    },
+    {
+      "id": "tool-selection",
+      "name": "Tool Selection Loop",
+      "objective": "Improve routing between shell, browser, MCP, and specialists.",
+      "stopConditions": [
+        "tool_path_validated",
+        "fallback_exhausted"
+      ],
+      "rollbackTriggers": [
+        "tool_choice_regression"
+      ]
+    },
+    {
+      "id": "verification",
+      "name": "Verification Loop",
+      "objective": "Raise confidence with the minimum test/evidence set needed for the task family.",
+      "stopConditions": [
+        "acceptance_checks_passed",
+        "evidence_gate_failed"
+      ],
+      "rollbackTriggers": [
+        "regression_detected"
+      ]
+    },
+    {
+      "id": "external-learning",
+      "name": "External Learning Loop",
+      "objective": "Retrieve bounded external lessons only when task-family and trigger match.",
+      "stopConditions": [
+        "retrieval_decision_logged",
+        "no_match_found"
+      ],
+      "rollbackTriggers": [
+        "low_signal_learning_noise"
+      ]
+    },
+    {
+      "id": "self-improvement",
+      "name": "Self Improvement Loop",
+      "objective": "Promote only eval-gated improvements from proposal to limited rollout.",
+      "stopConditions": [
+        "proposal_recorded",
+        "eval_gate_decided",
+        "rollout_observed",
+        "rollback_ready"
+      ],
+      "rollbackTriggers": [
+        "eval_regression",
+        "observation_starved",
+        "unsafe_blast_radius"
+      ]
+    }
+  ],
+  "kpis": [
+    "broad_task_family_completion_rate",
+    "hard_task_recovery_rate",
+    "self_correction_rate",
+    "user_intent_alignment_rate",
+    "majority_preference_proxy_score",
+    "nonfunctional_quality_pass_rate",
+    "regression_rate",
+    "verification_pass_rate",
+    "tool_learning_adoption_rate",
+    "latency_cost_per_accepted_task"
+  ],
+  "failureModes": [
+    "benchmark_chasing_without_real_quality_gain",
+    "noise_learning_from_unbounded_loops",
+    "ungated_self_promotion",
+    "prompt_bloat_without_quality_gain",
+    "overfitting_to_local_success",
+    "missing_rollback_path",
+    "synthetic_only_learning_without_real_tasks",
+    "majority_only_optimization_without_safety_or_accessibility"
+  ],
+  "promotionPath": [
+    "proposal_only",
+    "eval_gated_candidate",
+    "limited_rollout",
+    "observed_promotion"
+  ]
+}

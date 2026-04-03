@@ -99,6 +99,130 @@ function formatInteger(value) {
   return new Intl.NumberFormat("ja-JP").format(Math.trunc(parsed));
 }
 
+function formatSelfImprovementProgress(entry) {
+  const reinforcement = entry && entry.reinforcement && typeof entry.reinforcement === "object"
+    ? entry.reinforcement
+    : null;
+  if (!reinforcement) {
+    return "-";
+  }
+  return `success ${formatInteger(num(reinforcement.successCount, 0))}/${formatInteger(num(reinforcement.requiredSuccesses, 0))} / obs ${formatInteger(num(reinforcement.observedCount, 0))} / rate ${formatPercent(num(reinforcement.successRate, 0))} / last ${safeText(reinforcement.lastObservedAt, "-")}`;
+}
+
+function toneForPromotionDecision(value) {
+  const normalized = lower(value).replace(/_/g, "-");
+  if (normalized === "auto-apply candidate" || normalized === "auto-apply-candidate" || normalized === "applied") {
+    return "pass";
+  }
+  if (normalized === "blocked") {
+    return "fail";
+  }
+  if (normalized === "proposal-only" || normalized === "proposal only") {
+    return "warn";
+  }
+  return "neutral";
+}
+
+function toneForManualClassification(value) {
+  const normalized = lower(value).replace(/_/g, "-");
+  if (normalized === "quality-note" || normalized === "quality note") {
+    return "warn";
+  }
+  if (normalized === "skill-candidate" || normalized === "skill candidate") {
+    return "pass";
+  }
+  if (normalized === "runtime-hint" || normalized === "runtime hint") {
+    return "info";
+  }
+  return "neutral";
+}
+
+function formatCaptureTimestamp(value) {
+  if (typeof value === "number") {
+    return formatDateTime(value);
+  }
+  return safeText(value, "-");
+}
+
+function joinSummaryParts(values, fallback = "-") {
+  const parts = toArr(values)
+    .map((entry) => safeText(entry))
+    .filter(Boolean);
+  return parts.length ? parts.join(" / ") : fallback;
+}
+
+function countEntriesByDecision(entries, decision) {
+  const expected = lower(decision).replace(/_/g, "-");
+  return toArr(entries).filter((entry) => lower(entry && entry.promotionDecision).replace(/_/g, "-") === expected).length;
+}
+
+function countEntriesByClassification(entries, classification) {
+  const expected = lower(classification).replace(/_/g, "-");
+  return toArr(entries).filter((entry) => lower(entry && entry.classification).replace(/_/g, "-") === expected).length;
+}
+
+function normalizeManualCaptureSummary(payload, externalLearning, selfImprovement) {
+  const memoryExternalLearning = payload && payload.memory && payload.memory.externalLearning && typeof payload.memory.externalLearning === "object"
+    ? payload.memory.externalLearning
+    : {};
+  const runtimeManualSelfImprovement = payload && payload.runtime && payload.runtime.manualSelfImprovement && typeof payload.runtime.manualSelfImprovement === "object"
+    ? payload.runtime.manualSelfImprovement
+    : null;
+  const memoryManualSelfImprovement = payload && payload.memory && payload.memory.manualSelfImprovement && typeof payload.memory.manualSelfImprovement === "object"
+    ? payload.memory.manualSelfImprovement
+    : null;
+  const rawSummary = [
+    selfImprovement && selfImprovement.manualCaptureSummary,
+    externalLearning && externalLearning.manualCaptureSummary,
+    memoryExternalLearning && memoryExternalLearning.manualCaptureSummary,
+    runtimeManualSelfImprovement,
+    memoryManualSelfImprovement,
+  ].find((entry) => entry && typeof entry === "object");
+  if (!rawSummary) {
+    return null;
+  }
+  const entries = toArr(rawSummary.entries && rawSummary.entries.length ? rawSummary.entries : rawSummary.lessons).map((entry) => {
+    const appliesTo = entry && entry.appliesTo && typeof entry.appliesTo === "object"
+      ? entry.appliesTo
+      : {};
+    const supportingArtifacts = toArr(entry && entry.supportingArtifacts).map((artifact) => safeText(artifact)).filter(Boolean);
+    const evidenceText = safeText(entry && (entry.evidenceSummary || entry.evidence), "").slice(0, 200);
+    return {
+      title: safeText(entry && (entry.lessonSummary || entry.title || entry.summary), "manual lesson"),
+      classification: safeText(entry && entry.classification, "runtime hint"),
+      promotionDecision: safeText(entry && entry.promotionDecision, "proposal-only"),
+      detail: joinSummaryParts([
+        toArr(appliesTo.agent).length ? `agent ${toArr(appliesTo.agent).slice(0, 2).join(", ")}` : "",
+        toArr(appliesTo.taskFamily).length ? `family ${toArr(appliesTo.taskFamily).slice(0, 2).join(", ")}` : "",
+        toArr(appliesTo.triggers).length ? `trigger ${toArr(appliesTo.triggers).slice(0, 1).join(", ")}` : "",
+        evidenceText ? `evidence ${evidenceText}` : "",
+        supportingArtifacts.length ? `artifacts ${supportingArtifacts.slice(0, 2).join(", ")}` : "",
+      ]),
+    };
+  });
+  const entryCount = num(rawSummary.entryCount, entries.length) || entries.length;
+  return {
+    schema: safeText(rawSummary.schema, "manual-self-improvement-capture.v1"),
+    generatedAt: formatCaptureTimestamp(rawSummary.generatedAt),
+    artifactPath: safeText(rawSummary.artifactPath || rawSummary.path || rawSummary.sourcePath, ""),
+    sourceKind: safeText(rawSummary.source && rawSummary.source.kind, safeText(rawSummary.sourceKind, "manual_turn_capture")),
+    request: safeText(rawSummary.source && rawSummary.source.request, safeText(rawSummary.request || rawSummary.requestSummary, "")),
+    status: safeText(rawSummary.status || rawSummary.captureStatus, entryCount ? "captured" : "empty"),
+    entryCount,
+    proposalOnlyCount: num(rawSummary.proposalOnlyCount, countEntriesByDecision(entries, "proposal-only")),
+    blockedCount: num(rawSummary.blockedCount, countEntriesByDecision(entries, "blocked")),
+    autoApplyCandidateCount: num(rawSummary.autoApplyCandidateCount, countEntriesByDecision(entries, "auto-apply candidate")),
+    runtimeHintCount: num(rawSummary.runtimeHintCount, countEntriesByClassification(entries, "runtime hint")),
+    qualityNoteCount: num(rawSummary.qualityNoteCount, countEntriesByClassification(entries, "quality note")),
+    skillCandidateCount: num(rawSummary.skillCandidateCount, countEntriesByClassification(entries, "skill candidate")),
+    entries,
+  };
+}
+
+function populatedObject(value) {
+  return Boolean(value) && typeof value === "object" && !Array.isArray(value) && Object.keys(value).length > 0;
+}
+
 function escapeHtml(value) {
   return String(value == null ? "" : value)
     .replace(/&/g, "&amp;")
@@ -110,13 +234,13 @@ function escapeHtml(value) {
 
 function toneForTaskOutcome(value) {
   const normalized = lower(value);
-  if (normalized === "completed" || normalized === "pass" || normalized === "ready") {
+  if (normalized === "completed" || normalized === "pass" || normalized === "ready" || normalized === "ready_to_gate") {
     return "pass";
   }
   if (normalized === "failed_validation" || normalized === "blocked" || normalized === "fail") {
     return "fail";
   }
-  if (normalized === "needs_input" || normalized === "partial" || normalized === "wait") {
+  if (normalized === "needs_input" || normalized === "partial" || normalized === "wait" || normalized === "awaiting_observations" || normalized === "awaiting_reinforcement" || normalized === "policy_disabled") {
     return "warn";
   }
   if (normalized === "running" || normalized === "enforce" || normalized === "configured") {
@@ -171,7 +295,7 @@ function factRowsHtml(entries) {
       `;
     });
   if (!items.length) {
-    return `<div class="overview-empty">No facts available.</div>`;
+    return `<div class="overview-empty">表示できる項目がありません。</div>`;
   }
   return `<div class="overview-fact-list">${items.join("")}</div>`;
 }
@@ -197,7 +321,7 @@ function itemListHtml(items, emptyText) {
       `;
     });
   if (!rows.length) {
-    return `<div class="overview-empty">${escapeHtml(emptyText || "No data available.")}</div>`;
+    return `<div class="overview-empty">${escapeHtml(emptyText || "表示できるデータがありません。")}</div>`;
   }
   return `<div class="overview-list">${rows.join("")}</div>`;
 }
@@ -591,8 +715,12 @@ function renderEvidence(payload) {
 function renderMemory(payload) {
   const memory = payload && payload.memory ? payload.memory : {};
   const execution = memory.execution || {};
-  const externalLearning = memory.externalLearning || (payload && payload.runtime && payload.runtime.externalLearning) || {};
-  const secondaryLearning = memory.secondaryLearning || (payload && payload.runtime && payload.runtime.secondaryLearning) || {};
+  const externalLearning = populatedObject(memory.externalLearning)
+    ? memory.externalLearning
+    : (payload && payload.runtime && payload.runtime.externalLearning) || {};
+  const secondaryLearning = populatedObject(memory.secondaryLearning)
+    ? memory.secondaryLearning
+    : (payload && payload.runtime && payload.runtime.secondaryLearning) || {};
   const anthropicEngineering = secondaryLearning.anthropicEngineering || secondaryLearning.anthropic_engineering || {};
   const recentTurns = toArr(execution.recent).slice(0, 5).map((entry) => ({
     title: `${safeText(entry.agentName, "agent")} / ${safeText(entry.taskOutcomeStatus || entry.status, "status")}`,
@@ -669,6 +797,15 @@ function renderMemory(payload) {
     title: safeText(entry.title, "proposal"),
     detail: `${safeText(entry.target, "")} / ${safeText(entry.status, "proposal_only")}`,
   }));
+  const learningBacklog = toArr(externalLearning.selfImprovement && externalLearning.selfImprovement.priorityBacklog).map((entry) => ({
+    title: safeText(entry.title, "candidate"),
+    tags: [
+      { label: safeText(entry.changeType, "change"), tone: "info" },
+      { label: safeText(entry.readinessStatus, "proposal_only"), tone: toneForTaskOutcome(entry.readinessStatus) },
+      { label: safeText(entry.blastRadius, "low"), tone: safeText(entry.blastRadius, "low") === "low" ? "pass" : safeText(entry.blastRadius, "low") === "medium" ? "warn" : "fail" },
+    ],
+    detail: `${safeText(entry.gatingReason, "-")} / ${safeText(entry.nextAction, "-")}`,
+  }));
   const anthropicArticles = toArr(anthropicEngineering.recentArticles).map((entry) => ({
     title: safeText(entry.title, "article"),
     tags: [
@@ -681,6 +818,15 @@ function renderMemory(payload) {
     title: safeText(entry.title, "proposal"),
     detail: `${safeText(entry.target, "")} / ${safeText(entry.status, "proposal_only")}`,
   }));
+  const anthropicBacklog = toArr(anthropicEngineering.selfImprovement && anthropicEngineering.selfImprovement.priorityBacklog).map((entry) => ({
+    title: safeText(entry.title, "candidate"),
+    tags: [
+      { label: safeText(entry.changeType, "change"), tone: "info" },
+      { label: safeText(entry.readinessStatus, "proposal_only"), tone: toneForTaskOutcome(entry.readinessStatus) },
+      { label: safeText(entry.blastRadius, "low"), tone: safeText(entry.blastRadius, "low") === "low" ? "pass" : safeText(entry.blastRadius, "low") === "medium" ? "warn" : "fail" },
+    ],
+    detail: `${safeText(entry.gatingReason, "-")} / ${safeText(entry.nextAction, "-")}`,
+  }));
   if (elements.externalLearningCard) {
     const runtimeRetrieval = externalLearning.runtimeRetrieval && typeof externalLearning.runtimeRetrieval === "object"
       ? externalLearning.runtimeRetrieval
@@ -688,6 +834,7 @@ function renderMemory(payload) {
     const selfImprovement = externalLearning.selfImprovement && typeof externalLearning.selfImprovement === "object"
       ? externalLearning.selfImprovement
       : {};
+    const manualCaptureSummary = normalizeManualCaptureSummary(payload, externalLearning, selfImprovement);
     const secondarySelfImprovement = anthropicEngineering.selfImprovement && typeof anthropicEngineering.selfImprovement === "object"
       ? anthropicEngineering.selfImprovement
       : {};
@@ -705,10 +852,40 @@ function renderMemory(payload) {
         { label: "Artifacts", value: safeText(externalLearning.ledgerPath, "output/openai_blog_learning_ledger.json"), detail: `${safeText(externalLearning.digestPath, "")} / ${safeText(externalLearning.curatedDocPath, "")}` },
         { label: "Runtime Retrieval", value: safeText(runtimeRetrieval.lastStatus, runtimeRetrieval.enabled ? "IDLE" : "DISABLED"), detail: `${toArr(runtimeRetrieval.applyToAgents).join(", ") || "-"} / ${toArr(runtimeRetrieval.lastMatchedTopics).join(", ") || "-"}` },
         { label: "Self Improvement", value: safeText(selfImprovement.gateStatus, "NOT_RUN"), detail: `${safeText(selfImprovement.appliedDecision, "none")} / hints ${formatInteger(num(selfImprovement.appliedHintCount, 0))} / notes ${formatInteger(num(selfImprovement.appliedFrontendQualityNoteCount, 0))} / failed ${toArr(selfImprovement.failedCaseIds).join(", ") || "-"}` },
+        { label: "Candidate Queue", value: `ready ${formatInteger(num(selfImprovement.autoApplyCandidateCount, 0))}`, detail: `raw ${formatInteger(num(selfImprovement.rawAutoApplyChangeCount, 0))} / wait ${formatInteger(num(selfImprovement.awaitingObservationCount, 0) + num(selfImprovement.awaitingReinforcementCount, 0))} / disabled ${formatInteger(num(selfImprovement.policyDisabledCandidateCount, 0))}` },
+        { label: "Observation Lane", value: safeText(selfImprovement.observationStatus, "-"), detail: `obs ${formatInteger(num(selfImprovement.observationCount, 0))} / last ${safeText(selfImprovement.lastObservedAt, "-")} / threshold s>=${formatInteger(num(selfImprovement.requiredObservationSuccesses, 0))} rate>=${formatPercent(num(selfImprovement.requiredObservationSuccessRate, 0))}` },
+        { label: "Next Cycle", value: safeText(selfImprovement.nextPriority && selfImprovement.nextPriority.readinessStatus, "-"), detail: `${safeText(selfImprovement.nextPriority && selfImprovement.nextPriority.title, "-")} / ${safeText(selfImprovement.nextPriority && selfImprovement.nextPriority.nextAction, "-")} / ${formatSelfImprovementProgress(selfImprovement.nextPriority)}` },
         { label: "Freeze Guard", value: safeText(externalLearning.freezeAware && externalLearning.freezeAware.requirementFoundationV1, "bug_fix_only"), detail: `blocked ${toArr(externalLearning.freezeAware && externalLearning.freezeAware.blockedApplyTargets).join(", ") || "-"}` },
       ])}
       ${itemListHtml(learningArticles.slice(0, 4), "No recent official learning articles are tracked yet.")}
       ${itemListHtml(learningProposals.slice(0, 4), "No governed promotion proposals are pending.")}
+      ${itemListHtml(learningBacklog.slice(0, 4), "No self-improvement backlog items are queued.")}
+      ${manualCaptureSummary ? `
+      <section class="overview-subsection">
+        <div class="overview-subsection-head">
+          <h4>Manual Capture</h4>
+          <div class="overview-inline-tags">
+            ${tagHtml(`status ${safeText(manualCaptureSummary.status, "captured")}`, toneForTaskOutcome(manualCaptureSummary.status))}
+            ${tagHtml(`${formatInteger(num(manualCaptureSummary.entryCount, 0))} lessons`, "info")}
+            ${tagHtml(`proposal ${formatInteger(num(manualCaptureSummary.proposalOnlyCount, 0))}`, "warn")}
+            ${tagHtml(`blocked ${formatInteger(num(manualCaptureSummary.blockedCount, 0))}`, manualCaptureSummary.blockedCount ? "fail" : "neutral")}
+          </div>
+        </div>
+        ${factRowsHtml([
+          { label: "Capture", value: safeText(manualCaptureSummary.schema, "manual-self-improvement-capture.v1"), detail: `${safeText(manualCaptureSummary.generatedAt, "-")} / ${safeText(manualCaptureSummary.sourceKind, "manual_turn_capture")}` },
+          { label: "Decisions", value: `proposal ${formatInteger(num(manualCaptureSummary.proposalOnlyCount, 0))} / blocked ${formatInteger(num(manualCaptureSummary.blockedCount, 0))}`, detail: `auto ${formatInteger(num(manualCaptureSummary.autoApplyCandidateCount, 0))} / runtime ${formatInteger(num(manualCaptureSummary.runtimeHintCount, 0))} / quality ${formatInteger(num(manualCaptureSummary.qualityNoteCount, 0))} / skill ${formatInteger(num(manualCaptureSummary.skillCandidateCount, 0))}` },
+          { label: "Artifact", value: safeText(manualCaptureSummary.artifactPath, "manual capture summary"), detail: safeText(manualCaptureSummary.request, "-") },
+        ])}
+        ${itemListHtml(toArr(manualCaptureSummary.entries).slice(0, 3).map((entry) => ({
+          title: entry.title,
+          tags: [
+            { label: entry.classification, tone: toneForManualClassification(entry.classification) },
+            { label: entry.promotionDecision, tone: toneForPromotionDecision(entry.promotionDecision) },
+          ],
+          detail: entry.detail,
+        })), "No manual self-improvement lessons are captured yet.")}
+      </section>
+      ` : ""}
       ${anthropicEngineering && (anthropicEngineering.sourceName || anthropicEngineering.enabled !== undefined) ? `
       <h4>Secondary Source</h4>
       ${factRowsHtml([
@@ -716,9 +893,13 @@ function renderMemory(payload) {
         { label: "Cadence", value: `${formatInteger(num(anthropicEngineering.intervalMinutes, 0))} min`, detail: `next ${safeText(anthropicEngineering.nextRunAt, "-")}` },
         { label: "Mode", value: safeText(anthropicEngineering.portabilityMode, "portable_principles_only"), detail: safeText(anthropicEngineering.curatedDocPath, "") },
         { label: "Self Improvement", value: safeText(secondarySelfImprovement.gateStatus, "NOT_RUN"), detail: `${safeText(secondarySelfImprovement.appliedDecision, "none")} / hints ${formatInteger(num(secondarySelfImprovement.appliedHintCount, 0))}` },
+        { label: "Candidate Queue", value: `ready ${formatInteger(num(secondarySelfImprovement.autoApplyCandidateCount, 0))}`, detail: `raw ${formatInteger(num(secondarySelfImprovement.rawAutoApplyChangeCount, 0))} / wait ${formatInteger(num(secondarySelfImprovement.awaitingObservationCount, 0) + num(secondarySelfImprovement.awaitingReinforcementCount, 0))} / disabled ${formatInteger(num(secondarySelfImprovement.policyDisabledCandidateCount, 0))}` },
+        { label: "Observation Lane", value: safeText(secondarySelfImprovement.observationStatus, "-"), detail: `obs ${formatInteger(num(secondarySelfImprovement.observationCount, 0))} / last ${safeText(secondarySelfImprovement.lastObservedAt, "-")} / threshold s>=${formatInteger(num(secondarySelfImprovement.requiredObservationSuccesses, 0))} rate>=${formatPercent(num(secondarySelfImprovement.requiredObservationSuccessRate, 0))}` },
+        { label: "Next Cycle", value: safeText(secondarySelfImprovement.nextPriority && secondarySelfImprovement.nextPriority.readinessStatus, "-"), detail: `${safeText(secondarySelfImprovement.nextPriority && secondarySelfImprovement.nextPriority.title, "-")} / ${safeText(secondarySelfImprovement.nextPriority && secondarySelfImprovement.nextPriority.nextAction, "-")} / ${formatSelfImprovementProgress(secondarySelfImprovement.nextPriority)}` },
       ])}
       ${itemListHtml(anthropicArticles.slice(0, 3), "No secondary learning articles are tracked yet.")}
       ${itemListHtml(anthropicProposals.slice(0, 3), "No secondary learning proposals are pending.")}
+      ${itemListHtml(anthropicBacklog.slice(0, 3), "No secondary self-improvement backlog items are queued.")}
       ` : ""}
     `;
   }
@@ -730,7 +911,7 @@ function renderMemory(payload) {
     ],
     detail: `missingClasses ${toArr(entry.missingClasses).join("|") || "-"} / missingSkills ${toArr(entry.missingSkills).join("|") || "-"}`,
   }));
-  elements.roleChecksCard.innerHTML = itemListHtml(roleCheckItems, "No role checks are available.");
+  elements.roleChecksCard.innerHTML = itemListHtml(roleCheckItems, "ロール監査結果はまだありません。");
 }
 
 function renderRawSnapshot(payload) {

@@ -1,0 +1,51 @@
+{
+  "schema": "tool-registry-manifest.v1",
+  "version": "2026-03-30.r1",
+  "tools": [
+    {
+      "id": "api_exec",
+      "capability": "repo-local execution",
+      "riskTier": "medium",
+      "wrapperTests": ["phase1_public_regression"],
+      "reliabilityScore": 0.96,
+      "status": "active",
+      "fallbackMode": "single_agent_fallback"
+    },
+    {
+      "id": "shell",
+      "capability": "repo-local shell execution",
+      "riskTier": "medium",
+      "wrapperTests": ["phase1_public_regression"],
+      "reliabilityScore": 0.95,
+      "status": "active",
+      "fallbackMode": "read_only_if_guarded"
+    },
+    {
+      "id": "apply_patch",
+      "capability": "repo-local code mutation",
+      "riskTier": "high",
+      "wrapperTests": ["phase1_public_regression", "phase4_multi_agent"],
+      "reliabilityScore": 0.94,
+      "status": "active",
+      "fallbackMode": "deny_without_patch_path"
+    },
+    {
+      "id": "web_search",
+      "capability": "external evidence lookup",
+      "riskTier": "low",
+      "wrapperTests": ["phase5_public_eval"],
+      "reliabilityScore": 0.9,
+      "status": "active",
+      "fallbackMode": "repo_local_sources_only"
+    },
+    {
+      "id": "playwright",
+      "capability": "browser interaction",
+      "riskTier": "medium",
+      "wrapperTests": ["phase4_multi_agent", "phase5_public_eval"],
+      "reliabilityScore": 0.89,
+      "status": "active",
+      "fallbackMode": "skip_browser_path"
+    }
+  ]
+}

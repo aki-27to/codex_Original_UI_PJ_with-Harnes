@@ -1,6 +1,6 @@
 # OPENAI_DEVELOPER_LEARNINGS
 
-Updated: 2026-03-25T11:25:33.023Z
+Updated: 2026-04-03T23:30:47.228Z
 
 This file is auto-synced from OpenAI Developers Blog.
 It is not constitutional guidance and does not silently override `AGENTS.md` or frozen Step 1/2 behavior.
@@ -15,6 +15,19 @@ It is not constitutional guidance and does not silently override `AGENTS.md` or 
 
 ## Topic: agents
 
+### How Perplexity Brought Voice Search to Millions Using the Realtime API | OpenAI Developers
+
+- Source: https://developers.openai.com/blog/realtime-perplexity-computer
+- Relevance: high
+- Portability: portable
+- Blog card date: Mar 25
+- Summary: Lessons from how Perplexity Computer's voice agent was built with the Realtime API.
+- Guidance:
+  - For Perplexity Comet , our agentic browser, and Perplexity Computer , our powerful, general-purpose digital worker, a big part of that was making these fully usable through voice.
+  - Long-form content, especially dense multi-hour podcasts, was one of our clearest tests of context management.
+  - One other subtle thing we learned was that not all context should enter the model in the same way.
+  - One of our internal test cases was a noisy San Francisco bar because that felt like a real product moment.
+
 ### From prompts to products: One year of Responses | OpenAI Developers
 
 - Source: https://developers.openai.com/blog/one-year-of-responses
@@ -23,10 +36,10 @@ It is not constitutional guidance and does not silently override `AGENTS.md` or 
 - Blog card date: Mar 11
 - Summary: Five stories from developers building agentic products with the Responses API in its first year.
 - Guidance:
-  - One year ago, we introduced the Responses API — a foundation for developers and enterprises to build useful and reliable agents. Equipping models with a set of hosted tools allowed AI to evolve from chat assistants to systems that can take action on your behalf. Today, the Responses API supports a number of tools to po
   - Agent behavior monitoring
   - One year ago, we introduced the Responses API — a foundation for developers and enterprises to build useful and reliable agents.
   - Tracking behavior changes across agent versions
+  - Raindrop is the monitoring platform behind the world’s most ambitious AI companies to catch when their agents go off the rails in production.
 
 ### Using skills to accelerate OSS maintenance | OpenAI Developers
 
@@ -38,8 +51,8 @@ It is not constitutional guidance and does not silently override `AGENTS.md` or 
 - Guidance:
   - repo-local skills in .agents/skills/
   - Repo-local skills, AGENTS.md , and GitHub Actions let us turn recurring engineering work, such as verification, release preparation, integration testing for examples, and PR review, into repeatable workflows.
-  - In these repos, we use skills to capture repository-specific workflows. A skill is a small package of operational knowledge: a SKILL.md manifest, plus optional scripts/ , references/ , and assets/ . The Codex customization docs describe why this works well: skills are a good fit for repeatable workflows because they ca
   - repository policy in AGENTS.md
+  - In these repos, we use skills to capture repository-specific workflows.
 
 ### Building frontend UIs with Codex and Figma | OpenAI Developers
 
@@ -51,8 +64,8 @@ It is not constitutional guidance and does not silently override `AGENTS.md` or 
 - Guidance:
   - One of the core use cases of the Figma MCP server is retrieving context from Figma files and using that context in code generation. The Figma MCP server can capture information from Figma Design, Make, and FigJam files and pass it to Codex as part of the building process.
   - The Figma MCP server can capture information from Figma Design, Make, and FigJam files and pass it to Codex as part of the building process.
-  - These selection URLs are linked directly to a frame or node on the Figma canvas. They could be a single element or a collection of components, but essentially it’s the source data that an agent will use for code generation. Selections can come from Figma Design, Make, or FigJam files. Once you have the URL, open Codex
-  - help me implement this Figma design in code, use my existing design system components as much as possible. Your browser does not support the video tag. Prompts like this will instruct the agent to call the get_design_context tool from the Figma MCP server. This tool helps extract critical design information from Figma
+  - The Codex desktop application is purpose-built for agentic coding.
+  - Decide to either create a new Figma file or use an existing one.
 
 ### Run long horizon tasks with Codex | OpenAI Developers
 
@@ -60,25 +73,12 @@ It is not constitutional guidance and does not silently override `AGENTS.md` or 
 - Relevance: high
 - Portability: portable
 - Blog card date: Feb 23
-- Summary: In September 2025, OpenAI introduced GPT-5-Codex as the first version of GPT-5 optimized for agentic coding. In December 2025, we launched 5.2 which was the moment that people began to believe that using autonomous coding agents could be reliable. In particular, we saw a huge jump in how long the model could reliably f
+- Summary: This was an experiment, not a production rollout. But it performed well on the parts that matter for long-horizon work: following the spec, staying on task, running verification, and repairing failures as it went.
 - Guidance:
-  - I wanted to stress-test that threshold. So I gave Codex a blank repo, full access, and one job: build a design tool from scratch. Then I let it run with GPT-5.3-Codex at “Extra High” reasoning. Codex ran for about 25 hours uninterrupted, used about 13M tokens, and generated about 30k lines of code.
-  - This was an experiment, not a production rollout. But it performed well on the parts that matter for long-horizon work: following the spec, staying on task, running verification, and repairing failures as it went.
   - These screenshots are useful because they make the core shift visible: agentic coding is increasingly about time horizon, not just one-shot intelligence.
   - Section focus: Takeaways for long-horizon Codex tasks
-
-### Shell + Skills + Compaction: Tips for long-running agents that do real work | OpenAI Developers
-
-- Source: https://developers.openai.com/blog/skills-shell-tips
-- Relevance: high
-- Portability: portable
-- Blog card date: Feb 11
-- Summary: Practical patterns for building with skills, hosted shell, and server-side compaction in the Responses API.
-- Guidance:
-  - Skills (aligned with the Agent Skills open standard): reusable, versioned instructions you can mount into containers so that agents can execute tasks more reliably.
-  - We’re shifting from single-turn assistants to long-running agents that handle real knowledge work: reading large datasets, updating files, and writing apps.
-  - Based on developer feedback and our own experience building Codex and internal agents, we’re releasing a new set of agentic primitives that make long-horizon work more practical:
-  - This post focuses on the nonobvious tips and patterns we’ve seen work best so far, both in our work at OpenAI and in production at Glean, an early skills customer.
+  - Section focus: Why Codex can stay coherent on long tasks
+  - This is not only “models got smarter.” The practical change is that agents can stay coherent for longer, complete larger chunks of work end-to-end, and recover from errors without losing the thread.
 
 ## Topic: automation
 
@@ -90,10 +90,10 @@ It is not constitutional guidance and does not silently override `AGENTS.md` or 
 - Blog card date: Mar 11
 - Summary: Five stories from developers building agentic products with the Responses API in its first year.
 - Guidance:
-  - One year ago, we introduced the Responses API — a foundation for developers and enterprises to build useful and reliable agents. Equipping models with a set of hosted tools allowed AI to evolve from chat assistants to systems that can take action on your behalf. Today, the Responses API supports a number of tools to po
   - Agent behavior monitoring
   - One year ago, we introduced the Responses API — a foundation for developers and enterprises to build useful and reliable agents.
   - Tracking behavior changes across agent versions
+  - Raindrop is the monitoring platform behind the world’s most ambitious AI companies to catch when their agents go off the rails in production.
 
 ### Using skills to accelerate OSS maintenance | OpenAI Developers
 
@@ -105,8 +105,8 @@ It is not constitutional guidance and does not silently override `AGENTS.md` or 
 - Guidance:
   - repo-local skills in .agents/skills/
   - Repo-local skills, AGENTS.md , and GitHub Actions let us turn recurring engineering work, such as verification, release preparation, integration testing for examples, and PR review, into repeatable workflows.
-  - In these repos, we use skills to capture repository-specific workflows. A skill is a small package of operational knowledge: a SKILL.md manifest, plus optional scripts/ , references/ , and assets/ . The Codex customization docs describe why this works well: skills are a good fit for repeatable workflows because they ca
   - repository policy in AGENTS.md
+  - In these repos, we use skills to capture repository-specific workflows.
 
 ### Run long horizon tasks with Codex | OpenAI Developers
 
@@ -114,12 +114,12 @@ It is not constitutional guidance and does not silently override `AGENTS.md` or 
 - Relevance: high
 - Portability: portable
 - Blog card date: Feb 23
-- Summary: In September 2025, OpenAI introduced GPT-5-Codex as the first version of GPT-5 optimized for agentic coding. In December 2025, we launched 5.2 which was the moment that people began to believe that using autonomous coding agents could be reliable. In particular, we saw a huge jump in how long the model could reliably f
+- Summary: This was an experiment, not a production rollout. But it performed well on the parts that matter for long-horizon work: following the spec, staying on task, running verification, and repairing failures as it went.
 - Guidance:
-  - I wanted to stress-test that threshold. So I gave Codex a blank repo, full access, and one job: build a design tool from scratch. Then I let it run with GPT-5.3-Codex at “Extra High” reasoning. Codex ran for about 25 hours uninterrupted, used about 13M tokens, and generated about 30k lines of code.
-  - This was an experiment, not a production rollout. But it performed well on the parts that matter for long-horizon work: following the spec, staying on task, running verification, and repairing failures as it went.
   - These screenshots are useful because they make the core shift visible: agentic coding is increasingly about time horizon, not just one-shot intelligence.
   - Section focus: Takeaways for long-horizon Codex tasks
+  - Section focus: Why Codex can stay coherent on long tasks
+  - This is not only “models got smarter.” The practical change is that agents can stay coherent for longer, complete larger chunks of work end-to-end, and recover from errors without losing the thread.
 
 ## Topic: codex
 
@@ -131,10 +131,10 @@ It is not constitutional guidance and does not silently override `AGENTS.md` or 
 - Blog card date: Mar 11
 - Summary: Five stories from developers building agentic products with the Responses API in its first year.
 - Guidance:
-  - One year ago, we introduced the Responses API — a foundation for developers and enterprises to build useful and reliable agents. Equipping models with a set of hosted tools allowed AI to evolve from chat assistants to systems that can take action on your behalf. Today, the Responses API supports a number of tools to po
   - Agent behavior monitoring
   - One year ago, we introduced the Responses API — a foundation for developers and enterprises to build useful and reliable agents.
   - Tracking behavior changes across agent versions
+  - Raindrop is the monitoring platform behind the world’s most ambitious AI companies to catch when their agents go off the rails in production.
 
 ### Using skills to accelerate OSS maintenance | OpenAI Developers
 
@@ -146,8 +146,8 @@ It is not constitutional guidance and does not silently override `AGENTS.md` or 
 - Guidance:
   - repo-local skills in .agents/skills/
   - Repo-local skills, AGENTS.md , and GitHub Actions let us turn recurring engineering work, such as verification, release preparation, integration testing for examples, and PR review, into repeatable workflows.
-  - In these repos, we use skills to capture repository-specific workflows. A skill is a small package of operational knowledge: a SKILL.md manifest, plus optional scripts/ , references/ , and assets/ . The Codex customization docs describe why this works well: skills are a good fit for repeatable workflows because they ca
   - repository policy in AGENTS.md
+  - In these repos, we use skills to capture repository-specific workflows.
 
 ### Building frontend UIs with Codex and Figma | OpenAI Developers
 
@@ -159,8 +159,8 @@ It is not constitutional guidance and does not silently override `AGENTS.md` or 
 - Guidance:
   - One of the core use cases of the Figma MCP server is retrieving context from Figma files and using that context in code generation. The Figma MCP server can capture information from Figma Design, Make, and FigJam files and pass it to Codex as part of the building process.
   - The Figma MCP server can capture information from Figma Design, Make, and FigJam files and pass it to Codex as part of the building process.
-  - These selection URLs are linked directly to a frame or node on the Figma canvas. They could be a single element or a collection of components, but essentially it’s the source data that an agent will use for code generation. Selections can come from Figma Design, Make, or FigJam files. Once you have the URL, open Codex
-  - help me implement this Figma design in code, use my existing design system components as much as possible. Your browser does not support the video tag. Prompts like this will instruct the agent to call the get_design_context tool from the Figma MCP server. This tool helps extract critical design information from Figma
+  - The Codex desktop application is purpose-built for agentic coding.
+  - Decide to either create a new Figma file or use an existing one.
 
 ### Run long horizon tasks with Codex | OpenAI Developers
 
@@ -168,28 +168,28 @@ It is not constitutional guidance and does not silently override `AGENTS.md` or 
 - Relevance: high
 - Portability: portable
 - Blog card date: Feb 23
-- Summary: In September 2025, OpenAI introduced GPT-5-Codex as the first version of GPT-5 optimized for agentic coding. In December 2025, we launched 5.2 which was the moment that people began to believe that using autonomous coding agents could be reliable. In particular, we saw a huge jump in how long the model could reliably f
+- Summary: This was an experiment, not a production rollout. But it performed well on the parts that matter for long-horizon work: following the spec, staying on task, running verification, and repairing failures as it went.
 - Guidance:
-  - I wanted to stress-test that threshold. So I gave Codex a blank repo, full access, and one job: build a design tool from scratch. Then I let it run with GPT-5.3-Codex at “Extra High” reasoning. Codex ran for about 25 hours uninterrupted, used about 13M tokens, and generated about 30k lines of code.
-  - This was an experiment, not a production rollout. But it performed well on the parts that matter for long-horizon work: following the spec, staying on task, running verification, and repairing failures as it went.
   - These screenshots are useful because they make the core shift visible: agentic coding is increasingly about time horizon, not just one-shot intelligence.
   - Section focus: Takeaways for long-horizon Codex tasks
-
-### Shell + Skills + Compaction: Tips for long-running agents that do real work | OpenAI Developers
-
-- Source: https://developers.openai.com/blog/skills-shell-tips
-- Relevance: high
-- Portability: portable
-- Blog card date: Feb 11
-- Summary: Practical patterns for building with skills, hosted shell, and server-side compaction in the Responses API.
-- Guidance:
-  - Skills (aligned with the Agent Skills open standard): reusable, versioned instructions you can mount into containers so that agents can execute tasks more reliably.
-  - We’re shifting from single-turn assistants to long-running agents that handle real knowledge work: reading large datasets, updating files, and writing apps.
-  - Based on developer feedback and our own experience building Codex and internal agents, we’re releasing a new set of agentic primitives that make long-horizon work more practical:
-  - This post focuses on the nonobvious tips and patterns we’ve seen work best so far, both in our work at OpenAI and in production at Glean, an early skills customer.
+  - Section focus: Why Codex can stay coherent on long tasks
+  - This is not only “models got smarter.” The practical change is that agents can stay coherent for longer, complete larger chunks of work end-to-end, and recover from errors without losing the thread.
 
 ## Topic: context
 
+### How Perplexity Brought Voice Search to Millions Using the Realtime API | OpenAI Developers
+
+- Source: https://developers.openai.com/blog/realtime-perplexity-computer
+- Relevance: high
+- Portability: portable
+- Blog card date: Mar 25
+- Summary: Lessons from how Perplexity Computer's voice agent was built with the Realtime API.
+- Guidance:
+  - For Perplexity Comet , our agentic browser, and Perplexity Computer , our powerful, general-purpose digital worker, a big part of that was making these fully usable through voice.
+  - Long-form content, especially dense multi-hour podcasts, was one of our clearest tests of context management.
+  - One other subtle thing we learned was that not all context should enter the model in the same way.
+  - One of our internal test cases was a noisy San Francisco bar because that felt like a real product moment.
+
 ### Designing delightful frontends with GPT-5.4 | OpenAI Developers
 
 - Source: https://developers.openai.com/blog/designing-delightful-frontends-with-gpt-5-4
@@ -211,10 +211,10 @@ It is not constitutional guidance and does not silently override `AGENTS.md` or 
 - Blog card date: Mar 11
 - Summary: Five stories from developers building agentic products with the Responses API in its first year.
 - Guidance:
-  - One year ago, we introduced the Responses API — a foundation for developers and enterprises to build useful and reliable agents. Equipping models with a set of hosted tools allowed AI to evolve from chat assistants to systems that can take action on your behalf. Today, the Responses API supports a number of tools to po
   - Agent behavior monitoring
   - One year ago, we introduced the Responses API — a foundation for developers and enterprises to build useful and reliable agents.
   - Tracking behavior changes across agent versions
+  - Raindrop is the monitoring platform behind the world’s most ambitious AI companies to catch when their agents go off the rails in production.
 
 ### Using skills to accelerate OSS maintenance | OpenAI Developers
 
@@ -226,8 +226,8 @@ It is not constitutional guidance and does not silently override `AGENTS.md` or 
 - Guidance:
   - repo-local skills in .agents/skills/
   - Repo-local skills, AGENTS.md , and GitHub Actions let us turn recurring engineering work, such as verification, release preparation, integration testing for examples, and PR review, into repeatable workflows.
-  - In these repos, we use skills to capture repository-specific workflows. A skill is a small package of operational knowledge: a SKILL.md manifest, plus optional scripts/ , references/ , and assets/ . The Codex customization docs describe why this works well: skills are a good fit for repeatable workflows because they ca
   - repository policy in AGENTS.md
+  - In these repos, we use skills to capture repository-specific workflows.
 
 ### Building frontend UIs with Codex and Figma | OpenAI Developers
 
@@ -239,8 +239,8 @@ It is not constitutional guidance and does not silently override `AGENTS.md` or 
 - Guidance:
   - One of the core use cases of the Figma MCP server is retrieving context from Figma files and using that context in code generation. The Figma MCP server can capture information from Figma Design, Make, and FigJam files and pass it to Codex as part of the building process.
   - The Figma MCP server can capture information from Figma Design, Make, and FigJam files and pass it to Codex as part of the building process.
-  - These selection URLs are linked directly to a frame or node on the Figma canvas. They could be a single element or a collection of components, but essentially it’s the source data that an agent will use for code generation. Selections can come from Figma Design, Make, or FigJam files. Once you have the URL, open Codex
-  - help me implement this Figma design in code, use my existing design system components as much as possible. Your browser does not support the video tag. Prompts like this will instruct the agent to call the get_design_context tool from the Figma MCP server. This tool helps extract critical design information from Figma
+  - The Codex desktop application is purpose-built for agentic coding.
+  - Decide to either create a new Figma file or use an existing one.
 
 ### Run long horizon tasks with Codex | OpenAI Developers
 
@@ -248,28 +248,28 @@ It is not constitutional guidance and does not silently override `AGENTS.md` or 
 - Relevance: high
 - Portability: portable
 - Blog card date: Feb 23
-- Summary: In September 2025, OpenAI introduced GPT-5-Codex as the first version of GPT-5 optimized for agentic coding. In December 2025, we launched 5.2 which was the moment that people began to believe that using autonomous coding agents could be reliable. In particular, we saw a huge jump in how long the model could reliably f
+- Summary: This was an experiment, not a production rollout. But it performed well on the parts that matter for long-horizon work: following the spec, staying on task, running verification, and repairing failures as it went.
 - Guidance:
-  - I wanted to stress-test that threshold. So I gave Codex a blank repo, full access, and one job: build a design tool from scratch. Then I let it run with GPT-5.3-Codex at “Extra High” reasoning. Codex ran for about 25 hours uninterrupted, used about 13M tokens, and generated about 30k lines of code.
-  - This was an experiment, not a production rollout. But it performed well on the parts that matter for long-horizon work: following the spec, staying on task, running verification, and repairing failures as it went.
   - These screenshots are useful because they make the core shift visible: agentic coding is increasingly about time horizon, not just one-shot intelligence.
   - Section focus: Takeaways for long-horizon Codex tasks
-
-### Shell + Skills + Compaction: Tips for long-running agents that do real work | OpenAI Developers
-
-- Source: https://developers.openai.com/blog/skills-shell-tips
-- Relevance: high
-- Portability: portable
-- Blog card date: Feb 11
-- Summary: Practical patterns for building with skills, hosted shell, and server-side compaction in the Responses API.
-- Guidance:
-  - Skills (aligned with the Agent Skills open standard): reusable, versioned instructions you can mount into containers so that agents can execute tasks more reliably.
-  - We’re shifting from single-turn assistants to long-running agents that handle real knowledge work: reading large datasets, updating files, and writing apps.
-  - Based on developer feedback and our own experience building Codex and internal agents, we’re releasing a new set of agentic primitives that make long-horizon work more practical:
-  - This post focuses on the nonobvious tips and patterns we’ve seen work best so far, both in our work at OpenAI and in production at Glean, an early skills customer.
+  - Section focus: Why Codex can stay coherent on long tasks
+  - This is not only “models got smarter.” The practical change is that agents can stay coherent for longer, complete larger chunks of work end-to-end, and recover from errors without losing the thread.
 
 ## Topic: evals
 
+### How Perplexity Brought Voice Search to Millions Using the Realtime API | OpenAI Developers
+
+- Source: https://developers.openai.com/blog/realtime-perplexity-computer
+- Relevance: high
+- Portability: portable
+- Blog card date: Mar 25
+- Summary: Lessons from how Perplexity Computer's voice agent was built with the Realtime API.
+- Guidance:
+  - For Perplexity Comet , our agentic browser, and Perplexity Computer , our powerful, general-purpose digital worker, a big part of that was making these fully usable through voice.
+  - Long-form content, especially dense multi-hour podcasts, was one of our clearest tests of context management.
+  - One other subtle thing we learned was that not all context should enter the model in the same way.
+  - One of our internal test cases was a noisy San Francisco bar because that felt like a real product moment.
+
 ### Designing delightful frontends with GPT-5.4 | OpenAI Developers
 
 - Source: https://developers.openai.com/blog/designing-delightful-frontends-with-gpt-5-4
@@ -291,10 +291,10 @@ It is not constitutional guidance and does not silently override `AGENTS.md` or 
 - Blog card date: Mar 11
 - Summary: Five stories from developers building agentic products with the Responses API in its first year.
 - Guidance:
-  - One year ago, we introduced the Responses API — a foundation for developers and enterprises to build useful and reliable agents. Equipping models with a set of hosted tools allowed AI to evolve from chat assistants to systems that can take action on your behalf. Today, the Responses API supports a number of tools to po
   - Agent behavior monitoring
   - One year ago, we introduced the Responses API — a foundation for developers and enterprises to build useful and reliable agents.
   - Tracking behavior changes across agent versions
+  - Raindrop is the monitoring platform behind the world’s most ambitious AI companies to catch when their agents go off the rails in production.
 
 ### Using skills to accelerate OSS maintenance | OpenAI Developers
 
@@ -306,8 +306,8 @@ It is not constitutional guidance and does not silently override `AGENTS.md` or 
 - Guidance:
   - repo-local skills in .agents/skills/
   - Repo-local skills, AGENTS.md , and GitHub Actions let us turn recurring engineering work, such as verification, release preparation, integration testing for examples, and PR review, into repeatable workflows.
-  - In these repos, we use skills to capture repository-specific workflows. A skill is a small package of operational knowledge: a SKILL.md manifest, plus optional scripts/ , references/ , and assets/ . The Codex customization docs describe why this works well: skills are a good fit for repeatable workflows because they ca
   - repository policy in AGENTS.md
+  - In these repos, we use skills to capture repository-specific workflows.
 
 ### Run long horizon tasks with Codex | OpenAI Developers
 
@@ -315,14 +315,27 @@ It is not constitutional guidance and does not silently override `AGENTS.md` or 
 - Relevance: high
 - Portability: portable
 - Blog card date: Feb 23
-- Summary: In September 2025, OpenAI introduced GPT-5-Codex as the first version of GPT-5 optimized for agentic coding. In December 2025, we launched 5.2 which was the moment that people began to believe that using autonomous coding agents could be reliable. In particular, we saw a huge jump in how long the model could reliably f
+- Summary: This was an experiment, not a production rollout. But it performed well on the parts that matter for long-horizon work: following the spec, staying on task, running verification, and repairing failures as it went.
 - Guidance:
-  - I wanted to stress-test that threshold. So I gave Codex a blank repo, full access, and one job: build a design tool from scratch. Then I let it run with GPT-5.3-Codex at “Extra High” reasoning. Codex ran for about 25 hours uninterrupted, used about 13M tokens, and generated about 30k lines of code.
-  - This was an experiment, not a production rollout. But it performed well on the parts that matter for long-horizon work: following the spec, staying on task, running verification, and repairing failures as it went.
   - These screenshots are useful because they make the core shift visible: agentic coding is increasingly about time horizon, not just one-shot intelligence.
   - Section focus: Takeaways for long-horizon Codex tasks
+  - Section focus: Why Codex can stay coherent on long tasks
+  - This is not only “models got smarter.” The practical change is that agents can stay coherent for longer, complete larger chunks of work end-to-end, and recover from errors without losing the thread.
 
 ## Topic: frontend
+
+### How Perplexity Brought Voice Search to Millions Using the Realtime API | OpenAI Developers
+
+- Source: https://developers.openai.com/blog/realtime-perplexity-computer
+- Relevance: high
+- Portability: portable
+- Blog card date: Mar 25
+- Summary: Lessons from how Perplexity Computer's voice agent was built with the Realtime API.
+- Guidance:
+  - For Perplexity Comet , our agentic browser, and Perplexity Computer , our powerful, general-purpose digital worker, a big part of that was making these fully usable through voice.
+  - Long-form content, especially dense multi-hour podcasts, was one of our clearest tests of context management.
+  - One other subtle thing we learned was that not all context should enter the model in the same way.
+  - One of our internal test cases was a noisy San Francisco bar because that felt like a real product moment.
 
 ### Designing delightful frontends with GPT-5.4 | OpenAI Developers
 
@@ -345,10 +358,10 @@ It is not constitutional guidance and does not silently override `AGENTS.md` or 
 - Blog card date: Mar 11
 - Summary: Five stories from developers building agentic products with the Responses API in its first year.
 - Guidance:
-  - One year ago, we introduced the Responses API — a foundation for developers and enterprises to build useful and reliable agents. Equipping models with a set of hosted tools allowed AI to evolve from chat assistants to systems that can take action on your behalf. Today, the Responses API supports a number of tools to po
   - Agent behavior monitoring
   - One year ago, we introduced the Responses API — a foundation for developers and enterprises to build useful and reliable agents.
   - Tracking behavior changes across agent versions
+  - Raindrop is the monitoring platform behind the world’s most ambitious AI companies to catch when their agents go off the rails in production.
 
 ### Using skills to accelerate OSS maintenance | OpenAI Developers
 
@@ -360,8 +373,8 @@ It is not constitutional guidance and does not silently override `AGENTS.md` or 
 - Guidance:
   - repo-local skills in .agents/skills/
   - Repo-local skills, AGENTS.md , and GitHub Actions let us turn recurring engineering work, such as verification, release preparation, integration testing for examples, and PR review, into repeatable workflows.
-  - In these repos, we use skills to capture repository-specific workflows. A skill is a small package of operational knowledge: a SKILL.md manifest, plus optional scripts/ , references/ , and assets/ . The Codex customization docs describe why this works well: skills are a good fit for repeatable workflows because they ca
   - repository policy in AGENTS.md
+  - In these repos, we use skills to capture repository-specific workflows.
 
 ### Building frontend UIs with Codex and Figma | OpenAI Developers
 
@@ -373,8 +386,8 @@ It is not constitutional guidance and does not silently override `AGENTS.md` or 
 - Guidance:
   - One of the core use cases of the Figma MCP server is retrieving context from Figma files and using that context in code generation. The Figma MCP server can capture information from Figma Design, Make, and FigJam files and pass it to Codex as part of the building process.
   - The Figma MCP server can capture information from Figma Design, Make, and FigJam files and pass it to Codex as part of the building process.
-  - These selection URLs are linked directly to a frame or node on the Figma canvas. They could be a single element or a collection of components, but essentially it’s the source data that an agent will use for code generation. Selections can come from Figma Design, Make, or FigJam files. Once you have the URL, open Codex
-  - help me implement this Figma design in code, use my existing design system components as much as possible. Your browser does not support the video tag. Prompts like this will instruct the agent to call the get_design_context tool from the Figma MCP server. This tool helps extract critical design information from Figma
+  - The Codex desktop application is purpose-built for agentic coding.
+  - Decide to either create a new Figma file or use an existing one.
 
 ### Run long horizon tasks with Codex | OpenAI Developers
 
@@ -382,25 +395,12 @@ It is not constitutional guidance and does not silently override `AGENTS.md` or 
 - Relevance: high
 - Portability: portable
 - Blog card date: Feb 23
-- Summary: In September 2025, OpenAI introduced GPT-5-Codex as the first version of GPT-5 optimized for agentic coding. In December 2025, we launched 5.2 which was the moment that people began to believe that using autonomous coding agents could be reliable. In particular, we saw a huge jump in how long the model could reliably f
+- Summary: This was an experiment, not a production rollout. But it performed well on the parts that matter for long-horizon work: following the spec, staying on task, running verification, and repairing failures as it went.
 - Guidance:
-  - I wanted to stress-test that threshold. So I gave Codex a blank repo, full access, and one job: build a design tool from scratch. Then I let it run with GPT-5.3-Codex at “Extra High” reasoning. Codex ran for about 25 hours uninterrupted, used about 13M tokens, and generated about 30k lines of code.
-  - This was an experiment, not a production rollout. But it performed well on the parts that matter for long-horizon work: following the spec, staying on task, running verification, and repairing failures as it went.
   - These screenshots are useful because they make the core shift visible: agentic coding is increasingly about time horizon, not just one-shot intelligence.
   - Section focus: Takeaways for long-horizon Codex tasks
-
-### Shell + Skills + Compaction: Tips for long-running agents that do real work | OpenAI Developers
-
-- Source: https://developers.openai.com/blog/skills-shell-tips
-- Relevance: high
-- Portability: portable
-- Blog card date: Feb 11
-- Summary: Practical patterns for building with skills, hosted shell, and server-side compaction in the Responses API.
-- Guidance:
-  - Skills (aligned with the Agent Skills open standard): reusable, versioned instructions you can mount into containers so that agents can execute tasks more reliably.
-  - We’re shifting from single-turn assistants to long-running agents that handle real knowledge work: reading large datasets, updating files, and writing apps.
-  - Based on developer feedback and our own experience building Codex and internal agents, we’re releasing a new set of agentic primitives that make long-horizon work more practical:
-  - This post focuses on the nonobvious tips and patterns we’ve seen work best so far, both in our work at OpenAI and in production at Glean, an early skills customer.
+  - Section focus: Why Codex can stay coherent on long tasks
+  - This is not only “models got smarter.” The practical change is that agents can stay coherent for longer, complete larger chunks of work end-to-end, and recover from errors without losing the thread.
 
 ## Topic: safety
 
@@ -442,8 +442,8 @@ It is not constitutional guidance and does not silently override `AGENTS.md` or 
 - Guidance:
   - repo-local skills in .agents/skills/
   - Repo-local skills, AGENTS.md , and GitHub Actions let us turn recurring engineering work, such as verification, release preparation, integration testing for examples, and PR review, into repeatable workflows.
-  - In these repos, we use skills to capture repository-specific workflows. A skill is a small package of operational knowledge: a SKILL.md manifest, plus optional scripts/ , references/ , and assets/ . The Codex customization docs describe why this works well: skills are a good fit for repeatable workflows because they ca
   - repository policy in AGENTS.md
+  - In these repos, we use skills to capture repository-specific workflows.
 
 ### Run long horizon tasks with Codex | OpenAI Developers
 
@@ -451,23 +451,10 @@ It is not constitutional guidance and does not silently override `AGENTS.md` or 
 - Relevance: high
 - Portability: portable
 - Blog card date: Feb 23
-- Summary: In September 2025, OpenAI introduced GPT-5-Codex as the first version of GPT-5 optimized for agentic coding. In December 2025, we launched 5.2 which was the moment that people began to believe that using autonomous coding agents could be reliable. In particular, we saw a huge jump in how long the model could reliably f
+- Summary: This was an experiment, not a production rollout. But it performed well on the parts that matter for long-horizon work: following the spec, staying on task, running verification, and repairing failures as it went.
 - Guidance:
-  - I wanted to stress-test that threshold. So I gave Codex a blank repo, full access, and one job: build a design tool from scratch. Then I let it run with GPT-5.3-Codex at “Extra High” reasoning. Codex ran for about 25 hours uninterrupted, used about 13M tokens, and generated about 30k lines of code.
-  - This was an experiment, not a production rollout. But it performed well on the parts that matter for long-horizon work: following the spec, staying on task, running verification, and repairing failures as it went.
   - These screenshots are useful because they make the core shift visible: agentic coding is increasingly about time horizon, not just one-shot intelligence.
   - Section focus: Takeaways for long-horizon Codex tasks
-
-### Shell + Skills + Compaction: Tips for long-running agents that do real work | OpenAI Developers
-
-- Source: https://developers.openai.com/blog/skills-shell-tips
-- Relevance: high
-- Portability: portable
-- Blog card date: Feb 11
-- Summary: Practical patterns for building with skills, hosted shell, and server-side compaction in the Responses API.
-- Guidance:
-  - Skills (aligned with the Agent Skills open standard): reusable, versioned instructions you can mount into containers so that agents can execute tasks more reliably.
-  - We’re shifting from single-turn assistants to long-running agents that handle real knowledge work: reading large datasets, updating files, and writing apps.
-  - Based on developer feedback and our own experience building Codex and internal agents, we’re releasing a new set of agentic primitives that make long-horizon work more practical:
-  - This post focuses on the nonobvious tips and patterns we’ve seen work best so far, both in our work at OpenAI and in production at Glean, an early skills customer.
+  - Section focus: Why Codex can stay coherent on long tasks
+  - This is not only “models got smarter.” The practical change is that agents can stay coherent for longer, complete larger chunks of work end-to-end, and recover from errors without losing the thread.
 

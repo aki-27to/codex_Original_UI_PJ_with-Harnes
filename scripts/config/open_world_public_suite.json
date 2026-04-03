@@ -1,0 +1,69 @@
+{
+  "suiteId": "open_world_public_suite",
+  "description": "Open-world public readiness tasks spanning economic and long-horizon work proxies.",
+  "cases": [
+    {
+      "id": "ow-public-coding-release-triage",
+      "title": "Open-world coding triage",
+      "familyId": "coding",
+      "difficultyTier": "advanced",
+      "modalityTags": ["code", "logs"],
+      "structureTags": ["multi_step", "open_world"],
+      "orchestrationMode": "multi_agent_required",
+      "objective": "Triage a production-like bug report, identify likely fix scope, and produce a bounded remediation summary.",
+      "acceptanceCriteria": [
+        "produce probable root cause",
+        "provide bounded fix plan",
+        "include verifier-ready summary"
+      ],
+      "valueProxy": "engineering_hours_saved",
+      "simulatedDurationMinutes": 420,
+      "payload": {
+        "kind": "open_world_coding",
+        "requiredDeliverable": "release triage summary"
+      }
+    },
+    {
+      "id": "ow-public-research-market-brief",
+      "title": "Open-world research market brief",
+      "familyId": "research",
+      "difficultyTier": "advanced",
+      "modalityTags": ["web", "docs"],
+      "structureTags": ["multi_step", "open_world"],
+      "orchestrationMode": "multi_agent_required",
+      "objective": "Produce a bounded market brief with cited assumptions and explicit gaps for human review.",
+      "acceptanceCriteria": [
+        "bounded market brief produced",
+        "assumptions and gaps listed",
+        "handoff summary produced"
+      ],
+      "valueProxy": "analysis_hours_saved",
+      "simulatedDurationMinutes": 390,
+      "payload": {
+        "kind": "open_world_research",
+        "requiredDeliverable": "market brief"
+      }
+    },
+    {
+      "id": "ow-public-ops-rollout-plan",
+      "title": "Open-world operations rollout plan",
+      "familyId": "operations",
+      "difficultyTier": "expert",
+      "modalityTags": ["spreadsheet", "doc"],
+      "structureTags": ["multi_step", "open_world", "economically_relevant"],
+      "orchestrationMode": "single_agent_fallback",
+      "objective": "Build a rollout plan for a bounded operations migration with checkpoints, risks, and operator actions.",
+      "acceptanceCriteria": [
+        "rollout plan generated",
+        "risks and mitigations listed",
+        "operator handoff included"
+      ],
+      "valueProxy": "operator_minutes_reduced",
+      "simulatedDurationMinutes": 360,
+      "payload": {
+        "kind": "open_world_operations",
+        "requiredDeliverable": "rollout plan"
+      }
+    }
+  ]
+}

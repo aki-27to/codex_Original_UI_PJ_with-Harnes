@@ -182,6 +182,26 @@ function testSkippedForSmokeProfile() {
   assert(verdict.violation === 0, "guard should not violate in smoke profile");
 }
 
+function testSkippedForConversationProfile() {
+  const verdict = evaluateParentDispatchGuard({
+    mode: "enforce",
+    parentAgents: ["default", "intake", "release_manager"],
+    agentName: "default",
+    executionProfile: "conversation-app-server",
+    finalStatus: "completed",
+    fileChanges: 1,
+    dispatchCount: 0,
+    dispatchSuccessCount: 0,
+    dispatchFailureCount: 0,
+    collabCalls: 0,
+    attempt: 0,
+    maxRetries: 1,
+  });
+  assert(verdict.required === 0, "guard should not require dispatch for conversation-app-server profile");
+  assert(verdict.violation === 0, "guard should not violate for conversation-app-server profile");
+  assert(verdict.guardExemptProfile === 1, "conversation-app-server profile should be marked exempt");
+}
+
 function testRetryPromptBuilder() {
   const prompt = buildParentDispatchGuardRetryPrompt({
     originalPrompt: "Implement feature X.",
@@ -208,6 +228,7 @@ function run() {
     ["skip read-only MCP inspection turn", testReadOnlyMcpCallsDoNotRequireDispatch],
     ["require dispatch when plan expects child work", testRequiresDispatchWhenPlanStillExpectsChildWork],
     ["skip for smoke profile", testSkippedForSmokeProfile],
+    ["skip for conversation profile", testSkippedForConversationProfile],
     ["retry prompt builder", testRetryPromptBuilder],
   ];
   let passed = 0;

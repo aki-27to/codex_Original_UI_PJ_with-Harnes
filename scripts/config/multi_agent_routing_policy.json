@@ -1,0 +1,34 @@
+{
+  "schema": "bounded-multi-agent-routing-policy.v1",
+  "version": "2026-03-30.r1",
+  "fallback": {
+    "maxAcceptanceItems": 1,
+    "maxSteps": 2,
+    "smallTaskFamilies": [
+      "planning_design"
+    ]
+  },
+  "familyRoleSequences": {
+    "deterministic_code": [
+      "planner",
+      "executor",
+      "verifier"
+    ],
+    "research_analysis": [
+      "planner",
+      "researcher",
+      "verifier"
+    ],
+    "planning_design": [
+      "planner",
+      "researcher",
+      "verifier"
+    ]
+  },
+  "replanTriggers": [
+    "child_verifier_failed",
+    "child_denied_action",
+    "child_budget_overflow",
+    "orphan_child_detected"
+  ]
+}

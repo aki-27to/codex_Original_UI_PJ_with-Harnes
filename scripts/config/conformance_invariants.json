@@ -1,6 +1,6 @@
 {
   "schema": "conformance-invariants.v1",
-  "version": "2026-03-08.r1",
+  "version": "2026-04-03.r2",
   "sourceOfTruthHierarchy": [
     "constitution",
     "machine_readable_contracts",
@@ -31,9 +31,9 @@
       "statement": "Retired worker must not be used in normal runtime."
     },
     {
-      "id": "execution.blocked_user_input_posture",
+      "id": "execution.autonomy_first_user_input_posture",
       "plane": "execution",
-      "statement": "Blocked request-user-input posture must never be violated."
+      "statement": "Heuristic approval-boundary markers alone must not force interruption; autonomy-first request-user-input posture is the default outside explicit strict lanes."
     },
     {
       "id": "execution.task_outcome_required",

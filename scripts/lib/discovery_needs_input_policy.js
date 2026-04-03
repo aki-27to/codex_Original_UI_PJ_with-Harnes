@@ -30,17 +30,13 @@ function getPlanningSignals(planningContext){
 
 function hasExplicitDiscoveryNeedsInputSignal(planningContext){
   const {requirement,selectionSignals,planningSignals}=getPlanningSignals(planningContext);
-  const approvalBoundaryCount=Math.max(
-    toCount(selectionSignals.approvalBoundaryCount),
-    toCount(planningSignals.approvalBoundaryCount),
-    Array.isArray(requirement.approvalBoundaryItems)?requirement.approvalBoundaryItems.length:0
-  );
   return(
     toFlag(selectionSignals.explicitUserDecisionRequired)||
     toFlag(planningSignals.explicitUserDecisionRequired)||
-    toFlag(selectionSignals.approvalBoundaryTouched)||
-    toFlag(planningSignals.approvalBoundaryTouched)||
-    approvalBoundaryCount>0
+    (
+      (Array.isArray(requirement.approvalBoundaryItems)?requirement.approvalBoundaryItems.length:0)>0
+      && (toFlag(selectionSignals.explicitUserDecisionRequired)||toFlag(planningSignals.explicitUserDecisionRequired))
+    )
   );
 }
 

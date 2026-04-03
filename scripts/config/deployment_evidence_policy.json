@@ -1,0 +1,24 @@
+{
+  "schema": "deployment-evidence-policy.v1",
+  "version": "2026-03-31.r1",
+  "evidenceRoot": "logs/archive/raw/deployment_evidence",
+  "registryPath": "logs/archive/raw/deployment_evidence/evidence_registry.json",
+  "importHistoryPath": "logs/archive/raw/deployment_evidence/import_history.jsonl",
+  "telemetryHistoryPath": "logs/archive/raw/deployment_evidence/telemetry_history.jsonl",
+  "allowedObservationKinds": [
+    "production_like_observed",
+    "simulation_fixture",
+    "lab_internal",
+    "mock_fixture"
+  ],
+  "minimumObservedCountForPublicClaim": 3,
+  "minimumBlackboxObservedCountForPublicClaim": 2,
+  "requiredMetrics": [
+    "successRate",
+    "rollbackSuccessRate",
+    "mttrMinutes",
+    "incidentRate",
+    "variance",
+    "ci95HalfWidth"
+  ]
+}

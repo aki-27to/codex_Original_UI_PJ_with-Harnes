@@ -6,7 +6,12 @@ const fs = require("fs");
 const path = require("path");
 
 const workspaceRoot = path.resolve(__dirname, "..");
+const originalRequestUserInputPolicy = process.env.CODEX_REQUEST_USER_INPUT_POLICY;
+delete process.env.CODEX_REQUEST_USER_INPUT_POLICY;
 const server = require(path.join(workspaceRoot, "server.js"));
+if (typeof originalRequestUserInputPolicy === "string") {
+  process.env.CODEX_REQUEST_USER_INPUT_POLICY = originalRequestUserInputPolicy;
+}
 
 function readJson(filePath) {
   return JSON.parse(fs.readFileSync(filePath, "utf8"));
@@ -81,6 +86,9 @@ function main() {
   assert.strictEqual(operatorSummary.reviewLoadStatus, reviewLoadStatus, "operator reviewLoadStatus must match review summary");
   assert.strictEqual(operatorSummary.topLineDecision, recommendedDecision, "operator topLineDecision must be derived from subordinate summaries");
   assert.strictEqual(operatorSummary.recommendedDecision, recommendedDecision, "operator recommendedDecision must align with subordinate summaries");
+  assert.strictEqual(operatorSummary.postureSummary.requestUserInputPolicy, "auto-default", "operator posture summary must expose the live autonomy-first request-user-input policy");
+  assert.strictEqual(operatorSummary.postureSummary.parentDispatchGuardMode, "enforce", "operator posture summary must expose the live parent dispatch guard mode");
+  assert.strictEqual(operatorSummary.postureSummary.defaultExecAgent, "default", "operator posture summary must expose the live default exec agent");
   assert.strictEqual(typeof reviewLoadSummary.outcomeConversionTimeMs, "number", "review_load_breakdown.outcomeConversionTimeMs must be preserved");
   assert.ok(Array.isArray(reviewLoadSummary.requiredEvidenceFailures), "review_load_breakdown.requiredEvidenceFailures must be preserved");
   assert.ok(Array.isArray(reviewLoadSummary.reviewerFindingSummary), "review_load_breakdown.reviewerFindingSummary must be preserved");
@@ -88,6 +96,7 @@ function main() {
 
   const designChecks = [
     "defaultExecAgentIsDefault",
+    "runtimeRequestUserInputPolicyAutonomyFirst",
     "requestUserInputPolicyBlocked",
     "parentDispatchGuardEnforced",
     "retiredWorkerNotRoutable",

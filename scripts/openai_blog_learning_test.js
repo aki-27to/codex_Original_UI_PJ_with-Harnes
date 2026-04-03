@@ -6,6 +6,7 @@ const fs = require("fs");
 const os = require("os");
 const path = require("path");
 const {
+  extractArticleInsights,
   buildRuntimeLearningSelection,
   buildRuntimePromptInjection,
   normalizeOpenAIBlogLearningPolicy,
@@ -77,6 +78,42 @@ function sampleLongHorizonArticleHtml() {
           <h2>Execution control</h2>
           <li>Keep an audit log of what the agent changed.</li>
           <li>Use verification after each checkpoint.</li>
+        </article>
+      </body>
+    </html>
+  `;
+}
+
+function sampleFigmaArticleHtmlWithVideoNoise() {
+  return `
+    <html>
+      <head>
+        <title>Building frontend UIs with Codex and Figma | OpenAI Developers</title>
+        <meta name="description" content="Use Codex and Figma to bring real, running interfaces into Figma and back into code.">
+      </head>
+      <body>
+        <article id="mainContent">
+          <p>One of the core use cases of the Figma MCP server is retrieving context from Figma files and using that context in code generation.</p>
+          <p>These selection URLs link directly to a frame or node on the canvas, which gives the agent concrete source data for code generation.</p>
+          <p>Help me implement this Figma design in code, use my existing design system components as much as possible. Your browser does not support the video tag. Prompts like this will instruct the agent to call the get_design_context tool from the Figma MCP server.</p>
+          <li>Reuse the existing design system components as much as possible.</li>
+        </article>
+      </body>
+    </html>
+  `;
+}
+
+function sampleArticleHtmlWithClippedSentence() {
+  return `
+    <html>
+      <head>
+        <title>Using skills to accelerate OSS maintenance | OpenAI Developers</title>
+      </head>
+      <body>
+        <article id="mainContent">
+          <p>Repo-local skills and repository policy let teams turn recurring engineering work into repeatable workflows.</p>
+          <p>The Codex customization docs describe why this works well: skills are a good fit for repeatable workflows because they ca</p>
+          <li>Repo-local skills in .agents/skills/</li>
         </article>
       </body>
     </html>
@@ -185,6 +222,22 @@ async function run() {
   assert.strictEqual(first.selfImprovement.gate.status, "PASS", "self improvement gate should pass fixture coverage");
   assert(first.selfImprovement.state.appliedHintCount >= 1, "primary lane should auto-apply at least one bounded runtime hint");
   assert.strictEqual(Number(first.selfImprovement.state.appliedFrontendQualityNoteCount) || 0, 0, "frontend quality notes should not auto-apply before reinforcement");
+  assert.strictEqual(String(first.selfImprovement.state.observationStatus || ""), "starved", "initial frontend-note lane should expose observation starvation");
+  assert.strictEqual(Number(first.selfImprovement.state.observationCount) || 0, 0, "initial state should start with zero recorded observations");
+  assert.strictEqual(Number(first.selfImprovement.state.readyHintCandidateCount) || 0, 2, "two runtime hint candidates should be ready on the fixture");
+  assert.strictEqual(Number(first.selfImprovement.state.awaitingObservationCount) || 0, 1, "frontend notes should wait for observations before promotion");
+  assert.strictEqual(Number(first.selfImprovement.state.rawAutoApplyChangeCount) || 0, 3, "raw auto-apply change count should include the waiting frontend note");
+  assert(first.selfImprovement.state.nextPriority && typeof first.selfImprovement.state.nextPriority === "object", "self improvement state should expose the next priority candidate");
+  assert(first.selfImprovement.state.nextPriority.reinforcement && typeof first.selfImprovement.state.nextPriority.reinforcement === "object", "next priority should expose reinforcement progress");
+  assert.strictEqual(Number(first.selfImprovement.state.nextPriority.reinforcement.requiredSuccesses) || 0, 2, "next priority should expose the required observation wins");
+  assert.strictEqual(Number(first.selfImprovement.state.nextPriority.reinforcement.remainingSuccesses) || 0, 2, "next priority should expose the remaining required wins");
+  assert.strictEqual(Number(first.selfImprovement.state.priorityBacklog[0].reinforcement.observedCount) || 0, 0, "priority backlog should preserve reinforcement progress details");
+  assert((Number(first.selfImprovement.gate.results[0].limits.maxPromptBlockChars) || 0) > 0, "gate results should surface prompt block budgets");
+  const figmaInsights = extractArticleInsights(sampleFigmaArticleHtmlWithVideoNoise(), 4);
+  assert(figmaInsights.guidance.every((entry) => !/video tag/i.test(entry)), "guidance extraction should drop embedded video-tag boilerplate");
+  assert(figmaInsights.guidance.some((entry) => /selection urls|design system components/i.test(entry)), "guidance extraction should keep the cleaner Figma-specific instructions");
+  const clippedInsights = extractArticleInsights(sampleArticleHtmlWithClippedSentence(), 4);
+  assert(clippedInsights.guidance.every((entry) => !/because they ca$/i.test(entry)), "guidance extraction should drop long open-ended fragments that end mid-sentence");
 
   const second = await runOpenAIBlogLearningCycle({
     policy,
@@ -208,6 +261,11 @@ async function run() {
   assert(runtime.selfImprovement && runtime.selfImprovement.gateStatus === "PASS", "runtime snapshot should surface self improvement gate status");
   assert(Number(runtime.selfImprovement.appliedHintCount) >= 1, "runtime snapshot should surface applied hint count");
   assert.strictEqual(Number(runtime.selfImprovement.appliedFrontendQualityNoteCount) || 0, 0, "runtime snapshot should not claim reinforced notes before observations");
+  assert.strictEqual(String(runtime.selfImprovement.observationStatus || ""), "starved", "runtime snapshot should expose observation starvation before reinforcement");
+  assert.strictEqual(Number(runtime.selfImprovement.awaitingObservationCount) || 0, 1, "runtime snapshot should surface waiting frontend note observations");
+  assert(runtime.selfImprovement.nextPriority && typeof runtime.selfImprovement.nextPriority === "object", "runtime snapshot should expose the next priority item");
+  assert.strictEqual(Number(runtime.selfImprovement.nextPriority.reinforcement.requiredSuccesses) || 0, 2, "runtime snapshot should preserve next-priority observation thresholds");
+  assert.strictEqual(Number(runtime.selfImprovement.nextPriority.reinforcement.remainingSuccesses) || 0, 2, "runtime snapshot should preserve next-priority remaining wins");
 
   const planningContext = {
     selection: {
@@ -252,7 +310,7 @@ async function run() {
   assert(Array.isArray(injection.matchedHintIds) && injection.matchedHintIds.length >= 1, "prompt injection should surface matched self improvement hints");
   assert(Array.isArray(injection.matchedFrontendQualityNoteIds) && injection.matchedFrontendQualityNoteIds.length === 0, "frontend quality notes should not appear before reinforcement");
 
-  recordOpenAIBlogLearningObservation({
+  const firstObservation = recordOpenAIBlogLearningObservation({
     policy,
     turnId: "turn-001",
     threadId: "thread-001",
@@ -264,6 +322,12 @@ async function run() {
     externalLearning: injection,
     now: new Date("2026-03-23T07:00:00.000Z"),
   });
+  assert(firstObservation && firstObservation.selfImprovement && firstObservation.selfImprovement.state && firstObservation.selfImprovement.state.nextPriority, "first observation should refresh self-improvement state");
+  assert.strictEqual(String(firstObservation.selfImprovement.state.observationStatus || ""), "collecting", "first observation should move the lane into collecting status");
+  assert.strictEqual(Number(firstObservation.selfImprovement.state.observationCount) || 0, 1, "first observation should increment the observation counter");
+  assert.strictEqual(Number(firstObservation.selfImprovement.state.awaitingObservationCount) || 0, 0, "first observation should clear the waiting-observation count");
+  assert.strictEqual(Number(firstObservation.selfImprovement.state.awaitingReinforcementCount) || 0, 1, "first observation should move the note into reinforcement wait");
+  assert.strictEqual(Number(firstObservation.selfImprovement.state.nextPriority.reinforcement.remainingSuccesses) || 0, 1, "first observation should reduce the remaining required wins");
   const reinforcementResult = recordOpenAIBlogLearningObservation({
     policy,
     turnId: "turn-002",
@@ -280,6 +344,7 @@ async function run() {
   assert(fs.existsSync(path.join(workspaceRoot, "output", "openai_blog_reinforcement_memory.json")), "reinforcement memory should be written");
   const reinforcedState = JSON.parse(fs.readFileSync(path.join(workspaceRoot, "output", "openai_blog_self_improvement_state.json"), "utf8"));
   assert(Number(reinforcedState.appliedFrontendQualityNoteCount) >= 1, "reinforced frontend quality note should auto-apply after repeated successful turns");
+  assert.strictEqual(Number(reinforcedState.awaitingObservationCount) || 0, 0, "reinforced state should clear waiting observation count after promotion");
   const reinforcedPlaybook = fs.readFileSync(path.join(workspaceRoot, "docs", "FRONTEND_QUALITY_PLAYBOOK.md"), "utf8");
   assert(/designing-delightful-frontends-with-gpt-5-4-frontend-quality/i.test(reinforcedPlaybook), "playbook should contain the promoted frontend quality note id");
   const reinforcedInjection = buildRuntimePromptInjection({
@@ -290,6 +355,187 @@ async function run() {
   });
   assert(Array.isArray(reinforcedInjection.matchedFrontendQualityNoteIds) && reinforcedInjection.matchedFrontendQualityNoteIds.length >= 1, "reinforced runtime injection should surface frontend quality note ids");
   assert(/Harness-stabilized frontend quality notes:/i.test(reinforcedInjection.prompt), "reinforced runtime injection should include the stabilized playbook block");
+
+  const noteOnlyRoot = makeTempWorkspace();
+  const noteOnlyPolicyPath = path.join(noteOnlyRoot, "scripts", "config", "openai_blog_learning_policy.json");
+  const noteOnlyPromotionPolicyPath = path.join(noteOnlyRoot, "scripts", "config", "self_improvement_promotion_policy.json");
+  fs.writeFileSync(noteOnlyPromotionPolicyPath, `${JSON.stringify({
+    schema: "self-improvement-promotion-policy.v1",
+    mode: "machine_guarded_autonomy",
+    autoApply: {
+      changeClasses: ["runtime_retrieval_hint", "frontend_quality_note"],
+      requireGatePass: true,
+      maxAutoApplyPerLane: 8,
+    },
+    proposalOnly: {
+      targets: ["docs/CONTEXT_MEMORY_POLICY.md", "scripts/config/eval_suite_default.json"],
+      changeClasses: ["memory_policy_note", "eval_extension", "operator_policy_note", "runtime_policy_tuning"],
+    },
+    blocked: {
+      targets: ["AGENTS.md", "scripts/lib/planning_mode_policy.js"],
+    },
+    evalGate: {
+      schema: "self-improvement-eval-gate.v1",
+      cases: [
+        {
+          caseId: "frontend_note_only",
+          agentName: "default",
+          taskFamily: "web_creative",
+          prompt: "Refine the design system, typography, and motion so the page feels coherent.",
+          requiredTopics: ["frontend"],
+          maxTopics: 4,
+          maxPromptBlockChars: 800,
+        },
+      ],
+    },
+  }, null, 2)}\n`, "utf8");
+  const noteOnlyPolicy = normalizeOpenAIBlogLearningPolicy({
+    schema: "openai-blog-learning-policy.v1",
+    source: {
+      name: "OpenAI Developers Blog",
+      indexUrl: "https://developers.openai.com/blog",
+      allowedHosts: ["developers.openai.com"],
+    },
+    cadence: {
+      intervalMinutes: 1440,
+      startupDelayMs: 1000,
+      requestTimeoutMs: 5000,
+      maxArticlesPerRun: 4,
+      maxGuidanceItemsPerArticle: 4,
+    },
+    governance: {
+      mode: "observe_propose_and_doc_sync",
+      autoPromoteDocs: true,
+      autoPromoteDocPath: "docs/OPENAI_DEVELOPER_LEARNINGS.md",
+      blockedApplyTargets: ["AGENTS.md"],
+      proposalOnlyTargets: ["docs/CONTEXT_MEMORY_POLICY.md", "scripts/config/eval_suite_default.json", "skills/web-designer-master/references/quality-gate.md", "docs/AGENT_OPERATING_RULES.md", "docs/AGENT_SKILL_MATRIX.md"],
+      frozenFoundationTargets: ["scripts/lib/planning_mode_policy.js"],
+    },
+    retrieval: {
+      maxTopicEntries: 4,
+      allowedTopics: ["frontend", "context", "automation", "skills", "agents", "evals"],
+    },
+    runtimeRetrieval: {
+      enabled: false,
+      shadowMode: false,
+      applyToAgents: ["default", "frontend_worker"],
+      applyToTaskFamilies: ["web_creative"],
+      topicPriority: ["frontend", "context"],
+      maxArticles: 0,
+      maxGuidanceItemsPerArticle: 0,
+      maxPromptBlockChars: 800,
+    },
+    stabilization: {
+      enabled: true,
+      applyToAgents: ["default", "frontend_worker"],
+      applyToTaskFamilies: ["web_creative"],
+      minSuccessfulTurnsForPromotion: 2,
+      minSuccessRate: 0.67,
+      maxPromotedNotes: 4,
+      maxGuidanceItemsPerNote: 3,
+      maxPromptNotes: 2,
+    },
+    selfImprovement: {
+      enabled: true,
+      promotionPolicyPath: noteOnlyPromotionPolicyPath,
+    },
+    artifacts: {
+      proposalIdPrefix: "openai-blog",
+    },
+    paths: {
+      selfImprovementProposalDir: "output/openai_blog_self_improvement_proposals",
+      selfImprovementStatePath: "output/openai_blog_self_improvement_state.json",
+      selfImprovementGatePath: "output/openai_blog_self_improvement_gate.json",
+      stabilizationMemoryPath: "output/openai_blog_reinforcement_memory.json",
+      stabilizationPlaybookPath: "docs/FRONTEND_QUALITY_PLAYBOOK.md",
+    },
+  }, { policyPath: noteOnlyPolicyPath });
+  const noteOnlyFetchText = async (url) => {
+    if (url === "https://developers.openai.com/blog") {
+      return `
+        <a class="resource-item" href="/blog/designing-delightful-frontends-with-gpt-5-4">
+          <img alt="Designing delightful frontends with GPT-5.4">
+          <div class="text-secondary">Mar 21</div>
+          <div class="line-clamp-2">Designing delightful frontends with GPT-5.4</div>
+          <p>Practical techniques for steering GPT-5.4 toward polished, production-ready frontend designs.</p>
+          <div class="text-sm text-secondary">Codex</div>
+        </a>
+      `;
+    }
+    if (url.includes("designing-delightful-frontends")) {
+      return sampleFrontendArticleHtml();
+    }
+    throw new Error(`unexpected url ${url}`);
+  };
+  const noteOnlyFirst = await runOpenAIBlogLearningCycle({
+    policy: noteOnlyPolicy,
+    fetchText: noteOnlyFetchText,
+    now: new Date("2026-03-24T00:00:00.000Z"),
+  });
+  assert.strictEqual(Number(noteOnlyFirst.selfImprovement.state.appliedHintCount) || 0, 0, "note-only lane should not apply runtime hints");
+  assert.strictEqual(Number(noteOnlyFirst.selfImprovement.state.awaitingObservationCount) || 0, 1, "note-only lane should wait for observations before promotion");
+  const noteOnlyPlanningContext = {
+    selection: {
+      taskFamily: "web_creative",
+      signals: {
+        specialistOwners: ["frontend_worker"],
+      },
+      selectedPlanningDepth: "STANDARD_PLANNING",
+      selectedAssuranceDepth: "STANDARD_ASSURANCE",
+    },
+    dispatchPlan: {
+      reviewerRequired: true,
+      testerRequired: true,
+      dispatches: [
+        { ownerAgent: "frontend_worker" },
+      ],
+    },
+    requirementContract: {
+      taskFamily: "web_creative",
+    },
+  };
+  recordOpenAIBlogLearningObservation({
+    policy: noteOnlyPolicy,
+    turnId: "note-turn-001",
+    threadId: "thread-note-001",
+    agentName: "default",
+    finalStatus: "completed",
+    taskOutcomeStatus: "COMPLETED",
+    planningContext: noteOnlyPlanningContext,
+    familyCompletionGate: { applies: true, status: "passed" },
+    externalLearning: {
+      articles: [{ articleId: "designing-delightful-frontends-with-gpt-5-4" }],
+      matchedTopics: ["frontend"],
+    },
+    now: new Date("2026-03-24T01:00:00.000Z"),
+  });
+  recordOpenAIBlogLearningObservation({
+    policy: noteOnlyPolicy,
+    turnId: "note-turn-002",
+    threadId: "thread-note-001",
+    agentName: "default",
+    finalStatus: "completed",
+    taskOutcomeStatus: "COMPLETED",
+    planningContext: noteOnlyPlanningContext,
+    familyCompletionGate: { applies: true, status: "passed" },
+    externalLearning: {
+      articles: [{ articleId: "designing-delightful-frontends-with-gpt-5-4" }],
+      matchedTopics: ["frontend"],
+    },
+    now: new Date("2026-03-24T02:00:00.000Z"),
+  });
+  const noteOnlyState = JSON.parse(fs.readFileSync(path.join(noteOnlyRoot, "output", "openai_blog_self_improvement_state.json"), "utf8"));
+  assert.strictEqual(Number(noteOnlyState.appliedHintCount) || 0, 0, "note-only lane should still have zero runtime hints after promotion");
+  assert(Number(noteOnlyState.appliedFrontendQualityNoteCount) >= 1, "note-only lane should auto-apply frontend notes after reinforcement");
+  assert.strictEqual(String(noteOnlyState.appliedDecision || ""), "applied", "note-only lane should mark the note promotion as applied");
+  const noteOnlyInjection = buildRuntimePromptInjection({
+    prompt: "Refine the design system typography and motion so the page feels coherent.",
+    agentName: "default",
+    planningContext: noteOnlyPlanningContext,
+    policy: noteOnlyPolicy,
+  });
+  assert.strictEqual(noteOnlyInjection.status, "applied", "note-only prompt injection should still apply after note promotion");
+  assert(Array.isArray(noteOnlyInjection.matchedFrontendQualityNoteIds) && noteOnlyInjection.matchedFrontendQualityNoteIds.length >= 1, "note-only prompt injection should expose promoted frontend note ids");
 
   console.log("[openai-blog-learning-test] PASS cycle, reinforcement, self-improvement gate, runtime snapshot, and runtime retrieval injection");
   console.log("PASS");

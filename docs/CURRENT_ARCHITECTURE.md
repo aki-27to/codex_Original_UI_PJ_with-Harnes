@@ -1,6 +1,6 @@
 ﻿# CURRENT_ARCHITECTURE
 
-Updated: 2026-03-23
+Updated: 2026-04-04
 
 ## 1) Purpose
 
@@ -10,6 +10,7 @@ This document is the active architecture spec for the Codex App Server integrati
 - Frozen design authority is `docs/HARNESS_CONSTITUTION.md`.
 - Narrative docs are subordinate to machine-readable contracts and runtime proof.
 - Human-oriented overview-first guide: `docs/AI_AGENT_HARNESS_DETAILED_DESIGN.html`. It explains the harness mechanism from big picture to deeper details and does not replace this spec or the machine-readable contracts.
+- AGI-oriented eval/promotion extension guide: `docs/AGI_V1_EVAL_FRAMEWORK.md`.
 
 ## 2) Active Execution Path
 
@@ -26,12 +27,12 @@ This document is the active architecture spec for the Codex App Server integrati
 - `web/01.HarnesUI/index.html`, `web/01.HarnesUI/app.js`, and `server.js` now treat `web_search` as an exact tri-state execution control (`cached | live | disabled`) instead of a UI-only boolean. The selected mode is sent through `POST /api/exec`, preserved in the execution recipe/runtime snapshots, used in thread-reset comparisons, and forwarded to `thread/start` config without collapsing `cached` and `live` into the same value.
 - `web/01.HarnesUI/index.html` and `web/01.HarnesUI/app.js` now keep the local model preset surface aligned with the current Codex lineup by exposing `gpt-5.4`, `gpt-5.4-mini`, and `gpt-5.3-codex` as first-class operator choices.
 - The main `web/01.HarnesUI/index.html` chat composer now auto-grows with multi-line input while keeping its empty-state height as the stable baseline, so clearing the field or resizing the window while expanded still returns the control to the original initial height.
-- Interactive Web UI submits now attach UI-generated idempotency keys and automatically retry bounded transient `/api/exec` submit failures, so short harness restarts or transport drops do not immediately surface as a final operator failure.
+- Interactive Web UI submits now attach UI-generated idempotency keys, automatically retry bounded transient `/api/exec` submit failures, and recover post-open stream disconnects from persisted idempotency/replay state when possible, so short transport drops or browser-visible disconnects do not immediately surface as a final operator failure.
 - `on-request` approval policy is now compatible with the non-interactive harness path: low-risk approval requests are auto-reviewed and accepted, while high-risk approval requests still fail closed instead of silently bypassing review.
 - `default` is the default exec agent and the canonical collaboration-first parent entrypoint for end-to-end tasks.
-- `start_codex_ui.bat` applies safer Windows launcher defaults only when env vars are unset:
+- `start_codex_ui.bat` applies autonomy-first Windows launcher defaults only when env vars are unset:
   - `CODEX_EXECUTION_PROFILE=full-runtime`
-  - `CODEX_REQUEST_USER_INPUT_POLICY=blocked`
+  - `CODEX_REQUEST_USER_INPUT_POLICY=auto-default`
   - `CODEX_AUTOMATIC_APPROVAL_REVIEW=1`
   - `CODEX_FAST_MODE_DEFAULT=0`
   - `CODEX_SERVER_RESTART_MAX_RETRIES=4`
@@ -40,7 +41,7 @@ This document is the active architecture spec for the Codex App Server integrati
   - `CODEX_PARENT_DISPATCH_GUARD_MODE=enforce`
   - `CODEX_PARENT_DISPATCH_GUARD_MAX_RETRIES=1`
 - The launcher now also keeps `node server.js` behind a restart loop with a bounded retry budget and stability window, so unexpected harness exits can recover without requiring an immediate manual relaunch.
-- Re-running `start_codex_ui.bat` now acts as a launcher-owned restart for the local harness on the configured UI port: if that port is already served by this harness, the launcher stops the existing listener first, starts a fresh `node server.js`, and owns the single browser auto-open so the latest source is reflected without duplicate UI windows.
+- Re-running `start_codex_ui.bat` now defaults to reusing an already-running local harness on the configured UI port instead of force-restarting it. Explicit restart mode still exists, but the launcher refuses to kill an existing listener while `/api/exec` work is active unless `CODEX_FORCE_ACTIVE_RESTART=1` is set, and it keeps browser auto-open launcher-owned so the latest source can still be reflected without duplicate UI windows.
 - `start_codex_ui.bat` now applies `CODEX_PAUSE_ON_EXIT=1` before its early dependency/elevation checks as well, so the launcher does not immediately disappear on those fast-fail paths unless operators explicitly opt out with `CODEX_PAUSE_ON_EXIT=0`.
 - `start_codex_ui.bat` also enables turn-complete Git automation by default:
   - `CODEX_GIT_AUTOCOMMIT_ENABLED=1`
@@ -48,9 +49,20 @@ This document is the active architecture spec for the Codex App Server integrati
   - `CODEX_GIT_ALLOW_DIRTY_BASELINE=0`
   - `CODEX_GIT_REMOTE=origin`
 - `server.js` itself now defaults turn-complete Git automation to `commit + push` unless env overrides disable it.
-- `server.js` now infers the non-interactive `request-user-input` fallback as `blocked` when `CODEX_REQUEST_USER_INPUT_POLICY` is unset.
+- `server.js` now infers the non-interactive `request-user-input` fallback as `auto-default` when `CODEX_REQUEST_USER_INPUT_POLICY` is unset, so non-fatal clarification flows default to autonomous continuation instead of hard stops.
+- Planning governance now treats `approvalBoundaryItems` as audit metadata by default. They still surface in requirement and risk summaries, but they no longer force `DISCOVERY`/`NEEDS_INPUT` unless the prompt carries an explicit user-decision clause or the action is a narrow irreversible external escalation.
 - `server.js` owns HTTP APIs, app-server protocol handling, evidence capture, replay, eval, and SLO surfaces.
+- The existing `/api/eval/run` path now also supports an AGI-oriented evaluation profile behind `evaluation.profile = "agi_v1"`. This is extension-only: legacy suites, legacy score flow, and non-`agi_v1` reports stay unchanged, while `agi_v1` adds fail-closed manifest integrity checks, `standard` / `elicited` aggregation, AGI-oriented metric families, and a dedicated `report.agiV1` bundle plus promotion decision.
+- `scripts/lib/agi_v1_profile.js` is the central config, aggregation, manifest, and promotion layer for that profile, and `scripts/lib/agi_candidate_runtime.js` reuses the existing champion/challenger runtime to apply AGI-oriented promotion logic only when the compared bundles are `agi_v1`.
+- Long-running single-agent continuity now stays file-backed and local-first under `logs/archive/raw/runtime_state/continuity/`, and it is intentionally layered on top of the existing `/api/exec`, `/api/eval/*`, public/holdout lanes, independent verifier, and rollback posture rather than introducing a new execution route.
+- Final externalization and no-HITL closure are also layered on top of the same governed runtime instead of creating a second orchestration path. `scripts/run_externalization_nohitl.js` drives a non-interactive closure profile, returns machine-readable statuses such as `AUTO_PASS`, `AUTO_FAIL`, `BLOCKED_BY_ENV`, `BLOCKED_BY_POLICY`, and `EXTERNAL_EVIDENCE_PENDING`, and keeps public-claim evidence separate from mock/simulation fixtures.
+- The same closure layer now also exposes an internal/private governance view for owner-operated deployments. In that view, human baseline is not a primary readiness axis; it is recorded only as `calibration_only_for_private_governance`, while `task breadth`, `long-duration resilience`, `adaptation gain`, `tool-learning reliability`, `regression stability`, and `freeze safety` drive `PRIVATE_LOOP_*` state reporting. Public-claim gates remain unchanged and still require observed external evidence.
+- Claim closure now separates `internal/private governance` from `public claimability` more explicitly. The internal/private lane treats human baseline as `calibration_only_for_private_governance` and promotes primary loop signals such as task breadth, long-duration resilience, adaptation gain, tool-learning reliability, regression stability, and freeze safety, while the public lane still requires observed human/external/deployment evidence and does not mix mock/synthetic fixtures into claim decisions.
+- External-only evidence remains file-backed and import-driven. Human baseline packets, external audit sealed packs, deployment evidence imports, and recomputed claim-gap artifacts live under `output/externalization_nohitl/` plus `logs/archive/raw/{human_baseline,external_audit,deployment_evidence}/`, so the harness can prepare, verify, and ingest outside-world evidence without fabricating that evidence inside `/api/exec`.
+- Repo-side closure verification is now a separate export/audit layer, not a new runtime phase. `scripts/run_repo_closure_export.js` fixes four operator entrypoints: `full_preflight`, `export_all_external_packets`, `import_all_observed`, and `recompute_public_claim`. It emits `output/repo_closure_export/{repo_closure_audit,external_evidence_manifest,final_blocking_matrix,final_structured_status}.json` plus packet roots for human baseline, external audit, deployment evidence, provider connection, and host config application.
 - `server.js` now treats app-server stdio transport failures as child-scoped failures: write-side pipe errors and late stale-child close/error events reject the affected RPCs/turn watchers, clear the dead child, and keep the parent harness server alive so the next request can respawn the app-server.
+- `GET /api/runtime` now exposes `serverProcess.activeExecRequests` / `restartProtection` plus an `appServerTransport` snapshot, so launchers and operators can tell whether the harness is safe to restart before touching the active listener.
+- `server.js` now also ignores broken-pipe-like process-level stdout/stderr and uncaught `EPIPE` failures instead of shutting the entire harness down for those local transport faults; non-broken-pipe fatal errors still terminate normally.
 - The harness is a governed decision system: top-level outcomes must end in one of
   - `RELEASE_APPROVED`
   - `RELEASE_APPROVED_WITH_ASSUMPTIONS`
@@ -76,8 +88,13 @@ This document is the active architecture spec for the Codex App Server integrati
   - `CODEX_ENGLISH_CONVERSATION_APP_ROOT`
   - sibling repo `../english-conversation-app/`
   - bundled fallback `web/english-conversation-app/`
+- The sibling English conversation repo can also run as a standalone app on `127.0.0.1:57526` via `start_english_conversation_app.bat` and `standalone_server.js`. That standalone server owns only the English app browser session and proxies just the conversation/voice APIs back to the main harness on `127.0.0.1:57525`, so opening the app no longer restarts or interrupts active HarnesUI `/api/exec` turns.
+- That standalone proxy normalizes `Origin` / `Referer` to the harness origin for proxied mutation APIs so the main harness can keep its same-port local-origin checks without rejecting standalone English conversation POST calls.
+- The same standalone proxy keeps longer upstream timeouts for conversation/TTS mutation routes than for lightweight runtime probes, so a normal local conversation turn does not get misreported as backend-unavailable simply because the proxy gave up before the harness conversation timeout.
+- The harness-side `conversation-app-server` lane now treats English conversation turns as a lightweight non-dispatch profile: parent-dispatch guard retries are exempt for that profile, `requestUserInput` is explicitly blocked, and the route runs with a conversation-specific low reasoning-effort override so short spoken replies can complete without leaking internal retry prompts or forcing unnecessary specialist delegation.
 - `bootstrap_english_conversation_app_repo.bat` / `scripts/bootstrap_english_conversation_app_repo.ps1` can seed the sibling repo from the bundled static app when splitting it out for the first time.
 - `web/01.HarnesUI/overview.html` is a dedicated operator overview page that aggregates runtime posture, topology, contracts, evidence bundles, replay/eval summaries, and skill coverage without mixing that inventory into the execution console.
+- `web/01.HarnesUI/overview.html`, `web/01.HarnesUI/overview.css`, and `web/01.HarnesUI/overview.js` now separate first-glance posture from deep inventory. `Runtime` and `Evidence` stay open by default, `Topology / Contracts / Traceability / Memory` move behind collapsible section shells, the raw `/api/harness/overview` snapshot is closed by default, and the overview no longer relies on mojibake-prone refresh-state labels in the operator-facing view.
 - The same overview now also exposes the governed external-learning lane: official OpenAI Developers blog ingestion status, recent promoted learnings, pending proposal-only targets, and freeze-aware boundaries are visible there without adding noise to the main execution console.
 - The standalone floating `AIエージェントかんばん` has been removed. `web/01.HarnesUI/index.html` now embeds the same `/api/agent-topography` view inside `実行トレース` as an inline `担当エージェント` section, keeps the grouped `稼働中 / 親 / 専門 / 検証` lanes, keeps any scoped runtime agent with an active turn visible in `稼働中` even when that scoped session belongs to a different chat, and still surfaces actually spawned collab child agents as live rows when `spawnAgent`/`sendInput`/`wait` activity proves they are actively working.
 - `web/01.HarnesUI/index.html` keeps `Performance Metrics` scoped to the active chat's thread/session instead of the process-global runtime session, so plan/progress/performance surfaces stay aligned while operators switch between chats.
@@ -89,6 +106,9 @@ This document is the active architecture spec for the Codex App Server integrati
 - `web/01.HarnesUI/app.js` now preserves the main chat composer's existing initial height while auto-growing and shrinking `#promptInput` to match multiline operator input, including send-clear, preset insert, command insert, and viewport-resize reflow paths.
 - `web/01.HarnesUI/index.html` now treats readability as the top-level console goal: it defaults to a simpler view, never hides the main `Harness Status` panel behind the secondary-telemetry toggle, and surfaces `task family`, `user-value thesis`, and `family gate` inside the existing progress/verdict summaries instead of adding extra inventory panels.
 - `web/01.HarnesUI/index.html`, `web/01.HarnesUI/app.js`, and `web/01.HarnesUI/styles.css` now foreground first-run clarity: the work surface adds a `次にやること` focus panel, chat cards show a short preview instead of only a title, the conversation area has an explicit empty-state guide plus a jump-to-composer action, the header exposes a `UI更新` reload action for HTML/CSS/JS-only refreshes, and the composer exposes fill-only prompt presets. Mobile simple-view still orders the main work surface ahead of the settings column, while the composer stays in the normal page flow at the bottom of the conversation area instead of following the viewport during scroll.
+- `web/01.HarnesUI/index.html`, `web/01.HarnesUI/app.js`, and `web/01.HarnesUI/styles.css` now treat AGI-facing prompt structure as a first-class operator surface. The console exposes a `Mission Brief` with `Goal / Scope / Constraints / Done When`, keeps a runtime strip (`mode / model / workspace / attachments`) directly above the composer, derives both from the live draft or latest user request, and updates those summaries reactively as the operator edits prompt text or execution settings.
+- The same console no longer leaks scoped runtime ids such as `default@chat-*` into the main operator surfaces. Chat list meta, live-status summaries, pending-state labels, trace cards, and topography cards now use operator-facing agent labels (`Codex`, `要件プランナー`, `UI実装`, `サーバ実装`, `環境・運用`) while deeper session/thread ids stay confined to the technical metadata lines.
+- Mobile simple-view now keeps the mission-to-composer path inside the first viewport: secondary helper cards collapse, mission copy is clamped, preset buttons become a horizontal scroll strip, and the composer remains above the fold instead of after the full focus stack.
 - `web/01.HarnesUI/styles.css` now keeps the desktop composer action column content-sized instead of stretching it to the textarea column height, so the `停止` / `送信` buttons remain normal controls even when the composer grows taller.
 - `web/01.HarnesUI/app.js` now keeps the composer in static bottom placement and clears the old reserved sticky-spacing path, while the transcript panel itself keeps a compact bottom edge instead of reserving a large blank strip.
 - The conversation transcript now renders message rows inside a bottom-aligned `timeline-stack`, so chats with only a few messages no longer pin those messages to the very top of the tall transcript panel and instead sit near the composer in a ChatGPT-like reading position until the thread grows long enough to need scrolling.
@@ -116,8 +136,16 @@ This document is the active architecture spec for the Codex App Server integrati
 - Once that audit passes, this phase is frozen to bug-fix-only changes. New Step 1/2 feature work must move to a later phase instead of extending V1 indefinitely.
 - The harness now also runs a governed external-learning lane sourced only from `https://developers.openai.com/blog`. `scripts/openai_blog_learning_cycle.js` and `scripts/lib/openai_blog_learning.js` fetch official articles on a timer, persist machine-readable learning artifacts under `output/`, auto-sync a non-constitutional retrieval doc at `docs/OPENAI_DEVELOPER_LEARNINGS.md`, and keep any risky target as proposal-only instead of silently mutating `AGENTS.md` or frozen Step 1/2 files.
 - The same lane now has a bounded runtime-retrieval layer on top: after planning is already locked, `server.js` can append a small advisory external-learning block to `default` / `frontend_worker` web-creative turns, but it must stay freeze-aware, must not rewrite Step 1/2 contracts, and can be disabled or shadowed by runtime flags.
+- Learning sync now suppresses obvious extraction noise before it becomes working memory. `scripts/lib/openai_blog_learning.js` filters boilerplate such as embedded video-player fallback text and drops long truncated paragraph candidates, so curated learning docs and runtime prompt blocks prefer cleaner article-specific guidance over half-cut narrative fragments.
 - The learning lanes now also emit machine-readable self-improvement artifacts. `scripts/config/self_improvement_proposal.schema.json` defines the proposal contract, `scripts/config/self_improvement_promotion_policy.json` defines which change classes are `auto_apply_candidate` vs `proposal_only` vs `blocked`, and `scripts/self_improvement_eval_gate.js` re-runs the non-regression gate over current learning artifacts without changing the main `POST /api/exec` route.
 - Auto-applied self-improvement is intentionally narrow: only low-risk `runtime_retrieval_hint` changes may self-promote, only after the eval gate passes, and only into the primary OpenAI lane's bounded runtime retrieval. If a new candidate fails the gate, the harness retains the last passing applied hint set instead of silently widening drift.
+- Self-improvement state is now change-level rather than proposal-only. Runtime artifacts distinguish raw auto-apply suggestions from ready-to-gate changes, waiting-on-observation notes, waiting-on-reinforcement notes, and policy-disabled candidates such as a secondary-lane frontend note when stabilization is disabled.
+- `output/*_self_improvement_state.json` now also carries `nextPriority` plus `priorityBacklog`, and `buildAppliedSelfImprovementState` filters already-applied hint/note ids out of that backlog so the next cycle target remains genuinely unresolved work.
+- Frontend-note backlog entries now preserve reinforcement progress instead of collapsing it to raw success/failure counts. `nextPriority` / `priorityBacklog` retain required wins, remaining wins, observed count, success rate, and last observation timestamp, and the Overview surface can show that gap directly without rereading reinforcement memory files.
+- The same runtime snapshot now keeps stabilization-lane observation posture visible with `observationStatus`, `observationCount`, and `lastObservedAt`, so operators can tell whether a waiting frontend note is starved, actively collecting evidence, or already reinforced.
+- The self-improvement eval gate now supports per-case `maxPromptBlockChars`, so prompt-block growth becomes part of non-regression instead of an untracked side effect.
+- The repo now also defines a manual self-improvement capture lane for non-governed turns. `scripts/config/manual_self_improvement_capture_policy.json` points at the compressed latest-only artifact `output/manual_self_improvement/latest.json`, marks the lane as non-constitutional, and keeps entries proposal-first by default so a manual capture can be retrieved later without silently changing runtime behavior.
+- That manual capture lane is intentionally separate from governed auto-learning. It does not feed `runtime.externalLearning`, does not bypass the self-improvement eval gate, and allows only `proposal-only` or `blocked` decisions unless a separate governed lane explicitly reclassifies the same lesson.
 - Step 1 now tries to tighten bounded ambiguity before it falls back to `BLOCKED`. `scripts/lib/planning_mode_policy.js` infers a small acceptance gate set from the goal/scope/direction when the request is otherwise executable, partitions unresolved questions into `blocking` versus deferred (`defaultable` / `taste`) lanes before planning mode selection, and carries the deferred questions into `questionPlan` plus explicit assumptions so the harness can keep visible ambiguity without unnecessarily stopping execution-ready work.
 - Step 1 now treats structured Stitch replay briefs as a first-class requirement shape instead of flattening them into generic `UI refresh` wording. When the prompt names a Stitch project/screen and asks for reproduction, `scripts/lib/planning_mode_policy.js` locks the goal around the actual project/screen replay objective, carries the project/screen ids plus asset-download instructions into `baselineScope`, and gives `displayContract` a concrete next action (`画像とコードを取得する`) plus replay boundaries (`指定 screen を基準にする`, `独自アレンジを入れない`) so `Requirement Lock` can foreground the real implementation target.
 - HarnesUI now exposes structured Stitch references on two surfaces. `web/01.HarnesUI/app.js` parses structured Stitch instructions in chat messages and renders a compact `Stitch参照` card in the conversation timeline, while `Requirement Lock` adds a `確認対象` row derived from `baselineScope` so the operator can verify the referenced project/screen/assets without rereading the raw prompt.
@@ -133,6 +161,16 @@ This document is the active architecture spec for the Codex App Server integrati
   - a `Current Work` surface synchronized to the same plan focus
   - the full step list with localized status badges (`pending`, `in_progress`, `completed`, `failed`, `interrupted`, `skipped`) plus the same purpose line on each row
   - plan-focus fallback ordering of explicit `in_progress`, then blocked step, then next pending step while running, then last completed step
+- A verified external Microsoft 365 weekly-report companion now runs alongside the harness without changing the repo's main `/api/exec` path.
+- The conversational face is the Copilot Studio agent `週報下書きアシスタント` in environment `Default-1a69c0c6-e1c8-439d-8c95-0b8bc3c195d4`.
+- Evidence persistence for that companion currently uses Microsoft To Do list `Weekly Evidence` instead of the earlier SharePoint-list design assumption.
+- Started Power Automate flows currently back that weekly-report companion:
+  - `WR_TEAMS_CHANNEL_TO_EVIDENCE_V1` (`b46fc296-b725-f111-88b4-000d3acf2bda`) captures the target Teams channel into `Weekly Evidence`.
+  - `WR_OUTLOOK_SENT_TO_EVIDENCE_V1` (`3ce1784f-b825-f111-88b4-000d3acf2bda`) captures `Sent Items` mail into `Weekly Evidence`.
+  - `WR_ADD_WORK_MEMO_TO_EVIDENCE_V1` (`49e1784f-b825-f111-88b4-000d3acf2bda`) stores operator work memos into `Weekly Evidence`.
+  - `WR_GET_WEEKLY_EVIDENCE_PACKET_V1` (`54e1784f-b825-f111-88b4-000d3acf2bda`) collects `Weekly Evidence`, Outlook calendar events, and recent sent mail for Copilot Studio.
+  - `WR_WEEKLY_DRAFT_REMINDER_V1` (`60e1784f-b825-f111-88b4-000d3acf2bda`) sends the Friday 18:00 JST reminder mail that points operators back to the Copilot draft flow.
+- The Copilot Studio agent exposes `WR_ADD_WORK_MEMO_TO_EVIDENCE_V1` and `WR_GET_WEEKLY_EVIDENCE_PACKET_V1` as verified tools, and the end-to-end draft path has been validated with live Teams, Outlook, memo, and reminder runs.
 
 ## 3) Collaboration-First Agent Topology
 
@@ -161,7 +199,7 @@ This document is the active architecture spec for the Codex App Server integrati
   - parent roles must not perform material implementation directly
   - read-only diagnostic shell/MCP inspection does not count as parent material implementation for the Parent Dispatch Guard
   - `intake` and `release_manager` are focused parent overlays, not interchangeable default parents
-  - unresolved user decisions must surface as `EXTERNAL_ACTION_REQUIRED`/`RELEASE_BLOCKED`; parent roles must not auto-answer approval-boundary questions
+  - unresolved explicit user decisions must surface as `EXTERNAL_ACTION_REQUIRED`/`RELEASE_BLOCKED`; parent roles must not auto-answer narrow operator-escalation questions
   - user-facing response policy now treats `結論 / 根拠 / 限界/反論 / 実務上の意味` as the default high-precision answer shape, but allows task-specific overrides for short answers, reviews, implementation reports, option comparisons, and blocked states when those forms improve reach precision without dropping answer, basis, limits, and practical implication coverage
   - short fact/status turns now enforce `lead with the direct answer` plus `close in place` not only as docs policy but also through shadow-review findings, retry instructions, and final-text sanitization for non-blocked runs
 - Retired runtime role:
@@ -181,6 +219,12 @@ This document is the active architecture spec for the Codex App Server integrati
 - Task outcome taxonomy:
   - `scripts/config/task_outcome_contract.json`
   - defines `COMPLETED`, `BLOCKED`, `NEEDS_INPUT`, `FAILED_VALIDATION`, `PARTIAL`
+- Non-interactive execution and externalization contracts:
+  - `scripts/config/non_interactive_execution_profile.json`
+  - `scripts/config/no_hitl_blocked_reason_taxonomy.json`
+  - `scripts/config/deployment_evidence_policy.json`
+  - `scripts/config/claim_closure_gate_policy.json`
+  - these define the no-HITL execution profile, structured blocked-reason taxonomy, production-like evidence thresholds, and the stricter observed-evidence-only public claim gate
 - User-facing response contract:
   - `scripts/config/user_facing_response_contract.json`
   - defines close-in-place exemptions, allowed prompt-menu signals, prohibited optional closing starters, completion-claim leads, internal-process disclosure bans, and exact-reply override behavior
@@ -226,6 +270,7 @@ This document is the active architecture spec for the Codex App Server integrati
   - `/english-conversation-app/*`
     - served from external sibling/override root when present, otherwise bundled fallback
     - keeps the existing same-origin browser path so conversation/TTS APIs do not need CORS or alternate ports
+    - sibling repo `start_english_conversation_app.bat` can instead launch a standalone browser/static server on `57526`, isolating its launcher lifecycle from the main harness while proxying only conversation/TTS calls to `57525`
 - `GET /api/runtime`
   - runtime snapshot, latest turn, governance policy, turn contract, task outcome contract, eval/replay/SLO capability summary
   - exposes `userFacingResponseContract` summary/path so operators can inspect which close-in-place and response-safety rules are actively enforced
@@ -317,6 +362,7 @@ This document is the active architecture spec for the Codex App Server integrati
 - `latest_run_summary.json` keeps `residualRisks` for real unresolved risk only. Completed runs may still carry `informationalNotes`, `assumptions`, or `operatorCaveats`, but they should not read as paused, blocked on user choice, or otherwise unfinished.
 - `runtime_snapshot.json` is no longer part of `logs/current/`; detailed posture storage lives in the latest signoff bundle.
 - The operator-facing posture summary is embedded in `logs/current/operator_summary.json`, while the detailed snapshot remains bundle-only.
+- `design_conformance_summary.json` now proves two request-user-input postures at once: the live runtime default must stay autonomy-first, while the signoff evidence lane remains explicitly blocked for strict proof collection.
 - `operator_summary.json` is the only current-surface entrypoint; the fixed current surface does not preserve a separate `index.json`.
 - When both live `stdio` and later `mock-fixture` signoff bundles exist, current-surface truth prefers the latest passing live `stdio` bundle so stronger parity evidence is not hidden by newer fixture-only summaries.
 - Migration/admin evidence is emitted to:
@@ -388,6 +434,33 @@ This document is the active architecture spec for the Codex App Server integrati
 - Harness memory is stored in `logs/archive/raw/harness_execution_memory.json` by default and can be redirected with `CODEX_HARNESS_MEMORY_PATH`.
 - Eval run history is stored in `logs/archive/raw/eval_runs.jsonl` by default and can be redirected with `CODEX_EVAL_HISTORY_PATH`.
 - Conversation persona memory is stored in `logs/archive/raw/runtime_state/conversation_persona_memory.json`.
+- Long-horizon continuity state is stored under `logs/archive/raw/runtime_state/continuity/tasks/<taskId>/` with:
+  - `task_state.json`
+  - `plan_state.json`
+  - `task_spec.json`
+  - `plan.json`
+  - `acceptance_contract.json`
+  - `closeout_summary.json`
+  - `replan.json`
+  - `global_memory.json`
+  - `verifier_state.json`
+  - `artifact_index.json`
+  - `lifecycle_events.jsonl`
+  - `archive/`
+  - per-session `session_memory.json`, `resume_context.json`, `sprint_contract.json`, and `handoff/*.json` / `handoff/*.md`
+- Bounded multi-agent orchestration extends that same continuity root instead of adding a separate orchestration API family. Parent tasks now also persist:
+  - `agent_graph.json`
+  - `handoff_history.json`
+  - `integration_summary.json`
+  - child task roots linked by `parentTaskId` / `rootTaskId`
+- Resume context is intentionally selective and ordered: task contract/stop conditions first, then verified plan state, next-session brief, unresolved verifier findings, relevant durable memory, and only then repo-local skill metadata.
+- Continuity lifecycle is explicitly enforced as `initialized -> planned -> running -> blocked/awaiting_approval/verifier_failed -> completed|abandoned -> archived`, with legacy `status` retained only for compatibility with existing tests and operator surfaces.
+- Close-session continuity now treats unresolved verifier findings, unresolved acceptance criteria, or outstanding open issues as a false-completion blocker: `completion-claim=completed` is downgraded to `FAILED_VALIDATION` and lifecycle `verifier_failed` until those gates are green.
+- Operator inspection for continuity is available through both CLI (`scripts/long_horizon_task.js`) and HTTP (`GET /api/continuity/task`, `GET /api/continuity/tasks`).
+- Phase 4 bounded orchestration adds runtime role contracts in `scripts/config/agent_role_contract_manifest.json` and public multi-agent baselines in `scripts/config/multi_agent_public_baseline.json`.
+- Role-bounded child work is constrained by per-role `allowedTools` / `deniedTools`, `readableStateScope` / `writableStateScope`, budgets, stop conditions, escalation conditions, and handoff pre/postconditions.
+- Parent-child runtime inspection now exposes `agent_graph`, `active_agent_tree`, `handoff_history`, `integration_summary`, `child_tasks`, `blocked_subtasks`, `verifier_failed_subtasks`, `pending_integrations`, and `orphan_subtasks`.
+- Public regression now includes the multi-agent public baseline in addition to the original verifier/regression gates, while single-agent fallback remains the default route for small/simple tasks.
 - Runtime state files are intentionally hidden from the operator-first surface and referenced through `logs/current/*.json`.
 - Replay memory, idempotency snapshots, and latest turn snapshots carry `taskOutcomeStatus` and `taskOutcomeReason`.
 - Latest turn snapshots now also carry `cwd` and a summarized `git_automation` result when turn-complete Git automation runs.
@@ -428,10 +501,12 @@ This document is the active architecture spec for the Codex App Server integrati
   - run `node scripts/exec_retry_regression_test.mjs` when interactive submit retry handling, launcher restart defaults, or Fast mode operator defaults change
   - run `node scripts/send_retry_resilience_test.mjs` when idempotency/header wiring or retry classification changes
   - run `node scripts/git_automation_policy_test.js` when the change touches turn-complete Git automation
+  - run `node scripts/manual_self_improvement_runtime_test.js` and `npm run learn:self-improvement:manual:validate` when the change touches `output/manual_self_improvement/*`, `scripts/lib/manual_self_improvement_runtime.js`, or manual self-improvement capture policy/validation
 - `web/` changes:
   - verify `GET /api/runtime` returns HTTP 200
   - verify `GET /01.HarnesUI/index.html` returns HTTP 200
   - run `node scripts/harnesui_prompt_autogrow_test.js` when the main chat composer height logic changes
+  - run `node scripts/harness_overview_test.js` when the change touches `web/01.HarnesUI/overview.*` or Overview-bound runtime surfaces such as manual self-improvement capture
 - English Conversation App static-mount changes:
   - run `node scripts/external_english_conversation_app_mount_test.js`
 - Skill assignment or skill package changes:
@@ -452,11 +527,14 @@ This document is the active architecture spec for the Codex App Server integrati
 ## 8) Current Residual Risks
 
 - Request-user-input posture is enforced primarily through runtime request metadata and governance docs; there is no separately documented per-agent `config.toml` key for that posture today.
-- The server-level inferred non-interactive request-user-input default is now `blocked`, and the launcher matches that posture, so flows that intentionally rely on `auto-default` or `auto-empty` must opt in explicitly via env override.
+- The server-level inferred non-interactive request-user-input default is now `auto-default`, but some isolated proof/repro lanes still pin `blocked` intentionally for determinism and stricter signoff posture.
 - Context and evidence discipline are stronger, but context/memory promotion is still not fully machine-enforced.
 - The legacy `worker` contract still exists for compatibility interpretation, even though runtime selection now rejects it.
 - Default eval coverage is now workflow-aware, but broader scenario depth is still limited by the small baseline suite.
+- The AGI-readiness program layers are now file-backed and inspectable, but they remain scaffold-grade in two places: observed human baselines are not yet populated, and claim gate outputs should be treated as internal readiness advice rather than an external claim.
+- Phase 5/6/7/8/9/10 artifacts are generated under `output/` and `logs/archive/raw/knowledge_store/`, but most promotion decisions are still policy-driven local files rather than remote-controlled deployment systems.
 - The external English Conversation App priority is resolved at request time; operators still need to ensure the sibling repo contents themselves stay compatible with the harness APIs.
 - Some lower-tier operator documents remain mixed-language.
 - Live `stdio` parity still depends on the host allowing child-process spawn for the Codex app-server. In spawn-restricted sandboxes, proof/signoff `transportMode=stdio` can only fail fast with recorded evidence (`spawn EPERM`) rather than produce a full live comparison bundle.
 - Playwright browser verification can fail for the same reason in this sandbox (`browserType.launch: spawn EPERM`), so local UI changes may need a normal desktop shell for screenshot-grade browser evidence even when route checks and targeted UI logic tests pass.
+- In the current Copilot Studio tool exposure for `WR_ADD_WORK_MEMO_TO_EVIDENCE_V1`, the tested agent UI surfaced `memo_text` but not the underlying optional `memo_project` / `memo_date` fields, so memo capture is presently optimized for one-line notes rather than fully structured memo entry.

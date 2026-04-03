@@ -1,6 +1,6 @@
 # ANTHROPIC_ENGINEERING_LEARNINGS
 
-Updated: 2026-03-25T11:25:33.281Z
+Updated: 2026-04-03T23:11:46.706Z
 
 This file is auto-synced from the Anthropic Engineering secondary learning lane.
 Only portable agent-engineering principles are retained here; Claude-specific mechanics do not become runtime policy.
@@ -23,9 +23,9 @@ Only portable agent-engineering principles are retained here; Claude-specific me
 - Summary: Infrastructure configuration can swing agentic coding benchmarks by several percentage points—sometimes more than the leaderboard gap between top models.
 - Guidance:
   - Agentic coding evals are different: models are given a full environment where they write programs, run tests, install dependencies, and iterate over multiple turns.
-  - Static benchmarks score a model's output directly—the runtime environment doesn’t factor into the result. Agentic coding evals are different: models are given a full environment where they write programs, run tests, install dependencies, and iterate over multiple turns. The runtime is no longer a passive container, but
   - Agentic coding benchmarks like SWE-bench and Terminal-Bench are commonly used to compare the software engineering capabilities of frontier models—with top spots on leaderboards often separated by just a few percentage points.
-  - Agentic coding benchmarks like SWE-bench and Terminal-Bench are commonly used to compare the software engineering capabilities of frontier models—with top spots on leaderboards often separated by just a few percentage points. These scores are often treated as precise measurements of relative model capability and increa
+  - Eval developers have begun accounting for this.
+  - Terminal-Bench 2.0, for instance, specifies recommended CPU and RAM on a per-task basis in their latest 2.0 release.
 
 ### Harness design for long-running application development
 
@@ -35,10 +35,10 @@ Only portable agent-engineering principles are retained here; Claude-specific me
 - Blog card date: Mar 24, 2026
 - Summary: Harness design is key to performance at the frontier of agentic coding. Here's how we pushed Claude further in frontend design and long-running autonomous software engineering.
 - Guidance:
-  - This work originated with earlier efforts on our frontend design skill and long-running coding agent harness ,
-  - We've previously shown that harness design has a substantial impact on the effectiveness of long running agentic coding. In an earlier experiment , we used an initializer agent to decompose a product spec into a task list, and a coding agent that implemented the tasks one feature at a time before handing off artifacts
   - We've previously shown that harness design has a substantial impact on the effectiveness of long running agentic coding.
-  - I then applied these techniques to long-running autonomous coding, carrying over two lessons from our earlier harness work: decomposing the build into tractable chunks, and using structured artifacts to hand off context between sessions. The final result was a three-agent architecture—planner, generator, and evaluator—
+  - Two insights shaped the harness I built for frontend design.
+  - Design quality: Does the design feel like a coherent whole rather than a collection of parts? Strong work here means the colors, typography, layout, imagery, and other details combine to create a distinct mood and identity.
+  - For more complex tasks, the agent still tends to go off the rails over time.
 
 ### Demystifying evals for AI agents
 
@@ -48,10 +48,10 @@ Only portable agent-engineering principles are retained here; Claude-specific me
 - Blog card date: Jan 09, 2026
 - Summary: The capabilities that make agents useful also make them difficult to evaluate. The strategies that work across deployments combine techniques to match the complexity of the systems they measure.
 - Guidance:
-  - As we described in Building effective agents , agents operate over many turns: calling tools, modifying state, and adapting based on intermediate results. These same capabilities that make AI agents useful—autonomy, intelligence, and flexibility—also make them harder to evaluate.
   - As we described in Building effective agents , agents operate over many turns: calling tools, modifying state, and adapting based on intermediate results.
-  - Through our internal work and with customers at the frontier of agent development, we’ve learned how to design more rigorous and useful evals for agents. Here's what's worked across a range of agent architectures and use cases in real-world deployment.
   - Through our internal work and with customers at the frontier of agent development, we’ve learned how to design more rigorous and useful evals for agents.
+  - Good evaluations help teams ship AI agents more confidently.
+  - These same capabilities that make AI agents useful—autonomy, intelligence, and flexibility—also make them harder to evaluate.
 
 ### Effective harnesses for long-running agents
 
@@ -62,7 +62,6 @@ Only portable agent-engineering principles are retained here; Claude-specific me
 - Summary: Agents still face challenges working across many context windows. We looked to human engineers for inspiration in creating a more effective harness for long-running agents.
 - Guidance:
   - The core challenge of long-running agents is that they must work in discrete sessions, and each new session begins with no memory of what came before.
-  - The core challenge of long-running agents is that they must work in discrete sessions, and each new session begins with no memory of what came before. Imagine a software project staffed by engineers working in shifts, where each new engineer arrives with no memory of what happened on the previous shift. Because context
   - However, getting agents to make consistent progress across multiple context windows remains an open problem.
   - As AI agents become more capable, developers are increasingly asking them to take on complex tasks requiring work that spans hours, or even days.
 
@@ -76,10 +75,10 @@ Only portable agent-engineering principles are retained here; Claude-specific me
 - Blog card date: Mar 24, 2026
 - Summary: Harness design is key to performance at the frontier of agentic coding. Here's how we pushed Claude further in frontend design and long-running autonomous software engineering.
 - Guidance:
-  - This work originated with earlier efforts on our frontend design skill and long-running coding agent harness ,
-  - We've previously shown that harness design has a substantial impact on the effectiveness of long running agentic coding. In an earlier experiment , we used an initializer agent to decompose a product spec into a task list, and a coding agent that implemented the tasks one feature at a time before handing off artifacts
   - We've previously shown that harness design has a substantial impact on the effectiveness of long running agentic coding.
-  - I then applied these techniques to long-running autonomous coding, carrying over two lessons from our earlier harness work: decomposing the build into tractable chunks, and using structured artifacts to hand off context between sessions. The final result was a three-agent architecture—planner, generator, and evaluator—
+  - Two insights shaped the harness I built for frontend design.
+  - Design quality: Does the design feel like a coherent whole rather than a collection of parts? Strong work here means the colors, typography, layout, imagery, and other details combine to create a distinct mood and identity.
+  - For more complex tasks, the agent still tends to go off the rails over time.
 
 ### Demystifying evals for AI agents
 
@@ -89,10 +88,10 @@ Only portable agent-engineering principles are retained here; Claude-specific me
 - Blog card date: Jan 09, 2026
 - Summary: The capabilities that make agents useful also make them difficult to evaluate. The strategies that work across deployments combine techniques to match the complexity of the systems they measure.
 - Guidance:
-  - As we described in Building effective agents , agents operate over many turns: calling tools, modifying state, and adapting based on intermediate results. These same capabilities that make AI agents useful—autonomy, intelligence, and flexibility—also make them harder to evaluate.
   - As we described in Building effective agents , agents operate over many turns: calling tools, modifying state, and adapting based on intermediate results.
-  - Through our internal work and with customers at the frontier of agent development, we’ve learned how to design more rigorous and useful evals for agents. Here's what's worked across a range of agent architectures and use cases in real-world deployment.
   - Through our internal work and with customers at the frontier of agent development, we’ve learned how to design more rigorous and useful evals for agents.
+  - Good evaluations help teams ship AI agents more confidently.
+  - These same capabilities that make AI agents useful—autonomy, intelligence, and flexibility—also make them harder to evaluate.
 
 ### Effective harnesses for long-running agents
 
@@ -103,7 +102,6 @@ Only portable agent-engineering principles are retained here; Claude-specific me
 - Summary: Agents still face challenges working across many context windows. We looked to human engineers for inspiration in creating a more effective harness for long-running agents.
 - Guidance:
   - The core challenge of long-running agents is that they must work in discrete sessions, and each new session begins with no memory of what came before.
-  - The core challenge of long-running agents is that they must work in discrete sessions, and each new session begins with no memory of what came before. Imagine a software project staffed by engineers working in shifts, where each new engineer arrives with no memory of what happened on the previous shift. Because context
   - However, getting agents to make consistent progress across multiple context windows remains an open problem.
   - As AI agents become more capable, developers are increasingly asking them to take on complex tasks requiring work that spans hours, or even days.
 
@@ -117,9 +115,9 @@ Only portable agent-engineering principles are retained here; Claude-specific me
 - Summary: Infrastructure configuration can swing agentic coding benchmarks by several percentage points—sometimes more than the leaderboard gap between top models.
 - Guidance:
   - Agentic coding evals are different: models are given a full environment where they write programs, run tests, install dependencies, and iterate over multiple turns.
-  - Static benchmarks score a model's output directly—the runtime environment doesn’t factor into the result. Agentic coding evals are different: models are given a full environment where they write programs, run tests, install dependencies, and iterate over multiple turns. The runtime is no longer a passive container, but
   - Agentic coding benchmarks like SWE-bench and Terminal-Bench are commonly used to compare the software engineering capabilities of frontier models—with top spots on leaderboards often separated by just a few percentage points.
-  - Agentic coding benchmarks like SWE-bench and Terminal-Bench are commonly used to compare the software engineering capabilities of frontier models—with top spots on leaderboards often separated by just a few percentage points. These scores are often treated as precise measurements of relative model capability and increa
+  - Eval developers have begun accounting for this.
+  - Terminal-Bench 2.0, for instance, specifies recommended CPU and RAM on a per-task basis in their latest 2.0 release.
 
 ### Harness design for long-running application development
 
@@ -129,10 +127,10 @@ Only portable agent-engineering principles are retained here; Claude-specific me
 - Blog card date: Mar 24, 2026
 - Summary: Harness design is key to performance at the frontier of agentic coding. Here's how we pushed Claude further in frontend design and long-running autonomous software engineering.
 - Guidance:
-  - This work originated with earlier efforts on our frontend design skill and long-running coding agent harness ,
-  - We've previously shown that harness design has a substantial impact on the effectiveness of long running agentic coding. In an earlier experiment , we used an initializer agent to decompose a product spec into a task list, and a coding agent that implemented the tasks one feature at a time before handing off artifacts
   - We've previously shown that harness design has a substantial impact on the effectiveness of long running agentic coding.
-  - I then applied these techniques to long-running autonomous coding, carrying over two lessons from our earlier harness work: decomposing the build into tractable chunks, and using structured artifacts to hand off context between sessions. The final result was a three-agent architecture—planner, generator, and evaluator—
+  - Two insights shaped the harness I built for frontend design.
+  - Design quality: Does the design feel like a coherent whole rather than a collection of parts? Strong work here means the colors, typography, layout, imagery, and other details combine to create a distinct mood and identity.
+  - For more complex tasks, the agent still tends to go off the rails over time.
 
 ### Designing AI resistant technical evaluations
 
@@ -155,10 +153,10 @@ Only portable agent-engineering principles are retained here; Claude-specific me
 - Blog card date: Jan 09, 2026
 - Summary: The capabilities that make agents useful also make them difficult to evaluate. The strategies that work across deployments combine techniques to match the complexity of the systems they measure.
 - Guidance:
-  - As we described in Building effective agents , agents operate over many turns: calling tools, modifying state, and adapting based on intermediate results. These same capabilities that make AI agents useful—autonomy, intelligence, and flexibility—also make them harder to evaluate.
   - As we described in Building effective agents , agents operate over many turns: calling tools, modifying state, and adapting based on intermediate results.
-  - Through our internal work and with customers at the frontier of agent development, we’ve learned how to design more rigorous and useful evals for agents. Here's what's worked across a range of agent architectures and use cases in real-world deployment.
   - Through our internal work and with customers at the frontier of agent development, we’ve learned how to design more rigorous and useful evals for agents.
+  - Good evaluations help teams ship AI agents more confidently.
+  - These same capabilities that make AI agents useful—autonomy, intelligence, and flexibility—also make them harder to evaluate.
 
 ## Topic: frontend
 
@@ -170,10 +168,10 @@ Only portable agent-engineering principles are retained here; Claude-specific me
 - Blog card date: Mar 24, 2026
 - Summary: Harness design is key to performance at the frontier of agentic coding. Here's how we pushed Claude further in frontend design and long-running autonomous software engineering.
 - Guidance:
-  - This work originated with earlier efforts on our frontend design skill and long-running coding agent harness ,
-  - We've previously shown that harness design has a substantial impact on the effectiveness of long running agentic coding. In an earlier experiment , we used an initializer agent to decompose a product spec into a task list, and a coding agent that implemented the tasks one feature at a time before handing off artifacts
   - We've previously shown that harness design has a substantial impact on the effectiveness of long running agentic coding.
-  - I then applied these techniques to long-running autonomous coding, carrying over two lessons from our earlier harness work: decomposing the build into tractable chunks, and using structured artifacts to hand off context between sessions. The final result was a three-agent architecture—planner, generator, and evaluator—
+  - Two insights shaped the harness I built for frontend design.
+  - Design quality: Does the design feel like a coherent whole rather than a collection of parts? Strong work here means the colors, typography, layout, imagery, and other details combine to create a distinct mood and identity.
+  - For more complex tasks, the agent still tends to go off the rails over time.
 
 ### Designing AI resistant technical evaluations
 
@@ -196,10 +194,10 @@ Only portable agent-engineering principles are retained here; Claude-specific me
 - Blog card date: Jan 09, 2026
 - Summary: The capabilities that make agents useful also make them difficult to evaluate. The strategies that work across deployments combine techniques to match the complexity of the systems they measure.
 - Guidance:
-  - As we described in Building effective agents , agents operate over many turns: calling tools, modifying state, and adapting based on intermediate results. These same capabilities that make AI agents useful—autonomy, intelligence, and flexibility—also make them harder to evaluate.
   - As we described in Building effective agents , agents operate over many turns: calling tools, modifying state, and adapting based on intermediate results.
-  - Through our internal work and with customers at the frontier of agent development, we’ve learned how to design more rigorous and useful evals for agents. Here's what's worked across a range of agent architectures and use cases in real-world deployment.
   - Through our internal work and with customers at the frontier of agent development, we’ve learned how to design more rigorous and useful evals for agents.
+  - Good evaluations help teams ship AI agents more confidently.
+  - These same capabilities that make AI agents useful—autonomy, intelligence, and flexibility—also make them harder to evaluate.
 
 ### Effective harnesses for long-running agents
 
@@ -210,7 +208,6 @@ Only portable agent-engineering principles are retained here; Claude-specific me
 - Summary: Agents still face challenges working across many context windows. We looked to human engineers for inspiration in creating a more effective harness for long-running agents.
 - Guidance:
   - The core challenge of long-running agents is that they must work in discrete sessions, and each new session begins with no memory of what came before.
-  - The core challenge of long-running agents is that they must work in discrete sessions, and each new session begins with no memory of what came before. Imagine a software project staffed by engineers working in shifts, where each new engineer arrives with no memory of what happened on the previous shift. Because context
   - However, getting agents to make consistent progress across multiple context windows remains an open problem.
   - As AI agents become more capable, developers are increasingly asking them to take on complex tasks requiring work that spans hours, or even days.
 
@@ -224,10 +221,10 @@ Only portable agent-engineering principles are retained here; Claude-specific me
 - Blog card date: Mar 24, 2026
 - Summary: Harness design is key to performance at the frontier of agentic coding. Here's how we pushed Claude further in frontend design and long-running autonomous software engineering.
 - Guidance:
-  - This work originated with earlier efforts on our frontend design skill and long-running coding agent harness ,
-  - We've previously shown that harness design has a substantial impact on the effectiveness of long running agentic coding. In an earlier experiment , we used an initializer agent to decompose a product spec into a task list, and a coding agent that implemented the tasks one feature at a time before handing off artifacts
   - We've previously shown that harness design has a substantial impact on the effectiveness of long running agentic coding.
-  - I then applied these techniques to long-running autonomous coding, carrying over two lessons from our earlier harness work: decomposing the build into tractable chunks, and using structured artifacts to hand off context between sessions. The final result was a three-agent architecture—planner, generator, and evaluator—
+  - Two insights shaped the harness I built for frontend design.
+  - Design quality: Does the design feel like a coherent whole rather than a collection of parts? Strong work here means the colors, typography, layout, imagery, and other details combine to create a distinct mood and identity.
+  - For more complex tasks, the agent still tends to go off the rails over time.
 
 ### Designing AI resistant technical evaluations
 

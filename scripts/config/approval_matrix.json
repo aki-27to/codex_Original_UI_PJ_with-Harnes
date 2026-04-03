@@ -1,0 +1,30 @@
+{
+  "schema": "approval-matrix.v1",
+  "version": "2026-04-03.r2",
+  "rules": [
+    {
+      "taskFamily": "debugging_incident_response",
+      "tool": "deploy",
+      "environment": "production_like",
+      "approvalRequired": true
+    },
+    {
+      "taskFamily": "tool_learning_or_new_tool_adoption",
+      "tool": "tool_adoption",
+      "environment": "staging",
+      "approvalRequired": false
+    },
+    {
+      "taskFamily": "operations",
+      "tool": "deploy",
+      "environment": "production_like",
+      "approvalRequired": true
+    },
+    {
+      "taskFamily": "coding",
+      "tool": "multi_agent_delegation",
+      "environment": "sandbox",
+      "approvalRequired": false
+    }
+  ]
+}

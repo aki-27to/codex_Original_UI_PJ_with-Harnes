@@ -1,7 +1,7 @@
 {
   "schema": "anthropic-engineering-learning-proposal.v1",
   "proposalId": "anthropic-engineering-AI-resistant-technical-evaluations",
-  "createdAt": "2026-03-25T11:25:33.281Z",
+  "createdAt": "2026-04-03T23:11:46.706Z",
   "articleId": "AI-resistant-technical-evaluations",
   "title": "Designing AI resistant technical evaluations",
   "sourceUrl": "https://www.anthropic.com/engineering/AI-resistant-technical-evaluations",
@@ -13,7 +13,7 @@
     "Each time, I’ve learned something new about what makes evaluations robust to AI assistance and what doesn't.",
     "A take-home that distinguishes well between human skill levels today may be trivially solved by models tomorrow—rendering it useless for evaluation.",
     "Tristan designed—and redesigned—the take-home test that's helped Anthropic hire dozens of performance engineers.",
-    "Evaluating technical candidates becomes harder as AI capabilities improve. A take-home that distinguishes well between human skill levels today may be trivially solved by models tomorrow—rendering it useless for evaluation."
+    "We needed a way to evaluate candidates more efficiently. So, I took two weeks to design a take-home test that could adequately capture the demands of the role and identify the most capable applicants."
   ],
   "topicTags": [
     "evals",

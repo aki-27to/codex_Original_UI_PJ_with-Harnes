@@ -1,7 +1,7 @@
 {
   "schema": "openai-blog-learning-proposal.v1",
   "proposalId": "openai-blog-skills-agents-sdk",
-  "createdAt": "2026-03-25T11:25:33.023Z",
+  "createdAt": "2026-04-03T23:30:47.228Z",
   "articleId": "skills-agents-sdk",
   "title": "Using skills to accelerate OSS maintenance | OpenAI Developers",
   "sourceUrl": "https://developers.openai.com/blog/skills-agents-sdk",
@@ -10,10 +10,10 @@
   "guidance": [
     "repo-local skills in .agents/skills/",
     "Repo-local skills, AGENTS.md , and GitHub Actions let us turn recurring engineering work, such as verification, release preparation, integration testing for examples, and PR review, into repeatable workflows.",
-    "In these repos, we use skills to capture repository-specific workflows. A skill is a small package of operational knowledge: a SKILL.md manifest, plus optional scripts/ , references/ , and assets/ . The Codex customization docs describe why this works well: skills are a good fit for repeatable workflows because they ca",
     "repository policy in AGENTS.md",
     "In these repos, we use skills to capture repository-specific workflows.",
-    "optional scripts and references inside those skills"
+    "optional scripts and references inside those skills",
+    ".agents/skills in openai-agents-python"
   ],
   "topicTags": [
     "agents",

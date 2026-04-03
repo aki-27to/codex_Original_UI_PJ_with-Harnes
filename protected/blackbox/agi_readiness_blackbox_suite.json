@@ -1,0 +1,46 @@
+{
+  "schema": "agi-readiness-suite.v1",
+  "version": "2026-03-30.r1",
+  "suiteId": "agi_readiness_blackbox_suite",
+  "description": "Protected blackbox readiness suite kept outside optimizer loops.",
+  "cases": [
+    {
+      "id": "blackbox-web-tool",
+      "title": "Blackbox web interaction",
+      "familyId": "web_tool_use",
+      "difficultyTier": "expert",
+      "modalityTags": ["web", "browser"],
+      "structureTags": ["tool_use", "interactive"],
+      "objective": "complete blackbox web-tool readiness flow",
+      "acceptanceCriteria": ["bounded interaction recorded"],
+      "orchestrationMode": "single_agent_fallback"
+    },
+    {
+      "id": "blackbox-debugging",
+      "title": "Blackbox incident response",
+      "familyId": "debugging_incident_response",
+      "difficultyTier": "expert",
+      "modalityTags": ["logs", "code"],
+      "structureTags": ["debugging", "incident", "bounded_multi_agent"],
+      "objective": "complete blackbox incident response flow",
+      "acceptanceCriteria": ["incident diagnosis recorded", "verifier passes"],
+      "orchestrationMode": "multi_agent_required",
+      "workflow": [
+        { "role": "planner", "objective": "plan blackbox incident flow", "expectedDeliverable": "incident plan", "acceptanceSubset": ["incident diagnosis recorded"] },
+        { "role": "executor", "objective": "produce blackbox incident diagnosis", "expectedDeliverable": "incident diagnosis", "acceptanceSubset": ["incident diagnosis recorded"], "payload": { "deliverableSummary": "Blackbox incident diagnosis", "changedSurface": ["scripts/lib/bounded_multi_agent_orchestrator.js"] } },
+        { "role": "verifier", "objective": "verify blackbox incident diagnosis", "expectedDeliverable": "verifier report", "acceptanceSubset": ["verifier passes"], "targetRole": "executor" }
+      ]
+    },
+    {
+      "id": "blackbox-tool-learning",
+      "title": "Blackbox tool learning",
+      "familyId": "tool_learning_or_new_tool_adoption",
+      "difficultyTier": "expert",
+      "modalityTags": ["schema", "tooling"],
+      "structureTags": ["tool_learning", "safe_rollout"],
+      "objective": "complete blackbox tool-learning flow",
+      "acceptanceCriteria": ["tool adoption recorded"],
+      "orchestrationMode": "single_agent_fallback"
+    }
+  ]
+}

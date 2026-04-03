@@ -468,6 +468,10 @@ function run() {
     approvalBoundaryArtifacts.requirementContract.questionPlan.askNext.some((entry) => /approval/i.test(entry.question)),
     "approval-boundary findings should produce a blocking approval question"
   );
+  assert.ok(
+    !approvalBoundaryArtifacts.requirementContract.userValueFrame.hardConstraints.some((entry) => /Explicit user approval is required before/i.test(entry)),
+    "approval-boundary metadata should not be rewritten into fabricated hard-constraint approval text"
+  );
   const approvalBoundarySanitized = sanitizePlanningArtifactsForRuntime({
     ...approvalBoundaryArtifacts,
     requirementContract: {

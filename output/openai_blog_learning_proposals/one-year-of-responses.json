@@ -1,19 +1,19 @@
 {
   "schema": "openai-blog-learning-proposal.v1",
   "proposalId": "openai-blog-one-year-of-responses",
-  "createdAt": "2026-03-25T11:25:33.023Z",
+  "createdAt": "2026-04-03T23:30:47.228Z",
   "articleId": "one-year-of-responses",
   "title": "From prompts to products: One year of Responses | OpenAI Developers",
   "sourceUrl": "https://developers.openai.com/blog/one-year-of-responses",
   "relevance": "high",
   "summary": "Five stories from developers building agentic products with the Responses API in its first year.",
   "guidance": [
-    "One year ago, we introduced the Responses API — a foundation for developers and enterprises to build useful and reliable agents. Equipping models with a set of hosted tools allowed AI to evolve from chat assistants to systems that can take action on your behalf. Today, the Responses API supports a number of tools to po",
     "Agent behavior monitoring",
     "One year ago, we introduced the Responses API — a foundation for developers and enterprises to build useful and reliable agents.",
     "Tracking behavior changes across agent versions",
-    "Thousands of developers are building with the Responses API today to accelerate productivity across industries like customer support , legal , life sciences , travel , and more. Having shared many success stories from those industries, today we’re celebrating five lesser-told stories of the developers who have built on",
-    "Raindrop is the monitoring platform behind the world’s most ambitious AI companies to catch when their agents go off the rails in production."
+    "Raindrop is the monitoring platform behind the world’s most ambitious AI companies to catch when their agents go off the rails in production.",
+    "Failure detection and alerting",
+    "As agents have gotten more complex, these failures have become more critical."
   ],
   "topicTags": [
     "agents",

@@ -883,10 +883,10 @@ function buildPlanningSelection({ prompt = "", options = {}, contract } = {}) {
     }
     return { id: "medium", score: 1 };
   })();
+  const explicitUserDecisionRequired = hasAnyKeyword(prompt, normalizedContract.signals.userDecisionKeywords);
   const userDecisionRequired =
-    approvalBoundaryItems.length > 0 ||
-    openQuestions.length > 0 ||
-    hasAnyKeyword(prompt, normalizedContract.signals.userDecisionKeywords);
+    explicitUserDecisionRequired ||
+    openQuestions.length > 0;
   const fastEligible =
     openQuestions.length <= normalizedContract.thresholds.fast.maxOpenQuestions &&
     acceptanceClarity.score >= normalizedContract.thresholds.fast.minAcceptanceScore &&
@@ -895,11 +895,9 @@ function buildPlanningSelection({ prompt = "", options = {}, contract } = {}) {
     overDeliveryRisk.score <= normalizedContract.thresholds.fast.maxOverDeliveryRiskScore &&
     existingSpecClarity.score >= normalizedContract.thresholds.fast.minExistingSpecClarityScore &&
     changeScopeClarity.score >= normalizedContract.thresholds.fast.minChangeScopeClarityScore &&
-    approvalBoundaryItems.length === 0 &&
     !userDecisionRequired;
   const discoveryRequired =
-    approvalBoundaryItems.length > 0 ||
-    userDecisionRequired ||
+    explicitUserDecisionRequired ||
     openQuestions.length >= normalizedContract.thresholds.discovery.minOpenQuestions ||
     acceptanceClarity.score <= normalizedContract.thresholds.discovery.maxAcceptanceScore ||
     assumptionDependence.score >= normalizedContract.thresholds.discovery.minAssumptionScore ||
@@ -925,7 +923,7 @@ function buildPlanningSelection({ prompt = "", options = {}, contract } = {}) {
       `existingSpecClarity=${existingSpecClarity.id}`,
       `changeScopeClarity=${changeScopeClarity.id}`,
     ],
-    needsInputRecommended: selectedMode === "DISCOVERY" && (userDecisionRequired || approvalBoundaryItems.length > 0 || openQuestions.length > 0),
+    needsInputRecommended: selectedMode === "DISCOVERY" && userDecisionRequired,
     signals: {
       openQuestionsCount: openQuestions.length,
       acceptanceCheckCount: acceptanceChecks.length,
@@ -936,6 +934,7 @@ function buildPlanningSelection({ prompt = "", options = {}, contract } = {}) {
       approvalBoundaryCount: approvalBoundaryItems.length,
       overDeliveryRisk: overDeliveryRisk.id,
       userDecisionRequired: userDecisionRequired ? 1 : 0,
+      explicitUserDecisionRequired: explicitUserDecisionRequired ? 1 : 0,
       assumptionDependence: assumptionDependence.id,
       existingSpecClarity: existingSpecClarity.id,
       changeScopeClarity: changeScopeClarity.id,
@@ -1683,7 +1682,6 @@ function buildUserValueFrame({
     [
       ...directiveConstraints,
       ...acceptanceTitles.filter((entry) => isHardConstraintDirective(entry)),
-      ...approvalBoundaryItems.map((entry) => `Explicit user approval is required before: ${entry}.`),
     ],
     10
   );
@@ -2041,8 +2039,16 @@ function buildRequirementChallengeReport({ requirementContract, selection } = {}
   if (sanitizeUserValueFrame(requirement.userValueFrame).benchmarkCandidates.length && currentSelection.taskFamily === "web_creative" && !uniqueStrings(requirement.openQuestions, 12).length) {
     addFinding("likely_implicit_requirement", "medium", "Benchmark context suggests visual/taste expectations that may still need confirmation.", "userValueFrame.benchmarkCandidates");
   }
+  const explicitUserDecisionRequired = Boolean(currentSelection && currentSelection.signals && currentSelection.signals.explicitUserDecisionRequired);
   uniqueStrings(requirement.approvalBoundaryItems, 2).forEach((entry) => {
-    addFinding("proceed_risk", "high", `Approval boundary still blocks safe execution: ${entry}`, "approvalBoundaryItems");
+    addFinding(
+      explicitUserDecisionRequired ? "explicit_decision_risk" : "audit_boundary_note",
+      explicitUserDecisionRequired ? "high" : "medium",
+      explicitUserDecisionRequired
+        ? `Explicit operator decision still required before: ${entry}`
+        : `Approval-boundary metadata captured for audit visibility: ${entry}`,
+      "approvalBoundaryItems"
+    );
   });
   const contradictoryCheck = validation.checks.find((entry) => entry.id === "contract_consistency" && entry.status === "BLOCK");
   if (contradictoryCheck) {
@@ -3265,6 +3271,11 @@ function buildRequirementValidation({ requirementContract, selection } = {}) {
   const nonGoals = uniqueStrings(requirement.nonGoals, 16);
   const openQuestions = uniqueStrings(requirement.openQuestions, 12);
   const approvalBoundaryItems = uniqueStrings(requirement.approvalBoundaryItems, 12);
+  const explicitUserDecisionRequired = Boolean(
+    currentSelection
+    && currentSelection.signals
+    && currentSelection.signals.explicitUserDecisionRequired
+  );
   const userValueFrame = sanitizeUserValueFrame(requirement.userValueFrame);
   const provenance = sanitizeRequirementProvenance(requirement.provenance, requirement);
   const revisionLedger = sanitizeRequirementRevisionLedger(requirement.revisionLedger);
@@ -3332,11 +3343,13 @@ function buildRequirementValidation({ requirementContract, selection } = {}) {
   );
   pushCheck(
     "approval_boundary_clear",
-    "Approval boundaries are resolved",
-    approvalBoundaryItems.length > 0 ? "BLOCK" : "PASS",
+    "Approval boundaries are recorded and triaged",
+    explicitUserDecisionRequired && approvalBoundaryItems.length > 0 ? "BLOCK" : approvalBoundaryItems.length > 0 ? "WARN" : "PASS",
     approvalBoundaryItems.length > 0
-      ? `Approval-boundary items remain: ${approvalBoundaryItems.length}.`
-      : "No unresolved approval-boundary item remains.",
+      ? explicitUserDecisionRequired
+        ? `Explicit operator decision still required for ${approvalBoundaryItems.length} approval-boundary item(s).`
+        : `Approval-boundary items remain as audit metadata: ${approvalBoundaryItems.length}.`
+      : "No approval-boundary metadata remains.",
     ["approvalBoundaryItems"]
   );
   const goalConflicts = goalAnchor
@@ -3479,7 +3492,7 @@ function deriveRequirementStatus({ requirementContract, selection, validation, r
     const blockingCheck = normalizedValidation.checks.find((entry) => entry.status === "BLOCK");
     return {
       status: "BLOCKED",
-      statusReason: blockingCheck ? blockingCheck.detail : "Requirement contract still has blocking ambiguity or approval boundaries.",
+      statusReason: blockingCheck ? blockingCheck.detail : "Requirement contract still has blocking ambiguity or an explicit operator decision gate.",
     };
   }
   if (normalizedRevisionLedger.revised) {
@@ -4002,22 +4015,23 @@ function buildPlanningScoreBreakdown({
   acceptanceClarity,
   overDeliveryRisk,
   approvalBoundaryItems,
+  explicitUserDecisionRequired,
   userDecisionRequired,
   existingSpecClarity,
   changeScopeClarity,
   specialistBoundaryCount,
   prompt,
 }) {
-  const ambiguity = approvalBoundaryItems.length > 0 || openQuestionsCount >= 3 || specialistBoundaryCount >= 3
+  const ambiguity = explicitUserDecisionRequired || openQuestionsCount >= 3 || specialistBoundaryCount >= 3
     ? 2
     : (userDecisionRequired || openQuestionsCount >= 1 || specialistBoundaryCount >= 2 ? 1 : 0);
   const acceptanceUncertainty = acceptanceClarity.score <= 0 ? 2 : acceptanceClarity.score === 1 ? 1 : 0;
   const novelty = overDeliveryRisk.score >= 2 || existingSpecClarity.score <= 0 || specialistBoundaryCount >= 2 || /(?:new feature|future product|greenfield|design a new)/i.test(prompt)
     ? 2
     : (overDeliveryRisk.score === 1 || existingSpecClarity.score === 1 || changeScopeClarity.score === 1 ? 1 : 0);
-  const externalDependency = approvalBoundaryItems.length >= 2 || /(?:user decision is required|needs input|need input|approval required|must decide)/i.test(prompt)
+  const externalDependency = explicitUserDecisionRequired || /(?:user decision is required|needs input|need input|approval required|must decide)/i.test(prompt)
     ? 2
-    : (approvalBoundaryItems.length === 1 || userDecisionRequired || /(?:external service|external system|account|dependency|migration)/i.test(prompt) ? 1 : 0);
+    : (approvalBoundaryItems.length >= 1 || /(?:external service|external system|account|dependency|migration)/i.test(prompt) ? 1 : 0);
   const total = ambiguity + acceptanceUncertainty + novelty + externalDependency;
   return {
     ambiguity,
@@ -4384,12 +4398,12 @@ function buildClarificationDecision({
   const normalizedPrompt = sanitizePromptForPolicyAnalysis(prompt);
   const lower = normalizedPrompt.toLowerCase();
   const normalizedTaskFamily = safeString(taskFamily, 80).toLowerCase();
-  if (approvalBoundaryItems.length > 0 || explicitUserDecisionRequired) {
+  if (explicitUserDecisionRequired) {
     return {
       action: "needs_input",
       reason: "explicit_user_decision_required",
       question: "",
-      summary: "Approval-boundary or explicit user decision items block safe execution.",
+      summary: "An explicit user-decision clause blocks autonomous execution.",
       missingAnchors: [],
     };
   }
@@ -4483,7 +4497,7 @@ function buildPlanningSelection({ prompt = "", options = {}, contract } = {}) {
   ], 12);
   const approvalBoundaryItems = detectApprovalBoundaryItems(analysisPrompt, contracts.planning.signals.approvalBoundaryKeywords);
   const explicitUserDecisionRequired =
-    approvalBoundaryItems.length > 0 || hasAnyKeyword(analysisPrompt, contracts.planning.signals.userDecisionKeywords);
+    hasAnyKeyword(analysisPrompt, contracts.planning.signals.userDecisionKeywords);
   const questionPartition = partitionRequirementQuestions({
     openQuestions: initialOpenQuestions,
     taskFamily: familySelection.taskFamily,
@@ -4542,6 +4556,7 @@ function buildPlanningSelection({ prompt = "", options = {}, contract } = {}) {
     acceptanceClarity,
     overDeliveryRisk,
     approvalBoundaryItems,
+    explicitUserDecisionRequired,
     userDecisionRequired,
     existingSpecClarity,
     changeScopeClarity,
@@ -4567,7 +4582,6 @@ function buildPlanningSelection({ prompt = "", options = {}, contract } = {}) {
   if (
     familySelection.taskFamily === "web_creative" &&
     familySelection.ambiguityHandling === "expand_with_directions" &&
-    approvalBoundaryItems.length === 0 &&
     !explicitUserDecisionRequired &&
     clarificationDecision.action === "proceed" &&
     selectedMode === "DISCOVERY"
@@ -4582,7 +4596,6 @@ function buildPlanningSelection({ prompt = "", options = {}, contract } = {}) {
   if (
     fastModeEnabled &&
     selectedMode === "NORMAL" &&
-    approvalBoundaryItems.length === 0 &&
     !explicitUserDecisionRequired &&
     clarificationDecision.action === "proceed"
   ) {
@@ -4634,8 +4647,7 @@ function buildPlanningSelection({ prompt = "", options = {}, contract } = {}) {
     needsInputRecommended: selectedMode === "DISCOVERY" && (
       clarificationDecision.action !== "proceed" ||
       explicitUserDecisionRequired ||
-      approvalBoundaryItems.length > 0 ||
-      (familySelection.taskFamily !== "web_creative" && openQuestions.length > 0)
+      openQuestions.length > 0
     ),
     signals: {
       openQuestionsCount: openQuestions.length,

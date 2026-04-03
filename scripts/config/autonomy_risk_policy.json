@@ -1,0 +1,37 @@
+{
+  "schema": "autonomy-risk-policy.v1",
+  "version": "2026-04-03.r2",
+  "autonomyLevels": [
+    { "id": "L0", "description": "operator-held only for irreversible external effects" },
+    { "id": "L1", "description": "bounded local actions with rollback and traceability" },
+    { "id": "L2", "description": "bounded multi-agent local orchestration with self-correction" },
+    { "id": "L3", "description": "staged rollout with canary, override, and incident logging" }
+  ],
+  "riskTiers": {
+    "low": { "maxAutonomyLevel": "L3", "approvalRequired": false },
+    "medium": { "maxAutonomyLevel": "L3", "approvalRequired": false },
+    "high": { "maxAutonomyLevel": "L2", "approvalRequired": false },
+    "critical": { "maxAutonomyLevel": "L1", "approvalRequired": true }
+  },
+  "familyRisk": {
+    "coding": "medium",
+    "research": "low",
+    "planning": "low",
+    "analysis": "low",
+    "business_ops": "medium",
+    "operations": "medium",
+    "multimodal_docs": "medium",
+    "document_workflow": "medium",
+    "multimodal_or_semi_structured_artifact_handling": "medium",
+    "spreadsheets_structured_artifacts": "medium",
+    "web_tool_use": "medium",
+    "cross_tool_orchestration": "high",
+    "debugging_incident_response": "high",
+    "tool_learning_or_new_tool_adoption": "high"
+  },
+  "sensitiveTools": ["external_write", "deploy", "dangerous_delete", "dangerous_schema_migration", "holdout_eval_lane", "blackbox_eval_lane"],
+  "sensitiveStateScopes": ["root.hidden_holdout"],
+  "deploymentControlStatePath": "logs/archive/raw/deployment_controls/control_state.json",
+  "incidentLogPath": "logs/archive/raw/deployment_controls/incident_log.jsonl",
+  "forensicBundleRoot": "logs/archive/raw/deployment_controls/forensics"
+}

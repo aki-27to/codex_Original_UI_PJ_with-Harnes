@@ -1,0 +1,29 @@
+{
+  "schema": "generated-skill-registry.v1",
+  "generatedAt": "2026-03-31T22:24:55.969Z",
+  "skills": [
+    {
+      "id": "continuity-verification-closeout",
+      "title": "Continuity Verification Closeout",
+      "description": "Use after a successful long-horizon execution to combine changed surface, verification state, and next-session brief.",
+      "trigger": "when closeout must preserve verifier and continuity state",
+      "path": ".agents/skills/generated/continuity-verification-closeout/SKILL.md",
+      "deterministicSteps": [
+        "load latest verifier state",
+        "refresh closeout summary",
+        "emit next_session_brief"
+      ],
+      "reasoningGuidance": [
+        "prefer verified artifacts",
+        "do not promote session-only notes"
+      ],
+      "tests": [
+        "closeout_summary exists",
+        "verification_status exists"
+      ],
+      "sourceTrace": "output/agi_readiness/phase5/agi_readiness_public_latest.json",
+      "updatedAt": "2026-03-31T22:24:55.962Z",
+      "stale": 0
+    }
+  ]
+}

@@ -1,0 +1,37 @@
+{
+  "laneId": "public_regression",
+  "maxCases": 15,
+  "suite": "@scripts/config/eval_suite_agi_v1_example.json",
+  "variants": [
+    {
+      "label": "candidate",
+      "candidateId": "candidate-main",
+      "agentName": "default",
+      "executionProfile": "eval-agi-v1",
+      "requestUserInputPolicy": "blocked"
+    }
+  ],
+  "evaluation": {
+    "profile": "agi_v1",
+    "profileConfigPath": "scripts/config/agi_v1_eval_profile.json",
+    "manifest": {
+      "suitePaths": ["scripts/config/eval_suite_agi_v1_example.json"],
+      "evaluatorPaths": [
+        "server.js",
+        "scripts/lib/eval_harness_policy.js",
+        "scripts/lib/agi_v1_profile.js"
+      ],
+      "datasetPaths": ["scripts/config/eval_suite_agi_v1_example.json"],
+      "promptTemplatePaths": ["scripts/config/eval_suite_agi_v1_example.json"],
+      "split": {
+        "trainSuiteIds": ["public_regression"],
+        "devSuiteIds": ["agi_v1_example_suite"],
+        "selectionSuiteIds": ["agi_v1_holdout_suite"]
+      },
+      "hiddenMarkers": [
+        "protected/holdout",
+        "SECRET_HOLDOUT_ANSWER"
+      ]
+    }
+  }
+}

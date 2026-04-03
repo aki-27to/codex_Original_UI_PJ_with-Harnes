@@ -1,0 +1,18 @@
+{
+  "schema": "deployment-tier-policy.v1",
+  "version": "2026-03-31.r1",
+  "tiers": [
+    "dev",
+    "sandbox",
+    "staging",
+    "production_like",
+    "restricted_high_risk"
+  ],
+  "freezeSensitiveActions": [
+    "self_improvement",
+    "multi_agent_delegation",
+    "adaptation_job",
+    "tool_adoption"
+  ],
+  "readOnlyDegradedModePath": "logs/archive/raw/deployment_controls/degraded_mode_state.json"
+}

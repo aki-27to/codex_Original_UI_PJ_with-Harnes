@@ -1,7 +1,7 @@
 {
   "schema": "anthropic-engineering-learning-proposal.v1",
   "proposalId": "anthropic-engineering-infrastructure-noise",
-  "createdAt": "2026-03-25T11:25:33.281Z",
+  "createdAt": "2026-04-03T23:11:46.706Z",
   "articleId": "infrastructure-noise",
   "title": "Quantifying infrastructure noise in agentic coding evals",
   "sourceUrl": "https://www.anthropic.com/engineering/infrastructure-noise",
@@ -9,11 +9,11 @@
   "summary": "Infrastructure configuration can swing agentic coding benchmarks by several percentage points—sometimes more than the leaderboard gap between top models.",
   "guidance": [
     "Agentic coding evals are different: models are given a full environment where they write programs, run tests, install dependencies, and iterate over multiple turns.",
-    "Static benchmarks score a model's output directly—the runtime environment doesn’t factor into the result. Agentic coding evals are different: models are given a full environment where they write programs, run tests, install dependencies, and iterate over multiple turns. The runtime is no longer a passive container, but",
     "Agentic coding benchmarks like SWE-bench and Terminal-Bench are commonly used to compare the software engineering capabilities of frontier models—with top spots on leaderboards often separated by just a few percentage points.",
-    "Agentic coding benchmarks like SWE-bench and Terminal-Bench are commonly used to compare the software engineering capabilities of frontier models—with top spots on leaderboards often separated by just a few percentage points. These scores are often treated as precise measurements of relative model capability and increa",
     "Eval developers have begun accounting for this.",
-    "Terminal-Bench 2.0, for instance, specifies recommended CPU and RAM on a per-task basis in their latest 2.0 release."
+    "Terminal-Bench 2.0, for instance, specifies recommended CPU and RAM on a per-task basis in their latest 2.0 release.",
+    "We also tested whether this pattern holds on evals outside Terminal-Bench by running a crossover experiment on SWE-bench.",
+    "This finding raised a larger question: how much does resource configuration impact evaluation scores?"
   ],
   "topicTags": [
     "agents",

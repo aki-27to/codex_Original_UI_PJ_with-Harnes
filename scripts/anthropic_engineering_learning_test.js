@@ -283,9 +283,18 @@ async function run() {
   assert(/Harness design is key to performance/i.test(harnessArticle.summary), "summary should use the harness-specific hero summary");
   assert(harnessArticle.guidance.some((entry) => /structured artifacts|planner, generator, and evaluator/i.test(entry)), "guidance should retain harness-specific principles");
   assert(!harnessArticle.guidance.some((entry) => /^Design quality:/i.test(entry)), "guidance should not be led by unrelated frontend rubric noise");
+  assert(harnessArticle.guidance.filter((entry) => /^We've previously shown that harness design has a substantial impact/i.test(entry)).length <= 1, "guidance should collapse near-duplicate harness statements");
+  assert(!harnessArticle.guidance.some((entry) => /evaluator—$/i.test(entry)), "guidance should not retain trailing-dash truncation noise");
+  const curatedDoc = fs.readFileSync(path.join(workspaceRoot, "docs", "ANTHROPIC_ENGINEERING_LEARNINGS.md"), "utf8");
+  assert(!/evaluator—$/im.test(curatedDoc), "curated doc should not surface trailing-dash guidance fragments");
   assert(first.selfImprovement && first.selfImprovement.state, "secondary self improvement state should be returned");
   assert.strictEqual(first.selfImprovement.gate.status, "PASS", "secondary self improvement gate should pass");
   assert.strictEqual(Number(first.selfImprovement.state.appliedHintCount) || 0, 0, "secondary lane should not auto-apply runtime hints");
+  assert.strictEqual(String(first.selfImprovement.state.observationStatus || ""), "disabled", "secondary lane should expose disabled observation status when stabilization is off");
+  assert.strictEqual(Number(first.selfImprovement.state.rawAutoApplyChangeCount) || 0, 0, "secondary lane fixture should not expose auto-apply candidates without the long-running frontend article");
+  assert.strictEqual(Number(first.selfImprovement.state.policyDisabledCandidateCount) || 0, 0, "secondary lane fixture should not mark disabled candidates when no frontend-note candidate exists");
+  assert.strictEqual(Number(first.selfImprovement.state.proposalOnlyCount) || 0, 3, "secondary lane should keep the portable fixture proposals as proposal-only items");
+  assert(first.selfImprovement.state.nextPriority && typeof first.selfImprovement.state.nextPriority === "object", "secondary lane should expose the next priority backlog item");
 
   const runtime = buildAnthropicEngineeringRuntimeSnapshot(policy, {
     enabled: true,
@@ -300,6 +309,8 @@ async function run() {
   assert(runtime.curatedDocPath.endsWith("docs/ANTHROPIC_ENGINEERING_LEARNINGS.md"), "runtime snapshot should surface anthropic curated doc path");
   assert(runtime.runtimeRetrieval && runtime.runtimeRetrieval.enabled === false, "secondary lane runtime retrieval should stay disabled");
   assert(runtime.selfImprovement && runtime.selfImprovement.appliedDecision === "none", "secondary runtime snapshot should expose proposal-first self improvement state");
+  assert.strictEqual(String(runtime.selfImprovement.observationStatus || ""), "disabled", "secondary runtime snapshot should expose disabled observation status");
+  assert.strictEqual(Number(runtime.selfImprovement.policyDisabledCandidateCount) || 0, 0, "secondary runtime snapshot should match the fixture's lack of disabled candidates");
   assert.strictEqual(runtime.selfImprovement.playbookPath, "", "secondary runtime snapshot should not expose a primary playbook path");
   assert.strictEqual(runtime.selfImprovement.reinforcementMemoryPath, "", "secondary runtime snapshot should not expose reinforcement memory when stabilization is disabled");
 

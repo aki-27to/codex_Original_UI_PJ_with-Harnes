@@ -1,0 +1,114 @@
+{
+  "schema": "agi-readiness-lane-report.v1",
+  "generatedAt": "2026-03-31T22:24:55.949Z",
+  "laneId": "blackbox_readiness",
+  "suiteId": "agi_readiness_blackbox_suite",
+  "visibility": "protected",
+  "results": [
+    {
+      "caseId": "blackbox-web-tool",
+      "taskId": "blackbox-web-tool-1774995895697",
+      "familyId": "web_tool_use",
+      "difficultyTier": "expert",
+      "modalityTags": [
+        "web",
+        "browser"
+      ],
+      "structureTags": [
+        "tool_use",
+        "interactive"
+      ],
+      "orchestrationMode": "single_agent_fallback",
+      "pass": 1,
+      "score": 100,
+      "lifecycleState": "completed",
+      "verifierVerdict": "PASS",
+      "failureType": "",
+      "rootCauseTaxonomy": [],
+      "blockers": [],
+      "remainingWork": []
+    },
+    {
+      "caseId": "blackbox-debugging",
+      "taskId": "blackbox-debugging-1774995895725",
+      "familyId": "debugging_incident_response",
+      "difficultyTier": "expert",
+      "modalityTags": [
+        "logs",
+        "code"
+      ],
+      "structureTags": [
+        "debugging",
+        "incident",
+        "bounded_multi_agent"
+      ],
+      "orchestrationMode": "multi_agent_required",
+      "pass": 1,
+      "score": 100,
+      "lifecycleState": "completed",
+      "verifierVerdict": "PASS",
+      "failureType": "",
+      "rootCauseTaxonomy": [],
+      "blockers": [],
+      "remainingWork": []
+    },
+    {
+      "caseId": "blackbox-tool-learning",
+      "taskId": "blackbox-tool-learning-1774995895920",
+      "familyId": "tool_learning_or_new_tool_adoption",
+      "difficultyTier": "expert",
+      "modalityTags": [
+        "schema",
+        "tooling"
+      ],
+      "structureTags": [
+        "tool_learning",
+        "safe_rollout"
+      ],
+      "orchestrationMode": "single_agent_fallback",
+      "pass": 1,
+      "score": 100,
+      "lifecycleState": "completed",
+      "verifierVerdict": "PASS",
+      "failureType": "",
+      "rootCauseTaxonomy": [],
+      "blockers": [],
+      "remainingWork": []
+    }
+  ],
+  "summary": {
+    "schema": "eval-results-summary.v1",
+    "generatedAt": "2026-03-31T22:24:55.949Z",
+    "caseCount": 3,
+    "passRate": 1,
+    "verifierReliabilityRate": 1,
+    "familyBreakdown": [
+      {
+        "familyId": "web_tool_use",
+        "count": 1,
+        "passRate": 1,
+        "averageScore": 100
+      },
+      {
+        "familyId": "debugging_incident_response",
+        "count": 1,
+        "passRate": 1,
+        "averageScore": 100
+      },
+      {
+        "familyId": "tool_learning_or_new_tool_adoption",
+        "count": 1,
+        "passRate": 1,
+        "averageScore": 100
+      }
+    ],
+    "difficultyBreakdown": [
+      {
+        "difficultyTier": "expert",
+        "count": 3,
+        "passRate": 1,
+        "averageScore": 100
+      }
+    ]
+  }
+}

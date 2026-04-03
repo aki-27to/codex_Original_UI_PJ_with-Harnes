@@ -1,0 +1,211 @@
+{
+  "schema": "phase1-holdout-regression-report.v1",
+  "generatedAt": "2026-03-31T22:25:49.357Z",
+  "lane": {
+    "id": "hidden_holdout",
+    "visibility": "protected"
+  },
+  "proofRoot": "logs/archive/raw/phase1_runs/phase3-holdout-1774995949305-1774995949306",
+  "apiReport": {
+    "runId": "eval-1774995949356-0d063a52",
+    "generatedAt": 1774995949356,
+    "laneId": "hidden_holdout",
+    "suite": {
+      "schema": "harness-eval-suite.v1",
+      "suiteId": "hidden_holdout.merged.v1",
+      "description": "Merged evaluation lane suite",
+      "caseCount": 3,
+      "caseIds": [
+        "holdout_turn_bridge_completed",
+        "holdout_parent_dispatch_enforced",
+        "holdout_request_user_input_blocked"
+      ],
+      "outputSchema": {}
+    },
+    "maxCases": 3,
+    "timeoutMs": 180000,
+    "runs": [
+      {
+        "suiteId": "hidden_holdout.merged.v1",
+        "kind": "conformance",
+        "variant": {
+          "label": "holdout-gate",
+          "agentName": "default",
+          "model": "gpt-5.4",
+          "modelReasoningEffort": "xhigh",
+          "sandboxMode": "workspace-write",
+          "approvalPolicy": "never",
+          "webSearch": false,
+          "cwd": "C:\\Users\\akima\\dev\\codex_Original_UI_PJ_with-Harnes",
+          "requestUserInputPolicy": "blocked",
+          "executionProfile": "eval-holdout-regression",
+          "executionIntent": "eval",
+          "executionSource": "eval_harness"
+        },
+        "startedAt": 1774995949356,
+        "completedAt": 1774995949356,
+        "durationMs": 0,
+        "sampleSize": 3,
+        "passedCases": 3,
+        "failedCases": 0,
+        "passRate": 1,
+        "score": 3,
+        "maxScore": 3,
+        "scoreRate": 1,
+        "avgLatencyMs": 0,
+        "cases": [
+          {
+            "caseId": "holdout_turn_bridge_completed",
+            "title": "Completed turn remains compatible with COMPLETED outcome",
+            "driver": "turn_task_outcome_probe",
+            "status": "completed",
+            "latencyMs": 0,
+            "passed": true,
+            "score": 1,
+            "maxScore": 1,
+            "reason": "json_fields_match",
+            "details": {
+              "checkedFields": 2,
+              "failedFields": []
+            },
+            "errorText": "",
+            "output": {
+              "chars": 132,
+              "preview": "{\"ok\":true,\"reason\":\"compatible\",\"turnStatus\":\"completed\",\"taskOutcomeStatus\":\"COMPLETED\",\"allowedStatuses\":[\"COMPLETED\",\"PARTIAL\"]}"
+            },
+            "taskOutcomeStatus": "",
+            "taskOutcomeReason": "",
+            "turnId": ""
+          },
+          {
+            "caseId": "holdout_parent_dispatch_enforced",
+            "title": "Parent dispatch guard still blocks undispatched completion",
+            "driver": "parent_dispatch_guard_probe",
+            "status": "completed",
+            "latencyMs": 0,
+            "passed": true,
+            "score": 1,
+            "maxScore": 1,
+            "reason": "json_fields_match",
+            "details": {
+              "checkedFields": 3,
+              "failedFields": []
+            },
+            "errorText": "",
+            "output": {
+              "chars": 533,
+              "preview": "{\"mode\":\"enforce\",\"enabled\":1,\"required\":1,\"routingDecisionPresent\":1,\"satisfied\":0,\"violation\":1,\"reason\":\"dispatch_not_attempted\",\"parentAgent\":1,\"smokeLikeProfile\":0,\"implementationWorkObserved\":1,\"plannedExecution\":0,\"finalStatus\":\"completed\",\"work\":{\"observed\":true,\"materialObserved\":true,\"readOnlyInspectionObserved\":false,\"fileChanges\":1,\"changedFiles\":0,\"commandExecutions\":0,\"mcpCalls\":0},\""
+            },
+            "taskOutcomeStatus": "",
+            "taskOutcomeReason": "",
+            "turnId": ""
+          },
+          {
+            "caseId": "holdout_request_user_input_blocked",
+            "title": "Non-interactive request_user_input remains blocked",
+            "driver": "request_user_input_probe",
+            "status": "completed",
+            "latencyMs": 0,
+            "passed": true,
+            "score": 1,
+            "maxScore": 1,
+            "reason": "json_fields_match",
+            "details": {
+              "checkedFields": 2,
+              "failedFields": []
+            },
+            "errorText": "",
+            "output": {
+              "chars": 211,
+              "preview": "{\"policy\":\"blocked\",\"decision\":\"blocked\",\"reason\":\"blocked_non_interactive_user_input_policy\",\"businessDecisionState\":\"EXTERNAL_ACTION_REQUIRED\",\"answers\":{},\"assumptions\":[],\"questionCount\":1,\"answeredCount\":0}"
+            },
+            "taskOutcomeStatus": "",
+            "taskOutcomeReason": "",
+            "turnId": ""
+          }
+        ],
+        "userValue": null
+      }
+    ],
+    "comparison": {
+      "winner": "single",
+      "reason": "single_variant"
+    },
+    "verifier": {
+      "schema": "independent-verifier-report.v1",
+      "generatedAt": "2026-03-31T22:25:49.356Z",
+      "source": "api_eval_run",
+      "laneId": "hidden_holdout",
+      "suiteId": "hidden_holdout.merged.v1",
+      "verdict": "PASS",
+      "reason": "all_verifier_checks_passed",
+      "policy": {
+        "requireAllCasesPass": true,
+        "minPassRate": 1,
+        "minScoreRate": 1,
+        "blockedTaskOutcomeStatuses": [
+          "FAILED_VALIDATION",
+          "NEEDS_INPUT",
+          "PARTIAL",
+          "BLOCKED"
+        ],
+        "allowedExecutorStatuses": [
+          "completed"
+        ]
+      },
+      "variantSummaries": [
+        {
+          "variant": "holdout-gate",
+          "passRate": 1,
+          "scoreRate": 1,
+          "sampleSize": 3,
+          "failedCases": 0,
+          "avgLatencyMs": 0
+        }
+      ],
+      "failureCount": 0,
+      "failures": []
+    },
+    "probePersistence": {
+      "requested": 0,
+      "persistedRecords": 0,
+      "storage": "logs/archive/raw/phase1_runs/phase3-holdout-1774995949305-1774995949306/harness_execution_memory.json",
+      "records": []
+    }
+  },
+  "verifier": {
+    "schema": "independent-verifier-report.v1",
+    "generatedAt": "2026-03-31T22:25:49.357Z",
+    "source": "holdout_regression_runner",
+    "laneId": "hidden_holdout",
+    "suiteId": "hidden_holdout.merged.v1",
+    "verdict": "PASS",
+    "reason": "all_verifier_checks_passed",
+    "policy": {
+      "requireAllCasesPass": true,
+      "minPassRate": 1,
+      "minScoreRate": 1,
+      "blockedTaskOutcomeStatuses": [
+        "FAILED_VALIDATION",
+        "NEEDS_INPUT",
+        "PARTIAL",
+        "BLOCKED"
+      ],
+      "allowedExecutorStatuses": [
+        "completed"
+      ]
+    },
+    "variantSummaries": [
+      {
+        "variant": "holdout-gate",
+        "passRate": 1,
+        "scoreRate": 1,
+        "sampleSize": 3,
+        "failedCases": 0,
+        "avgLatencyMs": 0
+      }
+    ],
+    "failureCount": 0,
+    "failures": []
+  }
+}

@@ -14,3 +14,4 @@ tools/kokoro-fastapi/.env
 .resume_home/
 output/appserver_tui_demo_home/
 output/tmp_harnesui_retry_bootstrap.js
+docs/copilot-studio/

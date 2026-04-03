@@ -1,0 +1,76 @@
+{
+  "schema": "multi-agent-public-baseline.v1",
+  "version": "2026-03-30.r1",
+  "cases": [
+    {
+      "id": "coding_multi_agent",
+      "familyId": "deterministic_code",
+      "orchestrationMode": "multi_agent_bounded",
+      "title": "Coding baseline through planner/executor/verifier",
+      "objective": "Produce a bounded code-change deliverable summary with independent verification.",
+      "acceptanceCriteria": [
+        "deliverable summary is written",
+        "verifier report is PASS",
+        "integration summary is merged"
+      ],
+      "workflow": [
+        "planner",
+        "executor",
+        "verifier"
+      ],
+      "expectedDeliverable": "Provide a coding deliverable summary and changed surface.",
+      "executorDeliverable": "Implemented bounded coding delta with evidence for review.",
+      "researchMaterials": [],
+      "verificationRules": {
+        "requiredSubstrings": [
+          "Implemented",
+          "evidence"
+        ]
+      }
+    },
+    {
+      "id": "research_multi_agent",
+      "familyId": "research_analysis",
+      "orchestrationMode": "multi_agent_bounded",
+      "title": "Research baseline through planner/researcher/verifier",
+      "objective": "Summarize bounded research findings with citations and verification.",
+      "acceptanceCriteria": [
+        "research summary is written",
+        "citations are present",
+        "verifier report is PASS"
+      ],
+      "workflow": [
+        "planner",
+        "researcher",
+        "verifier"
+      ],
+      "expectedDeliverable": "Provide a research synthesis with citations.",
+      "researchMaterials": [
+        "Phase 1 established public regression, hidden holdout, rollback, and independent verifier.",
+        "Phase 2 established continuity state, initialize/resume/close flows, and handoff artifacts.",
+        "Phase 3 established lifecycle state machine, acceptance-driven closeout, and inspect API."
+      ],
+      "verificationRules": {
+        "minimumCitationCount": 2,
+        "requiredSubstrings": [
+          "Phase 1",
+          "Phase 2",
+          "Phase 3"
+        ]
+      }
+    },
+    {
+      "id": "planning_single_agent_fallback",
+      "familyId": "planning_design",
+      "orchestrationMode": "single_agent_fallback",
+      "title": "Simple planning task falls back to single-agent path",
+      "objective": "Keep a trivial planning task on the single-agent path.",
+      "acceptanceCriteria": [
+        "single-agent fallback is used",
+        "closeout remains green"
+      ],
+      "workflow": [],
+      "expectedDeliverable": "Provide a single-agent closeout note."
+    }
+  ]
+}

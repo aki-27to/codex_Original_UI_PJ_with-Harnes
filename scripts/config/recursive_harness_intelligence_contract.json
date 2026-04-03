@@ -1,0 +1,38 @@
+{
+  "schema": "recursive-harness-intelligence-contract.v1",
+  "version": "2026-04-01.r1",
+  "preferredLabels": [
+    "自己改善型・ゼロHITL・汎用志向エージェント基盤",
+    "Recursive Harness Intelligence"
+  ],
+  "loopDefinition": "サイクルを回すたびに、未知課題での広さ・深さ・自律性が持続的に改善し、失敗再発率が下がり、安全性が悪化しないこと",
+  "requiredCycleStages": [
+    "execute_task",
+    "detect_failure_or_weakness",
+    "analyze_root_cause",
+    "update_memory_knowledge_or_tool_use",
+    "re_evaluate",
+    "retain_gain_without_regression",
+    "transfer_to_next_unseen_task"
+  ],
+  "necessaryConditions": [
+    "task_breadth_increases_or_holds",
+    "long_duration_resilience_increases_or_holds",
+    "adaptation_gain_is_positive_or_stable",
+    "tool_learning_reliability_is_non_degrading",
+    "regression_stability_is_non_degrading",
+    "freeze_safety_is_non_degrading",
+    "failure_recurrence_rate_declines_or_holds",
+    "safety_does_not_degrade"
+  ],
+  "antiPatterns": [
+    "local_harness_optimization_only",
+    "self_reinforcing_without_breadth_gain",
+    "safety_regression_hidden_by_score_gain",
+    "one_off_improvement_without_retention"
+  ],
+  "humanBaselineRoles": {
+    "privateOperator": "calibration_only_for_private_governance",
+    "publicClaim": "required_external_evidence"
+  }
+}

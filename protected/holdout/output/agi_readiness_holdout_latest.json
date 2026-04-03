@@ -1,0 +1,113 @@
+{
+  "schema": "agi-readiness-lane-report.v1",
+  "generatedAt": "2026-03-31T22:24:55.695Z",
+  "laneId": "agi_readiness_holdout",
+  "suiteId": "agi_readiness_holdout_suite",
+  "visibility": "protected",
+  "results": [
+    {
+      "caseId": "holdout-coding",
+      "taskId": "holdout-coding-1774995895456",
+      "familyId": "coding",
+      "difficultyTier": "advanced",
+      "modalityTags": [
+        "text",
+        "code"
+      ],
+      "structureTags": [
+        "implementation",
+        "bounded_multi_agent"
+      ],
+      "orchestrationMode": "multi_agent_required",
+      "pass": 1,
+      "score": 100,
+      "lifecycleState": "completed",
+      "verifierVerdict": "PASS",
+      "failureType": "",
+      "rootCauseTaxonomy": [],
+      "blockers": [],
+      "remainingWork": []
+    },
+    {
+      "caseId": "holdout-business-ops",
+      "taskId": "holdout-business-ops-1774995895638",
+      "familyId": "business_ops",
+      "difficultyTier": "advanced",
+      "modalityTags": [
+        "text",
+        "structured_artifact"
+      ],
+      "structureTags": [
+        "ops",
+        "handoff"
+      ],
+      "orchestrationMode": "single_agent_fallback",
+      "pass": 1,
+      "score": 100,
+      "lifecycleState": "completed",
+      "verifierVerdict": "PASS",
+      "failureType": "",
+      "rootCauseTaxonomy": [],
+      "blockers": [],
+      "remainingWork": []
+    },
+    {
+      "caseId": "holdout-multimodal-docs",
+      "taskId": "holdout-multimodal-docs-1774995895666",
+      "familyId": "multimodal_docs",
+      "difficultyTier": "advanced",
+      "modalityTags": [
+        "document",
+        "layout"
+      ],
+      "structureTags": [
+        "multimodal",
+        "artifact"
+      ],
+      "orchestrationMode": "single_agent_fallback",
+      "pass": 1,
+      "score": 100,
+      "lifecycleState": "completed",
+      "verifierVerdict": "PASS",
+      "failureType": "",
+      "rootCauseTaxonomy": [],
+      "blockers": [],
+      "remainingWork": []
+    }
+  ],
+  "summary": {
+    "schema": "eval-results-summary.v1",
+    "generatedAt": "2026-03-31T22:24:55.695Z",
+    "caseCount": 3,
+    "passRate": 1,
+    "verifierReliabilityRate": 1,
+    "familyBreakdown": [
+      {
+        "familyId": "coding",
+        "count": 1,
+        "passRate": 1,
+        "averageScore": 100
+      },
+      {
+        "familyId": "business_ops",
+        "count": 1,
+        "passRate": 1,
+        "averageScore": 100
+      },
+      {
+        "familyId": "multimodal_docs",
+        "count": 1,
+        "passRate": 1,
+        "averageScore": 100
+      }
+    ],
+    "difficultyBreakdown": [
+      {
+        "difficultyTier": "advanced",
+        "count": 3,
+        "passRate": 1,
+        "averageScore": 100
+      }
+    ]
+  }
+}

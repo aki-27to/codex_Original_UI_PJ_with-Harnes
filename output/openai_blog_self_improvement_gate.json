@@ -1,6 +1,6 @@
 {
   "schema": "self-improvement-eval-gate.v1",
-  "generatedAt": "2026-03-25T14:31:59.958Z",
+  "generatedAt": "2026-04-03T23:30:47.228Z",
   "status": "PASS",
   "reason": "all_cases_passed",
   "passedCount": 3,
@@ -23,7 +23,8 @@
           "one-year-of-responses",
           "skills-agents-sdk"
         ],
-        "matchedFrontendQualityNoteIds": []
+        "matchedFrontendQualityNoteIds": [],
+        "promptBlockChars": 1201
       },
       "candidate": {
         "status": "ready",
@@ -34,19 +35,22 @@
           "codex"
         ],
         "matchedHintIds": [
+          "realtime-perplexity-computer-runtime-retrieval",
           "designing-delightful-frontends-with-gpt-5-4-runtime-retrieval",
           "one-year-of-responses-runtime-retrieval",
           "skills-agents-sdk-runtime-retrieval",
           "building-frontend-uis-with-codex-and-figma-runtime-retrieval",
-          "run-long-horizon-tasks-with-codex-runtime-retrieval",
-          "skills-shell-tips-runtime-retrieval"
+          "run-long-horizon-tasks-with-codex-runtime-retrieval"
         ],
         "matchedFrontendQualityNoteIds": [],
         "articleIds": [
           "one-year-of-responses",
           "skills-agents-sdk"
         ],
-        "promptBlockChars": 1564
+        "promptBlockChars": 1201
+      },
+      "limits": {
+        "maxPromptBlockChars": 1700
       }
     },
     {
@@ -66,7 +70,8 @@
           "one-year-of-responses",
           "skills-agents-sdk"
         ],
-        "matchedFrontendQualityNoteIds": []
+        "matchedFrontendQualityNoteIds": [],
+        "promptBlockChars": 1210
       },
       "candidate": {
         "status": "ready",
@@ -76,23 +81,25 @@
           "evals",
           "codex",
           "context",
-          "safety",
-          "agents"
+          "safety"
         ],
         "matchedHintIds": [
           "designing-delightful-frontends-with-gpt-5-4-runtime-retrieval",
-          "building-frontend-uis-with-codex-and-figma-runtime-retrieval",
+          "realtime-perplexity-computer-runtime-retrieval",
           "one-year-of-responses-runtime-retrieval",
           "skills-agents-sdk-runtime-retrieval",
-          "run-long-horizon-tasks-with-codex-runtime-retrieval",
-          "skills-shell-tips-runtime-retrieval"
+          "building-frontend-uis-with-codex-and-figma-runtime-retrieval",
+          "run-long-horizon-tasks-with-codex-runtime-retrieval"
         ],
         "matchedFrontendQualityNoteIds": [],
         "articleIds": [
           "one-year-of-responses",
           "skills-agents-sdk"
         ],
-        "promptBlockChars": 1589
+        "promptBlockChars": 1218
+      },
+      "limits": {
+        "maxPromptBlockChars": 1700
       }
     },
     {
@@ -106,7 +113,8 @@
           "codex"
         ],
         "articleIds": [],
-        "matchedFrontendQualityNoteIds": []
+        "matchedFrontendQualityNoteIds": [],
+        "promptBlockChars": 0
       },
       "candidate": {
         "status": "skipped",
@@ -118,6 +126,9 @@
         "matchedFrontendQualityNoteIds": [],
         "articleIds": [],
         "promptBlockChars": 0
+      },
+      "limits": {
+        "maxPromptBlockChars": 400
       }
     }
   ]

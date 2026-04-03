@@ -104,6 +104,7 @@ body.simple-view .topbar {
   gap: 8px;
   flex-wrap: wrap;
   justify-content: flex-end;
+  align-items: center;
 }
 
 .view-toggle {
@@ -311,6 +312,7 @@ body.simple-view .command-panel {
   grid-template-rows: auto;
   gap: 10px;
   min-height: 82vh;
+  align-content: start;
 }
 
 body.simple-view .work-panel {
@@ -1046,9 +1048,9 @@ input[readonly] {
 .focus-panel {
   border: 1px solid #254473;
   border-radius: 12px;
-  padding: 10px;
+  padding: 12px;
   display: grid;
-  gap: 10px;
+  gap: 12px;
 }
 
 .focus-head,
@@ -1083,6 +1085,12 @@ input[readonly] {
   gap: 8px;
 }
 
+.focus-brief-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.05fr) minmax(0, 1.35fr);
+  gap: 10px;
+}
+
 .focus-summary-card {
   border: 1px solid #335789;
   border-radius: 12px;
@@ -1090,6 +1098,75 @@ input[readonly] {
   background: linear-gradient(180deg, rgba(24, 38, 66, 0.92), rgba(11, 21, 39, 0.94));
   display: grid;
   gap: 6px;
+}
+
+.mission-draft-card {
+  border: 1px solid #365b8f;
+  border-radius: 12px;
+  padding: 11px 12px;
+  background: linear-gradient(180deg, rgba(18, 30, 55, 0.96), rgba(10, 18, 33, 0.98));
+  display: grid;
+  gap: 10px;
+}
+
+.mission-draft-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: start;
+  gap: 12px;
+}
+
+.mission-draft-head h4 {
+  margin: 0;
+  font-size: 14px;
+  color: #eef5ff;
+}
+
+.mission-draft-copy,
+.mission-draft-status {
+  margin: 0;
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.mission-draft-copy {
+  max-width: 320px;
+  color: #b2c8ec;
+  text-align: right;
+}
+
+.mission-draft-status {
+  color: #8ec5ff;
+}
+
+.mission-draft-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.mission-draft-row {
+  border: 1px solid rgba(72, 103, 157, 0.72);
+  border-radius: 11px;
+  padding: 10px;
+  background: rgba(7, 14, 27, 0.74);
+  display: grid;
+  gap: 6px;
+}
+
+.mission-draft-label {
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #8eacd9;
+}
+
+.mission-draft-value {
+  font-size: 14px;
+  line-height: 1.45;
+  color: #eff5ff;
+  word-break: break-word;
 }
 
 .focus-action-title {
@@ -2760,8 +2837,8 @@ body.simple-view .diagnostics-panel {
   border: 1px solid #1f355f;
   border-radius: 12px;
   background: linear-gradient(180deg, rgba(9, 17, 33, 0.84), rgba(8, 14, 27, 0.95));
-  min-height: clamp(520px, 64vh, 720px);
-  max-height: 72vh;
+  min-height: clamp(360px, 48vh, 560px);
+  max-height: 62vh;
   display: flex;
   flex-direction: column;
   overflow: auto;
@@ -2779,10 +2856,10 @@ body.simple-view .diagnostics-panel {
 .timeline-empty-state {
   border: 1px dashed #355a8f;
   border-radius: 12px;
-  padding: 14px;
+  padding: 16px;
   background: rgba(10, 18, 33, 0.62);
   display: grid;
-  gap: 8px;
+  gap: 10px;
 }
 
 .timeline-empty-title {
@@ -2946,6 +3023,35 @@ body.simple-view .diagnostics-panel {
 .composer-input {
   display: grid;
   gap: 8px;
+}
+
+.composer-runtime-strip {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.composer-runtime-chip {
+  display: inline-flex;
+  align-items: center;
+  min-height: 28px;
+  padding: 0 10px;
+  border-radius: 999px;
+  border: 1px solid rgba(71, 101, 150, 0.8);
+  background: rgba(6, 12, 23, 0.76);
+  color: #dce8ff;
+  font-size: 12px;
+  line-height: 1.25;
+}
+
+.composer-runtime-chip.ready {
+  border-color: rgba(71, 159, 118, 0.58);
+  color: #b9f4cf;
+}
+
+.composer-runtime-chip.warning {
+  border-color: rgba(244, 174, 43, 0.62);
+  color: #ffe0a1;
 }
 
 .composer-tip {
@@ -3293,8 +3399,47 @@ textarea {
 body.telemetry-off .runtime-strip,
 body.telemetry-off .performance-panel,
 body.telemetry-off .agent-flow-panel,
-body.telemetry-off .diagnostics-panel {
+body.telemetry-off .diagnostics-panel,
+body.telemetry-off .ops-deck {
   display: none;
+}
+
+.ops-deck {
+  border: 1px solid #294d80;
+  border-radius: 12px;
+  background: linear-gradient(180deg, rgba(15, 23, 42, 0.9), rgba(9, 16, 29, 0.96));
+  padding: 10px 12px 12px;
+}
+
+.ops-deck summary {
+  list-style: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  font-size: 13px;
+  font-weight: 800;
+  color: #dbe8ff;
+}
+
+.ops-deck summary::-webkit-details-marker {
+  display: none;
+}
+
+.ops-deck summary::after {
+  content: "▾";
+  color: #9db9e9;
+}
+
+.ops-deck:not([open]) summary::after {
+  content: "▸";
+}
+
+.ops-deck-body {
+  margin-top: 10px;
+  display: grid;
+  gap: 10px;
 }
 
 button:disabled {
@@ -3351,7 +3496,9 @@ button:disabled {
 
   .runtime-strip,
   .performance-grid,
+  .focus-brief-grid,
   .focus-grid,
+  .mission-draft-grid,
   .harness-requirement-sections,
   .intent-gate-list,
   .harness-focus-grid,
@@ -3392,6 +3539,15 @@ button:disabled {
     flex-direction: column;
     align-items: stretch;
   }
+
+  .mission-draft-head {
+    flex-direction: column;
+  }
+
+  .mission-draft-copy {
+    max-width: none;
+    text-align: left;
+  }
 }
 
 @media (max-width: 760px) {
@@ -3400,7 +3556,6 @@ button:disabled {
   .intent-grid,
   .runtime-strip,
   .performance-grid,
-  .focus-grid,
   .harness-requirement-sections,
   .intent-gate-list,
   .harness-focus-grid,
@@ -3438,6 +3593,25 @@ button:disabled {
   .topbar {
     flex-direction: column;
     align-items: flex-start;
+    gap: 10px;
+    padding: 12px;
+  }
+
+  .brand h1 {
+    font-size: 22px;
+  }
+
+  .brand p {
+    font-size: 12px;
+  }
+
+  .state-pills {
+    gap: 6px;
+  }
+
+  .state-pills .pill {
+    font-size: 11px;
+    padding: 5px 10px;
   }
 
   .intent-gates-head {
@@ -3463,6 +3637,56 @@ button:disabled {
     justify-items: start;
   }
 
+  .focus-panel {
+    padding: 10px;
+    gap: 8px;
+  }
+
+  body.simple-view .focus-head-tools,
+  body.simple-view .mission-draft-copy {
+    display: none;
+  }
+
+  .mission-draft-grid,
+  .focus-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  body.simple-view .focus-grid {
+    display: none;
+  }
+
+  .mission-draft-row {
+    padding: 10px;
+  }
+
+  .mission-draft-value,
+  .focus-action-detail,
+  .focus-action-hint {
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+
+  .mission-draft-value {
+    -webkit-line-clamp: 3;
+  }
+
+  .focus-action-detail,
+  .focus-action-hint {
+    -webkit-line-clamp: 2;
+  }
+
+  .composer-shortcuts {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    padding-bottom: 4px;
+  }
+
+  .composer-shortcuts .btn {
+    flex: 0 0 auto;
+  }
+
   .agent-trace-item {
     grid-template-columns: 1fr;
     gap: 4px;
@@ -3477,8 +3701,8 @@ button:disabled {
   }
 
   .timeline {
-    min-height: clamp(320px, 48vh, 460px);
-    max-height: 58vh;
+    min-height: clamp(280px, 40vh, 360px);
+    max-height: 52vh;
   }
 
   .composer {
@@ -3489,6 +3713,10 @@ button:disabled {
   .agent-topography-list {
     max-height: 240px;
     grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .ops-deck {
+    padding: 9px 10px 10px;
   }
 }
 

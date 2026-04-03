@@ -1,7 +1,7 @@
 {
   "schema": "self-improvement-proposal.v1",
   "proposalId": "openai-blog-run-long-horizon-tasks-with-codex-self-improvement",
-  "createdAt": "2026-03-25T14:31:59.958Z",
+  "createdAt": "2026-04-03T23:30:47.228Z",
   "sourceLane": "OpenAI Developers Blog",
   "sourceTier": "primary",
   "articleId": "run-long-horizon-tasks-with-codex",
@@ -13,14 +13,14 @@
   "target": "runtime/external-learning/runtime-retrieval",
   "objective": "Improve runtime retrieval targeting using article-specific guidance from Run long horizon tasks with Codex | OpenAI Developers.",
   "evidence": {
-    "summary": "In September 2025, OpenAI introduced GPT-5-Codex as the first version of GPT-5 optimized for agentic coding. In December 2025, we launched 5.2 which was the moment that people began to believe that using autonomous coding agents could be reliable. In particular, we saw a huge jump in how long the model could reliably f",
+    "summary": "This was an experiment, not a production rollout. But it performed well on the parts that matter for long-horizon work: following the spec, staying on task, running verification, and repairing failures as it went.",
     "guidance": [
-      "I wanted to stress-test that threshold. So I gave Codex a blank repo, full access, and one job: build a design tool from scratch. Then I let it run with GPT-5.3-Codex at “Extra High” reasoning. Codex ran for about 25 hours uninterrupted, us",
-      "This was an experiment, not a production rollout. But it performed well on the parts that matter for long-horizon work: following the spec, staying on task, running verification, and repairing failures as it went.",
       "These screenshots are useful because they make the core shift visible: agentic coding is increasingly about time horizon, not just one-shot intelligence.",
       "Section focus: Takeaways for long-horizon Codex tasks",
       "Section focus: Why Codex can stay coherent on long tasks",
-      "This is not only “models got smarter.” The practical change is that agents can stay coherent for longer, complete larger chunks of work end-to-end, and recover from errors without losing the thread."
+      "This is not only “models got smarter.” The practical change is that agents can stay coherent for longer, complete larger chunks of work end-to-end, and recover from errors without losing the thread.",
+      "This was an experiment, not a production rollout. But it performed well on the parts that matter for long-horizon work: following the spec, staying on task, running verification, and repairing failures as it went.",
+      "In December 2025, we launched 5.2 which was the moment that people began to believe that using autonomous coding agents could be reliable."
     ],
     "topicTags": [
       "agents",
@@ -89,9 +89,9 @@
         "frontend_quality"
       ],
       "guidance": [
-        "I wanted to stress-test that threshold. So I gave Codex a blank repo, full access, and one job: build a design tool from scratch. Then I let it run with GPT-5.3-Codex at “Extra High” reasoning. Codex ran for about 25 hou",
-        "This was an experiment, not a production rollout. But it performed well on the parts that matter for long-horizon work: following the spec, staying on task, running verification, and repairing failures as it went.",
-        "These screenshots are useful because they make the core shift visible: agentic coding is increasingly about time horizon, not just one-shot intelligence."
+        "These screenshots are useful because they make the core shift visible: agentic coding is increasingly about time horizon, not just one-shot intelligence.",
+        "Section focus: Takeaways for long-horizon Codex tasks",
+        "Section focus: Why Codex can stay coherent on long tasks"
       ]
     }
   },

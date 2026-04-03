@@ -4,11 +4,11 @@ Updated: 2026-03-08
 
 ## 1) Frozen Goal
 
-This harness is a governed decision system for delegated execution.
+This harness is an autonomy-first governed decision system for delegated execution.
 
 Its primary goal is:
 
-> Move ambiguous user requests into a governed, reviewable, replayable, evidence-backed, decisionable state without depending on additional user questions.
+> Move ambiguous user requests into a governed, reviewable, replayable, evidence-backed, decisionable state while maximizing autonomous forward progress and minimizing unnecessary human interruption.
 
 Important:
 - Constitution conformance is the primary design goal.
@@ -217,7 +217,7 @@ Each factor is scored `0/1/2` and must retain rationale.
 
 The following may only be preserved or strengthened:
 
-- `requestUserInputPolicy = blocked`
+- `requestUserInputPolicy = autonomy_first`
 - `parentDispatchGuard = enforce`
 - retired worker remains legacy-only
 - turn contract and task outcome contract remain separate
@@ -238,7 +238,7 @@ The following may only be preserved or strengthened:
 
 ### Execution Invariants
 
-5. Blocked user-input posture must never be violated.
+5. Heuristic approval-boundary markers alone must not force interruption; only explicit user-decision clauses or narrow irreversible external actions may escalate to operator input.
 6. No child task may complete without `TaskOutcome`.
 7. `DELIVERY` runs must carry evidence for each material claim.
 8. `DISCOVERY` runs must emit assumptions, open questions, and decision boundary.

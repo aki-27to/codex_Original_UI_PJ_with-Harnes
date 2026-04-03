@@ -516,6 +516,16 @@ function evaluateInvariantStatuses({
   const finalOutcome = latestRun.finalOutcome && typeof latestRun.finalOutcome === "object" ? latestRun.finalOutcome : {};
   const signoffAllPassed = Boolean(signoff.allPassed || (signoff.assertions && signoff.assertions.allPassed));
   const invariants = Array.isArray(invariantsContract && invariantsContract.invariants) ? invariantsContract.invariants : [];
+  const autonomyFirstPolicies = new Set(["auto-default", "auto-empty"]);
+  const liveRuntimePolicy = safeString(trace.runtimeDefaultRequestUserInputPolicy, 80).toLowerCase();
+  const latestRunPolicy = safeString(latestRun.requestUserInputPolicy, 80).toLowerCase();
+  const tracePolicy = safeString(trace.requestUserInputPolicy, 80).toLowerCase();
+  const signoffPolicy = safeString(signoff.runtime && signoff.runtime.nonInteractiveUserInput && signoff.runtime.nonInteractiveUserInput.policy, 80).toLowerCase();
+  const strictLane = safeString(routing.assurance_depth, 80) === "SIGNOFF_ASSURANCE"
+    || safeString(latestRun.selectedAssuranceDepth, 80) === "SIGNOFF_ASSURANCE";
+  const liveRuntimeAutonomyFirst = autonomyFirstPolicies.has(liveRuntimePolicy);
+  const observedRunAutonomyFirst = autonomyFirstPolicies.has(latestRunPolicy) || autonomyFirstPolicies.has(tracePolicy);
+  const strictLaneBlocked = strictLane && [latestRunPolicy, tracePolicy, signoffPolicy].includes("blocked");
   const derived = {
     "control.parent_no_material_implementation":
       !(latestRun.parentMaterialImplementationObserved || (trace.invariants && trace.invariants.parentMaterialImplementationObserved)),
@@ -525,10 +535,10 @@ function evaluateInvariantStatuses({
       Boolean(requestFrame && requestFrame.schema && routing && routing.schema),
     "control.retired_worker_not_runtime":
       !Array.isArray(latestRun.usedAgents) || !latestRun.usedAgents.includes("worker"),
-    "execution.blocked_user_input_posture":
-      safeString(latestRun.requestUserInputPolicy, 80).toLowerCase() === "blocked"
-      || safeString(trace.requestUserInputPolicy, 80).toLowerCase() === "blocked"
-      || (signoff.runtime && signoff.runtime.nonInteractiveUserInput && signoff.runtime.nonInteractiveUserInput.policy === "blocked"),
+    "execution.autonomy_first_user_input_posture":
+      liveRuntimePolicy
+        ? liveRuntimeAutonomyFirst
+        : (observedRunAutonomyFirst || strictLaneBlocked),
     "execution.task_outcome_required":
       outcomes.length > 0,
     "execution.delivery_evidence_per_material_claim":
@@ -616,6 +626,7 @@ function buildConformanceReport(input = {}) {
       turn: {
         turnId: input.latestRunSummary && input.latestRunSummary.turnId,
       },
+      runtimeDefaultRequestUserInputPolicy: input.runtimeRequestUserInputPolicy,
       requestUserInputPolicy: input.latestRunSummary && input.latestRunSummary.requestUserInputPolicy,
       invariants: {
         parentMaterialImplementationObserved: Boolean(input.latestRunSummary && input.latestRunSummary.parentMaterialImplementationObserved),
