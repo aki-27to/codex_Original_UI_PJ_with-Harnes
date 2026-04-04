@@ -1,6 +1,6 @@
 {
   "schema": "governed-memory-latest-pack-public.v1",
-  "generatedAt": "2026-04-04T06:29:18.432Z",
+  "generatedAt": "2026-04-04T06:54:52.039Z",
   "workspaceId": "5c839dfeef8b555f",
   "packId": "pack_e98f182726",
   "latestPack": {
@@ -145,7 +145,7 @@
         "taskFamilies": [
           "deterministic_code"
         ],
-        "summary": "mock-<turn-ref> finished as COMPLETED."
+        "summary": "runtime episode finished as CAPTURED."
       },
       {
         "publicRef": "mem_06ab676347",
@@ -159,7 +159,7 @@
         "taskFamilies": [
           "deterministic_code"
         ],
-        "summary": "mock-<turn-ref> finished as COMPLETED."
+        "summary": "runtime episode finished as CAPTURED."
       },
       {
         "publicRef": "mem_1f6c4fc7af",
@@ -173,7 +173,7 @@
         "taskFamilies": [
           "deterministic_code"
         ],
-        "summary": "019d5664-cfcb-7c11-8ce2-3199cd7b59ab finished as FAILED_VALIDATION."
+        "summary": "runtime episode finished as CAPTURED."
       }
     ]
   }

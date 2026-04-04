@@ -99,6 +99,12 @@ function maskOpaqueId(value, prefix = "mem") {
   return `${prefix}_${stableHash(text).slice(0, 10)}`;
 }
 
+function humanizeCompactIdentifier(value) {
+  const text = safeString(value, 240);
+  if (!text) return "";
+  return text.replace(/\b([A-Za-z0-9]+(?:[_-][A-Za-z0-9]+)+)\b/g, (_, token) => token.replace(/[_-]+/g, " "));
+}
+
 function normalizePublicText(value, workspaceRoot) {
   let text = safeString(value, 600);
   if (!text) return "";
@@ -112,8 +118,65 @@ function normalizePublicText(value, workspaceRoot) {
   }
   text = text
     .replace(/\bturn[-:][A-Za-z0-9_-]+\b/g, "<turn-ref>")
-    .replace(/\bthread[-:][A-Za-z0-9_-]+\b/g, "<thread-ref>");
+    .replace(/\bthread[-:][A-Za-z0-9_-]+\b/g, "<thread-ref>")
+    .replace(/\b[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}\b/ig, "<opaque-id>");
   return text;
+}
+
+function normalizePublicTimestamp(value) {
+  const text = safeString(value, 80);
+  if (!text) return "";
+  if (/^\d{13}$/.test(text)) {
+    const asNumber = Number(text);
+    if (Number.isFinite(asNumber) && asNumber > 0) {
+      return new Date(asNumber).toISOString();
+    }
+  }
+  if (/^\d{10}$/.test(text)) {
+    const asNumber = Number(text);
+    if (Number.isFinite(asNumber) && asNumber > 0) {
+      return new Date(asNumber * 1000).toISOString();
+    }
+  }
+  return text;
+}
+
+function collectTextFragments(value, workspaceRoot, depth = 0) {
+  if (depth > 3 || value == null) return [];
+  if (typeof value === "string") {
+    const normalized = normalizePublicText(humanizeCompactIdentifier(value), workspaceRoot).trim();
+    if (!normalized || normalized === "[object Object]") return [];
+    return [normalized];
+  }
+  if (typeof value === "number" || typeof value === "boolean") {
+    return [String(value)];
+  }
+  if (Array.isArray(value)) {
+    return value.flatMap((entry) => collectTextFragments(entry, workspaceRoot, depth + 1)).slice(0, 8);
+  }
+  if (value && typeof value === "object") {
+    const preferredKeys = ["summary", "reason", "message", "title", "status", "hint", "label", "code", "nextAction", "gatingReason"];
+    const keys = [
+      ...preferredKeys.filter((key) => Object.prototype.hasOwnProperty.call(value, key)),
+      ...Object.keys(value).filter((key) => !preferredKeys.includes(key)),
+    ];
+    const collected = [];
+    for (const key of keys) {
+      collected.push(...collectTextFragments(value[key], workspaceRoot, depth + 1));
+      if (collected.length >= 8) break;
+    }
+    return collected.slice(0, 8);
+  }
+  return [];
+}
+
+function coerceSummaryText(value, workspaceRoot, fallback = "") {
+  const [first] = collectTextFragments(value, workspaceRoot, 0);
+  return first || fallback;
+}
+
+function coerceSummaryList(values, workspaceRoot, limit = 8) {
+  return uniqueStrings(collectTextFragments(values, workspaceRoot, 0), limit, 220);
 }
 
 function normalizePublicPath(workspaceRoot, rawPath) {
@@ -886,16 +949,26 @@ function buildWorkspaceProgressItem({ workspaceRoot, runtime, traceability, exec
     summary: "Durable workspace-scoped progress state compiled from the latest turn, evidence traceability, and execution history.",
     structured: {
       workspaceRoot: repoRelative(workspaceRoot, workspaceRoot),
-      currentObjective: safeString(latestTurn.summary || latestTurn.title || latestTurn.task_outcome_reason, 280) || "Continue the active governed harness objective.",
+      currentObjective: coerceSummaryText(
+        latestTurn.summary || latestTurn.title || humanizeCompactIdentifier(latestTurn.task_outcome_reason),
+        workspaceRoot,
+        "Continue the active governed harness objective."
+      ),
       currentMilestones: uniqueStrings([
-        safeString(latestTurn.status, 80) && `latest turn status: ${safeString(latestTurn.status, 80)}`,
-        safeString(familyGate.status, 80) && `family gate: ${safeString(familyGate.status, 80)}`,
+        safeString(latestTurn.status, 80) && `latest turn status: ${humanizeCompactIdentifier(safeString(latestTurn.status, 80))}`,
+        safeString(familyGate.status, 80) && `family gate: ${humanizeCompactIdentifier(safeString(familyGate.status, 80))}`,
       ].filter(Boolean), 8, 160),
-      knownBlockers: uniqueStrings((Array.isArray(familyGate.missingHard) ? familyGate.missingHard : []).map((entry) => safeString(entry && entry.label, 120) || safeString(entry && entry.reason, 120)), 8, 160),
-      knownRisks: uniqueStrings([
-        safeString(latestFailure && latestFailure.taskOutcomeReason, 200),
-        safeString(traceability && traceability.summary, 200),
-      ], 8, 200),
+      knownBlockers: uniqueStrings(
+        (Array.isArray(familyGate.missingHard) ? familyGate.missingHard : [])
+          .map((entry) => coerceSummaryText(entry && (entry.label || entry.reason || entry), workspaceRoot))
+          .filter(Boolean),
+        8,
+        160
+      ),
+      knownRisks: coerceSummaryList([
+        latestFailure && humanizeCompactIdentifier(latestFailure.taskOutcomeReason),
+        traceability && traceability.summary,
+      ], workspaceRoot, 8),
       lastSuccessfulValidation: latestSuccess ? [{
         turnId: safeString(latestSuccess.turnId, 120),
         taskOutcomeStatus: safeString(latestSuccess.taskOutcomeStatus, 80),
@@ -904,7 +977,7 @@ function buildWorkspaceProgressItem({ workspaceRoot, runtime, traceability, exec
       lastFailedValidation: latestFailure ? [{
         turnId: safeString(latestFailure.turnId, 120),
         taskOutcomeStatus: safeString(latestFailure.taskOutcomeStatus, 80),
-        reason: safeString(latestFailure.taskOutcomeReason, 200),
+        reason: coerceSummaryText(humanizeCompactIdentifier(latestFailure.taskOutcomeReason), workspaceRoot),
         completedAt: safeString(latestFailure.completedAt, 80),
       }] : [],
       recentTouchedPaths: uniqueStrings(traceability && traceability.changedPaths, 24, 220),
@@ -950,7 +1023,7 @@ function buildEpisodicAndFailureItems({ workspaceRoot, runtime, executionOvervie
         agents: uniqueStrings([safeString(entry && entry.agentName, 80)], 4, 80),
         ownedPaths: [],
       },
-      summary: `${safeString(entry && entry.turnId, 120) || "turn"} finished as ${taskOutcomeStatus}.`,
+      summary: `${safeString(entry && entry.executionProfile, 80) || "runtime"} episode finished as ${taskOutcomeStatus}.`,
       structured: {
         turnId: safeString(entry && entry.turnId, 120),
         status: safeString(entry && entry.status, 40),
@@ -1368,6 +1441,7 @@ function compileMemoryPack({ workspaceRoot, runtime, items }) {
       status: entry.item.status,
       score: entry.score,
       summary: entry.item.content.summary,
+      structured: entry.item.content.structured,
       whyIncluded: reason,
     });
   }
@@ -1684,6 +1758,22 @@ function loadPublicExportPolicy(workspaceRoot) {
   return loadConfigJson(workspaceRoot, "scripts", "config", "memory_public_export_policy.json");
 }
 
+function buildPublicItemSummary(item, workspaceRoot) {
+  const type = safeString(item && item.type, 80);
+  const structured = item && item.structured && typeof item.structured === "object" ? item.structured : {};
+  if (type === "episodic_event") {
+    const outcome = safeString(structured.taskOutcomeStatus, 80).toUpperCase() || safeString(item && item.status, 40).toUpperCase() || "UNSPECIFIED";
+    const profile = safeString(structured.executionProfile, 80);
+    return normalizePublicText(`${profile || "runtime"} episode finished as ${outcome}.`, workspaceRoot);
+  }
+  if (type === "eval_observation") {
+    const suiteId = safeString(structured.suiteId, 120) || "eval suite";
+    const failures = clampInt(structured.failedCases, 0, 9999, 0);
+    return normalizePublicText(`${suiteId} completed with ${failures} failures.`, workspaceRoot);
+  }
+  return normalizePublicText(item && item.summary, workspaceRoot);
+}
+
 function sanitizePublicPackItem(item, workspaceRoot, thresholds) {
   const reason = item && item.whyIncluded && typeof item.whyIncluded === "object" ? item.whyIncluded : {};
   return {
@@ -1696,7 +1786,7 @@ function sanitizePublicPackItem(item, workspaceRoot, thresholds) {
     authorityTier: clampInt(reason && reason.authorityTier, 0, 6, 0),
     scopeWorkspace: safeString(reason && reason.scopeWorkspace, 120),
     taskFamilies: uniqueStrings(reason && reason.taskFamilies, 8, 80),
-    summary: normalizePublicText(item && item.summary, workspaceRoot),
+    summary: buildPublicItemSummary(item, workspaceRoot),
   };
 }
 
@@ -1882,22 +1972,22 @@ function buildGovernedMemoryPublicArtifacts({ workspaceRoot = workspaceRootDefau
     schema: "governed-memory-workspace-progress-public.v1",
     generatedAt: toIso(),
     workspaceId: summary.workspaceId,
-    currentObjective: normalizePublicText(workspaceProgress.currentObjective, workspaceRoot),
-    currentMilestones: uniqueStrings(workspaceProgress.currentMilestones, safeNumber(policy && policy.limits && policy.limits.maxMilestones, 6), 200),
-    knownBlockers: uniqueStrings(workspaceProgress.knownBlockers, safeNumber(policy && policy.limits && policy.limits.maxBlockers, 6), 200),
-    knownRisks: uniqueStrings(workspaceProgress.knownRisks, safeNumber(policy && policy.limits && policy.limits.maxRisks, 6), 220),
+    currentObjective: coerceSummaryText(workspaceProgress.currentObjective, workspaceRoot),
+    currentMilestones: coerceSummaryList(workspaceProgress.currentMilestones, workspaceRoot, safeNumber(policy && policy.limits && policy.limits.maxMilestones, 6)),
+    knownBlockers: coerceSummaryList(workspaceProgress.knownBlockers, workspaceRoot, safeNumber(policy && policy.limits && policy.limits.maxBlockers, 6)),
+    knownRisks: coerceSummaryList(workspaceProgress.knownRisks, workspaceRoot, safeNumber(policy && policy.limits && policy.limits.maxRisks, 6)),
     recentTouchedPaths: uniqueStrings(workspaceProgress.recentTouchedPaths, safeNumber(policy && policy.limits && policy.limits.maxTouchedPaths, 8), 220).map((entry) => normalizePublicPath(workspaceRoot, entry)),
-    nextRecommendedActions: uniqueStrings(workspaceProgress.nextRecommendedActions, safeNumber(policy && policy.limits && policy.limits.maxNextActions, 6), 220),
+    nextRecommendedActions: coerceSummaryList(workspaceProgress.nextRecommendedActions, workspaceRoot, safeNumber(policy && policy.limits && policy.limits.maxNextActions, 6)),
     lastSuccessfulValidation: Array.isArray(workspaceProgress.lastSuccessfulValidation) ? workspaceProgress.lastSuccessfulValidation.slice(0, 2).map((entry) => ({
       reference: maskOpaqueId(entry && entry.turnId, "turn"),
       taskOutcomeStatus: safeString(entry && entry.taskOutcomeStatus, 80),
-      completedAt: safeString(entry && entry.completedAt, 80),
+      completedAt: normalizePublicTimestamp(entry && entry.completedAt),
     })) : [],
     lastFailedValidation: Array.isArray(workspaceProgress.lastFailedValidation) ? workspaceProgress.lastFailedValidation.slice(0, 2).map((entry) => ({
       reference: maskOpaqueId(entry && entry.turnId, "turn"),
       taskOutcomeStatus: safeString(entry && entry.taskOutcomeStatus, 80),
-      reason: normalizePublicText(entry && entry.reason, workspaceRoot),
-      completedAt: safeString(entry && entry.completedAt, 80),
+      reason: coerceSummaryText(entry && entry.reason, workspaceRoot),
+      completedAt: normalizePublicTimestamp(entry && entry.completedAt),
     })) : [],
   };
   const latestPackPublic = {

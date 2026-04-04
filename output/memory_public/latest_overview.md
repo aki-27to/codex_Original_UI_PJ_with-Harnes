@@ -27,9 +27,9 @@
 - workspace_progress: 2
 
 ## Workspace Progress
-- objective: completed_default
+- objective: completed default
 - milestone: latest turn status: completed
-- milestone: family gate: not_applicable
+- milestone: family gate: not applicable
 
 ## Lane Health
 - openai_primary: governed=active / promoted=4 / canonical-selected=0 / compatibility=PASS

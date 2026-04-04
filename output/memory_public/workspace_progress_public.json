@@ -1,16 +1,15 @@
 {
   "schema": "governed-memory-workspace-progress-public.v1",
-  "generatedAt": "2026-04-04T06:29:18.432Z",
+  "generatedAt": "2026-04-04T06:54:52.038Z",
   "workspaceId": "5c839dfeef8b555f",
-  "currentObjective": "completed_default",
+  "currentObjective": "completed default",
   "currentMilestones": [
     "latest turn status: completed",
-    "family gate: not_applicable"
+    "family gate: not applicable"
   ],
   "knownBlockers": [],
   "knownRisks": [
-    "parent_dispatch_guard_block",
-    "[object Object]"
+    "parent dispatch guard block"
   ],
   "recentTouchedPaths": [],
   "nextRecommendedActions": [],
@@ -18,15 +17,15 @@
     {
       "reference": "turn_3003496d70",
       "taskOutcomeStatus": "COMPLETED",
-      "completedAt": "1775272727138"
+      "completedAt": "2026-04-04T03:18:47.138Z"
     }
   ],
   "lastFailedValidation": [
     {
       "reference": "turn_d16bb2d3c1",
       "taskOutcomeStatus": "FAILED_VALIDATION",
-      "reason": "parent_dispatch_guard_block",
-      "completedAt": "1775272581795"
+      "reason": "parent dispatch guard block",
+      "completedAt": "2026-04-04T03:16:21.795Z"
     }
   ]
 }
