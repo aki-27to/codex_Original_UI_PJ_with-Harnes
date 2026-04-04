@@ -1,0 +1,28 @@
+{
+  "schema": "memory-event-schema.v1",
+  "version": "2026-04-04.r1",
+  "description": "Append-only event contract for governed memory graph updates.",
+  "required": [
+    "eventId",
+    "schema",
+    "eventType",
+    "recordedAt",
+    "memoryId",
+    "memoryType",
+    "status",
+    "sourceTier",
+    "authorityTier",
+    "reason"
+  ],
+  "eventTypes": [
+    "memory_item_upsert",
+    "memory_item_feedback",
+    "memory_item_tombstone",
+    "memory_pack_compiled"
+  ],
+  "feedbackFields": [
+    "outcome",
+    "notes",
+    "turnId"
+  ]
+}

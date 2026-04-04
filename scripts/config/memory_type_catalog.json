@@ -1,0 +1,66 @@
+{
+  "schema": "memory-type-catalog.v1",
+  "version": "2026-04-04.r1",
+  "types": [
+    {
+      "id": "constitution_ref",
+      "authorityTier": 0,
+      "defaultStatus": "promoted",
+      "projectionBucket": "spec_graph"
+    },
+    {
+      "id": "requirement_ref",
+      "authorityTier": 1,
+      "defaultStatus": "promoted",
+      "projectionBucket": "intent"
+    },
+    {
+      "id": "preference_signal",
+      "authorityTier": 2,
+      "defaultStatus": "promoted",
+      "projectionBucket": "preference_profiles"
+    },
+    {
+      "id": "workspace_progress",
+      "authorityTier": 3,
+      "defaultStatus": "promoted",
+      "projectionBucket": "workspace_progress"
+    },
+    {
+      "id": "episodic_event",
+      "authorityTier": 4,
+      "defaultStatus": "captured",
+      "projectionBucket": "execution"
+    },
+    {
+      "id": "eval_observation",
+      "authorityTier": 4,
+      "defaultStatus": "captured",
+      "projectionBucket": "eval_observations"
+    },
+    {
+      "id": "semantic_lesson",
+      "authorityTier": 5,
+      "defaultStatus": "promoted",
+      "projectionBucket": "semantic_lessons"
+    },
+    {
+      "id": "failure_pattern",
+      "authorityTier": 5,
+      "defaultStatus": "promoted",
+      "projectionBucket": "failure_patterns"
+    },
+    {
+      "id": "runtime_hint",
+      "authorityTier": 5,
+      "defaultStatus": "shadow",
+      "projectionBucket": "active_runtime_hints"
+    },
+    {
+      "id": "improvement_candidate",
+      "authorityTier": 6,
+      "defaultStatus": "candidate",
+      "projectionBucket": "improvement_state"
+    }
+  ]
+}

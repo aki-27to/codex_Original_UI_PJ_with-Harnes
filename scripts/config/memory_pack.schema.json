@@ -1,0 +1,31 @@
+{
+  "schema": "memory-pack-schema.v1",
+  "version": "2026-04-04.r1",
+  "description": "Compiled bounded pack contract used by the governed memory graph.",
+  "required": [
+    "packId",
+    "schema",
+    "generatedAt",
+    "context",
+    "sections",
+    "selectedMemoryIds",
+    "selectionReasons"
+  ],
+  "sections": [
+    "spec",
+    "intent",
+    "workspace_progress",
+    "experience",
+    "semantic",
+    "preference",
+    "improvement"
+  ],
+  "contextFields": [
+    "workspaceId",
+    "threadId",
+    "agentName",
+    "taskFamily",
+    "ownedPaths",
+    "query"
+  ]
+}

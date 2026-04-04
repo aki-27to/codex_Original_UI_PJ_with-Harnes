@@ -629,6 +629,144 @@ const selectedExecModelReasoningEffort=()=>{
   const chosen=e.modelReasoningEffort&&typeof e.modelReasoningEffort.value==="string"?e.modelReasoningEffort.value.trim():"";
   return normalizeExecModelReasoningEffortForUi(chosen,runtimeDefaultExecModelReasoningEffort());
 };
+function chatSettingsDefaultsForUi(){
+  const defaultProfile=PROFILES[DEFAULT_PROFILE_ID]||{approvalPolicy:"never",sandboxMode:"danger-full-access",webSearchMode:"live",automaticApprovalReviewEnabled:false};
+  const selectedWorkspace=e.workspacePath&&typeof e.workspacePath.value==="string"?e.workspacePath.value.trim():"";
+  const runtimeWorkspace=s.runtime&&typeof s.runtime.workspaceRoot==="string"?s.runtime.workspaceRoot.trim():"";
+  return{
+    executionProfile:normalizeExecutionProfileForUi(e.executionProfile&&e.executionProfile.value,DEFAULT_PROFILE_ID),
+    approvalPolicy:normalizeApprovalPolicyForUi(e.approvalPolicy&&e.approvalPolicy.value,defaultProfile.approvalPolicy),
+    sandboxMode:normalizeSandboxModeForUi(e.sandboxMode&&e.sandboxMode.value,defaultProfile.sandboxMode),
+    webSearchMode:normalizeWebSearchModeForUi(e.webSearchMode&&e.webSearchMode.value,defaultProfile.webSearchMode),
+    fastModeEnabled:Boolean(e.fastModeEnabled&&e.fastModeEnabled.checked),
+    automaticApprovalReviewEnabled:Boolean(e.automaticApprovalReviewEnabled&&e.automaticApprovalReviewEnabled.checked),
+    modelName:selectedExecModel(),
+    modelReasoningEffort:selectedExecModelReasoningEffort(),
+    workspacePath:selectedWorkspace||runtimeWorkspace||"",
+    workspaceLockRoot:"",
+  };
+}
+function normalizeChatSettingsForUi(raw,fallback=chatSettingsDefaultsForUi()){
+  const source=raw&&typeof raw==="object"?raw:{};
+  const baseSource=fallback&&typeof fallback==="object"?fallback:{};
+  const base=chatSettingsDefaultsForUi();
+  const merged={...base,...baseSource};
+  return{
+    executionProfile:normalizeExecutionProfileForUi(source.executionProfile,merged.executionProfile||DEFAULT_PROFILE_ID),
+    approvalPolicy:normalizeApprovalPolicyForUi(source.approvalPolicy,merged.approvalPolicy||base.approvalPolicy),
+    sandboxMode:normalizeSandboxModeForUi(source.sandboxMode,merged.sandboxMode||base.sandboxMode),
+    webSearchMode:normalizeWebSearchModeForUi(source.webSearchMode,merged.webSearchMode||base.webSearchMode),
+    fastModeEnabled:typeof source.fastModeEnabled==="boolean"?source.fastModeEnabled:Boolean(merged.fastModeEnabled),
+    automaticApprovalReviewEnabled:typeof source.automaticApprovalReviewEnabled==="boolean"
+      ?source.automaticApprovalReviewEnabled
+      :Boolean(merged.automaticApprovalReviewEnabled),
+    modelName:normalizeExecModelNameForUi(source.modelName,merged.modelName||runtimeDefaultExecModel()),
+    modelReasoningEffort:normalizeExecModelReasoningEffortForUi(
+      source.modelReasoningEffort,
+      merged.modelReasoningEffort||runtimeDefaultExecModelReasoningEffort()
+    ),
+    workspacePath:typeof source.workspacePath==="string"&&source.workspacePath.trim()
+      ?source.workspacePath.trim()
+      :String(merged.workspacePath||"").trim(),
+    workspaceLockRoot:typeof source.workspaceLockRoot==="string"&&source.workspaceLockRoot.trim()
+      ?source.workspaceLockRoot.trim()
+      :"",
+  };
+}
+function serializeChatSettingsForStorage(settings){
+  const normalized=normalizeChatSettingsForUi(settings);
+  return{
+    executionProfile:normalized.executionProfile,
+    approvalPolicy:normalized.approvalPolicy,
+    sandboxMode:normalized.sandboxMode,
+    webSearchMode:normalized.webSearchMode,
+    fastModeEnabled:Boolean(normalized.fastModeEnabled),
+    automaticApprovalReviewEnabled:Boolean(normalized.automaticApprovalReviewEnabled),
+    modelName:normalized.modelName,
+    modelReasoningEffort:normalized.modelReasoningEffort,
+    workspacePath:normalized.workspacePath,
+    workspaceLockRoot:normalized.workspaceLockRoot,
+  };
+}
+function ensureChatScopedStateForUi(chatRecord=active()){
+  if(!chatRecord||typeof chatRecord!=="object")return null;
+  chatRecord.settings=normalizeChatSettingsForUi(chatRecord.settings);
+  if(typeof chatRecord.draftPrompt!=="string")chatRecord.draftPrompt="";
+  if(!Array.isArray(chatRecord.draftAttachments))chatRecord.draftAttachments=[];
+  return chatRecord;
+}
+function activeChatSettingsForUi(){
+  const current=ensureChatScopedStateForUi(active());
+  return current?current.settings:chatSettingsDefaultsForUi();
+}
+function syncActiveChatScopedStateFromUi(){
+  const current=ensureChatScopedStateForUi(active());
+  if(!current)return null;
+  const existingLockRoot=typeof current.settings.workspaceLockRoot==="string"&&current.settings.workspaceLockRoot.trim()
+    ?current.settings.workspaceLockRoot.trim()
+    :"";
+  current.settings=normalizeChatSettingsForUi({
+    executionProfile:e.executionProfile&&e.executionProfile.value,
+    approvalPolicy:e.approvalPolicy&&e.approvalPolicy.value,
+    sandboxMode:e.sandboxMode&&e.sandboxMode.value,
+    webSearchMode:e.webSearchMode&&e.webSearchMode.value,
+    fastModeEnabled:Boolean(e.fastModeEnabled&&e.fastModeEnabled.checked),
+    automaticApprovalReviewEnabled:Boolean(e.automaticApprovalReviewEnabled&&e.automaticApprovalReviewEnabled.checked),
+    modelName:selectedExecModel(),
+    modelReasoningEffort:selectedExecModelReasoningEffort(),
+    workspacePath:selectedCwd(),
+    workspaceLockRoot:existingLockRoot,
+  },current.settings);
+  current.draftPrompt=e.promptInput&&typeof e.promptInput.value==="string"?e.promptInput.value:"";
+  current.draftAttachments=Array.isArray(composerAttachment.items)?composerAttachment.items:[];
+  scheduleSaveChatState();
+  return current;
+}
+function applyChatScopedStateToUi(chatRecord){
+  const current=ensureChatScopedStateForUi(chatRecord);
+  if(!current)return null;
+  const settings=normalizeChatSettingsForUi(current.settings);
+  current.settings=settings;
+  const savedProfile=normalizeExecutionProfileForUi(settings.executionProfile,"custom");
+  if(savedProfile!=="custom"&&PROFILES[savedProfile]){
+    applyExecutionProfileToUi(savedProfile);
+    if(e.fastModeEnabled)e.fastModeEnabled.checked=Boolean(settings.fastModeEnabled);
+  }else{
+    if(e.executionProfile)e.executionProfile.value="custom";
+    if(e.approvalPolicy)e.approvalPolicy.value=settings.approvalPolicy;
+    if(e.fastModeEnabled)e.fastModeEnabled.checked=Boolean(settings.fastModeEnabled);
+    if(e.automaticApprovalReviewEnabled)e.automaticApprovalReviewEnabled.checked=Boolean(settings.automaticApprovalReviewEnabled);
+    if(e.sandboxMode)e.sandboxMode.value=settings.sandboxMode;
+    if(e.webSearchMode)e.webSearchMode.value=settings.webSearchMode;
+    renderExecutionProfileSummaryForUi("custom");
+    syncPermissionModeControlsForUi();
+  }
+  if(e.modelName){
+    hydrateExecModelOptionsForUi([settings.modelName,runtimeDefaultExecModel()]);
+    e.modelName.value=ensureExecModelOptionForUi(settings.modelName)||settings.modelName;
+  }
+  if(e.modelReasoningEffort){
+    e.modelReasoningEffort.value=normalizeExecModelReasoningEffortForUi(
+      settings.modelReasoningEffort,
+      runtimeDefaultExecModelReasoningEffort()
+    );
+  }
+  if(e.workspacePath){
+    const runtimeWorkspace=s.runtime&&typeof s.runtime.workspaceRoot==="string"?s.runtime.workspaceRoot:"";
+    e.workspacePath.value=settings.workspacePath||runtimeWorkspace||"";
+  }
+  if(e.promptInput){
+    e.promptInput.value=typeof current.draftPrompt==="string"?current.draftPrompt:"";
+    syncPromptInputHeight({resetToBase:!e.promptInput.value,remeasureBase:true});
+  }
+  composerAttachment.error="";
+  composerAttachment.items=Array.isArray(current.draftAttachments)?current.draftAttachments:[];
+  renderAttachmentUi();
+  renderExecutionProfileSummaryForUi(e.executionProfile&&e.executionProfile.value?e.executionProfile.value:"custom");
+  renderWorkspaceGuardUi();
+  renderMissionSupportUi();
+  return current;
+}
 function deriveAgentNameFromChatId(chatId){
   const raw=typeof chatId==="string"?chatId:"";
   const normalized=raw.toLowerCase().replace(/[^a-z0-9_-]+/g,"-").replace(/-+/g,"-").replace(/^-|-$/g,"");
@@ -1658,7 +1796,13 @@ function pendingCountForChat(chatId){
 function totalPendingCount(){
   return s.chats.reduce((sum,item)=>sum+pendingCountForChat(item&&item.id),0);
 }
-const selectedCwd=()=>{const chosen=e.workspacePath&&typeof e.workspacePath.value==="string"?e.workspacePath.value.trim():"";if(chosen)return chosen;return s.runtime&&typeof s.runtime.workspaceRoot==="string"?s.runtime.workspaceRoot:"";};
+const selectedCwd=()=>{
+  const chosen=e.workspacePath&&typeof e.workspacePath.value==="string"?e.workspacePath.value.trim():"";
+  if(chosen)return chosen;
+  const scoped=activeChatSettingsForUi();
+  if(scoped&&typeof scoped.workspacePath==="string"&&scoped.workspacePath.trim())return scoped.workspacePath.trim();
+  return s.runtime&&typeof s.runtime.workspaceRoot==="string"?s.runtime.workspaceRoot:"";
+};
 const controlApiCfg=()=>s.runtime&&s.runtime.controlApi&&typeof s.runtime.controlApi==="object"?s.runtime.controlApi:null;
 const controlApiToken=()=>{const cfg=controlApiCfg();return cfg&&typeof cfg.token==="string"?cfg.token.trim():"";};
 const controlApiTokenHeader=()=>{const cfg=controlApiCfg();return cfg&&typeof cfg.tokenHeader==="string"&&cfg.tokenHeader.trim()?cfg.tokenHeader.trim():"x-codex-control-token";};
@@ -1692,6 +1836,21 @@ function workspaceGuardSnapshotForUi(){
     requiredForSources:Array.isArray(source.requiredForSources)?source.requiredForSources.map((entry)=>String(entry||"").trim()).filter(Boolean):[],
     rejectWhenUnlocked:Boolean(source.rejectWhenUnlocked),
   };
+}
+function chatWorkspaceGuardPreferenceForUi(chatRecord=active()){
+  const current=ensureChatScopedStateForUi(chatRecord);
+  const settings=current&&current.settings&&typeof current.settings==="object"?current.settings:{};
+  const lockedRoot=typeof settings.workspaceLockRoot==="string"&&settings.workspaceLockRoot.trim()?settings.workspaceLockRoot.trim():"";
+  return{
+    locked:Boolean(lockedRoot),
+    lockedRoot,
+  };
+}
+function workspaceGuardPreferenceMatchesRuntimeForUi(chatRecord=active()){
+  const runtimeSnapshot=workspaceGuardSnapshotForUi();
+  const preference=chatWorkspaceGuardPreferenceForUi(chatRecord);
+  if(!preference.locked)return!runtimeSnapshot.locked;
+  return runtimeSnapshot.locked&&normalizePathForUi(runtimeSnapshot.lockedRoot)===normalizePathForUi(preference.lockedRoot);
 }
 function setWorkspaceGuardNotice(message,{tone=""}={}){
   workspaceGuardUiState.message=t1(message||"",220).trim();
@@ -1740,25 +1899,29 @@ function workspaceGuardErrorInfoForUi(error){
 }
 function renderWorkspaceGuardUi(){
   if(!e.workspaceStatus&&!e.workspaceLockBtn&&!e.workspaceUnlockBtn)return;
-  const snapshot=workspaceGuardSnapshotForUi();
+  const runtimeSnapshot=workspaceGuardSnapshotForUi();
+  const preference=chatWorkspaceGuardPreferenceForUi();
   const selectedPath=selectedCwd();
   const hasToken=Boolean(controlApiToken());
-  const selectedInsideLock=snapshot.locked&&selectedPath?isPathWithinForUi(snapshot.lockedRoot,selectedPath):false;
+  const selectedInsideLock=preference.locked&&selectedPath?isPathWithinForUi(preference.lockedRoot,selectedPath):false;
+  const runtimeMatches=workspaceGuardPreferenceMatchesRuntimeForUi();
   let text="";
   let tone="";
   if(workspaceGuardUiState.message){
     text=workspaceGuardUiState.message;
     tone=workspaceGuardUiState.tone;
-  }else if(snapshot.locked){
+  }else if(preference.locked){
     text=selectedPath&&!selectedInsideLock
-      ?`Lock 中: ${snapshot.lockedRoot} / 現在の入力先は lock 範囲外です。`
-      :`Lock 中: ${snapshot.lockedRoot} / この配下だけ実行できます。`;
+      ?`Lock 中: ${preference.lockedRoot} / 現在の入力先は lock 範囲外です。`
+      :`Lock 中: ${preference.lockedRoot} / この部屋ではこの配下だけ実行できます。`;
+    if(!runtimeMatches)text+=s.req.size>0?" / 実行中の turn 完了後にこの部屋の lock へ戻ります。":" / この部屋へ切り替えたので lock を同期中です。";
     tone=selectedPath&&!selectedInsideLock?"warning":"locked";
   }else{
-    const requiredSources=snapshot.requiredForSources.length?snapshot.requiredForSources.join(", "):"design-sensitive source";
+    const requiredSources=runtimeSnapshot.requiredForSources.length?runtimeSnapshot.requiredForSources.join(", "):"design-sensitive source";
     text=selectedPath
-      ?`未固定: ${selectedPath} / ${requiredSources} では lock 後に送信します。`
+      ?`未固定: ${selectedPath} / ${requiredSources} では部屋ごとに lock 後に送信します。`
       :"未固定: ワークスペースを選ぶと、ここから lock できます。";
+    if(runtimeSnapshot.locked&&!runtimeMatches)text+=" / いまのサーバ lock は別の部屋の状態です。";
     tone="warning";
   }
   if(e.workspaceStatus){
@@ -1768,21 +1931,21 @@ function renderWorkspaceGuardUi(){
     if(tone==="warning")e.workspaceStatus.classList.add("warning");
   }
   if(e.workspaceLockBtn){
-    e.workspaceLockBtn.disabled=!hasToken||!selectedPath||(snapshot.locked&&selectedInsideLock);
+    e.workspaceLockBtn.disabled=!hasToken||!selectedPath||(preference.locked&&selectedInsideLock&&runtimeMatches);
     e.workspaceLockBtn.title=!hasToken
       ?"control API token unavailable. refresh runtime first."
       :!selectedPath
         ?"lock するワークスペースを指定してください。"
-        :snapshot.locked&&selectedInsideLock
+        :preference.locked&&selectedInsideLock&&runtimeMatches
           ?"このパスはすでに lock 済みです。"
           :"";
   }
   if(e.workspaceUnlockBtn){
-    e.workspaceUnlockBtn.disabled=!hasToken||!snapshot.locked;
+    e.workspaceUnlockBtn.disabled=!hasToken||!preference.locked;
     e.workspaceUnlockBtn.title=!hasToken
       ?"control API token unavailable. refresh runtime first."
-      :!snapshot.locked
-        ?"現在 lock はありません。"
+      :!preference.locked
+        ?"この部屋では lock はありません。"
         :"";
   }
   renderFocusPanel();
@@ -1802,12 +1965,19 @@ async function postWorkspaceGuardMutationForUi(pathname,payload){
   return parsed;
 }
 async function lockSelectedWorkspaceForUi(){
+  const current=ensureChatScopedStateForUi(active());
+  if(!current){
+    setWorkspaceGuardNotice("lock 先の部屋が見つかりません。", {tone:"warning"});
+    return false;
+  }
   const targetPath=selectedCwd();
   if(!targetPath){
     setWorkspaceGuardNotice("lock するワークスペースが未指定です。", {tone:"warning"});
     return false;
   }
   const payload=await postWorkspaceGuardMutationForUi("/api/workspace/lock",{action:"lock_workspace_directory",path:targetPath});
+  current.settings=normalizeChatSettingsForUi({...current.settings,workspacePath:targetPath,workspaceLockRoot:targetPath},current.settings);
+  scheduleSaveChatState();
   if(s.runtime&&payload&&payload.workspaceGuard)s.runtime.workspaceGuard=payload.workspaceGuard;
   setWorkspaceGuardNotice(`workspace を固定しました: ${targetPath}`,{tone:"locked"});
   try{await loadRuntime({reconcilePending:false});}catch{}
@@ -1815,10 +1985,63 @@ async function lockSelectedWorkspaceForUi(){
   return true;
 }
 async function unlockWorkspaceForUi(){
+  const current=ensureChatScopedStateForUi(active());
+  if(!current){
+    setWorkspaceGuardNotice("unlock 対象の部屋が見つかりません。", {tone:"warning"});
+    return false;
+  }
   const payload=await postWorkspaceGuardMutationForUi("/api/workspace/unlock",{action:"unlock_workspace_directory"});
+  current.settings=normalizeChatSettingsForUi({...current.settings,workspaceLockRoot:""},current.settings);
+  scheduleSaveChatState();
   if(s.runtime&&payload&&payload.workspaceGuard)s.runtime.workspaceGuard=payload.workspaceGuard;
   setWorkspaceGuardNotice("workspace lock を解除しました。", {tone:"warning"});
   try{await loadRuntime({reconcilePending:false});}catch{}
+  refresh();
+  return true;
+}
+async function syncWorkspaceGuardForChat(chatRecord,{quiet=false}={}){
+  const current=ensureChatScopedStateForUi(chatRecord);
+  if(!current)return false;
+  const runtimeSnapshot=workspaceGuardSnapshotForUi();
+  const preference=chatWorkspaceGuardPreferenceForUi(current);
+  const runtimeMatches=workspaceGuardPreferenceMatchesRuntimeForUi(current);
+  if(runtimeMatches)return true;
+  const token=controlApiToken();
+  if(!token){
+    if(!quiet)setWorkspaceGuardNotice("control API token unavailable. refresh runtime first.", {tone:"warning"});
+    return false;
+  }
+  if(preference.locked){
+    await postWorkspaceGuardMutationForUi("/api/workspace/lock",{
+      action:"lock_workspace_directory",
+      path:preference.lockedRoot,
+    });
+    if(!quiet)setWorkspaceGuardNotice(`この部屋の workspace lock を反映しました: ${preference.lockedRoot}`,{tone:"locked"});
+  }else if(runtimeSnapshot.locked){
+    await postWorkspaceGuardMutationForUi("/api/workspace/unlock",{action:"unlock_workspace_directory"});
+    if(!quiet)setWorkspaceGuardNotice("この部屋の workspace は未固定なので、サーバ lock を解除しました。",{tone:"warning"});
+  }
+  try{
+    await loadRuntime({reconcilePending:false});
+  }catch{
+  }
+  return true;
+}
+async function setActiveChatForUi(chatId,{syncWorkspaceGuard=true}={}){
+  const target=chat(chatId);
+  if(!target)return false;
+  syncActiveChatScopedStateFromUi();
+  s.active=target.id;
+  scheduleSaveChatState();
+  clearWorkspaceGuardNotice();
+  applyChatScopedStateToUi(target);
+  refresh();
+  if(syncWorkspaceGuard){
+    try{
+      await syncWorkspaceGuardForChat(target,{quiet:true});
+    }catch{
+    }
+  }
   refresh();
   return true;
 }
@@ -2684,7 +2907,6 @@ function collectMissionPathHintsForUi(text){
 function deriveMissionDraftForUi(text,chatRecord){
   const source=String(text||"");
   const compact=compactInlineTextForUi(source);
-  const workspace=workspaceGuardSnapshotForUi();
   const explicitGoal=extractMissionFieldByLabelForUi(source,["目的","goal","task"]);
   const explicitScope=extractMissionFieldByLabelForUi(source,["対象","scope","files","file","path","paths"]);
   const explicitConstraint=extractMissionFieldByLabelForUi(source,["制約","constraints","constraint","非対象","avoid","must avoid"]);
@@ -2723,7 +2945,7 @@ function renderComposerRuntimeStrip(){
   if(!e.composerModeChip&&!e.composerModelChip&&!e.composerWorkspaceChip&&!e.composerAttachmentChip)return;
   const profileLabel=executionProfileLabelForUi(e.executionProfile&&e.executionProfile.value);
   const webSearchMode=normalizeWebSearchModeForUi(e.webSearchMode&&e.webSearchMode.value,"cached");
-  const workspace=workspaceGuardSnapshotForUi();
+  const workspace=chatWorkspaceGuardPreferenceForUi();
   const selectedPath=selectedCwd();
   const attachments=Array.isArray(composerAttachment.items)?composerAttachment.items:[];
   setComposerRuntimeChip(e.composerModeChip,`${profileLabel} / ${webSearchMode}`,webSearchMode==="live"?"ready":"");
@@ -2770,7 +2992,7 @@ function renderFocusPanel(){
   const currentChat=active();
   if(!currentChat)return;
   const conversation=conversationSnapshotForUi(currentChat);
-  const snapshot=workspaceGuardSnapshotForUi();
+  const snapshot=chatWorkspaceGuardPreferenceForUi(currentChat);
   const selectedPath=selectedCwd();
   const currentPending=pendingCountForChat(currentChat.id);
   const localPending=localPendingCountForChat(currentChat.id);
@@ -2921,6 +3143,10 @@ function mkChat(o={}){
   const id=`chat-${s.nextChat++}-${Date.now()}`;
   const currentNumber=s.nextChat-1;
   const savedAgent=typeof o.agent==="string"&&o.agent.trim()?o.agent.trim():"";
+  const activeChatRecord=active();
+  const fallbackSettings=activeChatRecord&&activeChatRecord.settings
+    ?{...activeChatRecord.settings,workspaceLockRoot:""}
+    :chatSettingsDefaultsForUi();
   const c={
     id,
     title:o.title||`Chat ${currentNumber}`,
@@ -2930,6 +3156,9 @@ function mkChat(o={}){
     h:createHarnessState(),
     perf:createPerformanceState(),
     forceNewSession:o.forceNewSession!==false,
+    settings:normalizeChatSettingsForUi(o.settings,fallbackSettings),
+    draftPrompt:typeof o.draftPrompt==="string"?o.draftPrompt:"",
+    draftAttachments:Array.isArray(o.draftAttachments)?o.draftAttachments:[],
   };
   s.chats.push(c);
   if(!s.active||o.activate!==false)s.active=c.id;
@@ -2970,11 +3199,18 @@ function revokeAttachmentPreview(item){
   try{URL.revokeObjectURL(item.previewUrl)}catch{}
 }
 function clearAttachment({keepError=false}={}){
-  composerAttachment.items.forEach(revokeAttachmentPreview);
-  composerAttachment.items=[];
+  const cleared=composerAttachment.items.splice(0,composerAttachment.items.length);
+  cleared.forEach(revokeAttachmentPreview);
   if(!keepError)composerAttachment.error="";
   if(e.imageInput)e.imageInput.value="";
   renderAttachmentUi();
+}
+function dropChatDraftAttachmentsForUi(chatRecord){
+  const current=ensureChatScopedStateForUi(chatRecord);
+  if(!current||!Array.isArray(current.draftAttachments))return;
+  const removed=current.draftAttachments.splice(0,current.draftAttachments.length);
+  removed.forEach(revokeAttachmentPreview);
+  if(chatRecord===active())composerAttachment.items=current.draftAttachments;
 }
 function removeAttachmentFromComposer(itemId=null){
   if(itemId===null||itemId===undefined){
@@ -3885,7 +4121,7 @@ function renderChatList(){
     b.className=c.id===s.active?"chat-item active":"chat-item";
     b.title="ダブルクリックでタイトル変更 / Deleteで削除";
     b.innerHTML=`<span class=\"chat-item-line\"><span class=\"chat-item-title\">${c.title}</span><span class=\"chat-item-meta\">${agentLabel}</span><span class=\"chat-item-status ${statusClass}\">${statusLabel}</span></span><span class=\"chat-item-preview\">${preview}</span>`;
-    b.onclick=()=>{s.active=c.id;refresh()};
+    b.onclick=()=>{void setActiveChatForUi(c.id);};
     b.ondblclick=(ev)=>{
       ev.preventDefault();
       ev.stopPropagation();
@@ -4684,7 +4920,20 @@ function normalizeSavedChat(raw,index){
   const agent=normalizeScopedChatAgentNameForUi(savedAgent,id);
   const messages=toArr(raw.messages).map((item,msgIndex)=>normalizeSavedMessage(item,msgIndex)).filter(Boolean).slice(-CHAT_MESSAGE_LIMIT);
   const forceNewSession=typeof raw.forceNewSession==="boolean"?raw.forceNewSession:messages.length===0;
-  return{id,title,agent,pending:0,messages,h:normalizeSavedHarnessState(raw.h),perf:createPerformanceState(),forceNewSession};
+  const fallbackSettings=chatSettingsDefaultsForUi();
+  return{
+    id,
+    title,
+    agent,
+    pending:0,
+    messages,
+    h:normalizeSavedHarnessState(raw.h),
+    perf:createPerformanceState(),
+    forceNewSession,
+    settings:normalizeChatSettingsForUi(raw.settings,fallbackSettings),
+    draftPrompt:typeof raw.draftPrompt==="string"?raw.draftPrompt:"",
+    draftAttachments:[],
+  };
 }
 function normalizeSavedHarnessEvent(raw,index){
   if(!raw||typeof raw!=="object")return null;
@@ -4837,6 +5086,8 @@ function saveChatStateNow(){
         agent:chatRecord.agent,
         forceNewSession:Boolean(chatRecord.forceNewSession),
         h:serializeHarnessState(chatRecord.h),
+        settings:serializeChatSettingsForStorage(chatRecord.settings),
+        draftPrompt:typeof chatRecord.draftPrompt==="string"?chatRecord.draftPrompt:"",
         messages:toArr(chatRecord.messages).slice(-CHAT_MESSAGE_LIMIT).map((message)=>({
           id:message.id,
           role:message.role,
@@ -4895,6 +5146,7 @@ function resolveStoredWebSearchModeForUi(parsed,fallback="cached"){
 }
 function saveSettings(){
   try{
+    syncActiveChatScopedStateFromUi();
     const payload={
       approvalPolicy:e.approvalPolicy.value,
       fastModeEnabled:Boolean(e.fastModeEnabled&&e.fastModeEnabled.checked),
@@ -4908,6 +5160,7 @@ function saveSettings(){
       simpleView:document.body.classList.contains("simple-view"),
       uiVisibility:e.uiVisibility?Boolean(e.uiVisibility.checked):true,
       workspacePath:selectedCwd(),
+      workspaceLockRoot:activeChatSettingsForUi().workspaceLockRoot||"",
     };
     localStorage.setItem(SETTINGS_KEY,JSON.stringify(payload));
     settingsState.hasStoredFastMode=true;
@@ -5034,7 +5287,7 @@ async function loadRuntime({reconcilePending=true}={}){
   }
   if(e.fastModeEnabled&&!settingsState.hasStoredFastMode)e.fastModeEnabled.checked=runtimeDefaultFastModeEnabled();
   if(e.automaticApprovalReviewEnabled&&!settingsState.hasStoredAutomaticApprovalReview)e.automaticApprovalReviewEnabled.checked=runtimeDefaultAutomaticApprovalReviewEnabled();
-  profileSync();
+  applyChatScopedStateToUi(active());
   syncPerformanceFromRuntime(s.runtime);
   if(e.workspacePath&&!e.workspacePath.value.trim())e.workspacePath.value=s.runtime.workspaceRoot||"";
   if(e.runtimeAgent)e.runtimeAgent.textContent=s.runtime.activeAgent||DEFAULT_AGENT_NAME;
@@ -5611,6 +5864,13 @@ async function runPrompt(raw,cid=s.active,options={}){
   }
   clearAttachmentError();
   clearWorkspaceGuardNotice();
+  if(cid===s.active){
+    syncActiveChatScopedStateFromUi();
+    try{
+      await syncWorkspaceGuardForChat(c,{quiet:true});
+    }catch{
+    }
+  }
   const dispatchDetail=composeDispatchDetail(prompt,imagePayloads);
   const shouldForceNewSession=Boolean(c.forceNewSession);
   if(shouldForceNewSession)c.perf=createPerformanceState();
@@ -5619,6 +5879,7 @@ async function runPrompt(raw,cid=s.active,options={}){
   hpush(c,"dispatch",dispatchDetail||"(empty)","running");
   if(c.id===s.active)renderHarness();
   msg(c.id,"user","You",composeUserMessage(prompt,imagePayloads));
+  c.draftPrompt="";
   if(c.id===s.active){
     e.promptInput.value="";
     syncPromptInputHeight({resetToBase:true});
@@ -5639,25 +5900,29 @@ async function runPrompt(raw,cid=s.active,options={}){
   let streamOpened=false;
   let idempotencyKey="";
   try{
-    const selectedApproval=normalizeApprovalPolicyForUi(e.approvalPolicy.value,PROFILES[DEFAULT_PROFILE_ID].approvalPolicy);
-    const selectedSandbox=normalizeSandboxModeForUi(e.sandboxMode.value,PROFILES[DEFAULT_PROFILE_ID].sandboxMode);
-    const selectedWebSearchMode=normalizeWebSearchModeForUi(e.webSearchMode&&e.webSearchMode.value,"cached");
-    const selectedModel=selectedExecModel();
-    const selectedModelReasoningEffort=selectedExecModelReasoningEffort();
+    const scopedSettings=normalizeChatSettingsForUi(c.settings,c.settings);
+    const selectedApproval=normalizeApprovalPolicyForUi(scopedSettings.approvalPolicy,PROFILES[DEFAULT_PROFILE_ID].approvalPolicy);
+    const selectedSandbox=normalizeSandboxModeForUi(scopedSettings.sandboxMode,PROFILES[DEFAULT_PROFILE_ID].sandboxMode);
+    const selectedWebSearchMode=normalizeWebSearchModeForUi(scopedSettings.webSearchMode,"cached");
+    const selectedModel=normalizeExecModelNameForUi(scopedSettings.modelName,runtimeDefaultExecModel());
+    const selectedModelReasoningEffort=normalizeExecModelReasoningEffortForUi(
+      scopedSettings.modelReasoningEffort,
+      runtimeDefaultExecModelReasoningEffort()
+    );
     const requestPayload={
       prompt,
       sandboxMode:selectedSandbox,
       approvalPolicy:selectedApproval,
-      fastModeEnabled:Boolean(e.fastModeEnabled&&e.fastModeEnabled.checked),
-      automaticApprovalReviewEnabled:Boolean(e.automaticApprovalReviewEnabled&&e.automaticApprovalReviewEnabled.checked),
+      fastModeEnabled:Boolean(scopedSettings.fastModeEnabled),
+      automaticApprovalReviewEnabled:Boolean(scopedSettings.automaticApprovalReviewEnabled),
       webSearch:webSearchEnabledForUi(selectedWebSearchMode),
       webSearchMode:selectedWebSearchMode,
       model:selectedModel,
       modelReasoningEffort:selectedModelReasoningEffort,
       agentName:runAgent,
       forceNewSession:shouldForceNewSession,
-      cwd:selectedCwd(),
-      executionProfile:String(e.executionProfile&&e.executionProfile.value?e.executionProfile.value:"custom"),
+      cwd:scopedSettings.workspacePath||selectedCwd(),
+      executionProfile:String(scopedSettings.executionProfile||"custom"),
       executionIntent:"web-ui-interactive",
       executionSource:"web_ui",
     };
@@ -5684,7 +5949,7 @@ async function runPrompt(raw,cid=s.active,options={}){
   }catch(err){if(err&&err.name==="AbortError"){ttype="aborted";tdetail="user interrupted";madd(out,"\n[user interrupted]\n");hset(c,"interrupted");hpush(c,"turn/interrupt","user interrupt","failed");renderHarness();return}const surfacedError=err&&err.cause?err.cause:err;if(streamOpened&&idempotencyKey&&isTransientExecStreamError(surfacedError)){let recovery=null;try{recovery=await recoverExecStreamAfterDisconnect({idempotencyKey,signal:ctl.signal,out,chatRecord:c})}catch{}if(recovery&&recovery.handled){ttype=recovery.terminal==="completed"?"completed":"failed";tdetail=recovery.detail||`${ttype==="completed"?"completed":"failed"} after stream recovery`;if(typeof recovery.text==="string"&&(recovery.text||ttype!=="completed"))mset(out,recovery.text);hset(c,ttype==="completed"?"completed":"failed");hpush(c,"stream/recovered",t1(tdetail,180),ttype==="completed"?"info":"failed");renderHarness();return}}const workspaceGuardError=workspaceGuardErrorInfoForUi(surfacedError);if(workspaceGuardError.handled){ttype=workspaceGuardError.status||"needs_input";tdetail=workspaceGuardError.detail;mset(out,`[needs_input] ${workspaceGuardError.inlineMessage}`);hset(c,"needs_input");hpush(c,"turn/needs_input",t1(workspaceGuardError.detail,180),"info");setWorkspaceGuardNotice(workspaceGuardError.notice,{tone:workspaceGuardError.tone||"warning"});renderHarness();return}ttype="failed";tdetail=err&&err.message?err.message:"runtime error";mset(out,`[error] ${formatExecSubmitError(surfacedError)}`);hset(c,"failed");hpush(c,"turn/error",t1(tdetail,180),"failed");renderHarness();throw err}finally{const reqMeta=s.req.get(rid);s.req.delete(rid);c.pending=Math.max(0,c.pending-1);syncRuntimePendingMonitor();if(ttype==="completed")hset(c,"completed");else if(ttype==="failed")hset(c,"failed");else if(ttype==="aborted")hset(c,"interrupted");else if(ttype==="needs_input")hset(c,"needs_input");hpush(c,"turn/end",t1(tdetail,180),ttype==="failed"?"failed":"info");s.last={type:ttype,detail:tdetail,at:Date.now(),agent:runAgent,chat:c.title,cid:c.id};trace(ttype,runAgent,tdetail,c.id);if(reqMeta&&reqMeta.notifyOnTerminal)void playNotificationTone(ttype);refresh();if(s.req.size===0){try{await loadRuntime()}catch(_e){e.connectionState.textContent="未接続";e.connectionState.classList.remove("connected");e.connectionState.classList.add("disconnected")}}scheduleSaveChatState();updateSearchDiag()}
 }
 function renderCommands(q=""){e.commandGrid.innerHTML="";const qq=q.trim().toLowerCase();const list=COMMANDS.filter(c=>!qq||c.toLowerCase().includes(qq));if(!list.length){e.commandGrid.innerHTML='<article class="command-empty">No matching commands.</article>';return}list.forEach(cmd=>{const f=e.commandTemplate.content.cloneNode(true);f.querySelector(".command-text").textContent=cmd;const b=f.querySelector(".command-badge");b.textContent="local";b.classList.add("local");f.querySelector(".command-desc").textContent="Quick insert/run command.";f.querySelector(".insert-btn").onclick=()=>{const cur=e.promptInput.value,p=cur&&!cur.endsWith("\n")?"\n":"";e.promptInput.value=`${cur}${p}${cmd} `;syncPromptInputHeight();e.promptInput.focus()};f.querySelector(".run-btn").onclick=async()=>{e.promptInput.value=cmd;syncPromptInputHeight();await runPrompt(e.promptInput.value,s.active).catch(er=>msg(s.active,"system","System",formatRunPromptFailureMessage(er)))};e.commandGrid.appendChild(f)})}
-function clearChat(){const c=active();if(!c)return;c.messages=[];c.h=createHarnessState();c.perf=createPerformanceState();c.forceNewSession=true;s.trace=s.trace.filter((item)=>item&&item.cid!==c.id);if(s.last&&s.last.cid===c.id)s.last=null;scheduleSaveChatState();refresh()}
+function clearChat(){const c=active();if(!c)return;c.messages=[];c.h=createHarnessState();c.perf=createPerformanceState();c.forceNewSession=true;c.draftPrompt="";dropChatDraftAttachmentsForUi(c);if(e.promptInput)e.promptInput.value="";syncPromptInputHeight({resetToBase:true});s.trace=s.trace.filter((item)=>item&&item.cid!==c.id);if(s.last&&s.last.cid===c.id)s.last=null;scheduleSaveChatState();refresh()}
 function deleteChat(chatId=s.active){
   const target=chat(chatId);
   if(!target)return false;
@@ -5706,19 +5971,24 @@ function deleteChat(chatId=s.active){
     try{item.controller.abort();}catch{}
     s.req.delete(item.rid);
   });
+  dropChatDraftAttachmentsForUi(target);
   s.chats=s.chats.filter((item)=>item&&item.id!==target.id);
   s.trace=s.trace.filter((item)=>item&&item.cid!==target.id);
   if(s.last&&s.last.cid===target.id)s.last=null;
+  let nextActiveId="";
   if(!s.chats.length){
     const fallback=mkChat({title:"Chat 1",agent:DEFAULT_AGENT_NAME});
-    s.active=fallback.id;
+    nextActiveId=fallback.id;
   }else if(activeId===target.id||!chat(s.active)){
     const nextIndex=Math.max(0,Math.min(currentIndex,s.chats.length-1));
-    s.active=s.chats[nextIndex].id;
+    nextActiveId=s.chats[nextIndex].id;
   }
-  clearAttachment();
   scheduleSaveChatState();
-  refresh();
+  if(nextActiveId){
+    void setActiveChatForUi(nextActiveId);
+  }else{
+    refresh();
+  }
   return true;
 }
 function stop(){const c=active();if(!c)return;let n=0;s.req.forEach(r=>{if(r.cid===c.id){r.controller.abort();n+=1}});if(n>0)msg(c.id,"system","System",`Stopped ${n} running request(s).`) }
@@ -5782,7 +6052,11 @@ function bind(){
   e.reconnectBtn.onclick=async()=>{try{await loadRuntime();msg(s.active,"system","System","Runtime refreshed.")}catch(er){e.connectionState.textContent="未接続";e.connectionState.classList.remove("connected");e.connectionState.classList.add("disconnected");msg(s.active,"system","System",`Reconnect failed: ${er&&er.message?er.message:"unknown"}`)}};
   if(e.uiReloadBtn)e.uiReloadBtn.onclick=()=>reloadUiShellForUi();
   e.refreshDiagBtn.onclick=async()=>{try{await loadDiag();msg(s.active,"system","System","Diagnostics refreshed.")}catch(er){msg(s.active,"system","System",`Diagnostics refresh failed: ${er&&er.message?er.message:"unknown"}`)}};
-  e.newChatBtn.onclick=()=>{const c=mkChat({agent:DEFAULT_AGENT_NAME,forceNewSession:true});s.active=c.id;refresh()};
+  e.newChatBtn.onclick=()=>{
+    syncActiveChatScopedStateFromUi();
+    const c=mkChat({agent:DEFAULT_AGENT_NAME,forceNewSession:true});
+    void setActiveChatForUi(c.id);
+  };
   e.clearAgentTraceBtn.onclick=()=>{const c=active();if(!c){s.trace=[];s.last=null;flow();return;}s.trace=s.trace.filter((item)=>item&&item.cid!==c.id);if(s.last&&s.last.cid===c.id)s.last=null;flow();msg(s.active,"system","System","Current chat trace cleared.")};
   if(e.agentTopographyRefreshBtn)e.agentTopographyRefreshBtn.onclick=()=>loadAgentTopography({manual:true}).catch(()=>{});
   if(automationUi.batchRunBtn)automationUi.batchRunBtn.onclick=()=>runAutomationBatchOnce().catch(()=>{});
@@ -5798,7 +6072,7 @@ function bind(){
   };
   if(e.promptInput){
     e.promptInput.onkeydown=ev=>{if(ev.key==="Enter"&&!ev.shiftKey){ev.preventDefault();e.sendBtn.click()}};
-    e.promptInput.addEventListener("input",()=>{syncPromptInputHeight();renderMissionSupportUi();});
+    e.promptInput.addEventListener("input",()=>{syncPromptInputHeight();syncActiveChatScopedStateFromUi();renderMissionSupportUi();});
     e.promptInput.addEventListener("paste",handlePromptPaste);
   }
   document.querySelectorAll("[data-compose-preset]").forEach((btn)=>btn.onclick=()=>{
@@ -5821,7 +6095,7 @@ function bind(){
   [e.approvalPolicy,e.fastModeEnabled,e.automaticApprovalReviewEnabled,e.sandboxMode,e.webSearchMode].filter(Boolean).forEach(x=>x.onchange=()=>{profileSync();saveSettings();updateSearchDiag();renderMissionSupportUi()});
   if(e.modelName)e.modelName.onchange=()=>{const normalizedModel=normalizeExecModelNameForUi(e.modelName.value,runtimeDefaultExecModel());e.modelName.value=ensureExecModelOptionForUi(normalizedModel)||normalizedModel;settingsState.hasStoredModel=true;saveSettings();renderMissionSupportUi();};
   if(e.modelReasoningEffort)e.modelReasoningEffort.onchange=()=>{e.modelReasoningEffort.value=normalizeExecModelReasoningEffortForUi(e.modelReasoningEffort.value,runtimeDefaultExecModelReasoningEffort());settingsState.hasStoredModelReasoningEffort=true;saveSettings();renderMissionSupportUi();};
-  if(e.workspacePath)e.workspacePath.oninput=()=>{workspaceGuardUiState.message="";workspaceGuardUiState.tone="";renderWorkspaceGuardUi();renderMissionSupportUi();};
+  if(e.workspacePath)e.workspacePath.oninput=()=>{workspaceGuardUiState.message="";workspaceGuardUiState.tone="";syncActiveChatScopedStateFromUi();renderWorkspaceGuardUi();renderMissionSupportUi();};
   e.workspacePath.onchange=()=>{workspaceGuardUiState.message="";workspaceGuardUiState.tone="";saveSettings();renderWorkspaceGuardUi();renderMissionSupportUi();};
   if(e.uiVisibility)e.uiVisibility.onchange=()=>{document.body.classList.toggle("telemetry-off",!e.uiVisibility.checked);saveSettings();};
   e.simpleViewToggle.onclick=()=>{const n=!document.body.classList.contains("simple-view");document.body.classList.toggle("simple-view",n);e.simpleViewToggle.textContent=n?"詳細表示":"要点表示";saveSettings()};
@@ -5836,6 +6110,7 @@ async function boot(){
   renderAgentTopography();
   if(!s.chats.length)mkChat({title:"Chat 1",agent:DEFAULT_AGENT_NAME});
   if(!chat(s.active))s.active=s.chats[0].id;
+  applyChatScopedStateToUi(active());
   syncPromptInputHeight({resetToBase:true,remeasureBase:true});
   scheduleComposerViewportSyncForUi();
   refresh();
@@ -5844,6 +6119,7 @@ async function boot(){
   e.connectionState.classList.add("disconnected");
   try{
     await loadRuntime();
+    await syncWorkspaceGuardForChat(active(),{quiet:true});
   }catch(error){
     msg(s.active,"system","System",`Runtime check failed: ${error&&error.message?error.message:"unknown"}`);
   }

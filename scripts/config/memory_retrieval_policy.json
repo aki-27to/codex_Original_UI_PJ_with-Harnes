@@ -1,0 +1,33 @@
+{
+  "schema": "memory-retrieval-policy.v1",
+  "version": "2026-04-04.r1",
+  "defaultPackBudget": 18,
+  "sectionBudgets": {
+    "spec": 4,
+    "intent": 3,
+    "workspace_progress": 2,
+    "experience": 4,
+    "semantic": 3,
+    "preference": 1,
+    "improvement": 1
+  },
+  "scoringWeights": {
+    "authorityMatch": 0.28,
+    "scopeMatch": 0.22,
+    "taskFamilyMatch": 0.16,
+    "ownedPathMatch": 0.12,
+    "freshness": 0.1,
+    "evidenceStrength": 0.07,
+    "reinforcement": 0.05
+  },
+  "penalties": {
+    "stale": 0.18,
+    "conflict": 0.24,
+    "secondarySource": 0.08,
+    "shadowOnly": 0.05
+  },
+  "scoreThresholds": {
+    "minimumSelectionScore": 0.18,
+    "highConfidenceScore": 0.68
+  }
+}

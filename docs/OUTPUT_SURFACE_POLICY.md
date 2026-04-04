@@ -24,11 +24,13 @@ Examples:
 - `output/externalization_nohitl/`
 - `output/repo_closure_export/`
 - `output/manual_self_improvement/`
+- `output/memory/`
 - `output/*learning*`
 - top-level summary files such as `output/public_regression_latest.json`
 
 Rule:
 - if an artifact is part of a named program, report contract, release gate, or operator summary path, it stays in `output/`
+- governed memory reports are intentional output even though canonical memory truth stays under `logs/archive/raw/runtime_state/memory/`
 
 ## Regenerable Transient
 

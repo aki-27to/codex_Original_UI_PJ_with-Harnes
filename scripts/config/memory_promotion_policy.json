@@ -1,0 +1,24 @@
+{
+  "schema": "memory-promotion-policy.v1",
+  "version": "2026-04-04.r1",
+  "capture": {
+    "defaultStatusBySourceTier": {
+      "repo": "promoted",
+      "runtime": "captured",
+      "eval": "captured",
+      "external_primary": "shadow",
+      "external_secondary": "shadow",
+      "manual": "proposal_only"
+    }
+  },
+  "promotion": {
+    "minimumSupportCount": 1,
+    "minimumConfidence": 0.5,
+    "requireRuntimeEvidenceForImprovementCandidates": true,
+    "secondarySourcesCannotOutrankPrimary": true
+  },
+  "reinforcement": {
+    "requiredSuccesses": 2,
+    "requiredSuccessRate": 0.67
+  }
+}

@@ -195,6 +195,10 @@ const {
 const {
   buildHarnessAgiImprovementFlywheelRuntimeSummary,
 }=require("./scripts/lib/agi_improvement_flywheel_runtime");
+const {
+  buildGovernedMemoryRuntimeSnapshot,
+  syncGovernedMemoryGraph,
+}=require("./scripts/lib/governed_memory_graph");
 
 const workspaceRoot=__dirname;
 const workspaceParentRoot=path.dirname(workspaceRoot);
@@ -10766,6 +10770,14 @@ async function executeTurnStreaming(res,prompt,agentName,options){
       updatedAt:Date.now(),
     },{persist:false});
     persistHarnessExecutionMemoryStore({reason:"turn_finalized"});
+    try{
+      syncGovernedMemoryGraphFromLiveRuntime("turn_finalized");
+    }catch(error){
+      logOperation("governed_memory.sync_failed",{
+        reason:"turn_finalized",
+        err:summarizeErrorForOperationLog(error,220),
+      },"core");
+    }
     maybeEmitSloAlert(buildSloRuntimeSnapshot(),{reason:"turn_finalized"});
     debugFinalize("after_memory_persist");
     if(parentDispatchGuard.retry){
@@ -12718,6 +12730,40 @@ function buildRuntimeApiSnapshot(){
   const secondaryLearning={
     anthropicEngineering:buildAnthropicEngineeringLearningRuntimeStateSnapshot(),
   };
+  const evalHistoryOverview={
+    recentRuns:buildEvalHistoryOverview({limit:6}),
+  };
+  const executionOverview=buildExecutionMemoryOverview({limit:10,window:60});
+  const intentFirstSummary={
+    ...summarizeIntentFirstRuntime({contract:designAcceptanceContract,store:tasteMemoryStore}),
+    contractPath:summarizePathForOperationLog(designAcceptanceContractPath,220),
+    tasteMemorySeedPath:summarizePathForOperationLog(tasteMemorySeedPath,220),
+    tasteMemoryPath:summarizePathForOperationLog(tasteMemoryMemoryPath,220),
+  };
+  const traceability=buildHarnessTraceabilitySnapshot(
+    latestTurn&&latestTurn.planning&&typeof latestTurn.planning==="object"
+      ?latestTurn.planning
+      :{},
+    safeString(latestTurn&&latestTurn.agent_name,80)
+      ||safeString(activeAgentName,80)
+      ||"default"
+  );
+  const governedMemory=buildGovernedMemoryRuntimeSnapshot({
+    workspaceRoot,
+    runtime:{
+      activeAgent:activeAgentName,
+      latestTurn,
+      intentFirst:intentFirstSummary,
+      executionOverview,
+      evalHistory:evalHistoryOverview,
+      externalLearning,
+      manualSelfImprovement,
+      secondaryLearning,
+      phaseStatus,
+      traceability,
+    },
+    traceability,
+  });
   const executionVisibility={
     profile:runtimeExecutionProfile,
     envKey:executionProfileEnvKey,
@@ -12802,6 +12848,8 @@ function buildRuntimeApiSnapshot(){
     git_automation:gitAutomation,
     harnessMemory,
     harness_memory:harnessMemory,
+    governedMemory,
+    governed_memory:governedMemory,
     slo,
     evalHarness,
     eval_harness:evalHarness,
@@ -12867,12 +12915,7 @@ function buildRuntimeApiSnapshot(){
         ?taskContractManifest.contracts.map((entry)=>summarizeTaskContract(entry))
         :[],
     },
-    intentFirst:{
-      ...summarizeIntentFirstRuntime({contract:designAcceptanceContract,store:tasteMemoryStore}),
-      contractPath:summarizePathForOperationLog(designAcceptanceContractPath,220),
-      tasteMemorySeedPath:summarizePathForOperationLog(tasteMemorySeedPath,220),
-      tasteMemoryPath:summarizePathForOperationLog(tasteMemoryMemoryPath,220),
-    },
+    intentFirst:intentFirstSummary,
     workspaceGuard,
     workspace_guard:workspaceGuard,
     controlApi:{
@@ -13245,6 +13288,36 @@ function buildPostLockDriftSnapshot({planningContext,agentName="default",dispatc
     })),
   };
 }
+function syncGovernedMemoryGraphFromLiveRuntime(reason="runtime_sync"){
+  const runtime=buildRuntimeApiSnapshot();
+  const traceability=buildHarnessTraceabilitySnapshot(
+    runtime&&runtime.latestTurn&&runtime.latestTurn.planning&&typeof runtime.latestTurn.planning==="object"
+      ?runtime.latestTurn.planning
+      :{},
+    safeString(runtime&&runtime.latestTurn&&runtime.latestTurn.agent_name,80)
+      ||safeString(runtime&&runtime.activeAgent,80)
+      ||"default"
+  );
+  return syncGovernedMemoryGraph({
+    workspaceRoot,
+    runtime:{
+      activeAgent:runtime.activeAgent,
+      latestTurn:runtime.latestTurn,
+      intentFirst:runtime.intentFirst,
+      executionOverview:buildExecutionMemoryOverview({limit:10,window:60}),
+      evalHistory:{
+        recentRuns:buildEvalHistoryOverview({limit:6}),
+      },
+      externalLearning:runtime.externalLearning,
+      manualSelfImprovement:runtime.manualSelfImprovement,
+      secondaryLearning:runtime.secondaryLearning,
+      phaseStatus:runtime.phaseStatus,
+      traceability,
+    },
+    traceability,
+    reason:safeString(reason,80)||"runtime_sync",
+  });
+}
 function buildHarnessOverviewSnapshot(){
   if(!harnessMemoryLoaded){
     loadHarnessExecutionMemoryStore();
@@ -13253,6 +13326,15 @@ function buildHarnessOverviewSnapshot(){
   const skillPortfolio=buildSkillPortfolioOverview();
   const assignmentsByRole=new Map(skillPortfolio.assignments.map((entry)=>[entry.role,entry.skills]));
   const topology=buildTopographyOverview(getAgentTopographySnapshot(),assignmentsByRole);
+  const traceability=buildHarnessTraceabilitySnapshot(
+    runtime&&runtime.latestTurn&&runtime.latestTurn.planning&&typeof runtime.latestTurn.planning==="object"
+      ?runtime.latestTurn.planning
+      :{},
+    safeString(runtime&&runtime.latestTurn&&runtime.latestTurn.agent_name,80)
+      ||safeString(runtime&&runtime.activeAgent,80)
+      ||"default"
+  );
+  const governedGraph=syncGovernedMemoryGraphFromLiveRuntime("overview_sync");
   return{
     apiVersion,
     mode:"harness-overview",
@@ -13300,6 +13382,11 @@ function buildHarnessOverviewSnapshot(){
     },
     memory:{
       harness:runtime.harnessMemory,
+      governedGraph:governedGraph&&governedGraph.summary&&typeof governedGraph.summary==="object"
+        ?governedGraph.summary
+        :runtime.governedMemory&&typeof runtime.governedMemory==="object"
+          ?runtime.governedMemory
+          :{},
       taste:runtime.intentFirst&&runtime.intentFirst.tasteMemory?runtime.intentFirst.tasteMemory:{},
       execution:buildExecutionMemoryOverview({limit:10,window:60}),
       externalLearning:runtime.externalLearning&&typeof runtime.externalLearning==="object"?runtime.externalLearning:{},
@@ -13310,14 +13397,7 @@ function buildHarnessOverviewSnapshot(){
         recent:listReplayMemorySnapshots({limit:6}),
       },
     },
-    traceability:buildHarnessTraceabilitySnapshot(
-      runtime&&runtime.latestTurn&&runtime.latestTurn.planning&&typeof runtime.latestTurn.planning==="object"
-        ?runtime.latestTurn.planning
-        :{},
-      safeString(runtime&&runtime.latestTurn&&runtime.latestTurn.agent_name,80)
-        ||safeString(runtime&&runtime.activeAgent,80)
-        ||"default"
-    ),
+    traceability,
     health:{
       latestTurn:runtime.latestTurn,
       fullUtilization:runtime.fullUtilization,
@@ -15234,6 +15314,14 @@ async function requestHandler(req,res){
       },[]);
       if(persistProbeResults&&persistedProbeRecords.length){
         persistHarnessExecutionMemoryStore({reason:"eval_probe_results"});
+        try{
+          syncGovernedMemoryGraphFromLiveRuntime("eval_probe_results");
+        }catch(error){
+          logOperation("governed_memory.sync_failed",{
+            reason:"eval_probe_results",
+            err:summarizeErrorForOperationLog(error,220),
+          },"core");
+        }
       }
       const comparison=runs.length>=2?compareEvalRuns(runs[0],runs[1]):{winner:"single",reason:"single_variant"};
       const laneVerifierPolicy=Array.isArray(evalLanePolicy&&evalLanePolicy.lanes)

@@ -1,71 +1,186 @@
 # CONTEXT_MEMORY_POLICY
 
-Updated: 2026-04-03
+Updated: 2026-04-04
 
 ## 1) Purpose
 
-Define how the harness preserves, summarizes, shares, and externalizes context so execution stays accurate without uncontrolled prompt growth.
+Define the governed memory model for this harness so long-horizon execution can reuse durable state without letting speculative summaries, stale learnings, or ungated preferences become runtime truth.
 
-## 2) Context Tiers
+## 2) Core Model
 
-- Turn-local context:
-  - the active user request
-  - immediate constraints, acceptance checks, and findings
-  - discard after the turn unless promoted
-- Session summary:
-  - current goal, locked decisions, open questions, risks, and pending approvals
-  - keep only what is likely needed for the next turn in the same thread
-- Project memory:
-  - stable repo facts, policy decisions, machine-readable contracts, and durable operator expectations
-  - source these from files or config whenever possible instead of freeform recollection
-- Artifact memory:
-  - large outputs, logs, screenshots, traces, datasets, and transcripts
-  - store in files/artifacts, then reference them from summaries instead of inlining them into prompts
+This repo now treats memory as a contract-backed graph rather than a freeform summary cache.
 
-## 3) Promotion Rules
+- Memory is file-backed, typed, evidence-linked, scope-bounded, and revocable.
+- Capture, promotion, and runtime retrieval are separate stages.
+- Constitutional/frozen artifacts are not lessons. They remain top-level invariants.
+- External learnings, self-improvement candidates, and manual captures stay advisory until promotion gates say otherwise.
+- The active runtime never consumes the whole store. It consumes a compiled bounded memory pack.
 
-- Promote turn-local facts into session summary only when they affect likely next-step execution.
-- Promote facts into project memory only when they are stable, reusable, and source-backed.
-- Do not promote speculative interpretations, transient failures, or unverified user preferences into durable memory.
-- User taste signals may be promoted into durable memory only when the user has explicitly indicated them or approved them through the harness UI.
-- If a fact is already represented in a repo file, prefer updating or citing that file instead of duplicating the fact in freeform memory.
+## 3) Canonical Store
 
-## 4) Parent and Child Context Boundaries
+Canonical governed memory lives under:
 
-- Parent context should contain:
-  - requirement contract
-  - non-goals and constraints
-  - acceptance checks
-  - current review state
-- Child context should contain only:
-  - the scoped subtask
-  - required files or artifacts
-  - explicit skill/tool requirements
-  - acceptance checks needed for that subtask
-- Do not inject unrelated thread history into child prompts.
-- Read-only roles should receive review/research context only, not implementation scope beyond what is needed to inspect.
+- `logs/archive/raw/runtime_state/memory/`
 
-## 5) Artifact First Rule
+The canonical event surface is:
 
-- When command output is long, persist it as an artifact or file and summarize only the relevant result in prompt context.
-- When design state becomes durable, sync it into `docs/CURRENT_ARCHITECTURE.md` and append the matching change entry to `docs/ARCHITECTURE_CHANGELOG.md` rather than relying on conversational memory.
-- Prefer file references over copied blocks when the information already exists in the repository.
-- The intent-first harness keeps user taste memory in a dedicated persisted store instead of smearing those preferences across arbitrary prompts.
+- `memory_events.jsonl`
+- `memory_feedback.jsonl`
+- `memory_tombstones.jsonl`
 
-## 6) External Learning Memory
+Derived indexes live under:
 
-- Official external learnings must be ingested into dedicated artifacts such as `output/openai_blog_learning_ledger.json`, `output/openai_blog_learning_digest.json`, and `docs/OPENAI_DEVELOPER_LEARNINGS.md` rather than copied into every prompt.
-- Secondary external learnings may be ingested from non-OpenAI sources only when they are explicitly labeled as secondary, stored in separate artifacts, and prevented from outranking the primary OpenAI lane.
-- Secondary sources must retain only portable agent-engineering principles. Vendor-specific mechanics, model-marketing claims, and model-family-specific benchmark notes do not become runtime policy.
-- Retrieval must stay selective: only inject learnings that match the current task family or subsystem, and cap the number of promoted guidance items.
-- Runtime retrieval must stay bounded and gated: apply only to explicitly allowed agents/task families, keep a kill switch, and prefer shadow/proposal modes before widening the scope.
-- External learnings are advisory memory, not constitutional truth. They must not silently override `AGENTS.md` or frozen Step 1/2 behavior.
-- Promotion from external learning into runtime behavior must stay governed and regression-checked; collecting or summarizing a learning does not authorize automatic policy drift.
-- Self-improvement promotion is machine-readable and tiered: low-risk runtime retrieval hints may auto-apply only after the self-improvement eval gate passes, while policy/config/runtime-core targets remain proposal-only or blocked according to `docs/SELF_IMPROVEMENT_POLICY.md` and `scripts/config/self_improvement_promotion_policy.json`.
-- Repeated successful `web_creative` turns may reinforce a bounded `frontend_quality_note` into the mutable `docs/FRONTEND_QUALITY_PLAYBOOK.md`, but that playbook remains non-constitutional and machine-gated.
-- Manual self-improvement capture is artifact-first and compressed: store only the latest bounded lesson set at `output/manual_self_improvement/latest.json`, keep it proposal-first by default, and retrieve it only when a later turn actually needs the same task-family guidance.
+- `indexes/by_id.json`
+- `indexes/by_scope.json`
+- `indexes/by_type.json`
+- `indexes/by_task_family.json`
+- `indexes/by_agent.json`
+- `indexes/by_workspace.json`
 
-## 7) Safety and Privacy
+Derived projections live under:
 
-- Do not copy secrets, credentials, tokens, or unnecessary personal data into summaries, child prompts, or artifacts unless the task explicitly requires it and the approval boundary allows it.
-- Scope shared context to the minimum needed for the receiving role to complete its task safely.
+- `projections/spec_graph.json`
+- `projections/workspace_progress/*.json`
+- `projections/preference_profiles/active.json`
+- `projections/semantic_lessons/{primary,secondary}.json`
+- `projections/failure_patterns/latest.json`
+- `projections/active_runtime_hints/latest.json`
+- `projections/improvement_state/latest.json`
+- `projections/eval_observations/latest.json`
+
+Compiled retrieval artifacts live under:
+
+- `retrieval/packs.jsonl`
+- `retrieval/last_pack_by_thread.json`
+- `retrieval/last_pack_by_workspace.json`
+
+Human-facing memory reports are projections only and live under:
+
+- `output/memory/`
+
+`output/memory/` is intentional output, not canonical truth.
+
+Those projections now surface memory-health fields as well:
+
+- recent promotions
+- recent revocations / blocked items
+- stale memory warnings derived from retention policy
+- latest-pack section counts and high-confidence counts
+
+## 4) Memory Tiers
+
+- Tier 0 `constitutional memory`
+  - `AGENTS.md`, frozen foundation audits, architecture invariants, core contracts
+  - immutable for runtime retrieval purposes
+- Tier 1 `intent / requirement memory`
+  - active requirement contract, acceptance checks, locked non-goals, revision gates
+- Tier 2 `preference / taste memory`
+  - approved taste profiles and benchmark constraints only
+- Tier 3 `workspace progress memory`
+  - objective, milestones, blockers, risks, recent touched paths, next actions
+- Tier 4 `episodic memory`
+  - turn outcomes, evidence manifests, replay traces, eval runs, probe persistence
+- Tier 5 `semantic lesson memory`
+  - promoted reusable lessons, failure patterns, success patterns, runtime hints
+- Tier 6 `improvement candidate memory`
+  - proposal-only, shadow, blocked, or reinforcement-tracked improvement candidates
+
+## 5) Memory Types
+
+The active machine-readable type catalog lives in:
+
+- `scripts/config/memory_type_catalog.json`
+
+Representative types are:
+
+- `constitution_ref`
+- `requirement_ref`
+- `preference_signal`
+- `workspace_progress`
+- `episodic_event`
+- `eval_observation`
+- `semantic_lesson`
+- `failure_pattern`
+- `runtime_hint`
+- `improvement_candidate`
+
+## 6) Promotion Rules
+
+- Capture does not equal truth.
+- A captured observation becomes durable runtime memory only after type assignment, scope assignment, evidence linking, and promotion-status evaluation.
+- Secondary external learnings must remain secondary. They cannot outrank repo contracts, frozen audits, or primary-lane OpenAI learnings.
+- Manual self-improvement remains proposal-first unless a dedicated promotion path explicitly upgrades it.
+- User preference signals become durable only after explicit user instruction or equivalent approved intent contract.
+- Stale, conflicting, blocked, or regressed entries must be revoked or expired instead of silently kept in active packs.
+
+## 7) Workspace Progress Memory
+
+`workspace_progress` is mandatory durable project memory for repeated repo work.
+
+Each workspace projection must expose:
+
+- `currentObjective`
+- `currentMilestones`
+- `knownBlockers`
+- `knownRisks`
+- `lastSuccessfulValidation`
+- `lastFailedValidation`
+- `recentTouchedPaths`
+- `nextRecommendedActions`
+- `updatedAt`
+
+This replaces ad hoc “what were we doing?” summaries with a bounded machine-readable progress surface.
+
+## 8) Retrieval and Pack Compilation
+
+Runtime retrieval is compile-time, not dump-time.
+
+Each memory pack is built in this order:
+
+1. spec graph
+2. intent/requirement memory
+3. workspace progress memory
+4. recent episodic/eval observations
+5. promoted semantic lessons and failure patterns
+6. active preference/taste memory
+
+Selection is deterministic and policy-backed. Authority, scope, task-family match, path ownership, freshness, evidence strength, and reinforcement state must outrank raw semantic similarity.
+
+The machine-readable retrieval policy lives in:
+
+- `scripts/config/memory_retrieval_policy.json`
+
+That policy governs:
+
+- `defaultPackBudget`
+- per-section budgets (`spec`, `intent`, `workspace_progress`, `experience`, `semantic`, `preference`, `improvement`)
+- `minimumSelectionScore`
+- `highConfidenceScore`
+
+Revoked, expired, and blocked entries must not enter the compiled pack even when they would otherwise score well.
+
+## 9) Output and Compatibility Projections
+
+Legacy learning/self-improvement artifacts remain supported as compatibility projections, including:
+
+- `output/openai_blog_learning_digest.json`
+- `output/openai_blog_learning_ledger.json`
+- `output/openai_blog_self_improvement_state.json`
+- `output/openai_blog_self_improvement_gate.json`
+- `output/openai_blog_reinforcement_memory.json`
+- Anthropic engineering counterparts
+
+These artifacts are no longer the canonical memory model. They are projections/reports layered on top of the governed memory graph.
+
+## 10) Parent and Child Boundaries
+
+- Parent/runtime overview may read the full compiled governed memory summary for the current workspace.
+- Child agents receive only the bounded pack relevant to their role, task family, owned paths, and acceptance checks.
+- Read-only roles receive evidence/review/failure memory, not broad implementation history.
+- Unrelated thread history must not be injected into child prompts.
+
+## 11) Safety
+
+- Do not persist secrets, credentials, tokens, or unnecessary personal data into governed memory.
+- Prefer repo-backed evidence and machine-readable contracts over conversational paraphrase.
+- When in doubt, keep new observations as `captured`, `candidate`, or `proposal_only` instead of promoting them.

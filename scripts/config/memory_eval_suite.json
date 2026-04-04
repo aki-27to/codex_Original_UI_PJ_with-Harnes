@@ -1,0 +1,22 @@
+{
+  "schema": "memory-eval-suite.v1",
+  "version": "2026-04-04.r1",
+  "checks": [
+    {
+      "id": "canonical_store_present",
+      "title": "Canonical memory store exists under runtime_state/memory"
+    },
+    {
+      "id": "workspace_progress_projection_present",
+      "title": "Workspace progress projection is generated"
+    },
+    {
+      "id": "legacy_learning_compatibility_preserved",
+      "title": "Existing learning artifacts remain addressable"
+    },
+    {
+      "id": "bounded_memory_pack_written",
+      "title": "At least one bounded memory pack is compiled"
+    }
+  ]
+}

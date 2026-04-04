@@ -1,0 +1,22 @@
+{
+  "schema": "memory-retention-policy.v1",
+  "version": "2026-04-04.r1",
+  "eventStore": {
+    "maxEvents": 12000,
+    "maxDays": 180
+  },
+  "projectionRetention": {
+    "maxRecentExecutionItems": 24,
+    "maxRecentEvalItems": 24,
+    "maxRecentPackEntries": 120
+  },
+  "expiryByType": {
+    "episodic_event": 90,
+    "eval_observation": 120,
+    "workspace_progress": 30,
+    "semantic_lesson": 180,
+    "failure_pattern": 180,
+    "runtime_hint": 90,
+    "improvement_candidate": 180
+  }
+}

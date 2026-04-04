@@ -34,6 +34,7 @@ const elements = {
   replayPatternsCard: by("replayPatternsCard"),
   skillPortfolioCard: by("skillPortfolioCard"),
   externalLearningCard: by("externalLearningCard"),
+  governedMemoryCard: by("governedMemoryCard"),
   roleChecksCard: by("roleChecksCard"),
   rawSnapshot: by("overviewRawSnapshot"),
 };
@@ -718,6 +719,9 @@ function renderMemory(payload) {
   const externalLearning = populatedObject(memory.externalLearning)
     ? memory.externalLearning
     : (payload && payload.runtime && payload.runtime.externalLearning) || {};
+  const governedGraph = populatedObject(memory.governedGraph)
+    ? memory.governedGraph
+    : (payload && payload.runtime && (payload.runtime.governedMemory || payload.runtime.governed_memory)) || {};
   const secondaryLearning = populatedObject(memory.secondaryLearning)
     ? memory.secondaryLearning
     : (payload && payload.runtime && payload.runtime.secondaryLearning) || {};
@@ -901,6 +905,79 @@ function renderMemory(payload) {
       ${itemListHtml(anthropicProposals.slice(0, 3), "No secondary learning proposals are pending.")}
       ${itemListHtml(anthropicBacklog.slice(0, 3), "No secondary self-improvement backlog items are queued.")}
       ` : ""}
+    `;
+  }
+  if (elements.governedMemoryCard) {
+    const workspaceProgress = governedGraph && governedGraph.workspaceProgress && typeof governedGraph.workspaceProgress === "object"
+      ? governedGraph.workspaceProgress
+      : {};
+    const latestPack = governedGraph && governedGraph.latestPack && typeof governedGraph.latestPack === "object"
+      ? governedGraph.latestPack
+      : {};
+    const staleWarnings = toArr(governedGraph && governedGraph.staleMemoryWarnings);
+    const recentPromotions = toArr(governedGraph && governedGraph.recentPromotions);
+    const recentRevocations = toArr(governedGraph && governedGraph.recentRevocations);
+    const typeCounts = Object.entries(governedGraph && governedGraph.typeCounts ? governedGraph.typeCounts : {}).map(([key, value]) => ({
+      label: `${key} ${formatInteger(num(value, 0))}`,
+      tone: key === "constitution_ref" || key === "requirement_ref" ? "pass" : key === "improvement_candidate" ? "warn" : "info",
+    }));
+    const sectionCounts = Object.entries(latestPack && latestPack.sectionCounts ? latestPack.sectionCounts : {})
+      .filter(([, value]) => num(value, 0) > 0)
+      .map(([key, value]) => ({
+        label: `${key} ${formatInteger(num(value, 0))}`,
+        tone: key === "spec" || key === "intent" ? "pass" : key === "semantic" ? "info" : "neutral",
+      }));
+    const packItems = toArr(latestPack.memoryIds).slice(0, 6).map((entry) => ({
+      title: safeText(entry, "memory"),
+      detail: safeText(governedGraph.canonicalRoot, ""),
+    }));
+    const blockerItems = toArr(workspaceProgress.knownBlockers).slice(0, 4).map((entry) => ({
+      title: safeText(entry, "blocker"),
+      tags: [{ label: "blocker", tone: "fail" }],
+      detail: safeText(governedGraph.eventLogPath, ""),
+    }));
+    const nextItems = toArr(workspaceProgress.nextRecommendedActions).slice(0, 4).map((entry) => ({
+      title: safeText(entry, "next"),
+      tags: [{ label: "next", tone: "info" }],
+      detail: toArr(workspaceProgress.recentTouchedPaths).slice(0, 2).join(" / ") || safeText(governedGraph.outputRoot, ""),
+    }));
+    const staleItems = staleWarnings.slice(0, 4).map((entry) => ({
+      title: safeText(entry.memoryId, "stale-memory"),
+      tags: [{ label: `${safeText(entry.type, "memory")} stale`, tone: "warn" }],
+      detail: `${formatInteger(num(entry.ageDays, 0))}d / expiry ${formatInteger(num(entry.expiryDays, 0))}d`,
+    }));
+    const promotionItems = recentPromotions.slice(0, 3).map((entry) => ({
+      title: safeText(entry.memoryId, "promotion"),
+      tags: [{ label: safeText(entry.status, "promoted"), tone: "pass" }],
+      detail: `${safeText(entry.memoryType, "-")} / ${safeText(entry.recordedAt, "-")}`,
+    }));
+    const revocationItems = recentRevocations.slice(0, 3).map((entry) => ({
+      title: safeText(entry.memoryId, "revocation"),
+      tags: [{ label: safeText(entry.status, "revoked"), tone: "fail" }],
+      detail: `${safeText(entry.memoryType, "-")} / ${safeText(entry.recordedAt, "-")}`,
+    }));
+    elements.governedMemoryCard.innerHTML = `
+      <div class="overview-inline-tags">
+        ${tagHtml(`status ${safeText(governedGraph.status, "ready")}`, safeText(governedGraph.status, "ready") === "ready" ? "pass" : "warn")}
+        ${tagHtml(`items ${formatInteger(num(governedGraph.itemCount, 0))}`, "info")}
+        ${tagHtml(`promoted ${formatInteger(num(governedGraph.promotedCount, 0))}`, "pass")}
+        ${tagHtml(`events ${formatInteger(num(governedGraph.eventCount, 0))}`, "neutral")}
+        ${tagHtml(`stale ${formatInteger(staleWarnings.length)}`, staleWarnings.length ? "warn" : "pass")}
+      </div>
+      <div class="overview-inline-tags">${typeCounts.map((entry) => tagHtml(entry.label, entry.tone)).join("")}</div>
+      <div class="overview-inline-tags">${sectionCounts.map((entry) => tagHtml(entry.label, entry.tone)).join("")}</div>
+      ${factRowsHtml([
+        { label: "Canonical Root", value: safeText(governedGraph.canonicalRoot, "logs/archive/raw/runtime_state/memory"), detail: safeText(governedGraph.eventLogPath, "") },
+        { label: "Output Root", value: safeText(governedGraph.outputRoot, "output/memory"), detail: safeText(governedGraph.workspaceId, "") },
+        { label: "Latest Pack", value: `${formatInteger(num(latestPack.selectedCount, 0))} items`, detail: `${safeText(latestPack.activeAgent, "-")} / ${safeText(latestPack.taskFamily, "-")} / high ${formatInteger(num(latestPack.highConfidenceCount, 0))}` },
+        { label: "Objective", value: safeText(workspaceProgress.currentObjective, "No compiled objective"), detail: safeText(workspaceProgress.updatedAt, "") },
+      ])}
+      ${itemListHtml(packItems, "No compiled memory pack is available yet.")}
+      ${itemListHtml(blockerItems, "No known workspace blockers are recorded.")}
+      ${itemListHtml(nextItems, "No next actions are compiled.")}
+      ${itemListHtml(staleItems, "No stale memory warnings are active.")}
+      ${itemListHtml(promotionItems, "No recent promotions are recorded.")}
+      ${itemListHtml(revocationItems, "No recent revocations are recorded.")}
     `;
   }
   const roleCheckItems = toArr(skillPortfolio.roleChecks).map((entry) => ({

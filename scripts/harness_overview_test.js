@@ -466,6 +466,49 @@ function createOverviewPayload(overrides = {}) {
         storage: "logs/archive/raw/harness_execution_memory.json",
         retentionDays: 14,
       },
+      governedMemory: {
+        enabled: true,
+        schema: "governed-memory-graph-runtime.v1",
+        status: "ready",
+        workspaceId: "workspace-001",
+        canonicalRoot: "logs/archive/raw/runtime_state/memory",
+        eventLogPath: "logs/archive/raw/runtime_state/memory/memory_events.jsonl",
+        outputRoot: "output/memory",
+        itemCount: 18,
+        promotedCount: 9,
+        eventCount: 42,
+        typeCounts: {
+          constitution_ref: 4,
+          requirement_ref: 1,
+          preference_signal: 1,
+          workspace_progress: 1,
+          episodic_event: 4,
+          semantic_lesson: 3,
+          improvement_candidate: 2,
+          failure_pattern: 2,
+        },
+        statusCounts: {
+          promoted: 9,
+          captured: 4,
+          shadow: 3,
+          proposal_only: 1,
+          blocked: 1,
+        },
+        workspaceProgress: {
+          currentObjective: "Refresh the memory architecture around a governed canonical graph.",
+          knownBlockers: ["screenshot review"],
+          recentTouchedPaths: ["server.js", "docs/CONTEXT_MEMORY_POLICY.md"],
+          nextRecommendedActions: ["Recover the latest failed validation before adding new scope."],
+          updatedAt: "2026-04-04T10:00:00.000Z",
+        },
+        latestPack: {
+          compiledAt: "2026-04-04T10:00:00.000Z",
+          selectedCount: 6,
+          activeAgent: "default",
+          taskFamily: "web_creative",
+          memoryIds: ["spec:agents", "intent:active_requirement_contract", "workspace:progress"],
+        },
+      },
       controlApi: {
         enabled: true,
         token: "",
@@ -688,6 +731,42 @@ function createOverviewPayload(overrides = {}) {
       ],
     },
     memory: {
+      governedGraph: {
+        enabled: true,
+        schema: "governed-memory-graph-runtime.v1",
+        status: "ready",
+        workspaceId: "workspace-001",
+        canonicalRoot: "logs/archive/raw/runtime_state/memory",
+        eventLogPath: "logs/archive/raw/runtime_state/memory/memory_events.jsonl",
+        outputRoot: "output/memory",
+        itemCount: 18,
+        promotedCount: 9,
+        eventCount: 42,
+        typeCounts: {
+          constitution_ref: 4,
+          requirement_ref: 1,
+          preference_signal: 1,
+          workspace_progress: 1,
+          episodic_event: 4,
+          semantic_lesson: 3,
+          improvement_candidate: 2,
+          failure_pattern: 2,
+        },
+        workspaceProgress: {
+          currentObjective: "Refresh the memory architecture around a governed canonical graph.",
+          knownBlockers: ["screenshot review"],
+          recentTouchedPaths: ["server.js", "docs/CONTEXT_MEMORY_POLICY.md"],
+          nextRecommendedActions: ["Recover the latest failed validation before adding new scope."],
+          updatedAt: "2026-04-04T10:00:00.000Z",
+        },
+        latestPack: {
+          compiledAt: "2026-04-04T10:00:00.000Z",
+          selectedCount: 6,
+          activeAgent: "default",
+          taskFamily: "web_creative",
+          memoryIds: ["spec:agents", "intent:active_requirement_contract", "workspace:progress"],
+        },
+      },
       taste: {
         activeProfileId: "default",
         profileCount: 1,
@@ -1255,6 +1334,19 @@ function assertRenderedOverviewMatchesPayload(payload, elements) {
       }
     }
   }
+  const governedMemory = payload && payload.memory && payload.memory.governedGraph && typeof payload.memory.governedGraph === "object"
+    ? payload.memory.governedGraph
+    : payload && payload.runtime && payload.runtime.governedMemory && typeof payload.runtime.governedMemory === "object"
+      ? payload.runtime.governedMemory
+      : null;
+  if (governedMemory) {
+    const governedMemoryCardHtml = elements.governedMemoryCard ? elements.governedMemoryCard.innerHTML : "";
+    assertContains(governedMemoryCardHtml, String(governedMemory.canonicalRoot || "logs/archive/raw/runtime_state/memory"), "governed memory card must render canonical root");
+    assertContains(governedMemoryCardHtml, String(governedMemory.eventLogPath || "memory_events.jsonl"), "governed memory card must render event log path");
+    assertContains(governedMemoryCardHtml, String(governedMemory.workspaceProgress && governedMemory.workspaceProgress.currentObjective || "objective"), "governed memory card must render workspace objective");
+    assertContains(governedMemoryCardHtml, String(governedMemory.workspaceProgress && governedMemory.workspaceProgress.knownBlockers && governedMemory.workspaceProgress.knownBlockers[0] || "blocker"), "governed memory card must render workspace blockers");
+    assertContains(governedMemoryCardHtml, String(governedMemory.latestPack && governedMemory.latestPack.memoryIds && governedMemory.latestPack.memoryIds[0] || "memory"), "governed memory card must render latest pack item ids");
+  }
   const traceabilityClauses = payload && payload.traceability && Array.isArray(payload.traceability.clauses)
     ? payload.traceability.clauses
     : [];
@@ -1454,11 +1546,13 @@ async function runIntegrationCheck() {
     assert(overviewJson.runtime.phaseStatus && typeof overviewJson.runtime.phaseStatus === "object", "overview runtime must expose phaseStatus");
     assert(typeof overviewJson.runtime.phaseStatus.requirementFoundationV1 === "string", "overview runtime phaseStatus must expose requirementFoundationV1");
     assert(overviewJson.runtime.externalLearning && typeof overviewJson.runtime.externalLearning === "object", "overview runtime must expose externalLearning");
+    assert(overviewJson.runtime.governedMemory && typeof overviewJson.runtime.governedMemory === "object", "overview runtime must expose governedMemory");
     assert(overviewJson.runtime.manualSelfImprovement && typeof overviewJson.runtime.manualSelfImprovement === "object", "overview runtime must expose manualSelfImprovement");
     assert(typeof overviewJson.runtime.manualSelfImprovement.status === "string", "overview runtime manualSelfImprovement must expose status");
     assert(overviewJson.runtime.agiImprovementFlywheel && typeof overviewJson.runtime.agiImprovementFlywheel === "object", "overview runtime must expose agiImprovementFlywheel");
     assert.strictEqual(Boolean(overviewJson.runtime.agiImprovementFlywheel.boundedLoopsOnly), true, "overview runtime agiImprovementFlywheel must reject unbounded loops");
     assert(overviewJson.memory.externalLearning && typeof overviewJson.memory.externalLearning === "object", "overview memory must expose externalLearning");
+    assert(overviewJson.memory.governedGraph && typeof overviewJson.memory.governedGraph === "object", "overview memory must expose governedGraph");
     assert(overviewJson.memory.manualSelfImprovement && typeof overviewJson.memory.manualSelfImprovement === "object", "overview memory must expose manualSelfImprovement");
     assert(overviewJson.memory.agiImprovementFlywheel && typeof overviewJson.memory.agiImprovementFlywheel === "object", "overview memory must expose agiImprovementFlywheel");
     assert(overviewJson.topology && typeof overviewJson.topology === "object", "overview topology missing");
@@ -1590,6 +1684,7 @@ async function main() {
       assertRegex(overviewHtml, /id=\"overviewMetrics\"/, "overviewMetrics container missing");
       assertRegex(overviewHtml, /id=\"topologyParentLane\"/, "topologyParentLane container missing");
       assertRegex(overviewHtml, /id=\"traceabilityCard\"/, "traceabilityCard container missing");
+      assertRegex(overviewHtml, /id=\"governedMemoryCard\"/, "governedMemoryCard container missing");
       assertRegex(overviewHtml, /id=\"overviewRawSnapshot\"/, "overviewRawSnapshot container missing");
       assertRegex(overviewHtml, /class=\"overview-section-shell\"/, "overview sections must expose collapsible shells");
       assertRegex(overviewHtml, /class=\"overview-section-summary\"/, "overview sections must expose collapsible summaries");

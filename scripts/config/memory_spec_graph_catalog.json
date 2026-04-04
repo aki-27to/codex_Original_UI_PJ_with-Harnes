@@ -1,0 +1,81 @@
+{
+  "schema": "memory-spec-graph-catalog.v1",
+  "version": "2026-04-04.r1",
+  "nodes": [
+    {
+      "id": "tier0-agents",
+      "label": "Tier-0 Constitution",
+      "path": "AGENTS.md",
+      "type": "constitution_ref",
+      "authorityTier": 0,
+      "tags": ["constitution", "governance"]
+    },
+    {
+      "id": "current-architecture",
+      "label": "Current Architecture",
+      "path": "docs/CURRENT_ARCHITECTURE.md",
+      "type": "constitution_ref",
+      "authorityTier": 0,
+      "tags": ["architecture", "operator_surface"]
+    },
+    {
+      "id": "context-memory-policy",
+      "label": "Context Memory Policy",
+      "path": "docs/CONTEXT_MEMORY_POLICY.md",
+      "type": "constitution_ref",
+      "authorityTier": 0,
+      "tags": ["memory", "retrieval"]
+    },
+    {
+      "id": "evidence-contract",
+      "label": "Evidence Contract",
+      "path": "docs/EVIDENCE_CONTRACT.md",
+      "type": "constitution_ref",
+      "authorityTier": 0,
+      "tags": ["evidence", "release"]
+    },
+    {
+      "id": "design-acceptance-contract",
+      "label": "Design Acceptance Contract",
+      "path": "scripts/config/design_acceptance_contract.json",
+      "type": "constitution_ref",
+      "authorityTier": 0,
+      "tags": ["design", "acceptance"]
+    },
+    {
+      "id": "phase-foundation-freeze",
+      "label": "Requirement Foundation V1",
+      "path": "output/phase_exit_requirement_foundation_v1.json",
+      "type": "constitution_ref",
+      "authorityTier": 0,
+      "tags": ["frozen_foundation", "phase_exit"]
+    }
+  ],
+  "edges": [
+    {
+      "from": "tier0-agents",
+      "to": "current-architecture",
+      "relation": "governs"
+    },
+    {
+      "from": "tier0-agents",
+      "to": "context-memory-policy",
+      "relation": "governs"
+    },
+    {
+      "from": "tier0-agents",
+      "to": "evidence-contract",
+      "relation": "governs"
+    },
+    {
+      "from": "current-architecture",
+      "to": "design-acceptance-contract",
+      "relation": "depends_on"
+    },
+    {
+      "from": "phase-foundation-freeze",
+      "to": "context-memory-policy",
+      "relation": "freezes"
+    }
+  ]
+}

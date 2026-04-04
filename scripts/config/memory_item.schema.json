@@ -1,0 +1,78 @@
+{
+  "schema": "memory-item-schema.v1",
+  "version": "2026-04-04.r1",
+  "description": "Canonical governed memory item contract for the harness.",
+  "required": [
+    "memoryId",
+    "schema",
+    "type",
+    "status",
+    "authorityTier",
+    "sourceTier",
+    "scope",
+    "content",
+    "evidence",
+    "retrieval",
+    "lifecycle"
+  ],
+  "enums": {
+    "type": [
+      "constitution_ref",
+      "requirement_ref",
+      "preference_signal",
+      "workspace_progress",
+      "episodic_event",
+      "eval_observation",
+      "semantic_lesson",
+      "failure_pattern",
+      "runtime_hint",
+      "improvement_candidate"
+    ],
+    "status": [
+      "captured",
+      "candidate",
+      "shadow",
+      "promoted",
+      "reinforced",
+      "proposal_only",
+      "blocked",
+      "revoked",
+      "expired"
+    ],
+    "sourceTier": [
+      "repo",
+      "runtime",
+      "eval",
+      "external_primary",
+      "external_secondary",
+      "manual"
+    ]
+  },
+  "scopeFields": [
+    "workspaceId",
+    "threadId",
+    "taskFamilies",
+    "agents",
+    "ownedPaths"
+  ],
+  "evidenceFields": [
+    "sourceRefs",
+    "contentHash",
+    "supportCount",
+    "confidence",
+    "lastValidatedAt"
+  ],
+  "retrievalFields": [
+    "topics",
+    "lexicalTriggers",
+    "negativeTriggers",
+    "priority"
+  ],
+  "lifecycleFields": [
+    "createdAt",
+    "updatedAt",
+    "expiresAt",
+    "supersedes",
+    "conflictsWith"
+  ]
+}
