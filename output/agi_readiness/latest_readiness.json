@@ -1,6 +1,6 @@
 {
   "schema": "agi-readiness-live-summary.v1",
-  "generatedAt": "2026-04-04T12:20:41.123Z",
+  "generatedAt": "2026-04-04T12:26:34.527Z",
   "workspaceId": "5c839dfeef8b555f",
   "latestRunId": "eval-1775264897008-443e2a6a",
   "profile": "agi_v1",
@@ -9,83 +9,194 @@
   "metrics": {
     "G_breadth": {
       "familyName": "G_breadth",
-      "value": null,
-      "threshold": null,
-      "supportStatus": "unknown",
-      "passFail": null,
-      "details": {}
+      "value": 1,
+      "threshold": 0,
+      "supportStatus": "supported",
+      "passFail": true,
+      "details": {
+        "value": 1,
+        "matrix": [
+          {
+            "domainFamily": "coding",
+            "domainScore": 0.92,
+            "covered": 1,
+            "weight": 1
+          },
+          {
+            "domainFamily": "planning",
+            "domainScore": 0.88,
+            "covered": 1,
+            "weight": 1
+          }
+        ],
+        "observations": [
+          {
+            "family_name": "G_breadth",
+            "submetric_name": "challenger_breadth_coding",
+            "mode": "standard",
+            "value": 0.92,
+            "ci_low": 0.92,
+            "ci_high": 0.92,
+            "threshold": null,
+            "pass_fail": null,
+            "relevant": true,
+            "supportStatus": "supported",
+            "supported": true,
+            "not_evaluated": false,
+            "not_applicable": false,
+            "sample_count": 1,
+            "severity_or_loss": null,
+            "evidence": [],
+            "notes": "",
+            "reason": "",
+            "case_id": "challenger-metric-1",
+            "title": "challenger-case-1",
+            "variant_label": "candidate-standard",
+            "candidate_id": "candidate-main",
+            "domain_family": "coding",
+            "normalization_basis": "",
+            "horizon_units": null,
+            "target_horizon_units": null,
+            "horizon_unit_name": "steps",
+            "local_training_signal": null
+          },
+          {
+            "family_name": "G_breadth",
+            "submetric_name": "challenger_breadth_planning",
+            "mode": "standard",
+            "value": 0.88,
+            "ci_low": 0.88,
+            "ci_high": 0.88,
+            "threshold": null,
+            "pass_fail": null,
+            "relevant": true,
+            "supportStatus": "supported",
+            "supported": true,
+            "not_evaluated": false,
+            "not_applicable": false,
+            "sample_count": 1,
+            "severity_or_loss": null,
+            "evidence": [],
+            "notes": "",
+            "reason": "",
+            "case_id": "challenger-metric-2",
+            "title": "challenger-case-2",
+            "variant_label": "candidate-standard",
+            "candidate_id": "candidate-main",
+            "domain_family": "planning",
+            "normalization_basis": "",
+            "horizon_units": null,
+            "target_horizon_units": null,
+            "horizon_unit_name": "steps",
+            "local_training_signal": null
+          }
+        ]
+      }
     },
     "G_depth": {
       "familyName": "G_depth",
-      "value": null,
-      "threshold": null,
-      "supportStatus": "unknown",
-      "passFail": null,
-      "details": {}
+      "value": 0.87,
+      "threshold": 0,
+      "supportStatus": "supported",
+      "passFail": true,
+      "details": {
+        "value": 0.87,
+        "details": {
+          "strategy": "mean"
+        }
+      }
     },
     "A_adapt": {
       "familyName": "A_adapt",
-      "value": null,
-      "threshold": null,
-      "supportStatus": "unknown",
-      "passFail": null,
-      "details": {}
+      "value": 0.83,
+      "threshold": 0,
+      "supportStatus": "supported",
+      "passFail": true,
+      "details": {
+        "value": 0.83,
+        "details": {
+          "strategy": "mean"
+        }
+      }
     },
     "R_robust": {
       "familyName": "R_robust",
-      "value": null,
-      "threshold": null,
-      "supportStatus": "unknown",
-      "passFail": null,
-      "details": {}
+      "value": 0.81,
+      "threshold": 0,
+      "supportStatus": "supported",
+      "passFail": true,
+      "details": {
+        "value": 0.81,
+        "details": {
+          "strategy": "min"
+        }
+      }
     },
     "H_horizon": {
       "familyName": "H_horizon",
-      "value": null,
-      "threshold": null,
-      "supportStatus": "unknown",
-      "passFail": null,
-      "details": {}
+      "value": 0.93487,
+      "threshold": 0,
+      "supportStatus": "supported",
+      "passFail": true,
+      "details": {
+        "value": 0.93487,
+        "details": {
+          "strategy": "mean"
+        }
+      }
     },
     "P_context": {
       "familyName": "P_context",
-      "value": null,
-      "threshold": null,
-      "supportStatus": "unknown",
-      "passFail": null,
-      "details": {}
+      "value": 0.86,
+      "threshold": 0,
+      "supportStatus": "supported",
+      "passFail": true,
+      "details": {
+        "value": 0.86,
+        "details": {
+          "strategy": "mean"
+        }
+      }
     },
     "I_eval": {
       "familyName": "I_eval",
-      "value": null,
-      "threshold": null,
-      "supportStatus": "unknown",
-      "passFail": null,
-      "details": {}
+      "value": 1,
+      "threshold": 0.95,
+      "supportStatus": "supported",
+      "passFail": true,
+      "details": {
+        "strategy": "min"
+      }
     },
     "S_trust": {
       "familyName": "S_trust",
-      "value": null,
-      "threshold": null,
-      "supportStatus": "unknown",
-      "passFail": null,
-      "details": {}
+      "value": 1,
+      "threshold": 0.9,
+      "supportStatus": "supported",
+      "passFail": true,
+      "details": {
+        "strategy": "min"
+      }
     },
     "C_corr": {
       "familyName": "C_corr",
-      "value": null,
-      "threshold": null,
-      "supportStatus": "unknown",
-      "passFail": null,
-      "details": {}
+      "value": 1,
+      "threshold": 0.9,
+      "supportStatus": "supported",
+      "passFail": true,
+      "details": {
+        "strategy": "min"
+      }
     },
     "E_epi": {
       "familyName": "E_epi",
-      "value": null,
-      "threshold": null,
-      "supportStatus": "unknown",
-      "passFail": null,
-      "details": {}
+      "value": 1,
+      "threshold": 0.85,
+      "supportStatus": "supported",
+      "passFail": true,
+      "details": {
+        "strategy": "min"
+      }
     }
   },
   "catastrophicRisk": {
@@ -102,7 +213,7 @@
   "blockedReasons": [
     "challenger_strictly_beats_incumbent_under_fail_closed_rule"
   ],
-  "weakestCapabilityFamily": "G_breadth",
+  "weakestCapabilityFamily": "R_robust",
   "weakestGateFamily": "I_eval",
   "domainCoveragePath": "output/agi_readiness/domain_coverage_matrix.json",
   "recentImprovement": 0.133862,

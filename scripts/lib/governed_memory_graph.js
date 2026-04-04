@@ -2086,7 +2086,9 @@ function findLatestAgiV1Bundles(workspaceRoot, limit = 8) {
 
 function collectAgiFamilyMetric(bundle, familyName) {
   const candidate = bundle && bundle.candidate && typeof bundle.candidate === "object" ? bundle.candidate : {};
-  const familySummaries = candidate.familySummaries && typeof candidate.familySummaries === "object" ? candidate.familySummaries : {};
+  const familySummaries = candidate.familySummaries && typeof candidate.familySummaries === "object"
+    ? candidate.familySummaries
+    : (candidate.familySummary && typeof candidate.familySummary === "object" ? candidate.familySummary : {});
   const family = familySummaries[familyName] && typeof familySummaries[familyName] === "object" ? familySummaries[familyName] : {};
   const main = family.main && typeof family.main === "object" ? family.main : {};
   return {
@@ -3352,26 +3354,14 @@ function buildGovernedMemoryPublicArtifacts({ workspaceRoot = workspaceRootDefau
     writeJsonIfChanged(continuityProjectionPath, continuityProjection);
   }
   const fallbackReadinessArtifacts = buildAgiReadinessArtifacts({ workspaceRoot, items, continuityBridge });
-  let readinessProjection = readJsonObject(readinessProjectionPath);
-  if (!readinessProjection || typeof readinessProjection !== "object" || safeString(readinessProjection.schema, 120) !== "agi-readiness-live-summary.v1") {
-    readinessProjection = fallbackReadinessArtifacts.readiness;
-    writeJsonIfChanged(readinessProjectionPath, readinessProjection);
-  }
-  let promotionTrendProjection = readJsonObject(promotionTrendProjectionPath);
-  if (!promotionTrendProjection || typeof promotionTrendProjection !== "object" || !Object.keys(promotionTrendProjection).length) {
-    promotionTrendProjection = fallbackReadinessArtifacts.promotionTrend;
-    writeJsonIfChanged(promotionTrendProjectionPath, promotionTrendProjection);
-  }
-  let blockedReasonsProjection = readJsonObject(blockedReasonsProjectionPath);
-  if (!blockedReasonsProjection || typeof blockedReasonsProjection !== "object" || !Object.keys(blockedReasonsProjection).length) {
-    blockedReasonsProjection = fallbackReadinessArtifacts.blockedReasons;
-    writeJsonIfChanged(blockedReasonsProjectionPath, blockedReasonsProjection);
-  }
-  let coverageProjection = readJsonObject(coverageProjectionPath);
-  if (!coverageProjection || typeof coverageProjection !== "object" || !Object.keys(coverageProjection).length) {
-    coverageProjection = fallbackReadinessArtifacts.coverage;
-    writeJsonIfChanged(coverageProjectionPath, coverageProjection);
-  }
+  const readinessProjection = fallbackReadinessArtifacts.readiness;
+  writeJsonIfChanged(readinessProjectionPath, readinessProjection);
+  const promotionTrendProjection = fallbackReadinessArtifacts.promotionTrend;
+  writeJsonIfChanged(promotionTrendProjectionPath, promotionTrendProjection);
+  const blockedReasonsProjection = fallbackReadinessArtifacts.blockedReasons;
+  writeJsonIfChanged(blockedReasonsProjectionPath, blockedReasonsProjection);
+  const coverageProjection = fallbackReadinessArtifacts.coverage;
+  writeJsonIfChanged(coverageProjectionPath, coverageProjection);
   const workspaceProgress = sanitizePublicValue(summary.workspaceProgress || {}, workspaceRoot);
   const workspaceProgressPublic = {
     schema: "governed-memory-workspace-progress-public.v1",
@@ -3511,18 +3501,15 @@ function buildGovernedMemoryPublicArtifacts({ workspaceRoot = workspaceRootDefau
     continuityArtifacts,
     readinessArtifacts,
   });
-  let bottlenecks = readJsonObject(bottlenecksProjectionPath);
-  if (!bottlenecks || typeof bottlenecks !== "object" || !Object.keys(bottlenecks).length) {
-    bottlenecks = buildNextBottlenecks({
-      workspaceRoot,
-      memoryEval: evalStatus,
-      readinessArtifacts,
-      continuityArtifacts,
-      openAIBlogLane,
-      anthropicLane,
-    });
-    writeJsonIfChanged(bottlenecksProjectionPath, bottlenecks);
-  }
+  const bottlenecks = buildNextBottlenecks({
+    workspaceRoot,
+    memoryEval: evalStatus,
+    readinessArtifacts,
+    continuityArtifacts,
+    openAIBlogLane,
+    anthropicLane,
+  });
+  writeJsonIfChanged(bottlenecksProjectionPath, bottlenecks);
   evalStatus = evaluateMemoryPublicSuite({
     workspaceRoot,
     paths,

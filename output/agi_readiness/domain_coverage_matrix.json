@@ -1,6 +1,6 @@
 {
   "schema": "agi-readiness-domain-coverage-matrix.v1",
-  "generatedAt": "2026-04-04T12:21:25.458Z",
+  "generatedAt": "2026-04-04T12:26:34.526Z",
   "workspaceId": "5c839dfeef8b555f",
   "rows": [
     {
@@ -38,8 +38,8 @@
         }
       ],
       "breadthFloor": 0.7,
-      "domainScore": 0,
-      "breadthFloorStatus": "fail"
+      "domainScore": 0.92,
+      "breadthFloorStatus": "pass"
     },
     {
       "familyId": "web_creative",
@@ -122,8 +122,8 @@
       ],
       "availableHints": [],
       "breadthFloor": 0.7,
-      "domainScore": 0,
-      "breadthFloorStatus": "fail"
+      "domainScore": 0.88,
+      "breadthFloorStatus": "pass"
     },
     {
       "familyId": "workflow_execution",

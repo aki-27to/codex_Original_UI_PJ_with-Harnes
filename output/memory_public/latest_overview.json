@@ -1,6 +1,6 @@
 {
   "schema": "governed-memory-public-overview.v1",
-  "generatedAt": "2026-04-04T12:21:25.461Z",
+  "generatedAt": "2026-04-04T12:26:34.530Z",
   "workspaceId": "5c839dfeef8b555f",
   "canonicalRoot": "logs/archive/raw/runtime_state/memory",
   "publicOutputRoot": "output/memory_public",
