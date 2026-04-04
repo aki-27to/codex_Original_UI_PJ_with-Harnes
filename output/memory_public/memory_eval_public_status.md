@@ -1,7 +1,7 @@
 # Memory Eval Public Status
 
 - Status: PASS
-- Generated At: 2026-04-04T12:26:34.534Z
+- Generated At: 2026-04-04T13:14:33.158Z
 
 ## Checks
 - canonical_store_present: PASS (canonical event log and index are present)
@@ -17,4 +17,7 @@
 - observation_projection_present: PASS (canonical observation projection is present)
 - continuity_projection_present: PASS (continuity projection and public summary are present)
 - agi_readiness_surface_present: PASS (agi readiness canonical surface is present)
+- readiness_breadth_semantics_consistent: PASS (readiness headline exposes evaluated breadth separately from repo-wide supported coverage breadth)
+- promotion_surface_not_self_comparison_misreported: PASS (promotion surface distinguishes self-snapshot from distinct incumbent comparison)
+- coverage_failures_reflected_in_bottlenecks: PASS (coverage failures are reflected in readiness blocked reasons and next bottlenecks)
 - lane_projection_real_observations_reflected: PASS (lane projections reflect canonical observation state (starved/disabled))

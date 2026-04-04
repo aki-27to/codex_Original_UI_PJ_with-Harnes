@@ -1,8 +1,16 @@
 {
   "schema": "agi-readiness-blocked-reasons.v1",
-  "generatedAt": "2026-04-04T12:26:34.527Z",
+  "generatedAt": "2026-04-04T13:14:33.148Z",
   "workspaceId": "5c839dfeef8b555f",
   "reasons": [
-    "challenger_strictly_beats_incumbent_under_fail_closed_rule"
+    "breadth coverage incomplete across supported families: web_creative, workflow_execution, evaluation_review, tool_use_browser_like"
+  ],
+  "promotionComparisonMode": "self_snapshot",
+  "distinctComparison": false,
+  "failedFamilies": [
+    "web_creative",
+    "workflow_execution",
+    "evaluation_review",
+    "tool_use_browser_like"
   ]
 }

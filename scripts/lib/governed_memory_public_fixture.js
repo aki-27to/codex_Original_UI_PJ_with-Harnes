@@ -476,7 +476,20 @@ function seedGovernedMemoryPublicContinuityArtifacts(root) {
   });
 }
 
-function createAgiBundle({ runId, generatedAt, rawFinalScore, displayFinalScore, cvar, promote, blockedReasons, breadthBase }) {
+function createAgiBundle({
+  runId,
+  generatedAt,
+  rawFinalScore,
+  displayFinalScore,
+  cvar,
+  promote,
+  blockedReasons,
+  breadthBase,
+  candidateId = "candidate-main",
+  incumbentIdentifier = "incumbent-live",
+  challengerIdentifier = runId,
+  reasons = null,
+}) {
   const coverageRows = [
     ["deterministic_code", breadthBase + 0.10],
     ["web_creative", breadthBase + 0.06],
@@ -504,6 +517,7 @@ function createAgiBundle({ runId, generatedAt, rawFinalScore, displayFinalScore,
     candidate: {
       generatedAt,
       runId,
+      candidateId,
       rawFinalScore,
       displayFinalScore,
       blockingReasons: blockedReasons || [],
@@ -527,11 +541,11 @@ function createAgiBundle({ runId, generatedAt, rawFinalScore, displayFinalScore,
       },
     },
     promotionDecision: {
-      incumbentIdentifier: "incumbent-live",
-      challengerIdentifier: runId,
+      incumbentIdentifier,
+      challengerIdentifier,
       promote,
       blockingConditions: blockedReasons || [],
-      reasons: promote ? ["all_gates_pass"] : ["promotion_margin_not_met"],
+      reasons: Array.isArray(reasons) ? reasons : promote ? ["all_gates_pass"] : ["promotion_margin_not_met"],
     },
   };
 }
@@ -558,9 +572,13 @@ function seedGovernedMemoryPublicAgiReadinessArtifacts(root) {
       rawFinalScore: 0.64,
       displayFinalScore: 0.64,
       cvar: 0.09,
-      promote: false,
-      blockedReasons: ["promotion_margin_not_met"],
+      promote: true,
+      blockedReasons: [],
       breadthBase: 0.68,
+      candidateId: "candidate-main",
+      incumbentIdentifier: "candidate-main",
+      challengerIdentifier: "candidate-main",
+      reasons: ["challenger_strictly_beats_incumbent_under_fail_closed_rule"],
     })
   );
 }

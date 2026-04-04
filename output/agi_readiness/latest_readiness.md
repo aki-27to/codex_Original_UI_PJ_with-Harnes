@@ -4,8 +4,11 @@
 - Raw final score: 0.860278
 - Display final score: 0.860278
 - Catastrophic risk (CVaR): 0.04
-- Promote: true
-- Weakest capability family: R_robust
+- Promotion comparison mode: self_snapshot
+- Promote: n/a
+- Repo-wide coverage breadth: 0.333333
+- Evaluated breadth: 1
+- Weakest capability family: G_breadth
 - Weakest hard gate: I_eval
 
 ## Domain Coverage
@@ -17,9 +20,9 @@
 - tool_use_browser_like: score=0.000 floor=0.70 status=fail
 
 ## Blocked Reasons
-- challenger_strictly_beats_incumbent_under_fail_closed_rule
+- breadth coverage incomplete across supported families: web_creative, workflow_execution, evaluation_review, tool_use_browser_like
 
 ## Next Bottlenecks
-- capability bottleneck: weakest family is R_robust
+- scope/coverage bottleneck: breadth coverage incomplete across supported families: web_creative, workflow_execution, evaluation_review, tool_use_browser_like
+- capability bottleneck: weakest family is G_breadth
 - governance bottleneck: hard gate pressure at I_eval
-- observation bottleneck: primary learning lane is still starved for successful runtime observations

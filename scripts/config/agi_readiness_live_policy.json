@@ -35,5 +35,15 @@
   ],
   "breadthFloorDefault": 0.7,
   "promotionTrendLimit": 8,
-  "bottleneckLimit": 3
+  "bottleneckLimit": 3,
+  "breadthSemantics": {
+    "headlineMode": "repo_coverage_breadth",
+    "evaluatedField": "evaluatedBreadth",
+    "coverageField": "supportedCoverageBreadth"
+  },
+  "promotionSemantics": {
+    "selfSnapshotMode": "self_snapshot",
+    "distinctComparisonMode": "distinct_comparison",
+    "coldStartMode": "cold_start"
+  }
 }

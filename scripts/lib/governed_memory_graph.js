@@ -2170,6 +2170,143 @@ function buildFamilyCoverageProjection({ workspaceRoot, items, continuityBridge,
   };
 }
 
+function buildBreadthSemantics({ workspaceRoot, metrics, coverage }) {
+  const policy = loadAgiReadinessPolicy(workspaceRoot);
+  const semanticsPolicy = policy && policy.breadthSemantics && typeof policy.breadthSemantics === "object"
+    ? policy.breadthSemantics
+    : {};
+  const rows = Array.isArray(coverage && coverage.rows) ? coverage.rows : [];
+  const coverageFamilyCount = rows.length;
+  const failedFamilies = rows
+    .filter((row) => safeString(row && row.breadthFloorStatus, 20) !== "pass")
+    .map((row) => safeString(row && row.familyId, 80))
+    .filter(Boolean);
+  const coveredFamilyCount = rows.filter((row) => safeString(row && row.breadthFloorStatus, 20) === "pass").length;
+  const supportedCoverageBreadth = coverageFamilyCount > 0
+    ? Number((coveredFamilyCount / coverageFamilyCount).toFixed(6))
+    : null;
+  const evaluatedBreadth = metrics && metrics.G_breadth && Number.isFinite(Number(metrics.G_breadth.value))
+    ? Number(Number(metrics.G_breadth.value).toFixed(6))
+    : null;
+  const headlineMode = safeString(semanticsPolicy.headlineMode, 80) || "repo_coverage_breadth";
+  const headlineBreadth = headlineMode === "repo_coverage_breadth"
+    ? supportedCoverageBreadth
+    : evaluatedBreadth;
+  return {
+    mode: headlineMode,
+    evaluatedField: safeString(semanticsPolicy.evaluatedField, 80) || "evaluatedBreadth",
+    coverageField: safeString(semanticsPolicy.coverageField, 80) || "supportedCoverageBreadth",
+    evaluatedBreadth,
+    supportedCoverageBreadth,
+    headlineBreadth,
+    coverageFamilyCount,
+    coveredFamilyCount,
+    failedFamilies,
+  };
+}
+
+function derivePromotionComparison({ workspaceRoot, candidate, promotionDecision }) {
+  const policy = loadAgiReadinessPolicy(workspaceRoot);
+  const semantics = policy && policy.promotionSemantics && typeof policy.promotionSemantics === "object"
+    ? policy.promotionSemantics
+    : {};
+  const incumbentIdentifier = safeString(promotionDecision && promotionDecision.incumbentIdentifier, 120);
+  const challengerIdentifier = safeString(
+    promotionDecision && promotionDecision.challengerIdentifier,
+    120
+  ) || safeString(candidate && candidate.candidateId, 120);
+  let comparisonMode = safeString(semantics.distinctComparisonMode, 80) || "distinct_comparison";
+  if (!incumbentIdentifier) {
+    comparisonMode = safeString(semantics.coldStartMode, 80) || "cold_start";
+  } else if (!challengerIdentifier || incumbentIdentifier === challengerIdentifier) {
+    comparisonMode = safeString(semantics.selfSnapshotMode, 80) || "self_snapshot";
+  }
+  const distinctComparison = comparisonMode === (safeString(semantics.distinctComparisonMode, 80) || "distinct_comparison");
+  const coldStart = comparisonMode === (safeString(semantics.coldStartMode, 80) || "cold_start");
+  let promotionInterpretation = "distinct_incumbent_comparison";
+  let promotionEvidenceStrength = "distinct_incumbent_challenger_decision";
+  let promote = typeof promotionDecision && typeof promotionDecision.promote === "boolean" ? promotionDecision.promote : null;
+  if (comparisonMode === (safeString(semantics.selfSnapshotMode, 80) || "self_snapshot")) {
+    promotionInterpretation = "not_a_distinct_incumbent_comparison";
+    promotionEvidenceStrength = "self_snapshot_only";
+    promote = null;
+  } else if (coldStart) {
+    promotionInterpretation = "cold_start_threshold_evaluation";
+    promotionEvidenceStrength = "cold_start_threshold_gated";
+  }
+  return {
+    comparisonMode,
+    distinctComparison,
+    coldStart,
+    incumbentIdentifier,
+    challengerIdentifier,
+    promote,
+    promotionInterpretation,
+    promotionEvidenceStrength,
+  };
+}
+
+function filterPromotionReasons(reasons, promotionContext) {
+  const rawReasons = uniqueStrings(reasons, 16, 220);
+  if (!promotionContext || !promotionContext.distinctComparison) {
+    return rawReasons.filter((reason) => reason !== "challenger_strictly_beats_incumbent_under_fail_closed_rule");
+  }
+  return rawReasons;
+}
+
+function buildReadinessConsistencyChecks({ readiness, coverage, blockedReasons, bottlenecks }) {
+  const failedFamilies = uniqueStrings(readiness && readiness.failedFamilies, 16, 80);
+  const supportedCoverageBreadth = Number.isFinite(Number(readiness && readiness.supportedCoverageBreadth))
+    ? Number(readiness.supportedCoverageBreadth)
+    : null;
+  const evaluatedBreadth = Number.isFinite(Number(readiness && readiness.evaluatedBreadth))
+    ? Number(readiness.evaluatedBreadth)
+    : null;
+  const headlineMode = safeString(readiness && readiness.breadthSemantics && readiness.breadthSemantics.mode, 80);
+  const blockedReasonList = Array.isArray(blockedReasons && blockedReasons.reasons) ? blockedReasons.reasons : [];
+  const bottleneckItems = Array.isArray(bottlenecks && bottlenecks.items) ? bottlenecks.items : [];
+  const checks = [];
+  const breadthConsistent = Boolean(
+    headlineMode
+    && Number.isFinite(supportedCoverageBreadth)
+    && Number.isFinite(evaluatedBreadth)
+    && (failedFamilies.length === 0 || supportedCoverageBreadth < 1)
+  );
+  checks.push({
+    id: "readiness_breadth_semantics_consistent",
+    status: breadthConsistent ? "PASS" : "FAIL",
+    detail: breadthConsistent
+      ? "headline breadth distinguishes evaluated bundle breadth from repo-wide supported coverage breadth"
+      : "headline breadth does not clearly distinguish evaluated breadth from repo-wide supported coverage breadth",
+  });
+  const selfCompareMisreported = !(
+    safeString(readiness && readiness.promotionComparisonMode, 80) === "self_snapshot"
+    && (readiness && readiness.incumbentVsChallenger && readiness.incumbentVsChallenger.promote !== null)
+  ) && !(
+    safeString(readiness && readiness.promotionComparisonMode, 80) === "self_snapshot"
+    && blockedReasonList.includes("challenger_strictly_beats_incumbent_under_fail_closed_rule")
+  );
+  checks.push({
+    id: "promotion_surface_not_self_comparison_misreported",
+    status: selfCompareMisreported ? "PASS" : "FAIL",
+    detail: selfCompareMisreported
+      ? "promotion surface does not present self-comparison as a distinct incumbent comparison"
+      : "self-comparison readiness still exposes distinct-comparison promotion semantics",
+  });
+  const coverageReflected = failedFamilies.length === 0 || (
+    blockedReasonList.some((reason) => reason.includes("breadth coverage incomplete across supported families"))
+    && bottleneckItems.some((item) => safeString(item && item.summary, 240).includes("breadth coverage incomplete across supported families"))
+  );
+  checks.push({
+    id: "coverage_failures_reflected_in_bottlenecks",
+    status: coverageReflected ? "PASS" : "FAIL",
+    detail: coverageReflected
+      ? "coverage failures are reflected in readiness blocked reasons and next bottlenecks"
+      : "coverage failures are not surfaced in readiness blocked reasons or next bottlenecks",
+  });
+  return checks;
+}
+
 function buildAgiReadinessArtifacts({ workspaceRoot, items, continuityBridge }) {
   const bundles = findLatestAgiV1Bundles(workspaceRoot, 8);
   const latestBundleEntry = bundles[0] || null;
@@ -2182,23 +2319,38 @@ function buildAgiReadinessArtifacts({ workspaceRoot, items, continuityBridge }) 
     : {};
   const familyIds = ["G_breadth", "G_depth", "A_adapt", "R_robust", "H_horizon", "P_context", "I_eval", "S_trust", "C_corr", "E_epi"];
   const metrics = Object.fromEntries(familyIds.map((id) => [id, collectAgiFamilyMetric(latestBundle, id)]));
-  const weakestCapability = ["G_breadth", "G_depth", "A_adapt", "R_robust", "H_horizon", "P_context"]
-    .map((id) => metrics[id])
-    .filter((entry) => Number.isFinite(Number(entry && entry.value)))
-    .sort((left, right) => safeNumber(left && left.value, 1) - safeNumber(right && right.value, 1))[0] || null;
+  const coverage = buildFamilyCoverageProjection({ workspaceRoot, items, continuityBridge, latestAgiBundle: latestBundle });
+  const breadthSemantics = buildBreadthSemantics({ workspaceRoot, metrics, coverage });
+  const promotionContext = derivePromotionComparison({ workspaceRoot, candidate, promotionDecision });
+  const headlineMetrics = {
+    G_breadth: Number.isFinite(Number(breadthSemantics.headlineBreadth)) ? Number(breadthSemantics.headlineBreadth) : null,
+    G_depth: metrics.G_depth && Number.isFinite(Number(metrics.G_depth.value)) ? Number(metrics.G_depth.value) : null,
+    A_adapt: metrics.A_adapt && Number.isFinite(Number(metrics.A_adapt.value)) ? Number(metrics.A_adapt.value) : null,
+    R_robust: metrics.R_robust && Number.isFinite(Number(metrics.R_robust.value)) ? Number(metrics.R_robust.value) : null,
+    H_horizon: metrics.H_horizon && Number.isFinite(Number(metrics.H_horizon.value)) ? Number(metrics.H_horizon.value) : null,
+    P_context: metrics.P_context && Number.isFinite(Number(metrics.P_context.value)) ? Number(metrics.P_context.value) : null,
+  };
+  const weakestCapability = Object.entries(headlineMetrics)
+    .filter(([, value]) => Number.isFinite(Number(value)))
+    .sort((left, right) => safeNumber(left[1], 1) - safeNumber(right[1], 1))[0] || null;
   const weakestGate = ["I_eval", "S_trust", "C_corr", "E_epi"]
     .map((id) => metrics[id])
     .filter((entry) => Number.isFinite(Number(entry && entry.value)))
     .sort((left, right) => safeNumber(left && left.value, 1) - safeNumber(right && right.value, 1))[0] || null;
-  const blockedReasons = uniqueStrings([
+  const blockedReasons = filterPromotionReasons([
     ...(Array.isArray(candidate.blockingReasons) ? candidate.blockingReasons : []),
     ...(Array.isArray(promotionDecision.blockingConditions) ? promotionDecision.blockingConditions : []),
     ...(Array.isArray(promotionDecision.reasons) ? promotionDecision.reasons : []),
-  ], 12, 220);
+  ], promotionContext);
+  if (breadthSemantics.failedFamilies.length) {
+    blockedReasons.push(`breadth coverage incomplete across supported families: ${breadthSemantics.failedFamilies.join(", ")}`);
+  }
+  const normalizedBlockedReasons = uniqueStrings(blockedReasons, 12, 220);
   const trend = bundles.map((entry) => {
     const payload = entry && entry.payload && typeof entry.payload === "object" ? entry.payload : {};
     const candidateBundle = payload.candidate && typeof payload.candidate === "object" ? payload.candidate : {};
     const decision = payload.promotionDecision && typeof payload.promotionDecision === "object" ? payload.promotionDecision : {};
+    const promotion = derivePromotionComparison({ workspaceRoot, candidate: candidateBundle, promotionDecision: decision });
     return {
       runId: safeString(payload.runId || candidateBundle.runId, 120),
       generatedAt: safeString(payload.generatedAt || candidateBundle.generatedAt, 80),
@@ -2207,14 +2359,20 @@ function buildAgiReadinessArtifacts({ workspaceRoot, items, continuityBridge }) 
       catastrophicRisk: candidateBundle.riskSummary && Number.isFinite(Number(candidateBundle.riskSummary.cvar))
         ? Number(Number(candidateBundle.riskSummary.cvar).toFixed(6))
         : null,
-      promote: Boolean(decision.promote),
-      blockedReasons: uniqueStrings([
+      promote: promotion.promote,
+      comparisonMode: promotion.comparisonMode,
+      distinctComparison: promotion.distinctComparison,
+      promotionInterpretation: promotion.promotionInterpretation,
+      promotionEvidenceStrength: promotion.promotionEvidenceStrength,
+      incumbentIdentifier: promotion.incumbentIdentifier,
+      challengerIdentifier: promotion.challengerIdentifier,
+      blockedReasons: uniqueStrings(filterPromotionReasons([
         ...(Array.isArray(candidateBundle.blockingReasons) ? candidateBundle.blockingReasons : []),
         ...(Array.isArray(decision.blockingConditions) ? decision.blockingConditions : []),
-      ], 8, 180),
+        ...(Array.isArray(decision.reasons) ? decision.reasons : []),
+      ], promotion), 8, 180),
     };
   });
-  const coverage = buildFamilyCoverageProjection({ workspaceRoot, items, continuityBridge, latestAgiBundle: latestBundle });
   const readiness = {
     schema: "agi-readiness-live-summary.v1",
     generatedAt: toIso(),
@@ -2230,13 +2388,32 @@ function buildAgiReadinessArtifacts({ workspaceRoot, items, continuityBridge }) 
     } : { cvar: null, supportStatus: "unknown" },
     rawFinalScore: Number.isFinite(Number(candidate.rawFinalScore)) ? Number(Number(candidate.rawFinalScore).toFixed(6)) : null,
     displayFinalScore: Number.isFinite(Number(candidate.displayFinalScore)) ? Number(Number(candidate.displayFinalScore).toFixed(6)) : null,
-    incumbentVsChallenger: {
-      incumbentIdentifier: safeString(promotionDecision.incumbentIdentifier, 120),
-      challengerIdentifier: safeString(promotionDecision.challengerIdentifier, 120),
-      promote: typeof promotionDecision.promote === "boolean" ? promotionDecision.promote : null,
+    breadthSemantics: {
+      mode: breadthSemantics.mode,
+      headlineField: "supportedCoverageBreadth",
+      evaluatedField: breadthSemantics.evaluatedField,
+      coverageField: breadthSemantics.coverageField,
     },
-    blockedReasons,
-    weakestCapabilityFamily: weakestCapability ? weakestCapability.familyName : "",
+    evaluatedBreadth: breadthSemantics.evaluatedBreadth,
+    supportedCoverageBreadth: breadthSemantics.supportedCoverageBreadth,
+    coverageFamilyCount: breadthSemantics.coverageFamilyCount,
+    coveredFamilyCount: breadthSemantics.coveredFamilyCount,
+    failedFamilies: breadthSemantics.failedFamilies,
+    headlineMetrics,
+    headlineBreadth: breadthSemantics.headlineBreadth,
+    promotionComparisonMode: promotionContext.comparisonMode,
+    distinctComparison: promotionContext.distinctComparison,
+    promotionInterpretation: promotionContext.promotionInterpretation,
+    promotionEvidenceStrength: promotionContext.promotionEvidenceStrength,
+    incumbentVsChallenger: {
+      incumbentIdentifier: promotionContext.incumbentIdentifier,
+      challengerIdentifier: promotionContext.challengerIdentifier,
+      promote: promotionContext.promote,
+      comparisonMode: promotionContext.comparisonMode,
+      distinctComparison: promotionContext.distinctComparison,
+    },
+    blockedReasons: normalizedBlockedReasons,
+    weakestCapabilityFamily: weakestCapability ? safeString(weakestCapability[0], 80) : "",
     weakestGateFamily: weakestGate ? weakestGate.familyName : "",
     domainCoveragePath: repoRelative(workspaceRoot, getMemoryPaths(workspaceRoot).agiReadiness.domainCoverageMatrixJson),
     recentImprovement: trend.length > 1 && Number.isFinite(Number(trend[0].rawFinalScore)) && Number.isFinite(Number(trend[1].rawFinalScore))
@@ -2259,7 +2436,10 @@ function buildAgiReadinessArtifacts({ workspaceRoot, items, continuityBridge }) 
       schema: "agi-readiness-blocked-reasons.v1",
       generatedAt: toIso(),
       workspaceId: toWorkspaceId(workspaceRoot),
-      reasons: blockedReasons,
+      reasons: normalizedBlockedReasons,
+      promotionComparisonMode: promotionContext.comparisonMode,
+      distinctComparison: promotionContext.distinctComparison,
+      failedFamilies: breadthSemantics.failedFamilies,
     },
   };
 }
@@ -2272,7 +2452,10 @@ function renderAgiReadinessMarkdown(readiness, coverage, blockedReasons, bottlen
     `- Raw final score: ${Number.isFinite(Number(readiness && readiness.rawFinalScore)) ? readiness.rawFinalScore : "-"}`,
     `- Display final score: ${Number.isFinite(Number(readiness && readiness.displayFinalScore)) ? readiness.displayFinalScore : "-"}`,
     `- Catastrophic risk (CVaR): ${readiness && readiness.catastrophicRisk && Number.isFinite(Number(readiness.catastrophicRisk.cvar)) ? readiness.catastrophicRisk.cvar : "-"}`,
-    `- Promote: ${readiness && readiness.incumbentVsChallenger ? String(readiness.incumbentVsChallenger.promote) : "-"}`,
+    `- Promotion comparison mode: ${safeString(readiness && readiness.promotionComparisonMode, 80) || "-"}`,
+    `- Promote: ${readiness && readiness.incumbentVsChallenger && readiness.incumbentVsChallenger.promote !== null ? String(readiness.incumbentVsChallenger.promote) : "n/a"}`,
+    `- Repo-wide coverage breadth: ${Number.isFinite(Number(readiness && readiness.supportedCoverageBreadth)) ? readiness.supportedCoverageBreadth : "-"}`,
+    `- Evaluated breadth: ${Number.isFinite(Number(readiness && readiness.evaluatedBreadth)) ? readiness.evaluatedBreadth : "-"}`,
     `- Weakest capability family: ${safeString(readiness && readiness.weakestCapabilityFamily, 80) || "-"}`,
     `- Weakest hard gate: ${safeString(readiness && readiness.weakestGateFamily, 80) || "-"}`,
     "",
@@ -2346,6 +2529,14 @@ function buildNextBottlenecks({ workspaceRoot, memoryEval, readinessArtifacts, c
     });
   }
   const readiness = readinessArtifacts && readinessArtifacts.readiness ? readinessArtifacts.readiness : {};
+  const failedFamilies = uniqueStrings(readiness && readiness.failedFamilies, 16, 80);
+  if (failedFamilies.length) {
+    items.push({
+      classification: "scope/coverage bottleneck",
+      summary: `breadth coverage incomplete across supported families: ${failedFamilies.join(", ")}`,
+      source: "agi_readiness",
+    });
+  }
   if (safeString(readiness.weakestCapabilityFamily, 80)) {
     items.push({
       classification: "capability bottleneck",
@@ -3179,6 +3370,12 @@ function evaluateMemoryPublicSuite({ workspaceRoot, paths, summary, pack, items,
   const readiness = readinessArtifacts && readinessArtifacts.readiness && typeof readinessArtifacts.readiness === "object"
     ? readinessArtifacts.readiness
     : {};
+  const readinessBlockedReasons = readinessArtifacts && readinessArtifacts.blockedReasons && typeof readinessArtifacts.blockedReasons === "object"
+    ? readinessArtifacts.blockedReasons
+    : {};
+  const readinessBottlenecks = readinessArtifacts && readinessArtifacts.bottlenecks && typeof readinessArtifacts.bottlenecks === "object"
+    ? readinessArtifacts.bottlenecks
+    : {};
   const checkResults = checks.map((check) => {
     const id = safeString(check && check.id, 120);
     let pass = false;
@@ -3258,6 +3455,39 @@ function evaluateMemoryPublicSuite({ workspaceRoot, paths, summary, pack, items,
       const missing = required.filter((targetPath) => !fs.existsSync(targetPath));
       pass = missing.length === 0 && safeString(readiness.schema, 120) === "agi-readiness-live-summary.v1";
       detail = pass ? "agi readiness canonical surface is present" : `missing: ${missing.map((entry) => normalizePublicPath(workspaceRoot, entry)).join(", ")}`;
+    } else if (id === "readiness_breadth_semantics_consistent") {
+      const failedFamilies = uniqueStrings(readiness && readiness.failedFamilies, 16, 80);
+      const supportedCoverageBreadth = safeNumber(readiness && readiness.supportedCoverageBreadth, NaN);
+      const evaluatedBreadth = safeNumber(readiness && readiness.evaluatedBreadth, NaN);
+      const headlineMode = safeString(readiness && readiness.breadthSemantics && readiness.breadthSemantics.mode, 80);
+      pass = Boolean(
+        headlineMode
+        && Number.isFinite(supportedCoverageBreadth)
+        && Number.isFinite(evaluatedBreadth)
+        && (failedFamilies.length === 0 || supportedCoverageBreadth < 1)
+      );
+      detail = pass
+        ? "readiness headline exposes evaluated breadth separately from repo-wide supported coverage breadth"
+        : "readiness headline breadth semantics are missing or inconsistent with coverage failures";
+    } else if (id === "promotion_surface_not_self_comparison_misreported") {
+      const selfSnapshot = safeString(readiness && readiness.promotionComparisonMode, 80) === "self_snapshot";
+      const promoteValue = readiness && readiness.incumbentVsChallenger ? readiness.incumbentVsChallenger.promote : undefined;
+      const reasons = Array.isArray(readinessBlockedReasons && readinessBlockedReasons.reasons) ? readinessBlockedReasons.reasons : [];
+      pass = !selfSnapshot || (promoteValue === null && !reasons.includes("challenger_strictly_beats_incumbent_under_fail_closed_rule"));
+      detail = pass
+        ? "promotion surface distinguishes self-snapshot from distinct incumbent comparison"
+        : "self-snapshot readiness is still exposed like a distinct incumbent/challenger promotion result";
+    } else if (id === "coverage_failures_reflected_in_bottlenecks") {
+      const failedFamilies = uniqueStrings(readiness && readiness.failedFamilies, 16, 80);
+      const reasons = Array.isArray(readinessBlockedReasons && readinessBlockedReasons.reasons) ? readinessBlockedReasons.reasons : [];
+      const bottlenecks = Array.isArray(readinessBottlenecks && readinessBottlenecks.items) ? readinessBottlenecks.items : [];
+      pass = failedFamilies.length === 0 || (
+        reasons.some((reason) => reason.includes("breadth coverage incomplete across supported families"))
+        && bottlenecks.some((item) => safeString(item && item.summary, 240).includes("breadth coverage incomplete across supported families"))
+      );
+      detail = pass
+        ? "coverage failures are reflected in readiness blocked reasons and next bottlenecks"
+        : "coverage failures are not reflected in readiness blocked reasons or next bottlenecks";
     } else if (id === "lane_projection_real_observations_reflected") {
       const primaryObserved = clampInt(openAIBlogLane && openAIBlogLane.canonicalCounts && openAIBlogLane.canonicalCounts.observationCount, 0, 999999, 0);
       const secondaryAwaiting = clampInt(anthropicLane && anthropicLane.canonicalCounts && anthropicLane.canonicalCounts.awaitingObservationCount, 0, 999999, 0);
@@ -3501,7 +3731,7 @@ function buildGovernedMemoryPublicArtifacts({ workspaceRoot = workspaceRootDefau
     continuityArtifacts,
     readinessArtifacts,
   });
-  const bottlenecks = buildNextBottlenecks({
+  let bottlenecks = buildNextBottlenecks({
     workspaceRoot,
     memoryEval: evalStatus,
     readinessArtifacts,
@@ -3509,6 +3739,16 @@ function buildGovernedMemoryPublicArtifacts({ workspaceRoot = workspaceRootDefau
     openAIBlogLane,
     anthropicLane,
   });
+  readinessArtifacts.bottlenecks = bottlenecks;
+  const readinessConsistencyChecks = buildReadinessConsistencyChecks({
+    readiness: readinessArtifacts.readiness,
+    coverage: readinessArtifacts.coverage,
+    blockedReasons: readinessArtifacts.blockedReasons,
+    bottlenecks,
+  });
+  readinessArtifacts.readiness.consistencyChecks = readinessConsistencyChecks;
+  writeJsonIfChanged(readinessProjectionPath, readinessArtifacts.readiness);
+  writeJsonIfChanged(blockedReasonsProjectionPath, readinessArtifacts.blockedReasons);
   writeJsonIfChanged(bottlenecksProjectionPath, bottlenecks);
   evalStatus = evaluateMemoryPublicSuite({
     workspaceRoot,
@@ -3522,6 +3762,16 @@ function buildGovernedMemoryPublicArtifacts({ workspaceRoot = workspaceRootDefau
     continuityArtifacts,
     readinessArtifacts,
   });
+  bottlenecks = buildNextBottlenecks({
+    workspaceRoot,
+    memoryEval: evalStatus,
+    readinessArtifacts,
+    continuityArtifacts,
+    openAIBlogLane,
+    anthropicLane,
+  });
+  readinessArtifacts.bottlenecks = bottlenecks;
+  writeJsonIfChanged(bottlenecksProjectionPath, bottlenecks);
   const exportManifest = {
     schema: "governed-memory-public-export-manifest.v1",
     generatedAt: toIso(),

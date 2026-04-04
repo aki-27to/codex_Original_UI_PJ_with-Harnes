@@ -1,6 +1,6 @@
 {
   "schema": "memory-eval-public-status.v1",
-  "generatedAt": "2026-04-04T12:26:34.534Z",
+  "generatedAt": "2026-04-04T13:14:33.158Z",
   "suiteSchema": "memory-eval-suite.v1",
   "suiteVersion": "2026-04-04.r1",
   "status": "PASS",
@@ -83,6 +83,24 @@
       "title": "AGI readiness live surface is generated from canonical evaluation evidence",
       "status": "PASS",
       "detail": "agi readiness canonical surface is present"
+    },
+    {
+      "id": "readiness_breadth_semantics_consistent",
+      "title": "Readiness headline breadth semantics are explicit and consistent with repo-wide coverage",
+      "status": "PASS",
+      "detail": "readiness headline exposes evaluated breadth separately from repo-wide supported coverage breadth"
+    },
+    {
+      "id": "promotion_surface_not_self_comparison_misreported",
+      "title": "Readiness promotion surface does not present self-comparison as a distinct incumbent comparison",
+      "status": "PASS",
+      "detail": "promotion surface distinguishes self-snapshot from distinct incumbent comparison"
+    },
+    {
+      "id": "coverage_failures_reflected_in_bottlenecks",
+      "title": "Repo-wide coverage failures are reflected in readiness bottlenecks and blocked reasons",
+      "status": "PASS",
+      "detail": "coverage failures are reflected in readiness blocked reasons and next bottlenecks"
     },
     {
       "id": "lane_projection_real_observations_reflected",

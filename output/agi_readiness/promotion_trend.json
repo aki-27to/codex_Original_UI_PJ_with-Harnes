@@ -1,6 +1,6 @@
 {
   "schema": "agi-readiness-promotion-trend.v1",
-  "generatedAt": "2026-04-04T12:26:34.527Z",
+  "generatedAt": "2026-04-04T13:14:33.148Z",
   "workspaceId": "5c839dfeef8b555f",
   "entries": [
     {
@@ -9,7 +9,13 @@
       "rawFinalScore": 0.860278,
       "displayFinalScore": 0.860278,
       "catastrophicRisk": 0.04,
-      "promote": true,
+      "promote": null,
+      "comparisonMode": "self_snapshot",
+      "distinctComparison": false,
+      "promotionInterpretation": "not_a_distinct_incumbent_comparison",
+      "promotionEvidenceStrength": "self_snapshot_only",
+      "incumbentIdentifier": "candidate-main",
+      "challengerIdentifier": "candidate-main",
       "blockedReasons": []
     },
     {
@@ -19,7 +25,15 @@
       "displayFinalScore": 0.726416,
       "catastrophicRisk": 0.08,
       "promote": true,
-      "blockedReasons": []
+      "comparisonMode": "cold_start",
+      "distinctComparison": false,
+      "promotionInterpretation": "cold_start_threshold_evaluation",
+      "promotionEvidenceStrength": "cold_start_threshold_gated",
+      "incumbentIdentifier": "",
+      "challengerIdentifier": "candidate-main",
+      "blockedReasons": [
+        "cold_start_gates_and_thresholds_passed"
+      ]
     },
     {
       "runId": "eval-1775264801048-611d5a70",
@@ -27,7 +41,13 @@
       "rawFinalScore": 0.860278,
       "displayFinalScore": 0.860278,
       "catastrophicRisk": 0.04,
-      "promote": true,
+      "promote": null,
+      "comparisonMode": "self_snapshot",
+      "distinctComparison": false,
+      "promotionInterpretation": "not_a_distinct_incumbent_comparison",
+      "promotionEvidenceStrength": "self_snapshot_only",
+      "incumbentIdentifier": "candidate-main",
+      "challengerIdentifier": "candidate-main",
       "blockedReasons": []
     },
     {
@@ -37,7 +57,15 @@
       "displayFinalScore": 0.726416,
       "catastrophicRisk": 0.08,
       "promote": true,
-      "blockedReasons": []
+      "comparisonMode": "cold_start",
+      "distinctComparison": false,
+      "promotionInterpretation": "cold_start_threshold_evaluation",
+      "promotionEvidenceStrength": "cold_start_threshold_gated",
+      "incumbentIdentifier": "",
+      "challengerIdentifier": "candidate-main",
+      "blockedReasons": [
+        "cold_start_gates_and_thresholds_passed"
+      ]
     },
     {
       "runId": "eval-1775264775837-7aefad2e",
@@ -45,7 +73,13 @@
       "rawFinalScore": 0.860278,
       "displayFinalScore": 0.860278,
       "catastrophicRisk": 0.04,
-      "promote": true,
+      "promote": null,
+      "comparisonMode": "self_snapshot",
+      "distinctComparison": false,
+      "promotionInterpretation": "not_a_distinct_incumbent_comparison",
+      "promotionEvidenceStrength": "self_snapshot_only",
+      "incumbentIdentifier": "candidate-main",
+      "challengerIdentifier": "candidate-main",
       "blockedReasons": []
     },
     {
@@ -55,7 +89,15 @@
       "displayFinalScore": 0.726416,
       "catastrophicRisk": 0.08,
       "promote": true,
-      "blockedReasons": []
+      "comparisonMode": "cold_start",
+      "distinctComparison": false,
+      "promotionInterpretation": "cold_start_threshold_evaluation",
+      "promotionEvidenceStrength": "cold_start_threshold_gated",
+      "incumbentIdentifier": "",
+      "challengerIdentifier": "candidate-main",
+      "blockedReasons": [
+        "cold_start_gates_and_thresholds_passed"
+      ]
     },
     {
       "runId": "eval-1775259042576-a40bc3f6",
@@ -63,7 +105,13 @@
       "rawFinalScore": 0.860278,
       "displayFinalScore": 0.860278,
       "catastrophicRisk": 0.04,
-      "promote": true,
+      "promote": null,
+      "comparisonMode": "self_snapshot",
+      "distinctComparison": false,
+      "promotionInterpretation": "not_a_distinct_incumbent_comparison",
+      "promotionEvidenceStrength": "self_snapshot_only",
+      "incumbentIdentifier": "candidate-main",
+      "challengerIdentifier": "candidate-main",
       "blockedReasons": []
     },
     {
@@ -73,7 +121,15 @@
       "displayFinalScore": 0.726416,
       "catastrophicRisk": 0.08,
       "promote": true,
-      "blockedReasons": []
+      "comparisonMode": "cold_start",
+      "distinctComparison": false,
+      "promotionInterpretation": "cold_start_threshold_evaluation",
+      "promotionEvidenceStrength": "cold_start_threshold_gated",
+      "incumbentIdentifier": "",
+      "challengerIdentifier": "candidate-main",
+      "blockedReasons": [
+        "cold_start_gates_and_thresholds_passed"
+      ]
     }
   ]
 }

@@ -1,6 +1,6 @@
 {
   "schema": "agi-readiness-live-summary.v1",
-  "generatedAt": "2026-04-04T12:26:34.527Z",
+  "generatedAt": "2026-04-04T13:14:33.148Z",
   "workspaceId": "5c839dfeef8b555f",
   "latestRunId": "eval-1775264897008-443e2a6a",
   "profile": "agi_v1",
@@ -205,17 +205,65 @@
   },
   "rawFinalScore": 0.860278,
   "displayFinalScore": 0.860278,
+  "breadthSemantics": {
+    "mode": "repo_coverage_breadth",
+    "headlineField": "supportedCoverageBreadth",
+    "evaluatedField": "evaluatedBreadth",
+    "coverageField": "supportedCoverageBreadth"
+  },
+  "evaluatedBreadth": 1,
+  "supportedCoverageBreadth": 0.333333,
+  "coverageFamilyCount": 6,
+  "coveredFamilyCount": 2,
+  "failedFamilies": [
+    "web_creative",
+    "workflow_execution",
+    "evaluation_review",
+    "tool_use_browser_like"
+  ],
+  "headlineMetrics": {
+    "G_breadth": 0.333333,
+    "G_depth": 0.87,
+    "A_adapt": 0.83,
+    "R_robust": 0.81,
+    "H_horizon": 0.93487,
+    "P_context": 0.86
+  },
+  "headlineBreadth": 0.333333,
+  "promotionComparisonMode": "self_snapshot",
+  "distinctComparison": false,
+  "promotionInterpretation": "not_a_distinct_incumbent_comparison",
+  "promotionEvidenceStrength": "self_snapshot_only",
   "incumbentVsChallenger": {
     "incumbentIdentifier": "candidate-main",
     "challengerIdentifier": "candidate-main",
-    "promote": true
+    "promote": null,
+    "comparisonMode": "self_snapshot",
+    "distinctComparison": false
   },
   "blockedReasons": [
-    "challenger_strictly_beats_incumbent_under_fail_closed_rule"
+    "breadth coverage incomplete across supported families: web_creative, workflow_execution, evaluation_review, tool_use_browser_like"
   ],
-  "weakestCapabilityFamily": "R_robust",
+  "weakestCapabilityFamily": "G_breadth",
   "weakestGateFamily": "I_eval",
   "domainCoveragePath": "output/agi_readiness/domain_coverage_matrix.json",
   "recentImprovement": 0.133862,
-  "recentRegression": -0.04
+  "recentRegression": -0.04,
+  "consistencyChecks": [
+    {
+      "id": "readiness_breadth_semantics_consistent",
+      "status": "PASS",
+      "detail": "headline breadth distinguishes evaluated bundle breadth from repo-wide supported coverage breadth"
+    },
+    {
+      "id": "promotion_surface_not_self_comparison_misreported",
+      "status": "PASS",
+      "detail": "promotion surface does not present self-comparison as a distinct incumbent comparison"
+    },
+    {
+      "id": "coverage_failures_reflected_in_bottlenecks",
+      "status": "PASS",
+      "detail": "coverage failures are reflected in readiness blocked reasons and next bottlenecks"
+    }
+  ]
 }

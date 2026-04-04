@@ -55,6 +55,18 @@
       "title": "AGI readiness live surface is generated from canonical evaluation evidence"
     },
     {
+      "id": "readiness_breadth_semantics_consistent",
+      "title": "Readiness headline breadth semantics are explicit and consistent with repo-wide coverage"
+    },
+    {
+      "id": "promotion_surface_not_self_comparison_misreported",
+      "title": "Readiness promotion surface does not present self-comparison as a distinct incumbent comparison"
+    },
+    {
+      "id": "coverage_failures_reflected_in_bottlenecks",
+      "title": "Repo-wide coverage failures are reflected in readiness bottlenecks and blocked reasons"
+    },
+    {
       "id": "lane_projection_real_observations_reflected",
       "title": "Learning lane projections reflect canonical runtime observations"
     }
