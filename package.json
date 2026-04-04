@@ -9,6 +9,7 @@
   "scripts": {
     "test": "node scripts/run_public_regression.js",
     "start": "node server.js",
+    "test:docs:drift": "node scripts/web_autonomy_copy_test.js",
     "regression:public": "node scripts/run_public_regression.js",
     "eval:holdout": "node scripts/run_holdout_eval.js",
     "eval:aggregate": "node scripts/aggregate_eval_lanes.js",
@@ -54,7 +55,10 @@
     "learn:anthropic-engineering": "node scripts/anthropic_engineering_learning_cycle.js",
     "learn:self-improvement-gate": "node scripts/self_improvement_eval_gate.js",
     "learn:self-improvement:manual:validate": "node scripts/manual_self_improvement_validate.js",
-    "housekeeping:runtime-surface": "node scripts/organize_runtime_surface.js"
+    "housekeeping:runtime-surface": "node scripts/organize_runtime_surface.js",
+    "housekeeping:output-surface": "node scripts/organize_output_surface.js",
+    "housekeeping:surfaces": "node scripts/organize_runtime_surface.js && node scripts/organize_output_surface.js",
+    "test:housekeeping:output-surface": "node scripts/organize_output_surface_test.js"
   },
   "keywords": [
     "codex",

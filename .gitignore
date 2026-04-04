@@ -16,6 +16,7 @@ tools/kokoro-fastapi/.env
 runtime/*
 !runtime/README.md
 output/appserver_tui_demo_home/
+output/playwright/
 output/tmp_harnesui_retry_bootstrap.js
 docs/copilot-studio/
 output/adaptation/

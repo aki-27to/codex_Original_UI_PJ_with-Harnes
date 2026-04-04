@@ -1,0 +1,66 @@
+{
+  "version": 1,
+  "intentionalOutputRoots": [
+    "output/adaptation",
+    "output/agi_readiness",
+    "output/agi_v1",
+    "output/claim_closure",
+    "output/external_audit_bundle",
+    "output/external_audit_closure",
+    "output/externalization_nohitl",
+    "output/improvement",
+    "output/manual_self_improvement",
+    "output/openai_blog_learning_proposals",
+    "output/openai_blog_self_improvement_proposals",
+    "output/repo_closure_export"
+  ],
+  "transientRoots": [
+    {
+      "source": "output/playwright",
+      "target": "runtime/output-transient/playwright",
+      "retention": {
+        "maxDays": 14,
+        "maxEntries": 160,
+        "maxBytes": 1073741824
+      }
+    },
+    {
+      "source": "output/appserver_tui_demo_home",
+      "target": "runtime/output-transient/appserver_tui_demo_home",
+      "retention": {
+        "maxDays": 14,
+        "maxEntries": 32,
+        "maxBytes": 268435456
+      }
+    }
+  ],
+  "transientOutputFiles": [
+    {
+      "pattern": "phase2-long-horizon-*.json",
+      "targetDir": "runtime/output-transient/phase-probes",
+      "retention": {
+        "maxDays": 14,
+        "maxEntries": 256,
+        "maxBytes": 134217728
+      }
+    },
+    {
+      "pattern": "phase3-lifecycle-*.json",
+      "targetDir": "runtime/output-transient/phase-probes",
+      "retention": {
+        "maxDays": 14,
+        "maxEntries": 256,
+        "maxBytes": 134217728
+      }
+    },
+    {
+      "pattern": "tmp_harnesui_retry_bootstrap.js",
+      "targetDir": "runtime/output-transient/bootstrap",
+      "retention": {
+        "maxDays": 14,
+        "maxEntries": 32,
+        "maxBytes": 33554432
+      }
+    }
+  ]
+}
