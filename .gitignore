@@ -28,6 +28,7 @@ output/external_audit_closure/
 output/externalization_nohitl/
 output/improvement/
 output/manual_self_improvement/
+output/memory/
 output/phase1_dry_runs/
 output/repo_closure_export/
 output/agi_readiness_blackbox_summary.json

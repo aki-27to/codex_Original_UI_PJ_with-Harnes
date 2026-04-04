@@ -57,8 +57,10 @@ Compiled retrieval artifacts live under:
 Human-facing memory reports are projections only and live under:
 
 - `output/memory/`
+- `output/memory_public/`
 
-`output/memory/` is intentional output, not canonical truth.
+`output/memory/` is the local operator projection and is not canonical truth.
+`output/memory_public/` is the repo-safe redacted projection surface used for sample/public evidence.
 
 Those projections now surface memory-health fields as well:
 
@@ -66,6 +68,13 @@ Those projections now surface memory-health fields as well:
 - recent revocations / blocked items
 - stale memory warnings derived from retention policy
 - latest-pack section counts and high-confidence counts
+
+Public-safe projections must:
+
+- redact absolute workspace paths
+- replace opaque runtime ids with stable public refs
+- keep compatibility lane state without exposing local-only turn/thread identifiers
+- remain regenerable from an export script instead of being edited manually
 
 ## 4) Memory Tiers
 
@@ -171,6 +180,24 @@ Legacy learning/self-improvement artifacts remain supported as compatibility pro
 - Anthropic engineering counterparts
 
 These artifacts are no longer the canonical memory model. They are projections/reports layered on top of the governed memory graph.
+
+The public-safe sample/export surface is:
+
+- `output/memory_public/latest_overview.json`
+- `output/memory_public/latest_overview.md`
+- `output/memory_public/workspace_progress_public.json`
+- `output/memory_public/latest_pack_public.json`
+- `output/memory_public/promotion_revocation_health_public.json`
+- `output/memory_public/memory_eval_public_status.json`
+- `output/memory_public/memory_eval_public_status.md`
+- `output/memory_public/openai_primary_lane_projection.json`
+- `output/memory_public/anthropic_secondary_lane_projection.json`
+- `output/memory_public/export_manifest.json`
+
+Regeneration commands:
+
+- `npm run artifact:memory-public` for live redacted export from the local canonical store
+- `npm run artifact:memory-public:sample` for the deterministic repo-safe sample surface checked into the repo
 
 ## 10) Parent and Child Boundaries
 

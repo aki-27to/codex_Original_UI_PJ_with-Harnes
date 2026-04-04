@@ -1,0 +1,51 @@
+{
+  "schema": "governed-memory-public-lane-projection.v1",
+  "generatedAt": "2026-04-04T04:58:46.851Z",
+  "laneKey": "anthropic_secondary",
+  "sourceName": "Anthropic Engineering",
+  "sourceTier": "external_secondary",
+  "canonicalCounts": {
+    "lessonCount": 1,
+    "promotedLessonCount": 0,
+    "shadowLessonCount": 1,
+    "improvementCandidateCount": 0,
+    "proposalOnlyCount": 0,
+    "blockedCount": 0,
+    "shadowCount": 0
+  },
+  "recentLessons": [
+    {
+      "publicRef": "mem_d44da98aec",
+      "status": "shadow",
+      "summary": "Demystifying evals for AI agents",
+      "topics": []
+    }
+  ],
+  "compatibilityState": {
+    "gateStatus": "PASS",
+    "gateReason": "no_auto_apply_candidates",
+    "appliedDecision": "none",
+    "observationStatus": "disabled",
+    "observationCount": 0,
+    "proposalOnlyCount": 2,
+    "blockedCount": 0,
+    "awaitingObservationCount": 0,
+    "policyDisabledCandidateCount": 1,
+    "nextPriority": {
+      "title": "Demystifying evals for AI agents",
+      "changeType": "frontend_quality_note",
+      "readinessStatus": "proposal_only",
+      "gatingReason": "promotion_policy_proposal_only",
+      "nextAction": "Keep this note proposal-only."
+    }
+  },
+  "compatibilityPaths": {
+    "ledgerPath": "output/anthropic_engineering_learning_ledger.json",
+    "digestPath": "output/anthropic_engineering_learning_digest.json",
+    "reportPath": "output/anthropic_engineering_learning_report.md",
+    "proposalDir": "output/anthropic_engineering_self_improvement_proposals",
+    "statePath": "output/anthropic_engineering_self_improvement_state.json",
+    "gatePath": "output/anthropic_engineering_self_improvement_gate.json",
+    "curatedDocPath": "docs/ANTHROPIC_ENGINEERING_LEARNINGS.md"
+  }
+}

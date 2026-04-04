@@ -1,0 +1,16 @@
+{
+  "schema": "governed-memory-public-export-manifest.v1",
+  "generatedAt": "2026-04-04T04:58:46.851Z",
+  "workspaceId": "b7bd07fb01282c16",
+  "outputs": {
+    "latestOverviewJson": "output/memory_public/latest_overview.json",
+    "latestOverviewMd": "output/memory_public/latest_overview.md",
+    "workspaceProgressJson": "output/memory_public/workspace_progress_public.json",
+    "latestPackJson": "output/memory_public/latest_pack_public.json",
+    "promotionHealthJson": "output/memory_public/promotion_revocation_health_public.json",
+    "memoryEvalStatusJson": "output/memory_public/memory_eval_public_status.json",
+    "memoryEvalStatusMd": "output/memory_public/memory_eval_public_status.md",
+    "openAIBlogLaneJson": "output/memory_public/openai_primary_lane_projection.json",
+    "anthropicLaneJson": "output/memory_public/anthropic_secondary_lane_projection.json"
+  }
+}

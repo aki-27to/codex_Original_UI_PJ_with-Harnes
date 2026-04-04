@@ -59,6 +59,11 @@ function readJsonObject(targetPath) {
   return payload && typeof payload === "object" && !Array.isArray(payload) ? payload : {};
 }
 
+function readJsonArray(targetPath) {
+  const payload = readJson(targetPath);
+  return Array.isArray(payload) ? payload : [];
+}
+
 function ensureFile(targetPath, initialText = "") {
   ensureDir(path.dirname(targetPath));
   if (!fs.existsSync(targetPath)) {
@@ -88,6 +93,77 @@ function overwriteJsonl(targetPath, records) {
   fs.writeFileSync(targetPath, lines.length ? `${lines.join("\n")}\n` : "", "utf8");
 }
 
+function maskOpaqueId(value, prefix = "mem") {
+  const text = safeString(value, 240);
+  if (!text) return "";
+  return `${prefix}_${stableHash(text).slice(0, 10)}`;
+}
+
+function normalizePublicText(value, workspaceRoot) {
+  let text = safeString(value, 600);
+  if (!text) return "";
+  const absoluteRoot = safeString(path.resolve(workspaceRoot), 400);
+  const forwardRoot = absoluteRoot.replace(/\\/g, "/");
+  if (absoluteRoot) {
+    text = text.split(absoluteRoot).join("<workspace-root>");
+  }
+  if (forwardRoot && forwardRoot !== absoluteRoot) {
+    text = text.split(forwardRoot).join("<workspace-root>");
+  }
+  text = text
+    .replace(/\bturn[-:][A-Za-z0-9_-]+\b/g, "<turn-ref>")
+    .replace(/\bthread[-:][A-Za-z0-9_-]+\b/g, "<thread-ref>");
+  return text;
+}
+
+function normalizePublicPath(workspaceRoot, rawPath) {
+  const text = safeString(rawPath, 400);
+  if (!text) return "";
+  try {
+    const resolved = path.isAbsolute(text) ? path.normalize(text) : path.resolve(workspaceRoot, text);
+    const workspaceResolved = path.resolve(workspaceRoot);
+    if (resolved.toLowerCase().startsWith(workspaceResolved.toLowerCase())) {
+      return repoRelative(workspaceRoot, resolved);
+    }
+    return `<external>/${path.basename(resolved)}`;
+  } catch {
+    return normalizePublicText(text, workspaceRoot);
+  }
+}
+
+function sanitizePublicValue(value, workspaceRoot) {
+  if (Array.isArray(value)) {
+    return value.map((entry) => sanitizePublicValue(entry, workspaceRoot));
+  }
+  if (value && typeof value === "object") {
+    const out = {};
+    for (const [key, entry] of Object.entries(value)) {
+      if (key === "workspaceRoot") {
+        out.workspace = ".";
+        continue;
+      }
+      if (/path$/i.test(key) || /paths$/i.test(key)) {
+        out[key] = Array.isArray(entry)
+          ? entry.map((item) => normalizePublicPath(workspaceRoot, item))
+          : normalizePublicPath(workspaceRoot, entry);
+        continue;
+      }
+      if (/turnId$/i.test(key) || /threadId$/i.test(key) || /memoryId$/i.test(key) || /sampleTurnIds$/i.test(key)) {
+        out[key] = Array.isArray(entry)
+          ? entry.map((item) => maskOpaqueId(item, key.toLowerCase().includes("turn") ? "turn" : key.toLowerCase().includes("thread") ? "thread" : "mem"))
+          : maskOpaqueId(entry, key.toLowerCase().includes("turn") ? "turn" : key.toLowerCase().includes("thread") ? "thread" : "mem");
+        continue;
+      }
+      out[key] = sanitizePublicValue(entry, workspaceRoot);
+    }
+    return out;
+  }
+  if (typeof value === "string") {
+    return normalizePublicText(value, workspaceRoot);
+  }
+  return value;
+}
+
 function toWorkspaceId(workspaceRoot) {
   return stableHash({ workspaceRoot }).slice(0, 16);
 }
@@ -99,6 +175,7 @@ function getMemoryPaths(workspaceRoot = workspaceRootDefault) {
   const projectionsRoot = path.join(root, "projections");
   const retrievalRoot = path.join(root, "retrieval");
   const outputRoot = path.join(workspaceRoot, "output", "memory");
+  const publicOutputRoot = path.join(workspaceRoot, "output", "memory_public");
   return {
     workspaceRoot,
     root,
@@ -139,6 +216,19 @@ function getMemoryPaths(workspaceRoot = workspaceRootDefault) {
       preferenceProfilesReport: path.join(outputRoot, "preference_profiles_report.json"),
       improvementDashboard: path.join(outputRoot, "improvement_dashboard.json"),
       memoryHealthReportMd: path.join(outputRoot, "memory_health_report.md"),
+    },
+    publicOutput: {
+      root: publicOutputRoot,
+      latestOverviewJson: path.join(publicOutputRoot, "latest_overview.json"),
+      latestOverviewMd: path.join(publicOutputRoot, "latest_overview.md"),
+      workspaceProgressJson: path.join(publicOutputRoot, "workspace_progress_public.json"),
+      latestPackJson: path.join(publicOutputRoot, "latest_pack_public.json"),
+      promotionHealthJson: path.join(publicOutputRoot, "promotion_revocation_health_public.json"),
+      memoryEvalStatusJson: path.join(publicOutputRoot, "memory_eval_public_status.json"),
+      memoryEvalStatusMd: path.join(publicOutputRoot, "memory_eval_public_status.md"),
+      openAIBlogLaneJson: path.join(publicOutputRoot, "openai_primary_lane_projection.json"),
+      anthropicLaneJson: path.join(publicOutputRoot, "anthropic_secondary_lane_projection.json"),
+      exportManifestJson: path.join(publicOutputRoot, "export_manifest.json"),
     },
   };
 }
@@ -325,6 +415,127 @@ function collectMemoryHealth({ items, paths, retentionPolicy, currentEvents = []
     staleMemoryWarnings,
     recentPromotions,
     recentRevocations,
+  };
+}
+
+function summarizePack(pack, thresholds = {}) {
+  const items = Array.isArray(pack && pack.items) ? pack.items : [];
+  const highConfidenceScore = safeNumber(thresholds.highConfidenceScore, 0.68);
+  const selectedMemoryIds = Array.isArray(pack && pack.selectedMemoryIds)
+    ? pack.selectedMemoryIds.slice(0, 24)
+    : items.map((entry) => safeString(entry && entry.memoryId, 120)).filter(Boolean).slice(0, 24);
+  const sectionCounts = pack && pack.sectionCounts && typeof pack.sectionCounts === "object"
+    ? pack.sectionCounts
+    : items.reduce((acc, entry) => {
+      const section = classifyMemorySection(entry);
+      acc[section] = safeNumber(acc[section], 0) + 1;
+      return acc;
+    }, {});
+  return {
+    packId: safeString(pack && pack.packId, 120),
+    generatedAt: safeString(pack && (pack.generatedAt || pack.compiledAt), 80),
+    compiledAt: safeString(pack && pack.compiledAt, 80),
+    selectedCount: clampInt(pack && (pack.selectedCount || items.length), 0, 999999, items.length),
+    highConfidenceCount: Number.isFinite(Number(pack && pack.highConfidenceCount))
+      ? clampInt(pack.highConfidenceCount, 0, 999999, 0)
+      : items.filter((entry) => safeNumber(entry && entry.score, 0) >= highConfidenceScore).length,
+    sectionCounts,
+    activeAgent: safeString(pack && pack.activeAgent, 80),
+    taskFamily: safeString(pack && pack.taskFamily, 80),
+    memoryIds: selectedMemoryIds,
+  };
+}
+
+function buildPersistedItemsFromCanonicalStore(workspaceRoot, paths) {
+  const workspaceId = toWorkspaceId(workspaceRoot);
+  const byId = readJsonObject(paths.indexes.byId);
+  const items = Object.entries(byId).map(([memoryId, meta]) => ({
+    memoryId,
+    type: safeString(meta && meta.type, 80),
+    status: safeString(meta && meta.status, 40),
+    sourceTier: safeString(meta && meta.sourceTier, 40),
+    authorityTier: clampInt(meta && meta.authorityTier, 0, 6, 0),
+    content: {
+      summary: safeString(meta && meta.summary, 400),
+    },
+    lifecycle: {
+      updatedAt: safeString(meta && meta.updatedAt, 80),
+    },
+  }));
+  const workspaceProgressStructured = readJsonObject(path.join(paths.projections.workspaceProgressRoot, `${workspaceId}.json`));
+  if (Object.keys(workspaceProgressStructured).length) {
+    items.push({
+      memoryId: `workspace:${workspaceId}:progress`,
+      type: "workspace_progress",
+      status: "promoted",
+      sourceTier: "runtime",
+      authorityTier: 3,
+      lifecycle: {
+        updatedAt: safeString(workspaceProgressStructured.updatedAt, 80),
+      },
+      content: { structured: workspaceProgressStructured },
+    });
+  }
+  return items;
+}
+
+function loadPersistedGovernedMemoryState({ workspaceRoot = workspaceRootDefault } = {}) {
+  const paths = getMemoryPaths(workspaceRoot);
+  ensureMemoryLayout(paths);
+  const items = buildPersistedItemsFromCanonicalStore(workspaceRoot, paths);
+  const workspaceId = toWorkspaceId(workspaceRoot);
+  const lastPackByWorkspace = readJsonObject(paths.retrieval.lastPackByWorkspace);
+  const packs = loadJsonl(paths.retrieval.packsPath);
+  const pack = lastPackByWorkspace[workspaceId] && typeof lastPackByWorkspace[workspaceId] === "object"
+    ? lastPackByWorkspace[workspaceId]
+    : (packs.length ? packs[packs.length - 1] : {});
+  const retentionPolicy = loadConfigJson(workspaceRoot, "scripts", "config", "memory_retention_policy.json");
+  const retrievalPolicy = loadConfigJson(workspaceRoot, "scripts", "config", "memory_retrieval_policy.json");
+  const workspaceProgressItem = items.find((item) => item.type === "workspace_progress" && item.content && item.content.structured && Object.keys(item.content.structured).length)
+    || items.find((item) => item.type === "workspace_progress");
+  const typeCounts = {};
+  const statusCounts = {};
+  for (const item of items) {
+    typeCounts[item.type] = safeNumber(typeCounts[item.type], 0) + 1;
+    statusCounts[item.status] = safeNumber(statusCounts[item.status], 0) + 1;
+  }
+  const health = collectMemoryHealth({ items, paths, retentionPolicy, currentEvents: [] });
+  return {
+    paths,
+    items,
+    pack,
+    summary: {
+      enabled: true,
+      schema: "governed-memory-graph-runtime.v1",
+      status: "ready",
+      workspaceId,
+      canonicalRoot: repoRelative(workspaceRoot, paths.root),
+      eventLogPath: repoRelative(workspaceRoot, paths.eventsPath),
+      outputRoot: repoRelative(workspaceRoot, paths.output.root),
+      publicOutputRoot: repoRelative(workspaceRoot, paths.publicOutput.root),
+      itemCount: items.length,
+      promotedCount: items.filter((item) => ["promoted", "reinforced"].includes(safeString(item.status, 40))).length,
+      typeCounts,
+      statusCounts,
+      staleMemoryWarnings: health.staleMemoryWarnings,
+      recentPromotions: health.recentPromotions,
+      recentRevocations: health.recentRevocations,
+      workspaceProgress: workspaceProgressItem && workspaceProgressItem.content && workspaceProgressItem.content.structured
+        ? workspaceProgressItem.content.structured
+        : {},
+      latestPack: summarizePack(pack, retrievalPolicy && retrievalPolicy.scoreThresholds),
+      compatibilityProjectionPaths: uniqueStrings([
+        "output/openai_blog_learning_digest.json",
+        "output/openai_blog_learning_ledger.json",
+        "output/openai_blog_self_improvement_state.json",
+        "output/openai_blog_self_improvement_gate.json",
+        "output/openai_blog_reinforcement_memory.json",
+        "output/anthropic_engineering_learning_digest.json",
+        "output/anthropic_engineering_learning_ledger.json",
+        "output/anthropic_engineering_self_improvement_state.json",
+        "output/anthropic_engineering_self_improvement_gate.json",
+      ], 16, 220),
+    },
   };
 }
 
@@ -1103,13 +1314,16 @@ function compileMemoryPack({ workspaceRoot, runtime, items }) {
 
 function buildRuntimeSummary({ workspaceRoot, items, pack, paths, runtime, currentEvents = [] }) {
   const retentionPolicy = loadConfigJson(workspaceRoot, "scripts", "config", "memory_retention_policy.json");
+  const retrievalPolicy = loadConfigJson(workspaceRoot, "scripts", "config", "memory_retrieval_policy.json");
   const typeCounts = {};
   const statusCounts = {};
   for (const item of items) {
     typeCounts[item.type] = (typeCounts[item.type] || 0) + 1;
     statusCounts[item.status] = (statusCounts[item.status] || 0) + 1;
   }
-  const workspaceProgress = items.find((item) => item.type === "workspace_progress") || null;
+  const workspaceProgress = items.find((item) => item.type === "workspace_progress" && item.content && item.content.structured && Object.keys(item.content.structured).length)
+    || items.find((item) => item.type === "workspace_progress")
+    || null;
   const health = collectMemoryHealth({ items, paths, retentionPolicy, currentEvents });
   return {
     enabled: true,
@@ -1119,6 +1333,7 @@ function buildRuntimeSummary({ workspaceRoot, items, pack, paths, runtime, curre
     canonicalRoot: repoRelative(workspaceRoot, paths.root),
     eventLogPath: repoRelative(workspaceRoot, paths.eventsPath),
     outputRoot: repoRelative(workspaceRoot, paths.output.root),
+    publicOutputRoot: repoRelative(workspaceRoot, paths.publicOutput.root),
     itemCount: items.length,
     promotedCount: items.filter((item) => item.status === "promoted" || item.status === "reinforced").length,
     typeCounts,
@@ -1127,17 +1342,7 @@ function buildRuntimeSummary({ workspaceRoot, items, pack, paths, runtime, curre
     recentPromotions: health.recentPromotions,
     recentRevocations: health.recentRevocations,
     workspaceProgress: workspaceProgress ? workspaceProgress.content.structured : {},
-    latestPack: {
-      packId: safeString(pack.packId, 120),
-      generatedAt: safeString(pack.generatedAt, 80),
-      compiledAt: pack.compiledAt,
-      selectedCount: pack.selectedCount,
-      highConfidenceCount: clampInt(pack.highConfidenceCount, 0, 9999, 0),
-      sectionCounts: pack.sectionCounts && typeof pack.sectionCounts === "object" ? pack.sectionCounts : {},
-      activeAgent: pack.activeAgent,
-      taskFamily: pack.taskFamily,
-      memoryIds: Array.isArray(pack.selectedMemoryIds) ? pack.selectedMemoryIds.slice(0, 24) : pack.items.map((entry) => entry.memoryId),
-    },
+    latestPack: summarizePack(pack, retrievalPolicy && retrievalPolicy.scoreThresholds),
     compatibilityProjectionPaths: uniqueStrings([
       "output/openai_blog_learning_digest.json",
       "output/openai_blog_learning_ledger.json",
@@ -1182,6 +1387,54 @@ function renderOverviewMarkdown(summary) {
       lines.push(`- ${safeString(warning.memoryId, 120)} (${safeString(warning.type, 80)}): ${safeNumber(warning.ageDays, 0).toFixed(1)}d >= ${clampInt(warning.expiryDays, 0, 9999, 0)}d`);
     }
   }
+  return `${lines.join("\n")}\n`;
+}
+
+function renderPublicOverviewMarkdown({
+  overview = {},
+  workspaceProgress = {},
+  latestPack = {},
+  promotionHealth = {},
+  evalStatus = {},
+  openAIBlogLane = {},
+  anthropicLane = {},
+} = {}) {
+  const pack = latestPack && typeof latestPack.latestPack === "object" ? latestPack.latestPack : {};
+  const lines = [
+    "# Governed Memory Public Overview",
+    "",
+    `- Workspace: ${safeString(overview.workspaceId, 120) || "-"}`,
+    `- Canonical root: ${safeString(overview.canonicalRoot, 220) || "-"}`,
+    `- Public output root: ${safeString(overview.publicOutputRoot, 220) || "-"}`,
+    `- Items: ${clampInt(overview.itemCount, 0, 999999, 0)}`,
+    `- Promoted: ${clampInt(overview.promotedCount, 0, 999999, 0)}`,
+    `- Latest pack: ${clampInt(pack.selectedCount, 0, 999999, 0)} items for ${safeString(pack.activeAgent, 80) || "default"} (${clampInt(pack.highConfidenceCount, 0, 999999, 0)} high-confidence)`,
+    `- Memory eval: ${safeString(evalStatus.status, 20) || "UNKNOWN"}`,
+    `- Recent promotions: ${Array.isArray(promotionHealth.recentPromotions) ? promotionHealth.recentPromotions.length : 0}`,
+    `- Recent revocations: ${Array.isArray(promotionHealth.recentRevocations) ? promotionHealth.recentRevocations.length : 0}`,
+    `- Stale warnings: ${clampInt(promotionHealth.staleWarningCount, 0, 999999, 0)}`,
+    "",
+    "## Type Counts",
+  ];
+  for (const [key, value] of Object.entries(overview.typeCounts || {}).sort((left, right) => String(left[0]).localeCompare(String(right[0])))) {
+    lines.push(`- ${key}: ${value}`);
+  }
+  lines.push("", "## Workspace Progress");
+  if (safeString(workspaceProgress.currentObjective, 220)) {
+    lines.push(`- objective: ${safeString(workspaceProgress.currentObjective, 220)}`);
+  }
+  for (const milestone of uniqueStrings(workspaceProgress.currentMilestones, 6, 180)) {
+    lines.push(`- milestone: ${milestone}`);
+  }
+  for (const blocker of uniqueStrings(workspaceProgress.knownBlockers, 6, 180)) {
+    lines.push(`- blocker: ${blocker}`);
+  }
+  for (const action of uniqueStrings(workspaceProgress.nextRecommendedActions, 6, 180)) {
+    lines.push(`- next: ${action}`);
+  }
+  lines.push("", "## Lane Health");
+  lines.push(`- openai_primary: ${safeString(openAIBlogLane && openAIBlogLane.compatibilityState && openAIBlogLane.compatibilityState.gateStatus, 40) || "UNKNOWN"} / observations=${clampInt(openAIBlogLane && openAIBlogLane.compatibilityState && openAIBlogLane.compatibilityState.observationCount, 0, 999999, 0)}`);
+  lines.push(`- anthropic_secondary: ${safeString(anthropicLane && anthropicLane.compatibilityState && anthropicLane.compatibilityState.gateStatus, 40) || "UNKNOWN"} / observations=${clampInt(anthropicLane && anthropicLane.compatibilityState && anthropicLane.compatibilityState.observationCount, 0, 999999, 0)}`);
   return `${lines.join("\n")}\n`;
 }
 
@@ -1313,8 +1566,327 @@ function buildGovernedMemoryRuntimeSnapshot({ workspaceRoot = workspaceRootDefau
   return summary;
 }
 
+function loadPublicExportPolicy(workspaceRoot) {
+  return loadConfigJson(workspaceRoot, "scripts", "config", "memory_public_export_policy.json");
+}
+
+function sanitizePublicPackItem(item, workspaceRoot, thresholds) {
+  const reason = item && item.whyIncluded && typeof item.whyIncluded === "object" ? item.whyIncluded : {};
+  return {
+    publicRef: maskOpaqueId(item && item.memoryId, "mem"),
+    type: safeString(item && item.type, 80),
+    status: safeString(item && item.status, 40),
+    score: Number(safeNumber(item && item.score, 0).toFixed(4)),
+    scoreBand: scoreBand(safeNumber(item && item.score, 0), thresholds || {}),
+    sourceTier: safeString(reason && reason.sourceTier, 40),
+    authorityTier: clampInt(reason && reason.authorityTier, 0, 6, 0),
+    scopeWorkspace: safeString(reason && reason.scopeWorkspace, 120),
+    taskFamilies: uniqueStrings(reason && reason.taskFamilies, 8, 80),
+    summary: normalizePublicText(item && item.summary, workspaceRoot),
+  };
+}
+
+function buildLaneProjection({ workspaceRoot, sourceName, sourceTier, laneKey, items, statePath, ledgerPath, digestPath, reportPath, proposalDir, curatedDocPath }) {
+  const laneItems = items.filter((item) => safeString(item && item.sourceTier, 40) === sourceTier);
+  const lessons = laneItems.filter((item) => safeString(item && item.type, 80) === "semantic_lesson");
+  const improvements = laneItems.filter((item) => safeString(item && item.type, 80) === "improvement_candidate");
+  const compatibilityState = readJsonObject(path.join(workspaceRoot, statePath));
+  const compatibilityGatePath = statePath.replace(/_state\.json$/i, "_gate.json");
+  return {
+    schema: "governed-memory-public-lane-projection.v1",
+    generatedAt: toIso(),
+    laneKey,
+    sourceName,
+    sourceTier,
+    canonicalCounts: {
+      lessonCount: lessons.length,
+      promotedLessonCount: lessons.filter((item) => ["promoted", "reinforced"].includes(safeString(item && item.status, 40))).length,
+      shadowLessonCount: lessons.filter((item) => safeString(item && item.status, 40) === "shadow").length,
+      improvementCandidateCount: improvements.length,
+      proposalOnlyCount: improvements.filter((item) => safeString(item && item.status, 40) === "proposal_only").length,
+      blockedCount: improvements.filter((item) => safeString(item && item.status, 40) === "blocked").length,
+      shadowCount: improvements.filter((item) => safeString(item && item.status, 40) === "shadow").length,
+    },
+    recentLessons: lessons.slice(0, 4).map((item) => ({
+      publicRef: maskOpaqueId(item.memoryId, "mem"),
+      status: safeString(item.status, 40),
+      summary: normalizePublicText(item.content && item.content.summary, workspaceRoot),
+      topics: uniqueStrings(item.retrieval && item.retrieval.topics, 6, 80),
+    })),
+    compatibilityState: {
+      gateStatus: safeString(compatibilityState.gateStatus, 40) || "UNKNOWN",
+      gateReason: normalizePublicText(compatibilityState.gateReason, workspaceRoot),
+      appliedDecision: safeString(compatibilityState.appliedDecision, 40) || "none",
+      observationStatus: safeString(compatibilityState.observationStatus, 40) || "unknown",
+      observationCount: clampInt(compatibilityState.observationCount, 0, 999999, 0),
+      proposalOnlyCount: clampInt(compatibilityState.proposalOnlyCount, 0, 999999, 0),
+      blockedCount: clampInt(compatibilityState.blockedCount, 0, 999999, 0),
+      awaitingObservationCount: clampInt(compatibilityState.awaitingObservationCount, 0, 999999, 0),
+      policyDisabledCandidateCount: clampInt(compatibilityState.policyDisabledCandidateCount, 0, 999999, 0),
+      nextPriority: compatibilityState.nextPriority && typeof compatibilityState.nextPriority === "object"
+        ? {
+          title: normalizePublicText(compatibilityState.nextPriority.title, workspaceRoot),
+          changeType: safeString(compatibilityState.nextPriority.changeType, 80),
+          readinessStatus: safeString(compatibilityState.nextPriority.readinessStatus, 80),
+          gatingReason: normalizePublicText(compatibilityState.nextPriority.gatingReason, workspaceRoot),
+          nextAction: normalizePublicText(compatibilityState.nextPriority.nextAction, workspaceRoot),
+        }
+        : null,
+    },
+    compatibilityPaths: {
+      ledgerPath: normalizePublicPath(workspaceRoot, ledgerPath),
+      digestPath: normalizePublicPath(workspaceRoot, digestPath),
+      reportPath: normalizePublicPath(workspaceRoot, reportPath),
+      proposalDir: normalizePublicPath(workspaceRoot, proposalDir),
+      statePath: normalizePublicPath(workspaceRoot, statePath),
+      gatePath: normalizePublicPath(workspaceRoot, compatibilityGatePath),
+      curatedDocPath: normalizePublicPath(workspaceRoot, curatedDocPath),
+    },
+  };
+}
+
+function evaluateMemoryPublicSuite({ workspaceRoot, paths, summary, pack }) {
+  const suite = loadConfigJson(workspaceRoot, "scripts", "config", "memory_eval_suite.json");
+  const checks = Array.isArray(suite && suite.checks) ? suite.checks : [];
+  const workspaceProgressPath = path.join(paths.projections.workspaceProgressRoot, `${summary.workspaceId}.json`);
+  const lastPackByWorkspace = readJsonObject(paths.retrieval.lastPackByWorkspace);
+  const workspacePack = lastPackByWorkspace[summary.workspaceId] && typeof lastPackByWorkspace[summary.workspaceId] === "object"
+    ? lastPackByWorkspace[summary.workspaceId]
+    : pack;
+  const checkResults = checks.map((check) => {
+    const id = safeString(check && check.id, 120);
+    let pass = false;
+    let detail = "";
+    if (id === "canonical_store_present") {
+      pass = fs.existsSync(paths.eventsPath) && fs.existsSync(paths.indexes.byId);
+      detail = pass ? "canonical event log and index are present" : "canonical event log or index is missing";
+    } else if (id === "workspace_progress_projection_present") {
+      pass = fs.existsSync(workspaceProgressPath);
+      detail = pass ? "workspace progress projection present" : "workspace progress projection missing";
+    } else if (id === "legacy_learning_compatibility_preserved") {
+      const required = [
+        "output/openai_blog_learning_digest.json",
+        "output/openai_blog_learning_ledger.json",
+        "output/openai_blog_self_improvement_state.json",
+        "output/anthropic_engineering_learning_digest.json",
+        "output/anthropic_engineering_learning_ledger.json",
+        "output/anthropic_engineering_self_improvement_state.json",
+      ];
+      const missing = required.filter((entry) => !fs.existsSync(path.join(workspaceRoot, entry)));
+      pass = missing.length === 0;
+      detail = pass ? "legacy learning compatibility artifacts remain addressable" : `missing: ${missing.map((entry) => normalizePublicPath(workspaceRoot, entry)).join(", ")}`;
+    } else if (id === "bounded_memory_pack_written") {
+      const itemCount = Array.isArray(workspacePack && workspacePack.items) ? workspacePack.items.length : 0;
+      pass = itemCount > 0 || clampInt(workspacePack && workspacePack.selectedCount, 0, 999999, 0) > 0;
+      detail = pass ? "at least one bounded memory pack exists" : "no bounded memory pack found";
+    }
+    return {
+      id,
+      title: safeString(check && check.title, 240),
+      status: pass ? "PASS" : "FAIL",
+      detail,
+    };
+  });
+  const failedChecks = checkResults.filter((entry) => entry.status !== "PASS").map((entry) => entry.id);
+  return {
+    schema: "memory-eval-public-status.v1",
+    generatedAt: toIso(),
+    suiteSchema: safeString(suite && suite.schema, 120) || "memory-eval-suite.v1",
+    suiteVersion: safeString(suite && suite.version, 80),
+    status: failedChecks.length ? "FAIL" : "PASS",
+    failedCheckIds: failedChecks,
+    checks: checkResults,
+  };
+}
+
+function renderMemoryEvalMarkdown(result) {
+  const lines = [
+    "# Memory Eval Public Status",
+    "",
+    `- Status: ${safeString(result && result.status, 20) || "UNKNOWN"}`,
+    `- Generated At: ${safeString(result && result.generatedAt, 80) || "-"}`,
+    "",
+    "## Checks",
+  ];
+  for (const entry of Array.isArray(result && result.checks) ? result.checks : []) {
+    lines.push(`- ${safeString(entry.id, 120)}: ${safeString(entry.status, 20)} (${safeString(entry.detail, 280) || safeString(entry.title, 240)})`);
+  }
+  return `${lines.join("\n")}\n`;
+}
+
+function buildGovernedMemoryPublicArtifacts({ workspaceRoot = workspaceRootDefault } = {}) {
+  const policy = loadPublicExportPolicy(workspaceRoot);
+  const persisted = loadPersistedGovernedMemoryState({ workspaceRoot });
+  const { paths, items, pack, summary } = persisted;
+  const thresholds = loadConfigJson(workspaceRoot, "scripts", "config", "memory_retrieval_policy.json").scoreThresholds || {};
+  const workspaceProgress = sanitizePublicValue(summary.workspaceProgress || {}, workspaceRoot);
+  const workspaceProgressPublic = {
+    schema: "governed-memory-workspace-progress-public.v1",
+    generatedAt: toIso(),
+    workspaceId: summary.workspaceId,
+    currentObjective: normalizePublicText(workspaceProgress.currentObjective, workspaceRoot),
+    currentMilestones: uniqueStrings(workspaceProgress.currentMilestones, safeNumber(policy && policy.limits && policy.limits.maxMilestones, 6), 200),
+    knownBlockers: uniqueStrings(workspaceProgress.knownBlockers, safeNumber(policy && policy.limits && policy.limits.maxBlockers, 6), 200),
+    knownRisks: uniqueStrings(workspaceProgress.knownRisks, safeNumber(policy && policy.limits && policy.limits.maxRisks, 6), 220),
+    recentTouchedPaths: uniqueStrings(workspaceProgress.recentTouchedPaths, safeNumber(policy && policy.limits && policy.limits.maxTouchedPaths, 8), 220).map((entry) => normalizePublicPath(workspaceRoot, entry)),
+    nextRecommendedActions: uniqueStrings(workspaceProgress.nextRecommendedActions, safeNumber(policy && policy.limits && policy.limits.maxNextActions, 6), 220),
+    lastSuccessfulValidation: Array.isArray(workspaceProgress.lastSuccessfulValidation) ? workspaceProgress.lastSuccessfulValidation.slice(0, 2).map((entry) => ({
+      reference: maskOpaqueId(entry && entry.turnId, "turn"),
+      taskOutcomeStatus: safeString(entry && entry.taskOutcomeStatus, 80),
+      completedAt: safeString(entry && entry.completedAt, 80),
+    })) : [],
+    lastFailedValidation: Array.isArray(workspaceProgress.lastFailedValidation) ? workspaceProgress.lastFailedValidation.slice(0, 2).map((entry) => ({
+      reference: maskOpaqueId(entry && entry.turnId, "turn"),
+      taskOutcomeStatus: safeString(entry && entry.taskOutcomeStatus, 80),
+      reason: normalizePublicText(entry && entry.reason, workspaceRoot),
+      completedAt: safeString(entry && entry.completedAt, 80),
+    })) : [],
+  };
+  const latestPackPublic = {
+    schema: "governed-memory-latest-pack-public.v1",
+    generatedAt: toIso(),
+    workspaceId: summary.workspaceId,
+    packId: safeString(summary.latestPack && summary.latestPack.packId, 120) || maskOpaqueId(`${summary.workspaceId}:${summary.latestPack && summary.latestPack.compiledAt}`, "pack"),
+    latestPack: {
+      generatedAt: safeString(summary.latestPack && summary.latestPack.generatedAt, 80),
+      compiledAt: safeString(summary.latestPack && summary.latestPack.compiledAt, 80),
+      activeAgent: safeString(summary.latestPack && summary.latestPack.activeAgent, 80),
+      taskFamily: safeString(summary.latestPack && summary.latestPack.taskFamily, 80),
+      selectedCount: clampInt(summary.latestPack && summary.latestPack.selectedCount, 0, 999999, 0),
+      highConfidenceCount: clampInt(summary.latestPack && summary.latestPack.highConfidenceCount, 0, 999999, 0),
+      sectionCounts: summary.latestPack && summary.latestPack.sectionCounts && typeof summary.latestPack.sectionCounts === "object" ? summary.latestPack.sectionCounts : {},
+      selectedItems: (Array.isArray(pack && pack.items) ? pack.items : []).slice(0, safeNumber(policy && policy.limits && policy.limits.maxPackItems, 12)).map((entry) => sanitizePublicPackItem(entry, workspaceRoot, thresholds)),
+    },
+  };
+  const promotionHealthPublic = {
+    schema: "governed-memory-promotion-health-public.v1",
+    generatedAt: toIso(),
+    workspaceId: summary.workspaceId,
+    staleWarningCount: Array.isArray(summary.staleMemoryWarnings) ? summary.staleMemoryWarnings.length : 0,
+    recentPromotions: Array.isArray(summary.recentPromotions) ? summary.recentPromotions.map((entry) => ({
+      publicRef: maskOpaqueId(entry && entry.memoryId, "mem"),
+      memoryType: safeString(entry && entry.memoryType, 80),
+      status: safeString(entry && entry.status, 40),
+      recordedAt: safeString(entry && entry.recordedAt, 80),
+    })) : [],
+    recentRevocations: Array.isArray(summary.recentRevocations) ? summary.recentRevocations.map((entry) => ({
+      publicRef: maskOpaqueId(entry && entry.memoryId, "mem"),
+      memoryType: safeString(entry && entry.memoryType, 80),
+      status: safeString(entry && entry.status, 40),
+      recordedAt: safeString(entry && entry.recordedAt, 80),
+    })) : [],
+  };
+  const evalStatus = evaluateMemoryPublicSuite({ workspaceRoot, paths, summary, pack });
+  const publicOverview = {
+    schema: "governed-memory-public-overview.v1",
+    generatedAt: toIso(),
+    workspaceId: summary.workspaceId,
+    canonicalRoot: summary.canonicalRoot,
+    publicOutputRoot: repoRelative(workspaceRoot, paths.publicOutput.root),
+    itemCount: clampInt(summary.itemCount, 0, 999999, 0),
+    promotedCount: clampInt(summary.promotedCount, 0, 999999, 0),
+    typeCounts: summary.typeCounts,
+    statusCounts: summary.statusCounts,
+    workspaceProgressPath: repoRelative(workspaceRoot, paths.publicOutput.workspaceProgressJson),
+    latestPackPath: repoRelative(workspaceRoot, paths.publicOutput.latestPackJson),
+    promotionHealthPath: repoRelative(workspaceRoot, paths.publicOutput.promotionHealthJson),
+    evalStatusPath: repoRelative(workspaceRoot, paths.publicOutput.memoryEvalStatusJson),
+    compatibilityProjectionPaths: summary.compatibilityProjectionPaths,
+    latestPack: {
+      selectedCount: clampInt(summary.latestPack && summary.latestPack.selectedCount, 0, 999999, 0),
+      highConfidenceCount: clampInt(summary.latestPack && summary.latestPack.highConfidenceCount, 0, 999999, 0),
+      activeAgent: safeString(summary.latestPack && summary.latestPack.activeAgent, 80),
+      taskFamily: safeString(summary.latestPack && summary.latestPack.taskFamily, 80),
+      sectionCounts: summary.latestPack && summary.latestPack.sectionCounts && typeof summary.latestPack.sectionCounts === "object" ? summary.latestPack.sectionCounts : {},
+    },
+    staleWarningCount: Array.isArray(summary.staleMemoryWarnings) ? summary.staleMemoryWarnings.length : 0,
+  };
+  const openAIBlogLane = buildLaneProjection({
+    workspaceRoot,
+    sourceName: "OpenAI Developers Blog",
+    sourceTier: "external_primary",
+    laneKey: "openai_primary",
+    items,
+    statePath: "output/openai_blog_self_improvement_state.json",
+    ledgerPath: "output/openai_blog_learning_ledger.json",
+    digestPath: "output/openai_blog_learning_digest.json",
+    reportPath: "output/openai_blog_learning_report.md",
+    proposalDir: "output/openai_blog_self_improvement_proposals",
+    curatedDocPath: "docs/OPENAI_DEVELOPER_LEARNINGS.md",
+  });
+  const anthropicLane = buildLaneProjection({
+    workspaceRoot,
+    sourceName: "Anthropic Engineering",
+    sourceTier: "external_secondary",
+    laneKey: "anthropic_secondary",
+    items,
+    statePath: "output/anthropic_engineering_self_improvement_state.json",
+    ledgerPath: "output/anthropic_engineering_learning_ledger.json",
+    digestPath: "output/anthropic_engineering_learning_digest.json",
+    reportPath: "output/anthropic_engineering_learning_report.md",
+    proposalDir: "output/anthropic_engineering_self_improvement_proposals",
+    curatedDocPath: "docs/ANTHROPIC_ENGINEERING_LEARNINGS.md",
+  });
+  const exportManifest = {
+    schema: "governed-memory-public-export-manifest.v1",
+    generatedAt: toIso(),
+    workspaceId: summary.workspaceId,
+    outputs: {
+      latestOverviewJson: repoRelative(workspaceRoot, paths.publicOutput.latestOverviewJson),
+      latestOverviewMd: repoRelative(workspaceRoot, paths.publicOutput.latestOverviewMd),
+      workspaceProgressJson: repoRelative(workspaceRoot, paths.publicOutput.workspaceProgressJson),
+      latestPackJson: repoRelative(workspaceRoot, paths.publicOutput.latestPackJson),
+      promotionHealthJson: repoRelative(workspaceRoot, paths.publicOutput.promotionHealthJson),
+      memoryEvalStatusJson: repoRelative(workspaceRoot, paths.publicOutput.memoryEvalStatusJson),
+      memoryEvalStatusMd: repoRelative(workspaceRoot, paths.publicOutput.memoryEvalStatusMd),
+      openAIBlogLaneJson: repoRelative(workspaceRoot, paths.publicOutput.openAIBlogLaneJson),
+      anthropicLaneJson: repoRelative(workspaceRoot, paths.publicOutput.anthropicLaneJson),
+    },
+  };
+  return {
+    paths,
+    summary,
+    publicOverview,
+    workspaceProgressPublic,
+    latestPackPublic,
+    promotionHealthPublic,
+    evalStatus,
+    openAIBlogLane,
+    anthropicLane,
+    exportManifest,
+  };
+}
+
+function exportGovernedMemoryPublicArtifacts({ workspaceRoot = workspaceRootDefault } = {}) {
+  const artifacts = buildGovernedMemoryPublicArtifacts({ workspaceRoot });
+  const { paths } = artifacts;
+  ensureDir(paths.publicOutput.root);
+  writeJsonIfChanged(paths.publicOutput.latestOverviewJson, artifacts.publicOverview);
+  fs.writeFileSync(paths.publicOutput.latestOverviewMd, renderPublicOverviewMarkdown({
+    overview: artifacts.publicOverview,
+    workspaceProgress: artifacts.workspaceProgressPublic,
+    latestPack: artifacts.latestPackPublic,
+    promotionHealth: artifacts.promotionHealthPublic,
+    evalStatus: artifacts.evalStatus,
+    openAIBlogLane: artifacts.openAIBlogLane,
+    anthropicLane: artifacts.anthropicLane,
+  }), "utf8");
+  writeJsonIfChanged(paths.publicOutput.workspaceProgressJson, artifacts.workspaceProgressPublic);
+  writeJsonIfChanged(paths.publicOutput.latestPackJson, artifacts.latestPackPublic);
+  writeJsonIfChanged(paths.publicOutput.promotionHealthJson, artifacts.promotionHealthPublic);
+  writeJsonIfChanged(paths.publicOutput.memoryEvalStatusJson, artifacts.evalStatus);
+  fs.writeFileSync(paths.publicOutput.memoryEvalStatusMd, renderMemoryEvalMarkdown(artifacts.evalStatus), "utf8");
+  writeJsonIfChanged(paths.publicOutput.openAIBlogLaneJson, artifacts.openAIBlogLane);
+  writeJsonIfChanged(paths.publicOutput.anthropicLaneJson, artifacts.anthropicLane);
+  writeJsonIfChanged(paths.publicOutput.exportManifestJson, artifacts.exportManifest);
+  return artifacts;
+}
+
 module.exports = {
+  buildGovernedMemoryPublicArtifacts,
   buildGovernedMemoryRuntimeSnapshot,
+  exportGovernedMemoryPublicArtifacts,
   getMemoryPaths,
+  loadPersistedGovernedMemoryState,
   syncGovernedMemoryGraph,
 };

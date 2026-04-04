@@ -25,12 +25,15 @@ Examples:
 - `output/repo_closure_export/`
 - `output/manual_self_improvement/`
 - `output/memory/`
+- `output/memory_public/`
 - `output/*learning*`
 - top-level summary files such as `output/public_regression_latest.json`
 
 Rule:
 - if an artifact is part of a named program, report contract, release gate, or operator summary path, it stays in `output/`
 - governed memory reports are intentional output even though canonical memory truth stays under `logs/archive/raw/runtime_state/memory/`
+- `output/memory/` is the local/operator governed-memory projection and stays out of Git
+- `output/memory_public/` is the repo-safe redacted governed-memory projection and may be regenerated/checked in
 
 ## Regenerable Transient
 
@@ -82,3 +85,18 @@ When adding a new generated artifact:
 1. If a runbook, release gate, runtime overview, or machine-readable policy points at it, keep it in `output/`.
 2. If it is local debug/capture/scratch and can be recreated, route it to `runtime/output-transient/`.
 3. If uncertain, default to transient first and only promote it to `output/` when an explicit contract needs it.
+
+## Governed Memory Export Split
+
+Governed memory uses two separate output faces:
+
+- `output/memory/`
+  - live local projection from the current canonical store
+  - may contain operator-only runtime context
+  - intentionally ignored from Git
+- `output/memory_public/`
+  - redacted public/sample projection
+  - safe for checked-in example artifacts
+  - regenerated through:
+    - `npm run artifact:memory-public`
+    - `npm run artifact:memory-public:sample`

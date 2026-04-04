@@ -1,0 +1,39 @@
+{
+  "schema": "governed-memory-promotion-health-public.v1",
+  "generatedAt": "2026-04-04T04:58:46.850Z",
+  "workspaceId": "b7bd07fb01282c16",
+  "staleWarningCount": 0,
+  "recentPromotions": [
+    {
+      "publicRef": "mem_e65f4ce9a0",
+      "memoryType": "constitution_ref",
+      "status": "promoted",
+      "recordedAt": "2026-04-04T04:58:46.828Z"
+    },
+    {
+      "publicRef": "mem_ad36640985",
+      "memoryType": "constitution_ref",
+      "status": "promoted",
+      "recordedAt": "2026-04-04T04:58:46.828Z"
+    },
+    {
+      "publicRef": "mem_b5d199f8aa",
+      "memoryType": "constitution_ref",
+      "status": "promoted",
+      "recordedAt": "2026-04-04T04:58:46.828Z"
+    },
+    {
+      "publicRef": "mem_03ac8147c1",
+      "memoryType": "constitution_ref",
+      "status": "promoted",
+      "recordedAt": "2026-04-04T04:58:46.828Z"
+    },
+    {
+      "publicRef": "mem_21e2745933",
+      "memoryType": "constitution_ref",
+      "status": "promoted",
+      "recordedAt": "2026-04-04T04:58:46.828Z"
+    }
+  ],
+  "recentRevocations": []
+}

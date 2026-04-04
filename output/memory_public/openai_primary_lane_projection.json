@@ -1,0 +1,51 @@
+{
+  "schema": "governed-memory-public-lane-projection.v1",
+  "generatedAt": "2026-04-04T04:58:46.850Z",
+  "laneKey": "openai_primary",
+  "sourceName": "OpenAI Developers Blog",
+  "sourceTier": "external_primary",
+  "canonicalCounts": {
+    "lessonCount": 1,
+    "promotedLessonCount": 1,
+    "shadowLessonCount": 0,
+    "improvementCandidateCount": 1,
+    "proposalOnlyCount": 0,
+    "blockedCount": 0,
+    "shadowCount": 1
+  },
+  "recentLessons": [
+    {
+      "publicRef": "mem_9a150bdcb9",
+      "status": "promoted",
+      "summary": "Run long horizon tasks with Codex",
+      "topics": []
+    }
+  ],
+  "compatibilityState": {
+    "gateStatus": "PASS",
+    "gateReason": "all_cases_passed",
+    "appliedDecision": "applied",
+    "observationStatus": "starved",
+    "observationCount": 0,
+    "proposalOnlyCount": 0,
+    "blockedCount": 0,
+    "awaitingObservationCount": 1,
+    "policyDisabledCandidateCount": 0,
+    "nextPriority": {
+      "title": "Run long horizon tasks with Codex",
+      "changeType": "frontend_quality_note",
+      "readinessStatus": "awaiting_observations",
+      "gatingReason": "awaiting_runtime_observations",
+      "nextAction": "Record 2 successful targeted observations before promotion."
+    }
+  },
+  "compatibilityPaths": {
+    "ledgerPath": "output/openai_blog_learning_ledger.json",
+    "digestPath": "output/openai_blog_learning_digest.json",
+    "reportPath": "output/openai_blog_learning_report.md",
+    "proposalDir": "output/openai_blog_self_improvement_proposals",
+    "statePath": "output/openai_blog_self_improvement_state.json",
+    "gatePath": "output/openai_blog_self_improvement_gate.json",
+    "curatedDocPath": "docs/OPENAI_DEVELOPER_LEARNINGS.md"
+  }
+}

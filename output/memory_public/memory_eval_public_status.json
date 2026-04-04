@@ -1,0 +1,34 @@
+{
+  "schema": "memory-eval-public-status.v1",
+  "generatedAt": "2026-04-04T04:58:46.850Z",
+  "suiteSchema": "memory-eval-suite.v1",
+  "suiteVersion": "2026-04-04.r1",
+  "status": "PASS",
+  "failedCheckIds": [],
+  "checks": [
+    {
+      "id": "canonical_store_present",
+      "title": "Canonical memory store exists under runtime_state/memory",
+      "status": "PASS",
+      "detail": "canonical event log and index are present"
+    },
+    {
+      "id": "workspace_progress_projection_present",
+      "title": "Workspace progress projection is generated",
+      "status": "PASS",
+      "detail": "workspace progress projection present"
+    },
+    {
+      "id": "legacy_learning_compatibility_preserved",
+      "title": "Existing learning artifacts remain addressable",
+      "status": "PASS",
+      "detail": "legacy learning compatibility artifacts remain addressable"
+    },
+    {
+      "id": "bounded_memory_pack_written",
+      "title": "At least one bounded memory pack is compiled",
+      "status": "PASS",
+      "detail": "at least one bounded memory pack exists"
+    }
+  ]
+}
