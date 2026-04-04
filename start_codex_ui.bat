@@ -17,7 +17,9 @@ if not "%ELEVATE_EXIT%"=="0" (
 
 cd /d "%~dp0"
 set "npm_config_userconfig=%~dp0.npmrc"
-set "npm_config_cache=%~dp0.npm-cache"
+set "CODEX_RUNTIME_ROOT=%~dp0runtime"
+set "npm_config_cache=%CODEX_RUNTIME_ROOT%\npm-cache"
+if "%PLAYWRIGHT_BROWSERS_PATH%"=="" set "PLAYWRIGHT_BROWSERS_PATH=%CODEX_RUNTIME_ROOT%\pw-browsers"
 
 where node >nul 2>nul
 if %errorlevel% neq 0 (

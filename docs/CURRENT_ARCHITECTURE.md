@@ -5,9 +5,12 @@ Updated: 2026-04-04
 ## 1) Purpose
 
 This document is the active architecture spec for the Codex App Server integration harness.
+- Front-door identity doc: `README.md`. It positions the repo as a local-first governed decision system, not just a local Web + CLI wrapper.
+- Operator map: `HARNESS_MAP.md`.
 - Current-state architecture belongs here.
 - Historical implementation logs belong in `docs/ARCHITECTURE_CHANGELOG.md`.
 - Frozen design authority is `docs/HARNESS_CONSTITUTION.md`.
+- Repo root should stay source-first. Transient local caches, browser payloads, scratch exports, and migrated `tmp_*` material belong under `runtime/`, while governed evidence stays under `logs/` and intentional report/artifact surfaces stay under `output/`.
 - Narrative docs are subordinate to machine-readable contracts and runtime proof.
 - Human-oriented overview-first guide: `docs/AI_AGENT_HARNESS_DETAILED_DESIGN.html`. It explains the harness mechanism from big picture to deeper details and does not replace this spec or the machine-readable contracts.
 - AGI-oriented eval/promotion extension guide: `docs/AGI_V1_EVAL_FRAMEWORK.md`.
@@ -82,7 +85,7 @@ This document is the active architecture spec for the Codex App Server integrati
 - Close-in-place user-facing response governance is now machine-readable as well as documented: `scripts/config/user_facing_response_contract.json` defines exempt outcome states, prompt signals that allow option menus, prohibited closing starters, completion-claim lead phrases, internal-process disclosure bans, and exact-reply bypass rules; `server.js`, `scripts/lib/user_facing_response_policy.js`, and `scripts/lib/adversarial_shadow_policy.js` all consume that shared contract instead of carrying separate hard-coded policy lists.
 - Turn-complete Git automation ignores harness runtime metadata files under `logs/archive/raw/` plus persona memory under `logs/archive/raw/runtime_state/` when the target repo is this workspace, so operator-memory persistence alone does not trigger an automated publish.
 - `web/` owns the browser UI and uses the standard exec/runtime APIs.
-- `web/01.HarnesUI/guide.html` is the static human-facing guide that explains the harness in child-friendly language without depending on live runtime data.
+- `web/01.HarnesUI/guide.html` is the static human-facing guide that explains the harness in child-friendly language without depending on live runtime data, and its front-door copy now explicitly frames the standard routes, evidence, release judgment, and no-parallel-harness posture.
 - Previously archived legacy/reference payloads that were proven unused were purged from the repository root; the active runtime no longer ships a top-level legacy payload set.
 - `GET /english-conversation-app/*` now preserves the existing same-origin route while resolving static files in this priority order:
   - `CODEX_ENGLISH_CONVERSATION_APP_ROOT`
@@ -93,7 +96,7 @@ This document is the active architecture spec for the Codex App Server integrati
 - The same standalone proxy keeps longer upstream timeouts for conversation/TTS mutation routes than for lightweight runtime probes, so a normal local conversation turn does not get misreported as backend-unavailable simply because the proxy gave up before the harness conversation timeout.
 - The harness-side `conversation-app-server` lane now treats English conversation turns as a lightweight non-dispatch profile: parent-dispatch guard retries are exempt for that profile, `requestUserInput` is explicitly blocked, and the route runs with a conversation-specific low reasoning-effort override so short spoken replies can complete without leaking internal retry prompts or forcing unnecessary specialist delegation.
 - `bootstrap_english_conversation_app_repo.bat` / `scripts/bootstrap_english_conversation_app_repo.ps1` can seed the sibling repo from the bundled static app when splitting it out for the first time.
-- `web/01.HarnesUI/overview.html` is a dedicated operator overview page that aggregates runtime posture, topology, contracts, evidence bundles, replay/eval summaries, and skill coverage without mixing that inventory into the execution console.
+- `web/01.HarnesUI/overview.html` is a dedicated operator overview page that aggregates runtime posture, topology, contracts, evidence bundles, replay/eval summaries, and skill coverage without mixing that inventory into the execution console, and its top-line copy now presents the page as the operator map for standard routes, governance posture, release truth, and `agi_v1`-facing eval posture rather than as generic telemetry.
 - `web/01.HarnesUI/overview.html`, `web/01.HarnesUI/overview.css`, and `web/01.HarnesUI/overview.js` now separate first-glance posture from deep inventory. `Runtime` and `Evidence` stay open by default, `Topology / Contracts / Traceability / Memory` move behind collapsible section shells, the raw `/api/harness/overview` snapshot is closed by default, and the overview no longer relies on mojibake-prone refresh-state labels in the operator-facing view.
 - The same overview now also exposes the governed external-learning lane: official OpenAI Developers blog ingestion status, recent promoted learnings, pending proposal-only targets, and freeze-aware boundaries are visible there without adding noise to the main execution console.
 - The standalone floating `AIエージェントかんばん` has been removed. `web/01.HarnesUI/index.html` now embeds the same `/api/agent-topography` view inside `実行トレース` as an inline `担当エージェント` section, keeps the grouped `稼働中 / 親 / 専門 / 検証` lanes, keeps any scoped runtime agent with an active turn visible in `稼働中` even when that scoped session belongs to a different chat, and still surfaces actually spawned collab child agents as live rows when `spawnAgent`/`sendInput`/`wait` activity proves they are actively working.

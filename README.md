@@ -1,19 +1,58 @@
-# Codex Standard Harness
+# Codex Governed Harness
 
 HTML guide:
 - `http://127.0.0.1:57525/01.HarnesUI/guide.html`
 
-このリポジトリは `codex app-server` 用のローカル開発ハーネスです。  
-役割は Web UI、`server.js` による Node アダプタ、`codex app-server` との JSONL stdio 連携をまとめて扱うことです。
+このリポジトリは、単なる「Codex を呼ぶだけの Web UI」ではありません。
+`codex app-server` をローカル優先で運用しつつ、既存の標準実行経路を維持したまま、要件固定、親子ガバナンス、evidence-first の release judgment、fail-closed な `agi_v1` 評価を重ねる governed harness です。
+
+固定する主経路:
+- interactive execution: `POST /api/exec`
+- evaluation / promotion: `POST /api/eval/run`
+- local batch operations: `/api/batch/*`
+
+この repo の front-door claim:
+- truth source は narrative だけでなく machine-readable contracts と runtime proof
+- 完了は会話の終了ではなく evidence と release decision state で判定
+- `agi_v1` は既存 eval ルートへの extension-only 実装であり、parallel harness や別 CLI 宇宙を増やさない
+- self-improvement は machine-gated に扱い、fail-open で昇格しない
 
 構成:
 - HTTP UI: `web/*`
 - Node アダプタ: `server.js`
 - 実行バックエンド: `codex app-server`
+- machine-readable contracts: `scripts/config/*`
+- evidence / proof / signoff: `logs/current/*`, `logs/archive/*`, `logs/bundles/*`
 
 リポジトリ配置:
 - 現役の runtime / docs / scripts / tools / web UI は root に置きます。
 - 旧資料・サンプル・手動生成物のうち未参照だったものは整理で削除しました。
+
+## まず読む順番
+
+1. `README.md`
+2. `AGENTS.md`
+3. `HARNESS_MAP.md`
+4. `docs/CURRENT_ARCHITECTURE.md`
+5. `docs/EVIDENCE_CONTRACT.md`
+6. `docs/AGI_V1_EVAL_FRAMEWORK.md`
+
+## このハーネスが実際に持っているもの
+
+- standard Codex route 維持:
+  - interactive 実行は `POST /api/exec`
+  - eval / promotion は `POST /api/eval/run`
+- governed decision system:
+  - requirement lock
+  - parent / child role governance
+  - release decision state の分離
+- evidence-first runtime:
+  - turn artifact
+  - review bundle
+  - signoff / proof bundle
+- AGI-oriented extension:
+  - `evaluation.profile = "agi_v1"` で fail-closed な比較 / 昇格判定を追加
+  - weighted geometric mean、CVaR、hard gates、hidden evaluator integrity を既存 eval flow の上に重ねる
 
 ## クイックスタート
 

@@ -1,7 +1,7 @@
 {
   "name": "codex_original_ui_pj",
   "version": "1.0.0",
-  "description": "Local harness for `codex app-server` (Web + CLI).",
+  "description": "Local-first governed Codex App Server harness with evidence-first release gates and fail-closed agi_v1 eval.",
   "main": "server.js",
   "directories": {
     "doc": "docs"
@@ -53,9 +53,18 @@
     "learn:openai-blog": "node scripts/openai_blog_learning_cycle.js",
     "learn:anthropic-engineering": "node scripts/anthropic_engineering_learning_cycle.js",
     "learn:self-improvement-gate": "node scripts/self_improvement_eval_gate.js",
-    "learn:self-improvement:manual:validate": "node scripts/manual_self_improvement_validate.js"
+    "learn:self-improvement:manual:validate": "node scripts/manual_self_improvement_validate.js",
+    "housekeeping:runtime-surface": "node scripts/organize_runtime_surface.js"
   },
-  "keywords": [],
+  "keywords": [
+    "codex",
+    "codex-app-server",
+    "harness",
+    "local-first",
+    "evidence-first",
+    "release-governance",
+    "agi-v1"
+  ],
   "author": "",
   "license": "ISC",
   "type": "commonjs",

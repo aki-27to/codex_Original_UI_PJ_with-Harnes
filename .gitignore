@@ -6,12 +6,15 @@ logs/archive/raw/operation_logs/
 logs/archive/
 .npm-cache/
 .pw-browsers/
+.playwright-cli/
 models/piper/**/*.onnx
 tools/piper/*
 !tools/piper/README.md
 tools/kokoro-fastapi/cache/
 tools/kokoro-fastapi/.env
 .resume_home/
+runtime/*
+!runtime/README.md
 output/appserver_tui_demo_home/
 output/tmp_harnesui_retry_bootstrap.js
 docs/copilot-studio/
@@ -43,4 +46,8 @@ output/openai_blog_learning_proposals/realtime-perplexity-computer.json
 output/openai_blog_self_improvement_proposals/realtime-perplexity-computer.json
 tmp_*.html
 tmp_*.txt
+tmp_*.json
+tmp_*.out
+tmp_*.err
 tmp_runtime_revision_verify/
+提出用/

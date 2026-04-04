@@ -17,7 +17,7 @@
         <span class="brand-dot"></span>
         <div>
           <h1>Harness Guide</h1>
-          <p>Codex harness を、人にも小学生にもわかる言葉で説明するための静的な案内書です。</p>
+          <p>標準ルート、役割分担、証拠、release judgment をやさしい言葉で説明する静的ガイドです。</p>
         </div>
       </div>
       <div class="state-pills overview-actions">
@@ -46,17 +46,18 @@
       <section id="hero" class="overview-hero guide-hero">
         <div class="overview-hero-copy">
           <p class="overview-eyebrow">Child-Friendly System Book</p>
-          <h2>このハーネスは、「お願いを受ける」「得意な人に分ける」「終わった証拠を残す」をまとめた司令室です。</h2>
+          <h2>このハーネスは、標準入口を守りながら「受ける」「分ける」「証拠で閉じる」を行う司令室です。</h2>
           <p class="overview-hero-text">
             むずかしい言い方をやめると、この仕組みは「先生ロボットの教室」です。
-            入口はひとつ、仕事の分担にはルールがあり、最後はテストとノートで本当に終わったかを確かめます。
+            本線は <code>POST /api/exec</code> と <code>POST /api/eval/run</code> のままで、
+            役わり分担、契約、証拠、fail-closed な評価を上から重ねています。
           </p>
         </div>
         <div class="overview-hero-pills">
           <span class="overview-tag ready">入口は `POST /api/exec`</span>
-          <span class="overview-tag info">画面は Console / Overview / Guide</span>
-          <span class="overview-tag completed">ログは `logs/current` から読む</span>
-          <span class="overview-tag warn">古い `worker` は現役ではない</span>
+          <span class="overview-tag info">eval は `POST /api/eval/run`</span>
+          <span class="overview-tag completed">証拠は `logs/current` と bundle に残る</span>
+          <span class="overview-tag warn">parallel harness は増やさない</span>
         </div>
       </section>
 
@@ -71,15 +72,15 @@
         <div class="guide-grid guide-grid-3">
           <article class="side-card guide-card">
             <h4>1. 何をする場所?</h4>
-            <p>人が書いたお願いを受けて、Codex に仕事をさせる場所です。ふつうの入口は <code>POST /api/exec</code> です。</p>
+            <p>人が書いたお願いを受けて、Codex に仕事をさせる場所です。本線は <code>POST /api/exec</code>、評価は <code>POST /api/eval/run</code> です。</p>
           </article>
           <article class="side-card guide-card">
             <h4>2. どうやって安全にする?</h4>
-            <p>いきなり全部を勝手にやらず、計画して、役わりを分けて、最後に証拠を残します。</p>
+            <p>いきなり全部を勝手にやらず、要件を固定し、親と子で役わりを分け、最後に証拠と release judgment を残します。</p>
           </article>
           <article class="side-card guide-card">
             <h4>3. 何が残る?</h4>
-            <p>今のまとめ、証拠セット、深い生ログの3段階で記録が残ります。だからあとで見返せます。</p>
+            <p>今のまとめ、証拠セット、深い生ログの3段階で記録が残ります。`agi_v1` では fail-closed な評価と昇格判定も残ります。</p>
           </article>
         </div>
       </section>
@@ -100,6 +101,7 @@
               <li>サーバー本体は <code>server.js</code> です。</li>
               <li>標準ポートは <code>57525</code> です。</li>
               <li>実行の本線は <code>POST /api/exec</code> です。</li>
+              <li>評価の本線は <code>POST /api/eval/run</code> です。</li>
             </ul>
           </article>
           <article class="side-card guide-card">
@@ -107,8 +109,8 @@
             <ul class="guide-list">
               <li>親役は計画、分担、最終確認をします。</li>
               <li>専門の子役は、得意分野の実作業をします。</li>
-              <li>終わったと言うには、証拠が必要です。</li>
-              <li>追加の脇道 API を本線の代わりにしてはいけません。</li>
+              <li>終わったと言うには、証拠と release judgment が必要です。</li>
+              <li>parallel harness や追加の脇道 API を本線の代わりにしてはいけません。</li>
             </ul>
           </article>
         </div>
@@ -279,7 +281,7 @@
             <ul class="guide-list">
               <li><code>GET /api/eval/suites</code></li>
               <li><code>GET /api/eval/history</code></li>
-              <li><code>POST /api/eval/run</code></li>
+              <li><code>POST /api/eval/run</code>: 評価の本線です。<code>agi_v1</code> もこの既存ルートで有効にします。</li>
               <li><code>GET /api/replay/turns</code></li>
               <li><code>GET /api/replay/turn/:turnId</code></li>
               <li><code>POST /api/replay/turn</code></li>
@@ -297,7 +299,7 @@
         </div>
         <article class="side-card guide-card guide-note-card">
           <h4>いちばん大事なこと</h4>
-          <p>API はたくさんありますが、仕事を始めるときの本線は <code>POST /api/exec</code> です。補助 API はありますが、本線の代わりにしてはいけません。</p>
+          <p>API はたくさんありますが、仕事の本線は <code>POST /api/exec</code>、評価の本線は <code>POST /api/eval/run</code> です。補助 API はありますが、本線の代わりにしてはいけません。</p>
         </article>
       </section>
 

@@ -1,25 +1,27 @@
 # HARNESS_MAP
 
-Updated: 2026-03-08
+Updated: 2026-04-04
 
 ## 1) Purpose And Reading Order
 
-This file is the operator map for the harness.
+This file is the operator map for the harness after the front-door README.
+- Front-door identity and quick posture live in `README.md`.
 - Policy is human-facing.
 - Contracts are machine-readable.
 - Proof/signoff artifacts are execution evidence.
 
 Recommended read order:
-1. `AGENTS.md`
-2. `docs/AGENT_OPERATING_RULES.md`
-3. `docs/CURRENT_ARCHITECTURE.md`
-4. `docs/EVIDENCE_CONTRACT.md`
-5. `scripts/config/harness_contract_spec.json`
-6. `scripts/config/task_outcome_contract.json`
-7. `scripts/config/planning_mode_contract.json`
-8. `scripts/config/assurance_depth_contract.json`
-9. `scripts/config/planning_decision_contract.schema.json`
-10. `scripts/config/eval_suite_default.json`
+1. `README.md`
+2. `AGENTS.md`
+3. `docs/AGENT_OPERATING_RULES.md`
+4. `docs/CURRENT_ARCHITECTURE.md`
+5. `docs/EVIDENCE_CONTRACT.md`
+6. `scripts/config/harness_contract_spec.json`
+7. `scripts/config/task_outcome_contract.json`
+8. `scripts/config/planning_mode_contract.json`
+9. `scripts/config/assurance_depth_contract.json`
+10. `scripts/config/planning_decision_contract.schema.json`
+11. `scripts/config/eval_suite_default.json`
 
 ## 2) Layer Map
 
