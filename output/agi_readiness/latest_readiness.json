@@ -1,6 +1,6 @@
 {
   "schema": "agi-readiness-live-summary.v1",
-  "generatedAt": "2026-04-04T13:14:33.148Z",
+  "generatedAt": "2026-04-04T17:23:27.318Z",
   "workspaceId": "5c839dfeef8b555f",
   "latestRunId": "eval-1775264897008-443e2a6a",
   "profile": "agi_v1",
@@ -212,24 +212,19 @@
     "coverageField": "supportedCoverageBreadth"
   },
   "evaluatedBreadth": 1,
-  "supportedCoverageBreadth": 0.333333,
+  "supportedCoverageBreadth": 1,
   "coverageFamilyCount": 6,
-  "coveredFamilyCount": 2,
-  "failedFamilies": [
-    "web_creative",
-    "workflow_execution",
-    "evaluation_review",
-    "tool_use_browser_like"
-  ],
+  "coveredFamilyCount": 6,
+  "failedFamilies": [],
   "headlineMetrics": {
-    "G_breadth": 0.333333,
+    "G_breadth": 1,
     "G_depth": 0.87,
     "A_adapt": 0.83,
     "R_robust": 0.81,
     "H_horizon": 0.93487,
     "P_context": 0.86
   },
-  "headlineBreadth": 0.333333,
+  "headlineBreadth": 1,
   "promotionComparisonMode": "self_snapshot",
   "distinctComparison": false,
   "promotionInterpretation": "not_a_distinct_incumbent_comparison",
@@ -241,12 +236,28 @@
     "comparisonMode": "self_snapshot",
     "distinctComparison": false
   },
-  "blockedReasons": [
-    "breadth coverage incomplete across supported families: web_creative, workflow_execution, evaluation_review, tool_use_browser_like"
+  "blockedReasons": [],
+  "weakestCapabilityFamily": "R_robust",
+  "weakestGateFamily": "",
+  "gatePressure": {
+    "weakestGateFamily": "",
+    "tiedGateFamilies": [
+      "I_eval"
+    ],
+    "pressureStatus": "no_material_pressure",
+    "explanation": "all governed hard gates clear thresholds with comfortable margin",
+    "weakestGateMargin": 0.05
+  },
+  "horizonEvidenceRefs": [
+    "logs/archive/raw/runtime_state/continuity/tasks/phase4-failure-1774995929746/closeout_summary.json",
+    "logs/archive/raw/runtime_state/continuity/tasks/phase4-failure-1774995929746/verifier_state.json",
+    "logs/archive/raw/runtime_state/continuity/tasks/phase4-failure-1774995929746/integration_summary.json",
+    "logs/archive/raw/runtime_state/continuity/tasks/phase4-failure-1774995929746/task_state.json",
+    "logs/archive/raw/runtime_state/continuity/tasks/phase4-failure-1774995929746/plan_state.json",
+    "logs/archive/raw/runtime_state/continuity/tasks/phase4-failure-1774995929746/agent_graph.json"
   ],
-  "weakestCapabilityFamily": "G_breadth",
-  "weakestGateFamily": "I_eval",
   "domainCoveragePath": "output/agi_readiness/domain_coverage_matrix.json",
+  "robustnessBreakdownPath": "output/agi_readiness/robustness_breakdown.json",
   "recentImprovement": 0.133862,
   "recentRegression": -0.04,
   "consistencyChecks": [

@@ -13,6 +13,8 @@
     "output/manual_self_improvement",
     "output/memory",
     "output/memory_public",
+    "output/anthropic_engineering_learning_proposals",
+    "output/anthropic_engineering_self_improvement_proposals",
     "output/openai_blog_learning_proposals",
     "output/openai_blog_self_improvement_proposals",
     "output/repo_closure_export"

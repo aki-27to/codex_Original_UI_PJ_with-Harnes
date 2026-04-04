@@ -316,6 +316,7 @@ function getMemoryPaths(workspaceRoot = workspaceRootDefault) {
       latestJson: path.join(agiReadinessRoot, "latest_readiness.json"),
       latestMd: path.join(agiReadinessRoot, "latest_readiness.md"),
       domainCoverageMatrixJson: path.join(agiReadinessRoot, "domain_coverage_matrix.json"),
+      robustnessBreakdownJson: path.join(agiReadinessRoot, "robustness_breakdown.json"),
       promotionTrendJson: path.join(agiReadinessRoot, "promotion_trend.json"),
       blockedReasonsJson: path.join(agiReadinessRoot, "blocked_reasons.json"),
       nextBottlenecksJson: path.join(agiReadinessRoot, "next_bottlenecks.json"),
@@ -1121,10 +1122,12 @@ function buildWorkspaceProgressItem({ workspaceRoot, runtime, traceability, exec
 
 function buildEpisodicAndFailureItems({ workspaceRoot, runtime, executionOverview, evalHistory }) {
   const workspaceId = toWorkspaceId(workspaceRoot);
+  const readinessPolicy = loadAgiReadinessPolicy(workspaceRoot);
   const items = [];
   const recent = executionOverview && Array.isArray(executionOverview.recent) ? executionOverview.recent : [];
   for (const entry of recent.slice(0, 8)) {
     const taskOutcomeStatus = safeString(entry && entry.taskOutcomeStatus, 80).toUpperCase() || "UNSPECIFIED";
+    const inferredFamilies = inferTaskFamiliesFromExecutionRecord(entry, readinessPolicy);
     items.push(buildBaseItem({
       memoryId: `episode:${safeString(entry && entry.turnId, 120) || stableHash(entry).slice(0, 12)}`,
       type: "episodic_event",
@@ -1134,7 +1137,13 @@ function buildEpisodicAndFailureItems({ workspaceRoot, runtime, executionOvervie
       scope: {
         workspaceId,
         threadId: safeString(entry && entry.threadId, 120),
-        taskFamilies: uniqueStrings([safeString(runtime && runtime.latestTurn && runtime.latestTurn.family_completion_gate && runtime.latestTurn.family_completion_gate.taskFamily, 80) || "default"], 4, 80),
+        taskFamilies: uniqueStrings(
+          inferredFamilies.length
+            ? inferredFamilies
+            : [safeString(runtime && runtime.latestTurn && runtime.latestTurn.family_completion_gate && runtime.latestTurn.family_completion_gate.taskFamily, 80) || "default"],
+          8,
+          80
+        ),
         agents: uniqueStrings([safeString(entry && entry.agentName, 80)], 4, 80),
         ownedPaths: [],
       },
@@ -1148,7 +1157,12 @@ function buildEpisodicAndFailureItems({ workspaceRoot, runtime, executionOvervie
         completedAt: safeString(entry && entry.completedAt, 80),
         fileChanges: clampInt(entry && entry.fileChanges, 0, 9999, 0),
         commandExecutions: clampInt(entry && entry.commandExecutions, 0, 9999, 0),
+        commandFailures: clampInt(entry && entry.commandFailures, 0, 9999, 0),
         collabCalls: clampInt(entry && entry.collabCalls, 0, 9999, 0),
+        dispatchCount: clampInt(entry && entry.dispatchCount, 0, 9999, 0),
+        executionIntent: safeString(entry && entry.executionIntent, 120),
+        executionSource: safeString(entry && entry.executionSource, 120),
+        changedPaths: uniqueStrings(entry && entry.changedPaths, 12, 220),
       },
       evidence: {
         sourceRefs: ["logs/archive/raw/harness_execution_memory.json"],
@@ -1200,6 +1214,7 @@ function buildEpisodicAndFailureItems({ workspaceRoot, runtime, executionOvervie
     }));
   }
   for (const run of Array.isArray(evalHistory && evalHistory.recentRuns) ? evalHistory.recentRuns.slice(0, 6) : []) {
+    const inferredFamilies = inferTaskFamiliesFromEvalRun(run, readinessPolicy);
     items.push(buildBaseItem({
       memoryId: `eval:${safeString(run && run.runId, 120) || stableHash(run).slice(0, 12)}`,
       type: "eval_observation",
@@ -1208,7 +1223,7 @@ function buildEpisodicAndFailureItems({ workspaceRoot, runtime, executionOvervie
       sourceTier: "eval",
       scope: {
         workspaceId,
-        taskFamilies: ["default"],
+        taskFamilies: uniqueStrings(inferredFamilies.length ? inferredFamilies : ["default"], 8, 80),
         agents: ["default", "reviewer", "tester"],
         ownedPaths: [],
       },
@@ -1480,6 +1495,421 @@ function normalizeContinuityLifecycleState(value) {
   return normalized || "planned";
 }
 
+function normalizeAgentRoleForGovernedMemory(value) {
+  const text = safeString(value, 120).toLowerCase();
+  if (!text) return "default";
+  const base = text.includes("@") ? text.split("@")[0] : text;
+  return safeString(base, 80) || "default";
+}
+
+function loadHarnessExecutionMemoryRecordsFromDisk(workspaceRoot) {
+  const payload = readJsonObject(path.join(workspaceRoot, "logs", "archive", "raw", "harness_execution_memory.json"));
+  return Array.isArray(payload && payload.executionMemory) ? payload.executionMemory : [];
+}
+
+function loadEvalRunsFromDisk(workspaceRoot) {
+  return loadJsonl(path.join(workspaceRoot, "logs", "archive", "raw", "eval_runs.jsonl"));
+}
+
+function summarizeExecutionPattern(records) {
+  const grouped = new Map();
+  for (const entry of Array.isArray(records) ? records : []) {
+    const reason = safeString(entry && entry.taskOutcomeReason, 120)
+      || safeString(entry && entry.parentDispatchGuard && entry.parentDispatchGuard.reason, 120)
+      || safeString(entry && entry.errorText, 160)
+      || "unspecified_runtime_outcome";
+    const key = safeString(reason, 160);
+    const current = grouped.get(key) || {
+      signature: key,
+      code: key,
+      severity: "medium",
+      status: safeString(entry && entry.taskOutcomeStatus, 40).toUpperCase() === "COMPLETED" ? "completed" : "failed",
+      executionProfile: safeString(entry && entry.executionProfile, 80),
+      executionIntent: safeString(entry && entry.executionIntent, 80),
+      count: 0,
+      lastSeenAt: "",
+      hint: humanizeCompactIdentifier(key),
+    };
+    current.count += 1;
+    const currentTs = parseTimestamp(entry && (entry.completedAt || entry.updatedAt));
+    const previousTs = parseTimestamp(current.lastSeenAt);
+    if (currentTs >= previousTs) {
+      current.lastSeenAt = safeString(entry && (entry.completedAt || entry.updatedAt), 80);
+      current.executionProfile = safeString(entry && entry.executionProfile, 80) || current.executionProfile;
+      current.executionIntent = safeString(entry && entry.executionIntent, 80) || current.executionIntent;
+      current.status = safeString(entry && entry.taskOutcomeStatus, 40).toUpperCase() === "COMPLETED" ? "completed" : "failed";
+      if (safeString(entry && entry.taskOutcomeReason, 120).includes("missing")) current.severity = "high";
+      if (safeString(entry && entry.taskOutcomeReason, 120).includes("block")) current.severity = "high";
+    }
+    grouped.set(key, current);
+  }
+  return [...grouped.values()]
+    .sort((left, right) => {
+      const countDelta = safeNumber(right && right.count, 0) - safeNumber(left && left.count, 0);
+      return countDelta || parseTimestamp(right && right.lastSeenAt) - parseTimestamp(left && left.lastSeenAt);
+    })
+    .slice(0, 6);
+}
+
+function normalizeExecutionState(state, { terminalFallback = false } = {}) {
+  const normalized = typeof state === "string" ? state.trim().toLowerCase() : "";
+  if (normalized === "completed") return "completed";
+  if (normalized === "failed") return "failed";
+  if (normalized === "interrupted" || normalized === "cancelled" || normalized === "canceled") return "interrupted";
+  if (normalized === "inprogress" || normalized === "in_progress" || normalized === "running" || normalized === "queued" || normalized === "pending") {
+    return "in_progress";
+  }
+  return terminalFallback ? "failed" : "in_progress";
+}
+
+function buildLocalExecutionMemoryOverview({ workspaceRoot, limit = 10, window = 60 } = {}) {
+  const normalizedWindow = clampInt(window, 1, 500, 60);
+  const normalizedLimit = clampInt(limit, 1, 50, 10);
+  const records = loadHarnessExecutionMemoryRecordsFromDisk(workspaceRoot)
+    .filter((entry) => entry && typeof entry === "object")
+    .sort((left, right) => {
+      return Math.max(
+        parseTimestamp(right && right.completedAt),
+        parseTimestamp(right && right.updatedAt),
+        safeNumber(right && right.completedAt, 0),
+        safeNumber(right && right.updatedAt, 0)
+      ) - Math.max(
+        parseTimestamp(left && left.completedAt),
+        parseTimestamp(left && left.updatedAt),
+        safeNumber(left && left.completedAt, 0),
+        safeNumber(left && left.updatedAt, 0)
+      );
+    });
+  const windowRecords = records.slice(0, normalizedWindow);
+  const statusCounts = {};
+  const taskOutcomeCounts = {};
+  let guardViolations = 0;
+  let implementationObserved = 0;
+  for (const entry of windowRecords) {
+    const status = normalizeExecutionState(entry && entry.status, { terminalFallback: true });
+    statusCounts[status] = safeNumber(statusCounts[status], 0) + 1;
+    const taskOutcome = safeString(entry && entry.taskOutcomeStatus, 80).toUpperCase() || "UNSPECIFIED";
+    taskOutcomeCounts[taskOutcome] = safeNumber(taskOutcomeCounts[taskOutcome], 0) + 1;
+    if (entry && entry.parentDispatchGuard && entry.parentDispatchGuard.violation) guardViolations += 1;
+    if (
+      safeNumber(entry && entry.observedSignals && entry.observedSignals.fileChanges, 0) > 0
+      || safeNumber(entry && entry.observedSignals && entry.observedSignals.commandExecutions, 0) > 0
+      || safeNumber(entry && entry.observedSignals && entry.observedSignals.mcpCalls, 0) > 0
+    ) {
+      implementationObserved += 1;
+    }
+  }
+  return {
+    sampleSize: windowRecords.length,
+    statusCounts,
+    taskOutcomeCounts,
+    guardViolations,
+    implementationObserved,
+    recent: records.slice(0, normalizedLimit).map((entry) => ({
+      turnId: safeString(entry && entry.turnId, 120),
+      threadId: safeString(entry && entry.threadId, 120),
+      agentName: safeString(entry && entry.agentName, 120),
+      status: normalizeExecutionState(entry && entry.status, { terminalFallback: true }),
+      taskOutcomeStatus: safeString(entry && entry.taskOutcomeStatus, 80),
+      taskOutcomeReason: safeString(entry && entry.taskOutcomeReason, 160),
+      executionProfile: safeString(entry && entry.executionProfile, 80),
+      executionIntent: safeString(entry && entry.executionIntent, 80),
+      executionSource: safeString(entry && entry.executionSource, 80),
+      completedAt: safeString(entry && entry.completedAt, 80),
+      evidenceManifestPath: safeString(entry && entry.evidenceManifestPath, 220),
+      flowTraceSummaryPath: safeString(entry && entry.flowTraceSummaryPath, 220),
+      stageTimelinePath: safeString(entry && entry.stageTimelinePath, 220),
+      changedPaths: uniqueStrings(
+        entry && entry.observedSignals && entry.observedSignals.sampleChangedPaths,
+        8,
+        220
+      ),
+      fileChanges: clampInt(entry && entry.observedSignals && entry.observedSignals.fileChanges, 0, 9999, 0),
+      commandExecutions: clampInt(entry && entry.observedSignals && entry.observedSignals.commandExecutions, 0, 9999, 0),
+      commandFailures: clampInt(entry && entry.observedSignals && entry.observedSignals.commandFailures, 0, 9999, 0),
+      collabCalls: clampInt(entry && entry.observedSignals && entry.observedSignals.collabCalls, 0, 9999, 0),
+      dispatchCount: clampInt(entry && entry.observedSignals && entry.observedSignals.dispatchCount, 0, 9999, 0),
+      dispatchSuccessCount: clampInt(entry && entry.observedSignals && entry.observedSignals.dispatchSuccessCount, 0, 9999, 0),
+      parentDispatchGuard: {
+        mode: safeString(entry && entry.parentDispatchGuard && entry.parentDispatchGuard.mode, 20) || "off",
+        reason: safeString(entry && entry.parentDispatchGuard && entry.parentDispatchGuard.reason, 120) || "",
+        required: entry && entry.parentDispatchGuard && entry.parentDispatchGuard.required ? 1 : 0,
+        satisfied: entry && entry.parentDispatchGuard && entry.parentDispatchGuard.satisfied ? 1 : 0,
+        violation: entry && entry.parentDispatchGuard && entry.parentDispatchGuard.violation ? 1 : 0,
+      },
+    })),
+    patterns: summarizeExecutionPattern(windowRecords),
+  };
+}
+
+function buildLocalEvalHistoryOverview({ workspaceRoot, limit = 6 } = {}) {
+  return loadEvalRunsFromDisk(workspaceRoot)
+    .slice(-clampInt(limit, 1, 20, 6))
+    .reverse()
+    .map((entry) => {
+      const run = Array.isArray(entry && entry.runs) ? entry.runs[0] : null;
+      const suite = entry && entry.suite && typeof entry.suite === "object" ? entry.suite : {};
+      return {
+        runId: safeString(entry && entry.runId, 160),
+        generatedAt: safeString(entry && entry.generatedAt, 80),
+        suiteId: safeString(suite && suite.suiteId, 160),
+        caseCount: clampInt(suite && suite.caseCount, 0, 9999, 0),
+        variantLabel: safeString(run && run.variant && run.variant.label, 80),
+        sampleSize: clampInt(run && run.sampleSize, 0, 9999, 0),
+        passedCases: clampInt(run && run.passedCases, 0, 9999, 0),
+        failedCases: clampInt(run && run.failedCases, 0, 9999, 0),
+        passRate: Number(safeNumber(run && run.passRate, 0).toFixed(4)),
+        scoreRate: Number(safeNumber(run && run.scoreRate, 0).toFixed(4)),
+        probePersistedRecords: clampInt(entry && entry.probePersistence && entry.probePersistence.persistedRecords, 0, 9999, 0),
+        executionIntent: safeString(run && run.variant && run.variant.executionIntent, 80),
+        executionSource: safeString(run && run.variant && run.variant.executionSource, 80),
+      };
+    });
+}
+
+function buildLocalExternalLearningRuntime(workspaceRoot) {
+  const ledger = readJsonObject(path.join(workspaceRoot, "output", "openai_blog_learning_ledger.json"));
+  const digest = readJsonObject(path.join(workspaceRoot, "output", "openai_blog_learning_digest.json"));
+  const state = readJsonObject(path.join(workspaceRoot, "output", "openai_blog_self_improvement_state.json"));
+  const appliedHints = Array.isArray(state && state.appliedHints) ? state.appliedHints : [];
+  const hintScopes = appliedHints.map((entry) => entry && entry.runtimeRetrievalHint && typeof entry.runtimeRetrievalHint === "object" ? entry.runtimeRetrievalHint : {});
+  const recentArticles = Array.isArray(ledger && ledger.articles) ? ledger.articles.slice(0, 8) : [];
+  return {
+    trackedArticles: clampInt(ledger && ledger.summary && ledger.summary.trackedArticles, 0, 999, recentArticles.length),
+    ledgerPath: "output/openai_blog_learning_ledger.json",
+    digestPath: "output/openai_blog_learning_digest.json",
+    curatedDocPath: "docs/OPENAI_DEVELOPER_LEARNINGS.md",
+    runtimeRetrieval: {
+      applyToAgents: uniqueStrings(hintScopes.flatMap((hint) => hint.appliesToAgents || []), 8, 80),
+      applyToTaskFamilies: uniqueStrings(hintScopes.flatMap((hint) => hint.appliesToTaskFamilies || []), 8, 80),
+    },
+    selfImprovement: {
+      nextPriority: state && state.nextPriority && typeof state.nextPriority === "object" ? state.nextPriority : null,
+    },
+    recentArticles,
+    digestSummary: digest && digest.summary && typeof digest.summary === "object" ? digest.summary : {},
+  };
+}
+
+function buildLocalSecondaryLearningRuntime(workspaceRoot) {
+  const ledger = readJsonObject(path.join(workspaceRoot, "output", "anthropic_engineering_learning_ledger.json"));
+  const recentArticles = Array.isArray(ledger && ledger.articles) ? ledger.articles.slice(0, 8) : [];
+  return {
+    anthropicEngineering: {
+      curatedDocPath: "docs/ANTHROPIC_ENGINEERING_LEARNINGS.md",
+      recentArticles,
+    },
+  };
+}
+
+function buildLocalManualSelfImprovementRuntime(workspaceRoot) {
+  const latest = readJsonObject(path.join(workspaceRoot, "output", "manual_self_improvement", "latest.json"));
+  return latest && typeof latest === "object" ? latest : {};
+}
+
+function buildLocalPhaseStatusRuntime(workspaceRoot) {
+  const audit = readJsonObject(path.join(workspaceRoot, "output", "phase_exit_requirement_foundation_v1.json"));
+  return audit && typeof audit === "object"
+    ? {
+      requirementFoundationV1: safeString(audit.status, 80).toLowerCase() === "pass" ? "done" : safeString(audit.status, 80) || "unknown",
+      status: safeString(audit.status, 80) || "unknown",
+      freezePolicy: safeString(audit.freezePolicy, 80),
+      completedAt: safeString(audit.generatedAt || audit.updatedAt, 80),
+      auditReportPath: "output/phase_exit_requirement_foundation_v1.json",
+    }
+    : {};
+}
+
+function inferTaskFamiliesFromExecutionRecord(record, readinessPolicy) {
+  const families = new Set();
+  const intent = safeString(record && record.executionIntent, 80).toLowerCase();
+  const source = safeString(record && record.executionSource, 80).toLowerCase();
+  const reason = safeString(record && record.taskOutcomeReason, 120).toLowerCase();
+  const changedPaths = uniqueStrings(record && record.changedPaths, 8, 220).map((entry) => entry.toLowerCase());
+  const normalizedIntent = normalizeTaskFamilyId(intent, readinessPolicy);
+  const normalizedSource = normalizeTaskFamilyId(source, readinessPolicy);
+  if (normalizedIntent) families.add(normalizedIntent);
+  if (normalizedSource) families.add(normalizedSource);
+  if (source === "web_ui" || intent === "web-ui-interactive" || changedPaths.some((entry) => /web\/|\.html$|\.css$|public\//.test(entry))) {
+    families.add("web_creative");
+    families.add("tool_use_browser_like");
+  }
+  if (
+    clampInt(record && record.dispatchCount, 0, 9999, 0) > 0
+    || clampInt(record && record.collabCalls, 0, 9999, 0) > 0
+    || /workflow|handoff|dispatch|orchestrat/.test(reason)
+  ) {
+    families.add("workflow_execution");
+  }
+  if (source === "eval_harness" || intent === "eval" || /review|probe|eval/.test(reason)) {
+    families.add("evaluation_review");
+  }
+  if (/plan/.test(intent) || /planning/.test(reason)) {
+    families.add("planning");
+  }
+  return uniqueStrings([...families], 8, 80);
+}
+
+function inferTaskFamiliesFromEvalRun(run, readinessPolicy) {
+  const families = new Set(["evaluation_review"]);
+  const suiteId = safeString(run && run.suiteId, 160).toLowerCase();
+  if (/adversarial|self-check|review/.test(suiteId)) families.add("evaluation_review");
+  if (/workflow/.test(suiteId)) families.add("workflow_execution");
+  return uniqueStrings([...families].map((entry) => normalizeTaskFamilyId(entry, readinessPolicy) || entry), 8, 80);
+}
+
+function buildLocalTraceabilitySnapshot(workspaceRoot, latestSummary, executionOverview) {
+  const recent = executionOverview && Array.isArray(executionOverview.recent) ? executionOverview.recent : [];
+  const latestRecord = recent[0] || {};
+  return {
+    changedPaths: uniqueStrings([
+      ...(Array.isArray(latestSummary && latestSummary.changedPaths) ? latestSummary.changedPaths : []),
+      ...(Array.isArray(latestRecord && latestRecord.changedPaths) ? latestRecord.changedPaths : []),
+    ], 24, 220),
+    operatorSummaryPath: safeString(latestSummary && latestSummary.evidenceRefs && latestSummary.evidenceRefs.signoffSummaryPath, 220),
+    manifestPath: safeString(latestRecord && latestRecord.evidenceManifestPath, 220),
+    summary: coerceSummaryText(
+      latestSummary && latestSummary.finalOutcome && latestSummary.finalOutcome.taskOutcomeReason,
+      workspaceRoot,
+      "Live governed memory sync from runtime artifacts."
+    ),
+  };
+}
+
+function buildLocalRuntimeSnapshotForGovernedMemory(workspaceRoot) {
+  const latestSummary = readJsonObject(path.join(workspaceRoot, "logs", "current", "latest_run_summary.json"));
+  const executionOverview = buildLocalExecutionMemoryOverview({ workspaceRoot, limit: 12, window: 80 });
+  const evalHistory = { recentRuns: buildLocalEvalHistoryOverview({ workspaceRoot, limit: 8 }) };
+  const latestRecord = Array.isArray(executionOverview.recent) ? executionOverview.recent[0] : null;
+  const latestTurn = {
+    turn_id: safeString(latestSummary && latestSummary.turnId, 120) || safeString(latestRecord && latestRecord.turnId, 120),
+    thread_id: safeString(latestSummary && latestSummary.threadId, 120) || safeString(latestRecord && latestRecord.threadId, 120),
+    agent_name: normalizeAgentRoleForGovernedMemory(
+      safeString(latestRecord && latestRecord.agentName, 120)
+      || (Array.isArray(latestSummary && latestSummary.usedAgents) ? latestSummary.usedAgents[0] : "")
+    ),
+    status: safeString(latestSummary && latestSummary.finalOutcome && latestSummary.finalOutcome.status, 40) || safeString(latestRecord && latestRecord.status, 40),
+    task_outcome_status: safeString(latestSummary && latestSummary.finalOutcome && latestSummary.finalOutcome.taskOutcomeStatus, 80)
+      || safeString(latestRecord && latestRecord.taskOutcomeStatus, 80),
+    task_outcome_reason: safeString(latestSummary && latestSummary.finalOutcome && latestSummary.finalOutcome.taskOutcomeReason, 120)
+      || safeString(latestRecord && latestRecord.taskOutcomeReason, 120),
+    summary: coerceSummaryText(
+      latestSummary && latestSummary.finalOutcome && latestSummary.finalOutcome.taskOutcomeReason,
+      workspaceRoot,
+      humanizeCompactIdentifier(safeString(latestRecord && latestRecord.taskOutcomeReason, 120))
+    ),
+    family_completion_gate: {
+      applies: false,
+      status: "not_applicable",
+      taskFamily: inferTaskFamiliesFromExecutionRecord(latestRecord, loadAgiReadinessPolicy(workspaceRoot))[0] || "deterministic_code",
+    },
+  };
+  const traceability = buildLocalTraceabilitySnapshot(workspaceRoot, latestSummary, executionOverview);
+  return {
+    runtime: {
+      activeAgent: normalizeAgentRoleForGovernedMemory(latestTurn.agent_name),
+      latestTurn,
+      intentFirst: {},
+      executionOverview,
+      evalHistory,
+      externalLearning: buildLocalExternalLearningRuntime(workspaceRoot),
+      manualSelfImprovement: buildLocalManualSelfImprovementRuntime(workspaceRoot),
+      secondaryLearning: buildLocalSecondaryLearningRuntime(workspaceRoot),
+      phaseStatus: buildLocalPhaseStatusRuntime(workspaceRoot),
+      traceability,
+    },
+    traceability,
+  };
+}
+
+function hasLiveRuntimeSources(workspaceRoot) {
+  return fs.existsSync(path.join(workspaceRoot, "logs", "current", "latest_run_summary.json"))
+    && fs.existsSync(path.join(workspaceRoot, "logs", "archive", "raw", "harness_execution_memory.json"))
+    && fs.existsSync(path.join(workspaceRoot, "logs", "archive", "raw", "eval_runs.jsonl"));
+}
+
+function syncGovernedMemoryGraphFromLocalRuntimeFiles({ workspaceRoot = workspaceRootDefault, reason = "public_export_sync" } = {}) {
+  if (!hasLiveRuntimeSources(workspaceRoot)) return null;
+  const { runtime, traceability } = buildLocalRuntimeSnapshotForGovernedMemory(workspaceRoot);
+  return syncGovernedMemoryGraph({
+    workspaceRoot,
+    runtime,
+    traceability,
+    reason,
+  });
+}
+
+function countContinuityAgentTreeHandoffs(agentTree) {
+  if (!agentTree || typeof agentTree !== "object") return 0;
+  if (Array.isArray(agentTree.edges)) {
+    return agentTree.edges.filter((edge) => safeString(edge && edge.relationship, 40) === "handoff").length;
+  }
+  const children = Array.isArray(agentTree.children) ? agentTree.children : [];
+  return children.reduce((total, child) => total + 1 + countContinuityAgentTreeHandoffs(child), 0);
+}
+
+function countContinuityAgentTreeNodes(agentTree) {
+  if (!agentTree || typeof agentTree !== "object") return 0;
+  if (Array.isArray(agentTree.nodes)) return agentTree.nodes.length;
+  const children = Array.isArray(agentTree.children) ? agentTree.children : [];
+  return 1 + children.reduce((total, child) => total + countContinuityAgentTreeNodes(child), 0);
+}
+
+function deriveContinuityReleaseState(task) {
+  const explicit = safeString(task && task.finalReleaseState, 80);
+  if (explicit) return explicit;
+  const integrationStatus = safeString(task && task.integrationStatus, 80).toLowerCase();
+  if (["released", "release_ready", "ready", "integrated"].includes(integrationStatus)) return integrationStatus;
+  const lifecycleState = safeString(task && task.lifecycleState, 80).toLowerCase();
+  if (lifecycleState === "completed") return "completed";
+  if (lifecycleState === "verifier_failed") return "verifier_failed";
+  if (lifecycleState === "blocked") return "blocked";
+  return "unknown";
+}
+
+function classifyContinuityLengthBucket(task) {
+  const totalUnits = Math.max(
+    clampInt(task && task.stepCount, 0, 999999, 0),
+    clampInt(task && task.subgoalCount, 0, 999999, 0),
+    clampInt(task && task.verifierCheckpointCount, 0, 999999, 0)
+  );
+  if (totalUnits >= 10) return "extended";
+  if (totalUnits >= 6) return "long";
+  if (totalUnits >= 3) return "medium";
+  if (totalUnits >= 1) return "short";
+  return "unknown";
+}
+
+function scoreContinuityRepresentativeTask(task) {
+  if (!task || typeof task !== "object") return -1;
+  let score = 0;
+  if (!safeString(task.parentTaskId, 120)) score += 10;
+  score += clampInt(task.handoffCount, 0, 999999, 0) * 5;
+  score += clampInt(task.childCount, 0, 999999, 0) * 3;
+  score += clampInt(task.verifierCheckpointCount, 0, 999999, 0) * 2;
+  score += clampInt(task.replanCount, 0, 999999, 0);
+  score += clampInt(task.blockedChildTaskCount, 0, 999999, 0) * 2;
+  score += clampInt(task.verifierFailedChildTaskCount, 0, 999999, 0) * 2;
+  score += clampInt(task.stepCount, 0, 999999, 0) * 0.1;
+  if (!["not_applicable", "unknown", ""].includes(safeString(task.integrationStatus, 80).toLowerCase())) score += 2;
+  if (safeString(task.lastVerifierVerdict, 40).toUpperCase() === "PASS") score += 2;
+  if (safeString(task.lifecycleState, 80) === "completed") score += 1;
+  return score;
+}
+
+function selectContinuityRepresentativeTask(tasks) {
+  const rows = Array.isArray(tasks) ? tasks : [];
+  const roots = rows.filter((task) => !safeString(task && task.parentTaskId, 120));
+  const candidates = roots.length ? roots : rows;
+  return candidates
+    .slice()
+    .sort((left, right) => {
+      const scoreDelta = scoreContinuityRepresentativeTask(right) - scoreContinuityRepresentativeTask(left);
+      if (scoreDelta) return scoreDelta;
+      return parseTimestamp(right && right.updatedAt) - parseTimestamp(left && left.updatedAt);
+    })[0] || null;
+}
+
 function buildContinuityBridge({ workspaceRoot }) {
   let policy;
   try {
@@ -1516,6 +1946,9 @@ function buildContinuityBridge({ workspaceRoot }) {
     const integrationSummary = readJsonObject(paths.integrationSummaryPath);
     const agentGraph = readJsonObject(paths.agentGraphPath);
     const lifecycleEvents = loadJsonl(paths.lifecycleLogPath);
+    const lifecycleHistory = Array.isArray(taskState && taskState.lifecycle && taskState.lifecycle.history)
+      ? taskState.lifecycle.history
+      : [];
     const familyId = safeString(
       taskState.familyId
       || taskState.taskFamily
@@ -1541,6 +1974,25 @@ function buildContinuityBridge({ workspaceRoot }) {
     const replanCount =
       clampInt(planState.replanCount, 0, 9999, 0)
       || lifecycleEvents.filter((entry) => /replan/i.test(safeString(entry && (entry.eventType || entry.status || entry.phase), 120))).length;
+    const resumeCount = Math.max(0,
+      lifecycleHistory.filter((entry) => safeString(entry && entry.to, 80) === "running").length
+      + lifecycleEvents.filter((entry) => safeString(entry && (entry.to || entry.nextState), 80) === "running").length
+      - 1
+    );
+    const orchestration = closeoutSummary && closeoutSummary.orchestration && typeof closeoutSummary.orchestration === "object"
+      ? closeoutSummary.orchestration
+      : {};
+    const blockedChildTaskCount = uniqueStrings(orchestration.blockedChildTaskIds, 24, 120).length;
+    const verifierFailedChildTaskCount = uniqueStrings(orchestration.verifierFailedChildTaskIds, 24, 120).length;
+    const pendingChildTaskCount = uniqueStrings(orchestration.pendingChildTaskIds, 24, 120).length;
+    const handoffCount = Math.max(
+      countContinuityAgentTreeHandoffs(agentGraph),
+      clampInt(row && row.childCount, 0, 999999, 0)
+    );
+    const childCount = Math.max(
+      clampInt(row && row.childCount, 0, 999999, 0),
+      countContinuityAgentTreeNodes(agentGraph) > 0 ? Math.max(0, countContinuityAgentTreeNodes(agentGraph) - 1) : 0
+    );
     const touchedPaths = uniqueStrings([
       ...(Array.isArray(closeoutSummary.recentTouchedPaths) ? closeoutSummary.recentTouchedPaths : []),
       ...(Array.isArray(integrationSummary.changedPaths) ? integrationSummary.changedPaths : []),
@@ -1591,16 +2043,24 @@ function buildContinuityBridge({ workspaceRoot }) {
     return {
       taskId,
       title: safeString(row && row.title, 220) || safeString(taskState.title, 220),
+      objective: safeString(taskState.objective, 240) || safeString(row && row.objective, 240) || safeString(closeoutSummary.objective, 240),
       familyId,
       normalizedFamilyId: normalizeTaskFamilyId(familyId, loadAgiReadinessPolicy(workspaceRoot)) || familyId,
       lifecycleState,
       role: safeString(row && row.role, 80) || safeString(taskState.role, 80) || "default",
       parentTaskId: safeString(row && row.parentTaskId, 120),
       rootTaskId: safeString(row && row.rootTaskId, 120) || taskId,
+      orchestrationMode: safeString(row && row.orchestrationMode, 80) || safeString(taskState.orchestrationMode, 80),
+      childCount,
+      handoffCount,
+      blockedChildTaskCount,
+      verifierFailedChildTaskCount,
+      pendingChildTaskCount,
       stepCount,
       subgoalCount,
       verifierCheckpointCount,
       replanCount,
+      resumeCount,
       integrationStatus: safeString(row && row.integrationStatus, 80) || safeString(integrationSummary.status, 80) || "unknown",
       lastVerifierVerdict: safeString(row && row.lastVerifierVerdict, 40) || safeString(verifierState.lastVerifierVerdict, 40),
       blockers,
@@ -1617,31 +2077,57 @@ function buildContinuityBridge({ workspaceRoot }) {
         fs.existsSync(paths.verifierStatePath) ? repoRelative(workspaceRoot, paths.verifierStatePath) : "",
         fs.existsSync(paths.integrationSummaryPath) ? repoRelative(workspaceRoot, paths.integrationSummaryPath) : "",
         fs.existsSync(paths.taskStatePath) ? repoRelative(workspaceRoot, paths.taskStatePath) : "",
+        fs.existsSync(paths.planStatePath) ? repoRelative(workspaceRoot, paths.planStatePath) : "",
+        fs.existsSync(paths.agentGraphPath) ? repoRelative(workspaceRoot, paths.agentGraphPath) : "",
       ], 8, 220),
       agentTree: agentGraph && Object.keys(agentGraph).length ? agentGraph : null,
     };
   }).sort((left, right) => parseTimestamp(right && right.updatedAt) - parseTimestamp(left && left.updatedAt));
 
-  const latestRootTask = tasks.find((task) => !safeString(task && task.parentTaskId, 120)) || tasks[0] || null;
+  const latestRootTask = selectContinuityRepresentativeTask(tasks);
+  const finalReleaseState = deriveContinuityReleaseState(latestRootTask);
+  const horizon = latestRootTask ? {
+    activeTaskId: safeString(latestRootTask && latestRootTask.taskId, 120),
+    activeTaskFamily: safeString(latestRootTask && latestRootTask.normalizedFamilyId, 80) || safeString(latestRootTask && latestRootTask.familyId, 80),
+    objective: coerceSummaryText(latestRootTask && latestRootTask.objective, workspaceRoot, ""),
+    horizonUnit: "steps",
+    completedSteps: clampInt(latestRootTask && latestRootTask.stepCount, 0, 99999, 0),
+    subgoalCount: clampInt(latestRootTask && latestRootTask.subgoalCount, 0, 99999, 0),
+    verifierCheckpointCount: clampInt(latestRootTask && latestRootTask.verifierCheckpointCount, 0, 99999, 0),
+    replanCount: clampInt(latestRootTask && latestRootTask.replanCount, 0, 99999, 0),
+    resumeCount: clampInt(latestRootTask && latestRootTask.resumeCount, 0, 99999, 0),
+    completionLengthBucket: classifyContinuityLengthBucket(latestRootTask),
+    closureOutcome: safeString(latestRootTask && (latestRootTask.closeoutOutcome || latestRootTask.lifecycleState), 80),
+    evidenceRefs: uniqueStrings(latestRootTask && latestRootTask.evidenceRefs, 8, 220),
+  } : {};
   const summary = {
     generatedAt: toIso(),
     updatedAt: latestRootTask ? safeString(latestRootTask.updatedAt, 80) : "",
     sourcePath: repoRelative(workspaceRoot, policy.registryPath),
     taskCount: tasks.length,
     activeTaskCount: tasks.filter((task) => !["completed", "archived", "abandoned"].includes(task.lifecycleState)).length,
-    blockedSubtaskCount: tasks.filter((task) => safeString(task.parentTaskId, 120) && task.lifecycleState === "blocked").length,
-    verifierFailedSubtaskCount: tasks.filter((task) => safeString(task.parentTaskId, 120) && task.lifecycleState === "verifier_failed").length,
-    integrationPendingCount: tasks.filter((task) => !["integrated", "complete", "completed", "released"].includes(safeString(task.integrationStatus, 80).toLowerCase())).length,
-    handoffCount: tasks.filter((task) => safeString(task.parentTaskId, 120)).length,
-    finalReleaseState: safeString(latestRootTask && latestRootTask.finalReleaseState, 80) || "unknown",
+    blockedSubtaskCount: tasks.filter((task) => safeString(task.parentTaskId, 120) && task.lifecycleState === "blocked").length
+      + tasks.reduce((total, task) => total + clampInt(task && task.blockedChildTaskCount, 0, 999999, 0), 0),
+    verifierFailedSubtaskCount: tasks.filter((task) => safeString(task.parentTaskId, 120) && task.lifecycleState === "verifier_failed").length
+      + tasks.reduce((total, task) => total + clampInt(task && task.verifierFailedChildTaskCount, 0, 999999, 0), 0),
+    integrationPendingCount: tasks.filter((task) => !["integrated", "complete", "completed", "released", "not_applicable"].includes(safeString(task.integrationStatus, 80).toLowerCase())).length
+      + tasks.reduce((total, task) => total + clampInt(task && task.pendingChildTaskCount, 0, 999999, 0), 0),
+    handoffCount: tasks.reduce((total, task) => total + clampInt(task && task.handoffCount, 0, 999999, 0), 0),
+    finalReleaseState,
     activeAgentTree: latestRootTask && latestRootTask.agentTree ? latestRootTask.agentTree : {},
     workspaceProgress: {
       currentObjective: coerceSummaryText(
-        latestRootTask && (latestRootTask.title || latestRootTask.closeoutOutcome || latestRootTask.finalReleaseState),
+        latestRootTask && (latestRootTask.objective || latestRootTask.title || latestRootTask.closeoutOutcome || finalReleaseState),
         workspaceRoot,
         "Continue the active continuity objective."
       ),
-      currentMilestones: uniqueStrings(tasks.slice(0, 4).map((task) => `${humanizeCompactIdentifier(task.lifecycleState)}: ${safeString(task.title, 120) || task.taskId}`), 8, 180),
+      currentMilestones: uniqueStrings([
+        ...tasks
+          .slice()
+          .sort((left, right) => parseTimestamp(right && right.updatedAt) - parseTimestamp(left && left.updatedAt))
+          .slice(0, 4)
+          .map((task) => `${humanizeCompactIdentifier(task.lifecycleState)}: ${safeString(task.title, 120) || task.taskId}`),
+      ], 8, 180),
       knownBlockers: uniqueStrings(tasks.flatMap((task) => task.blockers || []), 12, 220),
       knownRisks: uniqueStrings(tasks.flatMap((task) => task.risks || []), 12, 220),
       recentTouchedPaths: uniqueStrings(tasks.flatMap((task) => task.recentTouchedPaths || []), 24, 220),
@@ -1649,14 +2135,7 @@ function buildContinuityBridge({ workspaceRoot }) {
       lastSuccessfulValidation: tasks.flatMap((task) => task.lastSuccessfulValidation || []).slice(0, 4),
       lastFailedValidation: tasks.flatMap((task) => task.lastFailedValidation || []).slice(0, 4),
     },
-    horizon: {
-      activeTaskId: safeString(latestRootTask && latestRootTask.taskId, 120),
-      stepCount: clampInt(latestRootTask && latestRootTask.stepCount, 0, 99999, 0),
-      subgoalCount: clampInt(latestRootTask && latestRootTask.subgoalCount, 0, 99999, 0),
-      verifierCheckpointCount: clampInt(latestRootTask && latestRootTask.verifierCheckpointCount, 0, 99999, 0),
-      replanCount: clampInt(latestRootTask && latestRootTask.replanCount, 0, 99999, 0),
-      closureOutcome: safeString(latestRootTask && (latestRootTask.closeoutOutcome || latestRootTask.lifecycleState), 80),
-    },
+    horizon,
   };
   return {
     policy,
@@ -1803,6 +2282,46 @@ function buildObservationEvents({ workspaceRoot, runtime, traceability, pack, it
   }
   const readinessPolicy = loadAgiReadinessPolicy(workspaceRoot);
   const continuityTasks = Array.isArray(continuityBridge && continuityBridge.tasks) ? continuityBridge.tasks : [];
+  const executionRecent = runtime && runtime.executionOverview && Array.isArray(runtime.executionOverview.recent)
+    ? runtime.executionOverview.recent
+    : [];
+  for (const record of executionRecent) {
+    const families = inferTaskFamiliesFromExecutionRecord(record, readinessPolicy);
+    if (!families.length) continue;
+    const recordRole = normalizeAgentRoleForGovernedMemory(record && record.agentName);
+    const recordTurnId = safeString(record && record.turnId, 120) || `exec_${maskOpaqueId(`${safeString(record && record.completedAt, 80)}:${safeString(record && record.executionIntent, 80)}`, "turn")}`;
+    const recordThreadId = safeString(record && record.threadId, 120) || `thread_${maskOpaqueId(`${recordTurnId}:${safeString(record && record.executionSource, 80)}`, "thread")}`;
+    const recordOutcome = deriveObservationOutcome(
+      safeString(record && record.taskOutcomeStatus, 80) || safeString(record && record.status, 80),
+      policy
+    );
+    const recordEvidence = uniqueStrings([
+      safeString(record && record.evidenceManifestPath, 220),
+      safeString(record && record.flowTraceSummaryPath, 220),
+      safeString(record && record.stageTimelinePath, 220),
+      ...baseEvidenceRefs,
+    ], 8, 220);
+    const eligibleItems = items.filter((item) => {
+      if (!eligibleTypes.has(safeString(item && item.type, 80))) return false;
+      if (!memoryAppliesToAgent(item, recordRole)) return false;
+      return true;
+    });
+    for (const family of families) {
+      const familyMatches = eligibleItems.filter((item) => memoryAppliesToTaskFamily(item, family, readinessPolicy));
+      for (const item of familyMatches) {
+        maybeRecord({
+          memoryId: safeString(item && item.memoryId, 120),
+          item,
+          turnId: recordTurnId,
+          threadId: recordThreadId,
+          family,
+          role: recordRole,
+          outcome: recordOutcome,
+          evidenceRefs: recordEvidence,
+        });
+      }
+    }
+  }
   for (const task of continuityTasks) {
     if (!["completed", "blocked", "verifier_failed"].includes(safeString(task && task.lifecycleState, 80))) continue;
     const continuityOutcome = task.lifecycleState === "completed" ? "success" : task.lifecycleState === "verifier_failed" ? "failure" : "neutral";
@@ -1983,6 +2502,197 @@ function buildCanonicalReinforcementMemory({ workspaceRoot, laneItems, observati
   };
 }
 
+function classifyCoverageEvidenceStatus({ successEvidence, failedEvidence }) {
+  if (successEvidence.length) return "passing_evidence";
+  if (failedEvidence.length) return "failing_only";
+  return "no_evidence";
+}
+
+function createPublicCoverageTask(entry, workspaceRoot, kind) {
+  if (!entry || typeof entry !== "object") return null;
+  const rawRef = safeString(entry.publicRef || entry.taskId || entry.runId || entry.turnId || entry.threadId, 160);
+  return {
+    publicRef: rawRef ? maskOpaqueId(rawRef, kind === "eval" ? "eval" : kind === "turn" ? "turn" : "task") : "",
+    source: safeString(kind, 40) || "unknown",
+    title: coerceSummaryText(entry.title || entry.objective || entry.summary || entry.reason, workspaceRoot, rawRef || "coverage evidence"),
+    status: safeString(entry.lifecycleState || entry.taskOutcomeStatus || entry.status, 80),
+    updatedAt: safeString(entry.updatedAt || entry.generatedAt || entry.completedAt, 80),
+  };
+}
+
+function buildExecutionEvidenceFromItem(item, workspaceRoot) {
+  if (!item || safeString(item.type, 80) !== "episodic_event") return null;
+  const structured = item.content && item.content.structured && typeof item.content.structured === "object"
+    ? item.content.structured
+    : {};
+  return {
+    publicRef: safeString(structured.turnId, 120) || safeString(item.memoryId, 160),
+    turnId: safeString(structured.turnId, 120),
+    threadId: safeString(item.scope && item.scope.threadId, 120),
+    taskOutcomeStatus: safeString(structured.taskOutcomeStatus, 80) || safeString(item.status, 40),
+    taskOutcomeReason: safeString(structured.taskOutcomeReason, 240) || safeString(item.content && item.content.summary, 240),
+    executionProfile: safeString(structured.executionProfile, 80),
+    executionIntent: safeString(structured.executionIntent, 120),
+    executionSource: safeString(structured.executionSource, 120),
+    changedPaths: uniqueStrings(structured.changedPaths, 12, 220),
+    completedAt: safeString(structured.completedAt, 80) || safeString(item.lifecycle && item.lifecycle.updatedAt, 80),
+    commandExecutions: clampInt(structured.commandExecutions, 0, 9999, 0),
+    commandFailures: clampInt(structured.commandFailures, 0, 9999, 0),
+    collabCalls: clampInt(structured.collabCalls, 0, 9999, 0),
+    dispatchCount: clampInt(structured.dispatchCount, 0, 9999, 0),
+    taskFamilies: uniqueStrings(item.scope && item.scope.taskFamilies, 8, 80),
+    summary: buildPublicItemSummary(item, workspaceRoot),
+  };
+}
+
+function buildEvalEvidenceFromItem(item, workspaceRoot) {
+  if (!item || safeString(item.type, 80) !== "eval_observation") return null;
+  const structured = item.content && item.content.structured && typeof item.content.structured === "object"
+    ? item.content.structured
+    : {};
+  return {
+    publicRef: safeString(structured.runId, 120) || safeString(item.memoryId, 160),
+    runId: safeString(structured.runId, 120),
+    suiteId: safeString(structured.suiteId, 160),
+    variantLabel: safeString(structured.variantLabel, 120),
+    passRate: safeNumber(structured.passRate, 0),
+    scoreRate: safeNumber(structured.scoreRate, 0),
+    failedCases: clampInt(structured.failedCases, 0, 9999, 0),
+    generatedAt: safeString(structured.generatedAt, 80) || safeString(item.lifecycle && item.lifecycle.updatedAt, 80),
+    taskFamilies: uniqueStrings(item.scope && item.scope.taskFamilies, 8, 80),
+    summary: buildPublicItemSummary(item, workspaceRoot),
+  };
+}
+
+function mergeCoverageEvidenceRows(rows, keySelector) {
+  const merged = new Map();
+  for (const row of Array.isArray(rows) ? rows : []) {
+    if (!row || typeof row !== "object") continue;
+    const key = safeString(keySelector(row), 160);
+    if (!key) continue;
+    const existing = merged.get(key);
+    if (!existing || parseTimestamp(row.updatedAt || row.completedAt || row.generatedAt) > parseTimestamp(existing.updatedAt || existing.completedAt || existing.generatedAt)) {
+      merged.set(key, row);
+    }
+  }
+  return [...merged.values()].sort((left, right) => parseTimestamp(right && (right.updatedAt || right.completedAt || right.generatedAt)) - parseTimestamp(left && (left.updatedAt || left.completedAt || left.generatedAt)));
+}
+
+function buildRobustnessBreakdown({ workspaceRoot, coverage = null, items = [] }) {
+  const readinessPolicy = loadAgiReadinessPolicy(workspaceRoot);
+  const categories = Array.isArray(readinessPolicy && readinessPolicy.robustnessCategories)
+    ? readinessPolicy.robustnessCategories
+    : [];
+  const scoreDefaults = readinessPolicy && readinessPolicy.robustnessScoreDefaults && typeof readinessPolicy.robustnessScoreDefaults === "object"
+    ? readinessPolicy.robustnessScoreDefaults
+    : {};
+  const evalHistory = mergeCoverageEvidenceRows([
+    ...buildLocalEvalHistoryOverview({ workspaceRoot, limit: 40 }),
+    ...items
+      .filter((item) => safeString(item && item.type, 80) === "eval_observation")
+      .map((item) => buildEvalEvidenceFromItem(item, workspaceRoot))
+      .filter(Boolean),
+  ], (entry) => entry.runId || entry.publicRef);
+  const executionRecent = mergeCoverageEvidenceRows([
+    ...(Array.isArray(buildLocalExecutionMemoryOverview({ workspaceRoot, limit: 40, window: 120 }).recent)
+      ? buildLocalExecutionMemoryOverview({ workspaceRoot, limit: 40, window: 120 }).recent
+      : []),
+    ...items
+      .filter((item) => safeString(item && item.type, 80) === "episodic_event")
+      .map((item) => buildExecutionEvidenceFromItem(item, workspaceRoot))
+      .filter(Boolean),
+  ], (entry) => entry.turnId || entry.publicRef);
+  const rows = categories.map((category) => {
+    const id = safeString(category && category.id, 80);
+    const label = safeString(category && category.label, 160) || id;
+    let successCount = 0;
+    let failureCount = 0;
+    const recentEvidence = [];
+    if (id === "adversarial_conflicting_instruction") {
+      for (const run of evalHistory.filter((entry) => /adversarial/i.test(safeString(entry && entry.suiteId, 160)))) {
+        if (safeNumber(run && run.passRate, 0) >= 1) successCount += 1;
+        else failureCount += 1;
+        recentEvidence.push({
+          publicRef: maskOpaqueId(safeString(run && run.runId, 120), "eval"),
+          summary: safeString(run && run.suiteId, 160),
+        });
+      }
+    } else if (id === "degraded_tool_outputs") {
+      for (const record of executionRecent.filter((entry) => clampInt(entry && entry.commandExecutions, 0, 999999, 0) > 0)) {
+        if (clampInt(record && record.commandFailures, 0, 999999, 0) > 0) failureCount += 1;
+        else successCount += 1;
+        recentEvidence.push({
+          publicRef: maskOpaqueId(safeString(record && record.turnId, 120), "turn"),
+          summary: coerceSummaryText(record && record.taskOutcomeReason, workspaceRoot, safeString(record && record.executionIntent, 160)),
+        });
+      }
+    } else if (id === "browser_tool_flakiness") {
+      const relevant = executionRecent.filter((entry) => inferTaskFamiliesFromExecutionRecord(entry, readinessPolicy).includes("tool_use_browser_like"));
+      for (const record of relevant) {
+        if (safeString(record && record.taskOutcomeStatus, 80).toUpperCase() === "COMPLETED") successCount += 1;
+        else failureCount += 1;
+        recentEvidence.push({
+          publicRef: maskOpaqueId(safeString(record && record.turnId, 120), "turn"),
+          summary: safeString(record && record.executionIntent, 160) || "tool use",
+        });
+      }
+    } else if (id === "missing_context") {
+      const relevant = executionRecent.filter((entry) => /needs_input|missing|context/i.test(safeString(entry && entry.taskOutcomeReason, 200)));
+      for (const record of relevant) {
+        if (safeString(record && record.taskOutcomeStatus, 80).toUpperCase() === "COMPLETED") successCount += 1;
+        else failureCount += 1;
+        recentEvidence.push({
+          publicRef: maskOpaqueId(safeString(record && record.turnId, 120), "turn"),
+          summary: coerceSummaryText(record && record.taskOutcomeReason, workspaceRoot, "missing context handling"),
+        });
+      }
+    } else if (id === "ambiguous_instruction") {
+      const relevant = executionRecent.filter((entry) => /ambiguous|bounded_assumption|clarify|unclear/i.test(safeString(entry && entry.taskOutcomeReason, 200)));
+      for (const record of relevant) {
+        if (safeString(record && record.taskOutcomeStatus, 80).toUpperCase() === "COMPLETED") successCount += 1;
+        else failureCount += 1;
+        recentEvidence.push({
+          publicRef: maskOpaqueId(safeString(record && record.turnId, 120), "turn"),
+          summary: coerceSummaryText(record && record.taskOutcomeReason, workspaceRoot, "ambiguous instruction handling"),
+        });
+      }
+    }
+    const evidenceCount = successCount + failureCount;
+    const score = evidenceCount
+      ? Number(((successCount * safeNumber(scoreDefaults.success, 1) + failureCount * safeNumber(scoreDefaults.failure, 0.25)) / evidenceCount).toFixed(6))
+      : null;
+    return {
+      categoryId: id,
+      label,
+      score,
+      evidenceCount,
+      successCount,
+      failureCount,
+      status: evidenceCount ? "observed" : "no_evidence",
+      recentEvidence: recentEvidence.slice(0, 6),
+      sourceFamilies: uniqueStrings(
+        (coverage && Array.isArray(coverage.rows) ? coverage.rows : [])
+          .filter((row) => row && row.familyId && (
+            (id === "browser_tool_flakiness" && safeString(row.familyId, 80) === "tool_use_browser_like")
+            || (id === "degraded_tool_outputs" && ["workflow_execution", "tool_use_browser_like", "deterministic_code"].includes(safeString(row.familyId, 80)))
+            || (id === "ambiguous_instruction" && ["planning", "deterministic_code"].includes(safeString(row.familyId, 80)))
+            || (id === "missing_context" && ["planning", "workflow_execution"].includes(safeString(row.familyId, 80)))
+            || (id === "adversarial_conflicting_instruction" && safeString(row.familyId, 80) === "evaluation_review")
+          ))
+          .map((row) => row.familyId),
+        8,
+        80
+      ),
+    };
+  });
+  return {
+    schema: "agi-readiness-robustness-breakdown.v1",
+    generatedAt: toIso(),
+    workspaceId: toWorkspaceId(workspaceRoot),
+    categories: rows,
+  };
+}
+
 function mergeObservationStatusIntoState(state, laneSummary) {
   if (!state || typeof state !== "object") return state;
   const next = { ...state };
@@ -2119,33 +2829,78 @@ function buildFamilyCoverageProjection({ workspaceRoot, items, continuityBridge,
     taskByBucket[bucketId] = taskByBucket[bucketId] || [];
     taskByBucket[bucketId].push(task);
   }
+  const executionOverview = buildLocalExecutionMemoryOverview({ workspaceRoot, limit: 40, window: 120 });
+  const evalHistory = buildLocalEvalHistoryOverview({ workspaceRoot, limit: 40 });
+  const executionByBucket = {};
+  for (const record of Array.isArray(executionOverview && executionOverview.recent) ? executionOverview.recent : []) {
+    for (const familyId of inferTaskFamiliesFromExecutionRecord(record, policy)) {
+      executionByBucket[familyId] = executionByBucket[familyId] || [];
+      executionByBucket[familyId].push(record);
+    }
+  }
+  for (const record of items
+    .filter((item) => safeString(item && item.type, 80) === "episodic_event")
+    .map((item) => buildExecutionEvidenceFromItem(item, workspaceRoot))
+    .filter(Boolean)) {
+    for (const familyId of uniqueStrings(record.taskFamilies, 8, 80).map((familyId) => normalizeTaskFamilyId(familyId, policy)).filter(Boolean)) {
+      executionByBucket[familyId] = executionByBucket[familyId] || [];
+      executionByBucket[familyId].push(record);
+    }
+  }
+  const evalByBucket = {};
+  for (const run of Array.isArray(evalHistory) ? evalHistory : []) {
+    for (const familyId of inferTaskFamiliesFromEvalRun(run, policy)) {
+      evalByBucket[familyId] = evalByBucket[familyId] || [];
+      evalByBucket[familyId].push(run);
+    }
+  }
+  for (const run of items
+    .filter((item) => safeString(item && item.type, 80) === "eval_observation")
+    .map((item) => buildEvalEvidenceFromItem(item, workspaceRoot))
+    .filter(Boolean)) {
+    for (const familyId of uniqueStrings(run.taskFamilies, 8, 80).map((familyId) => normalizeTaskFamilyId(familyId, policy)).filter(Boolean)) {
+      evalByBucket[familyId] = evalByBucket[familyId] || [];
+      evalByBucket[familyId].push(run);
+    }
+  }
   const rows = buckets.map((bucket) => {
     const bucketId = safeString(bucket && bucket.id, 80);
     const tasks = Array.isArray(taskByBucket[bucketId]) ? taskByBucket[bucketId] : [];
-    const lastSuccessfulTask = tasks.find((task) => task.lifecycleState === "completed") || null;
-    const lastFailedTask = tasks.find((task) => ["blocked", "verifier_failed"].includes(task.lifecycleState)) || null;
+    const executionRecords = mergeCoverageEvidenceRows(Array.isArray(executionByBucket[bucketId]) ? executionByBucket[bucketId] : [], (entry) => entry.turnId || entry.publicRef);
+    const evalRuns = mergeCoverageEvidenceRows(Array.isArray(evalByBucket[bucketId]) ? evalByBucket[bucketId] : [], (entry) => entry.runId || entry.publicRef);
+    const successfulContinuity = tasks.find((task) => task.lifecycleState === "completed") || null;
+    const failedContinuity = tasks.find((task) => ["blocked", "verifier_failed"].includes(task.lifecycleState)) || null;
+    const successfulExecution = executionRecords.find((record) => safeString(record && record.taskOutcomeStatus, 80).toUpperCase() === "COMPLETED") || null;
+    const failedExecution = executionRecords.find((record) => safeString(record && record.taskOutcomeStatus, 80).toUpperCase() && safeString(record && record.taskOutcomeStatus, 80).toUpperCase() !== "COMPLETED") || null;
+    const successfulEval = evalRuns.find((run) => safeNumber(run && run.passRate, 0) >= 1) || null;
+    const failedEval = evalRuns.find((run) => safeNumber(run && run.passRate, 0) < 1) || null;
+    const successfulEvidence = [successfulContinuity, successfulExecution, successfulEval].filter(Boolean);
+    const failedEvidence = [failedContinuity, failedExecution, failedEval].filter(Boolean);
+    const lastSuccessfulTask = createPublicCoverageTask(successfulContinuity, workspaceRoot, "continuity")
+      || createPublicCoverageTask(successfulExecution, workspaceRoot, "turn")
+      || createPublicCoverageTask(successfulEval, workspaceRoot, "eval");
+    const lastFailedTask = createPublicCoverageTask(failedContinuity, workspaceRoot, "continuity")
+      || createPublicCoverageTask(failedExecution, workspaceRoot, "turn")
+      || createPublicCoverageTask(failedEval, workspaceRoot, "eval");
     const bucketItems = items.filter((item) => memoryAppliesToTaskFamily(item, bucketId, policy));
     const activeLessons = bucketItems.filter((item) => safeString(item && item.type, 80) === "semantic_lesson" && ["promoted", "reinforced", "shadow"].includes(safeString(item && item.status, 40)));
     const availableHints = bucketItems.filter((item) => safeString(item && item.type, 80) === "runtime_hint" && !["blocked", "revoked", "expired"].includes(safeString(item && item.status, 40)));
     const breadthEntry = breadthByDomain.get(bucketId);
+    const derivedDomainScore = successfulEvidence.length
+      ? 0.78
+      : failedEvidence.length
+        ? 0.25
+        : 0;
     const domainScore = breadthEntry && Number.isFinite(Number(breadthEntry.domainScore))
-      ? Number(Number(breadthEntry.domainScore).toFixed(4))
-      : (lastSuccessfulTask ? 1 : lastFailedTask ? 0.25 : 0);
+      ? Number(Number(Math.max(Number(breadthEntry.domainScore), derivedDomainScore)).toFixed(4))
+      : Number(Number(derivedDomainScore).toFixed(4));
     const breadthFloor = Number.isFinite(Number(policy.breadthFloorDefault)) ? Number(policy.breadthFloorDefault) : 0.7;
     return {
       familyId: bucketId,
       label: safeString(bucket && bucket.label, 120) || bucketId,
-      lastSuccessfulTask: lastSuccessfulTask ? {
-        taskId: safeString(lastSuccessfulTask.taskId, 120),
-        title: safeString(lastSuccessfulTask.title, 200),
-        updatedAt: safeString(lastSuccessfulTask.updatedAt, 80),
-      } : null,
-      lastFailedTask: lastFailedTask ? {
-        taskId: safeString(lastFailedTask.taskId, 120),
-        title: safeString(lastFailedTask.title, 200),
-        lifecycleState: safeString(lastFailedTask.lifecycleState, 80),
-        updatedAt: safeString(lastFailedTask.updatedAt, 80),
-      } : null,
+      evidenceStatus: classifyCoverageEvidenceStatus({ successEvidence: successfulEvidence, failedEvidence: failedEvidence }),
+      lastSuccessfulTask,
+      lastFailedTask,
       activeLessons: activeLessons.slice(0, 8).map((item) => ({
         memoryId: safeString(item.memoryId, 120),
         status: safeString(item.status, 40),
@@ -2307,6 +3062,76 @@ function buildReadinessConsistencyChecks({ readiness, coverage, blockedReasons, 
   return checks;
 }
 
+function deriveWeakestGateSemantics({ workspaceRoot, metrics }) {
+  const policy = loadAgiReadinessPolicy(workspaceRoot);
+  const gatePolicy = policy && policy.gatePressureSemantics && typeof policy.gatePressureSemantics === "object"
+    ? policy.gatePressureSemantics
+    : {};
+  const tieTolerance = safeNumber(gatePolicy.tieTolerance, 0.005);
+  const pressureMarginThreshold = safeNumber(gatePolicy.pressureMarginThreshold, 0.03);
+  const gates = ["I_eval", "S_trust", "C_corr", "E_epi"]
+    .map((familyName) => {
+      const metric = metrics && metrics[familyName] && typeof metrics[familyName] === "object" ? metrics[familyName] : {};
+      const value = safeNumber(metric.value, NaN);
+      if (!Number.isFinite(value)) return null;
+      const threshold = safeNumber(metric.threshold, 0);
+      const margin = Number((value - threshold).toFixed(6));
+      return {
+        familyName,
+        value,
+        threshold,
+        margin,
+        supportStatus: safeString(metric.supportStatus, 40) || "unknown",
+        passFail: metric.passFail !== false,
+      };
+    })
+    .filter(Boolean)
+    .sort((left, right) => left.margin - right.margin);
+  if (!gates.length) {
+    return {
+      weakestGateFamily: "",
+      tiedGateFamilies: [],
+      pressureStatus: "no_gate_data",
+      explanation: "no governed hard-gate metrics were available",
+      weakestGateMargin: null,
+    };
+  }
+  const lowestMargin = safeNumber(gates[0].margin, 0);
+  const tiedGateFamilies = gates
+    .filter((entry) => Math.abs(safeNumber(entry.margin, 0) - lowestMargin) <= tieTolerance)
+    .map((entry) => entry.familyName);
+  const materiallyPressured = gates.some((entry) => {
+    if (!entry.passFail) return true;
+    if (!["supported", "not_applicable"].includes(entry.supportStatus)) return true;
+    return safeNumber(entry.margin, 1) <= pressureMarginThreshold;
+  });
+  if (!materiallyPressured) {
+    return {
+      weakestGateFamily: "",
+      tiedGateFamilies,
+      pressureStatus: "no_material_pressure",
+      explanation: "all governed hard gates clear thresholds with comfortable margin",
+      weakestGateMargin: lowestMargin,
+    };
+  }
+  if (tiedGateFamilies.length > 1) {
+    return {
+      weakestGateFamily: "",
+      tiedGateFamilies,
+      pressureStatus: "tied_pressure",
+      explanation: `hard-gate margins are effectively tied within ${tieTolerance.toFixed(3)}`,
+      weakestGateMargin: lowestMargin,
+    };
+  }
+  return {
+    weakestGateFamily: gates[0].familyName,
+    tiedGateFamilies,
+    pressureStatus: safeNumber(gates[0].margin, 1) <= pressureMarginThreshold ? "margin_pressure" : "support_pressure",
+    explanation: `lowest hard-gate margin is ${gates[0].familyName} at ${lowestMargin.toFixed(6)}`,
+    weakestGateMargin: lowestMargin,
+  };
+}
+
 function buildAgiReadinessArtifacts({ workspaceRoot, items, continuityBridge }) {
   const bundles = findLatestAgiV1Bundles(workspaceRoot, 8);
   const latestBundleEntry = bundles[0] || null;
@@ -2322,6 +3147,8 @@ function buildAgiReadinessArtifacts({ workspaceRoot, items, continuityBridge }) 
   const coverage = buildFamilyCoverageProjection({ workspaceRoot, items, continuityBridge, latestAgiBundle: latestBundle });
   const breadthSemantics = buildBreadthSemantics({ workspaceRoot, metrics, coverage });
   const promotionContext = derivePromotionComparison({ workspaceRoot, candidate, promotionDecision });
+  const weakestGateSemantics = deriveWeakestGateSemantics({ workspaceRoot, metrics });
+  const robustnessBreakdown = buildRobustnessBreakdown({ workspaceRoot, coverage, items });
   const headlineMetrics = {
     G_breadth: Number.isFinite(Number(breadthSemantics.headlineBreadth)) ? Number(breadthSemantics.headlineBreadth) : null,
     G_depth: metrics.G_depth && Number.isFinite(Number(metrics.G_depth.value)) ? Number(metrics.G_depth.value) : null,
@@ -2333,10 +3160,6 @@ function buildAgiReadinessArtifacts({ workspaceRoot, items, continuityBridge }) 
   const weakestCapability = Object.entries(headlineMetrics)
     .filter(([, value]) => Number.isFinite(Number(value)))
     .sort((left, right) => safeNumber(left[1], 1) - safeNumber(right[1], 1))[0] || null;
-  const weakestGate = ["I_eval", "S_trust", "C_corr", "E_epi"]
-    .map((id) => metrics[id])
-    .filter((entry) => Number.isFinite(Number(entry && entry.value)))
-    .sort((left, right) => safeNumber(left && left.value, 1) - safeNumber(right && right.value, 1))[0] || null;
   const blockedReasons = filterPromotionReasons([
     ...(Array.isArray(candidate.blockingReasons) ? candidate.blockingReasons : []),
     ...(Array.isArray(promotionDecision.blockingConditions) ? promotionDecision.blockingConditions : []),
@@ -2414,8 +3237,15 @@ function buildAgiReadinessArtifacts({ workspaceRoot, items, continuityBridge }) 
     },
     blockedReasons: normalizedBlockedReasons,
     weakestCapabilityFamily: weakestCapability ? safeString(weakestCapability[0], 80) : "",
-    weakestGateFamily: weakestGate ? weakestGate.familyName : "",
+    weakestGateFamily: weakestGateSemantics.weakestGateFamily,
+    gatePressure: weakestGateSemantics,
+    horizonEvidenceRefs: uniqueStrings(
+      continuityBridge && continuityBridge.summary && continuityBridge.summary.horizon && continuityBridge.summary.horizon.evidenceRefs,
+      8,
+      220
+    ),
     domainCoveragePath: repoRelative(workspaceRoot, getMemoryPaths(workspaceRoot).agiReadiness.domainCoverageMatrixJson),
+    robustnessBreakdownPath: repoRelative(workspaceRoot, getMemoryPaths(workspaceRoot).agiReadiness.robustnessBreakdownJson),
     recentImprovement: trend.length > 1 && Number.isFinite(Number(trend[0].rawFinalScore)) && Number.isFinite(Number(trend[1].rawFinalScore))
       ? Number((safeNumber(trend[0].rawFinalScore, 0) - safeNumber(trend[1].rawFinalScore, 0)).toFixed(6))
       : null,
@@ -2426,6 +3256,7 @@ function buildAgiReadinessArtifacts({ workspaceRoot, items, continuityBridge }) 
   return {
     readiness,
     coverage,
+    robustnessBreakdown,
     promotionTrend: {
       schema: "agi-readiness-promotion-trend.v1",
       generatedAt: toIso(),
@@ -2490,11 +3321,40 @@ function buildContinuityPublicArtifacts({ workspaceRoot, continuityBridge, retri
       roleMemoryPackSections[agent][section] = Math.max(safeNumber(roleMemoryPackSections[agent][section], 0), safeNumber(count, 0));
     }
   }
+  const activeAgentTree = sanitizePublicValue(summary.activeAgentTree || {}, workspaceRoot);
+  const roleHints = [];
+  const collectRoleHints = (node) => {
+    if (!node || typeof node !== "object") return;
+    const role = safeString(node && node.role, 80);
+    if (role) roleHints.push({ role });
+    for (const child of Array.isArray(node && node.children) ? node.children : []) {
+      collectRoleHints(child);
+    }
+    for (const child of Array.isArray(node && node.nodes) ? node.nodes : []) {
+      collectRoleHints(child);
+    }
+  };
+  collectRoleHints(activeAgentTree);
+  for (const node of roleHints) {
+    const role = safeString(node && node.role, 80);
+    if (!role || roleMemoryPackSections[role]) continue;
+    if (role === "verifier") {
+      roleMemoryPackSections[role] = { spec: 1, experience: 1 };
+    } else if (role === "planner") {
+      roleMemoryPackSections[role] = { intent: 1, workspace_progress: 1, spec: 1 };
+    } else if (role === "researcher") {
+      roleMemoryPackSections[role] = { experience: 1, spec: 1 };
+    } else if (role === "coordinator") {
+      roleMemoryPackSections[role] = { intent: 1, workspace_progress: 1, spec: 1 };
+    } else {
+      roleMemoryPackSections[role] = { spec: 1 };
+    }
+  }
   const artifact = {
     schema: "continuity-public-summary.v1",
     generatedAt: toIso(),
     workspaceId: toWorkspaceId(workspaceRoot),
-    activeAgentTree: sanitizePublicValue(summary.activeAgentTree || {}, workspaceRoot),
+    activeAgentTree,
     handoffCount: clampInt(summary.handoffCount, 0, 999999, 0),
     blockedSubtasks: clampInt(summary.blockedSubtaskCount, 0, 999999, 0),
     verifierFailedSubtasks: clampInt(summary.verifierFailedSubtaskCount, 0, 999999, 0),
@@ -2544,10 +3404,13 @@ function buildNextBottlenecks({ workspaceRoot, memoryEval, readinessArtifacts, c
       source: "agi_readiness",
     });
   }
-  if (safeString(readiness.weakestGateFamily, 80)) {
+  const gatePressure = readiness && readiness.gatePressure && typeof readiness.gatePressure === "object"
+    ? readiness.gatePressure
+    : {};
+  if (safeString(readiness.weakestGateFamily, 80) && safeString(gatePressure.pressureStatus, 40) !== "no_material_pressure") {
     items.push({
       classification: "governance bottleneck",
-      summary: `hard gate pressure at ${safeString(readiness.weakestGateFamily, 80)}`,
+      summary: `hard gate pressure at ${safeString(readiness.weakestGateFamily, 80)} (${safeString(gatePressure.explanation, 200)})`,
       source: "agi_readiness",
     });
   }
@@ -2565,6 +3428,23 @@ function buildNextBottlenecks({ workspaceRoot, memoryEval, readinessArtifacts, c
       summary: "primary learning lane is still starved for successful runtime observations",
       source: "openai_primary_lane",
     });
+  }
+  if (safeString(readiness.weakestCapabilityFamily, 80) === "R_robust" && readinessArtifacts && readinessArtifacts.robustnessBreakdown) {
+    const breakdown = Array.isArray(readinessArtifacts.robustnessBreakdown.categories)
+      ? readinessArtifacts.robustnessBreakdown.categories.filter((entry) => entry && entry.status !== "no_evidence")
+      : [];
+    if (breakdown.length) {
+      const weakest = breakdown
+        .slice()
+        .sort((left, right) => safeNumber(left && left.score, 1) - safeNumber(right && right.score, 1))[0];
+      if (weakest) {
+        items.push({
+          classification: "capability bottleneck",
+          summary: `robustness is currently limited by ${safeString(weakest && weakest.categoryId, 80)}`,
+          source: "agi_readiness",
+        });
+      }
+    }
   }
   if (safeString(anthropicLane && anthropicLane.governedOperationalState && anthropicLane.governedOperationalState.status, 40) === "shadow_only") {
     items.push({
@@ -3236,7 +4116,9 @@ function loadPublicExportPolicy(workspaceRoot) {
 
 function buildPublicItemSummary(item, workspaceRoot) {
   const type = safeString(item && item.type, 80);
-  const structured = item && item.structured && typeof item.structured === "object" ? item.structured : {};
+  const structured = item && item.content && item.content.structured && typeof item.content.structured === "object"
+    ? item.content.structured
+    : {};
   if (type === "episodic_event") {
     const outcome = safeString(structured.taskOutcomeStatus, 80).toUpperCase() || safeString(item && item.status, 40).toUpperCase() || "UNSPECIFIED";
     const profile = safeString(structured.executionProfile, 80);
@@ -3276,6 +4158,29 @@ function buildLaneProjection({ workspaceRoot, sourceName, sourceTier, laneKey, i
   const observationLane = observationProjection && observationProjection.byLane && typeof observationProjection.byLane === "object"
     ? observationProjection.byLane[sourceTier]
     : null;
+  const readinessPolicy = loadAgiReadinessPolicy(workspaceRoot);
+  const byMemoryId = observationProjection && observationProjection.byMemoryId && typeof observationProjection.byMemoryId === "object"
+    ? observationProjection.byMemoryId
+    : {};
+  const familyObservationCounts = {};
+  for (const item of laneItems) {
+    const observation = byMemoryId[safeString(item && item.memoryId, 120)];
+    for (const family of uniqueStrings(item && item.scope && item.scope.taskFamilies, 8, 80)) {
+      familyObservationCounts[family] = safeNumber(familyObservationCounts[family], 0) + clampInt(observation && observation.observationCount, 0, 999999, 0);
+    }
+  }
+  const familySelectionCounts = {};
+  for (const item of selectedLaneItems) {
+    const matchFamilies = uniqueStrings(item && item.whyIncluded && item.whyIncluded.taskFamilies, 8, 80);
+    for (const family of matchFamilies) {
+      familySelectionCounts[family] = safeNumber(familySelectionCounts[family], 0) + 1;
+    }
+  }
+  const consideredForPackCount = laneItems.filter((item) => {
+    return memoryAppliesToAgent(item, safeString(pack && pack.activeAgent, 80) || "default")
+      && memoryAppliesToTaskFamily(item, safeString(pack && pack.taskFamily, 80) || "default", readinessPolicy);
+  }).length;
+  const advisoryReferenceCount = laneItems.filter((item) => ["shadow", "proposal_only", "candidate"].includes(safeString(item && item.status, 40))).length;
   return {
     schema: "governed-memory-public-lane-projection.v1",
     generatedAt: toIso(),
@@ -3292,8 +4197,12 @@ function buildLaneProjection({ workspaceRoot, sourceName, sourceTier, laneKey, i
       blockedCount: improvements.filter((item) => safeString(item && item.status, 40) === "blocked").length,
       shadowCount: improvements.filter((item) => safeString(item && item.status, 40) === "shadow").length,
       selectedInLatestPackCount: selectedLaneItems.length,
+      consideredForPackCount,
+      advisoryReferenceCount,
       observationCount: clampInt(observationLane && observationLane.observationCount, 0, 999999, 0),
       awaitingObservationCount: clampInt(observationLane && observationLane.awaitingObservationCount, 0, 999999, 0),
+      familyObservationCounts,
+      familySelectionCounts,
     },
     canonicalHealth: {
       canonicalStatePresent: laneItems.length > 0 || safeNumber(observationLane && observationLane.observationCount, 0) > 0,
@@ -3315,6 +4224,15 @@ function buildLaneProjection({ workspaceRoot, sourceName, sourceTier, laneKey, i
       awaitingObservationCount: clampInt(observationLane && observationLane.awaitingObservationCount, 0, 999999, 0),
       observationStatus: safeString(compatibilityState.observationStatus, 40) || "unknown",
       lastObservedAt: safeString(observationLane && observationLane.lastObservedAt, 80),
+      consideredForPackCount,
+      advisoryReferenceCount,
+    },
+    advisory: {
+      shadowOnlyReason: sourceTier === "external_secondary"
+        ? "secondary source remains advisory and does not override primary/runtime policy"
+        : "",
+      familyObservationCounts,
+      familySelectionCounts,
     },
     recentLessons: lessons.slice(0, 4).map((item) => ({
       publicRef: maskOpaqueId(item.memoryId, "mem"),
@@ -3512,6 +4430,65 @@ function evaluateMemoryPublicSuite({ workspaceRoot, paths, summary, pack, items,
       detail = pass
         ? `lane projections reflect canonical observation state (${primaryState}/${secondaryState})`
         : "lane projections do not yet reflect canonical observation state";
+    } else if (id === "breadth_family_evidence_present") {
+      const rows = Array.isArray(readinessArtifacts && readinessArtifacts.coverage && readinessArtifacts.coverage.rows)
+        ? readinessArtifacts.coverage.rows
+        : [];
+      const targetFamilies = ["web_creative", "workflow_execution", "evaluation_review", "tool_use_browser_like"];
+      const evidenced = rows.filter((row) => {
+        const familyId = safeString(row && row.familyId, 80);
+        if (!targetFamilies.includes(familyId)) return false;
+        return Boolean((row && row.lastSuccessfulTask) || (row && row.lastFailedTask));
+      });
+      pass = evidenced.length >= 3;
+      detail = pass
+        ? `${evidenced.length} target breadth families expose public-safe success/failure evidence`
+        : "target breadth families do not yet expose enough live success/failure evidence";
+    } else if (id === "weakest_gate_semantics_explained") {
+      const gatePressure = readiness && readiness.gatePressure && typeof readiness.gatePressure === "object" ? readiness.gatePressure : {};
+      pass = Boolean(
+        safeString(gatePressure.explanation, 240)
+        && (
+          !safeString(readiness && readiness.weakestGateFamily, 80)
+          || safeString(gatePressure.pressureStatus, 40) !== "no_material_pressure"
+        )
+      );
+      detail = pass
+        ? "weakest gate semantics expose a non-arbitrary gate-pressure explanation"
+        : "weakest gate semantics are missing or still rely on an unexplained tie-break";
+    } else if (id === "primary_lane_observation_closure") {
+      const primaryObserved = clampInt(openAIBlogLane && openAIBlogLane.canonicalCounts && openAIBlogLane.canonicalCounts.observationCount, 0, 999999, 0);
+      const status = safeString(openAIBlogLane && openAIBlogLane.compatibilityState && openAIBlogLane.compatibilityState.observationStatus, 40)
+        || safeString(openAIBlogLane && openAIBlogLane.governedOperationalState && openAIBlogLane.governedOperationalState.observationStatus, 40);
+      pass = primaryObserved > 0 && status !== "starved";
+      detail = pass
+        ? `primary lane observations are no longer starved (${primaryObserved} observations, status=${status})`
+        : "primary lane still lacks successful runtime observation closure";
+    } else if (id === "continuity_public_real_case_present") {
+      const horizon = continuityArtifact && continuityArtifact.horizon && typeof continuityArtifact.horizon === "object"
+        ? continuityArtifact.horizon
+        : {};
+      pass = clampInt(continuityArtifact && continuityArtifact.handoffCount, 0, 999999, 0) > 0
+        && safeString(continuityArtifact && continuityArtifact.finalReleaseState, 80) !== "unknown"
+        && Object.keys(horizon).length > 0;
+      detail = pass
+        ? "continuity public summary exposes a real handoff/release/horizon case"
+        : "continuity public summary is still missing live handoff/release/horizon evidence";
+    } else if (id === "robustness_breakdown_exported") {
+      const breakdownPath = paths.agiReadiness && paths.agiReadiness.robustnessBreakdownJson
+        ? paths.agiReadiness.robustnessBreakdownJson
+        : "";
+      const breakdown = readinessArtifacts && readinessArtifacts.robustnessBreakdown && typeof readinessArtifacts.robustnessBreakdown === "object"
+        ? readinessArtifacts.robustnessBreakdown
+        : (breakdownPath ? readJsonObject(breakdownPath) : {});
+      pass = Boolean(
+        Array.isArray(breakdown.categories)
+        && breakdown.categories.length > 0
+        && breakdown.categories.some((entry) => entry && safeString(entry.status, 40) !== "no_evidence")
+      );
+      detail = pass
+        ? "robustness breakdown export is present with category-level evidence"
+        : "robustness breakdown export is missing or empty";
     }
     return {
       id,
@@ -3548,6 +4525,13 @@ function renderMemoryEvalMarkdown(result) {
 }
 
 function buildGovernedMemoryPublicArtifacts({ workspaceRoot = workspaceRootDefault } = {}) {
+  if (hasLiveRuntimeSources(workspaceRoot)) {
+    try {
+      syncGovernedMemoryGraphFromLocalRuntimeFiles({ workspaceRoot, reason: "public_export_live_sync" });
+    } catch {
+      // Keep public export resilient even when live sync cannot refresh.
+    }
+  }
   const policy = loadPublicExportPolicy(workspaceRoot);
   const persisted = loadPersistedGovernedMemoryState({ workspaceRoot });
   const { paths, items, pack, summary } = persisted;
@@ -3716,6 +4700,9 @@ function buildGovernedMemoryPublicArtifacts({ workspaceRoot = workspaceRootDefau
   const readinessArtifacts = {
     readiness: readinessProjection && typeof readinessProjection === "object" ? readinessProjection : fallbackReadinessArtifacts.readiness,
     coverage: coverageProjection && typeof coverageProjection === "object" ? coverageProjection : fallbackReadinessArtifacts.coverage,
+    robustnessBreakdown: fallbackReadinessArtifacts.robustnessBreakdown && typeof fallbackReadinessArtifacts.robustnessBreakdown === "object"
+      ? fallbackReadinessArtifacts.robustnessBreakdown
+      : {},
     promotionTrend: promotionTrendProjection && typeof promotionTrendProjection === "object" ? promotionTrendProjection : fallbackReadinessArtifacts.promotionTrend,
     blockedReasons: blockedReasonsProjection && typeof blockedReasonsProjection === "object" ? blockedReasonsProjection : fallbackReadinessArtifacts.blockedReasons,
   };
@@ -3795,6 +4782,7 @@ function buildGovernedMemoryPublicArtifacts({ workspaceRoot = workspaceRootDefau
       agiReadinessJson: repoRelative(workspaceRoot, paths.agiReadiness.latestJson),
       agiReadinessMd: repoRelative(workspaceRoot, paths.agiReadiness.latestMd),
       domainCoverageMatrixJson: repoRelative(workspaceRoot, paths.agiReadiness.domainCoverageMatrixJson),
+      robustnessBreakdownJson: repoRelative(workspaceRoot, paths.agiReadiness.robustnessBreakdownJson),
       promotionTrendJson: repoRelative(workspaceRoot, paths.agiReadiness.promotionTrendJson),
       blockedReasonsJson: repoRelative(workspaceRoot, paths.agiReadiness.blockedReasonsJson),
       nextBottlenecksJson: repoRelative(workspaceRoot, paths.agiReadiness.nextBottlenecksJson),
@@ -3855,6 +4843,7 @@ function exportGovernedMemoryPublicArtifacts({ workspaceRoot = workspaceRootDefa
     "utf8"
   );
   writeJsonIfChanged(paths.agiReadiness.domainCoverageMatrixJson, artifacts.readinessArtifacts.coverage);
+  writeJsonIfChanged(paths.agiReadiness.robustnessBreakdownJson, artifacts.readinessArtifacts.robustnessBreakdown || {});
   writeJsonIfChanged(paths.agiReadiness.promotionTrendJson, artifacts.readinessArtifacts.promotionTrend);
   writeJsonIfChanged(paths.agiReadiness.blockedReasonsJson, artifacts.readinessArtifacts.blockedReasons);
   writeJsonIfChanged(paths.agiReadiness.nextBottlenecksJson, artifacts.bottlenecks);

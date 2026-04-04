@@ -69,6 +69,26 @@
     {
       "id": "lane_projection_real_observations_reflected",
       "title": "Learning lane projections reflect canonical runtime observations"
+    },
+    {
+      "id": "breadth_family_evidence_present",
+      "title": "Repo-wide breadth coverage exposes live family evidence for supported task families"
+    },
+    {
+      "id": "weakest_gate_semantics_explained",
+      "title": "Weakest gate semantics are explained with margin or tie-aware pressure rules"
+    },
+    {
+      "id": "primary_lane_observation_closure",
+      "title": "Primary learning lane no longer reports unexplained observation starvation"
+    },
+    {
+      "id": "continuity_public_real_case_present",
+      "title": "Continuity public summary exposes non-empty live handoff, verifier, release, and horizon evidence"
+    },
+    {
+      "id": "robustness_breakdown_exported",
+      "title": "Readiness exports a public-safe robustness breakdown from live evidence"
     }
   ]
 }

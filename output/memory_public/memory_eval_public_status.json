@@ -1,6 +1,6 @@
 {
   "schema": "memory-eval-public-status.v1",
-  "generatedAt": "2026-04-04T13:14:33.158Z",
+  "generatedAt": "2026-04-04T17:23:27.324Z",
   "suiteSchema": "memory-eval-suite.v1",
   "suiteVersion": "2026-04-04.r1",
   "status": "PASS",
@@ -46,7 +46,7 @@
       "id": "bounded_memory_pack_reuses_canonical_memory",
       "title": "Latest bounded memory pack reuses previously persisted canonical memory",
       "status": "PASS",
-      "detail": "16 selected pack item(s) were reused from the canonical store"
+      "detail": "13 selected pack item(s) were reused from the canonical store"
     },
     {
       "id": "task_family_isolation_respected",
@@ -106,7 +106,37 @@
       "id": "lane_projection_real_observations_reflected",
       "title": "Learning lane projections reflect canonical runtime observations",
       "status": "PASS",
-      "detail": "lane projections reflect canonical observation state (starved/disabled)"
+      "detail": "lane projections reflect canonical observation state (observed/disabled)"
+    },
+    {
+      "id": "breadth_family_evidence_present",
+      "title": "Repo-wide breadth coverage exposes live family evidence for supported task families",
+      "status": "PASS",
+      "detail": "4 target breadth families expose public-safe success/failure evidence"
+    },
+    {
+      "id": "weakest_gate_semantics_explained",
+      "title": "Weakest gate semantics are explained with margin or tie-aware pressure rules",
+      "status": "PASS",
+      "detail": "weakest gate semantics expose a non-arbitrary gate-pressure explanation"
+    },
+    {
+      "id": "primary_lane_observation_closure",
+      "title": "Primary learning lane no longer reports unexplained observation starvation",
+      "status": "PASS",
+      "detail": "primary lane observations are no longer starved (132 observations, status=observed)"
+    },
+    {
+      "id": "continuity_public_real_case_present",
+      "title": "Continuity public summary exposes non-empty live handoff, verifier, release, and horizon evidence",
+      "status": "PASS",
+      "detail": "continuity public summary exposes a real handoff/release/horizon case"
+    },
+    {
+      "id": "robustness_breakdown_exported",
+      "title": "Readiness exports a public-safe robustness breakdown from live evidence",
+      "status": "PASS",
+      "detail": "robustness breakdown export is present with category-level evidence"
     }
   ]
 }

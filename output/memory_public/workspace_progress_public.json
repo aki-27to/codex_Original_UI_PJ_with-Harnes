@@ -1,32 +1,59 @@
 {
   "schema": "governed-memory-workspace-progress-public.v1",
-  "generatedAt": "2026-04-04T13:14:33.151Z",
+  "generatedAt": "2026-04-04T17:23:27.320Z",
   "workspaceId": "5c839dfeef8b555f",
-  "updatedAt": "2026-04-04T03:18:47.479Z",
-  "currentObjective": "completed default",
+  "updatedAt": "2026-04-04T17:20:49.818Z",
+  "currentObjective": "verifier failure should force replan and recovery",
   "currentMilestones": [
+    "completed: Simple planning task falls back to single agent path",
+    "completed: verifier handoff for Research baseline through planner/researcher/verifier",
+    "completed: researcher handoff for Research baseline through planner/researcher/verifier",
+    "completed: planner handoff for Research baseline through planner/researcher/verifier",
     "latest turn status: completed",
     "family gate: not applicable"
   ],
-  "knownBlockers": [],
-  "knownRisks": [
-    "parent dispatch guard block"
+  "knownBlockers": [
+    "operator chose to abandon the task",
+    "pending child integration: phase4 denied 1774995929975 executor 1774995929990",
+    "simulated child verifier failure",
+    "pending child integration: phase4 denied 1774995861796 executor 1774995861808"
   ],
-  "recentTouchedPaths": [],
+  "knownRisks": [
+    "return to intake required",
+    "completed default"
+  ],
+  "recentTouchedPaths": [
+    "logs/bundles/signoff/signoff-2026-03-09T12-31-59-842Z-24dd95/raw/scripts/config/signoff_sample_target.txt",
+    "docs/EVIDENCE_CONTRACT.md",
+    "docs/CURRENT_ARCHITECTURE.md",
+    "docs/ARCHITECTURE_CHANGELOG.md",
+    "<external>/app.js"
+  ],
   "nextRecommendedActions": [],
   "lastSuccessfulValidation": [
     {
-      "reference": "turn_3003496d70",
-      "taskOutcomeStatus": "COMPLETED",
-      "completedAt": "2026-04-04T03:18:47.138Z"
+      "reference": "",
+      "taskOutcomeStatus": "",
+      "completedAt": "2026-04-02T10:55:54.561Z"
+    },
+    {
+      "reference": "",
+      "taskOutcomeStatus": "",
+      "completedAt": "2026-04-02T10:55:54.580Z"
     }
   ],
   "lastFailedValidation": [
     {
-      "reference": "turn_d16bb2d3c1",
-      "taskOutcomeStatus": "FAILED_VALIDATION",
-      "reason": "parent dispatch guard block",
-      "completedAt": "2026-04-04T03:16:21.795Z"
+      "reference": "",
+      "taskOutcomeStatus": "",
+      "reason": "verifier failed",
+      "completedAt": "2026-03-31T22:26:01.215Z"
+    },
+    {
+      "reference": "",
+      "taskOutcomeStatus": "",
+      "reason": "verifier failed",
+      "completedAt": "2026-03-31T22:25:42.892Z"
     }
   ]
 }

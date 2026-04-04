@@ -1,7 +1,7 @@
 {
   "schema": "anthropic-engineering-learning-proposal.v1",
   "proposalId": "anthropic-engineering-harness-design-long-running-apps",
-  "createdAt": "2026-04-04T11:29:16.110Z",
+  "createdAt": "2026-04-04T15:53:50.523Z",
   "articleId": "harness-design-long-running-apps",
   "title": "Harness design for long-running application development",
   "sourceUrl": "https://www.anthropic.com/engineering/harness-design-long-running-apps",

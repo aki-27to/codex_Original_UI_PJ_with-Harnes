@@ -45,5 +45,37 @@
     "selfSnapshotMode": "self_snapshot",
     "distinctComparisonMode": "distinct_comparison",
     "coldStartMode": "cold_start"
+  },
+  "gatePressureSemantics": {
+    "tieTolerance": 0.005,
+    "pressureMarginThreshold": 0.03,
+    "explainWithMargins": true
+  },
+  "robustnessCategories": [
+    {
+      "id": "ambiguous_instruction",
+      "label": "Ambiguous instruction handling"
+    },
+    {
+      "id": "adversarial_conflicting_instruction",
+      "label": "Adversarial/conflicting instruction handling"
+    },
+    {
+      "id": "missing_context",
+      "label": "Missing-context recovery"
+    },
+    {
+      "id": "degraded_tool_outputs",
+      "label": "Degraded tool output handling"
+    },
+    {
+      "id": "browser_tool_flakiness",
+      "label": "Browser/tool flakiness handling"
+    }
+  ],
+  "robustnessScoreDefaults": {
+    "success": 1,
+    "failure": 0.25,
+    "noEvidence": null
   }
 }

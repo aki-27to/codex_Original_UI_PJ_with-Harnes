@@ -127,8 +127,11 @@ function main() {
   assert.strictEqual(readiness.breadthSemantics.mode, "repo_coverage_breadth", "agi readiness latest json must expose repo-wide breadth semantics");
   assert.strictEqual(typeof readiness.evaluatedBreadth, "number", "agi readiness latest json must expose evaluated breadth");
   assert.strictEqual(typeof readiness.supportedCoverageBreadth, "number", "agi readiness latest json must expose repo-wide supported coverage breadth");
-  assert(readiness.supportedCoverageBreadth < 1, "coverage failures must prevent repo-wide supported coverage breadth from appearing as 1.0");
-  assert(Array.isArray(readiness.failedFamilies) && readiness.failedFamilies.length >= 1, "agi readiness latest json must expose failed coverage families");
+  assert(readiness.supportedCoverageBreadth >= 0 && readiness.supportedCoverageBreadth <= 1, "repo-wide supported coverage breadth must be normalized");
+  assert(Array.isArray(readiness.failedFamilies), "agi readiness latest json must expose failed coverage families");
+  if (readiness.failedFamilies.length) {
+    assert(readiness.supportedCoverageBreadth < 1, "coverage failures must prevent repo-wide supported coverage breadth from appearing as 1.0");
+  }
   assert.strictEqual(readiness.promotionComparisonMode, "self_snapshot", "same incumbent/challenger readiness must be marked as self_snapshot");
   assert.strictEqual(readiness.distinctComparison, false, "same incumbent/challenger readiness must not be marked as distinctComparison");
   assert.strictEqual(readiness.promotionInterpretation, "not_a_distinct_incumbent_comparison", "self snapshot readiness must explicitly state non-distinct comparison semantics");
@@ -136,9 +139,14 @@ function main() {
   assert(Array.isArray(readiness.consistencyChecks) && readiness.consistencyChecks.every((entry) => entry.status === "PASS"), "readiness latest json must expose passing consistency checks");
   const coverage = JSON.parse(fs.readFileSync(path.join(readinessRoot, "domain_coverage_matrix.json"), "utf8"));
   assert(Array.isArray(coverage.rows) && coverage.rows.some((row) => row.familyId === "deterministic_code"), "domain coverage matrix must expose deterministic_code coverage");
-  assert(coverage.rows.some((row) => row.breadthFloorStatus === "fail"), "domain coverage matrix fixture must include at least one failed family");
+  const targetFamilies = ["web_creative", "workflow_execution", "evaluation_review", "tool_use_browser_like"];
+  const evidencedFamilies = coverage.rows.filter((row) => targetFamilies.includes(row.familyId) && (row.lastSuccessfulTask || row.lastFailedTask));
+  assert(evidencedFamilies.length >= 3, "domain coverage matrix must expose public-safe evidence for at least three target breadth families");
   const blockedReasons = JSON.parse(fs.readFileSync(path.join(readinessRoot, "blocked_reasons.json"), "utf8"));
-  assert(Array.isArray(blockedReasons.reasons) && blockedReasons.reasons.some((reason) => reason.includes("breadth coverage incomplete across supported families")), "blocked reasons must reflect coverage failures");
+  assert(Array.isArray(blockedReasons.reasons), "blocked reasons must remain structured");
+  if (readiness.failedFamilies.length) {
+    assert(blockedReasons.reasons.some((reason) => reason.includes("breadth coverage incomplete across supported families")), "blocked reasons must reflect coverage failures when families still fail");
+  }
   assert(!blockedReasons.reasons.includes("challenger_strictly_beats_incumbent_under_fail_closed_rule"), "self snapshot blocked reasons must not surface distinct-comparison promotion language");
   const promotionTrend = JSON.parse(fs.readFileSync(path.join(readinessRoot, "promotion_trend.json"), "utf8"));
   assert(Array.isArray(promotionTrend.entries) && promotionTrend.entries.length >= 1, "promotion trend must expose at least one entry");
@@ -147,10 +155,16 @@ function main() {
   assert(promotionTrend.entries.every((entry) => entry.comparisonMode !== "distinct_comparison" || entry.blockedReasons.includes("challenger_strictly_beats_incumbent_under_fail_closed_rule") || entry.promote !== null), "distinct comparison entries must preserve distinct promotion evidence");
   const bottlenecks = JSON.parse(fs.readFileSync(path.join(readinessRoot, "next_bottlenecks.json"), "utf8"));
   assert(Array.isArray(bottlenecks.items) && bottlenecks.items.length >= 1, "next bottlenecks must expose at least one bottleneck");
-  assert(bottlenecks.items.some((entry) => String(entry.summary).includes("breadth coverage incomplete across supported families")), "next bottlenecks must reflect coverage failures");
+  if (readiness.failedFamilies.length) {
+    assert(bottlenecks.items.some((entry) => String(entry.summary).includes("breadth coverage incomplete across supported families")), "next bottlenecks must reflect coverage failures");
+  }
   const continuity = JSON.parse(fs.readFileSync(path.join(continuityRoot, "latest_continuity.json"), "utf8"));
   assert(Number.isFinite(Number(continuity.handoffCount)) && continuity.handoffCount >= 1, "continuity public summary must expose handoff count");
   assert(continuity.roleMemoryPackSections && typeof continuity.roleMemoryPackSections === "object", "continuity public summary must expose role memory pack sections");
+  assert(Object.prototype.hasOwnProperty.call(continuity.roleMemoryPackSections, "reviewer"), "continuity public summary must expose reviewer memory pack sections");
+  assert(Object.prototype.hasOwnProperty.call(continuity.roleMemoryPackSections, "tester"), "continuity public summary must expose tester memory pack sections");
+  const robustness = JSON.parse(fs.readFileSync(path.join(readinessRoot, "robustness_breakdown.json"), "utf8"));
+  assert(Array.isArray(robustness.categories) && robustness.categories.some((entry) => entry.status === "observed"), "robustness breakdown must expose observed live evidence");
   assert(exported.exportManifest && exported.exportManifest.outputs, "export manifest must be returned");
   assert.strictEqual(exported.exportManifest.canonicalReuseVerified, true, "export manifest must record canonical reuse verification");
 

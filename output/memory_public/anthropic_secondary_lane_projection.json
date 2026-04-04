@@ -1,6 +1,6 @@
 {
   "schema": "governed-memory-public-lane-projection.v1",
-  "generatedAt": "2026-04-04T13:14:33.154Z",
+  "generatedAt": "2026-04-04T17:23:27.321Z",
   "laneKey": "anthropic_secondary",
   "sourceName": "Anthropic Engineering",
   "sourceTier": "external_secondary",
@@ -14,8 +14,14 @@
     "blockedCount": 0,
     "shadowCount": 0,
     "selectedInLatestPackCount": 0,
-    "observationCount": 0,
-    "awaitingObservationCount": 4
+    "consideredForPackCount": 4,
+    "advisoryReferenceCount": 4,
+    "observationCount": 2456,
+    "awaitingObservationCount": 0,
+    "familyObservationCounts": {
+      "default": 2456
+    },
+    "familySelectionCounts": {}
   },
   "canonicalHealth": {
     "canonicalStatePresent": true,
@@ -27,35 +33,56 @@
     "status": "shadow_only",
     "promotedLessonCount": 0,
     "selectedInLatestPackCount": 0,
-    "observationCount": 0,
-    "awaitingObservationCount": 4,
+    "observationCount": 2456,
+    "awaitingObservationCount": 0,
     "observationStatus": "disabled",
-    "lastObservedAt": ""
+    "lastObservedAt": "2026-04-04T17:20:49.821Z",
+    "consideredForPackCount": 4,
+    "advisoryReferenceCount": 4
+  },
+  "advisory": {
+    "shadowOnlyReason": "secondary source remains advisory and does not override primary/runtime policy",
+    "familyObservationCounts": {
+      "default": 2456
+    },
+    "familySelectionCounts": {}
   },
   "recentLessons": [
     {
-      "publicRef": "mem_3742c05faf",
+      "publicRef": "mem_474f9c5bf2",
       "status": "shadow",
       "summary": "Quantifying infrastructure noise in agentic coding evals",
-      "topics": []
+      "topics": [
+        "secondary",
+        "portable-principles"
+      ]
     },
     {
-      "publicRef": "mem_b9d97d41ed",
+      "publicRef": "mem_412e5e6452",
       "status": "shadow",
       "summary": "Harness design for long-running application development",
-      "topics": []
+      "topics": [
+        "secondary",
+        "portable-principles"
+      ]
     },
     {
-      "publicRef": "mem_cb4f3f02bf",
+      "publicRef": "mem_ab7aec13ac",
       "status": "shadow",
       "summary": "Designing AI resistant technical evaluations",
-      "topics": []
+      "topics": [
+        "secondary",
+        "portable-principles"
+      ]
     },
     {
-      "publicRef": "mem_fdeacdb9b9",
+      "publicRef": "mem_df486039e8",
       "status": "shadow",
       "summary": "Demystifying evals for AI agents",
-      "topics": []
+      "topics": [
+        "secondary",
+        "portable-principles"
+      ]
     }
   ],
   "compatibilityState": {
@@ -63,12 +90,12 @@
     "gateReason": "no_auto_apply_candidates",
     "appliedDecision": "none",
     "observationStatus": "disabled",
-    "observationCount": 0,
+    "observationCount": 2456,
     "proposalOnlyCount": 4,
     "blockedCount": 0,
     "awaitingObservationCount": 0,
     "policyDisabledCandidateCount": 1,
-    "lastObservedAt": "",
+    "lastObservedAt": "2026-04-04T17:20:49.821Z",
     "nextPriority": {
       "title": "Effective harnesses for long-running agents",
       "changeType": "frontend_quality_note",

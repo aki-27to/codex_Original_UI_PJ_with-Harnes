@@ -1,24 +1,39 @@
 {
   "schema": "governed-memory-latest-pack-public.v1",
-  "generatedAt": "2026-04-04T13:14:33.152Z",
+  "generatedAt": "2026-04-04T17:23:27.320Z",
   "workspaceId": "5c839dfeef8b555f",
-  "packId": "pack_e98f182726",
+  "packId": "b0533b9c82abc08c8ea4",
   "latestPack": {
-    "generatedAt": "2026-04-04T03:18:47.479Z",
-    "compiledAt": "2026-04-04T03:18:47.479Z",
-    "activeAgent": "intake",
-    "taskFamily": "deterministic_code",
-    "selectedCount": 16,
-    "highConfidenceCount": 2,
-    "reusedSelectedCount": 16,
+    "generatedAt": "2026-04-04T17:23:26.345Z",
+    "compiledAt": "2026-04-04T17:23:26.345Z",
+    "activeAgent": "default",
+    "taskFamily": "web-ui-interactive",
+    "selectedCount": 13,
+    "highConfidenceCount": 3,
+    "reusedSelectedCount": 13,
     "explicitTaskFamilyMismatchCount": 0,
     "sectionCounts": {
-      "intent": 1,
       "workspace_progress": 1,
-      "spec": 7,
-      "experience": 7
+      "intent": 1,
+      "spec": 4,
+      "experience": 4,
+      "semantic": 3
     },
     "selectedItems": [
+      {
+        "publicRef": "mem_dd9c0f3a28",
+        "type": "workspace_progress",
+        "status": "promoted",
+        "score": 0.8725,
+        "scoreBand": "high",
+        "sourceTier": "runtime",
+        "authorityTier": 3,
+        "scopeWorkspace": "5c839dfeef8b555f",
+        "taskFamilies": [
+          "web-ui-interactive"
+        ],
+        "summary": "Durable workspace-scoped progress state compiled from the latest turn, evidence traceability, and execution history."
+      },
       {
         "publicRef": "mem_9c7f4cba43",
         "type": "requirement_ref",
@@ -29,30 +44,16 @@
         "authorityTier": 1,
         "scopeWorkspace": "5c839dfeef8b555f",
         "taskFamilies": [
-          "deterministic_code"
+          "web-ui-interactive"
         ],
         "summary": "Active intent-first requirement state for the current workspace and turn."
-      },
-      {
-        "publicRef": "mem_dd9c0f3a28",
-        "type": "workspace_progress",
-        "status": "promoted",
-        "score": 0.735,
-        "scoreBand": "high",
-        "sourceTier": "runtime",
-        "authorityTier": 3,
-        "scopeWorkspace": "5c839dfeef8b555f",
-        "taskFamilies": [
-          "deterministic_code"
-        ],
-        "summary": "Durable workspace-scoped progress state compiled from the latest turn, evidence traceability, and execution history."
       },
       {
         "publicRef": "mem_52f4ed9143",
         "type": "constitution_ref",
         "status": "promoted",
-        "score": 0.6775,
-        "scoreBand": "selected",
+        "score": 0.6975,
+        "scoreBand": "high",
         "sourceTier": "repo",
         "authorityTier": 0,
         "scopeWorkspace": "5c839dfeef8b555f",
@@ -65,7 +66,7 @@
         "publicRef": "mem_e65f4ce9a0",
         "type": "constitution_ref",
         "status": "promoted",
-        "score": 0.6575,
+        "score": 0.6555,
         "scoreBand": "selected",
         "sourceTier": "repo",
         "authorityTier": 0,
@@ -77,7 +78,7 @@
         "publicRef": "mem_ad36640985",
         "type": "constitution_ref",
         "status": "promoted",
-        "score": 0.6575,
+        "score": 0.6555,
         "scoreBand": "selected",
         "sourceTier": "repo",
         "authorityTier": 0,
@@ -89,7 +90,7 @@
         "publicRef": "mem_b5d199f8aa",
         "type": "constitution_ref",
         "status": "promoted",
-        "score": 0.6575,
+        "score": 0.6555,
         "scoreBand": "selected",
         "sourceTier": "repo",
         "authorityTier": 0,
@@ -98,71 +99,7 @@
         "summary": "context-memory-policy"
       },
       {
-        "publicRef": "mem_03ac8147c1",
-        "type": "constitution_ref",
-        "status": "promoted",
-        "score": 0.6575,
-        "scoreBand": "selected",
-        "sourceTier": "repo",
-        "authorityTier": 0,
-        "scopeWorkspace": "5c839dfeef8b555f",
-        "taskFamilies": [],
-        "summary": "evidence-contract"
-      },
-      {
-        "publicRef": "mem_21e2745933",
-        "type": "constitution_ref",
-        "status": "promoted",
-        "score": 0.6575,
-        "scoreBand": "selected",
-        "sourceTier": "repo",
-        "authorityTier": 0,
-        "scopeWorkspace": "5c839dfeef8b555f",
-        "taskFamilies": [],
-        "summary": "design-acceptance-contract"
-      },
-      {
-        "publicRef": "mem_91fc182198",
-        "type": "constitution_ref",
-        "status": "promoted",
-        "score": 0.6575,
-        "scoreBand": "selected",
-        "sourceTier": "repo",
-        "authorityTier": 0,
-        "scopeWorkspace": "5c839dfeef8b555f",
-        "taskFamilies": [],
-        "summary": "phase-foundation-freeze"
-      },
-      {
-        "publicRef": "mem_46618c22f3",
-        "type": "episodic_event",
-        "status": "captured",
-        "score": 0.6408,
-        "scoreBand": "selected",
-        "sourceTier": "runtime",
-        "authorityTier": 4,
-        "scopeWorkspace": "5c839dfeef8b555f",
-        "taskFamilies": [
-          "deterministic_code"
-        ],
-        "summary": "runtime episode finished as CAPTURED."
-      },
-      {
-        "publicRef": "mem_06ab676347",
-        "type": "episodic_event",
-        "status": "captured",
-        "score": 0.6408,
-        "scoreBand": "selected",
-        "sourceTier": "runtime",
-        "authorityTier": 4,
-        "scopeWorkspace": "5c839dfeef8b555f",
-        "taskFamilies": [
-          "deterministic_code"
-        ],
-        "summary": "runtime episode finished as CAPTURED."
-      },
-      {
-        "publicRef": "mem_1f6c4fc7af",
+        "publicRef": "mem_99637365aa",
         "type": "episodic_event",
         "status": "captured",
         "score": 0.6008,
@@ -171,9 +108,95 @@
         "authorityTier": 4,
         "scopeWorkspace": "5c839dfeef8b555f",
         "taskFamilies": [
-          "deterministic_code"
+          "web-ui-interactive",
+          "web_ui",
+          "web_creative",
+          "tool_use_browser_like",
+          "workflow_execution"
         ],
         "summary": "runtime episode finished as CAPTURED."
+      },
+      {
+        "publicRef": "mem_0f1d9d64cd",
+        "type": "episodic_event",
+        "status": "captured",
+        "score": 0.6008,
+        "scoreBand": "selected",
+        "sourceTier": "runtime",
+        "authorityTier": 4,
+        "scopeWorkspace": "5c839dfeef8b555f",
+        "taskFamilies": [
+          "web-ui-interactive",
+          "web_ui",
+          "web_creative",
+          "tool_use_browser_like",
+          "workflow_execution"
+        ],
+        "summary": "runtime episode finished as CAPTURED."
+      },
+      {
+        "publicRef": "mem_d5cef08727",
+        "type": "episodic_event",
+        "status": "captured",
+        "score": 0.6008,
+        "scoreBand": "selected",
+        "sourceTier": "runtime",
+        "authorityTier": 4,
+        "scopeWorkspace": "5c839dfeef8b555f",
+        "taskFamilies": [
+          "web-ui-interactive",
+          "web_ui",
+          "web_creative",
+          "tool_use_browser_like",
+          "workflow_execution"
+        ],
+        "summary": "runtime episode finished as CAPTURED."
+      },
+      {
+        "publicRef": "mem_77170c0578",
+        "type": "episodic_event",
+        "status": "captured",
+        "score": 0.6008,
+        "scoreBand": "selected",
+        "sourceTier": "runtime",
+        "authorityTier": 4,
+        "scopeWorkspace": "5c839dfeef8b555f",
+        "taskFamilies": [
+          "web-ui-interactive",
+          "web_ui",
+          "web_creative",
+          "tool_use_browser_like",
+          "workflow_execution"
+        ],
+        "summary": "runtime episode finished as CAPTURED."
+      },
+      {
+        "publicRef": "mem_38e064a6a2",
+        "type": "failure_pattern",
+        "status": "promoted",
+        "score": 0.5967,
+        "scoreBand": "selected",
+        "sourceTier": "runtime",
+        "authorityTier": 5,
+        "scopeWorkspace": "5c839dfeef8b555f",
+        "taskFamilies": [
+          "default"
+        ],
+        "summary": "parent dispatch guard block"
+      },
+      {
+        "publicRef": "mem_1ce008bc40",
+        "type": "failure_pattern",
+        "status": "promoted",
+        "score": 0.5967,
+        "scoreBand": "selected",
+        "sourceTier": "runtime",
+        "authorityTier": 5,
+        "scopeWorkspace": "5c839dfeef8b555f",
+        "taskFamilies": [
+          "default"
+        ],
+        "summary": "missing required evidence"
       }
     ]
   }

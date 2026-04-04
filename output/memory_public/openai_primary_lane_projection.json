@@ -1,6 +1,6 @@
 {
   "schema": "governed-memory-public-lane-projection.v1",
-  "generatedAt": "2026-04-04T13:14:33.153Z",
+  "generatedAt": "2026-04-04T17:23:27.320Z",
   "laneKey": "openai_primary",
   "sourceName": "OpenAI Developers Blog",
   "sourceTier": "external_primary",
@@ -12,69 +12,111 @@
     "improvementCandidateCount": 1,
     "proposalOnlyCount": 0,
     "blockedCount": 0,
-    "shadowCount": 1,
+    "shadowCount": 0,
     "selectedInLatestPackCount": 0,
-    "observationCount": 0,
-    "awaitingObservationCount": 5
+    "consideredForPackCount": 0,
+    "advisoryReferenceCount": 1,
+    "observationCount": 132,
+    "awaitingObservationCount": 0,
+    "familyObservationCounts": {
+      "web_creative": 132
+    },
+    "familySelectionCounts": {}
   },
   "canonicalHealth": {
     "canonicalStatePresent": true,
     "selectedInLatestPackCount": 0,
-    "promotedOrReinforcedCount": 4,
+    "promotedOrReinforcedCount": 10,
     "shadowOrProposalCount": 1
   },
   "governedOperationalState": {
     "status": "active",
     "promotedLessonCount": 4,
     "selectedInLatestPackCount": 0,
-    "observationCount": 0,
-    "awaitingObservationCount": 5,
-    "observationStatus": "starved",
-    "lastObservedAt": ""
+    "observationCount": 132,
+    "awaitingObservationCount": 0,
+    "observationStatus": "observed",
+    "lastObservedAt": "2026-04-04T17:23:26.382Z",
+    "consideredForPackCount": 0,
+    "advisoryReferenceCount": 1
+  },
+  "advisory": {
+    "shadowOnlyReason": "",
+    "familyObservationCounts": {
+      "web_creative": 132
+    },
+    "familySelectionCounts": {}
   },
   "recentLessons": [
     {
-      "publicRef": "mem_2198ea29fa",
+      "publicRef": "mem_ec957e3de3",
       "status": "promoted",
       "summary": "How Perplexity Brought Voice Search to Millions Using the Realtime API | OpenAI Developers",
-      "topics": []
+      "topics": [
+        "agents",
+        "audio",
+        "context",
+        "evals",
+        "frontend"
+      ]
     },
     {
-      "publicRef": "mem_873da463e7",
+      "publicRef": "mem_f38921b6c8",
       "status": "promoted",
       "summary": "Designing delightful frontends with GPT-5.4 | OpenAI Developers",
-      "topics": []
+      "topics": [
+        "context",
+        "evals",
+        "frontend",
+        "general",
+        "safety",
+        "skills"
+      ]
     },
     {
-      "publicRef": "mem_3130e028d3",
+      "publicRef": "mem_eb390615f9",
       "status": "promoted",
       "summary": "From prompts to products: One year of Responses | OpenAI Developers",
-      "topics": []
+      "topics": [
+        "agents",
+        "api",
+        "automation",
+        "codex",
+        "context",
+        "evals"
+      ]
     },
     {
-      "publicRef": "mem_2323b9de6f",
+      "publicRef": "mem_d0800f01f8",
       "status": "promoted",
       "summary": "Using skills to accelerate OSS maintenance | OpenAI Developers",
-      "topics": []
+      "topics": [
+        "agents",
+        "automation",
+        "codex",
+        "context",
+        "evals",
+        "frontend"
+      ]
     }
   ],
   "compatibilityState": {
     "gateStatus": "PASS",
     "gateReason": "all_cases_passed",
     "appliedDecision": "applied",
-    "observationStatus": "starved",
-    "observationCount": 0,
+    "observationStatus": "observed",
+    "observationCount": 132,
     "proposalOnlyCount": 0,
     "blockedCount": 0,
-    "awaitingObservationCount": 6,
+    "awaitingObservationCount": 0,
     "policyDisabledCandidateCount": 0,
-    "lastObservedAt": "",
+    "lastObservedAt": "2026-04-04T17:23:26.382Z",
     "nextPriority": {
       "title": "Building frontend UIs with Codex and Figma | OpenAI Developers",
       "changeType": "frontend_quality_note",
-      "readinessStatus": "awaiting_observations",
-      "gatingReason": "awaiting_runtime_observations",
-      "nextAction": "Record 2 successful targeted observations before promotion."
+      "readinessStatus": "awaiting_reinforcement",
+      "gatingReason": "reinforcement_below_threshold",
+      "nextAction": "Need success>=2 and successRate>=0.67 before promotion."
     }
   },
   "compatibilityPaths": {
