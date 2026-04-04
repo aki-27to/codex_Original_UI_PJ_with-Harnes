@@ -139,7 +139,8 @@ Contract files:
   - Look at `flow_trace_summary.json`, `stage_timeline.json`, `scripts/config/task_outcome_contract.json`, and signoff/proof bundles.
 
 Runtime invariants to keep in mind:
-- `requestUserInputPolicy=blocked`
+- live runtime `requestUserInputPolicy=auto-default`
+- strict `proof` / `repro` / `conversation-app-server` lanes pin `requestUserInputPolicy=blocked`
 - `parentDispatchGuard=enforce`
 - retired `worker` is not a normal fallback
 - turn contract and task outcome contract stay separate

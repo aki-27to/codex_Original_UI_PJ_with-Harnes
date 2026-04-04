@@ -110,7 +110,7 @@ async function run() {
     assert(runtime.evalHarness && runtime.evalHarness.suite, "runtime should expose evalHarness suite");
     assert(runtime.slo && runtime.slo.status, "runtime should expose slo status");
     assert(runtime.harnessMemory && runtime.harnessMemory.counts, "runtime should expose harnessMemory counts");
-    assert(runtime.nonInteractiveUserInput && runtime.nonInteractiveUserInput.policy === "blocked", "runtime should default nonInteractive user input to blocked");
+    assert(runtime.nonInteractiveUserInput && runtime.nonInteractiveUserInput.policy === "auto-default", "runtime should default nonInteractive user input to auto-default");
     assert(
       runtime.harnessMemory.storage === path.relative(workspaceRoot, harnessMemoryPath).replace(/\\/g, "/"),
       `runtime should expose isolated harness memory path (${runtime.harnessMemory.storage || "missing"})`

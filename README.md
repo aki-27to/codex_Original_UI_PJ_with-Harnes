@@ -64,12 +64,13 @@ HTML guide:
 ## English Conversation App
 
 1. `start_codex_ui.bat` を実行
-2. `http://127.0.0.1:57525/english-conversation-app/index.html` を開く
+2. 既定の same-origin 入口として `http://127.0.0.1:57525/english-conversation-app/index.html` を開く
 3. 静的ファイルは次の優先順で解決されます
    - `CODEX_ENGLISH_CONVERSATION_APP_ROOT`
    - sibling repo `../english-conversation-app/`
    - bundled fallback `web/english-conversation-app/`
-4. bundled app を一度 sibling repo に展開したい場合は `bootstrap_english_conversation_app_repo.bat` を実行
+4. sibling repo 側の `start_english_conversation_app.bat` を使うと standalone app を `127.0.0.1:57526` で起動でき、会話/TTS API だけを main harness (`127.0.0.1:57525`) に proxy します
+5. bundled app を一度 sibling repo に展開したい場合は `bootstrap_english_conversation_app_repo.bat` を実行
 
 ## スモークテスト
 
@@ -79,6 +80,7 @@ HTML guide:
 node scripts/git_automation_policy_test.js
 node scripts/app_server_smoke_test.js
 node scripts/external_english_conversation_app_mount_test.js
+node scripts/web_autonomy_copy_test.js
 node scripts/eval_replay_api_smoke_test.js
 node scripts/eval_harness_policy_test.js
 node scripts/harness_contract_policy_test.js
@@ -93,6 +95,7 @@ node scripts/skill_portfolio_audit.js
 - `GET /api/runtime`
 - `POST /api/exec`
 - English Conversation App の external mount と traversal guard
+- static/operator docs の runtime-truth drift
 - skill portfolio policy
 
 期待結果:
@@ -202,6 +205,7 @@ English Conversation App 連携:
 - `http://127.0.0.1:57525/english-conversation-app/index.html` を開く
 - sibling repo があればサーバーが `CODEX_ENGLISH_CONVERSATION_APP_ROOT` 未設定時に自動で優先します
 - 明示 override は `CODEX_ENGLISH_CONVERSATION_APP_ROOT=/abs/path/to/english-conversation-app`
+- sibling repo 側の `start_english_conversation_app.bat` を使うと standalone app を `127.0.0.1:57526` で開き、会話/TTS API だけを `127.0.0.1:57525` に proxy します
 - 初回 split は `bootstrap_english_conversation_app_repo.bat`
 - `TTS Engine` を `Kokoro FastAPI (local)` に設定
 - 音声応答は `POST /api/voice/kokoro` を経由してブラウザ再生されます
@@ -236,7 +240,7 @@ English Conversation App 連携:
 - Edge 優先起動。固定するなら `CODEX_EDGE_EXE`
 - `start_codex_ui.bat` は unset 時だけ以下を補います
   - `CODEX_DEFAULT_EXEC_AGENT=default`
-  - `CODEX_REQUEST_USER_INPUT_POLICY=blocked`
+  - `CODEX_REQUEST_USER_INPUT_POLICY=auto-default`
   - `CODEX_PARENT_DISPATCH_GUARD_MODE=enforce`
   - `CODEX_PARENT_DISPATCH_GUARD_MAX_RETRIES=1`
   - `CODEX_ADVERSARIAL_SHADOW_ENABLED=1`

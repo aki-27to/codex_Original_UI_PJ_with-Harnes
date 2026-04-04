@@ -3,6 +3,7 @@
 
 const fs = require("fs");
 const http = require("http");
+const net = require("net");
 const path = require("path");
 const { spawn } = require("child_process");
 const { startInProcessHarnessServer } = require("./lib/in_process_harness_server");
@@ -27,6 +28,38 @@ function sleep(ms) {
 function isSpawnPermissionError(error) {
   const message = error instanceof Error ? error.message : String(error || "");
   return /spawn(?:Sync)?\s+EPERM/i.test(message) || /\bEPERM\b/i.test(message);
+}
+
+async function pickAvailablePort(preferredPort) {
+  const tryListen = (port) =>
+    new Promise((resolve, reject) => {
+      const server = net.createServer();
+      server.unref();
+      server.once("error", (error) => {
+        server.close(() => {
+          reject(error);
+        });
+      });
+      server.listen(port, "127.0.0.1", () => {
+        const address = server.address();
+        const resolvedPort = address && typeof address === "object" ? Number(address.port || 0) : 0;
+        server.close((closeError) => {
+          if (closeError) {
+            reject(closeError);
+            return;
+          }
+          resolve(resolvedPort);
+        });
+      });
+    });
+  try {
+    return await tryListen(preferredPort);
+  } catch (error) {
+    if (!(error && error.code === "EADDRINUSE")) {
+      throw error;
+    }
+  }
+  return tryListen(0);
 }
 
 async function stopHarnessHandle(handle) {
@@ -895,7 +928,7 @@ async function run() {
       console.log("[smoke] sandbox blocks direct codex app-server spawn; skipping steps 1/7-7/7");
     }
 
-    const harnessPort = 57535;
+    const harnessPort = await pickAvailablePort(57535);
     console.log(`[smoke] 8/25 start local harness server (/api/runtime) port=${harnessPort}`);
     harnessProcess = await startHarnessServer({
       port: harnessPort,

@@ -6,6 +6,8 @@ Updated: 2026-04-04
 
 `agi_v1` is an AGI-oriented evaluation / promotion framework layered onto the current harness. It does not claim AGI. It adds a stricter fail-closed decision layer for evaluation, comparison, and promotion on top of the existing harness runtime.
 
+This document is narrative guidance only. The active truth for `agi_v1` still lives in the existing runtime/eval surfaces (`/api/runtime`, `/api/eval/run`, generated `report.agiV1` bundles) plus fresh proof checks such as `npm run test:docs:drift`, `node scripts/eval_replay_api_smoke_test.js`, and the AGI profile tests.
+
 ## 2) Minimal-Intrusion Integration Points
 
 - `server.js`
@@ -198,3 +200,16 @@ Refresh them with:
 ```powershell
 npm run artifact:agi-v1:sample
 ```
+
+## 12) Proof Posture
+
+This document is a design contract, not a passing proof artifact by itself.
+
+- Fresh evidence for current behavior must come from live eval artifacts produced through the existing `/api/eval/run` route.
+- Operator-facing claims should be backed by the current machine-readable bundle fields under `report.agiV1`, not by this narrative page alone.
+- The minimum repo-side proof path for this framework remains the existing verification surface:
+  - `npm run test:agi-v1:unit`
+  - `npm run test:agi-v1:e2e`
+  - any narrower smoke/drift checks that were added for the touched operator surface in the same change set
+
+This keeps `AGI_V1_EVAL_FRAMEWORK.md` aligned with the repo-wide rule that narrative docs are subordinate to machine-readable contracts and runtime proof.

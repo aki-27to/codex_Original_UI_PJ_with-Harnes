@@ -1,7 +1,7 @@
 {
   "schema": "openai-blog-learning-proposal.v1",
   "proposalId": "openai-blog-skills-agents-sdk",
-  "createdAt": "2026-04-03T23:30:47.228Z",
+  "createdAt": "2026-04-04T01:08:19.569Z",
   "articleId": "skills-agents-sdk",
   "title": "Using skills to accelerate OSS maintenance | OpenAI Developers",
   "sourceUrl": "https://developers.openai.com/blog/skills-agents-sdk",

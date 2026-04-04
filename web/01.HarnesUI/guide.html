@@ -314,11 +314,12 @@
         <div class="guide-grid guide-grid-2">
           <article class="side-card guide-card">
             <h4>English Conversation App</h4>
-            <p>同じサーバーの中にぶら下がる英会話アプリです。別ポートではなく、同じ場所から開けるので連携しやすくなっています。</p>
+            <p>既定では同じサーバー配下の same-origin パスから開く英会話アプリです。必要なら sibling 側の standalone launcher を <code>127.0.0.1:57526</code> で動かし、会話/TTS だけを main harness に proxy する構成も使えます。</p>
             <ul class="guide-list">
-              <li>URL は <code>/english-conversation-app/index.html</code></li>
+              <li>ふだんの browser path は <code>/english-conversation-app/index.html</code></li>
               <li>置き場の優先順は env 指定 → sibling repo → bundled fallback</li>
-              <li>会話 API や TTS と同じ origin を使います</li>
+              <li>same-origin path では会話 API や TTS と同じ origin を使います</li>
+              <li>standalone app は <code>127.0.0.1:57526</code> で静的 UI を持ち、会話/TTS API だけを <code>127.0.0.1:57525</code> に proxy します</li>
             </ul>
           </article>
           <article class="side-card guide-card">
@@ -405,7 +406,8 @@
           <article class="side-card guide-card">
             <h4>ガードレール</h4>
             <ul class="guide-list">
-              <li><code>request-user-input</code> は既定で <code>auto-default</code></li>
+              <li>ふだんの live runtime では <code>request-user-input</code> の既定は <code>auto-default</code></li>
+              <li><code>conversation</code> / <code>proof</code> / <code>repro</code> の strict lane では <code>blocked</code> を明示します</li>
               <li>親は専門作業を自分で抱え込みすぎない</li>
               <li>証拠なしで「終わった」と言わない</li>
               <li>勝手な scope expansion をしない</li>
@@ -449,6 +451,7 @@
               <li><code>node scripts/app_server_smoke_test.js</code></li>
               <li><code>node scripts/eval_replay_api_smoke_test.js</code></li>
               <li><code>node scripts/external_english_conversation_app_mount_test.js</code></li>
+              <li><code>node scripts/web_autonomy_copy_test.js</code></li>
               <li><code>node scripts/agent_governance_policy_test.js</code></li>
             </ul>
           </article>
