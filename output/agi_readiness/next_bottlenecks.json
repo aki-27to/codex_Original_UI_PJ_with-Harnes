@@ -1,0 +1,22 @@
+{
+  "schema": "agi-readiness-next-bottlenecks.v1",
+  "generatedAt": "2026-04-04T12:21:25.464Z",
+  "workspaceId": "5c839dfeef8b555f",
+  "items": [
+    {
+      "classification": "capability bottleneck",
+      "summary": "weakest family is G_breadth",
+      "source": "agi_readiness"
+    },
+    {
+      "classification": "governance bottleneck",
+      "summary": "hard gate pressure at I_eval",
+      "source": "agi_readiness"
+    },
+    {
+      "classification": "observation bottleneck",
+      "summary": "primary learning lane is still starved for successful runtime observations",
+      "source": "openai_primary_lane"
+    }
+  ]
+}

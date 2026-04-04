@@ -1,6 +1,6 @@
 {
   "schema": "governed-memory-public-lane-projection.v1",
-  "generatedAt": "2026-04-04T07:17:39.934Z",
+  "generatedAt": "2026-04-04T12:21:25.462Z",
   "laneKey": "openai_primary",
   "sourceName": "OpenAI Developers Blog",
   "sourceTier": "external_primary",
@@ -13,7 +13,9 @@
     "proposalOnlyCount": 0,
     "blockedCount": 0,
     "shadowCount": 1,
-    "selectedInLatestPackCount": 0
+    "selectedInLatestPackCount": 0,
+    "observationCount": 0,
+    "awaitingObservationCount": 5
   },
   "canonicalHealth": {
     "canonicalStatePresent": true,
@@ -24,7 +26,11 @@
   "governedOperationalState": {
     "status": "active",
     "promotedLessonCount": 4,
-    "selectedInLatestPackCount": 0
+    "selectedInLatestPackCount": 0,
+    "observationCount": 0,
+    "awaitingObservationCount": 5,
+    "observationStatus": "starved",
+    "lastObservedAt": ""
   },
   "recentLessons": [
     {
@@ -62,6 +68,7 @@
     "blockedCount": 0,
     "awaitingObservationCount": 6,
     "policyDisabledCandidateCount": 0,
+    "lastObservedAt": "",
     "nextPriority": {
       "title": "Building frontend UIs with Codex and Figma | OpenAI Developers",
       "changeType": "frontend_quality_note",

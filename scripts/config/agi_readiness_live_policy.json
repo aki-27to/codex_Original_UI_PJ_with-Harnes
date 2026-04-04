@@ -1,0 +1,39 @@
+{
+  "schema": "agi-readiness-live-policy.v1",
+  "version": "2026-04-04.r1",
+  "coverageBuckets": [
+    {
+      "id": "deterministic_code",
+      "label": "Deterministic Code",
+      "aliases": ["deterministic_code", "coding", "debugging_incident_response"]
+    },
+    {
+      "id": "web_creative",
+      "label": "Web Creative",
+      "aliases": ["web_creative"]
+    },
+    {
+      "id": "planning",
+      "label": "Planning",
+      "aliases": ["planning", "planning_design", "analysis", "research_analysis", "research"]
+    },
+    {
+      "id": "workflow_execution",
+      "label": "Workflow Execution",
+      "aliases": ["workflow_execution", "cross_tool_orchestration", "operations", "business_ops", "tool_learning_or_new_tool_adoption"]
+    },
+    {
+      "id": "evaluation_review",
+      "label": "Evaluation / Review",
+      "aliases": ["evaluation_review", "research_analysis"]
+    },
+    {
+      "id": "tool_use_browser_like",
+      "label": "Tool Use / Browser-like",
+      "aliases": ["tool_use_browser_like", "web_tool_use", "cross_tool_orchestration"]
+    }
+  ],
+  "breadthFloorDefault": 0.7,
+  "promotionTrendLimit": 8,
+  "bottleneckLimit": 3
+}

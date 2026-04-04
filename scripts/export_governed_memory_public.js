@@ -16,6 +16,12 @@ function main() {
     publicOutputRoot: result && result.paths && result.paths.publicOutput
       ? path.relative(workspaceRoot, result.paths.publicOutput.root).replace(/\\/g, "/")
       : "output/memory_public",
+    agiReadinessRoot: result && result.paths && result.paths.agiReadiness
+      ? path.relative(workspaceRoot, result.paths.agiReadiness.root).replace(/\\/g, "/")
+      : "output/agi_readiness",
+    continuityPublicRoot: result && result.paths && result.paths.continuityPublic
+      ? path.relative(workspaceRoot, result.paths.continuityPublic.root).replace(/\\/g, "/")
+      : "output/continuity_public",
     files: result && result.exportManifest && result.exportManifest.outputs ? result.exportManifest.outputs : {},
   };
   process.stdout.write(`${JSON.stringify(payload, null, 2)}\n`);

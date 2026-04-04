@@ -1,6 +1,6 @@
 {
   "schema": "memory-eval-public-status.v1",
-  "generatedAt": "2026-04-04T07:17:39.935Z",
+  "generatedAt": "2026-04-04T12:21:25.465Z",
   "suiteSchema": "memory-eval-suite.v1",
   "suiteVersion": "2026-04-04.r1",
   "status": "PASS",
@@ -65,6 +65,30 @@
       "title": "Promotion and revocation health entries expose non-empty memoryType values",
       "status": "PASS",
       "detail": "promotion/revocation health entries expose non-empty memoryType values"
+    },
+    {
+      "id": "observation_projection_present",
+      "title": "Canonical observation projection is generated from runtime outcomes",
+      "status": "PASS",
+      "detail": "canonical observation projection is present"
+    },
+    {
+      "id": "continuity_projection_present",
+      "title": "Continuity projection and public summary are generated",
+      "status": "PASS",
+      "detail": "continuity projection and public summary are present"
+    },
+    {
+      "id": "agi_readiness_surface_present",
+      "title": "AGI readiness live surface is generated from canonical evaluation evidence",
+      "status": "PASS",
+      "detail": "agi readiness canonical surface is present"
+    },
+    {
+      "id": "lane_projection_real_observations_reflected",
+      "title": "Learning lane projections reflect canonical runtime observations",
+      "status": "PASS",
+      "detail": "lane projections reflect canonical observation state (starved/disabled)"
     }
   ]
 }

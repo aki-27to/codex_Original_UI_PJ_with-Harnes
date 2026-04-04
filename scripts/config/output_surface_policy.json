@@ -5,6 +5,7 @@
     "output/agi_readiness",
     "output/agi_v1",
     "output/claim_closure",
+    "output/continuity_public",
     "output/external_audit_bundle",
     "output/external_audit_closure",
     "output/externalization_nohitl",

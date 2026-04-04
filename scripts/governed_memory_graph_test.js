@@ -9,6 +9,11 @@ const {
   getMemoryPaths,
   syncGovernedMemoryGraph,
 } = require("./lib/governed_memory_graph");
+const {
+  seedGovernedMemoryPublicAgiReadinessArtifacts,
+  seedGovernedMemoryPublicCompatibilityArtifacts,
+  seedGovernedMemoryPublicContinuityArtifacts,
+} = require("./lib/governed_memory_public_fixture");
 
 const repoRoot = path.resolve(__dirname, "..");
 
@@ -196,9 +201,18 @@ function createRuntimeFixture() {
 
 function main() {
   const tempRoot = fs.mkdtempSync(path.join(os.tmpdir(), "governed-memory-"));
+  copyJson(path.join("scripts", "config", "agi_readiness_live_policy.json"), tempRoot);
+  copyJson(path.join("scripts", "config", "anthropic_engineering_learning_policy.json"), tempRoot);
+  copyJson(path.join("scripts", "config", "governed_observation_policy.json"), tempRoot);
   copyJson(path.join("scripts", "config", "memory_spec_graph_catalog.json"), tempRoot);
   copyJson(path.join("scripts", "config", "memory_retrieval_policy.json"), tempRoot);
+  copyJson(path.join("scripts", "config", "memory_eval_suite.json"), tempRoot);
+  copyJson(path.join("scripts", "config", "openai_blog_learning_policy.json"), tempRoot);
+  copyJson(path.join("scripts", "config", "self_improvement_promotion_policy.json"), tempRoot);
   copyJson(path.join("scripts", "config", "memory_type_catalog.json"), tempRoot);
+  seedGovernedMemoryPublicCompatibilityArtifacts(tempRoot);
+  seedGovernedMemoryPublicContinuityArtifacts(tempRoot);
+  seedGovernedMemoryPublicAgiReadinessArtifacts(tempRoot);
 
   const retrievalPolicyPath = path.join(tempRoot, "scripts", "config", "memory_retrieval_policy.json");
   const retrievalPolicy = JSON.parse(fs.readFileSync(retrievalPolicyPath, "utf8"));
@@ -219,6 +233,16 @@ function main() {
   fs.writeFileSync(retrievalPolicyPath, `${JSON.stringify(retrievalPolicy, null, 2)}\n`, "utf8");
 
   const runtime = createRuntimeFixture();
+  runtime.latestTurn.task_outcome_status = "COMPLETED";
+  runtime.latestTurn.task_outcome_reason = "deterministic code validation passed";
+  runtime.latestTurn.family_completion_gate = {
+    applies: true,
+    status: "passed",
+    taskFamily: "deterministic_code",
+    completionContract: "default",
+    missingHard: [],
+  };
+  runtime.latestTurn.planning = { taskFamily: "deterministic_code" };
   const traceability = {
     changedPaths: ["server.js", "docs/CONTEXT_MEMORY_POLICY.md"],
     operatorSummaryPath: "logs/current/operator_summary.json",
@@ -232,6 +256,63 @@ function main() {
     traceability,
     reason: "test_sync",
   });
+  const observationStatePath = path.join(getMemoryPaths(tempRoot).projections.observationStateRoot, "latest.json");
+  const observationAfterFirstSync = JSON.parse(fs.readFileSync(observationStatePath, "utf8"));
+  const primaryObservationsAfterFirstSync = Number(observationAfterFirstSync.byLane.external_primary.observationCount || 0);
+  assert(primaryObservationsAfterFirstSync > 0, "first sync must record primary learning observations");
+
+  syncGovernedMemoryGraph({
+    workspaceRoot: tempRoot,
+    runtime,
+    traceability,
+    reason: "test_sync_duplicate",
+  });
+  const observationAfterDuplicateSync = JSON.parse(fs.readFileSync(observationStatePath, "utf8"));
+  assert.strictEqual(
+    Number(observationAfterDuplicateSync.byLane.external_primary.observationCount || 0),
+    primaryObservationsAfterFirstSync,
+    "same turn must not double count primary observations"
+  );
+
+  const deterministicRuntime = JSON.parse(JSON.stringify(runtime));
+  deterministicRuntime.latestTurn.turn_id = "turn-governed-003";
+  deterministicRuntime.latestTurn.task_outcome_reason = "web creative turn should not reuse deterministic-only lessons";
+  deterministicRuntime.latestTurn.family_completion_gate = {
+    applies: true,
+    status: "failed_validation",
+    taskFamily: "web_creative",
+    completionContract: "design_acceptance",
+    missingHard: [{ label: "visual review", reason: "intent_visual_review_missing" }],
+  };
+  deterministicRuntime.latestTurn.planning = { taskFamily: "web_creative" };
+  syncGovernedMemoryGraph({
+    workspaceRoot: tempRoot,
+    runtime: deterministicRuntime,
+    traceability,
+    reason: "test_sync_family_mismatch",
+  });
+  const observationAfterMismatchSync = JSON.parse(fs.readFileSync(observationStatePath, "utf8"));
+  assert.strictEqual(
+    Number(observationAfterMismatchSync.byLane.external_primary.observationCount || 0),
+    primaryObservationsAfterFirstSync,
+    "unrelated task families must not mix into primary observations"
+  );
+
+  const missingEvidenceRuntime = JSON.parse(JSON.stringify(runtime));
+  missingEvidenceRuntime.latestTurn.turn_id = "turn-governed-004";
+  syncResult.summary.latestPack = syncResult.pack;
+  syncGovernedMemoryGraph({
+    workspaceRoot: tempRoot,
+    runtime: missingEvidenceRuntime,
+    traceability: {
+      changedPaths: traceability.changedPaths,
+      summary: "Missing evidence refs should fail closed.",
+    },
+    reason: "test_sync_missing_evidence",
+  });
+  const observationAfterMissingEvidenceSync = JSON.parse(fs.readFileSync(observationStatePath, "utf8"));
+  assert(Number(observationAfterMissingEvidenceSync.rejectedReasons.missing_evidence_refs || 0) >= 1, "missing evidence refs must be rejected");
+
   const snapshot = buildGovernedMemoryRuntimeSnapshot({
     workspaceRoot: tempRoot,
     runtime,
@@ -246,6 +327,9 @@ function main() {
   assert(fs.existsSync(paths.output.latestOverviewJson), "latest overview json must exist");
   assert(fs.existsSync(paths.output.latestOverviewMd), "latest overview markdown must exist");
   assert(fs.existsSync(path.join(paths.projections.workspaceProgressRoot, `${snapshot.workspaceId}.json`)), "workspace progress projection must exist");
+  assert(fs.existsSync(path.join(paths.projections.continuityStateRoot, "latest.json")), "continuity projection must exist");
+  assert(fs.existsSync(path.join(paths.projections.observationStateRoot, "latest.json")), "observation projection must exist");
+  assert(fs.existsSync(path.join(paths.projections.readinessRoot, "latest.json")), "readiness projection must exist");
   assert(snapshot.latestPack && snapshot.latestPack.selectedCount >= 1, "runtime snapshot must expose a selected pack");
   assert(String(snapshot.canonicalRoot || "").includes("runtime_state/memory"), "snapshot must expose canonical root");
   assert(String(snapshot.outputRoot || "").includes("output/memory"), "snapshot must expose output root");
@@ -270,6 +354,9 @@ function main() {
   assert(Array.isArray(snapshot.staleMemoryWarnings), "runtime snapshot must expose staleMemoryWarnings");
   assert(Array.isArray(snapshot.recentPromotions), "runtime snapshot must expose recentPromotions");
   assert(Array.isArray(snapshot.recentRevocations), "runtime snapshot must expose recentRevocations");
+  assert(Array.isArray(snapshot.workspaceProgress && snapshot.workspaceProgress.recentTouchedPaths), "runtime snapshot must expose continuity-enriched recentTouchedPaths");
+  assert(snapshot.workspaceProgress.recentTouchedPaths.includes("server.js"), "workspace progress must be enriched from continuity state");
+  assert(Array.isArray(snapshot.workspaceProgress.nextRecommendedActions) && snapshot.workspaceProgress.nextRecommendedActions.length >= 1, "workspace progress must include next recommended actions");
 
   const eventRecords = fs.readFileSync(paths.eventsPath, "utf8")
     .split(/\r?\n/)
@@ -278,6 +365,10 @@ function main() {
     .map((line) => JSON.parse(line));
   assert(eventRecords.some((entry) => entry.eventType === "memory_item_upsert"), "event log must contain memory_item_upsert");
   assert(eventRecords.some((entry) => entry.eventType === "memory_pack_compiled"), "event log must contain memory_pack_compiled");
+  assert(eventRecords.some((entry) => entry.eventType === "memory_observation_recorded"), "event log must contain memory_observation_recorded");
+  assert(eventRecords.some((entry) => entry.eventType === "memory_observation_rejected" && entry.reason === "duplicate_observation"), "event log must contain duplicate observation rejections");
+  assert(eventRecords.some((entry) => entry.eventType === "memory_observation_rejected" && entry.reason === "missing_evidence_refs"), "event log must contain missing evidence rejections");
+  assert(eventRecords.some((entry) => entry.eventType === "continuity_lifecycle_transition"), "event log must contain continuity lifecycle transitions");
   for (const entry of eventRecords) {
     assert(typeof entry.eventId === "string" && entry.eventId, "event log entries must include eventId");
     assert(typeof entry.memoryId === "string" && entry.memoryId, "event log entries must include memoryId");

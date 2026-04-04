@@ -1,0 +1,15 @@
+{
+  "schema": "continuity-public-summary.v1",
+  "generatedAt": "2026-04-04T12:21:25.463Z",
+  "workspaceId": "5c839dfeef8b555f",
+  "activeAgentTree": {},
+  "handoffCount": 0,
+  "blockedSubtasks": 0,
+  "verifierFailedSubtasks": 0,
+  "integrationPendingCount": 0,
+  "finalReleaseState": "unknown",
+  "roleMemoryPackSections": {
+    "intake": {}
+  },
+  "horizon": {}
+}

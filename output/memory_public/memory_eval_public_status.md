@@ -1,7 +1,7 @@
 # Memory Eval Public Status
 
 - Status: PASS
-- Generated At: 2026-04-04T07:17:39.935Z
+- Generated At: 2026-04-04T12:21:25.465Z
 
 ## Checks
 - canonical_store_present: PASS (canonical event log and index are present)
@@ -14,3 +14,7 @@
 - task_family_isolation_respected: PASS (latest bounded memory pack respects task-family isolation for hard-excluded governed memory types)
 - lane_projection_canonical_state_present: PASS (public lane projections expose canonical memory-derived lesson state for primary and secondary learning lanes)
 - promotion_health_memory_type_populated: PASS (promotion/revocation health entries expose non-empty memoryType values)
+- observation_projection_present: PASS (canonical observation projection is present)
+- continuity_projection_present: PASS (continuity projection and public summary are present)
+- agi_readiness_surface_present: PASS (agi readiness canonical surface is present)
+- lane_projection_real_observations_reflected: PASS (lane projections reflect canonical observation state (starved/disabled))

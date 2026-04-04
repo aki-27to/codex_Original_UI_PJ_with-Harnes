@@ -1,0 +1,231 @@
+{
+  "schema": "agi-readiness-domain-coverage-matrix.v1",
+  "generatedAt": "2026-04-04T12:21:25.458Z",
+  "workspaceId": "5c839dfeef8b555f",
+  "rows": [
+    {
+      "familyId": "deterministic_code",
+      "label": "Deterministic Code",
+      "lastSuccessfulTask": null,
+      "lastFailedTask": null,
+      "activeLessons": [
+        {
+          "memoryId": "lesson:anthropic:3b83c565c86c",
+          "status": "shadow",
+          "summary": "Quantifying infrastructure noise in agentic coding evals"
+        },
+        {
+          "memoryId": "lesson:anthropic:32e50b2a4846",
+          "status": "shadow",
+          "summary": "Harness design for long-running application development"
+        },
+        {
+          "memoryId": "lesson:anthropic:0345e9b5514e",
+          "status": "shadow",
+          "summary": "Designing AI resistant technical evaluations"
+        },
+        {
+          "memoryId": "lesson:anthropic:6ba1d27c7ae4",
+          "status": "shadow",
+          "summary": "Demystifying evals for AI agents"
+        }
+      ],
+      "availableHints": [
+        {
+          "memoryId": "manual:83d33626aabc",
+          "status": "proposal_only",
+          "summary": "Use a proposal-only fallback when the governed promotion lane does not match the current turn. Do not force reinforcement or runtime application from a non-targeted task family."
+        }
+      ],
+      "breadthFloor": 0.7,
+      "domainScore": 0,
+      "breadthFloorStatus": "fail"
+    },
+    {
+      "familyId": "web_creative",
+      "label": "Web Creative",
+      "lastSuccessfulTask": null,
+      "lastFailedTask": null,
+      "activeLessons": [
+        {
+          "memoryId": "lesson:openai:abdf50f52dd7",
+          "status": "promoted",
+          "summary": "How Perplexity Brought Voice Search to Millions Using the Realtime API | OpenAI Developers"
+        },
+        {
+          "memoryId": "lesson:openai:ce80c3e2425c",
+          "status": "promoted",
+          "summary": "Designing delightful frontends with GPT-5.4 | OpenAI Developers"
+        },
+        {
+          "memoryId": "lesson:openai:8323241a8ebe",
+          "status": "promoted",
+          "summary": "From prompts to products: One year of Responses | OpenAI Developers"
+        },
+        {
+          "memoryId": "lesson:openai:173ca1feaef4",
+          "status": "promoted",
+          "summary": "Using skills to accelerate OSS maintenance | OpenAI Developers"
+        },
+        {
+          "memoryId": "lesson:anthropic:3b83c565c86c",
+          "status": "shadow",
+          "summary": "Quantifying infrastructure noise in agentic coding evals"
+        },
+        {
+          "memoryId": "lesson:anthropic:32e50b2a4846",
+          "status": "shadow",
+          "summary": "Harness design for long-running application development"
+        },
+        {
+          "memoryId": "lesson:anthropic:0345e9b5514e",
+          "status": "shadow",
+          "summary": "Designing AI resistant technical evaluations"
+        },
+        {
+          "memoryId": "lesson:anthropic:6ba1d27c7ae4",
+          "status": "shadow",
+          "summary": "Demystifying evals for AI agents"
+        }
+      ],
+      "availableHints": [],
+      "breadthFloor": 0.7,
+      "domainScore": 0,
+      "breadthFloorStatus": "fail"
+    },
+    {
+      "familyId": "planning",
+      "label": "Planning",
+      "lastSuccessfulTask": null,
+      "lastFailedTask": null,
+      "activeLessons": [
+        {
+          "memoryId": "lesson:anthropic:3b83c565c86c",
+          "status": "shadow",
+          "summary": "Quantifying infrastructure noise in agentic coding evals"
+        },
+        {
+          "memoryId": "lesson:anthropic:32e50b2a4846",
+          "status": "shadow",
+          "summary": "Harness design for long-running application development"
+        },
+        {
+          "memoryId": "lesson:anthropic:0345e9b5514e",
+          "status": "shadow",
+          "summary": "Designing AI resistant technical evaluations"
+        },
+        {
+          "memoryId": "lesson:anthropic:6ba1d27c7ae4",
+          "status": "shadow",
+          "summary": "Demystifying evals for AI agents"
+        }
+      ],
+      "availableHints": [],
+      "breadthFloor": 0.7,
+      "domainScore": 0,
+      "breadthFloorStatus": "fail"
+    },
+    {
+      "familyId": "workflow_execution",
+      "label": "Workflow Execution",
+      "lastSuccessfulTask": null,
+      "lastFailedTask": null,
+      "activeLessons": [
+        {
+          "memoryId": "lesson:anthropic:3b83c565c86c",
+          "status": "shadow",
+          "summary": "Quantifying infrastructure noise in agentic coding evals"
+        },
+        {
+          "memoryId": "lesson:anthropic:32e50b2a4846",
+          "status": "shadow",
+          "summary": "Harness design for long-running application development"
+        },
+        {
+          "memoryId": "lesson:anthropic:0345e9b5514e",
+          "status": "shadow",
+          "summary": "Designing AI resistant technical evaluations"
+        },
+        {
+          "memoryId": "lesson:anthropic:6ba1d27c7ae4",
+          "status": "shadow",
+          "summary": "Demystifying evals for AI agents"
+        }
+      ],
+      "availableHints": [
+        {
+          "memoryId": "manual:827872169850",
+          "status": "proposal_only",
+          "summary": "Lock the self-improvement contract first. When the user asks for simultaneous delivery and learning with explicit output fields, capture the required fields before deciding any storage or promotion path."
+        }
+      ],
+      "breadthFloor": 0.7,
+      "domainScore": 0,
+      "breadthFloorStatus": "fail"
+    },
+    {
+      "familyId": "evaluation_review",
+      "label": "Evaluation / Review",
+      "lastSuccessfulTask": null,
+      "lastFailedTask": null,
+      "activeLessons": [
+        {
+          "memoryId": "lesson:anthropic:3b83c565c86c",
+          "status": "shadow",
+          "summary": "Quantifying infrastructure noise in agentic coding evals"
+        },
+        {
+          "memoryId": "lesson:anthropic:32e50b2a4846",
+          "status": "shadow",
+          "summary": "Harness design for long-running application development"
+        },
+        {
+          "memoryId": "lesson:anthropic:0345e9b5514e",
+          "status": "shadow",
+          "summary": "Designing AI resistant technical evaluations"
+        },
+        {
+          "memoryId": "lesson:anthropic:6ba1d27c7ae4",
+          "status": "shadow",
+          "summary": "Demystifying evals for AI agents"
+        }
+      ],
+      "availableHints": [],
+      "breadthFloor": 0.7,
+      "domainScore": 0,
+      "breadthFloorStatus": "fail"
+    },
+    {
+      "familyId": "tool_use_browser_like",
+      "label": "Tool Use / Browser-like",
+      "lastSuccessfulTask": null,
+      "lastFailedTask": null,
+      "activeLessons": [
+        {
+          "memoryId": "lesson:anthropic:3b83c565c86c",
+          "status": "shadow",
+          "summary": "Quantifying infrastructure noise in agentic coding evals"
+        },
+        {
+          "memoryId": "lesson:anthropic:32e50b2a4846",
+          "status": "shadow",
+          "summary": "Harness design for long-running application development"
+        },
+        {
+          "memoryId": "lesson:anthropic:0345e9b5514e",
+          "status": "shadow",
+          "summary": "Designing AI resistant technical evaluations"
+        },
+        {
+          "memoryId": "lesson:anthropic:6ba1d27c7ae4",
+          "status": "shadow",
+          "summary": "Demystifying evals for AI agents"
+        }
+      ],
+      "availableHints": [],
+      "breadthFloor": 0.7,
+      "domainScore": 0,
+      "breadthFloorStatus": "fail"
+    }
+  ]
+}

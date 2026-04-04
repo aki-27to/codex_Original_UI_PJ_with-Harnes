@@ -11,7 +11,9 @@ const {
   createGovernedMemoryPublicFixtureRuntime,
   createGovernedMemoryPublicFixtureSecondPassRuntime,
   createGovernedMemoryPublicFixtureTraceability,
+  seedGovernedMemoryPublicAgiReadinessArtifacts,
   seedGovernedMemoryPublicCompatibilityArtifacts,
+  seedGovernedMemoryPublicContinuityArtifacts,
 } = require("./lib/governed_memory_public_fixture");
 
 const repoRoot = path.resolve(__dirname, "..");
@@ -48,13 +50,20 @@ function annotateSampleManifest(targetRoot, extra) {
 function main() {
   const tempRoot = fs.mkdtempSync(path.join(os.tmpdir(), "governed-memory-public-sample-"));
   [
+    path.join("scripts", "config", "agi_readiness_live_policy.json"),
+    path.join("scripts", "config", "anthropic_engineering_learning_policy.json"),
+    path.join("scripts", "config", "governed_observation_policy.json"),
     path.join("scripts", "config", "memory_spec_graph_catalog.json"),
     path.join("scripts", "config", "memory_retrieval_policy.json"),
     path.join("scripts", "config", "memory_type_catalog.json"),
     path.join("scripts", "config", "memory_eval_suite.json"),
     path.join("scripts", "config", "memory_public_export_policy.json"),
+    path.join("scripts", "config", "openai_blog_learning_policy.json"),
+    path.join("scripts", "config", "self_improvement_promotion_policy.json"),
   ].forEach((relativePath) => copyJson(relativePath, tempRoot));
   seedGovernedMemoryPublicCompatibilityArtifacts(tempRoot);
+  seedGovernedMemoryPublicContinuityArtifacts(tempRoot);
+  seedGovernedMemoryPublicAgiReadinessArtifacts(tempRoot);
   const traceability = createGovernedMemoryPublicFixtureTraceability();
   syncGovernedMemoryGraph({
     workspaceRoot: tempRoot,
@@ -70,6 +79,8 @@ function main() {
   });
   const exported = exportGovernedMemoryPublicArtifacts({ workspaceRoot: tempRoot });
   copyTree(path.join(tempRoot, "output", "memory_public"), path.join(repoRoot, "output", "memory_public"));
+  copyTree(path.join(tempRoot, "output", "agi_readiness"), path.join(repoRoot, "output", "agi_readiness"));
+  copyTree(path.join(tempRoot, "output", "continuity_public"), path.join(repoRoot, "output", "continuity_public"));
   annotateSampleManifest(repoRoot, {
     sourceMode: "deterministic_fixture_sample",
     sampleSyncPassCount: 2,
@@ -79,6 +90,8 @@ function main() {
     ok: true,
     status: exported && exported.evalStatus ? exported.evalStatus.status : "UNKNOWN",
     outputRoot: "output/memory_public",
+    agiReadinessRoot: "output/agi_readiness",
+    continuityPublicRoot: "output/continuity_public",
     files: exported && exported.exportManifest && exported.exportManifest.outputs ? exported.exportManifest.outputs : {},
   }, null, 2)}\n`);
 }

@@ -1,6 +1,6 @@
 {
   "schema": "governed-memory-public-lane-projection.v1",
-  "generatedAt": "2026-04-04T07:17:39.934Z",
+  "generatedAt": "2026-04-04T12:21:25.462Z",
   "laneKey": "anthropic_secondary",
   "sourceName": "Anthropic Engineering",
   "sourceTier": "external_secondary",
@@ -13,7 +13,9 @@
     "proposalOnlyCount": 0,
     "blockedCount": 0,
     "shadowCount": 0,
-    "selectedInLatestPackCount": 0
+    "selectedInLatestPackCount": 0,
+    "observationCount": 0,
+    "awaitingObservationCount": 4
   },
   "canonicalHealth": {
     "canonicalStatePresent": true,
@@ -24,7 +26,11 @@
   "governedOperationalState": {
     "status": "shadow_only",
     "promotedLessonCount": 0,
-    "selectedInLatestPackCount": 0
+    "selectedInLatestPackCount": 0,
+    "observationCount": 0,
+    "awaitingObservationCount": 4,
+    "observationStatus": "disabled",
+    "lastObservedAt": ""
   },
   "recentLessons": [
     {
@@ -62,6 +68,7 @@
     "blockedCount": 0,
     "awaitingObservationCount": 0,
     "policyDisabledCandidateCount": 1,
+    "lastObservedAt": "",
     "nextPriority": {
       "title": "Effective harnesses for long-running agents",
       "changeType": "frontend_quality_note",

@@ -41,6 +41,22 @@
     {
       "id": "promotion_health_memory_type_populated",
       "title": "Promotion and revocation health entries expose non-empty memoryType values"
+    },
+    {
+      "id": "observation_projection_present",
+      "title": "Canonical observation projection is generated from runtime outcomes"
+    },
+    {
+      "id": "continuity_projection_present",
+      "title": "Continuity projection and public summary are generated"
+    },
+    {
+      "id": "agi_readiness_surface_present",
+      "title": "AGI readiness live surface is generated from canonical evaluation evidence"
+    },
+    {
+      "id": "lane_projection_real_observations_reflected",
+      "title": "Learning lane projections reflect canonical runtime observations"
     }
   ]
 }

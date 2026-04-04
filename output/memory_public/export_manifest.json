@@ -1,6 +1,6 @@
 {
   "schema": "governed-memory-public-export-manifest.v1",
-  "generatedAt": "2026-04-04T07:17:39.935Z",
+  "generatedAt": "2026-04-04T12:21:25.465Z",
   "workspaceId": "5c839dfeef8b555f",
   "sourceMode": "redacted_live_export",
   "canonicalReuseVerified": true,
@@ -17,6 +17,15 @@
     "memoryEvalStatusJson": "output/memory_public/memory_eval_public_status.json",
     "memoryEvalStatusMd": "output/memory_public/memory_eval_public_status.md",
     "openAIBlogLaneJson": "output/memory_public/openai_primary_lane_projection.json",
-    "anthropicLaneJson": "output/memory_public/anthropic_secondary_lane_projection.json"
+    "anthropicLaneJson": "output/memory_public/anthropic_secondary_lane_projection.json",
+    "agiReadinessJson": "output/agi_readiness/latest_readiness.json",
+    "agiReadinessMd": "output/agi_readiness/latest_readiness.md",
+    "domainCoverageMatrixJson": "output/agi_readiness/domain_coverage_matrix.json",
+    "promotionTrendJson": "output/agi_readiness/promotion_trend.json",
+    "blockedReasonsJson": "output/agi_readiness/blocked_reasons.json",
+    "nextBottlenecksJson": "output/agi_readiness/next_bottlenecks.json",
+    "nextBottlenecksMd": "output/agi_readiness/next_bottlenecks.md",
+    "continuityPublicJson": "output/continuity_public/latest_continuity.json",
+    "continuityPublicMd": "output/continuity_public/latest_continuity.md"
   }
 }

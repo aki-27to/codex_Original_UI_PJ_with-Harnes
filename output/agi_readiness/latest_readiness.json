@@ -1,0 +1,110 @@
+{
+  "schema": "agi-readiness-live-summary.v1",
+  "generatedAt": "2026-04-04T12:20:41.123Z",
+  "workspaceId": "5c839dfeef8b555f",
+  "latestRunId": "eval-1775264897008-443e2a6a",
+  "profile": "agi_v1",
+  "laneId": "public_regression",
+  "suiteId": "challenger.agi_v1_suite",
+  "metrics": {
+    "G_breadth": {
+      "familyName": "G_breadth",
+      "value": null,
+      "threshold": null,
+      "supportStatus": "unknown",
+      "passFail": null,
+      "details": {}
+    },
+    "G_depth": {
+      "familyName": "G_depth",
+      "value": null,
+      "threshold": null,
+      "supportStatus": "unknown",
+      "passFail": null,
+      "details": {}
+    },
+    "A_adapt": {
+      "familyName": "A_adapt",
+      "value": null,
+      "threshold": null,
+      "supportStatus": "unknown",
+      "passFail": null,
+      "details": {}
+    },
+    "R_robust": {
+      "familyName": "R_robust",
+      "value": null,
+      "threshold": null,
+      "supportStatus": "unknown",
+      "passFail": null,
+      "details": {}
+    },
+    "H_horizon": {
+      "familyName": "H_horizon",
+      "value": null,
+      "threshold": null,
+      "supportStatus": "unknown",
+      "passFail": null,
+      "details": {}
+    },
+    "P_context": {
+      "familyName": "P_context",
+      "value": null,
+      "threshold": null,
+      "supportStatus": "unknown",
+      "passFail": null,
+      "details": {}
+    },
+    "I_eval": {
+      "familyName": "I_eval",
+      "value": null,
+      "threshold": null,
+      "supportStatus": "unknown",
+      "passFail": null,
+      "details": {}
+    },
+    "S_trust": {
+      "familyName": "S_trust",
+      "value": null,
+      "threshold": null,
+      "supportStatus": "unknown",
+      "passFail": null,
+      "details": {}
+    },
+    "C_corr": {
+      "familyName": "C_corr",
+      "value": null,
+      "threshold": null,
+      "supportStatus": "unknown",
+      "passFail": null,
+      "details": {}
+    },
+    "E_epi": {
+      "familyName": "E_epi",
+      "value": null,
+      "threshold": null,
+      "supportStatus": "unknown",
+      "passFail": null,
+      "details": {}
+    }
+  },
+  "catastrophicRisk": {
+    "cvar": 0.04,
+    "supportStatus": "supported"
+  },
+  "rawFinalScore": 0.860278,
+  "displayFinalScore": 0.860278,
+  "incumbentVsChallenger": {
+    "incumbentIdentifier": "candidate-main",
+    "challengerIdentifier": "candidate-main",
+    "promote": true
+  },
+  "blockedReasons": [
+    "challenger_strictly_beats_incumbent_under_fail_closed_rule"
+  ],
+  "weakestCapabilityFamily": "G_breadth",
+  "weakestGateFamily": "I_eval",
+  "domainCoveragePath": "output/agi_readiness/domain_coverage_matrix.json",
+  "recentImprovement": 0.133862,
+  "recentRegression": -0.04
+}
