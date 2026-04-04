@@ -1,13 +1,13 @@
 {
   "schema": "governed-memory-public-lane-projection.v1",
-  "generatedAt": "2026-04-04T05:49:47.118Z",
+  "generatedAt": "2026-04-04T06:29:18.433Z",
   "laneKey": "openai_primary",
   "sourceName": "OpenAI Developers Blog",
   "sourceTier": "external_primary",
   "canonicalCounts": {
     "derivedFromCanonicalStore": true,
-    "lessonCount": 1,
-    "promotedLessonCount": 1,
+    "lessonCount": 4,
+    "promotedLessonCount": 4,
     "shadowLessonCount": 0,
     "improvementCandidateCount": 1,
     "proposalOnlyCount": 0,
@@ -18,14 +18,37 @@
   "canonicalHealth": {
     "canonicalStatePresent": true,
     "selectedInLatestPackCount": 0,
-    "promotedOrReinforcedCount": 1,
+    "promotedOrReinforcedCount": 4,
     "shadowOrProposalCount": 1
+  },
+  "governedOperationalState": {
+    "status": "active",
+    "promotedLessonCount": 4,
+    "selectedInLatestPackCount": 0
   },
   "recentLessons": [
     {
-      "publicRef": "mem_9a150bdcb9",
+      "publicRef": "mem_2198ea29fa",
       "status": "promoted",
-      "summary": "Run long horizon tasks with Codex",
+      "summary": "How Perplexity Brought Voice Search to Millions Using the Realtime API | OpenAI Developers",
+      "topics": []
+    },
+    {
+      "publicRef": "mem_873da463e7",
+      "status": "promoted",
+      "summary": "Designing delightful frontends with GPT-5.4 | OpenAI Developers",
+      "topics": []
+    },
+    {
+      "publicRef": "mem_3130e028d3",
+      "status": "promoted",
+      "summary": "From prompts to products: One year of Responses | OpenAI Developers",
+      "topics": []
+    },
+    {
+      "publicRef": "mem_2323b9de6f",
+      "status": "promoted",
+      "summary": "Using skills to accelerate OSS maintenance | OpenAI Developers",
       "topics": []
     }
   ],
@@ -37,10 +60,10 @@
     "observationCount": 0,
     "proposalOnlyCount": 0,
     "blockedCount": 0,
-    "awaitingObservationCount": 1,
+    "awaitingObservationCount": 6,
     "policyDisabledCandidateCount": 0,
     "nextPriority": {
-      "title": "Run long horizon tasks with Codex",
+      "title": "Building frontend UIs with Codex and Figma | OpenAI Developers",
       "changeType": "frontend_quality_note",
       "readinessStatus": "awaiting_observations",
       "gatingReason": "awaiting_runtime_observations",

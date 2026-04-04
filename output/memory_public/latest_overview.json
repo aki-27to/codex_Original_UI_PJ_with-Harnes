@@ -1,29 +1,30 @@
 {
   "schema": "governed-memory-public-overview.v1",
-  "generatedAt": "2026-04-04T05:49:47.118Z",
-  "workspaceId": "a645044d819b6f5d",
+  "generatedAt": "2026-04-04T06:29:18.432Z",
+  "workspaceId": "5c839dfeef8b555f",
   "canonicalRoot": "logs/archive/raw/runtime_state/memory",
   "publicOutputRoot": "output/memory_public",
-  "canonicalEventCount": 23,
-  "itemCount": 21,
-  "promotedCount": 14,
+  "canonicalEventCount": 48,
+  "itemCount": 46,
+  "promotedCount": 22,
   "typeCounts": {
     "constitution_ref": 8,
     "requirement_ref": 1,
     "preference_signal": 1,
     "workspace_progress": 2,
-    "episodic_event": 2,
-    "failure_pattern": 1,
-    "eval_observation": 2,
-    "improvement_candidate": 1,
-    "semantic_lesson": 2,
-    "runtime_hint": 1
+    "episodic_event": 8,
+    "failure_pattern": 6,
+    "eval_observation": 6,
+    "improvement_candidate": 3,
+    "semantic_lesson": 8,
+    "runtime_hint": 3
   },
   "statusCounts": {
-    "promoted": 14,
-    "captured": 4,
-    "shadow": 2,
-    "proposal_only": 1
+    "promoted": 22,
+    "captured": 14,
+    "shadow": 5,
+    "proposal_only": 4,
+    "blocked": 1
   },
   "workspaceProgressPath": "output/memory_public/workspace_progress_public.json",
   "latestPackPath": "output/memory_public/latest_pack_public.json",
@@ -41,20 +42,17 @@
     "output/anthropic_engineering_self_improvement_gate.json"
   ],
   "latestPack": {
-    "selectedCount": 12,
-    "highConfidenceCount": 3,
-    "reusedSelectedCount": 10,
+    "selectedCount": 16,
+    "highConfidenceCount": 2,
+    "reusedSelectedCount": 16,
     "explicitTaskFamilyMismatchCount": 0,
-    "activeAgent": "default",
+    "activeAgent": "intake",
     "taskFamily": "deterministic_code",
     "sectionCounts": {
-      "spec": 4,
       "intent": 1,
       "workspace_progress": 1,
-      "experience": 4,
-      "semantic": 2,
-      "preference": 0,
-      "improvement": 0
+      "spec": 7,
+      "experience": 7
     }
   },
   "staleWarningCount": 0

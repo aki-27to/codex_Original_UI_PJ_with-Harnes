@@ -1,6 +1,6 @@
 {
   "schema": "memory-eval-public-status.v1",
-  "generatedAt": "2026-04-04T05:49:47.120Z",
+  "generatedAt": "2026-04-04T06:29:18.434Z",
   "suiteSchema": "memory-eval-suite.v1",
   "suiteVersion": "2026-04-04.r1",
   "status": "PASS",
@@ -40,7 +40,7 @@
       "id": "bounded_memory_pack_reuses_canonical_memory",
       "title": "Latest bounded memory pack reuses previously persisted canonical memory",
       "status": "PASS",
-      "detail": "10 selected pack item(s) were reused from the canonical store"
+      "detail": "16 selected pack item(s) were reused from the canonical store"
     },
     {
       "id": "task_family_isolation_respected",

@@ -1,29 +1,52 @@
 {
   "schema": "governed-memory-public-lane-projection.v1",
-  "generatedAt": "2026-04-04T05:49:47.118Z",
+  "generatedAt": "2026-04-04T06:29:18.433Z",
   "laneKey": "anthropic_secondary",
   "sourceName": "Anthropic Engineering",
   "sourceTier": "external_secondary",
   "canonicalCounts": {
     "derivedFromCanonicalStore": true,
-    "lessonCount": 1,
+    "lessonCount": 4,
     "promotedLessonCount": 0,
-    "shadowLessonCount": 1,
+    "shadowLessonCount": 4,
     "improvementCandidateCount": 0,
     "proposalOnlyCount": 0,
     "blockedCount": 0,
     "shadowCount": 0,
-    "selectedInLatestPackCount": 1
+    "selectedInLatestPackCount": 0
   },
   "canonicalHealth": {
     "canonicalStatePresent": true,
-    "selectedInLatestPackCount": 1,
+    "selectedInLatestPackCount": 0,
     "promotedOrReinforcedCount": 0,
-    "shadowOrProposalCount": 1
+    "shadowOrProposalCount": 4
+  },
+  "governedOperationalState": {
+    "status": "shadow_only",
+    "promotedLessonCount": 0,
+    "selectedInLatestPackCount": 0
   },
   "recentLessons": [
     {
-      "publicRef": "mem_d44da98aec",
+      "publicRef": "mem_3742c05faf",
+      "status": "shadow",
+      "summary": "Quantifying infrastructure noise in agentic coding evals",
+      "topics": []
+    },
+    {
+      "publicRef": "mem_b9d97d41ed",
+      "status": "shadow",
+      "summary": "Harness design for long-running application development",
+      "topics": []
+    },
+    {
+      "publicRef": "mem_cb4f3f02bf",
+      "status": "shadow",
+      "summary": "Designing AI resistant technical evaluations",
+      "topics": []
+    },
+    {
+      "publicRef": "mem_fdeacdb9b9",
       "status": "shadow",
       "summary": "Demystifying evals for AI agents",
       "topics": []
@@ -35,16 +58,16 @@
     "appliedDecision": "none",
     "observationStatus": "disabled",
     "observationCount": 0,
-    "proposalOnlyCount": 2,
+    "proposalOnlyCount": 4,
     "blockedCount": 0,
     "awaitingObservationCount": 0,
     "policyDisabledCandidateCount": 1,
     "nextPriority": {
-      "title": "Demystifying evals for AI agents",
+      "title": "Effective harnesses for long-running agents",
       "changeType": "frontend_quality_note",
-      "readinessStatus": "proposal_only",
-      "gatingReason": "promotion_policy_proposal_only",
-      "nextAction": "Keep this note proposal-only."
+      "readinessStatus": "policy_disabled",
+      "gatingReason": "stabilization_disabled",
+      "nextAction": "Enable stabilization for this lane or keep the note proposal-only."
     }
   },
   "compatibilityPaths": {

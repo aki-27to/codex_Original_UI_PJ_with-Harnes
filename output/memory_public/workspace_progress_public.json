@@ -1,27 +1,32 @@
 {
   "schema": "governed-memory-workspace-progress-public.v1",
-  "generatedAt": "2026-04-04T05:49:47.117Z",
-  "workspaceId": "a645044d819b6f5d",
-  "currentObjective": "reused governed memory pack and passed validation",
+  "generatedAt": "2026-04-04T06:29:18.432Z",
+  "workspaceId": "5c839dfeef8b555f",
+  "currentObjective": "completed_default",
   "currentMilestones": [
     "latest turn status: completed",
     "family gate: not_applicable"
   ],
   "knownBlockers": [],
   "knownRisks": [
-    "Governed memory public export fixture."
+    "parent_dispatch_guard_block",
+    "[object Object]"
   ],
-  "recentTouchedPaths": [
-    "server.js",
-    "docs/CONTEXT_MEMORY_POLICY.md"
-  ],
+  "recentTouchedPaths": [],
   "nextRecommendedActions": [],
   "lastSuccessfulValidation": [
     {
-      "reference": "turn_2ccda8f5ff",
+      "reference": "turn_3003496d70",
       "taskOutcomeStatus": "COMPLETED",
-      "completedAt": "2026-04-04T10:05:00.000Z"
+      "completedAt": "1775272727138"
     }
   ],
-  "lastFailedValidation": []
+  "lastFailedValidation": [
+    {
+      "reference": "turn_d16bb2d3c1",
+      "taskOutcomeStatus": "FAILED_VALIDATION",
+      "reason": "parent_dispatch_guard_block",
+      "completedAt": "1775272581795"
+    }
+  ]
 }

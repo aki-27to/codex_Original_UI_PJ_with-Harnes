@@ -1,39 +1,15 @@
 {
   "schema": "governed-memory-promotion-health-public.v1",
-  "generatedAt": "2026-04-04T05:49:47.117Z",
-  "workspaceId": "a645044d819b6f5d",
+  "generatedAt": "2026-04-04T06:29:18.432Z",
+  "workspaceId": "5c839dfeef8b555f",
   "staleWarningCount": 0,
-  "recentPromotions": [
+  "recentPromotions": [],
+  "recentRevocations": [
     {
-      "publicRef": "mem_1e38cc1791",
-      "memoryType": "workspace_progress",
-      "status": "promoted",
-      "recordedAt": "2026-04-04T05:49:47.103Z"
-    },
-    {
-      "publicRef": "mem_b5d199f8aa",
-      "memoryType": "constitution_ref",
-      "status": "promoted",
-      "recordedAt": "2026-04-04T05:49:47.074Z"
-    },
-    {
-      "publicRef": "mem_03ac8147c1",
-      "memoryType": "constitution_ref",
-      "status": "promoted",
-      "recordedAt": "2026-04-04T05:49:47.074Z"
-    },
-    {
-      "publicRef": "mem_21e2745933",
-      "memoryType": "constitution_ref",
-      "status": "promoted",
-      "recordedAt": "2026-04-04T05:49:47.074Z"
-    },
-    {
-      "publicRef": "mem_91fc182198",
-      "memoryType": "constitution_ref",
-      "status": "promoted",
-      "recordedAt": "2026-04-04T05:49:47.074Z"
+      "publicRef": "mem_5e56ce1275",
+      "memoryType": "",
+      "status": "blocked",
+      "recordedAt": "2026-04-04T03:18:46.904Z"
     }
-  ],
-  "recentRevocations": []
+  ]
 }

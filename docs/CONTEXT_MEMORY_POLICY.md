@@ -199,7 +199,12 @@ Regeneration commands:
 - `npm run artifact:memory-public` for live redacted export from the local canonical store
 - `npm run artifact:memory-public:sample` for the deterministic repo-safe sample surface checked into the repo
 
-The checked-in sample is a two-pass deterministic fixture export. It intentionally demonstrates:
+Preferred publication order:
+
+1. `npm run artifact:memory-public`
+2. if the live redacted export does not pass the governed-memory public eval, regenerate the deterministic fallback sample with `npm run artifact:memory-public:sample`
+
+The deterministic fallback sample is a two-pass fixture export. It intentionally demonstrates:
 
 - canonical store creation
 - workspace progress projection population
