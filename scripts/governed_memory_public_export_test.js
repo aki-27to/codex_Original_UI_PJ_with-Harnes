@@ -10,6 +10,7 @@ const {
 } = require("./lib/governed_memory_graph");
 const {
   createGovernedMemoryPublicFixtureRuntime,
+  createGovernedMemoryPublicFixtureSecondPassRuntime,
   createGovernedMemoryPublicFixtureTraceability,
   seedGovernedMemoryPublicCompatibilityArtifacts,
 } = require("./lib/governed_memory_public_fixture");
@@ -35,13 +36,20 @@ function main() {
   seedGovernedMemoryPublicCompatibilityArtifacts(tempRoot);
 
   const runtime = createGovernedMemoryPublicFixtureRuntime();
+  const secondPassRuntime = createGovernedMemoryPublicFixtureSecondPassRuntime();
   const traceability = createGovernedMemoryPublicFixtureTraceability();
 
   syncGovernedMemoryGraph({
     workspaceRoot: tempRoot,
     runtime,
     traceability,
-    reason: "test_sync_public",
+    reason: "test_sync_public_seed",
+  });
+  syncGovernedMemoryGraph({
+    workspaceRoot: tempRoot,
+    runtime: secondPassRuntime,
+    traceability,
+    reason: "test_sync_public_reuse",
   });
   const exported = exportGovernedMemoryPublicArtifacts({ workspaceRoot: tempRoot });
 
@@ -63,15 +71,22 @@ function main() {
   assert(Array.isArray(latestPack.latestPack.selectedItems), "latest pack public artifact must expose selectedItems");
   assert(latestPack.latestPack.selectedItems.every((entry) => typeof entry.publicRef === "string" && entry.publicRef.startsWith("mem_")), "latest pack public artifact must expose redacted publicRefs");
   assert(latestPack.latestPack.selectedItems.every((entry) => !String(entry.publicRef).includes("episode:")), "latest pack public artifact must not leak raw memory ids");
+  assert(latestPack.latestPack.reusedSelectedCount >= 1, "latest pack public artifact must show canonical reuse");
+  assert.strictEqual(latestPack.latestPack.explicitTaskFamilyMismatchCount, 0, "latest pack public artifact must not expose hard task-family mismatches");
   const evalStatus = JSON.parse(fs.readFileSync(path.join(outputRoot, "memory_eval_public_status.json"), "utf8"));
   assert.strictEqual(evalStatus.status, "PASS", "memory eval public status must pass for the seeded canonical store");
+  assert(evalStatus.checks.some((entry) => entry.id === "bounded_memory_pack_reuses_canonical_memory" && entry.status === "PASS"), "memory eval public status must verify canonical pack reuse");
+  assert(evalStatus.checks.some((entry) => entry.id === "task_family_isolation_respected" && entry.status === "PASS"), "memory eval public status must verify task-family isolation");
   const openaiLane = JSON.parse(fs.readFileSync(path.join(outputRoot, "openai_primary_lane_projection.json"), "utf8"));
   assert(openaiLane.canonicalCounts.lessonCount >= 1, "openai lane projection must derive lesson counts from canonical graph");
   assert.strictEqual(openaiLane.compatibilityState.gateStatus, "PASS", "openai lane projection must preserve compatibility gate status");
+  assert.strictEqual(openaiLane.canonicalCounts.derivedFromCanonicalStore, true, "openai lane projection must declare canonical derivation");
   const anthropicLane = JSON.parse(fs.readFileSync(path.join(outputRoot, "anthropic_secondary_lane_projection.json"), "utf8"));
   assert(anthropicLane.canonicalCounts.lessonCount >= 1, "anthropic lane projection must derive lesson counts from canonical graph");
   assert.strictEqual(anthropicLane.compatibilityState.observationStatus, "disabled", "anthropic lane projection must preserve compatibility observation status");
+  assert.strictEqual(anthropicLane.canonicalCounts.derivedFromCanonicalStore, true, "anthropic lane projection must declare canonical derivation");
   assert(exported.exportManifest && exported.exportManifest.outputs, "export manifest must be returned");
+  assert.strictEqual(exported.exportManifest.canonicalReuseVerified, true, "export manifest must record canonical reuse verification");
 
   console.log("governed_memory_public_export_test: ok");
 }

@@ -100,3 +100,4 @@ Governed memory uses two separate output faces:
   - regenerated through:
     - `npm run artifact:memory-public`
     - `npm run artifact:memory-public:sample`
+  - the checked-in sample is deterministic and fixture-backed; it proves the public export contract and canonical reuse path without exposing live local runtime state

@@ -439,6 +439,8 @@ function summarizePack(pack, thresholds = {}) {
     highConfidenceCount: Number.isFinite(Number(pack && pack.highConfidenceCount))
       ? clampInt(pack.highConfidenceCount, 0, 999999, 0)
       : items.filter((entry) => safeNumber(entry && entry.score, 0) >= highConfidenceScore).length,
+    reusedSelectedCount: clampInt(pack && pack.reusedSelectedCount, 0, 999999, 0),
+    explicitTaskFamilyMismatchCount: clampInt(pack && pack.explicitTaskFamilyMismatchCount, 0, 999999, 0),
     sectionCounts,
     activeAgent: safeString(pack && pack.activeAgent, 80),
     taskFamily: safeString(pack && pack.taskFamily, 80),
@@ -513,6 +515,7 @@ function loadPersistedGovernedMemoryState({ workspaceRoot = workspaceRootDefault
       eventLogPath: repoRelative(workspaceRoot, paths.eventsPath),
       outputRoot: repoRelative(workspaceRoot, paths.output.root),
       publicOutputRoot: repoRelative(workspaceRoot, paths.publicOutput.root),
+      canonicalEventCount: loadJsonl(paths.eventsPath).length,
       itemCount: items.length,
       promotedCount: items.filter((item) => ["promoted", "reinforced"].includes(safeString(item.status, 40))).length,
       typeCounts,
@@ -1150,10 +1153,28 @@ function buildIndexes(items) {
   return { byId, byScope, byType, byTaskFamily, byAgent, byWorkspace };
 }
 
+function getTaskFamilyIsolationPolicy(policy) {
+  return policy && policy.taskFamilyIsolation && typeof policy.taskFamilyIsolation === "object"
+    ? policy.taskFamilyIsolation
+    : {};
+}
+
+function hasExplicitTaskFamilyMismatch(item, taskFamily) {
+  const activeTaskFamily = safeString(taskFamily, 80) || "default";
+  const taskFamilies = uniqueStrings(item && item.scope && item.scope.taskFamilies, 16, 80);
+  if (!taskFamilies.length) return false;
+  if (taskFamilies.includes("all") || taskFamilies.includes("default")) return false;
+  return !taskFamilies.includes(activeTaskFamily);
+}
+
 function scoreItem(item, context, policy) {
   const weights = policy && policy.scoringWeights && typeof policy.scoringWeights === "object"
     ? policy.scoringWeights
     : (policy && policy.weights && typeof policy.weights === "object" ? policy.weights : {});
+  const isolation = getTaskFamilyIsolationPolicy(policy);
+  const mismatchPenalty = safeNumber(isolation.explicitMismatchPenalty, 0.38);
+  const hardExcludeTypes = uniqueStrings(isolation.hardExcludeTypes, 16, 80);
+  const explicitFamilyMismatch = hasExplicitTaskFamilyMismatch(item, context && context.taskFamily);
   const authorityMatch = 1 - Math.min(1, Math.max(0, safeNumber(item.authorityTier, 6) / 6));
   const scopeMatch = safeString(item.scope && item.scope.workspaceId, 120) === safeString(context.workspaceId, 120) ? 1 : 0;
   const taskFamilies = uniqueStrings(item.scope && item.scope.taskFamilies, 16, 80);
@@ -1175,6 +1196,7 @@ function scoreItem(item, context, policy) {
     freshness: Number(freshness.toFixed(4)),
     evidenceStrength: Number(evidenceStrength.toFixed(4)),
     reinforcement: Number(reinforcement.toFixed(4)),
+    explicitTaskFamilyMismatch: explicitFamilyMismatch ? 1 : 0,
   };
   let score = 0;
   score += safeNumber(weights.authorityMatch, 0.28) * authorityMatch;
@@ -1190,10 +1212,14 @@ function scoreItem(item, context, policy) {
   if (item.sourceTier === "external_secondary") score -= safeNumber(penalties.secondarySource, 0.12);
   if (item.status === "shadow") score -= safeNumber(penalties.shadowOnly, 0.08);
   if (item.status === "blocked") score -= safeNumber(penalties.policyBlocked, 0.35);
+  if (explicitFamilyMismatch) score -= mismatchPenalty;
+  const hardExcluded = explicitFamilyMismatch && hardExcludeTypes.includes(safeString(item && item.type, 80));
   return {
     score: Number(score.toFixed(4)),
     factors,
     section: classifyMemorySection(item),
+    hardExcluded,
+    explicitFamilyMismatch,
   };
 }
 
@@ -1228,6 +1254,7 @@ function compileMemoryPack({ workspaceRoot, runtime, items }) {
   };
   for (const entry of allScored) {
     if (selected.length >= limit) break;
+    if (entry.hardExcluded) continue;
     if (entry.score < minimumSelectionScore) continue;
     if (["revoked", "expired", "blocked"].includes(safeString(entry.item && entry.item.status, 40))) continue;
     const section = entry.section;
@@ -1254,6 +1281,7 @@ function compileMemoryPack({ workspaceRoot, runtime, items }) {
       sourceTier: entry.item.sourceTier,
       authorityTier: entry.item.authorityTier,
       factors: entry.factors,
+      explicitTaskFamilyMismatch: Boolean(entry.explicitFamilyMismatch),
     };
     selectionReasons[entry.item.memoryId] = reason;
     sectionEntries[entry.section].push({
@@ -1294,6 +1322,7 @@ function compileMemoryPack({ workspaceRoot, runtime, items }) {
     selectionReasons,
     selectedCount: selected.length,
     highConfidenceCount: selected.filter((entry) => entry.score >= highConfidenceScore).length,
+    explicitTaskFamilyMismatchCount: selected.filter((entry) => Boolean(entry.explicitFamilyMismatch)).length,
     items: selected.map(({ item, score }) => ({
       memoryId: item.memoryId,
       type: item.type,
@@ -1306,6 +1335,7 @@ function compileMemoryPack({ workspaceRoot, runtime, items }) {
         sourceTier: item.sourceTier,
         scopeWorkspace: safeString(item.scope && item.scope.workspaceId, 120),
         taskFamilies: uniqueStrings(item.scope && item.scope.taskFamilies, 8, 80),
+        explicitTaskFamilyMismatch: hasExplicitTaskFamilyMismatch(item, context.taskFamily),
       },
       summary: item.content.summary,
     })),
@@ -1336,6 +1366,7 @@ function buildRuntimeSummary({ workspaceRoot, items, pack, paths, runtime, curre
     publicOutputRoot: repoRelative(workspaceRoot, paths.publicOutput.root),
     itemCount: items.length,
     promotedCount: items.filter((item) => item.status === "promoted" || item.status === "reinforced").length,
+    canonicalEventCount: loadJsonl(paths.eventsPath).length + currentEvents.length,
     typeCounts,
     statusCounts,
     staleMemoryWarnings: health.staleMemoryWarnings,
@@ -1406,9 +1437,12 @@ function renderPublicOverviewMarkdown({
     `- Workspace: ${safeString(overview.workspaceId, 120) || "-"}`,
     `- Canonical root: ${safeString(overview.canonicalRoot, 220) || "-"}`,
     `- Public output root: ${safeString(overview.publicOutputRoot, 220) || "-"}`,
+    `- Canonical events: ${clampInt(overview.canonicalEventCount, 0, 999999, 0)}`,
     `- Items: ${clampInt(overview.itemCount, 0, 999999, 0)}`,
     `- Promoted: ${clampInt(overview.promotedCount, 0, 999999, 0)}`,
     `- Latest pack: ${clampInt(pack.selectedCount, 0, 999999, 0)} items for ${safeString(pack.activeAgent, 80) || "default"} (${clampInt(pack.highConfidenceCount, 0, 999999, 0)} high-confidence)`,
+    `- Latest pack reused items: ${clampInt(pack.reusedSelectedCount, 0, 999999, 0)}`,
+    `- Latest pack task-family mismatches: ${clampInt(pack.explicitTaskFamilyMismatchCount, 0, 999999, 0)}`,
     `- Memory eval: ${safeString(evalStatus.status, 20) || "UNKNOWN"}`,
     `- Recent promotions: ${Array.isArray(promotionHealth.recentPromotions) ? promotionHealth.recentPromotions.length : 0}`,
     `- Recent revocations: ${Array.isArray(promotionHealth.recentRevocations) ? promotionHealth.recentRevocations.length : 0}`,
@@ -1433,8 +1467,8 @@ function renderPublicOverviewMarkdown({
     lines.push(`- next: ${action}`);
   }
   lines.push("", "## Lane Health");
-  lines.push(`- openai_primary: ${safeString(openAIBlogLane && openAIBlogLane.compatibilityState && openAIBlogLane.compatibilityState.gateStatus, 40) || "UNKNOWN"} / observations=${clampInt(openAIBlogLane && openAIBlogLane.compatibilityState && openAIBlogLane.compatibilityState.observationCount, 0, 999999, 0)}`);
-  lines.push(`- anthropic_secondary: ${safeString(anthropicLane && anthropicLane.compatibilityState && anthropicLane.compatibilityState.gateStatus, 40) || "UNKNOWN"} / observations=${clampInt(anthropicLane && anthropicLane.compatibilityState && anthropicLane.compatibilityState.observationCount, 0, 999999, 0)}`);
+  lines.push(`- openai_primary: ${safeString(openAIBlogLane && openAIBlogLane.compatibilityState && openAIBlogLane.compatibilityState.gateStatus, 40) || "UNKNOWN"} / observations=${clampInt(openAIBlogLane && openAIBlogLane.compatibilityState && openAIBlogLane.compatibilityState.observationCount, 0, 999999, 0)} / canonical-selected=${clampInt(openAIBlogLane && openAIBlogLane.canonicalCounts && openAIBlogLane.canonicalCounts.selectedInLatestPackCount, 0, 999999, 0)}`);
+  lines.push(`- anthropic_secondary: ${safeString(anthropicLane && anthropicLane.compatibilityState && anthropicLane.compatibilityState.gateStatus, 40) || "UNKNOWN"} / observations=${clampInt(anthropicLane && anthropicLane.compatibilityState && anthropicLane.compatibilityState.observationCount, 0, 999999, 0)} / canonical-selected=${clampInt(anthropicLane && anthropicLane.canonicalCounts && anthropicLane.canonicalCounts.selectedInLatestPackCount, 0, 999999, 0)}`);
   return `${lines.join("\n")}\n`;
 }
 
@@ -1448,6 +1482,7 @@ function syncGovernedMemoryGraph({ workspaceRoot = workspaceRootDefault, runtime
   );
   const indexes = buildIndexes(items);
   const pack = compileMemoryPack({ workspaceRoot, runtime: { ...runtime, traceability }, items });
+  pack.reusedSelectedCount = pack.selectedMemoryIds.filter((memoryId) => previousById && previousById[memoryId]).length;
   const initialSummary = buildRuntimeSummary({ workspaceRoot, items, pack, paths, runtime, currentEvents: [] });
   const events = [];
   for (const item of items) {
@@ -1561,6 +1596,7 @@ function buildGovernedMemoryRuntimeSnapshot({ workspaceRoot = workspaceRootDefau
     previousById
   );
   const pack = compileMemoryPack({ workspaceRoot, runtime: { ...runtime, traceability }, items });
+  pack.reusedSelectedCount = pack.selectedMemoryIds.filter((memoryId) => previousById && previousById[memoryId]).length;
   const summary = buildRuntimeSummary({ workspaceRoot, items, pack, paths, runtime });
   summary.eventCount = loadJsonl(paths.eventsPath).length;
   return summary;
@@ -1586,10 +1622,11 @@ function sanitizePublicPackItem(item, workspaceRoot, thresholds) {
   };
 }
 
-function buildLaneProjection({ workspaceRoot, sourceName, sourceTier, laneKey, items, statePath, ledgerPath, digestPath, reportPath, proposalDir, curatedDocPath }) {
+function buildLaneProjection({ workspaceRoot, sourceName, sourceTier, laneKey, items, pack, statePath, ledgerPath, digestPath, reportPath, proposalDir, curatedDocPath }) {
   const laneItems = items.filter((item) => safeString(item && item.sourceTier, 40) === sourceTier);
   const lessons = laneItems.filter((item) => safeString(item && item.type, 80) === "semantic_lesson");
   const improvements = laneItems.filter((item) => safeString(item && item.type, 80) === "improvement_candidate");
+  const selectedLaneItems = (Array.isArray(pack && pack.items) ? pack.items : []).filter((item) => safeString(item && item.whyIncluded && item.whyIncluded.sourceTier, 40) === sourceTier);
   const compatibilityState = readJsonObject(path.join(workspaceRoot, statePath));
   const compatibilityGatePath = statePath.replace(/_state\.json$/i, "_gate.json");
   return {
@@ -1599,6 +1636,7 @@ function buildLaneProjection({ workspaceRoot, sourceName, sourceTier, laneKey, i
     sourceName,
     sourceTier,
     canonicalCounts: {
+      derivedFromCanonicalStore: laneItems.length > 0,
       lessonCount: lessons.length,
       promotedLessonCount: lessons.filter((item) => ["promoted", "reinforced"].includes(safeString(item && item.status, 40))).length,
       shadowLessonCount: lessons.filter((item) => safeString(item && item.status, 40) === "shadow").length,
@@ -1606,6 +1644,13 @@ function buildLaneProjection({ workspaceRoot, sourceName, sourceTier, laneKey, i
       proposalOnlyCount: improvements.filter((item) => safeString(item && item.status, 40) === "proposal_only").length,
       blockedCount: improvements.filter((item) => safeString(item && item.status, 40) === "blocked").length,
       shadowCount: improvements.filter((item) => safeString(item && item.status, 40) === "shadow").length,
+      selectedInLatestPackCount: selectedLaneItems.length,
+    },
+    canonicalHealth: {
+      canonicalStatePresent: laneItems.length > 0,
+      selectedInLatestPackCount: selectedLaneItems.length,
+      promotedOrReinforcedCount: laneItems.filter((item) => ["promoted", "reinforced"].includes(safeString(item && item.status, 40))).length,
+      shadowOrProposalCount: laneItems.filter((item) => ["shadow", "proposal_only", "candidate"].includes(safeString(item && item.status, 40))).length,
     },
     recentLessons: lessons.slice(0, 4).map((item) => ({
       publicRef: maskOpaqueId(item.memoryId, "mem"),
@@ -1645,14 +1690,18 @@ function buildLaneProjection({ workspaceRoot, sourceName, sourceTier, laneKey, i
   };
 }
 
-function evaluateMemoryPublicSuite({ workspaceRoot, paths, summary, pack }) {
+function evaluateMemoryPublicSuite({ workspaceRoot, paths, summary, pack, items, openAIBlogLane, anthropicLane }) {
   const suite = loadConfigJson(workspaceRoot, "scripts", "config", "memory_eval_suite.json");
   const checks = Array.isArray(suite && suite.checks) ? suite.checks : [];
   const workspaceProgressPath = path.join(paths.projections.workspaceProgressRoot, `${summary.workspaceId}.json`);
+  const workspaceProgressProjection = readJsonObject(workspaceProgressPath);
   const lastPackByWorkspace = readJsonObject(paths.retrieval.lastPackByWorkspace);
   const workspacePack = lastPackByWorkspace[summary.workspaceId] && typeof lastPackByWorkspace[summary.workspaceId] === "object"
     ? lastPackByWorkspace[summary.workspaceId]
     : pack;
+  const packItems = Array.isArray(workspacePack && workspacePack.items) ? workspacePack.items : [];
+  const isolationPolicy = getTaskFamilyIsolationPolicy(loadConfigJson(workspaceRoot, "scripts", "config", "memory_retrieval_policy.json"));
+  const hardExcludeTypes = uniqueStrings(isolationPolicy.hardExcludeTypes, 16, 80);
   const checkResults = checks.map((check) => {
     const id = safeString(check && check.id, 120);
     let pass = false;
@@ -1663,6 +1712,10 @@ function evaluateMemoryPublicSuite({ workspaceRoot, paths, summary, pack }) {
     } else if (id === "workspace_progress_projection_present") {
       pass = fs.existsSync(workspaceProgressPath);
       detail = pass ? "workspace progress projection present" : "workspace progress projection missing";
+    } else if (id === "workspace_progress_projection_populated") {
+      const milestoneCount = Array.isArray(workspaceProgressProjection.currentMilestones) ? workspaceProgressProjection.currentMilestones.length : 0;
+      pass = Boolean(safeString(workspaceProgressProjection.currentObjective, 240)) || milestoneCount > 0;
+      detail = pass ? "workspace progress projection contains objective or milestone data" : "workspace progress projection is structurally present but empty";
     } else if (id === "legacy_learning_compatibility_preserved") {
       const required = [
         "output/openai_blog_learning_digest.json",
@@ -1679,6 +1732,25 @@ function evaluateMemoryPublicSuite({ workspaceRoot, paths, summary, pack }) {
       const itemCount = Array.isArray(workspacePack && workspacePack.items) ? workspacePack.items.length : 0;
       pass = itemCount > 0 || clampInt(workspacePack && workspacePack.selectedCount, 0, 999999, 0) > 0;
       detail = pass ? "at least one bounded memory pack exists" : "no bounded memory pack found";
+    } else if (id === "bounded_memory_pack_reuses_canonical_memory") {
+      const reusedCount = clampInt(workspacePack && workspacePack.reusedSelectedCount, 0, 999999, 0);
+      pass = reusedCount > 0;
+      detail = pass ? `${reusedCount} selected pack item(s) were reused from the canonical store` : "latest bounded memory pack does not yet demonstrate canonical reuse";
+    } else if (id === "task_family_isolation_respected") {
+      const mismatched = packItems.filter((entry) => {
+        const itemType = safeString(entry && entry.type, 80);
+        const families = uniqueStrings(entry && entry.whyIncluded && entry.whyIncluded.taskFamilies, 8, 80);
+        if (!families.length || families.includes("all") || families.includes("default")) return false;
+        if (!hardExcludeTypes.includes(itemType)) return false;
+        return !families.includes(safeString(workspacePack && workspacePack.taskFamily, 80) || "default");
+      });
+      pass = mismatched.length === 0;
+      detail = pass ? "latest bounded memory pack respects task-family isolation for hard-excluded governed memory types" : `mismatched items present: ${mismatched.map((entry) => safeString(entry && entry.type, 80)).join(", ")}`;
+    } else if (id === "lane_projection_canonical_state_present") {
+      const openaiCanonical = openAIBlogLane && openAIBlogLane.canonicalCounts && safeNumber(openAIBlogLane.canonicalCounts.lessonCount, 0) >= 1;
+      const anthropicCanonical = anthropicLane && anthropicLane.canonicalCounts && safeNumber(anthropicLane.canonicalCounts.lessonCount, 0) >= 1;
+      pass = Boolean(openaiCanonical && anthropicCanonical);
+      detail = pass ? "public lane projections expose canonical memory-derived lesson state for primary and secondary learning lanes" : "canonical memory-derived lane state is missing from one or more public projections";
     }
     return {
       id,
@@ -1754,6 +1826,8 @@ function buildGovernedMemoryPublicArtifacts({ workspaceRoot = workspaceRootDefau
       taskFamily: safeString(summary.latestPack && summary.latestPack.taskFamily, 80),
       selectedCount: clampInt(summary.latestPack && summary.latestPack.selectedCount, 0, 999999, 0),
       highConfidenceCount: clampInt(summary.latestPack && summary.latestPack.highConfidenceCount, 0, 999999, 0),
+      reusedSelectedCount: clampInt(summary.latestPack && summary.latestPack.reusedSelectedCount, 0, 999999, 0),
+      explicitTaskFamilyMismatchCount: clampInt(summary.latestPack && summary.latestPack.explicitTaskFamilyMismatchCount, 0, 999999, 0),
       sectionCounts: summary.latestPack && summary.latestPack.sectionCounts && typeof summary.latestPack.sectionCounts === "object" ? summary.latestPack.sectionCounts : {},
       selectedItems: (Array.isArray(pack && pack.items) ? pack.items : []).slice(0, safeNumber(policy && policy.limits && policy.limits.maxPackItems, 12)).map((entry) => sanitizePublicPackItem(entry, workspaceRoot, thresholds)),
     },
@@ -1776,13 +1850,13 @@ function buildGovernedMemoryPublicArtifacts({ workspaceRoot = workspaceRootDefau
       recordedAt: safeString(entry && entry.recordedAt, 80),
     })) : [],
   };
-  const evalStatus = evaluateMemoryPublicSuite({ workspaceRoot, paths, summary, pack });
   const publicOverview = {
     schema: "governed-memory-public-overview.v1",
     generatedAt: toIso(),
     workspaceId: summary.workspaceId,
     canonicalRoot: summary.canonicalRoot,
     publicOutputRoot: repoRelative(workspaceRoot, paths.publicOutput.root),
+    canonicalEventCount: clampInt(summary.canonicalEventCount, 0, 999999, 0),
     itemCount: clampInt(summary.itemCount, 0, 999999, 0),
     promotedCount: clampInt(summary.promotedCount, 0, 999999, 0),
     typeCounts: summary.typeCounts,
@@ -1795,6 +1869,8 @@ function buildGovernedMemoryPublicArtifacts({ workspaceRoot = workspaceRootDefau
     latestPack: {
       selectedCount: clampInt(summary.latestPack && summary.latestPack.selectedCount, 0, 999999, 0),
       highConfidenceCount: clampInt(summary.latestPack && summary.latestPack.highConfidenceCount, 0, 999999, 0),
+      reusedSelectedCount: clampInt(summary.latestPack && summary.latestPack.reusedSelectedCount, 0, 999999, 0),
+      explicitTaskFamilyMismatchCount: clampInt(summary.latestPack && summary.latestPack.explicitTaskFamilyMismatchCount, 0, 999999, 0),
       activeAgent: safeString(summary.latestPack && summary.latestPack.activeAgent, 80),
       taskFamily: safeString(summary.latestPack && summary.latestPack.taskFamily, 80),
       sectionCounts: summary.latestPack && summary.latestPack.sectionCounts && typeof summary.latestPack.sectionCounts === "object" ? summary.latestPack.sectionCounts : {},
@@ -1807,6 +1883,7 @@ function buildGovernedMemoryPublicArtifacts({ workspaceRoot = workspaceRootDefau
     sourceTier: "external_primary",
     laneKey: "openai_primary",
     items,
+    pack,
     statePath: "output/openai_blog_self_improvement_state.json",
     ledgerPath: "output/openai_blog_learning_ledger.json",
     digestPath: "output/openai_blog_learning_digest.json",
@@ -1820,6 +1897,7 @@ function buildGovernedMemoryPublicArtifacts({ workspaceRoot = workspaceRootDefau
     sourceTier: "external_secondary",
     laneKey: "anthropic_secondary",
     items,
+    pack,
     statePath: "output/anthropic_engineering_self_improvement_state.json",
     ledgerPath: "output/anthropic_engineering_learning_ledger.json",
     digestPath: "output/anthropic_engineering_learning_digest.json",
@@ -1827,10 +1905,17 @@ function buildGovernedMemoryPublicArtifacts({ workspaceRoot = workspaceRootDefau
     proposalDir: "output/anthropic_engineering_self_improvement_proposals",
     curatedDocPath: "docs/ANTHROPIC_ENGINEERING_LEARNINGS.md",
   });
+  const evalStatus = evaluateMemoryPublicSuite({ workspaceRoot, paths, summary, pack, items, openAIBlogLane, anthropicLane });
   const exportManifest = {
     schema: "governed-memory-public-export-manifest.v1",
     generatedAt: toIso(),
     workspaceId: summary.workspaceId,
+    sourceMode: "redacted_public_projection",
+    canonicalReuseVerified: clampInt(summary.latestPack && summary.latestPack.reusedSelectedCount, 0, 999999, 0) > 0,
+    regenerateCommands: {
+      liveRedactedExport: "npm run artifact:memory-public",
+      deterministicSampleExport: "npm run artifact:memory-public:sample",
+    },
     outputs: {
       latestOverviewJson: repoRelative(workspaceRoot, paths.publicOutput.latestOverviewJson),
       latestOverviewMd: repoRelative(workspaceRoot, paths.publicOutput.latestOverviewMd),

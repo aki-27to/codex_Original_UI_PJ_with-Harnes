@@ -1,7 +1,13 @@
 {
   "schema": "governed-memory-public-export-manifest.v1",
-  "generatedAt": "2026-04-04T04:58:46.851Z",
-  "workspaceId": "b7bd07fb01282c16",
+  "generatedAt": "2026-04-04T05:49:47.120Z",
+  "workspaceId": "a645044d819b6f5d",
+  "sourceMode": "deterministic_fixture_sample",
+  "canonicalReuseVerified": true,
+  "regenerateCommands": {
+    "liveRedactedExport": "npm run artifact:memory-public",
+    "deterministicSampleExport": "npm run artifact:memory-public:sample"
+  },
   "outputs": {
     "latestOverviewJson": "output/memory_public/latest_overview.json",
     "latestOverviewMd": "output/memory_public/latest_overview.md",
@@ -12,5 +18,6 @@
     "memoryEvalStatusMd": "output/memory_public/memory_eval_public_status.md",
     "openAIBlogLaneJson": "output/memory_public/openai_primary_lane_projection.json",
     "anthropicLaneJson": "output/memory_public/anthropic_secondary_lane_projection.json"
-  }
+  },
+  "sampleSyncPassCount": 2
 }

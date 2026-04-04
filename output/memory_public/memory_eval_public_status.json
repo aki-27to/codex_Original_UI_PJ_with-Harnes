@@ -1,6 +1,6 @@
 {
   "schema": "memory-eval-public-status.v1",
-  "generatedAt": "2026-04-04T04:58:46.850Z",
+  "generatedAt": "2026-04-04T05:49:47.120Z",
   "suiteSchema": "memory-eval-suite.v1",
   "suiteVersion": "2026-04-04.r1",
   "status": "PASS",
@@ -19,6 +19,12 @@
       "detail": "workspace progress projection present"
     },
     {
+      "id": "workspace_progress_projection_populated",
+      "title": "Workspace progress projection contains durable objective or milestone data",
+      "status": "PASS",
+      "detail": "workspace progress projection contains objective or milestone data"
+    },
+    {
       "id": "legacy_learning_compatibility_preserved",
       "title": "Existing learning artifacts remain addressable",
       "status": "PASS",
@@ -29,6 +35,24 @@
       "title": "At least one bounded memory pack is compiled",
       "status": "PASS",
       "detail": "at least one bounded memory pack exists"
+    },
+    {
+      "id": "bounded_memory_pack_reuses_canonical_memory",
+      "title": "Latest bounded memory pack reuses previously persisted canonical memory",
+      "status": "PASS",
+      "detail": "10 selected pack item(s) were reused from the canonical store"
+    },
+    {
+      "id": "task_family_isolation_respected",
+      "title": "Latest bounded memory pack excludes task-family mismatched governed memory types",
+      "status": "PASS",
+      "detail": "latest bounded memory pack respects task-family isolation for hard-excluded governed memory types"
+    },
+    {
+      "id": "lane_projection_canonical_state_present",
+      "title": "Public lane projections expose canonical memory-derived lesson or improvement state",
+      "status": "PASS",
+      "detail": "public lane projections expose canonical memory-derived lesson state for primary and secondary learning lanes"
     }
   ]
 }

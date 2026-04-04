@@ -199,6 +199,14 @@ Regeneration commands:
 - `npm run artifact:memory-public` for live redacted export from the local canonical store
 - `npm run artifact:memory-public:sample` for the deterministic repo-safe sample surface checked into the repo
 
+The checked-in sample is a two-pass deterministic fixture export. It intentionally demonstrates:
+
+- canonical store creation
+- workspace progress projection population
+- bounded pack compilation
+- bounded pack reuse from previously persisted canonical memory
+- legacy OpenAI/Anthropic lane compatibility projection
+
 ## 10) Parent and Child Boundaries
 
 - Parent/runtime overview may read the full compiled governed memory summary for the current workspace.

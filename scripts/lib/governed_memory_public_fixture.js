@@ -156,6 +156,57 @@ function createGovernedMemoryPublicFixtureRuntime() {
   };
 }
 
+function createGovernedMemoryPublicFixtureSecondPassRuntime() {
+  const runtime = createGovernedMemoryPublicFixtureRuntime();
+  runtime.latestTurn = {
+    ...runtime.latestTurn,
+    turn_id: "turn-governed-public-002",
+    status: "completed",
+    task_outcome_status: "COMPLETED",
+    task_outcome_reason: "reused governed memory pack and passed validation",
+  };
+  runtime.executionOverview = {
+    ...runtime.executionOverview,
+    recent: [
+      {
+        turnId: "turn-governed-public-002",
+        threadId: "thread-governed-public-001",
+        agentName: "default",
+        status: "completed",
+        taskOutcomeStatus: "COMPLETED",
+        taskOutcomeReason: "reused governed memory pack and passed validation",
+        executionProfile: "full-runtime",
+        completedAt: "2026-04-04T10:05:00.000Z",
+        fileChanges: 3,
+        commandExecutions: 1,
+        collabCalls: 0,
+      },
+      ...(Array.isArray(runtime.executionOverview && runtime.executionOverview.recent)
+        ? runtime.executionOverview.recent
+        : []),
+    ],
+  };
+  runtime.evalHistory = {
+    ...runtime.evalHistory,
+    recentRuns: [
+      {
+        runId: "eval-public-002",
+        suiteId: "governed-memory-public.v1",
+        variantLabel: "reuse-proof",
+        scoreRate: 1,
+        passRate: 1,
+        failedCases: 0,
+        probePersistedRecords: 3,
+        generatedAt: "2026-04-04T10:08:00.000Z",
+      },
+      ...(Array.isArray(runtime.evalHistory && runtime.evalHistory.recentRuns)
+        ? runtime.evalHistory.recentRuns
+        : []),
+    ],
+  };
+  return runtime;
+}
+
 function createGovernedMemoryPublicFixtureTraceability() {
   return {
     changedPaths: ["server.js", "docs/CONTEXT_MEMORY_POLICY.md"],
@@ -225,6 +276,7 @@ function seedGovernedMemoryPublicCompatibilityArtifacts(root) {
 
 module.exports = {
   createGovernedMemoryPublicFixtureRuntime,
+  createGovernedMemoryPublicFixtureSecondPassRuntime,
   createGovernedMemoryPublicFixtureTraceability,
   seedGovernedMemoryPublicCompatibilityArtifacts,
 };

@@ -11,12 +11,28 @@
       "title": "Workspace progress projection is generated"
     },
     {
+      "id": "workspace_progress_projection_populated",
+      "title": "Workspace progress projection contains durable objective or milestone data"
+    },
+    {
       "id": "legacy_learning_compatibility_preserved",
       "title": "Existing learning artifacts remain addressable"
     },
     {
       "id": "bounded_memory_pack_written",
       "title": "At least one bounded memory pack is compiled"
+    },
+    {
+      "id": "bounded_memory_pack_reuses_canonical_memory",
+      "title": "Latest bounded memory pack reuses previously persisted canonical memory"
+    },
+    {
+      "id": "task_family_isolation_respected",
+      "title": "Latest bounded memory pack excludes task-family mismatched governed memory types"
+    },
+    {
+      "id": "lane_projection_canonical_state_present",
+      "title": "Public lane projections expose canonical memory-derived lesson or improvement state"
     }
   ]
 }

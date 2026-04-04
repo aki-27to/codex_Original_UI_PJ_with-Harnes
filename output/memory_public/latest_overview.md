@@ -1,11 +1,14 @@
 # Governed Memory Public Overview
 
-- Workspace: b7bd07fb01282c16
+- Workspace: a645044d819b6f5d
 - Canonical root: logs/archive/raw/runtime_state/memory
 - Public output root: output/memory_public
-- Items: 19
+- Canonical events: 23
+- Items: 21
 - Promoted: 14
-- Latest pack: 13 items for default (4 high-confidence)
+- Latest pack: 12 items for default (3 high-confidence)
+- Latest pack reused items: 10
+- Latest pack task-family mismatches: 0
 - Memory eval: PASS
 - Recent promotions: 5
 - Recent revocations: 0
@@ -13,8 +16,8 @@
 
 ## Type Counts
 - constitution_ref: 8
-- episodic_event: 1
-- eval_observation: 1
+- episodic_event: 2
+- eval_observation: 2
 - failure_pattern: 1
 - improvement_candidate: 1
 - preference_signal: 1
@@ -24,10 +27,10 @@
 - workspace_progress: 2
 
 ## Workspace Progress
-- objective: all checks passed
+- objective: reused governed memory pack and passed validation
 - milestone: latest turn status: completed
 - milestone: family gate: not_applicable
 
 ## Lane Health
-- openai_primary: PASS / observations=0
-- anthropic_secondary: PASS / observations=0
+- openai_primary: PASS / observations=0 / canonical-selected=0
+- anthropic_secondary: PASS / observations=0 / canonical-selected=1

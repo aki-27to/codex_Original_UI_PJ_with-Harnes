@@ -1,34 +1,36 @@
 {
   "schema": "governed-memory-latest-pack-public.v1",
-  "generatedAt": "2026-04-04T04:58:46.849Z",
-  "workspaceId": "b7bd07fb01282c16",
-  "packId": "3ecc79f1debb22183e6d",
+  "generatedAt": "2026-04-04T05:49:47.117Z",
+  "workspaceId": "a645044d819b6f5d",
+  "packId": "959f14ab6d1eda192036",
   "latestPack": {
-    "generatedAt": "2026-04-04T04:58:46.827Z",
-    "compiledAt": "2026-04-04T04:58:46.827Z",
+    "generatedAt": "2026-04-04T05:49:47.103Z",
+    "compiledAt": "2026-04-04T05:49:47.103Z",
     "activeAgent": "default",
     "taskFamily": "deterministic_code",
-    "selectedCount": 13,
-    "highConfidenceCount": 4,
+    "selectedCount": 12,
+    "highConfidenceCount": 3,
+    "reusedSelectedCount": 10,
+    "explicitTaskFamilyMismatchCount": 0,
     "sectionCounts": {
       "spec": 4,
       "intent": 1,
       "workspace_progress": 1,
-      "experience": 2,
-      "semantic": 3,
-      "preference": 1,
-      "improvement": 1
+      "experience": 4,
+      "semantic": 2,
+      "preference": 0,
+      "improvement": 0
     },
     "selectedItems": [
       {
-        "publicRef": "mem_6f703838a4",
+        "publicRef": "mem_1e38cc1791",
         "type": "workspace_progress",
         "status": "promoted",
         "score": 0.855,
         "scoreBand": "high",
         "sourceTier": "runtime",
         "authorityTier": 3,
-        "scopeWorkspace": "b7bd07fb01282c16",
+        "scopeWorkspace": "a645044d819b6f5d",
         "taskFamilies": [
           "deterministic_code"
         ],
@@ -42,25 +44,11 @@
         "scoreBand": "high",
         "sourceTier": "runtime",
         "authorityTier": 1,
-        "scopeWorkspace": "b7bd07fb01282c16",
+        "scopeWorkspace": "a645044d819b6f5d",
         "taskFamilies": [
           "deterministic_code"
         ],
         "summary": "Active intent-first requirement state for the current workspace and turn."
-      },
-      {
-        "publicRef": "mem_b58b4ddf00",
-        "type": "constitution_ref",
-        "status": "promoted",
-        "score": 0.715,
-        "scoreBand": "high",
-        "sourceTier": "repo",
-        "authorityTier": 0,
-        "scopeWorkspace": "b7bd07fb01282c16",
-        "taskFamilies": [
-          "web_creative"
-        ],
-        "summary": "Design-sensitive work is completion-gated by benchmark alignment, visual review, independent review, and doc sync."
       },
       {
         "publicRef": "mem_52f4ed9143",
@@ -70,7 +58,7 @@
         "scoreBand": "high",
         "sourceTier": "repo",
         "authorityTier": 0,
-        "scopeWorkspace": "b7bd07fb01282c16",
+        "scopeWorkspace": "a645044d819b6f5d",
         "taskFamilies": [
           "all"
         ],
@@ -84,7 +72,7 @@
         "scoreBand": "selected",
         "sourceTier": "repo",
         "authorityTier": 0,
-        "scopeWorkspace": "b7bd07fb01282c16",
+        "scopeWorkspace": "a645044d819b6f5d",
         "taskFamilies": [],
         "summary": "tier0-agents"
       },
@@ -96,9 +84,35 @@
         "scoreBand": "selected",
         "sourceTier": "repo",
         "authorityTier": 0,
-        "scopeWorkspace": "b7bd07fb01282c16",
+        "scopeWorkspace": "a645044d819b6f5d",
         "taskFamilies": [],
         "summary": "current-architecture"
+      },
+      {
+        "publicRef": "mem_b5d199f8aa",
+        "type": "constitution_ref",
+        "status": "promoted",
+        "score": 0.6575,
+        "scoreBand": "selected",
+        "sourceTier": "repo",
+        "authorityTier": 0,
+        "scopeWorkspace": "a645044d819b6f5d",
+        "taskFamilies": [],
+        "summary": "context-memory-policy"
+      },
+      {
+        "publicRef": "mem_e24a739970",
+        "type": "episodic_event",
+        "status": "captured",
+        "score": 0.6408,
+        "scoreBand": "selected",
+        "sourceTier": "runtime",
+        "authorityTier": 4,
+        "scopeWorkspace": "a645044d819b6f5d",
+        "taskFamilies": [
+          "deterministic_code"
+        ],
+        "summary": "<turn-ref> finished as COMPLETED."
       },
       {
         "publicRef": "mem_3a6406fb99",
@@ -108,25 +122,11 @@
         "scoreBand": "selected",
         "sourceTier": "runtime",
         "authorityTier": 4,
-        "scopeWorkspace": "b7bd07fb01282c16",
+        "scopeWorkspace": "a645044d819b6f5d",
         "taskFamilies": [
           "deterministic_code"
         ],
         "summary": "<turn-ref> finished as COMPLETED."
-      },
-      {
-        "publicRef": "mem_6396b50180",
-        "type": "preference_signal",
-        "status": "promoted",
-        "score": 0.6217,
-        "scoreBand": "selected",
-        "sourceTier": "runtime",
-        "authorityTier": 2,
-        "scopeWorkspace": "b7bd07fb01282c16",
-        "taskFamilies": [
-          "web_creative"
-        ],
-        "summary": "Ship deliberate, benchmark-beating UI work."
       },
       {
         "publicRef": "mem_4b32dd2e62",
@@ -136,11 +136,25 @@
         "scoreBand": "selected",
         "sourceTier": "runtime",
         "authorityTier": 5,
-        "scopeWorkspace": "b7bd07fb01282c16",
+        "scopeWorkspace": "a645044d819b6f5d",
         "taskFamilies": [
           "default"
         ],
         "summary": "Block completion when screenshot review is missing."
+      },
+      {
+        "publicRef": "mem_a1fdf0f6d3",
+        "type": "eval_observation",
+        "status": "captured",
+        "score": 0.5608,
+        "scoreBand": "selected",
+        "sourceTier": "eval",
+        "authorityTier": 4,
+        "scopeWorkspace": "a645044d819b6f5d",
+        "taskFamilies": [
+          "default"
+        ],
+        "summary": "governed-memory-public.v1 score 1.00 with 0 failures."
       },
       {
         "publicRef": "mem_f142612b0f",
@@ -150,25 +164,11 @@
         "scoreBand": "selected",
         "sourceTier": "eval",
         "authorityTier": 4,
-        "scopeWorkspace": "b7bd07fb01282c16",
+        "scopeWorkspace": "a645044d819b6f5d",
         "taskFamilies": [
           "default"
         ],
         "summary": "core-harness-workflow.v4 score 1.00 with 0 failures."
-      },
-      {
-        "publicRef": "mem_9a150bdcb9",
-        "type": "semantic_lesson",
-        "status": "promoted",
-        "score": 0.4642,
-        "scoreBand": "selected",
-        "sourceTier": "external_primary",
-        "authorityTier": 5,
-        "scopeWorkspace": "b7bd07fb01282c16",
-        "taskFamilies": [
-          "web_creative"
-        ],
-        "summary": "Run long horizon tasks with Codex"
       },
       {
         "publicRef": "mem_d44da98aec",
@@ -178,7 +178,7 @@
         "scoreBand": "selected",
         "sourceTier": "external_secondary",
         "authorityTier": 5,
-        "scopeWorkspace": "b7bd07fb01282c16",
+        "scopeWorkspace": "a645044d819b6f5d",
         "taskFamilies": [
           "default"
         ],

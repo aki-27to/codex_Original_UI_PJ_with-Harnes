@@ -1,17 +1,25 @@
 {
   "schema": "governed-memory-public-lane-projection.v1",
-  "generatedAt": "2026-04-04T04:58:46.851Z",
+  "generatedAt": "2026-04-04T05:49:47.118Z",
   "laneKey": "anthropic_secondary",
   "sourceName": "Anthropic Engineering",
   "sourceTier": "external_secondary",
   "canonicalCounts": {
+    "derivedFromCanonicalStore": true,
     "lessonCount": 1,
     "promotedLessonCount": 0,
     "shadowLessonCount": 1,
     "improvementCandidateCount": 0,
     "proposalOnlyCount": 0,
     "blockedCount": 0,
-    "shadowCount": 0
+    "shadowCount": 0,
+    "selectedInLatestPackCount": 1
+  },
+  "canonicalHealth": {
+    "canonicalStatePresent": true,
+    "selectedInLatestPackCount": 1,
+    "promotedOrReinforcedCount": 0,
+    "shadowOrProposalCount": 1
   },
   "recentLessons": [
     {

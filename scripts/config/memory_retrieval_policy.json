@@ -29,5 +29,21 @@
   "scoreThresholds": {
     "minimumSelectionScore": 0.18,
     "highConfidenceScore": 0.68
+  },
+  "taskFamilyIsolation": {
+    "hardExcludeTypes": [
+      "constitution_ref",
+      "preference_signal",
+      "semantic_lesson",
+      "runtime_hint",
+      "improvement_candidate",
+      "failure_pattern"
+    ],
+    "penalizedTypes": [
+      "constitution_ref",
+      "eval_observation",
+      "episodic_event"
+    ],
+    "explicitMismatchPenalty": 0.38
   }
 }

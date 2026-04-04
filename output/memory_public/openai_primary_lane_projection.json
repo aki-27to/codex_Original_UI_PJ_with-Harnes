@@ -1,17 +1,25 @@
 {
   "schema": "governed-memory-public-lane-projection.v1",
-  "generatedAt": "2026-04-04T04:58:46.850Z",
+  "generatedAt": "2026-04-04T05:49:47.118Z",
   "laneKey": "openai_primary",
   "sourceName": "OpenAI Developers Blog",
   "sourceTier": "external_primary",
   "canonicalCounts": {
+    "derivedFromCanonicalStore": true,
     "lessonCount": 1,
     "promotedLessonCount": 1,
     "shadowLessonCount": 0,
     "improvementCandidateCount": 1,
     "proposalOnlyCount": 0,
     "blockedCount": 0,
-    "shadowCount": 1
+    "shadowCount": 1,
+    "selectedInLatestPackCount": 0
+  },
+  "canonicalHealth": {
+    "canonicalStatePresent": true,
+    "selectedInLatestPackCount": 0,
+    "promotedOrReinforcedCount": 1,
+    "shadowOrProposalCount": 1
   },
   "recentLessons": [
     {
