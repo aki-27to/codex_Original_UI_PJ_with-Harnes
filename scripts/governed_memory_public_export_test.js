@@ -68,6 +68,9 @@ function main() {
   assert(!JSON.stringify(workspaceProgress).includes(tempRoot), "workspace progress public artifact must not leak the absolute workspace path");
   assert.strictEqual(workspaceProgress.workspaceRoot, undefined, "workspace progress public artifact must not expose workspaceRoot");
   assert(!JSON.stringify(workspaceProgress).includes("[object Object]"), "workspace progress public artifact must not contain object stringification artifacts");
+  assert.strictEqual(typeof workspaceProgress.updatedAt, "string", "workspace progress public artifact must expose updatedAt");
+  assert(workspaceProgress.updatedAt.length > 0, "workspace progress public artifact updatedAt must not be empty");
+  assert.notStrictEqual(workspaceProgress.updatedAt, workspaceProgress.generatedAt, "workspace progress updatedAt must be distinct from generatedAt");
   const latestPack = JSON.parse(fs.readFileSync(path.join(outputRoot, "latest_pack_public.json"), "utf8"));
   assert(Array.isArray(latestPack.latestPack.selectedItems), "latest pack public artifact must expose selectedItems");
   assert(latestPack.latestPack.selectedItems.every((entry) => typeof entry.publicRef === "string" && entry.publicRef.startsWith("mem_")), "latest pack public artifact must expose redacted publicRefs");
@@ -79,8 +82,13 @@ function main() {
   assert.strictEqual(latestPack.latestPack.explicitTaskFamilyMismatchCount, 0, "latest pack public artifact must not expose hard task-family mismatches");
   const evalStatus = JSON.parse(fs.readFileSync(path.join(outputRoot, "memory_eval_public_status.json"), "utf8"));
   assert.strictEqual(evalStatus.status, "PASS", "memory eval public status must pass for the seeded canonical store");
+  assert(evalStatus.checks.some((entry) => entry.id === "workspace_progress_updated_at_present" && entry.status === "PASS"), "memory eval public status must verify workspace progress updatedAt");
+  assert(evalStatus.checks.some((entry) => entry.id === "promotion_health_memory_type_populated" && entry.status === "PASS"), "memory eval public status must verify promotion/revocation memoryType population");
   assert(evalStatus.checks.some((entry) => entry.id === "bounded_memory_pack_reuses_canonical_memory" && entry.status === "PASS"), "memory eval public status must verify canonical pack reuse");
   assert(evalStatus.checks.some((entry) => entry.id === "task_family_isolation_respected" && entry.status === "PASS"), "memory eval public status must verify task-family isolation");
+  const promotionHealth = JSON.parse(fs.readFileSync(path.join(outputRoot, "promotion_revocation_health_public.json"), "utf8"));
+  assert((promotionHealth.recentPromotions || []).every((entry) => typeof entry.memoryType === "string" && entry.memoryType.length > 0), "recent promotions must expose non-empty memoryType");
+  assert((promotionHealth.recentRevocations || []).every((entry) => typeof entry.memoryType === "string" && entry.memoryType.length > 0), "recent revocations must expose non-empty memoryType");
   const openaiLane = JSON.parse(fs.readFileSync(path.join(outputRoot, "openai_primary_lane_projection.json"), "utf8"));
   assert(openaiLane.canonicalCounts.lessonCount >= 1, "openai lane projection must derive lesson counts from canonical graph");
   assert.strictEqual(openaiLane.compatibilityState.gateStatus, "PASS", "openai lane projection must preserve compatibility gate status");

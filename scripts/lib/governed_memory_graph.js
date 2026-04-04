@@ -431,6 +431,13 @@ function reviveLifecycle(items, previousById) {
 }
 
 function collectMemoryHealth({ items, paths, retentionPolicy, currentEvents = [] }) {
+  const itemTypeById = new Map((Array.isArray(items) ? items : []).map((item) => [safeString(item && item.memoryId, 120), safeString(item && item.type, 80)]));
+  const resolveMemoryType = (entry) => {
+    const explicit = safeString(entry && entry.memoryType, 80) || safeString(entry && entry.type, 80);
+    if (explicit) return explicit;
+    const memoryId = safeString(entry && entry.memoryId, 120);
+    return itemTypeById.get(memoryId) || "unknown";
+  };
   const expiryByType = retentionPolicy && retentionPolicy.expiryByType && typeof retentionPolicy.expiryByType === "object"
     ? retentionPolicy.expiryByType
     : {};
@@ -458,7 +465,7 @@ function collectMemoryHealth({ items, paths, retentionPolicy, currentEvents = []
     .slice(0, 5)
     .map((entry) => ({
       memoryId: safeString(entry && entry.memoryId, 120),
-      memoryType: safeString(entry && entry.memoryType, 80),
+      memoryType: resolveMemoryType(entry),
       status: safeString(entry && entry.status, 40),
       recordedAt: safeString(entry && entry.recordedAt, 80),
     }));
@@ -470,7 +477,7 @@ function collectMemoryHealth({ items, paths, retentionPolicy, currentEvents = []
     .slice(0, 5)
     .map((entry) => ({
       memoryId: safeString(entry && entry.memoryId, 120),
-      memoryType: safeString(entry && entry.memoryType, 80),
+      memoryType: resolveMemoryType(entry),
       status: safeString(entry && entry.status, 40) || safeString(entry && entry.eventType, 80),
       recordedAt: safeString(entry && entry.recordedAt, 80),
     }));
@@ -647,6 +654,7 @@ function loadPersistedGovernedMemoryState({ workspaceRoot = workspaceRootDefault
     paths,
     items,
     pack,
+    workspaceProgressItem,
     summary: {
       enabled: true,
       schema: "governed-memory-graph-runtime.v1",
@@ -667,6 +675,7 @@ function loadPersistedGovernedMemoryState({ workspaceRoot = workspaceRootDefault
       workspaceProgress: workspaceProgressItem && workspaceProgressItem.content && workspaceProgressItem.content.structured
         ? workspaceProgressItem.content.structured
         : {},
+      workspaceProgressUpdatedAt: safeString(workspaceProgressItem && workspaceProgressItem.lifecycle && workspaceProgressItem.lifecycle.updatedAt, 80),
       latestPack: summarizePack(pack, retrievalPolicy && retrievalPolicy.scoreThresholds),
       compatibilityProjectionPaths: uniqueStrings([
         "output/openai_blog_learning_digest.json",
@@ -1892,6 +1901,9 @@ function evaluateMemoryPublicSuite({ workspaceRoot, paths, summary, pack, items,
       const milestoneCount = Array.isArray(workspaceProgressProjection.currentMilestones) ? workspaceProgressProjection.currentMilestones.length : 0;
       pass = Boolean(safeString(workspaceProgressProjection.currentObjective, 240)) || milestoneCount > 0;
       detail = pass ? "workspace progress projection contains objective or milestone data" : "workspace progress projection is structurally present but empty";
+    } else if (id === "workspace_progress_updated_at_present") {
+      pass = Boolean(safeString(workspaceProgressProjection.updatedAt, 80));
+      detail = pass ? "workspace progress projection exposes a durable updatedAt timestamp" : "workspace progress projection is missing durable updatedAt";
     } else if (id === "legacy_learning_compatibility_preserved") {
       const required = [
         "output/openai_blog_learning_digest.json",
@@ -1927,6 +1939,12 @@ function evaluateMemoryPublicSuite({ workspaceRoot, paths, summary, pack, items,
       const anthropicCanonical = anthropicLane && anthropicLane.canonicalCounts && safeNumber(anthropicLane.canonicalCounts.lessonCount, 0) >= 1;
       pass = Boolean(openaiCanonical && anthropicCanonical);
       detail = pass ? "public lane projections expose canonical memory-derived lesson state for primary and secondary learning lanes" : "canonical memory-derived lane state is missing from one or more public projections";
+    } else if (id === "promotion_health_memory_type_populated") {
+      const promotions = Array.isArray(summary && summary.recentPromotions) ? summary.recentPromotions : [];
+      const revocations = Array.isArray(summary && summary.recentRevocations) ? summary.recentRevocations : [];
+      const emptyEntry = [...promotions, ...revocations].find((entry) => !safeString(entry && entry.memoryType, 80));
+      pass = !emptyEntry;
+      detail = pass ? "promotion/revocation health entries expose non-empty memoryType values" : "one or more promotion/revocation health entries are missing memoryType";
     }
     return {
       id,
@@ -1972,6 +1990,7 @@ function buildGovernedMemoryPublicArtifacts({ workspaceRoot = workspaceRootDefau
     schema: "governed-memory-workspace-progress-public.v1",
     generatedAt: toIso(),
     workspaceId: summary.workspaceId,
+    updatedAt: normalizePublicTimestamp(summary.workspaceProgressUpdatedAt),
     currentObjective: coerceSummaryText(workspaceProgress.currentObjective, workspaceRoot),
     currentMilestones: coerceSummaryList(workspaceProgress.currentMilestones, workspaceRoot, safeNumber(policy && policy.limits && policy.limits.maxMilestones, 6)),
     knownBlockers: coerceSummaryList(workspaceProgress.knownBlockers, workspaceRoot, safeNumber(policy && policy.limits && policy.limits.maxBlockers, 6)),
@@ -1990,6 +2009,9 @@ function buildGovernedMemoryPublicArtifacts({ workspaceRoot = workspaceRootDefau
       completedAt: normalizePublicTimestamp(entry && entry.completedAt),
     })) : [],
   };
+  if (!safeString(workspaceProgressPublic.updatedAt, 80)) {
+    workspaceProgressPublic.updatedAtReason = "canonical_workspace_progress_updated_at_missing";
+  }
   const latestPackPublic = {
     schema: "governed-memory-latest-pack-public.v1",
     generatedAt: toIso(),

@@ -1,6 +1,6 @@
 {
   "schema": "memory-eval-public-status.v1",
-  "generatedAt": "2026-04-04T06:54:52.042Z",
+  "generatedAt": "2026-04-04T07:17:39.935Z",
   "suiteSchema": "memory-eval-suite.v1",
   "suiteVersion": "2026-04-04.r1",
   "status": "PASS",
@@ -23,6 +23,12 @@
       "title": "Workspace progress projection contains durable objective or milestone data",
       "status": "PASS",
       "detail": "workspace progress projection contains objective or milestone data"
+    },
+    {
+      "id": "workspace_progress_updated_at_present",
+      "title": "Workspace progress projection exposes a durable updatedAt timestamp",
+      "status": "PASS",
+      "detail": "workspace progress projection exposes a durable updatedAt timestamp"
     },
     {
       "id": "legacy_learning_compatibility_preserved",
@@ -53,6 +59,12 @@
       "title": "Public lane projections expose canonical memory-derived lesson or improvement state",
       "status": "PASS",
       "detail": "public lane projections expose canonical memory-derived lesson state for primary and secondary learning lanes"
+    },
+    {
+      "id": "promotion_health_memory_type_populated",
+      "title": "Promotion and revocation health entries expose non-empty memoryType values",
+      "status": "PASS",
+      "detail": "promotion/revocation health entries expose non-empty memoryType values"
     }
   ]
 }

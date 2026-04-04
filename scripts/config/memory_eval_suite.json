@@ -15,6 +15,10 @@
       "title": "Workspace progress projection contains durable objective or milestone data"
     },
     {
+      "id": "workspace_progress_updated_at_present",
+      "title": "Workspace progress projection exposes a durable updatedAt timestamp"
+    },
+    {
       "id": "legacy_learning_compatibility_preserved",
       "title": "Existing learning artifacts remain addressable"
     },
@@ -33,6 +37,10 @@
     {
       "id": "lane_projection_canonical_state_present",
       "title": "Public lane projections expose canonical memory-derived lesson or improvement state"
+    },
+    {
+      "id": "promotion_health_memory_type_populated",
+      "title": "Promotion and revocation health entries expose non-empty memoryType values"
     }
   ]
 }
