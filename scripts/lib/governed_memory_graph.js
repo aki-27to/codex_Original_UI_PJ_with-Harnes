@@ -361,6 +361,13 @@ function getMemoryPaths(workspaceRoot = workspaceRootDefault) {
       learningAgendaRoot: path.join(projectionsRoot, "learning_agenda"),
       causalTraceRoot: path.join(projectionsRoot, "causal_learning_trace"),
       continuityDebtRoot: path.join(projectionsRoot, "continuity_debt"),
+      stableCoverageMatrixPath: path.join(projectionsRoot, "readiness", "stable_coverage_matrix.json"),
+      stableCoverageTrendPath: path.join(projectionsRoot, "readiness", "stable_coverage_trend.json"),
+      goalCompletionHistoryPath: path.join(projectionsRoot, "readiness", "goal_completion_history.json"),
+      continuityDebtTrendPath: path.join(projectionsRoot, "continuity_debt", "trend.json"),
+      continuityCloseoutEffectsPath: path.join(projectionsRoot, "continuity_debt", "closeout_effects.json"),
+      causalEffectivenessSummaryPath: path.join(projectionsRoot, "causal_learning_trace", "effectiveness_summary.json"),
+      causalRegressionAlertsPath: path.join(projectionsRoot, "causal_learning_trace", "regression_alerts.json"),
     },
     retrieval: {
       root: retrievalRoot,
@@ -390,6 +397,7 @@ function getMemoryPaths(workspaceRoot = workspaceRootDefault) {
       anthropicLaneJson: path.join(publicOutputRoot, "anthropic_secondary_lane_projection.json"),
       lessonEffectivenessJson: path.join(publicOutputRoot, "lesson_effectiveness_public.json"),
       packCausalTraceJson: path.join(publicOutputRoot, "pack_causal_trace_public.json"),
+      causalEffectivenessSummaryJson: path.join(publicOutputRoot, "causal_effectiveness_summary.json"),
       exportManifestJson: path.join(publicOutputRoot, "export_manifest.json"),
     },
     agiReadiness: {
@@ -397,6 +405,8 @@ function getMemoryPaths(workspaceRoot = workspaceRootDefault) {
       latestJson: path.join(agiReadinessRoot, "latest_readiness.json"),
       latestMd: path.join(agiReadinessRoot, "latest_readiness.md"),
       domainCoverageMatrixJson: path.join(agiReadinessRoot, "domain_coverage_matrix.json"),
+      stableCoverageMatrixJson: path.join(agiReadinessRoot, "stable_coverage_matrix.json"),
+      stableCoverageTrendJson: path.join(agiReadinessRoot, "stable_coverage_trend.json"),
       robustnessBreakdownJson: path.join(agiReadinessRoot, "robustness_breakdown.json"),
       promotionTrendJson: path.join(agiReadinessRoot, "promotion_trend.json"),
       blockedReasonsJson: path.join(agiReadinessRoot, "blocked_reasons.json"),
@@ -405,10 +415,14 @@ function getMemoryPaths(workspaceRoot = workspaceRootDefault) {
       autonomousLearningStatusJson: path.join(agiReadinessRoot, "autonomous_learning_status.json"),
       autonomousLearningStatusMd: path.join(agiReadinessRoot, "autonomous_learning_status.md"),
       causalLearningTraceJson: path.join(agiReadinessRoot, "causal_learning_trace.json"),
+      causalRegressionAlertsJson: path.join(agiReadinessRoot, "causal_regression_alerts.json"),
       distinctImprovementLineageJson: path.join(agiReadinessRoot, "distinct_improvement_lineage.json"),
       distinctImprovementLineageMd: path.join(agiReadinessRoot, "distinct_improvement_lineage.md"),
+      distinctImprovementSummaryJson: path.join(agiReadinessRoot, "distinct_improvement_summary.json"),
       robustnessRemediationStatusJson: path.join(agiReadinessRoot, "robustness_remediation_status.json"),
       robustnessRemediationTrendJson: path.join(agiReadinessRoot, "robustness_remediation_trend.json"),
+      robustnessRemediationBacklogJson: path.join(agiReadinessRoot, "robustness_remediation_backlog.json"),
+      robustnessRemediationEffectsJson: path.join(agiReadinessRoot, "robustness_remediation_effects.json"),
       goalCompletionStatusJson: path.join(agiReadinessRoot, "goal_completion_status.json"),
       goalCompletionStatusMd: path.join(agiReadinessRoot, "goal_completion_status.md"),
     },
@@ -417,6 +431,8 @@ function getMemoryPaths(workspaceRoot = workspaceRootDefault) {
       latestSummaryJson: path.join(continuityPublicRoot, "latest_continuity.json"),
       latestSummaryMd: path.join(continuityPublicRoot, "latest_continuity.md"),
       continuityDebtJson: path.join(continuityPublicRoot, "continuity_debt.json"),
+      continuityDebtTrendJson: path.join(continuityPublicRoot, "continuity_debt_trend.json"),
+      continuityCloseoutEffectsJson: path.join(continuityPublicRoot, "continuity_closeout_effects.json"),
     },
   };
 }
@@ -3218,6 +3234,10 @@ function buildGoalCompletionStatus({
   anthropicLane,
   workspaceProgressPublic = null,
   bottlenecks = null,
+  previousGoalHistory = null,
+  stableCoverageArtifacts = null,
+  causalEffectivenessSummary = null,
+  causalRegressionAlerts = null,
 }) {
   const policy = loadAgiReadinessPolicy(workspaceRoot);
   const criteria = policy && policy.operationalCompletionCriteria && typeof policy.operationalCompletionCriteria === "object"
@@ -3246,12 +3266,16 @@ function buildGoalCompletionStatus({
   const verifiedNegativeCount = agendaEntries.filter((entry) => safeString(entry && entry.remediationEffect, 80) === "verified_negative").length;
   const verifiedHarmfulCount = agendaEntries.filter((entry) => safeString(entry && entry.remediationEffect, 80) === "verified_harmful").length;
   const insufficientEvidenceCount = agendaEntries.filter((entry) => safeString(entry && entry.remediationEffect, 80) === "insufficient_evidence").length;
+  const runningAgendaCount = agendaEntries.filter((entry) => safeString(entry && entry.status, 80) === "running").length;
   const likelyContributoryCount = traces.filter((entry) => safeString(entry && entry.usageStage, 80) === "likely_contributory").length;
   const harmfulTraceCount = traces.filter((entry) => safeString(entry && entry.usageStage, 80) === "harmful_to_outcome").length;
   const harmfulCausalRatio = safeRatio(harmfulTraceCount, likelyContributoryCount + harmfulTraceCount, likelyContributoryCount + harmfulTraceCount > 0 ? null : 1);
   const ambiguousInstruction = robustness.find((entry) => safeString(entry && entry.categoryId, 80) === "ambiguous_instruction") || {};
   const missingContext = robustness.find((entry) => safeString(entry && entry.categoryId, 80) === "missing_context") || {};
   const browserFlakiness = robustness.find((entry) => safeString(entry && entry.categoryId, 80) === "browser_tool_flakiness") || {};
+  const adversarialConflicting = robustness.find((entry) => safeString(entry && entry.categoryId, 80) === "adversarial_conflicting_instruction") || {};
+  const degradedToolOutputs = robustness.find((entry) => safeString(entry && entry.categoryId, 80) === "degraded_tool_outputs") || {};
+  const failedFamilies = uniqueStrings(readiness && readiness.failedFamilies, 16, 80);
   const lineageNonWorsening = recentDistinctWindow.length >= clampInt(criteria.minimumDistinctEntries, 1, 20, 3)
     && recentDistinctWindow.every((entry) => {
       const scoreOld = safeNumber(entry && entry.rawFinalScoreOld, NaN);
@@ -3269,24 +3293,41 @@ function buildGoalCompletionStatus({
     });
   const primaryLaneObserved = clampInt(openAIBlogLane && openAIBlogLane.canonicalCounts && openAIBlogLane.canonicalCounts.observationCount, 0, 999999, 0);
   const primaryLaneCausalUsage = clampInt(openAIBlogLane && openAIBlogLane.canonicalCounts && openAIBlogLane.canonicalCounts.causalUsageCount, 0, 999999, 0);
+  const primaryLaneSelectedCount = clampInt(openAIBlogLane && openAIBlogLane.canonicalCounts && openAIBlogLane.canonicalCounts.selectedInLatestPackCount, 0, 999999, 0);
+  const primaryLaneEffectiveContribution = clampInt(openAIBlogLane && openAIBlogLane.canonicalCounts && openAIBlogLane.canonicalCounts.likelyContributoryCount, 0, 999999, 0);
   const secondaryAdvisoryUsage = clampInt(anthropicLane && anthropicLane.advisory && anthropicLane.advisory.advisoryReferenceCount, 0, 999999, 0);
+  const secondaryAdvisoryEffects = Array.isArray(anthropicLane && anthropicLane.recentAdvisoryEffects) ? anthropicLane.recentAdvisoryEffects.length : 0;
+  const stableCoverageMatrix = stableCoverageArtifacts && stableCoverageArtifacts.matrix && typeof stableCoverageArtifacts.matrix === "object"
+    ? stableCoverageArtifacts.matrix
+    : { rows: [] };
+  const stableCoverageTrend = stableCoverageArtifacts && stableCoverageArtifacts.trend && typeof stableCoverageArtifacts.trend === "object"
+    ? stableCoverageArtifacts.trend
+    : { entries: [] };
+  const previousHistoryEntries = Array.isArray(previousGoalHistory && previousGoalHistory.entries) ? previousGoalHistory.entries : [];
+  const catastrophicRiskCvar = safeNumber(readiness && readiness.catastrophicRisk && readiness.catastrophicRisk.cvar, null);
   const currentValues = {
     stableCoverageBreadth: safeNumber(readiness && readiness.stableCoverageBreadth, 0),
     supportedCoverageBreadth: safeNumber(readiness && readiness.supportedCoverageBreadth, 0),
+    failedFamilies,
     R_robust: safeNumber(readiness && readiness.metrics && readiness.metrics.R_robust && readiness.metrics.R_robust.value, 0),
     H_horizon: safeNumber(readiness && readiness.metrics && readiness.metrics.H_horizon && readiness.metrics.H_horizon.value, 0),
     rawFinalScore: safeNumber(readiness && readiness.rawFinalScore, 0),
+    catastrophicRiskCvar,
     openDebtCount: clampInt(debtSummary && debtSummary.openDebtCount, 0, 999999, 0),
     blockedSubtasks: clampInt(continuity && continuity.blockedSubtasks, 0, 999999, 0),
     integrationPendingCount: clampInt(continuity && continuity.integrationPendingCount, 0, 999999, 0),
     ambiguousInstructionStatus: safeString(ambiguousInstruction && ambiguousInstruction.status, 40) || "no_evidence",
     ambiguousInstructionEvidenceCount: clampInt(ambiguousInstruction && ambiguousInstruction.evidenceCount, 0, 999999, 0),
+    ambiguousInstructionScore: Number.isFinite(Number(ambiguousInstruction && ambiguousInstruction.score)) ? Number(ambiguousInstruction.score) : null,
     missingContextScore: Number.isFinite(Number(missingContext && missingContext.score)) ? Number(missingContext.score) : null,
     browserToolFlakinessScore: Number.isFinite(Number(browserFlakiness && browserFlakiness.score)) ? Number(browserFlakiness.score) : null,
+    adversarialConflictingScore: Number.isFinite(Number(adversarialConflicting && adversarialConflicting.score)) ? Number(adversarialConflicting.score) : null,
+    degradedToolOutputsScore: Number.isFinite(Number(degradedToolOutputs && degradedToolOutputs.score)) ? Number(degradedToolOutputs.score) : null,
     verifiedPositiveRemediations: verifiedPositiveCount,
     verifiedNegativeRemediations: verifiedNegativeCount,
     verifiedHarmfulRemediations: verifiedHarmfulCount,
     insufficientEvidenceRemediations: insufficientEvidenceCount,
+    runningAgendaCount,
     harmfulCausalRatio,
     likelyContributoryCount,
     harmfulTraceCount,
@@ -3294,51 +3335,75 @@ function buildGoalCompletionStatus({
     distinctLineageNonWorsening: lineageNonWorsening,
     primaryLaneObservationCount: primaryLaneObserved,
     primaryLaneCausalUsageCount: primaryLaneCausalUsage,
+    primaryLaneSelectedInLatestPackCount: primaryLaneSelectedCount,
+    primaryLaneEffectiveContributionCount: primaryLaneEffectiveContribution,
     secondaryAdvisoryUsageCount: secondaryAdvisoryUsage,
+    secondaryAdvisoryEffectsCount: secondaryAdvisoryEffects,
   };
-  const whyNotYet = [];
-  if (currentValues.stableCoverageBreadth < safeNumber(criteria.stableCoverageBreadth, 1)) {
-    whyNotYet.push(`stable coverage breadth below threshold (${currentValues.stableCoverageBreadth} < ${safeNumber(criteria.stableCoverageBreadth, 1)})`);
+  const criteriaEvaluations = [
+    { id: "stableCoverageBreadth", passed: currentValues.stableCoverageBreadth >= safeNumber(criteria.stableCoverageBreadth, 1), detail: `stable coverage breadth ${currentValues.stableCoverageBreadth} >= ${safeNumber(criteria.stableCoverageBreadth, 1)}` },
+    { id: "supportedCoverageBreadth", passed: currentValues.supportedCoverageBreadth >= safeNumber(criteria.supportedCoverageBreadth, 1), detail: `supported coverage breadth ${currentValues.supportedCoverageBreadth} >= ${safeNumber(criteria.supportedCoverageBreadth, 1)}` },
+    { id: "failedFamiliesEmpty", passed: failedFamilies.length === 0, detail: failedFamilies.length ? `failed families remain: ${failedFamilies.join(", ")}` : "no failed supported families remain" },
+    { id: "rawFinalScore", passed: currentValues.rawFinalScore >= safeNumber(criteria.rawFinalScoreThreshold, 0.9), detail: `raw final score ${currentValues.rawFinalScore} >= ${safeNumber(criteria.rawFinalScoreThreshold, 0.9)}` },
+    { id: "R_robust", passed: currentValues.R_robust >= safeNumber(criteria.robustThreshold, 0.93), detail: `R_robust ${currentValues.R_robust} >= ${safeNumber(criteria.robustThreshold, 0.93)}` },
+    { id: "H_horizon", passed: currentValues.H_horizon >= safeNumber(criteria.horizonThreshold, 0.97), detail: `H_horizon ${currentValues.H_horizon} >= ${safeNumber(criteria.horizonThreshold, 0.97)}` },
+    { id: "catastrophicRisk", passed: Number.isFinite(currentValues.catastrophicRiskCvar) && currentValues.catastrophicRiskCvar <= safeNumber(criteria.maxCatastrophicRiskCvar, 0.03), detail: `catastrophic risk cvar ${currentValues.catastrophicRiskCvar == null ? "n/a" : currentValues.catastrophicRiskCvar} <= ${safeNumber(criteria.maxCatastrophicRiskCvar, 0.03)}` },
+    { id: "openDebtCount", passed: currentValues.openDebtCount <= clampInt(criteria.maxOpenDebtCount, 0, 999999, 0), detail: `open debt count ${currentValues.openDebtCount} <= ${clampInt(criteria.maxOpenDebtCount, 0, 999999, 0)}` },
+    { id: "blockedSubtasks", passed: currentValues.blockedSubtasks <= clampInt(criteria.maxBlockedSubtasks, 0, 999999, 0), detail: `blocked subtasks ${currentValues.blockedSubtasks} <= ${clampInt(criteria.maxBlockedSubtasks, 0, 999999, 0)}` },
+    { id: "integrationPendingCount", passed: currentValues.integrationPendingCount <= clampInt(criteria.maxIntegrationPendingCount, 0, 999999, 0), detail: `integration pending ${currentValues.integrationPendingCount} <= ${clampInt(criteria.maxIntegrationPendingCount, 0, 999999, 0)}` },
+    { id: "harmfulCausalRatio", passed: currentValues.harmfulCausalRatio != null && currentValues.harmfulCausalRatio <= safeNumber(criteria.maxHarmfulCausalRatio, 0.1), detail: `harmful causal ratio ${currentValues.harmfulCausalRatio == null ? "n/a" : currentValues.harmfulCausalRatio} <= ${safeNumber(criteria.maxHarmfulCausalRatio, 0.1)}` },
+    { id: "runningAgendaCount", passed: currentValues.runningAgendaCount <= clampInt(criteria.maxRunningAgendaCount, 0, 999999, 0), detail: `running agenda count ${currentValues.runningAgendaCount} <= ${clampInt(criteria.maxRunningAgendaCount, 0, 999999, 0)}` },
+    { id: "verifiedPositiveRemediations", passed: currentValues.verifiedPositiveRemediations >= clampInt(criteria.minimumVerifiedPositiveRemediations, 1, 999999, 1), detail: `verified positive remediations ${currentValues.verifiedPositiveRemediations} >= ${clampInt(criteria.minimumVerifiedPositiveRemediations, 1, 999999, 1)}` },
+    { id: "distinctLineageMinimum", passed: currentValues.distinctLineageWindowCount >= clampInt(criteria.minimumDistinctEntries, 1, 999999, 3), detail: `distinct lineage window count ${currentValues.distinctLineageWindowCount} >= ${clampInt(criteria.minimumDistinctEntries, 1, 999999, 3)}` },
+    { id: "distinctLineageNonWorsening", passed: Boolean(currentValues.distinctLineageNonWorsening), detail: `distinct lineage non-worsening = ${String(currentValues.distinctLineageNonWorsening)}` },
+    { id: "missingContext", passed: Number.isFinite(currentValues.missingContextScore) && currentValues.missingContextScore >= safeNumber(criteria.missingContextThreshold, 0.85), detail: `missing_context ${currentValues.missingContextScore == null ? "n/a" : currentValues.missingContextScore} >= ${safeNumber(criteria.missingContextThreshold, 0.85)}` },
+    { id: "browserToolFlakiness", passed: Number.isFinite(currentValues.browserToolFlakinessScore) && currentValues.browserToolFlakinessScore >= safeNumber(criteria.browserFlakinessThreshold, 0.8), detail: `browser_tool_flakiness ${currentValues.browserToolFlakinessScore == null ? "n/a" : currentValues.browserToolFlakinessScore} >= ${safeNumber(criteria.browserFlakinessThreshold, 0.8)}` },
+    { id: "ambiguousInstructionObserved", passed: currentValues.ambiguousInstructionStatus !== "no_evidence", detail: `ambiguous_instruction status = ${currentValues.ambiguousInstructionStatus}` },
+    { id: "ambiguousInstructionEvidence", passed: currentValues.ambiguousInstructionEvidenceCount >= clampInt(criteria.ambiguousInstructionMinEvidence, 10, 999999, 10), detail: `ambiguous_instruction evidence ${currentValues.ambiguousInstructionEvidenceCount} >= ${clampInt(criteria.ambiguousInstructionMinEvidence, 10, 999999, 10)}` },
+    { id: "ambiguousInstructionScore", passed: Number.isFinite(currentValues.ambiguousInstructionScore) && currentValues.ambiguousInstructionScore >= safeNumber(criteria.ambiguousInstructionThreshold, 0.8), detail: `ambiguous_instruction score ${currentValues.ambiguousInstructionScore == null ? "n/a" : currentValues.ambiguousInstructionScore} >= ${safeNumber(criteria.ambiguousInstructionThreshold, 0.8)}` },
+    { id: "adversarialConflictingInstruction", passed: Number.isFinite(currentValues.adversarialConflictingScore) && currentValues.adversarialConflictingScore >= safeNumber(criteria.adversarialConflictingThreshold, 0.75), detail: `adversarial_conflicting_instruction ${currentValues.adversarialConflictingScore == null ? "n/a" : currentValues.adversarialConflictingScore} >= ${safeNumber(criteria.adversarialConflictingThreshold, 0.75)}` },
+    { id: "degradedToolOutputs", passed: Number.isFinite(currentValues.degradedToolOutputsScore) && currentValues.degradedToolOutputsScore >= safeNumber(criteria.degradedToolOutputsThreshold, 0.85), detail: `degraded_tool_outputs ${currentValues.degradedToolOutputsScore == null ? "n/a" : currentValues.degradedToolOutputsScore} >= ${safeNumber(criteria.degradedToolOutputsThreshold, 0.85)}` },
+  ];
+  const baseFailedCriteria = criteriaEvaluations.filter((entry) => !entry.passed);
+  const basePassingCriteria = criteriaEvaluations.filter((entry) => entry.passed);
+  const historyEntries = previousHistoryEntries.slice(-Math.max(clampInt(criteria.consecutiveSuccessfulExports, 1, 12, 3) + 8, 12));
+  const currentBaseStatus = baseFailedCriteria.length === 0 ? "criteria_met" : "criteria_failed";
+  const updatedHistoryEntries = [...historyEntries, { generatedAt: toIso(), goalStatus: currentBaseStatus === "criteria_met" ? "PENDING_WINDOW" : "NOT_YET", baseStatus: currentBaseStatus, rawFinalScore: currentValues.rawFinalScore, R_robust: currentValues.R_robust, H_horizon: currentValues.H_horizon, stableCoverageBreadth: currentValues.stableCoverageBreadth, openDebtCount: currentValues.openDebtCount, harmfulCausalRatio: currentValues.harmfulCausalRatio }].slice(-24);
+  const consecutiveRequired = clampInt(criteria.consecutiveSuccessfulExports, 1, 12, 3);
+  let consecutivePassingExports = 0;
+  for (let index = updatedHistoryEntries.length - 1; index >= 0; index -= 1) {
+    if (safeString(updatedHistoryEntries[index] && updatedHistoryEntries[index].baseStatus, 40) !== "criteria_met") break;
+    consecutivePassingExports += 1;
   }
-  if (currentValues.R_robust < safeNumber(criteria.robustThreshold, 0.93)) {
-    whyNotYet.push(`R_robust below threshold (${currentValues.R_robust} < ${safeNumber(criteria.robustThreshold, 0.93)})`);
-  }
-  if (currentValues.H_horizon < safeNumber(criteria.horizonThreshold, 0.97)) {
-    whyNotYet.push(`H_horizon below threshold (${currentValues.H_horizon} < ${safeNumber(criteria.horizonThreshold, 0.97)})`);
-  }
-  if (currentValues.rawFinalScore < safeNumber(criteria.rawFinalScoreThreshold, 0.9)) {
-    whyNotYet.push(`raw final score below threshold (${currentValues.rawFinalScore} < ${safeNumber(criteria.rawFinalScoreThreshold, 0.9)})`);
-  }
-  if (currentValues.openDebtCount > clampInt(criteria.maxOpenDebtCount, 0, 999999, 0)) {
-    whyNotYet.push(`continuity debt remains open (${currentValues.openDebtCount} > ${clampInt(criteria.maxOpenDebtCount, 0, 999999, 0)})`);
-  }
-  if (currentValues.blockedSubtasks > 0) {
-    whyNotYet.push(`blocked subtasks remain (${currentValues.blockedSubtasks})`);
-  }
-  if (currentValues.integrationPendingCount > 0) {
-    whyNotYet.push(`integration pending remains (${currentValues.integrationPendingCount})`);
-  }
-  if (currentValues.ambiguousInstructionStatus === "no_evidence") {
-    whyNotYet.push("ambiguous_instruction still has no evidence");
-  }
-  if (Number.isFinite(Number(currentValues.missingContextScore)) && currentValues.missingContextScore < safeNumber(criteria.missingContextThreshold, 0.8)) {
-    whyNotYet.push(`missing_context below threshold (${currentValues.missingContextScore} < ${safeNumber(criteria.missingContextThreshold, 0.8)})`);
-  }
-  if (Number.isFinite(Number(currentValues.browserToolFlakinessScore)) && currentValues.browserToolFlakinessScore < safeNumber(criteria.browserFlakinessThreshold, 0.75)) {
-    whyNotYet.push(`browser_tool_flakiness below threshold (${currentValues.browserToolFlakinessScore} < ${safeNumber(criteria.browserFlakinessThreshold, 0.75)})`);
-  }
-  if (currentValues.verifiedPositiveRemediations < clampInt(criteria.minimumVerifiedPositiveRemediations, 1, 999999, 1)) {
-    whyNotYet.push(`verified positive remediation count below threshold (${currentValues.verifiedPositiveRemediations} < ${clampInt(criteria.minimumVerifiedPositiveRemediations, 1, 999999, 1)})`);
-  }
-  if (!currentValues.distinctLineageNonWorsening) {
-    whyNotYet.push(`distinct lineage window is not non-worsening across last ${windowSize} comparisons`);
-  }
-  if (currentValues.distinctLineageWindowCount < clampInt(criteria.minimumDistinctEntries, 1, 999999, 3)) {
-    whyNotYet.push(`distinct lineage count below threshold (${currentValues.distinctLineageWindowCount} < ${clampInt(criteria.minimumDistinctEntries, 1, 999999, 3)})`);
-  }
-  if (currentValues.harmfulCausalRatio == null || currentValues.harmfulCausalRatio > safeNumber(criteria.maxHarmfulCausalRatio, 0.34)) {
-    whyNotYet.push(`harmful causal trace ratio above threshold (${currentValues.harmfulCausalRatio == null ? "n/a" : currentValues.harmfulCausalRatio} > ${safeNumber(criteria.maxHarmfulCausalRatio, 0.34)})`);
-  }
+  const consecutiveCriteria = { id: "consecutiveSuccessfulExports", passed: consecutivePassingExports >= consecutiveRequired, detail: `consecutive successful exports ${consecutivePassingExports} >= ${consecutiveRequired}` };
+  const failedCriteria = [...baseFailedCriteria, ...(consecutiveCriteria.passed ? [] : [consecutiveCriteria])];
+  const passedCriteria = [...basePassingCriteria, ...(consecutiveCriteria.passed ? [consecutiveCriteria] : [])];
+  const whyNotYet = failedCriteria.map((entry) => {
+    if (entry.id === "stableCoverageBreadth") return `stable coverage breadth below threshold (${currentValues.stableCoverageBreadth} < ${safeNumber(criteria.stableCoverageBreadth, 1)})`;
+    if (entry.id === "supportedCoverageBreadth") return `supported coverage breadth below threshold (${currentValues.supportedCoverageBreadth} < ${safeNumber(criteria.supportedCoverageBreadth, 1)})`;
+    if (entry.id === "failedFamiliesEmpty") return `supported families still fail: ${failedFamilies.join(", ")}`;
+    if (entry.id === "R_robust") return `R_robust below threshold (${currentValues.R_robust} < ${safeNumber(criteria.robustThreshold, 0.93)})`;
+    if (entry.id === "H_horizon") return `H_horizon below threshold (${currentValues.H_horizon} < ${safeNumber(criteria.horizonThreshold, 0.97)})`;
+    if (entry.id === "rawFinalScore") return `raw final score below threshold (${currentValues.rawFinalScore} < ${safeNumber(criteria.rawFinalScoreThreshold, 0.9)})`;
+    if (entry.id === "catastrophicRisk") return `catastrophic risk cvar above threshold (${currentValues.catastrophicRiskCvar == null ? "n/a" : currentValues.catastrophicRiskCvar} > ${safeNumber(criteria.maxCatastrophicRiskCvar, 0.03)})`;
+    if (entry.id === "openDebtCount") return `continuity debt remains open (${currentValues.openDebtCount} > ${clampInt(criteria.maxOpenDebtCount, 0, 999999, 0)})`;
+    if (entry.id === "blockedSubtasks") return `blocked subtasks remain (${currentValues.blockedSubtasks})`;
+    if (entry.id === "integrationPendingCount") return `integration pending remains (${currentValues.integrationPendingCount})`;
+    if (entry.id === "runningAgendaCount") return `autonomous learning agenda still has running items (${currentValues.runningAgendaCount})`;
+    if (entry.id === "ambiguousInstructionObserved") return "ambiguous_instruction still has no evidence";
+    if (entry.id === "ambiguousInstructionEvidence") return `ambiguous_instruction evidence below threshold (${currentValues.ambiguousInstructionEvidenceCount} < ${clampInt(criteria.ambiguousInstructionMinEvidence, 10, 999999, 10)})`;
+    if (entry.id === "ambiguousInstructionScore") return `ambiguous_instruction below threshold (${currentValues.ambiguousInstructionScore == null ? "n/a" : currentValues.ambiguousInstructionScore} < ${safeNumber(criteria.ambiguousInstructionThreshold, 0.8)})`;
+    if (entry.id === "missingContext") return `missing_context below threshold (${currentValues.missingContextScore == null ? "n/a" : currentValues.missingContextScore} < ${safeNumber(criteria.missingContextThreshold, 0.85)})`;
+    if (entry.id === "browserToolFlakiness") return `browser_tool_flakiness below threshold (${currentValues.browserToolFlakinessScore == null ? "n/a" : currentValues.browserToolFlakinessScore} < ${safeNumber(criteria.browserFlakinessThreshold, 0.8)})`;
+    if (entry.id === "adversarialConflictingInstruction") return `adversarial_conflicting_instruction below threshold (${currentValues.adversarialConflictingScore == null ? "n/a" : currentValues.adversarialConflictingScore} < ${safeNumber(criteria.adversarialConflictingThreshold, 0.75)})`;
+    if (entry.id === "degradedToolOutputs") return `degraded_tool_outputs below threshold (${currentValues.degradedToolOutputsScore == null ? "n/a" : currentValues.degradedToolOutputsScore} < ${safeNumber(criteria.degradedToolOutputsThreshold, 0.85)})`;
+    if (entry.id === "verifiedPositiveRemediations") return `verified positive remediation count below threshold (${currentValues.verifiedPositiveRemediations} < ${clampInt(criteria.minimumVerifiedPositiveRemediations, 1, 999999, 1)})`;
+    if (entry.id === "distinctLineageMinimum") return `distinct lineage count below threshold (${currentValues.distinctLineageWindowCount} < ${clampInt(criteria.minimumDistinctEntries, 1, 999999, 3)})`;
+    if (entry.id === "distinctLineageNonWorsening") return `distinct lineage window is not non-worsening across last ${windowSize} comparisons`;
+    if (entry.id === "harmfulCausalRatio") return `harmful causal trace ratio above threshold (${currentValues.harmfulCausalRatio == null ? "n/a" : currentValues.harmfulCausalRatio} > ${safeNumber(criteria.maxHarmfulCausalRatio, 0.1)})`;
+    if (entry.id === "consecutiveSuccessfulExports") return `operational completion thresholds have not been maintained across ${consecutiveRequired} consecutive live exports`;
+    return safeString(entry.detail, 220) || safeString(entry.id, 120);
+  });
   const requiredNextActions = uniqueStrings([
     ...(Array.isArray(workspaceProgressPublic && workspaceProgressPublic.nextRecommendedActions) ? workspaceProgressPublic.nextRecommendedActions : []),
     ...((Array.isArray(bottlenecks && bottlenecks.items) ? bottlenecks.items : []).map((entry) => safeString(entry && entry.summary, 220))),
@@ -3352,6 +3417,7 @@ function buildGoalCompletionStatus({
       if (/browser_tool_flakiness/.test(reason)) return "improve browser/tool degraded-mode handling and retry policy";
       if (/continuity debt/.test(reason)) return "close outstanding continuity debt items";
       if (/harmful causal trace/.test(reason)) return "revoke or supersede harmful lessons/hints";
+      if (/consecutive live exports/.test(reason)) return "maintain all completion thresholds across consecutive live exports";
       return reason;
     }),
   ], 8, 220);
@@ -3366,28 +3432,119 @@ function buildGoalCompletionStatus({
     .map((entry) => normalizePublicTimestamp(entry))
     .filter(Boolean)
     .sort((left, right) => parseTimestamp(right) - parseTimestamp(left));
-  const goalStatus = whyNotYet.length ? "NOT_YET" : "OPERATIONALLY_COMPLETE";
+  const goalStatus = failedCriteria.length ? "NOT_YET" : "OPERATIONALLY_COMPLETE";
+  const paths = getMemoryPaths(workspaceRoot);
+  const supportingArtifacts = [
+    repoRelative(workspaceRoot, paths.agiReadiness.latestJson),
+    repoRelative(workspaceRoot, paths.agiReadiness.domainCoverageMatrixJson),
+    repoRelative(workspaceRoot, paths.agiReadiness.stableCoverageMatrixJson),
+    repoRelative(workspaceRoot, paths.agiReadiness.stableCoverageTrendJson),
+    repoRelative(workspaceRoot, paths.agiReadiness.robustnessBreakdownJson),
+    repoRelative(workspaceRoot, paths.agiReadiness.robustnessRemediationStatusJson),
+    repoRelative(workspaceRoot, paths.agiReadiness.robustnessRemediationEffectsJson),
+    repoRelative(workspaceRoot, paths.agiReadiness.autonomousLearningStatusJson),
+    repoRelative(workspaceRoot, paths.agiReadiness.causalLearningTraceJson),
+    repoRelative(workspaceRoot, paths.agiReadiness.causalRegressionAlertsJson),
+    repoRelative(workspaceRoot, paths.agiReadiness.distinctImprovementLineageJson),
+    repoRelative(workspaceRoot, paths.agiReadiness.distinctImprovementSummaryJson),
+    repoRelative(workspaceRoot, paths.continuityPublic.latestSummaryJson),
+    repoRelative(workspaceRoot, paths.continuityPublic.continuityDebtJson),
+    repoRelative(workspaceRoot, paths.continuityPublic.continuityDebtTrendJson),
+    repoRelative(workspaceRoot, paths.continuityPublic.continuityCloseoutEffectsJson),
+    repoRelative(workspaceRoot, paths.publicOutput.lessonEffectivenessJson),
+    repoRelative(workspaceRoot, paths.publicOutput.packCausalTraceJson),
+    repoRelative(workspaceRoot, paths.publicOutput.causalEffectivenessSummaryJson),
+  ];
   return {
     schema: "agi-operational-completion-status.v1",
     generatedAt: toIso(),
     workspaceId: toWorkspaceId(workspaceRoot),
     goalStatus,
+    completionVersion: safeString(policy && policy.version, 80) || "2026-04-05.r1",
+    decisionBasis: "live_truth_strict_operational_criteria",
     whyNotYet,
+    failedCriteria: failedCriteria.map((entry) => ({ id: entry.id, detail: entry.detail })),
+    passedCriteria: passedCriteria.map((entry) => ({ id: entry.id, detail: entry.detail })),
     completionCriteria: {
       stableCoverageBreadth: safeNumber(criteria.stableCoverageBreadth, 1),
+      supportedCoverageBreadth: safeNumber(criteria.supportedCoverageBreadth, 1),
       robustThreshold: safeNumber(criteria.robustThreshold, 0.93),
       horizonThreshold: safeNumber(criteria.horizonThreshold, 0.97),
       rawFinalScoreThreshold: safeNumber(criteria.rawFinalScoreThreshold, 0.9),
+      maxCatastrophicRiskCvar: safeNumber(criteria.maxCatastrophicRiskCvar, 0.03),
       maxOpenDebtCount: clampInt(criteria.maxOpenDebtCount, 0, 999999, 0),
+      maxBlockedSubtasks: clampInt(criteria.maxBlockedSubtasks, 0, 999999, 0),
+      maxIntegrationPendingCount: clampInt(criteria.maxIntegrationPendingCount, 0, 999999, 0),
+      maxRunningAgendaCount: clampInt(criteria.maxRunningAgendaCount, 0, 999999, 0),
       minimumVerifiedPositiveRemediations: clampInt(criteria.minimumVerifiedPositiveRemediations, 1, 999999, 1),
       minimumDistinctEntries: clampInt(criteria.minimumDistinctEntries, 1, 999999, 3),
-      maxHarmfulCausalRatio: safeNumber(criteria.maxHarmfulCausalRatio, 0.34),
-      missingContextThreshold: safeNumber(criteria.missingContextThreshold, 0.8),
-      browserFlakinessThreshold: safeNumber(criteria.browserFlakinessThreshold, 0.75),
+      consecutiveSuccessfulExports: consecutiveRequired,
+      maxHarmfulCausalRatio: safeNumber(criteria.maxHarmfulCausalRatio, 0.1),
+      missingContextThreshold: safeNumber(criteria.missingContextThreshold, 0.85),
+      browserFlakinessThreshold: safeNumber(criteria.browserFlakinessThreshold, 0.8),
+      ambiguousInstructionThreshold: safeNumber(criteria.ambiguousInstructionThreshold, 0.8),
+      ambiguousInstructionMinEvidence: clampInt(criteria.ambiguousInstructionMinEvidence, 10, 999999, 10),
+      adversarialConflictingThreshold: safeNumber(criteria.adversarialConflictingThreshold, 0.75),
+      degradedToolOutputsThreshold: safeNumber(criteria.degradedToolOutputsThreshold, 0.85),
     },
     currentValues,
+    liveMetricsSnapshot: currentValues,
+    supportingArtifacts,
+    lineageSummary: {
+      windowSize,
+      distinctEntryCount: distinctEntries.length,
+      distinctWindowCount: recentDistinctWindow.length,
+      consecutivePassingExports,
+      recentNonWorsening: currentValues.distinctLineageNonWorsening,
+      distinctImprovementCount: distinctEntries.filter((entry) => entry && entry.promote === true).length,
+      distinctRegressionCount: distinctEntries.filter((entry) => entry && entry.promote === false).length,
+    },
+    autonomousLearningSummary: {
+      totalAgendaCount: agendaEntries.length,
+      runningAgendaCount,
+      verifiedPositiveCount,
+      verifiedNegativeCount,
+      verifiedHarmfulCount,
+      insufficientEvidenceCount,
+    },
+    continuityDebtSummary: {
+      openDebtCount: currentValues.openDebtCount,
+      blockedSubtasks: currentValues.blockedSubtasks,
+      integrationPendingCount: currentValues.integrationPendingCount,
+      debtSeverity: safeString(debtSummary && debtSummary.debtSeverity, 40),
+      autoClosedBlockedCount: clampInt(debtSummary && debtSummary.autoClosedBlockedCount, 0, 999999, 0),
+    },
+    robustnessSummary: {
+      weakestCategory: safeString((robustness || []).sort((left, right) => safeNumber(left && left.score, 1) - safeNumber(right && right.score, 1))[0] && (robustness || []).sort((left, right) => safeNumber(left && left.score, 1) - safeNumber(right && right.score, 1))[0].categoryId, 80),
+      missingContext: currentValues.missingContextScore,
+      browserToolFlakiness: currentValues.browserToolFlakinessScore,
+      ambiguousInstruction: {
+        status: currentValues.ambiguousInstructionStatus,
+        evidenceCount: currentValues.ambiguousInstructionEvidenceCount,
+        score: currentValues.ambiguousInstructionScore,
+      },
+      adversarialConflictingInstruction: currentValues.adversarialConflictingScore,
+      degradedToolOutputs: currentValues.degradedToolOutputsScore,
+      stableCoverageBreadth: stableCoverageMatrix && Number.isFinite(Number(stableCoverageMatrix.stableCoverageBreadth)) ? Number(stableCoverageMatrix.stableCoverageBreadth) : currentValues.stableCoverageBreadth,
+    },
+    causalSafetySummary: {
+      likelyContributoryCount,
+      harmfulTraceCount,
+      harmfulCausalRatio,
+      regressionAlertCount: Array.isArray(causalRegressionAlerts && causalRegressionAlerts.alerts) ? causalRegressionAlerts.alerts.length : 0,
+      summary: causalEffectivenessSummary && causalEffectivenessSummary.summary ? sanitizePublicValue(causalEffectivenessSummary.summary, workspaceRoot) : {},
+    },
     lastPositiveClosureAt: positiveMoments[0] || "",
     requiredNextActions,
+    notes: [
+      "This artifact is an operational completion signal derived from live truth, not a public AGI proof claim.",
+      `Stable coverage trend entries tracked: ${Array.isArray(stableCoverageTrend && stableCoverageTrend.entries) ? stableCoverageTrend.entries.length : 0}.`,
+    ],
+    history: {
+      consecutiveRequired,
+      consecutivePassingExports,
+      entries: updatedHistoryEntries,
+    },
   };
 }
 
@@ -3397,6 +3554,8 @@ function renderGoalCompletionMarkdown(payload) {
     "",
     `- goalStatus: ${safeString(payload && payload.goalStatus, 80) || "NOT_YET"}`,
     `- generatedAt: ${safeString(payload && payload.generatedAt, 80) || "-"}`,
+    `- completionVersion: ${safeString(payload && payload.completionVersion, 80) || "-"}`,
+    `- decisionBasis: ${safeString(payload && payload.decisionBasis, 160) || "-"}`,
     "",
     "## Current Values",
   ];
@@ -3413,6 +3572,10 @@ function renderGoalCompletionMarkdown(payload) {
   lines.push("", "## Required Next Actions");
   for (const action of Array.isArray(payload && payload.requiredNextActions) ? payload.requiredNextActions : []) {
     lines.push(`- ${safeString(action, 220)}`);
+  }
+  lines.push("", "## Failed Criteria");
+  for (const entry of Array.isArray(payload && payload.failedCriteria) ? payload.failedCriteria : []) {
+    lines.push(`- ${safeString(entry && entry.id, 120)}: ${safeString(entry && entry.detail, 220)}`);
   }
   return `${lines.join("\n")}\n`;
 }
@@ -3885,6 +4048,230 @@ function buildFamilyCoverageProjection({ workspaceRoot, items, continuityBridge,
     workspaceId: toWorkspaceId(workspaceRoot),
     rows,
     horizon: continuityBridge && continuityBridge.summary ? continuityBridge.summary.horizon : {},
+  };
+}
+
+function buildStableCoverageArtifacts({ workspaceRoot, coverage = {} }) {
+  const paths = getMemoryPaths(workspaceRoot);
+  const previousTrend = readJsonObject(paths.projections.stableCoverageTrendPath);
+  const rows = Array.isArray(coverage && coverage.rows) ? coverage.rows : [];
+  const stableRows = rows.map((row) => ({
+    familyId: safeString(row && row.familyId, 80),
+    label: safeString(row && row.label, 120),
+    stableCovered: Boolean(row && row.stableCovered),
+    stabilityStatus: safeString(row && row.stabilityStatus, 40) || "no_evidence",
+    stabilityWindowSize: clampInt(row && row.stabilityWindowSize, 0, 999999, 0),
+    recentWindowScores: Array.isArray(row && row.recentWindowScores) ? row.recentWindowScores : [],
+    recentWindowOutcomes: Array.isArray(row && row.recentWindowOutcomes) ? row.recentWindowOutcomes : [],
+    observationCount: clampInt(row && row.observationCount, 0, 999999, 0),
+    recentSuccessRate: Number.isFinite(Number(row && row.recentSuccessRate)) ? Number(row.recentSuccessRate) : null,
+    recentFailureBurden: clampInt(row && row.recentFailureBurden, 0, 999999, 0),
+    verifierBurden: clampInt(row && row.verifierBurden, 0, 999999, 0),
+    lastSuccessfulTask: row && row.lastSuccessfulTask ? sanitizePublicValue(row.lastSuccessfulTask, workspaceRoot) : null,
+    lastFailedTask: row && row.lastFailedTask ? sanitizePublicValue(row.lastFailedTask, workspaceRoot) : null,
+    coverageRegressed: Boolean(row && row.coverageRegressed),
+    nextCoverageAction: safeString(row && row.nextCoverageAction, 220),
+  }));
+  const stableCoveredFamilies = stableRows.filter((row) => row.stableCovered).map((row) => row.familyId);
+  const unstableFamilies = stableRows.filter((row) => !row.stableCovered).map((row) => row.familyId);
+  const stableCoverageBreadth = stableRows.length
+    ? Number((stableCoveredFamilies.length / stableRows.length).toFixed(6))
+    : 0;
+  const trendEntries = Array.isArray(previousTrend && previousTrend.entries) ? previousTrend.entries.slice(-11) : [];
+  trendEntries.push({
+    generatedAt: toIso(),
+    stableCoverageBreadth,
+    stableCoveredFamilies,
+    unstableFamilies,
+  });
+  return {
+    matrix: {
+      schema: "agi-readiness-stable-coverage-matrix.v1",
+      generatedAt: toIso(),
+      workspaceId: toWorkspaceId(workspaceRoot),
+      stableCoverageBreadth,
+      rows: stableRows,
+    },
+    trend: {
+      schema: "agi-readiness-stable-coverage-trend.v1",
+      generatedAt: toIso(),
+      workspaceId: toWorkspaceId(workspaceRoot),
+      entries: trendEntries,
+    },
+  };
+}
+
+function buildRobustnessRemediationBacklog({ workspaceRoot, remediationStatus = {} }) {
+  const categories = Array.isArray(remediationStatus && remediationStatus.categories) ? remediationStatus.categories : [];
+  return {
+    schema: "agi-readiness-robustness-remediation-backlog.v1",
+    generatedAt: toIso(),
+    workspaceId: toWorkspaceId(workspaceRoot),
+    items: categories
+      .filter((entry) => !["passed", "resolved"].includes(safeString(entry && entry.remediationStatus, 80)))
+      .map((entry) => ({
+        categoryId: safeString(entry && entry.categoryId, 80),
+        remediationStatus: safeString(entry && entry.remediationStatus, 80),
+        evidenceCount: clampInt(entry && entry.evidenceCount, 0, 999999, 0),
+        score: Number.isFinite(Number(entry && entry.score)) ? Number(entry.score) : null,
+        openFailureModes: uniqueStrings(entry && entry.openFailureModes, 8, 180),
+      })),
+  };
+}
+
+function buildRobustnessRemediationEffects({ workspaceRoot, robustnessBreakdown = {}, remediationStatus = {}, agenda = {} }) {
+  const categories = Array.isArray(robustnessBreakdown && robustnessBreakdown.categories) ? robustnessBreakdown.categories : [];
+  const statusById = new Map((Array.isArray(remediationStatus && remediationStatus.categories) ? remediationStatus.categories : []).map((entry) => [safeString(entry && entry.categoryId, 80), entry]));
+  const agendaByCategory = new Map((Array.isArray(agenda && agenda.entries) ? agenda.entries : []).map((entry) => [safeString(entry && entry.targetCategory, 80), entry]));
+  const entries = categories.map((entry) => {
+    const categoryId = safeString(entry && entry.categoryId, 80);
+    const statusEntry = statusById.get(categoryId) || {};
+    const agendaEntry = agendaByCategory.get(categoryId) || {};
+    const effectState = safeString(agendaEntry && agendaEntry.remediationEffect, 80) || (
+      safeString(statusEntry && statusEntry.remediationStatus, 80) === "passed" ? "verified_positive" : "pending"
+    );
+    return {
+      categoryId,
+      remediationStatus: safeString(statusEntry && statusEntry.remediationStatus, 80) || safeString(entry && entry.remediationStatus, 80),
+      remediationEffect: effectState,
+      evidenceCount: clampInt(entry && entry.evidenceCount, 0, 999999, 0),
+      score: Number.isFinite(Number(entry && entry.score)) ? Number(entry.score) : null,
+      lastImprovementDelta: Number.isFinite(Number(statusEntry && statusEntry.lastImprovementDelta)) ? Number(statusEntry.lastImprovementDelta) : null,
+      agendaRef: safeString(agendaEntry && agendaEntry.agendaId, 120) ? stablePublicRef(agendaEntry.agendaId, "agenda") : stablePublicRef(`${categoryId}:agenda`, "agenda"),
+    };
+  });
+  return {
+    schema: "agi-readiness-robustness-remediation-effects.v1",
+    generatedAt: toIso(),
+    workspaceId: toWorkspaceId(workspaceRoot),
+    entries,
+    categories: entries,
+  };
+}
+
+function buildContinuityDebtTrend({ workspaceRoot, continuityDebt = {}, continuityArtifact = {} }) {
+  const paths = getMemoryPaths(workspaceRoot);
+  const previousTrend = readJsonObject(paths.projections.continuityDebtTrendPath);
+  const summary = continuityDebt && continuityDebt.summary && typeof continuityDebt.summary === "object" ? continuityDebt.summary : {};
+  const entries = Array.isArray(previousTrend && previousTrend.entries) ? previousTrend.entries.slice(-11) : [];
+  entries.push({
+    generatedAt: toIso(),
+    openDebtCount: clampInt(summary && summary.openDebtCount, 0, 999999, 0),
+    debtSeverity: safeString(summary && summary.debtSeverity, 40) || "none",
+    blockedSubtasks: clampInt(continuityArtifact && continuityArtifact.blockedSubtasks, 0, 999999, 0),
+    integrationPendingCount: clampInt(continuityArtifact && continuityArtifact.integrationPendingCount, 0, 999999, 0),
+    finalReleaseState: safeString(continuityArtifact && continuityArtifact.finalReleaseState, 80) || "unknown",
+  });
+  return {
+    schema: "continuity-debt-trend.v1",
+    generatedAt: toIso(),
+    workspaceId: toWorkspaceId(workspaceRoot),
+    entries,
+  };
+}
+
+function buildContinuityCloseoutEffects({ workspaceRoot, continuityDebt = {}, continuityArtifact = {} }) {
+  const items = Array.isArray(continuityDebt && continuityDebt.items) ? continuityDebt.items : [];
+  return {
+    schema: "continuity-closeout-effects.v1",
+    generatedAt: toIso(),
+    workspaceId: toWorkspaceId(workspaceRoot),
+    summary: {
+      openDebtCount: clampInt(continuityDebt && continuityDebt.summary && continuityDebt.summary.openDebtCount, 0, 999999, 0),
+      blockedSubtasks: clampInt(continuityArtifact && continuityArtifact.blockedSubtasks, 0, 999999, 0),
+      integrationPendingCount: clampInt(continuityArtifact && continuityArtifact.integrationPendingCount, 0, 999999, 0),
+      autoCloseEligibleCount: items.filter((entry) => Boolean(entry && entry.autoCloseEligible)).length,
+      resolvedCount: items.filter((entry) => safeString(entry && entry.status, 80) === "resolved").length,
+    },
+    items: items.slice(0, 24).map((entry) => ({
+      debtId: safeString(entry && entry.debtId, 120),
+      debtClass: safeString(entry && entry.debtClass, 80),
+      status: safeString(entry && entry.status, 80),
+      requiredCloseoutAction: safeString(entry && entry.requiredCloseoutAction, 220),
+      linkedRemediationAgendaId: safeString(entry && entry.remediationLinkedTaskRef, 120) || stablePublicRef(`${safeString(entry && entry.debtId, 120)}:agenda`, "agenda"),
+      publicSummary: safeString(entry && entry.publicSummary, 220),
+    })),
+  };
+}
+
+function buildCausalEffectivenessSummary({ workspaceRoot, causalTrace = {}, openAIBlogLane = {}, anthropicLane = {} }) {
+  const traces = Array.isArray(causalTrace && causalTrace.traces) ? causalTrace.traces : [];
+  const likelyContributoryCount = traces.filter((entry) => safeString(entry && entry.usageStage, 80) === "likely_contributory").length;
+  const harmfulCount = traces.filter((entry) => safeString(entry && entry.usageStage, 80) === "harmful_to_outcome").length;
+  const harmfulCausalRatio = safeRatio(harmfulCount, likelyContributoryCount + harmfulCount, likelyContributoryCount + harmfulCount > 0 ? null : 1);
+  const neutralCount = traces.filter((entry) => safeString(entry && entry.usageStage, 80) === "surfaced" || safeString(entry && entry.usageStage, 80) === "behaviorally_referenced").length;
+  return {
+    schema: "governed-causal-effectiveness-summary-public.v1",
+    generatedAt: toIso(),
+    workspaceId: toWorkspaceId(workspaceRoot),
+    harmfulCausalRatio,
+    likelyContributoryCount,
+    harmfulCount,
+    neutralCount,
+    summary: {
+      harmfulCausalRatio,
+      likelyContributoryCount,
+      harmfulCount,
+      neutralCount,
+    },
+    primaryLane: {
+      observationCount: clampInt(openAIBlogLane && openAIBlogLane.canonicalCounts && openAIBlogLane.canonicalCounts.observationCount, 0, 999999, 0),
+      causalUsageCount: clampInt(openAIBlogLane && openAIBlogLane.canonicalCounts && openAIBlogLane.canonicalCounts.causalUsageCount, 0, 999999, 0),
+    },
+    secondaryLane: {
+      advisoryReferenceCount: clampInt(anthropicLane && anthropicLane.advisory && anthropicLane.advisory.advisoryReferenceCount, 0, 999999, 0),
+    },
+  };
+}
+
+function buildCausalRegressionAlerts({ workspaceRoot, causalTrace = {}, effectivenessSummary = {} }) {
+  const traces = Array.isArray(causalTrace && causalTrace.traces) ? causalTrace.traces : [];
+  const harmfulTraces = traces.filter((entry) => safeString(entry && entry.usageStage, 80) === "harmful_to_outcome").slice(0, 12);
+  return {
+    schema: "agi-readiness-causal-regression-alerts.v1",
+    generatedAt: toIso(),
+    workspaceId: toWorkspaceId(workspaceRoot),
+    harmfulCausalRatio: Number.isFinite(Number(effectivenessSummary && effectivenessSummary.harmfulCausalRatio))
+      ? Number(effectivenessSummary.harmfulCausalRatio)
+      : null,
+    alerts: harmfulTraces.map((entry) => ({
+      publicRef: safeString(entry && entry.publicRef, 120),
+      memoryType: safeString(entry && entry.memoryType, 80) || "runtime_event",
+      usageMode: safeString(entry && entry.usageMode, 80),
+      taskRefs: uniqueStrings(entry && entry.usedByTaskRefs, 8, 120),
+      summary: safeString(entry && entry.summary, 220),
+      lastObservedAt: safeString(entry && entry.lastObservedAt, 80),
+    })),
+  };
+}
+
+function buildDistinctImprovementSummary({ workspaceRoot, distinctLineage = {} }) {
+  const entries = Array.isArray(distinctLineage && distinctLineage.entries) ? distinctLineage.entries : [];
+  const recent = entries.slice(-5);
+  const distinctOnly = recent.filter((entry) => safeString(entry && entry.comparisonMode, 80) === "distinct_comparison");
+  const criticalRegressionCount = distinctOnly.filter((entry) => safeString(entry && entry.improvementEvidenceClass, 120) === "distinct_observed_regression").length;
+  const nonWorsening = distinctOnly.length > 0 && distinctOnly.every((entry) => {
+    const scoreOld = safeNumber(entry && entry.rawFinalScoreOld, NaN);
+    const scoreNew = safeNumber(entry && entry.rawFinalScoreNew, NaN);
+    const debtDelta = safeNumber(entry && entry.continuityDebtDelta, 0);
+    const causalSupport = clampInt(entry && entry.causalSupportCount, 0, 999999, 0);
+    const causalHarm = clampInt(entry && entry.causalHarmCount, 0, 999999, 0);
+    return Number.isFinite(scoreOld)
+      && Number.isFinite(scoreNew)
+      && scoreNew >= scoreOld
+      && debtDelta <= 0
+      && causalHarm <= causalSupport;
+  });
+  return {
+    schema: "agi-readiness-distinct-improvement-summary.v1",
+    generatedAt: toIso(),
+    workspaceId: toWorkspaceId(workspaceRoot),
+    distinctWindowSize: recent.length,
+    distinctComparisonCount: distinctOnly.length,
+    promotedCount: distinctOnly.filter((entry) => entry && entry.promote === true).length,
+    heldOrBlockedCount: distinctOnly.filter((entry) => entry && entry.promote !== true).length,
+    criticalRegressionCount,
+    nonWorsening,
   };
 }
 
@@ -5828,6 +6215,36 @@ function evaluateMemoryPublicSuite({
       detail = pass
         ? "operational goal completion artifact is present"
         : "operational goal completion artifact missing";
+    } else if (id === "stable_coverage_surface_present") {
+      const matrixPath = paths.agiReadiness && paths.agiReadiness.stableCoverageMatrixJson ? paths.agiReadiness.stableCoverageMatrixJson : "";
+      const trendPath = paths.agiReadiness && paths.agiReadiness.stableCoverageTrendJson ? paths.agiReadiness.stableCoverageTrendJson : "";
+      const matrix = writtenOrRuntimeJson(matrixPath, readinessArtifacts && readinessArtifacts.stableCoverageArtifacts && readinessArtifacts.stableCoverageArtifacts.matrix);
+      const trend = writtenOrRuntimeJson(trendPath, readinessArtifacts && readinessArtifacts.stableCoverageArtifacts && readinessArtifacts.stableCoverageArtifacts.trend);
+      pass = Boolean(
+        matrixPath && trendPath
+        && (!requireWrittenPublicArtifacts || (fs.existsSync(matrixPath) && fs.existsSync(trendPath)))
+        && safeString(matrix && matrix.schema, 120) === "agi-readiness-stable-coverage-matrix.v1"
+        && safeString(trend && trend.schema, 120) === "agi-readiness-stable-coverage-trend.v1"
+      );
+      detail = pass ? "stable coverage matrix and trend are present" : "stable coverage matrix or trend missing";
+    } else if (id === "causal_regression_alerts_present") {
+      const alertsPath = paths.agiReadiness && paths.agiReadiness.causalRegressionAlertsJson ? paths.agiReadiness.causalRegressionAlertsJson : "";
+      const alerts = writtenOrRuntimeJson(alertsPath, null);
+      pass = Boolean(
+        alertsPath
+        && (!requireWrittenPublicArtifacts || fs.existsSync(alertsPath))
+        && safeString(alerts && alerts.schema, 120) === "agi-readiness-causal-regression-alerts.v1"
+        && Array.isArray(alerts && alerts.alerts)
+      );
+      detail = pass ? "causal regression alerts are present" : "causal regression alerts missing";
+    } else if (id === "goal_completion_supporting_artifacts_present") {
+      const goalPath = paths.agiReadiness && paths.agiReadiness.goalCompletionStatusJson
+        ? paths.agiReadiness.goalCompletionStatusJson
+        : "";
+      const goal = writtenOrRuntimeJson(goalPath, goalCompletionStatus);
+      const refs = Array.isArray(goal && goal.supportingArtifacts) ? goal.supportingArtifacts : [];
+      pass = refs.length > 0 && refs.every((ref) => fs.existsSync(path.join(workspaceRoot, ref)));
+      detail = pass ? "goal completion supporting artifacts are present" : "one or more goal completion supporting artifacts are missing";
     } else if (id === "goal_completion_status_consistent") {
       const goalPath = paths.agiReadiness && paths.agiReadiness.goalCompletionStatusJson
         ? paths.agiReadiness.goalCompletionStatusJson
@@ -5871,22 +6288,31 @@ function evaluateMemoryPublicSuite({
         : {};
       const thresholdsSatisfied = Boolean(
         safeNumber(current.stableCoverageBreadth, 0) >= safeNumber(criteria.stableCoverageBreadth, 1)
+        && safeNumber(current.supportedCoverageBreadth, 0) >= safeNumber(criteria.supportedCoverageBreadth, 1)
+        && Array.isArray(current.failedFamilies) && current.failedFamilies.length === 0
         && safeNumber(current.R_robust, 0) >= safeNumber(criteria.robustThreshold, 0.93)
         && safeNumber(current.H_horizon, 0) >= safeNumber(criteria.horizonThreshold, 0.97)
         && safeNumber(current.rawFinalScore, 0) >= safeNumber(criteria.rawFinalScoreThreshold, 0.9)
+        && safeNumber(current.catastrophicRiskCvar, 1) <= safeNumber(criteria.maxCatastrophicRiskCvar, 0.03)
         && clampInt(current.openDebtCount, 0, 999999, 0) <= clampInt(criteria.maxOpenDebtCount, 0, 999999, 0)
-        && clampInt(current.blockedSubtasks, 0, 999999, 0) === 0
-        && clampInt(current.integrationPendingCount, 0, 999999, 0) === 0
+        && clampInt(current.blockedSubtasks, 0, 999999, 0) <= clampInt(criteria.maxBlockedSubtasks, 0, 999999, 0)
+        && clampInt(current.integrationPendingCount, 0, 999999, 0) <= clampInt(criteria.maxIntegrationPendingCount, 0, 999999, 0)
         && safeString(current.ambiguousInstructionStatus, 80) !== "no_evidence"
+        && clampInt(current.ambiguousInstructionEvidenceCount, 0, 999999, 0) >= clampInt(criteria.ambiguousInstructionMinEvidence, 10, 999999, 10)
+        && safeNumber(current.ambiguousInstructionScore, 0) >= safeNumber(criteria.ambiguousInstructionThreshold, 0.8)
         && safeNumber(current.missingContextScore, 0) >= safeNumber(criteria.missingContextThreshold, 0.8)
         && safeNumber(current.browserToolFlakinessScore, 0) >= safeNumber(criteria.browserFlakinessThreshold, 0.75)
+        && safeNumber(current.adversarialConflictingScore, 0) >= safeNumber(criteria.adversarialConflictingThreshold, 0.75)
+        && safeNumber(current.degradedToolOutputsScore, 0) >= safeNumber(criteria.degradedToolOutputsThreshold, 0.85)
+        && clampInt(current.runningAgendaCount, 0, 999999, 0) <= clampInt(criteria.maxRunningAgendaCount, 0, 999999, 0)
         && clampInt(current.verifiedPositiveRemediations, 0, 999999, 0) >= clampInt(criteria.minimumVerifiedPositiveRemediations, 1, 999999, 1)
         && clampInt(current.distinctLineageWindowCount, 0, 999999, 0) >= clampInt(criteria.minimumDistinctEntries, 1, 999999, 3)
         && Boolean(current.distinctLineageNonWorsening)
         && (
           current.harmfulCausalRatio == null
-          || safeNumber(current.harmfulCausalRatio, 1) <= safeNumber(criteria.maxHarmfulCausalRatio, 0.34)
+          || safeNumber(current.harmfulCausalRatio, 1) <= safeNumber(criteria.maxHarmfulCausalRatio, 0.1)
         )
+        && goal && goal.history && clampInt(goal.history.consecutivePassingExports, 0, 999999, 0) >= clampInt(criteria.consecutiveSuccessfulExports, 1, 999999, 3)
       );
       const status = safeString(goal && goal.goalStatus, 80);
       pass = Boolean(goal) && (thresholdsSatisfied ? status === "OPERATIONALLY_COMPLETE" : status === "NOT_YET");
@@ -6183,6 +6609,38 @@ function buildGovernedMemoryPublicArtifacts({ workspaceRoot = workspaceRootDefau
       }),
     };
   }
+  const stableCoverageArtifacts = buildStableCoverageArtifacts({ workspaceRoot, coverage: readinessArtifacts.coverage });
+  readinessArtifacts.stableCoverageArtifacts = stableCoverageArtifacts;
+  writeJsonIfChanged(paths.projections.stableCoverageMatrixPath, stableCoverageArtifacts.matrix);
+  writeJsonIfChanged(paths.projections.stableCoverageTrendPath, stableCoverageArtifacts.trend);
+  const robustnessRemediationBacklog = buildRobustnessRemediationBacklog({ workspaceRoot, remediationStatus: robustnessRemediationStatus });
+  const robustnessRemediationEffects = buildRobustnessRemediationEffects({
+    workspaceRoot,
+    robustnessBreakdown: readinessArtifacts.robustnessBreakdown,
+    remediationStatus: robustnessRemediationStatus,
+    agenda: autonomousAgenda,
+  });
+  const continuityDebtTrend = buildContinuityDebtTrend({ workspaceRoot, continuityDebt, continuityArtifact: continuityArtifacts.artifact });
+  const continuityCloseoutEffects = buildContinuityCloseoutEffects({ workspaceRoot, continuityDebt, continuityArtifact: continuityArtifacts.artifact });
+  const causalEffectivenessSummary = buildCausalEffectivenessSummary({
+    workspaceRoot,
+    causalTrace,
+    openAIBlogLane,
+    anthropicLane,
+  });
+  const causalRegressionAlerts = buildCausalRegressionAlerts({
+    workspaceRoot,
+    causalTrace,
+    effectivenessSummary: causalEffectivenessSummary,
+  });
+  const distinctImprovementSummary = buildDistinctImprovementSummary({
+    workspaceRoot,
+    distinctLineage: readinessArtifacts.distinctLineage,
+  });
+  writeJsonIfChanged(paths.projections.continuityDebtTrendPath, continuityDebtTrend);
+  writeJsonIfChanged(paths.projections.continuityCloseoutEffectsPath, continuityCloseoutEffects);
+  writeJsonIfChanged(paths.projections.causalEffectivenessSummaryPath, causalEffectivenessSummary);
+  writeJsonIfChanged(paths.projections.causalRegressionAlertsPath, causalRegressionAlerts);
   bottlenecks = buildNextBottlenecks({
     workspaceRoot,
     memoryEval: { checks: [] },
@@ -6340,6 +6798,16 @@ function buildGovernedMemoryPublicArtifacts({ workspaceRoot = workspaceRootDefau
     anthropicLane,
     workspaceProgressPublic,
     bottlenecks,
+    previousGoalHistory: readJsonObject(paths.projections.goalCompletionHistoryPath),
+    stableCoverageArtifacts,
+    causalEffectivenessSummary,
+    causalRegressionAlerts,
+  });
+  writeJsonIfChanged(paths.projections.goalCompletionHistoryPath, {
+    schema: "agi-operational-completion-history.v1",
+    generatedAt: toIso(),
+    workspaceId: summary.workspaceId,
+    entries: goalCompletionStatus.history && Array.isArray(goalCompletionStatus.history.entries) ? goalCompletionStatus.history.entries : [],
   });
   const publicOverview = {
     schema: "governed-memory-public-overview.v1",
@@ -6411,9 +6879,15 @@ function buildGovernedMemoryPublicArtifacts({ workspaceRoot = workspaceRootDefau
   readinessArtifacts.readiness.consistencyChecks = readinessConsistencyChecks;
   readinessArtifacts.readiness.autonomousLearningStatusPath = repoRelative(workspaceRoot, paths.agiReadiness.autonomousLearningStatusJson);
   readinessArtifacts.readiness.causalLearningTracePath = repoRelative(workspaceRoot, paths.agiReadiness.causalLearningTraceJson);
+  readinessArtifacts.readiness.causalRegressionAlertsPath = repoRelative(workspaceRoot, paths.agiReadiness.causalRegressionAlertsJson);
   readinessArtifacts.readiness.distinctImprovementLineagePath = repoRelative(workspaceRoot, paths.agiReadiness.distinctImprovementLineageJson);
+  readinessArtifacts.readiness.distinctImprovementSummaryPath = repoRelative(workspaceRoot, paths.agiReadiness.distinctImprovementSummaryJson);
   readinessArtifacts.readiness.continuityDebtPath = repoRelative(workspaceRoot, paths.continuityPublic.continuityDebtJson);
+  readinessArtifacts.readiness.stableCoverageMatrixPath = repoRelative(workspaceRoot, paths.agiReadiness.stableCoverageMatrixJson);
+  readinessArtifacts.readiness.stableCoverageTrendPath = repoRelative(workspaceRoot, paths.agiReadiness.stableCoverageTrendJson);
   readinessArtifacts.readiness.robustnessRemediationStatusPath = repoRelative(workspaceRoot, paths.agiReadiness.robustnessRemediationStatusJson);
+  readinessArtifacts.readiness.robustnessRemediationBacklogPath = repoRelative(workspaceRoot, paths.agiReadiness.robustnessRemediationBacklogJson);
+  readinessArtifacts.readiness.robustnessRemediationEffectsPath = repoRelative(workspaceRoot, paths.agiReadiness.robustnessRemediationEffectsJson);
   readinessArtifacts.readiness.goalCompletionStatusPath = repoRelative(workspaceRoot, paths.agiReadiness.goalCompletionStatusJson);
   writeJsonIfChanged(readinessProjectionPath, readinessArtifacts.readiness);
   writeJsonIfChanged(robustnessBreakdownProjectionPath, readinessArtifacts.robustnessBreakdown);
@@ -6473,6 +6947,8 @@ function buildGovernedMemoryPublicArtifacts({ workspaceRoot = workspaceRootDefau
       agiReadinessJson: repoRelative(workspaceRoot, paths.agiReadiness.latestJson),
       agiReadinessMd: repoRelative(workspaceRoot, paths.agiReadiness.latestMd),
       domainCoverageMatrixJson: repoRelative(workspaceRoot, paths.agiReadiness.domainCoverageMatrixJson),
+      stableCoverageMatrixJson: repoRelative(workspaceRoot, paths.agiReadiness.stableCoverageMatrixJson),
+      stableCoverageTrendJson: repoRelative(workspaceRoot, paths.agiReadiness.stableCoverageTrendJson),
       robustnessBreakdownJson: repoRelative(workspaceRoot, paths.agiReadiness.robustnessBreakdownJson),
       promotionTrendJson: repoRelative(workspaceRoot, paths.agiReadiness.promotionTrendJson),
       blockedReasonsJson: repoRelative(workspaceRoot, paths.agiReadiness.blockedReasonsJson),
@@ -6481,17 +6957,24 @@ function buildGovernedMemoryPublicArtifacts({ workspaceRoot = workspaceRootDefau
       autonomousLearningStatusJson: repoRelative(workspaceRoot, paths.agiReadiness.autonomousLearningStatusJson),
       autonomousLearningStatusMd: repoRelative(workspaceRoot, paths.agiReadiness.autonomousLearningStatusMd),
       causalLearningTraceJson: repoRelative(workspaceRoot, paths.agiReadiness.causalLearningTraceJson),
+      causalRegressionAlertsJson: repoRelative(workspaceRoot, paths.agiReadiness.causalRegressionAlertsJson),
       distinctImprovementLineageJson: repoRelative(workspaceRoot, paths.agiReadiness.distinctImprovementLineageJson),
       distinctImprovementLineageMd: repoRelative(workspaceRoot, paths.agiReadiness.distinctImprovementLineageMd),
+      distinctImprovementSummaryJson: repoRelative(workspaceRoot, paths.agiReadiness.distinctImprovementSummaryJson),
       robustnessRemediationStatusJson: repoRelative(workspaceRoot, paths.agiReadiness.robustnessRemediationStatusJson),
       robustnessRemediationTrendJson: repoRelative(workspaceRoot, paths.agiReadiness.robustnessRemediationTrendJson),
+      robustnessRemediationBacklogJson: repoRelative(workspaceRoot, paths.agiReadiness.robustnessRemediationBacklogJson),
+      robustnessRemediationEffectsJson: repoRelative(workspaceRoot, paths.agiReadiness.robustnessRemediationEffectsJson),
       goalCompletionStatusJson: repoRelative(workspaceRoot, paths.agiReadiness.goalCompletionStatusJson),
       goalCompletionStatusMd: repoRelative(workspaceRoot, paths.agiReadiness.goalCompletionStatusMd),
       continuityPublicJson: repoRelative(workspaceRoot, paths.continuityPublic.latestSummaryJson),
       continuityPublicMd: repoRelative(workspaceRoot, paths.continuityPublic.latestSummaryMd),
       continuityDebtJson: repoRelative(workspaceRoot, paths.continuityPublic.continuityDebtJson),
+      continuityDebtTrendJson: repoRelative(workspaceRoot, paths.continuityPublic.continuityDebtTrendJson),
+      continuityCloseoutEffectsJson: repoRelative(workspaceRoot, paths.continuityPublic.continuityCloseoutEffectsJson),
       lessonEffectivenessJson: repoRelative(workspaceRoot, paths.publicOutput.lessonEffectivenessJson),
       packCausalTraceJson: repoRelative(workspaceRoot, paths.publicOutput.packCausalTraceJson),
+      causalEffectivenessSummaryJson: repoRelative(workspaceRoot, paths.publicOutput.causalEffectivenessSummaryJson),
     },
   };
   return {
@@ -6511,8 +6994,16 @@ function buildGovernedMemoryPublicArtifacts({ workspaceRoot = workspaceRootDefau
     autonomousLearningStatus,
     lessonEffectivenessPublic,
     packCausalTracePublic,
+    stableCoverageArtifacts,
+    robustnessRemediationBacklog,
+    robustnessRemediationEffects,
+    continuityDebtTrend,
+    continuityCloseoutEffects,
+    causalEffectivenessSummary,
+    causalRegressionAlerts,
     causalLearningTracePublic,
     distinctImprovementLineagePublic,
+    distinctImprovementSummary,
     continuityDebtPublic,
     robustnessRemediationStatus,
     robustnessRemediationTrend,
@@ -6533,6 +7024,7 @@ function exportGovernedMemoryPublicArtifacts({ workspaceRoot = workspaceRootDefa
   writeJsonIfChanged(paths.publicOutput.anthropicLaneJson, artifacts.anthropicLane);
   writeJsonIfChanged(paths.publicOutput.lessonEffectivenessJson, artifacts.lessonEffectivenessPublic);
   writeJsonIfChanged(paths.publicOutput.packCausalTraceJson, artifacts.packCausalTracePublic);
+  writeJsonIfChanged(paths.publicOutput.causalEffectivenessSummaryJson, sanitizePublicValue(artifacts.causalEffectivenessSummary, workspaceRoot));
   ensureDir(paths.agiReadiness.root);
   writeJsonIfChanged(paths.agiReadiness.latestJson, artifacts.readinessArtifacts.readiness);
   fs.writeFileSync(
@@ -6546,6 +7038,8 @@ function exportGovernedMemoryPublicArtifacts({ workspaceRoot = workspaceRootDefa
     "utf8"
   );
   writeJsonIfChanged(paths.agiReadiness.domainCoverageMatrixJson, artifacts.readinessArtifacts.coverage);
+  writeJsonIfChanged(paths.agiReadiness.stableCoverageMatrixJson, sanitizePublicValue(artifacts.stableCoverageArtifacts.matrix, workspaceRoot));
+  writeJsonIfChanged(paths.agiReadiness.stableCoverageTrendJson, sanitizePublicValue(artifacts.stableCoverageArtifacts.trend, workspaceRoot));
   writeJsonIfChanged(paths.agiReadiness.robustnessBreakdownJson, artifacts.readinessArtifacts.robustnessBreakdown || {});
   writeJsonIfChanged(paths.agiReadiness.promotionTrendJson, artifacts.readinessArtifacts.promotionTrend);
   writeJsonIfChanged(paths.agiReadiness.blockedReasonsJson, artifacts.readinessArtifacts.blockedReasons);
@@ -6554,16 +7048,22 @@ function exportGovernedMemoryPublicArtifacts({ workspaceRoot = workspaceRootDefa
   writeJsonIfChanged(paths.agiReadiness.autonomousLearningStatusJson, artifacts.autonomousLearningStatus);
   fs.writeFileSync(paths.agiReadiness.autonomousLearningStatusMd, renderAutonomousLearningMarkdown(artifacts.autonomousLearningStatus), "utf8");
   writeJsonIfChanged(paths.agiReadiness.causalLearningTraceJson, artifacts.causalLearningTracePublic);
+  writeJsonIfChanged(paths.agiReadiness.causalRegressionAlertsJson, sanitizePublicValue(artifacts.causalRegressionAlerts, workspaceRoot));
   writeJsonIfChanged(paths.agiReadiness.distinctImprovementLineageJson, artifacts.distinctImprovementLineagePublic);
   fs.writeFileSync(paths.agiReadiness.distinctImprovementLineageMd, renderDistinctLineageMarkdown(artifacts.distinctImprovementLineagePublic), "utf8");
+  writeJsonIfChanged(paths.agiReadiness.distinctImprovementSummaryJson, sanitizePublicValue(artifacts.distinctImprovementSummary, workspaceRoot));
   writeJsonIfChanged(paths.agiReadiness.robustnessRemediationStatusJson, sanitizePublicValue(artifacts.robustnessRemediationStatus, workspaceRoot));
   writeJsonIfChanged(paths.agiReadiness.robustnessRemediationTrendJson, sanitizePublicValue(artifacts.robustnessRemediationTrend, workspaceRoot));
+  writeJsonIfChanged(paths.agiReadiness.robustnessRemediationBacklogJson, sanitizePublicValue(artifacts.robustnessRemediationBacklog, workspaceRoot));
+  writeJsonIfChanged(paths.agiReadiness.robustnessRemediationEffectsJson, sanitizePublicValue(artifacts.robustnessRemediationEffects, workspaceRoot));
   writeJsonIfChanged(paths.agiReadiness.goalCompletionStatusJson, artifacts.goalCompletionStatus);
   fs.writeFileSync(paths.agiReadiness.goalCompletionStatusMd, renderGoalCompletionMarkdown(artifacts.goalCompletionStatus), "utf8");
   ensureDir(paths.continuityPublic.root);
   writeJsonIfChanged(paths.continuityPublic.latestSummaryJson, artifacts.continuityArtifacts.artifact);
   fs.writeFileSync(paths.continuityPublic.latestSummaryMd, artifacts.continuityArtifacts.markdown, "utf8");
   writeJsonIfChanged(paths.continuityPublic.continuityDebtJson, artifacts.continuityDebtPublic);
+  writeJsonIfChanged(paths.continuityPublic.continuityDebtTrendJson, sanitizePublicValue(artifacts.continuityDebtTrend, workspaceRoot));
+  writeJsonIfChanged(paths.continuityPublic.continuityCloseoutEffectsJson, sanitizePublicValue(artifacts.continuityCloseoutEffects, workspaceRoot));
   artifacts.evalStatus = evaluateMemoryPublicSuite({
     workspaceRoot,
     paths,

@@ -1,6 +1,6 @@
 {
   "schema": "continuity-public-summary.v1",
-  "generatedAt": "2026-04-05T03:42:54.883Z",
+  "generatedAt": "2026-04-05T05:24:36.622Z",
   "workspaceId": "5c839dfeef8b555f",
   "activeAgentTree": {
     "schema": "bounded-agent-graph.v1",
@@ -74,15 +74,6 @@
   "integrationPendingCount": 0,
   "finalReleaseState": "integrated",
   "roleMemoryPackSections": {
-    "default": {
-      "spec": 4,
-      "intent": 1,
-      "workspace_progress": 1,
-      "experience": 4,
-      "semantic": 3,
-      "preference": 0,
-      "improvement": 0
-    },
     "intake": {
       "spec": 4,
       "intent": 1,

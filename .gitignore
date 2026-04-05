@@ -26,6 +26,8 @@ output/agi_readiness/*
 !output/agi_readiness/latest_readiness.json
 !output/agi_readiness/latest_readiness.md
 !output/agi_readiness/domain_coverage_matrix.json
+!output/agi_readiness/stable_coverage_matrix.json
+!output/agi_readiness/stable_coverage_trend.json
 !output/agi_readiness/robustness_breakdown.json
 !output/agi_readiness/promotion_trend.json
 !output/agi_readiness/blocked_reasons.json
@@ -34,10 +36,14 @@ output/agi_readiness/*
 !output/agi_readiness/autonomous_learning_status.json
 !output/agi_readiness/autonomous_learning_status.md
 !output/agi_readiness/causal_learning_trace.json
+!output/agi_readiness/causal_regression_alerts.json
 !output/agi_readiness/distinct_improvement_lineage.json
 !output/agi_readiness/distinct_improvement_lineage.md
+!output/agi_readiness/distinct_improvement_summary.json
 !output/agi_readiness/robustness_remediation_status.json
 !output/agi_readiness/robustness_remediation_trend.json
+!output/agi_readiness/robustness_remediation_backlog.json
+!output/agi_readiness/robustness_remediation_effects.json
 !output/agi_readiness/goal_completion_status.json
 !output/agi_readiness/goal_completion_status.md
 output/agi_v1/
@@ -48,6 +54,7 @@ output/externalization_nohitl/
 output/improvement/
 output/manual_self_improvement/
 output/memory/
+!output/memory_public/causal_effectiveness_summary.json
 output/phase1_dry_runs/
 output/repo_closure_export/
 output/agi_readiness_blackbox_summary.json
@@ -65,6 +72,8 @@ output/phase2-long-horizon-*.json
 output/phase3-lifecycle-*.json
 output/openai_blog_learning_proposals/realtime-perplexity-computer.json
 output/openai_blog_self_improvement_proposals/realtime-perplexity-computer.json
+!output/continuity_public/continuity_debt_trend.json
+!output/continuity_public/continuity_closeout_effects.json
 tmp_*.html
 tmp_*.txt
 tmp_*.json

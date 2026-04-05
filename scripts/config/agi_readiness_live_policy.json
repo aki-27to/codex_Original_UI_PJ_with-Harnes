@@ -56,17 +56,27 @@
   },
   "operationalCompletionCriteria": {
     "stableCoverageBreadth": 1,
+    "supportedCoverageBreadth": 1,
     "robustThreshold": 0.93,
     "horizonThreshold": 0.97,
     "rawFinalScoreThreshold": 0.9,
+    "maxCatastrophicRiskCvar": 0.03,
     "maxOpenDebtCount": 0,
+    "maxBlockedSubtasks": 0,
+    "maxIntegrationPendingCount": 0,
+    "maxRunningAgendaCount": 0,
     "minimumVerifiedPositiveRemediations": 1,
     "minimumDistinctEntries": 3,
     "distinctWindowSize": 5,
+    "consecutiveSuccessfulExports": 3,
     "nonWorseningTolerance": 0.000001,
-    "maxHarmfulCausalRatio": 0.34,
-    "missingContextThreshold": 0.8,
-    "browserFlakinessThreshold": 0.75
+    "maxHarmfulCausalRatio": 0.1,
+    "missingContextThreshold": 0.85,
+    "browserFlakinessThreshold": 0.8,
+    "ambiguousInstructionThreshold": 0.8,
+    "ambiguousInstructionMinEvidence": 10,
+    "adversarialConflictingThreshold": 0.75,
+    "degradedToolOutputsThreshold": 0.85
   },
   "robustnessCategories": [
     {

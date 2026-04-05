@@ -1,0 +1,72 @@
+{
+  "schema": "agi-readiness-stable-coverage-trend.v1",
+  "generatedAt": "2026-04-05T05:24:36.624Z",
+  "workspaceId": "5c839dfeef8b555f",
+  "entries": [
+    {
+      "generatedAt": "2026-04-05T05:18:36.581Z",
+      "stableCoverageBreadth": 0,
+      "stableCoveredFamilies": [],
+      "unstableFamilies": [
+        "deterministic_code",
+        "web_creative",
+        "planning",
+        "workflow_execution",
+        "evaluation_review",
+        "tool_use_browser_like"
+      ]
+    },
+    {
+      "generatedAt": "2026-04-05T05:19:12.304Z",
+      "stableCoverageBreadth": 0,
+      "stableCoveredFamilies": [],
+      "unstableFamilies": [
+        "deterministic_code",
+        "web_creative",
+        "planning",
+        "workflow_execution",
+        "evaluation_review",
+        "tool_use_browser_like"
+      ]
+    },
+    {
+      "generatedAt": "2026-04-05T05:19:39.522Z",
+      "stableCoverageBreadth": 0,
+      "stableCoveredFamilies": [],
+      "unstableFamilies": [
+        "deterministic_code",
+        "web_creative",
+        "planning",
+        "workflow_execution",
+        "evaluation_review",
+        "tool_use_browser_like"
+      ]
+    },
+    {
+      "generatedAt": "2026-04-05T05:20:25.114Z",
+      "stableCoverageBreadth": 0,
+      "stableCoveredFamilies": [],
+      "unstableFamilies": [
+        "deterministic_code",
+        "web_creative",
+        "planning",
+        "workflow_execution",
+        "evaluation_review",
+        "tool_use_browser_like"
+      ]
+    },
+    {
+      "generatedAt": "2026-04-05T05:24:36.624Z",
+      "stableCoverageBreadth": 0,
+      "stableCoveredFamilies": [],
+      "unstableFamilies": [
+        "deterministic_code",
+        "web_creative",
+        "planning",
+        "workflow_execution",
+        "evaluation_review",
+        "tool_use_browser_like"
+      ]
+    }
+  ]
+}

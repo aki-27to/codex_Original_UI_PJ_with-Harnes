@@ -1,15 +1,15 @@
 {
   "schema": "learning-reinforcement-memory.v1",
-  "generatedAt": "2026-04-05T03:42:54.669Z",
-  "lastObservedAt": "2026-04-05T03:42:53.621Z",
+  "generatedAt": "2026-04-05T05:24:36.345Z",
+  "lastObservedAt": "2026-04-05T05:24:35.077Z",
   "observationCount": 110,
   "recentObservations": [
     {
-      "memoryId": "improvement:openai:5914e215f85b",
+      "memoryId": "improvement:openai:d9756c6914fe",
       "memoryType": "improvement_candidate",
       "articleId": "building-frontend-uis-with-codex-and-figma",
       "outcome": "failure",
-      "observedAt": "2026-04-05T03:42:53.621Z",
+      "observedAt": "2026-04-05T05:24:35.077Z",
       "sourceTier": "external_primary"
     },
     {
@@ -17,7 +17,7 @@
       "memoryType": "semantic_lesson",
       "articleId": "realtime-perplexity-computer",
       "outcome": "failure",
-      "observedAt": "2026-04-05T02:45:53.152Z",
+      "observedAt": "2026-04-05T05:19:38.045Z",
       "sourceTier": "external_primary"
     },
     {
@@ -25,7 +25,7 @@
       "memoryType": "semantic_lesson",
       "articleId": "designing-delightful-frontends-with-gpt-5-4",
       "outcome": "failure",
-      "observedAt": "2026-04-05T02:45:53.152Z",
+      "observedAt": "2026-04-05T05:19:38.045Z",
       "sourceTier": "external_primary"
     },
     {
@@ -33,7 +33,7 @@
       "memoryType": "semantic_lesson",
       "articleId": "one-year-of-responses",
       "outcome": "failure",
-      "observedAt": "2026-04-05T02:45:53.152Z",
+      "observedAt": "2026-04-05T05:19:38.045Z",
       "sourceTier": "external_primary"
     },
     {
@@ -41,7 +41,7 @@
       "memoryType": "semantic_lesson",
       "articleId": "skills-agents-sdk",
       "outcome": "failure",
-      "observedAt": "2026-04-05T02:45:53.152Z",
+      "observedAt": "2026-04-05T05:19:38.045Z",
       "sourceTier": "external_primary"
     },
     {
@@ -49,7 +49,7 @@
       "memoryType": "runtime_hint",
       "articleId": "realtime-perplexity-computer",
       "outcome": "failure",
-      "observedAt": "2026-04-05T02:45:53.152Z",
+      "observedAt": "2026-04-05T05:19:38.045Z",
       "sourceTier": "external_primary"
     },
     {
@@ -57,7 +57,7 @@
       "memoryType": "runtime_hint",
       "articleId": "designing-delightful-frontends-with-gpt-5-4",
       "outcome": "failure",
-      "observedAt": "2026-04-05T02:45:53.152Z",
+      "observedAt": "2026-04-05T05:19:38.045Z",
       "sourceTier": "external_primary"
     },
     {
@@ -65,7 +65,7 @@
       "memoryType": "runtime_hint",
       "articleId": "one-year-of-responses",
       "outcome": "failure",
-      "observedAt": "2026-04-05T02:45:53.152Z",
+      "observedAt": "2026-04-05T05:19:38.045Z",
       "sourceTier": "external_primary"
     },
     {
@@ -73,7 +73,7 @@
       "memoryType": "runtime_hint",
       "articleId": "skills-agents-sdk",
       "outcome": "failure",
-      "observedAt": "2026-04-05T02:45:53.152Z",
+      "observedAt": "2026-04-05T05:19:38.045Z",
       "sourceTier": "external_primary"
     },
     {
@@ -81,7 +81,7 @@
       "memoryType": "runtime_hint",
       "articleId": "building-frontend-uis-with-codex-and-figma",
       "outcome": "failure",
-      "observedAt": "2026-04-05T02:45:53.152Z",
+      "observedAt": "2026-04-05T05:19:38.045Z",
       "sourceTier": "external_primary"
     },
     {
@@ -89,7 +89,7 @@
       "memoryType": "runtime_hint",
       "articleId": "run-long-horizon-tasks-with-codex",
       "outcome": "failure",
-      "observedAt": "2026-04-05T02:45:53.152Z",
+      "observedAt": "2026-04-05T05:19:38.045Z",
       "sourceTier": "external_primary"
     }
   ],
@@ -99,7 +99,7 @@
       "failureCount": 9,
       "observedCount": 10,
       "successRate": 0,
-      "lastObservedAt": "2026-04-05T02:45:53.152Z",
+      "lastObservedAt": "2026-04-05T05:19:38.045Z",
       "sampleTurnIds": [
         "019d5897-d8a1-78b0-8c62-8227b05470db",
         "019d5adc-5a6e-7a20-9de3-d3653b8843a9",
@@ -114,7 +114,7 @@
       "failureCount": 9,
       "observedCount": 10,
       "successRate": 0,
-      "lastObservedAt": "2026-04-05T02:45:53.152Z",
+      "lastObservedAt": "2026-04-05T05:19:38.045Z",
       "sampleTurnIds": [
         "019d5897-d8a1-78b0-8c62-8227b05470db",
         "019d5adc-5a6e-7a20-9de3-d3653b8843a9",
@@ -129,7 +129,7 @@
       "failureCount": 9,
       "observedCount": 10,
       "successRate": 0,
-      "lastObservedAt": "2026-04-05T02:45:53.152Z",
+      "lastObservedAt": "2026-04-05T05:19:38.045Z",
       "sampleTurnIds": [
         "019d5897-d8a1-78b0-8c62-8227b05470db",
         "019d5adc-5a6e-7a20-9de3-d3653b8843a9",
@@ -144,7 +144,7 @@
       "failureCount": 9,
       "observedCount": 10,
       "successRate": 0,
-      "lastObservedAt": "2026-04-05T02:45:53.152Z",
+      "lastObservedAt": "2026-04-05T05:19:38.045Z",
       "sampleTurnIds": [
         "019d5897-d8a1-78b0-8c62-8227b05470db",
         "019d5adc-5a6e-7a20-9de3-d3653b8843a9",
@@ -159,7 +159,7 @@
       "failureCount": 9,
       "observedCount": 10,
       "successRate": 0,
-      "lastObservedAt": "2026-04-05T02:45:53.152Z",
+      "lastObservedAt": "2026-04-05T05:19:38.045Z",
       "sampleTurnIds": [
         "019d5897-d8a1-78b0-8c62-8227b05470db",
         "019d5adc-5a6e-7a20-9de3-d3653b8843a9",
@@ -174,7 +174,7 @@
       "failureCount": 9,
       "observedCount": 10,
       "successRate": 0,
-      "lastObservedAt": "2026-04-05T02:45:53.152Z",
+      "lastObservedAt": "2026-04-05T05:19:38.045Z",
       "sampleTurnIds": [
         "019d5897-d8a1-78b0-8c62-8227b05470db",
         "019d5adc-5a6e-7a20-9de3-d3653b8843a9",
@@ -191,7 +191,7 @@
       "failureCount": 9,
       "observedCount": 10,
       "successRate": 0,
-      "lastObservedAt": "2026-04-05T02:45:53.152Z",
+      "lastObservedAt": "2026-04-05T05:19:38.045Z",
       "sampleTurnIds": [
         "019d5897-d8a1-78b0-8c62-8227b05470db",
         "019d5adc-5a6e-7a20-9de3-d3653b8843a9",
@@ -206,7 +206,7 @@
       "failureCount": 9,
       "observedCount": 10,
       "successRate": 0,
-      "lastObservedAt": "2026-04-05T02:45:53.152Z",
+      "lastObservedAt": "2026-04-05T05:19:38.045Z",
       "sampleTurnIds": [
         "019d5897-d8a1-78b0-8c62-8227b05470db",
         "019d5adc-5a6e-7a20-9de3-d3653b8843a9",
@@ -221,7 +221,7 @@
       "failureCount": 9,
       "observedCount": 10,
       "successRate": 0,
-      "lastObservedAt": "2026-04-05T02:45:53.152Z",
+      "lastObservedAt": "2026-04-05T05:19:38.045Z",
       "sampleTurnIds": [
         "019d5897-d8a1-78b0-8c62-8227b05470db",
         "019d5adc-5a6e-7a20-9de3-d3653b8843a9",
@@ -236,7 +236,7 @@
       "failureCount": 9,
       "observedCount": 10,
       "successRate": 0,
-      "lastObservedAt": "2026-04-05T02:45:53.152Z",
+      "lastObservedAt": "2026-04-05T05:19:38.045Z",
       "sampleTurnIds": [
         "019d5897-d8a1-78b0-8c62-8227b05470db",
         "019d5adc-5a6e-7a20-9de3-d3653b8843a9",
@@ -251,7 +251,7 @@
       "failureCount": 9,
       "observedCount": 10,
       "successRate": 0,
-      "lastObservedAt": "2026-04-05T02:45:53.152Z",
+      "lastObservedAt": "2026-04-05T05:19:38.045Z",
       "sampleTurnIds": [
         "019d5897-d8a1-78b0-8c62-8227b05470db",
         "019d5adc-5a6e-7a20-9de3-d3653b8843a9",
@@ -266,7 +266,7 @@
       "failureCount": 9,
       "observedCount": 10,
       "successRate": 0,
-      "lastObservedAt": "2026-04-05T02:45:53.152Z",
+      "lastObservedAt": "2026-04-05T05:19:38.045Z",
       "sampleTurnIds": [
         "019d5897-d8a1-78b0-8c62-8227b05470db",
         "019d5adc-5a6e-7a20-9de3-d3653b8843a9",
@@ -283,91 +283,91 @@
       "failureCount": 9,
       "observedCount": 10,
       "successRate": 0,
-      "lastObservedAt": "2026-04-05T03:42:53.621Z"
+      "lastObservedAt": "2026-04-05T05:24:35.077Z"
     },
     "primary-lane": {
       "successCount": 0,
       "failureCount": 9,
       "observedCount": 10,
       "successRate": 0,
-      "lastObservedAt": "2026-04-05T03:42:53.621Z"
+      "lastObservedAt": "2026-04-05T05:24:35.077Z"
     },
     "agents": {
       "successCount": 0,
       "failureCount": 72,
       "observedCount": 80,
       "successRate": 0,
-      "lastObservedAt": "2026-04-05T02:45:53.152Z"
+      "lastObservedAt": "2026-04-05T05:19:38.045Z"
     },
     "audio": {
       "successCount": 0,
       "failureCount": 9,
       "observedCount": 10,
       "successRate": 0,
-      "lastObservedAt": "2026-04-05T02:45:53.152Z"
+      "lastObservedAt": "2026-04-05T05:19:38.045Z"
     },
     "context": {
       "successCount": 0,
       "failureCount": 90,
       "observedCount": 100,
       "successRate": 0,
-      "lastObservedAt": "2026-04-05T02:45:53.152Z"
+      "lastObservedAt": "2026-04-05T05:19:38.045Z"
     },
     "evals": {
       "successCount": 0,
       "failureCount": 54,
       "observedCount": 60,
       "successRate": 0,
-      "lastObservedAt": "2026-04-05T02:45:53.152Z"
+      "lastObservedAt": "2026-04-05T05:19:38.045Z"
     },
     "frontend": {
       "successCount": 0,
       "failureCount": 63,
       "observedCount": 70,
       "successRate": 0,
-      "lastObservedAt": "2026-04-05T02:45:53.152Z"
+      "lastObservedAt": "2026-04-05T05:19:38.045Z"
     },
     "general": {
       "successCount": 0,
       "failureCount": 9,
       "observedCount": 10,
       "successRate": 0,
-      "lastObservedAt": "2026-04-05T02:45:53.152Z"
+      "lastObservedAt": "2026-04-05T05:19:38.045Z"
     },
     "safety": {
       "successCount": 0,
       "failureCount": 18,
       "observedCount": 20,
       "successRate": 0,
-      "lastObservedAt": "2026-04-05T02:45:53.152Z"
+      "lastObservedAt": "2026-04-05T05:19:38.045Z"
     },
     "skills": {
       "successCount": 0,
       "failureCount": 18,
       "observedCount": 20,
       "successRate": 0,
-      "lastObservedAt": "2026-04-05T02:45:53.152Z"
+      "lastObservedAt": "2026-04-05T05:19:38.045Z"
     },
     "api": {
       "successCount": 0,
       "failureCount": 9,
       "observedCount": 10,
       "successRate": 0,
-      "lastObservedAt": "2026-04-05T02:45:53.152Z"
+      "lastObservedAt": "2026-04-05T05:19:38.045Z"
     },
     "automation": {
       "successCount": 0,
       "failureCount": 45,
       "observedCount": 50,
       "successRate": 0,
-      "lastObservedAt": "2026-04-05T02:45:53.152Z"
+      "lastObservedAt": "2026-04-05T05:19:38.045Z"
     },
     "codex": {
       "successCount": 0,
       "failureCount": 54,
       "observedCount": 60,
       "successRate": 0,
-      "lastObservedAt": "2026-04-05T02:45:53.152Z"
+      "lastObservedAt": "2026-04-05T05:19:38.045Z"
     }
   }
 }

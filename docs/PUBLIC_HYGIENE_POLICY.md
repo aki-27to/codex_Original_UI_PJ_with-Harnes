@@ -1,5 +1,19 @@
 # Public Hygiene Policy
 
+## 2026-04-05 update
+
+- Strict public hygiene blocks completion and strict eval when major surfaces expose:
+  - `memoryType = "unknown"`
+  - blank references or blank outcome status
+  - raw UUID-like titles
+  - epoch-millisecond timestamps
+  - `[object Object]`
+  - `mock-` residues
+- Hygiene applies to:
+  - `output/memory_public/*`
+  - `output/agi_readiness/*`
+  - `output/continuity_public/*`
+
 public proof は operator がそのまま読める品質を維持します。
 
 ## Hygiene rules

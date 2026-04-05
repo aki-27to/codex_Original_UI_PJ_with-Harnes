@@ -1,8 +1,13 @@
 {
   "schema": "agi-readiness-next-bottlenecks.v1",
-  "generatedAt": "2026-04-05T03:42:54.893Z",
+  "generatedAt": "2026-04-05T05:24:36.641Z",
   "workspaceId": "5c839dfeef8b555f",
   "items": [
+    {
+      "classification": "evidence bottleneck",
+      "summary": "causal regression alerts missing",
+      "source": "memory_eval"
+    },
     {
       "classification": "capability bottleneck",
       "summary": "weakest family is R_robust",
@@ -12,11 +17,6 @@
       "classification": "scope/coverage bottleneck",
       "summary": "continuity carries 26 closeout debt item(s) with severity high",
       "source": "continuity"
-    },
-    {
-      "classification": "capability bottleneck",
-      "summary": "robustness is currently limited by ambiguous_instruction (no evidence yet)",
-      "source": "agi_readiness"
     }
   ]
 }

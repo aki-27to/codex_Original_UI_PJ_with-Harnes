@@ -1,6 +1,6 @@
 {
   "schema": "governed-memory-public-export-manifest.v1",
-  "generatedAt": "2026-04-05T03:42:54.893Z",
+  "generatedAt": "2026-04-05T05:24:36.641Z",
   "workspaceId": "5c839dfeef8b555f",
   "sourceMode": "redacted_live_export",
   "canonicalReuseVerified": true,
@@ -21,6 +21,8 @@
     "agiReadinessJson": "output/agi_readiness/latest_readiness.json",
     "agiReadinessMd": "output/agi_readiness/latest_readiness.md",
     "domainCoverageMatrixJson": "output/agi_readiness/domain_coverage_matrix.json",
+    "stableCoverageMatrixJson": "output/agi_readiness/stable_coverage_matrix.json",
+    "stableCoverageTrendJson": "output/agi_readiness/stable_coverage_trend.json",
     "robustnessBreakdownJson": "output/agi_readiness/robustness_breakdown.json",
     "promotionTrendJson": "output/agi_readiness/promotion_trend.json",
     "blockedReasonsJson": "output/agi_readiness/blocked_reasons.json",
@@ -29,16 +31,23 @@
     "autonomousLearningStatusJson": "output/agi_readiness/autonomous_learning_status.json",
     "autonomousLearningStatusMd": "output/agi_readiness/autonomous_learning_status.md",
     "causalLearningTraceJson": "output/agi_readiness/causal_learning_trace.json",
+    "causalRegressionAlertsJson": "output/agi_readiness/causal_regression_alerts.json",
     "distinctImprovementLineageJson": "output/agi_readiness/distinct_improvement_lineage.json",
     "distinctImprovementLineageMd": "output/agi_readiness/distinct_improvement_lineage.md",
+    "distinctImprovementSummaryJson": "output/agi_readiness/distinct_improvement_summary.json",
     "robustnessRemediationStatusJson": "output/agi_readiness/robustness_remediation_status.json",
     "robustnessRemediationTrendJson": "output/agi_readiness/robustness_remediation_trend.json",
+    "robustnessRemediationBacklogJson": "output/agi_readiness/robustness_remediation_backlog.json",
+    "robustnessRemediationEffectsJson": "output/agi_readiness/robustness_remediation_effects.json",
     "goalCompletionStatusJson": "output/agi_readiness/goal_completion_status.json",
     "goalCompletionStatusMd": "output/agi_readiness/goal_completion_status.md",
     "continuityPublicJson": "output/continuity_public/latest_continuity.json",
     "continuityPublicMd": "output/continuity_public/latest_continuity.md",
     "continuityDebtJson": "output/continuity_public/continuity_debt.json",
+    "continuityDebtTrendJson": "output/continuity_public/continuity_debt_trend.json",
+    "continuityCloseoutEffectsJson": "output/continuity_public/continuity_closeout_effects.json",
     "lessonEffectivenessJson": "output/memory_public/lesson_effectiveness_public.json",
-    "packCausalTraceJson": "output/memory_public/pack_causal_trace_public.json"
+    "packCausalTraceJson": "output/memory_public/pack_causal_trace_public.json",
+    "causalEffectivenessSummaryJson": "output/memory_public/causal_effectiveness_summary.json"
   }
 }

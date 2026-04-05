@@ -127,6 +127,18 @@
       "title": "Operational goal completion artifact is generated"
     },
     {
+      "id": "stable_coverage_surface_present",
+      "title": "Stable coverage matrix and trend are generated"
+    },
+    {
+      "id": "causal_regression_alerts_present",
+      "title": "Causal regression alerts are generated"
+    },
+    {
+      "id": "goal_completion_supporting_artifacts_present",
+      "title": "Goal completion artifact points at supporting public artifacts that exist"
+    },
+    {
       "id": "goal_completion_status_consistent",
       "title": "Operational goal completion status matches current readiness, debt, and learning metrics"
     },

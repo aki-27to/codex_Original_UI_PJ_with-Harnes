@@ -1,5 +1,15 @@
 # Continuity Closeout Policy
 
+## 2026-04-05 update
+
+- Continuity closeout is now tracked as debt with public proof.
+- Primary surfaces:
+  - `output/continuity_public/latest_continuity.json`
+  - `output/continuity_public/continuity_debt.json`
+  - `output/continuity_public/continuity_debt_trend.json`
+  - `output/continuity_public/continuity_closeout_effects.json`
+- Goal completion requires `openDebtCount = 0`, `blockedSubtasks = 0`, and `integrationPendingCount = 0`.
+
 continuity root は単なる履歴ではなく、closeout debt を管理する面として扱います。
 
 ## Normalized blocker types

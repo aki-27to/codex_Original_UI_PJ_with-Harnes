@@ -3,6 +3,22 @@
 HTML guide:
 - `http://127.0.0.1:57525/01.HarnesUI/guide.html`
 
+## Current App Layout
+
+The shared harness now owns the multi-app surface under `APP/`.
+
+- `APP/01.english-conversation-app`
+- `APP/02.talkApp`
+- `APP/03.プレゼン上達AI`
+
+Current default runtime posture:
+
+- English Conversation App static files resolve from `APP/01.english-conversation-app` first.
+- `CODEX_ENGLISH_CONVERSATION_APP_ROOT` remains the explicit override.
+- `../english-conversation-app` remains a legacy compatibility fallback only.
+- App manifests and runtime wiring live under `APP/*/app.manifest.json`.
+- Architecture details live in `docs/HARNESS_APP_PLATFORM.md`.
+
 このリポジトリは、単なる「Codex を呼ぶだけの Web UI」ではありません。
 `codex app-server` をローカル優先で運用しつつ、既存の標準実行経路を維持したまま、要件固定、親子ガバナンス、evidence-first の release judgment、fail-closed な `agi_v1` 評価を重ねる governed harness です。
 
@@ -67,10 +83,11 @@ HTML guide:
 2. 既定の same-origin 入口として `http://127.0.0.1:57525/english-conversation-app/index.html` を開く
 3. 静的ファイルは次の優先順で解決されます
    - `CODEX_ENGLISH_CONVERSATION_APP_ROOT`
-   - sibling repo `../english-conversation-app/`
+   - integrated app `APP/01.english-conversation-app/`
+   - legacy external clone `../english-conversation-app/`
    - bundled fallback `web/english-conversation-app/`
-4. sibling repo 側の `start_english_conversation_app.bat` を使うと standalone app を `127.0.0.1:57526` で起動でき、会話/TTS API だけを main harness (`127.0.0.1:57525`) に proxy します
-5. bundled app を一度 sibling repo に展開したい場合は `bootstrap_english_conversation_app_repo.bat` を実行
+4. `start_english_conversation_app.bat` は互換用の standalone app を `127.0.0.1:57526` で起動し、会話/TTS API だけを main harness (`127.0.0.1:57525`) に proxy します
+5. `bootstrap_english_conversation_app_repo.bat` は legacy external clone を明示的に用意したい場合だけ使います
 
 ## スモークテスト
 
@@ -203,10 +220,10 @@ powershell -ExecutionPolicy Bypass -File .\tools\kokoro-fastapi\smoke_test_speec
 
 English Conversation App 連携:
 - `http://127.0.0.1:57525/english-conversation-app/index.html` を開く
-- sibling repo があればサーバーが `CODEX_ENGLISH_CONVERSATION_APP_ROOT` 未設定時に自動で優先します
+- サーバーは `CODEX_ENGLISH_CONVERSATION_APP_ROOT` 未設定時に `APP/01.english-conversation-app` を既定優先し、必要なときだけ legacy external clone を使います
 - 明示 override は `CODEX_ENGLISH_CONVERSATION_APP_ROOT=/abs/path/to/english-conversation-app`
-- sibling repo 側の `start_english_conversation_app.bat` を使うと standalone app を `127.0.0.1:57526` で開き、会話/TTS API だけを `127.0.0.1:57525` に proxy します
-- 初回 split は `bootstrap_english_conversation_app_repo.bat`
+- `start_english_conversation_app.bat` は互換用 standalone app を `127.0.0.1:57526` で開き、会話/TTS API だけを `127.0.0.1:57525` に proxy します
+- 初回 split が必要なら `bootstrap_english_conversation_app_repo.bat`
 - `TTS Engine` を `Kokoro FastAPI (local)` に設定
 - 音声応答は `POST /api/voice/kokoro` を経由してブラウザ再生されます
 
@@ -276,3 +293,24 @@ English Conversation App 連携:
 
 移行メモ:
 - `docs/standard-codex-migration.md`
+
+## 2026-04-05 operational goal surfaces
+
+The harness now exposes an operational goal-completion layer on top of governed memory and readiness.
+
+- Primary decision artifact:
+  - `output/agi_readiness/goal_completion_status.json`
+- Supporting readiness artifacts:
+  - `output/agi_readiness/stable_coverage_matrix.json`
+  - `output/agi_readiness/stable_coverage_trend.json`
+  - `output/agi_readiness/robustness_breakdown.json`
+  - `output/agi_readiness/causal_regression_alerts.json`
+  - `output/agi_readiness/distinct_improvement_summary.json`
+- Continuity debt artifacts:
+  - `output/continuity_public/continuity_debt.json`
+  - `output/continuity_public/continuity_debt_trend.json`
+  - `output/continuity_public/continuity_closeout_effects.json`
+- Memory public causal artifact:
+  - `output/memory_public/causal_effectiveness_summary.json`
+
+This is an internal operational completion surface, not a public AGI claim.

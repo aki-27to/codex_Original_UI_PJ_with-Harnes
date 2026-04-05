@@ -1,6 +1,6 @@
 {
   "schema": "governed-memory-public-lane-projection.v1",
-  "generatedAt": "2026-04-05T03:42:54.883Z",
+  "generatedAt": "2026-04-05T05:24:36.622Z",
   "laneKey": "anthropic_secondary",
   "sourceName": "Anthropic Engineering",
   "sourceTier": "external_secondary",
@@ -40,7 +40,7 @@
     "observationCount": 2436,
     "awaitingObservationCount": 0,
     "observationStatus": "disabled",
-    "lastObservedAt": "2026-04-05T02:45:53.152Z",
+    "lastObservedAt": "2026-04-05T05:20:23.639Z",
     "consideredForPackCount": 4,
     "advisoryReferenceCount": 4,
     "causalUsageCount": 4
@@ -203,7 +203,7 @@
     "blockedCount": 0,
     "awaitingObservationCount": 0,
     "policyDisabledCandidateCount": 1,
-    "lastObservedAt": "2026-04-05T02:45:53.152Z",
+    "lastObservedAt": "2026-04-05T05:20:23.639Z",
     "nextPriority": {
       "title": "Effective harnesses for long-running agents",
       "changeType": "frontend_quality_note",

@@ -1,0 +1,11 @@
+{
+  "schema": "agi-readiness-distinct-improvement-summary.v1",
+  "generatedAt": "2026-04-05T05:24:36.626Z",
+  "workspaceId": "5c839dfeef8b555f",
+  "distinctWindowSize": 5,
+  "distinctComparisonCount": 5,
+  "promotedCount": 3,
+  "heldOrBlockedCount": 2,
+  "criticalRegressionCount": 2,
+  "nonWorsening": false
+}

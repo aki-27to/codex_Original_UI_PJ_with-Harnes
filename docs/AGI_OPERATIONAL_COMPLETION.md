@@ -1,5 +1,20 @@
 # AGI Operational Completion
 
+## 2026-04-05 update
+
+- This document defines operational completion for this harness, not a public AGI claim.
+- The top-level decision artifact is `output/agi_readiness/goal_completion_status.json`.
+- `goalStatus = "OPERATIONALLY_COMPLETE"` is allowed only when strict live criteria pass, including stable coverage, robustness, horizon, continuity debt closeout, causal safety, distinct lineage quality, and three consecutive passing live exports.
+- Supporting public artifacts include:
+  - `output/agi_readiness/stable_coverage_matrix.json`
+  - `output/agi_readiness/stable_coverage_trend.json`
+  - `output/agi_readiness/robustness_breakdown.json`
+  - `output/agi_readiness/causal_regression_alerts.json`
+  - `output/agi_readiness/distinct_improvement_summary.json`
+  - `output/continuity_public/continuity_debt.json`
+  - `output/continuity_public/continuity_debt_trend.json`
+  - `output/memory_public/causal_effectiveness_summary.json`
+
 この文書は、この repo における「AGI を公開証明した」状態ではなく、**運用上の到達判定**を定義します。
 
 ## これは何か

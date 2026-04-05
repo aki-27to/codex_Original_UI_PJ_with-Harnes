@@ -1,6 +1,6 @@
 ﻿# CURRENT_ARCHITECTURE
 
-Updated: 2026-04-04
+Updated: 2026-04-05
 
 ## 1) Purpose
 
@@ -28,6 +28,7 @@ This document is the active architecture spec for the Codex App Server integrati
 - Fresh HarnesUI sessions now default that operator-facing permission selector to `Agent (Full Access)` / `danger-full-access`; saved browser preferences still win when present.
 - The same settings panel now shows an always-visible permission summary card for the active mode, keeps raw config-level controls (`approval_policy`, `sandbox_mode`, guardian toggle) behind a dedicated advanced details block, and no longer exposes deprecated interactive `on-failure` approval wording.
 - The same HarnesUI settings column now also exposes a workspace-lock control strip (`このパスで lock` / `unlock`) plus live lock status text driven by `/api/runtime.workspaceGuard`, and simple view collapses the settings card down to that workspace-lock surface so design-sensitive `web_ui` turns can be recovered without leaving the main console.
+- `web/01.HarnesUI/app.js` now treats operator execution state as chat-scoped instead of console-global: each chat persists its own workspace path, desired workspace-lock root, execution profile, approval/sandbox/web-search toggles, model selection, and unsent composer draft, and room switches rehydrate those values into the visible controls before optionally syncing the server-side workspace lock to the active room.
 - `web/01.HarnesUI/index.html`, `web/01.HarnesUI/app.js`, and `server.js` now treat `web_search` as an exact tri-state execution control (`cached | live | disabled`) instead of a UI-only boolean. The selected mode is sent through `POST /api/exec`, preserved in the execution recipe/runtime snapshots, used in thread-reset comparisons, and forwarded to `thread/start` config without collapsing `cached` and `live` into the same value.
 - `web/01.HarnesUI/index.html` and `web/01.HarnesUI/app.js` now keep the local model preset surface aligned with the current Codex lineup by exposing `gpt-5.4`, `gpt-5.4-mini`, and `gpt-5.3-codex` as first-class operator choices.
 - The main `web/01.HarnesUI/index.html` chat composer now auto-grows with multi-line input while keeping its empty-state height as the stable baseline, so clearing the field or resizing the window while expanded still returns the control to the original initial height.
@@ -93,13 +94,14 @@ This document is the active architecture spec for the Codex App Server integrati
 - Previously archived legacy/reference payloads that were proven unused were purged from the repository root; the active runtime no longer ships a top-level legacy payload set.
 - `GET /english-conversation-app/*` now preserves the existing same-origin route while resolving static files in this priority order:
   - `CODEX_ENGLISH_CONVERSATION_APP_ROOT`
-  - sibling repo `../english-conversation-app/`
+  - in-repo app root `APP/01.english-conversation-app/`
+  - legacy external clone `../english-conversation-app/`
   - bundled fallback `web/english-conversation-app/`
-- The sibling English conversation repo can also run as a standalone app on `127.0.0.1:57526` via `start_english_conversation_app.bat` and `standalone_server.js`. That standalone server owns only the English app browser session and proxies just the conversation/voice APIs back to the main harness on `127.0.0.1:57525`, so opening the app no longer restarts or interrupts active HarnesUI `/api/exec` turns.
+- The integrated English conversation app can also run as a standalone app on `127.0.0.1:57526` via `APP/01.english-conversation-app/start_english_conversation_app.bat` and `standalone_server.js`. That standalone server owns only the English app browser session and proxies just the conversation/voice APIs back to the main harness on `127.0.0.1:57525`, so opening the app no longer restarts or interrupts active HarnesUI `/api/exec` turns.
 - That standalone proxy normalizes `Origin` / `Referer` to the harness origin for proxied mutation APIs so the main harness can keep its same-port local-origin checks without rejecting standalone English conversation POST calls.
 - The same standalone proxy keeps longer upstream timeouts for conversation/TTS mutation routes than for lightweight runtime probes, so a normal local conversation turn does not get misreported as backend-unavailable simply because the proxy gave up before the harness conversation timeout.
 - The harness-side `conversation-app-server` lane now treats English conversation turns as a lightweight non-dispatch profile: parent-dispatch guard retries are exempt for that profile, `requestUserInput` is explicitly blocked, and the route runs with a conversation-specific low reasoning-effort override so short spoken replies can complete without leaking internal retry prompts or forcing unnecessary specialist delegation.
-- `bootstrap_english_conversation_app_repo.bat` / `scripts/bootstrap_english_conversation_app_repo.ps1` can seed the sibling repo from the bundled static app when splitting it out for the first time.
+- `bootstrap_english_conversation_app_repo.bat` / `scripts/bootstrap_english_conversation_app_repo.ps1` can still seed a legacy external clone from the bundled static app when that compatibility path is needed.
 - `web/01.HarnesUI/overview.html` is a dedicated operator overview page that aggregates runtime posture, topology, contracts, evidence bundles, replay/eval summaries, and skill coverage without mixing that inventory into the execution console, and its top-line copy now presents the page as the operator map for standard routes, governance posture, release truth, and `agi_v1`-facing eval posture rather than as generic telemetry.
 - `web/01.HarnesUI/overview.html`, `web/01.HarnesUI/overview.css`, and `web/01.HarnesUI/overview.js` now separate first-glance posture from deep inventory. `Runtime` and `Evidence` stay open by default, `Topology / Contracts / Traceability / Memory` move behind collapsible section shells, the raw `/api/harness/overview` snapshot is closed by default, and the overview no longer relies on mojibake-prone refresh-state labels in the operator-facing view.
 - The same overview now also exposes the governed external-learning lane: official OpenAI Developers blog ingestion status, recent promoted learnings, pending proposal-only targets, and freeze-aware boundaries are visible there without adding noise to the main execution console.
@@ -282,9 +284,19 @@ This document is the active architecture spec for the Codex App Server integrati
     - always served from bundled `web/01.HarnesUI/`
     - polls `GET /api/runtime` while local requests are active so stale client-side pending rows can self-heal after the backend has already emitted a terminal turn
   - `/english-conversation-app/*`
-    - served from external sibling/override root when present, otherwise bundled fallback
+    - served from the integrated `APP/01.english-conversation-app/` root by default, with env override and legacy external clone as compatibility fallbacks
     - keeps the existing same-origin browser path so conversation/TTS APIs do not need CORS or alternate ports
-    - sibling repo `start_english_conversation_app.bat` can instead launch a standalone browser/static server on `57526`, isolating its launcher lifecycle from the main harness while proxying only conversation/TTS calls to `57525`
+    - `start_english_conversation_app.bat` can still launch a compatibility standalone browser/static server on `57526`, isolating its launcher lifecycle from the main harness while proxying only conversation/TTS calls to `57525`
+  - `/apps/english-conversation-app/*`
+    - registry-driven primary mount for the English Conversation App
+    - uses the same static root resolution order as `/english-conversation-app/*`
+    - rewrites `/apps/english-conversation-app/api/*` into harness-native `/api/*`
+  - `/apps/talkapp/*`
+    - reverse-proxy mount for the local talkApp server
+    - keeps the talkApp UI/backend separate while exposing it under the shared harness namespace
+  - `/apps/presentation-coach/*`
+    - reverse-proxy mount for the local presentation coaching app
+    - keeps the app's own UX while allowing it to consume shared harness AI
 - `GET /api/runtime`
   - runtime snapshot, latest turn, governance policy, turn contract, task outcome contract, eval/replay/SLO capability summary
   - exposes `userFacingResponseContract` summary/path so operators can inspect which close-in-place and response-safety rules are actively enforced
@@ -296,6 +308,20 @@ This document is the active architecture spec for the Codex App Server integrati
   - exposes constitution contract paths and release decision state vocabulary for operator/runtime inspection
   - includes `gitAutomation` with config posture and latest turn-level auto-commit/autopush result
   - includes `staticApps.englishConversationApp` with mount source/root summary for the current English Conversation App static root
+  - now also includes `staticApps.apps`, the registry-driven app catalog snapshot sourced from `APP/*/app.manifest.json`
+- `GET /api/apps`
+  - returns the harness app catalog
+  - exposes each app's mount path, working directory summary, and integration mode (`native-static` or `reverse-proxy`)
+- `GET /api/apps/:appId/runtime`
+  - returns the app identity plus harness AI readiness for that app's working directory
+- `POST /api/apps/:appId/reply`
+  - local app-to-harness bridge for plain-text app-scoped generation
+- `POST /api/apps/:appId/structured`
+  - local app-to-harness bridge for schema-constrained app-scoped generation
+- Multi-app integration posture:
+  - the harness now treats `APP/` as the shared macro-AGI registry
+  - current app code now physically lives under `APP/` inside the harness repo
+  - `docs/HARNESS_APP_PLATFORM.md` is the operator-facing design note for this layer
 - `GET /api/intent/profile`
   - returns the same `intentFirst` summary as a dedicated local operator API for intent-first posture inspection
   - does not require the control token for same-origin read access
@@ -457,7 +483,9 @@ This document is the active architecture spec for the Codex App Server integrati
   - indexes: `indexes/by_{id,scope,type,task_family,agent,workspace}.json`
   - projections: `projections/spec_graph.json`, `projections/workspace_progress/*.json`, `projections/preference_profiles/active.json`, `projections/semantic_lessons/{primary,secondary}.json`, `projections/failure_patterns/latest.json`, `projections/active_runtime_hints/latest.json`, `projections/improvement_state/latest.json`, `projections/eval_observations/latest.json`
   - compiled packs: `retrieval/packs.jsonl`, `retrieval/last_pack_by_thread.json`, `retrieval/last_pack_by_workspace.json`
-- Human-facing governed memory reports now live under `output/memory/` as intentional output projections (`latest_overview.*`, `promoted_semantic_memory.json`, `preference_profiles_report.json`, `improvement_dashboard.json`, `memory_health_report.md`).
+- Human-facing governed memory reports now live under `output/memory/` as local/operator projections (`latest_overview.*`, `promoted_semantic_memory.json`, `preference_profiles_report.json`, `improvement_dashboard.json`, `memory_health_report.md`). That surface is intentionally not the canonical store and should not be relied on as the public-safe checked-in projection.
+- Repo-safe governed memory exports now live under `output/memory_public/`. This surface is redacted and reproducible, and includes `latest_overview.*`, workspace-progress, latest-pack, promotion/revocation health, memory-eval PASS/FAIL status, and canonical-graph-derived OpenAI / Anthropic lane projections.
+- `scripts/export_governed_memory_public.js` exports the redacted public surface from the live local canonical store, while `scripts/export_governed_memory_public_sample.js` regenerates the checked-in sample/public artifact set from a deterministic fixture so the repo can carry public-safe proof without leaking local runtime state.
 - Long-horizon continuity state is stored under `logs/archive/raw/runtime_state/continuity/tasks/<taskId>/` with:
   - `task_state.json`
   - `plan_state.json`
@@ -558,8 +586,24 @@ This document is the active architecture spec for the Codex App Server integrati
 - Default eval coverage is now workflow-aware, but broader scenario depth is still limited by the small baseline suite.
 - The AGI-readiness program layers are now file-backed and inspectable, but they remain scaffold-grade in two places: observed human baselines are not yet populated, and claim gate outputs should be treated as internal readiness advice rather than an external claim.
 - Phase 5/6/7/8/9/10 artifacts are generated under `output/` and `logs/archive/raw/knowledge_store/`, but most promotion decisions are still policy-driven local files rather than remote-controlled deployment systems.
-- The external English Conversation App priority is resolved at request time; operators still need to ensure the sibling repo contents themselves stay compatible with the harness APIs.
+- English Conversation App static root priority is resolved at request time; operators still need to ensure any env override or legacy external clone stays compatible with the harness APIs.
 - Some lower-tier operator documents remain mixed-language.
 - Live `stdio` parity still depends on the host allowing child-process spawn for the Codex app-server. In spawn-restricted sandboxes, proof/signoff `transportMode=stdio` can only fail fast with recorded evidence (`spawn EPERM`) rather than produce a full live comparison bundle.
 - Playwright browser verification can fail for the same reason in this sandbox (`browserType.launch: spawn EPERM`), so local UI changes may need a normal desktop shell for screenshot-grade browser evidence even when route checks and targeted UI logic tests pass.
 - In the current Copilot Studio tool exposure for `WR_ADD_WORK_MEMO_TO_EVIDENCE_V1`, the tested agent UI surfaced `memo_text` but not the underlying optional `memo_project` / `memo_date` fields, so memo capture is presently optimized for one-line notes rather than fully structured memo entry.
+
+## 2026-04-05 operational completion surfaces
+
+- Live truth remains the governed runtime state under `logs/archive/raw/runtime_state/memory/`.
+- Public operational proof now includes:
+  - `output/agi_readiness/goal_completion_status.json`
+  - `output/agi_readiness/stable_coverage_matrix.json`
+  - `output/agi_readiness/stable_coverage_trend.json`
+  - `output/agi_readiness/robustness_remediation_backlog.json`
+  - `output/agi_readiness/robustness_remediation_effects.json`
+  - `output/agi_readiness/causal_regression_alerts.json`
+  - `output/continuity_public/continuity_debt_trend.json`
+  - `output/continuity_public/continuity_closeout_effects.json`
+  - `output/memory_public/causal_effectiveness_summary.json`
+- `goal_completion_status.json` is the strict top-level operational decision surface.
+- `OPERATIONALLY_COMPLETE` is allowed only when all live criteria pass; fixture or sample-only evidence must never be used for this decision.

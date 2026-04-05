@@ -1,0 +1,99 @@
+{
+  "schema": "agi-readiness-robustness-remediation-effects.v1",
+  "generatedAt": "2026-04-05T05:24:36.625Z",
+  "workspaceId": "5c839dfeef8b555f",
+  "entries": [
+    {
+      "categoryId": "ambiguous_instruction",
+      "remediationStatus": "measurement required",
+      "remediationEffect": "pending",
+      "evidenceCount": 0,
+      "score": 0,
+      "lastImprovementDelta": 0,
+      "agendaRef": "<agenda-ref>"
+    },
+    {
+      "categoryId": "missing_context",
+      "remediationStatus": "running",
+      "remediationEffect": "pending",
+      "evidenceCount": 15,
+      "score": 0.25,
+      "lastImprovementDelta": 0,
+      "agendaRef": "<agenda-ref>"
+    },
+    {
+      "categoryId": "browser_tool_flakiness",
+      "remediationStatus": "running",
+      "remediationEffect": "pending",
+      "evidenceCount": 38,
+      "score": 0.269737,
+      "lastImprovementDelta": 0,
+      "agendaRef": "<agenda-ref>"
+    },
+    {
+      "categoryId": "adversarial_conflicting_instruction",
+      "remediationStatus": "running",
+      "remediationEffect": "pending",
+      "evidenceCount": 3,
+      "score": 0.5,
+      "lastImprovementDelta": 0,
+      "agendaRef": "<agenda-ref>"
+    },
+    {
+      "categoryId": "degraded_tool_outputs",
+      "remediationStatus": "running",
+      "remediationEffect": "pending",
+      "evidenceCount": 30,
+      "score": 0.675,
+      "lastImprovementDelta": 0,
+      "agendaRef": "<agenda-ref>"
+    }
+  ],
+  "categories": [
+    {
+      "categoryId": "ambiguous_instruction",
+      "remediationStatus": "measurement required",
+      "remediationEffect": "pending",
+      "evidenceCount": 0,
+      "score": 0,
+      "lastImprovementDelta": 0,
+      "agendaRef": "<agenda-ref>"
+    },
+    {
+      "categoryId": "missing_context",
+      "remediationStatus": "running",
+      "remediationEffect": "pending",
+      "evidenceCount": 15,
+      "score": 0.25,
+      "lastImprovementDelta": 0,
+      "agendaRef": "<agenda-ref>"
+    },
+    {
+      "categoryId": "browser_tool_flakiness",
+      "remediationStatus": "running",
+      "remediationEffect": "pending",
+      "evidenceCount": 38,
+      "score": 0.269737,
+      "lastImprovementDelta": 0,
+      "agendaRef": "<agenda-ref>"
+    },
+    {
+      "categoryId": "adversarial_conflicting_instruction",
+      "remediationStatus": "running",
+      "remediationEffect": "pending",
+      "evidenceCount": 3,
+      "score": 0.5,
+      "lastImprovementDelta": 0,
+      "agendaRef": "<agenda-ref>"
+    },
+    {
+      "categoryId": "degraded_tool_outputs",
+      "remediationStatus": "running",
+      "remediationEffect": "pending",
+      "evidenceCount": 30,
+      "score": 0.675,
+      "lastImprovementDelta": 0,
+      "agendaRef": "<agenda-ref>"
+    }
+  ]
+}

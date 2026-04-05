@@ -1,6 +1,6 @@
 # HARNESS_MAP
 
-Updated: 2026-04-04
+Updated: 2026-04-05
 
 ## 1) Purpose And Reading Order
 
@@ -15,13 +15,14 @@ Recommended read order:
 2. `AGENTS.md`
 3. `docs/AGENT_OPERATING_RULES.md`
 4. `docs/CURRENT_ARCHITECTURE.md`
-5. `docs/EVIDENCE_CONTRACT.md`
-6. `scripts/config/harness_contract_spec.json`
-7. `scripts/config/task_outcome_contract.json`
-8. `scripts/config/planning_mode_contract.json`
-9. `scripts/config/assurance_depth_contract.json`
-10. `scripts/config/planning_decision_contract.schema.json`
-11. `scripts/config/eval_suite_default.json`
+5. `docs/HARNESS_APP_PLATFORM.md`
+6. `docs/EVIDENCE_CONTRACT.md`
+7. `scripts/config/harness_contract_spec.json`
+8. `scripts/config/task_outcome_contract.json`
+9. `scripts/config/planning_mode_contract.json`
+10. `scripts/config/assurance_depth_contract.json`
+11. `scripts/config/planning_decision_contract.schema.json`
+12. `scripts/config/eval_suite_default.json`
 
 ## 2) Layer Map
 
@@ -29,6 +30,7 @@ Recommended read order:
   - `AGENTS.md`
 - Tier-1 / operating policy:
   - `docs/AGENT_OPERATING_RULES.md`
+  - `docs/HARNESS_APP_PLATFORM.md`
   - `docs/APP_SERVER_PROTOCOL_RUNBOOK.md`
   - `docs/CONTEXT_MEMORY_POLICY.md`
   - `docs/EVIDENCE_CONTRACT.md`
@@ -177,3 +179,24 @@ Comparison artifacts:
 - `baseline_comparison_report.json`
 - `speed_vs_assurance_report.md`
 - New bundles also include `measured_baseline_summary.json` plus `baseline_*_task_trace_summary.json` so speed/dispatch/review/evidence comparisons are based on measured runs instead of a prose-only approximation.
+
+## 2026-04-05 Operational Goal Map
+
+- Live truth:
+  - `logs/archive/raw/runtime_state/memory/`
+- Public readiness:
+  - `output/agi_readiness/latest_readiness.json`
+  - `output/agi_readiness/goal_completion_status.json`
+  - `output/agi_readiness/stable_coverage_matrix.json`
+  - `output/agi_readiness/robustness_breakdown.json`
+  - `output/agi_readiness/distinct_improvement_lineage.json`
+- Public continuity:
+  - `output/continuity_public/latest_continuity.json`
+  - `output/continuity_public/continuity_debt.json`
+  - `output/continuity_public/continuity_debt_trend.json`
+- Public memory:
+  - `output/memory_public/latest_overview.json`
+  - `output/memory_public/latest_pack_public.json`
+  - `output/memory_public/causal_effectiveness_summary.json`
+
+Use `goal_completion_status.json` as the top-level operational status file. It remains `NOT_YET` unless all strict live criteria are met.

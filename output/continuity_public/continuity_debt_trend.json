@@ -1,0 +1,47 @@
+{
+  "schema": "continuity-debt-trend.v1",
+  "generatedAt": "2026-04-05T05:24:36.625Z",
+  "workspaceId": "5c839dfeef8b555f",
+  "entries": [
+    {
+      "generatedAt": "2026-04-05T05:18:36.583Z",
+      "openDebtCount": 26,
+      "debtSeverity": "high",
+      "blockedSubtasks": 0,
+      "integrationPendingCount": 0,
+      "finalReleaseState": "integrated"
+    },
+    {
+      "generatedAt": "2026-04-05T05:19:12.316Z",
+      "openDebtCount": 26,
+      "debtSeverity": "high",
+      "blockedSubtasks": 0,
+      "integrationPendingCount": 0,
+      "finalReleaseState": "integrated"
+    },
+    {
+      "generatedAt": "2026-04-05T05:19:39.523Z",
+      "openDebtCount": 26,
+      "debtSeverity": "high",
+      "blockedSubtasks": 0,
+      "integrationPendingCount": 0,
+      "finalReleaseState": "integrated"
+    },
+    {
+      "generatedAt": "2026-04-05T05:20:25.115Z",
+      "openDebtCount": 26,
+      "debtSeverity": "high",
+      "blockedSubtasks": 0,
+      "integrationPendingCount": 0,
+      "finalReleaseState": "integrated"
+    },
+    {
+      "generatedAt": "2026-04-05T05:24:36.625Z",
+      "openDebtCount": 26,
+      "debtSeverity": "high",
+      "blockedSubtasks": 0,
+      "integrationPendingCount": 0,
+      "finalReleaseState": "integrated"
+    }
+  ]
+}

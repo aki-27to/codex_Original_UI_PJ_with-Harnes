@@ -103,9 +103,12 @@ function main() {
     path.join(outputRoot, "anthropic_secondary_lane_projection.json"),
     path.join(outputRoot, "lesson_effectiveness_public.json"),
     path.join(outputRoot, "pack_causal_trace_public.json"),
+    path.join(outputRoot, "causal_effectiveness_summary.json"),
     path.join(readinessRoot, "latest_readiness.json"),
     path.join(readinessRoot, "latest_readiness.md"),
     path.join(readinessRoot, "domain_coverage_matrix.json"),
+    path.join(readinessRoot, "stable_coverage_matrix.json"),
+    path.join(readinessRoot, "stable_coverage_trend.json"),
     path.join(readinessRoot, "robustness_breakdown.json"),
     path.join(readinessRoot, "promotion_trend.json"),
     path.join(readinessRoot, "blocked_reasons.json"),
@@ -113,14 +116,20 @@ function main() {
     path.join(readinessRoot, "autonomous_learning_status.json"),
     path.join(readinessRoot, "autonomous_learning_status.md"),
     path.join(readinessRoot, "causal_learning_trace.json"),
+    path.join(readinessRoot, "causal_regression_alerts.json"),
     path.join(readinessRoot, "distinct_improvement_lineage.json"),
     path.join(readinessRoot, "distinct_improvement_lineage.md"),
+    path.join(readinessRoot, "distinct_improvement_summary.json"),
     path.join(readinessRoot, "robustness_remediation_status.json"),
     path.join(readinessRoot, "robustness_remediation_trend.json"),
+    path.join(readinessRoot, "robustness_remediation_backlog.json"),
+    path.join(readinessRoot, "robustness_remediation_effects.json"),
     path.join(readinessRoot, "goal_completion_status.json"),
     path.join(readinessRoot, "goal_completion_status.md"),
     path.join(continuityRoot, "latest_continuity.json"),
     path.join(continuityRoot, "continuity_debt.json"),
+    path.join(continuityRoot, "continuity_debt_trend.json"),
+    path.join(continuityRoot, "continuity_closeout_effects.json"),
   ];
   requiredPaths.forEach((targetPath) => {
     assert(fs.existsSync(targetPath), `required public artifact missing: ${targetPath}`);
@@ -170,6 +179,9 @@ function main() {
   const packCausalTrace = JSON.parse(fs.readFileSync(path.join(outputRoot, "pack_causal_trace_public.json"), "utf8"));
   assert(Array.isArray(packCausalTrace.traces) && packCausalTrace.traces.length > 0, "pack causal trace public surface must be non-empty");
   assert(packCausalTrace.traces.some((entry) => ["selected_only", "surfaced", "behaviorally_referenced", "likely_contributory", "harmful_to_outcome"].includes(entry.usageStage)), "pack causal trace must expose usage stages");
+  const causalEffectivenessSummary = JSON.parse(fs.readFileSync(path.join(outputRoot, "causal_effectiveness_summary.json"), "utf8"));
+  assert.strictEqual(causalEffectivenessSummary.schema, "governed-causal-effectiveness-summary-public.v1", "causal effectiveness summary must expose expected schema");
+  assert(causalEffectivenessSummary.summary && Number.isFinite(Number(causalEffectivenessSummary.summary.harmfulCausalRatio)), "causal effectiveness summary must expose harmful causal ratio");
 
   const evalStatus = JSON.parse(fs.readFileSync(path.join(outputRoot, "memory_eval_public_status.json"), "utf8"));
   assert.strictEqual(evalStatus.status, "PASS", "memory eval public status must pass for the seeded canonical store");
@@ -199,6 +211,9 @@ function main() {
     "distinct_lineage_has_non_promoted_case",
     "continuity_debt_surface_present",
     "goal_completion_artifact_present",
+    "stable_coverage_surface_present",
+    "causal_regression_alerts_present",
+    "goal_completion_supporting_artifacts_present",
     "goal_completion_status_consistent",
     "goal_completion_not_yet_when_criteria_fail",
     "public_hygiene_no_unknown_memory_type",
@@ -262,6 +277,12 @@ function main() {
   assert(coverage.rows.every((row) => Array.isArray(row.recentWindowOutcomes)), "coverage rows must expose recentWindowOutcomes");
   assert(coverage.rows.every((row) => typeof row.coverageRegressed === "boolean"), "coverage rows must expose coverageRegressed");
   assert(coverage.rows.every((row) => typeof row.nextCoverageAction === "string"), "coverage rows must expose nextCoverageAction");
+  const stableCoverageMatrix = JSON.parse(fs.readFileSync(path.join(readinessRoot, "stable_coverage_matrix.json"), "utf8"));
+  assert.strictEqual(stableCoverageMatrix.schema, "agi-readiness-stable-coverage-matrix.v1", "stable coverage matrix must expose expected schema");
+  assert(Array.isArray(stableCoverageMatrix.rows) && stableCoverageMatrix.rows.length === coverage.rows.length, "stable coverage matrix must mirror coverage rows");
+  const stableCoverageTrend = JSON.parse(fs.readFileSync(path.join(readinessRoot, "stable_coverage_trend.json"), "utf8"));
+  assert.strictEqual(stableCoverageTrend.schema, "agi-readiness-stable-coverage-trend.v1", "stable coverage trend must expose expected schema");
+  assert(Array.isArray(stableCoverageTrend.entries) && stableCoverageTrend.entries.length > 0, "stable coverage trend must expose entries");
 
   const blockedReasons = JSON.parse(fs.readFileSync(path.join(readinessRoot, "blocked_reasons.json"), "utf8"));
   assert(Array.isArray(blockedReasons.reasons), "blocked reasons must remain structured");
@@ -304,6 +325,9 @@ function main() {
   const causalLearning = JSON.parse(fs.readFileSync(path.join(readinessRoot, "causal_learning_trace.json"), "utf8"));
   assert(Array.isArray(causalLearning.traces) && causalLearning.traces.length > 0, "causal learning trace must expose traces");
   assert(causalLearning.traces.some((entry) => ["direct", "plausible", "weak"].includes(String(entry.causalConfidence))), "causal learning trace must expose causal confidence");
+  const causalRegressionAlerts = JSON.parse(fs.readFileSync(path.join(readinessRoot, "causal_regression_alerts.json"), "utf8"));
+  assert.strictEqual(causalRegressionAlerts.schema, "agi-readiness-causal-regression-alerts.v1", "causal regression alerts must expose expected schema");
+  assert(Array.isArray(causalRegressionAlerts.alerts), "causal regression alerts must expose alerts");
 
   const robustness = JSON.parse(fs.readFileSync(path.join(readinessRoot, "robustness_breakdown.json"), "utf8"));
   assert.strictEqual(robustness.schema, "agi-readiness-robustness-breakdown.v1", "robustness breakdown must expose the expected schema");
@@ -317,6 +341,12 @@ function main() {
 
   const remediationTrend = JSON.parse(fs.readFileSync(path.join(readinessRoot, "robustness_remediation_trend.json"), "utf8"));
   assert(Array.isArray(remediationTrend.entries) && remediationTrend.entries.length > 0, "robustness remediation trend must expose entries");
+  const remediationBacklog = JSON.parse(fs.readFileSync(path.join(readinessRoot, "robustness_remediation_backlog.json"), "utf8"));
+  assert.strictEqual(remediationBacklog.schema, "agi-readiness-robustness-remediation-backlog.v1", "robustness remediation backlog must expose expected schema");
+  assert(Array.isArray(remediationBacklog.items), "robustness remediation backlog must expose items");
+  const remediationEffects = JSON.parse(fs.readFileSync(path.join(readinessRoot, "robustness_remediation_effects.json"), "utf8"));
+  assert.strictEqual(remediationEffects.schema, "agi-readiness-robustness-remediation-effects.v1", "robustness remediation effects must expose expected schema");
+  assert(Array.isArray(remediationEffects.categories), "robustness remediation effects must expose categories");
 
   const continuity = JSON.parse(fs.readFileSync(path.join(continuityRoot, "latest_continuity.json"), "utf8"));
   assert(Number.isFinite(Number(continuity.handoffCount)) && continuity.handoffCount >= 1, "continuity public summary must expose handoff count");
@@ -333,12 +363,29 @@ function main() {
   assert(continuityDebt.items.every((entry) => typeof entry.requiredCloseoutAction === "string"), "continuity debt items must expose requiredCloseoutAction");
   assert(continuityDebt.items.every((entry) => typeof entry.autoCloseEligible === "boolean"), "continuity debt items must expose autoCloseEligible");
   assert(continuityDebt.items.every((entry) => typeof entry.publicSummary === "string" && entry.publicSummary.length > 0), "continuity debt items must expose publicSummary");
+  const continuityDebtTrend = JSON.parse(fs.readFileSync(path.join(continuityRoot, "continuity_debt_trend.json"), "utf8"));
+  assert.strictEqual(continuityDebtTrend.schema, "continuity-debt-trend.v1", "continuity debt trend must expose expected schema");
+  assert(Array.isArray(continuityDebtTrend.entries) && continuityDebtTrend.entries.length > 0, "continuity debt trend must expose entries");
+  const continuityCloseoutEffects = JSON.parse(fs.readFileSync(path.join(continuityRoot, "continuity_closeout_effects.json"), "utf8"));
+  assert.strictEqual(continuityCloseoutEffects.schema, "continuity-closeout-effects.v1", "continuity closeout effects must expose expected schema");
+  assert(Array.isArray(continuityCloseoutEffects.items), "continuity closeout effects must expose items");
 
   const goalCompletion = JSON.parse(fs.readFileSync(path.join(readinessRoot, "goal_completion_status.json"), "utf8"));
   assert.strictEqual(goalCompletion.schema, "agi-operational-completion-status.v1", "goal completion artifact must expose expected schema");
   assert.strictEqual(goalCompletion.goalStatus, "NOT_YET", "seeded live-goal fixture must remain NOT_YET");
   assert(Array.isArray(goalCompletion.whyNotYet) && goalCompletion.whyNotYet.length > 0, "goal completion artifact must explain why it is not yet complete");
   assert(Array.isArray(goalCompletion.requiredNextActions) && goalCompletion.requiredNextActions.length > 0, "goal completion artifact must expose required next actions");
+  assert.strictEqual(typeof goalCompletion.completionVersion, "string", "goal completion artifact must expose completionVersion");
+  assert.strictEqual(typeof goalCompletion.decisionBasis, "string", "goal completion artifact must expose decisionBasis");
+  assert(Array.isArray(goalCompletion.failedCriteria) && goalCompletion.failedCriteria.length > 0, "goal completion artifact must expose failedCriteria");
+  assert(Array.isArray(goalCompletion.passedCriteria), "goal completion artifact must expose passedCriteria");
+  assert(Array.isArray(goalCompletion.supportingArtifacts) && goalCompletion.supportingArtifacts.length > 0, "goal completion artifact must expose supporting artifacts");
+  assert(goalCompletion.lineageSummary && typeof goalCompletion.lineageSummary === "object", "goal completion artifact must expose lineageSummary");
+  assert(goalCompletion.autonomousLearningSummary && typeof goalCompletion.autonomousLearningSummary === "object", "goal completion artifact must expose autonomousLearningSummary");
+  assert(goalCompletion.continuityDebtSummary && typeof goalCompletion.continuityDebtSummary === "object", "goal completion artifact must expose continuityDebtSummary");
+  assert(goalCompletion.robustnessSummary && typeof goalCompletion.robustnessSummary === "object", "goal completion artifact must expose robustnessSummary");
+  assert(goalCompletion.causalSafetySummary && typeof goalCompletion.causalSafetySummary === "object", "goal completion artifact must expose causalSafetySummary");
+  assert(goalCompletion.history && Number.isFinite(Number(goalCompletion.history.consecutivePassingExports)), "goal completion artifact must expose goal history summary");
 
   const exportManifest = JSON.parse(fs.readFileSync(path.join(outputRoot, "export_manifest.json"), "utf8"));
   assert(exportManifest && exportManifest.outputs, "export manifest must be returned");
@@ -348,8 +395,17 @@ function main() {
   assert.strictEqual(fs.existsSync(path.join(tempRoot, exportManifest.outputs.robustnessBreakdownJson)), true, "export manifest robustness path must resolve to a real file");
   assert.strictEqual(fs.existsSync(path.join(tempRoot, exportManifest.outputs.autonomousLearningStatusJson)), true, "export manifest autonomous learning path must resolve to a real file");
   assert.strictEqual(fs.existsSync(path.join(tempRoot, exportManifest.outputs.causalLearningTraceJson)), true, "export manifest causal learning path must resolve to a real file");
+  assert.strictEqual(fs.existsSync(path.join(tempRoot, exportManifest.outputs.causalRegressionAlertsJson)), true, "export manifest causal regression alerts path must resolve to a real file");
   assert.strictEqual(fs.existsSync(path.join(tempRoot, exportManifest.outputs.distinctImprovementLineageJson)), true, "export manifest distinct lineage path must resolve to a real file");
+  assert.strictEqual(fs.existsSync(path.join(tempRoot, exportManifest.outputs.distinctImprovementSummaryJson)), true, "export manifest distinct improvement summary path must resolve to a real file");
   assert.strictEqual(fs.existsSync(path.join(tempRoot, exportManifest.outputs.continuityDebtJson)), true, "export manifest continuity debt path must resolve to a real file");
+  assert.strictEqual(fs.existsSync(path.join(tempRoot, exportManifest.outputs.continuityDebtTrendJson)), true, "export manifest continuity debt trend path must resolve to a real file");
+  assert.strictEqual(fs.existsSync(path.join(tempRoot, exportManifest.outputs.continuityCloseoutEffectsJson)), true, "export manifest continuity closeout effects path must resolve to a real file");
+  assert.strictEqual(fs.existsSync(path.join(tempRoot, exportManifest.outputs.stableCoverageMatrixJson)), true, "export manifest stable coverage matrix path must resolve to a real file");
+  assert.strictEqual(fs.existsSync(path.join(tempRoot, exportManifest.outputs.stableCoverageTrendJson)), true, "export manifest stable coverage trend path must resolve to a real file");
+  assert.strictEqual(fs.existsSync(path.join(tempRoot, exportManifest.outputs.robustnessRemediationBacklogJson)), true, "export manifest remediation backlog path must resolve to a real file");
+  assert.strictEqual(fs.existsSync(path.join(tempRoot, exportManifest.outputs.robustnessRemediationEffectsJson)), true, "export manifest remediation effects path must resolve to a real file");
+  assert.strictEqual(fs.existsSync(path.join(tempRoot, exportManifest.outputs.causalEffectivenessSummaryJson)), true, "export manifest causal effectiveness summary path must resolve to a real file");
   assert.strictEqual(fs.existsSync(path.join(tempRoot, exportManifest.outputs.goalCompletionStatusJson)), true, "export manifest goal completion path must resolve to a real file");
 
   const publicLeafValues = [
@@ -386,7 +442,9 @@ function main() {
       readiness: {
         stableCoverageBreadth: 1,
         supportedCoverageBreadth: 1,
+        failedFamilies: [],
         rawFinalScore: 0.95,
+        catastrophicRisk: { cvar: 0.02 },
         metrics: {
           R_robust: { value: 0.95 },
           H_horizon: { value: 0.98 },
@@ -397,6 +455,8 @@ function main() {
           { categoryId: "ambiguous_instruction", status: "observed", evidenceCount: 12, score: 0.82 },
           { categoryId: "missing_context", status: "observed", evidenceCount: 18, score: 0.9 },
           { categoryId: "browser_tool_flakiness", status: "observed", evidenceCount: 20, score: 0.84 },
+          { categoryId: "adversarial_conflicting_instruction", status: "observed", evidenceCount: 12, score: 0.8 },
+          { categoryId: "degraded_tool_outputs", status: "observed", evidenceCount: 12, score: 0.9 },
         ],
       },
       distinctLineage: {
@@ -420,7 +480,7 @@ function main() {
     },
     autonomousAgenda: {
       entries: [
-        { remediationEffect: "verified_positive", lastUpdatedAt: "2026-04-04T12:30:00.000Z" },
+        { remediationEffect: "verified_positive", status: "passed", lastUpdatedAt: "2026-04-04T12:30:00.000Z" },
       ],
     },
     causalTrace: {
@@ -433,6 +493,18 @@ function main() {
     anthropicLane: { advisory: { advisoryReferenceCount: 2 } },
     workspaceProgressPublic: { nextRecommendedActions: ["Keep verifying improvements."] },
     bottlenecks: { items: [] },
+    previousGoalHistory: {
+      entries: [
+        { baseStatus: "criteria_met", generatedAt: "2026-04-04T10:00:00.000Z" },
+        { baseStatus: "criteria_met", generatedAt: "2026-04-04T11:00:00.000Z" },
+      ],
+    },
+    stableCoverageArtifacts: {
+      matrix: { stableCoverageBreadth: 1, rows: [] },
+      trend: { entries: [{ generatedAt: "2026-04-04T10:00:00.000Z" }, { generatedAt: "2026-04-04T11:00:00.000Z" }] },
+    },
+    causalEffectivenessSummary: { summary: { harmfulCausalRatio: 0, likelyContributoryCount: 2 } },
+    causalRegressionAlerts: { alerts: [] },
   });
   assert.strictEqual(syntheticGoal.goalStatus, "OPERATIONALLY_COMPLETE", "synthetic fully-satisfied criteria must yield OPERATIONALLY_COMPLETE");
   assert(Array.isArray(syntheticGoal.whyNotYet) && syntheticGoal.whyNotYet.length === 0, "synthetic operational completion case must have no unmet criteria");

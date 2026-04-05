@@ -1,5 +1,14 @@
 # Governed Autonomous Learning Loop
 
+## 2026-04-05 update
+
+- Bottlenecks from readiness, robustness, continuity debt, and harmful lessons are converted into governed agenda entries.
+- The loop is: detect bottleneck, create remediation agenda item, run remediation task, verify effect with evidence, then promote, reinforce, revoke, or roll back.
+- Primary public surfaces:
+  - `output/agi_readiness/autonomous_learning_status.json`
+  - `output/agi_readiness/robustness_remediation_backlog.json`
+  - `output/agi_readiness/robustness_remediation_effects.json`
+
 このハーネスでは、改善は単なる提案管理ではなく、次の閉ループとして扱います。
 
 1. readiness / continuity / memory projection から bottleneck を検出する  

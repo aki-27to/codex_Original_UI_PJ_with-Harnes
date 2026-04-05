@@ -1,6 +1,6 @@
 {
   "schema": "governed-memory-public-overview.v1",
-  "generatedAt": "2026-04-05T03:42:54.888Z",
+  "generatedAt": "2026-04-05T05:24:36.635Z",
   "workspaceId": "5c839dfeef8b555f",
   "canonicalRoot": "logs/archive/raw/runtime_state/memory",
   "publicOutputRoot": "output/memory_public",
@@ -43,7 +43,7 @@
   ],
   "goalCompletionPath": "output/agi_readiness/goal_completion_status.json",
   "goalStatus": "NOT_YET",
-  "goalWhyNotYetCount": 11,
+  "goalWhyNotYetCount": 18,
   "latestPack": {
     "selectedCount": 11,
     "highConfidenceCount": 2,

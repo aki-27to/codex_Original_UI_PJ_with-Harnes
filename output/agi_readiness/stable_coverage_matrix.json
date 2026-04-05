@@ -1,0 +1,230 @@
+{
+  "schema": "agi-readiness-stable-coverage-matrix.v1",
+  "generatedAt": "2026-04-05T05:24:36.624Z",
+  "workspaceId": "5c839dfeef8b555f",
+  "stableCoverageBreadth": 0,
+  "rows": [
+    {
+      "familyId": "deterministic_code",
+      "label": "Deterministic Code",
+      "stableCovered": false,
+      "stabilityStatus": "unstable",
+      "stabilityWindowSize": 3,
+      "recentWindowScores": [
+        0.92,
+        0.72,
+        0.92
+      ],
+      "recentWindowOutcomes": [
+        "pass",
+        "fail",
+        "pass"
+      ],
+      "observationCount": 2,
+      "recentSuccessRate": 0.5,
+      "recentFailureBurden": 1,
+      "verifierBurden": 10,
+      "lastSuccessfulTask": {
+        "publicRef": "<task-ref>",
+        "source": "continuity",
+        "title": "verifier handoff for Coding baseline through planner/executor/verifier",
+        "status": "completed",
+        "updatedAt": "2026-04-02T10:55:54.310Z"
+      },
+      "lastFailedTask": {
+        "publicRef": "<task-ref>",
+        "source": "continuity",
+        "title": "False completion guard",
+        "status": "verifier failed",
+        "updatedAt": "2026-03-31T22:26:01.160Z"
+      },
+      "coverageRegressed": false,
+      "nextCoverageAction": "reduce failure burden and verifier debt in recent windows"
+    },
+    {
+      "familyId": "web_creative",
+      "label": "Web Creative",
+      "stableCovered": false,
+      "stabilityStatus": "unstable",
+      "stabilityWindowSize": 3,
+      "recentWindowScores": [
+        0.78,
+        0.58,
+        0.78
+      ],
+      "recentWindowOutcomes": [
+        "pass",
+        "fail",
+        "pass"
+      ],
+      "observationCount": 2,
+      "recentSuccessRate": 0.5,
+      "recentFailureBurden": 1,
+      "verifierBurden": 0,
+      "lastSuccessfulTask": {
+        "publicRef": "turn_f45d5ef904",
+        "source": "turn",
+        "title": "web ui interactive",
+        "status": "completed",
+        "updatedAt": "2026-04-04T12:34:12.370Z"
+      },
+      "lastFailedTask": {
+        "publicRef": "turn_eb427077fb",
+        "source": "turn",
+        "title": "web ui interactive",
+        "status": "failed validation",
+        "updatedAt": "2026-04-05T01:19:39.647Z"
+      },
+      "coverageRegressed": false,
+      "nextCoverageAction": "reduce failure burden and verifier debt in recent windows"
+    },
+    {
+      "familyId": "planning",
+      "label": "Planning",
+      "stableCovered": false,
+      "stabilityStatus": "unstable",
+      "stabilityWindowSize": 3,
+      "recentWindowScores": [
+        0.88,
+        0.68,
+        0.88
+      ],
+      "recentWindowOutcomes": [
+        "pass",
+        "fail",
+        "pass"
+      ],
+      "observationCount": 2,
+      "recentSuccessRate": 0.5,
+      "recentFailureBurden": 1,
+      "verifierBurden": 4,
+      "lastSuccessfulTask": {
+        "publicRef": "<task-ref>",
+        "source": "continuity",
+        "title": "Simple planning task falls back to single agent path",
+        "status": "completed",
+        "updatedAt": "2026-04-02T10:55:54.605Z"
+      },
+      "lastFailedTask": {
+        "publicRef": "<task-ref>",
+        "source": "continuity",
+        "title": "Long Duration Simulated Trial",
+        "status": "verifier failed",
+        "updatedAt": "2026-03-31T22:23:48.966Z"
+      },
+      "coverageRegressed": false,
+      "nextCoverageAction": "reduce failure burden and verifier debt in recent windows"
+    },
+    {
+      "familyId": "workflow_execution",
+      "label": "Workflow Execution",
+      "stableCovered": false,
+      "stabilityStatus": "unstable",
+      "stabilityWindowSize": 3,
+      "recentWindowScores": [
+        0.78,
+        0.58,
+        0.78
+      ],
+      "recentWindowOutcomes": [
+        "pass",
+        "fail",
+        "fail"
+      ],
+      "observationCount": 5,
+      "recentSuccessRate": 0.4,
+      "recentFailureBurden": 3,
+      "verifierBurden": 2,
+      "lastSuccessfulTask": {
+        "publicRef": "<task-ref>",
+        "source": "continuity",
+        "title": "Blackbox tool learning",
+        "status": "completed",
+        "updatedAt": "2026-03-31T22:24:55.921Z"
+      },
+      "lastFailedTask": {
+        "publicRef": "<task-ref>",
+        "source": "continuity",
+        "title": "Long Duration Simulated Trial",
+        "status": "verifier failed",
+        "updatedAt": "2026-03-31T22:23:48.816Z"
+      },
+      "coverageRegressed": true,
+      "nextCoverageAction": "reduce failure burden and verifier debt in recent windows"
+    },
+    {
+      "familyId": "evaluation_review",
+      "label": "Evaluation / Review",
+      "stableCovered": false,
+      "stabilityStatus": "unstable",
+      "stabilityWindowSize": 3,
+      "recentWindowScores": [
+        0.78,
+        0.58,
+        0.78
+      ],
+      "recentWindowOutcomes": [
+        "pass",
+        "fail",
+        "fail"
+      ],
+      "observationCount": 3,
+      "recentSuccessRate": 0.3333,
+      "recentFailureBurden": 2,
+      "verifierBurden": 0,
+      "lastSuccessfulTask": {
+        "publicRef": "<eval-ref>",
+        "source": "eval",
+        "title": "adversarial self check.v2",
+        "status": "observed",
+        "updatedAt": "2026-03-15T14:35:59.373Z"
+      },
+      "lastFailedTask": {
+        "publicRef": "turn_eb427077fb",
+        "source": "turn",
+        "title": "web ui interactive",
+        "status": "failed validation",
+        "updatedAt": "2026-04-05T01:19:39.647Z"
+      },
+      "coverageRegressed": true,
+      "nextCoverageAction": "reduce failure burden and verifier debt in recent windows"
+    },
+    {
+      "familyId": "tool_use_browser_like",
+      "label": "Tool Use / Browser-like",
+      "stableCovered": false,
+      "stabilityStatus": "unstable",
+      "stabilityWindowSize": 3,
+      "recentWindowScores": [
+        0.78,
+        0.58,
+        0.78
+      ],
+      "recentWindowOutcomes": [
+        "pass",
+        "fail",
+        "pass"
+      ],
+      "observationCount": 3,
+      "recentSuccessRate": 0.6667,
+      "recentFailureBurden": 1,
+      "verifierBurden": 0,
+      "lastSuccessfulTask": {
+        "publicRef": "<task-ref>",
+        "source": "continuity",
+        "title": "Blackbox web interaction",
+        "status": "completed",
+        "updatedAt": "2026-03-31T22:24:55.698Z"
+      },
+      "lastFailedTask": {
+        "publicRef": "turn_eb427077fb",
+        "source": "turn",
+        "title": "web ui interactive",
+        "status": "failed validation",
+        "updatedAt": "2026-04-05T01:19:39.647Z"
+      },
+      "coverageRegressed": false,
+      "nextCoverageAction": "reduce failure burden and verifier debt in recent windows"
+    }
+  ]
+}

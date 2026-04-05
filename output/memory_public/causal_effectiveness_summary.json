@@ -1,0 +1,22 @@
+{
+  "schema": "governed-causal-effectiveness-summary-public.v1",
+  "generatedAt": "2026-04-05T05:24:36.626Z",
+  "workspaceId": "5c839dfeef8b555f",
+  "harmfulCausalRatio": 0.857143,
+  "likelyContributoryCount": 2,
+  "harmfulCount": 12,
+  "neutralCount": 0,
+  "summary": {
+    "harmfulCausalRatio": 0.857143,
+    "likelyContributoryCount": 2,
+    "harmfulCount": 12,
+    "neutralCount": 0
+  },
+  "primaryLane": {
+    "observationCount": 110,
+    "causalUsageCount": 11
+  },
+  "secondaryLane": {
+    "advisoryReferenceCount": 4
+  }
+}

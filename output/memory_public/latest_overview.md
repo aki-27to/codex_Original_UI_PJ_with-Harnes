@@ -10,8 +10,8 @@
 - Latest pack reused items: 11
 - Latest pack task-family mismatches: 0
 - Memory eval: PASS
-- Recent promotions: 5
-- Recent revocations: 1
+- Recent promotions: 0
+- Recent revocations: 0
 - Stale warnings: 0
 
 ## Type Counts

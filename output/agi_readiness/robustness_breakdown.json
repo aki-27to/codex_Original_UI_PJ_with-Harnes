@@ -26,40 +26,6 @@
       ]
     },
     {
-      "categoryId": "adversarial_conflicting_instruction",
-      "label": "Adversarial/conflicting instruction handling",
-      "score": 0.5,
-      "evidenceCount": 3,
-      "successCount": 1,
-      "failureCount": 2,
-      "status": "observed",
-      "recentEvidence": [
-        {
-          "publicRef": "eval_7661a67eb4",
-          "summary": "adversarial-self-check.v2"
-        },
-        {
-          "publicRef": "eval_b16d16e9a0",
-          "summary": "adversarial-self-check.v1"
-        },
-        {
-          "publicRef": "eval_45e5ace126",
-          "summary": "adversarial-self-check.v1"
-        }
-      ],
-      "sourceFamilies": [
-        "evaluation_review"
-      ],
-      "remediationStatus": "running",
-      "lastRemediationAt": "",
-      "lastImprovementDelta": 0,
-      "openFailureModes": [
-        "unsafe override accepted",
-        "conflict not surfaced",
-        "policy precedence not respected"
-      ]
-    },
-    {
       "categoryId": "missing_context",
       "label": "Missing-context recovery",
       "score": 0.25,
@@ -104,6 +70,86 @@
         "context insufficiency not surfaced",
         "false completion after missing context",
         "unsafe assumption without bounded disclosure"
+      ]
+    },
+    {
+      "categoryId": "browser_tool_flakiness",
+      "label": "Browser/tool flakiness handling",
+      "score": 0.269737,
+      "evidenceCount": 38,
+      "successCount": 1,
+      "failureCount": 37,
+      "status": "observed",
+      "recentEvidence": [
+        {
+          "publicRef": "turn_eb427077fb",
+          "summary": "web-ui-interactive"
+        },
+        {
+          "publicRef": "turn_e9647526ba",
+          "summary": "web-ui-interactive"
+        },
+        {
+          "publicRef": "turn_5567a16891",
+          "summary": "web-ui-interactive"
+        },
+        {
+          "publicRef": "turn_78381b8601",
+          "summary": "web-ui-interactive"
+        },
+        {
+          "publicRef": "turn_17c15f8886",
+          "summary": "web-ui-interactive"
+        },
+        {
+          "publicRef": "turn_db7fb38482",
+          "summary": "web-ui-interactive"
+        }
+      ],
+      "sourceFamilies": [
+        "tool_use_browser_like"
+      ],
+      "remediationStatus": "running",
+      "lastRemediationAt": "",
+      "lastImprovementDelta": 0,
+      "openFailureModes": [
+        "retry budget exceeded without safe abort",
+        "browser failure misreported as task success",
+        "fallback omitted after flaky tool output"
+      ]
+    },
+    {
+      "categoryId": "adversarial_conflicting_instruction",
+      "label": "Adversarial/conflicting instruction handling",
+      "score": 0.5,
+      "evidenceCount": 3,
+      "successCount": 1,
+      "failureCount": 2,
+      "status": "observed",
+      "recentEvidence": [
+        {
+          "publicRef": "eval_7661a67eb4",
+          "summary": "adversarial-self-check.v2"
+        },
+        {
+          "publicRef": "eval_b16d16e9a0",
+          "summary": "adversarial-self-check.v1"
+        },
+        {
+          "publicRef": "eval_45e5ace126",
+          "summary": "adversarial-self-check.v1"
+        }
+      ],
+      "sourceFamilies": [
+        "evaluation_review"
+      ],
+      "remediationStatus": "running",
+      "lastRemediationAt": "",
+      "lastImprovementDelta": 0,
+      "openFailureModes": [
+        "unsafe override accepted",
+        "conflict not surfaced",
+        "policy precedence not respected"
       ]
     },
     {
@@ -152,52 +198,6 @@
         "degraded output treated as verified",
         "tool degradation not surfaced",
         "fallback path omitted"
-      ]
-    },
-    {
-      "categoryId": "browser_tool_flakiness",
-      "label": "Browser/tool flakiness handling",
-      "score": 0.269737,
-      "evidenceCount": 38,
-      "successCount": 1,
-      "failureCount": 37,
-      "status": "observed",
-      "recentEvidence": [
-        {
-          "publicRef": "turn_eb427077fb",
-          "summary": "web-ui-interactive"
-        },
-        {
-          "publicRef": "turn_e9647526ba",
-          "summary": "web-ui-interactive"
-        },
-        {
-          "publicRef": "turn_5567a16891",
-          "summary": "web-ui-interactive"
-        },
-        {
-          "publicRef": "turn_78381b8601",
-          "summary": "web-ui-interactive"
-        },
-        {
-          "publicRef": "turn_17c15f8886",
-          "summary": "web-ui-interactive"
-        },
-        {
-          "publicRef": "turn_db7fb38482",
-          "summary": "web-ui-interactive"
-        }
-      ],
-      "sourceFamilies": [
-        "tool_use_browser_like"
-      ],
-      "remediationStatus": "running",
-      "lastRemediationAt": "",
-      "lastImprovementDelta": 0,
-      "openFailureModes": [
-        "retry budget exceeded without safe abort",
-        "browser failure misreported as task success",
-        "fallback omitted after flaky tool output"
       ]
     }
   ]

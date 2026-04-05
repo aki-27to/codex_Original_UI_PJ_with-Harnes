@@ -1,6 +1,6 @@
 {
   "schema": "governed-autonomous-learning-status-public.v1",
-  "generatedAt": "2026-04-05T03:42:54.886Z",
+  "generatedAt": "2026-04-05T05:24:36.630Z",
   "workspaceId": "5c839dfeef8b555f",
   "summary": {
     "queued": 0,
@@ -38,7 +38,7 @@
       "attemptCount": 0,
       "revertCondition": "regression or harmful lesson detected",
       "stopCondition": "no improvement after retry budget exhausted",
-      "lastUpdatedAt": "2026-04-05T03:42:54.568Z",
+      "lastUpdatedAt": "2026-04-05T05:24:36.219Z",
       "source": "agi_readiness",
       "publicSummary": "weakest family is R robust"
     },
@@ -64,7 +64,7 @@
       "attemptCount": 0,
       "revertCondition": "regression or harmful lesson detected",
       "stopCondition": "no improvement after retry budget exhausted",
-      "lastUpdatedAt": "2026-04-05T03:42:54.568Z",
+      "lastUpdatedAt": "2026-04-05T05:24:36.219Z",
       "source": "agi_readiness",
       "publicSummary": "robustness is currently limited by ambiguous instruction (no evidence yet)"
     },
@@ -90,7 +90,7 @@
       "attemptCount": 0,
       "revertCondition": "coverage claim becomes unsupported",
       "stopCondition": "family remains unsupported or blocked",
-      "lastUpdatedAt": "2026-04-05T03:42:54.568Z",
+      "lastUpdatedAt": "2026-04-05T05:24:36.219Z",
       "source": "continuity",
       "publicSummary": "continuity carries 26 closeout debt item(s) with severity high"
     }

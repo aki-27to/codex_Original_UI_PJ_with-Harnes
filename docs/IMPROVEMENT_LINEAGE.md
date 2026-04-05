@@ -1,5 +1,17 @@
 # Improvement Lineage
 
+## 2026-04-05 update
+
+- Improvement history is strict about comparison mode:
+  - `self_snapshot`
+  - `cold_start`
+  - `distinct_comparison`
+- Only distinct comparisons count toward operational completion history.
+- Public surfaces:
+  - `output/agi_readiness/distinct_improvement_lineage.json`
+  - `output/agi_readiness/distinct_improvement_summary.json`
+  - `output/agi_readiness/promotion_trend.json`
+
 改善履歴は self snapshot と distinct comparison を分けて扱います。
 
 ## Modes

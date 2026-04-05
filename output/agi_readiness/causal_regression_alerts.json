@@ -1,0 +1,188 @@
+{
+  "schema": "agi-readiness-causal-regression-alerts.v1",
+  "generatedAt": "2026-04-05T05:24:36.626Z",
+  "workspaceId": "5c839dfeef8b555f",
+  "harmfulCausalRatio": 0.857143,
+  "alerts": [
+    {
+      "publicRef": "mem_4714adcbce",
+      "memoryType": "improvement_candidate",
+      "usageMode": "remediation_hint",
+      "taskRefs": [
+        "turn_816303077a",
+        "turn_ae658d538b",
+        "turn_ea3078f43f",
+        "turn_903381175d",
+        "turn_db7fb38482",
+        "turn_17c15f8886"
+      ],
+      "summary": "Building frontend UIs with Codex and Figma | OpenAI Developers",
+      "lastObservedAt": "2026-04-05T05:24:35.077Z"
+    },
+    {
+      "publicRef": "mem_ec957e3de3",
+      "memoryType": "semantic_lesson",
+      "usageMode": "explicit_prompt_pack",
+      "taskRefs": [
+        "turn_816303077a",
+        "turn_ae658d538b",
+        "turn_ea3078f43f",
+        "turn_903381175d",
+        "turn_db7fb38482",
+        "turn_17c15f8886"
+      ],
+      "summary": "How Perplexity Brought Voice Search to Millions Using the Realtime API | OpenAI Developers",
+      "lastObservedAt": "2026-04-05T05:19:38.045Z"
+    },
+    {
+      "publicRef": "mem_f38921b6c8",
+      "memoryType": "semantic_lesson",
+      "usageMode": "explicit_prompt_pack",
+      "taskRefs": [
+        "turn_816303077a",
+        "turn_ae658d538b",
+        "turn_ea3078f43f",
+        "turn_903381175d",
+        "turn_db7fb38482",
+        "turn_17c15f8886"
+      ],
+      "summary": "Designing delightful frontends with GPT-5.4 | OpenAI Developers",
+      "lastObservedAt": "2026-04-05T05:19:38.045Z"
+    },
+    {
+      "publicRef": "mem_eb390615f9",
+      "memoryType": "semantic_lesson",
+      "usageMode": "explicit_prompt_pack",
+      "taskRefs": [
+        "turn_816303077a",
+        "turn_ae658d538b",
+        "turn_ea3078f43f",
+        "turn_903381175d",
+        "turn_db7fb38482",
+        "turn_17c15f8886"
+      ],
+      "summary": "From prompts to products: One year of Responses | OpenAI Developers",
+      "lastObservedAt": "2026-04-05T05:19:38.045Z"
+    },
+    {
+      "publicRef": "mem_d0800f01f8",
+      "memoryType": "semantic_lesson",
+      "usageMode": "explicit_prompt_pack",
+      "taskRefs": [
+        "turn_816303077a",
+        "turn_ae658d538b",
+        "turn_ea3078f43f",
+        "turn_903381175d",
+        "turn_db7fb38482",
+        "turn_17c15f8886"
+      ],
+      "summary": "Using skills to accelerate OSS maintenance | OpenAI Developers",
+      "lastObservedAt": "2026-04-05T05:19:38.045Z"
+    },
+    {
+      "publicRef": "mem_46f23704e6",
+      "memoryType": "runtime_hint",
+      "usageMode": "explicit_prompt_pack",
+      "taskRefs": [
+        "turn_816303077a",
+        "turn_ae658d538b",
+        "turn_ea3078f43f",
+        "turn_903381175d",
+        "turn_db7fb38482",
+        "turn_17c15f8886"
+      ],
+      "summary": "How Perplexity Brought Voice Search to Millions Using the Realtime API | OpenAI Developers",
+      "lastObservedAt": "2026-04-05T05:19:38.045Z"
+    },
+    {
+      "publicRef": "mem_5e926a0571",
+      "memoryType": "runtime_hint",
+      "usageMode": "explicit_prompt_pack",
+      "taskRefs": [
+        "turn_816303077a",
+        "turn_ae658d538b",
+        "turn_ea3078f43f",
+        "turn_903381175d",
+        "turn_db7fb38482",
+        "turn_17c15f8886"
+      ],
+      "summary": "Designing delightful frontends with GPT-5.4 | OpenAI Developers",
+      "lastObservedAt": "2026-04-05T05:19:38.045Z"
+    },
+    {
+      "publicRef": "mem_b439f61eb1",
+      "memoryType": "runtime_hint",
+      "usageMode": "explicit_prompt_pack",
+      "taskRefs": [
+        "turn_816303077a",
+        "turn_ae658d538b",
+        "turn_ea3078f43f",
+        "turn_903381175d",
+        "turn_db7fb38482",
+        "turn_17c15f8886"
+      ],
+      "summary": "From prompts to products: One year of Responses | OpenAI Developers",
+      "lastObservedAt": "2026-04-05T05:19:38.045Z"
+    },
+    {
+      "publicRef": "mem_8896adaa48",
+      "memoryType": "runtime_hint",
+      "usageMode": "explicit_prompt_pack",
+      "taskRefs": [
+        "turn_816303077a",
+        "turn_ae658d538b",
+        "turn_ea3078f43f",
+        "turn_903381175d",
+        "turn_db7fb38482",
+        "turn_17c15f8886"
+      ],
+      "summary": "Using skills to accelerate OSS maintenance | OpenAI Developers",
+      "lastObservedAt": "2026-04-05T05:19:38.045Z"
+    },
+    {
+      "publicRef": "mem_847a1aba42",
+      "memoryType": "runtime_hint",
+      "usageMode": "explicit_prompt_pack",
+      "taskRefs": [
+        "turn_816303077a",
+        "turn_ae658d538b",
+        "turn_ea3078f43f",
+        "turn_903381175d",
+        "turn_db7fb38482",
+        "turn_17c15f8886"
+      ],
+      "summary": "Building frontend UIs with Codex and Figma | OpenAI Developers",
+      "lastObservedAt": "2026-04-05T05:19:38.045Z"
+    },
+    {
+      "publicRef": "mem_106d75d257",
+      "memoryType": "runtime_hint",
+      "usageMode": "explicit_prompt_pack",
+      "taskRefs": [
+        "turn_816303077a",
+        "turn_ae658d538b",
+        "turn_ea3078f43f",
+        "turn_903381175d",
+        "turn_db7fb38482",
+        "turn_17c15f8886"
+      ],
+      "summary": "Run long horizon tasks with Codex | OpenAI Developers",
+      "lastObservedAt": "2026-04-05T05:19:38.045Z"
+    },
+    {
+      "publicRef": "mem_ee901c1e19",
+      "memoryType": "improvement_candidate",
+      "usageMode": "remediation_hint",
+      "taskRefs": [
+        "turn_816303077a",
+        "turn_ae658d538b",
+        "turn_ea3078f43f",
+        "turn_903381175d",
+        "turn_db7fb38482",
+        "turn_17c15f8886"
+      ],
+      "summary": "Do not promote design-quality guidance from a non-design turn. Design notes stay blocked unless there is benchmark context, visual evidence, and an independent review path.",
+      "lastObservedAt": "2026-04-05T05:19:38.045Z"
+    }
+  ]
+}

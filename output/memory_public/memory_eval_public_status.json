@@ -1,6 +1,6 @@
 {
   "schema": "memory-eval-public-status.v1",
-  "generatedAt": "2026-04-05T03:42:55.064Z",
+  "generatedAt": "2026-04-05T05:24:36.882Z",
   "suiteSchema": "memory-eval-suite.v1",
   "suiteVersion": "2026-04-04.r1",
   "status": "PASS",
@@ -191,6 +191,24 @@
       "title": "Operational goal completion artifact is generated",
       "status": "PASS",
       "detail": "operational goal completion artifact is present"
+    },
+    {
+      "id": "stable_coverage_surface_present",
+      "title": "Stable coverage matrix and trend are generated",
+      "status": "PASS",
+      "detail": "stable coverage matrix and trend are present"
+    },
+    {
+      "id": "causal_regression_alerts_present",
+      "title": "Causal regression alerts are generated",
+      "status": "PASS",
+      "detail": "causal regression alerts are present"
+    },
+    {
+      "id": "goal_completion_supporting_artifacts_present",
+      "title": "Goal completion artifact points at supporting public artifacts that exist",
+      "status": "PASS",
+      "detail": "goal completion supporting artifacts are present"
     },
     {
       "id": "goal_completion_status_consistent",

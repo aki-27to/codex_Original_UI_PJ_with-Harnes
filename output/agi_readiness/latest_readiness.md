@@ -22,6 +22,6 @@
 ## Blocked Reasons
 
 ## Next Bottlenecks
+- evidence bottleneck: causal regression alerts missing
 - capability bottleneck: weakest family is R_robust
 - scope/coverage bottleneck: continuity carries 26 closeout debt item(s) with severity high
-- capability bottleneck: robustness is currently limited by ambiguous_instruction (no evidence yet)

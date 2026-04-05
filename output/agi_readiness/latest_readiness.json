@@ -1,6 +1,6 @@
 {
   "schema": "agi-readiness-live-summary.v1",
-  "generatedAt": "2026-04-05T03:42:54.560Z",
+  "generatedAt": "2026-04-05T05:24:36.209Z",
   "workspaceId": "5c839dfeef8b555f",
   "latestRunId": "eval-1775264897008-443e2a6a",
   "profile": "agi_v1",
@@ -284,8 +284,14 @@
   ],
   "autonomousLearningStatusPath": "output/agi_readiness/autonomous_learning_status.json",
   "causalLearningTracePath": "output/agi_readiness/causal_learning_trace.json",
+  "causalRegressionAlertsPath": "output/agi_readiness/causal_regression_alerts.json",
   "distinctImprovementLineagePath": "output/agi_readiness/distinct_improvement_lineage.json",
+  "distinctImprovementSummaryPath": "output/agi_readiness/distinct_improvement_summary.json",
   "continuityDebtPath": "output/continuity_public/continuity_debt.json",
+  "stableCoverageMatrixPath": "output/agi_readiness/stable_coverage_matrix.json",
+  "stableCoverageTrendPath": "output/agi_readiness/stable_coverage_trend.json",
   "robustnessRemediationStatusPath": "output/agi_readiness/robustness_remediation_status.json",
+  "robustnessRemediationBacklogPath": "output/agi_readiness/robustness_remediation_backlog.json",
+  "robustnessRemediationEffectsPath": "output/agi_readiness/robustness_remediation_effects.json",
   "goalCompletionStatusPath": "output/agi_readiness/goal_completion_status.json"
 }
