@@ -4273,7 +4273,19 @@ function buildLaneProjection({ workspaceRoot, sourceName, sourceTier, laneKey, i
   };
 }
 
-function evaluateMemoryPublicSuite({ workspaceRoot, paths, summary, pack, items, openAIBlogLane, anthropicLane, observationProjection = null, continuityArtifacts = null, readinessArtifacts = null }) {
+function evaluateMemoryPublicSuite({
+  workspaceRoot,
+  paths,
+  summary,
+  pack,
+  items,
+  openAIBlogLane,
+  anthropicLane,
+  observationProjection = null,
+  continuityArtifacts = null,
+  readinessArtifacts = null,
+  requireWrittenPublicArtifacts = false,
+}) {
   const suite = loadConfigJson(workspaceRoot, "scripts", "config", "memory_eval_suite.json");
   const checks = Array.isArray(suite && suite.checks) ? suite.checks : [];
   const workspaceProgressPath = path.join(paths.projections.workspaceProgressRoot, `${summary.workspaceId}.json`);
@@ -4478,17 +4490,31 @@ function evaluateMemoryPublicSuite({ workspaceRoot, paths, summary, pack, items,
       const breakdownPath = paths.agiReadiness && paths.agiReadiness.robustnessBreakdownJson
         ? paths.agiReadiness.robustnessBreakdownJson
         : "";
-      const breakdown = readinessArtifacts && readinessArtifacts.robustnessBreakdown && typeof readinessArtifacts.robustnessBreakdown === "object"
-        ? readinessArtifacts.robustnessBreakdown
-        : (breakdownPath ? readJsonObject(breakdownPath) : {});
+      const writtenArtifactExists = Boolean(breakdownPath) && fs.existsSync(breakdownPath);
+      const breakdown = writtenArtifactExists
+        ? readJsonObject(breakdownPath)
+        : (
+          !requireWrittenPublicArtifacts
+          && readinessArtifacts
+          && readinessArtifacts.robustnessBreakdown
+          && typeof readinessArtifacts.robustnessBreakdown === "object"
+            ? readinessArtifacts.robustnessBreakdown
+            : {}
+        );
       pass = Boolean(
-        Array.isArray(breakdown.categories)
+        writtenArtifactExists
+        && safeString(breakdown.schema, 160) === "agi-readiness-robustness-breakdown.v1"
+        && Array.isArray(breakdown.categories)
         && breakdown.categories.length > 0
         && breakdown.categories.some((entry) => entry && safeString(entry.status, 40) !== "no_evidence")
       );
       detail = pass
         ? "robustness breakdown export is present with category-level evidence"
-        : "robustness breakdown export is missing or empty";
+        : (
+          writtenArtifactExists
+            ? "robustness breakdown export is present but empty or malformed"
+            : "robustness breakdown public artifact is missing"
+        );
     }
     return {
       id,
@@ -4524,7 +4550,7 @@ function renderMemoryEvalMarkdown(result) {
   return `${lines.join("\n")}\n`;
 }
 
-function buildGovernedMemoryPublicArtifacts({ workspaceRoot = workspaceRootDefault } = {}) {
+function buildGovernedMemoryPublicArtifacts({ workspaceRoot = workspaceRootDefault, requireWrittenPublicArtifacts = false } = {}) {
   if (hasLiveRuntimeSources(workspaceRoot)) {
     try {
       syncGovernedMemoryGraphFromLocalRuntimeFiles({ workspaceRoot, reason: "public_export_live_sync" });
@@ -4717,6 +4743,7 @@ function buildGovernedMemoryPublicArtifacts({ workspaceRoot = workspaceRootDefau
     observationProjection,
     continuityArtifacts,
     readinessArtifacts,
+    requireWrittenPublicArtifacts,
   });
   let bottlenecks = buildNextBottlenecks({
     workspaceRoot,
@@ -4748,6 +4775,7 @@ function buildGovernedMemoryPublicArtifacts({ workspaceRoot = workspaceRootDefau
     observationProjection,
     continuityArtifacts,
     readinessArtifacts,
+    requireWrittenPublicArtifacts,
   });
   bottlenecks = buildNextBottlenecks({
     workspaceRoot,
@@ -4813,21 +4841,9 @@ function exportGovernedMemoryPublicArtifacts({ workspaceRoot = workspaceRootDefa
   const artifacts = buildGovernedMemoryPublicArtifacts({ workspaceRoot });
   const { paths } = artifacts;
   ensureDir(paths.publicOutput.root);
-  writeJsonIfChanged(paths.publicOutput.latestOverviewJson, artifacts.publicOverview);
-  fs.writeFileSync(paths.publicOutput.latestOverviewMd, renderPublicOverviewMarkdown({
-    overview: artifacts.publicOverview,
-    workspaceProgress: artifacts.workspaceProgressPublic,
-    latestPack: artifacts.latestPackPublic,
-    promotionHealth: artifacts.promotionHealthPublic,
-    evalStatus: artifacts.evalStatus,
-    openAIBlogLane: artifacts.openAIBlogLane,
-    anthropicLane: artifacts.anthropicLane,
-  }), "utf8");
   writeJsonIfChanged(paths.publicOutput.workspaceProgressJson, artifacts.workspaceProgressPublic);
   writeJsonIfChanged(paths.publicOutput.latestPackJson, artifacts.latestPackPublic);
   writeJsonIfChanged(paths.publicOutput.promotionHealthJson, artifacts.promotionHealthPublic);
-  writeJsonIfChanged(paths.publicOutput.memoryEvalStatusJson, artifacts.evalStatus);
-  fs.writeFileSync(paths.publicOutput.memoryEvalStatusMd, renderMemoryEvalMarkdown(artifacts.evalStatus), "utf8");
   writeJsonIfChanged(paths.publicOutput.openAIBlogLaneJson, artifacts.openAIBlogLane);
   writeJsonIfChanged(paths.publicOutput.anthropicLaneJson, artifacts.anthropicLane);
   ensureDir(paths.agiReadiness.root);
@@ -4851,6 +4867,31 @@ function exportGovernedMemoryPublicArtifacts({ workspaceRoot = workspaceRootDefa
   ensureDir(paths.continuityPublic.root);
   writeJsonIfChanged(paths.continuityPublic.latestSummaryJson, artifacts.continuityArtifacts.artifact);
   fs.writeFileSync(paths.continuityPublic.latestSummaryMd, artifacts.continuityArtifacts.markdown, "utf8");
+  artifacts.evalStatus = evaluateMemoryPublicSuite({
+    workspaceRoot,
+    paths,
+    summary: artifacts.summary,
+    pack: loadPersistedGovernedMemoryState({ workspaceRoot }).pack,
+    items: loadPersistedGovernedMemoryState({ workspaceRoot }).items,
+    openAIBlogLane: artifacts.openAIBlogLane,
+    anthropicLane: artifacts.anthropicLane,
+    observationProjection: artifacts.observationProjection,
+    continuityArtifacts: artifacts.continuityArtifacts,
+    readinessArtifacts: artifacts.readinessArtifacts,
+    requireWrittenPublicArtifacts: true,
+  });
+  writeJsonIfChanged(paths.publicOutput.latestOverviewJson, artifacts.publicOverview);
+  fs.writeFileSync(paths.publicOutput.latestOverviewMd, renderPublicOverviewMarkdown({
+    overview: artifacts.publicOverview,
+    workspaceProgress: artifacts.workspaceProgressPublic,
+    latestPack: artifacts.latestPackPublic,
+    promotionHealth: artifacts.promotionHealthPublic,
+    evalStatus: artifacts.evalStatus,
+    openAIBlogLane: artifacts.openAIBlogLane,
+    anthropicLane: artifacts.anthropicLane,
+  }), "utf8");
+  writeJsonIfChanged(paths.publicOutput.memoryEvalStatusJson, artifacts.evalStatus);
+  fs.writeFileSync(paths.publicOutput.memoryEvalStatusMd, renderMemoryEvalMarkdown(artifacts.evalStatus), "utf8");
   writeJsonIfChanged(paths.publicOutput.exportManifestJson, artifacts.exportManifest);
   return artifacts;
 }

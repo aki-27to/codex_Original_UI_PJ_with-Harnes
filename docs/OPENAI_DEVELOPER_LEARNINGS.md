@@ -1,6 +1,6 @@
 # OPENAI_DEVELOPER_LEARNINGS
 
-Updated: 2026-04-04T01:08:19.569Z
+Updated: 2026-04-04T23:11:29.110Z
 
 This file is auto-synced from OpenAI Developers Blog.
 It is not constitutional guidance and does not silently override `AGENTS.md` or frozen Step 1/2 behavior.

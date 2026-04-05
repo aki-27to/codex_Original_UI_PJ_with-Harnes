@@ -3,7 +3,7 @@
 - Workspace: 5c839dfeef8b555f
 - Canonical root: logs/archive/raw/runtime_state/memory
 - Public output root: output/memory_public
-- Canonical events: 6450
+- Canonical events: 9352
 - Items: 50
 - Promoted: 26
 - Latest pack: 13 items for default (3 high-confidence)

@@ -1,10 +1,10 @@
 {
   "schema": "governed-memory-public-overview.v1",
-  "generatedAt": "2026-04-04T17:23:27.320Z",
+  "generatedAt": "2026-04-05T00:12:47.515Z",
   "workspaceId": "5c839dfeef8b555f",
   "canonicalRoot": "logs/archive/raw/runtime_state/memory",
   "publicOutputRoot": "output/memory_public",
-  "canonicalEventCount": 6450,
+  "canonicalEventCount": 9352,
   "itemCount": 50,
   "promotedCount": 26,
   "typeCounts": {

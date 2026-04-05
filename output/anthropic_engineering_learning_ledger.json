@@ -1,8 +1,8 @@
 {
   "schema": "anthropic-engineering-learning-ledger.v1",
-  "generatedAt": "2026-04-04T15:53:50.523Z",
-  "lastRunAt": "2026-04-04T15:53:50.523Z",
-  "lastSuccessAt": "2026-04-04T15:53:50.523Z",
+  "generatedAt": "2026-04-04T23:11:48.721Z",
+  "lastRunAt": "2026-04-04T23:11:48.721Z",
+  "lastSuccessAt": "2026-04-04T23:11:48.721Z",
   "lastStatus": "PASS",
   "lastReason": "",
   "summary": {
@@ -24,8 +24,8 @@
       "topicLabel": "",
       "discoveredAt": "2026-03-25T10:58:32.280Z",
       "firstReadAt": "2026-03-25T10:58:32.280Z",
-      "lastReadAt": "2026-04-04T15:53:50.523Z",
-      "contentHash": "24674f15474102bfaef1ae174ca967285d2fbd0096772262ad3e327b9efca57c",
+      "lastReadAt": "2026-04-04T23:11:48.721Z",
+      "contentHash": "5e1f1b3d72668e6a507f4473f05ab258be85458679ea47d977644d289063a555",
       "summary": "Infrastructure configuration can swing agentic coding benchmarks by several percentage points—sometimes more than the leaderboard gap between top models.",
       "guidance": [
         "Agentic coding evals are different: models are given a full environment where they write programs, run tests, install dependencies, and iterate over multiple turns.",
@@ -63,8 +63,8 @@
       "topicLabel": "",
       "discoveredAt": "2026-03-25T10:58:32.280Z",
       "firstReadAt": "2026-03-25T10:58:32.280Z",
-      "lastReadAt": "2026-04-04T15:53:50.523Z",
-      "contentHash": "c36737628d4086f82ea59ab7420a8068baf7005dbcb4ea3b6523268f206bd43d",
+      "lastReadAt": "2026-04-04T23:11:48.721Z",
+      "contentHash": "794fe1d4e9edb949fd0735b2e13c2ab439fb84a5ec6b29209d2a03d28ae4e370",
       "summary": "Harness design is key to performance at the frontier of agentic coding. Here's how we pushed Claude further in frontend design and long-running autonomous software engineering.",
       "guidance": [
         "We've previously shown that harness design has a substantial impact on the effectiveness of long running agentic coding.",
@@ -104,8 +104,8 @@
       "topicLabel": "",
       "discoveredAt": "2026-03-25T10:58:32.280Z",
       "firstReadAt": "2026-03-25T10:58:32.280Z",
-      "lastReadAt": "2026-04-04T15:53:50.523Z",
-      "contentHash": "d41d9cc3576f8ff6ebb39858644cf7759013ba1077336ab5f7d745354c4087e7",
+      "lastReadAt": "2026-04-04T23:11:48.721Z",
+      "contentHash": "ea0d812121e98f3b6c249fce2b426aecde60b47497bd47cca9f33e2db9b8ad7b",
       "summary": "What we learned from three iterations of a performance engineering take-home that Claude keeps beating.",
       "guidance": [
         "Evaluating technical candidates becomes harder as AI capabilities improve.",
@@ -145,8 +145,8 @@
       "topicLabel": "",
       "discoveredAt": "2026-03-25T10:58:32.280Z",
       "firstReadAt": "2026-03-25T10:58:32.280Z",
-      "lastReadAt": "2026-04-04T15:53:50.523Z",
-      "contentHash": "9910517047a23dbb748af99a55c7ff9287d0fd5945e44ac4e250c6ed1ceeaa85",
+      "lastReadAt": "2026-04-04T23:11:48.721Z",
+      "contentHash": "d28ffdb81bf31c5c14f68d41e142077de2347c1c9ef8f706463d4f8e48c00066",
       "summary": "The capabilities that make agents useful also make them difficult to evaluate. The strategies that work across deployments combine techniques to match the complexity of the systems they measure.",
       "guidance": [
         "As we described in Building effective agents , agents operate over many turns: calling tools, modifying state, and adapting based on intermediate results.",
@@ -186,8 +186,8 @@
       "topicLabel": "",
       "discoveredAt": "2026-03-25T10:58:32.280Z",
       "firstReadAt": "2026-03-25T10:58:32.280Z",
-      "lastReadAt": "2026-04-04T15:53:50.523Z",
-      "contentHash": "ed4a6e8f11f63b9d14dd0cfcac9560312dcf140e3b818a43e4a5930d9a45c367",
+      "lastReadAt": "2026-04-04T23:11:48.721Z",
+      "contentHash": "4d7a06fcff4ae2848d0241822cbdaeb41eaa77e3404965e8e53e452f052c648a",
       "summary": "Agents still face challenges working across many context windows. We looked to human engineers for inspiration in creating a more effective harness for long-running agents.",
       "guidance": [
         "The core challenge of long-running agents is that they must work in discrete sessions, and each new session begins with no memory of what came before.",

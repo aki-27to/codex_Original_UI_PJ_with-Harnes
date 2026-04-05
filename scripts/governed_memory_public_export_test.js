@@ -5,6 +5,7 @@ const fs = require("fs");
 const os = require("os");
 const path = require("path");
 const {
+  buildGovernedMemoryPublicArtifacts,
   exportGovernedMemoryPublicArtifacts,
   syncGovernedMemoryGraph,
 } = require("./lib/governed_memory_graph");
@@ -74,6 +75,7 @@ function main() {
   assert(fs.existsSync(path.join(outputRoot, "anthropic_secondary_lane_projection.json")), "anthropic lane projection must exist");
   assert(fs.existsSync(path.join(readinessRoot, "latest_readiness.json")), "agi readiness latest json must exist");
   assert(fs.existsSync(path.join(readinessRoot, "domain_coverage_matrix.json")), "agi readiness domain coverage matrix must exist");
+  assert(fs.existsSync(path.join(readinessRoot, "robustness_breakdown.json")), "agi readiness robustness breakdown must exist");
   assert(fs.existsSync(path.join(readinessRoot, "promotion_trend.json")), "agi readiness promotion trend must exist");
   assert(fs.existsSync(path.join(readinessRoot, "blocked_reasons.json")), "agi readiness blocked reasons must exist");
   assert(fs.existsSync(path.join(readinessRoot, "next_bottlenecks.json")), "agi readiness bottlenecks must exist");
@@ -110,6 +112,8 @@ function main() {
   assert(evalStatus.checks.some((entry) => entry.id === "promotion_surface_not_self_comparison_misreported" && entry.status === "PASS"), "memory eval public status must verify self-comparison promotion semantics");
   assert(evalStatus.checks.some((entry) => entry.id === "coverage_failures_reflected_in_bottlenecks" && entry.status === "PASS"), "memory eval public status must verify coverage failures are reflected in bottlenecks");
   assert(evalStatus.checks.some((entry) => entry.id === "lane_projection_real_observations_reflected" && entry.status === "PASS"), "memory eval public status must verify lane observation reflection");
+  const robustnessExportCheck = evalStatus.checks.find((entry) => entry.id === "robustness_breakdown_exported");
+  assert(robustnessExportCheck && robustnessExportCheck.status === "PASS", "memory eval public status must verify robustness breakdown export");
   const promotionHealth = JSON.parse(fs.readFileSync(path.join(outputRoot, "promotion_revocation_health_public.json"), "utf8"));
   assert((promotionHealth.recentPromotions || []).every((entry) => typeof entry.memoryType === "string" && entry.memoryType.length > 0), "recent promotions must expose non-empty memoryType");
   assert((promotionHealth.recentRevocations || []).every((entry) => typeof entry.memoryType === "string" && entry.memoryType.length > 0), "recent revocations must expose non-empty memoryType");
@@ -164,9 +168,18 @@ function main() {
   assert(Object.prototype.hasOwnProperty.call(continuity.roleMemoryPackSections, "reviewer"), "continuity public summary must expose reviewer memory pack sections");
   assert(Object.prototype.hasOwnProperty.call(continuity.roleMemoryPackSections, "tester"), "continuity public summary must expose tester memory pack sections");
   const robustness = JSON.parse(fs.readFileSync(path.join(readinessRoot, "robustness_breakdown.json"), "utf8"));
+  assert.strictEqual(robustness.schema, "agi-readiness-robustness-breakdown.v1", "robustness breakdown must expose the expected schema");
+  assert.strictEqual(readiness.robustnessBreakdownPath, "output/agi_readiness/robustness_breakdown.json", "latest readiness must point at the tracked robustness breakdown artifact");
+  assert.strictEqual(exported.exportManifest.outputs.robustnessBreakdownJson, "output/agi_readiness/robustness_breakdown.json", "export manifest must point at the tracked robustness breakdown artifact");
   assert(Array.isArray(robustness.categories) && robustness.categories.some((entry) => entry.status === "observed"), "robustness breakdown must expose observed live evidence");
+  assert.strictEqual(fs.existsSync(path.join(tempRoot, readiness.robustnessBreakdownPath)), true, "latest readiness robustness path must resolve to a real file");
+  assert.strictEqual(fs.existsSync(path.join(tempRoot, exported.exportManifest.outputs.robustnessBreakdownJson)), true, "export manifest robustness path must resolve to a real file");
   assert(exported.exportManifest && exported.exportManifest.outputs, "export manifest must be returned");
   assert.strictEqual(exported.exportManifest.canonicalReuseVerified, true, "export manifest must record canonical reuse verification");
+  fs.unlinkSync(path.join(readinessRoot, "robustness_breakdown.json"));
+  const strictArtifacts = buildGovernedMemoryPublicArtifacts({ workspaceRoot: tempRoot, requireWrittenPublicArtifacts: true });
+  const strictRobustnessCheck = strictArtifacts.evalStatus.checks.find((entry) => entry.id === "robustness_breakdown_exported");
+  assert(strictRobustnessCheck && strictRobustnessCheck.status === "FAIL", "strict public eval must fail when the tracked robustness breakdown artifact is missing");
 
   console.log("governed_memory_public_export_test: ok");
 }

@@ -1,6 +1,6 @@
 {
   "schema": "governed-memory-public-lane-projection.v1",
-  "generatedAt": "2026-04-04T17:23:27.321Z",
+  "generatedAt": "2026-04-05T00:12:47.516Z",
   "laneKey": "anthropic_secondary",
   "sourceName": "Anthropic Engineering",
   "sourceTier": "external_secondary",
@@ -36,7 +36,7 @@
     "observationCount": 2456,
     "awaitingObservationCount": 0,
     "observationStatus": "disabled",
-    "lastObservedAt": "2026-04-04T17:20:49.821Z",
+    "lastObservedAt": "2026-04-05T00:12:46.391Z",
     "consideredForPackCount": 4,
     "advisoryReferenceCount": 4
   },
@@ -49,7 +49,7 @@
   },
   "recentLessons": [
     {
-      "publicRef": "mem_474f9c5bf2",
+      "publicRef": "mem_1ef523dba6",
       "status": "shadow",
       "summary": "Quantifying infrastructure noise in agentic coding evals",
       "topics": [
@@ -58,7 +58,7 @@
       ]
     },
     {
-      "publicRef": "mem_412e5e6452",
+      "publicRef": "mem_606a1bdedc",
       "status": "shadow",
       "summary": "Harness design for long-running application development",
       "topics": [
@@ -67,7 +67,7 @@
       ]
     },
     {
-      "publicRef": "mem_ab7aec13ac",
+      "publicRef": "mem_1ac8f13aa6",
       "status": "shadow",
       "summary": "Designing AI resistant technical evaluations",
       "topics": [
@@ -76,7 +76,7 @@
       ]
     },
     {
-      "publicRef": "mem_df486039e8",
+      "publicRef": "mem_4a860af3cd",
       "status": "shadow",
       "summary": "Demystifying evals for AI agents",
       "topics": [
@@ -95,7 +95,7 @@
     "blockedCount": 0,
     "awaitingObservationCount": 0,
     "policyDisabledCandidateCount": 1,
-    "lastObservedAt": "2026-04-04T17:20:49.821Z",
+    "lastObservedAt": "2026-04-05T00:12:46.391Z",
     "nextPriority": {
       "title": "Effective harnesses for long-running agents",
       "changeType": "frontend_quality_note",

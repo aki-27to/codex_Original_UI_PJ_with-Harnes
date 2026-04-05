@@ -26,6 +26,7 @@ output/agi_readiness/*
 !output/agi_readiness/latest_readiness.json
 !output/agi_readiness/latest_readiness.md
 !output/agi_readiness/domain_coverage_matrix.json
+!output/agi_readiness/robustness_breakdown.json
 !output/agi_readiness/promotion_trend.json
 !output/agi_readiness/blocked_reasons.json
 !output/agi_readiness/next_bottlenecks.json

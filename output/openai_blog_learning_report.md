@@ -1,7 +1,7 @@
 # OPENAI_BLOG_LEARNING_REPORT
 
 - status: PASS
-- generatedAt: 2026-04-04T01:08:19.569Z
+- generatedAt: 2026-04-04T23:11:29.110Z
 - trackedArticles: 6
 - newArticlesThisRun: 0
 - pendingProposals: 6
@@ -37,16 +37,16 @@
 - appliedDecision: applied
 - appliedHintCount: 6
 - appliedFrontendQualityNoteCount: 0
-- observationStatus: starved
-- observationCount: 0
-- lastObservedAt: -
+- observationStatus: collecting
+- observationCount: 132
+- lastObservedAt: 2026-04-04T17:23:26.382Z
 - rawAutoApplyChangeCount: 12
 - readyAutoApplyChangeCount: 6
-- awaitingObservationCount: 6
-- awaitingReinforcementCount: 0
+- awaitingObservationCount: 0
+- awaitingReinforcementCount: 6
 - policyDisabledCandidateCount: 0
 - proposalOnlyCount: 0
 - blockedCount: 0
-- nextPriority: Building frontend UIs with Codex and Figma | OpenAI Developers / awaiting_observations
-- nextPriorityAction: Record 2 successful targeted observations before promotion.
-- nextPriorityProgress: success 0/2 / observed 0 / rate 0
+- nextPriority: Building frontend UIs with Codex and Figma | OpenAI Developers / awaiting_reinforcement
+- nextPriorityAction: Need success>=2 and successRate>=0.67 before promotion.
+- nextPriorityProgress: success 1/2 / observed 12 / rate 0.0833

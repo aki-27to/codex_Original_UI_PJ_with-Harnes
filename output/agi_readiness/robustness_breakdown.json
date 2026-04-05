@@ -1,0 +1,164 @@
+{
+  "schema": "agi-readiness-robustness-breakdown.v1",
+  "generatedAt": "2026-04-05T00:12:47.512Z",
+  "workspaceId": "5c839dfeef8b555f",
+  "categories": [
+    {
+      "categoryId": "ambiguous_instruction",
+      "label": "Ambiguous instruction handling",
+      "score": null,
+      "evidenceCount": 0,
+      "successCount": 0,
+      "failureCount": 0,
+      "status": "no_evidence",
+      "recentEvidence": [],
+      "sourceFamilies": [
+        "deterministic_code",
+        "planning"
+      ]
+    },
+    {
+      "categoryId": "adversarial_conflicting_instruction",
+      "label": "Adversarial/conflicting instruction handling",
+      "score": 0.5,
+      "evidenceCount": 3,
+      "successCount": 1,
+      "failureCount": 2,
+      "status": "observed",
+      "recentEvidence": [
+        {
+          "publicRef": "eval_7661a67eb4",
+          "summary": "adversarial-self-check.v2"
+        },
+        {
+          "publicRef": "eval_b16d16e9a0",
+          "summary": "adversarial-self-check.v1"
+        },
+        {
+          "publicRef": "eval_45e5ace126",
+          "summary": "adversarial-self-check.v1"
+        }
+      ],
+      "sourceFamilies": [
+        "evaluation_review"
+      ]
+    },
+    {
+      "categoryId": "missing_context",
+      "label": "Missing-context recovery",
+      "score": 0.25,
+      "evidenceCount": 13,
+      "successCount": 0,
+      "failureCount": 13,
+      "status": "observed",
+      "recentEvidence": [
+        {
+          "publicRef": "turn_4cfe5263bd",
+          "summary": "missing required evidence"
+        },
+        {
+          "publicRef": "turn_a9d9f1a19b",
+          "summary": "missing required evidence"
+        },
+        {
+          "publicRef": "turn_aa73770c4d",
+          "summary": "intent visual review missing"
+        },
+        {
+          "publicRef": "turn_94bb9f61ed",
+          "summary": "intent visual review missing"
+        },
+        {
+          "publicRef": "turn_e395ad0d92",
+          "summary": "intent visual review missing"
+        },
+        {
+          "publicRef": "turn_8035941532",
+          "summary": "missing required evidence"
+        }
+      ],
+      "sourceFamilies": [
+        "planning",
+        "workflow_execution"
+      ]
+    },
+    {
+      "categoryId": "degraded_tool_outputs",
+      "label": "Degraded tool output handling",
+      "score": 0.7,
+      "evidenceCount": 30,
+      "successCount": 18,
+      "failureCount": 12,
+      "status": "observed",
+      "recentEvidence": [
+        {
+          "publicRef": "turn_816303077a",
+          "summary": "return to intake required"
+        },
+        {
+          "publicRef": "turn_696bc2a2b9",
+          "summary": "parent dispatch guard block"
+        },
+        {
+          "publicRef": "turn_98cf06f19c",
+          "summary": "return to intake required"
+        },
+        {
+          "publicRef": "turn_d694c63c32",
+          "summary": "parent dispatch guard block"
+        },
+        {
+          "publicRef": "turn_1467bc52fb",
+          "summary": "silent requirement rewrite"
+        },
+        {
+          "publicRef": "turn_f45d5ef904",
+          "summary": "completed default"
+        }
+      ],
+      "sourceFamilies": [
+        "deterministic_code",
+        "workflow_execution",
+        "tool_use_browser_like"
+      ]
+    },
+    {
+      "categoryId": "browser_tool_flakiness",
+      "label": "Browser/tool flakiness handling",
+      "score": 0.26875,
+      "evidenceCount": 40,
+      "successCount": 1,
+      "failureCount": 39,
+      "status": "observed",
+      "recentEvidence": [
+        {
+          "publicRef": "turn_816303077a",
+          "summary": "web-ui-interactive"
+        },
+        {
+          "publicRef": "turn_4cfe5263bd",
+          "summary": "web-ui-interactive"
+        },
+        {
+          "publicRef": "turn_696bc2a2b9",
+          "summary": "web-ui-interactive"
+        },
+        {
+          "publicRef": "turn_98cf06f19c",
+          "summary": "web-ui-interactive"
+        },
+        {
+          "publicRef": "turn_d694c63c32",
+          "summary": "web-ui-interactive"
+        },
+        {
+          "publicRef": "turn_1467bc52fb",
+          "summary": "web-ui-interactive"
+        }
+      ],
+      "sourceFamilies": [
+        "tool_use_browser_like"
+      ]
+    }
+  ]
+}
