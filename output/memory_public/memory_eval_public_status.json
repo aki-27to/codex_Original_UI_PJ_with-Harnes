@@ -1,6 +1,6 @@
 {
   "schema": "memory-eval-public-status.v1",
-  "generatedAt": "2026-04-05T02:47:47.877Z",
+  "generatedAt": "2026-04-05T03:42:55.064Z",
   "suiteSchema": "memory-eval-suite.v1",
   "suiteVersion": "2026-04-04.r1",
   "status": "PASS",
@@ -185,6 +185,24 @@
       "title": "Continuity debt surface is generated and addressable",
       "status": "PASS",
       "detail": "continuity debt surface is present"
+    },
+    {
+      "id": "goal_completion_artifact_present",
+      "title": "Operational goal completion artifact is generated",
+      "status": "PASS",
+      "detail": "operational goal completion artifact is present"
+    },
+    {
+      "id": "goal_completion_status_consistent",
+      "title": "Operational goal completion status matches current readiness, debt, and learning metrics",
+      "status": "PASS",
+      "detail": "operational goal completion status matches readiness, debt, and learning state"
+    },
+    {
+      "id": "goal_completion_not_yet_when_criteria_fail",
+      "title": "Operational goal completion remains NOT_YET when thresholds are not satisfied",
+      "status": "PASS",
+      "detail": "goal completion artifact does not over-claim completion when thresholds fail"
     },
     {
       "id": "public_hygiene_no_unknown_memory_type",

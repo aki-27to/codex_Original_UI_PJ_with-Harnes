@@ -1,0 +1,53 @@
+# AGI Operational Completion
+
+- goalStatus: NOT_YET
+- generatedAt: 2026-04-05T03:42:54.888Z
+
+## Current Values
+- stableCoverageBreadth: 0
+- supportedCoverageBreadth: 1
+- R_robust: 0.81
+- H_horizon: 0.93487
+- rawFinalScore: 0.860278
+- openDebtCount: 26
+- blockedSubtasks: 0
+- integrationPendingCount: 0
+- ambiguousInstructionStatus: no_evidence
+- ambiguousInstructionEvidenceCount: 0
+- missingContextScore: 0.25
+- browserToolFlakinessScore: 0.269737
+- verifiedPositiveRemediations: 0
+- verifiedNegativeRemediations: 0
+- verifiedHarmfulRemediations: 0
+- insufficientEvidenceRemediations: 0
+- harmfulCausalRatio: 0.857143
+- likelyContributoryCount: 2
+- harmfulTraceCount: 12
+- distinctLineageWindowCount: 5
+- distinctLineageNonWorsening: false
+- primaryLaneObservationCount: 110
+- primaryLaneCausalUsageCount: 11
+- secondaryAdvisoryUsageCount: 4
+
+## Why Not Yet
+- stable coverage breadth below threshold (0 < 1)
+- R_robust below threshold (0.81 < 0.93)
+- H_horizon below threshold (0.93487 < 0.97)
+- raw final score below threshold (0.860278 < 0.9)
+- continuity debt remains open (26 > 0)
+- ambiguous_instruction still has no evidence
+- missing_context below threshold (0.25 < 0.8)
+- browser_tool_flakiness below threshold (0.269737 < 0.75)
+- verified positive remediation count below threshold (0 < 1)
+- distinct lineage window is not non-worsening across last 5 comparisons
+- harmful causal trace ratio above threshold (0.857143 > 0.34)
+
+## Required Next Actions
+- weakest family is R robust
+- robustness is currently limited by ambiguous instruction (no evidence yet)
+- continuity carries 26 closeout debt item(s) with severity high
+- capture governed recovery evidence
+- weakest family is R_robust
+- robustness is currently limited by ambiguous_instruction (no evidence yet)
+- stabilize supported family coverage across recent windows
+- run robustness remediation agenda and verify positive effect

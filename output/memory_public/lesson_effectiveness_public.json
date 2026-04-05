@@ -1,23 +1,43 @@
 {
   "schema": "governed-memory-lesson-effectiveness-public.v1",
-  "generatedAt": "2026-04-05T02:47:47.672Z",
+  "generatedAt": "2026-04-05T03:42:54.885Z",
   "workspaceId": "5c839dfeef8b555f",
   "entries": [
     {
-      "publicRef": "mem_9f11aebf87",
+      "memoryId": "mem_0fec65243c",
+      "publicRef": "mem_0fec65243c",
       "memoryType": "improvement_candidate",
       "sourceTier": "external_primary",
+      "promotionState": "candidate",
+      "positiveCount": 0,
+      "neutralCount": 1,
+      "harmfulCount": 9,
+      "lastUsedAt": "2026-04-05T03:42:53.621Z",
+      "lastEffect": "harmful_to_outcome",
+      "appliesToFamily": [
+        "web_creative"
+      ],
       "selectedInLatestPack": false,
       "usageStage": "harmful_to_outcome",
       "likelyContributory": false,
       "harmfulToOutcome": true,
       "summary": "Building frontend UIs with Codex and Figma | OpenAI Developers",
-      "lastObservedAt": "2026-04-05T02:47:46.183Z"
+      "lastObservedAt": "2026-04-05T03:42:53.621Z"
     },
     {
+      "memoryId": "mem_ec957e3de3",
       "publicRef": "mem_ec957e3de3",
       "memoryType": "semantic_lesson",
       "sourceTier": "external_primary",
+      "promotionState": "promoted",
+      "positiveCount": 0,
+      "neutralCount": 1,
+      "harmfulCount": 9,
+      "lastUsedAt": "2026-04-05T02:45:53.152Z",
+      "lastEffect": "harmful_to_outcome",
+      "appliesToFamily": [
+        "web_creative"
+      ],
       "selectedInLatestPack": false,
       "usageStage": "harmful_to_outcome",
       "likelyContributory": false,
@@ -26,9 +46,19 @@
       "lastObservedAt": "2026-04-05T02:45:53.152Z"
     },
     {
+      "memoryId": "mem_f38921b6c8",
       "publicRef": "mem_f38921b6c8",
       "memoryType": "semantic_lesson",
       "sourceTier": "external_primary",
+      "promotionState": "promoted",
+      "positiveCount": 0,
+      "neutralCount": 1,
+      "harmfulCount": 9,
+      "lastUsedAt": "2026-04-05T02:45:53.152Z",
+      "lastEffect": "harmful_to_outcome",
+      "appliesToFamily": [
+        "web_creative"
+      ],
       "selectedInLatestPack": false,
       "usageStage": "harmful_to_outcome",
       "likelyContributory": false,
@@ -37,9 +67,19 @@
       "lastObservedAt": "2026-04-05T02:45:53.152Z"
     },
     {
+      "memoryId": "mem_eb390615f9",
       "publicRef": "mem_eb390615f9",
       "memoryType": "semantic_lesson",
       "sourceTier": "external_primary",
+      "promotionState": "promoted",
+      "positiveCount": 0,
+      "neutralCount": 1,
+      "harmfulCount": 9,
+      "lastUsedAt": "2026-04-05T02:45:53.152Z",
+      "lastEffect": "harmful_to_outcome",
+      "appliesToFamily": [
+        "web_creative"
+      ],
       "selectedInLatestPack": false,
       "usageStage": "harmful_to_outcome",
       "likelyContributory": false,
@@ -48,9 +88,19 @@
       "lastObservedAt": "2026-04-05T02:45:53.152Z"
     },
     {
+      "memoryId": "mem_d0800f01f8",
       "publicRef": "mem_d0800f01f8",
       "memoryType": "semantic_lesson",
       "sourceTier": "external_primary",
+      "promotionState": "promoted",
+      "positiveCount": 0,
+      "neutralCount": 1,
+      "harmfulCount": 9,
+      "lastUsedAt": "2026-04-05T02:45:53.152Z",
+      "lastEffect": "harmful_to_outcome",
+      "appliesToFamily": [
+        "web_creative"
+      ],
       "selectedInLatestPack": false,
       "usageStage": "harmful_to_outcome",
       "likelyContributory": false,
@@ -59,9 +109,19 @@
       "lastObservedAt": "2026-04-05T02:45:53.152Z"
     },
     {
+      "memoryId": "mem_46f23704e6",
       "publicRef": "mem_46f23704e6",
       "memoryType": "runtime_hint",
       "sourceTier": "external_primary",
+      "promotionState": "promoted",
+      "positiveCount": 0,
+      "neutralCount": 1,
+      "harmfulCount": 9,
+      "lastUsedAt": "2026-04-05T02:45:53.152Z",
+      "lastEffect": "harmful_to_outcome",
+      "appliesToFamily": [
+        "web_creative"
+      ],
       "selectedInLatestPack": false,
       "usageStage": "harmful_to_outcome",
       "likelyContributory": false,
@@ -70,9 +130,19 @@
       "lastObservedAt": "2026-04-05T02:45:53.152Z"
     },
     {
+      "memoryId": "mem_5e926a0571",
       "publicRef": "mem_5e926a0571",
       "memoryType": "runtime_hint",
       "sourceTier": "external_primary",
+      "promotionState": "promoted",
+      "positiveCount": 0,
+      "neutralCount": 1,
+      "harmfulCount": 9,
+      "lastUsedAt": "2026-04-05T02:45:53.152Z",
+      "lastEffect": "harmful_to_outcome",
+      "appliesToFamily": [
+        "web_creative"
+      ],
       "selectedInLatestPack": false,
       "usageStage": "harmful_to_outcome",
       "likelyContributory": false,
@@ -81,9 +151,19 @@
       "lastObservedAt": "2026-04-05T02:45:53.152Z"
     },
     {
+      "memoryId": "mem_b439f61eb1",
       "publicRef": "mem_b439f61eb1",
       "memoryType": "runtime_hint",
       "sourceTier": "external_primary",
+      "promotionState": "promoted",
+      "positiveCount": 0,
+      "neutralCount": 1,
+      "harmfulCount": 9,
+      "lastUsedAt": "2026-04-05T02:45:53.152Z",
+      "lastEffect": "harmful_to_outcome",
+      "appliesToFamily": [
+        "web_creative"
+      ],
       "selectedInLatestPack": false,
       "usageStage": "harmful_to_outcome",
       "likelyContributory": false,
@@ -92,9 +172,19 @@
       "lastObservedAt": "2026-04-05T02:45:53.152Z"
     },
     {
+      "memoryId": "mem_8896adaa48",
       "publicRef": "mem_8896adaa48",
       "memoryType": "runtime_hint",
       "sourceTier": "external_primary",
+      "promotionState": "promoted",
+      "positiveCount": 0,
+      "neutralCount": 1,
+      "harmfulCount": 9,
+      "lastUsedAt": "2026-04-05T02:45:53.152Z",
+      "lastEffect": "harmful_to_outcome",
+      "appliesToFamily": [
+        "web_creative"
+      ],
       "selectedInLatestPack": false,
       "usageStage": "harmful_to_outcome",
       "likelyContributory": false,
@@ -103,9 +193,19 @@
       "lastObservedAt": "2026-04-05T02:45:53.152Z"
     },
     {
+      "memoryId": "mem_847a1aba42",
       "publicRef": "mem_847a1aba42",
       "memoryType": "runtime_hint",
       "sourceTier": "external_primary",
+      "promotionState": "promoted",
+      "positiveCount": 0,
+      "neutralCount": 1,
+      "harmfulCount": 9,
+      "lastUsedAt": "2026-04-05T02:45:53.152Z",
+      "lastEffect": "harmful_to_outcome",
+      "appliesToFamily": [
+        "web_creative"
+      ],
       "selectedInLatestPack": false,
       "usageStage": "harmful_to_outcome",
       "likelyContributory": false,
@@ -114,9 +214,19 @@
       "lastObservedAt": "2026-04-05T02:45:53.152Z"
     },
     {
+      "memoryId": "mem_106d75d257",
       "publicRef": "mem_106d75d257",
       "memoryType": "runtime_hint",
       "sourceTier": "external_primary",
+      "promotionState": "promoted",
+      "positiveCount": 0,
+      "neutralCount": 1,
+      "harmfulCount": 9,
+      "lastUsedAt": "2026-04-05T02:45:53.152Z",
+      "lastEffect": "harmful_to_outcome",
+      "appliesToFamily": [
+        "web_creative"
+      ],
       "selectedInLatestPack": false,
       "usageStage": "harmful_to_outcome",
       "likelyContributory": false,
@@ -125,9 +235,19 @@
       "lastObservedAt": "2026-04-05T02:45:53.152Z"
     },
     {
+      "memoryId": "mem_1ef523dba6",
       "publicRef": "mem_1ef523dba6",
       "memoryType": "semantic_lesson",
       "sourceTier": "external_secondary",
+      "promotionState": "shadow",
+      "positiveCount": 532,
+      "neutralCount": 6,
+      "harmfulCount": 71,
+      "lastUsedAt": "2026-04-05T02:45:53.152Z",
+      "lastEffect": "advisory_reference",
+      "appliesToFamily": [
+        "default"
+      ],
       "selectedInLatestPack": false,
       "usageStage": "advisory_reference",
       "likelyContributory": false,

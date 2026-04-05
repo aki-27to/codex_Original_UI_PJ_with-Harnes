@@ -1,9 +1,15 @@
 {
   "schema": "governed-memory-promotion-health-public.v1",
-  "generatedAt": "2026-04-05T02:47:47.672Z",
+  "generatedAt": "2026-04-05T03:42:54.885Z",
   "workspaceId": "5c839dfeef8b555f",
   "staleWarningCount": 0,
   "recentPromotions": [
+    {
+      "publicRef": "mem_dd9c0f3a28",
+      "memoryType": "workspace_progress",
+      "status": "promoted",
+      "recordedAt": "2026-04-05T03:42:53.581Z"
+    },
     {
       "publicRef": "mem_52f4ed9143",
       "memoryType": "constitution_ref",
@@ -24,12 +30,6 @@
     },
     {
       "publicRef": "mem_38e064a6a2",
-      "memoryType": "failure_pattern",
-      "status": "promoted",
-      "recordedAt": "2026-04-05T02:45:53.101Z"
-    },
-    {
-      "publicRef": "mem_1ce008bc40",
       "memoryType": "failure_pattern",
       "status": "promoted",
       "recordedAt": "2026-04-05T02:45:53.101Z"

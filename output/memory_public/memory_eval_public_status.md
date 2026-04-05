@@ -1,7 +1,7 @@
 # Memory Eval Public Status
 
 - Status: PASS
-- Generated At: 2026-04-05T02:47:47.877Z
+- Generated At: 2026-04-05T03:42:55.064Z
 
 ## Checks
 - canonical_store_present: PASS (canonical event log and index are present)
@@ -34,6 +34,9 @@
 - distinct_lineage_present: PASS (distinct lineage has 7 entries)
 - distinct_lineage_has_non_promoted_case: PASS (distinct lineage includes blocked/hold or rejected comparisons)
 - continuity_debt_surface_present: PASS (continuity debt surface is present)
+- goal_completion_artifact_present: PASS (operational goal completion artifact is present)
+- goal_completion_status_consistent: PASS (operational goal completion status matches readiness, debt, and learning state)
+- goal_completion_not_yet_when_criteria_fail: PASS (goal completion artifact does not over-claim completion when thresholds fail)
 - public_hygiene_no_unknown_memory_type: PASS (public artifacts do not expose unknown memoryType)
 - public_hygiene_validation_refs_present: PASS (validation references are populated)
 - public_hygiene_no_blank_task_outcome_status: PASS (task outcome statuses are populated)

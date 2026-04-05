@@ -38,6 +38,8 @@ output/agi_readiness/*
 !output/agi_readiness/distinct_improvement_lineage.md
 !output/agi_readiness/robustness_remediation_status.json
 !output/agi_readiness/robustness_remediation_trend.json
+!output/agi_readiness/goal_completion_status.json
+!output/agi_readiness/goal_completion_status.md
 output/agi_v1/
 output/claim_closure/
 output/external_audit_bundle/

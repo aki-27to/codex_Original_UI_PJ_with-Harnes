@@ -5,6 +5,7 @@ const fs = require("fs");
 const os = require("os");
 const path = require("path");
 const {
+  buildGoalCompletionStatus,
   buildGovernedMemoryPublicArtifacts,
   exportGovernedMemoryPublicArtifacts,
   syncGovernedMemoryGraph,
@@ -116,6 +117,8 @@ function main() {
     path.join(readinessRoot, "distinct_improvement_lineage.md"),
     path.join(readinessRoot, "robustness_remediation_status.json"),
     path.join(readinessRoot, "robustness_remediation_trend.json"),
+    path.join(readinessRoot, "goal_completion_status.json"),
+    path.join(readinessRoot, "goal_completion_status.md"),
     path.join(continuityRoot, "latest_continuity.json"),
     path.join(continuityRoot, "continuity_debt.json"),
   ];
@@ -159,6 +162,10 @@ function main() {
 
   const lessonEffectiveness = JSON.parse(fs.readFileSync(path.join(outputRoot, "lesson_effectiveness_public.json"), "utf8"));
   assert(Array.isArray(lessonEffectiveness.entries) && lessonEffectiveness.entries.length > 0, "lesson effectiveness public surface must be non-empty");
+  assert(lessonEffectiveness.entries.every((entry) => typeof entry.memoryId === "string" && entry.memoryId.length > 0), "lesson effectiveness entries must expose canonical memory ids");
+  assert(lessonEffectiveness.entries.every((entry) => typeof entry.promotionState === "string" && entry.promotionState.length > 0), "lesson effectiveness entries must expose promotionState");
+  assert(lessonEffectiveness.entries.every((entry) => Number.isFinite(Number(entry.positiveCount))), "lesson effectiveness entries must expose positiveCount");
+  assert(lessonEffectiveness.entries.every((entry) => Number.isFinite(Number(entry.harmfulCount))), "lesson effectiveness entries must expose harmfulCount");
 
   const packCausalTrace = JSON.parse(fs.readFileSync(path.join(outputRoot, "pack_causal_trace_public.json"), "utf8"));
   assert(Array.isArray(packCausalTrace.traces) && packCausalTrace.traces.length > 0, "pack causal trace public surface must be non-empty");
@@ -191,6 +198,9 @@ function main() {
     "distinct_lineage_present",
     "distinct_lineage_has_non_promoted_case",
     "continuity_debt_surface_present",
+    "goal_completion_artifact_present",
+    "goal_completion_status_consistent",
+    "goal_completion_not_yet_when_criteria_fail",
     "public_hygiene_no_unknown_memory_type",
     "public_hygiene_validation_refs_present",
     "public_hygiene_no_blank_task_outcome_status",
@@ -238,6 +248,7 @@ function main() {
   assert.strictEqual(typeof readiness.distinctImprovementLineagePath, "string", "readiness must expose distinct lineage path");
   assert.strictEqual(typeof readiness.continuityDebtPath, "string", "readiness must expose continuity debt path");
   assert.strictEqual(typeof readiness.robustnessRemediationStatusPath, "string", "readiness must expose robustness remediation status path");
+  assert.strictEqual(typeof readiness.goalCompletionStatusPath, "string", "readiness must expose goal completion status path");
 
   const coverage = JSON.parse(fs.readFileSync(path.join(readinessRoot, "domain_coverage_matrix.json"), "utf8"));
   assert(Array.isArray(coverage.rows) && coverage.rows.some((row) => row.familyId === "deterministic_code"), "domain coverage matrix must expose deterministic_code coverage");
@@ -245,6 +256,12 @@ function main() {
   const evidencedFamilies = coverage.rows.filter((row) => targetFamilies.includes(row.familyId) && (row.lastSuccessfulTask || row.lastFailedTask));
   assert(evidencedFamilies.length >= 3, "domain coverage matrix must expose public-safe evidence for at least three target breadth families");
   assert(coverage.rows.every((row) => ["no_evidence", "passing_evidence", "unstable", "stable"].includes(String(row.stabilityStatus || ""))), "coverage rows must expose stability status");
+  assert(coverage.rows.every((row) => typeof row.stableCovered === "boolean"), "coverage rows must expose stableCovered");
+  assert(coverage.rows.every((row) => Number.isFinite(Number(row.stabilityWindowSize))), "coverage rows must expose stabilityWindowSize");
+  assert(coverage.rows.every((row) => Array.isArray(row.recentWindowScores)), "coverage rows must expose recentWindowScores");
+  assert(coverage.rows.every((row) => Array.isArray(row.recentWindowOutcomes)), "coverage rows must expose recentWindowOutcomes");
+  assert(coverage.rows.every((row) => typeof row.coverageRegressed === "boolean"), "coverage rows must expose coverageRegressed");
+  assert(coverage.rows.every((row) => typeof row.nextCoverageAction === "string"), "coverage rows must expose nextCoverageAction");
 
   const blockedReasons = JSON.parse(fs.readFileSync(path.join(readinessRoot, "blocked_reasons.json"), "utf8"));
   assert(Array.isArray(blockedReasons.reasons), "blocked reasons must remain structured");
@@ -264,6 +281,10 @@ function main() {
   assert(distinctLineage.entries.some((entry) => entry.comparisonMode === "distinct_comparison" && entry.promote === true), "distinct lineage must include a promoted comparison");
   assert(distinctLineage.entries.some((entry) => entry.comparisonMode === "distinct_comparison" && entry.promote !== true), "distinct lineage must include a non-promoted distinct comparison");
   assert(distinctLineage.entries.every((entry) => entry.comparisonMode !== "self_snapshot" || entry.promote == null), "self snapshot lineage entries must not appear as wins");
+  assert(distinctLineage.entries.every((entry) => Number.isFinite(Number(entry.continuityDebtDelta))), "distinct lineage entries must expose continuityDebtDelta");
+  assert(distinctLineage.entries.every((entry) => typeof entry.robustnessDeltaByCategory === "object"), "distinct lineage entries must expose robustnessDeltaByCategory");
+  assert(distinctLineage.entries.every((entry) => Number.isFinite(Number(entry.causalSupportCount))), "distinct lineage entries must expose causalSupportCount");
+  assert(distinctLineage.entries.every((entry) => Number.isFinite(Number(entry.causalHarmCount))), "distinct lineage entries must expose causalHarmCount");
 
   const bottlenecks = JSON.parse(fs.readFileSync(path.join(readinessRoot, "next_bottlenecks.json"), "utf8"));
   assert(Array.isArray(bottlenecks.items) && bottlenecks.items.length >= 1, "next bottlenecks must expose at least one bottleneck");
@@ -274,6 +295,11 @@ function main() {
   const autonomousLearning = JSON.parse(fs.readFileSync(path.join(readinessRoot, "autonomous_learning_status.json"), "utf8"));
   assert(Array.isArray(autonomousLearning.entries) && autonomousLearning.entries.length > 0, "autonomous learning status must expose entries");
   assert(autonomousLearning.entries.some((entry) => ["running", "passed"].includes(String(entry.status))), "autonomous learning status must expose running or passed items");
+  assert(Number.isFinite(Number(autonomousLearning.summary.verifiedPositive)), "autonomous learning summary must expose verifiedPositive");
+  assert(Number.isFinite(Number(autonomousLearning.summary.verifiedNeutral)), "autonomous learning summary must expose verifiedNeutral");
+  assert(Number.isFinite(Number(autonomousLearning.summary.verifiedNegative)), "autonomous learning summary must expose verifiedNegative");
+  assert(Number.isFinite(Number(autonomousLearning.summary.verifiedHarmful)), "autonomous learning summary must expose verifiedHarmful");
+  assert(Number.isFinite(Number(autonomousLearning.summary.insufficientEvidence)), "autonomous learning summary must expose insufficientEvidence");
 
   const causalLearning = JSON.parse(fs.readFileSync(path.join(readinessRoot, "causal_learning_trace.json"), "utf8"));
   assert(Array.isArray(causalLearning.traces) && causalLearning.traces.length > 0, "causal learning trace must expose traces");
@@ -303,6 +329,16 @@ function main() {
   assert(Array.isArray(continuityDebt.items), "continuity debt must expose items");
   assert(continuityDebt.items.every((entry) => ["missing_evidence", "verifier_failed", "dependency_unresolved", "operator_abandoned", "policy_blocked"].includes(String(entry.blockerType))), "continuity debt items must expose normalized blocker types");
   assert(continuityDebt.summary && Number.isFinite(Number(continuityDebt.summary.openDebtCount)), "continuity debt must expose summary");
+  assert(continuityDebt.items.every((entry) => typeof entry.debtId === "string" && entry.debtId.length > 0), "continuity debt items must expose debtId");
+  assert(continuityDebt.items.every((entry) => typeof entry.requiredCloseoutAction === "string"), "continuity debt items must expose requiredCloseoutAction");
+  assert(continuityDebt.items.every((entry) => typeof entry.autoCloseEligible === "boolean"), "continuity debt items must expose autoCloseEligible");
+  assert(continuityDebt.items.every((entry) => typeof entry.publicSummary === "string" && entry.publicSummary.length > 0), "continuity debt items must expose publicSummary");
+
+  const goalCompletion = JSON.parse(fs.readFileSync(path.join(readinessRoot, "goal_completion_status.json"), "utf8"));
+  assert.strictEqual(goalCompletion.schema, "agi-operational-completion-status.v1", "goal completion artifact must expose expected schema");
+  assert.strictEqual(goalCompletion.goalStatus, "NOT_YET", "seeded live-goal fixture must remain NOT_YET");
+  assert(Array.isArray(goalCompletion.whyNotYet) && goalCompletion.whyNotYet.length > 0, "goal completion artifact must explain why it is not yet complete");
+  assert(Array.isArray(goalCompletion.requiredNextActions) && goalCompletion.requiredNextActions.length > 0, "goal completion artifact must expose required next actions");
 
   const exportManifest = JSON.parse(fs.readFileSync(path.join(outputRoot, "export_manifest.json"), "utf8"));
   assert(exportManifest && exportManifest.outputs, "export manifest must be returned");
@@ -314,6 +350,7 @@ function main() {
   assert.strictEqual(fs.existsSync(path.join(tempRoot, exportManifest.outputs.causalLearningTraceJson)), true, "export manifest causal learning path must resolve to a real file");
   assert.strictEqual(fs.existsSync(path.join(tempRoot, exportManifest.outputs.distinctImprovementLineageJson)), true, "export manifest distinct lineage path must resolve to a real file");
   assert.strictEqual(fs.existsSync(path.join(tempRoot, exportManifest.outputs.continuityDebtJson)), true, "export manifest continuity debt path must resolve to a real file");
+  assert.strictEqual(fs.existsSync(path.join(tempRoot, exportManifest.outputs.goalCompletionStatusJson)), true, "export manifest goal completion path must resolve to a real file");
 
   const publicLeafValues = [
     workspaceProgress,
@@ -333,6 +370,7 @@ function main() {
     remediationTrend,
     continuity,
     continuityDebt,
+    goalCompletion,
   ].flatMap((entry) => collectLeafValues(entry));
   assert(publicLeafValues.every((entry) => typeof entry.value !== "string" || !isUuidLike(entry.value)), "public artifacts must not expose raw UUID-like titles");
   assert(publicLeafValues.every((entry) => !(typeof entry.value === "string" && /^\d{13}$/.test(entry.value))), "public artifacts must not expose epoch-millisecond timestamps");
@@ -341,6 +379,63 @@ function main() {
   const strictArtifacts = buildGovernedMemoryPublicArtifacts({ workspaceRoot: tempRoot, requireWrittenPublicArtifacts: true });
   const strictRobustnessCheck = strictArtifacts.evalStatus.checks.find((entry) => entry.id === "robustness_breakdown_exported");
   assert(strictRobustnessCheck && strictRobustnessCheck.status === "FAIL", "strict public eval must fail when the tracked robustness breakdown artifact is missing");
+
+  const syntheticGoal = buildGoalCompletionStatus({
+    workspaceRoot: tempRoot,
+    readinessArtifacts: {
+      readiness: {
+        stableCoverageBreadth: 1,
+        supportedCoverageBreadth: 1,
+        rawFinalScore: 0.95,
+        metrics: {
+          R_robust: { value: 0.95 },
+          H_horizon: { value: 0.98 },
+        },
+      },
+      robustnessBreakdown: {
+        categories: [
+          { categoryId: "ambiguous_instruction", status: "observed", evidenceCount: 12, score: 0.82 },
+          { categoryId: "missing_context", status: "observed", evidenceCount: 18, score: 0.9 },
+          { categoryId: "browser_tool_flakiness", status: "observed", evidenceCount: 20, score: 0.84 },
+        ],
+      },
+      distinctLineage: {
+        entries: [
+          { comparisonMode: "distinct_comparison", rawFinalScoreOld: 0.88, rawFinalScoreNew: 0.9, continuityDebtDelta: -1, robustnessDeltaByCategory: { overall: 0.02 }, causalSupportCount: 2, causalHarmCount: 0, promote: true, generatedAt: "2026-04-04T10:00:00.000Z" },
+          { comparisonMode: "distinct_comparison", rawFinalScoreOld: 0.9, rawFinalScoreNew: 0.92, continuityDebtDelta: -1, robustnessDeltaByCategory: { overall: 0.01 }, causalSupportCount: 1, causalHarmCount: 0, promote: true, generatedAt: "2026-04-04T11:00:00.000Z" },
+          { comparisonMode: "distinct_comparison", rawFinalScoreOld: 0.92, rawFinalScoreNew: 0.95, continuityDebtDelta: 0, robustnessDeltaByCategory: { overall: 0.01 }, causalSupportCount: 1, causalHarmCount: 0, promote: false, generatedAt: "2026-04-04T12:00:00.000Z" },
+        ],
+      },
+    },
+    continuityArtifacts: {
+      artifact: {
+        blockedSubtasks: 0,
+        integrationPendingCount: 0,
+      },
+    },
+    continuityDebt: {
+      summary: {
+        openDebtCount: 0,
+      },
+    },
+    autonomousAgenda: {
+      entries: [
+        { remediationEffect: "verified_positive", lastUpdatedAt: "2026-04-04T12:30:00.000Z" },
+      ],
+    },
+    causalTrace: {
+      traces: [
+        { usageStage: "likely_contributory" },
+        { usageStage: "likely_contributory" },
+      ],
+    },
+    openAIBlogLane: { canonicalCounts: { observationCount: 4, causalUsageCount: 3 } },
+    anthropicLane: { advisory: { advisoryReferenceCount: 2 } },
+    workspaceProgressPublic: { nextRecommendedActions: ["Keep verifying improvements."] },
+    bottlenecks: { items: [] },
+  });
+  assert.strictEqual(syntheticGoal.goalStatus, "OPERATIONALLY_COMPLETE", "synthetic fully-satisfied criteria must yield OPERATIONALLY_COMPLETE");
+  assert(Array.isArray(syntheticGoal.whyNotYet) && syntheticGoal.whyNotYet.length === 0, "synthetic operational completion case must have no unmet criteria");
 
   console.log("governed_memory_public_export_test: ok");
 }

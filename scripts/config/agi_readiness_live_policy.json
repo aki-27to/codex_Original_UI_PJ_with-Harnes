@@ -51,6 +51,23 @@
     "pressureMarginThreshold": 0.03,
     "explainWithMargins": true
   },
+  "stableCoverage": {
+    "windowSize": 3
+  },
+  "operationalCompletionCriteria": {
+    "stableCoverageBreadth": 1,
+    "robustThreshold": 0.93,
+    "horizonThreshold": 0.97,
+    "rawFinalScoreThreshold": 0.9,
+    "maxOpenDebtCount": 0,
+    "minimumVerifiedPositiveRemediations": 1,
+    "minimumDistinctEntries": 3,
+    "distinctWindowSize": 5,
+    "nonWorseningTolerance": 0.000001,
+    "maxHarmfulCausalRatio": 0.34,
+    "missingContextThreshold": 0.8,
+    "browserFlakinessThreshold": 0.75
+  },
   "robustnessCategories": [
     {
       "id": "ambiguous_instruction",

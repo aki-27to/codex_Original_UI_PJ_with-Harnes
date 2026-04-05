@@ -1,14 +1,14 @@
 {
   "schema": "agi-readiness-distinct-improvement-lineage.v1",
-  "generatedAt": "2026-04-05T02:47:47.279Z",
+  "generatedAt": "2026-04-05T03:42:54.559Z",
   "workspaceId": "5c839dfeef8b555f",
   "entries": [
     {
       "lineageId": "lineage_001",
-      "incumbentIdentifier": "eval-1775259039826-065bee03",
-      "challengerIdentifier": "eval-1775259042576-a40bc3f6",
-      "incumbentVersion": "lineage_ac63694ae1",
-      "challengerVersion": "lineage_d13fd4d02e",
+      "incumbentIdentifier": "<eval-ref>",
+      "challengerIdentifier": "<eval-ref>",
+      "incumbentVersion": "<lineage-ref>",
+      "challengerVersion": "<lineage-ref>",
       "comparisonMode": "distinct_comparison",
       "distinctComparison": true,
       "promote": true,
@@ -27,18 +27,30 @@
       },
       "observationBackedRationale": "challenger improved score without worsening catastrophic risk",
       "changedFactors": [
-        "run eval-1775259042576-a40bc3f6",
+        "run <eval-ref>",
         "generated 2026-04-03T23:30:47.224Z"
       ],
       "generatedAt": "2026-04-03T23:30:47.224Z",
-      "improvementEvidenceClass": "distinct_observed_improvement"
+      "improvementEvidenceClass": "distinct_observed_improvement",
+      "targetBottlenecksClosed": [
+        "R_robust",
+        "H_horizon"
+      ],
+      "harmfulLessonsRevoked": 0,
+      "positiveLessonsPromoted": 1,
+      "continuityDebtDelta": null,
+      "robustnessDeltaByCategory": {
+        "overall": 0.12
+      },
+      "causalSupportCount": 1,
+      "causalHarmCount": 0
     },
     {
       "lineageId": "lineage_002",
-      "incumbentIdentifier": "eval-1775259042576-a40bc3f6",
-      "challengerIdentifier": "eval-1775264773178-984eb597",
-      "incumbentVersion": "lineage_d13fd4d02e",
-      "challengerVersion": "lineage_6336ce2fc2",
+      "incumbentIdentifier": "<eval-ref>",
+      "challengerIdentifier": "<eval-ref>",
+      "incumbentVersion": "<lineage-ref>",
+      "challengerVersion": "<lineage-ref>",
       "comparisonMode": "distinct_comparison",
       "distinctComparison": true,
       "promote": false,
@@ -59,18 +71,27 @@
       },
       "observationBackedRationale": "challenger regressed or increased catastrophic risk",
       "changedFactors": [
-        "run eval-1775264773178-984eb597",
+        "run <eval-ref>",
         "generated 2026-04-04T01:06:15.830Z"
       ],
       "generatedAt": "2026-04-04T01:06:15.830Z",
-      "improvementEvidenceClass": "distinct_observed_regression"
+      "improvementEvidenceClass": "distinct_observed_regression",
+      "targetBottlenecksClosed": [],
+      "harmfulLessonsRevoked": 1,
+      "positiveLessonsPromoted": 0,
+      "continuityDebtDelta": null,
+      "robustnessDeltaByCategory": {
+        "overall": -0.12
+      },
+      "causalSupportCount": 0,
+      "causalHarmCount": 1
     },
     {
       "lineageId": "lineage_003",
-      "incumbentIdentifier": "eval-1775264773178-984eb597",
-      "challengerIdentifier": "eval-1775264775837-7aefad2e",
-      "incumbentVersion": "lineage_6336ce2fc2",
-      "challengerVersion": "lineage_d51abf1827",
+      "incumbentIdentifier": "<eval-ref>",
+      "challengerIdentifier": "<eval-ref>",
+      "incumbentVersion": "<lineage-ref>",
+      "challengerVersion": "<lineage-ref>",
       "comparisonMode": "distinct_comparison",
       "distinctComparison": true,
       "promote": true,
@@ -89,18 +110,30 @@
       },
       "observationBackedRationale": "challenger improved score without worsening catastrophic risk",
       "changedFactors": [
-        "run eval-1775264775837-7aefad2e",
+        "run <eval-ref>",
         "generated 2026-04-04T01:06:18.418Z"
       ],
       "generatedAt": "2026-04-04T01:06:18.418Z",
-      "improvementEvidenceClass": "distinct_observed_improvement"
+      "improvementEvidenceClass": "distinct_observed_improvement",
+      "targetBottlenecksClosed": [
+        "R_robust",
+        "H_horizon"
+      ],
+      "harmfulLessonsRevoked": 0,
+      "positiveLessonsPromoted": 1,
+      "continuityDebtDelta": null,
+      "robustnessDeltaByCategory": {
+        "overall": 0.12
+      },
+      "causalSupportCount": 1,
+      "causalHarmCount": 0
     },
     {
       "lineageId": "lineage_004",
-      "incumbentIdentifier": "eval-1775264775837-7aefad2e",
-      "challengerIdentifier": "eval-1775264798402-1d7900e5",
-      "incumbentVersion": "lineage_d51abf1827",
-      "challengerVersion": "lineage_daf465b5e3",
+      "incumbentIdentifier": "<eval-ref>",
+      "challengerIdentifier": "<eval-ref>",
+      "incumbentVersion": "<lineage-ref>",
+      "challengerVersion": "<lineage-ref>",
       "comparisonMode": "distinct_comparison",
       "distinctComparison": true,
       "promote": false,
@@ -121,18 +154,27 @@
       },
       "observationBackedRationale": "challenger regressed or increased catastrophic risk",
       "changedFactors": [
-        "run eval-1775264798402-1d7900e5",
+        "run <eval-ref>",
         "generated 2026-04-04T01:06:41.041Z"
       ],
       "generatedAt": "2026-04-04T01:06:41.041Z",
-      "improvementEvidenceClass": "distinct_observed_regression"
+      "improvementEvidenceClass": "distinct_observed_regression",
+      "targetBottlenecksClosed": [],
+      "harmfulLessonsRevoked": 1,
+      "positiveLessonsPromoted": 0,
+      "continuityDebtDelta": null,
+      "robustnessDeltaByCategory": {
+        "overall": -0.12
+      },
+      "causalSupportCount": 0,
+      "causalHarmCount": 1
     },
     {
       "lineageId": "lineage_005",
-      "incumbentIdentifier": "eval-1775264798402-1d7900e5",
-      "challengerIdentifier": "eval-1775264801048-611d5a70",
-      "incumbentVersion": "lineage_daf465b5e3",
-      "challengerVersion": "lineage_d219300a88",
+      "incumbentIdentifier": "<eval-ref>",
+      "challengerIdentifier": "<eval-ref>",
+      "incumbentVersion": "<lineage-ref>",
+      "challengerVersion": "<lineage-ref>",
       "comparisonMode": "distinct_comparison",
       "distinctComparison": true,
       "promote": true,
@@ -151,18 +193,30 @@
       },
       "observationBackedRationale": "challenger improved score without worsening catastrophic risk",
       "changedFactors": [
-        "run eval-1775264801048-611d5a70",
+        "run <eval-ref>",
         "generated 2026-04-04T01:06:43.677Z"
       ],
       "generatedAt": "2026-04-04T01:06:43.677Z",
-      "improvementEvidenceClass": "distinct_observed_improvement"
+      "improvementEvidenceClass": "distinct_observed_improvement",
+      "targetBottlenecksClosed": [
+        "R_robust",
+        "H_horizon"
+      ],
+      "harmfulLessonsRevoked": 0,
+      "positiveLessonsPromoted": 1,
+      "continuityDebtDelta": null,
+      "robustnessDeltaByCategory": {
+        "overall": 0.12
+      },
+      "causalSupportCount": 1,
+      "causalHarmCount": 0
     },
     {
       "lineageId": "lineage_006",
-      "incumbentIdentifier": "eval-1775264801048-611d5a70",
-      "challengerIdentifier": "eval-1775264894494-c84a459e",
-      "incumbentVersion": "lineage_d219300a88",
-      "challengerVersion": "lineage_4489ff94ff",
+      "incumbentIdentifier": "<eval-ref>",
+      "challengerIdentifier": "<eval-ref>",
+      "incumbentVersion": "<lineage-ref>",
+      "challengerVersion": "<lineage-ref>",
       "comparisonMode": "distinct_comparison",
       "distinctComparison": true,
       "promote": false,
@@ -183,18 +237,27 @@
       },
       "observationBackedRationale": "challenger regressed or increased catastrophic risk",
       "changedFactors": [
-        "run eval-1775264894494-c84a459e",
+        "run <eval-ref>",
         "generated 2026-04-04T01:08:17.003Z"
       ],
       "generatedAt": "2026-04-04T01:08:17.003Z",
-      "improvementEvidenceClass": "distinct_observed_regression"
+      "improvementEvidenceClass": "distinct_observed_regression",
+      "targetBottlenecksClosed": [],
+      "harmfulLessonsRevoked": 1,
+      "positiveLessonsPromoted": 0,
+      "continuityDebtDelta": null,
+      "robustnessDeltaByCategory": {
+        "overall": -0.12
+      },
+      "causalSupportCount": 0,
+      "causalHarmCount": 1
     },
     {
       "lineageId": "lineage_007",
-      "incumbentIdentifier": "eval-1775264894494-c84a459e",
-      "challengerIdentifier": "eval-1775264897008-443e2a6a",
-      "incumbentVersion": "lineage_4489ff94ff",
-      "challengerVersion": "lineage_4883260209",
+      "incumbentIdentifier": "<eval-ref>",
+      "challengerIdentifier": "<eval-ref>",
+      "incumbentVersion": "<lineage-ref>",
+      "challengerVersion": "<lineage-ref>",
       "comparisonMode": "distinct_comparison",
       "distinctComparison": true,
       "promote": true,
@@ -213,11 +276,23 @@
       },
       "observationBackedRationale": "challenger improved score without worsening catastrophic risk",
       "changedFactors": [
-        "run eval-1775264897008-443e2a6a",
+        "run <eval-ref>",
         "generated 2026-04-04T01:08:19.554Z"
       ],
       "generatedAt": "2026-04-04T01:08:19.554Z",
-      "improvementEvidenceClass": "distinct_observed_improvement"
+      "improvementEvidenceClass": "distinct_observed_improvement",
+      "targetBottlenecksClosed": [
+        "R_robust",
+        "H_horizon"
+      ],
+      "harmfulLessonsRevoked": 0,
+      "positiveLessonsPromoted": 1,
+      "continuityDebtDelta": null,
+      "robustnessDeltaByCategory": {
+        "overall": 0.12
+      },
+      "causalSupportCount": 1,
+      "causalHarmCount": 0
     }
   ]
 }

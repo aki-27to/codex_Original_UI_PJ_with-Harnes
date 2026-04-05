@@ -1,6 +1,6 @@
 {
   "schema": "governed-memory-public-export-manifest.v1",
-  "generatedAt": "2026-04-05T02:47:47.682Z",
+  "generatedAt": "2026-04-05T03:42:54.893Z",
   "workspaceId": "5c839dfeef8b555f",
   "sourceMode": "redacted_live_export",
   "canonicalReuseVerified": true,
@@ -33,6 +33,8 @@
     "distinctImprovementLineageMd": "output/agi_readiness/distinct_improvement_lineage.md",
     "robustnessRemediationStatusJson": "output/agi_readiness/robustness_remediation_status.json",
     "robustnessRemediationTrendJson": "output/agi_readiness/robustness_remediation_trend.json",
+    "goalCompletionStatusJson": "output/agi_readiness/goal_completion_status.json",
+    "goalCompletionStatusMd": "output/agi_readiness/goal_completion_status.md",
     "continuityPublicJson": "output/continuity_public/latest_continuity.json",
     "continuityPublicMd": "output/continuity_public/latest_continuity.md",
     "continuityDebtJson": "output/continuity_public/continuity_debt.json",

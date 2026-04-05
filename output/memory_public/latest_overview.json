@@ -1,6 +1,6 @@
 {
   "schema": "governed-memory-public-overview.v1",
-  "generatedAt": "2026-04-05T02:47:47.675Z",
+  "generatedAt": "2026-04-05T03:42:54.888Z",
   "workspaceId": "5c839dfeef8b555f",
   "canonicalRoot": "logs/archive/raw/runtime_state/memory",
   "publicOutputRoot": "output/memory_public",
@@ -41,6 +41,9 @@
     "output/anthropic_engineering_self_improvement_state.json",
     "output/anthropic_engineering_self_improvement_gate.json"
   ],
+  "goalCompletionPath": "output/agi_readiness/goal_completion_status.json",
+  "goalStatus": "NOT_YET",
+  "goalWhyNotYetCount": 11,
   "latestPack": {
     "selectedCount": 11,
     "highConfidenceCount": 2,
@@ -63,6 +66,11 @@
     "blocked": 0,
     "passed": 0,
     "failed": 0,
-    "revoked": 0
+    "revoked": 0,
+    "verifiedPositive": 0,
+    "verifiedNeutral": 0,
+    "verifiedNegative": 0,
+    "verifiedHarmful": 0,
+    "insufficientEvidence": 0
   }
 }

@@ -34,9 +34,8 @@
 - milestone: latest turn status: completed
 - milestone: family gate: not applicable
 - blocker: operator chose to abandon the task
-- blocker: pending child integration: phase4 denied 1774995929975 executor 1774995929990
+- blocker: pending child integration: phase4 denied-<opaque id>-executor-<opaque id>
 - blocker: simulated child verifier failure
-- blocker: pending child integration: phase4 denied 1774995861796 executor 1774995861808
 - next: weakest family is R robust
 - next: robustness is currently limited by ambiguous instruction (no evidence yet)
 - next: continuity carries 26 closeout debt item(s) with severity high

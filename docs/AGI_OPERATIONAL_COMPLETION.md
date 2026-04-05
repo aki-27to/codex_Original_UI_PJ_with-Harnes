@@ -1,27 +1,107 @@
 # AGI Operational Completion
 
-この repo では「公開上 AGI を証明した」ことと、「内部運用上、AGI に近い閉ループを持つ」ことを分けて扱います。
+この文書は、この repo における「AGI を公開証明した」状態ではなく、**運用上の到達判定**を定義します。
 
-## Operational completion
-次を同時に満たす状態を、内部運用上の到達に近い状態とみなします。
+## これは何か
 
-- governed memory が canonical truth として動作している
-- bottleneck から autonomous learning agenda が生成される
-- remediation の結果が observation と causal trace に戻る
-- distinct incumbent / challenger lineage で改善履歴を持てる
-- continuity debt を closeout loop に接続できる
-- public proof が live truth と意味的に一致する
+- public claim ではなく、repo 内の live truth と public proof が十分に閉じた状態を判定するための基準です。
+- governed memory、autonomous learning、continuity closeout、readiness、causal trace をまとめて見たときに、
+  - bottleneck を検出できる
+  - remediation agenda を自律生成できる
+  - effect を evidence-backed に検証できる
+  - harmful lesson を revoke できる
+  - distinct lineage で improvement / regression を追える
+  - continuity debt を閉じられる
+  状態を「operational completion」と呼びます。
 
-## What this is not
-- 公開の AGI 証明ではありません
-- unsupported / not evaluated / no evidence を成功扱いすることではありません
+## これは何ではないか
 
-## Public proof surfaces
-- `output/memory_public/*`
-- `output/agi_readiness/*`
-- `output/continuity_public/*`
+- 公開の場で AGI を証明するものではありません。
+- unsupported / not evaluated / missing evidence を PASS 扱いするものではありません。
+- self snapshot を distinct victory と見なすものではありません。
 
-## Interpretation
-- readiness score は headline 指標です
-- capability loop の成熟は、agenda / causal trace / lineage / debt の有無で見ます
-- fail-closed 原則により、欠落した evidence は hold / block のまま残します
+## Truth source と public proof
+
+- live truth:
+  - `logs/archive/raw/runtime_state/memory/`
+  - readiness / continuity / causal trace / autonomous learning の canonical projection
+- public proof:
+  - `output/memory_public/*`
+  - `output/agi_readiness/*`
+  - `output/continuity_public/*`
+
+public proof は redacted projection であり、live truth をそのまま dump しません。
+
+## Goal completion criteria
+
+`output/agi_readiness/goal_completion_status.json` は次を判定します。
+
+- `stableCoverageBreadth = 1`
+- `R_robust >= 0.93`
+- `H_horizon >= 0.97`
+- `rawFinalScore >= 0.90`
+- `openDebtCount = 0`
+- `blockedSubtasks = 0`
+- `integrationPendingCount = 0`
+- `ambiguous_instruction.status != "no_evidence"`
+- `missing_context.score >= 0.80`
+- `browser_tool_flakiness.score >= 0.75`
+- verified positive remediation が最小件数以上
+- distinct lineage が最小件数以上で non-worsening
+- harmful causal trace 比率が閾値以下
+
+これらをすべて満たしたときだけ、`goalStatus = "OPERATIONALLY_COMPLETE"` にできます。
+1 つでも落ちていれば `goalStatus = "NOT_YET"` です。
+
+## `goal_completion_status.json` の意味
+
+最低限、次を含みます。
+
+- `goalStatus`
+- `whyNotYet`
+- `completionCriteria`
+- `currentValues`
+- `lastPositiveClosureAt`
+- `requiredNextActions`
+
+見方:
+
+- `goalStatus`
+  - 現時点の到達判定
+- `whyNotYet`
+  - どの条件がまだ足りないか
+- `currentValues`
+  - readiness / debt / remediation / causal trace の現在値
+- `requiredNextActions`
+  - 次に閉じるべき改善項目
+
+## まだ未達のときに見る場所
+
+優先的に確認する場所は次です。
+
+- `output/agi_readiness/latest_readiness.json`
+  - breadth / robustness / horizon / score
+- `output/agi_readiness/robustness_breakdown.json`
+  - robustness category ごとの弱点
+- `output/agi_readiness/autonomous_learning_status.json`
+  - agenda と remediation effect
+- `output/agi_readiness/causal_learning_trace.json`
+  - lesson / hint が runtime にどう効いたか
+- `output/agi_readiness/distinct_improvement_lineage.json`
+  - distinct improvement history
+- `output/continuity_public/continuity_debt.json`
+  - closeout されていない debt
+
+## 運用上「AGI に非常に近い」とみなす条件
+
+この repo では、次を満たしたときに「運用上、AGI に非常に近い」と判断します。
+
+- learning loop が自律的に回る
+- effect verification が fail-closed
+- harmful lesson が revoke される
+- beneficial lesson が reinforce される
+- distinct lineage が継続的 improvement を示す
+- continuity debt が閉じている
+- public proof から bottleneck / remediation / effect / debt closeout が読める
+
+ただし、これは operational completion であり、public AGI claim とは別です。

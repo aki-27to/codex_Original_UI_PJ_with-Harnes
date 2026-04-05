@@ -1,17 +1,18 @@
 {
   "schema": "governed-memory-pack-causal-trace-public.v1",
-  "generatedAt": "2026-04-05T02:47:47.672Z",
+  "generatedAt": "2026-04-05T03:42:54.885Z",
   "workspaceId": "5c839dfeef8b555f",
-  "packId": "4fd767c7d29987b3e775",
+  "packId": "1dbeb16f9fe642b5dd1f",
   "traces": [
     {
-      "memoryId": "mem_9f11aebf87",
-      "publicRef": "mem_9f11aebf87",
+      "memoryId": "mem_0fec65243c",
+      "publicRef": "mem_0fec65243c",
       "memoryType": "improvement_candidate",
       "sourceTier": "external_primary",
+      "promotionState": "candidate",
       "usageMode": "remediation_hint",
       "selectedInLatestPack": false,
-      "selectedInPackAt": "2026-04-05T02:47:46.016Z",
+      "selectedInPackAt": "2026-04-05T03:42:53.495Z",
       "usedByTaskRefs": [
         "turn_816303077a",
         "turn_ae658d538b",
@@ -34,16 +35,17 @@
         "verifierOutcome": "FAIL"
       },
       "summary": "Building frontend UIs with Codex and Figma | OpenAI Developers",
-      "lastObservedAt": "2026-04-05T02:47:46.183Z"
+      "lastObservedAt": "2026-04-05T03:42:53.621Z"
     },
     {
       "memoryId": "mem_ec957e3de3",
       "publicRef": "mem_ec957e3de3",
       "memoryType": "semantic_lesson",
       "sourceTier": "external_primary",
+      "promotionState": "promoted",
       "usageMode": "explicit_prompt_pack",
       "selectedInLatestPack": false,
-      "selectedInPackAt": "2026-04-05T02:47:46.016Z",
+      "selectedInPackAt": "2026-04-05T03:42:53.495Z",
       "usedByTaskRefs": [
         "turn_816303077a",
         "turn_ae658d538b",
@@ -73,9 +75,10 @@
       "publicRef": "mem_f38921b6c8",
       "memoryType": "semantic_lesson",
       "sourceTier": "external_primary",
+      "promotionState": "promoted",
       "usageMode": "explicit_prompt_pack",
       "selectedInLatestPack": false,
-      "selectedInPackAt": "2026-04-05T02:47:46.016Z",
+      "selectedInPackAt": "2026-04-05T03:42:53.495Z",
       "usedByTaskRefs": [
         "turn_816303077a",
         "turn_ae658d538b",
@@ -105,9 +108,10 @@
       "publicRef": "mem_eb390615f9",
       "memoryType": "semantic_lesson",
       "sourceTier": "external_primary",
+      "promotionState": "promoted",
       "usageMode": "explicit_prompt_pack",
       "selectedInLatestPack": false,
-      "selectedInPackAt": "2026-04-05T02:47:46.016Z",
+      "selectedInPackAt": "2026-04-05T03:42:53.495Z",
       "usedByTaskRefs": [
         "turn_816303077a",
         "turn_ae658d538b",
@@ -137,9 +141,10 @@
       "publicRef": "mem_d0800f01f8",
       "memoryType": "semantic_lesson",
       "sourceTier": "external_primary",
+      "promotionState": "promoted",
       "usageMode": "explicit_prompt_pack",
       "selectedInLatestPack": false,
-      "selectedInPackAt": "2026-04-05T02:47:46.016Z",
+      "selectedInPackAt": "2026-04-05T03:42:53.495Z",
       "usedByTaskRefs": [
         "turn_816303077a",
         "turn_ae658d538b",
@@ -169,9 +174,10 @@
       "publicRef": "mem_46f23704e6",
       "memoryType": "runtime_hint",
       "sourceTier": "external_primary",
+      "promotionState": "promoted",
       "usageMode": "explicit_prompt_pack",
       "selectedInLatestPack": false,
-      "selectedInPackAt": "2026-04-05T02:47:46.016Z",
+      "selectedInPackAt": "2026-04-05T03:42:53.495Z",
       "usedByTaskRefs": [
         "turn_816303077a",
         "turn_ae658d538b",
@@ -201,9 +207,10 @@
       "publicRef": "mem_5e926a0571",
       "memoryType": "runtime_hint",
       "sourceTier": "external_primary",
+      "promotionState": "promoted",
       "usageMode": "explicit_prompt_pack",
       "selectedInLatestPack": false,
-      "selectedInPackAt": "2026-04-05T02:47:46.016Z",
+      "selectedInPackAt": "2026-04-05T03:42:53.495Z",
       "usedByTaskRefs": [
         "turn_816303077a",
         "turn_ae658d538b",
@@ -233,9 +240,10 @@
       "publicRef": "mem_b439f61eb1",
       "memoryType": "runtime_hint",
       "sourceTier": "external_primary",
+      "promotionState": "promoted",
       "usageMode": "explicit_prompt_pack",
       "selectedInLatestPack": false,
-      "selectedInPackAt": "2026-04-05T02:47:46.016Z",
+      "selectedInPackAt": "2026-04-05T03:42:53.495Z",
       "usedByTaskRefs": [
         "turn_816303077a",
         "turn_ae658d538b",
@@ -265,9 +273,10 @@
       "publicRef": "mem_8896adaa48",
       "memoryType": "runtime_hint",
       "sourceTier": "external_primary",
+      "promotionState": "promoted",
       "usageMode": "explicit_prompt_pack",
       "selectedInLatestPack": false,
-      "selectedInPackAt": "2026-04-05T02:47:46.016Z",
+      "selectedInPackAt": "2026-04-05T03:42:53.495Z",
       "usedByTaskRefs": [
         "turn_816303077a",
         "turn_ae658d538b",
@@ -297,9 +306,10 @@
       "publicRef": "mem_847a1aba42",
       "memoryType": "runtime_hint",
       "sourceTier": "external_primary",
+      "promotionState": "promoted",
       "usageMode": "explicit_prompt_pack",
       "selectedInLatestPack": false,
-      "selectedInPackAt": "2026-04-05T02:47:46.016Z",
+      "selectedInPackAt": "2026-04-05T03:42:53.495Z",
       "usedByTaskRefs": [
         "turn_816303077a",
         "turn_ae658d538b",
@@ -329,9 +339,10 @@
       "publicRef": "mem_106d75d257",
       "memoryType": "runtime_hint",
       "sourceTier": "external_primary",
+      "promotionState": "promoted",
       "usageMode": "explicit_prompt_pack",
       "selectedInLatestPack": false,
-      "selectedInPackAt": "2026-04-05T02:47:46.016Z",
+      "selectedInPackAt": "2026-04-05T03:42:53.495Z",
       "usedByTaskRefs": [
         "turn_816303077a",
         "turn_ae658d538b",
@@ -361,9 +372,10 @@
       "publicRef": "mem_1ef523dba6",
       "memoryType": "semantic_lesson",
       "sourceTier": "external_secondary",
+      "promotionState": "shadow",
       "usageMode": "advisory_reference",
       "selectedInLatestPack": false,
-      "selectedInPackAt": "2026-04-05T02:47:46.016Z",
+      "selectedInPackAt": "2026-04-05T03:42:53.495Z",
       "usedByTaskRefs": [
         "turn_816303077a",
         "turn_ae658d538b",
@@ -371,8 +383,8 @@
         "turn_903381175d",
         "turn_db7fb38482",
         "turn_17c15f8886",
-        "task_fa3a39cabb",
-        "task_7c65f9b94c"
+        "<task-ref>",
+        "<task-ref>"
       ],
       "taskFamilies": [
         "default"

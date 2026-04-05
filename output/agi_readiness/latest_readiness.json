@@ -1,6 +1,6 @@
 {
   "schema": "agi-readiness-live-summary.v1",
-  "generatedAt": "2026-04-05T02:47:47.279Z",
+  "generatedAt": "2026-04-05T03:42:54.560Z",
   "workspaceId": "5c839dfeef8b555f",
   "latestRunId": "eval-1775264897008-443e2a6a",
   "profile": "agi_v1",
@@ -286,5 +286,6 @@
   "causalLearningTracePath": "output/agi_readiness/causal_learning_trace.json",
   "distinctImprovementLineagePath": "output/agi_readiness/distinct_improvement_lineage.json",
   "continuityDebtPath": "output/continuity_public/continuity_debt.json",
-  "robustnessRemediationStatusPath": "output/agi_readiness/robustness_remediation_status.json"
+  "robustnessRemediationStatusPath": "output/agi_readiness/robustness_remediation_status.json",
+  "goalCompletionStatusPath": "output/agi_readiness/goal_completion_status.json"
 }

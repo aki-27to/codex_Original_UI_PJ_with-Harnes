@@ -1,6 +1,6 @@
 {
   "schema": "continuity-public-summary.v1",
-  "generatedAt": "2026-04-05T02:47:47.669Z",
+  "generatedAt": "2026-04-05T03:42:54.883Z",
   "workspaceId": "5c839dfeef8b555f",
   "activeAgentTree": {
     "schema": "bounded-agent-graph.v1",
@@ -118,12 +118,12 @@
     "completionLengthBucket": "medium",
     "closureOutcome": "completed",
     "evidenceRefs": [
-      "logs/archive/raw/runtime_state/continuity/tasks/phase4-failure-1774995929746/closeout_summary.json",
-      "logs/archive/raw/runtime_state/continuity/tasks/phase4-failure-1774995929746/verifier_state.json",
-      "logs/archive/raw/runtime_state/continuity/tasks/phase4-failure-1774995929746/integration_summary.json",
-      "logs/archive/raw/runtime_state/continuity/tasks/phase4-failure-1774995929746/task_state.json",
-      "logs/archive/raw/runtime_state/continuity/tasks/phase4-failure-1774995929746/plan_state.json",
-      "logs/archive/raw/runtime_state/continuity/tasks/phase4-failure-1774995929746/agent_graph.json"
+      "logs/archive/raw/runtime_state/continuity/tasks/phase4-failure-<opaque-id>/closeout_summary.json",
+      "logs/archive/raw/runtime_state/continuity/tasks/phase4-failure-<opaque-id>/verifier_state.json",
+      "logs/archive/raw/runtime_state/continuity/tasks/phase4-failure-<opaque-id>/integration_summary.json",
+      "logs/archive/raw/runtime_state/continuity/tasks/phase4-failure-<opaque-id>/task_state.json",
+      "logs/archive/raw/runtime_state/continuity/tasks/phase4-failure-<opaque-id>/plan_state.json",
+      "logs/archive/raw/runtime_state/continuity/tasks/phase4-failure-<opaque-id>/agent_graph.json"
     ]
   },
   "blockedReasonClasses": [

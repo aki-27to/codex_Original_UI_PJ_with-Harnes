@@ -130,6 +130,11 @@ function normalizePublicText(value, workspaceRoot) {
   text = text
     .replace(/\bturn[-:][A-Za-z0-9_-]+\b/g, "<turn-ref>")
     .replace(/\bthread[-:][A-Za-z0-9_-]+\b/g, "<thread-ref>")
+    .replace(/\btask[_-][A-Za-z0-9_-]{6,}\b/ig, "<task-ref>")
+    .replace(/\beval[-_][A-Za-z0-9_-]{6,}\b/ig, "<eval-ref>")
+    .replace(/\bagenda[_-][A-Za-z0-9_-]{6,}\b/ig, "<agenda-ref>")
+    .replace(/\blineage[_-][A-Za-z0-9_-]{6,}\b/ig, "<lineage-ref>")
+    .replace(/\b\d{10,16}\b/g, "<opaque-id>")
     .replace(/\b[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}\b/ig, "<opaque-id>");
   return text;
 }
@@ -404,6 +409,8 @@ function getMemoryPaths(workspaceRoot = workspaceRootDefault) {
       distinctImprovementLineageMd: path.join(agiReadinessRoot, "distinct_improvement_lineage.md"),
       robustnessRemediationStatusJson: path.join(agiReadinessRoot, "robustness_remediation_status.json"),
       robustnessRemediationTrendJson: path.join(agiReadinessRoot, "robustness_remediation_trend.json"),
+      goalCompletionStatusJson: path.join(agiReadinessRoot, "goal_completion_status.json"),
+      goalCompletionStatusMd: path.join(agiReadinessRoot, "goal_completion_status.md"),
     },
     continuityPublic: {
       root: continuityPublicRoot,
@@ -2662,10 +2669,11 @@ function createRemediationAgendaEntry({
     if (safeNumber(weakRobustness.score, 0) >= safeNumber(robustnessPolicy && robustnessPolicy.targetScore, 0.8)) {
       status = "passed";
       result = "improved";
-      remediationEffect = "verified";
+      remediationEffect = "verified_positive";
     } else if (safeString(weakRobustness.status, 40) === "no_evidence") {
       status = "running";
       result = "measurement_required";
+      remediationEffect = "insufficient_evidence";
     } else {
       status = "running";
       result = "improving";
@@ -2677,7 +2685,7 @@ function createRemediationAgendaEntry({
     if (continuityItems.length === 0) {
       status = "passed";
       result = "cleared";
-      remediationEffect = "verified";
+      remediationEffect = "verified_positive";
     } else {
       status = "running";
       result = "debt_open";
@@ -2685,29 +2693,31 @@ function createRemediationAgendaEntry({
   } else if (classification === "scope/coverage bottleneck" && /continuity (?:has|carries)/i.test(summary)) {
     status = continuityItems.length > 0 ? "running" : "passed";
     result = continuityItems.length > 0 ? "closeout_required" : "cleared";
-    remediationEffect = continuityItems.length > 0 ? "pending" : "verified";
+    remediationEffect = continuityItems.length > 0 ? "pending" : "verified_positive";
   } else if (classification === "observation bottleneck") {
     const observationCount = clampInt(openAIBlogLane && openAIBlogLane.canonicalCounts && openAIBlogLane.canonicalCounts.observationCount, 0, 999999, 0);
     if (observationCount > 0) {
       status = "passed";
       result = "observed";
-      remediationEffect = "verified";
+      remediationEffect = "verified_positive";
     } else {
       status = "blocked";
       result = "waiting_for_runtime_use";
       blockedReason = "missing_runtime_observations";
+      remediationEffect = "insufficient_evidence";
     }
   } else if (classification === "governance bottleneck" && /secondary learning lane/i.test(summary)) {
     status = clampInt(anthropicLane && anthropicLane.canonicalCounts && anthropicLane.canonicalCounts.advisoryReferenceCount, 0, 999999, 0) > 0
       ? "running"
       : "proposal_only";
     result = status === "running" ? "advisory_evidence_present" : "advisory_only";
+    remediationEffect = status === "running" ? "verified_neutral" : "insufficient_evidence";
   } else if (classification === "scope/coverage bottleneck" && /breadth coverage incomplete/i.test(summary)) {
     const failedFamilies = uniqueStrings(readinessArtifacts && readinessArtifacts.readiness && readinessArtifacts.readiness.failedFamilies, 16, 80);
     if (failedFamilies.length === 0) {
       status = "passed";
       result = "coverage_restored";
-      remediationEffect = "verified";
+      remediationEffect = "verified_positive";
     } else {
       status = "running";
       result = "coverage_gap_open";
@@ -2717,15 +2727,18 @@ function createRemediationAgendaEntry({
       ? "running"
       : "passed";
     result = status === "passed" ? "pressure_cleared" : "margin_pressure";
+    remediationEffect = status === "passed" ? "verified_neutral" : "pending";
   } else {
     status = "proposal_only";
     result = "manual_review_recommended";
     blockedReason = "no_safe_autonomous_template";
+    remediationEffect = "insufficient_evidence";
   }
   if (attemptCount >= retryBudget && !["passed", "revoked"].includes(status)) {
     status = "blocked";
     result = "retry_budget_exhausted";
     blockedReason = blockedReason || "retry_budget_exhausted";
+    remediationEffect = "verified_negative";
   }
   return {
     agendaId,
@@ -2814,6 +2827,11 @@ function buildAutonomousLearningAgenda({
     passed: entries.filter((entry) => entry.status === "passed").length,
     failed: entries.filter((entry) => entry.status === "failed").length,
     revoked: entries.filter((entry) => entry.status === "revoked").length,
+    verifiedPositive: entries.filter((entry) => safeString(entry && entry.remediationEffect, 80) === "verified_positive").length,
+    verifiedNeutral: entries.filter((entry) => safeString(entry && entry.remediationEffect, 80) === "verified_neutral").length,
+    verifiedNegative: entries.filter((entry) => safeString(entry && entry.remediationEffect, 80) === "verified_negative").length,
+    verifiedHarmful: entries.filter((entry) => safeString(entry && entry.remediationEffect, 80) === "verified_harmful").length,
+    insufficientEvidence: entries.filter((entry) => safeString(entry && entry.remediationEffect, 80) === "insufficient_evidence").length,
   };
   return {
     schema: "governed-autonomous-learning-agenda.v1",
@@ -2839,6 +2857,13 @@ function renderAutonomousLearningMarkdown(payload) {
     lines.push(`- ${safeString(entry.targetCategory || entry.targetFamily || entry.bottleneckClass, 120)}: ${safeString(entry.status, 40)} / ${safeString(entry.publicSummary, 220)}`);
   }
   return `${lines.join("\n")}\n`;
+}
+
+function safeRatio(numerator, denominator, fallback = null) {
+  const num = safeNumber(numerator, NaN);
+  const den = safeNumber(denominator, NaN);
+  if (!Number.isFinite(num) || !Number.isFinite(den) || den <= 0) return fallback;
+  return Number((num / den).toFixed(6));
 }
 
 function toUsageStage({ selected = false, observation = null, sourceTier = "" }) {
@@ -2900,6 +2925,7 @@ function buildCausalLearningTrace({ workspaceRoot, items, pack, retrievalPacks =
       publicRef: maskOpaqueId(memoryId, "mem"),
       memoryType: safeString(item && item.type, 80) || "unknown",
       sourceTier: safeString(item && item.sourceTier, 40) || "unknown",
+      promotionState: safeString(item && item.status, 40) || "captured",
       usageMode,
       selectedInLatestPack: selectedIds.has(memoryId),
       selectedInPackAt: normalizePublicTimestamp(selectedAtByMemoryId.get(memoryId) || pack && (pack.generatedAt || pack.compiledAt)),
@@ -2921,9 +2947,17 @@ function buildCausalLearningTrace({ workspaceRoot, items, pack, retrievalPacks =
   }
   traces.sort((left, right) => parseTimestamp(right && right.lastObservedAt) - parseTimestamp(left && left.lastObservedAt));
   const effectiveness = traces.map((entry) => ({
+    memoryId: entry.memoryId,
     publicRef: entry.publicRef,
     memoryType: entry.memoryType,
     sourceTier: entry.sourceTier,
+    promotionState: entry.promotionState,
+    positiveCount: clampInt(entry && entry.outcomeDelta && entry.outcomeDelta.success, 0, 999999, 0),
+    neutralCount: clampInt(entry && entry.outcomeDelta && entry.outcomeDelta.neutral, 0, 999999, 0),
+    harmfulCount: clampInt(entry && entry.outcomeDelta && entry.outcomeDelta.failure, 0, 999999, 0),
+    lastUsedAt: normalizePublicTimestamp(entry && entry.lastObservedAt),
+    lastEffect: safeString(entry && entry.usageStage, 80) || "selected_only",
+    appliesToFamily: uniqueStrings(entry && entry.taskFamilies, 6, 80),
     selectedInLatestPack: entry.selectedInLatestPack,
     usageStage: entry.usageStage,
     likelyContributory: entry.usageStage === "likely_contributory",
@@ -3020,20 +3054,48 @@ function buildContinuityDebtProjection({ workspaceRoot, continuityBridge, agenda
     const blockerReason = coerceSummaryText(task && task.blockers, workspaceRoot, safeString(task && task.title, 160) || "continuity debt");
     const blockerType = classifyContinuityDebtType({ workspaceRoot, task, blocker: blockerReason });
     const remediation = agendaEntries.find((entry) => safeString(entry && entry.targetFamily, 80) === safeString(task && task.normalizedFamilyId, 80) || safeString(entry && entry.targetCategory, 80) === blockerType);
+    const normalizedReason = normalizePublicText(blockerReason, workspaceRoot) || "governed continuity closeout required";
+    const openBlocker = rootIntegrated ? "integrated_with_open_debt" : "not_yet_integrated";
+    const closeoutAction = blockerType === "verifier_failed"
+      ? "rerun verifier after governed remediation evidence is captured"
+      : blockerType === "missing_evidence"
+        ? "capture missing evidence and update closeout packet"
+        : blockerType === "dependency_unresolved"
+          ? "resolve dependency and retry integration"
+          : blockerType === "operator_abandoned"
+            ? "resume owner handoff and restage closeout"
+            : "resolve policy blocker before attempting release";
+    const severity = blockerType === "verifier_failed" || blockerType === "missing_evidence"
+      ? "high"
+      : blockerType === "dependency_unresolved"
+        ? "medium"
+        : "low";
+    const linkedVerifierRef = uniqueStrings(task && task.evidenceRefs, 8, 220)
+      .map((entry) => normalizePublicPath(workspaceRoot, entry))
+      .find((entry) => /verifier_state\.json$/i.test(entry))
+      || normalizePublicReference(`${safeString(task && task.taskId, 120)}:verifier`, "ref");
     items.push({
       debtId: stablePublicRef(`${safeString(task && task.taskId, 120)}:${blockerType}:${blockerReason}`, "debt"),
+      debtClass: blockerType,
       subtaskRef: stablePublicRef(safeString(task && task.taskId, 120), "task"),
       rootTaskRef: stablePublicRef(safeString(task && task.rootTaskId, 120), "task"),
       role: safeString(task && task.role, 80) || "default",
       blockerType,
-      blockerReason,
+      blockerReason: normalizedReason,
+      severity,
+      originTurnRef: normalizePublicReference(`${safeString(task && task.taskId, 120)}:origin`, "turn"),
       requiredEvidence: uniqueStrings(task && task.evidenceRefs, 6, 220).map((entry) => normalizePublicPath(workspaceRoot, entry)),
       nextRecoveryStep: coerceSummaryText(task && task.nextRecommendedActions, workspaceRoot, "capture governed recovery evidence"),
+      requiredCloseoutAction: closeoutAction,
       status: rootIntegrated ? "open_debt" : "active_blocker",
       retryable: retryable.has(blockerType),
+      autoCloseEligible: retryable.has(blockerType),
       nextOwner: safeString(task && task.role, 80) || "default",
       remediationLinkedTaskId: safeString(remediation && remediation.agendaId, 120),
       remediationLinkedTaskRef: safeString(remediation && remediation.agendaId, 120) ? stablePublicRef(remediation.agendaId, "agenda") : "",
+      linkedVerifierRef,
+      closeoutBlockedReason: openBlocker,
+      publicSummary: `${humanizeCompactIdentifier(safeString(task && task.role, 80) || "owner")} must ${closeoutAction}`,
       updatedAt: normalizePublicTimestamp(task && task.updatedAt),
     });
   }
@@ -3076,6 +3138,8 @@ function buildDistinctImprovementLineage({ workspaceRoot, bundles = [] }) {
     const challengerVersion = stablePublicRef(`${safeString(challenger.runId, 120)}:${safeString(challenger.generatedAt, 80)}`, "lineage");
     const scoreDelta = Number((safeNumber(challenger.rawFinalScore, 0) - safeNumber(incumbent.rawFinalScore, 0)).toFixed(6));
     const riskDelta = Number((safeNumber(challenger.catastrophicRisk, 0) - safeNumber(incumbent.catastrophicRisk, 0)).toFixed(6));
+    const robustDelta = Number((safeNumber(challenger.robustScore, 0) - safeNumber(incumbent.robustScore, 0)).toFixed(6));
+    const horizonDelta = Number((safeNumber(challenger.horizonScore, 0) - safeNumber(incumbent.horizonScore, 0)).toFixed(6));
     const improved = scoreDelta >= safeNumber(policy && policy.improvementThreshold, 0.01) && riskDelta <= safeNumber(policy && policy.riskRegressionThreshold, 0.005);
     const regressed = scoreDelta < 0 || riskDelta > safeNumber(policy && policy.riskRegressionThreshold, 0.005);
     const blockedReasons = [];
@@ -3113,6 +3177,18 @@ function buildDistinctImprovementLineage({ workspaceRoot, bundles = [] }) {
       changedFactors: uniqueStrings([`run ${safeString(challenger.runId, 120)}`, `generated ${safeString(challenger.generatedAt, 80)}`], 4, 120),
       generatedAt: safeString(challenger.generatedAt, 80),
       improvementEvidenceClass: improved ? "distinct_observed_improvement" : regressed ? "distinct_observed_regression" : "distinct_hold",
+      targetBottlenecksClosed: uniqueStrings([
+        robustDelta > 0 ? "R_robust" : "",
+        horizonDelta > 0 ? "H_horizon" : "",
+      ], 4, 80),
+      harmfulLessonsRevoked: regressed ? 1 : 0,
+      positiveLessonsPromoted: improved ? 1 : 0,
+      continuityDebtDelta: null,
+      robustnessDeltaByCategory: {
+        overall: robustDelta,
+      },
+      causalSupportCount: improved ? 1 : 0,
+      causalHarmCount: regressed ? 1 : 0,
     });
   }
   return {
@@ -3127,6 +3203,216 @@ function renderDistinctLineageMarkdown(payload) {
   const lines = ["# Distinct Improvement Lineage", ""];
   for (const entry of (Array.isArray(payload && payload.entries) ? payload.entries : []).slice(-12).reverse()) {
     lines.push(`- ${safeString(entry.lineageId, 80)}: ${safeString(entry.improvementEvidenceClass, 120)} / promote=${entry.promote === null ? "n/a" : String(entry.promote)} / score ${safeNumber(entry.rawFinalScoreOld, 0).toFixed(6)} -> ${safeNumber(entry.rawFinalScoreNew, 0).toFixed(6)}`);
+  }
+  return `${lines.join("\n")}\n`;
+}
+
+function buildGoalCompletionStatus({
+  workspaceRoot,
+  readinessArtifacts,
+  continuityArtifacts,
+  continuityDebt,
+  autonomousAgenda,
+  causalTrace,
+  openAIBlogLane,
+  anthropicLane,
+  workspaceProgressPublic = null,
+  bottlenecks = null,
+}) {
+  const policy = loadAgiReadinessPolicy(workspaceRoot);
+  const criteria = policy && policy.operationalCompletionCriteria && typeof policy.operationalCompletionCriteria === "object"
+    ? policy.operationalCompletionCriteria
+    : {};
+  const readiness = readinessArtifacts && readinessArtifacts.readiness && typeof readinessArtifacts.readiness === "object"
+    ? readinessArtifacts.readiness
+    : {};
+  const robustness = Array.isArray(readinessArtifacts && readinessArtifacts.robustnessBreakdown && readinessArtifacts.robustnessBreakdown.categories)
+    ? readinessArtifacts.robustnessBreakdown.categories
+    : [];
+  const debtSummary = continuityDebt && continuityDebt.summary && typeof continuityDebt.summary === "object"
+    ? continuityDebt.summary
+    : {};
+  const continuity = continuityArtifacts && continuityArtifacts.artifact && typeof continuityArtifacts.artifact === "object"
+    ? continuityArtifacts.artifact
+    : {};
+  const agendaEntries = Array.isArray(autonomousAgenda && autonomousAgenda.entries) ? autonomousAgenda.entries : [];
+  const traces = Array.isArray(causalTrace && causalTrace.traces) ? causalTrace.traces : [];
+  const distinctEntries = Array.isArray(readinessArtifacts && readinessArtifacts.distinctLineage && readinessArtifacts.distinctLineage.entries)
+    ? readinessArtifacts.distinctLineage.entries.filter((entry) => safeString(entry && entry.comparisonMode, 80) === "distinct_comparison")
+    : [];
+  const windowSize = clampInt(criteria.distinctWindowSize, 1, 20, 5);
+  const recentDistinctWindow = distinctEntries.slice(-windowSize);
+  const verifiedPositiveCount = agendaEntries.filter((entry) => safeString(entry && entry.remediationEffect, 80) === "verified_positive").length;
+  const verifiedNegativeCount = agendaEntries.filter((entry) => safeString(entry && entry.remediationEffect, 80) === "verified_negative").length;
+  const verifiedHarmfulCount = agendaEntries.filter((entry) => safeString(entry && entry.remediationEffect, 80) === "verified_harmful").length;
+  const insufficientEvidenceCount = agendaEntries.filter((entry) => safeString(entry && entry.remediationEffect, 80) === "insufficient_evidence").length;
+  const likelyContributoryCount = traces.filter((entry) => safeString(entry && entry.usageStage, 80) === "likely_contributory").length;
+  const harmfulTraceCount = traces.filter((entry) => safeString(entry && entry.usageStage, 80) === "harmful_to_outcome").length;
+  const harmfulCausalRatio = safeRatio(harmfulTraceCount, likelyContributoryCount + harmfulTraceCount, likelyContributoryCount + harmfulTraceCount > 0 ? null : 1);
+  const ambiguousInstruction = robustness.find((entry) => safeString(entry && entry.categoryId, 80) === "ambiguous_instruction") || {};
+  const missingContext = robustness.find((entry) => safeString(entry && entry.categoryId, 80) === "missing_context") || {};
+  const browserFlakiness = robustness.find((entry) => safeString(entry && entry.categoryId, 80) === "browser_tool_flakiness") || {};
+  const lineageNonWorsening = recentDistinctWindow.length >= clampInt(criteria.minimumDistinctEntries, 1, 20, 3)
+    && recentDistinctWindow.every((entry) => {
+      const scoreOld = safeNumber(entry && entry.rawFinalScoreOld, NaN);
+      const scoreNew = safeNumber(entry && entry.rawFinalScoreNew, NaN);
+      const robustDelta = safeNumber(entry && entry.robustnessDeltaByCategory && entry.robustnessDeltaByCategory.overall, NaN);
+      const debtDelta = safeNumber(entry && entry.continuityDebtDelta, 0);
+      const causalSupport = clampInt(entry && entry.causalSupportCount, 0, 999999, 0);
+      const causalHarm = clampInt(entry && entry.causalHarmCount, 0, 999999, 0);
+      return Number.isFinite(scoreOld)
+        && Number.isFinite(scoreNew)
+        && scoreNew >= scoreOld - safeNumber(criteria.nonWorseningTolerance, 0.000001)
+        && (!Number.isFinite(robustDelta) || robustDelta >= -safeNumber(criteria.nonWorseningTolerance, 0.000001))
+        && debtDelta <= 0
+        && causalHarm <= causalSupport;
+    });
+  const primaryLaneObserved = clampInt(openAIBlogLane && openAIBlogLane.canonicalCounts && openAIBlogLane.canonicalCounts.observationCount, 0, 999999, 0);
+  const primaryLaneCausalUsage = clampInt(openAIBlogLane && openAIBlogLane.canonicalCounts && openAIBlogLane.canonicalCounts.causalUsageCount, 0, 999999, 0);
+  const secondaryAdvisoryUsage = clampInt(anthropicLane && anthropicLane.advisory && anthropicLane.advisory.advisoryReferenceCount, 0, 999999, 0);
+  const currentValues = {
+    stableCoverageBreadth: safeNumber(readiness && readiness.stableCoverageBreadth, 0),
+    supportedCoverageBreadth: safeNumber(readiness && readiness.supportedCoverageBreadth, 0),
+    R_robust: safeNumber(readiness && readiness.metrics && readiness.metrics.R_robust && readiness.metrics.R_robust.value, 0),
+    H_horizon: safeNumber(readiness && readiness.metrics && readiness.metrics.H_horizon && readiness.metrics.H_horizon.value, 0),
+    rawFinalScore: safeNumber(readiness && readiness.rawFinalScore, 0),
+    openDebtCount: clampInt(debtSummary && debtSummary.openDebtCount, 0, 999999, 0),
+    blockedSubtasks: clampInt(continuity && continuity.blockedSubtasks, 0, 999999, 0),
+    integrationPendingCount: clampInt(continuity && continuity.integrationPendingCount, 0, 999999, 0),
+    ambiguousInstructionStatus: safeString(ambiguousInstruction && ambiguousInstruction.status, 40) || "no_evidence",
+    ambiguousInstructionEvidenceCount: clampInt(ambiguousInstruction && ambiguousInstruction.evidenceCount, 0, 999999, 0),
+    missingContextScore: Number.isFinite(Number(missingContext && missingContext.score)) ? Number(missingContext.score) : null,
+    browserToolFlakinessScore: Number.isFinite(Number(browserFlakiness && browserFlakiness.score)) ? Number(browserFlakiness.score) : null,
+    verifiedPositiveRemediations: verifiedPositiveCount,
+    verifiedNegativeRemediations: verifiedNegativeCount,
+    verifiedHarmfulRemediations: verifiedHarmfulCount,
+    insufficientEvidenceRemediations: insufficientEvidenceCount,
+    harmfulCausalRatio,
+    likelyContributoryCount,
+    harmfulTraceCount,
+    distinctLineageWindowCount: recentDistinctWindow.length,
+    distinctLineageNonWorsening: lineageNonWorsening,
+    primaryLaneObservationCount: primaryLaneObserved,
+    primaryLaneCausalUsageCount: primaryLaneCausalUsage,
+    secondaryAdvisoryUsageCount: secondaryAdvisoryUsage,
+  };
+  const whyNotYet = [];
+  if (currentValues.stableCoverageBreadth < safeNumber(criteria.stableCoverageBreadth, 1)) {
+    whyNotYet.push(`stable coverage breadth below threshold (${currentValues.stableCoverageBreadth} < ${safeNumber(criteria.stableCoverageBreadth, 1)})`);
+  }
+  if (currentValues.R_robust < safeNumber(criteria.robustThreshold, 0.93)) {
+    whyNotYet.push(`R_robust below threshold (${currentValues.R_robust} < ${safeNumber(criteria.robustThreshold, 0.93)})`);
+  }
+  if (currentValues.H_horizon < safeNumber(criteria.horizonThreshold, 0.97)) {
+    whyNotYet.push(`H_horizon below threshold (${currentValues.H_horizon} < ${safeNumber(criteria.horizonThreshold, 0.97)})`);
+  }
+  if (currentValues.rawFinalScore < safeNumber(criteria.rawFinalScoreThreshold, 0.9)) {
+    whyNotYet.push(`raw final score below threshold (${currentValues.rawFinalScore} < ${safeNumber(criteria.rawFinalScoreThreshold, 0.9)})`);
+  }
+  if (currentValues.openDebtCount > clampInt(criteria.maxOpenDebtCount, 0, 999999, 0)) {
+    whyNotYet.push(`continuity debt remains open (${currentValues.openDebtCount} > ${clampInt(criteria.maxOpenDebtCount, 0, 999999, 0)})`);
+  }
+  if (currentValues.blockedSubtasks > 0) {
+    whyNotYet.push(`blocked subtasks remain (${currentValues.blockedSubtasks})`);
+  }
+  if (currentValues.integrationPendingCount > 0) {
+    whyNotYet.push(`integration pending remains (${currentValues.integrationPendingCount})`);
+  }
+  if (currentValues.ambiguousInstructionStatus === "no_evidence") {
+    whyNotYet.push("ambiguous_instruction still has no evidence");
+  }
+  if (Number.isFinite(Number(currentValues.missingContextScore)) && currentValues.missingContextScore < safeNumber(criteria.missingContextThreshold, 0.8)) {
+    whyNotYet.push(`missing_context below threshold (${currentValues.missingContextScore} < ${safeNumber(criteria.missingContextThreshold, 0.8)})`);
+  }
+  if (Number.isFinite(Number(currentValues.browserToolFlakinessScore)) && currentValues.browserToolFlakinessScore < safeNumber(criteria.browserFlakinessThreshold, 0.75)) {
+    whyNotYet.push(`browser_tool_flakiness below threshold (${currentValues.browserToolFlakinessScore} < ${safeNumber(criteria.browserFlakinessThreshold, 0.75)})`);
+  }
+  if (currentValues.verifiedPositiveRemediations < clampInt(criteria.minimumVerifiedPositiveRemediations, 1, 999999, 1)) {
+    whyNotYet.push(`verified positive remediation count below threshold (${currentValues.verifiedPositiveRemediations} < ${clampInt(criteria.minimumVerifiedPositiveRemediations, 1, 999999, 1)})`);
+  }
+  if (!currentValues.distinctLineageNonWorsening) {
+    whyNotYet.push(`distinct lineage window is not non-worsening across last ${windowSize} comparisons`);
+  }
+  if (currentValues.distinctLineageWindowCount < clampInt(criteria.minimumDistinctEntries, 1, 999999, 3)) {
+    whyNotYet.push(`distinct lineage count below threshold (${currentValues.distinctLineageWindowCount} < ${clampInt(criteria.minimumDistinctEntries, 1, 999999, 3)})`);
+  }
+  if (currentValues.harmfulCausalRatio == null || currentValues.harmfulCausalRatio > safeNumber(criteria.maxHarmfulCausalRatio, 0.34)) {
+    whyNotYet.push(`harmful causal trace ratio above threshold (${currentValues.harmfulCausalRatio == null ? "n/a" : currentValues.harmfulCausalRatio} > ${safeNumber(criteria.maxHarmfulCausalRatio, 0.34)})`);
+  }
+  const requiredNextActions = uniqueStrings([
+    ...(Array.isArray(workspaceProgressPublic && workspaceProgressPublic.nextRecommendedActions) ? workspaceProgressPublic.nextRecommendedActions : []),
+    ...((Array.isArray(bottlenecks && bottlenecks.items) ? bottlenecks.items : []).map((entry) => safeString(entry && entry.summary, 220))),
+    ...whyNotYet.map((reason) => {
+      if (/stable coverage breadth/.test(reason)) return "stabilize supported family coverage across recent windows";
+      if (/R_robust/.test(reason)) return "run robustness remediation agenda and verify positive effect";
+      if (/H_horizon/.test(reason)) return "reduce continuity debt and improve long-horizon closeout quality";
+      if (/raw final score/.test(reason)) return "raise aggregate readiness score through verified remediation";
+      if (/ambiguous_instruction/.test(reason)) return "collect ambiguity-handling evidence with governed probes";
+      if (/missing_context/.test(reason)) return "improve missing-context recovery via clarify/defer/fallback";
+      if (/browser_tool_flakiness/.test(reason)) return "improve browser/tool degraded-mode handling and retry policy";
+      if (/continuity debt/.test(reason)) return "close outstanding continuity debt items";
+      if (/harmful causal trace/.test(reason)) return "revoke or supersede harmful lessons/hints";
+      return reason;
+    }),
+  ], 8, 220);
+  const positiveMoments = [
+    ...agendaEntries
+      .filter((entry) => safeString(entry && entry.remediationEffect, 80) === "verified_positive")
+      .map((entry) => safeString(entry && entry.lastUpdatedAt, 80)),
+    ...recentDistinctWindow
+      .filter((entry) => entry && entry.promote === true)
+      .map((entry) => safeString(entry && entry.generatedAt, 80)),
+  ]
+    .map((entry) => normalizePublicTimestamp(entry))
+    .filter(Boolean)
+    .sort((left, right) => parseTimestamp(right) - parseTimestamp(left));
+  const goalStatus = whyNotYet.length ? "NOT_YET" : "OPERATIONALLY_COMPLETE";
+  return {
+    schema: "agi-operational-completion-status.v1",
+    generatedAt: toIso(),
+    workspaceId: toWorkspaceId(workspaceRoot),
+    goalStatus,
+    whyNotYet,
+    completionCriteria: {
+      stableCoverageBreadth: safeNumber(criteria.stableCoverageBreadth, 1),
+      robustThreshold: safeNumber(criteria.robustThreshold, 0.93),
+      horizonThreshold: safeNumber(criteria.horizonThreshold, 0.97),
+      rawFinalScoreThreshold: safeNumber(criteria.rawFinalScoreThreshold, 0.9),
+      maxOpenDebtCount: clampInt(criteria.maxOpenDebtCount, 0, 999999, 0),
+      minimumVerifiedPositiveRemediations: clampInt(criteria.minimumVerifiedPositiveRemediations, 1, 999999, 1),
+      minimumDistinctEntries: clampInt(criteria.minimumDistinctEntries, 1, 999999, 3),
+      maxHarmfulCausalRatio: safeNumber(criteria.maxHarmfulCausalRatio, 0.34),
+      missingContextThreshold: safeNumber(criteria.missingContextThreshold, 0.8),
+      browserFlakinessThreshold: safeNumber(criteria.browserFlakinessThreshold, 0.75),
+    },
+    currentValues,
+    lastPositiveClosureAt: positiveMoments[0] || "",
+    requiredNextActions,
+  };
+}
+
+function renderGoalCompletionMarkdown(payload) {
+  const lines = [
+    "# AGI Operational Completion",
+    "",
+    `- goalStatus: ${safeString(payload && payload.goalStatus, 80) || "NOT_YET"}`,
+    `- generatedAt: ${safeString(payload && payload.generatedAt, 80) || "-"}`,
+    "",
+    "## Current Values",
+  ];
+  const currentValues = payload && payload.currentValues && typeof payload.currentValues === "object"
+    ? payload.currentValues
+    : {};
+  for (const [key, value] of Object.entries(currentValues)) {
+    lines.push(`- ${key}: ${value == null ? "n/a" : String(value)}`);
+  }
+  lines.push("", "## Why Not Yet");
+  for (const reason of Array.isArray(payload && payload.whyNotYet) ? payload.whyNotYet : []) {
+    lines.push(`- ${safeString(reason, 220)}`);
+  }
+  lines.push("", "## Required Next Actions");
+  for (const action of Array.isArray(payload && payload.requiredNextActions) ? payload.requiredNextActions : []) {
+    lines.push(`- ${safeString(action, 220)}`);
   }
   return `${lines.join("\n")}\n`;
 }
@@ -3449,6 +3735,10 @@ function collectAgiFamilyMetric(bundle, familyName) {
 function buildFamilyCoverageProjection({ workspaceRoot, items, continuityBridge, latestAgiBundle }) {
   const policy = loadAgiReadinessPolicy(workspaceRoot);
   const buckets = Array.isArray(policy.coverageBuckets) ? policy.coverageBuckets : [];
+  const stableCoveragePolicy = policy && policy.stableCoverage && typeof policy.stableCoverage === "object"
+    ? policy.stableCoverage
+    : {};
+  const stabilityWindowSize = clampInt(stableCoveragePolicy.windowSize, 1, 12, 3);
   const latestMetrics = latestAgiBundle ? {
     G_breadth: collectAgiFamilyMetric(latestAgiBundle, "G_breadth"),
     H_horizon: collectAgiFamilyMetric(latestAgiBundle, "H_horizon"),
@@ -3525,13 +3815,6 @@ function buildFamilyCoverageProjection({ workspaceRoot, items, continuityBridge,
     const observationCount = recentPassCount + recentFailureBurden;
     const lastPassRecency = lastSuccessfulTask ? normalizePublicTimestamp(lastSuccessfulTask.updatedAt) : "";
     const verifierBurden = tasks.filter((task) => safeString(task && task.lastVerifierVerdict, 40).toUpperCase() === "FAIL").length;
-    const stabilityStatus = observationCount === 0
-      ? "no_evidence"
-      : recentPassCount === 0
-        ? "failing_only"
-        : recentPassCount >= 2 && recentFailureBurden === 0
-          ? "stable"
-          : "unstable";
     const breadthEntry = breadthByDomain.get(bucketId);
     const derivedDomainScore = successfulEvidence.length
       ? 0.78
@@ -3541,6 +3824,23 @@ function buildFamilyCoverageProjection({ workspaceRoot, items, continuityBridge,
     const domainScore = breadthEntry && Number.isFinite(Number(breadthEntry.domainScore))
       ? Number(Number(Math.max(Number(breadthEntry.domainScore), derivedDomainScore)).toFixed(4))
       : Number(Number(derivedDomainScore).toFixed(4));
+    const recentWindowScores = [
+      successfulEvidence.length ? Number(domainScore.toFixed(4)) : null,
+      failedEvidence.length ? Number(Math.max(0, domainScore - 0.2).toFixed(4)) : null,
+      observationCount > 1 ? Number(domainScore.toFixed(4)) : null,
+    ].slice(0, stabilityWindowSize);
+    const recentWindowOutcomes = [
+      successfulEvidence.length ? "pass" : "",
+      failedEvidence.length ? "fail" : "",
+      observationCount > 1 ? (recentPassCount >= recentFailureBurden ? "pass" : "fail") : "",
+    ].filter(Boolean).slice(0, stabilityWindowSize);
+    const stabilityStatus = observationCount === 0
+      ? "no_evidence"
+      : recentPassCount === 0
+        ? "failing_only"
+        : recentPassCount >= 2 && recentFailureBurden === 0
+          ? "stable"
+          : "unstable";
     const breadthFloor = Number.isFinite(Number(policy.breadthFloorDefault)) ? Number(policy.breadthFloorDefault) : 0.7;
     return {
       familyId: bucketId,
@@ -3564,6 +3864,16 @@ function buildFamilyCoverageProjection({ workspaceRoot, items, continuityBridge,
       lastPassRecency,
       verifierBurden,
       stabilityStatus,
+      stableCovered: stabilityStatus === "stable",
+      stabilityWindowSize,
+      recentWindowScores,
+      recentWindowOutcomes,
+      coverageRegressed: recentFailureBurden > recentPassCount,
+      nextCoverageAction: stabilityStatus === "stable"
+        ? "maintain current evidence quality"
+        : recentPassCount === 0
+          ? "obtain governed passing evidence for this family"
+          : "reduce failure burden and verifier debt in recent windows",
       breadthFloor: breadthFloor,
       domainScore,
       breadthFloorStatus: domainScore >= breadthFloor ? "pass" : "fail",
@@ -5201,6 +5511,7 @@ function evaluateMemoryPublicSuite({
   autonomousAgenda = null,
   causalTrace = null,
   continuityDebt = null,
+  goalCompletionStatus = null,
   workspaceProgressPublic = null,
   promotionHealthPublic = null,
   latestPackPublic = null,
@@ -5499,6 +5810,89 @@ function evaluateMemoryPublicSuite({
         && Array.isArray(debt.items)
       );
       detail = pass ? "continuity debt surface is present" : "continuity debt projection missing";
+    } else if (id === "goal_completion_artifact_present") {
+      const goalPath = paths.agiReadiness && paths.agiReadiness.goalCompletionStatusJson
+        ? paths.agiReadiness.goalCompletionStatusJson
+        : "";
+      const goal = writtenOrRuntimeJson(goalPath, goalCompletionStatus);
+      pass = Boolean(
+        goalPath
+        && (
+          !requireWrittenPublicArtifacts
+          || fs.existsSync(goalPath)
+        )
+        && goal
+        && safeString(goal.schema, 160) === "agi-operational-completion-status.v1"
+        && safeString(goal.goalStatus, 80)
+      );
+      detail = pass
+        ? "operational goal completion artifact is present"
+        : "operational goal completion artifact missing";
+    } else if (id === "goal_completion_status_consistent") {
+      const goalPath = paths.agiReadiness && paths.agiReadiness.goalCompletionStatusJson
+        ? paths.agiReadiness.goalCompletionStatusJson
+        : "";
+      const goal = writtenOrRuntimeJson(goalPath, goalCompletionStatus);
+      const current = goal && goal.currentValues && typeof goal.currentValues === "object" ? goal.currentValues : {};
+      const whyNotYet = Array.isArray(goal && goal.whyNotYet) ? goal.whyNotYet : [];
+      const readinessStable = safeNumber(readiness && readiness.stableCoverageBreadth, 0);
+      const readinessRobust = safeNumber(readiness && readiness.metrics && readiness.metrics.R_robust && readiness.metrics.R_robust.value, 0);
+      const readinessHorizon = safeNumber(readiness && readiness.metrics && readiness.metrics.H_horizon && readiness.metrics.H_horizon.value, 0);
+      const readinessScore = safeNumber(readiness && readiness.rawFinalScore, 0);
+      const debtCount = clampInt(continuityDebt && continuityDebt.summary && continuityDebt.summary.openDebtCount, 0, 999999, 0);
+      const blockedSubtasks = clampInt(continuityArtifacts && continuityArtifacts.artifact && continuityArtifacts.artifact.blockedSubtasks, 0, 999999, 0);
+      const integrationPendingCount = clampInt(continuityArtifacts && continuityArtifacts.artifact && continuityArtifacts.artifact.integrationPendingCount, 0, 999999, 0);
+      pass = Boolean(
+        goal
+        && safeString(goal.schema, 160) === "agi-operational-completion-status.v1"
+        && Math.abs(safeNumber(current.stableCoverageBreadth, -1) - readinessStable) < 0.000001
+        && Math.abs(safeNumber(current.R_robust, -1) - readinessRobust) < 0.000001
+        && Math.abs(safeNumber(current.H_horizon, -1) - readinessHorizon) < 0.000001
+        && Math.abs(safeNumber(current.rawFinalScore, -1) - readinessScore) < 0.000001
+        && clampInt(current.openDebtCount, -1, 999999, -1) === debtCount
+        && clampInt(current.blockedSubtasks, -1, 999999, -1) === blockedSubtasks
+        && clampInt(current.integrationPendingCount, -1, 999999, -1) === integrationPendingCount
+        && Array.isArray(goal.requiredNextActions)
+        && (safeString(goal.goalStatus, 80) === "OPERATIONALLY_COMPLETE" || whyNotYet.length > 0)
+      );
+      detail = pass
+        ? "operational goal completion status matches readiness, debt, and learning state"
+        : "operational goal completion status is inconsistent with readiness or debt state";
+    } else if (id === "goal_completion_not_yet_when_criteria_fail") {
+      const goalPath = paths.agiReadiness && paths.agiReadiness.goalCompletionStatusJson
+        ? paths.agiReadiness.goalCompletionStatusJson
+        : "";
+      const goal = writtenOrRuntimeJson(goalPath, goalCompletionStatus);
+      const criteria = goal && goal.completionCriteria && typeof goal.completionCriteria === "object"
+        ? goal.completionCriteria
+        : {};
+      const current = goal && goal.currentValues && typeof goal.currentValues === "object"
+        ? goal.currentValues
+        : {};
+      const thresholdsSatisfied = Boolean(
+        safeNumber(current.stableCoverageBreadth, 0) >= safeNumber(criteria.stableCoverageBreadth, 1)
+        && safeNumber(current.R_robust, 0) >= safeNumber(criteria.robustThreshold, 0.93)
+        && safeNumber(current.H_horizon, 0) >= safeNumber(criteria.horizonThreshold, 0.97)
+        && safeNumber(current.rawFinalScore, 0) >= safeNumber(criteria.rawFinalScoreThreshold, 0.9)
+        && clampInt(current.openDebtCount, 0, 999999, 0) <= clampInt(criteria.maxOpenDebtCount, 0, 999999, 0)
+        && clampInt(current.blockedSubtasks, 0, 999999, 0) === 0
+        && clampInt(current.integrationPendingCount, 0, 999999, 0) === 0
+        && safeString(current.ambiguousInstructionStatus, 80) !== "no_evidence"
+        && safeNumber(current.missingContextScore, 0) >= safeNumber(criteria.missingContextThreshold, 0.8)
+        && safeNumber(current.browserToolFlakinessScore, 0) >= safeNumber(criteria.browserFlakinessThreshold, 0.75)
+        && clampInt(current.verifiedPositiveRemediations, 0, 999999, 0) >= clampInt(criteria.minimumVerifiedPositiveRemediations, 1, 999999, 1)
+        && clampInt(current.distinctLineageWindowCount, 0, 999999, 0) >= clampInt(criteria.minimumDistinctEntries, 1, 999999, 3)
+        && Boolean(current.distinctLineageNonWorsening)
+        && (
+          current.harmfulCausalRatio == null
+          || safeNumber(current.harmfulCausalRatio, 1) <= safeNumber(criteria.maxHarmfulCausalRatio, 0.34)
+        )
+      );
+      const status = safeString(goal && goal.goalStatus, 80);
+      pass = Boolean(goal) && (thresholdsSatisfied ? status === "OPERATIONALLY_COMPLETE" : status === "NOT_YET");
+      detail = pass
+        ? "goal completion artifact does not over-claim completion when thresholds fail"
+        : "goal completion artifact misreports operational completion status";
     } else if (id === "public_hygiene_no_unknown_memory_type") {
       const health = writtenOrRuntimeJson(paths.publicOutput.promotionHealthJson, promotionHealthPublic) || {};
       const entries = [
@@ -5587,6 +5981,7 @@ function buildGovernedMemoryPublicArtifacts({ workspaceRoot = workspaceRootDefau
   const observationProjectionPath = path.join(paths.projections.observationStateRoot, "latest.json");
   const continuityProjectionPath = path.join(paths.projections.continuityStateRoot, "latest.json");
   const readinessProjectionPath = path.join(paths.projections.readinessRoot, "latest.json");
+  const robustnessBreakdownProjectionPath = path.join(paths.projections.readinessRoot, "robustness_breakdown.json");
   const promotionTrendProjectionPath = path.join(paths.projections.readinessRoot, "promotion_trend.json");
   const blockedReasonsProjectionPath = path.join(paths.projections.readinessRoot, "blocked_reasons.json");
   const coverageProjectionPath = path.join(paths.projections.familyCoverageRoot, "latest.json");
@@ -5629,14 +6024,19 @@ function buildGovernedMemoryPublicArtifacts({ workspaceRoot = workspaceRootDefau
   let readinessArtifacts = {
     readiness: safeString(readinessProjection.schema, 120) ? readinessProjection : fallbackReadinessArtifacts.readiness,
     coverage: safeString(coverageProjection.schema, 120) ? coverageProjection : fallbackReadinessArtifacts.coverage,
-    robustnessBreakdown: fallbackReadinessArtifacts.robustnessBreakdown && typeof fallbackReadinessArtifacts.robustnessBreakdown === "object"
-      ? fallbackReadinessArtifacts.robustnessBreakdown
-      : {},
+    robustnessBreakdown: safeString(readJsonObject(robustnessBreakdownProjectionPath).schema, 120)
+      ? readJsonObject(robustnessBreakdownProjectionPath)
+      : (
+        fallbackReadinessArtifacts.robustnessBreakdown && typeof fallbackReadinessArtifacts.robustnessBreakdown === "object"
+          ? fallbackReadinessArtifacts.robustnessBreakdown
+          : {}
+      ),
     promotionTrend: safeString(promotionTrendProjection.schema, 120) ? promotionTrendProjection : fallbackReadinessArtifacts.promotionTrend,
     blockedReasons: safeString(blockedReasonsProjection.schema, 120) ? blockedReasonsProjection : fallbackReadinessArtifacts.blockedReasons,
     distinctLineage: readJsonObject(distinctLineageProjectionPath),
   };
   writeJsonIfChanged(readinessProjectionPath, readinessArtifacts.readiness);
+  writeJsonIfChanged(robustnessBreakdownProjectionPath, readinessArtifacts.robustnessBreakdown);
   writeJsonIfChanged(promotionTrendProjectionPath, readinessArtifacts.promotionTrend);
   writeJsonIfChanged(blockedReasonsProjectionPath, readinessArtifacts.blockedReasons);
   writeJsonIfChanged(coverageProjectionPath, readinessArtifacts.coverage);
@@ -5929,6 +6329,18 @@ function buildGovernedMemoryPublicArtifacts({ workspaceRoot = workspaceRootDefau
       : { schema: "continuity-debt-projection.v1", generatedAt: toIso(), workspaceId: summary.workspaceId, items: [], summary: {} },
     workspaceRoot
   );
+  const goalCompletionStatus = buildGoalCompletionStatus({
+    workspaceRoot,
+    readinessArtifacts,
+    continuityArtifacts,
+    continuityDebt,
+    autonomousAgenda,
+    causalTrace,
+    openAIBlogLane,
+    anthropicLane,
+    workspaceProgressPublic,
+    bottlenecks,
+  });
   const publicOverview = {
     schema: "governed-memory-public-overview.v1",
     generatedAt: toIso(),
@@ -5945,6 +6357,9 @@ function buildGovernedMemoryPublicArtifacts({ workspaceRoot = workspaceRootDefau
     promotionHealthPath: repoRelative(workspaceRoot, paths.publicOutput.promotionHealthJson),
     evalStatusPath: repoRelative(workspaceRoot, paths.publicOutput.memoryEvalStatusJson),
     compatibilityProjectionPaths: summary.compatibilityProjectionPaths,
+    goalCompletionPath: repoRelative(workspaceRoot, paths.agiReadiness.goalCompletionStatusJson),
+    goalStatus: safeString(goalCompletionStatus.goalStatus, 80),
+    goalWhyNotYetCount: Array.isArray(goalCompletionStatus.whyNotYet) ? goalCompletionStatus.whyNotYet.length : 0,
     latestPack: {
       selectedCount: clampInt(summary.latestPack && summary.latestPack.selectedCount, 0, 999999, 0),
       highConfidenceCount: clampInt(summary.latestPack && summary.latestPack.highConfidenceCount, 0, 999999, 0),
@@ -5971,6 +6386,7 @@ function buildGovernedMemoryPublicArtifacts({ workspaceRoot = workspaceRootDefau
     autonomousAgenda,
     causalTrace,
     continuityDebt,
+    goalCompletionStatus,
     workspaceProgressPublic,
     promotionHealthPublic,
     latestPackPublic,
@@ -5998,7 +6414,9 @@ function buildGovernedMemoryPublicArtifacts({ workspaceRoot = workspaceRootDefau
   readinessArtifacts.readiness.distinctImprovementLineagePath = repoRelative(workspaceRoot, paths.agiReadiness.distinctImprovementLineageJson);
   readinessArtifacts.readiness.continuityDebtPath = repoRelative(workspaceRoot, paths.continuityPublic.continuityDebtJson);
   readinessArtifacts.readiness.robustnessRemediationStatusPath = repoRelative(workspaceRoot, paths.agiReadiness.robustnessRemediationStatusJson);
+  readinessArtifacts.readiness.goalCompletionStatusPath = repoRelative(workspaceRoot, paths.agiReadiness.goalCompletionStatusJson);
   writeJsonIfChanged(readinessProjectionPath, readinessArtifacts.readiness);
+  writeJsonIfChanged(robustnessBreakdownProjectionPath, readinessArtifacts.robustnessBreakdown);
   writeJsonIfChanged(blockedReasonsProjectionPath, readinessArtifacts.blockedReasons);
   writeJsonIfChanged(bottlenecksProjectionPath, bottlenecks);
   evalStatus = evaluateMemoryPublicSuite({
@@ -6015,6 +6433,7 @@ function buildGovernedMemoryPublicArtifacts({ workspaceRoot = workspaceRootDefau
     autonomousAgenda,
     causalTrace,
     continuityDebt,
+    goalCompletionStatus,
     workspaceProgressPublic,
     promotionHealthPublic,
     latestPackPublic,
@@ -6066,6 +6485,8 @@ function buildGovernedMemoryPublicArtifacts({ workspaceRoot = workspaceRootDefau
       distinctImprovementLineageMd: repoRelative(workspaceRoot, paths.agiReadiness.distinctImprovementLineageMd),
       robustnessRemediationStatusJson: repoRelative(workspaceRoot, paths.agiReadiness.robustnessRemediationStatusJson),
       robustnessRemediationTrendJson: repoRelative(workspaceRoot, paths.agiReadiness.robustnessRemediationTrendJson),
+      goalCompletionStatusJson: repoRelative(workspaceRoot, paths.agiReadiness.goalCompletionStatusJson),
+      goalCompletionStatusMd: repoRelative(workspaceRoot, paths.agiReadiness.goalCompletionStatusMd),
       continuityPublicJson: repoRelative(workspaceRoot, paths.continuityPublic.latestSummaryJson),
       continuityPublicMd: repoRelative(workspaceRoot, paths.continuityPublic.latestSummaryMd),
       continuityDebtJson: repoRelative(workspaceRoot, paths.continuityPublic.continuityDebtJson),
@@ -6095,6 +6516,7 @@ function buildGovernedMemoryPublicArtifacts({ workspaceRoot = workspaceRootDefau
     continuityDebtPublic,
     robustnessRemediationStatus,
     robustnessRemediationTrend,
+    goalCompletionStatus,
     exportManifest,
   };
 }
@@ -6136,6 +6558,8 @@ function exportGovernedMemoryPublicArtifacts({ workspaceRoot = workspaceRootDefa
   fs.writeFileSync(paths.agiReadiness.distinctImprovementLineageMd, renderDistinctLineageMarkdown(artifacts.distinctImprovementLineagePublic), "utf8");
   writeJsonIfChanged(paths.agiReadiness.robustnessRemediationStatusJson, sanitizePublicValue(artifacts.robustnessRemediationStatus, workspaceRoot));
   writeJsonIfChanged(paths.agiReadiness.robustnessRemediationTrendJson, sanitizePublicValue(artifacts.robustnessRemediationTrend, workspaceRoot));
+  writeJsonIfChanged(paths.agiReadiness.goalCompletionStatusJson, artifacts.goalCompletionStatus);
+  fs.writeFileSync(paths.agiReadiness.goalCompletionStatusMd, renderGoalCompletionMarkdown(artifacts.goalCompletionStatus), "utf8");
   ensureDir(paths.continuityPublic.root);
   writeJsonIfChanged(paths.continuityPublic.latestSummaryJson, artifacts.continuityArtifacts.artifact);
   fs.writeFileSync(paths.continuityPublic.latestSummaryMd, artifacts.continuityArtifacts.markdown, "utf8");
@@ -6154,6 +6578,7 @@ function exportGovernedMemoryPublicArtifacts({ workspaceRoot = workspaceRootDefa
     autonomousAgenda: artifacts.autonomousLearningStatus,
     causalTrace: artifacts.causalLearningTracePublic,
     continuityDebt: artifacts.continuityDebtPublic,
+    goalCompletionStatus: artifacts.goalCompletionStatus,
     workspaceProgressPublic: artifacts.workspaceProgressPublic,
     promotionHealthPublic: artifacts.promotionHealthPublic,
     latestPackPublic: artifacts.latestPackPublic,
@@ -6175,6 +6600,7 @@ function exportGovernedMemoryPublicArtifacts({ workspaceRoot = workspaceRootDefa
 }
 
 module.exports = {
+  buildGoalCompletionStatus,
   buildGovernedMemoryPublicArtifacts,
   buildGovernedMemoryRuntimeSnapshot,
   exportGovernedMemoryPublicArtifacts,

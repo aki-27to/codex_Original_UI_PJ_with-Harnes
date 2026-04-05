@@ -1,6 +1,6 @@
 {
   "schema": "self-improvement-state.v1",
-  "generatedAt": "2026-04-05T02:47:47.420Z",
+  "generatedAt": "2026-04-05T03:42:54.669Z",
   "sourceName": "OpenAI Developers Blog",
   "sourceTier": "primary",
   "promotionMode": "machine_guarded_autonomy",
@@ -24,7 +24,7 @@
   "autoApplyFrontendQualityNoteCount": 0,
   "observationStatus": "observed",
   "observationCount": 110,
-  "lastObservedAt": "2026-04-05T02:47:46.183Z",
+  "lastObservedAt": "2026-04-05T03:42:53.621Z",
   "requiredObservationSuccesses": 2,
   "requiredObservationSuccessRate": 0.67,
   "awaitingObservationCount": 0,
@@ -251,7 +251,7 @@
       "requiredSuccesses": 2,
       "requiredSuccessRate": 0.67,
       "remainingSuccesses": 2,
-      "lastObservedAt": "2026-04-05T02:47:46.183Z",
+      "lastObservedAt": "2026-04-05T03:42:53.621Z",
       "lastOutcome": "",
       "status": "building_evidence",
       "sampleTurnIds": [

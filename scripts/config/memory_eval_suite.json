@@ -123,6 +123,18 @@
       "title": "Continuity debt surface is generated and addressable"
     },
     {
+      "id": "goal_completion_artifact_present",
+      "title": "Operational goal completion artifact is generated"
+    },
+    {
+      "id": "goal_completion_status_consistent",
+      "title": "Operational goal completion status matches current readiness, debt, and learning metrics"
+    },
+    {
+      "id": "goal_completion_not_yet_when_criteria_fail",
+      "title": "Operational goal completion remains NOT_YET when thresholds are not satisfied"
+    },
+    {
       "id": "public_hygiene_no_unknown_memory_type",
       "title": "Public artifacts avoid unknown memoryType fallbacks"
     },

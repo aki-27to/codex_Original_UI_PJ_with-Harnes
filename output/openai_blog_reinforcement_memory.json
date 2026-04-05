@@ -1,15 +1,15 @@
 {
   "schema": "learning-reinforcement-memory.v1",
-  "generatedAt": "2026-04-05T02:47:47.419Z",
-  "lastObservedAt": "2026-04-05T02:47:46.183Z",
+  "generatedAt": "2026-04-05T03:42:54.669Z",
+  "lastObservedAt": "2026-04-05T03:42:53.621Z",
   "observationCount": 110,
   "recentObservations": [
     {
-      "memoryId": "improvement:openai:58fb72271d12",
+      "memoryId": "improvement:openai:5914e215f85b",
       "memoryType": "improvement_candidate",
       "articleId": "building-frontend-uis-with-codex-and-figma",
       "outcome": "failure",
-      "observedAt": "2026-04-05T02:47:46.183Z",
+      "observedAt": "2026-04-05T03:42:53.621Z",
       "sourceTier": "external_primary"
     },
     {
@@ -283,14 +283,14 @@
       "failureCount": 9,
       "observedCount": 10,
       "successRate": 0,
-      "lastObservedAt": "2026-04-05T02:47:46.183Z"
+      "lastObservedAt": "2026-04-05T03:42:53.621Z"
     },
     "primary-lane": {
       "successCount": 0,
       "failureCount": 9,
       "observedCount": 10,
       "successRate": 0,
-      "lastObservedAt": "2026-04-05T02:47:46.183Z"
+      "lastObservedAt": "2026-04-05T03:42:53.621Z"
     },
     "agents": {
       "successCount": 0,

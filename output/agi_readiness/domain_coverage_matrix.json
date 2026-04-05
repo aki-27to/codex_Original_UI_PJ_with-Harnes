@@ -1,6 +1,6 @@
 {
   "schema": "agi-readiness-domain-coverage-matrix.v1",
-  "generatedAt": "2026-04-05T02:47:47.229Z",
+  "generatedAt": "2026-04-05T03:42:54.520Z",
   "workspaceId": "5c839dfeef8b555f",
   "rows": [
     {
@@ -56,6 +56,20 @@
       "lastPassRecency": "2026-04-02T10:55:54.310Z",
       "verifierBurden": 10,
       "stabilityStatus": "unstable",
+      "stableCovered": false,
+      "stabilityWindowSize": 3,
+      "recentWindowScores": [
+        0.92,
+        0.72,
+        0.92
+      ],
+      "recentWindowOutcomes": [
+        "pass",
+        "fail",
+        "pass"
+      ],
+      "coverageRegressed": false,
+      "nextCoverageAction": "reduce failure burden and verifier debt in recent windows",
       "breadthFloor": 0.7,
       "domainScore": 0.92,
       "breadthFloorStatus": "pass"
@@ -158,6 +172,20 @@
       "lastPassRecency": "2026-04-04T12:34:12.370Z",
       "verifierBurden": 0,
       "stabilityStatus": "unstable",
+      "stableCovered": false,
+      "stabilityWindowSize": 3,
+      "recentWindowScores": [
+        0.78,
+        0.58,
+        0.78
+      ],
+      "recentWindowOutcomes": [
+        "pass",
+        "fail",
+        "pass"
+      ],
+      "coverageRegressed": false,
+      "nextCoverageAction": "reduce failure burden and verifier debt in recent windows",
       "breadthFloor": 0.7,
       "domainScore": 0.78,
       "breadthFloorStatus": "pass"
@@ -209,6 +237,20 @@
       "lastPassRecency": "2026-04-02T10:55:54.605Z",
       "verifierBurden": 4,
       "stabilityStatus": "unstable",
+      "stableCovered": false,
+      "stabilityWindowSize": 3,
+      "recentWindowScores": [
+        0.88,
+        0.68,
+        0.88
+      ],
+      "recentWindowOutcomes": [
+        "pass",
+        "fail",
+        "pass"
+      ],
+      "coverageRegressed": false,
+      "nextCoverageAction": "reduce failure burden and verifier debt in recent windows",
       "breadthFloor": 0.7,
       "domainScore": 0.88,
       "breadthFloorStatus": "pass"
@@ -266,6 +308,20 @@
       "lastPassRecency": "2026-03-31T22:24:55.921Z",
       "verifierBurden": 2,
       "stabilityStatus": "unstable",
+      "stableCovered": false,
+      "stabilityWindowSize": 3,
+      "recentWindowScores": [
+        0.78,
+        0.58,
+        0.78
+      ],
+      "recentWindowOutcomes": [
+        "pass",
+        "fail",
+        "fail"
+      ],
+      "coverageRegressed": true,
+      "nextCoverageAction": "reduce failure burden and verifier debt in recent windows",
       "breadthFloor": 0.7,
       "domainScore": 0.78,
       "breadthFloorStatus": "pass"
@@ -317,6 +373,20 @@
       "lastPassRecency": "2026-03-15T14:35:59.373Z",
       "verifierBurden": 0,
       "stabilityStatus": "unstable",
+      "stableCovered": false,
+      "stabilityWindowSize": 3,
+      "recentWindowScores": [
+        0.78,
+        0.58,
+        0.78
+      ],
+      "recentWindowOutcomes": [
+        "pass",
+        "fail",
+        "fail"
+      ],
+      "coverageRegressed": true,
+      "nextCoverageAction": "reduce failure burden and verifier debt in recent windows",
       "breadthFloor": 0.7,
       "domainScore": 0.78,
       "breadthFloorStatus": "pass"
@@ -368,6 +438,20 @@
       "lastPassRecency": "2026-03-31T22:24:55.698Z",
       "verifierBurden": 0,
       "stabilityStatus": "unstable",
+      "stableCovered": false,
+      "stabilityWindowSize": 3,
+      "recentWindowScores": [
+        0.78,
+        0.58,
+        0.78
+      ],
+      "recentWindowOutcomes": [
+        "pass",
+        "fail",
+        "pass"
+      ],
+      "coverageRegressed": false,
+      "nextCoverageAction": "reduce failure burden and verifier debt in recent windows",
       "breadthFloor": 0.7,
       "domainScore": 0.78,
       "breadthFloorStatus": "pass"
