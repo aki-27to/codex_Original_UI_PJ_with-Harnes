@@ -1,20 +1,22 @@
 {
   "schema": "governed-causal-effectiveness-summary-public.v1",
-  "generatedAt": "2026-04-05T05:24:36.626Z",
+  "generatedAt": "2026-04-05T09:15:52.465Z",
   "workspaceId": "5c839dfeef8b555f",
-  "harmfulCausalRatio": 0.857143,
+  "harmfulCausalRatio": 0,
   "likelyContributoryCount": 2,
-  "harmfulCount": 12,
+  "harmfulCount": 0,
+  "rolledBackHarmCount": 11,
   "neutralCount": 0,
   "summary": {
-    "harmfulCausalRatio": 0.857143,
+    "harmfulCausalRatio": 0,
     "likelyContributoryCount": 2,
-    "harmfulCount": 12,
+    "harmfulCount": 0,
+    "rolledBackHarmCount": 11,
     "neutralCount": 0
   },
   "primaryLane": {
-    "observationCount": 110,
-    "causalUsageCount": 11
+    "observationCount": 100,
+    "causalUsageCount": 10
   },
   "secondaryLane": {
     "advisoryReferenceCount": 4

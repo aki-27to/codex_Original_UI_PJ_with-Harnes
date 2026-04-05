@@ -1,182 +1,9 @@
 {
   "schema": "governed-memory-pack-causal-trace-public.v1",
-  "generatedAt": "2026-04-05T05:24:36.629Z",
+  "generatedAt": "2026-04-05T09:15:52.468Z",
   "workspaceId": "5c839dfeef8b555f",
-  "packId": "87587d414ffc56ef13b2",
+  "packId": "283ce11578b9ccbdfb1f",
   "traces": [
-    {
-      "memoryId": "mem_4714adcbce",
-      "publicRef": "mem_4714adcbce",
-      "memoryType": "improvement_candidate",
-      "sourceTier": "external_primary",
-      "promotionState": "candidate",
-      "usageMode": "remediation_hint",
-      "selectedInLatestPack": false,
-      "selectedInPackAt": "2026-04-05T05:24:34.925Z",
-      "usedByTaskRefs": [
-        "turn_816303077a",
-        "turn_ae658d538b",
-        "turn_ea3078f43f",
-        "turn_903381175d",
-        "turn_db7fb38482",
-        "turn_17c15f8886"
-      ],
-      "taskFamilies": [
-        "web_creative"
-      ],
-      "usageStage": "harmful_to_outcome",
-      "causalConfidence": "weak",
-      "outcomeDelta": {
-        "success": 0,
-        "failure": 9,
-        "neutral": 1,
-        "notApplicable": 0,
-        "retryCount": 9,
-        "verifierOutcome": "FAIL"
-      },
-      "summary": "Building frontend UIs with Codex and Figma | OpenAI Developers",
-      "lastObservedAt": "2026-04-05T05:24:35.077Z"
-    },
-    {
-      "memoryId": "mem_1ef523dba6",
-      "publicRef": "mem_1ef523dba6",
-      "memoryType": "semantic_lesson",
-      "sourceTier": "external_secondary",
-      "promotionState": "shadow",
-      "usageMode": "advisory_reference",
-      "selectedInLatestPack": false,
-      "selectedInPackAt": "2026-04-05T05:24:34.925Z",
-      "usedByTaskRefs": [
-        "turn_816303077a",
-        "turn_ae658d538b",
-        "turn_ea3078f43f",
-        "turn_903381175d",
-        "turn_db7fb38482",
-        "turn_17c15f8886",
-        "<task-ref>",
-        "<task-ref>"
-      ],
-      "taskFamilies": [
-        "default"
-      ],
-      "usageStage": "advisory_reference",
-      "causalConfidence": "plausible",
-      "outcomeDelta": {
-        "success": 532,
-        "failure": 71,
-        "neutral": 6,
-        "notApplicable": 0,
-        "retryCount": 71,
-        "verifierOutcome": "PASS"
-      },
-      "summary": "Quantifying infrastructure noise in agentic coding evals",
-      "lastObservedAt": "2026-04-05T05:20:23.639Z"
-    },
-    {
-      "memoryId": "mem_606a1bdedc",
-      "publicRef": "mem_606a1bdedc",
-      "memoryType": "semantic_lesson",
-      "sourceTier": "external_secondary",
-      "promotionState": "shadow",
-      "usageMode": "advisory_reference",
-      "selectedInLatestPack": false,
-      "selectedInPackAt": "2026-04-05T05:24:34.925Z",
-      "usedByTaskRefs": [
-        "turn_816303077a",
-        "turn_ae658d538b",
-        "turn_ea3078f43f",
-        "turn_903381175d",
-        "turn_db7fb38482",
-        "turn_17c15f8886",
-        "<task-ref>",
-        "<task-ref>"
-      ],
-      "taskFamilies": [
-        "default"
-      ],
-      "usageStage": "advisory_reference",
-      "causalConfidence": "plausible",
-      "outcomeDelta": {
-        "success": 532,
-        "failure": 71,
-        "neutral": 6,
-        "notApplicable": 0,
-        "retryCount": 71,
-        "verifierOutcome": "PASS"
-      },
-      "summary": "Harness design for long-running application development",
-      "lastObservedAt": "2026-04-05T05:20:23.639Z"
-    },
-    {
-      "memoryId": "mem_1ac8f13aa6",
-      "publicRef": "mem_1ac8f13aa6",
-      "memoryType": "semantic_lesson",
-      "sourceTier": "external_secondary",
-      "promotionState": "shadow",
-      "usageMode": "advisory_reference",
-      "selectedInLatestPack": false,
-      "selectedInPackAt": "2026-04-05T05:24:34.925Z",
-      "usedByTaskRefs": [
-        "turn_816303077a",
-        "turn_ae658d538b",
-        "turn_ea3078f43f",
-        "turn_903381175d",
-        "turn_db7fb38482",
-        "turn_17c15f8886",
-        "<task-ref>",
-        "<task-ref>"
-      ],
-      "taskFamilies": [
-        "default"
-      ],
-      "usageStage": "advisory_reference",
-      "causalConfidence": "plausible",
-      "outcomeDelta": {
-        "success": 532,
-        "failure": 71,
-        "neutral": 6,
-        "notApplicable": 0,
-        "retryCount": 71,
-        "verifierOutcome": "PASS"
-      },
-      "summary": "Designing AI resistant technical evaluations",
-      "lastObservedAt": "2026-04-05T05:20:23.639Z"
-    },
-    {
-      "memoryId": "mem_4a860af3cd",
-      "publicRef": "mem_4a860af3cd",
-      "memoryType": "semantic_lesson",
-      "sourceTier": "external_secondary",
-      "promotionState": "shadow",
-      "usageMode": "advisory_reference",
-      "selectedInLatestPack": false,
-      "selectedInPackAt": "2026-04-05T05:24:34.925Z",
-      "usedByTaskRefs": [
-        "turn_816303077a",
-        "turn_ae658d538b",
-        "turn_ea3078f43f",
-        "turn_903381175d",
-        "turn_db7fb38482",
-        "turn_17c15f8886",
-        "<task-ref>",
-        "<task-ref>"
-      ],
-      "taskFamilies": [
-        "default"
-      ],
-      "usageStage": "advisory_reference",
-      "causalConfidence": "plausible",
-      "outcomeDelta": {
-        "success": 532,
-        "failure": 71,
-        "neutral": 6,
-        "notApplicable": 0,
-        "retryCount": 71,
-        "verifierOutcome": "PASS"
-      },
-      "summary": "Demystifying evals for AI agents",
-      "lastObservedAt": "2026-04-05T05:20:23.639Z"
-    },
     {
       "memoryId": "mem_3f7c96d737",
       "publicRef": "mem_3f7c96d737",
@@ -185,7 +12,7 @@
       "promotionState": "proposal_only",
       "usageMode": "explicit_prompt_pack",
       "selectedInLatestPack": false,
-      "selectedInPackAt": "2026-04-05T05:24:34.925Z",
+      "selectedInPackAt": "2026-04-05T09:15:51.495Z",
       "usedByTaskRefs": [
         "turn_816303077a",
         "turn_ae658d538b",
@@ -221,7 +48,7 @@
       "promotionState": "proposal_only",
       "usageMode": "explicit_prompt_pack",
       "selectedInLatestPack": false,
-      "selectedInPackAt": "2026-04-05T05:24:34.925Z",
+      "selectedInPackAt": "2026-04-05T09:15:51.495Z",
       "usedByTaskRefs": [
         "<task-ref>",
         "<task-ref>",
@@ -255,7 +82,7 @@
       "promotionState": "promoted",
       "usageMode": "explicit_prompt_pack",
       "selectedInLatestPack": false,
-      "selectedInPackAt": "2026-04-05T05:24:34.925Z",
+      "selectedInPackAt": "2026-04-05T09:15:51.495Z",
       "usedByTaskRefs": [
         "turn_816303077a",
         "turn_ae658d538b",
@@ -267,7 +94,7 @@
       "taskFamilies": [
         "web_creative"
       ],
-      "usageStage": "harmful_to_outcome",
+      "usageStage": "rolled_back_after_harm",
       "causalConfidence": "weak",
       "outcomeDelta": {
         "success": 0,
@@ -288,7 +115,7 @@
       "promotionState": "promoted",
       "usageMode": "explicit_prompt_pack",
       "selectedInLatestPack": false,
-      "selectedInPackAt": "2026-04-05T05:24:34.925Z",
+      "selectedInPackAt": "2026-04-05T09:15:51.495Z",
       "usedByTaskRefs": [
         "turn_816303077a",
         "turn_ae658d538b",
@@ -300,7 +127,7 @@
       "taskFamilies": [
         "web_creative"
       ],
-      "usageStage": "harmful_to_outcome",
+      "usageStage": "rolled_back_after_harm",
       "causalConfidence": "weak",
       "outcomeDelta": {
         "success": 0,
@@ -321,7 +148,7 @@
       "promotionState": "promoted",
       "usageMode": "explicit_prompt_pack",
       "selectedInLatestPack": false,
-      "selectedInPackAt": "2026-04-05T05:24:34.925Z",
+      "selectedInPackAt": "2026-04-05T09:15:51.495Z",
       "usedByTaskRefs": [
         "turn_816303077a",
         "turn_ae658d538b",
@@ -333,7 +160,7 @@
       "taskFamilies": [
         "web_creative"
       ],
-      "usageStage": "harmful_to_outcome",
+      "usageStage": "rolled_back_after_harm",
       "causalConfidence": "weak",
       "outcomeDelta": {
         "success": 0,
@@ -354,7 +181,7 @@
       "promotionState": "promoted",
       "usageMode": "explicit_prompt_pack",
       "selectedInLatestPack": false,
-      "selectedInPackAt": "2026-04-05T05:24:34.925Z",
+      "selectedInPackAt": "2026-04-05T09:15:51.495Z",
       "usedByTaskRefs": [
         "turn_816303077a",
         "turn_ae658d538b",
@@ -366,7 +193,7 @@
       "taskFamilies": [
         "web_creative"
       ],
-      "usageStage": "harmful_to_outcome",
+      "usageStage": "rolled_back_after_harm",
       "causalConfidence": "weak",
       "outcomeDelta": {
         "success": 0,
@@ -387,7 +214,7 @@
       "promotionState": "promoted",
       "usageMode": "explicit_prompt_pack",
       "selectedInLatestPack": false,
-      "selectedInPackAt": "2026-04-05T05:24:34.925Z",
+      "selectedInPackAt": "2026-04-05T09:15:51.495Z",
       "usedByTaskRefs": [
         "turn_816303077a",
         "turn_ae658d538b",
@@ -399,7 +226,7 @@
       "taskFamilies": [
         "web_creative"
       ],
-      "usageStage": "harmful_to_outcome",
+      "usageStage": "rolled_back_after_harm",
       "causalConfidence": "weak",
       "outcomeDelta": {
         "success": 0,
@@ -410,6 +237,171 @@
         "verifierOutcome": "FAIL"
       },
       "summary": "How Perplexity Brought Voice Search to Millions Using the Realtime API | OpenAI Developers",
+      "lastObservedAt": "2026-04-05T05:19:38.045Z"
+    },
+    {
+      "memoryId": "mem_5e926a0571",
+      "publicRef": "mem_5e926a0571",
+      "memoryType": "runtime_hint",
+      "sourceTier": "external_primary",
+      "promotionState": "promoted",
+      "usageMode": "explicit_prompt_pack",
+      "selectedInLatestPack": false,
+      "selectedInPackAt": "2026-04-05T09:15:51.495Z",
+      "usedByTaskRefs": [
+        "turn_816303077a",
+        "turn_ae658d538b",
+        "turn_ea3078f43f",
+        "turn_903381175d",
+        "turn_db7fb38482",
+        "turn_17c15f8886"
+      ],
+      "taskFamilies": [
+        "web_creative"
+      ],
+      "usageStage": "rolled_back_after_harm",
+      "causalConfidence": "weak",
+      "outcomeDelta": {
+        "success": 0,
+        "failure": 9,
+        "neutral": 1,
+        "notApplicable": 0,
+        "retryCount": 9,
+        "verifierOutcome": "FAIL"
+      },
+      "summary": "Designing delightful frontends with GPT-5.4 | OpenAI Developers",
+      "lastObservedAt": "2026-04-05T05:19:38.045Z"
+    },
+    {
+      "memoryId": "mem_b439f61eb1",
+      "publicRef": "mem_b439f61eb1",
+      "memoryType": "runtime_hint",
+      "sourceTier": "external_primary",
+      "promotionState": "promoted",
+      "usageMode": "explicit_prompt_pack",
+      "selectedInLatestPack": false,
+      "selectedInPackAt": "2026-04-05T09:15:51.495Z",
+      "usedByTaskRefs": [
+        "turn_816303077a",
+        "turn_ae658d538b",
+        "turn_ea3078f43f",
+        "turn_903381175d",
+        "turn_db7fb38482",
+        "turn_17c15f8886"
+      ],
+      "taskFamilies": [
+        "web_creative"
+      ],
+      "usageStage": "rolled_back_after_harm",
+      "causalConfidence": "weak",
+      "outcomeDelta": {
+        "success": 0,
+        "failure": 9,
+        "neutral": 1,
+        "notApplicable": 0,
+        "retryCount": 9,
+        "verifierOutcome": "FAIL"
+      },
+      "summary": "From prompts to products: One year of Responses | OpenAI Developers",
+      "lastObservedAt": "2026-04-05T05:19:38.045Z"
+    },
+    {
+      "memoryId": "mem_8896adaa48",
+      "publicRef": "mem_8896adaa48",
+      "memoryType": "runtime_hint",
+      "sourceTier": "external_primary",
+      "promotionState": "promoted",
+      "usageMode": "explicit_prompt_pack",
+      "selectedInLatestPack": false,
+      "selectedInPackAt": "2026-04-05T09:15:51.495Z",
+      "usedByTaskRefs": [
+        "turn_816303077a",
+        "turn_ae658d538b",
+        "turn_ea3078f43f",
+        "turn_903381175d",
+        "turn_db7fb38482",
+        "turn_17c15f8886"
+      ],
+      "taskFamilies": [
+        "web_creative"
+      ],
+      "usageStage": "rolled_back_after_harm",
+      "causalConfidence": "weak",
+      "outcomeDelta": {
+        "success": 0,
+        "failure": 9,
+        "neutral": 1,
+        "notApplicable": 0,
+        "retryCount": 9,
+        "verifierOutcome": "FAIL"
+      },
+      "summary": "Using skills to accelerate OSS maintenance | OpenAI Developers",
+      "lastObservedAt": "2026-04-05T05:19:38.045Z"
+    },
+    {
+      "memoryId": "mem_847a1aba42",
+      "publicRef": "mem_847a1aba42",
+      "memoryType": "runtime_hint",
+      "sourceTier": "external_primary",
+      "promotionState": "promoted",
+      "usageMode": "explicit_prompt_pack",
+      "selectedInLatestPack": false,
+      "selectedInPackAt": "2026-04-05T09:15:51.495Z",
+      "usedByTaskRefs": [
+        "turn_816303077a",
+        "turn_ae658d538b",
+        "turn_ea3078f43f",
+        "turn_903381175d",
+        "turn_db7fb38482",
+        "turn_17c15f8886"
+      ],
+      "taskFamilies": [
+        "web_creative"
+      ],
+      "usageStage": "rolled_back_after_harm",
+      "causalConfidence": "weak",
+      "outcomeDelta": {
+        "success": 0,
+        "failure": 9,
+        "neutral": 1,
+        "notApplicable": 0,
+        "retryCount": 9,
+        "verifierOutcome": "FAIL"
+      },
+      "summary": "Building frontend UIs with Codex and Figma | OpenAI Developers",
+      "lastObservedAt": "2026-04-05T05:19:38.045Z"
+    },
+    {
+      "memoryId": "mem_106d75d257",
+      "publicRef": "mem_106d75d257",
+      "memoryType": "runtime_hint",
+      "sourceTier": "external_primary",
+      "promotionState": "promoted",
+      "usageMode": "explicit_prompt_pack",
+      "selectedInLatestPack": false,
+      "selectedInPackAt": "2026-04-05T09:15:51.495Z",
+      "usedByTaskRefs": [
+        "turn_816303077a",
+        "turn_ae658d538b",
+        "turn_ea3078f43f",
+        "turn_903381175d",
+        "turn_db7fb38482",
+        "turn_17c15f8886"
+      ],
+      "taskFamilies": [
+        "web_creative"
+      ],
+      "usageStage": "rolled_back_after_harm",
+      "causalConfidence": "weak",
+      "outcomeDelta": {
+        "success": 0,
+        "failure": 9,
+        "neutral": 1,
+        "notApplicable": 0,
+        "retryCount": 9,
+        "verifierOutcome": "FAIL"
+      },
+      "summary": "Run long horizon tasks with Codex | OpenAI Developers",
       "lastObservedAt": "2026-04-05T05:19:38.045Z"
     }
   ]

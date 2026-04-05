@@ -6,12 +6,12 @@
 - Canonical events: 12000
 - Items: 50
 - Promoted: 26
-- Latest pack: 11 items for intake (2 high-confidence)
-- Latest pack reused items: 11
+- Latest pack: 13 items for default (3 high-confidence)
+- Latest pack reused items: 13
 - Latest pack task-family mismatches: 0
 - Memory eval: PASS
-- Recent promotions: 0
-- Recent revocations: 0
+- Recent promotions: 5
+- Recent revocations: 5
 - Stale warnings: 0
 
 ## Type Counts
@@ -37,15 +37,13 @@
 - blocker: pending child integration: phase4 denied-<opaque id>-executor-<opaque id>
 - blocker: simulated child verifier failure
 - next: weakest family is R robust
-- next: robustness is currently limited by ambiguous instruction (no evidence yet)
-- next: continuity carries 26 closeout debt item(s) with severity high
 - next: capture governed recovery evidence
 
 ## Capability Loop
 - queued: 0
-- running: 3
-- passed: 0
-- blocked: 0
+- running: 0
+- passed: 1
+- blocked: 2
 
 ## Lane Health
 - openai_primary: governed=active / promoted=4 / canonical-selected=0 / compatibility=PASS

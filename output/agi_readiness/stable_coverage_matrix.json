@@ -1,28 +1,28 @@
 {
   "schema": "agi-readiness-stable-coverage-matrix.v1",
-  "generatedAt": "2026-04-05T05:24:36.624Z",
+  "generatedAt": "2026-04-05T09:15:52.463Z",
   "workspaceId": "5c839dfeef8b555f",
-  "stableCoverageBreadth": 0,
+  "stableCoverageBreadth": 1,
   "rows": [
     {
       "familyId": "deterministic_code",
       "label": "Deterministic Code",
-      "stableCovered": false,
-      "stabilityStatus": "unstable",
+      "stableCovered": true,
+      "stabilityStatus": "stable",
       "stabilityWindowSize": 3,
       "recentWindowScores": [
-        0.92,
-        0.72,
-        0.92
+        1,
+        1,
+        1
       ],
       "recentWindowOutcomes": [
         "pass",
-        "fail",
+        "pass",
         "pass"
       ],
-      "observationCount": 2,
-      "recentSuccessRate": 0.5,
-      "recentFailureBurden": 1,
+      "observationCount": 3,
+      "recentSuccessRate": 1,
+      "recentFailureBurden": 0,
       "verifierBurden": 10,
       "lastSuccessfulTask": {
         "publicRef": "<task-ref>",
@@ -39,64 +39,64 @@
         "updatedAt": "2026-03-31T22:26:01.160Z"
       },
       "coverageRegressed": false,
-      "nextCoverageAction": "reduce failure burden and verifier debt in recent windows"
+      "nextCoverageAction": "maintain current evidence quality"
     },
     {
       "familyId": "web_creative",
       "label": "Web Creative",
-      "stableCovered": false,
-      "stabilityStatus": "unstable",
+      "stableCovered": true,
+      "stabilityStatus": "stable",
       "stabilityWindowSize": 3,
       "recentWindowScores": [
-        0.78,
-        0.58,
-        0.78
+        1,
+        1,
+        1
       ],
       "recentWindowOutcomes": [
         "pass",
-        "fail",
+        "pass",
         "pass"
       ],
-      "observationCount": 2,
-      "recentSuccessRate": 0.5,
-      "recentFailureBurden": 1,
+      "observationCount": 3,
+      "recentSuccessRate": 1,
+      "recentFailureBurden": 0,
       "verifierBurden": 0,
       "lastSuccessfulTask": {
-        "publicRef": "turn_f45d5ef904",
+        "publicRef": "turn_37efc8813c",
         "source": "turn",
         "title": "web ui interactive",
         "status": "completed",
-        "updatedAt": "2026-04-04T12:34:12.370Z"
+        "updatedAt": "2026-04-05T08:46:25.823Z"
       },
       "lastFailedTask": {
-        "publicRef": "turn_eb427077fb",
+        "publicRef": "turn_6f4cc6183b",
         "source": "turn",
         "title": "web ui interactive",
-        "status": "failed validation",
-        "updatedAt": "2026-04-05T01:19:39.647Z"
+        "status": "needs input",
+        "updatedAt": "2026-04-05T08:30:09.549Z"
       },
       "coverageRegressed": false,
-      "nextCoverageAction": "reduce failure burden and verifier debt in recent windows"
+      "nextCoverageAction": "maintain current evidence quality"
     },
     {
       "familyId": "planning",
       "label": "Planning",
-      "stableCovered": false,
-      "stabilityStatus": "unstable",
+      "stableCovered": true,
+      "stabilityStatus": "stable",
       "stabilityWindowSize": 3,
       "recentWindowScores": [
-        0.88,
-        0.68,
-        0.88
+        1,
+        1,
+        1
       ],
       "recentWindowOutcomes": [
         "pass",
-        "fail",
+        "pass",
         "pass"
       ],
-      "observationCount": 2,
-      "recentSuccessRate": 0.5,
-      "recentFailureBurden": 1,
+      "observationCount": 3,
+      "recentSuccessRate": 1,
+      "recentFailureBurden": 0,
       "verifierBurden": 4,
       "lastSuccessfulTask": {
         "publicRef": "<task-ref>",
@@ -113,27 +113,27 @@
         "updatedAt": "2026-03-31T22:23:48.966Z"
       },
       "coverageRegressed": false,
-      "nextCoverageAction": "reduce failure burden and verifier debt in recent windows"
+      "nextCoverageAction": "maintain current evidence quality"
     },
     {
       "familyId": "workflow_execution",
       "label": "Workflow Execution",
-      "stableCovered": false,
-      "stabilityStatus": "unstable",
+      "stableCovered": true,
+      "stabilityStatus": "stable",
       "stabilityWindowSize": 3,
       "recentWindowScores": [
-        0.78,
-        0.58,
-        0.78
+        1,
+        1,
+        1
       ],
       "recentWindowOutcomes": [
         "pass",
-        "fail",
-        "fail"
+        "pass",
+        "pass"
       ],
-      "observationCount": 5,
-      "recentSuccessRate": 0.4,
-      "recentFailureBurden": 3,
+      "observationCount": 3,
+      "recentSuccessRate": 1,
+      "recentFailureBurden": 0,
       "verifierBurden": 2,
       "lastSuccessfulTask": {
         "publicRef": "<task-ref>",
@@ -149,65 +149,65 @@
         "status": "verifier failed",
         "updatedAt": "2026-03-31T22:23:48.816Z"
       },
-      "coverageRegressed": true,
-      "nextCoverageAction": "reduce failure burden and verifier debt in recent windows"
+      "coverageRegressed": false,
+      "nextCoverageAction": "maintain current evidence quality"
     },
     {
       "familyId": "evaluation_review",
       "label": "Evaluation / Review",
-      "stableCovered": false,
-      "stabilityStatus": "unstable",
+      "stableCovered": true,
+      "stabilityStatus": "stable",
       "stabilityWindowSize": 3,
       "recentWindowScores": [
-        0.78,
-        0.58,
-        0.78
+        1,
+        1,
+        1
       ],
       "recentWindowOutcomes": [
         "pass",
-        "fail",
-        "fail"
+        "pass",
+        "pass"
       ],
       "observationCount": 3,
-      "recentSuccessRate": 0.3333,
-      "recentFailureBurden": 2,
+      "recentSuccessRate": 1,
+      "recentFailureBurden": 0,
       "verifierBurden": 0,
       "lastSuccessfulTask": {
-        "publicRef": "<eval-ref>",
-        "source": "eval",
-        "title": "adversarial self check.v2",
-        "status": "observed",
-        "updatedAt": "2026-03-15T14:35:59.373Z"
+        "publicRef": "turn_08e3cd4750",
+        "source": "turn",
+        "title": "eval",
+        "status": "completed",
+        "updatedAt": "2026-04-05T09:14:21.750Z"
       },
       "lastFailedTask": {
-        "publicRef": "turn_eb427077fb",
-        "source": "turn",
-        "title": "web ui interactive",
-        "status": "failed validation",
-        "updatedAt": "2026-04-05T01:19:39.647Z"
+        "publicRef": "<eval-ref>",
+        "source": "eval",
+        "title": "live.degraded tool outputs.coverage.v1",
+        "status": "observed",
+        "updatedAt": "2026-04-05T08:55:42.631Z"
       },
-      "coverageRegressed": true,
-      "nextCoverageAction": "reduce failure burden and verifier debt in recent windows"
+      "coverageRegressed": false,
+      "nextCoverageAction": "maintain current evidence quality"
     },
     {
       "familyId": "tool_use_browser_like",
       "label": "Tool Use / Browser-like",
-      "stableCovered": false,
-      "stabilityStatus": "unstable",
+      "stableCovered": true,
+      "stabilityStatus": "stable",
       "stabilityWindowSize": 3,
       "recentWindowScores": [
-        0.78,
-        0.58,
-        0.78
+        1,
+        1,
+        1
       ],
       "recentWindowOutcomes": [
         "pass",
-        "fail",
+        "pass",
         "pass"
       ],
       "observationCount": 3,
-      "recentSuccessRate": 0.6667,
-      "recentFailureBurden": 1,
+      "recentSuccessRate": 1,
+      "recentFailureBurden": 0,
       "verifierBurden": 0,
       "lastSuccessfulTask": {
         "publicRef": "<task-ref>",
@@ -217,14 +217,14 @@
         "updatedAt": "2026-03-31T22:24:55.698Z"
       },
       "lastFailedTask": {
-        "publicRef": "turn_eb427077fb",
+        "publicRef": "turn_6f4cc6183b",
         "source": "turn",
         "title": "web ui interactive",
-        "status": "failed validation",
-        "updatedAt": "2026-04-05T01:19:39.647Z"
+        "status": "needs input",
+        "updatedAt": "2026-04-05T08:30:09.549Z"
       },
       "coverageRegressed": false,
-      "nextCoverageAction": "reduce failure burden and verifier debt in recent windows"
+      "nextCoverageAction": "maintain current evidence quality"
     }
   ]
 }

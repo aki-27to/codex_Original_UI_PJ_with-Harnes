@@ -1,16 +1,16 @@
 {
   "schema": "agi-readiness-live-summary.v1",
-  "generatedAt": "2026-04-05T05:24:36.209Z",
+  "generatedAt": "2026-04-05T09:15:52.382Z",
   "workspaceId": "5c839dfeef8b555f",
-  "latestRunId": "eval-1775264897008-443e2a6a",
+  "latestRunId": "eval-1775378801372-7cb2a02a",
   "profile": "agi_v1",
   "laneId": "public_regression",
-  "suiteId": "challenger.agi_v1_suite",
+  "suiteId": "e10.agi_v1_suite",
   "metrics": {
     "G_breadth": {
       "familyName": "G_breadth",
       "value": 1,
-      "threshold": 0,
+      "threshold": null,
       "supportStatus": "supported",
       "passFail": true,
       "details": {
@@ -18,13 +18,13 @@
         "matrix": [
           {
             "domainFamily": "coding",
-            "domainScore": 0.92,
+            "domainScore": 0.98,
             "covered": 1,
             "weight": 1
           },
           {
             "domainFamily": "planning",
-            "domainScore": 0.88,
+            "domainScore": 0.96,
             "covered": 1,
             "weight": 1
           }
@@ -32,11 +32,11 @@
         "observations": [
           {
             "family_name": "G_breadth",
-            "submetric_name": "challenger_breadth_coding",
+            "submetric_name": "e10_breadth_coding",
             "mode": "standard",
-            "value": 0.92,
-            "ci_low": 0.92,
-            "ci_high": 0.92,
+            "value": 0.98,
+            "ci_low": 0.98,
+            "ci_high": 0.98,
             "threshold": null,
             "pass_fail": null,
             "relevant": true,
@@ -49,10 +49,10 @@
             "evidence": [],
             "notes": "",
             "reason": "",
-            "case_id": "challenger-metric-1",
-            "title": "challenger-case-1",
+            "case_id": "e10-metric-1",
+            "title": "e10-case-1",
             "variant_label": "candidate-standard",
-            "candidate_id": "candidate-main",
+            "candidate_id": "candidate-e10",
             "domain_family": "coding",
             "normalization_basis": "",
             "horizon_units": null,
@@ -62,11 +62,11 @@
           },
           {
             "family_name": "G_breadth",
-            "submetric_name": "challenger_breadth_planning",
+            "submetric_name": "e10_breadth_planning",
             "mode": "standard",
-            "value": 0.88,
-            "ci_low": 0.88,
-            "ci_high": 0.88,
+            "value": 0.96,
+            "ci_low": 0.96,
+            "ci_high": 0.96,
             "threshold": null,
             "pass_fail": null,
             "relevant": true,
@@ -79,10 +79,10 @@
             "evidence": [],
             "notes": "",
             "reason": "",
-            "case_id": "challenger-metric-2",
-            "title": "challenger-case-2",
+            "case_id": "e10-metric-2",
+            "title": "e10-case-2",
             "variant_label": "candidate-standard",
-            "candidate_id": "candidate-main",
+            "candidate_id": "candidate-e10",
             "domain_family": "planning",
             "normalization_basis": "",
             "horizon_units": null,
@@ -95,12 +95,12 @@
     },
     "G_depth": {
       "familyName": "G_depth",
-      "value": 0.87,
-      "threshold": 0,
+      "value": 0.98,
+      "threshold": null,
       "supportStatus": "supported",
       "passFail": true,
       "details": {
-        "value": 0.87,
+        "value": 0.98,
         "details": {
           "strategy": "mean"
         }
@@ -108,12 +108,12 @@
     },
     "A_adapt": {
       "familyName": "A_adapt",
-      "value": 0.83,
-      "threshold": 0,
+      "value": 0.97,
+      "threshold": null,
       "supportStatus": "supported",
       "passFail": true,
       "details": {
-        "value": 0.83,
+        "value": 0.97,
         "details": {
           "strategy": "mean"
         }
@@ -121,12 +121,12 @@
     },
     "R_robust": {
       "familyName": "R_robust",
-      "value": 0.81,
-      "threshold": 0,
+      "value": 0.996,
+      "threshold": null,
       "supportStatus": "supported",
       "passFail": true,
       "details": {
-        "value": 0.81,
+        "value": 0.996,
         "details": {
           "strategy": "min"
         }
@@ -134,12 +134,12 @@
     },
     "H_horizon": {
       "familyName": "H_horizon",
-      "value": 0.93487,
-      "threshold": 0,
+      "value": 1,
+      "threshold": null,
       "supportStatus": "supported",
       "passFail": true,
       "details": {
-        "value": 0.93487,
+        "value": 1,
         "details": {
           "strategy": "mean"
         }
@@ -147,12 +147,12 @@
     },
     "P_context": {
       "familyName": "P_context",
-      "value": 0.86,
-      "threshold": 0,
+      "value": 0.98,
+      "threshold": null,
       "supportStatus": "supported",
       "passFail": true,
       "details": {
-        "value": 0.86,
+        "value": 0.98,
         "details": {
           "strategy": "mean"
         }
@@ -200,11 +200,11 @@
     }
   },
   "catastrophicRisk": {
-    "cvar": 0.04,
+    "cvar": 0.018,
     "supportStatus": "supported"
   },
-  "rawFinalScore": 0.860278,
-  "displayFinalScore": 0.860278,
+  "rawFinalScore": 0.97906,
+  "displayFinalScore": 0.97906,
   "breadthSemantics": {
     "mode": "repo_coverage_breadth",
     "headlineField": "supportedCoverageBreadth",
@@ -213,32 +213,32 @@
   },
   "evaluatedBreadth": 1,
   "supportedCoverageBreadth": 1,
-  "stableCoverageBreadth": 0,
+  "stableCoverageBreadth": 1,
   "coverageFamilyCount": 6,
   "coveredFamilyCount": 6,
   "failedFamilies": [],
   "headlineMetrics": {
     "G_breadth": 1,
-    "G_depth": 0.87,
-    "A_adapt": 0.83,
-    "R_robust": 0.81,
-    "H_horizon": 0.93487,
-    "P_context": 0.86
+    "G_depth": 0.98,
+    "A_adapt": 0.97,
+    "R_robust": 0.996,
+    "H_horizon": 1,
+    "P_context": 0.98
   },
   "headlineBreadth": 1,
-  "promotionComparisonMode": "self_snapshot",
-  "distinctComparison": false,
-  "promotionInterpretation": "not_a_distinct_incumbent_comparison",
-  "promotionEvidenceStrength": "self_snapshot_only",
+  "promotionComparisonMode": "distinct_comparison",
+  "distinctComparison": true,
+  "promotionInterpretation": "distinct_incumbent_comparison",
+  "promotionEvidenceStrength": "distinct_incumbent_challenger_decision",
   "incumbentVsChallenger": {
-    "incumbentIdentifier": "candidate-main",
-    "challengerIdentifier": "candidate-main",
-    "promote": null,
-    "comparisonMode": "self_snapshot",
-    "distinctComparison": false
+    "incumbentIdentifier": "candidate-lineage-e5",
+    "challengerIdentifier": "candidate-e10",
+    "promote": false,
+    "comparisonMode": "distinct_comparison",
+    "distinctComparison": true
   },
   "blockedReasons": [],
-  "weakestCapabilityFamily": "R_robust",
+  "weakestCapabilityFamily": "A_adapt",
   "weakestGateFamily": "",
   "gatePressure": {
     "weakestGateFamily": "",
@@ -259,12 +259,12 @@
   ],
   "domainCoveragePath": "output/agi_readiness/domain_coverage_matrix.json",
   "robustnessBreakdownPath": "output/agi_readiness/robustness_breakdown.json",
-  "recentImprovement": 0.133862,
-  "recentRegression": -0.04,
-  "incumbentVersion": "lineage_4489ff94ff",
-  "challengerVersion": "lineage_4883260209",
-  "distinctImprovementObserved": true,
-  "improvementEvidenceClass": "distinct_observed_improvement",
+  "recentImprovement": 0,
+  "recentRegression": 0,
+  "incumbentVersion": "lineage_0207d13ee2",
+  "challengerVersion": "lineage_2e87b3689e",
+  "distinctImprovementObserved": false,
+  "improvementEvidenceClass": "distinct_hold",
   "consistencyChecks": [
     {
       "id": "readiness_breadth_semantics_consistent",

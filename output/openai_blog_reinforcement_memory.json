@@ -1,17 +1,9 @@
 {
   "schema": "learning-reinforcement-memory.v1",
-  "generatedAt": "2026-04-05T05:24:36.345Z",
-  "lastObservedAt": "2026-04-05T05:24:35.077Z",
-  "observationCount": 110,
+  "generatedAt": "2026-04-05T09:15:52.139Z",
+  "lastObservedAt": "2026-04-05T05:19:38.045Z",
+  "observationCount": 100,
   "recentObservations": [
-    {
-      "memoryId": "improvement:openai:d9756c6914fe",
-      "memoryType": "improvement_candidate",
-      "articleId": "building-frontend-uis-with-codex-and-figma",
-      "outcome": "failure",
-      "observedAt": "2026-04-05T05:24:35.077Z",
-      "sourceTier": "external_primary"
-    },
     {
       "memoryId": "lesson:openai:89ea8312aab9",
       "memoryType": "semantic_lesson",
@@ -94,21 +86,6 @@
     }
   ],
   "articleStats": {
-    "building-frontend-uis-with-codex-and-figma": {
-      "successCount": 0,
-      "failureCount": 9,
-      "observedCount": 10,
-      "successRate": 0,
-      "lastObservedAt": "2026-04-05T05:19:38.045Z",
-      "sampleTurnIds": [
-        "019d5897-d8a1-78b0-8c62-8227b05470db",
-        "019d5adc-5a6e-7a20-9de3-d3653b8843a9",
-        "019d5b17-dfab-7953-9e48-14aac678eff8",
-        "019d5b19-85ca-7201-a790-d4888010f414",
-        "019d5b28-cc92-79a1-907e-d83ed7125293",
-        "019d5b2a-fe11-7d30-a677-d9c529ea5a19"
-      ]
-    },
     "realtime-perplexity-computer": {
       "successCount": 0,
       "failureCount": 9,
@@ -155,6 +132,21 @@
       ]
     },
     "skills-agents-sdk": {
+      "successCount": 0,
+      "failureCount": 9,
+      "observedCount": 10,
+      "successRate": 0,
+      "lastObservedAt": "2026-04-05T05:19:38.045Z",
+      "sampleTurnIds": [
+        "019d5897-d8a1-78b0-8c62-8227b05470db",
+        "019d5adc-5a6e-7a20-9de3-d3653b8843a9",
+        "019d5b17-dfab-7953-9e48-14aac678eff8",
+        "019d5b19-85ca-7201-a790-d4888010f414",
+        "019d5b28-cc92-79a1-907e-d83ed7125293",
+        "019d5b2a-fe11-7d30-a677-d9c529ea5a19"
+      ]
+    },
+    "building-frontend-uis-with-codex-and-figma": {
       "successCount": 0,
       "failureCount": 9,
       "observedCount": 10,
@@ -278,20 +270,6 @@
     }
   },
   "topicStats": {
-    "improvement": {
-      "successCount": 0,
-      "failureCount": 9,
-      "observedCount": 10,
-      "successRate": 0,
-      "lastObservedAt": "2026-04-05T05:24:35.077Z"
-    },
-    "primary-lane": {
-      "successCount": 0,
-      "failureCount": 9,
-      "observedCount": 10,
-      "successRate": 0,
-      "lastObservedAt": "2026-04-05T05:24:35.077Z"
-    },
     "agents": {
       "successCount": 0,
       "failureCount": 72,

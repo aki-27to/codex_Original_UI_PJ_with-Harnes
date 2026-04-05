@@ -1,11 +1,11 @@
 # Autonomous Learning Status
 
 - queued: 0
-- running: 3
-- passed: 0
-- blocked: 0
+- running: 0
+- passed: 1
+- blocked: 2
 
 ## Top agenda
-- default: running / weakest family is R robust
-- default: running / robustness is currently limited by ambiguous instruction (no evidence yet)
-- default: running / continuity carries 26 closeout debt item(s) with severity high
+- R_robust: passed / weakest family is R robust
+- default: proposal only / secondary advisory lane was considered but has no advisory trace
+- default: proposal only / causal regression alerts missing

@@ -52,8 +52,11 @@
     "explainWithMargins": true
   },
   "stableCoverage": {
-    "windowSize": 3
+    "windowSize": 3,
+    "requiredPassingWindows": 3,
+    "maxRecentFailureBurden": 0
   },
+  "robustnessWindowSize": 12,
   "operationalCompletionCriteria": {
     "stableCoverageBreadth": 1,
     "supportedCoverageBreadth": 1,

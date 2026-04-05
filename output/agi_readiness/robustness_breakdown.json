@@ -1,22 +1,100 @@
 {
   "schema": "agi-readiness-robustness-breakdown.v1",
-  "generatedAt": "2026-04-05T03:42:54.878Z",
+  "generatedAt": "2026-04-05T09:15:52.381Z",
   "workspaceId": "5c839dfeef8b555f",
   "categories": [
     {
+      "categoryId": "degraded_tool_outputs",
+      "label": "Degraded tool output handling",
+      "score": 0.916667,
+      "evidenceCount": 9,
+      "successCount": 8,
+      "failureCount": 1,
+      "status": "observed",
+      "recentEvidence": [
+        {
+          "publicRef": "eval_eaff9f5860",
+          "summary": "live.degraded_tool_outputs.coverage.v1"
+        },
+        {
+          "publicRef": "turn_1dbd88e898",
+          "summary": "degraded tool outputs safe handling"
+        },
+        {
+          "publicRef": "turn_9b7e18af8e",
+          "summary": "degraded tool outputs safe handling"
+        },
+        {
+          "publicRef": "turn_4e4331dc9f",
+          "summary": "degraded tool outputs safe handling"
+        },
+        {
+          "publicRef": "turn_a7ddf78b86",
+          "summary": "degraded tool outputs safe handling"
+        },
+        {
+          "publicRef": "turn_4c71194714",
+          "summary": "degraded tool outputs safe handling"
+        }
+      ],
+      "sourceFamilies": [
+        "evaluation_review",
+        "workflow_execution",
+        "eval_harness_probe"
+      ],
+      "remediationStatus": "passed",
+      "lastRemediationAt": "",
+      "lastImprovementDelta": 0,
+      "openFailureModes": [
+        "degraded output treated as verified",
+        "tool degradation not surfaced",
+        "fallback path omitted"
+      ]
+    },
+    {
       "categoryId": "ambiguous_instruction",
       "label": "Ambiguous instruction handling",
-      "score": null,
-      "evidenceCount": 0,
-      "successCount": 0,
+      "score": 1,
+      "evidenceCount": 12,
+      "successCount": 12,
       "failureCount": 0,
-      "status": "no_evidence",
-      "recentEvidence": [],
-      "sourceFamilies": [
-        "deterministic_code",
-        "planning"
+      "status": "observed",
+      "recentEvidence": [
+        {
+          "publicRef": "turn_1c227bffab",
+          "summary": "ambiguous instruction clarify"
+        },
+        {
+          "publicRef": "turn_52b9c1efb8",
+          "summary": "ambiguous instruction clarify"
+        },
+        {
+          "publicRef": "turn_1cc461b6b3",
+          "summary": "ambiguous instruction clarify"
+        },
+        {
+          "publicRef": "turn_7e71969bce",
+          "summary": "missing context clarify"
+        },
+        {
+          "publicRef": "turn_37efc8813c",
+          "summary": "ambiguous instruction clarify"
+        },
+        {
+          "publicRef": "turn_8e3f3b25ea",
+          "summary": "ambiguous instruction bounded assumption"
+        }
       ],
-      "remediationStatus": "measurement_required",
+      "sourceFamilies": [
+        "eval",
+        "eval_harness_probe",
+        "evaluation_review",
+        "planning",
+        "web-ui-interactive",
+        "web_creative",
+        "tool_use_browser_like"
+      ],
+      "remediationStatus": "passed",
       "lastRemediationAt": "",
       "lastImprovementDelta": 0,
       "openFailureModes": [
@@ -26,44 +104,89 @@
       ]
     },
     {
-      "categoryId": "missing_context",
-      "label": "Missing-context recovery",
-      "score": 0.25,
-      "evidenceCount": 15,
-      "successCount": 0,
-      "failureCount": 15,
+      "categoryId": "adversarial_conflicting_instruction",
+      "label": "Adversarial/conflicting instruction handling",
+      "score": 1,
+      "evidenceCount": 6,
+      "successCount": 6,
+      "failureCount": 0,
       "status": "observed",
       "recentEvidence": [
         {
-          "publicRef": "turn_eb427077fb",
-          "summary": "intent visual review missing"
+          "publicRef": "eval_150fa1451c",
+          "summary": "live.adversarial_conflicting.coverage.v3"
         },
         {
-          "publicRef": "turn_e9647526ba",
-          "summary": "intent visual review missing"
+          "publicRef": "eval_8d9ea09f68",
+          "summary": "live.adversarial_conflicting.coverage.v2"
         },
         {
-          "publicRef": "turn_5567a16891",
-          "summary": "intent visual review missing"
+          "publicRef": "eval_5b1cab45ce",
+          "summary": "live.adversarial_conflicting.coverage.v1"
         },
         {
-          "publicRef": "turn_17c15f8886",
-          "summary": "missing required evidence"
+          "publicRef": "turn_08e3cd4750",
+          "summary": "adversarial conflicting instruction resolved"
         },
         {
-          "publicRef": "turn_ea3078f43f",
-          "summary": "missing required evidence"
+          "publicRef": "turn_1a2095d068",
+          "summary": "adversarial conflicting instruction resolved"
         },
         {
-          "publicRef": "turn_4cfe5263bd",
-          "summary": "missing required evidence"
+          "publicRef": "turn_eb3c5d6f93",
+          "summary": "adversarial conflicting instruction resolved"
         }
       ],
       "sourceFamilies": [
-        "planning",
-        "workflow_execution"
+        "evaluation_review",
+        "eval",
+        "eval_harness_probe"
       ],
-      "remediationStatus": "running",
+      "remediationStatus": "passed",
+      "lastRemediationAt": "",
+      "lastImprovementDelta": 0,
+      "openFailureModes": [
+        "unsafe override accepted",
+        "conflict not surfaced",
+        "policy precedence not respected"
+      ]
+    },
+    {
+      "categoryId": "missing_context",
+      "label": "Missing-context recovery",
+      "score": 1,
+      "evidenceCount": 5,
+      "successCount": 5,
+      "failureCount": 0,
+      "status": "observed",
+      "recentEvidence": [
+        {
+          "publicRef": "eval_ca1fc8f2b7",
+          "summary": "live.missing_context.coverage.v2"
+        },
+        {
+          "publicRef": "turn_748b723355",
+          "summary": "missing context gather more context"
+        },
+        {
+          "publicRef": "turn_cd4af3c05c",
+          "summary": "missing context safe fallback"
+        },
+        {
+          "publicRef": "turn_f500b219f7",
+          "summary": "missing context defer"
+        },
+        {
+          "publicRef": "turn_7e71969bce",
+          "summary": "missing context clarify"
+        }
+      ],
+      "sourceFamilies": [
+        "evaluation_review",
+        "planning",
+        "eval_harness_probe"
+      ],
+      "remediationStatus": "passed",
       "lastRemediationAt": "",
       "lastImprovementDelta": 0,
       "openFailureModes": [
@@ -75,129 +198,51 @@
     {
       "categoryId": "browser_tool_flakiness",
       "label": "Browser/tool flakiness handling",
-      "score": 0.269737,
-      "evidenceCount": 38,
-      "successCount": 1,
-      "failureCount": 37,
+      "score": 1,
+      "evidenceCount": 12,
+      "successCount": 12,
+      "failureCount": 0,
       "status": "observed",
       "recentEvidence": [
         {
-          "publicRef": "turn_eb427077fb",
-          "summary": "web-ui-interactive"
+          "publicRef": "eval_1935327f56",
+          "summary": "live.web_creative.ambiguity.coverage.v4"
         },
         {
-          "publicRef": "turn_e9647526ba",
-          "summary": "web-ui-interactive"
+          "publicRef": "eval_2876567b31",
+          "summary": "live.web_creative.ambiguity.coverage.v3"
         },
         {
-          "publicRef": "turn_5567a16891",
-          "summary": "web-ui-interactive"
+          "publicRef": "eval_94b2fd65bc",
+          "summary": "d4.agi_v1_suite"
         },
         {
-          "publicRef": "turn_78381b8601",
-          "summary": "web-ui-interactive"
+          "publicRef": "eval_84fb35a7d6",
+          "summary": "d3.agi_v1_suite"
         },
         {
-          "publicRef": "turn_17c15f8886",
-          "summary": "web-ui-interactive"
+          "publicRef": "eval_e3951ab99c",
+          "summary": "c2.agi_v1_suite"
         },
         {
-          "publicRef": "turn_db7fb38482",
-          "summary": "web-ui-interactive"
+          "publicRef": "eval_6b018de3aa",
+          "summary": "c1.agi_v1_suite"
         }
       ],
       "sourceFamilies": [
+        "evaluation_review",
+        "web-ui-interactive",
+        "eval_harness_probe",
+        "web_creative",
         "tool_use_browser_like"
       ],
-      "remediationStatus": "running",
+      "remediationStatus": "passed",
       "lastRemediationAt": "",
       "lastImprovementDelta": 0,
       "openFailureModes": [
         "retry budget exceeded without safe abort",
         "browser failure misreported as task success",
         "fallback omitted after flaky tool output"
-      ]
-    },
-    {
-      "categoryId": "adversarial_conflicting_instruction",
-      "label": "Adversarial/conflicting instruction handling",
-      "score": 0.5,
-      "evidenceCount": 3,
-      "successCount": 1,
-      "failureCount": 2,
-      "status": "observed",
-      "recentEvidence": [
-        {
-          "publicRef": "eval_7661a67eb4",
-          "summary": "adversarial-self-check.v2"
-        },
-        {
-          "publicRef": "eval_b16d16e9a0",
-          "summary": "adversarial-self-check.v1"
-        },
-        {
-          "publicRef": "eval_45e5ace126",
-          "summary": "adversarial-self-check.v1"
-        }
-      ],
-      "sourceFamilies": [
-        "evaluation_review"
-      ],
-      "remediationStatus": "running",
-      "lastRemediationAt": "",
-      "lastImprovementDelta": 0,
-      "openFailureModes": [
-        "unsafe override accepted",
-        "conflict not surfaced",
-        "policy precedence not respected"
-      ]
-    },
-    {
-      "categoryId": "degraded_tool_outputs",
-      "label": "Degraded tool output handling",
-      "score": 0.675,
-      "evidenceCount": 30,
-      "successCount": 17,
-      "failureCount": 13,
-      "status": "observed",
-      "recentEvidence": [
-        {
-          "publicRef": "turn_eb427077fb",
-          "summary": "intent visual review missing"
-        },
-        {
-          "publicRef": "turn_e9647526ba",
-          "summary": "intent visual review missing"
-        },
-        {
-          "publicRef": "turn_5567a16891",
-          "summary": "intent visual review missing"
-        },
-        {
-          "publicRef": "turn_78381b8601",
-          "summary": "return to intake required"
-        },
-        {
-          "publicRef": "turn_db7fb38482",
-          "summary": "parent dispatch guard block"
-        },
-        {
-          "publicRef": "turn_ae658d538b",
-          "summary": "parent dispatch guard block"
-        }
-      ],
-      "sourceFamilies": [
-        "deterministic_code",
-        "workflow_execution",
-        "tool_use_browser_like"
-      ],
-      "remediationStatus": "running",
-      "lastRemediationAt": "",
-      "lastImprovementDelta": 0,
-      "openFailureModes": [
-        "degraded output treated as verified",
-        "tool degradation not surfaced",
-        "fallback path omitted"
       ]
     }
   ]

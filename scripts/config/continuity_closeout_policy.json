@@ -33,5 +33,7 @@
     "dependency_unresolved",
     "verifier_failed"
   ],
-  "autoCloseWhenRootIntegrated": true
+  "autoCloseWhenRootIntegrated": true,
+  "staleAutoCloseHours": 24,
+  "replacementEvidenceCountMin": 2
 }

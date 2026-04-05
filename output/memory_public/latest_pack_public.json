@@ -1,22 +1,22 @@
 {
   "schema": "governed-memory-latest-pack-public.v1",
-  "generatedAt": "2026-04-05T05:24:36.628Z",
+  "generatedAt": "2026-04-05T09:15:52.467Z",
   "workspaceId": "5c839dfeef8b555f",
-  "packId": "87587d414ffc56ef13b2",
+  "packId": "283ce11578b9ccbdfb1f",
   "latestPack": {
-    "generatedAt": "2026-04-05T05:24:34.925Z",
-    "compiledAt": "2026-04-05T05:24:34.925Z",
-    "activeAgent": "intake",
-    "taskFamily": "smoke-http-exec",
-    "selectedCount": 11,
-    "highConfidenceCount": 2,
-    "reusedSelectedCount": 11,
+    "generatedAt": "2026-04-05T09:15:51.495Z",
+    "compiledAt": "2026-04-05T09:15:51.495Z",
+    "activeAgent": "default",
+    "taskFamily": "eval",
+    "selectedCount": 13,
+    "highConfidenceCount": 3,
+    "reusedSelectedCount": 13,
     "explicitTaskFamilyMismatchCount": 0,
     "sectionCounts": {
       "workspace_progress": 1,
       "intent": 1,
       "spec": 4,
-      "experience": 2,
+      "experience": 4,
       "semantic": 3
     },
     "selectedItems": [
@@ -24,13 +24,13 @@
         "publicRef": "mem_dd9c0f3a28",
         "type": "workspace_progress",
         "status": "promoted",
-        "score": 0.8723,
+        "score": 0.8725,
         "scoreBand": "high",
         "sourceTier": "runtime",
         "authorityTier": 3,
         "scopeWorkspace": "5c839dfeef8b555f",
         "taskFamilies": [
-          "smoke-http-exec"
+          "eval"
         ],
         "summary": "Durable workspace-scoped progress state compiled from the latest turn, evidence traceability, and execution history."
       },
@@ -38,13 +38,13 @@
         "publicRef": "mem_9c7f4cba43",
         "type": "requirement_ref",
         "status": "promoted",
-        "score": 0.828,
+        "score": 0.8283,
         "scoreBand": "high",
         "sourceTier": "runtime",
         "authorityTier": 1,
         "scopeWorkspace": "5c839dfeef8b555f",
         "taskFamilies": [
-          "smoke-http-exec"
+          "eval"
         ],
         "summary": "Active intent-first requirement state for the current workspace and turn."
       },
@@ -52,8 +52,8 @@
         "publicRef": "mem_52f4ed9143",
         "type": "constitution_ref",
         "status": "promoted",
-        "score": 0.6771,
-        "scoreBand": "selected",
+        "score": 0.6975,
+        "scoreBand": "high",
         "sourceTier": "repo",
         "authorityTier": 0,
         "scopeWorkspace": "5c839dfeef8b555f",
@@ -66,7 +66,7 @@
         "publicRef": "mem_e65f4ce9a0",
         "type": "constitution_ref",
         "status": "promoted",
-        "score": 0.6539,
+        "score": 0.6533,
         "scoreBand": "selected",
         "sourceTier": "repo",
         "authorityTier": 0,
@@ -78,7 +78,7 @@
         "publicRef": "mem_ad36640985",
         "type": "constitution_ref",
         "status": "promoted",
-        "score": 0.6539,
+        "score": 0.6533,
         "scoreBand": "selected",
         "sourceTier": "repo",
         "authorityTier": 0,
@@ -90,7 +90,7 @@
         "publicRef": "mem_b5d199f8aa",
         "type": "constitution_ref",
         "status": "promoted",
-        "score": 0.6539,
+        "score": 0.6533,
         "scoreBand": "selected",
         "sourceTier": "repo",
         "authorityTier": 0,
@@ -99,68 +99,74 @@
         "summary": "context-memory-policy"
       },
       {
-        "publicRef": "mem_46618c22f3",
+        "publicRef": "mem_f07440d485",
         "type": "episodic_event",
         "status": "captured",
-        "score": 0.6404,
+        "score": 0.6408,
         "scoreBand": "selected",
         "sourceTier": "runtime",
         "authorityTier": 4,
         "scopeWorkspace": "5c839dfeef8b555f",
         "taskFamilies": [
-          "smoke-http-exec",
-          "smoke_test"
+          "eval",
+          "eval_harness_probe",
+          "evaluation_review"
         ],
         "summary": "runtime episode finished as CAPTURED."
       },
       {
-        "publicRef": "mem_06ab676347",
+        "publicRef": "mem_2266adc40e",
         "type": "episodic_event",
         "status": "captured",
-        "score": 0.6404,
+        "score": 0.6408,
         "scoreBand": "selected",
         "sourceTier": "runtime",
         "authorityTier": 4,
         "scopeWorkspace": "5c839dfeef8b555f",
         "taskFamilies": [
-          "smoke-http-exec",
-          "smoke_test"
+          "eval",
+          "eval_harness_probe",
+          "evaluation_review"
         ],
         "summary": "runtime episode finished as CAPTURED."
       },
       {
-        "publicRef": "mem_38e064a6a2",
-        "type": "failure_pattern",
-        "status": "promoted",
-        "score": 0.5763,
+        "publicRef": "mem_c54748de2b",
+        "type": "episodic_event",
+        "status": "captured",
+        "score": 0.6408,
         "scoreBand": "selected",
         "sourceTier": "runtime",
-        "authorityTier": 5,
+        "authorityTier": 4,
         "scopeWorkspace": "5c839dfeef8b555f",
         "taskFamilies": [
-          "default"
+          "eval",
+          "eval_harness_probe",
+          "evaluation_review"
         ],
-        "summary": "parent dispatch guard block"
+        "summary": "runtime episode finished as CAPTURED."
       },
       {
-        "publicRef": "mem_1ce008bc40",
-        "type": "failure_pattern",
-        "status": "promoted",
-        "score": 0.5763,
+        "publicRef": "mem_4395386d0e",
+        "type": "episodic_event",
+        "status": "captured",
+        "score": 0.6408,
         "scoreBand": "selected",
         "sourceTier": "runtime",
-        "authorityTier": 5,
+        "authorityTier": 4,
         "scopeWorkspace": "5c839dfeef8b555f",
         "taskFamilies": [
-          "default"
+          "eval",
+          "eval_harness_probe",
+          "evaluation_review"
         ],
-        "summary": "missing required evidence"
+        "summary": "runtime episode finished as CAPTURED."
       },
       {
-        "publicRef": "mem_c3232047e5",
+        "publicRef": "mem_26708ecfcc",
         "type": "failure_pattern",
         "status": "promoted",
-        "score": 0.5763,
+        "score": 0.5967,
         "scoreBand": "selected",
         "sourceTier": "runtime",
         "authorityTier": 5,
@@ -168,7 +174,21 @@
         "taskFamilies": [
           "default"
         ],
-        "summary": "intent visual review missing"
+        "summary": "interactive approval unavailable"
+      },
+      {
+        "publicRef": "mem_90a929a260",
+        "type": "failure_pattern",
+        "status": "promoted",
+        "score": 0.5967,
+        "scoreBand": "selected",
+        "sourceTier": "runtime",
+        "authorityTier": 5,
+        "scopeWorkspace": "5c839dfeef8b555f",
+        "taskFamilies": [
+          "default"
+        ],
+        "summary": "adversarial conflicting instruction resolved"
       }
     ]
   }

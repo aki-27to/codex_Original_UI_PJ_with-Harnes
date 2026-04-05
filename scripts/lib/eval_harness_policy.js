@@ -29,6 +29,11 @@ const allowedEvalDrivers = new Set([
   "adversarial_shadow_probe",
   "adversarial_loop_probe",
   "user_value_probe",
+  "missing_context_recovery",
+  "browser_tool_flakiness_recovery",
+  "ambiguous_instruction_probe",
+  "adversarial_conflict_probe",
+  "degraded_tool_outputs_probe",
 ]);
 
 function safeString(value, max = 2000) {

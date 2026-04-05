@@ -1,6 +1,6 @@
 {
   "schema": "governed-memory-public-lane-projection.v1",
-  "generatedAt": "2026-04-05T05:24:36.622Z",
+  "generatedAt": "2026-04-05T09:15:52.462Z",
   "laneKey": "anthropic_secondary",
   "sourceName": "Anthropic Engineering",
   "sourceTier": "external_secondary",
@@ -14,16 +14,16 @@
     "blockedCount": 0,
     "shadowCount": 0,
     "selectedInLatestPackCount": 0,
-    "consideredForPackCount": 4,
+    "consideredForPackCount": 0,
     "advisoryReferenceCount": 4,
-    "observationCount": 2436,
-    "awaitingObservationCount": 0,
+    "observationCount": 0,
+    "awaitingObservationCount": 4,
     "familyObservationCounts": {
-      "default": 2436
+      "default": 0
     },
     "familySelectionCounts": {},
-    "causalUsageCount": 4,
-    "surfacedToAgentCount": 4,
+    "causalUsageCount": 0,
+    "surfacedToAgentCount": 0,
     "behaviorallyReferencedCount": 0,
     "likelyContributoryCount": 0
   },
@@ -37,127 +37,30 @@
     "status": "shadow_only",
     "promotedLessonCount": 0,
     "selectedInLatestPackCount": 0,
-    "observationCount": 2436,
-    "awaitingObservationCount": 0,
+    "observationCount": 0,
+    "awaitingObservationCount": 4,
     "observationStatus": "disabled",
-    "lastObservedAt": "2026-04-05T05:20:23.639Z",
-    "consideredForPackCount": 4,
+    "lastObservedAt": "",
+    "consideredForPackCount": 0,
     "advisoryReferenceCount": 4,
-    "causalUsageCount": 4
+    "causalUsageCount": 0
   },
   "advisory": {
     "shadowOnlyReason": "secondary source remains advisory and does not override primary/runtime policy",
     "familyObservationCounts": {
-      "default": 2436
+      "default": 0
     },
     "familySelectionCounts": {},
-    "consideredForPackCount": 4,
+    "policyEligibleCount": 4,
+    "consideredForPackCount": 0,
     "advisoryReferenceCount": 4
   },
-  "causalUsageCount": 4,
-  "recentCausalEffects": [
-    {
-      "publicRef": "mem_1ef523dba6",
-      "usageStage": "advisory_reference",
-      "causalConfidence": "plausible",
-      "taskRefs": [
-        "turn_816303077a",
-        "turn_ae658d538b",
-        "turn_ea3078f43f",
-        "turn_903381175d"
-      ],
-      "summary": "Quantifying infrastructure noise in agentic coding evals"
-    },
-    {
-      "publicRef": "mem_606a1bdedc",
-      "usageStage": "advisory_reference",
-      "causalConfidence": "plausible",
-      "taskRefs": [
-        "turn_816303077a",
-        "turn_ae658d538b",
-        "turn_ea3078f43f",
-        "turn_903381175d"
-      ],
-      "summary": "Harness design for long-running application development"
-    },
-    {
-      "publicRef": "mem_1ac8f13aa6",
-      "usageStage": "advisory_reference",
-      "causalConfidence": "plausible",
-      "taskRefs": [
-        "turn_816303077a",
-        "turn_ae658d538b",
-        "turn_ea3078f43f",
-        "turn_903381175d"
-      ],
-      "summary": "Designing AI resistant technical evaluations"
-    },
-    {
-      "publicRef": "mem_4a860af3cd",
-      "usageStage": "advisory_reference",
-      "causalConfidence": "plausible",
-      "taskRefs": [
-        "turn_816303077a",
-        "turn_ae658d538b",
-        "turn_ea3078f43f",
-        "turn_903381175d"
-      ],
-      "summary": "Demystifying evals for AI agents"
-    }
-  ],
-  "recentAdvisoryEffects": [
-    {
-      "publicRef": "mem_1ef523dba6",
-      "usageStage": "advisory_reference",
-      "causalConfidence": "plausible",
-      "taskRefs": [
-        "turn_816303077a",
-        "turn_ae658d538b",
-        "turn_ea3078f43f",
-        "turn_903381175d"
-      ],
-      "summary": "Quantifying infrastructure noise in agentic coding evals"
-    },
-    {
-      "publicRef": "mem_606a1bdedc",
-      "usageStage": "advisory_reference",
-      "causalConfidence": "plausible",
-      "taskRefs": [
-        "turn_816303077a",
-        "turn_ae658d538b",
-        "turn_ea3078f43f",
-        "turn_903381175d"
-      ],
-      "summary": "Harness design for long-running application development"
-    },
-    {
-      "publicRef": "mem_1ac8f13aa6",
-      "usageStage": "advisory_reference",
-      "causalConfidence": "plausible",
-      "taskRefs": [
-        "turn_816303077a",
-        "turn_ae658d538b",
-        "turn_ea3078f43f",
-        "turn_903381175d"
-      ],
-      "summary": "Designing AI resistant technical evaluations"
-    },
-    {
-      "publicRef": "mem_4a860af3cd",
-      "usageStage": "advisory_reference",
-      "causalConfidence": "plausible",
-      "taskRefs": [
-        "turn_816303077a",
-        "turn_ae658d538b",
-        "turn_ea3078f43f",
-        "turn_903381175d"
-      ],
-      "summary": "Demystifying evals for AI agents"
-    }
-  ],
+  "causalUsageCount": 0,
+  "recentCausalEffects": [],
+  "recentAdvisoryEffects": [],
   "recentLessons": [
     {
-      "publicRef": "mem_1ef523dba6",
+      "publicRef": "mem_603ca2f989",
       "status": "shadow",
       "summary": "Quantifying infrastructure noise in agentic coding evals",
       "topics": [
@@ -166,7 +69,7 @@
       ]
     },
     {
-      "publicRef": "mem_606a1bdedc",
+      "publicRef": "mem_6d1874456b",
       "status": "shadow",
       "summary": "Harness design for long-running application development",
       "topics": [
@@ -175,7 +78,7 @@
       ]
     },
     {
-      "publicRef": "mem_1ac8f13aa6",
+      "publicRef": "mem_4fb3af82b3",
       "status": "shadow",
       "summary": "Designing AI resistant technical evaluations",
       "topics": [
@@ -184,7 +87,7 @@
       ]
     },
     {
-      "publicRef": "mem_4a860af3cd",
+      "publicRef": "mem_dacaa67e51",
       "status": "shadow",
       "summary": "Demystifying evals for AI agents",
       "topics": [
@@ -198,12 +101,12 @@
     "gateReason": "no_auto_apply_candidates",
     "appliedDecision": "none",
     "observationStatus": "disabled",
-    "observationCount": 2436,
+    "observationCount": 0,
     "proposalOnlyCount": 4,
     "blockedCount": 0,
-    "awaitingObservationCount": 0,
+    "awaitingObservationCount": 4,
     "policyDisabledCandidateCount": 1,
-    "lastObservedAt": "2026-04-05T05:20:23.639Z",
+    "lastObservedAt": "",
     "nextPriority": {
       "title": "Effective harnesses for long-running agents",
       "changeType": "frontend_quality_note",

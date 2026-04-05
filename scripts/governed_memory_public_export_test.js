@@ -239,6 +239,8 @@ function main() {
   assert.strictEqual(anthropicLane.canonicalCounts.derivedFromCanonicalStore, true, "anthropic lane projection must declare canonical derivation");
   if ((anthropicLane.canonicalCounts.consideredForPackCount || 0) > 0) {
     assert(Array.isArray(anthropicLane.recentAdvisoryEffects) && anthropicLane.recentAdvisoryEffects.length > 0, "anthropic lane must expose advisory effects when considered for pack");
+  } else {
+    assert.strictEqual(anthropicLane.canonicalCounts.consideredForPackCount, 0, "anthropic lane considered count must drop to zero when no advisory trace exists");
   }
 
   const readiness = JSON.parse(fs.readFileSync(path.join(readinessRoot, "latest_readiness.json"), "utf8"));
@@ -407,6 +409,36 @@ function main() {
   assert.strictEqual(fs.existsSync(path.join(tempRoot, exportManifest.outputs.robustnessRemediationEffectsJson)), true, "export manifest remediation effects path must resolve to a real file");
   assert.strictEqual(fs.existsSync(path.join(tempRoot, exportManifest.outputs.causalEffectivenessSummaryJson)), true, "export manifest causal effectiveness summary path must resolve to a real file");
   assert.strictEqual(fs.existsSync(path.join(tempRoot, exportManifest.outputs.goalCompletionStatusJson)), true, "export manifest goal completion path must resolve to a real file");
+
+  const incompleteBundleRoot = path.join(tempRoot, "output", "agi_v1", "eval-incomplete-readiness");
+  fs.mkdirSync(incompleteBundleRoot, { recursive: true });
+  fs.writeFileSync(path.join(incompleteBundleRoot, "agi_v1_bundle.json"), `${JSON.stringify({
+    generatedAt: "2026-04-06T00:00:00.000Z",
+    runId: "eval-incomplete-readiness",
+    profile: "agi_v1",
+    suiteId: "live.degraded_tool_outputs.coverage.incomplete",
+    candidate: {
+      candidateId: "candidate-incomplete-readiness",
+      generatedAt: "2026-04-06T00:00:00.000Z",
+      rawFinalScore: null,
+      displayFinalScore: null,
+      riskSummary: { cvar: null, supportStatus: "unsupported" },
+      familySummaries: {
+        G_breadth: { main: { value: null, threshold: 0.7, supportStatus: "unsupported" } },
+        R_robust: { main: { value: null, threshold: 0.93, supportStatus: "unsupported" } },
+        H_horizon: { main: { value: null, threshold: 0.97, supportStatus: "unsupported" } },
+      },
+    },
+    promotionDecision: {
+      challengerIdentifier: "candidate-incomplete-readiness",
+      promote: false,
+      reasons: ["missing_supported_critical_metrics"],
+    },
+  }, null, 2)}\n`, "utf8");
+  exportGovernedMemoryPublicArtifacts({ workspaceRoot: tempRoot });
+  const readinessAfterIncompleteBundle = JSON.parse(fs.readFileSync(path.join(readinessRoot, "latest_readiness.json"), "utf8"));
+  assert.notStrictEqual(readinessAfterIncompleteBundle.latestRunId, "eval-incomplete-readiness", "latest readiness must ignore incomplete agi_v1 bundles");
+  assert(readinessAfterIncompleteBundle.rawFinalScore === readiness.rawFinalScore, "incomplete agi_v1 bundles must not zero out readiness score");
 
   const publicLeafValues = [
     workspaceProgress,

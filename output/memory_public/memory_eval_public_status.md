@@ -1,7 +1,7 @@
 # Memory Eval Public Status
 
 - Status: PASS
-- Generated At: 2026-04-05T05:24:36.882Z
+- Generated At: 2026-04-05T09:15:52.702Z
 
 ## Checks
 - canonical_store_present: PASS (canonical event log and index are present)
@@ -10,7 +10,7 @@
 - workspace_progress_updated_at_present: PASS (workspace progress projection exposes a durable updatedAt timestamp)
 - legacy_learning_compatibility_preserved: PASS (legacy learning compatibility artifacts remain addressable)
 - bounded_memory_pack_written: PASS (at least one bounded memory pack exists)
-- bounded_memory_pack_reuses_canonical_memory: PASS (11 selected pack item(s) were reused from the canonical store)
+- bounded_memory_pack_reuses_canonical_memory: PASS (13 selected pack item(s) were reused from the canonical store)
 - task_family_isolation_respected: PASS (latest bounded memory pack respects task-family isolation for hard-excluded governed memory types)
 - lane_projection_canonical_state_present: PASS (public lane projections expose canonical memory-derived lesson state for primary and secondary learning lanes)
 - promotion_health_memory_type_populated: PASS (promotion/revocation health entries expose non-empty memoryType values)
@@ -20,10 +20,10 @@
 - readiness_breadth_semantics_consistent: PASS (readiness headline exposes evaluated breadth separately from repo-wide supported coverage breadth)
 - promotion_surface_not_self_comparison_misreported: PASS (promotion surface distinguishes self-snapshot from distinct incumbent comparison)
 - coverage_failures_reflected_in_bottlenecks: PASS (coverage failures are reflected in readiness blocked reasons and next bottlenecks)
-- lane_projection_real_observations_reflected: PASS (lane projections reflect canonical observation state (observed/disabled))
+- lane_projection_real_observations_reflected: PASS (lane projections reflect canonical observation state (awaiting_observations/disabled))
 - breadth_family_evidence_present: PASS (4 target breadth families expose public-safe success/failure evidence)
 - weakest_gate_semantics_explained: PASS (weakest gate semantics expose a non-arbitrary gate-pressure explanation)
-- primary_lane_observation_closure: PASS (primary lane observations are no longer starved (110 observations, status=observed))
+- primary_lane_observation_closure: PASS (primary lane observations are no longer starved (100 observations, status=awaiting_observations))
 - continuity_public_real_case_present: PASS (continuity public summary exposes a real handoff/release/horizon case)
 - robustness_breakdown_exported: PASS (robustness breakdown export is present with category-level evidence)
 - autonomous_learning_agenda_present: PASS (autonomous learning agenda is present)
@@ -31,7 +31,7 @@
 - causal_learning_trace_present: PASS (causal learning trace is present)
 - primary_lane_causal_usage_present: PASS (primary lane causal usage is present when observations exist)
 - secondary_lane_advisory_trace_present: PASS (secondary advisory lane exposes advisory trace when considered)
-- distinct_lineage_present: PASS (distinct lineage has 7 entries)
+- distinct_lineage_present: PASS (distinct lineage has 6 entries)
 - distinct_lineage_has_non_promoted_case: PASS (distinct lineage includes blocked/hold or rejected comparisons)
 - continuity_debt_surface_present: PASS (continuity debt surface is present)
 - goal_completion_artifact_present: PASS (operational goal completion artifact is present)

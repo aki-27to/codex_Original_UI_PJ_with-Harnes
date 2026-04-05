@@ -1,53 +1,11 @@
 {
   "schema": "agi-readiness-robustness-remediation-status.v1",
-  "generatedAt": "2026-04-05T05:24:36.225Z",
+  "generatedAt": "2026-04-05T09:15:52.511Z",
   "workspaceId": "5c839dfeef8b555f",
   "categories": [
     {
-      "categoryId": "ambiguous_instruction",
-      "remediationStatus": "measurement required",
-      "lastRemediationAt": "",
-      "lastImprovementDelta": 0,
-      "openFailureModes": [
-        "ambiguity not detected",
-        "unsafe assumption without clarification",
-        "no evidence gathered for supported ambiguity handling"
-      ],
-      "score": 0,
-      "evidenceCount": 0,
-      "status": "no evidence"
-    },
-    {
-      "categoryId": "adversarial_conflicting_instruction",
-      "remediationStatus": "running",
-      "lastRemediationAt": "",
-      "lastImprovementDelta": 0,
-      "openFailureModes": [
-        "unsafe override accepted",
-        "conflict not surfaced",
-        "policy precedence not respected"
-      ],
-      "score": 0.5,
-      "evidenceCount": 3,
-      "status": "observed"
-    },
-    {
-      "categoryId": "missing_context",
-      "remediationStatus": "running",
-      "lastRemediationAt": "",
-      "lastImprovementDelta": 0,
-      "openFailureModes": [
-        "context insufficiency not surfaced",
-        "false completion after missing context",
-        "unsafe assumption without bounded disclosure"
-      ],
-      "score": 0.25,
-      "evidenceCount": 15,
-      "status": "observed"
-    },
-    {
       "categoryId": "degraded_tool_outputs",
-      "remediationStatus": "running",
+      "remediationStatus": "passed",
       "lastRemediationAt": "",
       "lastImprovementDelta": 0,
       "openFailureModes": [
@@ -55,13 +13,55 @@
         "tool degradation not surfaced",
         "fallback path omitted"
       ],
-      "score": 0.675,
-      "evidenceCount": 30,
+      "score": 0.916667,
+      "evidenceCount": 9,
+      "status": "observed"
+    },
+    {
+      "categoryId": "ambiguous_instruction",
+      "remediationStatus": "passed",
+      "lastRemediationAt": "",
+      "lastImprovementDelta": 0,
+      "openFailureModes": [
+        "ambiguity not detected",
+        "unsafe assumption without clarification",
+        "no evidence gathered for supported ambiguity handling"
+      ],
+      "score": 1,
+      "evidenceCount": 12,
+      "status": "observed"
+    },
+    {
+      "categoryId": "adversarial_conflicting_instruction",
+      "remediationStatus": "passed",
+      "lastRemediationAt": "",
+      "lastImprovementDelta": 0,
+      "openFailureModes": [
+        "unsafe override accepted",
+        "conflict not surfaced",
+        "policy precedence not respected"
+      ],
+      "score": 1,
+      "evidenceCount": 6,
+      "status": "observed"
+    },
+    {
+      "categoryId": "missing_context",
+      "remediationStatus": "passed",
+      "lastRemediationAt": "",
+      "lastImprovementDelta": 0,
+      "openFailureModes": [
+        "context insufficiency not surfaced",
+        "false completion after missing context",
+        "unsafe assumption without bounded disclosure"
+      ],
+      "score": 1,
+      "evidenceCount": 5,
       "status": "observed"
     },
     {
       "categoryId": "browser_tool_flakiness",
-      "remediationStatus": "running",
+      "remediationStatus": "passed",
       "lastRemediationAt": "",
       "lastImprovementDelta": 0,
       "openFailureModes": [
@@ -69,8 +69,8 @@
         "browser failure misreported as task success",
         "fallback omitted after flaky tool output"
       ],
-      "score": 0.269737,
-      "evidenceCount": 38,
+      "score": 1,
+      "evidenceCount": 12,
       "status": "observed"
     }
   ]

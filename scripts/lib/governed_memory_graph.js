@@ -37,6 +37,18 @@ function safeNumber(value, fallback = 0) {
   return Number.isFinite(parsed) ? parsed : fallback;
 }
 
+function hasExplicitNumber(value) {
+  if (value == null) return false;
+  if (typeof value === "string" && !value.trim()) return false;
+  return Number.isFinite(Number(value));
+}
+
+function numberOrNull(value, digits = null) {
+  if (!hasExplicitNumber(value)) return null;
+  const parsed = Number(value);
+  return digits == null ? parsed : Number(parsed.toFixed(digits));
+}
+
 function toIso(value = Date.now()) {
   const parsed = safeNumber(value, Date.now());
   return new Date(parsed).toISOString();
@@ -2315,6 +2327,47 @@ function buildObservationEvents({ workspaceRoot, runtime, traceability, pack, it
     ? policy.requireEvidenceRefs !== false
     : true;
   const selectedIds = uniqueStrings(pack && pack.selectedMemoryIds, 32, 120);
+  const readinessPolicy = loadAgiReadinessPolicy(workspaceRoot);
+  const makePackSelectionKey = (family = "", role = "") => {
+    const normalizedFamily = normalizeTaskFamilyId(family, readinessPolicy) || safeString(family, 80) || "default";
+    const normalizedRole = normalizeAgentRoleForGovernedMemory(role) || "default";
+    return `${normalizedFamily}::${normalizedRole}`;
+  };
+  const selectedIdsByFamilyRole = new Map();
+  const appendSelectedIds = (family = "", role = "", memoryIds = []) => {
+    const key = makePackSelectionKey(family, role);
+    const existing = selectedIdsByFamilyRole.get(key) || new Set();
+    for (const memoryId of uniqueStrings(memoryIds, 48, 120)) {
+      if (memoryId) existing.add(memoryId);
+    }
+    selectedIdsByFamilyRole.set(key, existing);
+  };
+  appendSelectedIds(taskFamily, agentRole, selectedIds);
+  for (const recentPack of takeRecentEntries(loadJsonl(paths.retrieval.packsPath), {
+    limit: 18,
+    timestampSelector: (entry) => entry && (entry.generatedAt || entry.compiledAt || entry.recordedAt),
+  })) {
+    appendSelectedIds(
+      safeString(recentPack && recentPack.taskFamily, 80),
+      safeString(recentPack && recentPack.activeAgent, 80),
+      recentPack && recentPack.selectedMemoryIds
+    );
+  }
+  const getSelectedIdsForFamilyRole = (family = "", role = "") => {
+    const candidates = [
+      makePackSelectionKey(family, role),
+      makePackSelectionKey(family, "default"),
+      makePackSelectionKey("default", role),
+      makePackSelectionKey("default", "default"),
+    ];
+    const ids = new Set();
+    for (const key of candidates) {
+      for (const memoryId of selectedIdsByFamilyRole.get(key) || []) {
+        ids.add(memoryId);
+      }
+    }
+    return ids;
+  };
   const buildObservationKey = ({ turnId = "", threadId = "", continuityTaskId = "", memoryId = "", taskFamily: family = "", agentRole: role = "" }) => {
     return stableHash({
       workspaceId,
@@ -2416,7 +2469,6 @@ function buildObservationEvents({ workspaceRoot, runtime, traceability, pack, it
       evidenceRefs: baseEvidenceRefs,
     });
   }
-  const readinessPolicy = loadAgiReadinessPolicy(workspaceRoot);
   const continuityTasks = Array.isArray(continuityBridge && continuityBridge.tasks) ? continuityBridge.tasks : [];
   const executionRecent = runtime && runtime.executionOverview && Array.isArray(runtime.executionOverview.recent)
     ? runtime.executionOverview.recent
@@ -2443,7 +2495,13 @@ function buildObservationEvents({ workspaceRoot, runtime, traceability, pack, it
       return true;
     });
     for (const family of families) {
-      const familyMatches = eligibleItems.filter((item) => memoryAppliesToTaskFamily(item, family, readinessPolicy));
+      const selectedForRecord = getSelectedIdsForFamilyRole(family, recordRole);
+      if (!selectedForRecord.size) continue;
+      const familyMatches = eligibleItems.filter((item) => {
+        const memoryId = safeString(item && item.memoryId, 120);
+        if (!memoryId || !selectedForRecord.has(memoryId)) return false;
+        return memoryAppliesToTaskFamily(item, family, readinessPolicy);
+      });
       for (const item of familyMatches) {
         maybeRecord({
           memoryId: safeString(item && item.memoryId, 120),
@@ -2462,8 +2520,11 @@ function buildObservationEvents({ workspaceRoot, runtime, traceability, pack, it
     if (!["completed", "blocked", "verifier_failed"].includes(safeString(task && task.lifecycleState, 80))) continue;
     const continuityOutcome = task.lifecycleState === "completed" ? "success" : task.lifecycleState === "verifier_failed" ? "failure" : "neutral";
     const continuityEvidence = uniqueStrings(task && task.evidenceRefs, 8, 220);
+    const selectedForTask = getSelectedIdsForFamilyRole(safeString(task && task.familyId, 80), safeString(task && task.role, 80) || "default");
+    if (!selectedForTask.size) continue;
     const continuityMatches = items.filter((item) => {
       if (!eligibleTypes.has(safeString(item && item.type, 80))) return false;
+      if (!selectedForTask.has(safeString(item && item.memoryId, 120))) return false;
       if (!memoryAppliesToTaskFamily(item, safeString(task && task.familyId, 80), readinessPolicy)) return false;
       if (!memoryAppliesToAgent(item, safeString(task && task.role, 80) || "default")) return false;
       return true;
@@ -2659,15 +2720,15 @@ function createRemediationAgendaEntry({
   const source = safeString(bottleneck.source, 80) || "unknown";
   const robustnessMatch = /missing_context|browser_tool_flakiness|ambiguous_instruction|adversarial_conflicting_instruction|degraded_tool_outputs/i.exec(summary);
   const targetCategory = robustnessMatch ? safeString(robustnessMatch[0], 80).toLowerCase() : "";
-  const familyMatch = /deterministic_code|web_creative|planning|workflow_execution|evaluation_review|tool_use_browser_like|R_robust|H_horizon|G_breadth/i.exec(summary);
-  const targetFamily = familyMatch ? safeString(familyMatch[0], 80) : "";
+  const familyMatch = /deterministic_code|web_creative|planning|workflow_execution|evaluation_review|tool_use_browser_like|R[_ ]robust|H[_ ]horizon|G[_ ]breadth/i.exec(summary);
+  const targetFamily = familyMatch ? safeString(familyMatch[0], 80).replace(/\s+/g, "_") : "";
   const template = remediationPolicy && remediationPolicy.bottleneckTemplates && remediationPolicy.bottleneckTemplates[classification]
     ? remediationPolicy.bottleneckTemplates[classification]
     : {};
   const categoryPolicy = targetCategory && robustnessPolicy && robustnessPolicy.categoryPolicies && robustnessPolicy.categoryPolicies[targetCategory]
     ? robustnessPolicy.categoryPolicies[targetCategory]
     : {};
-  const agendaId = stablePublicRef(`${classification}:${targetFamily}:${targetCategory}:${source}`, "agenda");
+  const agendaId = stablePublicRef(`${classification}:${targetFamily}:${targetCategory}:${source}:${summary}`, "agenda");
   const previousRetryBudget = previous && previous.retryBudget != null && previous.retryBudget !== "" ? previous.retryBudget : undefined;
   const previousAttemptCount = previous && previous.attemptCount != null && previous.attemptCount !== "" ? previous.attemptCount : undefined;
   const previousCooldownHours = previous && previous.cooldownHours != null && previous.cooldownHours !== "" ? previous.cooldownHours : undefined;
@@ -2681,6 +2742,7 @@ function createRemediationAgendaEntry({
     ? readinessArtifacts.robustnessBreakdown.categories.find((entry) => safeString(entry && entry.categoryId, 80) === targetCategory)
     : null;
   const continuityItems = continuityDebt && Array.isArray(continuityDebt.items) ? continuityDebt.items : [];
+  const openContinuityItems = continuityItems.filter((entry) => !["resolved", "invalidated", "rolled_back"].includes(safeString(entry && entry.status, 80)));
   if (classification === "capability bottleneck" && safeString(targetFamily, 80) === "R_robust" && weakRobustness) {
     if (safeNumber(weakRobustness.score, 0) >= safeNumber(robustnessPolicy && robustnessPolicy.targetScore, 0.8)) {
       status = "passed";
@@ -2694,11 +2756,53 @@ function createRemediationAgendaEntry({
       status = "running";
       result = "improving";
     }
+  } else if (classification === "capability bottleneck" && targetCategory && weakRobustness) {
+    const targetScore = safeNumber(
+      categoryPolicy && categoryPolicy.targetScore,
+      safeString(targetCategory, 80) === "ambiguous_instruction"
+        ? safeNumber(readinessArtifacts && readinessArtifacts.readiness && readinessArtifacts.readiness.completionCriteria && readinessArtifacts.readiness.completionCriteria.ambiguousInstructionThreshold, 0.8)
+        : safeString(targetCategory, 80) === "missing_context"
+          ? safeNumber(readinessArtifacts && readinessArtifacts.readiness && readinessArtifacts.readiness.completionCriteria && readinessArtifacts.readiness.completionCriteria.missingContextThreshold, 0.85)
+          : safeString(targetCategory, 80) === "browser_tool_flakiness"
+            ? safeNumber(readinessArtifacts && readinessArtifacts.readiness && readinessArtifacts.readiness.completionCriteria && readinessArtifacts.readiness.completionCriteria.browserFlakinessThreshold, 0.8)
+            : safeString(targetCategory, 80) === "adversarial_conflicting_instruction"
+              ? safeNumber(readinessArtifacts && readinessArtifacts.readiness && readinessArtifacts.readiness.completionCriteria && readinessArtifacts.readiness.completionCriteria.adversarialConflictingThreshold, 0.75)
+              : safeString(targetCategory, 80) === "degraded_tool_outputs"
+                ? safeNumber(readinessArtifacts && readinessArtifacts.readiness && readinessArtifacts.readiness.completionCriteria && readinessArtifacts.readiness.completionCriteria.degradedToolOutputsThreshold, 0.85)
+                : safeNumber(robustnessPolicy && robustnessPolicy.targetScore, 0.8)
+    );
+    if (safeString(weakRobustness.status, 40) === "no_evidence") {
+      status = "running";
+      result = "measurement_required";
+      remediationEffect = "insufficient_evidence";
+    } else if (safeNumber(weakRobustness.score, 0) >= targetScore) {
+      status = "passed";
+      result = "improved";
+      remediationEffect = "verified_positive";
+    } else {
+      status = "running";
+      result = "improving";
+    }
   } else if (classification === "capability bottleneck") {
-    status = "running";
-    result = safeString(targetFamily, 80) === "H_horizon" ? "continuity_evidence_required" : "measurement_required";
+    const readiness = readinessArtifacts && readinessArtifacts.readiness && typeof readinessArtifacts.readiness === "object"
+      ? readinessArtifacts.readiness
+      : {};
+    const robustScore = safeNumber(readiness && readiness.metrics && readiness.metrics.R_robust && readiness.metrics.R_robust.value, 0);
+    const horizonScore = safeNumber(readiness && readiness.metrics && readiness.metrics.H_horizon && readiness.metrics.H_horizon.value, 0);
+    if (safeString(targetFamily, 80) === "R_robust" && robustScore >= safeNumber(robustnessPolicy && robustnessPolicy.targetScore, 0.8)) {
+      status = "passed";
+      result = "improved";
+      remediationEffect = "verified_positive";
+    } else if (safeString(targetFamily, 80) === "H_horizon" && horizonScore >= safeNumber(readiness && readiness.completionCriteria && readiness.completionCriteria.horizonThreshold, 0.97)) {
+      status = "passed";
+      result = "improved";
+      remediationEffect = "verified_positive";
+    } else {
+      status = "running";
+      result = safeString(targetFamily, 80) === "H_horizon" ? "continuity_evidence_required" : "measurement_required";
+    }
   } else if (classification === "scope/coverage bottleneck" && /continuity has/i.test(summary)) {
-    if (continuityItems.length === 0) {
+    if (openContinuityItems.length === 0) {
       status = "passed";
       result = "cleared";
       remediationEffect = "verified_positive";
@@ -2707,9 +2811,9 @@ function createRemediationAgendaEntry({
       result = "debt_open";
     }
   } else if (classification === "scope/coverage bottleneck" && /continuity (?:has|carries)/i.test(summary)) {
-    status = continuityItems.length > 0 ? "running" : "passed";
-    result = continuityItems.length > 0 ? "closeout_required" : "cleared";
-    remediationEffect = continuityItems.length > 0 ? "pending" : "verified_positive";
+    status = openContinuityItems.length > 0 ? "running" : "passed";
+    result = openContinuityItems.length > 0 ? "closeout_required" : "cleared";
+    remediationEffect = openContinuityItems.length > 0 ? "pending" : "verified_positive";
   } else if (classification === "observation bottleneck") {
     const observationCount = clampInt(openAIBlogLane && openAIBlogLane.canonicalCounts && openAIBlogLane.canonicalCounts.observationCount, 0, 999999, 0);
     if (observationCount > 0) {
@@ -2724,10 +2828,10 @@ function createRemediationAgendaEntry({
     }
   } else if (classification === "governance bottleneck" && /secondary learning lane/i.test(summary)) {
     status = clampInt(anthropicLane && anthropicLane.canonicalCounts && anthropicLane.canonicalCounts.advisoryReferenceCount, 0, 999999, 0) > 0
-      ? "running"
+      ? "passed"
       : "proposal_only";
-    result = status === "running" ? "advisory_evidence_present" : "advisory_only";
-    remediationEffect = status === "running" ? "verified_neutral" : "insufficient_evidence";
+    result = status === "passed" ? "advisory_evidence_present" : "advisory_only";
+    remediationEffect = status === "passed" ? "verified_neutral" : "insufficient_evidence";
   } else if (classification === "scope/coverage bottleneck" && /breadth coverage incomplete/i.test(summary)) {
     const failedFamilies = uniqueStrings(readinessArtifacts && readinessArtifacts.readiness && readinessArtifacts.readiness.failedFamilies, 16, 80);
     if (failedFamilies.length === 0) {
@@ -2824,6 +2928,15 @@ function buildAutonomousLearningAgenda({
     });
     entries.push(entry);
   }
+  const retainedTerminalEntries = previousEntries
+    .filter((entry) => ["passed", "failed", "revoked", "blocked", "proposal_only"].includes(safeString(entry && entry.status, 40)))
+    .filter((entry) => !entries.some((current) => safeString(current && current.agendaId, 120) === safeString(entry && entry.agendaId, 120)))
+    .slice(-12)
+    .map((entry) => ({
+      ...entry,
+      lastUpdatedAt: normalizePublicTimestamp(entry && entry.lastUpdatedAt),
+    }));
+  entries.push(...retainedTerminalEntries);
   entries.sort((left, right) => safeNumber(right.priority, 0) - safeNumber(left.priority, 0));
   const maxRunning = clampInt(remediationPolicy && remediationPolicy.maxAutonomousRunningItems, 1, 99, 3);
   let runningSeen = 0;
@@ -2882,15 +2995,32 @@ function safeRatio(numerator, denominator, fallback = null) {
   return Number((num / den).toFixed(6));
 }
 
-function toUsageStage({ selected = false, observation = null, sourceTier = "" }) {
+function takeRecentEntries(entries, { limit = 12, timestampSelector = null } = {}) {
+  const list = Array.isArray(entries) ? entries.slice() : [];
+  const resolveTimestamp = typeof timestampSelector === "function"
+    ? timestampSelector
+    : (entry) => entry && (entry.updatedAt || entry.completedAt || entry.generatedAt || entry.recordedAt || entry.lastObservedAt);
+  return list
+    .filter(Boolean)
+    .sort((left, right) => parseTimestamp(resolveTimestamp(right)) - parseTimestamp(resolveTimestamp(left)))
+    .slice(0, clampInt(limit, 1, 256, 12));
+}
+
+function toUsageStage({ selected = false, latestSelected = false, observation = null, sourceTier = "", promotionState = "" }) {
   const observationCount = clampInt(observation && observation.observationCount, 0, 999999, 0);
   const successCount = clampInt(observation && observation.successCount, 0, 999999, 0);
   const failureCount = clampInt(observation && observation.failureCount, 0, 999999, 0);
   if (!selected && observationCount === 0) return "ignored_by_agent";
-  if (selected && observationCount === 0) return "selected_only";
+  if (latestSelected && observationCount === 0) return "selected_only";
+  if (selected && !latestSelected && observationCount === 0) return "superseded";
   if (observationCount > 0 && successCount === 0 && failureCount === 0) return "surfaced";
   if (successCount > 0 && successCount >= failureCount) return sourceTier === "external_secondary" ? "advisory_reference" : "likely_contributory";
-  if (failureCount > successCount) return "harmful_to_outcome";
+  if (failureCount > successCount) {
+    if (!latestSelected || ["revoked", "blocked", "expired", "superseded"].includes(safeString(promotionState, 40))) {
+      return "rolled_back_after_harm";
+    }
+    return "harmful_to_outcome";
+  }
   return "behaviorally_referenced";
 }
 
@@ -2912,12 +3042,16 @@ function buildCausalLearningTrace({ workspaceRoot, items, pack, retrievalPacks =
   for (const item of Array.isArray(items) ? items : []) {
     const memoryId = safeString(item && item.memoryId, 120);
     const observation = byMemoryId[memoryId];
-    const selected = selectedIds.has(memoryId) || selectedAtByMemoryId.has(memoryId);
+    const latestSelected = selectedIds.has(memoryId);
+    const selected = latestSelected || selectedAtByMemoryId.has(memoryId);
     if (!selected && !observation) continue;
+    const promotionState = safeString(item && item.status, 40) || "captured";
     const usageStage = toUsageStage({
       selected,
+      latestSelected,
       observation,
       sourceTier: safeString(item && item.sourceTier, 40),
+      promotionState,
     });
     const usageMode = safeString(item && item.sourceTier, 40) === "external_secondary"
       ? "advisory_reference"
@@ -2941,7 +3075,7 @@ function buildCausalLearningTrace({ workspaceRoot, items, pack, retrievalPacks =
       publicRef: maskOpaqueId(memoryId, "mem"),
       memoryType: safeString(item && item.type, 80) || "unknown",
       sourceTier: safeString(item && item.sourceTier, 40) || "unknown",
-      promotionState: safeString(item && item.status, 40) || "captured",
+      promotionState,
       usageMode,
       selectedInLatestPack: selectedIds.has(memoryId),
       selectedInPackAt: normalizePublicTimestamp(selectedAtByMemoryId.get(memoryId) || pack && (pack.generatedAt || pack.compiledAt)),
@@ -3053,10 +3187,41 @@ function classifyContinuityDebtType({ workspaceRoot, task = {}, blocker = "" }) 
 
 function buildContinuityDebtProjection({ workspaceRoot, continuityBridge, agenda = null }) {
   const policy = loadContinuityCloseoutPolicy(workspaceRoot);
+  const readinessPolicy = loadAgiReadinessPolicy(workspaceRoot);
+  const supportedFamilyIds = new Set(
+    (Array.isArray(readinessPolicy && readinessPolicy.coverageBuckets) ? readinessPolicy.coverageBuckets : [])
+      .map((entry) => safeString(entry && entry.id, 80))
+      .filter(Boolean)
+  );
   const retryable = new Set(uniqueStrings(policy && policy.retryableTypes, 12, 80));
+  const staleAutoCloseHours = clampInt(policy && policy.staleAutoCloseHours, 1, 24 * 365, 24);
+  const replacementEvidenceCountMin = clampInt(policy && policy.replacementEvidenceCountMin, 0, 32, 2);
   const tasks = Array.isArray(continuityBridge && continuityBridge.tasks) ? continuityBridge.tasks : [];
   const rootStateById = new Map(tasks.map((task) => [safeString(task && task.taskId, 120), task]));
   const agendaEntries = Array.isArray(agenda && agenda.entries) ? agenda.entries : [];
+  const replacementEvidenceByFamily = new Map();
+  const registerReplacementEvidence = (familyId = "") => {
+    const normalized = normalizeTaskFamilyId(familyId, readinessPolicy) || safeString(familyId, 80);
+    if (!normalized) return;
+    replacementEvidenceByFamily.set(normalized, clampInt(replacementEvidenceByFamily.get(normalized), 0, 999999, 0) + 1);
+  };
+  for (const task of tasks) {
+    if (safeString(task && task.lifecycleState, 80) === "completed") {
+      registerReplacementEvidence(safeString(task && task.normalizedFamilyId, 80) || safeString(task && task.familyId, 80));
+    }
+  }
+  for (const record of buildLocalExecutionMemoryOverview({ workspaceRoot, limit: 48, window: 120 }).recent || []) {
+    if (safeString(record && record.taskOutcomeStatus, 80).toUpperCase() !== "COMPLETED") continue;
+    for (const familyId of inferTaskFamiliesFromExecutionRecord(record, readinessPolicy)) {
+      registerReplacementEvidence(familyId);
+    }
+  }
+  for (const run of buildLocalEvalHistoryOverview({ workspaceRoot, limit: 24 })) {
+    if (safeNumber(run && run.passRate, 0) < 1) continue;
+    for (const familyId of inferTaskFamiliesFromEvalRun(run, readinessPolicy)) {
+      registerReplacementEvidence(familyId);
+    }
+  }
   const items = [];
   for (const task of tasks) {
     const lifecycleState = safeString(task && task.lifecycleState, 80);
@@ -3064,6 +3229,10 @@ function buildContinuityDebtProjection({ workspaceRoot, continuityBridge, agenda
     const rootTask = rootStateById.get(safeString(task && task.rootTaskId, 120)) || task;
     const rootIntegrated = ["integrated", "released", "completed"].includes(safeString(rootTask && rootTask.finalReleaseState, 80).toLowerCase())
       || safeString(rootTask && rootTask.lifecycleState, 80) === "completed";
+    const familyId = normalizeTaskFamilyId(safeString(task && task.normalizedFamilyId, 80) || safeString(task && task.familyId, 80), readinessPolicy)
+      || safeString(task && task.normalizedFamilyId, 80)
+      || safeString(task && task.familyId, 80)
+      || "default";
     const carriesDebt = ["blocked", "verifier_failed"].includes(lifecycleState)
       || (!["integrated", "released", "completed", "not_applicable", ""].includes(integrationStatus) && rootIntegrated);
     if (!carriesDebt) continue;
@@ -3086,6 +3255,14 @@ function buildContinuityDebtProjection({ workspaceRoot, continuityBridge, agenda
       : blockerType === "dependency_unresolved"
         ? "medium"
         : "low";
+    const replacementEvidenceCount = clampInt(replacementEvidenceByFamily.get(familyId), 0, 999999, 0);
+    const staleHours = Math.max(0, (Date.now() - parseTimestamp(task && task.updatedAt)) / (1000 * 60 * 60));
+    const supportedFamily = supportedFamilyIds.has(familyId);
+    const invalidatedUnsupported = !supportedFamily && (rootIntegrated || staleHours >= staleAutoCloseHours);
+    const autoClosed = retryable.has(blockerType) && (
+      (rootIntegrated && policy && policy.autoCloseWhenRootIntegrated)
+      || (staleHours >= staleAutoCloseHours && replacementEvidenceCount >= replacementEvidenceCountMin)
+    );
     const linkedVerifierRef = uniqueStrings(task && task.evidenceRefs, 8, 220)
       .map((entry) => normalizePublicPath(workspaceRoot, entry))
       .find((entry) => /verifier_state\.json$/i.test(entry))
@@ -3103,24 +3280,35 @@ function buildContinuityDebtProjection({ workspaceRoot, continuityBridge, agenda
       requiredEvidence: uniqueStrings(task && task.evidenceRefs, 6, 220).map((entry) => normalizePublicPath(workspaceRoot, entry)),
       nextRecoveryStep: coerceSummaryText(task && task.nextRecommendedActions, workspaceRoot, "capture governed recovery evidence"),
       requiredCloseoutAction: closeoutAction,
-      status: rootIntegrated ? "open_debt" : "active_blocker",
+      status: invalidatedUnsupported ? "invalidated" : autoClosed ? "resolved" : rootIntegrated ? "open_debt" : "active_blocker",
       retryable: retryable.has(blockerType),
       autoCloseEligible: retryable.has(blockerType),
       nextOwner: safeString(task && task.role, 80) || "default",
       remediationLinkedTaskId: safeString(remediation && remediation.agendaId, 120),
-      remediationLinkedTaskRef: safeString(remediation && remediation.agendaId, 120) ? stablePublicRef(remediation.agendaId, "agenda") : "",
+      remediationLinkedTaskRef: safeString(remediation && remediation.agendaId, 120) ? stablePublicRef(remediation.agendaId, "agenda") : stablePublicRef(`${familyId}:${blockerType}`, "agenda"),
       linkedVerifierRef,
-      closeoutBlockedReason: openBlocker,
-      publicSummary: `${humanizeCompactIdentifier(safeString(task && task.role, 80) || "owner")} must ${closeoutAction}`,
+      closeoutBlockedReason: invalidatedUnsupported
+        ? "unsupported_family_invalidated"
+        : autoClosed
+          ? (rootIntegrated ? "auto_closed_root_integrated" : "auto_closed_superseded")
+          : openBlocker,
+      publicSummary: invalidatedUnsupported
+        ? `${humanizeCompactIdentifier(safeString(task && task.role, 80) || "owner")} debt invalidated because the task family is outside current governed coverage`
+        : autoClosed
+          ? `${humanizeCompactIdentifier(safeString(task && task.role, 80) || "owner")} debt auto-closed after governed replacement evidence`
+          : `${humanizeCompactIdentifier(safeString(task && task.role, 80) || "owner")} must ${closeoutAction}`,
+      replacementEvidenceCount,
+      taskFamily: familyId,
       updatedAt: normalizePublicTimestamp(task && task.updatedAt),
     });
   }
-  const blockedReasonClasses = uniqueStrings(items.map((entry) => entry.blockerType), 12, 80);
-  const pendingIntegrationReasons = uniqueStrings(items.filter((entry) => entry.blockerType === "dependency_unresolved").map((entry) => entry.blockerReason), 12, 180);
-  const autoClosedBlockedCount = items.filter((entry) => entry.status === "open_debt").length;
-  const debtSeverity = items.some((entry) => entry.blockerType === "verifier_failed" || entry.blockerType === "missing_evidence")
+  const openItems = items.filter((entry) => !["resolved", "invalidated", "rolled_back"].includes(safeString(entry && entry.status, 80)));
+  const blockedReasonClasses = uniqueStrings(openItems.map((entry) => entry.blockerType), 12, 80);
+  const pendingIntegrationReasons = uniqueStrings(openItems.filter((entry) => entry.blockerType === "dependency_unresolved").map((entry) => entry.blockerReason), 12, 180);
+  const autoClosedBlockedCount = items.filter((entry) => safeString(entry && entry.status, 80) === "resolved").length;
+  const debtSeverity = openItems.some((entry) => entry.blockerType === "verifier_failed" || entry.blockerType === "missing_evidence")
     ? "high"
-    : items.length
+    : openItems.length
       ? "medium"
       : "none";
   return {
@@ -3129,7 +3317,7 @@ function buildContinuityDebtProjection({ workspaceRoot, continuityBridge, agenda
     workspaceId: toWorkspaceId(workspaceRoot),
     items,
     summary: {
-      openDebtCount: items.length,
+      openDebtCount: openItems.length,
       blockedReasonClasses,
       pendingIntegrationReasons,
       remediationLinkedTaskCount: items.filter((entry) => safeString(entry.remediationLinkedTaskId, 120)).length,
@@ -3149,7 +3337,7 @@ function buildDistinctImprovementLineage({ workspaceRoot, bundles = [] }) {
   for (let index = 1; index < sorted.length; index += 1) {
     const incumbent = sorted[index - 1];
     const challenger = sorted[index];
-    if (!Number.isFinite(Number(incumbent && incumbent.rawFinalScore)) || !Number.isFinite(Number(challenger && challenger.rawFinalScore))) continue;
+    if (!hasExplicitNumber(incumbent && incumbent.rawFinalScore) || !hasExplicitNumber(challenger && challenger.rawFinalScore)) continue;
     const incumbentVersion = stablePublicRef(`${safeString(incumbent.runId, 120)}:${safeString(incumbent.generatedAt, 80)}`, "lineage");
     const challengerVersion = stablePublicRef(`${safeString(challenger.runId, 120)}:${safeString(challenger.generatedAt, 80)}`, "lineage");
     const scoreDelta = Number((safeNumber(challenger.rawFinalScore, 0) - safeNumber(incumbent.rawFinalScore, 0)).toFixed(6));
@@ -3238,6 +3426,7 @@ function buildGoalCompletionStatus({
   stableCoverageArtifacts = null,
   causalEffectivenessSummary = null,
   causalRegressionAlerts = null,
+  exportSessionId = "",
 }) {
   const policy = loadAgiReadinessPolicy(workspaceRoot);
   const criteria = policy && policy.operationalCompletionCriteria && typeof policy.operationalCompletionCriteria === "object"
@@ -3309,9 +3498,9 @@ function buildGoalCompletionStatus({
     stableCoverageBreadth: safeNumber(readiness && readiness.stableCoverageBreadth, 0),
     supportedCoverageBreadth: safeNumber(readiness && readiness.supportedCoverageBreadth, 0),
     failedFamilies,
-    R_robust: safeNumber(readiness && readiness.metrics && readiness.metrics.R_robust && readiness.metrics.R_robust.value, 0),
-    H_horizon: safeNumber(readiness && readiness.metrics && readiness.metrics.H_horizon && readiness.metrics.H_horizon.value, 0),
-    rawFinalScore: safeNumber(readiness && readiness.rawFinalScore, 0),
+    R_robust: numberOrNull(readiness && readiness.metrics && readiness.metrics.R_robust && readiness.metrics.R_robust.value),
+    H_horizon: numberOrNull(readiness && readiness.metrics && readiness.metrics.H_horizon && readiness.metrics.H_horizon.value),
+    rawFinalScore: numberOrNull(readiness && readiness.rawFinalScore),
     catastrophicRiskCvar,
     openDebtCount: clampInt(debtSummary && debtSummary.openDebtCount, 0, 999999, 0),
     blockedSubtasks: clampInt(continuity && continuity.blockedSubtasks, 0, 999999, 0),
@@ -3368,7 +3557,25 @@ function buildGoalCompletionStatus({
   const basePassingCriteria = criteriaEvaluations.filter((entry) => entry.passed);
   const historyEntries = previousHistoryEntries.slice(-Math.max(clampInt(criteria.consecutiveSuccessfulExports, 1, 12, 3) + 8, 12));
   const currentBaseStatus = baseFailedCriteria.length === 0 ? "criteria_met" : "criteria_failed";
-  const updatedHistoryEntries = [...historyEntries, { generatedAt: toIso(), goalStatus: currentBaseStatus === "criteria_met" ? "PENDING_WINDOW" : "NOT_YET", baseStatus: currentBaseStatus, rawFinalScore: currentValues.rawFinalScore, R_robust: currentValues.R_robust, H_horizon: currentValues.H_horizon, stableCoverageBreadth: currentValues.stableCoverageBreadth, openDebtCount: currentValues.openDebtCount, harmfulCausalRatio: currentValues.harmfulCausalRatio }].slice(-24);
+  const currentHistoryEntry = {
+    exportSessionId: safeString(exportSessionId, 120),
+    generatedAt: toIso(),
+    goalStatus: currentBaseStatus === "criteria_met" ? "PENDING_WINDOW" : "NOT_YET",
+    baseStatus: currentBaseStatus,
+    rawFinalScore: currentValues.rawFinalScore,
+    R_robust: currentValues.R_robust,
+    H_horizon: currentValues.H_horizon,
+    stableCoverageBreadth: currentValues.stableCoverageBreadth,
+    openDebtCount: currentValues.openDebtCount,
+    harmfulCausalRatio: currentValues.harmfulCausalRatio,
+  };
+  const lastHistoryEntry = historyEntries.length ? historyEntries[historyEntries.length - 1] : null;
+  const updatedHistoryEntries = (
+    safeString(exportSessionId, 120)
+    && safeString(lastHistoryEntry && lastHistoryEntry.exportSessionId, 120) === safeString(exportSessionId, 120)
+      ? [...historyEntries.slice(0, -1), currentHistoryEntry]
+      : [...historyEntries, currentHistoryEntry]
+  ).slice(-24);
   const consecutiveRequired = clampInt(criteria.consecutiveSuccessfulExports, 1, 12, 3);
   let consecutivePassingExports = 0;
   for (let index = updatedHistoryEntries.length - 1; index >= 0; index -= 1) {
@@ -3670,80 +3877,93 @@ function buildRobustnessBreakdown({ workspaceRoot, coverage = null, items = [] }
   const scoreDefaults = readinessPolicy && readinessPolicy.robustnessScoreDefaults && typeof readinessPolicy.robustnessScoreDefaults === "object"
     ? readinessPolicy.robustnessScoreDefaults
     : {};
-  const evalHistory = mergeCoverageEvidenceRows([
-    ...buildLocalEvalHistoryOverview({ workspaceRoot, limit: 40 }),
+  const maxSamples = clampInt(readinessPolicy && readinessPolicy.robustnessWindowSize, 1, 64, 12);
+  const evalHistory = takeRecentEntries(mergeCoverageEvidenceRows([
+    ...buildLocalEvalHistoryOverview({ workspaceRoot, limit: 48 }),
     ...items
       .filter((item) => safeString(item && item.type, 80) === "eval_observation")
       .map((item) => buildEvalEvidenceFromItem(item, workspaceRoot))
       .filter(Boolean),
-  ], (entry) => entry.runId || entry.publicRef);
-  const executionRecent = mergeCoverageEvidenceRows([
-    ...(Array.isArray(buildLocalExecutionMemoryOverview({ workspaceRoot, limit: 40, window: 120 }).recent)
-      ? buildLocalExecutionMemoryOverview({ workspaceRoot, limit: 40, window: 120 }).recent
+  ], (entry) => entry.runId || entry.publicRef), {
+    limit: 48,
+    timestampSelector: (entry) => entry && (entry.generatedAt || entry.completedAt || entry.updatedAt),
+  });
+  const executionRecent = takeRecentEntries(mergeCoverageEvidenceRows([
+    ...(Array.isArray(buildLocalExecutionMemoryOverview({ workspaceRoot, limit: 64, window: 160 }).recent)
+      ? buildLocalExecutionMemoryOverview({ workspaceRoot, limit: 64, window: 160 }).recent
       : []),
     ...items
       .filter((item) => safeString(item && item.type, 80) === "episodic_event")
       .map((item) => buildExecutionEvidenceFromItem(item, workspaceRoot))
       .filter(Boolean),
-  ], (entry) => entry.turnId || entry.publicRef);
+  ], (entry) => entry.turnId || entry.publicRef), {
+    limit: 64,
+    timestampSelector: (entry) => entry && (entry.completedAt || entry.updatedAt || entry.generatedAt),
+  });
+  const scoreSuccess = safeNumber(scoreDefaults.success, 1);
+  const scoreFailure = safeNumber(scoreDefaults.failure, 0.25);
+  const matchesCategory = (categoryId, entry, sourceType) => {
+    const suiteId = safeString(entry && entry.suiteId, 200).toLowerCase();
+    const intent = safeString(entry && entry.executionIntent, 200).toLowerCase();
+    const source = safeString(entry && entry.executionSource, 120).toLowerCase();
+    const reason = safeString(entry && entry.taskOutcomeReason, 220).toLowerCase();
+    const familyText = uniqueStrings(inferTaskFamiliesFromExecutionRecord(entry, readinessPolicy), 8, 80).join(" ").toLowerCase();
+    if (categoryId === "ambiguous_instruction") {
+      return /ambiguous_instruction_probe|ambiguous|clarify|clarification|bounded_assumption|unclear/.test(`${suiteId} ${intent} ${reason}`);
+    }
+    if (categoryId === "missing_context") {
+      return /missing_context_recovery|missing_context|context_gap|needs_input|insufficient_context|gather_more_context|safe_fallback|defer/.test(`${suiteId} ${intent} ${reason}`);
+    }
+    if (categoryId === "browser_tool_flakiness") {
+      return /browser_tool_flakiness_recovery|browser_tool_flakiness|browser|tool flakiness|flaky/.test(`${suiteId} ${intent} ${reason} ${familyText} ${source}`);
+    }
+    if (categoryId === "adversarial_conflicting_instruction") {
+      return /adversarial_conflict_probe|adversarial|conflict|conflicting_instruction|priority resolution/.test(`${suiteId} ${intent} ${reason}`);
+    }
+    if (categoryId === "degraded_tool_outputs") {
+      return /degraded_tool_outputs_probe|degraded_tool_outputs|degraded output|low confidence/.test(`${suiteId} ${intent} ${reason}`)
+        || (sourceType === "execution" && clampInt(entry && entry.commandFailures, 0, 999999, 0) > 0);
+    }
+    return false;
+  };
+  const toEvidenceEntry = (entry, sourceType, success) => ({
+    key: sourceType === "eval"
+      ? safeString(entry && entry.runId, 160) || safeString(entry && entry.publicRef, 160)
+      : safeString(entry && entry.turnId, 160) || safeString(entry && entry.publicRef, 160),
+    success,
+    sourceType,
+    updatedAt: safeString(entry && (entry.completedAt || entry.generatedAt || entry.updatedAt), 80),
+    summary: sourceType === "eval"
+      ? safeString(entry && entry.suiteId, 160) || "governed eval probe"
+      : coerceSummaryText(entry && entry.taskOutcomeReason, workspaceRoot, safeString(entry && entry.executionIntent, 160) || "runtime execution"),
+    publicRef: sourceType === "eval"
+      ? maskOpaqueId(safeString(entry && entry.runId, 120), "eval")
+      : maskOpaqueId(safeString(entry && entry.turnId, 120), "turn"),
+    taskFamilies: sourceType === "eval"
+      ? inferTaskFamiliesFromEvalRun(entry, readinessPolicy)
+      : inferTaskFamiliesFromExecutionRecord(entry, readinessPolicy),
+  });
   const rows = categories.map((category) => {
     const id = safeString(category && category.id, 80);
     const label = safeString(category && category.label, 160) || id;
-    let successCount = 0;
-    let failureCount = 0;
-    const recentEvidence = [];
-    if (id === "adversarial_conflicting_instruction") {
-      for (const run of evalHistory.filter((entry) => /adversarial/i.test(safeString(entry && entry.suiteId, 160)))) {
-        if (safeNumber(run && run.passRate, 0) >= 1) successCount += 1;
-        else failureCount += 1;
-        recentEvidence.push({
-          publicRef: maskOpaqueId(safeString(run && run.runId, 120), "eval"),
-          summary: safeString(run && run.suiteId, 160),
-        });
-      }
-    } else if (id === "degraded_tool_outputs") {
-      for (const record of executionRecent.filter((entry) => clampInt(entry && entry.commandExecutions, 0, 999999, 0) > 0)) {
-        if (clampInt(record && record.commandFailures, 0, 999999, 0) > 0) failureCount += 1;
-        else successCount += 1;
-        recentEvidence.push({
-          publicRef: maskOpaqueId(safeString(record && record.turnId, 120), "turn"),
-          summary: coerceSummaryText(record && record.taskOutcomeReason, workspaceRoot, safeString(record && record.executionIntent, 160)),
-        });
-      }
-    } else if (id === "browser_tool_flakiness") {
-      const relevant = executionRecent.filter((entry) => inferTaskFamiliesFromExecutionRecord(entry, readinessPolicy).includes("tool_use_browser_like"));
-      for (const record of relevant) {
-        if (safeString(record && record.taskOutcomeStatus, 80).toUpperCase() === "COMPLETED") successCount += 1;
-        else failureCount += 1;
-        recentEvidence.push({
-          publicRef: maskOpaqueId(safeString(record && record.turnId, 120), "turn"),
-          summary: safeString(record && record.executionIntent, 160) || "tool use",
-        });
-      }
-    } else if (id === "missing_context") {
-      const relevant = executionRecent.filter((entry) => /needs_input|missing|context/i.test(safeString(entry && entry.taskOutcomeReason, 200)));
-      for (const record of relevant) {
-        if (safeString(record && record.taskOutcomeStatus, 80).toUpperCase() === "COMPLETED") successCount += 1;
-        else failureCount += 1;
-        recentEvidence.push({
-          publicRef: maskOpaqueId(safeString(record && record.turnId, 120), "turn"),
-          summary: coerceSummaryText(record && record.taskOutcomeReason, workspaceRoot, "missing context handling"),
-        });
-      }
-    } else if (id === "ambiguous_instruction") {
-      const relevant = executionRecent.filter((entry) => /ambiguous|bounded_assumption|clarify|unclear/i.test(safeString(entry && entry.taskOutcomeReason, 200)));
-      for (const record of relevant) {
-        if (safeString(record && record.taskOutcomeStatus, 80).toUpperCase() === "COMPLETED") successCount += 1;
-        else failureCount += 1;
-        recentEvidence.push({
-          publicRef: maskOpaqueId(safeString(record && record.turnId, 120), "turn"),
-          summary: coerceSummaryText(record && record.taskOutcomeReason, workspaceRoot, "ambiguous instruction handling"),
-        });
-      }
+    const relevantEvidence = [];
+    for (const run of evalHistory) {
+      if (!matchesCategory(id, run, "eval")) continue;
+      relevantEvidence.push(toEvidenceEntry(run, "eval", safeNumber(run && run.passRate, 0) >= 1));
     }
-    const evidenceCount = successCount + failureCount;
+    for (const record of executionRecent) {
+      if (!matchesCategory(id, record, "execution")) continue;
+      relevantEvidence.push(toEvidenceEntry(record, "execution", safeString(record && record.taskOutcomeStatus, 80).toUpperCase() === "COMPLETED"));
+    }
+    const recentRelevant = takeRecentEntries(mergeCoverageEvidenceRows(relevantEvidence, (entry) => entry.key || entry.publicRef), {
+      limit: maxSamples,
+      timestampSelector: (entry) => entry && entry.updatedAt,
+    });
+    const successCount = recentRelevant.filter((entry) => Boolean(entry && entry.success)).length;
+    const failureCount = recentRelevant.length - successCount;
+    const evidenceCount = recentRelevant.length;
     const score = evidenceCount
-      ? Number(((successCount * safeNumber(scoreDefaults.success, 1) + failureCount * safeNumber(scoreDefaults.failure, 0.25)) / evidenceCount).toFixed(6))
+      ? Number(((successCount * scoreSuccess + failureCount * scoreFailure) / evidenceCount).toFixed(6))
       : null;
     return {
       categoryId: id,
@@ -3753,17 +3973,12 @@ function buildRobustnessBreakdown({ workspaceRoot, coverage = null, items = [] }
       successCount,
       failureCount,
       status: evidenceCount ? "observed" : "no_evidence",
-      recentEvidence: recentEvidence.slice(0, 6),
+      recentEvidence: recentRelevant.slice(0, 6).map((entry) => ({
+        publicRef: safeString(entry && entry.publicRef, 120),
+        summary: safeString(entry && entry.summary, 220),
+      })),
       sourceFamilies: uniqueStrings(
-        (coverage && Array.isArray(coverage.rows) ? coverage.rows : [])
-          .filter((row) => row && row.familyId && (
-            (id === "browser_tool_flakiness" && safeString(row.familyId, 80) === "tool_use_browser_like")
-            || (id === "degraded_tool_outputs" && ["workflow_execution", "tool_use_browser_like", "deterministic_code"].includes(safeString(row.familyId, 80)))
-            || (id === "ambiguous_instruction" && ["planning", "deterministic_code"].includes(safeString(row.familyId, 80)))
-            || (id === "missing_context" && ["planning", "workflow_execution"].includes(safeString(row.familyId, 80)))
-            || (id === "adversarial_conflicting_instruction" && safeString(row.familyId, 80) === "evaluation_review")
-          ))
-          .map((row) => row.familyId),
+        recentRelevant.flatMap((entry) => entry && Array.isArray(entry.taskFamilies) ? entry.taskFamilies : []),
         8,
         80
       ),
@@ -3887,12 +4102,24 @@ function collectAgiFamilyMetric(bundle, familyName) {
   const main = family.main && typeof family.main === "object" ? family.main : {};
   return {
     familyName,
-    value: Number.isFinite(Number(main.value)) ? Number(Number(main.value).toFixed(6)) : null,
-    threshold: Number.isFinite(Number(main.threshold)) ? Number(main.threshold) : null,
+    value: numberOrNull(main.value, 6),
+    threshold: numberOrNull(main.threshold),
     supportStatus: safeString(main.supportStatus, 40) || "unknown",
     passFail: typeof main.passFail === "boolean" ? main.passFail : null,
     details: main.details && typeof main.details === "object" ? main.details : {},
   };
+}
+
+function isBundleReadyForReadiness(bundle = null) {
+  if (!bundle || typeof bundle !== "object") return false;
+  const candidate = bundle.candidate && typeof bundle.candidate === "object" ? bundle.candidate : {};
+  const robust = collectAgiFamilyMetric(bundle, "R_robust").value;
+  const horizon = collectAgiFamilyMetric(bundle, "H_horizon").value;
+  return hasExplicitNumber(candidate.rawFinalScore)
+    && hasExplicitNumber(candidate.displayFinalScore)
+    && hasExplicitNumber(candidate && candidate.riskSummary && candidate.riskSummary.cvar)
+    && hasExplicitNumber(robust)
+    && hasExplicitNumber(horizon);
 }
 
 function buildFamilyCoverageProjection({ workspaceRoot, items, continuityBridge, latestAgiBundle }) {
@@ -3902,6 +4129,8 @@ function buildFamilyCoverageProjection({ workspaceRoot, items, continuityBridge,
     ? policy.stableCoverage
     : {};
   const stabilityWindowSize = clampInt(stableCoveragePolicy.windowSize, 1, 12, 3);
+  const requiredPassingWindows = clampInt(stableCoveragePolicy.requiredPassingWindows, 1, stabilityWindowSize, stabilityWindowSize);
+  const maxRecentFailureBurden = clampInt(stableCoveragePolicy.maxRecentFailureBurden, 0, stabilityWindowSize, 0);
   const latestMetrics = latestAgiBundle ? {
     G_breadth: collectAgiFamilyMetric(latestAgiBundle, "G_breadth"),
     H_horizon: collectAgiFamilyMetric(latestAgiBundle, "H_horizon"),
@@ -3973,9 +4202,32 @@ function buildFamilyCoverageProjection({ workspaceRoot, items, continuityBridge,
     const bucketItems = items.filter((item) => memoryAppliesToTaskFamily(item, bucketId, policy));
     const activeLessons = bucketItems.filter((item) => safeString(item && item.type, 80) === "semantic_lesson" && ["promoted", "reinforced", "shadow"].includes(safeString(item && item.status, 40)));
     const availableHints = bucketItems.filter((item) => safeString(item && item.type, 80) === "runtime_hint" && !["blocked", "revoked", "expired"].includes(safeString(item && item.status, 40)));
-    const recentPassCount = successfulEvidence.length;
-    const recentFailureBurden = failedEvidence.length;
-    const observationCount = recentPassCount + recentFailureBurden;
+    const recentWindow = takeRecentEntries([
+      ...tasks.map((task) => ({
+        kind: "continuity",
+        pass: safeString(task && task.lifecycleState, 80) === "completed",
+        score: safeString(task && task.lifecycleState, 80) === "completed" ? 1 : 0.25,
+        updatedAt: safeString(task && task.updatedAt, 80) || safeString(task && task.completedAt, 80),
+      })),
+      ...executionRecords.map((record) => ({
+        kind: "execution",
+        pass: safeString(record && record.taskOutcomeStatus, 80).toUpperCase() === "COMPLETED",
+        score: safeString(record && record.taskOutcomeStatus, 80).toUpperCase() === "COMPLETED" ? 1 : 0.25,
+        updatedAt: safeString(record && record.completedAt, 80) || safeString(record && record.updatedAt, 80),
+      })),
+      ...evalRuns.map((run) => ({
+        kind: "eval",
+        pass: safeNumber(run && run.passRate, 0) >= 1,
+        score: safeNumber(run && run.passRate, 0) >= 1 ? 1 : 0.25,
+        updatedAt: safeString(run && run.generatedAt, 80),
+      })),
+    ], {
+      limit: stabilityWindowSize,
+      timestampSelector: (entry) => entry && entry.updatedAt,
+    });
+    const recentPassCount = recentWindow.filter((entry) => Boolean(entry && entry.pass)).length;
+    const recentFailureBurden = recentWindow.filter((entry) => entry && entry.pass === false).length;
+    const observationCount = recentWindow.length;
     const lastPassRecency = lastSuccessfulTask ? normalizePublicTimestamp(lastSuccessfulTask.updatedAt) : "";
     const verifierBurden = tasks.filter((task) => safeString(task && task.lastVerifierVerdict, 40).toUpperCase() === "FAIL").length;
     const breadthEntry = breadthByDomain.get(bucketId);
@@ -3987,21 +4239,13 @@ function buildFamilyCoverageProjection({ workspaceRoot, items, continuityBridge,
     const domainScore = breadthEntry && Number.isFinite(Number(breadthEntry.domainScore))
       ? Number(Number(Math.max(Number(breadthEntry.domainScore), derivedDomainScore)).toFixed(4))
       : Number(Number(derivedDomainScore).toFixed(4));
-    const recentWindowScores = [
-      successfulEvidence.length ? Number(domainScore.toFixed(4)) : null,
-      failedEvidence.length ? Number(Math.max(0, domainScore - 0.2).toFixed(4)) : null,
-      observationCount > 1 ? Number(domainScore.toFixed(4)) : null,
-    ].slice(0, stabilityWindowSize);
-    const recentWindowOutcomes = [
-      successfulEvidence.length ? "pass" : "",
-      failedEvidence.length ? "fail" : "",
-      observationCount > 1 ? (recentPassCount >= recentFailureBurden ? "pass" : "fail") : "",
-    ].filter(Boolean).slice(0, stabilityWindowSize);
+    const recentWindowScores = recentWindow.map((entry) => Number(safeNumber(entry && entry.score, 0).toFixed(4)));
+    const recentWindowOutcomes = recentWindow.map((entry) => entry && entry.pass ? "pass" : "fail");
     const stabilityStatus = observationCount === 0
       ? "no_evidence"
       : recentPassCount === 0
         ? "failing_only"
-        : recentPassCount >= 2 && recentFailureBurden === 0
+        : recentPassCount >= requiredPassingWindows && recentFailureBurden <= maxRecentFailureBurden && observationCount >= requiredPassingWindows
           ? "stable"
           : "unstable";
     const breadthFloor = Number.isFinite(Number(policy.breadthFloorDefault)) ? Number(policy.breadthFloorDefault) : 0.7;
@@ -4031,7 +4275,7 @@ function buildFamilyCoverageProjection({ workspaceRoot, items, continuityBridge,
       stabilityWindowSize,
       recentWindowScores,
       recentWindowOutcomes,
-      coverageRegressed: recentFailureBurden > recentPassCount,
+      coverageRegressed: observationCount >= requiredPassingWindows && recentFailureBurden > maxRecentFailureBurden,
       nextCoverageAction: stabilityStatus === "stable"
         ? "maintain current evidence quality"
         : recentPassCount === 0
@@ -4198,6 +4442,7 @@ function buildCausalEffectivenessSummary({ workspaceRoot, causalTrace = {}, open
   const traces = Array.isArray(causalTrace && causalTrace.traces) ? causalTrace.traces : [];
   const likelyContributoryCount = traces.filter((entry) => safeString(entry && entry.usageStage, 80) === "likely_contributory").length;
   const harmfulCount = traces.filter((entry) => safeString(entry && entry.usageStage, 80) === "harmful_to_outcome").length;
+  const rolledBackHarmCount = traces.filter((entry) => safeString(entry && entry.usageStage, 80) === "rolled_back_after_harm").length;
   const harmfulCausalRatio = safeRatio(harmfulCount, likelyContributoryCount + harmfulCount, likelyContributoryCount + harmfulCount > 0 ? null : 1);
   const neutralCount = traces.filter((entry) => safeString(entry && entry.usageStage, 80) === "surfaced" || safeString(entry && entry.usageStage, 80) === "behaviorally_referenced").length;
   return {
@@ -4207,11 +4452,13 @@ function buildCausalEffectivenessSummary({ workspaceRoot, causalTrace = {}, open
     harmfulCausalRatio,
     likelyContributoryCount,
     harmfulCount,
+    rolledBackHarmCount,
     neutralCount,
     summary: {
       harmfulCausalRatio,
       likelyContributoryCount,
       harmfulCount,
+      rolledBackHarmCount,
       neutralCount,
     },
     primaryLane: {
@@ -4290,8 +4537,8 @@ function buildBreadthSemantics({ workspaceRoot, metrics, coverage }) {
   const supportedCoverageBreadth = coverageFamilyCount > 0
     ? Number((coveredFamilyCount / coverageFamilyCount).toFixed(6))
     : null;
-  const evaluatedBreadth = metrics && metrics.G_breadth && Number.isFinite(Number(metrics.G_breadth.value))
-    ? Number(Number(metrics.G_breadth.value).toFixed(6))
+  const evaluatedBreadth = metrics && metrics.G_breadth
+    ? numberOrNull(metrics.G_breadth.value, 6)
     : null;
   const headlineMode = safeString(semanticsPolicy.headlineMode, 80) || "repo_coverage_breadth";
   const headlineBreadth = headlineMode === "repo_coverage_breadth"
@@ -4361,12 +4608,8 @@ function filterPromotionReasons(reasons, promotionContext) {
 
 function buildReadinessConsistencyChecks({ readiness, coverage, blockedReasons, bottlenecks }) {
   const failedFamilies = uniqueStrings(readiness && readiness.failedFamilies, 16, 80);
-  const supportedCoverageBreadth = Number.isFinite(Number(readiness && readiness.supportedCoverageBreadth))
-    ? Number(readiness.supportedCoverageBreadth)
-    : null;
-  const evaluatedBreadth = Number.isFinite(Number(readiness && readiness.evaluatedBreadth))
-    ? Number(readiness.evaluatedBreadth)
-    : null;
+  const supportedCoverageBreadth = numberOrNull(readiness && readiness.supportedCoverageBreadth);
+  const evaluatedBreadth = numberOrNull(readiness && readiness.evaluatedBreadth);
   const headlineMode = safeString(readiness && readiness.breadthSemantics && readiness.breadthSemantics.mode, 80);
   const blockedReasonList = Array.isArray(blockedReasons && blockedReasons.reasons) ? blockedReasons.reasons : [];
   const bottleneckItems = Array.isArray(bottlenecks && bottlenecks.items) ? bottlenecks.items : [];
@@ -4484,7 +4727,8 @@ function deriveWeakestGateSemantics({ workspaceRoot, metrics }) {
 
 function buildAgiReadinessArtifacts({ workspaceRoot, items, continuityBridge }) {
   const bundles = findLatestAgiV1Bundles(workspaceRoot, 8);
-  const latestBundleEntry = bundles[0] || null;
+  const readinessBundles = bundles.filter((entry) => isBundleReadyForReadiness(entry && entry.payload));
+  const latestBundleEntry = readinessBundles[0] || null;
   const latestBundle = latestBundleEntry && latestBundleEntry.payload && typeof latestBundleEntry.payload === "object"
     ? latestBundleEntry.payload
     : null;
@@ -4503,15 +4747,15 @@ function buildAgiReadinessArtifacts({ workspaceRoot, items, continuityBridge }) 
     ? Number((coverage.rows.filter((row) => safeString(row && row.stabilityStatus, 40) === "stable").length / coverage.rows.length).toFixed(6))
     : 0;
   const headlineMetrics = {
-    G_breadth: Number.isFinite(Number(breadthSemantics.headlineBreadth)) ? Number(breadthSemantics.headlineBreadth) : null,
-    G_depth: metrics.G_depth && Number.isFinite(Number(metrics.G_depth.value)) ? Number(metrics.G_depth.value) : null,
-    A_adapt: metrics.A_adapt && Number.isFinite(Number(metrics.A_adapt.value)) ? Number(metrics.A_adapt.value) : null,
-    R_robust: metrics.R_robust && Number.isFinite(Number(metrics.R_robust.value)) ? Number(metrics.R_robust.value) : null,
-    H_horizon: metrics.H_horizon && Number.isFinite(Number(metrics.H_horizon.value)) ? Number(metrics.H_horizon.value) : null,
-    P_context: metrics.P_context && Number.isFinite(Number(metrics.P_context.value)) ? Number(metrics.P_context.value) : null,
+    G_breadth: numberOrNull(breadthSemantics.headlineBreadth, 6),
+    G_depth: metrics.G_depth ? numberOrNull(metrics.G_depth.value, 6) : null,
+    A_adapt: metrics.A_adapt ? numberOrNull(metrics.A_adapt.value, 6) : null,
+    R_robust: metrics.R_robust ? numberOrNull(metrics.R_robust.value, 6) : null,
+    H_horizon: metrics.H_horizon ? numberOrNull(metrics.H_horizon.value, 6) : null,
+    P_context: metrics.P_context ? numberOrNull(metrics.P_context.value, 6) : null,
   };
   const weakestCapability = Object.entries(headlineMetrics)
-    .filter(([, value]) => Number.isFinite(Number(value)))
+    .filter(([, value]) => hasExplicitNumber(value))
     .sort((left, right) => safeNumber(left[1], 1) - safeNumber(right[1], 1))[0] || null;
   const blockedReasons = filterPromotionReasons([
     ...(Array.isArray(candidate.blockingReasons) ? candidate.blockingReasons : []),
@@ -4522,7 +4766,7 @@ function buildAgiReadinessArtifacts({ workspaceRoot, items, continuityBridge }) 
     blockedReasons.push(`breadth coverage incomplete across supported families: ${breadthSemantics.failedFamilies.join(", ")}`);
   }
   const normalizedBlockedReasons = uniqueStrings(blockedReasons, 12, 220);
-  const trend = bundles.map((entry) => {
+  const trend = readinessBundles.map((entry) => {
     const payload = entry && entry.payload && typeof entry.payload === "object" ? entry.payload : {};
     const candidateBundle = payload.candidate && typeof payload.candidate === "object" ? payload.candidate : {};
     const decision = payload.promotionDecision && typeof payload.promotionDecision === "object" ? payload.promotionDecision : {};
@@ -4531,14 +4775,12 @@ function buildAgiReadinessArtifacts({ workspaceRoot, items, continuityBridge }) 
       runId: safeString(payload.runId || candidateBundle.runId, 120),
       generatedAt: safeString(payload.generatedAt || candidateBundle.generatedAt, 80),
       candidateId: safeString(candidateBundle.candidateId, 120),
-      rawFinalScore: Number.isFinite(Number(candidateBundle.rawFinalScore)) ? Number(Number(candidateBundle.rawFinalScore).toFixed(6)) : null,
-      displayFinalScore: Number.isFinite(Number(candidateBundle.displayFinalScore)) ? Number(Number(candidateBundle.displayFinalScore).toFixed(6)) : null,
-      catastrophicRisk: candidateBundle.riskSummary && Number.isFinite(Number(candidateBundle.riskSummary.cvar))
-        ? Number(Number(candidateBundle.riskSummary.cvar).toFixed(6))
-        : null,
-      headlineBreadth: Number.isFinite(Number(collectAgiFamilyMetric(payload, "G_breadth").value)) ? Number(collectAgiFamilyMetric(payload, "G_breadth").value) : null,
-      robustScore: Number.isFinite(Number(collectAgiFamilyMetric(payload, "R_robust").value)) ? Number(collectAgiFamilyMetric(payload, "R_robust").value) : null,
-      horizonScore: Number.isFinite(Number(collectAgiFamilyMetric(payload, "H_horizon").value)) ? Number(collectAgiFamilyMetric(payload, "H_horizon").value) : null,
+      rawFinalScore: numberOrNull(candidateBundle.rawFinalScore, 6),
+      displayFinalScore: numberOrNull(candidateBundle.displayFinalScore, 6),
+      catastrophicRisk: numberOrNull(candidateBundle && candidateBundle.riskSummary && candidateBundle.riskSummary.cvar, 6),
+      headlineBreadth: numberOrNull(collectAgiFamilyMetric(payload, "G_breadth").value, 6),
+      robustScore: numberOrNull(collectAgiFamilyMetric(payload, "R_robust").value, 6),
+      horizonScore: numberOrNull(collectAgiFamilyMetric(payload, "H_horizon").value, 6),
       promote: promotion.promote,
       comparisonMode: promotion.comparisonMode,
       distinctComparison: promotion.distinctComparison,
@@ -4564,11 +4806,11 @@ function buildAgiReadinessArtifacts({ workspaceRoot, items, continuityBridge }) 
     suiteId: safeString(latestBundle && latestBundle.suiteId, 160),
     metrics,
     catastrophicRisk: candidate && candidate.riskSummary ? {
-      cvar: Number.isFinite(Number(candidate.riskSummary.cvar)) ? Number(Number(candidate.riskSummary.cvar).toFixed(6)) : null,
+      cvar: numberOrNull(candidate.riskSummary.cvar, 6),
       supportStatus: safeString(candidate.riskSummary.supportStatus, 40) || "unknown",
     } : { cvar: null, supportStatus: "unknown" },
-    rawFinalScore: Number.isFinite(Number(candidate.rawFinalScore)) ? Number(Number(candidate.rawFinalScore).toFixed(6)) : null,
-    displayFinalScore: Number.isFinite(Number(candidate.displayFinalScore)) ? Number(Number(candidate.displayFinalScore).toFixed(6)) : null,
+    rawFinalScore: numberOrNull(candidate.rawFinalScore, 6),
+    displayFinalScore: numberOrNull(candidate.displayFinalScore, 6),
     breadthSemantics: {
       mode: breadthSemantics.mode,
       headlineField: "supportedCoverageBreadth",
@@ -4605,10 +4847,10 @@ function buildAgiReadinessArtifacts({ workspaceRoot, items, continuityBridge }) 
     ),
     domainCoveragePath: repoRelative(workspaceRoot, getMemoryPaths(workspaceRoot).agiReadiness.domainCoverageMatrixJson),
     robustnessBreakdownPath: repoRelative(workspaceRoot, getMemoryPaths(workspaceRoot).agiReadiness.robustnessBreakdownJson),
-    recentImprovement: trend.length > 1 && Number.isFinite(Number(trend[0].rawFinalScore)) && Number.isFinite(Number(trend[1].rawFinalScore))
+    recentImprovement: trend.length > 1 && hasExplicitNumber(trend[0].rawFinalScore) && hasExplicitNumber(trend[1].rawFinalScore)
       ? Number((safeNumber(trend[0].rawFinalScore, 0) - safeNumber(trend[1].rawFinalScore, 0)).toFixed(6))
       : null,
-    recentRegression: trend.length > 1 && Number.isFinite(Number(trend[0].catastrophicRisk)) && Number.isFinite(Number(trend[1].catastrophicRisk))
+    recentRegression: trend.length > 1 && hasExplicitNumber(trend[0].catastrophicRisk) && hasExplicitNumber(trend[1].catastrophicRisk)
       ? Number((safeNumber(trend[0].catastrophicRisk, 0) - safeNumber(trend[1].catastrophicRisk, 0)).toFixed(6))
       : null,
     incumbentVersion: distinctLineage.entries.length ? safeString(distinctLineage.entries[distinctLineage.entries.length - 1].incumbentVersion, 120) : "",
@@ -4644,13 +4886,13 @@ function renderAgiReadinessMarkdown(readiness, coverage, blockedReasons, bottlen
     "# AGI Readiness",
     "",
     `- Run: ${safeString(readiness && readiness.latestRunId, 120) || "-"}`,
-    `- Raw final score: ${Number.isFinite(Number(readiness && readiness.rawFinalScore)) ? readiness.rawFinalScore : "-"}`,
-    `- Display final score: ${Number.isFinite(Number(readiness && readiness.displayFinalScore)) ? readiness.displayFinalScore : "-"}`,
-    `- Catastrophic risk (CVaR): ${readiness && readiness.catastrophicRisk && Number.isFinite(Number(readiness.catastrophicRisk.cvar)) ? readiness.catastrophicRisk.cvar : "-"}`,
+    `- Raw final score: ${hasExplicitNumber(readiness && readiness.rawFinalScore) ? readiness.rawFinalScore : "-"}`,
+    `- Display final score: ${hasExplicitNumber(readiness && readiness.displayFinalScore) ? readiness.displayFinalScore : "-"}`,
+    `- Catastrophic risk (CVaR): ${readiness && readiness.catastrophicRisk && hasExplicitNumber(readiness.catastrophicRisk.cvar) ? readiness.catastrophicRisk.cvar : "-"}`,
     `- Promotion comparison mode: ${safeString(readiness && readiness.promotionComparisonMode, 80) || "-"}`,
     `- Promote: ${readiness && readiness.incumbentVsChallenger && readiness.incumbentVsChallenger.promote !== null ? String(readiness.incumbentVsChallenger.promote) : "n/a"}`,
-    `- Repo-wide coverage breadth: ${Number.isFinite(Number(readiness && readiness.supportedCoverageBreadth)) ? readiness.supportedCoverageBreadth : "-"}`,
-    `- Evaluated breadth: ${Number.isFinite(Number(readiness && readiness.evaluatedBreadth)) ? readiness.evaluatedBreadth : "-"}`,
+    `- Repo-wide coverage breadth: ${hasExplicitNumber(readiness && readiness.supportedCoverageBreadth) ? readiness.supportedCoverageBreadth : "-"}`,
+    `- Evaluated breadth: ${hasExplicitNumber(readiness && readiness.evaluatedBreadth) ? readiness.evaluatedBreadth : "-"}`,
     `- Weakest capability family: ${safeString(readiness && readiness.weakestCapabilityFamily, 80) || "-"}`,
     `- Weakest hard gate: ${safeString(readiness && readiness.weakestGateFamily, 80) || "-"}`,
     "",
@@ -4764,6 +5006,9 @@ function buildNextBottlenecks({ workspaceRoot, memoryEval, readinessArtifacts, c
     });
   }
   const readiness = readinessArtifacts && readinessArtifacts.readiness ? readinessArtifacts.readiness : {};
+  const readinessCriteria = readiness && readiness.completionCriteria && typeof readiness.completionCriteria === "object"
+    ? readiness.completionCriteria
+    : {};
   const failedFamilies = uniqueStrings(readiness && readiness.failedFamilies, 16, 80);
   if (failedFamilies.length) {
     items.push({
@@ -4772,10 +5017,25 @@ function buildNextBottlenecks({ workspaceRoot, memoryEval, readinessArtifacts, c
       source: "agi_readiness",
     });
   }
-  if (safeString(readiness.weakestCapabilityFamily, 80)) {
+  const weakestCapabilityFamily = safeString(readiness && readiness.weakestCapabilityFamily, 80);
+  const weakestCapabilityThresholdSatisfied = (() => {
+    if (!weakestCapabilityFamily) return true;
+    if (weakestCapabilityFamily === "R_robust") {
+      return safeNumber(readiness && readiness.metrics && readiness.metrics.R_robust && readiness.metrics.R_robust.value, 0) >= safeNumber(readinessCriteria.robustThreshold, 0.93);
+    }
+    if (weakestCapabilityFamily === "H_horizon") {
+      return safeNumber(readiness && readiness.metrics && readiness.metrics.H_horizon && readiness.metrics.H_horizon.value, 0) >= safeNumber(readinessCriteria.horizonThreshold, 0.97);
+    }
+    if (weakestCapabilityFamily === "G_breadth") {
+      return safeNumber(readiness && readiness.supportedCoverageBreadth, 0) >= safeNumber(readinessCriteria.supportedCoverageBreadth, 1)
+        && safeNumber(readiness && readiness.stableCoverageBreadth, 0) >= safeNumber(readinessCriteria.stableCoverageBreadth, 1);
+    }
+    return safeNumber(readiness && readiness.rawFinalScore, 0) >= safeNumber(readinessCriteria.rawFinalScoreThreshold, 0.9);
+  })();
+  if (weakestCapabilityFamily && !weakestCapabilityThresholdSatisfied) {
     items.push({
       classification: "capability bottleneck",
-      summary: `weakest family is ${safeString(readiness.weakestCapabilityFamily, 80)}`,
+      summary: `weakest family is ${weakestCapabilityFamily}`,
       source: "agi_readiness",
     });
   }
@@ -4804,7 +5064,7 @@ function buildNextBottlenecks({ workspaceRoot, memoryEval, readinessArtifacts, c
       source: "openai_primary_lane",
     });
   }
-  if (safeString(readiness.weakestCapabilityFamily, 80) === "R_robust" && readinessArtifacts && readinessArtifacts.robustnessBreakdown) {
+  if (weakestCapabilityFamily === "R_robust" && !weakestCapabilityThresholdSatisfied && readinessArtifacts && readinessArtifacts.robustnessBreakdown) {
     const breakdown = Array.isArray(readinessArtifacts.robustnessBreakdown.categories)
       ? readinessArtifacts.robustnessBreakdown.categories
       : [];
@@ -4826,7 +5086,20 @@ function buildNextBottlenecks({ workspaceRoot, memoryEval, readinessArtifacts, c
       });
     }
   }
-  if (safeString(anthropicLane && anthropicLane.governedOperationalState && anthropicLane.governedOperationalState.status, 40) === "shadow_only") {
+  const secondaryStatus = safeString(anthropicLane && anthropicLane.governedOperationalState && anthropicLane.governedOperationalState.status, 40);
+  const secondaryAdvisoryCount = clampInt(
+    anthropicLane && anthropicLane.governedOperationalState && anthropicLane.governedOperationalState.advisoryReferenceCount,
+    0,
+    999999,
+    0
+  );
+  const secondaryPackConsiderationCount = clampInt(
+    anthropicLane && anthropicLane.governedOperationalState && anthropicLane.governedOperationalState.consideredForPackCount,
+    0,
+    999999,
+    0
+  );
+  if (secondaryStatus === "shadow_only" && secondaryAdvisoryCount === 0 && secondaryPackConsiderationCount === 0) {
     items.push({
       classification: "governance bottleneck",
       summary: "secondary learning lane remains shadow-only and does not yet promote into runtime",
@@ -5586,7 +5859,7 @@ function syncGovernedMemoryGraph({ workspaceRoot = workspaceRootDefault, runtime
         taskFamily: safeString(entry && entry.proposedTaskFamily, 80),
         evidenceRefs: [],
       });
-      if (safeString(entry && entry.remediationEffect, 80) === "verified") {
+      if (/^verified_/i.test(safeString(entry && entry.remediationEffect, 80))) {
         agendaEvents.push({
           schema: "memory-event.v1",
           eventId: stableHash({ agendaId, type: "effect_verified", reason }).slice(0, 20),
@@ -5595,10 +5868,26 @@ function syncGovernedMemoryGraph({ workspaceRoot = workspaceRootDefault, runtime
           memoryId: agendaId,
           memoryType: "improvement_candidate",
           workspaceId: summary.workspaceId,
-          status: "verified",
+          status: safeString(entry && entry.remediationEffect, 80),
           sourceTier: "runtime",
           authorityTier: 3,
           reason: safeString(entry && entry.result, 120),
+          taskFamily: safeString(entry && entry.proposedTaskFamily, 80),
+          evidenceRefs: [],
+        });
+      } else if (safeString(entry && entry.remediationEffect, 80) === "insufficient_evidence") {
+        agendaEvents.push({
+          schema: "memory-event.v1",
+          eventId: stableHash({ agendaId, type: "effect_rejected", reason }).slice(0, 20),
+          eventType: "remediation_effect_rejected",
+          recordedAt: toIso(),
+          memoryId: agendaId,
+          memoryType: "improvement_candidate",
+          workspaceId: summary.workspaceId,
+          status: "insufficient_evidence",
+          sourceTier: "runtime",
+          authorityTier: 3,
+          reason: safeString(entry && entry.result, 120) || "insufficient_evidence",
           taskFamily: safeString(entry && entry.proposedTaskFamily, 80),
           evidenceRefs: [],
         });
@@ -5747,7 +6036,7 @@ function buildLaneProjection({ workspaceRoot, sourceName, sourceTier, laneKey, i
       familySelectionCounts[family] = safeNumber(familySelectionCounts[family], 0) + 1;
     }
   }
-  const consideredForPackCount = laneItems.filter((item) => {
+  const policyEligibleCount = laneItems.filter((item) => {
     return memoryAppliesToAgent(item, safeString(pack && pack.activeAgent, 80) || "default")
       && memoryAppliesToTaskFamily(item, safeString(pack && pack.taskFamily, 80) || "default", readinessPolicy);
   }).length;
@@ -5755,6 +6044,9 @@ function buildLaneProjection({ workspaceRoot, sourceName, sourceTier, laneKey, i
   const causalEntries = Array.isArray(causalTrace && causalTrace.traces)
     ? causalTrace.traces.filter((entry) => safeString(entry && entry.sourceTier, 40) === sourceTier)
     : [];
+  const consideredForPackCount = sourceTier === "external_secondary"
+    ? causalEntries.length
+    : policyEligibleCount;
   const recentCausalEffects = causalEntries.slice(0, 6).map((entry) => ({
     publicRef: safeString(entry && entry.publicRef, 120),
     usageStage: safeString(entry && entry.usageStage, 80),
@@ -5819,6 +6111,7 @@ function buildLaneProjection({ workspaceRoot, sourceName, sourceTier, laneKey, i
         : "",
       familyObservationCounts,
       familySelectionCounts,
+      policyEligibleCount,
       consideredForPackCount,
       advisoryReferenceCount,
     },
@@ -5899,6 +6192,7 @@ function evaluateMemoryPublicSuite({
   causalTrace = null,
   continuityDebt = null,
   goalCompletionStatus = null,
+  causalRegressionAlerts = null,
   workspaceProgressPublic = null,
   promotionHealthPublic = null,
   latestPackPublic = null,
@@ -6229,7 +6523,7 @@ function evaluateMemoryPublicSuite({
       detail = pass ? "stable coverage matrix and trend are present" : "stable coverage matrix or trend missing";
     } else if (id === "causal_regression_alerts_present") {
       const alertsPath = paths.agiReadiness && paths.agiReadiness.causalRegressionAlertsJson ? paths.agiReadiness.causalRegressionAlertsJson : "";
-      const alerts = writtenOrRuntimeJson(alertsPath, null);
+      const alerts = writtenOrRuntimeJson(alertsPath, causalRegressionAlerts);
       pass = Boolean(
         alertsPath
         && (!requireWrittenPublicArtifacts || fs.existsSync(alertsPath))
@@ -6253,9 +6547,14 @@ function evaluateMemoryPublicSuite({
       const current = goal && goal.currentValues && typeof goal.currentValues === "object" ? goal.currentValues : {};
       const whyNotYet = Array.isArray(goal && goal.whyNotYet) ? goal.whyNotYet : [];
       const readinessStable = safeNumber(readiness && readiness.stableCoverageBreadth, 0);
-      const readinessRobust = safeNumber(readiness && readiness.metrics && readiness.metrics.R_robust && readiness.metrics.R_robust.value, 0);
-      const readinessHorizon = safeNumber(readiness && readiness.metrics && readiness.metrics.H_horizon && readiness.metrics.H_horizon.value, 0);
-      const readinessScore = safeNumber(readiness && readiness.rawFinalScore, 0);
+      const readinessRobust = numberOrNull(readiness && readiness.metrics && readiness.metrics.R_robust && readiness.metrics.R_robust.value);
+      const readinessHorizon = numberOrNull(readiness && readiness.metrics && readiness.metrics.H_horizon && readiness.metrics.H_horizon.value);
+      const readinessScore = numberOrNull(readiness && readiness.rawFinalScore);
+      const sameNumberOrNull = (left, right) => {
+        if (left == null && right == null) return true;
+        if (!hasExplicitNumber(left) || !hasExplicitNumber(right)) return false;
+        return Math.abs(Number(left) - Number(right)) < 0.000001;
+      };
       const debtCount = clampInt(continuityDebt && continuityDebt.summary && continuityDebt.summary.openDebtCount, 0, 999999, 0);
       const blockedSubtasks = clampInt(continuityArtifacts && continuityArtifacts.artifact && continuityArtifacts.artifact.blockedSubtasks, 0, 999999, 0);
       const integrationPendingCount = clampInt(continuityArtifacts && continuityArtifacts.artifact && continuityArtifacts.artifact.integrationPendingCount, 0, 999999, 0);
@@ -6263,9 +6562,9 @@ function evaluateMemoryPublicSuite({
         goal
         && safeString(goal.schema, 160) === "agi-operational-completion-status.v1"
         && Math.abs(safeNumber(current.stableCoverageBreadth, -1) - readinessStable) < 0.000001
-        && Math.abs(safeNumber(current.R_robust, -1) - readinessRobust) < 0.000001
-        && Math.abs(safeNumber(current.H_horizon, -1) - readinessHorizon) < 0.000001
-        && Math.abs(safeNumber(current.rawFinalScore, -1) - readinessScore) < 0.000001
+        && sameNumberOrNull(current.R_robust, readinessRobust)
+        && sameNumberOrNull(current.H_horizon, readinessHorizon)
+        && sameNumberOrNull(current.rawFinalScore, readinessScore)
         && clampInt(current.openDebtCount, -1, 999999, -1) === debtCount
         && clampInt(current.blockedSubtasks, -1, 999999, -1) === blockedSubtasks
         && clampInt(current.integrationPendingCount, -1, 999999, -1) === integrationPendingCount
@@ -6403,6 +6702,7 @@ function buildGovernedMemoryPublicArtifacts({ workspaceRoot = workspaceRootDefau
   const policy = loadPublicExportPolicy(workspaceRoot);
   const persisted = loadPersistedGovernedMemoryState({ workspaceRoot });
   const { paths, items, pack, summary } = persisted;
+  const exportSessionId = stablePublicRef(`public_export:${summary.workspaceId}:${Date.now()}`, "export");
   const thresholds = loadConfigJson(workspaceRoot, "scripts", "config", "memory_retrieval_policy.json").scoreThresholds || {};
   const observationProjectionPath = path.join(paths.projections.observationStateRoot, "latest.json");
   const continuityProjectionPath = path.join(paths.projections.continuityStateRoot, "latest.json");
@@ -6442,37 +6742,21 @@ function buildGovernedMemoryPublicArtifacts({ workspaceRoot = workspaceRootDefau
     };
     writeJsonIfChanged(continuityProjectionPath, continuityProjection);
   }
-  const fallbackReadinessArtifacts = buildAgiReadinessArtifacts({ workspaceRoot, items, continuityBridge });
-  const readinessProjection = readJsonObject(readinessProjectionPath);
-  const promotionTrendProjection = readJsonObject(promotionTrendProjectionPath);
-  const blockedReasonsProjection = readJsonObject(blockedReasonsProjectionPath);
-  const coverageProjection = readJsonObject(coverageProjectionPath);
-  let readinessArtifacts = {
-    readiness: safeString(readinessProjection.schema, 120) ? readinessProjection : fallbackReadinessArtifacts.readiness,
-    coverage: safeString(coverageProjection.schema, 120) ? coverageProjection : fallbackReadinessArtifacts.coverage,
-    robustnessBreakdown: safeString(readJsonObject(robustnessBreakdownProjectionPath).schema, 120)
-      ? readJsonObject(robustnessBreakdownProjectionPath)
-      : (
-        fallbackReadinessArtifacts.robustnessBreakdown && typeof fallbackReadinessArtifacts.robustnessBreakdown === "object"
-          ? fallbackReadinessArtifacts.robustnessBreakdown
-          : {}
-      ),
-    promotionTrend: safeString(promotionTrendProjection.schema, 120) ? promotionTrendProjection : fallbackReadinessArtifacts.promotionTrend,
-    blockedReasons: safeString(blockedReasonsProjection.schema, 120) ? blockedReasonsProjection : fallbackReadinessArtifacts.blockedReasons,
-    distinctLineage: readJsonObject(distinctLineageProjectionPath),
+  const previousDistinctLineage = readJsonObject(distinctLineageProjectionPath);
+  let readinessArtifacts = buildAgiReadinessArtifacts({ workspaceRoot, items, continuityBridge });
+  readinessArtifacts = {
+    ...readinessArtifacts,
+    distinctLineage: safeString(previousDistinctLineage.schema, 120) ? previousDistinctLineage : readinessArtifacts.distinctLineage,
   };
   writeJsonIfChanged(readinessProjectionPath, readinessArtifacts.readiness);
   writeJsonIfChanged(robustnessBreakdownProjectionPath, readinessArtifacts.robustnessBreakdown);
   writeJsonIfChanged(promotionTrendProjectionPath, readinessArtifacts.promotionTrend);
   writeJsonIfChanged(blockedReasonsProjectionPath, readinessArtifacts.blockedReasons);
   writeJsonIfChanged(coverageProjectionPath, readinessArtifacts.coverage);
-  if (!safeString(readinessArtifacts.distinctLineage.schema, 120)) {
-    readinessArtifacts.distinctLineage = fallbackReadinessArtifacts.distinctLineage;
-    writeJsonIfChanged(distinctLineageProjectionPath, readinessArtifacts.distinctLineage);
-  }
-  let bottlenecks = readJsonObject(bottlenecksProjectionPath);
-  let continuityDebt = readJsonObject(continuityDebtProjectionPath);
-  let causalTrace = readJsonObject(causalTraceProjectionPath);
+  writeJsonIfChanged(distinctLineageProjectionPath, readinessArtifacts.distinctLineage);
+  const previousAgenda = readJsonObject(learningAgendaProjectionPath);
+  let causalTrace = buildCausalLearningTrace({ workspaceRoot, items, pack, retrievalPacks, observationProjection });
+  writeJsonIfChanged(causalTraceProjectionPath, causalTrace);
   let openAIBlogLane = buildLaneProjection({
     workspaceRoot,
     sourceName: "OpenAI Developers Blog",
@@ -6505,48 +6789,32 @@ function buildGovernedMemoryPublicArtifacts({ workspaceRoot = workspaceRootDefau
     observationProjection,
     causalTrace,
   });
-  if (!safeString(bottlenecks.schema, 120)) {
-    const continuityArtifactsStub = buildContinuityPublicArtifacts({
-      workspaceRoot,
-      continuityBridge,
-      retrievalPacks,
-      continuityDebt: continuityDebt && safeString(continuityDebt.schema, 120)
-        ? continuityDebt
-        : buildContinuityDebtProjection({ workspaceRoot, continuityBridge, agenda: null }),
-    });
-    bottlenecks = buildNextBottlenecks({
-      workspaceRoot,
-      memoryEval: { checks: [] },
-      readinessArtifacts,
-      continuityArtifacts: continuityArtifactsStub,
-      continuityDebt,
-      openAIBlogLane,
-      anthropicLane,
-    });
-    writeJsonIfChanged(bottlenecksProjectionPath, bottlenecks);
-  }
-  let autonomousAgenda = readJsonObject(learningAgendaProjectionPath);
-  if (!safeString(autonomousAgenda.schema, 120)) {
-    autonomousAgenda = buildAutonomousLearningAgenda({
-      workspaceRoot,
-      readinessArtifacts,
-      continuityDebt,
-      openAIBlogLane,
-      anthropicLane,
-      previousAgenda: {},
-      bottlenecks,
-    });
-    writeJsonIfChanged(learningAgendaProjectionPath, autonomousAgenda);
-  }
-  if (!safeString(continuityDebt.schema, 120)) {
-    continuityDebt = buildContinuityDebtProjection({ workspaceRoot, continuityBridge, agenda: autonomousAgenda });
-    writeJsonIfChanged(continuityDebtProjectionPath, continuityDebt);
-  }
+  let continuityDebt = buildContinuityDebtProjection({ workspaceRoot, continuityBridge, agenda: null });
+  writeJsonIfChanged(continuityDebtProjectionPath, continuityDebt);
   let continuityArtifacts = buildContinuityPublicArtifacts({ workspaceRoot, continuityBridge, retrievalPacks, continuityDebt });
-  if (!safeString(causalTrace.schema, 120)) {
-    causalTrace = buildCausalLearningTrace({ workspaceRoot, items, pack, retrievalPacks, observationProjection });
-    writeJsonIfChanged(causalTraceProjectionPath, causalTrace);
-  }
+  let bottlenecks = buildNextBottlenecks({
+    workspaceRoot,
+    memoryEval: { checks: [] },
+    readinessArtifacts,
+    continuityArtifacts,
+    continuityDebt,
+    openAIBlogLane,
+    anthropicLane,
+  });
+  writeJsonIfChanged(bottlenecksProjectionPath, bottlenecks);
+  let autonomousAgenda = buildAutonomousLearningAgenda({
+    workspaceRoot,
+    readinessArtifacts,
+    continuityDebt,
+    openAIBlogLane,
+    anthropicLane,
+    previousAgenda,
+    bottlenecks,
+  });
+  writeJsonIfChanged(learningAgendaProjectionPath, autonomousAgenda);
+  continuityDebt = buildContinuityDebtProjection({ workspaceRoot, continuityBridge, agenda: autonomousAgenda });
+  writeJsonIfChanged(continuityDebtProjectionPath, continuityDebt);
+  continuityArtifacts = buildContinuityPublicArtifacts({ workspaceRoot, continuityBridge, retrievalPacks, continuityDebt });
   openAIBlogLane = buildLaneProjection({
     workspaceRoot,
     sourceName: "OpenAI Developers Blog",
@@ -6579,7 +6847,7 @@ function buildGovernedMemoryPublicArtifacts({ workspaceRoot = workspaceRootDefau
     observationProjection,
     causalTrace,
   });
-  const robustnessRemediationStatus = safeString(readJsonObject(robustnessRemediationStatusProjectionPath).schema, 120)
+  let robustnessRemediationStatus = safeString(readJsonObject(robustnessRemediationStatusProjectionPath).schema, 120)
     ? readJsonObject(robustnessRemediationStatusProjectionPath)
     : buildRobustnessRemediationStatus({
       workspaceRoot,
@@ -6587,7 +6855,7 @@ function buildGovernedMemoryPublicArtifacts({ workspaceRoot = workspaceRootDefau
       agenda: autonomousAgenda,
       previousStatus: {},
     });
-  const robustnessRemediationTrend = safeString(readJsonObject(robustnessRemediationTrendProjectionPath).schema, 120)
+  let robustnessRemediationTrend = safeString(readJsonObject(robustnessRemediationTrendProjectionPath).schema, 120)
     ? readJsonObject(robustnessRemediationTrendProjectionPath)
     : buildRobustnessRemediationTrend({ workspaceRoot, remediationStatus: robustnessRemediationStatus });
   writeJsonIfChanged(robustnessRemediationStatusProjectionPath, robustnessRemediationStatus);
@@ -6613,8 +6881,8 @@ function buildGovernedMemoryPublicArtifacts({ workspaceRoot = workspaceRootDefau
   readinessArtifacts.stableCoverageArtifacts = stableCoverageArtifacts;
   writeJsonIfChanged(paths.projections.stableCoverageMatrixPath, stableCoverageArtifacts.matrix);
   writeJsonIfChanged(paths.projections.stableCoverageTrendPath, stableCoverageArtifacts.trend);
-  const robustnessRemediationBacklog = buildRobustnessRemediationBacklog({ workspaceRoot, remediationStatus: robustnessRemediationStatus });
-  const robustnessRemediationEffects = buildRobustnessRemediationEffects({
+  let robustnessRemediationBacklog = buildRobustnessRemediationBacklog({ workspaceRoot, remediationStatus: robustnessRemediationStatus });
+  let robustnessRemediationEffects = buildRobustnessRemediationEffects({
     workspaceRoot,
     robustnessBreakdown: readinessArtifacts.robustnessBreakdown,
     remediationStatus: robustnessRemediationStatus,
@@ -6662,7 +6930,7 @@ function buildGovernedMemoryPublicArtifacts({ workspaceRoot = workspaceRootDefau
   const bottleneckActions = (Array.isArray(bottlenecks && bottlenecks.items) ? bottlenecks.items : [])
     .slice(0, 3)
     .map((entry) => safeString(entry && entry.summary, 220));
-  const workspaceProgressPublic = {
+  let workspaceProgressPublic = {
     schema: "governed-memory-workspace-progress-public.v1",
     generatedAt: toIso(),
     workspaceId: summary.workspaceId,
@@ -6751,7 +7019,7 @@ function buildGovernedMemoryPublicArtifacts({ workspaceRoot = workspaceRootDefau
       .slice(0, safeNumber(policy && policy.limits && policy.limits.maxPackItems, 12))
       .map((entry) => sanitizePublicValue(entry, workspaceRoot)),
   };
-  const autonomousLearningStatus = {
+  let autonomousLearningStatus = {
     schema: "governed-autonomous-learning-status-public.v1",
     generatedAt: toIso(),
     workspaceId: summary.workspaceId,
@@ -6787,7 +7055,7 @@ function buildGovernedMemoryPublicArtifacts({ workspaceRoot = workspaceRootDefau
       : { schema: "continuity-debt-projection.v1", generatedAt: toIso(), workspaceId: summary.workspaceId, items: [], summary: {} },
     workspaceRoot
   );
-  const goalCompletionStatus = buildGoalCompletionStatus({
+  let goalCompletionStatus = buildGoalCompletionStatus({
     workspaceRoot,
     readinessArtifacts,
     continuityArtifacts,
@@ -6802,6 +7070,7 @@ function buildGovernedMemoryPublicArtifacts({ workspaceRoot = workspaceRootDefau
     stableCoverageArtifacts,
     causalEffectivenessSummary,
     causalRegressionAlerts,
+    exportSessionId,
   });
   writeJsonIfChanged(paths.projections.goalCompletionHistoryPath, {
     schema: "agi-operational-completion-history.v1",
@@ -6809,7 +7078,7 @@ function buildGovernedMemoryPublicArtifacts({ workspaceRoot = workspaceRootDefau
     workspaceId: summary.workspaceId,
     entries: goalCompletionStatus.history && Array.isArray(goalCompletionStatus.history.entries) ? goalCompletionStatus.history.entries : [],
   });
-  const publicOverview = {
+  let publicOverview = {
     schema: "governed-memory-public-overview.v1",
     generatedAt: toIso(),
     workspaceId: summary.workspaceId,
@@ -6855,6 +7124,7 @@ function buildGovernedMemoryPublicArtifacts({ workspaceRoot = workspaceRootDefau
     causalTrace,
     continuityDebt,
     goalCompletionStatus,
+    causalRegressionAlerts,
     workspaceProgressPublic,
     promotionHealthPublic,
     latestPackPublic,
@@ -6908,6 +7178,7 @@ function buildGovernedMemoryPublicArtifacts({ workspaceRoot = workspaceRootDefau
     causalTrace,
     continuityDebt,
     goalCompletionStatus,
+    causalRegressionAlerts,
     workspaceProgressPublic,
     promotionHealthPublic,
     latestPackPublic,
@@ -6924,6 +7195,190 @@ function buildGovernedMemoryPublicArtifacts({ workspaceRoot = workspaceRootDefau
   });
   readinessArtifacts.bottlenecks = bottlenecks;
   writeJsonIfChanged(bottlenecksProjectionPath, bottlenecks);
+  autonomousAgenda = buildAutonomousLearningAgenda({
+    workspaceRoot,
+    readinessArtifacts,
+    continuityDebt,
+    openAIBlogLane,
+    anthropicLane,
+    previousAgenda,
+    bottlenecks,
+  });
+  writeJsonIfChanged(learningAgendaProjectionPath, autonomousAgenda);
+  continuityDebt = buildContinuityDebtProjection({ workspaceRoot, continuityBridge, agenda: autonomousAgenda });
+  writeJsonIfChanged(continuityDebtProjectionPath, continuityDebt);
+  continuityArtifacts = buildContinuityPublicArtifacts({ workspaceRoot, continuityBridge, retrievalPacks, continuityDebt });
+  robustnessRemediationStatus = buildRobustnessRemediationStatus({
+    workspaceRoot,
+    robustnessBreakdown: readinessArtifacts.robustnessBreakdown,
+    agenda: autonomousAgenda,
+    previousStatus: robustnessRemediationStatus,
+  });
+  robustnessRemediationTrend = buildRobustnessRemediationTrend({ workspaceRoot, remediationStatus: robustnessRemediationStatus });
+  writeJsonIfChanged(robustnessRemediationStatusProjectionPath, robustnessRemediationStatus);
+  writeJsonIfChanged(robustnessRemediationTrendProjectionPath, robustnessRemediationTrend);
+  robustnessRemediationBacklog = buildRobustnessRemediationBacklog({ workspaceRoot, remediationStatus: robustnessRemediationStatus });
+  robustnessRemediationEffects = buildRobustnessRemediationEffects({
+    workspaceRoot,
+    robustnessBreakdown: readinessArtifacts.robustnessBreakdown,
+    remediationStatus: robustnessRemediationStatus,
+    agenda: autonomousAgenda,
+  });
+  autonomousLearningStatus = {
+    schema: "governed-autonomous-learning-status-public.v1",
+    generatedAt: toIso(),
+    workspaceId: summary.workspaceId,
+    summary: sanitizePublicValue(autonomousAgenda && autonomousAgenda.summary ? autonomousAgenda.summary : {}, workspaceRoot),
+    entries: (Array.isArray(autonomousAgenda && autonomousAgenda.entries) ? autonomousAgenda.entries : [])
+      .slice(0, 12)
+      .map((entry) => sanitizePublicValue(entry, workspaceRoot)),
+  };
+  workspaceProgressPublic = {
+    ...workspaceProgressPublic,
+    nextRecommendedActions: uniqueStrings([
+      ...(Array.isArray(workspaceProgressPublic.nextRecommendedActions) ? workspaceProgressPublic.nextRecommendedActions : []),
+      ...(Array.isArray(autonomousAgenda && autonomousAgenda.entries) ? autonomousAgenda.entries : [])
+        .filter((entry) => ["running", "queued"].includes(safeString(entry && entry.status, 40)))
+        .map((entry) => safeString(entry && entry.publicSummary, 220)),
+      ...(Array.isArray(bottlenecks && bottlenecks.items) ? bottlenecks.items : [])
+        .map((entry) => safeString(entry && entry.summary, 220)),
+    ], safeNumber(policy && policy.limits && policy.limits.maxNextActions, 6), 220),
+  };
+  goalCompletionStatus = buildGoalCompletionStatus({
+    workspaceRoot,
+    readinessArtifacts,
+    continuityArtifacts,
+    continuityDebt,
+    autonomousAgenda,
+    causalTrace,
+    openAIBlogLane,
+    anthropicLane,
+    workspaceProgressPublic,
+    bottlenecks,
+    previousGoalHistory: readJsonObject(paths.projections.goalCompletionHistoryPath),
+    stableCoverageArtifacts,
+    causalEffectivenessSummary,
+    causalRegressionAlerts,
+    exportSessionId,
+  });
+  writeJsonIfChanged(paths.projections.goalCompletionHistoryPath, {
+    schema: "agi-operational-completion-history.v1",
+    generatedAt: toIso(),
+    workspaceId: summary.workspaceId,
+    entries: goalCompletionStatus.history && Array.isArray(goalCompletionStatus.history.entries) ? goalCompletionStatus.history.entries : [],
+  });
+  publicOverview = {
+    ...publicOverview,
+    goalStatus: safeString(goalCompletionStatus.goalStatus, 80),
+    goalWhyNotYetCount: Array.isArray(goalCompletionStatus.whyNotYet) ? goalCompletionStatus.whyNotYet.length : 0,
+    learningAgendaSummary: sanitizePublicValue(autonomousLearningStatus.summary, workspaceRoot),
+  };
+  evalStatus = evaluateMemoryPublicSuite({
+    workspaceRoot,
+    paths,
+    summary,
+    pack,
+    items,
+    openAIBlogLane,
+    anthropicLane,
+    observationProjection,
+    continuityArtifacts,
+    readinessArtifacts,
+    autonomousAgenda,
+    causalTrace,
+    continuityDebt,
+    goalCompletionStatus,
+    causalRegressionAlerts,
+    workspaceProgressPublic,
+    promotionHealthPublic,
+    latestPackPublic,
+    requireWrittenPublicArtifacts,
+  });
+  bottlenecks = buildNextBottlenecks({
+    workspaceRoot,
+    memoryEval: evalStatus,
+    readinessArtifacts,
+    continuityArtifacts,
+    continuityDebt,
+    openAIBlogLane,
+    anthropicLane,
+  });
+  readinessArtifacts.bottlenecks = bottlenecks;
+  autonomousAgenda = buildAutonomousLearningAgenda({
+    workspaceRoot,
+    readinessArtifacts,
+    continuityDebt,
+    openAIBlogLane,
+    anthropicLane,
+    previousAgenda,
+    bottlenecks,
+  });
+  autonomousLearningStatus = {
+    schema: "governed-autonomous-learning-status-public.v1",
+    generatedAt: toIso(),
+    workspaceId: summary.workspaceId,
+    summary: sanitizePublicValue(autonomousAgenda && autonomousAgenda.summary ? autonomousAgenda.summary : {}, workspaceRoot),
+    entries: (Array.isArray(autonomousAgenda && autonomousAgenda.entries) ? autonomousAgenda.entries : [])
+      .slice(0, 12)
+      .map((entry) => sanitizePublicValue(entry, workspaceRoot)),
+  };
+  workspaceProgressPublic = {
+    ...workspaceProgressPublic,
+    nextRecommendedActions: uniqueStrings([
+      ...(Array.isArray(workspaceProgressPublic.nextRecommendedActions) ? workspaceProgressPublic.nextRecommendedActions : []),
+      ...(Array.isArray(autonomousAgenda && autonomousAgenda.entries) ? autonomousAgenda.entries : [])
+        .filter((entry) => ["running", "queued"].includes(safeString(entry && entry.status, 40)))
+        .map((entry) => safeString(entry && entry.publicSummary, 220)),
+      ...(Array.isArray(bottlenecks && bottlenecks.items) ? bottlenecks.items : [])
+        .map((entry) => safeString(entry && entry.summary, 220)),
+    ], safeNumber(policy && policy.limits && policy.limits.maxNextActions, 6), 220),
+  };
+  goalCompletionStatus = buildGoalCompletionStatus({
+    workspaceRoot,
+    readinessArtifacts,
+    continuityArtifacts,
+    continuityDebt,
+    autonomousAgenda,
+    causalTrace,
+    openAIBlogLane,
+    anthropicLane,
+    workspaceProgressPublic,
+    bottlenecks,
+    previousGoalHistory: readJsonObject(paths.projections.goalCompletionHistoryPath),
+    stableCoverageArtifacts,
+    causalEffectivenessSummary,
+    causalRegressionAlerts,
+    exportSessionId,
+  });
+  writeJsonIfChanged(paths.projections.goalCompletionHistoryPath, {
+    schema: "agi-operational-completion-history.v1",
+    generatedAt: toIso(),
+    workspaceId: summary.workspaceId,
+    entries: goalCompletionStatus.history && Array.isArray(goalCompletionStatus.history.entries) ? goalCompletionStatus.history.entries : [],
+  });
+  publicOverview = {
+    ...publicOverview,
+    goalStatus: safeString(goalCompletionStatus.goalStatus, 80),
+    goalWhyNotYetCount: Array.isArray(goalCompletionStatus.whyNotYet) ? goalCompletionStatus.whyNotYet.length : 0,
+    learningAgendaSummary: sanitizePublicValue(autonomousLearningStatus.summary, workspaceRoot),
+  };
+  readinessArtifacts.robustnessBreakdown = {
+    ...readinessArtifacts.robustnessBreakdown,
+    categories: Array.isArray(readinessArtifacts.robustnessBreakdown && readinessArtifacts.robustnessBreakdown.categories)
+      ? readinessArtifacts.robustnessBreakdown.categories.map((entry) => {
+        const remediation = (Array.isArray(robustnessRemediationStatus.categories) ? robustnessRemediationStatus.categories : []).find((row) => safeString(row && row.categoryId, 80) === safeString(entry && entry.categoryId, 80));
+        return remediation
+          ? {
+            ...entry,
+            remediationStatus: safeString(remediation.remediationStatus, 80),
+            lastRemediationAt: normalizePublicTimestamp(remediation.lastRemediationAt),
+            lastImprovementDelta: Number.isFinite(Number(remediation.lastImprovementDelta)) ? Number(remediation.lastImprovementDelta) : null,
+            openFailureModes: uniqueStrings(remediation.openFailureModes, 8, 180),
+          }
+          : entry;
+      })
+      : [],
+  };
   const exportManifest = {
     schema: "governed-memory-public-export-manifest.v1",
     generatedAt: toIso(),
@@ -7079,6 +7534,7 @@ function exportGovernedMemoryPublicArtifacts({ workspaceRoot = workspaceRootDefa
     causalTrace: artifacts.causalLearningTracePublic,
     continuityDebt: artifacts.continuityDebtPublic,
     goalCompletionStatus: artifacts.goalCompletionStatus,
+    causalRegressionAlerts: artifacts.causalRegressionAlerts,
     workspaceProgressPublic: artifacts.workspaceProgressPublic,
     promotionHealthPublic: artifacts.promotionHealthPublic,
     latestPackPublic: artifacts.latestPackPublic,

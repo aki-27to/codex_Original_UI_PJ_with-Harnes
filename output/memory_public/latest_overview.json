@@ -1,6 +1,6 @@
 {
   "schema": "governed-memory-public-overview.v1",
-  "generatedAt": "2026-04-05T05:24:36.635Z",
+  "generatedAt": "2026-04-05T09:15:52.472Z",
   "workspaceId": "5c839dfeef8b555f",
   "canonicalRoot": "logs/archive/raw/runtime_state/memory",
   "publicOutputRoot": "output/memory_public",
@@ -42,35 +42,35 @@
     "output/anthropic_engineering_self_improvement_gate.json"
   ],
   "goalCompletionPath": "output/agi_readiness/goal_completion_status.json",
-  "goalStatus": "NOT_YET",
-  "goalWhyNotYetCount": 18,
+  "goalStatus": "OPERATIONALLY_COMPLETE",
+  "goalWhyNotYetCount": 0,
   "latestPack": {
-    "selectedCount": 11,
-    "highConfidenceCount": 2,
-    "reusedSelectedCount": 11,
+    "selectedCount": 13,
+    "highConfidenceCount": 3,
+    "reusedSelectedCount": 13,
     "explicitTaskFamilyMismatchCount": 0,
-    "activeAgent": "intake",
-    "taskFamily": "smoke-http-exec",
+    "activeAgent": "default",
+    "taskFamily": "eval",
     "sectionCounts": {
       "workspace_progress": 1,
       "intent": 1,
       "spec": 4,
-      "experience": 2,
+      "experience": 4,
       "semantic": 3
     }
   },
   "staleWarningCount": 0,
   "learningAgendaSummary": {
     "queued": 0,
-    "running": 3,
-    "blocked": 0,
-    "passed": 0,
+    "running": 0,
+    "blocked": 2,
+    "passed": 1,
     "failed": 0,
     "revoked": 0,
-    "verifiedPositive": 0,
+    "verifiedPositive": 1,
     "verifiedNeutral": 0,
     "verifiedNegative": 0,
     "verifiedHarmful": 0,
-    "insufficientEvidence": 0
+    "insufficientEvidence": 2
   }
 }
