@@ -1,0 +1,139 @@
+{
+  "schema": "governed-memory-lesson-effectiveness-public.v1",
+  "generatedAt": "2026-04-05T02:47:47.672Z",
+  "workspaceId": "5c839dfeef8b555f",
+  "entries": [
+    {
+      "publicRef": "mem_9f11aebf87",
+      "memoryType": "improvement_candidate",
+      "sourceTier": "external_primary",
+      "selectedInLatestPack": false,
+      "usageStage": "harmful_to_outcome",
+      "likelyContributory": false,
+      "harmfulToOutcome": true,
+      "summary": "Building frontend UIs with Codex and Figma | OpenAI Developers",
+      "lastObservedAt": "2026-04-05T02:47:46.183Z"
+    },
+    {
+      "publicRef": "mem_ec957e3de3",
+      "memoryType": "semantic_lesson",
+      "sourceTier": "external_primary",
+      "selectedInLatestPack": false,
+      "usageStage": "harmful_to_outcome",
+      "likelyContributory": false,
+      "harmfulToOutcome": true,
+      "summary": "How Perplexity Brought Voice Search to Millions Using the Realtime API | OpenAI Developers",
+      "lastObservedAt": "2026-04-05T02:45:53.152Z"
+    },
+    {
+      "publicRef": "mem_f38921b6c8",
+      "memoryType": "semantic_lesson",
+      "sourceTier": "external_primary",
+      "selectedInLatestPack": false,
+      "usageStage": "harmful_to_outcome",
+      "likelyContributory": false,
+      "harmfulToOutcome": true,
+      "summary": "Designing delightful frontends with GPT-5.4 | OpenAI Developers",
+      "lastObservedAt": "2026-04-05T02:45:53.152Z"
+    },
+    {
+      "publicRef": "mem_eb390615f9",
+      "memoryType": "semantic_lesson",
+      "sourceTier": "external_primary",
+      "selectedInLatestPack": false,
+      "usageStage": "harmful_to_outcome",
+      "likelyContributory": false,
+      "harmfulToOutcome": true,
+      "summary": "From prompts to products: One year of Responses | OpenAI Developers",
+      "lastObservedAt": "2026-04-05T02:45:53.152Z"
+    },
+    {
+      "publicRef": "mem_d0800f01f8",
+      "memoryType": "semantic_lesson",
+      "sourceTier": "external_primary",
+      "selectedInLatestPack": false,
+      "usageStage": "harmful_to_outcome",
+      "likelyContributory": false,
+      "harmfulToOutcome": true,
+      "summary": "Using skills to accelerate OSS maintenance | OpenAI Developers",
+      "lastObservedAt": "2026-04-05T02:45:53.152Z"
+    },
+    {
+      "publicRef": "mem_46f23704e6",
+      "memoryType": "runtime_hint",
+      "sourceTier": "external_primary",
+      "selectedInLatestPack": false,
+      "usageStage": "harmful_to_outcome",
+      "likelyContributory": false,
+      "harmfulToOutcome": true,
+      "summary": "How Perplexity Brought Voice Search to Millions Using the Realtime API | OpenAI Developers",
+      "lastObservedAt": "2026-04-05T02:45:53.152Z"
+    },
+    {
+      "publicRef": "mem_5e926a0571",
+      "memoryType": "runtime_hint",
+      "sourceTier": "external_primary",
+      "selectedInLatestPack": false,
+      "usageStage": "harmful_to_outcome",
+      "likelyContributory": false,
+      "harmfulToOutcome": true,
+      "summary": "Designing delightful frontends with GPT-5.4 | OpenAI Developers",
+      "lastObservedAt": "2026-04-05T02:45:53.152Z"
+    },
+    {
+      "publicRef": "mem_b439f61eb1",
+      "memoryType": "runtime_hint",
+      "sourceTier": "external_primary",
+      "selectedInLatestPack": false,
+      "usageStage": "harmful_to_outcome",
+      "likelyContributory": false,
+      "harmfulToOutcome": true,
+      "summary": "From prompts to products: One year of Responses | OpenAI Developers",
+      "lastObservedAt": "2026-04-05T02:45:53.152Z"
+    },
+    {
+      "publicRef": "mem_8896adaa48",
+      "memoryType": "runtime_hint",
+      "sourceTier": "external_primary",
+      "selectedInLatestPack": false,
+      "usageStage": "harmful_to_outcome",
+      "likelyContributory": false,
+      "harmfulToOutcome": true,
+      "summary": "Using skills to accelerate OSS maintenance | OpenAI Developers",
+      "lastObservedAt": "2026-04-05T02:45:53.152Z"
+    },
+    {
+      "publicRef": "mem_847a1aba42",
+      "memoryType": "runtime_hint",
+      "sourceTier": "external_primary",
+      "selectedInLatestPack": false,
+      "usageStage": "harmful_to_outcome",
+      "likelyContributory": false,
+      "harmfulToOutcome": true,
+      "summary": "Building frontend UIs with Codex and Figma | OpenAI Developers",
+      "lastObservedAt": "2026-04-05T02:45:53.152Z"
+    },
+    {
+      "publicRef": "mem_106d75d257",
+      "memoryType": "runtime_hint",
+      "sourceTier": "external_primary",
+      "selectedInLatestPack": false,
+      "usageStage": "harmful_to_outcome",
+      "likelyContributory": false,
+      "harmfulToOutcome": true,
+      "summary": "Run long horizon tasks with Codex | OpenAI Developers",
+      "lastObservedAt": "2026-04-05T02:45:53.152Z"
+    },
+    {
+      "publicRef": "mem_1ef523dba6",
+      "memoryType": "semantic_lesson",
+      "sourceTier": "external_secondary",
+      "selectedInLatestPack": false,
+      "usageStage": "advisory_reference",
+      "likelyContributory": false,
+      "harmfulToOutcome": false,
+      "summary": "Quantifying infrastructure noise in agentic coding evals",
+      "lastObservedAt": "2026-04-05T02:45:53.152Z"
+    }
+  ]
+}

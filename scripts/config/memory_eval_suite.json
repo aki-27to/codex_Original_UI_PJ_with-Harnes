@@ -89,6 +89,58 @@
     {
       "id": "robustness_breakdown_exported",
       "title": "Readiness exports a public-safe robustness breakdown from live evidence"
+    },
+    {
+      "id": "autonomous_learning_agenda_present",
+      "title": "Autonomous learning agenda projection is present and non-empty"
+    },
+    {
+      "id": "autonomous_learning_running_or_passed",
+      "title": "Autonomous learning agenda has running or passed remediation items"
+    },
+    {
+      "id": "causal_learning_trace_present",
+      "title": "Causal learning trace is generated from selected pack items and outcomes"
+    },
+    {
+      "id": "primary_lane_causal_usage_present",
+      "title": "Primary lane exposes causal usage when runtime observations exist"
+    },
+    {
+      "id": "secondary_lane_advisory_trace_present",
+      "title": "Secondary advisory lane exposes advisory trace when considered for pack selection"
+    },
+    {
+      "id": "distinct_lineage_present",
+      "title": "Distinct improvement lineage contains at least three comparisons"
+    },
+    {
+      "id": "distinct_lineage_has_non_promoted_case",
+      "title": "Distinct improvement lineage includes at least one non-promoted comparison"
+    },
+    {
+      "id": "continuity_debt_surface_present",
+      "title": "Continuity debt surface is generated and addressable"
+    },
+    {
+      "id": "public_hygiene_no_unknown_memory_type",
+      "title": "Public artifacts avoid unknown memoryType fallbacks"
+    },
+    {
+      "id": "public_hygiene_validation_refs_present",
+      "title": "Public validation entries expose stable references"
+    },
+    {
+      "id": "public_hygiene_no_blank_task_outcome_status",
+      "title": "Public validation entries expose non-blank task outcome status"
+    },
+    {
+      "id": "public_hygiene_no_raw_uuid_titles",
+      "title": "Public artifacts avoid raw UUID-like titles"
+    },
+    {
+      "id": "public_hygiene_iso8601_timestamps",
+      "title": "Public artifacts normalize timestamps to ISO-8601"
     }
   ]
 }

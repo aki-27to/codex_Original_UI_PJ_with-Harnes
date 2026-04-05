@@ -1,6 +1,6 @@
 {
   "schema": "agi-readiness-live-summary.v1",
-  "generatedAt": "2026-04-05T00:12:47.512Z",
+  "generatedAt": "2026-04-05T02:47:47.279Z",
   "workspaceId": "5c839dfeef8b555f",
   "latestRunId": "eval-1775264897008-443e2a6a",
   "profile": "agi_v1",
@@ -213,6 +213,7 @@
   },
   "evaluatedBreadth": 1,
   "supportedCoverageBreadth": 1,
+  "stableCoverageBreadth": 0,
   "coverageFamilyCount": 6,
   "coveredFamilyCount": 6,
   "failedFamilies": [],
@@ -260,6 +261,10 @@
   "robustnessBreakdownPath": "output/agi_readiness/robustness_breakdown.json",
   "recentImprovement": 0.133862,
   "recentRegression": -0.04,
+  "incumbentVersion": "lineage_4489ff94ff",
+  "challengerVersion": "lineage_4883260209",
+  "distinctImprovementObserved": true,
+  "improvementEvidenceClass": "distinct_observed_improvement",
   "consistencyChecks": [
     {
       "id": "readiness_breadth_semantics_consistent",
@@ -276,5 +281,10 @@
       "status": "PASS",
       "detail": "coverage failures are reflected in readiness blocked reasons and next bottlenecks"
     }
-  ]
+  ],
+  "autonomousLearningStatusPath": "output/agi_readiness/autonomous_learning_status.json",
+  "causalLearningTracePath": "output/agi_readiness/causal_learning_trace.json",
+  "distinctImprovementLineagePath": "output/agi_readiness/distinct_improvement_lineage.json",
+  "continuityDebtPath": "output/continuity_public/continuity_debt.json",
+  "robustnessRemediationStatusPath": "output/agi_readiness/robustness_remediation_status.json"
 }

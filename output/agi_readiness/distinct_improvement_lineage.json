@@ -1,0 +1,223 @@
+{
+  "schema": "agi-readiness-distinct-improvement-lineage.v1",
+  "generatedAt": "2026-04-05T02:47:47.279Z",
+  "workspaceId": "5c839dfeef8b555f",
+  "entries": [
+    {
+      "lineageId": "lineage_001",
+      "incumbentIdentifier": "eval-1775259039826-065bee03",
+      "challengerIdentifier": "eval-1775259042576-a40bc3f6",
+      "incumbentVersion": "lineage_ac63694ae1",
+      "challengerVersion": "lineage_d13fd4d02e",
+      "comparisonMode": "distinct_comparison",
+      "distinctComparison": true,
+      "promote": true,
+      "adopted": true,
+      "rejected": false,
+      "rolledBack": false,
+      "blockedReasons": [],
+      "rawFinalScoreOld": 0.726416,
+      "rawFinalScoreNew": 0.860278,
+      "catastrophicRiskOld": 0.08,
+      "catastrophicRiskNew": 0.04,
+      "keyFamilyDeltas": {
+        "G_breadth": 0,
+        "R_robust": 0.12,
+        "H_horizon": 0.124156
+      },
+      "observationBackedRationale": "challenger improved score without worsening catastrophic risk",
+      "changedFactors": [
+        "run eval-1775259042576-a40bc3f6",
+        "generated 2026-04-03T23:30:47.224Z"
+      ],
+      "generatedAt": "2026-04-03T23:30:47.224Z",
+      "improvementEvidenceClass": "distinct_observed_improvement"
+    },
+    {
+      "lineageId": "lineage_002",
+      "incumbentIdentifier": "eval-1775259042576-a40bc3f6",
+      "challengerIdentifier": "eval-1775264773178-984eb597",
+      "incumbentVersion": "lineage_d13fd4d02e",
+      "challengerVersion": "lineage_6336ce2fc2",
+      "comparisonMode": "distinct_comparison",
+      "distinctComparison": true,
+      "promote": false,
+      "adopted": false,
+      "rejected": true,
+      "rolledBack": true,
+      "blockedReasons": [
+        "regression_detected"
+      ],
+      "rawFinalScoreOld": 0.860278,
+      "rawFinalScoreNew": 0.726416,
+      "catastrophicRiskOld": 0.04,
+      "catastrophicRiskNew": 0.08,
+      "keyFamilyDeltas": {
+        "G_breadth": 0,
+        "R_robust": -0.12,
+        "H_horizon": -0.124156
+      },
+      "observationBackedRationale": "challenger regressed or increased catastrophic risk",
+      "changedFactors": [
+        "run eval-1775264773178-984eb597",
+        "generated 2026-04-04T01:06:15.830Z"
+      ],
+      "generatedAt": "2026-04-04T01:06:15.830Z",
+      "improvementEvidenceClass": "distinct_observed_regression"
+    },
+    {
+      "lineageId": "lineage_003",
+      "incumbentIdentifier": "eval-1775264773178-984eb597",
+      "challengerIdentifier": "eval-1775264775837-7aefad2e",
+      "incumbentVersion": "lineage_6336ce2fc2",
+      "challengerVersion": "lineage_d51abf1827",
+      "comparisonMode": "distinct_comparison",
+      "distinctComparison": true,
+      "promote": true,
+      "adopted": true,
+      "rejected": false,
+      "rolledBack": false,
+      "blockedReasons": [],
+      "rawFinalScoreOld": 0.726416,
+      "rawFinalScoreNew": 0.860278,
+      "catastrophicRiskOld": 0.08,
+      "catastrophicRiskNew": 0.04,
+      "keyFamilyDeltas": {
+        "G_breadth": 0,
+        "R_robust": 0.12,
+        "H_horizon": 0.124156
+      },
+      "observationBackedRationale": "challenger improved score without worsening catastrophic risk",
+      "changedFactors": [
+        "run eval-1775264775837-7aefad2e",
+        "generated 2026-04-04T01:06:18.418Z"
+      ],
+      "generatedAt": "2026-04-04T01:06:18.418Z",
+      "improvementEvidenceClass": "distinct_observed_improvement"
+    },
+    {
+      "lineageId": "lineage_004",
+      "incumbentIdentifier": "eval-1775264775837-7aefad2e",
+      "challengerIdentifier": "eval-1775264798402-1d7900e5",
+      "incumbentVersion": "lineage_d51abf1827",
+      "challengerVersion": "lineage_daf465b5e3",
+      "comparisonMode": "distinct_comparison",
+      "distinctComparison": true,
+      "promote": false,
+      "adopted": false,
+      "rejected": true,
+      "rolledBack": true,
+      "blockedReasons": [
+        "regression_detected"
+      ],
+      "rawFinalScoreOld": 0.860278,
+      "rawFinalScoreNew": 0.726416,
+      "catastrophicRiskOld": 0.04,
+      "catastrophicRiskNew": 0.08,
+      "keyFamilyDeltas": {
+        "G_breadth": 0,
+        "R_robust": -0.12,
+        "H_horizon": -0.124156
+      },
+      "observationBackedRationale": "challenger regressed or increased catastrophic risk",
+      "changedFactors": [
+        "run eval-1775264798402-1d7900e5",
+        "generated 2026-04-04T01:06:41.041Z"
+      ],
+      "generatedAt": "2026-04-04T01:06:41.041Z",
+      "improvementEvidenceClass": "distinct_observed_regression"
+    },
+    {
+      "lineageId": "lineage_005",
+      "incumbentIdentifier": "eval-1775264798402-1d7900e5",
+      "challengerIdentifier": "eval-1775264801048-611d5a70",
+      "incumbentVersion": "lineage_daf465b5e3",
+      "challengerVersion": "lineage_d219300a88",
+      "comparisonMode": "distinct_comparison",
+      "distinctComparison": true,
+      "promote": true,
+      "adopted": true,
+      "rejected": false,
+      "rolledBack": false,
+      "blockedReasons": [],
+      "rawFinalScoreOld": 0.726416,
+      "rawFinalScoreNew": 0.860278,
+      "catastrophicRiskOld": 0.08,
+      "catastrophicRiskNew": 0.04,
+      "keyFamilyDeltas": {
+        "G_breadth": 0,
+        "R_robust": 0.12,
+        "H_horizon": 0.124156
+      },
+      "observationBackedRationale": "challenger improved score without worsening catastrophic risk",
+      "changedFactors": [
+        "run eval-1775264801048-611d5a70",
+        "generated 2026-04-04T01:06:43.677Z"
+      ],
+      "generatedAt": "2026-04-04T01:06:43.677Z",
+      "improvementEvidenceClass": "distinct_observed_improvement"
+    },
+    {
+      "lineageId": "lineage_006",
+      "incumbentIdentifier": "eval-1775264801048-611d5a70",
+      "challengerIdentifier": "eval-1775264894494-c84a459e",
+      "incumbentVersion": "lineage_d219300a88",
+      "challengerVersion": "lineage_4489ff94ff",
+      "comparisonMode": "distinct_comparison",
+      "distinctComparison": true,
+      "promote": false,
+      "adopted": false,
+      "rejected": true,
+      "rolledBack": true,
+      "blockedReasons": [
+        "regression_detected"
+      ],
+      "rawFinalScoreOld": 0.860278,
+      "rawFinalScoreNew": 0.726416,
+      "catastrophicRiskOld": 0.04,
+      "catastrophicRiskNew": 0.08,
+      "keyFamilyDeltas": {
+        "G_breadth": 0,
+        "R_robust": -0.12,
+        "H_horizon": -0.124156
+      },
+      "observationBackedRationale": "challenger regressed or increased catastrophic risk",
+      "changedFactors": [
+        "run eval-1775264894494-c84a459e",
+        "generated 2026-04-04T01:08:17.003Z"
+      ],
+      "generatedAt": "2026-04-04T01:08:17.003Z",
+      "improvementEvidenceClass": "distinct_observed_regression"
+    },
+    {
+      "lineageId": "lineage_007",
+      "incumbentIdentifier": "eval-1775264894494-c84a459e",
+      "challengerIdentifier": "eval-1775264897008-443e2a6a",
+      "incumbentVersion": "lineage_4489ff94ff",
+      "challengerVersion": "lineage_4883260209",
+      "comparisonMode": "distinct_comparison",
+      "distinctComparison": true,
+      "promote": true,
+      "adopted": true,
+      "rejected": false,
+      "rolledBack": false,
+      "blockedReasons": [],
+      "rawFinalScoreOld": 0.726416,
+      "rawFinalScoreNew": 0.860278,
+      "catastrophicRiskOld": 0.08,
+      "catastrophicRiskNew": 0.04,
+      "keyFamilyDeltas": {
+        "G_breadth": 0,
+        "R_robust": 0.12,
+        "H_horizon": 0.124156
+      },
+      "observationBackedRationale": "challenger improved score without worsening catastrophic risk",
+      "changedFactors": [
+        "run eval-1775264897008-443e2a6a",
+        "generated 2026-04-04T01:08:19.554Z"
+      ],
+      "generatedAt": "2026-04-04T01:08:19.554Z",
+      "improvementEvidenceClass": "distinct_observed_improvement"
+    }
+  ]
+}

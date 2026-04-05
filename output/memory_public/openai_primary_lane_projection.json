@@ -1,6 +1,6 @@
 {
   "schema": "governed-memory-public-lane-projection.v1",
-  "generatedAt": "2026-04-05T00:12:47.515Z",
+  "generatedAt": "2026-04-05T02:47:47.670Z",
   "laneKey": "openai_primary",
   "sourceName": "OpenAI Developers Blog",
   "sourceTier": "external_primary",
@@ -16,12 +16,16 @@
     "selectedInLatestPackCount": 0,
     "consideredForPackCount": 0,
     "advisoryReferenceCount": 1,
-    "observationCount": 132,
+    "observationCount": 110,
     "awaitingObservationCount": 0,
     "familyObservationCounts": {
-      "web_creative": 132
+      "web_creative": 110
     },
-    "familySelectionCounts": {}
+    "familySelectionCounts": {},
+    "causalUsageCount": 11,
+    "surfacedToAgentCount": 0,
+    "behaviorallyReferencedCount": 0,
+    "likelyContributoryCount": 0
   },
   "canonicalHealth": {
     "canonicalStatePresent": true,
@@ -33,20 +37,99 @@
     "status": "active",
     "promotedLessonCount": 4,
     "selectedInLatestPackCount": 0,
-    "observationCount": 132,
+    "observationCount": 110,
     "awaitingObservationCount": 0,
     "observationStatus": "observed",
-    "lastObservedAt": "2026-04-05T00:12:46.391Z",
+    "lastObservedAt": "2026-04-05T02:47:46.183Z",
     "consideredForPackCount": 0,
-    "advisoryReferenceCount": 1
+    "advisoryReferenceCount": 1,
+    "causalUsageCount": 11
   },
   "advisory": {
     "shadowOnlyReason": "",
     "familyObservationCounts": {
-      "web_creative": 132
+      "web_creative": 110
     },
-    "familySelectionCounts": {}
+    "familySelectionCounts": {},
+    "consideredForPackCount": 0,
+    "advisoryReferenceCount": 1
   },
+  "causalUsageCount": 11,
+  "recentCausalEffects": [
+    {
+      "publicRef": "mem_9f11aebf87",
+      "usageStage": "harmful_to_outcome",
+      "causalConfidence": "weak",
+      "taskRefs": [
+        "turn_816303077a",
+        "turn_ae658d538b",
+        "turn_ea3078f43f",
+        "turn_903381175d"
+      ],
+      "summary": "Building frontend UIs with Codex and Figma | OpenAI Developers"
+    },
+    {
+      "publicRef": "mem_ec957e3de3",
+      "usageStage": "harmful_to_outcome",
+      "causalConfidence": "weak",
+      "taskRefs": [
+        "turn_816303077a",
+        "turn_ae658d538b",
+        "turn_ea3078f43f",
+        "turn_903381175d"
+      ],
+      "summary": "How Perplexity Brought Voice Search to Millions Using the Realtime API | OpenAI Developers"
+    },
+    {
+      "publicRef": "mem_f38921b6c8",
+      "usageStage": "harmful_to_outcome",
+      "causalConfidence": "weak",
+      "taskRefs": [
+        "turn_816303077a",
+        "turn_ae658d538b",
+        "turn_ea3078f43f",
+        "turn_903381175d"
+      ],
+      "summary": "Designing delightful frontends with GPT-5.4 | OpenAI Developers"
+    },
+    {
+      "publicRef": "mem_eb390615f9",
+      "usageStage": "harmful_to_outcome",
+      "causalConfidence": "weak",
+      "taskRefs": [
+        "turn_816303077a",
+        "turn_ae658d538b",
+        "turn_ea3078f43f",
+        "turn_903381175d"
+      ],
+      "summary": "From prompts to products: One year of Responses | OpenAI Developers"
+    },
+    {
+      "publicRef": "mem_d0800f01f8",
+      "usageStage": "harmful_to_outcome",
+      "causalConfidence": "weak",
+      "taskRefs": [
+        "turn_816303077a",
+        "turn_ae658d538b",
+        "turn_ea3078f43f",
+        "turn_903381175d"
+      ],
+      "summary": "Using skills to accelerate OSS maintenance | OpenAI Developers"
+    },
+    {
+      "publicRef": "mem_46f23704e6",
+      "usageStage": "harmful_to_outcome",
+      "causalConfidence": "weak",
+      "taskRefs": [
+        "turn_816303077a",
+        "turn_ae658d538b",
+        "turn_ea3078f43f",
+        "turn_903381175d"
+      ],
+      "summary": "How Perplexity Brought Voice Search to Millions Using the Realtime API | OpenAI Developers"
+    }
+  ],
+  "recentAdvisoryEffects": [],
   "recentLessons": [
     {
       "publicRef": "mem_ec957e3de3",
@@ -105,12 +188,12 @@
     "gateReason": "all_cases_passed",
     "appliedDecision": "applied",
     "observationStatus": "observed",
-    "observationCount": 132,
+    "observationCount": 110,
     "proposalOnlyCount": 0,
     "blockedCount": 0,
     "awaitingObservationCount": 0,
     "policyDisabledCandidateCount": 0,
-    "lastObservedAt": "2026-04-05T00:12:46.391Z",
+    "lastObservedAt": "2026-04-05T02:47:46.183Z",
     "nextPriority": {
       "title": "Building frontend UIs with Codex and Figma | OpenAI Developers",
       "changeType": "frontend_quality_note",

@@ -1,10 +1,10 @@
 {
   "schema": "governed-memory-public-overview.v1",
-  "generatedAt": "2026-04-05T00:12:47.515Z",
+  "generatedAt": "2026-04-05T02:47:47.675Z",
   "workspaceId": "5c839dfeef8b555f",
   "canonicalRoot": "logs/archive/raw/runtime_state/memory",
   "publicOutputRoot": "output/memory_public",
-  "canonicalEventCount": 9352,
+  "canonicalEventCount": 12000,
   "itemCount": 50,
   "promotedCount": 26,
   "typeCounts": {
@@ -42,19 +42,27 @@
     "output/anthropic_engineering_self_improvement_gate.json"
   ],
   "latestPack": {
-    "selectedCount": 13,
-    "highConfidenceCount": 3,
-    "reusedSelectedCount": 13,
+    "selectedCount": 11,
+    "highConfidenceCount": 2,
+    "reusedSelectedCount": 11,
     "explicitTaskFamilyMismatchCount": 0,
-    "activeAgent": "default",
-    "taskFamily": "web-ui-interactive",
+    "activeAgent": "intake",
+    "taskFamily": "smoke-http-exec",
     "sectionCounts": {
       "workspace_progress": 1,
       "intent": 1,
       "spec": 4,
-      "experience": 4,
+      "experience": 2,
       "semantic": 3
     }
   },
-  "staleWarningCount": 0
+  "staleWarningCount": 0,
+  "learningAgendaSummary": {
+    "queued": 0,
+    "running": 3,
+    "blocked": 0,
+    "passed": 0,
+    "failed": 0,
+    "revoked": 0
+  }
 }

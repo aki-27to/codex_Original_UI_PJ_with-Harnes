@@ -1,6 +1,6 @@
 {
   "schema": "governed-memory-public-export-manifest.v1",
-  "generatedAt": "2026-04-05T00:12:47.520Z",
+  "generatedAt": "2026-04-05T02:47:47.682Z",
   "workspaceId": "5c839dfeef8b555f",
   "sourceMode": "redacted_live_export",
   "canonicalReuseVerified": true,
@@ -26,7 +26,17 @@
     "blockedReasonsJson": "output/agi_readiness/blocked_reasons.json",
     "nextBottlenecksJson": "output/agi_readiness/next_bottlenecks.json",
     "nextBottlenecksMd": "output/agi_readiness/next_bottlenecks.md",
+    "autonomousLearningStatusJson": "output/agi_readiness/autonomous_learning_status.json",
+    "autonomousLearningStatusMd": "output/agi_readiness/autonomous_learning_status.md",
+    "causalLearningTraceJson": "output/agi_readiness/causal_learning_trace.json",
+    "distinctImprovementLineageJson": "output/agi_readiness/distinct_improvement_lineage.json",
+    "distinctImprovementLineageMd": "output/agi_readiness/distinct_improvement_lineage.md",
+    "robustnessRemediationStatusJson": "output/agi_readiness/robustness_remediation_status.json",
+    "robustnessRemediationTrendJson": "output/agi_readiness/robustness_remediation_trend.json",
     "continuityPublicJson": "output/continuity_public/latest_continuity.json",
-    "continuityPublicMd": "output/continuity_public/latest_continuity.md"
+    "continuityPublicMd": "output/continuity_public/latest_continuity.md",
+    "continuityDebtJson": "output/continuity_public/continuity_debt.json",
+    "lessonEffectivenessJson": "output/memory_public/lesson_effectiveness_public.json",
+    "packCausalTraceJson": "output/memory_public/pack_causal_trace_public.json"
   }
 }

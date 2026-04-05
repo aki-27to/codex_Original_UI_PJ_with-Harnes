@@ -1,42 +1,42 @@
 {
   "schema": "continuity-public-summary.v1",
-  "generatedAt": "2026-04-05T00:12:47.516Z",
+  "generatedAt": "2026-04-05T02:47:47.669Z",
   "workspaceId": "5c839dfeef8b555f",
   "activeAgentTree": {
     "schema": "bounded-agent-graph.v1",
-    "taskId": "phase4-failure-1774995929746",
-    "rootTaskId": "phase4-failure-1774995929746",
+    "taskId": "task_486b48ffcf",
+    "rootTaskId": "task_486b48ffcf",
     "orchestrationMode": "bounded_multi_agent",
     "updatedAt": "2026-03-31T22:25:29.747Z",
     "nodes": [
       {
-        "taskId": "phase4-failure-1774995929746",
+        "taskId": "task_486b48ffcf",
         "role": "coordinator",
-        "parentTaskId": "",
+        "parentTaskId": "task_b5588bd249",
         "lifecycleState": "planned",
         "status": "active",
-        "integrationStatus": "not_applicable",
+        "integrationStatus": "not applicable",
         "updatedAt": "2026-03-31T22:25:29.747Z"
       },
       {
-        "taskId": "phase4-failure-1774995929746-executor-1774995929757",
-        "parentTaskId": "phase4-failure-1774995929746",
+        "taskId": "task_729744b6c7",
+        "parentTaskId": "task_486b48ffcf",
         "role": "executor",
         "lifecycleState": "completed",
         "orchestrationMode": "bounded_multi_agent",
         "updatedAt": "2026-03-31T22:25:29.804Z"
       },
       {
-        "taskId": "phase4-failure-1774995929746-verifier-1774995929816",
-        "parentTaskId": "phase4-failure-1774995929746",
+        "taskId": "task_d5596c2261",
+        "parentTaskId": "task_486b48ffcf",
         "role": "verifier",
         "lifecycleState": "blocked",
         "orchestrationMode": "bounded_multi_agent",
         "updatedAt": "2026-03-31T22:25:29.865Z"
       },
       {
-        "taskId": "phase4-failure-1774995929746-verifier-1774995929900",
-        "parentTaskId": "phase4-failure-1774995929746",
+        "taskId": "task_b1ddcf33c2",
+        "parentTaskId": "task_486b48ffcf",
         "role": "verifier",
         "lifecycleState": "completed",
         "orchestrationMode": "bounded_multi_agent",
@@ -45,20 +45,20 @@
     ],
     "edges": [
       {
-        "parentTaskId": "phase4-failure-1774995929746",
-        "childTaskId": "phase4-failure-1774995929746-executor-1774995929757",
+        "parentTaskId": "task_486b48ffcf",
+        "childTaskId": "task_729744b6c7",
         "relationship": "handoff",
         "at": "2026-03-31T22:25:29.767Z"
       },
       {
-        "parentTaskId": "phase4-failure-1774995929746",
-        "childTaskId": "phase4-failure-1774995929746-verifier-1774995929816",
+        "parentTaskId": "task_486b48ffcf",
+        "childTaskId": "task_d5596c2261",
         "relationship": "handoff",
         "at": "2026-03-31T22:25:29.826Z"
       },
       {
-        "parentTaskId": "phase4-failure-1774995929746",
-        "childTaskId": "phase4-failure-1774995929746-verifier-1774995929900",
+        "parentTaskId": "task_486b48ffcf",
+        "childTaskId": "task_b1ddcf33c2",
         "relationship": "handoff",
         "at": "2026-03-31T22:25:29.910Z"
       }
@@ -69,17 +69,25 @@
     "generatedAt": "2026-03-31T22:25:29.949Z"
   },
   "handoffCount": 326,
-  "blockedSubtasks": 2,
+  "blockedSubtasks": 0,
   "verifierFailedSubtasks": 0,
-  "integrationPendingCount": 4,
+  "integrationPendingCount": 0,
   "finalReleaseState": "integrated",
   "roleMemoryPackSections": {
-    "intake": {},
     "default": {
       "spec": 4,
       "intent": 1,
       "workspace_progress": 1,
       "experience": 4,
+      "semantic": 3,
+      "preference": 0,
+      "improvement": 0
+    },
+    "intake": {
+      "spec": 4,
+      "intent": 1,
+      "workspace_progress": 1,
+      "experience": 2,
       "semantic": 3,
       "preference": 0,
       "improvement": 0
@@ -98,7 +106,7 @@
     }
   },
   "horizon": {
-    "activeTaskId": "phase4-failure-1774995929746",
+    "activeTaskId": "task_486b48ffcf",
     "activeTaskFamily": "deterministic_code",
     "objective": "verifier failure should force replan and recovery",
     "horizonUnit": "steps",
@@ -117,5 +125,13 @@
       "logs/archive/raw/runtime_state/continuity/tasks/phase4-failure-1774995929746/plan_state.json",
       "logs/archive/raw/runtime_state/continuity/tasks/phase4-failure-1774995929746/agent_graph.json"
     ]
-  }
+  },
+  "blockedReasonClasses": [
+    "verifier_failed"
+  ],
+  "pendingIntegrationReasons": [],
+  "remediationLinkedTaskCount": 0,
+  "autoClosedBlockedCount": 2,
+  "openDebtCount": 26,
+  "debtSeverity": "high"
 }

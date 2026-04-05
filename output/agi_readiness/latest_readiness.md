@@ -23,5 +23,5 @@
 
 ## Next Bottlenecks
 - capability bottleneck: weakest family is R_robust
-- scope/coverage bottleneck: continuity has 2 blocked and 0 verifier-failed subtasks
-- capability bottleneck: robustness is currently limited by missing_context
+- scope/coverage bottleneck: continuity carries 26 closeout debt item(s) with severity high
+- capability bottleneck: robustness is currently limited by ambiguous_instruction (no evidence yet)

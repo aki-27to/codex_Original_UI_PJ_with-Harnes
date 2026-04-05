@@ -31,6 +31,13 @@ output/agi_readiness/*
 !output/agi_readiness/blocked_reasons.json
 !output/agi_readiness/next_bottlenecks.json
 !output/agi_readiness/next_bottlenecks.md
+!output/agi_readiness/autonomous_learning_status.json
+!output/agi_readiness/autonomous_learning_status.md
+!output/agi_readiness/causal_learning_trace.json
+!output/agi_readiness/distinct_improvement_lineage.json
+!output/agi_readiness/distinct_improvement_lineage.md
+!output/agi_readiness/robustness_remediation_status.json
+!output/agi_readiness/robustness_remediation_trend.json
 output/agi_v1/
 output/claim_closure/
 output/external_audit_bundle/

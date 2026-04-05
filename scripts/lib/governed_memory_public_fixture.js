@@ -628,23 +628,60 @@ function seedGovernedMemoryPublicAgiReadinessArtifacts(root) {
       promote: false,
       blockedReasons: ["promotion_margin_not_met"],
       breadthBase: 0.62,
+      candidateId: "candidate-v1",
+      incumbentIdentifier: "candidate-v0",
+      challengerIdentifier: "candidate-v1",
     })
   );
   writeJson(
     path.join(root, "output", "agi_v1", "seed-run-002", "agi_v1_bundle.json"),
     createAgiBundle({
       runId: "agi-live-002",
+      generatedAt: "2026-04-04T09:40:00.000Z",
+      rawFinalScore: 0.67,
+      displayFinalScore: 0.67,
+      cvar: 0.08,
+      promote: true,
+      blockedReasons: [],
+      breadthBase: 0.72,
+      candidateId: "candidate-v2",
+      incumbentIdentifier: "candidate-v1",
+      challengerIdentifier: "candidate-v2",
+      reasons: ["challenger_strictly_beats_incumbent_under_fail_closed_rule"],
+    })
+  );
+  writeJson(
+    path.join(root, "output", "agi_v1", "seed-run-003", "agi_v1_bundle.json"),
+    createAgiBundle({
+      runId: "agi-live-003",
+      generatedAt: "2026-04-04T10:00:00.000Z",
+      rawFinalScore: 0.63,
+      displayFinalScore: 0.63,
+      cvar: 0.11,
+      promote: false,
+      blockedReasons: ["regression_detected"],
+      breadthBase: 0.69,
+      candidateId: "candidate-v3",
+      incumbentIdentifier: "candidate-v2",
+      challengerIdentifier: "candidate-v3",
+      reasons: ["regression_detected"],
+    })
+  );
+  writeJson(
+    path.join(root, "output", "agi_v1", "seed-run-004", "agi_v1_bundle.json"),
+    createAgiBundle({
+      runId: "agi-live-004",
       generatedAt: "2026-04-04T10:20:00.000Z",
       rawFinalScore: 0.64,
       displayFinalScore: 0.64,
       cvar: 0.09,
-      promote: true,
+      promote: null,
       blockedReasons: [],
       breadthBase: 0.68,
       candidateId: "candidate-main",
       incumbentIdentifier: "candidate-main",
       challengerIdentifier: "candidate-main",
-      reasons: ["challenger_strictly_beats_incumbent_under_fail_closed_rule"],
+      reasons: [],
     })
   );
 }

@@ -1,6 +1,6 @@
 {
   "schema": "agi-readiness-next-bottlenecks.v1",
-  "generatedAt": "2026-04-05T00:12:47.519Z",
+  "generatedAt": "2026-04-05T02:47:47.681Z",
   "workspaceId": "5c839dfeef8b555f",
   "items": [
     {
@@ -10,12 +10,12 @@
     },
     {
       "classification": "scope/coverage bottleneck",
-      "summary": "continuity has 2 blocked and 0 verifier-failed subtasks",
+      "summary": "continuity carries 26 closeout debt item(s) with severity high",
       "source": "continuity"
     },
     {
       "classification": "capability bottleneck",
-      "summary": "robustness is currently limited by missing_context",
+      "summary": "robustness is currently limited by ambiguous_instruction (no evidence yet)",
       "source": "agi_readiness"
     }
   ]

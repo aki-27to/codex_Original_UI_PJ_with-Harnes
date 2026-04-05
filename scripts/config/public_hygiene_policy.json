@@ -1,0 +1,17 @@
+{
+  "schema": "public-hygiene-policy.v1",
+  "version": "2026-04-05.r1",
+  "forbidUnknownMemoryType": true,
+  "forbidBlankTaskOutcomeStatus": true,
+  "forbidBlankReferences": true,
+  "forbidRawUuidTitles": true,
+  "requireIso8601Timestamps": true,
+  "stableRefPrefixMap": {
+    "task": "task",
+    "turn": "turn",
+    "eval": "eval",
+    "agenda": "agenda",
+    "lineage": "lineage",
+    "debt": "debt"
+  }
+}

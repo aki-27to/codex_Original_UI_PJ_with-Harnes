@@ -1,6 +1,6 @@
 {
   "schema": "agi-readiness-domain-coverage-matrix.v1",
-  "generatedAt": "2026-04-05T00:12:47.471Z",
+  "generatedAt": "2026-04-05T02:47:47.229Z",
   "workspaceId": "5c839dfeef8b555f",
   "rows": [
     {
@@ -18,7 +18,7 @@
         "publicRef": "task_0db9a4ce91",
         "source": "continuity",
         "title": "False completion guard",
-        "status": "verifier_failed",
+        "status": "verifier failed",
         "updatedAt": "2026-03-31T22:26:01.160Z"
       },
       "activeLessons": [
@@ -50,6 +50,12 @@
           "summary": "Use a proposal-only fallback when the governed promotion lane does not match the current turn. Do not force reinforcement or runtime application from a non-targeted task family."
         }
       ],
+      "observationCount": 2,
+      "recentSuccessRate": 0.5,
+      "recentFailureBurden": 1,
+      "lastPassRecency": "2026-04-02T10:55:54.310Z",
+      "verifierBurden": 10,
+      "stabilityStatus": "unstable",
       "breadthFloor": 0.7,
       "domainScore": 0.92,
       "breadthFloorStatus": "pass"
@@ -61,16 +67,16 @@
       "lastSuccessfulTask": {
         "publicRef": "turn_f45d5ef904",
         "source": "turn",
-        "title": "019d587a-bcb6-7d50-8bcf-95f021b21995",
-        "status": "COMPLETED",
-        "updatedAt": "1775306052370"
+        "title": "web ui interactive",
+        "status": "completed",
+        "updatedAt": "2026-04-04T12:34:12.370Z"
       },
       "lastFailedTask": {
-        "publicRef": "turn_816303077a",
+        "publicRef": "turn_eb427077fb",
         "source": "turn",
-        "title": "019d5897-d8a1-78b0-8c62-8227b05470db",
-        "status": "BLOCKED",
-        "updatedAt": "1775308021285"
+        "title": "web ui interactive",
+        "status": "failed validation",
+        "updatedAt": "2026-04-05T01:19:39.647Z"
       },
       "activeLessons": [
         {
@@ -146,6 +152,12 @@
           "summary": "Run long horizon tasks with Codex | OpenAI Developers"
         }
       ],
+      "observationCount": 2,
+      "recentSuccessRate": 0.5,
+      "recentFailureBurden": 1,
+      "lastPassRecency": "2026-04-04T12:34:12.370Z",
+      "verifierBurden": 0,
+      "stabilityStatus": "unstable",
       "breadthFloor": 0.7,
       "domainScore": 0.78,
       "breadthFloorStatus": "pass"
@@ -165,7 +177,7 @@
         "publicRef": "task_151781cfdd",
         "source": "continuity",
         "title": "Long Duration Simulated Trial",
-        "status": "verifier_failed",
+        "status": "verifier failed",
         "updatedAt": "2026-03-31T22:23:48.966Z"
       },
       "activeLessons": [
@@ -191,6 +203,12 @@
         }
       ],
       "availableHints": [],
+      "observationCount": 2,
+      "recentSuccessRate": 0.5,
+      "recentFailureBurden": 1,
+      "lastPassRecency": "2026-04-02T10:55:54.605Z",
+      "verifierBurden": 4,
+      "stabilityStatus": "unstable",
       "breadthFloor": 0.7,
       "domainScore": 0.88,
       "breadthFloorStatus": "pass"
@@ -210,7 +228,7 @@
         "publicRef": "task_b6c21c7c06",
         "source": "continuity",
         "title": "Long Duration Simulated Trial",
-        "status": "verifier_failed",
+        "status": "verifier failed",
         "updatedAt": "2026-03-31T22:23:48.816Z"
       },
       "activeLessons": [
@@ -242,6 +260,12 @@
           "summary": "Lock the self-improvement contract first. When the user asks for simultaneous delivery and learning with explicit output fields, capture the required fields before deciding any storage or promotion path."
         }
       ],
+      "observationCount": 5,
+      "recentSuccessRate": 0.4,
+      "recentFailureBurden": 3,
+      "lastPassRecency": "2026-03-31T22:24:55.921Z",
+      "verifierBurden": 2,
+      "stabilityStatus": "unstable",
       "breadthFloor": 0.7,
       "domainScore": 0.78,
       "breadthFloorStatus": "pass"
@@ -253,16 +277,16 @@
       "lastSuccessfulTask": {
         "publicRef": "eval_7661a67eb4",
         "source": "eval",
-        "title": "eval-1773585359371-3b014812",
-        "status": "",
-        "updatedAt": "1773585359373"
+        "title": "adversarial self check.v2",
+        "status": "observed",
+        "updatedAt": "2026-03-15T14:35:59.373Z"
       },
       "lastFailedTask": {
-        "publicRef": "turn_aa73770c4d",
+        "publicRef": "turn_eb427077fb",
         "source": "turn",
-        "title": "019d5679-d609-7ac2-88ea-03249ba64687",
-        "status": "FAILED_VALIDATION",
-        "updatedAt": "1775272514862"
+        "title": "web ui interactive",
+        "status": "failed validation",
+        "updatedAt": "2026-04-05T01:19:39.647Z"
       },
       "activeLessons": [
         {
@@ -287,6 +311,12 @@
         }
       ],
       "availableHints": [],
+      "observationCount": 3,
+      "recentSuccessRate": 0.3333,
+      "recentFailureBurden": 2,
+      "lastPassRecency": "2026-03-15T14:35:59.373Z",
+      "verifierBurden": 0,
+      "stabilityStatus": "unstable",
       "breadthFloor": 0.7,
       "domainScore": 0.78,
       "breadthFloorStatus": "pass"
@@ -303,11 +333,11 @@
         "updatedAt": "2026-03-31T22:24:55.698Z"
       },
       "lastFailedTask": {
-        "publicRef": "turn_816303077a",
+        "publicRef": "turn_eb427077fb",
         "source": "turn",
-        "title": "019d5897-d8a1-78b0-8c62-8227b05470db",
-        "status": "BLOCKED",
-        "updatedAt": "1775308021285"
+        "title": "web ui interactive",
+        "status": "failed validation",
+        "updatedAt": "2026-04-05T01:19:39.647Z"
       },
       "activeLessons": [
         {
@@ -332,6 +362,12 @@
         }
       ],
       "availableHints": [],
+      "observationCount": 3,
+      "recentSuccessRate": 0.6667,
+      "recentFailureBurden": 1,
+      "lastPassRecency": "2026-03-31T22:24:55.698Z",
+      "verifierBurden": 0,
+      "stabilityStatus": "unstable",
       "breadthFloor": 0.7,
       "domainScore": 0.78,
       "breadthFloorStatus": "pass"

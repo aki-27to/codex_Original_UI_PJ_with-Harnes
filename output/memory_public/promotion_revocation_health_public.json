@@ -1,6 +1,6 @@
 {
   "schema": "governed-memory-promotion-health-public.v1",
-  "generatedAt": "2026-04-05T00:12:47.515Z",
+  "generatedAt": "2026-04-05T02:47:47.672Z",
   "workspaceId": "5c839dfeef8b555f",
   "staleWarningCount": 0,
   "recentPromotions": [
@@ -8,31 +8,31 @@
       "publicRef": "mem_52f4ed9143",
       "memoryType": "constitution_ref",
       "status": "promoted",
-      "recordedAt": "2026-04-04T17:20:49.821Z"
+      "recordedAt": "2026-04-05T02:45:53.101Z"
     },
     {
       "publicRef": "mem_9c7f4cba43",
       "memoryType": "requirement_ref",
       "status": "promoted",
-      "recordedAt": "2026-04-04T17:20:49.821Z"
+      "recordedAt": "2026-04-05T02:45:53.101Z"
     },
     {
       "publicRef": "mem_dd9c0f3a28",
       "memoryType": "workspace_progress",
       "status": "promoted",
-      "recordedAt": "2026-04-04T17:20:49.821Z"
+      "recordedAt": "2026-04-05T02:45:53.101Z"
     },
     {
       "publicRef": "mem_38e064a6a2",
       "memoryType": "failure_pattern",
       "status": "promoted",
-      "recordedAt": "2026-04-04T17:20:49.821Z"
+      "recordedAt": "2026-04-05T02:45:53.101Z"
     },
     {
       "publicRef": "mem_1ce008bc40",
       "memoryType": "failure_pattern",
       "status": "promoted",
-      "recordedAt": "2026-04-04T17:20:49.821Z"
+      "recordedAt": "2026-04-05T02:45:53.101Z"
     }
   ],
   "recentRevocations": [
@@ -40,25 +40,7 @@
       "publicRef": "mem_ee901c1e19",
       "memoryType": "improvement_candidate",
       "status": "blocked",
-      "recordedAt": "2026-04-04T17:20:49.821Z"
-    },
-    {
-      "publicRef": "mem_5e56ce1275",
-      "memoryType": "unknown",
-      "status": "blocked",
-      "recordedAt": "2026-04-04T03:18:46.904Z"
-    },
-    {
-      "publicRef": "mem_250addb33b",
-      "memoryType": "episodic_event",
-      "status": "blocked",
-      "recordedAt": "2026-03-31T22:25:29.818Z"
-    },
-    {
-      "publicRef": "mem_5d887c9a99",
-      "memoryType": "episodic_event",
-      "status": "blocked",
-      "recordedAt": "2026-03-31T22:24:21.682Z"
+      "recordedAt": "2026-04-05T02:45:53.101Z"
     }
   ]
 }

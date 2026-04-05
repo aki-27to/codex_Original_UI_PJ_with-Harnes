@@ -1,8 +1,8 @@
 {
   "schema": "governed-memory-workspace-progress-public.v1",
-  "generatedAt": "2026-04-05T00:12:47.515Z",
+  "generatedAt": "2026-04-05T02:47:47.671Z",
   "workspaceId": "5c839dfeef8b555f",
-  "updatedAt": "2026-04-04T17:20:49.818Z",
+  "updatedAt": "2026-04-05T02:45:52.986Z",
   "currentObjective": "verifier failure should force replan and recovery",
   "currentMilestones": [
     "completed: Simple planning task falls back to single agent path",
@@ -19,39 +19,43 @@
     "pending child integration: phase4 denied 1774995861796 executor 1774995861808"
   ],
   "knownRisks": [
-    "return to intake required",
+    "intent visual review missing",
     "completed default"
   ],
   "recentTouchedPaths": [
     "logs/bundles/signoff/signoff-2026-03-09T12-31-59-842Z-24dd95/raw/scripts/config/signoff_sample_target.txt",
     "docs/EVIDENCE_CONTRACT.md",
     "docs/CURRENT_ARCHITECTURE.md",
-    "docs/ARCHITECTURE_CHANGELOG.md",
-    "<external>/app.js"
+    "docs/ARCHITECTURE_CHANGELOG.md"
   ],
-  "nextRecommendedActions": [],
+  "nextRecommendedActions": [
+    "weakest family is R robust",
+    "robustness is currently limited by ambiguous instruction (no evidence yet)",
+    "continuity carries 26 closeout debt item(s) with severity high",
+    "capture governed recovery evidence"
+  ],
   "lastSuccessfulValidation": [
     {
-      "reference": "",
-      "taskOutcomeStatus": "",
+      "reference": "turn_4773037f53",
+      "taskOutcomeStatus": "unknown_status",
       "completedAt": "2026-04-02T10:55:54.561Z"
     },
     {
-      "reference": "",
-      "taskOutcomeStatus": "",
+      "reference": "turn_4773037f53",
+      "taskOutcomeStatus": "unknown_status",
       "completedAt": "2026-04-02T10:55:54.580Z"
     }
   ],
   "lastFailedValidation": [
     {
-      "reference": "",
-      "taskOutcomeStatus": "",
+      "reference": "turn_4773037f53",
+      "taskOutcomeStatus": "unknown_status",
       "reason": "verifier failed",
       "completedAt": "2026-03-31T22:26:01.215Z"
     },
     {
-      "reference": "",
-      "taskOutcomeStatus": "",
+      "reference": "turn_4773037f53",
+      "taskOutcomeStatus": "unknown_status",
       "reason": "verifier failed",
       "completedAt": "2026-03-31T22:25:42.892Z"
     }

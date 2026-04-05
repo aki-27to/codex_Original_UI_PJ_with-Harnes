@@ -1,0 +1,45 @@
+{
+  "schema": "governed-remediation-policy.v1",
+  "version": "2026-04-05.r1",
+  "defaultRetryBudget": 3,
+  "defaultCooldownHours": 12,
+  "defaultSafetyPosture": "proposal_only_until_evidence",
+  "maxAutonomousRunningItems": 3,
+  "bottleneckTemplates": {
+    "capability bottleneck": {
+      "priority": 90,
+      "expectedEvidenceClass": "capability_delta",
+      "successCriterion": "target capability score improves with observation-backed evidence",
+      "stopCondition": "no improvement after retry budget exhausted",
+      "revertCondition": "regression or harmful lesson detected"
+    },
+    "governance bottleneck": {
+      "priority": 70,
+      "expectedEvidenceClass": "governance_trace",
+      "successCriterion": "blocking governance condition is explained or cleared",
+      "stopCondition": "policy remains blocked after retry budget exhausted",
+      "revertCondition": "safety posture becomes unsafe"
+    },
+    "evidence bottleneck": {
+      "priority": 80,
+      "expectedEvidenceClass": "missing_evidence_capture",
+      "successCriterion": "required evidence is captured and linked",
+      "stopCondition": "required evidence cannot be captured in current context",
+      "revertCondition": "captured evidence is invalidated"
+    },
+    "observation bottleneck": {
+      "priority": 85,
+      "expectedEvidenceClass": "runtime_observation",
+      "successCriterion": "observation count increases with non-rejected evidence",
+      "stopCondition": "observation recorder continues to reject required evidence",
+      "revertCondition": "observation quality drops below fail-closed thresholds"
+    },
+    "scope/coverage bottleneck": {
+      "priority": 88,
+      "expectedEvidenceClass": "coverage_evidence",
+      "successCriterion": "supported family gains passing or failing evidence instead of no evidence",
+      "stopCondition": "family remains unsupported or blocked",
+      "revertCondition": "coverage claim becomes unsupported"
+    }
+  }
+}

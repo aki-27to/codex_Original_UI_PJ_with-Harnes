@@ -1,0 +1,9 @@
+{
+  "schema": "improvement-lineage-policy.v1",
+  "version": "2026-04-05.r1",
+  "lineageWindow": 12,
+  "minimumDistinctComparisons": 3,
+  "improvementThreshold": 0.01,
+  "riskRegressionThreshold": 0.005,
+  "versionPrefix": "lineage"
+}

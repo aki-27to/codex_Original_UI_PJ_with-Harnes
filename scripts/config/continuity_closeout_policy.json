@@ -1,0 +1,37 @@
+{
+  "schema": "continuity-closeout-policy.v1",
+  "version": "2026-04-05.r1",
+  "blockerTypeMap": {
+    "missing_evidence": [
+      "missing",
+      "evidence",
+      "screenshot",
+      "packet"
+    ],
+    "verifier_failed": [
+      "verifier",
+      "validation",
+      "failed"
+    ],
+    "dependency_unresolved": [
+      "dependency",
+      "pending",
+      "integration"
+    ],
+    "operator_abandoned": [
+      "abandoned",
+      "cancelled"
+    ],
+    "policy_blocked": [
+      "policy",
+      "guard",
+      "approval"
+    ]
+  },
+  "retryableTypes": [
+    "missing_evidence",
+    "dependency_unresolved",
+    "verifier_failed"
+  ],
+  "autoCloseWhenRootIntegrated": true
+}
