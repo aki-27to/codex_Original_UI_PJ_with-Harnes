@@ -1,6 +1,6 @@
 {
   "schema": "agi-readiness-domain-coverage-matrix.v1",
-  "generatedAt": "2026-04-05T09:15:52.330Z",
+  "generatedAt": "2026-04-05T20:48:53.213Z",
   "workspaceId": "5c839dfeef8b555f",
   "rows": [
     {
@@ -23,22 +23,22 @@
       },
       "activeLessons": [
         {
-          "memoryId": "lesson:anthropic:cbde652ccedc",
+          "memoryId": "lesson:anthropic:aa772311d931",
           "status": "shadow",
           "summary": "Quantifying infrastructure noise in agentic coding evals"
         },
         {
-          "memoryId": "lesson:anthropic:fadc2a79a3d7",
+          "memoryId": "lesson:anthropic:d98c16451eaf",
           "status": "shadow",
           "summary": "Harness design for long-running application development"
         },
         {
-          "memoryId": "lesson:anthropic:a77185e36159",
+          "memoryId": "lesson:anthropic:3c1d45f7a942",
           "status": "shadow",
           "summary": "Designing AI resistant technical evaluations"
         },
         {
-          "memoryId": "lesson:anthropic:1086a801120a",
+          "memoryId": "lesson:anthropic:bd1d0fa13d29",
           "status": "shadow",
           "summary": "Demystifying evals for AI agents"
         }
@@ -71,7 +71,7 @@
       "coverageRegressed": false,
       "nextCoverageAction": "maintain current evidence quality",
       "breadthFloor": 0.7,
-      "domainScore": 0.98,
+      "domainScore": 1,
       "breadthFloorStatus": "pass"
     },
     {
@@ -79,19 +79,13 @@
       "label": "Web Creative",
       "evidenceStatus": "passing_evidence",
       "lastSuccessfulTask": {
-        "publicRef": "turn_37efc8813c",
+        "publicRef": "turn_31e6a84e49",
         "source": "turn",
-        "title": "web ui interactive",
+        "title": "subjective web creative adoption",
         "status": "completed",
-        "updatedAt": "2026-04-05T08:46:25.823Z"
+        "updatedAt": "2026-04-05T20:09:18.742Z"
       },
-      "lastFailedTask": {
-        "publicRef": "turn_6f4cc6183b",
-        "source": "turn",
-        "title": "web ui interactive",
-        "status": "needs input",
-        "updatedAt": "2026-04-05T08:30:09.549Z"
-      },
+      "lastFailedTask": null,
       "activeLessons": [
         {
           "memoryId": "lesson:openai:89ea8312aab9",
@@ -114,22 +108,22 @@
           "summary": "Using skills to accelerate OSS maintenance | OpenAI Developers"
         },
         {
-          "memoryId": "lesson:anthropic:cbde652ccedc",
+          "memoryId": "lesson:anthropic:aa772311d931",
           "status": "shadow",
           "summary": "Quantifying infrastructure noise in agentic coding evals"
         },
         {
-          "memoryId": "lesson:anthropic:fadc2a79a3d7",
+          "memoryId": "lesson:anthropic:d98c16451eaf",
           "status": "shadow",
           "summary": "Harness design for long-running application development"
         },
         {
-          "memoryId": "lesson:anthropic:a77185e36159",
+          "memoryId": "lesson:anthropic:3c1d45f7a942",
           "status": "shadow",
           "summary": "Designing AI resistant technical evaluations"
         },
         {
-          "memoryId": "lesson:anthropic:1086a801120a",
+          "memoryId": "lesson:anthropic:bd1d0fa13d29",
           "status": "shadow",
           "summary": "Demystifying evals for AI agents"
         }
@@ -169,7 +163,7 @@
       "observationCount": 3,
       "recentSuccessRate": 1,
       "recentFailureBurden": 0,
-      "lastPassRecency": "2026-04-05T08:46:25.823Z",
+      "lastPassRecency": "2026-04-05T20:09:18.742Z",
       "verifierBurden": 0,
       "stabilityStatus": "stable",
       "stableCovered": true,
@@ -210,22 +204,22 @@
       },
       "activeLessons": [
         {
-          "memoryId": "lesson:anthropic:cbde652ccedc",
+          "memoryId": "lesson:anthropic:aa772311d931",
           "status": "shadow",
           "summary": "Quantifying infrastructure noise in agentic coding evals"
         },
         {
-          "memoryId": "lesson:anthropic:fadc2a79a3d7",
+          "memoryId": "lesson:anthropic:d98c16451eaf",
           "status": "shadow",
           "summary": "Harness design for long-running application development"
         },
         {
-          "memoryId": "lesson:anthropic:a77185e36159",
+          "memoryId": "lesson:anthropic:3c1d45f7a942",
           "status": "shadow",
           "summary": "Designing AI resistant technical evaluations"
         },
         {
-          "memoryId": "lesson:anthropic:1086a801120a",
+          "memoryId": "lesson:anthropic:bd1d0fa13d29",
           "status": "shadow",
           "summary": "Demystifying evals for AI agents"
         }
@@ -252,7 +246,7 @@
       "coverageRegressed": false,
       "nextCoverageAction": "maintain current evidence quality",
       "breadthFloor": 0.7,
-      "domainScore": 0.96,
+      "domainScore": 1,
       "breadthFloorStatus": "pass"
     },
     {
@@ -275,22 +269,22 @@
       },
       "activeLessons": [
         {
-          "memoryId": "lesson:anthropic:cbde652ccedc",
+          "memoryId": "lesson:anthropic:aa772311d931",
           "status": "shadow",
           "summary": "Quantifying infrastructure noise in agentic coding evals"
         },
         {
-          "memoryId": "lesson:anthropic:fadc2a79a3d7",
+          "memoryId": "lesson:anthropic:d98c16451eaf",
           "status": "shadow",
           "summary": "Harness design for long-running application development"
         },
         {
-          "memoryId": "lesson:anthropic:a77185e36159",
+          "memoryId": "lesson:anthropic:3c1d45f7a942",
           "status": "shadow",
           "summary": "Designing AI resistant technical evaluations"
         },
         {
-          "memoryId": "lesson:anthropic:1086a801120a",
+          "memoryId": "lesson:anthropic:bd1d0fa13d29",
           "status": "shadow",
           "summary": "Demystifying evals for AI agents"
         }
@@ -331,37 +325,31 @@
       "label": "Evaluation / Review",
       "evidenceStatus": "passing_evidence",
       "lastSuccessfulTask": {
-        "publicRef": "turn_08e3cd4750",
-        "source": "turn",
-        "title": "eval",
-        "status": "completed",
-        "updatedAt": "2026-04-05T09:14:21.750Z"
-      },
-      "lastFailedTask": {
-        "publicRef": "eval_eaff9f5860",
+        "publicRef": "eval_8eda1a4dba",
         "source": "eval",
-        "title": "live.degraded tool outputs.coverage.v1",
+        "title": "live.adversarial conflicting.recovery.v1",
         "status": "observed",
-        "updatedAt": "2026-04-05T08:55:42.631Z"
+        "updatedAt": "2026-04-05T20:00:19.746Z"
       },
+      "lastFailedTask": null,
       "activeLessons": [
         {
-          "memoryId": "lesson:anthropic:cbde652ccedc",
+          "memoryId": "lesson:anthropic:aa772311d931",
           "status": "shadow",
           "summary": "Quantifying infrastructure noise in agentic coding evals"
         },
         {
-          "memoryId": "lesson:anthropic:fadc2a79a3d7",
+          "memoryId": "lesson:anthropic:d98c16451eaf",
           "status": "shadow",
           "summary": "Harness design for long-running application development"
         },
         {
-          "memoryId": "lesson:anthropic:a77185e36159",
+          "memoryId": "lesson:anthropic:3c1d45f7a942",
           "status": "shadow",
           "summary": "Designing AI resistant technical evaluations"
         },
         {
-          "memoryId": "lesson:anthropic:1086a801120a",
+          "memoryId": "lesson:anthropic:bd1d0fa13d29",
           "status": "shadow",
           "summary": "Demystifying evals for AI agents"
         }
@@ -370,7 +358,7 @@
       "observationCount": 3,
       "recentSuccessRate": 1,
       "recentFailureBurden": 0,
-      "lastPassRecency": "2026-04-05T09:14:21.750Z",
+      "lastPassRecency": "2026-04-05T20:00:19.746Z",
       "verifierBurden": 0,
       "stabilityStatus": "stable",
       "stableCovered": true,
@@ -402,31 +390,25 @@
         "status": "completed",
         "updatedAt": "2026-03-31T22:24:55.698Z"
       },
-      "lastFailedTask": {
-        "publicRef": "turn_6f4cc6183b",
-        "source": "turn",
-        "title": "web ui interactive",
-        "status": "needs input",
-        "updatedAt": "2026-04-05T08:30:09.549Z"
-      },
+      "lastFailedTask": null,
       "activeLessons": [
         {
-          "memoryId": "lesson:anthropic:cbde652ccedc",
+          "memoryId": "lesson:anthropic:aa772311d931",
           "status": "shadow",
           "summary": "Quantifying infrastructure noise in agentic coding evals"
         },
         {
-          "memoryId": "lesson:anthropic:fadc2a79a3d7",
+          "memoryId": "lesson:anthropic:d98c16451eaf",
           "status": "shadow",
           "summary": "Harness design for long-running application development"
         },
         {
-          "memoryId": "lesson:anthropic:a77185e36159",
+          "memoryId": "lesson:anthropic:3c1d45f7a942",
           "status": "shadow",
           "summary": "Designing AI resistant technical evaluations"
         },
         {
-          "memoryId": "lesson:anthropic:1086a801120a",
+          "memoryId": "lesson:anthropic:bd1d0fa13d29",
           "status": "shadow",
           "summary": "Demystifying evals for AI agents"
         }

@@ -1,22 +1,13 @@
 {
   "schema": "agi-readiness-robustness-remediation-effects.v1",
-  "generatedAt": "2026-04-05T09:15:52.511Z",
+  "generatedAt": "2026-04-05T20:48:53.454Z",
   "workspaceId": "5c839dfeef8b555f",
   "entries": [
-    {
-      "categoryId": "degraded_tool_outputs",
-      "remediationStatus": "passed",
-      "remediationEffect": "verified_positive",
-      "evidenceCount": 9,
-      "score": 0.916667,
-      "lastImprovementDelta": 0,
-      "agendaRef": "<agenda-ref>"
-    },
     {
       "categoryId": "ambiguous_instruction",
       "remediationStatus": "passed",
       "remediationEffect": "verified_positive",
-      "evidenceCount": 12,
+      "evidenceCount": 24,
       "score": 1,
       "lastImprovementDelta": 0,
       "agendaRef": "<agenda-ref>"
@@ -25,7 +16,7 @@
       "categoryId": "adversarial_conflicting_instruction",
       "remediationStatus": "passed",
       "remediationEffect": "verified_positive",
-      "evidenceCount": 6,
+      "evidenceCount": 4,
       "score": 1,
       "lastImprovementDelta": 0,
       "agendaRef": "<agenda-ref>"
@@ -40,10 +31,19 @@
       "agendaRef": "<agenda-ref>"
     },
     {
+      "categoryId": "degraded_tool_outputs",
+      "remediationStatus": "passed",
+      "remediationEffect": "verified_positive",
+      "evidenceCount": 5,
+      "score": 1,
+      "lastImprovementDelta": 0,
+      "agendaRef": "<agenda-ref>"
+    },
+    {
       "categoryId": "browser_tool_flakiness",
       "remediationStatus": "passed",
       "remediationEffect": "verified_positive",
-      "evidenceCount": 12,
+      "evidenceCount": 8,
       "score": 1,
       "lastImprovementDelta": 0,
       "agendaRef": "<agenda-ref>"
@@ -51,19 +51,10 @@
   ],
   "categories": [
     {
-      "categoryId": "degraded_tool_outputs",
-      "remediationStatus": "passed",
-      "remediationEffect": "verified_positive",
-      "evidenceCount": 9,
-      "score": 0.916667,
-      "lastImprovementDelta": 0,
-      "agendaRef": "<agenda-ref>"
-    },
-    {
       "categoryId": "ambiguous_instruction",
       "remediationStatus": "passed",
       "remediationEffect": "verified_positive",
-      "evidenceCount": 12,
+      "evidenceCount": 24,
       "score": 1,
       "lastImprovementDelta": 0,
       "agendaRef": "<agenda-ref>"
@@ -72,7 +63,7 @@
       "categoryId": "adversarial_conflicting_instruction",
       "remediationStatus": "passed",
       "remediationEffect": "verified_positive",
-      "evidenceCount": 6,
+      "evidenceCount": 4,
       "score": 1,
       "lastImprovementDelta": 0,
       "agendaRef": "<agenda-ref>"
@@ -87,10 +78,19 @@
       "agendaRef": "<agenda-ref>"
     },
     {
+      "categoryId": "degraded_tool_outputs",
+      "remediationStatus": "passed",
+      "remediationEffect": "verified_positive",
+      "evidenceCount": 5,
+      "score": 1,
+      "lastImprovementDelta": 0,
+      "agendaRef": "<agenda-ref>"
+    },
+    {
       "categoryId": "browser_tool_flakiness",
       "remediationStatus": "passed",
       "remediationEffect": "verified_positive",
-      "evidenceCount": 12,
+      "evidenceCount": 8,
       "score": 1,
       "lastImprovementDelta": 0,
       "agendaRef": "<agenda-ref>"

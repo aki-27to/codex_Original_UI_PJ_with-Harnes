@@ -6,6 +6,8 @@ const os = require("os");
 const path = require("path");
 const {
   buildGoalCompletionStatus,
+  buildSubjectiveGoalCompletionStatus,
+  buildDistinctImprovementSummary,
   buildGovernedMemoryPublicArtifacts,
   exportGovernedMemoryPublicArtifacts,
   syncGovernedMemoryGraph,
@@ -216,6 +218,12 @@ function main() {
     "goal_completion_supporting_artifacts_present",
     "goal_completion_status_consistent",
     "goal_completion_not_yet_when_criteria_fail",
+    "subjective_goal_artifact_present",
+    "subjective_goal_supporting_artifacts_present",
+    "subjective_goal_not_yet_when_subjective_criteria_fail",
+    "learning_adoption_status_present",
+    "self_directed_probe_status_present",
+    "novel_task_acquisition_present",
     "public_hygiene_no_unknown_memory_type",
     "public_hygiene_validation_refs_present",
     "public_hygiene_no_blank_task_outcome_status",
@@ -388,6 +396,36 @@ function main() {
   assert(goalCompletion.robustnessSummary && typeof goalCompletion.robustnessSummary === "object", "goal completion artifact must expose robustnessSummary");
   assert(goalCompletion.causalSafetySummary && typeof goalCompletion.causalSafetySummary === "object", "goal completion artifact must expose causalSafetySummary");
   assert(goalCompletion.history && Number.isFinite(Number(goalCompletion.history.consecutivePassingExports)), "goal completion artifact must expose goal history summary");
+  assert.strictEqual(typeof goalCompletion.subjectiveGoalStatusPath, "string", "goal completion artifact must expose subjective companion path");
+  assert.strictEqual(typeof goalCompletion.subjectiveCriteriaMet, "boolean", "goal completion artifact must expose subjective criteria state");
+  assert(Number.isFinite(Number(goalCompletion.subjectiveCriteriaWindowPassCount)), "goal completion artifact must expose subjective criteria window count");
+
+  const subjectiveGoal = JSON.parse(fs.readFileSync(path.join(readinessRoot, "subjective_goal_completion_status.json"), "utf8"));
+  assert.strictEqual(subjectiveGoal.schema, "agi-subjective-goal-completion-status.v1", "subjective goal completion artifact must expose expected schema");
+  assert.strictEqual(subjectiveGoal.operationalGoalStatus, goalCompletion.goalStatus, "subjective goal artifact must reference operational goal status");
+  assert.strictEqual(subjectiveGoal.subjectiveGoalStatus, "NOT_YET", "seeded live subjective-goal fixture must remain NOT_YET");
+  assert(Array.isArray(subjectiveGoal.subjectiveWhyNotYet) && subjectiveGoal.subjectiveWhyNotYet.length > 0, "subjective goal artifact must explain why it is not yet complete");
+  assert(Array.isArray(subjectiveGoal.subjectiveFailedCriteria) && subjectiveGoal.subjectiveFailedCriteria.length > 0, "subjective goal artifact must expose failed criteria");
+  assert(Array.isArray(subjectiveGoal.subjectivePassedCriteria), "subjective goal artifact must expose passed criteria");
+  assert(subjectiveGoal.lineageSummary && typeof subjectiveGoal.lineageSummary === "object", "subjective goal artifact must expose lineage summary");
+  assert(subjectiveGoal.learningAdoptionSummary && typeof subjectiveGoal.learningAdoptionSummary === "object", "subjective goal artifact must expose learning adoption summary");
+  assert(subjectiveGoal.autonomousLearningSummary && typeof subjectiveGoal.autonomousLearningSummary === "object", "subjective goal artifact must expose autonomous learning summary");
+  assert(subjectiveGoal.robustnessSummary && typeof subjectiveGoal.robustnessSummary === "object", "subjective goal artifact must expose robustness summary");
+  assert(subjectiveGoal.continuitySummary && typeof subjectiveGoal.continuitySummary === "object", "subjective goal artifact must expose continuity summary");
+  assert(subjectiveGoal.history && Number.isFinite(Number(subjectiveGoal.history.consecutivePassingExports)), "subjective goal artifact must expose history summary");
+
+  const learningAdoptionStatus = JSON.parse(fs.readFileSync(path.join(readinessRoot, "learning_adoption_status.json"), "utf8"));
+  assert.strictEqual(learningAdoptionStatus.schema, "agi-readiness-learning-adoption-status.v1", "learning adoption artifact must expose expected schema");
+  assert(learningAdoptionStatus.summary && typeof learningAdoptionStatus.summary === "object", "learning adoption artifact must expose summary");
+  assert(learningAdoptionStatus.laneSummaries && typeof learningAdoptionStatus.laneSummaries === "object", "learning adoption artifact must expose lane summaries");
+
+  const selfDirectedProbeStatus = JSON.parse(fs.readFileSync(path.join(readinessRoot, "self_directed_probe_status.json"), "utf8"));
+  assert.strictEqual(selfDirectedProbeStatus.schema, "agi-readiness-self-directed-probe-status.v1", "self-directed probe artifact must expose expected schema");
+  assert(selfDirectedProbeStatus.summary && typeof selfDirectedProbeStatus.summary === "object", "self-directed probe artifact must expose summary");
+
+  const novelTaskAcquisition = JSON.parse(fs.readFileSync(path.join(readinessRoot, "novel_task_acquisition.json"), "utf8"));
+  assert.strictEqual(novelTaskAcquisition.schema, "agi-readiness-novel-task-acquisition.v1", "novel task acquisition artifact must expose expected schema");
+  assert(Array.isArray(novelTaskAcquisition.items), "novel task acquisition artifact must expose items");
 
   const exportManifest = JSON.parse(fs.readFileSync(path.join(outputRoot, "export_manifest.json"), "utf8"));
   assert(exportManifest && exportManifest.outputs, "export manifest must be returned");
@@ -409,6 +447,10 @@ function main() {
   assert.strictEqual(fs.existsSync(path.join(tempRoot, exportManifest.outputs.robustnessRemediationEffectsJson)), true, "export manifest remediation effects path must resolve to a real file");
   assert.strictEqual(fs.existsSync(path.join(tempRoot, exportManifest.outputs.causalEffectivenessSummaryJson)), true, "export manifest causal effectiveness summary path must resolve to a real file");
   assert.strictEqual(fs.existsSync(path.join(tempRoot, exportManifest.outputs.goalCompletionStatusJson)), true, "export manifest goal completion path must resolve to a real file");
+  assert.strictEqual(fs.existsSync(path.join(tempRoot, exportManifest.outputs.subjectiveGoalCompletionStatusJson)), true, "export manifest subjective goal completion path must resolve to a real file");
+  assert.strictEqual(fs.existsSync(path.join(tempRoot, exportManifest.outputs.learningAdoptionStatusJson)), true, "export manifest learning adoption status path must resolve to a real file");
+  assert.strictEqual(fs.existsSync(path.join(tempRoot, exportManifest.outputs.selfDirectedProbeStatusJson)), true, "export manifest self-directed probe status path must resolve to a real file");
+  assert.strictEqual(fs.existsSync(path.join(tempRoot, exportManifest.outputs.novelTaskAcquisitionJson)), true, "export manifest novel task acquisition path must resolve to a real file");
 
   const incompleteBundleRoot = path.join(tempRoot, "output", "agi_v1", "eval-incomplete-readiness");
   fs.mkdirSync(incompleteBundleRoot, { recursive: true });
@@ -417,22 +459,33 @@ function main() {
     runId: "eval-incomplete-readiness",
     profile: "agi_v1",
     suiteId: "live.degraded_tool_outputs.coverage.incomplete",
+    manifest: {
+      dataset: [],
+      promptTemplate: [],
+      splitIds: {
+        trainSuiteIds: ["train.incomplete"],
+        devSuiteIds: ["dev.incomplete"],
+        selectionSuiteIds: ["selection.incomplete"],
+      },
+    },
     candidate: {
       candidateId: "candidate-incomplete-readiness",
       generatedAt: "2026-04-06T00:00:00.000Z",
-      rawFinalScore: null,
-      displayFinalScore: null,
-      riskSummary: { cvar: null, supportStatus: "unsupported" },
+      profile: "agi_v1",
+      rawFinalScore: 0.981,
+      displayFinalScore: 0.981,
+      riskSummary: { cvar: 0.01, supportStatus: "supported" },
+      gateStatus: { allCriticalMetricsSupported: true },
       familySummaries: {
-        G_breadth: { main: { value: null, threshold: 0.7, supportStatus: "unsupported" } },
-        R_robust: { main: { value: null, threshold: 0.93, supportStatus: "unsupported" } },
-        H_horizon: { main: { value: null, threshold: 0.97, supportStatus: "unsupported" } },
+        G_breadth: { main: { value: 1, threshold: 0.7, supportStatus: "supported" } },
+        R_robust: { main: { value: 0.99, threshold: 0.93, supportStatus: "supported" } },
+        H_horizon: { main: { value: 0.99, threshold: 0.97, supportStatus: "supported" } },
       },
     },
     promotionDecision: {
       challengerIdentifier: "candidate-incomplete-readiness",
       promote: false,
-      reasons: ["missing_supported_critical_metrics"],
+      reasons: ["manifest_incomplete"],
     },
   }, null, 2)}\n`, "utf8");
   exportGovernedMemoryPublicArtifacts({ workspaceRoot: tempRoot });
@@ -475,27 +528,316 @@ function main() {
         stableCoverageBreadth: 1,
         supportedCoverageBreadth: 1,
         failedFamilies: [],
-        rawFinalScore: 0.95,
-        catastrophicRisk: { cvar: 0.02 },
+        rawFinalScore: 0.97,
+        catastrophicRisk: { cvar: 0.01 },
         metrics: {
-          R_robust: { value: 0.95 },
-          H_horizon: { value: 0.98 },
+          R_robust: { value: 0.97 },
+          H_horizon: { value: 0.99 },
         },
       },
       robustnessBreakdown: {
         categories: [
-          { categoryId: "ambiguous_instruction", status: "observed", evidenceCount: 12, score: 0.82 },
-          { categoryId: "missing_context", status: "observed", evidenceCount: 18, score: 0.9 },
-          { categoryId: "browser_tool_flakiness", status: "observed", evidenceCount: 20, score: 0.84 },
-          { categoryId: "adversarial_conflicting_instruction", status: "observed", evidenceCount: 12, score: 0.8 },
-          { categoryId: "degraded_tool_outputs", status: "observed", evidenceCount: 12, score: 0.9 },
+          { categoryId: "ambiguous_instruction", status: "observed", evidenceCount: 24, score: 0.94 },
+          { categoryId: "missing_context", status: "observed", evidenceCount: 24, score: 0.97 },
+          { categoryId: "browser_tool_flakiness", status: "observed", evidenceCount: 22, score: 0.93 },
+          { categoryId: "adversarial_conflicting_instruction", status: "observed", evidenceCount: 18, score: 0.92 },
+          { categoryId: "degraded_tool_outputs", status: "observed", evidenceCount: 20, score: 0.93 },
         ],
       },
       distinctLineage: {
         entries: [
           { comparisonMode: "distinct_comparison", rawFinalScoreOld: 0.88, rawFinalScoreNew: 0.9, continuityDebtDelta: -1, robustnessDeltaByCategory: { overall: 0.02 }, causalSupportCount: 2, causalHarmCount: 0, promote: true, generatedAt: "2026-04-04T10:00:00.000Z" },
           { comparisonMode: "distinct_comparison", rawFinalScoreOld: 0.9, rawFinalScoreNew: 0.92, continuityDebtDelta: -1, robustnessDeltaByCategory: { overall: 0.01 }, causalSupportCount: 1, causalHarmCount: 0, promote: true, generatedAt: "2026-04-04T11:00:00.000Z" },
-          { comparisonMode: "distinct_comparison", rawFinalScoreOld: 0.92, rawFinalScoreNew: 0.95, continuityDebtDelta: 0, robustnessDeltaByCategory: { overall: 0.01 }, causalSupportCount: 1, causalHarmCount: 0, promote: false, generatedAt: "2026-04-04T12:00:00.000Z" },
+          { comparisonMode: "distinct_comparison", rawFinalScoreOld: 0.92, rawFinalScoreNew: 0.95, continuityDebtDelta: 0, robustnessDeltaByCategory: { overall: 0.01 }, causalSupportCount: 1, causalHarmCount: 0, promote: true, adopted: true, generatedAt: "2026-04-04T12:00:00.000Z" },
+        ],
+      },
+    },
+    continuityArtifacts: {
+      artifact: {
+        blockedSubtasks: 0,
+        integrationPendingCount: 0,
+      },
+    },
+    continuityDebt: {
+      summary: {
+        openDebtCount: 0,
+      },
+    },
+    autonomousAgenda: {
+      entries: [
+        { remediationEffect: "verified_positive", status: "passed", lastUpdatedAt: "2026-04-04T12:30:00.000Z" },
+        { remediationEffect: "verified_positive", status: "passed", lastUpdatedAt: "2026-04-04T12:40:00.000Z" },
+        { remediationEffect: "verified_positive", status: "passed", lastUpdatedAt: "2026-04-04T12:50:00.000Z" },
+      ],
+    },
+    causalTrace: {
+      traces: [
+        { usageStage: "likely_contributory" },
+        { usageStage: "likely_contributory" },
+        { usageStage: "likely_contributory" },
+        { usageStage: "likely_contributory" },
+      ],
+    },
+    openAIBlogLane: { canonicalCounts: { observationCount: 4, causalUsageCount: 3 } },
+    anthropicLane: { advisory: { advisoryReferenceCount: 2 } },
+    workspaceProgressPublic: { nextRecommendedActions: ["Keep verifying improvements."] },
+    bottlenecks: { items: [] },
+    previousGoalHistory: {
+      entries: [
+        { baseStatus: "criteria_met", generatedAt: "2026-04-04T10:00:00.000Z" },
+        { baseStatus: "criteria_met", generatedAt: "2026-04-04T11:00:00.000Z" },
+      ],
+    },
+    stableCoverageArtifacts: {
+      matrix: { stableCoverageBreadth: 1, rows: [] },
+      trend: { entries: [{ generatedAt: "2026-04-04T10:00:00.000Z" }, { generatedAt: "2026-04-04T11:00:00.000Z" }] },
+    },
+    causalEffectivenessSummary: { summary: { harmfulCausalRatio: 0, likelyContributoryCount: 2 } },
+    causalRegressionAlerts: { alerts: [] },
+  });
+  assert.strictEqual(syntheticGoal.goalStatus, "OPERATIONALLY_COMPLETE", "synthetic fully-satisfied criteria must yield OPERATIONALLY_COMPLETE");
+  assert(Array.isArray(syntheticGoal.whyNotYet) && syntheticGoal.whyNotYet.length === 0, "synthetic operational completion case must have no unmet criteria");
+
+  const syntheticSubjective = buildSubjectiveGoalCompletionStatus({
+    workspaceRoot: tempRoot,
+    goalCompletionStatus: syntheticGoal,
+    readinessArtifacts: {
+      readiness: syntheticGoal.liveMetricsSnapshot || {
+        stableCoverageBreadth: 1,
+        supportedCoverageBreadth: 1,
+        rawFinalScore: 0.97,
+        catastrophicRisk: { cvar: 0.01 },
+        metrics: {
+          R_robust: { value: 0.97 },
+          H_horizon: { value: 0.99 },
+        },
+      },
+      robustnessBreakdown: {
+        categories: [
+          { categoryId: "missing_context", status: "observed", evidenceCount: 24, score: 0.97 },
+          { categoryId: "browser_tool_flakiness", status: "observed", evidenceCount: 22, score: 0.93 },
+          { categoryId: "ambiguous_instruction", status: "observed", evidenceCount: 24, score: 0.94 },
+          { categoryId: "adversarial_conflicting_instruction", status: "observed", evidenceCount: 18, score: 0.92 },
+          { categoryId: "degraded_tool_outputs", status: "observed", evidenceCount: 20, score: 0.93 },
+        ],
+      },
+    },
+    continuityArtifacts: { artifact: { blockedSubtasks: 0, integrationPendingCount: 0 } },
+    continuityDebt: { summary: { openDebtCount: 0 } },
+    autonomousLearningStatus: {
+      summary: {
+        verifiedPositive: 3,
+        running: 0,
+      },
+      entries: [
+        { source: "self_directed_probe", remediationEffect: "verified_positive", status: "passed", proposedEvalProbe: "probe:missing_context" },
+        { source: "self_directed_probe", remediationEffect: "verified_positive", status: "passed", proposedEvalProbe: "probe:browser_tool_flakiness" },
+        { source: "memory_eval", remediationEffect: "verified_positive", status: "passed", proposedEvalProbe: "probe:ambiguous_instruction" },
+      ],
+    },
+    learningAdoptionStatus: {
+      summary: {
+        likelyContributoryCount: 4,
+        harmfulCount: 0,
+        rolledBackHarmCount: 1,
+      },
+      laneSummaries: {
+        openai_primary: {
+          selectedInLatestPackCount: 1,
+          effectiveContributionCount: 1,
+          causalUsageCount: 4,
+          likelyContributoryCount: 3,
+          harmfulCount: 0,
+          rolledBackHarmCount: 1,
+        },
+        anthropic_secondary: {
+          selectedInLatestPackCount: 0,
+          effectiveContributionCount: 0,
+          causalUsageCount: 0,
+        },
+      },
+    },
+    selfDirectedProbeStatus: {
+      summary: {
+        selfDirectedCount: 3,
+        verifiedPositiveSelfDirectedCount: 2,
+        blockedCount: 0,
+        insufficientEvidenceCount: 0,
+        novelProbeCount: 2,
+        novelProbePositiveCount: 1,
+      },
+    },
+    novelTaskAcquisition: {
+      summary: { positiveCount: 1 },
+      items: [{ targetCategory: "ambiguous_instruction", positiveEvidence: true }],
+    },
+    causalEffectivenessSummary: {
+      summary: {
+        harmfulCausalRatio: 0,
+        likelyContributoryCount: 4,
+      },
+    },
+    distinctImprovementSummary: {
+      distinctImprovementCount: 3,
+      distinctRegressionCount: 0,
+      nonWorsening: true,
+    },
+    previousSubjectiveHistory: {
+      entries: Array.from({ length: 6 }, (_, index) => ({
+        exportSessionId: `synthetic-pass-${index}`,
+        baseStatus: "criteria_met",
+        subjectiveGoalStatus: "SUBJECTIVE_AGI_NEAR_COMPLETE",
+      })),
+    },
+    exportSessionId: "synthetic-subjective-pass",
+  });
+  assert.strictEqual(syntheticSubjective.subjectiveGoalStatus, "SUBJECTIVE_AGI_NEAR_COMPLETE", "synthetic fully-satisfied subjective criteria must yield SUBJECTIVE_AGI_NEAR_COMPLETE");
+  assert(Array.isArray(syntheticSubjective.subjectiveWhyNotYet) && syntheticSubjective.subjectiveWhyNotYet.length === 0, "synthetic subjective completion case must have no unmet criteria");
+
+  const subjectiveUsesMaxVerifiedPositive = buildSubjectiveGoalCompletionStatus({
+    workspaceRoot: tempRoot,
+    goalCompletionStatus: {
+      goalStatus: "OPERATIONALLY_COMPLETE",
+      currentValues: {
+        stableCoverageBreadth: 1,
+        supportedCoverageBreadth: 1,
+        rawFinalScore: 0.99,
+        R_robust: 0.99,
+        H_horizon: 0.99,
+        catastrophicRiskCvar: 0.001,
+        openDebtCount: 0,
+        blockedSubtasks: 0,
+        integrationPendingCount: 0,
+        runningAgendaCount: 0,
+        verifiedPositiveRemediations: 5,
+        primaryLaneSelectedInLatestPackCount: 1,
+        primaryLaneEffectiveContributionCount: 1,
+        primaryLaneCausalUsageCount: 3,
+        harmfulCausalRatio: 0,
+      },
+    },
+    readinessArtifacts: {
+      robustnessBreakdown: {
+        categories: [
+          { categoryId: "ambiguous_instruction", status: "observed", evidenceCount: 24, score: 1 },
+          { categoryId: "missing_context", status: "observed", evidenceCount: 5, score: 1 },
+          { categoryId: "browser_tool_flakiness", status: "observed", evidenceCount: 8, score: 1 },
+          { categoryId: "adversarial_conflicting_instruction", status: "observed", evidenceCount: 4, score: 1 },
+          { categoryId: "degraded_tool_outputs", status: "observed", evidenceCount: 5, score: 1 },
+        ],
+      },
+    },
+    continuityArtifacts: { artifact: { blockedSubtasks: 0, integrationPendingCount: 0 } },
+    continuityDebt: { summary: { openDebtCount: 0 } },
+    autonomousLearningStatus: {
+      summary: {
+        verifiedPositive: 2,
+        running: 0,
+      },
+      entries: [
+        { source: "autonomous_learning", remediationEffect: "verified_positive", status: "passed", proposedEvalProbe: "probe:one" },
+        { source: "subjective_goal", remediationEffect: "verified_positive", status: "passed", proposedEvalProbe: "probe:two" },
+      ],
+    },
+    learningAdoptionStatus: {
+      summary: {
+        likelyContributoryCount: 3,
+        harmfulCount: 0,
+        rolledBackHarmCount: 0,
+      },
+      laneSummaries: {
+        openai_primary: {
+          selectedInLatestPackCount: 1,
+          effectiveContributionCount: 1,
+          causalUsageCount: 3,
+          likelyContributoryCount: 3,
+          harmfulCount: 0,
+          rolledBackHarmCount: 0,
+        },
+      },
+    },
+    selfDirectedProbeStatus: {
+      summary: {
+        selfDirectedCount: 2,
+        verifiedPositiveSelfDirectedCount: 2,
+        blockedCount: 0,
+        insufficientEvidenceCount: 0,
+        novelProbeCount: 2,
+        novelProbePositiveCount: 2,
+      },
+    },
+    novelTaskAcquisition: {
+      summary: { positiveCount: 2 },
+      items: [{ targetCategory: "ambiguous_instruction", positiveEvidence: true }],
+    },
+    causalEffectivenessSummary: {
+      summary: {
+        harmfulCausalRatio: 0,
+        likelyContributoryCount: 3,
+      },
+    },
+    distinctImprovementSummary: {
+      distinctImprovementCount: 3,
+      distinctRegressionCount: 0,
+      nonWorsening: true,
+    },
+    previousSubjectiveHistory: {
+      entries: Array.from({ length: 6 }, (_, index) => ({
+        exportSessionId: `synthetic-max-pass-${index}`,
+        baseStatus: "criteria_met",
+        subjectiveGoalStatus: "SUBJECTIVE_AGI_NEAR_COMPLETE",
+      })),
+    },
+    exportSessionId: "synthetic-subjective-max-verified-positive",
+  });
+  assert.strictEqual(subjectiveUsesMaxVerifiedPositive.subjectiveCurrentValues.verifiedPositiveRemediations, 5, "subjective goal completion must count the max live verified-positive remediation total");
+
+  const distinctSummaryUsesHistoricalWindow = buildDistinctImprovementSummary({
+    workspaceRoot: tempRoot,
+    distinctLineage: {
+      entries: [
+        { comparisonMode: "distinct_comparison", adopted: true, promote: true, rawFinalScoreOld: 0.9, rawFinalScoreNew: 0.92, continuityDebtDelta: 0, robustnessDeltaByCategory: { overall: 0.01 }, causalSupportCount: 1, causalHarmCount: 0, generatedAt: "2026-04-04T10:00:00.000Z", improvementEvidenceClass: "distinct_observed_improvement" },
+        { comparisonMode: "distinct_comparison", adopted: true, promote: true, rawFinalScoreOld: 0.92, rawFinalScoreNew: 0.94, continuityDebtDelta: 0, robustnessDeltaByCategory: { overall: 0.01 }, causalSupportCount: 1, causalHarmCount: 0, generatedAt: "2026-04-04T11:00:00.000Z", improvementEvidenceClass: "distinct_observed_improvement" },
+      ],
+    },
+    previousSubjectiveHistory: {
+      entries: [
+        { baseStatus: "criteria_met", generatedAt: "2026-04-04T09:00:00.000Z", distinctImprovementCount: 4, distinctRegressionCount: 0 },
+      ],
+    },
+  });
+  assert.strictEqual(distinctSummaryUsesHistoricalWindow.effectiveDistinctImprovementCount, 4, "distinct improvement summary must preserve history-aware effective improvement count");
+  assert.strictEqual(distinctSummaryUsesHistoricalWindow.effectiveNonWorsening, true, "distinct improvement summary must preserve history-aware non-worsening window");
+
+  const rolledBackRegressionGoal = buildGoalCompletionStatus({
+    workspaceRoot: tempRoot,
+    readinessArtifacts: {
+      readiness: {
+        stableCoverageBreadth: 1,
+        supportedCoverageBreadth: 1,
+        failedFamilies: [],
+        rawFinalScore: 0.97,
+        catastrophicRisk: { cvar: 0.01 },
+        metrics: {
+          R_robust: { value: 0.97 },
+          H_horizon: { value: 0.99 },
+        },
+      },
+      robustnessBreakdown: {
+        categories: [
+          { categoryId: "ambiguous_instruction", status: "observed", evidenceCount: 24, score: 0.94 },
+          { categoryId: "missing_context", status: "observed", evidenceCount: 24, score: 0.97 },
+          { categoryId: "browser_tool_flakiness", status: "observed", evidenceCount: 22, score: 0.93 },
+          { categoryId: "adversarial_conflicting_instruction", status: "observed", evidenceCount: 18, score: 0.92 },
+          { categoryId: "degraded_tool_outputs", status: "observed", evidenceCount: 20, score: 0.93 },
+        ],
+      },
+      distinctLineage: {
+        entries: [
+          { comparisonMode: "distinct_comparison", adopted: true, promote: true, rawFinalScoreOld: 0.88, rawFinalScoreNew: 0.9, continuityDebtDelta: -1, robustnessDeltaByCategory: { overall: 0.02 }, causalSupportCount: 2, causalHarmCount: 0, generatedAt: "2026-04-04T10:00:00.000Z", improvementEvidenceClass: "distinct_observed_improvement" },
+          { comparisonMode: "distinct_comparison", adopted: true, promote: true, rawFinalScoreOld: 0.9, rawFinalScoreNew: 0.92, continuityDebtDelta: -1, robustnessDeltaByCategory: { overall: 0.01 }, causalSupportCount: 1, causalHarmCount: 0, generatedAt: "2026-04-04T11:00:00.000Z", improvementEvidenceClass: "distinct_observed_improvement" },
+          { comparisonMode: "distinct_comparison", adopted: false, rejected: true, rolledBack: true, promote: false, rawFinalScoreOld: 0.92, rawFinalScoreNew: 0.89, continuityDebtDelta: 1, robustnessDeltaByCategory: { overall: -0.03 }, causalSupportCount: 0, causalHarmCount: 2, generatedAt: "2026-04-04T12:00:00.000Z", improvementEvidenceClass: "distinct_observed_regression" },
+          { comparisonMode: "distinct_comparison", adopted: true, promote: true, rawFinalScoreOld: 0.92, rawFinalScoreNew: 0.95, continuityDebtDelta: 0, robustnessDeltaByCategory: { overall: 0.01 }, causalSupportCount: 1, causalHarmCount: 0, generatedAt: "2026-04-04T13:00:00.000Z", improvementEvidenceClass: "distinct_observed_improvement" },
         ],
       },
     },
@@ -521,7 +863,7 @@ function main() {
         { usageStage: "likely_contributory" },
       ],
     },
-    openAIBlogLane: { canonicalCounts: { observationCount: 4, causalUsageCount: 3 } },
+    openAIBlogLane: { canonicalCounts: { observationCount: 4, causalUsageCount: 3, selectedInLatestPackCount: 1, likelyContributoryCount: 1 } },
     anthropicLane: { advisory: { advisoryReferenceCount: 2 } },
     workspaceProgressPublic: { nextRecommendedActions: ["Keep verifying improvements."] },
     bottlenecks: { items: [] },
@@ -538,8 +880,7 @@ function main() {
     causalEffectivenessSummary: { summary: { harmfulCausalRatio: 0, likelyContributoryCount: 2 } },
     causalRegressionAlerts: { alerts: [] },
   });
-  assert.strictEqual(syntheticGoal.goalStatus, "OPERATIONALLY_COMPLETE", "synthetic fully-satisfied criteria must yield OPERATIONALLY_COMPLETE");
-  assert(Array.isArray(syntheticGoal.whyNotYet) && syntheticGoal.whyNotYet.length === 0, "synthetic operational completion case must have no unmet criteria");
+  assert.strictEqual(rolledBackRegressionGoal.currentValues.distinctLineageNonWorsening, true, "rolled-back rejected regressions must not count as active live lineage regression");
 
   console.log("governed_memory_public_export_test: ok");
 }

@@ -1,13 +1,83 @@
 {
-  "schema": "governed-causal-learning-trace-public.v1",
-  "generatedAt": "2026-04-05T20:48:53.396Z",
+  "schema": "agi-readiness-learning-adoption-status.v1",
+  "generatedAt": "2026-04-05T20:48:53.467Z",
   "workspaceId": "5c839dfeef8b555f",
   "summary": {
-    "traceCount": 14,
+    "selectedInLatestPackCount": 14,
+    "surfacedCount": 3,
+    "behaviorallyReferencedCount": 3,
     "likelyContributoryCount": 3,
-    "harmfulCount": 0
+    "harmfulCount": 0,
+    "rolledBackHarmCount": 0,
+    "familyCounts": {
+      "web_creative": 9,
+      "default": 4,
+      "all": 1,
+      "tool_use_browser_like": 3
+    }
   },
-  "traces": [
+  "laneSummaries": {
+    "openai_primary": {
+      "selectedInLatestPackCount": 3,
+      "surfacedCount": 3,
+      "behaviorallyReferencedCount": 3,
+      "likelyContributoryCount": 3,
+      "harmfulCount": 0,
+      "rolledBackHarmCount": 0,
+      "effectiveContributionCount": 3,
+      "causalUsageCount": 3,
+      "recentEffects": [
+        {
+          "publicRef": "mem_8896adaa48",
+          "usageStage": "likely_contributory",
+          "causalConfidence": "direct",
+          "taskRefs": [
+            "turn_fba29baf0b",
+            "turn_7f52ea5222",
+            "turn_31e6a84e49",
+            "turn_632a9c1c65"
+          ],
+          "summary": "Using skills to accelerate OSS maintenance | OpenAI Developers"
+        },
+        {
+          "publicRef": "mem_847a1aba42",
+          "usageStage": "likely_contributory",
+          "causalConfidence": "direct",
+          "taskRefs": [
+            "turn_fba29baf0b",
+            "turn_7f52ea5222",
+            "turn_31e6a84e49",
+            "turn_632a9c1c65"
+          ],
+          "summary": "Building frontend UIs with Codex and Figma | OpenAI Developers"
+        },
+        {
+          "publicRef": "mem_106d75d257",
+          "usageStage": "likely_contributory",
+          "causalConfidence": "direct",
+          "taskRefs": [
+            "turn_fba29baf0b",
+            "turn_7f52ea5222",
+            "turn_31e6a84e49",
+            "turn_632a9c1c65"
+          ],
+          "summary": "Run long horizon tasks with Codex | OpenAI Developers"
+        }
+      ]
+    },
+    "anthropic_secondary": {
+      "selectedInLatestPackCount": 0,
+      "surfacedCount": 0,
+      "behaviorallyReferencedCount": 0,
+      "likelyContributoryCount": 0,
+      "harmfulCount": 0,
+      "rolledBackHarmCount": 0,
+      "effectiveContributionCount": 0,
+      "causalUsageCount": 0,
+      "recentEffects": []
+    }
+  },
+  "recentAdoptions": [
     {
       "memoryId": "mem_8896adaa48",
       "publicRef": "mem_8896adaa48",

@@ -1,6 +1,6 @@
 {
   "schema": "agi-readiness-distinct-improvement-lineage.v1",
-  "generatedAt": "2026-04-05T09:15:51.988Z",
+  "generatedAt": "2026-04-05T20:48:52.801Z",
   "workspaceId": "5c839dfeef8b555f",
   "entries": [
     {
@@ -11,38 +11,56 @@
       "challengerVersion": "<lineage-ref>",
       "comparisonMode": "distinct_comparison",
       "distinctComparison": true,
-      "promote": false,
-      "adopted": false,
-      "rejected": true,
-      "rolledBack": true,
-      "blockedReasons": [
-        "regression_detected"
-      ],
-      "rawFinalScoreOld": 0.988422,
-      "rawFinalScoreNew": 0.97906,
-      "catastrophicRiskOld": 0.014,
-      "catastrophicRiskNew": 0.018,
+      "promote": true,
+      "adopted": true,
+      "rejected": false,
+      "rolledBack": false,
+      "blockedReasons": [],
+      "rawFinalScoreOld": 0.97906,
+      "rawFinalScoreNew": 0.99081,
+      "catastrophicRiskOld": 0.018,
+      "catastrophicRiskNew": 0.011,
       "keyFamilyDeltas": {
         "G_breadth": 0,
-        "R_robust": 0,
+        "R_robust": 0.003,
         "H_horizon": 0
       },
-      "observationBackedRationale": "challenger regressed or increased catastrophic risk",
+      "observationBackedRationale": "challenger improved score without worsening catastrophic risk",
       "changedFactors": [
         "run <eval-ref>",
-        "generated 2026-04-05T08:41:38.531Z"
+        "generated 2026-04-05T14:41:37.888Z"
       ],
-      "generatedAt": "2026-04-05T08:41:38.531Z",
-      "improvementEvidenceClass": "distinct_observed_regression",
-      "targetBottlenecksClosed": [],
-      "harmfulLessonsRevoked": 1,
-      "positiveLessonsPromoted": 0,
+      "generatedAt": "2026-04-05T14:41:37.888Z",
+      "improvementEvidenceClass": "distinct_observed_improvement",
+      "targetBottlenecksClosed": [
+        "R_robust"
+      ],
+      "harmfulLessonsRevoked": 0,
+      "positiveLessonsPromoted": 1,
       "continuityDebtDelta": null,
       "robustnessDeltaByCategory": {
-        "overall": 0
+        "overall": 0.003
       },
-      "causalSupportCount": 0,
-      "causalHarmCount": 1
+      "supportDeltaByMetric": {
+        "verifiedPositiveRemediations": 0,
+        "verifiedPositiveSelfDirectedRemediations": 0,
+        "runningAgendaResolved": 0,
+        "blockedAgendaResolved": 0,
+        "insufficientEvidenceResolved": 0,
+        "primaryLaneSelectedInLatestPackCount": 0,
+        "primaryLaneEffectiveContributionCount": 0,
+        "primaryLaneCausalUsageCount": 0,
+        "likelyContributoryCount": 0,
+        "ambiguousInstructionEvidenceCount": 0,
+        "novelProbePositiveCount": 0,
+        "missingContext": 0,
+        "stableCoverageBreadth": 0,
+        "browserToolFlakiness": 0,
+        "degradedToolOutputs": 0,
+        "harmfulCausalRatio": 0
+      },
+      "causalSupportCount": 1,
+      "causalHarmCount": 0
     },
     {
       "lineageId": "lineage_002",
@@ -52,37 +70,55 @@
       "challengerVersion": "<lineage-ref>",
       "comparisonMode": "distinct_comparison",
       "distinctComparison": true,
-      "promote": null,
-      "adopted": false,
+      "promote": true,
+      "adopted": true,
       "rejected": false,
       "rolledBack": false,
-      "blockedReasons": [
-        "improvement_margin_not_met"
-      ],
-      "rawFinalScoreOld": 0.97906,
-      "rawFinalScoreNew": 0.97906,
-      "catastrophicRiskOld": 0.018,
-      "catastrophicRiskNew": 0.018,
+      "blockedReasons": [],
+      "rawFinalScoreOld": 0.99081,
+      "rawFinalScoreNew": 0.9995,
+      "catastrophicRiskOld": 0.011,
+      "catastrophicRiskNew": 0.001,
       "keyFamilyDeltas": {
         "G_breadth": 0,
-        "R_robust": 0,
+        "R_robust": 0.001,
         "H_horizon": 0
       },
-      "observationBackedRationale": "challenger did not clear the distinct improvement margin",
+      "observationBackedRationale": "challenger improved score without worsening catastrophic risk",
       "changedFactors": [
         "run <eval-ref>",
-        "generated 2026-04-05T08:46:30.786Z"
+        "generated 2026-04-05T14:41:42.837Z"
       ],
-      "generatedAt": "2026-04-05T08:46:30.786Z",
-      "improvementEvidenceClass": "distinct_hold",
-      "targetBottlenecksClosed": [],
+      "generatedAt": "2026-04-05T14:41:42.837Z",
+      "improvementEvidenceClass": "distinct_observed_improvement",
+      "targetBottlenecksClosed": [
+        "R_robust"
+      ],
       "harmfulLessonsRevoked": 0,
-      "positiveLessonsPromoted": 0,
+      "positiveLessonsPromoted": 1,
       "continuityDebtDelta": null,
       "robustnessDeltaByCategory": {
-        "overall": 0
+        "overall": 0.001
       },
-      "causalSupportCount": 0,
+      "supportDeltaByMetric": {
+        "verifiedPositiveRemediations": 0,
+        "verifiedPositiveSelfDirectedRemediations": 0,
+        "runningAgendaResolved": 0,
+        "blockedAgendaResolved": 0,
+        "insufficientEvidenceResolved": 0,
+        "primaryLaneSelectedInLatestPackCount": 0,
+        "primaryLaneEffectiveContributionCount": 0,
+        "primaryLaneCausalUsageCount": 0,
+        "likelyContributoryCount": 0,
+        "ambiguousInstructionEvidenceCount": 0,
+        "novelProbePositiveCount": 0,
+        "missingContext": 0,
+        "stableCoverageBreadth": 0,
+        "browserToolFlakiness": 0,
+        "degradedToolOutputs": 0,
+        "harmfulCausalRatio": 0
+      },
+      "causalSupportCount": 1,
       "causalHarmCount": 0
     },
     {
@@ -100,10 +136,10 @@
       "blockedReasons": [
         "improvement_margin_not_met"
       ],
-      "rawFinalScoreOld": 0.97906,
-      "rawFinalScoreNew": 0.97906,
-      "catastrophicRiskOld": 0.018,
-      "catastrophicRiskNew": 0.018,
+      "rawFinalScoreOld": 0.9995,
+      "rawFinalScoreNew": 0.9995,
+      "catastrophicRiskOld": 0.001,
+      "catastrophicRiskNew": 0.001,
       "keyFamilyDeltas": {
         "G_breadth": 0,
         "R_robust": 0,
@@ -112,9 +148,9 @@
       "observationBackedRationale": "challenger did not clear the distinct improvement margin",
       "changedFactors": [
         "run <eval-ref>",
-        "generated 2026-04-05T08:46:34.232Z"
+        "generated 2026-04-05T15:27:07.954Z"
       ],
-      "generatedAt": "2026-04-05T08:46:34.232Z",
+      "generatedAt": "2026-04-05T15:27:07.954Z",
       "improvementEvidenceClass": "distinct_hold",
       "targetBottlenecksClosed": [],
       "harmfulLessonsRevoked": 0,
@@ -122,6 +158,24 @@
       "continuityDebtDelta": null,
       "robustnessDeltaByCategory": {
         "overall": 0
+      },
+      "supportDeltaByMetric": {
+        "verifiedPositiveRemediations": 0,
+        "verifiedPositiveSelfDirectedRemediations": 0,
+        "runningAgendaResolved": 0,
+        "blockedAgendaResolved": 0,
+        "insufficientEvidenceResolved": 0,
+        "primaryLaneSelectedInLatestPackCount": 0,
+        "primaryLaneEffectiveContributionCount": 0,
+        "primaryLaneCausalUsageCount": 0,
+        "likelyContributoryCount": 0,
+        "ambiguousInstructionEvidenceCount": 0,
+        "novelProbePositiveCount": 0,
+        "missingContext": 0,
+        "stableCoverageBreadth": 0,
+        "browserToolFlakiness": 0,
+        "degradedToolOutputs": 0,
+        "harmfulCausalRatio": 0
       },
       "causalSupportCount": 0,
       "causalHarmCount": 0
@@ -141,10 +195,10 @@
       "blockedReasons": [
         "improvement_margin_not_met"
       ],
-      "rawFinalScoreOld": 0.97906,
-      "rawFinalScoreNew": 0.97906,
-      "catastrophicRiskOld": 0.018,
-      "catastrophicRiskNew": 0.018,
+      "rawFinalScoreOld": 0.9995,
+      "rawFinalScoreNew": 0.9995,
+      "catastrophicRiskOld": 0.001,
+      "catastrophicRiskNew": 0.001,
       "keyFamilyDeltas": {
         "G_breadth": 0,
         "R_robust": 0,
@@ -153,9 +207,9 @@
       "observationBackedRationale": "challenger did not clear the distinct improvement margin",
       "changedFactors": [
         "run <eval-ref>",
-        "generated 2026-04-05T08:46:37.931Z"
+        "generated 2026-04-05T15:43:58.003Z"
       ],
-      "generatedAt": "2026-04-05T08:46:37.931Z",
+      "generatedAt": "2026-04-05T15:43:58.003Z",
       "improvementEvidenceClass": "distinct_hold",
       "targetBottlenecksClosed": [],
       "harmfulLessonsRevoked": 0,
@@ -163,6 +217,24 @@
       "continuityDebtDelta": null,
       "robustnessDeltaByCategory": {
         "overall": 0
+      },
+      "supportDeltaByMetric": {
+        "verifiedPositiveRemediations": 0,
+        "verifiedPositiveSelfDirectedRemediations": 0,
+        "runningAgendaResolved": 0,
+        "blockedAgendaResolved": 0,
+        "insufficientEvidenceResolved": 0,
+        "primaryLaneSelectedInLatestPackCount": 0,
+        "primaryLaneEffectiveContributionCount": 0,
+        "primaryLaneCausalUsageCount": 0,
+        "likelyContributoryCount": 0,
+        "ambiguousInstructionEvidenceCount": 0,
+        "novelProbePositiveCount": 0,
+        "missingContext": 0,
+        "stableCoverageBreadth": 0,
+        "browserToolFlakiness": 0,
+        "degradedToolOutputs": 0,
+        "harmfulCausalRatio": 0
       },
       "causalSupportCount": 0,
       "causalHarmCount": 0
@@ -182,10 +254,10 @@
       "blockedReasons": [
         "improvement_margin_not_met"
       ],
-      "rawFinalScoreOld": 0.97906,
-      "rawFinalScoreNew": 0.97906,
-      "catastrophicRiskOld": 0.018,
-      "catastrophicRiskNew": 0.018,
+      "rawFinalScoreOld": 0.9995,
+      "rawFinalScoreNew": 0.9995,
+      "catastrophicRiskOld": 0.001,
+      "catastrophicRiskNew": 0.001,
       "keyFamilyDeltas": {
         "G_breadth": 0,
         "R_robust": 0,
@@ -194,9 +266,9 @@
       "observationBackedRationale": "challenger did not clear the distinct improvement margin",
       "changedFactors": [
         "run <eval-ref>",
-        "generated 2026-04-05T08:46:41.365Z"
+        "generated 2026-04-05T16:13:20.038Z"
       ],
-      "generatedAt": "2026-04-05T08:46:41.365Z",
+      "generatedAt": "2026-04-05T16:13:20.038Z",
       "improvementEvidenceClass": "distinct_hold",
       "targetBottlenecksClosed": [],
       "harmfulLessonsRevoked": 0,
@@ -204,6 +276,24 @@
       "continuityDebtDelta": null,
       "robustnessDeltaByCategory": {
         "overall": 0
+      },
+      "supportDeltaByMetric": {
+        "verifiedPositiveRemediations": 0,
+        "verifiedPositiveSelfDirectedRemediations": 0,
+        "runningAgendaResolved": 0,
+        "blockedAgendaResolved": 0,
+        "insufficientEvidenceResolved": 0,
+        "primaryLaneSelectedInLatestPackCount": 0,
+        "primaryLaneEffectiveContributionCount": 0,
+        "primaryLaneCausalUsageCount": 0,
+        "likelyContributoryCount": 0,
+        "ambiguousInstructionEvidenceCount": 0,
+        "novelProbePositiveCount": 0,
+        "missingContext": 0,
+        "stableCoverageBreadth": 0,
+        "browserToolFlakiness": 0,
+        "degradedToolOutputs": 0,
+        "harmfulCausalRatio": 0
       },
       "causalSupportCount": 0,
       "causalHarmCount": 0
@@ -223,10 +313,10 @@
       "blockedReasons": [
         "improvement_margin_not_met"
       ],
-      "rawFinalScoreOld": 0.97906,
-      "rawFinalScoreNew": 0.97906,
-      "catastrophicRiskOld": 0.018,
-      "catastrophicRiskNew": 0.018,
+      "rawFinalScoreOld": 0.9995,
+      "rawFinalScoreNew": 0.9995,
+      "catastrophicRiskOld": 0.001,
+      "catastrophicRiskNew": 0.001,
       "keyFamilyDeltas": {
         "G_breadth": 0,
         "R_robust": 0,
@@ -235,9 +325,9 @@
       "observationBackedRationale": "challenger did not clear the distinct improvement margin",
       "changedFactors": [
         "run <eval-ref>",
-        "generated 2026-04-05T08:46:44.798Z"
+        "generated 2026-04-05T16:28:06.944Z"
       ],
-      "generatedAt": "2026-04-05T08:46:44.798Z",
+      "generatedAt": "2026-04-05T16:28:06.944Z",
       "improvementEvidenceClass": "distinct_hold",
       "targetBottlenecksClosed": [],
       "harmfulLessonsRevoked": 0,
@@ -245,6 +335,201 @@
       "continuityDebtDelta": null,
       "robustnessDeltaByCategory": {
         "overall": 0
+      },
+      "supportDeltaByMetric": {
+        "verifiedPositiveRemediations": 0,
+        "verifiedPositiveSelfDirectedRemediations": 0,
+        "runningAgendaResolved": 0,
+        "blockedAgendaResolved": 0,
+        "insufficientEvidenceResolved": 0,
+        "primaryLaneSelectedInLatestPackCount": 0,
+        "primaryLaneEffectiveContributionCount": 0,
+        "primaryLaneCausalUsageCount": 0,
+        "likelyContributoryCount": 0,
+        "ambiguousInstructionEvidenceCount": 0,
+        "novelProbePositiveCount": 0,
+        "missingContext": 0,
+        "stableCoverageBreadth": 0,
+        "browserToolFlakiness": 0,
+        "degradedToolOutputs": 0,
+        "harmfulCausalRatio": 0
+      },
+      "causalSupportCount": 0,
+      "causalHarmCount": 0
+    },
+    {
+      "lineageId": "lineage_007",
+      "incumbentIdentifier": "<eval-ref>",
+      "challengerIdentifier": "<eval-ref>",
+      "incumbentVersion": "<lineage-ref>",
+      "challengerVersion": "<lineage-ref>",
+      "comparisonMode": "distinct_comparison",
+      "distinctComparison": true,
+      "promote": null,
+      "adopted": false,
+      "rejected": false,
+      "rolledBack": false,
+      "blockedReasons": [
+        "improvement_margin_not_met"
+      ],
+      "rawFinalScoreOld": 0.9995,
+      "rawFinalScoreNew": 0.9995,
+      "catastrophicRiskOld": 0.001,
+      "catastrophicRiskNew": 0.001,
+      "keyFamilyDeltas": {
+        "G_breadth": 0,
+        "R_robust": 0,
+        "H_horizon": 0
+      },
+      "observationBackedRationale": "challenger did not clear the distinct improvement margin",
+      "changedFactors": [
+        "run <eval-ref>",
+        "generated 2026-04-05T16:35:30.305Z"
+      ],
+      "generatedAt": "2026-04-05T16:35:30.305Z",
+      "improvementEvidenceClass": "distinct_hold",
+      "targetBottlenecksClosed": [],
+      "harmfulLessonsRevoked": 0,
+      "positiveLessonsPromoted": 0,
+      "continuityDebtDelta": null,
+      "robustnessDeltaByCategory": {
+        "overall": 0
+      },
+      "supportDeltaByMetric": {
+        "verifiedPositiveRemediations": 0,
+        "verifiedPositiveSelfDirectedRemediations": 0,
+        "runningAgendaResolved": 0,
+        "blockedAgendaResolved": 0,
+        "insufficientEvidenceResolved": 0,
+        "primaryLaneSelectedInLatestPackCount": 0,
+        "primaryLaneEffectiveContributionCount": 0,
+        "primaryLaneCausalUsageCount": 0,
+        "likelyContributoryCount": 0,
+        "ambiguousInstructionEvidenceCount": 0,
+        "novelProbePositiveCount": 0,
+        "missingContext": 0,
+        "stableCoverageBreadth": 0,
+        "browserToolFlakiness": 0,
+        "degradedToolOutputs": 0,
+        "harmfulCausalRatio": 0
+      },
+      "causalSupportCount": 0,
+      "causalHarmCount": 0
+    },
+    {
+      "lineageId": "lineage_008",
+      "incumbentIdentifier": "<eval-ref>",
+      "challengerIdentifier": "<eval-ref>",
+      "incumbentVersion": "<lineage-ref>",
+      "challengerVersion": "<lineage-ref>",
+      "comparisonMode": "distinct_comparison",
+      "distinctComparison": true,
+      "promote": null,
+      "adopted": false,
+      "rejected": false,
+      "rolledBack": false,
+      "blockedReasons": [
+        "improvement_margin_not_met"
+      ],
+      "rawFinalScoreOld": 0.9995,
+      "rawFinalScoreNew": 0.9995,
+      "catastrophicRiskOld": 0.001,
+      "catastrophicRiskNew": 0.001,
+      "keyFamilyDeltas": {
+        "G_breadth": 0,
+        "R_robust": 0,
+        "H_horizon": 0
+      },
+      "observationBackedRationale": "challenger did not clear the distinct improvement margin",
+      "changedFactors": [
+        "run <eval-ref>",
+        "generated 2026-04-05T16:38:53.253Z"
+      ],
+      "generatedAt": "2026-04-05T16:38:53.253Z",
+      "improvementEvidenceClass": "distinct_hold",
+      "targetBottlenecksClosed": [],
+      "harmfulLessonsRevoked": 0,
+      "positiveLessonsPromoted": 0,
+      "continuityDebtDelta": null,
+      "robustnessDeltaByCategory": {
+        "overall": 0
+      },
+      "supportDeltaByMetric": {
+        "verifiedPositiveRemediations": 0,
+        "verifiedPositiveSelfDirectedRemediations": 0,
+        "runningAgendaResolved": 0,
+        "blockedAgendaResolved": 0,
+        "insufficientEvidenceResolved": 0,
+        "primaryLaneSelectedInLatestPackCount": 0,
+        "primaryLaneEffectiveContributionCount": 0,
+        "primaryLaneCausalUsageCount": 0,
+        "likelyContributoryCount": 0,
+        "ambiguousInstructionEvidenceCount": 0,
+        "novelProbePositiveCount": 0,
+        "missingContext": 0,
+        "stableCoverageBreadth": 0,
+        "browserToolFlakiness": 0,
+        "degradedToolOutputs": 0,
+        "harmfulCausalRatio": 0
+      },
+      "causalSupportCount": 0,
+      "causalHarmCount": 0
+    },
+    {
+      "lineageId": "lineage_009",
+      "incumbentIdentifier": "<eval-ref>",
+      "challengerIdentifier": "<eval-ref>",
+      "incumbentVersion": "<lineage-ref>",
+      "challengerVersion": "<lineage-ref>",
+      "comparisonMode": "distinct_comparison",
+      "distinctComparison": true,
+      "promote": null,
+      "adopted": false,
+      "rejected": false,
+      "rolledBack": false,
+      "blockedReasons": [
+        "improvement_margin_not_met"
+      ],
+      "rawFinalScoreOld": 0.9995,
+      "rawFinalScoreNew": 0.9995,
+      "catastrophicRiskOld": 0.001,
+      "catastrophicRiskNew": 0.001,
+      "keyFamilyDeltas": {
+        "G_breadth": 0,
+        "R_robust": 0,
+        "H_horizon": 0
+      },
+      "observationBackedRationale": "challenger did not clear the distinct improvement margin",
+      "changedFactors": [
+        "run <eval-ref>",
+        "generated 2026-04-05T18:55:07.393Z"
+      ],
+      "generatedAt": "2026-04-05T18:55:07.393Z",
+      "improvementEvidenceClass": "distinct_hold",
+      "targetBottlenecksClosed": [],
+      "harmfulLessonsRevoked": 0,
+      "positiveLessonsPromoted": 0,
+      "continuityDebtDelta": null,
+      "robustnessDeltaByCategory": {
+        "overall": 0
+      },
+      "supportDeltaByMetric": {
+        "verifiedPositiveRemediations": 0,
+        "verifiedPositiveSelfDirectedRemediations": 0,
+        "runningAgendaResolved": 0,
+        "blockedAgendaResolved": 0,
+        "insufficientEvidenceResolved": 0,
+        "primaryLaneSelectedInLatestPackCount": 0,
+        "primaryLaneEffectiveContributionCount": 0,
+        "primaryLaneCausalUsageCount": 0,
+        "likelyContributoryCount": 0,
+        "ambiguousInstructionEvidenceCount": 0,
+        "novelProbePositiveCount": 0,
+        "missingContext": 0,
+        "stableCoverageBreadth": 0,
+        "browserToolFlakiness": 0,
+        "degradedToolOutputs": 0,
+        "harmfulCausalRatio": 0
       },
       "causalSupportCount": 0,
       "causalHarmCount": 0

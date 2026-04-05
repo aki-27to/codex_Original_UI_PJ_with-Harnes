@@ -1,15 +1,15 @@
 {
   "schema": "governed-memory-latest-pack-public.v1",
-  "generatedAt": "2026-04-05T09:15:52.467Z",
+  "generatedAt": "2026-04-05T20:48:53.395Z",
   "workspaceId": "5c839dfeef8b555f",
-  "packId": "283ce11578b9ccbdfb1f",
+  "packId": "de3f0a049328dbc2553d",
   "latestPack": {
-    "generatedAt": "2026-04-05T09:15:51.495Z",
-    "compiledAt": "2026-04-05T09:15:51.495Z",
-    "activeAgent": "default",
-    "taskFamily": "eval",
+    "generatedAt": "2026-04-05T20:48:52.277Z",
+    "compiledAt": "2026-04-05T20:48:52.277Z",
+    "activeAgent": "intake",
+    "taskFamily": "web_creative",
     "selectedCount": 13,
-    "highConfidenceCount": 3,
+    "highConfidenceCount": 2,
     "reusedSelectedCount": 13,
     "explicitTaskFamilyMismatchCount": 0,
     "sectionCounts": {
@@ -24,13 +24,13 @@
         "publicRef": "mem_dd9c0f3a28",
         "type": "workspace_progress",
         "status": "promoted",
-        "score": 0.8725,
+        "score": 0.8724,
         "scoreBand": "high",
         "sourceTier": "runtime",
         "authorityTier": 3,
         "scopeWorkspace": "5c839dfeef8b555f",
         "taskFamilies": [
-          "eval"
+          "web_creative"
         ],
         "summary": "Durable workspace-scoped progress state compiled from the latest turn, evidence traceability, and execution history."
       },
@@ -44,7 +44,7 @@
         "authorityTier": 1,
         "scopeWorkspace": "5c839dfeef8b555f",
         "taskFamilies": [
-          "eval"
+          "web_creative"
         ],
         "summary": "Active intent-first requirement state for the current workspace and turn."
       },
@@ -52,8 +52,8 @@
         "publicRef": "mem_52f4ed9143",
         "type": "constitution_ref",
         "status": "promoted",
-        "score": 0.6975,
-        "scoreBand": "high",
+        "score": 0.6774,
+        "scoreBand": "selected",
         "sourceTier": "repo",
         "authorityTier": 0,
         "scopeWorkspace": "5c839dfeef8b555f",
@@ -66,7 +66,7 @@
         "publicRef": "mem_e65f4ce9a0",
         "type": "constitution_ref",
         "status": "promoted",
-        "score": 0.6533,
+        "score": 0.6517,
         "scoreBand": "selected",
         "sourceTier": "repo",
         "authorityTier": 0,
@@ -78,7 +78,7 @@
         "publicRef": "mem_ad36640985",
         "type": "constitution_ref",
         "status": "promoted",
-        "score": 0.6533,
+        "score": 0.6517,
         "scoreBand": "selected",
         "sourceTier": "repo",
         "authorityTier": 0,
@@ -90,7 +90,7 @@
         "publicRef": "mem_b5d199f8aa",
         "type": "constitution_ref",
         "status": "promoted",
-        "score": 0.6533,
+        "score": 0.6517,
         "scoreBand": "selected",
         "sourceTier": "repo",
         "authorityTier": 0,
@@ -99,7 +99,7 @@
         "summary": "context-memory-policy"
       },
       {
-        "publicRef": "mem_f07440d485",
+        "publicRef": "mem_5ba2b5881d",
         "type": "episodic_event",
         "status": "captured",
         "score": 0.6408,
@@ -108,14 +108,13 @@
         "authorityTier": 4,
         "scopeWorkspace": "5c839dfeef8b555f",
         "taskFamilies": [
-          "eval",
-          "eval_harness_probe",
-          "evaluation_review"
+          "web_creative",
+          "tool_use_browser_like"
         ],
         "summary": "runtime episode finished as CAPTURED."
       },
       {
-        "publicRef": "mem_2266adc40e",
+        "publicRef": "mem_deee9eedca",
         "type": "episodic_event",
         "status": "captured",
         "score": 0.6408,
@@ -124,71 +123,66 @@
         "authorityTier": 4,
         "scopeWorkspace": "5c839dfeef8b555f",
         "taskFamilies": [
-          "eval",
-          "eval_harness_probe",
-          "evaluation_review"
+          "web_creative"
         ],
         "summary": "runtime episode finished as CAPTURED."
       },
       {
-        "publicRef": "mem_c54748de2b",
-        "type": "episodic_event",
-        "status": "captured",
-        "score": 0.6408,
-        "scoreBand": "selected",
-        "sourceTier": "runtime",
-        "authorityTier": 4,
-        "scopeWorkspace": "5c839dfeef8b555f",
-        "taskFamilies": [
-          "eval",
-          "eval_harness_probe",
-          "evaluation_review"
-        ],
-        "summary": "runtime episode finished as CAPTURED."
-      },
-      {
-        "publicRef": "mem_4395386d0e",
-        "type": "episodic_event",
-        "status": "captured",
-        "score": 0.6408,
-        "scoreBand": "selected",
-        "sourceTier": "runtime",
-        "authorityTier": 4,
-        "scopeWorkspace": "5c839dfeef8b555f",
-        "taskFamilies": [
-          "eval",
-          "eval_harness_probe",
-          "evaluation_review"
-        ],
-        "summary": "runtime episode finished as CAPTURED."
-      },
-      {
-        "publicRef": "mem_26708ecfcc",
-        "type": "failure_pattern",
+        "publicRef": "mem_8896adaa48",
+        "type": "runtime_hint",
         "status": "promoted",
-        "score": 0.5967,
+        "score": 0.6212,
         "scoreBand": "selected",
-        "sourceTier": "runtime",
+        "sourceTier": "external_primary",
         "authorityTier": 5,
         "scopeWorkspace": "5c839dfeef8b555f",
         "taskFamilies": [
-          "default"
+          "web_creative"
         ],
-        "summary": "interactive approval unavailable"
+        "summary": "Using skills to accelerate OSS maintenance | OpenAI Developers"
       },
       {
-        "publicRef": "mem_90a929a260",
-        "type": "failure_pattern",
+        "publicRef": "mem_847a1aba42",
+        "type": "runtime_hint",
         "status": "promoted",
-        "score": 0.5967,
+        "score": 0.6212,
         "scoreBand": "selected",
-        "sourceTier": "runtime",
+        "sourceTier": "external_primary",
         "authorityTier": 5,
         "scopeWorkspace": "5c839dfeef8b555f",
         "taskFamilies": [
-          "default"
+          "web_creative"
         ],
-        "summary": "adversarial conflicting instruction resolved"
+        "summary": "Building frontend UIs with Codex and Figma | OpenAI Developers"
+      },
+      {
+        "publicRef": "mem_106d75d257",
+        "type": "runtime_hint",
+        "status": "promoted",
+        "score": 0.6212,
+        "scoreBand": "selected",
+        "sourceTier": "external_primary",
+        "authorityTier": 5,
+        "scopeWorkspace": "5c839dfeef8b555f",
+        "taskFamilies": [
+          "web_creative"
+        ],
+        "summary": "Run long horizon tasks with Codex | OpenAI Developers"
+      },
+      {
+        "publicRef": "mem_9adb8add8c",
+        "type": "episodic_event",
+        "status": "captured",
+        "score": 0.6207,
+        "scoreBand": "selected",
+        "sourceTier": "runtime",
+        "authorityTier": 4,
+        "scopeWorkspace": "5c839dfeef8b555f",
+        "taskFamilies": [
+          "web_creative",
+          "tool_use_browser_like"
+        ],
+        "summary": "runtime episode finished as CAPTURED."
       }
     ]
   }

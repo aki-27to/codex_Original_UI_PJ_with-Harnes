@@ -4,9 +4,9 @@
 - Canonical root: logs/archive/raw/runtime_state/memory
 - Public output root: output/memory_public
 - Canonical events: 12000
-- Items: 50
+- Items: 49
 - Promoted: 26
-- Latest pack: 13 items for default (3 high-confidence)
+- Latest pack: 13 items for intake (2 high-confidence)
 - Latest pack reused items: 13
 - Latest pack task-family mismatches: 0
 - Memory eval: PASS
@@ -19,7 +19,7 @@
 - episodic_event: 8
 - eval_observation: 6
 - failure_pattern: 6
-- improvement_candidate: 3
+- improvement_candidate: 2
 - requirement_ref: 1
 - runtime_hint: 9
 - semantic_lesson: 8
@@ -36,15 +36,17 @@
 - blocker: operator chose to abandon the task
 - blocker: pending child integration: phase4 denied-<opaque id>-executor-<opaque id>
 - blocker: simulated child verifier failure
-- next: weakest family is R robust
+- next: operational completion export durability below subjective threshold
+- next: ambiguous instruction evidence below subjective threshold
 - next: capture governed recovery evidence
+- next: subjective goal completion artifact missing
 
 ## Capability Loop
 - queued: 0
 - running: 0
-- passed: 1
-- blocked: 2
+- passed: 2
+- blocked: 0
 
 ## Lane Health
-- openai_primary: governed=active / promoted=4 / canonical-selected=0 / compatibility=PASS
+- openai_primary: governed=active / promoted=4 / canonical-selected=3 / compatibility=PASS
 - anthropic_secondary: governed=shadow_only / promoted=0 / canonical-selected=0 / compatibility=PASS

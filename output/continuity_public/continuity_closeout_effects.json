@@ -1,6 +1,6 @@
 {
   "schema": "continuity-closeout-effects.v1",
-  "generatedAt": "2026-04-05T09:15:52.465Z",
+  "generatedAt": "2026-04-05T20:48:53.392Z",
   "workspaceId": "5c839dfeef8b555f",
   "summary": {
     "openDebtCount": 0,
@@ -111,7 +111,7 @@
       "debtClass": "verifier_failed",
       "status": "resolved",
       "requiredCloseoutAction": "rerun verifier after governed remediation evidence is captured",
-      "linkedRemediationAgendaId": "agenda_159027b0f9",
+      "linkedRemediationAgendaId": "agenda_e3baa53ec1",
       "publicSummary": "coordinator debt auto-closed after governed replacement evidence"
     },
     {
@@ -119,7 +119,7 @@
       "debtClass": "verifier_failed",
       "status": "resolved",
       "requiredCloseoutAction": "rerun verifier after governed remediation evidence is captured",
-      "linkedRemediationAgendaId": "agenda_159027b0f9",
+      "linkedRemediationAgendaId": "agenda_e3baa53ec1",
       "publicSummary": "coordinator debt auto-closed after governed replacement evidence"
     },
     {
@@ -127,7 +127,7 @@
       "debtClass": "verifier_failed",
       "status": "resolved",
       "requiredCloseoutAction": "rerun verifier after governed remediation evidence is captured",
-      "linkedRemediationAgendaId": "agenda_159027b0f9",
+      "linkedRemediationAgendaId": "agenda_e3baa53ec1",
       "publicSummary": "coordinator debt auto-closed after governed replacement evidence"
     },
     {
@@ -143,7 +143,7 @@
       "debtClass": "verifier_failed",
       "status": "resolved",
       "requiredCloseoutAction": "rerun verifier after governed remediation evidence is captured",
-      "linkedRemediationAgendaId": "agenda_159027b0f9",
+      "linkedRemediationAgendaId": "agenda_e3baa53ec1",
       "publicSummary": "coordinator debt auto-closed after governed replacement evidence"
     },
     {
@@ -175,7 +175,7 @@
       "debtClass": "verifier_failed",
       "status": "resolved",
       "requiredCloseoutAction": "rerun verifier after governed remediation evidence is captured",
-      "linkedRemediationAgendaId": "agenda_159027b0f9",
+      "linkedRemediationAgendaId": "agenda_e3baa53ec1",
       "publicSummary": "coordinator debt auto-closed after governed replacement evidence"
     },
     {

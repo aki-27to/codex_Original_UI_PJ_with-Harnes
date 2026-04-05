@@ -1,8 +1,8 @@
 {
   "schema": "governed-memory-workspace-progress-public.v1",
-  "generatedAt": "2026-04-05T09:15:52.467Z",
+  "generatedAt": "2026-04-05T20:48:53.394Z",
   "workspaceId": "5c839dfeef8b555f",
-  "updatedAt": "2026-04-05T09:14:34.228Z",
+  "updatedAt": "2026-04-05T20:13:28.351Z",
   "currentObjective": "verifier failure should force replan and recovery",
   "currentMilestones": [
     "completed: Simple planning task falls back to single agent path",
@@ -27,8 +27,10 @@
     "docs/ARCHITECTURE_CHANGELOG.md"
   ],
   "nextRecommendedActions": [
-    "weakest family is R robust",
-    "capture governed recovery evidence"
+    "operational completion export durability below subjective threshold",
+    "ambiguous instruction evidence below subjective threshold",
+    "capture governed recovery evidence",
+    "subjective goal completion artifact missing"
   ],
   "lastSuccessfulValidation": [
     {

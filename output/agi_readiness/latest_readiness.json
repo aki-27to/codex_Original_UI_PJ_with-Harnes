@@ -1,11 +1,11 @@
 {
   "schema": "agi-readiness-live-summary.v1",
-  "generatedAt": "2026-04-05T09:15:52.382Z",
+  "generatedAt": "2026-04-05T20:48:53.288Z",
   "workspaceId": "5c839dfeef8b555f",
-  "latestRunId": "eval-1775378801372-7cb2a02a",
+  "latestRunId": "eval-1775415298684-6e4ae77c",
   "profile": "agi_v1",
   "laneId": "public_regression",
-  "suiteId": "e10.agi_v1_suite",
+  "suiteId": "subjective-s9.agi_v1_suite",
   "metrics": {
     "G_breadth": {
       "familyName": "G_breadth",
@@ -18,13 +18,13 @@
         "matrix": [
           {
             "domainFamily": "coding",
-            "domainScore": 0.98,
+            "domainScore": 1,
             "covered": 1,
             "weight": 1
           },
           {
             "domainFamily": "planning",
-            "domainScore": 0.96,
+            "domainScore": 1,
             "covered": 1,
             "weight": 1
           }
@@ -34,9 +34,9 @@
             "family_name": "G_breadth",
             "submetric_name": "e10_breadth_coding",
             "mode": "standard",
-            "value": 0.98,
-            "ci_low": 0.98,
-            "ci_high": 0.98,
+            "value": 1,
+            "ci_low": 1,
+            "ci_high": 1,
             "threshold": null,
             "pass_fail": null,
             "relevant": true,
@@ -52,7 +52,7 @@
             "case_id": "e10-metric-1",
             "title": "e10-case-1",
             "variant_label": "candidate-standard",
-            "candidate_id": "candidate-e10",
+            "candidate_id": "candidate-subjective-s10",
             "domain_family": "coding",
             "normalization_basis": "",
             "horizon_units": null,
@@ -64,9 +64,9 @@
             "family_name": "G_breadth",
             "submetric_name": "e10_breadth_planning",
             "mode": "standard",
-            "value": 0.96,
-            "ci_low": 0.96,
-            "ci_high": 0.96,
+            "value": 1,
+            "ci_low": 1,
+            "ci_high": 1,
             "threshold": null,
             "pass_fail": null,
             "relevant": true,
@@ -82,7 +82,7 @@
             "case_id": "e10-metric-2",
             "title": "e10-case-2",
             "variant_label": "candidate-standard",
-            "candidate_id": "candidate-e10",
+            "candidate_id": "candidate-subjective-s10",
             "domain_family": "planning",
             "normalization_basis": "",
             "horizon_units": null,
@@ -95,12 +95,12 @@
     },
     "G_depth": {
       "familyName": "G_depth",
-      "value": 0.98,
+      "value": 1,
       "threshold": null,
       "supportStatus": "supported",
       "passFail": true,
       "details": {
-        "value": 0.98,
+        "value": 1,
         "details": {
           "strategy": "mean"
         }
@@ -108,12 +108,12 @@
     },
     "A_adapt": {
       "familyName": "A_adapt",
-      "value": 0.97,
+      "value": 1,
       "threshold": null,
       "supportStatus": "supported",
       "passFail": true,
       "details": {
-        "value": 0.97,
+        "value": 1,
         "details": {
           "strategy": "mean"
         }
@@ -121,12 +121,12 @@
     },
     "R_robust": {
       "familyName": "R_robust",
-      "value": 0.996,
+      "value": 1,
       "threshold": null,
       "supportStatus": "supported",
       "passFail": true,
       "details": {
-        "value": 0.996,
+        "value": 1,
         "details": {
           "strategy": "min"
         }
@@ -147,12 +147,12 @@
     },
     "P_context": {
       "familyName": "P_context",
-      "value": 0.98,
+      "value": 1,
       "threshold": null,
       "supportStatus": "supported",
       "passFail": true,
       "details": {
-        "value": 0.98,
+        "value": 1,
         "details": {
           "strategy": "mean"
         }
@@ -200,11 +200,11 @@
     }
   },
   "catastrophicRisk": {
-    "cvar": 0.018,
+    "cvar": 0.001,
     "supportStatus": "supported"
   },
-  "rawFinalScore": 0.97906,
-  "displayFinalScore": 0.97906,
+  "rawFinalScore": 0.9995,
+  "displayFinalScore": 0.9995,
   "breadthSemantics": {
     "mode": "repo_coverage_breadth",
     "headlineField": "supportedCoverageBreadth",
@@ -219,11 +219,11 @@
   "failedFamilies": [],
   "headlineMetrics": {
     "G_breadth": 1,
-    "G_depth": 0.98,
-    "A_adapt": 0.97,
-    "R_robust": 0.996,
+    "G_depth": 1,
+    "A_adapt": 1,
+    "R_robust": 1,
     "H_horizon": 1,
-    "P_context": 0.98
+    "P_context": 1
   },
   "headlineBreadth": 1,
   "promotionComparisonMode": "distinct_comparison",
@@ -231,14 +231,14 @@
   "promotionInterpretation": "distinct_incumbent_comparison",
   "promotionEvidenceStrength": "distinct_incumbent_challenger_decision",
   "incumbentVsChallenger": {
-    "incumbentIdentifier": "candidate-lineage-e5",
-    "challengerIdentifier": "candidate-e10",
+    "incumbentIdentifier": "candidate-subjective-s9",
+    "challengerIdentifier": "candidate-subjective-s10",
     "promote": false,
     "comparisonMode": "distinct_comparison",
     "distinctComparison": true
   },
   "blockedReasons": [],
-  "weakestCapabilityFamily": "A_adapt",
+  "weakestCapabilityFamily": "G_breadth",
   "weakestGateFamily": "",
   "gatePressure": {
     "weakestGateFamily": "",
@@ -261,9 +261,9 @@
   "robustnessBreakdownPath": "output/agi_readiness/robustness_breakdown.json",
   "recentImprovement": 0,
   "recentRegression": 0,
-  "incumbentVersion": "lineage_0207d13ee2",
-  "challengerVersion": "lineage_2e87b3689e",
-  "distinctImprovementObserved": false,
+  "incumbentVersion": "lineage_ee3f00c380",
+  "challengerVersion": "lineage_23ca52516c",
+  "distinctImprovementObserved": true,
   "improvementEvidenceClass": "distinct_hold",
   "consistencyChecks": [
     {
@@ -293,5 +293,9 @@
   "robustnessRemediationStatusPath": "output/agi_readiness/robustness_remediation_status.json",
   "robustnessRemediationBacklogPath": "output/agi_readiness/robustness_remediation_backlog.json",
   "robustnessRemediationEffectsPath": "output/agi_readiness/robustness_remediation_effects.json",
-  "goalCompletionStatusPath": "output/agi_readiness/goal_completion_status.json"
+  "goalCompletionStatusPath": "output/agi_readiness/goal_completion_status.json",
+  "subjectiveGoalCompletionStatusPath": "output/agi_readiness/subjective_goal_completion_status.json",
+  "learningAdoptionStatusPath": "output/agi_readiness/learning_adoption_status.json",
+  "selfDirectedProbeStatusPath": "output/agi_readiness/self_directed_probe_status.json",
+  "novelTaskAcquisitionPath": "output/agi_readiness/novel_task_acquisition.json"
 }

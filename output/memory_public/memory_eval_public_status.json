@@ -1,6 +1,6 @@
 {
   "schema": "memory-eval-public-status.v1",
-  "generatedAt": "2026-04-05T09:15:52.702Z",
+  "generatedAt": "2026-04-05T20:48:53.668Z",
   "suiteSchema": "memory-eval-suite.v1",
   "suiteVersion": "2026-04-04.r1",
   "status": "PASS",
@@ -124,7 +124,7 @@
       "id": "primary_lane_observation_closure",
       "title": "Primary learning lane no longer reports unexplained observation starvation",
       "status": "PASS",
-      "detail": "primary lane observations are no longer starved (100 observations, status=awaiting_observations)"
+      "detail": "primary lane observations are no longer starved (45 observations, status=awaiting_observations)"
     },
     {
       "id": "continuity_public_real_case_present",
@@ -172,7 +172,7 @@
       "id": "distinct_lineage_present",
       "title": "Distinct improvement lineage contains at least three comparisons",
       "status": "PASS",
-      "detail": "distinct lineage has 6 entries"
+      "detail": "distinct lineage has 9 entries"
     },
     {
       "id": "distinct_lineage_has_non_promoted_case",
@@ -221,6 +221,42 @@
       "title": "Operational goal completion remains NOT_YET when thresholds are not satisfied",
       "status": "PASS",
       "detail": "goal completion artifact does not over-claim completion when thresholds fail"
+    },
+    {
+      "id": "subjective_goal_artifact_present",
+      "title": "Subjective goal completion artifact is generated",
+      "status": "PASS",
+      "detail": "subjective goal completion artifact is present"
+    },
+    {
+      "id": "subjective_goal_supporting_artifacts_present",
+      "title": "Subjective goal completion artifact points at supporting public artifacts that exist",
+      "status": "PASS",
+      "detail": "subjective goal supporting artifacts are present"
+    },
+    {
+      "id": "subjective_goal_not_yet_when_subjective_criteria_fail",
+      "title": "Subjective goal completion remains NOT_YET when strict subjective criteria are not satisfied",
+      "status": "PASS",
+      "detail": "subjective goal completion artifact does not over-claim completion when subjective thresholds fail"
+    },
+    {
+      "id": "learning_adoption_status_present",
+      "title": "Learning adoption status is generated from causal trace and lane projections",
+      "status": "PASS",
+      "detail": "learning adoption status is present"
+    },
+    {
+      "id": "self_directed_probe_status_present",
+      "title": "Self-directed probe status is generated from autonomous remediation outcomes",
+      "status": "PASS",
+      "detail": "self-directed probe status is present"
+    },
+    {
+      "id": "novel_task_acquisition_present",
+      "title": "Novel task acquisition surface is generated from under-evidenced remediation areas",
+      "status": "PASS",
+      "detail": "novel task acquisition status is present"
     },
     {
       "id": "public_hygiene_no_unknown_memory_type",

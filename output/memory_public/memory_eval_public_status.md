@@ -1,7 +1,7 @@
 # Memory Eval Public Status
 
 - Status: PASS
-- Generated At: 2026-04-05T09:15:52.702Z
+- Generated At: 2026-04-05T20:48:53.668Z
 
 ## Checks
 - canonical_store_present: PASS (canonical event log and index are present)
@@ -23,7 +23,7 @@
 - lane_projection_real_observations_reflected: PASS (lane projections reflect canonical observation state (awaiting_observations/disabled))
 - breadth_family_evidence_present: PASS (4 target breadth families expose public-safe success/failure evidence)
 - weakest_gate_semantics_explained: PASS (weakest gate semantics expose a non-arbitrary gate-pressure explanation)
-- primary_lane_observation_closure: PASS (primary lane observations are no longer starved (100 observations, status=awaiting_observations))
+- primary_lane_observation_closure: PASS (primary lane observations are no longer starved (45 observations, status=awaiting_observations))
 - continuity_public_real_case_present: PASS (continuity public summary exposes a real handoff/release/horizon case)
 - robustness_breakdown_exported: PASS (robustness breakdown export is present with category-level evidence)
 - autonomous_learning_agenda_present: PASS (autonomous learning agenda is present)
@@ -31,7 +31,7 @@
 - causal_learning_trace_present: PASS (causal learning trace is present)
 - primary_lane_causal_usage_present: PASS (primary lane causal usage is present when observations exist)
 - secondary_lane_advisory_trace_present: PASS (secondary advisory lane exposes advisory trace when considered)
-- distinct_lineage_present: PASS (distinct lineage has 6 entries)
+- distinct_lineage_present: PASS (distinct lineage has 9 entries)
 - distinct_lineage_has_non_promoted_case: PASS (distinct lineage includes blocked/hold or rejected comparisons)
 - continuity_debt_surface_present: PASS (continuity debt surface is present)
 - goal_completion_artifact_present: PASS (operational goal completion artifact is present)
@@ -40,6 +40,12 @@
 - goal_completion_supporting_artifacts_present: PASS (goal completion supporting artifacts are present)
 - goal_completion_status_consistent: PASS (operational goal completion status matches readiness, debt, and learning state)
 - goal_completion_not_yet_when_criteria_fail: PASS (goal completion artifact does not over-claim completion when thresholds fail)
+- subjective_goal_artifact_present: PASS (subjective goal completion artifact is present)
+- subjective_goal_supporting_artifacts_present: PASS (subjective goal supporting artifacts are present)
+- subjective_goal_not_yet_when_subjective_criteria_fail: PASS (subjective goal completion artifact does not over-claim completion when subjective thresholds fail)
+- learning_adoption_status_present: PASS (learning adoption status is present)
+- self_directed_probe_status_present: PASS (self-directed probe status is present)
+- novel_task_acquisition_present: PASS (novel task acquisition status is present)
 - public_hygiene_no_unknown_memory_type: PASS (public artifacts do not expose unknown memoryType)
 - public_hygiene_validation_refs_present: PASS (validation references are populated)
 - public_hygiene_no_blank_task_outcome_status: PASS (task outcome statuses are populated)

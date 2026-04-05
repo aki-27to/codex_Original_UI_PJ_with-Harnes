@@ -1,10 +1,10 @@
 {
   "schema": "agi-readiness-stable-coverage-trend.v1",
-  "generatedAt": "2026-04-05T09:15:52.463Z",
+  "generatedAt": "2026-04-05T20:48:53.387Z",
   "workspaceId": "5c839dfeef8b555f",
   "entries": [
     {
-      "generatedAt": "2026-04-05T08:17:49.339Z",
+      "generatedAt": "2026-04-05T20:18:39.273Z",
       "stableCoverageBreadth": 1,
       "stableCoveredFamilies": [
         "deterministic_code",
@@ -17,21 +17,7 @@
       "unstableFamilies": []
     },
     {
-      "generatedAt": "2026-04-05T08:33:44.415Z",
-      "stableCoverageBreadth": 0.833333,
-      "stableCoveredFamilies": [
-        "deterministic_code",
-        "planning",
-        "workflow_execution",
-        "evaluation_review",
-        "tool_use_browser_like"
-      ],
-      "unstableFamilies": [
-        "web_creative"
-      ]
-    },
-    {
-      "generatedAt": "2026-04-05T08:41:46.575Z",
+      "generatedAt": "2026-04-05T20:18:41.422Z",
       "stableCoverageBreadth": 1,
       "stableCoveredFamilies": [
         "deterministic_code",
@@ -44,7 +30,7 @@
       "unstableFamilies": []
     },
     {
-      "generatedAt": "2026-04-05T08:47:07.827Z",
+      "generatedAt": "2026-04-05T20:18:43.564Z",
       "stableCoverageBreadth": 1,
       "stableCoveredFamilies": [
         "deterministic_code",
@@ -57,7 +43,7 @@
       "unstableFamilies": []
     },
     {
-      "generatedAt": "2026-04-05T08:52:38.533Z",
+      "generatedAt": "2026-04-05T20:46:35.773Z",
       "stableCoverageBreadth": 1,
       "stableCoveredFamilies": [
         "deterministic_code",
@@ -70,35 +56,7 @@
       "unstableFamilies": []
     },
     {
-      "generatedAt": "2026-04-05T08:59:00.623Z",
-      "stableCoverageBreadth": 0.833333,
-      "stableCoveredFamilies": [
-        "deterministic_code",
-        "web_creative",
-        "planning",
-        "workflow_execution",
-        "tool_use_browser_like"
-      ],
-      "unstableFamilies": [
-        "evaluation_review"
-      ]
-    },
-    {
-      "generatedAt": "2026-04-05T09:09:49.964Z",
-      "stableCoverageBreadth": 0.833333,
-      "stableCoveredFamilies": [
-        "deterministic_code",
-        "web_creative",
-        "planning",
-        "workflow_execution",
-        "tool_use_browser_like"
-      ],
-      "unstableFamilies": [
-        "evaluation_review"
-      ]
-    },
-    {
-      "generatedAt": "2026-04-05T09:11:13.620Z",
+      "generatedAt": "2026-04-05T20:48:16.855Z",
       "stableCoverageBreadth": 1,
       "stableCoveredFamilies": [
         "deterministic_code",
@@ -111,7 +69,7 @@
       "unstableFamilies": []
     },
     {
-      "generatedAt": "2026-04-05T09:14:35.209Z",
+      "generatedAt": "2026-04-05T20:48:40.240Z",
       "stableCoverageBreadth": 1,
       "stableCoveredFamilies": [
         "deterministic_code",
@@ -124,7 +82,7 @@
       "unstableFamilies": []
     },
     {
-      "generatedAt": "2026-04-05T09:15:30.876Z",
+      "generatedAt": "2026-04-05T20:48:42.446Z",
       "stableCoverageBreadth": 1,
       "stableCoveredFamilies": [
         "deterministic_code",
@@ -137,7 +95,7 @@
       "unstableFamilies": []
     },
     {
-      "generatedAt": "2026-04-05T09:15:32.927Z",
+      "generatedAt": "2026-04-05T20:48:44.639Z",
       "stableCoverageBreadth": 1,
       "stableCoveredFamilies": [
         "deterministic_code",
@@ -150,7 +108,46 @@
       "unstableFamilies": []
     },
     {
-      "generatedAt": "2026-04-05T09:15:52.463Z",
+      "generatedAt": "2026-04-05T20:48:46.825Z",
+      "stableCoverageBreadth": 1,
+      "stableCoveredFamilies": [
+        "deterministic_code",
+        "web_creative",
+        "planning",
+        "workflow_execution",
+        "evaluation_review",
+        "tool_use_browser_like"
+      ],
+      "unstableFamilies": []
+    },
+    {
+      "generatedAt": "2026-04-05T20:48:49.009Z",
+      "stableCoverageBreadth": 1,
+      "stableCoveredFamilies": [
+        "deterministic_code",
+        "web_creative",
+        "planning",
+        "workflow_execution",
+        "evaluation_review",
+        "tool_use_browser_like"
+      ],
+      "unstableFamilies": []
+    },
+    {
+      "generatedAt": "2026-04-05T20:48:51.202Z",
+      "stableCoverageBreadth": 1,
+      "stableCoveredFamilies": [
+        "deterministic_code",
+        "web_creative",
+        "planning",
+        "workflow_execution",
+        "evaluation_review",
+        "tool_use_browser_like"
+      ],
+      "unstableFamilies": []
+    },
+    {
+      "generatedAt": "2026-04-05T20:48:53.387Z",
       "stableCoverageBreadth": 1,
       "stableCoveredFamilies": [
         "deterministic_code",

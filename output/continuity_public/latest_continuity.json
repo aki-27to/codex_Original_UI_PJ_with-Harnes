@@ -1,6 +1,6 @@
 {
   "schema": "continuity-public-summary.v1",
-  "generatedAt": "2026-04-05T09:15:52.510Z",
+  "generatedAt": "2026-04-05T20:48:53.453Z",
   "workspaceId": "5c839dfeef8b555f",
   "activeAgentTree": {
     "schema": "bounded-agent-graph.v1",
@@ -74,7 +74,7 @@
   "integrationPendingCount": 0,
   "finalReleaseState": "integrated",
   "roleMemoryPackSections": {
-    "default": {
+    "intake": {
       "spec": 4,
       "intent": 1,
       "workspace_progress": 1,
@@ -119,7 +119,7 @@
   },
   "blockedReasonClasses": [],
   "pendingIntegrationReasons": [],
-  "remediationLinkedTaskCount": 0,
+  "remediationLinkedTaskCount": 6,
   "autoClosedBlockedCount": 24,
   "openDebtCount": 0,
   "debtSeverity": "none"

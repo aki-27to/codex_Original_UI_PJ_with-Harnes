@@ -1,11 +1,11 @@
 {
   "schema": "governed-memory-public-overview.v1",
-  "generatedAt": "2026-04-05T09:15:52.472Z",
+  "generatedAt": "2026-04-05T20:48:53.399Z",
   "workspaceId": "5c839dfeef8b555f",
   "canonicalRoot": "logs/archive/raw/runtime_state/memory",
   "publicOutputRoot": "output/memory_public",
   "canonicalEventCount": 12000,
-  "itemCount": 50,
+  "itemCount": 49,
   "promotedCount": 26,
   "typeCounts": {
     "constitution_ref": 7,
@@ -14,14 +14,13 @@
     "episodic_event": 8,
     "failure_pattern": 6,
     "eval_observation": 6,
-    "improvement_candidate": 3,
     "semantic_lesson": 8,
-    "runtime_hint": 9
+    "runtime_hint": 9,
+    "improvement_candidate": 2
   },
   "statusCounts": {
     "promoted": 26,
     "captured": 14,
-    "candidate": 1,
     "shadow": 4,
     "proposal_only": 4,
     "blocked": 1
@@ -46,11 +45,11 @@
   "goalWhyNotYetCount": 0,
   "latestPack": {
     "selectedCount": 13,
-    "highConfidenceCount": 3,
+    "highConfidenceCount": 2,
     "reusedSelectedCount": 13,
     "explicitTaskFamilyMismatchCount": 0,
-    "activeAgent": "default",
-    "taskFamily": "eval",
+    "activeAgent": "intake",
+    "taskFamily": "web_creative",
     "sectionCounts": {
       "workspace_progress": 1,
       "intent": 1,
@@ -63,14 +62,22 @@
   "learningAgendaSummary": {
     "queued": 0,
     "running": 0,
-    "blocked": 2,
-    "passed": 1,
+    "blocked": 0,
+    "passed": 2,
     "failed": 0,
     "revoked": 0,
-    "verifiedPositive": 1,
+    "verifiedPositive": 2,
     "verifiedNeutral": 0,
     "verifiedNegative": 0,
     "verifiedHarmful": 0,
-    "insufficientEvidence": 2
-  }
+    "insufficientEvidence": 0,
+    "blockedCount": 0,
+    "insufficientEvidenceCount": 0,
+    "selfDirectedCount": 2,
+    "verifiedPositiveSelfDirectedCount": 2,
+    "novelProbeCount": 2,
+    "novelProbePositiveCount": 2
+  },
+  "subjectiveGoalStatus": "SUBJECTIVE_AGI_NEAR_COMPLETE",
+  "subjectiveGoalWhyNotYetCount": 0
 }

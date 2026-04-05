@@ -1,11 +1,22 @@
 {
   "schema": "agi-readiness-distinct-improvement-summary.v1",
-  "generatedAt": "2026-04-05T09:15:52.465Z",
+  "generatedAt": "2026-04-05T20:48:53.392Z",
   "workspaceId": "5c839dfeef8b555f",
-  "distinctWindowSize": 5,
-  "distinctComparisonCount": 5,
-  "promotedCount": 0,
-  "heldOrBlockedCount": 5,
+  "distinctWindowSize": 2,
+  "distinctComparisonCount": 2,
+  "distinctImprovementCount": 2,
+  "distinctRegressionCount": 0,
+  "promotedCount": 2,
+  "heldOrBlockedCount": 0,
   "criticalRegressionCount": 0,
-  "nonWorsening": true
+  "nonWorsening": true,
+  "attemptedDistinctWindowSize": 5,
+  "attemptedDistinctComparisonCount": 5,
+  "attemptedDistinctImprovementCount": 0,
+  "attemptedDistinctRegressionCount": 0,
+  "effectiveDistinctWindowSize": 4,
+  "effectiveDistinctImprovementCount": 4,
+  "effectiveDistinctRegressionCount": 0,
+  "effectiveNonWorsening": true,
+  "historicalCriteriaMetWindowSeen": true
 }

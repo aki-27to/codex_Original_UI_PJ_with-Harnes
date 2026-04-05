@@ -1,26 +1,12 @@
 {
   "schema": "agi-readiness-robustness-remediation-status.v1",
-  "generatedAt": "2026-04-05T09:15:52.511Z",
+  "generatedAt": "2026-04-05T20:48:53.453Z",
   "workspaceId": "5c839dfeef8b555f",
   "categories": [
     {
-      "categoryId": "degraded_tool_outputs",
-      "remediationStatus": "passed",
-      "lastRemediationAt": "",
-      "lastImprovementDelta": 0,
-      "openFailureModes": [
-        "degraded output treated as verified",
-        "tool degradation not surfaced",
-        "fallback path omitted"
-      ],
-      "score": 0.916667,
-      "evidenceCount": 9,
-      "status": "observed"
-    },
-    {
       "categoryId": "ambiguous_instruction",
       "remediationStatus": "passed",
-      "lastRemediationAt": "",
+      "lastRemediationAt": "2026-04-05T18:23:24.153Z",
       "lastImprovementDelta": 0,
       "openFailureModes": [
         "ambiguity not detected",
@@ -28,7 +14,7 @@
         "no evidence gathered for supported ambiguity handling"
       ],
       "score": 1,
-      "evidenceCount": 12,
+      "evidenceCount": 24,
       "status": "observed"
     },
     {
@@ -42,7 +28,7 @@
         "policy precedence not respected"
       ],
       "score": 1,
-      "evidenceCount": 6,
+      "evidenceCount": 4,
       "status": "observed"
     },
     {
@@ -60,6 +46,20 @@
       "status": "observed"
     },
     {
+      "categoryId": "degraded_tool_outputs",
+      "remediationStatus": "passed",
+      "lastRemediationAt": "",
+      "lastImprovementDelta": 0,
+      "openFailureModes": [
+        "degraded output treated as verified",
+        "tool degradation not surfaced",
+        "fallback path omitted"
+      ],
+      "score": 1,
+      "evidenceCount": 5,
+      "status": "observed"
+    },
+    {
       "categoryId": "browser_tool_flakiness",
       "remediationStatus": "passed",
       "lastRemediationAt": "",
@@ -70,7 +70,7 @@
         "fallback omitted after flaky tool output"
       ],
       "score": 1,
-      "evidenceCount": 12,
+      "evidenceCount": 8,
       "status": "observed"
     }
   ]

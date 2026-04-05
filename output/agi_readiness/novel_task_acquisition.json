@@ -1,0 +1,31 @@
+{
+  "schema": "agi-readiness-novel-task-acquisition.v1",
+  "generatedAt": "2026-04-05T20:48:53.468Z",
+  "workspaceId": "5c839dfeef8b555f",
+  "summary": {
+    "itemCount": 2,
+    "positiveCount": 2
+  },
+  "items": [
+    {
+      "targetCategory": "self_directed_probe",
+      "targetFamily": "default",
+      "beforeScore": null,
+      "currentScore": null,
+      "evidenceCount": 1,
+      "status": "observed",
+      "remediationRef": "<agenda-ref>",
+      "positiveEvidence": true
+    },
+    {
+      "targetCategory": "ambiguous_instruction",
+      "targetFamily": "planning",
+      "beforeScore": null,
+      "currentScore": null,
+      "evidenceCount": 1,
+      "status": "observed",
+      "remediationRef": "<agenda-ref>",
+      "positiveEvidence": true
+    }
+  ]
+}

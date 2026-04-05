@@ -10,7 +10,7 @@
     {
       "id": "web_creative",
       "label": "Web Creative",
-      "aliases": ["web_creative"]
+      "aliases": ["web_creative", "web-ui-interactive", "web_ui", "subjective_live_probe", "subjective-web-creative-adoption", "subjective_goal_live"]
     },
     {
       "id": "planning",
@@ -30,7 +30,7 @@
     {
       "id": "tool_use_browser_like",
       "label": "Tool Use / Browser-like",
-      "aliases": ["tool_use_browser_like", "web_tool_use", "cross_tool_orchestration"]
+      "aliases": ["tool_use_browser_like", "web_tool_use", "cross_tool_orchestration", "browser_tool_flakiness_recovery"]
     }
   ],
   "breadthFloorDefault": 0.7,
@@ -56,7 +56,7 @@
     "requiredPassingWindows": 3,
     "maxRecentFailureBurden": 0
   },
-  "robustnessWindowSize": 12,
+  "robustnessWindowSize": 24,
   "operationalCompletionCriteria": {
     "stableCoverageBreadth": 1,
     "supportedCoverageBreadth": 1,
@@ -80,6 +80,49 @@
     "ambiguousInstructionMinEvidence": 10,
     "adversarialConflictingThreshold": 0.75,
     "degradedToolOutputsThreshold": 0.85
+  },
+  "subjectiveGoalCompletion": {
+    "enabled": true,
+    "decisionBasis": "live_truth_strict_subjective_criteria",
+    "thresholds": {
+      "rawFinalScore": 0.95,
+      "R_robust": 0.95,
+      "H_horizon": 0.98,
+      "stableCoverageBreadth": 1,
+      "supportedCoverageBreadth": 1,
+      "maxCatastrophicRiskCvar": 0.02,
+      "maxOpenDebtCount": 0,
+      "maxBlockedSubtasks": 0,
+      "maxIntegrationPendingCount": 0,
+      "maxRunningAgendaCount": 0,
+      "maxBlockedAgendaCount": 0,
+      "maxInsufficientEvidenceCount": 0,
+      "minVerifiedPositiveRemediations": 3,
+      "minVerifiedPositiveSelfDirectedRemediations": 2,
+      "minDistinctImprovementCount": 3,
+      "maxDistinctRegressionCount": 0,
+      "minPrimaryLaneSelectedInLatestPackCount": 1,
+      "minPrimaryLaneEffectiveContributionCount": 1,
+      "minPrimaryLaneCausalUsageCount": 3,
+      "minLikelyContributoryCount": 3,
+      "maxHarmfulCausalRatio": 0,
+      "missingContext": 0.95,
+      "browserToolFlakiness": 0.9,
+      "ambiguousInstruction": 0.9,
+      "ambiguousInstructionMinEvidence": 20,
+      "adversarialConflictingInstruction": 0.9,
+      "degradedToolOutputs": 0.9,
+      "minConsecutivePassingExports": 7,
+      "stabilityWindowSize": 5
+    },
+    "policy": {
+      "failClosed": true,
+      "requireDistinctComparison": true,
+      "requirePositiveCausalAdoption": true,
+      "requireNoNoEvidenceRobustnessCategories": true,
+      "requireStableCoverageForAllSupportedFamilies": true,
+      "requireSelfDirectedNovelProbeEvidence": true
+    }
   },
   "robustnessCategories": [
     {

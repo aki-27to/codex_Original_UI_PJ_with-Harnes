@@ -1,6 +1,6 @@
 {
   "schema": "governed-memory-public-lane-projection.v1",
-  "generatedAt": "2026-04-05T09:15:52.462Z",
+  "generatedAt": "2026-04-05T20:48:53.386Z",
   "laneKey": "anthropic_secondary",
   "sourceName": "Anthropic Engineering",
   "sourceTier": "external_secondary",
@@ -25,7 +25,10 @@
     "causalUsageCount": 0,
     "surfacedToAgentCount": 0,
     "behaviorallyReferencedCount": 0,
-    "likelyContributoryCount": 0
+    "likelyContributoryCount": 0,
+    "effectiveContributionCount": 0,
+    "harmfulContributionCount": 0,
+    "netEffectiveContribution": 0
   },
   "canonicalHealth": {
     "canonicalStatePresent": true,
@@ -43,7 +46,10 @@
     "lastObservedAt": "",
     "consideredForPackCount": 0,
     "advisoryReferenceCount": 4,
-    "causalUsageCount": 0
+    "causalUsageCount": 0,
+    "effectiveContributionCount": 0,
+    "harmfulContributionCount": 0,
+    "netEffectiveContribution": 0
   },
   "advisory": {
     "shadowOnlyReason": "secondary source remains advisory and does not override primary/runtime policy",
@@ -60,7 +66,7 @@
   "recentAdvisoryEffects": [],
   "recentLessons": [
     {
-      "publicRef": "mem_603ca2f989",
+      "publicRef": "mem_b0f9489c50",
       "status": "shadow",
       "summary": "Quantifying infrastructure noise in agentic coding evals",
       "topics": [
@@ -69,7 +75,7 @@
       ]
     },
     {
-      "publicRef": "mem_6d1874456b",
+      "publicRef": "mem_360eb219f9",
       "status": "shadow",
       "summary": "Harness design for long-running application development",
       "topics": [
@@ -78,7 +84,7 @@
       ]
     },
     {
-      "publicRef": "mem_4fb3af82b3",
+      "publicRef": "mem_54c676d64f",
       "status": "shadow",
       "summary": "Designing AI resistant technical evaluations",
       "topics": [
@@ -87,7 +93,7 @@
       ]
     },
     {
-      "publicRef": "mem_dacaa67e51",
+      "publicRef": "mem_6aac729464",
       "status": "shadow",
       "summary": "Demystifying evals for AI agents",
       "topics": [
