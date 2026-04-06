@@ -1,3 +1,8 @@
+---
+name: "handoff-artifact-generation"
+description: "Use when a session needs to produce a durable handoff artifact with task summary, next-session brief, verification status, changed surface, and open issues."
+---
+
 # handoff-artifact-generation
 
 ## いつ使うか

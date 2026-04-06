@@ -1,0 +1,38 @@
+{
+  "name": "talk-app-rd",
+  "version": "0.2.0",
+  "private": true,
+  "type": "module",
+  "description": "Local conversation R&D app for building a Japanese AI that people want to keep talking to",
+  "scripts": {
+    "build": "node scripts/buildFrontend.mjs",
+    "build:frontend": "node scripts/buildFrontend.mjs",
+    "dev": "concurrently \"npm:dev:frontend\" \"npm:dev:backend\"",
+    "dev:backend": "tsx watch app/backend/server.ts",
+    "dev:frontend": "node scripts/buildFrontend.mjs --watch",
+    "evals": "tsx scripts/runEvals.ts",
+    "import:examples": "tsx scripts/importExamples.ts",
+    "rebuild:fewshots": "tsx scripts/rebuildFewshots.ts",
+    "seed:data": "tsx scripts/buildGoldens.ts",
+    "start": "npm run build && tsx app/backend/server.ts"
+  },
+  "engines": {
+    "node": ">=20.10.0"
+  },
+  "dependencies": {
+    "express": "^5.1.0",
+    "react": "^19.2.0",
+    "react-dom": "^19.2.0",
+    "zod": "^4.1.12"
+  },
+  "devDependencies": {
+    "@types/express": "^5.0.3",
+    "@types/node": "^24.9.1",
+    "@types/react": "^19.2.2",
+    "@types/react-dom": "^19.2.2",
+    "concurrently": "^9.2.1",
+    "esbuild": "^0.25.11",
+    "tsx": "^4.20.6",
+    "typescript": "^5.9.3"
+  }
+}

@@ -5,6 +5,8 @@ const fs = require("fs");
 const os = require("os");
 const path = require("path");
 const {
+  buildDistinctImprovementLineage,
+  buildGovernedMemoryPublicArtifacts,
   buildGovernedMemoryRuntimeSnapshot,
   getMemoryPaths,
   syncGovernedMemoryGraph,
@@ -377,6 +379,183 @@ function main() {
     assert(typeof entry.sourceTier === "string" && entry.sourceTier, "event log entries must include sourceTier");
     assert(Number.isFinite(Number(entry.authorityTier)), "event log entries must include authorityTier");
   }
+
+  const saturatedLineage = buildDistinctImprovementLineage({
+    workspaceRoot: tempRoot,
+    bundles: [
+      {
+        runId: "candidate-old",
+        generatedAt: "2026-04-05T14:00:00.000Z",
+        rawFinalScore: 0.99081,
+        catastrophicRisk: 0.011,
+        robustScore: 0.996,
+        horizonScore: 1,
+        headlineBreadth: 1,
+      },
+      {
+        runId: "candidate-new",
+        generatedAt: "2026-04-05T14:05:00.000Z",
+        rawFinalScore: 0.9995,
+        catastrophicRisk: 0.001,
+        robustScore: 0.996,
+        horizonScore: 1,
+        headlineBreadth: 1,
+      },
+    ],
+    supportHistoryEntries: [],
+  });
+  assert.strictEqual(
+    saturatedLineage.entries[0].improvementEvidenceClass,
+    "distinct_observed_improvement",
+    "high-score distinct comparisons with lower risk must count as observed improvement"
+  );
+  assert.strictEqual(
+    saturatedLineage.entries[0].promote,
+    true,
+    "high-score distinct comparisons with lower risk must remain promotable when non-worsening"
+  );
+
+  const causalSupportLineage = buildDistinctImprovementLineage({
+    workspaceRoot: tempRoot,
+    bundles: [
+      {
+        runId: "candidate-support-baseline",
+        generatedAt: "2026-04-05T14:00:00.000Z",
+        rawFinalScore: 0.9995,
+        catastrophicRisk: 0.001,
+        robustScore: 1,
+        horizonScore: 1,
+        headlineBreadth: 1,
+      },
+      {
+        runId: "candidate-support-incumbent",
+        generatedAt: "2026-04-05T14:05:00.000Z",
+        rawFinalScore: 0.9995,
+        catastrophicRisk: 0.001,
+        robustScore: 1,
+        horizonScore: 1,
+        headlineBreadth: 1,
+      },
+      {
+        runId: "candidate-support-challenger",
+        generatedAt: "2026-04-05T14:10:00.000Z",
+        rawFinalScore: 0.9995,
+        catastrophicRisk: 0.001,
+        robustScore: 1,
+        horizonScore: 1,
+        headlineBreadth: 1,
+      },
+    ],
+    supportHistoryEntries: [
+      {
+        generatedAt: "2026-04-05T13:59:00.000Z",
+        primaryLaneCausalUsageCount: 0,
+      },
+      {
+        generatedAt: "2026-04-05T14:06:00.000Z",
+        primaryLaneCausalUsageCount: 1,
+      },
+      {
+        generatedAt: "2026-04-05T14:10:00.000Z",
+        primaryLaneCausalUsageCount: 4,
+      },
+    ],
+  });
+  const latestCausalSupportEntry = causalSupportLineage.entries[causalSupportLineage.entries.length - 1];
+  assert.strictEqual(
+    latestCausalSupportEntry.improvementEvidenceClass,
+    "distinct_observed_improvement",
+    "higher primary lane causal usage must count as observed improvement when score and risk do not regress"
+  );
+  assert(latestCausalSupportEntry.supportDeltaByMetric.primaryLaneCausalUsageCount > 0, "causal usage delta must be tracked in lineage support deltas");
+
+  const executionMemoryPath = path.join(tempRoot, "logs", "archive", "raw", "harness_execution_memory.json");
+  fs.mkdirSync(path.dirname(executionMemoryPath), { recursive: true });
+  fs.writeFileSync(executionMemoryPath, `${JSON.stringify({
+    schema: "harness-execution-memory.v1",
+    updatedAt: Date.now(),
+    retentionDays: 30,
+    contractMemory: [],
+    executionMemory: [
+      {
+        turnId: "eval-probe-control-1",
+        threadId: "eval-thread",
+        agentName: "default",
+        status: "failed",
+        taskOutcomeStatus: "NEEDS_INPUT",
+        taskOutcomeReason: "interactive_approval_unavailable",
+        executionIntent: "eval",
+        executionSource: "eval_harness_probe",
+        completedAt: "2026-04-05T15:00:00.000Z",
+      },
+      {
+        turnId: "eval-probe-control-2",
+        threadId: "eval-thread",
+        agentName: "default",
+        status: "failed",
+        taskOutcomeStatus: "NEEDS_INPUT",
+        taskOutcomeReason: "interactive_approval_unavailable",
+        executionIntent: "eval",
+        executionSource: "eval_harness_probe",
+        completedAt: "2026-04-05T15:01:00.000Z",
+      },
+      {
+        turnId: "eval-probe-control-3",
+        threadId: "eval-thread",
+        agentName: "default",
+        status: "failed",
+        taskOutcomeStatus: "NEEDS_INPUT",
+        taskOutcomeReason: "interactive_approval_unavailable",
+        executionIntent: "eval",
+        executionSource: "eval_harness_probe",
+        completedAt: "2026-04-05T15:02:00.000Z",
+      },
+    ],
+    auditMemory: [],
+    replayMemory: [],
+    patterns: [],
+  }, null, 2)}\n`, "utf8");
+
+  const evalHistoryPath = path.join(tempRoot, "logs", "archive", "raw", "eval_runs.jsonl");
+  fs.mkdirSync(path.dirname(evalHistoryPath), { recursive: true });
+  const evalRuns = [
+    {
+      runId: "eval-pass-1",
+      generatedAt: "2026-04-05T15:03:00.000Z",
+      suite: { suiteId: "evaluation-review-pass.v1", caseCount: 4 },
+      runs: [{ variant: { executionIntent: "eval", executionSource: "eval_harness" }, sampleSize: 4, passedCases: 4, failedCases: 0, passRate: 1, scoreRate: 1 }],
+      probePersistence: { persistedRecords: 0 },
+    },
+    {
+      runId: "eval-pass-2",
+      generatedAt: "2026-04-05T15:04:00.000Z",
+      suite: { suiteId: "evaluation-review-pass.v2", caseCount: 4 },
+      runs: [{ variant: { executionIntent: "eval", executionSource: "eval_harness" }, sampleSize: 4, passedCases: 4, failedCases: 0, passRate: 1, scoreRate: 1 }],
+      probePersistence: { persistedRecords: 0 },
+    },
+    {
+      runId: "eval-pass-3",
+      generatedAt: "2026-04-05T15:05:00.000Z",
+      suite: { suiteId: "evaluation-review-pass.v3", caseCount: 4 },
+      runs: [{ variant: { executionIntent: "eval", executionSource: "eval_harness" }, sampleSize: 4, passedCases: 4, failedCases: 0, passRate: 1, scoreRate: 1 }],
+      probePersistence: { persistedRecords: 0 },
+    },
+  ];
+  fs.writeFileSync(evalHistoryPath, `${evalRuns.map((entry) => JSON.stringify(entry)).join("\n")}\n`, "utf8");
+
+  const rebuiltArtifacts = buildGovernedMemoryPublicArtifacts({ workspaceRoot: tempRoot });
+  const evaluationReviewCoverage = rebuiltArtifacts.readinessArtifacts.coverage.rows.find((row) => row.familyId === "evaluation_review");
+  assert(evaluationReviewCoverage, "evaluation_review coverage row must exist");
+  assert.strictEqual(
+    evaluationReviewCoverage.stableCovered,
+    true,
+    "evaluation_review stable coverage must ignore eval control-plane NEEDS_INPUT probe records"
+  );
+  assert.deepStrictEqual(
+    evaluationReviewCoverage.recentWindowOutcomes,
+    ["pass", "pass", "pass"],
+    "evaluation_review stable coverage must be driven by real eval results"
+  );
 
   console.log("governed_memory_graph_test: ok");
 }

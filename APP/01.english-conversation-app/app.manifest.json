@@ -1,0 +1,25 @@
+{
+  "schema": "harness-app-manifest.v1",
+  "id": "english-conversation-app",
+  "order": 1,
+  "title": "English Conversation App",
+  "description": "Realtime English practice UI backed directly by harness-native conversation and voice APIs.",
+  "mountPath": "/apps/english-conversation-app",
+  "legacyMountPath": "/english-conversation-app",
+  "integrationMode": "native-static",
+  "workingDirectory": "APP/01.english-conversation-app",
+  "nativeApiPrefix": "/api",
+  "static": {
+    "envKey": "CODEX_ENGLISH_CONVERSATION_APP_ROOT",
+    "indexFile": "index.html",
+    "bundledRelativeRoot": "web/english-conversation-app",
+    "candidateRelativeRoots": [
+      "APP/01.english-conversation-app",
+      "APP/01.english-conversation-app/dist",
+      "APP/01.english-conversation-app/web/english-conversation-app",
+      "../english-conversation-app",
+      "../english-conversation-app/dist",
+      "../english-conversation-app/web/english-conversation-app"
+    ]
+  }
+}

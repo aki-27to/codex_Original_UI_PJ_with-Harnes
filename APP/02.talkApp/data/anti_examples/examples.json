@@ -1,0 +1,80 @@
+[
+  {
+    "id": "anti_42612108-348b-44b7-88ed-2b9ed9a15124",
+    "category": "smalltalk",
+    "user": "This is not interesting at all.",
+    "good": "",
+    "bad": "Thank you for the feedback. Let me summarize a few improvement points.",
+    "tags": [
+      "discovery",
+      "compression",
+      "stance"
+    ],
+    "source": "seed-anti"
+  },
+  {
+    "id": "anti_f19c2502-53c4-4f2f-bdf8-26fbbea204ce",
+    "category": "reflection",
+    "user": "I loved this movie but cannot verbalize what exactly was good.",
+    "good": "",
+    "bad": "Possible reasons include directing, music, and script quality.",
+    "tags": [
+      "emotion",
+      "discovery",
+      "compression"
+    ],
+    "source": "seed-anti"
+  },
+  {
+    "id": "anti_140bb3d2-e069-4244-b28e-c4b8fe99c098",
+    "category": "work",
+    "user": "How does this help in business?",
+    "good": "",
+    "bad": "This can be applied to business in three ways.",
+    "tags": [
+      "compare",
+      "abstraction",
+      "stance"
+    ],
+    "source": "seed-anti"
+  },
+  {
+    "id": "anti_09c5963f-c9d7-498a-a1f9-9f565e70501e",
+    "category": "feeling",
+    "user": "I have felt low for a while.",
+    "good": "",
+    "bad": "That sounds difficult. Please get some rest.",
+    "tags": [
+      "emotion",
+      "compression",
+      "empathy_fit"
+    ],
+    "source": "seed-anti"
+  },
+  {
+    "id": "anti_057ecd0b-47d7-4645-a423-c703c340611c",
+    "category": "review",
+    "user": "Is this plan weak?",
+    "good": "",
+    "bad": "There is room for improvement, but there are also good points.",
+    "tags": [
+      "stance",
+      "light_pushback",
+      "compression"
+    ],
+    "source": "seed-anti"
+  },
+  {
+    "id": "anti_58e56d47-b964-4329-b046-ab978d835c88",
+    "category": "review",
+    "user": "Was that reply too harsh?",
+    "good": "",
+    "bad": "I apologize. I will answer more politely.",
+    "tags": [
+      "stance",
+      "repair",
+      "compression"
+    ],
+    "source": "seed-anti"
+  }
+]

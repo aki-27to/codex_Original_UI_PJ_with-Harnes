@@ -1214,7 +1214,85 @@ async function run() {
     if (governancePolicy.contracts.worker.requiresParentOverride !== true) {
       throw new Error("runtime governancePolicy worker.requiresParentOverride was not true");
     }
-    console.log("[smoke] 9/25 runtime reports latest_turn and artifact/idempotency capability");
+    console.log("[smoke] 9/25 runtime reports latest_turn, app catalog, and artifact/idempotency capability");
+    if (!runtimeReady.staticApps || typeof runtimeReady.staticApps !== "object") {
+      throw new Error("runtime did not expose staticApps");
+    }
+    if (!Array.isArray(runtimeReady.staticApps.apps) || runtimeReady.staticApps.apps.length < 3) {
+      throw new Error("runtime staticApps.apps did not expose the registry-backed app list");
+    }
+    const runtimeAppIds = new Set(
+      runtimeReady.staticApps.apps
+        .map((entry) => (entry && typeof entry.id === "string" ? entry.id : ""))
+        .filter(Boolean)
+    );
+    for (const requiredAppId of ["english-conversation-app", "talkapp", "presentation-coach"]) {
+      if (!runtimeAppIds.has(requiredAppId)) {
+        throw new Error(`runtime staticApps.apps missing ${requiredAppId}`);
+      }
+    }
+    const appsCatalog = await requestHttpJson({
+      method: "GET",
+      path: "/api/apps",
+      timeoutMs: 15000,
+      port: harnessPort,
+      headers: localOriginHeaders,
+    });
+    if (appsCatalog.statusCode !== 200 || !appsCatalog.json || appsCatalog.json.ok !== true) {
+      throw new Error("GET /api/apps did not return ok");
+    }
+    if (!Array.isArray(appsCatalog.json.apps) || appsCatalog.json.apps.length < 3) {
+      throw new Error("GET /api/apps did not return the full app registry");
+    }
+    const englishCatalogEntry = appsCatalog.json.apps.find(
+      (entry) => entry && entry.id === "english-conversation-app"
+    );
+    if (!englishCatalogEntry || englishCatalogEntry.mountPath !== "/apps/english-conversation-app") {
+      throw new Error("GET /api/apps did not expose the English app mount");
+    }
+    const presentationRuntime = await requestHttpJson({
+      method: "GET",
+      path: "/api/apps/presentation-coach/runtime",
+      timeoutMs: 15000,
+      port: harnessPort,
+      headers: localOriginHeaders,
+    });
+    if (presentationRuntime.statusCode !== 200 || !presentationRuntime.json || presentationRuntime.json.ok !== true) {
+      throw new Error("GET /api/apps/presentation-coach/runtime did not return ok");
+    }
+    if (
+      !presentationRuntime.json.app ||
+      presentationRuntime.json.app.id !== "presentation-coach" ||
+      presentationRuntime.json.app.mountPath !== "/apps/presentation-coach"
+    ) {
+      throw new Error("GET /api/apps/presentation-coach/runtime returned an unexpected app payload");
+    }
+    if (!presentationRuntime.json.ai || typeof presentationRuntime.json.ai.ready !== "boolean") {
+      throw new Error("GET /api/apps/presentation-coach/runtime did not expose AI readiness");
+    }
+    const englishMountIndex = await requestHttpJson({
+      method: "GET",
+      path: "/apps/english-conversation-app/index.html",
+      timeoutMs: 15000,
+      port: harnessPort,
+    });
+    if (englishMountIndex.statusCode !== 200 || !/<!doctype html>|<html/i.test(englishMountIndex.raw)) {
+      throw new Error("GET /apps/english-conversation-app/index.html did not serve the English app");
+    }
+    const englishMountApiRuntime = await requestHttpJson({
+      method: "GET",
+      path: "/apps/english-conversation-app/api/runtime",
+      timeoutMs: 15000,
+      port: harnessPort,
+      headers: localOriginHeaders,
+    });
+    if (
+      englishMountApiRuntime.statusCode !== 200 ||
+      !englishMountApiRuntime.json ||
+      englishMountApiRuntime.json.mode !== "app-server"
+    ) {
+      throw new Error("GET /apps/english-conversation-app/api/runtime did not rewrite into the harness runtime");
+    }
 
     console.log("[smoke] 10/25 check /api/agent-topography excludes retired worker from configured agents");
     const topography = await requestHttpJson({

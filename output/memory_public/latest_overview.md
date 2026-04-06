@@ -39,13 +39,14 @@
 - next: operational completion export durability below subjective threshold
 - next: ambiguous instruction evidence below subjective threshold
 - next: capture governed recovery evidence
+- next: goal completion artifact is missing one or more subjective summary fields
 - next: subjective goal completion artifact missing
 
 ## Capability Loop
 - queued: 0
 - running: 0
 - passed: 2
-- blocked: 0
+- blocked: 1
 
 ## Lane Health
 - openai_primary: governed=active / promoted=4 / canonical-selected=3 / compatibility=PASS

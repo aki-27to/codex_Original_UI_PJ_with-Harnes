@@ -2828,8 +2828,10 @@ function buildEvalProbePersistenceSnapshot(record,evalCase){
     parentDispatchGuard:normalized.parentDispatchGuard,
   };
 }
-async function executeEvalVariantOnSuite({variant,suite,maxCases,timeoutMs,evalRunId="",persistProbeResults=false}){
-  const selectedCases=(Array.isArray(suite&&suite.cases)?suite.cases:[]).slice(0,Math.max(1,Math.min(evalMaxCases,Math.trunc(Number(maxCases)||evalMaxCases))));
+async function executeEvalVariantOnSuite({variant,suite,maxCases,maxCaseLimit=evalMaxCases,timeoutMs,evalRunId="",persistProbeResults=false}){
+  const normalizedMaxCaseLimit=Math.max(1,Math.min(120,Math.trunc(Number(maxCaseLimit)||evalMaxCases)));
+  const caseCap=Math.max(1,Math.min(normalizedMaxCaseLimit,Math.trunc(Number(maxCases)||normalizedMaxCaseLimit||evalMaxCases)));
+  const selectedCases=(Array.isArray(suite&&suite.cases)?suite.cases:[]).slice(0,caseCap);
   const startedAt=Date.now();
   const caseResults=[];
   const persistedProbeRecords=[];
@@ -15750,8 +15752,12 @@ async function requestHandler(req,res){
           return;
         }
       }
+      const requestedSuiteLength=Array.isArray(suite&&suite.cases)?suite.cases.length:0;
+      const maxCaseLimit=agiProfile
+        ?Math.max(evalMaxCases,Math.min(120,requestedSuiteLength||evalMaxCases))
+        :evalMaxCases;
       const maxCasesRaw=Number(body.maxCases);
-      const maxCases=Number.isFinite(maxCasesRaw)?Math.max(1,Math.min(evalMaxCases,Math.trunc(maxCasesRaw))):Math.min(evalMaxCases,suite.cases.length);
+      const maxCases=Number.isFinite(maxCasesRaw)?Math.max(1,Math.min(maxCaseLimit,Math.trunc(maxCasesRaw))):Math.min(maxCaseLimit,suite.cases.length);
       const timeoutRaw=Number(body.caseTimeoutMs);
       const timeoutMs=Number.isFinite(timeoutRaw)?Math.max(10000,Math.min(900000,Math.trunc(timeoutRaw))):evalCaseTimeoutMs;
       const persistProbeResults=normalizeBooleanFlag(
@@ -15780,6 +15786,7 @@ async function requestHandler(req,res){
           variant,
           suite,
           maxCases,
+          maxCaseLimit,
           timeoutMs,
           evalRunId:reportId,
           persistProbeResults,

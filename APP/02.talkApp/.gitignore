@@ -1,0 +1,7 @@
+.env
+node_modules
+app/frontend/dist
+talkapp.out.log
+talkapp.err.log
+.DS_Store
+Thumbs.db

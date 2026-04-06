@@ -1,6 +1,6 @@
 {
   "schema": "governed-memory-public-lane-projection.v1",
-  "generatedAt": "2026-04-05T20:48:53.385Z",
+  "generatedAt": "2026-04-06T14:51:42.464Z",
   "laneKey": "openai_primary",
   "sourceName": "OpenAI Developers Blog",
   "sourceTier": "external_primary",
@@ -107,7 +107,7 @@
   "recentAdvisoryEffects": [],
   "recentLessons": [
     {
-      "publicRef": "mem_ec957e3de3",
+      "publicRef": "mem_23f22d5ff9",
       "status": "promoted",
       "summary": "How Perplexity Brought Voice Search to Millions Using the Realtime API | OpenAI Developers",
       "topics": [
@@ -119,7 +119,7 @@
       ]
     },
     {
-      "publicRef": "mem_f38921b6c8",
+      "publicRef": "mem_e251a59356",
       "status": "promoted",
       "summary": "Designing delightful frontends with GPT-5.4 | OpenAI Developers",
       "topics": [
@@ -132,7 +132,7 @@
       ]
     },
     {
-      "publicRef": "mem_eb390615f9",
+      "publicRef": "mem_3909a4dcef",
       "status": "promoted",
       "summary": "From prompts to products: One year of Responses | OpenAI Developers",
       "topics": [
@@ -145,7 +145,7 @@
       ]
     },
     {
-      "publicRef": "mem_d0800f01f8",
+      "publicRef": "mem_06cc0f54b7",
       "status": "promoted",
       "summary": "Using skills to accelerate OSS maintenance | OpenAI Developers",
       "topics": [

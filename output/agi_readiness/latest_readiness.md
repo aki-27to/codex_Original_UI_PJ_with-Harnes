@@ -20,3 +20,6 @@
 - tool_use_browser_like: score=0.780 floor=0.70 status=pass
 
 ## Blocked Reasons
+
+## Next Bottlenecks
+- evidence bottleneck: subjective current values do not reflect history-aware counts consistently

@@ -1,6 +1,6 @@
 {
   "schema": "agi-readiness-self-directed-probe-status.v1",
-  "generatedAt": "2026-04-06T10:26:22.119Z",
+  "generatedAt": "2026-04-06T14:51:42.574Z",
   "workspaceId": "5c839dfeef8b555f",
   "probeCount": 2,
   "positiveProbeCount": 2,
@@ -16,8 +16,8 @@
     "agenda_e3baa53ec1"
   ],
   "requiredThresholds": {
-    "positiveProbeCount": 2,
-    "novelPositiveCount": 1,
+    "positiveProbeCount": 6,
+    "novelPositiveCount": 4,
     "maxInsufficientEvidenceCount": 0
   },
   "summary": {

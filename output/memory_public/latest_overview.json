@@ -1,6 +1,6 @@
 {
   "schema": "governed-memory-public-overview.v1",
-  "generatedAt": "2026-04-05T20:48:53.399Z",
+  "generatedAt": "2026-04-06T14:51:42.483Z",
   "workspaceId": "5c839dfeef8b555f",
   "canonicalRoot": "logs/archive/raw/runtime_state/memory",
   "publicOutputRoot": "output/memory_public",
@@ -62,7 +62,7 @@
   "learningAgendaSummary": {
     "queued": 0,
     "running": 0,
-    "blocked": 0,
+    "blocked": 1,
     "passed": 2,
     "failed": 0,
     "revoked": 0,
@@ -70,12 +70,12 @@
     "verifiedNeutral": 0,
     "verifiedNegative": 0,
     "verifiedHarmful": 0,
-    "insufficientEvidence": 0,
-    "blockedCount": 0,
-    "insufficientEvidenceCount": 0,
+    "insufficientEvidence": 1,
+    "blockedCount": 1,
+    "insufficientEvidenceCount": 1,
     "selfDirectedCount": 2,
     "verifiedPositiveSelfDirectedCount": 2,
-    "novelProbeCount": 2,
+    "novelProbeCount": 3,
     "novelProbePositiveCount": 2
   },
   "subjectiveGoalStatus": "SUBJECTIVE_AGI_NEAR_COMPLETE",

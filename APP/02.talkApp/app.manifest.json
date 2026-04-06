@@ -1,0 +1,16 @@
+{
+  "schema": "harness-app-manifest.v1",
+  "id": "talkapp",
+  "order": 2,
+  "title": "talkApp",
+  "description": "Japanese conversation R&D app whose UI is routed through the harness while preserving its own backend.",
+  "mountPath": "/apps/talkapp",
+  "integrationMode": "reverse-proxy",
+  "workingDirectory": "APP/02.talkApp",
+  "proxy": {
+    "baseUrlEnvKey": "CODEX_TALKAPP_BASE_URL",
+    "defaultBaseUrl": "http://127.0.0.1:3000",
+    "healthPath": "/healthz",
+    "stripMountPath": true
+  }
+}

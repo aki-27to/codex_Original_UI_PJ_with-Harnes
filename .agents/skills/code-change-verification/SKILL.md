@@ -1,3 +1,8 @@
+---
+name: "code-change-verification"
+description: "Use when a session needs to verify changed code, summarize verification status, and capture changed surface or open issues for closeout and handoff."
+---
+
 # code-change-verification
 
 ## いつ使うか

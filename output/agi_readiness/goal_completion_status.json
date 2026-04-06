@@ -1,9 +1,9 @@
 {
   "schema": "agi-operational-completion-status.v1",
-  "generatedAt": "2026-04-06T10:26:22.120Z",
+  "generatedAt": "2026-04-06T14:51:42.576Z",
   "workspaceId": "5c839dfeef8b555f",
   "goalStatus": "OPERATIONALLY_COMPLETE",
-  "completionVersion": "2026-04-04.r1",
+  "completionVersion": "2026-04-06.r2",
   "decisionBasis": "live_truth_strict_operational_criteria",
   "whyNotYet": [],
   "failedCriteria": [],
@@ -82,7 +82,7 @@
     },
     {
       "id": "ambiguousInstructionEvidence",
-      "detail": "ambiguous_instruction evidence 24 >= 10"
+      "detail": "ambiguous_instruction evidence 39 >= 10"
     },
     {
       "id": "ambiguousInstructionScore",
@@ -135,7 +135,7 @@
     "blockedSubtasks": 0,
     "integrationPendingCount": 0,
     "ambiguousInstructionStatus": "observed",
-    "ambiguousInstructionEvidenceCount": 24,
+    "ambiguousInstructionEvidenceCount": 39,
     "ambiguousInstructionScore": 1,
     "missingContextScore": 1,
     "browserToolFlakinessScore": 1,
@@ -170,7 +170,7 @@
     "blockedSubtasks": 0,
     "integrationPendingCount": 0,
     "ambiguousInstructionStatus": "observed",
-    "ambiguousInstructionEvidenceCount": 24,
+    "ambiguousInstructionEvidenceCount": 39,
     "ambiguousInstructionScore": 1,
     "missingContextScore": 1,
     "browserToolFlakinessScore": 1,
@@ -246,7 +246,7 @@
     "browserToolFlakiness": 1,
     "ambiguousInstruction": {
       "status": "observed",
-      "evidenceCount": 24,
+      "evidenceCount": 39,
       "score": 1
     },
     "adversarialConflictingInstruction": 1,
@@ -283,18 +283,6 @@
     "consecutiveRequired": 3,
     "consecutivePassingExports": 13,
     "entries": [
-      {
-        "exportSessionId": "export_0f2607d6d3",
-        "generatedAt": "2026-04-05T20:46:35.857Z",
-        "goalStatus": "PENDING_WINDOW",
-        "baseStatus": "criteria_met",
-        "rawFinalScore": 0.9995,
-        "R_robust": 1,
-        "H_horizon": 1,
-        "stableCoverageBreadth": 1,
-        "openDebtCount": 0,
-        "harmfulCausalRatio": 0
-      },
       {
         "exportSessionId": "export_ed28b990a9",
         "generatedAt": "2026-04-05T20:48:16.937Z",
@@ -438,6 +426,18 @@
         "stableCoverageBreadth": 1,
         "openDebtCount": 0,
         "harmfulCausalRatio": 0
+      },
+      {
+        "exportSessionId": "export_7277162985",
+        "generatedAt": "2026-04-06T14:51:42.576Z",
+        "goalStatus": "PENDING_WINDOW",
+        "baseStatus": "criteria_met",
+        "rawFinalScore": 0.9995,
+        "R_robust": 1,
+        "H_horizon": 1,
+        "stableCoverageBreadth": 1,
+        "openDebtCount": 0,
+        "harmfulCausalRatio": 0
       }
     ]
   },
@@ -446,6 +446,6 @@
   "subjectiveCriteriaMet": true,
   "subjectiveFailedCriteria": [],
   "subjectiveWhyNotYet": [],
-  "subjectiveCriteriaWindowPassCount": 8,
+  "subjectiveCriteriaWindowPassCount": 9,
   "subjectiveCriteriaWindowSize": 7
 }

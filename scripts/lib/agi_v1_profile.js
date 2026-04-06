@@ -565,8 +565,16 @@ function parseMetricResultFromCaseResult(caseResult, evalCase, run) {
       relevant: meta.relevant !== false,
       supportStatus: meta.supportStatus || "supported",
       sample_count: 1,
+      severity_or_loss: meta.severity_or_loss ?? meta.severityOrLoss,
       evidence: [safeString(caseResult && caseResult.reason, 160) || safeString(caseResult && caseResult.taskOutcomeReason, 160)],
       domain_family: meta.domain_family || meta.domainFamily,
+      horizon_units: meta.horizon_units ?? meta.horizonUnits,
+      target_horizon_units: meta.target_horizon_units ?? meta.targetHorizonUnits,
+      horizon_unit_name: meta.horizon_unit_name ?? meta.horizonUnitName,
+      normalization_basis: meta.normalization_basis ?? meta.normalizationBasis,
+      notes: meta.notes,
+      reason: meta.reason,
+      local_training_signal: meta.local_training_signal ?? meta.localTrainingSignal,
     };
   }
   const metric = normalizeMetricResult(rawMetric, {

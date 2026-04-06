@@ -646,6 +646,25 @@ function chatSettingsDefaultsForUi(){
     workspaceLockRoot:"",
   };
 }
+function freshChatSettingsDefaultsForUi({workspacePath=""}={}){
+  const defaultProfile=PROFILES[DEFAULT_PROFILE_ID]||{approvalPolicy:"never",sandboxMode:"danger-full-access",webSearchMode:"live",automaticApprovalReviewEnabled:false};
+  const runtimeWorkspace=s.runtime&&typeof s.runtime.workspaceRoot==="string"?s.runtime.workspaceRoot.trim():"";
+  const preferredWorkspace=typeof workspacePath==="string"&&workspacePath.trim()
+    ?workspacePath.trim()
+    :selectedCwd()||runtimeWorkspace||"";
+  return{
+    executionProfile:DEFAULT_PROFILE_ID,
+    approvalPolicy:defaultProfile.approvalPolicy,
+    sandboxMode:defaultProfile.sandboxMode,
+    webSearchMode:defaultProfile.webSearchMode,
+    fastModeEnabled:runtimeDefaultFastModeEnabled(),
+    automaticApprovalReviewEnabled:runtimeDefaultAutomaticApprovalReviewEnabled(),
+    modelName:runtimeDefaultExecModel(),
+    modelReasoningEffort:runtimeDefaultExecModelReasoningEffort(),
+    workspacePath:preferredWorkspace,
+    workspaceLockRoot:"",
+  };
+}
 function normalizeChatSettingsForUi(raw,fallback=chatSettingsDefaultsForUi()){
   const source=raw&&typeof raw==="object"?raw:{};
   const baseSource=fallback&&typeof fallback==="object"?fallback:{};
@@ -3143,10 +3162,7 @@ function mkChat(o={}){
   const id=`chat-${s.nextChat++}-${Date.now()}`;
   const currentNumber=s.nextChat-1;
   const savedAgent=typeof o.agent==="string"&&o.agent.trim()?o.agent.trim():"";
-  const activeChatRecord=active();
-  const fallbackSettings=activeChatRecord&&activeChatRecord.settings
-    ?{...activeChatRecord.settings,workspaceLockRoot:""}
-    :chatSettingsDefaultsForUi();
+  const fallbackSettings=freshChatSettingsDefaultsForUi({workspacePath:selectedCwd()});
   const c={
     id,
     title:o.title||`Chat ${currentNumber}`,
@@ -6054,7 +6070,7 @@ function bind(){
   e.refreshDiagBtn.onclick=async()=>{try{await loadDiag();msg(s.active,"system","System","Diagnostics refreshed.")}catch(er){msg(s.active,"system","System",`Diagnostics refresh failed: ${er&&er.message?er.message:"unknown"}`)}};
   e.newChatBtn.onclick=()=>{
     syncActiveChatScopedStateFromUi();
-    const c=mkChat({agent:DEFAULT_AGENT_NAME,forceNewSession:true});
+    const c=mkChat({agent:DEFAULT_AGENT_NAME,forceNewSession:true,activate:false});
     void setActiveChatForUi(c.id);
   };
   e.clearAgentTraceBtn.onclick=()=>{const c=active();if(!c){s.trace=[];s.last=null;flow();return;}s.trace=s.trace.filter((item)=>item&&item.cid!==c.id);if(s.last&&s.last.cid===c.id)s.last=null;flow();msg(s.active,"system","System","Current chat trace cleared.")};

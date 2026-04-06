@@ -1,6 +1,6 @@
 {
   "schema": "agi-readiness-novel-task-acquisition.v1",
-  "generatedAt": "2026-04-06T10:26:22.119Z",
+  "generatedAt": "2026-04-06T14:51:42.574Z",
   "workspaceId": "5c839dfeef8b555f",
   "novelFamilyCount": 2,
   "novelTaskCount": 2,
@@ -38,7 +38,7 @@
     "agenda_e3baa53ec1"
   ],
   "requiredThresholds": {
-    "positiveNovelTaskCount": 1
+    "positiveNovelTaskCount": 8
   },
   "summary": {
     "itemCount": 2,

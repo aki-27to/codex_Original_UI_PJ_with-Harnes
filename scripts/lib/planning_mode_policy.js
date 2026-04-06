@@ -688,6 +688,74 @@ function textIncludesKeyword(lowerText, keyword) {
   return lowerText.includes(normalized);
 }
 
+function isWeakUserDecisionKeyword(keyword) {
+  const normalized = safeString(keyword, 120).toLowerCase();
+  return normalized === "clarify" || normalized === "confirm" || normalized === "choose";
+}
+
+function detectExplicitUserDecisionRequired(prompt, keywords) {
+  const text = sanitizePromptForPolicyAnalysis(prompt);
+  const lower = text.toLowerCase();
+  let weakKeywordMatched = false;
+  for (const keyword of Array.isArray(keywords) ? keywords : []) {
+    if (!textIncludesKeyword(lower, keyword)) continue;
+    if (isWeakUserDecisionKeyword(keyword)) {
+      weakKeywordMatched = true;
+      continue;
+    }
+    return true;
+  }
+  if (!weakKeywordMatched) return false;
+  return text.split(/\r?\n/).some((line) => {
+    const normalized = safeString(line, 240).toLowerCase();
+    if (!normalized) return false;
+    if (!["clarify", "confirm", "choose"].some((keyword) => textIncludesKeyword(normalized, keyword))) return false;
+    return /(?:\buser\b|\boperator\b|\bapproval\b|\bdecision\b|\binput\b|\brequired\b|\bmust\b|\bwait\b|\buntil\b|\bonly after\b|\bbefore (?:implementation|execution|proceeding)\b)/i.test(normalized);
+  });
+}
+
+function isAmbiguityHandlingDirective(text) {
+  const normalized = safeString(text, 240).trim();
+  if (!normalized || /[?？]/.test(normalized)) return false;
+  return /^(?:resolve|handle|clarify|disambiguate|apply|use|follow)\b.*\b(?:ambiguous|ambiguity)\b.*\b(?:request|instruction)\b/i.test(normalized);
+}
+
+function mentionsGovernedClarificationStrategy(text) {
+  return /(?:governed (?:clarify(?:cation)?|disambiguate(?:ion)?|defer(?:ral)?) strategy|governed clarification|governed disambiguation|governed deferral|bounded clarification|bounded disambiguation|bounded defer(?:ral)?)/i.test(safeString(text, 240));
+}
+
+function requestsGovernedClarificationWithoutInventing(prompt) {
+  const normalized = sanitizePromptForPolicyAnalysis(prompt);
+  if (!normalized) return false;
+  if (!isAmbiguityHandlingDirective(normalized)) return false;
+  if (!mentionsGovernedClarificationStrategy(normalized)) return false;
+  return /(?:without inventing|without guessing|without assuming|without making up)/i.test(normalized);
+}
+
+function requestsBoundedAssumptionHandling(prompt) {
+  const normalized = sanitizePromptForPolicyAnalysis(prompt);
+  if (!normalized) return false;
+  if (!isAmbiguityHandlingDirective(normalized)) return false;
+  return /(?:\bbounded[_ -]?assumption\b|\bbounded assumption\b)/i.test(normalized);
+}
+
+function applyExplicitAmbiguityHandlingOverride({ familySelection, prompt = "" } = {}) {
+  const current = familySelection && typeof familySelection === "object" ? familySelection : {};
+  if (!requestsBoundedAssumptionHandling(prompt)) return current;
+  return {
+    ...current,
+    ambiguityHandling: "bounded_assumption",
+    reasons: uniqueStrings([
+      ...(Array.isArray(current.reasons) ? current.reasons : []),
+      "promptAmbiguityHandling=bounded_assumption",
+    ], 8),
+    keywordHits: uniqueStrings([
+      ...(Array.isArray(current.keywordHits) ? current.keywordHits : []),
+      "bounded_assumption",
+    ], 8),
+  };
+}
+
 function extractPathHints(prompt) {
   const directMatches = safeString(prompt, 40000).match(/\b(?:[A-Za-z0-9._-]+\/)+[A-Za-z0-9._-]+\b/g) || [];
   const extras = [];
@@ -883,7 +951,7 @@ function buildPlanningSelection({ prompt = "", options = {}, contract } = {}) {
     }
     return { id: "medium", score: 1 };
   })();
-  const explicitUserDecisionRequired = hasAnyKeyword(prompt, normalizedContract.signals.userDecisionKeywords);
+  const explicitUserDecisionRequired = detectExplicitUserDecisionRequired(prompt, normalizedContract.signals.userDecisionKeywords);
   const userDecisionRequired =
     explicitUserDecisionRequired ||
     openQuestions.length > 0;
@@ -2262,6 +2330,11 @@ function buildRequirementQuestionPlan({ requirementContract, selection, challeng
   const requirement = requirementContract && typeof requirementContract === "object" ? requirementContract : {};
   const currentSelection = selection && typeof selection === "object" ? selection : {};
   const report = sanitizeRequirementChallengeReport(challengeReport, requirement);
+  const clarificationSignals = currentSelection && currentSelection.signals && typeof currentSelection.signals === "object"
+    ? currentSelection.signals
+    : {};
+  const clarificationAction = safeString(clarificationSignals.clarificationAction, 40).toLowerCase();
+  const clarificationQuestion = safeString(clarificationSignals.clarificationQuestion, 320);
   const blocking = [];
   const defaultable = [];
   const taste = [];
@@ -2297,6 +2370,16 @@ function buildRequirementQuestionPlan({ requirementContract, selection, challeng
   uniqueStrings(requirement.openQuestions, 12).forEach((question) => addQuestion(question, "open_question"));
   uniqueStrings(deferredQuestions.defaultable, 8).forEach((question) => pushCategorizedEntry(question, "defaultable", "deferred_defaultable"));
   uniqueStrings(deferredQuestions.taste, 8).forEach((question) => pushCategorizedEntry(question, "taste", "deferred_taste"));
+  if (clarificationAction === "ask_user_once") {
+    const singleQuestion = clarificationQuestion || safeString(requirement.openQuestions && requirement.openQuestions[0], 320);
+    return sanitizeRequirementQuestionPlan({
+      summary: singleQuestion ? "A single blocking clarification must be resolved before execution." : "",
+      blocking: singleQuestion ? [{ question: singleQuestion, category: "blocking", reason: "clarification_gate" }] : [],
+      defaultable: [],
+      taste: [],
+      askNext: singleQuestion ? [{ question: singleQuestion, category: "blocking", reason: "clarification_gate" }] : [],
+    }, requirement);
+  }
   report.findings.forEach((finding) => {
     if (finding.type === "must_ask_question" || finding.type === "missing_acceptance_check" || finding.type === "proceed_risk") {
       addQuestion(buildRequirementQuestionFromFinding(finding), finding.type);
@@ -3905,6 +3988,7 @@ function extractQuestionCandidates(prompt, keywords) {
     if (/\b(?:no|without)\s+open questions?\b/i.test(normalized) || /\bopen questions?\s+(?:are|is)\s+not\b/i.test(normalized)) continue;
     if (/^first make the open questions explicit\.?$/i.test(normalized)) continue;
     if (/^stop with status:\s*need_user_input\.?$/i.test(normalized)) continue;
+    if (isAmbiguityHandlingDirective(normalized)) continue;
     if (/[?？]/.test(normalized) || hasAnyKeyword(normalized, keywords)) {
       matches.push(normalized.replace(/^\s*[-*+]\s*/, ""));
     }
@@ -4396,8 +4480,10 @@ function buildClarificationDecision({
   benchmarkCandidates = [],
 } = {}) {
   const normalizedPrompt = sanitizePromptForPolicyAnalysis(prompt);
-  const lower = normalizedPrompt.toLowerCase();
   const normalizedTaskFamily = safeString(taskFamily, 80).toLowerCase();
+  const scopeAnchored =
+    (Array.isArray(acceptanceChecks) && acceptanceChecks.length > 0)
+    || (Array.isArray(baselineScope) && baselineScope.length > 0);
   if (explicitUserDecisionRequired) {
     return {
       action: "needs_input",
@@ -4405,6 +4491,19 @@ function buildClarificationDecision({
       question: "",
       summary: "An explicit user-decision clause blocks autonomous execution.",
       missingAnchors: [],
+    };
+  }
+  if (
+    requestsGovernedClarificationWithoutInventing(normalizedPrompt)
+    && !scopeAnchored
+    && (!Array.isArray(openQuestions) || openQuestions.length === 0)
+  ) {
+    return {
+      action: "ask_user_once",
+      reason: "governed_clarify_requires_anchor",
+      question: "Which requirement should be locked first so I can resolve the ambiguity without inventing scope or acceptance checks?",
+      summary: "The request asks for governed ambiguity handling, but it does not identify the first requirement anchor.",
+      missingAnchors: ["first_requirement_anchor"],
     };
   }
   if (normalizedTaskFamily !== "web_creative") {
@@ -4470,17 +4569,20 @@ function buildPlanningSelection({ prompt = "", options = {}, contract } = {}) {
   ], 24);
   const nonGoals = collectEntriesFromSections(collectSectionsByAlias(sections, aliases.nonGoals));
   const extractedAcceptanceChecks = extractAcceptanceChecks(analysisPrompt, sections, contracts.planning);
-  const familySelection = buildInheritedFamilySelection({
-    familySelection: selectTaskFamilyProfile({
+  const familySelection = applyExplicitAmbiguityHandlingOverride({
+    familySelection: buildInheritedFamilySelection({
+      familySelection: selectTaskFamilyProfile({
+        prompt: analysisPrompt,
+        options,
+        contract: contracts.familyProfiles,
+      }),
       prompt: analysisPrompt,
       options,
-      contract: contracts.familyProfiles,
     }),
     prompt: analysisPrompt,
-    options,
   });
   const benchmarkCandidates = extractEffectiveBenchmarkCandidates({ prompt: analysisPrompt, options });
-  const acceptanceChecks = buildAutonomousAcceptanceChecks({
+  const provisionalAcceptanceChecks = buildAutonomousAcceptanceChecks({
     prompt: analysisPrompt,
     explicitGoal,
     implicitGoal,
@@ -4497,12 +4599,12 @@ function buildPlanningSelection({ prompt = "", options = {}, contract } = {}) {
   ], 12);
   const approvalBoundaryItems = detectApprovalBoundaryItems(analysisPrompt, contracts.planning.signals.approvalBoundaryKeywords);
   const explicitUserDecisionRequired =
-    hasAnyKeyword(analysisPrompt, contracts.planning.signals.userDecisionKeywords);
+    detectExplicitUserDecisionRequired(analysisPrompt, contracts.planning.signals.userDecisionKeywords);
   const questionPartition = partitionRequirementQuestions({
     openQuestions: initialOpenQuestions,
     taskFamily: familySelection.taskFamily,
     approvalBoundaryItems,
-    acceptanceChecks,
+    acceptanceChecks: provisionalAcceptanceChecks,
     baselineScope,
     benchmarkCandidates,
     prompt: analysisPrompt,
@@ -4517,6 +4619,9 @@ function buildPlanningSelection({ prompt = "", options = {}, contract } = {}) {
     baselineScope,
     benchmarkCandidates,
   });
+  const acceptanceChecks = clarificationDecision.action === "proceed"
+    ? provisionalAcceptanceChecks
+    : sanitizeAcceptanceChecks(extractedAcceptanceChecks);
   const openQuestions = uniqueStrings([
     ...questionPartition.blocking.map((entry) => entry.question),
     clarificationDecision.action === "ask_user_once" ? clarificationDecision.question : "",

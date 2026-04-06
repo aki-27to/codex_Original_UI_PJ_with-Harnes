@@ -46,6 +46,11 @@ output/agi_readiness/*
 !output/agi_readiness/robustness_remediation_effects.json
 !output/agi_readiness/goal_completion_status.json
 !output/agi_readiness/goal_completion_status.md
+!output/agi_readiness/subjective_goal_completion_status.json
+!output/agi_readiness/subjective_goal_completion_status.md
+!output/agi_readiness/learning_adoption_status.json
+!output/agi_readiness/self_directed_probe_status.json
+!output/agi_readiness/novel_task_acquisition.json
 output/agi_v1/
 output/claim_closure/
 output/external_audit_bundle/
@@ -74,6 +79,10 @@ output/openai_blog_learning_proposals/realtime-perplexity-computer.json
 output/openai_blog_self_improvement_proposals/realtime-perplexity-computer.json
 !output/continuity_public/continuity_debt_trend.json
 !output/continuity_public/continuity_closeout_effects.json
+output/subjective_live_web_probe.md
+APP/01.english-conversation-app/*.log
+APP/02.talkApp/output/
+APP/03.プレゼン上達AI/*.log
 tmp_*.html
 tmp_*.txt
 tmp_*.json

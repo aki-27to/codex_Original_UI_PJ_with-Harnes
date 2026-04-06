@@ -183,8 +183,9 @@ function run() {
     !nonParentTransform.prompt.includes("[REQUIREMENT_RBJ_V1] mode: requirement_definition_loop"),
     "non-parent role should not force requirement RBJ loop"
   );
+  const nonParentMode = nonParentTransform.options.planningContext.selection.selectedMode;
   assert.ok(
-    nonParentTransform.prompt.includes("[PLANNING_MODE_V1] selected: DISCOVERY"),
+    nonParentTransform.prompt.includes(`[PLANNING_MODE_V1] selected: ${nonParentMode}`),
     "non-parent transform should still carry planning mode information"
   );
   assert.ok(
@@ -280,6 +281,95 @@ function run() {
     webCreativeTransform.options.planningContext.selection.signals.clarificationAction,
     "ask_user_once",
     "planning context should persist the single-question clarification action"
+  );
+
+  const boundedAssumptionTransform = matcher.transformExecRequest({
+    prompt: "#requirement-locked Resolve an ambiguous request using governed bounded_assumption strategy without inventing requirements.",
+    sandboxMode: "workspace-write",
+    options: { approvalPolicy: "on-request", agentName: "default" },
+    env: { CODEX_REQUIREMENT_RBJ_ENABLED: "0" },
+  });
+  assert.ok(
+    boundedAssumptionTransform.prompt.includes("[REQUIREMENT_LOCK_V1] mode: structured_execution"),
+    "bounded_assumption request should stay on the structured execution path"
+  );
+  assert.ok(
+    boundedAssumptionTransform.prompt.includes("[PLANNING_MODE_V1] selected: NORMAL"),
+    "bounded_assumption request should remain execution-ready once the false clarify gate is removed"
+  );
+  assert.ok(
+    !boundedAssumptionTransform.prompt.includes("Suggested question:"),
+    "bounded_assumption request should not surface a synthetic clarifying question"
+  );
+  assert.strictEqual(
+    boundedAssumptionTransform.options.planningContext.selection.familyProfile.ambiguityHandling,
+    "bounded_assumption",
+    "bounded_assumption request should persist the requested ambiguity strategy in planning context"
+  );
+  assert.strictEqual(
+    boundedAssumptionTransform.options.planningContext.selection.signals.clarificationAction,
+    "proceed",
+    "bounded_assumption request should proceed without a clarification gate"
+  );
+
+  const governedClarifyTransform = matcher.transformExecRequest({
+    prompt: "#requirement-locked Resolve an ambiguous request using governed clarify strategy without inventing requirements.",
+    sandboxMode: "workspace-write",
+    options: { approvalPolicy: "on-request", agentName: "default" },
+    env: { CODEX_REQUIREMENT_RBJ_ENABLED: "0" },
+  });
+  assert.ok(
+    governedClarifyTransform.prompt.includes("[REQUIREMENT_LOCK_V1] mode: single_clarification_gate"),
+    "governed clarify request should route through the single clarification gate"
+  );
+  assert.ok(
+    governedClarifyTransform.prompt.includes("Which requirement should be locked first so I can resolve the ambiguity without inventing scope or acceptance checks?"),
+    "governed clarify request should carry the bounded clarifying question"
+  );
+  assert.strictEqual(
+    governedClarifyTransform.options.planningContext.selection.signals.clarificationAction,
+    "ask_user_once",
+    "governed clarify planning context should persist the single-question action"
+  );
+
+  const governedDisambiguateTransform = matcher.transformExecRequest({
+    prompt: "#requirement-locked Resolve an ambiguous request using governed disambiguate strategy without inventing requirements.",
+    sandboxMode: "workspace-write",
+    options: { approvalPolicy: "on-request", agentName: "default" },
+    env: { CODEX_REQUIREMENT_RBJ_ENABLED: "0" },
+  });
+  assert.ok(
+    governedDisambiguateTransform.prompt.includes("[REQUIREMENT_LOCK_V1] mode: single_clarification_gate"),
+    "governed disambiguate request should route through the single clarification gate"
+  );
+  assert.ok(
+    governedDisambiguateTransform.prompt.includes("Which requirement should be locked first so I can resolve the ambiguity without inventing scope or acceptance checks?"),
+    "governed disambiguate request should carry the bounded clarifying question"
+  );
+  assert.strictEqual(
+    governedDisambiguateTransform.options.planningContext.selection.signals.clarificationAction,
+    "ask_user_once",
+    "governed disambiguate planning context should persist the single-question action"
+  );
+
+  const governedDeferTransform = matcher.transformExecRequest({
+    prompt: "#requirement-locked Resolve an ambiguous request using governed defer strategy without inventing requirements.",
+    sandboxMode: "workspace-write",
+    options: { approvalPolicy: "on-request", agentName: "default" },
+    env: { CODEX_REQUIREMENT_RBJ_ENABLED: "0" },
+  });
+  assert.ok(
+    governedDeferTransform.prompt.includes("[REQUIREMENT_LOCK_V1] mode: single_clarification_gate"),
+    "governed defer request should route through the single clarification gate"
+  );
+  assert.ok(
+    governedDeferTransform.prompt.includes("Which requirement should be locked first so I can resolve the ambiguity without inventing scope or acceptance checks?"),
+    "governed defer request should carry the bounded clarifying question"
+  );
+  assert.strictEqual(
+    governedDeferTransform.options.planningContext.selection.signals.clarificationAction,
+    "ask_user_once",
+    "governed defer planning context should persist the single-question action"
   );
 
   const anchoredWebCreativeTransform = matcher.transformExecRequest({

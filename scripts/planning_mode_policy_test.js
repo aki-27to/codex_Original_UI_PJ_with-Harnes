@@ -835,6 +835,233 @@ function run() {
     "inferred discovery non-goals should be tagged as policy defaults"
   );
 
+  const governedClarifyPrompt = "Resolve an ambiguous request using the governed clarify strategy without inventing missing requirements.";
+  const governedClarifyArtifacts = buildPlanningArtifacts({
+    prompt: governedClarifyPrompt,
+    options: { agentName: "default" },
+    contract,
+  });
+  assert.strictEqual(
+    governedClarifyArtifacts.selection.taskFamily,
+    "planning_design",
+    "governed clarify requests should stay in the planning_design family"
+  );
+  assert.strictEqual(
+    governedClarifyArtifacts.selection.familyProfile.ambiguityHandling,
+    "surface_decisions",
+    "governed clarify requests should keep the surface_decisions ambiguity strategy"
+  );
+  assert.strictEqual(governedClarifyArtifacts.selection.signals.explicitUserDecisionRequired, 0, "mentioning a clarify strategy must not be misread as an explicit user-decision boundary");
+  assert.strictEqual(governedClarifyArtifacts.selection.selectedMode, "DISCOVERY", "governed clarify requests should stay in discovery until the missing anchor is clarified");
+  assert.strictEqual(governedClarifyArtifacts.selection.signals.clarificationAction, "ask_user_once", "governed clarify requests should stop at a single clarification question");
+  assert.strictEqual(
+    governedClarifyArtifacts.selection.signals.clarificationReason,
+    "governed_clarify_requires_anchor",
+    "governed clarify requests should expose the governed anchor-missing reason"
+  );
+  assert.ok(
+    governedClarifyArtifacts.selection.signals.clarificationQuestion.includes("Which requirement should be locked first"),
+    "governed clarify requests should ask for the first requirement anchor"
+  );
+  assert.deepStrictEqual(
+    governedClarifyArtifacts.selection.signals.clarificationMissingAnchors,
+    ["first_requirement_anchor"],
+    "governed clarify requests should identify the missing first requirement anchor"
+  );
+  assert.deepStrictEqual(
+    governedClarifyArtifacts.requirementContract.acceptanceChecks,
+    [],
+    "governed clarify requests should not invent acceptance checks before the clarification answer exists"
+  );
+  assert.strictEqual(governedClarifyArtifacts.requirementContract.questionPlan.askNext.length, 1, "governed clarify requests should keep exactly one next question");
+  assert.strictEqual(
+    governedClarifyArtifacts.requirementContract.questionPlan.askNext[0].question,
+    governedClarifyArtifacts.selection.signals.clarificationQuestion,
+    "governed clarify requests should surface the same single question in the requirement contract"
+  );
+  assert.strictEqual(governedClarifyArtifacts.requirementContract.status, "BLOCKED", "governed clarify requests should keep the requirement contract blocked");
+  assert.strictEqual(governedClarifyArtifacts.requirementContract.validation.verdict, "BLOCK", "governed clarify requests should keep requirement validation blocked");
+
+  const governedClarifyExactPrompt = "Resolve an ambiguous request using governed clarify strategy without inventing requirements.";
+  const governedClarifyExactArtifacts = buildPlanningArtifacts({
+    prompt: governedClarifyExactPrompt,
+    options: { agentName: "default" },
+    contract,
+  });
+  assert.strictEqual(
+    governedClarifyExactArtifacts.selection.signals.clarificationAction,
+    "ask_user_once",
+    "exact governed clarify phrasing should still stop at one clarification question"
+  );
+  assert.strictEqual(
+    governedClarifyExactArtifacts.selection.signals.clarificationReason,
+    "governed_clarify_requires_anchor",
+    "exact governed clarify phrasing should keep the governed anchor-missing reason"
+  );
+  assert.deepStrictEqual(
+    governedClarifyExactArtifacts.selection.signals.clarificationMissingAnchors,
+    ["first_requirement_anchor"],
+    "exact governed clarify phrasing should keep the same missing-anchor contract"
+  );
+  assert.deepStrictEqual(
+    governedClarifyExactArtifacts.requirementContract.acceptanceChecks,
+    [],
+    "exact governed clarify phrasing should not invent acceptance checks"
+  );
+
+  const governedDisambiguatePrompt = "Resolve an ambiguous request using the governed disambiguate strategy without inventing missing requirements.";
+  const governedDisambiguateArtifacts = buildPlanningArtifacts({
+    prompt: governedDisambiguatePrompt,
+    options: { agentName: "default" },
+    contract,
+  });
+  assert.strictEqual(
+    governedDisambiguateArtifacts.selection.taskFamily,
+    "planning_design",
+    "governed disambiguate requests should stay in the planning_design family"
+  );
+  assert.strictEqual(
+    governedDisambiguateArtifacts.selection.signals.clarificationAction,
+    "ask_user_once",
+    "governed disambiguate requests should stop at a single clarification question"
+  );
+  assert.strictEqual(
+    governedDisambiguateArtifacts.selection.signals.clarificationReason,
+    "governed_clarify_requires_anchor",
+    "governed disambiguate requests should reuse the governed anchor-missing reason"
+  );
+  assert.deepStrictEqual(
+    governedDisambiguateArtifacts.selection.signals.clarificationMissingAnchors,
+    ["first_requirement_anchor"],
+    "governed disambiguate requests should identify the first requirement anchor as missing"
+  );
+  assert.deepStrictEqual(
+    governedDisambiguateArtifacts.requirementContract.acceptanceChecks,
+    [],
+    "governed disambiguate requests should not invent acceptance checks before the anchor exists"
+  );
+  assert.strictEqual(
+    governedDisambiguateArtifacts.requirementContract.status,
+    "BLOCKED",
+    "governed disambiguate requests should keep the requirement contract blocked"
+  );
+  assert.strictEqual(
+    governedDisambiguateArtifacts.requirementContract.validation.verdict,
+    "BLOCK",
+    "governed disambiguate requests should keep requirement validation blocked"
+  );
+
+  const governedDeferPrompt = "Resolve an ambiguous request using the governed defer strategy without inventing missing requirements.";
+  const governedDeferArtifacts = buildPlanningArtifacts({
+    prompt: governedDeferPrompt,
+    options: { agentName: "default" },
+    contract,
+  });
+  assert.strictEqual(
+    governedDeferArtifacts.selection.taskFamily,
+    "planning_design",
+    "governed defer requests should stay in the planning_design family"
+  );
+  assert.strictEqual(
+    governedDeferArtifacts.selection.familyProfile.ambiguityHandling,
+    "surface_decisions",
+    "governed defer requests should keep the surface_decisions ambiguity strategy"
+  );
+  assert.strictEqual(governedDeferArtifacts.selection.signals.explicitUserDecisionRequired, 0, "mentioning a defer strategy must not be misread as an explicit user-decision boundary");
+  assert.strictEqual(governedDeferArtifacts.selection.selectedMode, "DISCOVERY", "governed defer requests should stay in discovery until the missing anchor is clarified");
+  assert.strictEqual(governedDeferArtifacts.selection.signals.clarificationAction, "ask_user_once", "governed defer requests should stop at a single clarification question");
+  assert.ok(
+    governedDeferArtifacts.selection.signals.clarificationQuestion.includes("Which requirement should be locked first"),
+    "governed defer requests should ask for the first requirement anchor"
+  );
+  assert.deepStrictEqual(
+    governedDeferArtifacts.requirementContract.acceptanceChecks,
+    [],
+    "governed defer requests should not invent acceptance checks before the clarification answer exists"
+  );
+  assert.strictEqual(governedDeferArtifacts.requirementContract.questionPlan.askNext.length, 1, "governed defer requests should keep exactly one next question");
+  assert.strictEqual(
+    governedDeferArtifacts.requirementContract.questionPlan.askNext[0].question,
+    governedDeferArtifacts.selection.signals.clarificationQuestion,
+    "governed defer requests should surface the same single question in the requirement contract"
+  );
+  assert.strictEqual(governedDeferArtifacts.requirementContract.status, "BLOCKED", "governed defer requests should keep the requirement contract blocked");
+  assert.strictEqual(governedDeferArtifacts.requirementContract.validation.verdict, "BLOCK", "governed defer requests should keep requirement validation blocked");
+
+  const governedDeferExactPrompt = "Resolve an ambiguous request using governed defer strategy without inventing requirements.";
+  const governedDeferExactArtifacts = buildPlanningArtifacts({
+    prompt: governedDeferExactPrompt,
+    options: { agentName: "default" },
+    contract,
+  });
+  assert.strictEqual(
+    governedDeferExactArtifacts.selection.signals.clarificationAction,
+    "ask_user_once",
+    "exact governed defer phrasing should still stop at one clarification question"
+  );
+  assert.strictEqual(
+    governedDeferExactArtifacts.selection.signals.clarificationReason,
+    "governed_clarify_requires_anchor",
+    "exact governed defer phrasing should keep the governed anchor-missing reason"
+  );
+  assert.deepStrictEqual(
+    governedDeferExactArtifacts.selection.signals.clarificationMissingAnchors,
+    ["first_requirement_anchor"],
+    "exact governed defer phrasing should keep the same missing-anchor contract"
+  );
+  assert.deepStrictEqual(
+    governedDeferExactArtifacts.requirementContract.acceptanceChecks,
+    [],
+    "exact governed defer phrasing should not invent acceptance checks"
+  );
+
+  const boundedAssumptionPrompt = "Resolve an ambiguous request using governed bounded_assumption strategy without inventing requirements.";
+  const boundedAssumptionArtifacts = buildPlanningArtifacts({
+    prompt: boundedAssumptionPrompt,
+    options: { agentName: "default" },
+    contract,
+  });
+  assert.strictEqual(
+    boundedAssumptionArtifacts.selection.taskFamily,
+    "planning_design",
+    "bounded_assumption requests should stay in the planning_design family"
+  );
+  assert.strictEqual(
+    boundedAssumptionArtifacts.selection.familyProfile.ambiguityHandling,
+    "bounded_assumption",
+    "bounded_assumption requests should honor the explicitly requested ambiguity strategy"
+  );
+  assert.strictEqual(
+    boundedAssumptionArtifacts.selection.signals.explicitUserDecisionRequired,
+    0,
+    "bounded_assumption directives must not be misread as an explicit user-decision boundary"
+  );
+  assert.strictEqual(
+    boundedAssumptionArtifacts.selection.selectedMode,
+    "NORMAL",
+    "bounded_assumption directives without blocking gaps should remain execution-ready"
+  );
+  assert.strictEqual(
+    boundedAssumptionArtifacts.selection.signals.clarificationAction,
+    "proceed",
+    "bounded_assumption directives should not stop with a synthetic needs-input clarification"
+  );
+  assert.deepStrictEqual(
+    boundedAssumptionArtifacts.requirementContract.questionPlan.askNext,
+    [],
+    "bounded_assumption directives should not echo the directive itself as a follow-up question"
+  );
+  assert.strictEqual(
+    boundedAssumptionArtifacts.requirementContract.status,
+    "LOCKED",
+    "bounded_assumption directives should lock once the policy can interpret them without inventing requirements"
+  );
+  assert.strictEqual(
+    boundedAssumptionArtifacts.requirementContract.validation.verdict,
+    "PASS",
+    "bounded_assumption directives should pass requirement validation after the false ambiguity signals are removed"
+  );
+
   const markerPrompt = [
     "[FIXTURE_SCENARIO] DISCOVERY_SAMPLE",
     "[BASELINE_PROFILE] measured",

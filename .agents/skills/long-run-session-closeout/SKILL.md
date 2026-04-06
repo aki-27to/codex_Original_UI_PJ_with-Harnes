@@ -1,3 +1,8 @@
+---
+name: "long-run-session-closeout"
+description: "Use when closing a long-running session so verifier state, acceptance criteria, unresolved issues, and the next-session brief are captured without false completion."
+---
+
 # long-run-session-closeout
 
 ## いつ使うか

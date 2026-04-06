@@ -3,9 +3,9 @@
 - goalStatus: OPERATIONALLY_COMPLETE
 - subjectiveGoalStatus: SUBJECTIVE_AGI_NEAR_COMPLETE
 - subjectiveCriteriaMet: true
-- subjectiveCriteriaWindow: 8/7
-- generatedAt: 2026-04-06T10:26:22.120Z
-- completionVersion: 2026-04-04.r1
+- subjectiveCriteriaWindow: 9/7
+- generatedAt: 2026-04-06T14:51:42.576Z
+- completionVersion: 2026-04-06.r2
 - decisionBasis: live_truth_strict_operational_criteria
 
 ## Current Values
@@ -20,7 +20,7 @@
 - blockedSubtasks: 0
 - integrationPendingCount: 0
 - ambiguousInstructionStatus: observed
-- ambiguousInstructionEvidenceCount: 24
+- ambiguousInstructionEvidenceCount: 39
 - ambiguousInstructionScore: 1
 - missingContextScore: 1
 - browserToolFlakinessScore: 1

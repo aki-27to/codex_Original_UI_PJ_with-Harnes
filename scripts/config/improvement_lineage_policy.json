@@ -4,6 +4,8 @@
   "lineageWindow": 12,
   "minimumDistinctComparisons": 3,
   "improvementThreshold": 0.01,
+  "highScoreActivationThreshold": 0.98,
+  "highScoreImprovementThreshold": 0.005,
   "riskRegressionThreshold": 0.005,
   "versionPrefix": "lineage"
 }

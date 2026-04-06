@@ -580,13 +580,39 @@ function createAgiBundle({
     profile: "agi_v1",
     laneId: "public",
     suiteId: "agi_v1_live",
+    manifest: {
+      dataset: [
+        {
+          id: "fixture-dataset-governed-memory-public",
+          name: "Governed Memory Public Fixture Dataset",
+          supportStatus: "supported",
+        },
+      ],
+      promptTemplate: [
+        {
+          id: "fixture-prompt-template-governed-memory-public",
+          name: "Governed Memory Public Fixture Prompt Template",
+          supportStatus: "supported",
+        },
+      ],
+      splitIds: {
+        trainSuiteIds: ["public-train"],
+        devSuiteIds: ["dev-suite"],
+        selectionSuiteIds: ["hidden-selection"],
+      },
+    },
     candidate: {
       generatedAt,
       runId,
+      profile: "agi_v1",
       candidateId,
       rawFinalScore,
       displayFinalScore,
       blockingReasons: blockedReasons || [],
+      gateStatus: {
+        allGatesPass: !(Array.isArray(blockedReasons) && blockedReasons.includes("critical_gate_failure")),
+        allCriticalMetricsSupported: true,
+      },
       familySummaries: {
         G_breadth: family(0.78, 0.7, "supported", {
           matrix: coverageRows.map(([domainFamily, domainScore]) => ({ domainFamily, domainScore })),

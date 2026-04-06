@@ -1,11 +1,11 @@
 {
   "schema": "governed-autonomous-learning-status-public.v1",
-  "generatedAt": "2026-04-05T20:48:53.467Z",
+  "generatedAt": "2026-04-06T14:51:42.572Z",
   "workspaceId": "5c839dfeef8b555f",
   "summary": {
     "queued": 0,
     "running": 0,
-    "blocked": 0,
+    "blocked": 1,
     "passed": 2,
     "failed": 0,
     "revoked": 0,
@@ -13,12 +13,12 @@
     "verifiedNeutral": 0,
     "verifiedNegative": 0,
     "verifiedHarmful": 0,
-    "insufficientEvidence": 0,
-    "blockedCount": 0,
-    "insufficientEvidenceCount": 0,
+    "insufficientEvidence": 1,
+    "blockedCount": 1,
+    "insufficientEvidenceCount": 1,
     "selfDirectedCount": 2,
     "verifiedPositiveSelfDirectedCount": 2,
-    "novelProbeCount": 2,
+    "novelProbeCount": 3,
     "novelProbePositiveCount": 2
   },
   "entries": [
@@ -73,6 +73,32 @@
       "lastUpdatedAt": "2026-04-05T18:23:24.153Z",
       "source": "subjective_goal",
       "publicSummary": "ambiguous instruction evidence below subjective threshold"
+    },
+    {
+      "agendaId": "agenda_a6a25de718",
+      "bottleneckId": "gap_a38e44e1da",
+      "bottleneckClass": "evidence bottleneck",
+      "targetFamily": "default",
+      "targetCategory": "",
+      "remediationHypothesis": "required evidence is captured and linked",
+      "proposedTaskFamily": "deterministic_code",
+      "proposedEvalProbe": "probe:b822e703",
+      "expectedEvidenceClass": "missing_evidence_capture",
+      "safetyPosture": "proposal_only_until_evidence",
+      "successCriterion": "required evidence is captured and linked",
+      "priority": 80,
+      "status": "proposal only",
+      "result": "manual_review_recommended",
+      "remediationEffect": "insufficient_evidence",
+      "blockedReason": "no_safe_autonomous_template",
+      "cooldownHours": 12,
+      "retryBudget": 3,
+      "attemptCount": 0,
+      "revertCondition": "captured evidence is invalidated",
+      "stopCondition": "required evidence cannot be captured in current context",
+      "lastUpdatedAt": "2026-04-06T14:51:42.572Z",
+      "source": "memory_eval",
+      "publicSummary": "subjective current values do not reflect history aware counts consistently"
     }
   ]
 }
