@@ -1,6 +1,6 @@
 {
   "schema": "memory-eval-suite.v1",
-  "version": "2026-04-04.r1",
+  "version": "2026-04-06.r1",
   "checks": [
     {
       "id": "canonical_store_present",
@@ -145,6 +145,62 @@
     {
       "id": "goal_completion_not_yet_when_criteria_fail",
       "title": "Operational goal completion remains NOT_YET when thresholds are not satisfied"
+    },
+    {
+      "id": "goal_artifact_subjective_fields_present",
+      "title": "Operational goal completion artifact exposes subjective summary fields"
+    },
+    {
+      "id": "subjective_goal_artifact_present",
+      "title": "Subjective goal completion artifact is generated"
+    },
+    {
+      "id": "subjective_goal_supporting_artifacts_present",
+      "title": "Subjective goal completion artifact points at supporting public artifacts that exist"
+    },
+    {
+      "id": "history_aware_subjective_counts_consistent",
+      "title": "Subjective completion counts preserve history-aware lineage and probe evidence"
+    },
+    {
+      "id": "subjective_goal_not_yet_when_subjective_criteria_fail",
+      "title": "Subjective goal completion remains NOT_YET when strict subjective criteria are not satisfied"
+    },
+    {
+      "id": "primary_lane_latest_pack_adoption_reflected",
+      "title": "Primary lane latest-pack adoption count is reflected across live public artifacts"
+    },
+    {
+      "id": "primary_lane_effective_contribution_reflected",
+      "title": "Primary lane effective contribution count is reflected across live public artifacts"
+    },
+    {
+      "id": "learning_adoption_status_present",
+      "title": "Learning adoption status is generated from causal trace and lane projections"
+    },
+    {
+      "id": "self_directed_probe_surface_present",
+      "title": "Self-directed probe artifact exposes required counts, evidence refs, and thresholds"
+    },
+    {
+      "id": "self_directed_probe_status_present",
+      "title": "Self-directed probe status is generated from autonomous remediation outcomes"
+    },
+    {
+      "id": "novel_task_acquisition_surface_present",
+      "title": "Novel task acquisition artifact exposes required counts, evidence refs, and thresholds"
+    },
+    {
+      "id": "novel_task_acquisition_present",
+      "title": "Novel task acquisition surface is generated from under-evidenced remediation areas"
+    },
+    {
+      "id": "subjective_window_threshold_enforced",
+      "title": "Subjective completion window thresholds are reflected in both goal and subjective artifacts"
+    },
+    {
+      "id": "subjective_complete_case_requires_all_strict_thresholds",
+      "title": "A subjective complete status requires all strict thresholds to be satisfied"
     },
     {
       "id": "public_hygiene_no_unknown_memory_type",

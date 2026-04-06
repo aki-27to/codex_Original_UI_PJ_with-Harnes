@@ -1,7 +1,7 @@
 # Memory Eval Public Status
 
 - Status: PASS
-- Generated At: 2026-04-05T20:48:53.668Z
+- Generated At: 2026-04-06T10:26:22.313Z
 
 ## Checks
 - canonical_store_present: PASS (canonical event log and index are present)
@@ -40,12 +40,20 @@
 - goal_completion_supporting_artifacts_present: PASS (goal completion supporting artifacts are present)
 - goal_completion_status_consistent: PASS (operational goal completion status matches readiness, debt, and learning state)
 - goal_completion_not_yet_when_criteria_fail: PASS (goal completion artifact does not over-claim completion when thresholds fail)
+- goal_artifact_subjective_fields_present: PASS (goal completion artifact exposes subjective summary fields)
 - subjective_goal_artifact_present: PASS (subjective goal completion artifact is present)
 - subjective_goal_supporting_artifacts_present: PASS (subjective goal supporting artifacts are present)
+- history_aware_subjective_counts_consistent: PASS (subjective current values preserve history-aware counts and non-worsening state)
 - subjective_goal_not_yet_when_subjective_criteria_fail: PASS (subjective goal completion artifact does not over-claim completion when subjective thresholds fail)
+- primary_lane_latest_pack_adoption_reflected: PASS (primary lane latest-pack adoption is reflected across projection, goal, and subjective artifacts)
+- primary_lane_effective_contribution_reflected: PASS (primary lane effective contribution is reflected across projection, goal, and subjective artifacts)
 - learning_adoption_status_present: PASS (learning adoption status is present)
+- self_directed_probe_surface_present: PASS (self-directed probe surface exposes required counts and thresholds)
 - self_directed_probe_status_present: PASS (self-directed probe status is present)
+- novel_task_acquisition_surface_present: PASS (novel task acquisition surface exposes required counts and thresholds)
 - novel_task_acquisition_present: PASS (novel task acquisition status is present)
+- subjective_window_threshold_enforced: PASS (subjective completion window size and pass count are enforced consistently)
+- subjective_complete_case_requires_all_strict_thresholds: PASS (subjective completion only appears when all strict thresholds are satisfied)
 - public_hygiene_no_unknown_memory_type: PASS (public artifacts do not expose unknown memoryType)
 - public_hygiene_validation_refs_present: PASS (validation references are populated)
 - public_hygiene_no_blank_task_outcome_status: PASS (task outcome statuses are populated)

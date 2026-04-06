@@ -200,3 +200,17 @@ Comparison artifacts:
   - `output/memory_public/causal_effectiveness_summary.json`
 
 Use `goal_completion_status.json` as the top-level operational status file. It remains `NOT_YET` unless all strict live criteria are met.
+
+## 2026-04-06 Subjective Goal Map
+
+- Operational truth:
+  - `output/agi_readiness/goal_completion_status.json`
+- Subjective truth:
+  - `output/agi_readiness/subjective_goal_completion_status.json`
+- Subjective supporting artifacts:
+  - `output/agi_readiness/learning_adoption_status.json`
+  - `output/agi_readiness/self_directed_probe_status.json`
+  - `output/agi_readiness/novel_task_acquisition.json`
+  - `output/memory_public/export_manifest.json`
+
+`SUBJECTIVE_AGI_NEAR_COMPLETE` is an upper gate on top of `OPERATIONALLY_COMPLETE`. Missing supporting artifacts, missing history-aware counts, or a failed strict threshold must keep the subjective status at `NOT_YET`.

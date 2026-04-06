@@ -112,6 +112,7 @@
       "ambiguousInstructionMinEvidence": 20,
       "adversarialConflictingInstruction": 0.9,
       "degradedToolOutputs": 0.9,
+      "minNovelProbePositiveEvidence": 1,
       "minConsecutivePassingExports": 7,
       "stabilityWindowSize": 5
     },

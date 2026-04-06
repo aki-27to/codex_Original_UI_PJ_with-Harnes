@@ -50,6 +50,177 @@ function isUuidLike(value) {
   return typeof value === "string" && /\b[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}\b/i.test(value);
 }
 
+function mergeFixture(baseValue, overrideValue) {
+  if (overrideValue === undefined) return baseValue;
+  if (Array.isArray(overrideValue)) return overrideValue;
+  if (baseValue && typeof baseValue === "object" && overrideValue && typeof overrideValue === "object") {
+    const merged = { ...baseValue };
+    Object.entries(overrideValue).forEach(([key, value]) => {
+      merged[key] = mergeFixture(baseValue[key], value);
+    });
+    return merged;
+  }
+  return overrideValue;
+}
+
+function createStrictSubjectiveArgs(workspaceRoot, overrides = {}) {
+  const base = {
+    workspaceRoot,
+    goalCompletionStatus: {
+      goalStatus: "OPERATIONALLY_COMPLETE",
+      currentValues: {
+        stableCoverageBreadth: 1,
+        supportedCoverageBreadth: 1,
+        rawFinalScore: 0.99,
+        R_robust: 0.99,
+        H_horizon: 0.99,
+        catastrophicRiskCvar: 0.001,
+        openDebtCount: 0,
+        blockedSubtasks: 0,
+        integrationPendingCount: 0,
+        runningAgendaCount: 0,
+        verifiedPositiveRemediations: 5,
+        primaryLaneSelectedInLatestPackCount: 1,
+        primaryLaneEffectiveContributionCount: 1,
+        primaryLaneCausalUsageCount: 3,
+        harmfulCausalRatio: 0,
+        missingContextScore: 1,
+        browserToolFlakinessScore: 1,
+        ambiguousInstructionStatus: "observed",
+        ambiguousInstructionEvidenceCount: 24,
+        ambiguousInstructionScore: 1,
+        adversarialConflictingScore: 1,
+        degradedToolOutputsScore: 1,
+      },
+    },
+    readinessArtifacts: {
+      robustnessBreakdown: {
+        categories: [
+          { categoryId: "ambiguous_instruction", status: "observed", evidenceCount: 24, score: 1 },
+          { categoryId: "missing_context", status: "observed", evidenceCount: 5, score: 1 },
+          { categoryId: "browser_tool_flakiness", status: "observed", evidenceCount: 8, score: 1 },
+          { categoryId: "adversarial_conflicting_instruction", status: "observed", evidenceCount: 4, score: 1 },
+          { categoryId: "degraded_tool_outputs", status: "observed", evidenceCount: 5, score: 1 },
+        ],
+      },
+    },
+    continuityArtifacts: { artifact: { blockedSubtasks: 0, integrationPendingCount: 0 } },
+    continuityDebt: { summary: { openDebtCount: 0 } },
+    autonomousLearningStatus: {
+      summary: {
+        verifiedPositive: 5,
+        running: 0,
+      },
+      entries: [
+        { source: "self_directed_probe", remediationEffect: "verified_positive", status: "passed", proposedEvalProbe: "probe:one", targetFamily: "planning", agendaId: "agenda-one", lastUpdatedAt: "2026-04-04T13:10:00.000Z" },
+        { source: "subjective_goal", remediationEffect: "verified_positive", status: "passed", proposedEvalProbe: "probe:two", targetFamily: "default", agendaId: "agenda-two", lastUpdatedAt: "2026-04-04T13:20:00.000Z" },
+      ],
+    },
+    learningAdoptionStatus: {
+      primaryLaneKey: "openai_primary",
+      selectedInLatestPackCount: 1,
+      consideredForPackCount: 3,
+      effectiveContributionCount: 1,
+      likelyContributoryCount: 3,
+      rolledBackAfterHarmCount: 0,
+      adoptionWindow: { mode: "latest_pack_plus_recent_causal_trace", latestPackOnly: true, recentAdoptionsLimit: 12 },
+      requiredThresholds: {
+        selectedInLatestPackCount: 1,
+        effectiveContributionCount: 1,
+        likelyContributoryCount: 3,
+        causalUsageCount: 3,
+        maxRolledBackAfterHarmCount: 0,
+      },
+      summary: {
+        selectedInLatestPackCount: 1,
+        consideredForPackCount: 3,
+        likelyContributoryCount: 3,
+        harmfulCount: 0,
+        rolledBackAfterHarmCount: 0,
+      },
+      laneSummaries: {
+        openai_primary: {
+          selectedInLatestPackCount: 1,
+          consideredForPackCount: 3,
+          effectiveContributionCount: 1,
+          causalUsageCount: 3,
+          likelyContributoryCount: 3,
+          harmfulCount: 0,
+          rolledBackAfterHarmCount: 0,
+        },
+      },
+    },
+    selfDirectedProbeStatus: {
+      probeCount: 2,
+      positiveProbeCount: 2,
+      negativeProbeCount: 0,
+      novelProbeCount: 2,
+      novelPositiveCount: 2,
+      recentProbeFamilies: ["planning", "default"],
+      recentPositiveEvidenceRefs: ["agenda_agenda-one", "agenda_agenda-two"],
+      requiredThresholds: {
+        positiveProbeCount: 2,
+        novelPositiveCount: 1,
+        maxInsufficientEvidenceCount: 0,
+      },
+      summary: {
+        selfDirectedCount: 2,
+        probeCount: 2,
+        positiveProbeCount: 2,
+        negativeProbeCount: 0,
+        verifiedPositiveSelfDirectedCount: 2,
+        blockedCount: 0,
+        insufficientEvidenceCount: 0,
+        novelProbeCount: 2,
+        novelPositiveCount: 2,
+        novelProbePositiveCount: 2,
+      },
+    },
+    novelTaskAcquisition: {
+      novelFamilyCount: 2,
+      novelTaskCount: 2,
+      positiveNovelTaskCount: 2,
+      recentNovelTasks: [
+        { targetCategory: "ambiguous_instruction", targetFamily: "planning", positiveEvidence: true },
+        { targetCategory: "self_directed_probe", targetFamily: "default", positiveEvidence: true },
+      ],
+      positiveEvidenceRefs: ["agenda_agenda-one", "agenda_agenda-two"],
+      requiredThresholds: {
+        positiveNovelTaskCount: 1,
+      },
+      summary: { positiveCount: 2 },
+      items: [{ targetCategory: "ambiguous_instruction", positiveEvidence: true }],
+    },
+    causalEffectivenessSummary: {
+      summary: {
+        harmfulCausalRatio: 0,
+        likelyContributoryCount: 3,
+      },
+    },
+    distinctImprovementSummary: {
+      distinctImprovementCount: 3,
+      effectiveDistinctImprovementCount: 3,
+      distinctRegressionCount: 0,
+      effectiveDistinctRegressionCount: 0,
+      nonWorsening: true,
+      effectiveNonWorsening: true,
+    },
+    previousSubjectiveHistory: {
+      entries: Array.from({ length: 6 }, (_, index) => ({
+        exportSessionId: `strict-pass-${index}`,
+        baseStatus: "criteria_met",
+        subjectiveGoalStatus: "SUBJECTIVE_AGI_NEAR_COMPLETE",
+        distinctImprovementCount: 3,
+        distinctRegressionCount: 0,
+        verifiedPositiveSelfDirectedRemediations: 2,
+        novelProbePositiveCount: 2,
+      })),
+    },
+    exportSessionId: "strict-subjective-pass",
+  };
+  return mergeFixture(base, overrides);
+}
+
 function main() {
   const tempRoot = fs.mkdtempSync(path.join(os.tmpdir(), "governed-memory-public-"));
   [
@@ -218,12 +389,20 @@ function main() {
     "goal_completion_supporting_artifacts_present",
     "goal_completion_status_consistent",
     "goal_completion_not_yet_when_criteria_fail",
+    "goal_artifact_subjective_fields_present",
     "subjective_goal_artifact_present",
     "subjective_goal_supporting_artifacts_present",
+    "history_aware_subjective_counts_consistent",
     "subjective_goal_not_yet_when_subjective_criteria_fail",
+    "primary_lane_latest_pack_adoption_reflected",
+    "primary_lane_effective_contribution_reflected",
     "learning_adoption_status_present",
+    "self_directed_probe_surface_present",
     "self_directed_probe_status_present",
+    "novel_task_acquisition_surface_present",
     "novel_task_acquisition_present",
+    "subjective_window_threshold_enforced",
+    "subjective_complete_case_requires_all_strict_thresholds",
     "public_hygiene_no_unknown_memory_type",
     "public_hygiene_validation_refs_present",
     "public_hygiene_no_blank_task_outcome_status",
@@ -397,8 +576,12 @@ function main() {
   assert(goalCompletion.causalSafetySummary && typeof goalCompletion.causalSafetySummary === "object", "goal completion artifact must expose causalSafetySummary");
   assert(goalCompletion.history && Number.isFinite(Number(goalCompletion.history.consecutivePassingExports)), "goal completion artifact must expose goal history summary");
   assert.strictEqual(typeof goalCompletion.subjectiveGoalStatusPath, "string", "goal completion artifact must expose subjective companion path");
+  assert.strictEqual(typeof goalCompletion.subjectiveGoalStatus, "string", "goal completion artifact must expose subjective goal status");
   assert.strictEqual(typeof goalCompletion.subjectiveCriteriaMet, "boolean", "goal completion artifact must expose subjective criteria state");
+  assert(Array.isArray(goalCompletion.subjectiveFailedCriteria), "goal completion artifact must expose subjective failed criteria");
+  assert(Array.isArray(goalCompletion.subjectiveWhyNotYet), "goal completion artifact must expose subjective why-not-yet reasons");
   assert(Number.isFinite(Number(goalCompletion.subjectiveCriteriaWindowPassCount)), "goal completion artifact must expose subjective criteria window count");
+  assert(Number.isFinite(Number(goalCompletion.subjectiveCriteriaWindowSize)), "goal completion artifact must expose subjective criteria window size");
 
   const subjectiveGoal = JSON.parse(fs.readFileSync(path.join(readinessRoot, "subjective_goal_completion_status.json"), "utf8"));
   assert.strictEqual(subjectiveGoal.schema, "agi-subjective-goal-completion-status.v1", "subjective goal completion artifact must expose expected schema");
@@ -416,15 +599,37 @@ function main() {
 
   const learningAdoptionStatus = JSON.parse(fs.readFileSync(path.join(readinessRoot, "learning_adoption_status.json"), "utf8"));
   assert.strictEqual(learningAdoptionStatus.schema, "agi-readiness-learning-adoption-status.v1", "learning adoption artifact must expose expected schema");
+  assert.strictEqual(learningAdoptionStatus.primaryLaneKey, "openai_primary", "learning adoption artifact must name the primary lane");
+  assert(Number.isFinite(Number(learningAdoptionStatus.selectedInLatestPackCount)), "learning adoption artifact must expose primary selected count");
+  assert(Number.isFinite(Number(learningAdoptionStatus.consideredForPackCount)), "learning adoption artifact must expose primary considered count");
+  assert(Number.isFinite(Number(learningAdoptionStatus.effectiveContributionCount)), "learning adoption artifact must expose primary effective contribution count");
+  assert(Number.isFinite(Number(learningAdoptionStatus.likelyContributoryCount)), "learning adoption artifact must expose primary likely contributory count");
+  assert(Number.isFinite(Number(learningAdoptionStatus.rolledBackAfterHarmCount)), "learning adoption artifact must expose primary rollback count");
+  assert(learningAdoptionStatus.adoptionWindow && typeof learningAdoptionStatus.adoptionWindow === "object", "learning adoption artifact must expose adoptionWindow");
+  assert(learningAdoptionStatus.requiredThresholds && typeof learningAdoptionStatus.requiredThresholds === "object", "learning adoption artifact must expose requiredThresholds");
   assert(learningAdoptionStatus.summary && typeof learningAdoptionStatus.summary === "object", "learning adoption artifact must expose summary");
   assert(learningAdoptionStatus.laneSummaries && typeof learningAdoptionStatus.laneSummaries === "object", "learning adoption artifact must expose lane summaries");
 
   const selfDirectedProbeStatus = JSON.parse(fs.readFileSync(path.join(readinessRoot, "self_directed_probe_status.json"), "utf8"));
   assert.strictEqual(selfDirectedProbeStatus.schema, "agi-readiness-self-directed-probe-status.v1", "self-directed probe artifact must expose expected schema");
+  assert(Number.isFinite(Number(selfDirectedProbeStatus.probeCount)), "self-directed probe artifact must expose probeCount");
+  assert(Number.isFinite(Number(selfDirectedProbeStatus.positiveProbeCount)), "self-directed probe artifact must expose positiveProbeCount");
+  assert(Number.isFinite(Number(selfDirectedProbeStatus.negativeProbeCount)), "self-directed probe artifact must expose negativeProbeCount");
+  assert(Number.isFinite(Number(selfDirectedProbeStatus.novelProbeCount)), "self-directed probe artifact must expose novelProbeCount");
+  assert(Number.isFinite(Number(selfDirectedProbeStatus.novelPositiveCount)), "self-directed probe artifact must expose novelPositiveCount");
+  assert(Array.isArray(selfDirectedProbeStatus.recentProbeFamilies), "self-directed probe artifact must expose recentProbeFamilies");
+  assert(Array.isArray(selfDirectedProbeStatus.recentPositiveEvidenceRefs), "self-directed probe artifact must expose recentPositiveEvidenceRefs");
+  assert(selfDirectedProbeStatus.requiredThresholds && typeof selfDirectedProbeStatus.requiredThresholds === "object", "self-directed probe artifact must expose requiredThresholds");
   assert(selfDirectedProbeStatus.summary && typeof selfDirectedProbeStatus.summary === "object", "self-directed probe artifact must expose summary");
 
   const novelTaskAcquisition = JSON.parse(fs.readFileSync(path.join(readinessRoot, "novel_task_acquisition.json"), "utf8"));
   assert.strictEqual(novelTaskAcquisition.schema, "agi-readiness-novel-task-acquisition.v1", "novel task acquisition artifact must expose expected schema");
+  assert(Number.isFinite(Number(novelTaskAcquisition.novelFamilyCount)), "novel task acquisition artifact must expose novelFamilyCount");
+  assert(Number.isFinite(Number(novelTaskAcquisition.novelTaskCount)), "novel task acquisition artifact must expose novelTaskCount");
+  assert(Number.isFinite(Number(novelTaskAcquisition.positiveNovelTaskCount)), "novel task acquisition artifact must expose positiveNovelTaskCount");
+  assert(Array.isArray(novelTaskAcquisition.recentNovelTasks), "novel task acquisition artifact must expose recentNovelTasks");
+  assert(Array.isArray(novelTaskAcquisition.positiveEvidenceRefs), "novel task acquisition artifact must expose positiveEvidenceRefs");
+  assert(novelTaskAcquisition.requiredThresholds && typeof novelTaskAcquisition.requiredThresholds === "object", "novel task acquisition artifact must expose requiredThresholds");
   assert(Array.isArray(novelTaskAcquisition.items), "novel task acquisition artifact must expose items");
 
   const exportManifest = JSON.parse(fs.readFileSync(path.join(outputRoot, "export_manifest.json"), "utf8"));
@@ -520,6 +725,10 @@ function main() {
   const strictArtifacts = buildGovernedMemoryPublicArtifacts({ workspaceRoot: tempRoot, requireWrittenPublicArtifacts: true });
   const strictRobustnessCheck = strictArtifacts.evalStatus.checks.find((entry) => entry.id === "robustness_breakdown_exported");
   assert(strictRobustnessCheck && strictRobustnessCheck.status === "FAIL", "strict public eval must fail when the tracked robustness breakdown artifact is missing");
+  fs.unlinkSync(path.join(readinessRoot, "subjective_goal_completion_status.json"));
+  const strictArtifactsMissingSubjective = buildGovernedMemoryPublicArtifacts({ workspaceRoot: tempRoot, requireWrittenPublicArtifacts: true });
+  const strictSubjectiveCheck = strictArtifactsMissingSubjective.evalStatus.checks.find((entry) => entry.id === "subjective_goal_artifact_present");
+  assert(strictSubjectiveCheck && strictSubjectiveCheck.status === "FAIL", "strict public eval must fail when the tracked subjective goal artifact is missing");
 
   const syntheticGoal = buildGoalCompletionStatus({
     workspaceRoot: tempRoot,
@@ -598,8 +807,7 @@ function main() {
   assert.strictEqual(syntheticGoal.goalStatus, "OPERATIONALLY_COMPLETE", "synthetic fully-satisfied criteria must yield OPERATIONALLY_COMPLETE");
   assert(Array.isArray(syntheticGoal.whyNotYet) && syntheticGoal.whyNotYet.length === 0, "synthetic operational completion case must have no unmet criteria");
 
-  const syntheticSubjective = buildSubjectiveGoalCompletionStatus({
-    workspaceRoot: tempRoot,
+  const syntheticSubjective = buildSubjectiveGoalCompletionStatus(createStrictSubjectiveArgs(tempRoot, {
     goalCompletionStatus: syntheticGoal,
     readinessArtifacts: {
       readiness: syntheticGoal.liveMetricsSnapshot || {
@@ -622,77 +830,84 @@ function main() {
         ],
       },
     },
-    continuityArtifacts: { artifact: { blockedSubtasks: 0, integrationPendingCount: 0 } },
-    continuityDebt: { summary: { openDebtCount: 0 } },
-    autonomousLearningStatus: {
-      summary: {
-        verifiedPositive: 3,
-        running: 0,
-      },
-      entries: [
-        { source: "self_directed_probe", remediationEffect: "verified_positive", status: "passed", proposedEvalProbe: "probe:missing_context" },
-        { source: "self_directed_probe", remediationEffect: "verified_positive", status: "passed", proposedEvalProbe: "probe:browser_tool_flakiness" },
-        { source: "memory_eval", remediationEffect: "verified_positive", status: "passed", proposedEvalProbe: "probe:ambiguous_instruction" },
-      ],
-    },
+  }));
+  assert.strictEqual(syntheticSubjective.subjectiveGoalStatus, "SUBJECTIVE_AGI_NEAR_COMPLETE", "synthetic fully-satisfied subjective criteria must yield SUBJECTIVE_AGI_NEAR_COMPLETE");
+  assert(Array.isArray(syntheticSubjective.subjectiveWhyNotYet) && syntheticSubjective.subjectiveWhyNotYet.length === 0, "synthetic subjective completion case must have no unmet criteria");
+
+  const subjectiveFailsWithoutPrimarySelection = buildSubjectiveGoalCompletionStatus(createStrictSubjectiveArgs(tempRoot, {
     learningAdoptionStatus: {
-      summary: {
-        likelyContributoryCount: 4,
-        harmfulCount: 0,
-        rolledBackHarmCount: 1,
-      },
+      selectedInLatestPackCount: 0,
       laneSummaries: {
         openai_primary: {
-          selectedInLatestPackCount: 1,
-          effectiveContributionCount: 1,
-          causalUsageCount: 4,
-          likelyContributoryCount: 3,
-          harmfulCount: 0,
-          rolledBackHarmCount: 1,
-        },
-        anthropic_secondary: {
           selectedInLatestPackCount: 0,
-          effectiveContributionCount: 0,
-          causalUsageCount: 0,
         },
       },
     },
+  }));
+  assert.strictEqual(subjectiveFailsWithoutPrimarySelection.subjectiveGoalStatus, "NOT_YET", "subjective completion must remain NOT_YET when primary lane latest-pack selection is zero");
+
+  const subjectiveFailsWithoutPrimaryContribution = buildSubjectiveGoalCompletionStatus(createStrictSubjectiveArgs(tempRoot, {
+    learningAdoptionStatus: {
+      effectiveContributionCount: 0,
+      laneSummaries: {
+        openai_primary: {
+          effectiveContributionCount: 0,
+        },
+      },
+    },
+  }));
+  assert.strictEqual(subjectiveFailsWithoutPrimaryContribution.subjectiveGoalStatus, "NOT_YET", "subjective completion must remain NOT_YET when primary lane effective contribution is zero");
+
+  const subjectiveFailsWithoutNovelEvidence = buildSubjectiveGoalCompletionStatus(createStrictSubjectiveArgs(tempRoot, {
+    previousSubjectiveHistory: {
+      entries: Array.from({ length: 6 }, (_, index) => ({
+        exportSessionId: `strict-zero-novel-${index}`,
+        baseStatus: "criteria_met",
+        subjectiveGoalStatus: "SUBJECTIVE_AGI_NEAR_COMPLETE",
+        distinctImprovementCount: 3,
+        distinctRegressionCount: 0,
+        verifiedPositiveSelfDirectedRemediations: 2,
+        novelProbePositiveCount: 0,
+      })),
+    },
     selfDirectedProbeStatus: {
+      novelPositiveCount: 0,
       summary: {
-        selfDirectedCount: 3,
-        verifiedPositiveSelfDirectedCount: 2,
-        blockedCount: 0,
-        insufficientEvidenceCount: 0,
-        novelProbeCount: 2,
-        novelProbePositiveCount: 1,
+        novelPositiveCount: 0,
+        novelProbePositiveCount: 0,
       },
     },
     novelTaskAcquisition: {
-      summary: { positiveCount: 1 },
-      items: [{ targetCategory: "ambiguous_instruction", positiveEvidence: true }],
-    },
-    causalEffectivenessSummary: {
+      positiveNovelTaskCount: 0,
       summary: {
-        harmfulCausalRatio: 0,
-        likelyContributoryCount: 4,
+        positiveCount: 0,
+      },
+      recentNovelTasks: [],
+      positiveEvidenceRefs: [],
+      items: [],
+    },
+  }));
+  assert.strictEqual(subjectiveFailsWithoutNovelEvidence.subjectiveGoalStatus, "NOT_YET", "subjective completion must remain NOT_YET when novel probe evidence is zero");
+
+  const subjectiveFailsWithInsufficientEvidence = buildSubjectiveGoalCompletionStatus(createStrictSubjectiveArgs(tempRoot, {
+    selfDirectedProbeStatus: {
+      requiredThresholds: { maxInsufficientEvidenceCount: 0 },
+      summary: {
+        insufficientEvidenceCount: 1,
       },
     },
-    distinctImprovementSummary: {
-      distinctImprovementCount: 3,
-      distinctRegressionCount: 0,
-      nonWorsening: true,
+  }));
+  assert.strictEqual(subjectiveFailsWithInsufficientEvidence.subjectiveGoalStatus, "NOT_YET", "subjective completion must remain NOT_YET when insufficient-evidence remediations are present");
+
+  const subjectiveFailsWithHarmfulCausalRatio = buildSubjectiveGoalCompletionStatus(createStrictSubjectiveArgs(tempRoot, {
+    causalEffectivenessSummary: {
+      summary: {
+        harmfulCausalRatio: 0.2,
+        likelyContributoryCount: 3,
+      },
     },
-    previousSubjectiveHistory: {
-      entries: Array.from({ length: 6 }, (_, index) => ({
-        exportSessionId: `synthetic-pass-${index}`,
-        baseStatus: "criteria_met",
-        subjectiveGoalStatus: "SUBJECTIVE_AGI_NEAR_COMPLETE",
-      })),
-    },
-    exportSessionId: "synthetic-subjective-pass",
-  });
-  assert.strictEqual(syntheticSubjective.subjectiveGoalStatus, "SUBJECTIVE_AGI_NEAR_COMPLETE", "synthetic fully-satisfied subjective criteria must yield SUBJECTIVE_AGI_NEAR_COMPLETE");
-  assert(Array.isArray(syntheticSubjective.subjectiveWhyNotYet) && syntheticSubjective.subjectiveWhyNotYet.length === 0, "synthetic subjective completion case must have no unmet criteria");
+  }));
+  assert.strictEqual(subjectiveFailsWithHarmfulCausalRatio.subjectiveGoalStatus, "NOT_YET", "subjective completion must remain NOT_YET when harmful causal ratio is above zero");
 
   const subjectiveUsesMaxVerifiedPositive = buildSubjectiveGoalCompletionStatus({
     workspaceRoot: tempRoot,

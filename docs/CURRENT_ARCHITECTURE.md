@@ -355,6 +355,8 @@ This document is the active architecture spec for the Codex App Server integrati
   - `DISCOVERY` mode keeps blocking ambiguity in proposal-only space and maps explicit stop signals to `EXTERNAL_ACTION_REQUIRED`
   - subjective `web_creative` turns now split ambiguity into three actions: proceed, ask exactly one clarifying question, or require explicit user input before implementation
   - when the clarification path is selected, the requirement guard emits a single-question gate and the streamed terminal status surfaces to HarnesUI as `needs_input` instead of a false failure
+  - ambiguity-resolution directives that explicitly ask for governed clarification, governed disambiguation, or governed deferral without inventing requirements stay in the same single-question gate: the planner withholds inferred acceptance checks, keeps the requirement contract `BLOCKED`, and surfaces only the one requirement-anchoring question until the user answers
+  - ambiguity-resolution directives that explicitly ask for governed `bounded_assumption` handling no longer self-trigger that clarify gate; the planner keeps the request execution-ready under bounded assumptions when no real blocking question remains
   - answer-only confirmation turns no longer auto-surface `[needs_input] user decision required before implementation` from heuristic `DISCOVERY` open-question detection when no explicit approval boundary or explicit user-decision signal is present; the fallback remains available for true approval-boundary / explicit-decision cases
   - `01.HarnesUI` keeps internal terminal-control errors in harness state instead of appending them to an already-final assistant bubble, and parent-dispatch retry guidance now uses an internal-only wording without the visible `[Parent Dispatch Guard]` banner text
   - `01.HarnesUI` now assigns a request-scoped idempotency key to each interactive submit, retries transient browser-side submit failures twice with short backoff, and only surfaces a terminal send failure after the retry budget is exhausted
@@ -607,3 +609,6 @@ This document is the active architecture spec for the Codex App Server integrati
   - `output/memory_public/causal_effectiveness_summary.json`
 - `goal_completion_status.json` is the strict top-level operational decision surface.
 - `OPERATIONALLY_COMPLETE` is allowed only when all live criteria pass; fixture or sample-only evidence must never be used for this decision.
+- `subjective_goal_completion_status.json` is the tracked fail-closed companion surface for subjective completion.
+- Subjective completion is a stricter gate than operational completion and depends on checked-in live export artifacts, not local-only state.
+- `learning_adoption_status.json`, `self_directed_probe_status.json`, and `novel_task_acquisition.json` are first-class public proof surfaces and are registered in `output/memory_public/export_manifest.json`.

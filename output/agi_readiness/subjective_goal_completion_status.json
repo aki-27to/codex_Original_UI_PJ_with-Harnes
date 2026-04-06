@@ -1,6 +1,6 @@
 {
   "schema": "agi-subjective-goal-completion-status.v1",
-  "generatedAt": "2026-04-05T20:48:53.469Z",
+  "generatedAt": "2026-04-06T10:26:22.122Z",
   "workspaceId": "5c839dfeef8b555f",
   "operationalGoalStatus": "OPERATIONALLY_COMPLETE",
   "subjectiveGoalStatus": "SUBJECTIVE_AGI_NEAR_COMPLETE",
@@ -134,11 +134,11 @@
     },
     {
       "id": "selfDirectedNovelProbeEvidence",
-      "detail": "self-directed novel probe positive count = 2"
+      "detail": "self-directed novel probe positive count 2 >= 1"
     },
     {
       "id": "consecutivePassingExports",
-      "detail": "consecutive subjective passing exports 7 >= 7"
+      "detail": "consecutive subjective passing exports 8 >= 7"
     }
   ],
   "subjectiveCriteria": {
@@ -169,6 +169,7 @@
     "ambiguousInstructionMinEvidence": 20,
     "adversarialConflictingInstruction": 0.9,
     "degradedToolOutputs": 0.9,
+    "minNovelProbePositiveEvidence": 1,
     "minConsecutivePassingExports": 7,
     "stabilityWindowSize": 5
   },
@@ -223,7 +224,7 @@
   ],
   "lineageSummary": {
     "schema": "agi-readiness-distinct-improvement-summary.v1",
-    "generatedAt": "2026-04-05T20:48:53.392Z",
+    "generatedAt": "2026-04-06T10:26:22.034Z",
     "workspaceId": "5c839dfeef8b555f",
     "distinctWindowSize": 2,
     "distinctComparisonCount": 2,
@@ -245,11 +246,13 @@
   },
   "learningAdoptionSummary": {
     "selectedInLatestPackCount": 14,
+    "consideredForPackCount": 10,
     "surfacedCount": 3,
     "behaviorallyReferencedCount": 3,
     "likelyContributoryCount": 3,
     "harmfulCount": 0,
     "rolledBackHarmCount": 0,
+    "rolledBackAfterHarmCount": 0,
     "familyCounts": {
       "web_creative": 9,
       "default": 4,
@@ -259,10 +262,14 @@
   },
   "autonomousLearningSummary": {
     "selfDirectedCount": 2,
+    "probeCount": 2,
+    "positiveProbeCount": 2,
+    "negativeProbeCount": 0,
     "verifiedPositiveSelfDirectedCount": 2,
     "blockedCount": 0,
     "insufficientEvidenceCount": 0,
     "novelProbeCount": 2,
+    "novelPositiveCount": 2,
     "novelProbePositiveCount": 2
   },
   "robustnessSummary": {
@@ -307,7 +314,7 @@
   },
   "history": {
     "consecutiveRequired": 7,
-    "consecutivePassingExports": 7,
+    "consecutivePassingExports": 8,
     "entries": [
       {
         "exportSessionId": "export_3946153d31",
@@ -887,6 +894,31 @@
       {
         "exportSessionId": "export_3fec026cdf",
         "generatedAt": "2026-04-05T20:48:53.469Z",
+        "baseStatus": "criteria_met",
+        "subjectiveGoalStatus": "SUBJECTIVE_AGI_NEAR_COMPLETE",
+        "rawFinalScore": 0.9995,
+        "R_robust": 1,
+        "H_horizon": 1,
+        "distinctImprovementCount": 4,
+        "verifiedPositiveRemediations": 5,
+        "verifiedPositiveSelfDirectedRemediations": 2,
+        "runningAgendaCount": 0,
+        "blockedAgendaCount": 0,
+        "insufficientEvidenceCount": 0,
+        "stableCoverageBreadth": 1,
+        "missingContext": 1,
+        "browserToolFlakiness": 1,
+        "degradedToolOutputs": 1,
+        "primaryLaneSelectedInLatestPackCount": 3,
+        "primaryLaneEffectiveContributionCount": 3,
+        "likelyContributoryCount": 3,
+        "ambiguousInstructionEvidenceCount": 24,
+        "novelProbePositiveCount": 2,
+        "harmfulCausalRatio": 0
+      },
+      {
+        "exportSessionId": "export_f6a974be6e",
+        "generatedAt": "2026-04-06T10:26:22.121Z",
         "baseStatus": "criteria_met",
         "subjectiveGoalStatus": "SUBJECTIVE_AGI_NEAR_COMPLETE",
         "rawFinalScore": 0.9995,

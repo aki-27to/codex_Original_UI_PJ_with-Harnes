@@ -1,7 +1,10 @@
 # AGI Operational Completion
 
 - goalStatus: OPERATIONALLY_COMPLETE
-- generatedAt: 2026-04-05T20:48:53.468Z
+- subjectiveGoalStatus: SUBJECTIVE_AGI_NEAR_COMPLETE
+- subjectiveCriteriaMet: true
+- subjectiveCriteriaWindow: 8/7
+- generatedAt: 2026-04-06T10:26:22.120Z
 - completionVersion: 2026-04-04.r1
 - decisionBasis: live_truth_strict_operational_criteria
 
@@ -26,7 +29,7 @@
 - verifiedPositiveRemediations: 5
 - verifiedNegativeRemediations: 0
 - verifiedHarmfulRemediations: 0
-- insufficientEvidenceRemediations: 0
+- insufficientEvidenceRemediations: 1
 - runningAgendaCount: 0
 - harmfulCausalRatio: 0
 - likelyContributoryCount: 3
@@ -46,6 +49,8 @@
 - operational completion export durability below subjective threshold
 - ambiguous instruction evidence below subjective threshold
 - capture governed recovery evidence
+- goal completion artifact is missing one or more subjective summary fields
 - subjective goal completion artifact missing
+- subjective current values do not reflect history-aware counts consistently
 
 ## Failed Criteria

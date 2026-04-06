@@ -1,6 +1,6 @@
 {
   "schema": "agi-operational-completion-status.v1",
-  "generatedAt": "2026-04-05T20:48:53.468Z",
+  "generatedAt": "2026-04-06T10:26:22.120Z",
   "workspaceId": "5c839dfeef8b555f",
   "goalStatus": "OPERATIONALLY_COMPLETE",
   "completionVersion": "2026-04-04.r1",
@@ -98,7 +98,7 @@
     },
     {
       "id": "consecutiveSuccessfulExports",
-      "detail": "consecutive successful exports 9 >= 3"
+      "detail": "consecutive successful exports 13 >= 3"
     }
   ],
   "completionCriteria": {
@@ -144,7 +144,7 @@
     "verifiedPositiveRemediations": 5,
     "verifiedNegativeRemediations": 0,
     "verifiedHarmfulRemediations": 0,
-    "insufficientEvidenceRemediations": 0,
+    "insufficientEvidenceRemediations": 1,
     "runningAgendaCount": 0,
     "harmfulCausalRatio": 0,
     "likelyContributoryCount": 3,
@@ -179,7 +179,7 @@
     "verifiedPositiveRemediations": 5,
     "verifiedNegativeRemediations": 0,
     "verifiedHarmfulRemediations": 0,
-    "insufficientEvidenceRemediations": 0,
+    "insufficientEvidenceRemediations": 1,
     "runningAgendaCount": 0,
     "harmfulCausalRatio": 0,
     "likelyContributoryCount": 3,
@@ -218,7 +218,7 @@
     "windowSize": 5,
     "distinctEntryCount": 9,
     "distinctWindowCount": 2,
-    "consecutivePassingExports": 9,
+    "consecutivePassingExports": 13,
     "recentNonWorsening": true,
     "distinctImprovementCount": 2,
     "distinctRegressionCount": 0,
@@ -226,12 +226,12 @@
     "attemptedDistinctRegressionCount": 0
   },
   "autonomousLearningSummary": {
-    "totalAgendaCount": 0,
+    "totalAgendaCount": 1,
     "runningAgendaCount": 0,
     "verifiedPositiveCount": 5,
     "verifiedNegativeCount": 0,
     "verifiedHarmfulCount": 0,
-    "insufficientEvidenceCount": 0
+    "insufficientEvidenceCount": 1
   },
   "continuityDebtSummary": {
     "openDebtCount": 0,
@@ -271,7 +271,9 @@
     "operational completion export durability below subjective threshold",
     "ambiguous instruction evidence below subjective threshold",
     "capture governed recovery evidence",
-    "subjective goal completion artifact missing"
+    "goal completion artifact is missing one or more subjective summary fields",
+    "subjective goal completion artifact missing",
+    "subjective current values do not reflect history-aware counts consistently"
   ],
   "notes": [
     "This artifact is an operational completion signal derived from live truth, not a public AGI proof claim.",
@@ -279,44 +281,8 @@
   ],
   "history": {
     "consecutiveRequired": 3,
-    "consecutivePassingExports": 9,
+    "consecutivePassingExports": 13,
     "entries": [
-      {
-        "exportSessionId": "export_18e7886291",
-        "generatedAt": "2026-04-05T20:18:39.357Z",
-        "goalStatus": "NOT_YET",
-        "baseStatus": "criteria_failed",
-        "rawFinalScore": 0.9995,
-        "R_robust": 1,
-        "H_horizon": 1,
-        "stableCoverageBreadth": 1,
-        "openDebtCount": 0,
-        "harmfulCausalRatio": 0
-      },
-      {
-        "exportSessionId": "export_3a3f49208e",
-        "generatedAt": "2026-04-05T20:18:41.505Z",
-        "goalStatus": "NOT_YET",
-        "baseStatus": "criteria_failed",
-        "rawFinalScore": 0.9995,
-        "R_robust": 1,
-        "H_horizon": 1,
-        "stableCoverageBreadth": 1,
-        "openDebtCount": 0,
-        "harmfulCausalRatio": 0
-      },
-      {
-        "exportSessionId": "export_90dc305f4d",
-        "generatedAt": "2026-04-05T20:18:43.650Z",
-        "goalStatus": "NOT_YET",
-        "baseStatus": "criteria_failed",
-        "rawFinalScore": 0.9995,
-        "R_robust": 1,
-        "H_horizon": 1,
-        "stableCoverageBreadth": 1,
-        "openDebtCount": 0,
-        "harmfulCausalRatio": 0
-      },
       {
         "exportSessionId": "export_0f2607d6d3",
         "generatedAt": "2026-04-05T20:46:35.857Z",
@@ -424,10 +390,62 @@
         "stableCoverageBreadth": 1,
         "openDebtCount": 0,
         "harmfulCausalRatio": 0
+      },
+      {
+        "exportSessionId": "export_279374baee",
+        "generatedAt": "2026-04-06T10:15:31.872Z",
+        "goalStatus": "PENDING_WINDOW",
+        "baseStatus": "criteria_met",
+        "rawFinalScore": 0.9995,
+        "R_robust": 1,
+        "H_horizon": 1,
+        "stableCoverageBreadth": 1,
+        "openDebtCount": 0,
+        "harmfulCausalRatio": 0
+      },
+      {
+        "exportSessionId": "export_37eb322d60",
+        "generatedAt": "2026-04-06T10:20:02.105Z",
+        "goalStatus": "PENDING_WINDOW",
+        "baseStatus": "criteria_met",
+        "rawFinalScore": 0.9995,
+        "R_robust": 1,
+        "H_horizon": 1,
+        "stableCoverageBreadth": 1,
+        "openDebtCount": 0,
+        "harmfulCausalRatio": 0
+      },
+      {
+        "exportSessionId": "export_76a7c228f7",
+        "generatedAt": "2026-04-06T10:23:20.659Z",
+        "goalStatus": "PENDING_WINDOW",
+        "baseStatus": "criteria_met",
+        "rawFinalScore": 0.9995,
+        "R_robust": 1,
+        "H_horizon": 1,
+        "stableCoverageBreadth": 1,
+        "openDebtCount": 0,
+        "harmfulCausalRatio": 0
+      },
+      {
+        "exportSessionId": "export_f6a974be6e",
+        "generatedAt": "2026-04-06T10:26:22.120Z",
+        "goalStatus": "PENDING_WINDOW",
+        "baseStatus": "criteria_met",
+        "rawFinalScore": 0.9995,
+        "R_robust": 1,
+        "H_horizon": 1,
+        "stableCoverageBreadth": 1,
+        "openDebtCount": 0,
+        "harmfulCausalRatio": 0
       }
     ]
   },
   "subjectiveGoalStatusPath": "output/agi_readiness/subjective_goal_completion_status.json",
+  "subjectiveGoalStatus": "SUBJECTIVE_AGI_NEAR_COMPLETE",
   "subjectiveCriteriaMet": true,
-  "subjectiveCriteriaWindowPassCount": 7
+  "subjectiveFailedCriteria": [],
+  "subjectiveWhyNotYet": [],
+  "subjectiveCriteriaWindowPassCount": 8,
+  "subjectiveCriteriaWindowSize": 7
 }

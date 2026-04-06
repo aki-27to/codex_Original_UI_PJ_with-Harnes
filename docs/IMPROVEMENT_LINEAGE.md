@@ -12,6 +12,12 @@
   - `output/agi_readiness/distinct_improvement_summary.json`
   - `output/agi_readiness/promotion_trend.json`
 
+## 2026-04-06 subjective history rule
+
+- Operational completion still uses distinct-comparison lineage only.
+- Subjective completion additionally consumes history-aware aggregates from the tracked live export window.
+- `distinctImprovementCount`, `distinctRegressionCount`, and non-worsening state must not be reset by a thinner current snapshot when valid recent export history is present.
+
 改善履歴は self snapshot と distinct comparison を分けて扱います。
 
 ## Modes

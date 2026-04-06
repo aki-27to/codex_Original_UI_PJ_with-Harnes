@@ -40,7 +40,8 @@ function writeJsonFile(targetPath, value) {
 function readJsonIfExists(targetPath) {
   if (!targetPath || !fs.existsSync(targetPath)) return null;
   try {
-    return JSON.parse(fs.readFileSync(targetPath, "utf8"));
+    const text = fs.readFileSync(targetPath, "utf8").replace(/^\uFEFF/, "");
+    return JSON.parse(text);
   } catch {
     return null;
   }

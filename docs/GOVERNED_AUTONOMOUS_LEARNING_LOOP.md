@@ -8,6 +8,14 @@
   - `output/agi_readiness/autonomous_learning_status.json`
   - `output/agi_readiness/robustness_remediation_backlog.json`
   - `output/agi_readiness/robustness_remediation_effects.json`
+  - `output/agi_readiness/self_directed_probe_status.json`
+  - `output/agi_readiness/novel_task_acquisition.json`
+
+## 2026-04-06 subjective support surfaces
+
+- Self-directed probe outcomes are now exported as a first-class public surface in `output/agi_readiness/self_directed_probe_status.json`.
+- Novel task/probe acquisition evidence is exported in `output/agi_readiness/novel_task_acquisition.json`.
+- These artifacts are supporting proof for subjective completion. Missing artifacts or insufficient evidence must keep the subjective status at `NOT_YET`.
 
 このハーネスでは、改善は単なる提案管理ではなく、次の閉ループとして扱います。
 

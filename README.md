@@ -314,3 +314,14 @@ The harness now exposes an operational goal-completion layer on top of governed 
   - `output/memory_public/causal_effectiveness_summary.json`
 
 This is an internal operational completion surface, not a public AGI claim.
+
+## 2026-04-06 subjective completion surface
+
+- `output/agi_readiness/goal_completion_status.json` remains the top-level operational decision artifact.
+- `output/agi_readiness/subjective_goal_completion_status.json` is the fail-closed companion artifact for `SUBJECTIVE_AGI_NEAR_COMPLETE`.
+- Supporting tracked artifacts for the subjective decision are:
+  - `output/agi_readiness/learning_adoption_status.json`
+  - `output/agi_readiness/self_directed_probe_status.json`
+  - `output/agi_readiness/novel_task_acquisition.json`
+- The repo treats checked-in exported artifacts as main truth. Local-only or unpublished runs do not count as current main truth.
+- Subjective completion is stricter than operational completion. If any supporting artifact is missing or any strict threshold fails, the status must remain `NOT_YET`.

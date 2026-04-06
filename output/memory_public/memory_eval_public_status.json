@@ -1,8 +1,8 @@
 {
   "schema": "memory-eval-public-status.v1",
-  "generatedAt": "2026-04-05T20:48:53.668Z",
+  "generatedAt": "2026-04-06T10:26:22.313Z",
   "suiteSchema": "memory-eval-suite.v1",
-  "suiteVersion": "2026-04-04.r1",
+  "suiteVersion": "2026-04-06.r1",
   "status": "PASS",
   "failedCheckIds": [],
   "checks": [
@@ -223,6 +223,12 @@
       "detail": "goal completion artifact does not over-claim completion when thresholds fail"
     },
     {
+      "id": "goal_artifact_subjective_fields_present",
+      "title": "Operational goal completion artifact exposes subjective summary fields",
+      "status": "PASS",
+      "detail": "goal completion artifact exposes subjective summary fields"
+    },
+    {
       "id": "subjective_goal_artifact_present",
       "title": "Subjective goal completion artifact is generated",
       "status": "PASS",
@@ -235,10 +241,28 @@
       "detail": "subjective goal supporting artifacts are present"
     },
     {
+      "id": "history_aware_subjective_counts_consistent",
+      "title": "Subjective completion counts preserve history-aware lineage and probe evidence",
+      "status": "PASS",
+      "detail": "subjective current values preserve history-aware counts and non-worsening state"
+    },
+    {
       "id": "subjective_goal_not_yet_when_subjective_criteria_fail",
       "title": "Subjective goal completion remains NOT_YET when strict subjective criteria are not satisfied",
       "status": "PASS",
       "detail": "subjective goal completion artifact does not over-claim completion when subjective thresholds fail"
+    },
+    {
+      "id": "primary_lane_latest_pack_adoption_reflected",
+      "title": "Primary lane latest-pack adoption count is reflected across live public artifacts",
+      "status": "PASS",
+      "detail": "primary lane latest-pack adoption is reflected across projection, goal, and subjective artifacts"
+    },
+    {
+      "id": "primary_lane_effective_contribution_reflected",
+      "title": "Primary lane effective contribution count is reflected across live public artifacts",
+      "status": "PASS",
+      "detail": "primary lane effective contribution is reflected across projection, goal, and subjective artifacts"
     },
     {
       "id": "learning_adoption_status_present",
@@ -247,16 +271,40 @@
       "detail": "learning adoption status is present"
     },
     {
+      "id": "self_directed_probe_surface_present",
+      "title": "Self-directed probe artifact exposes required counts, evidence refs, and thresholds",
+      "status": "PASS",
+      "detail": "self-directed probe surface exposes required counts and thresholds"
+    },
+    {
       "id": "self_directed_probe_status_present",
       "title": "Self-directed probe status is generated from autonomous remediation outcomes",
       "status": "PASS",
       "detail": "self-directed probe status is present"
     },
     {
+      "id": "novel_task_acquisition_surface_present",
+      "title": "Novel task acquisition artifact exposes required counts, evidence refs, and thresholds",
+      "status": "PASS",
+      "detail": "novel task acquisition surface exposes required counts and thresholds"
+    },
+    {
       "id": "novel_task_acquisition_present",
       "title": "Novel task acquisition surface is generated from under-evidenced remediation areas",
       "status": "PASS",
       "detail": "novel task acquisition status is present"
+    },
+    {
+      "id": "subjective_window_threshold_enforced",
+      "title": "Subjective completion window thresholds are reflected in both goal and subjective artifacts",
+      "status": "PASS",
+      "detail": "subjective completion window size and pass count are enforced consistently"
+    },
+    {
+      "id": "subjective_complete_case_requires_all_strict_thresholds",
+      "title": "A subjective complete status requires all strict thresholds to be satisfied",
+      "status": "PASS",
+      "detail": "subjective completion only appears when all strict thresholds are satisfied"
     },
     {
       "id": "public_hygiene_no_unknown_memory_type",

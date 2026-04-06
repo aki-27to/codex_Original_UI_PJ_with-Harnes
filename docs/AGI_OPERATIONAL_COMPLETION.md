@@ -15,6 +15,17 @@
   - `output/continuity_public/continuity_debt_trend.json`
   - `output/memory_public/causal_effectiveness_summary.json`
 
+## 2026-04-06 subjective completion update
+
+- `output/agi_readiness/subjective_goal_completion_status.json` is now the tracked companion artifact for subjective completion.
+- `goal_completion_status.json` stays focused on operational completion, but now carries a summarized subjective status, failed criteria, why-not-yet reasons, and the enforced subjective window counts.
+- Subjective completion is fail-closed and stricter than operational completion.
+- Current main truth for the subjective decision requires the checked-in supporting artifacts:
+  - `output/agi_readiness/learning_adoption_status.json`
+  - `output/agi_readiness/self_directed_probe_status.json`
+  - `output/agi_readiness/novel_task_acquisition.json`
+- A local export does not become main truth until the tracked artifacts exist on `main`.
+
 この文書は、この repo における「AGI を公開証明した」状態ではなく、**運用上の到達判定**を定義します。
 
 ## これは何か

@@ -19,6 +19,14 @@
 ## Outputs
 - `output/agi_readiness/autonomous_learning_status.json`
 - canonical learning agenda projection
+- `output/agi_readiness/self_directed_probe_status.json`
+- `output/agi_readiness/novel_task_acquisition.json`
+
+## 2026-04-06 subjective closure update
+
+- Self-directed probe counts, positive evidence refs, and required thresholds are now exported as public proof.
+- Novel task acquisition is tracked as a first-class artifact instead of an implicit local-only signal.
+- These surfaces support subjective completion but do not bypass the existing governed loop; there is still no parallel probe harness.
 
 ## Guard rails
 - unsafe domain は `proposal_only`
