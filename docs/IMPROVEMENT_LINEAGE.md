@@ -33,3 +33,11 @@
 - self snapshot を distinct victory として表示しません
 - distinct comparison だけが、前世代に対する改善証拠になります
 - regression や hold も lineage に残します
+## 2026-04-06 lineage extension
+
+- Distinct lineage now covers self-authored change sets in addition to incumbent/challenger comparisons.
+- Self-authored history is linked to causal evidence through:
+  - `output/agi_readiness/self_authored_goal_history.json`
+  - `output/agi_readiness/self_authored_causal_effects.json`
+  - `output/agi_readiness/continuous_improvement_status.json`
+- Harmful self-authored outcomes must remain zero for sovereign completion.

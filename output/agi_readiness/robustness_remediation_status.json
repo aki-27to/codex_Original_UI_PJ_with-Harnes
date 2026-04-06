@@ -1,6 +1,6 @@
 {
   "schema": "agi-readiness-robustness-remediation-status.v1",
-  "generatedAt": "2026-04-06T14:51:42.549Z",
+  "generatedAt": "2026-04-06T15:32:16.783Z",
   "workspaceId": "5c839dfeef8b555f",
   "categories": [
     {
@@ -70,7 +70,7 @@
         "fallback omitted after flaky tool output"
       ],
       "score": 1,
-      "evidenceCount": 8,
+      "evidenceCount": 6,
       "status": "observed"
     }
   ]

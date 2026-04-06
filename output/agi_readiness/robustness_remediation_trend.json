@@ -1,6 +1,6 @@
 {
   "schema": "agi-readiness-robustness-remediation-trend.v1",
-  "generatedAt": "2026-04-06T14:51:42.549Z",
+  "generatedAt": "2026-04-06T15:32:16.783Z",
   "workspaceId": "5c839dfeef8b555f",
   "entries": [
     {
@@ -8,35 +8,35 @@
       "remediationStatus": "passed",
       "lastImprovementDelta": 0,
       "score": 1,
-      "generatedAt": "2026-04-06T14:51:42.549Z"
+      "generatedAt": "2026-04-06T15:32:16.783Z"
     },
     {
       "categoryId": "adversarial_conflicting_instruction",
       "remediationStatus": "passed",
       "lastImprovementDelta": 0,
       "score": 1,
-      "generatedAt": "2026-04-06T14:51:42.549Z"
+      "generatedAt": "2026-04-06T15:32:16.783Z"
     },
     {
       "categoryId": "missing_context",
       "remediationStatus": "passed",
       "lastImprovementDelta": 0,
       "score": 1,
-      "generatedAt": "2026-04-06T14:51:42.549Z"
+      "generatedAt": "2026-04-06T15:32:16.783Z"
     },
     {
       "categoryId": "degraded_tool_outputs",
       "remediationStatus": "passed",
       "lastImprovementDelta": 0,
       "score": 1,
-      "generatedAt": "2026-04-06T14:51:42.549Z"
+      "generatedAt": "2026-04-06T15:32:16.783Z"
     },
     {
       "categoryId": "browser_tool_flakiness",
       "remediationStatus": "passed",
       "lastImprovementDelta": 0,
       "score": 1,
-      "generatedAt": "2026-04-06T14:51:42.549Z"
+      "generatedAt": "2026-04-06T15:32:16.783Z"
     }
   ]
 }

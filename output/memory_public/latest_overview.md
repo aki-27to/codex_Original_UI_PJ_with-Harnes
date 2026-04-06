@@ -6,8 +6,8 @@
 - Canonical events: 12000
 - Items: 49
 - Promoted: 26
-- Latest pack: 13 items for intake (2 high-confidence)
-- Latest pack reused items: 13
+- Latest pack: 11 items for intake (2 high-confidence)
+- Latest pack reused items: 11
 - Latest pack task-family mismatches: 0
 - Memory eval: PASS
 - Recent promotions: 5

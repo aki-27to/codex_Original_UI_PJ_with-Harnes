@@ -1,22 +1,22 @@
 {
   "schema": "governed-memory-latest-pack-public.v1",
-  "generatedAt": "2026-04-06T14:51:42.477Z",
+  "generatedAt": "2026-04-06T15:32:16.720Z",
   "workspaceId": "5c839dfeef8b555f",
-  "packId": "72aed78c7382b01eaee5",
+  "packId": "99ec3f42d1454b05dc21",
   "latestPack": {
-    "generatedAt": "2026-04-06T14:51:40.876Z",
-    "compiledAt": "2026-04-06T14:51:40.876Z",
+    "generatedAt": "2026-04-06T15:32:15.640Z",
+    "compiledAt": "2026-04-06T15:32:15.640Z",
     "activeAgent": "intake",
-    "taskFamily": "web_creative",
-    "selectedCount": 13,
+    "taskFamily": "smoke-http-exec",
+    "selectedCount": 11,
     "highConfidenceCount": 2,
-    "reusedSelectedCount": 13,
+    "reusedSelectedCount": 11,
     "explicitTaskFamilyMismatchCount": 0,
     "sectionCounts": {
       "workspace_progress": 1,
       "intent": 1,
       "spec": 4,
-      "experience": 4,
+      "experience": 2,
       "semantic": 3
     },
     "selectedItems": [
@@ -24,13 +24,13 @@
         "publicRef": "mem_dd9c0f3a28",
         "type": "workspace_progress",
         "status": "promoted",
-        "score": 0.8699,
+        "score": 0.8724,
         "scoreBand": "high",
         "sourceTier": "runtime",
         "authorityTier": 3,
         "scopeWorkspace": "5c839dfeef8b555f",
         "taskFamilies": [
-          "web_creative"
+          "smoke-http-exec"
         ],
         "summary": "Durable workspace-scoped progress state compiled from the latest turn, evidence traceability, and execution history."
       },
@@ -38,13 +38,13 @@
         "publicRef": "mem_9c7f4cba43",
         "type": "requirement_ref",
         "status": "promoted",
-        "score": 0.8257,
+        "score": 0.8282,
         "scoreBand": "high",
         "sourceTier": "runtime",
         "authorityTier": 1,
         "scopeWorkspace": "5c839dfeef8b555f",
         "taskFamilies": [
-          "web_creative"
+          "smoke-http-exec"
         ],
         "summary": "Active intent-first requirement state for the current workspace and turn."
       },
@@ -52,7 +52,7 @@
         "publicRef": "mem_52f4ed9143",
         "type": "constitution_ref",
         "status": "promoted",
-        "score": 0.6749,
+        "score": 0.6774,
         "scoreBand": "selected",
         "sourceTier": "repo",
         "authorityTier": 0,
@@ -66,7 +66,7 @@
         "publicRef": "mem_e65f4ce9a0",
         "type": "constitution_ref",
         "status": "promoted",
-        "score": 0.6492,
+        "score": 0.6491,
         "scoreBand": "selected",
         "sourceTier": "repo",
         "authorityTier": 0,
@@ -78,7 +78,7 @@
         "publicRef": "mem_ad36640985",
         "type": "constitution_ref",
         "status": "promoted",
-        "score": 0.6492,
+        "score": 0.6491,
         "scoreBand": "selected",
         "sourceTier": "repo",
         "authorityTier": 0,
@@ -90,7 +90,7 @@
         "publicRef": "mem_b5d199f8aa",
         "type": "constitution_ref",
         "status": "promoted",
-        "score": 0.6492,
+        "score": 0.6491,
         "scoreBand": "selected",
         "sourceTier": "repo",
         "authorityTier": 0,
@@ -99,90 +99,76 @@
         "summary": "context-memory-policy"
       },
       {
-        "publicRef": "mem_5ba2b5881d",
+        "publicRef": "mem_46618c22f3",
         "type": "episodic_event",
         "status": "captured",
-        "score": 0.6382,
+        "score": 0.6407,
         "scoreBand": "selected",
         "sourceTier": "runtime",
         "authorityTier": 4,
         "scopeWorkspace": "5c839dfeef8b555f",
         "taskFamilies": [
-          "web_creative",
-          "tool_use_browser_like"
+          "smoke-http-exec",
+          "smoke_test"
         ],
         "summary": "runtime episode finished as CAPTURED."
       },
       {
-        "publicRef": "mem_deee9eedca",
+        "publicRef": "mem_06ab676347",
         "type": "episodic_event",
         "status": "captured",
-        "score": 0.6382,
+        "score": 0.6407,
         "scoreBand": "selected",
         "sourceTier": "runtime",
         "authorityTier": 4,
         "scopeWorkspace": "5c839dfeef8b555f",
         "taskFamilies": [
-          "web_creative"
+          "smoke-http-exec",
+          "smoke_test"
         ],
         "summary": "runtime episode finished as CAPTURED."
       },
       {
-        "publicRef": "mem_8896adaa48",
-        "type": "runtime_hint",
+        "publicRef": "mem_8e6dc0d56a",
+        "type": "failure_pattern",
         "status": "promoted",
-        "score": 0.6187,
-        "scoreBand": "selected",
-        "sourceTier": "external_primary",
-        "authorityTier": 5,
-        "scopeWorkspace": "5c839dfeef8b555f",
-        "taskFamilies": [
-          "web_creative"
-        ],
-        "summary": "Using skills to accelerate OSS maintenance | OpenAI Developers"
-      },
-      {
-        "publicRef": "mem_847a1aba42",
-        "type": "runtime_hint",
-        "status": "promoted",
-        "score": 0.6187,
-        "scoreBand": "selected",
-        "sourceTier": "external_primary",
-        "authorityTier": 5,
-        "scopeWorkspace": "5c839dfeef8b555f",
-        "taskFamilies": [
-          "web_creative"
-        ],
-        "summary": "Building frontend UIs with Codex and Figma | OpenAI Developers"
-      },
-      {
-        "publicRef": "mem_106d75d257",
-        "type": "runtime_hint",
-        "status": "promoted",
-        "score": 0.6187,
-        "scoreBand": "selected",
-        "sourceTier": "external_primary",
-        "authorityTier": 5,
-        "scopeWorkspace": "5c839dfeef8b555f",
-        "taskFamilies": [
-          "web_creative"
-        ],
-        "summary": "Run long horizon tasks with Codex | OpenAI Developers"
-      },
-      {
-        "publicRef": "mem_9adb8add8c",
-        "type": "episodic_event",
-        "status": "captured",
-        "score": 0.6182,
+        "score": 0.5766,
         "scoreBand": "selected",
         "sourceTier": "runtime",
-        "authorityTier": 4,
+        "authorityTier": 5,
         "scopeWorkspace": "5c839dfeef8b555f",
         "taskFamilies": [
-          "web_creative",
-          "tool_use_browser_like"
+          "default"
         ],
-        "summary": "runtime episode finished as CAPTURED."
+        "summary": "ambiguous instruction clarify"
+      },
+      {
+        "publicRef": "mem_b8952a3890",
+        "type": "failure_pattern",
+        "status": "promoted",
+        "score": 0.5766,
+        "scoreBand": "selected",
+        "sourceTier": "runtime",
+        "authorityTier": 5,
+        "scopeWorkspace": "5c839dfeef8b555f",
+        "taskFamilies": [
+          "default"
+        ],
+        "summary": "completed default"
+      },
+      {
+        "publicRef": "mem_90a929a260",
+        "type": "failure_pattern",
+        "status": "promoted",
+        "score": 0.5766,
+        "scoreBand": "selected",
+        "sourceTier": "runtime",
+        "authorityTier": 5,
+        "scopeWorkspace": "5c839dfeef8b555f",
+        "taskFamilies": [
+          "default"
+        ],
+        "summary": "adversarial conflicting instruction resolved"
       }
     ]
   }

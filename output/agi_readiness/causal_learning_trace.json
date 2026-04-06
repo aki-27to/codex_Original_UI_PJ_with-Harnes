@@ -1,9 +1,9 @@
 {
   "schema": "governed-causal-learning-trace-public.v1",
-  "generatedAt": "2026-04-06T14:51:42.478Z",
+  "generatedAt": "2026-04-06T15:32:16.722Z",
   "workspaceId": "5c839dfeef8b555f",
   "summary": {
-    "traceCount": 14,
+    "traceCount": 15,
     "likelyContributoryCount": 3,
     "harmfulCount": 0
   },
@@ -15,8 +15,8 @@
       "sourceTier": "external_primary",
       "promotionState": "promoted",
       "usageMode": "explicit_prompt_pack",
-      "selectedInLatestPack": true,
-      "selectedInPackAt": "2026-04-05T20:48:39.134Z",
+      "selectedInLatestPack": false,
+      "selectedInPackAt": "2026-04-06T15:32:15.640Z",
       "usedByTaskRefs": [
         "turn_fba29baf0b",
         "turn_7f52ea5222",
@@ -30,7 +30,7 @@
       ],
       "usageStage": "likely_contributory",
       "causalConfidence": "direct",
-      "adoptedInLatestPack": true,
+      "adoptedInLatestPack": false,
       "effectiveContribution": true,
       "effectiveContributionEvidenceRefs": [
         "turn_fba29baf0b",
@@ -60,8 +60,8 @@
       "sourceTier": "external_primary",
       "promotionState": "promoted",
       "usageMode": "explicit_prompt_pack",
-      "selectedInLatestPack": true,
-      "selectedInPackAt": "2026-04-05T20:48:39.134Z",
+      "selectedInLatestPack": false,
+      "selectedInPackAt": "2026-04-06T15:32:15.640Z",
       "usedByTaskRefs": [
         "turn_fba29baf0b",
         "turn_7f52ea5222",
@@ -75,7 +75,7 @@
       ],
       "usageStage": "likely_contributory",
       "causalConfidence": "direct",
-      "adoptedInLatestPack": true,
+      "adoptedInLatestPack": false,
       "effectiveContribution": true,
       "effectiveContributionEvidenceRefs": [
         "turn_fba29baf0b",
@@ -105,8 +105,8 @@
       "sourceTier": "external_primary",
       "promotionState": "promoted",
       "usageMode": "explicit_prompt_pack",
-      "selectedInLatestPack": true,
-      "selectedInPackAt": "2026-04-05T20:48:39.134Z",
+      "selectedInLatestPack": false,
+      "selectedInPackAt": "2026-04-06T15:32:15.640Z",
       "usedByTaskRefs": [
         "turn_fba29baf0b",
         "turn_7f52ea5222",
@@ -120,7 +120,7 @@
       ],
       "usageStage": "likely_contributory",
       "causalConfidence": "direct",
-      "adoptedInLatestPack": true,
+      "adoptedInLatestPack": false,
       "effectiveContribution": true,
       "effectiveContributionEvidenceRefs": [
         "turn_fba29baf0b",
@@ -151,7 +151,7 @@
       "promotionState": "promoted",
       "usageMode": "verifier_context",
       "selectedInLatestPack": true,
-      "selectedInPackAt": "2026-04-05T20:48:39.134Z",
+      "selectedInPackAt": "2026-04-06T15:15:42.059Z",
       "usedByTaskRefs": [],
       "taskFamilies": [],
       "usageStage": "selected_only",
@@ -180,7 +180,7 @@
       "promotionState": "promoted",
       "usageMode": "verifier_context",
       "selectedInLatestPack": true,
-      "selectedInPackAt": "2026-04-05T20:48:39.134Z",
+      "selectedInPackAt": "2026-04-06T15:15:42.059Z",
       "usedByTaskRefs": [],
       "taskFamilies": [],
       "usageStage": "selected_only",
@@ -209,7 +209,7 @@
       "promotionState": "promoted",
       "usageMode": "verifier_context",
       "selectedInLatestPack": true,
-      "selectedInPackAt": "2026-04-05T20:48:39.134Z",
+      "selectedInPackAt": "2026-04-06T15:15:42.059Z",
       "usedByTaskRefs": [],
       "taskFamilies": [],
       "usageStage": "selected_only",
@@ -238,7 +238,7 @@
       "promotionState": "promoted",
       "usageMode": "verifier_context",
       "selectedInLatestPack": true,
-      "selectedInPackAt": "2026-04-05T20:48:39.134Z",
+      "selectedInPackAt": "2026-04-06T15:15:42.059Z",
       "usedByTaskRefs": [],
       "taskFamilies": [
         "all"
@@ -269,10 +269,10 @@
       "promotionState": "promoted",
       "usageMode": "explicit_prompt_pack",
       "selectedInLatestPack": true,
-      "selectedInPackAt": "2026-04-05T20:48:39.134Z",
+      "selectedInPackAt": "2026-04-06T15:15:42.059Z",
       "usedByTaskRefs": [],
       "taskFamilies": [
-        "web_creative"
+        "smoke-http-exec"
       ],
       "usageStage": "selected_only",
       "causalConfidence": "weak",
@@ -300,10 +300,10 @@
       "promotionState": "promoted",
       "usageMode": "explicit_prompt_pack",
       "selectedInLatestPack": true,
-      "selectedInPackAt": "2026-04-05T20:48:39.134Z",
+      "selectedInPackAt": "2026-04-06T15:15:42.059Z",
       "usedByTaskRefs": [],
       "taskFamilies": [
-        "web_creative"
+        "smoke-http-exec"
       ],
       "usageStage": "selected_only",
       "causalConfidence": "weak",
@@ -324,18 +324,18 @@
       "lastObservedAt": ""
     },
     {
-      "memoryId": "mem_5ba2b5881d",
-      "publicRef": "mem_5ba2b5881d",
+      "memoryId": "mem_46618c22f3",
+      "publicRef": "mem_46618c22f3",
       "memoryType": "episodic_event",
       "sourceTier": "runtime",
       "promotionState": "captured",
       "usageMode": "explicit_prompt_pack",
       "selectedInLatestPack": true,
-      "selectedInPackAt": "2026-04-05T20:48:39.134Z",
+      "selectedInPackAt": "2026-04-06T15:15:42.059Z",
       "usedByTaskRefs": [],
       "taskFamilies": [
-        "web_creative",
-        "tool_use_browser_like"
+        "smoke-http-exec",
+        "smoke_test"
       ],
       "usageStage": "selected_only",
       "causalConfidence": "weak",
@@ -352,21 +352,22 @@
         "retryCount": 0,
         "verifierOutcome": "UNKNOWN"
       },
-      "summary": "standard episode finished as COMPLETED.",
+      "summary": "smoke-test episode finished as COMPLETED.",
       "lastObservedAt": ""
     },
     {
-      "memoryId": "mem_deee9eedca",
-      "publicRef": "mem_deee9eedca",
+      "memoryId": "mem_06ab676347",
+      "publicRef": "mem_06ab676347",
       "memoryType": "episodic_event",
       "sourceTier": "runtime",
       "promotionState": "captured",
       "usageMode": "explicit_prompt_pack",
       "selectedInLatestPack": true,
-      "selectedInPackAt": "2026-04-05T20:48:39.134Z",
+      "selectedInPackAt": "2026-04-06T15:15:42.059Z",
       "usedByTaskRefs": [],
       "taskFamilies": [
-        "web_creative"
+        "smoke-http-exec",
+        "smoke_test"
       ],
       "usageStage": "selected_only",
       "causalConfidence": "weak",
@@ -383,22 +384,21 @@
         "retryCount": 0,
         "verifierOutcome": "UNKNOWN"
       },
-      "summary": "standard episode finished as COMPLETED.",
+      "summary": "smoke-test episode finished as COMPLETED.",
       "lastObservedAt": ""
     },
     {
-      "memoryId": "mem_9adb8add8c",
-      "publicRef": "mem_9adb8add8c",
-      "memoryType": "episodic_event",
+      "memoryId": "mem_8e6dc0d56a",
+      "publicRef": "mem_8e6dc0d56a",
+      "memoryType": "failure_pattern",
       "sourceTier": "runtime",
-      "promotionState": "captured",
+      "promotionState": "promoted",
       "usageMode": "explicit_prompt_pack",
       "selectedInLatestPack": true,
-      "selectedInPackAt": "2026-04-05T20:48:39.134Z",
+      "selectedInPackAt": "2026-04-06T15:15:42.059Z",
       "usedByTaskRefs": [],
       "taskFamilies": [
-        "web_creative",
-        "tool_use_browser_like"
+        "default"
       ],
       "usageStage": "selected_only",
       "causalConfidence": "weak",
@@ -415,7 +415,7 @@
         "retryCount": 0,
         "verifierOutcome": "UNKNOWN"
       },
-      "summary": "subjective-live-web episode finished as COMPLETED.",
+      "summary": "ambiguous instruction clarify",
       "lastObservedAt": ""
     }
   ]

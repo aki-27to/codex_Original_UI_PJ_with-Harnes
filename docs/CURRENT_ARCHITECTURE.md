@@ -612,3 +612,11 @@ This document is the active architecture spec for the Codex App Server integrati
 - `subjective_goal_completion_status.json` is the tracked fail-closed companion surface for subjective completion.
 - Subjective completion is a stricter gate than operational completion and depends on checked-in live export artifacts, not local-only state.
 - `learning_adoption_status.json`, `self_directed_probe_status.json`, and `novel_task_acquisition.json` are first-class public proof surfaces and are registered in `output/memory_public/export_manifest.json`.
+## 2026-04-06 sovereign completion layer
+
+- The checked-in decision stack is now:
+  - `output/agi_readiness/goal_completion_status.json`
+  - `output/agi_readiness/subjective_goal_completion_status.json`
+  - `output/agi_readiness/sovereign_goal_completion_status.json`
+- All three are still produced by `scripts/lib/governed_memory_graph.js` through the existing `artifact:memory-public` flow.
+- Self-authored goal planning, workspace world modeling, security constitution, rollback readiness, and self-authored causal effects are first-class readiness surfaces.

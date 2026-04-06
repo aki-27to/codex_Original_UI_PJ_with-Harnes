@@ -214,3 +214,8 @@ Use `goal_completion_status.json` as the top-level operational status file. It r
   - `output/memory_public/export_manifest.json`
 
 `SUBJECTIVE_AGI_NEAR_COMPLETE` is an upper gate on top of `OPERATIONALLY_COMPLETE`. Missing supporting artifacts, missing history-aware counts, or a failed strict threshold must keep the subjective status at `NOT_YET`.
+## 2026-04-06 sovereign completion surfaces
+
+- `output/agi_readiness/sovereign_goal_completion_status.json` is the highest completion gate in the existing governed export flow.
+- The sovereign gate depends on checked-in self-authored, world-model, security, rollback, and causal-effect surfaces under `output/agi_readiness/`.
+- Missing or inconsistent supporting artifacts must keep the sovereign status at `NOT_YET`.

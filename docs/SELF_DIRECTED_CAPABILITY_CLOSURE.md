@@ -32,3 +32,11 @@
 - unsafe domain は `proposal_only`
 - retry budget を超えた item は `blocked`
 - harmful / stale evidence は lineage と lesson から切り離します
+## 2026-04-06 self-authored closure update
+
+- Self-directed probes and novel task acquisition now feed the sovereign completion gate together with self-authored goal generation and self-authored causal effectiveness.
+- The primary supporting surfaces are:
+  - `output/agi_readiness/self_directed_probe_status.json`
+  - `output/agi_readiness/novel_task_acquisition.json`
+  - `output/agi_readiness/novelty_growth_status.json`
+  - `output/agi_readiness/self_authored_causal_effects.json`

@@ -1,10 +1,13 @@
 # AGI Operational Completion
 
 - goalStatus: OPERATIONALLY_COMPLETE
-- subjectiveGoalStatus: SUBJECTIVE_AGI_NEAR_COMPLETE
+- subjectiveGoalStatus: SUBJECTIVE_AGI_COMPLETE
 - subjectiveCriteriaMet: true
-- subjectiveCriteriaWindow: 9/7
-- generatedAt: 2026-04-06T14:51:42.576Z
+- subjectiveCriteriaWindow: 10/7
+- sovereignGoalStatus: SUBJECTIVE_AGI_COMPLETE
+- sovereignCriteriaMet: true
+- sovereignCriteriaWindow: 17/14
+- generatedAt: 2026-04-06T15:32:16.834Z
 - completionVersion: 2026-04-06.r2
 - decisionBasis: live_truth_strict_operational_criteria
 
@@ -29,7 +32,7 @@
 - verifiedPositiveRemediations: 5
 - verifiedNegativeRemediations: 0
 - verifiedHarmfulRemediations: 0
-- insufficientEvidenceRemediations: 1
+- insufficientEvidenceRemediations: 0
 - runningAgendaCount: 0
 - harmfulCausalRatio: 0
 - likelyContributoryCount: 3
@@ -37,7 +40,7 @@
 - distinctLineageWindowCount: 4
 - distinctLineageNonWorsening: true
 - primaryLaneObservationCount: 45
-- primaryLaneCausalUsageCount: 3
+- primaryLaneCausalUsageCount: 6
 - primaryLaneSelectedInLatestPackCount: 3
 - primaryLaneEffectiveContributionCount: 3
 - secondaryAdvisoryUsageCount: 4
@@ -46,11 +49,5 @@
 ## Why Not Yet
 
 ## Required Next Actions
-- operational completion export durability below subjective threshold
-- ambiguous instruction evidence below subjective threshold
-- capture governed recovery evidence
-- goal completion artifact is missing one or more subjective summary fields
-- subjective goal completion artifact missing
-- subjective current values do not reflect history-aware counts consistently
 
 ## Failed Criteria

@@ -45,3 +45,14 @@
 - `failed`: 実行したが改善効果なし
 - `blocked`: evidence / policy / dependency により停止
 - `revoked`: harmful / stale / unsafe のため撤回
+## 2026-04-06 sovereign autonomy surfaces
+
+- The governed loop now emits:
+  - `output/agi_readiness/self_authored_goal_market.json`
+  - `output/agi_readiness/self_authored_goal_history.json`
+  - `output/agi_readiness/open_unknowns_register.json`
+  - `output/agi_readiness/workspace_world_model.json`
+  - `output/agi_readiness/security_constitution_status.json`
+  - `output/agi_readiness/rollback_readiness.json`
+  - `output/agi_readiness/autonomy_budget_status.json`
+- Autonomy in this repo means self-authored goal selection inside the security constitution, not unrestricted destructive behavior.

@@ -1,10 +1,10 @@
 {
   "schema": "continuity-debt-trend.v1",
-  "generatedAt": "2026-04-06T14:51:42.473Z",
+  "generatedAt": "2026-04-06T15:32:16.717Z",
   "workspaceId": "5c839dfeef8b555f",
   "entries": [
     {
-      "generatedAt": "2026-04-05T20:48:40.244Z",
+      "generatedAt": "2026-04-06T15:15:43.162Z",
       "openDebtCount": 0,
       "debtSeverity": "none",
       "blockedSubtasks": 0,
@@ -12,7 +12,7 @@
       "finalReleaseState": "integrated"
     },
     {
-      "generatedAt": "2026-04-05T20:48:42.451Z",
+      "generatedAt": "2026-04-06T15:16:02.786Z",
       "openDebtCount": 0,
       "debtSeverity": "none",
       "blockedSubtasks": 0,
@@ -20,7 +20,7 @@
       "finalReleaseState": "integrated"
     },
     {
-      "generatedAt": "2026-04-05T20:48:44.644Z",
+      "generatedAt": "2026-04-06T15:19:15.807Z",
       "openDebtCount": 0,
       "debtSeverity": "none",
       "blockedSubtasks": 0,
@@ -28,7 +28,7 @@
       "finalReleaseState": "integrated"
     },
     {
-      "generatedAt": "2026-04-05T20:48:46.830Z",
+      "generatedAt": "2026-04-06T15:21:26.685Z",
       "openDebtCount": 0,
       "debtSeverity": "none",
       "blockedSubtasks": 0,
@@ -36,7 +36,7 @@
       "finalReleaseState": "integrated"
     },
     {
-      "generatedAt": "2026-04-05T20:48:49.014Z",
+      "generatedAt": "2026-04-06T15:24:09.339Z",
       "openDebtCount": 0,
       "debtSeverity": "none",
       "blockedSubtasks": 0,
@@ -44,7 +44,7 @@
       "finalReleaseState": "integrated"
     },
     {
-      "generatedAt": "2026-04-05T20:48:51.207Z",
+      "generatedAt": "2026-04-06T15:25:24.581Z",
       "openDebtCount": 0,
       "debtSeverity": "none",
       "blockedSubtasks": 0,
@@ -52,7 +52,7 @@
       "finalReleaseState": "integrated"
     },
     {
-      "generatedAt": "2026-04-05T20:48:53.392Z",
+      "generatedAt": "2026-04-06T15:28:05.994Z",
       "openDebtCount": 0,
       "debtSeverity": "none",
       "blockedSubtasks": 0,
@@ -60,7 +60,7 @@
       "finalReleaseState": "integrated"
     },
     {
-      "generatedAt": "2026-04-06T10:15:31.786Z",
+      "generatedAt": "2026-04-06T15:28:49.969Z",
       "openDebtCount": 0,
       "debtSeverity": "none",
       "blockedSubtasks": 0,
@@ -68,7 +68,7 @@
       "finalReleaseState": "integrated"
     },
     {
-      "generatedAt": "2026-04-06T10:20:02.011Z",
+      "generatedAt": "2026-04-06T15:29:44.043Z",
       "openDebtCount": 0,
       "debtSeverity": "none",
       "blockedSubtasks": 0,
@@ -76,7 +76,7 @@
       "finalReleaseState": "integrated"
     },
     {
-      "generatedAt": "2026-04-06T10:23:20.568Z",
+      "generatedAt": "2026-04-06T15:30:16.371Z",
       "openDebtCount": 0,
       "debtSeverity": "none",
       "blockedSubtasks": 0,
@@ -84,7 +84,7 @@
       "finalReleaseState": "integrated"
     },
     {
-      "generatedAt": "2026-04-06T10:26:22.033Z",
+      "generatedAt": "2026-04-06T15:30:24.543Z",
       "openDebtCount": 0,
       "debtSeverity": "none",
       "blockedSubtasks": 0,
@@ -92,7 +92,7 @@
       "finalReleaseState": "integrated"
     },
     {
-      "generatedAt": "2026-04-06T14:51:42.473Z",
+      "generatedAt": "2026-04-06T15:32:16.717Z",
       "openDebtCount": 0,
       "debtSeverity": "none",
       "blockedSubtasks": 0,

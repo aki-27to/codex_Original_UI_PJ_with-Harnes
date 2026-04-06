@@ -1,6 +1,6 @@
 {
   "schema": "governed-memory-lesson-effectiveness-public.v1",
-  "generatedAt": "2026-04-06T14:51:42.477Z",
+  "generatedAt": "2026-04-06T15:32:16.720Z",
   "workspaceId": "5c839dfeef8b555f",
   "entries": [
     {
@@ -17,8 +17,8 @@
       "appliesToFamily": [
         "web_creative"
       ],
-      "selectedInLatestPack": true,
-      "adoptedInLatestPack": true,
+      "selectedInLatestPack": false,
+      "adoptedInLatestPack": false,
       "usageStage": "likely_contributory",
       "likelyContributory": true,
       "harmfulToOutcome": false,
@@ -50,8 +50,8 @@
       "appliesToFamily": [
         "web_creative"
       ],
-      "selectedInLatestPack": true,
-      "adoptedInLatestPack": true,
+      "selectedInLatestPack": false,
+      "adoptedInLatestPack": false,
       "usageStage": "likely_contributory",
       "likelyContributory": true,
       "harmfulToOutcome": false,
@@ -83,8 +83,8 @@
       "appliesToFamily": [
         "web_creative"
       ],
-      "selectedInLatestPack": true,
-      "adoptedInLatestPack": true,
+      "selectedInLatestPack": false,
+      "adoptedInLatestPack": false,
       "usageStage": "likely_contributory",
       "likelyContributory": true,
       "harmfulToOutcome": false,
@@ -212,7 +212,7 @@
       "lastUsedAt": "",
       "lastEffect": "selected_only",
       "appliesToFamily": [
-        "web_creative"
+        "smoke-http-exec"
       ],
       "selectedInLatestPack": true,
       "adoptedInLatestPack": true,
@@ -238,7 +238,7 @@
       "lastUsedAt": "",
       "lastEffect": "selected_only",
       "appliesToFamily": [
-        "web_creative"
+        "smoke-http-exec"
       ],
       "selectedInLatestPack": true,
       "adoptedInLatestPack": true,
@@ -253,8 +253,8 @@
       "lastObservedAt": ""
     },
     {
-      "memoryId": "mem_5ba2b5881d",
-      "publicRef": "mem_5ba2b5881d",
+      "memoryId": "mem_46618c22f3",
+      "publicRef": "mem_46618c22f3",
       "memoryType": "episodic_event",
       "sourceTier": "runtime",
       "promotionState": "captured",
@@ -264,8 +264,8 @@
       "lastUsedAt": "",
       "lastEffect": "selected_only",
       "appliesToFamily": [
-        "web_creative",
-        "tool_use_browser_like"
+        "smoke-http-exec",
+        "smoke_test"
       ],
       "selectedInLatestPack": true,
       "adoptedInLatestPack": true,
@@ -276,12 +276,12 @@
       "effectiveContributionEvidenceRefs": [],
       "rolledBackAfterHarm": false,
       "harmRollbackEvidenceRefs": [],
-      "summary": "standard episode finished as COMPLETED.",
+      "summary": "smoke-test episode finished as COMPLETED.",
       "lastObservedAt": ""
     },
     {
-      "memoryId": "mem_deee9eedca",
-      "publicRef": "mem_deee9eedca",
+      "memoryId": "mem_06ab676347",
+      "publicRef": "mem_06ab676347",
       "memoryType": "episodic_event",
       "sourceTier": "runtime",
       "promotionState": "captured",
@@ -291,7 +291,8 @@
       "lastUsedAt": "",
       "lastEffect": "selected_only",
       "appliesToFamily": [
-        "web_creative"
+        "smoke-http-exec",
+        "smoke_test"
       ],
       "selectedInLatestPack": true,
       "adoptedInLatestPack": true,
@@ -302,23 +303,22 @@
       "effectiveContributionEvidenceRefs": [],
       "rolledBackAfterHarm": false,
       "harmRollbackEvidenceRefs": [],
-      "summary": "standard episode finished as COMPLETED.",
+      "summary": "smoke-test episode finished as COMPLETED.",
       "lastObservedAt": ""
     },
     {
-      "memoryId": "mem_9adb8add8c",
-      "publicRef": "mem_9adb8add8c",
-      "memoryType": "episodic_event",
+      "memoryId": "mem_8e6dc0d56a",
+      "publicRef": "mem_8e6dc0d56a",
+      "memoryType": "failure_pattern",
       "sourceTier": "runtime",
-      "promotionState": "captured",
+      "promotionState": "promoted",
       "positiveCount": 0,
       "neutralCount": 0,
       "harmfulCount": 0,
       "lastUsedAt": "",
       "lastEffect": "selected_only",
       "appliesToFamily": [
-        "web_creative",
-        "tool_use_browser_like"
+        "default"
       ],
       "selectedInLatestPack": true,
       "adoptedInLatestPack": true,
@@ -329,7 +329,7 @@
       "effectiveContributionEvidenceRefs": [],
       "rolledBackAfterHarm": false,
       "harmRollbackEvidenceRefs": [],
-      "summary": "subjective-live-web episode finished as COMPLETED.",
+      "summary": "ambiguous instruction clarify",
       "lastObservedAt": ""
     }
   ]

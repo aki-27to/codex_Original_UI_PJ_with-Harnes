@@ -131,3 +131,9 @@ public proof は redacted projection であり、live truth をそのまま dump
 - public proof から bottleneck / remediation / effect / debt closeout が読める
 
 ただし、これは operational completion であり、public AGI claim とは別です。
+## 2026-04-06 sovereign completion update
+
+- `OPERATIONALLY_COMPLETE` remains the lower gate.
+- `SUBJECTIVE_AGI_NEAR_COMPLETE` remains the intermediate fail-closed gate.
+- `SUBJECTIVE_AGI_COMPLETE` is allowed only when `output/agi_readiness/sovereign_goal_completion_status.json` passes on current `main`.
+- This is an internal current-main truth gate, not a public claim about AGI in the general sense.

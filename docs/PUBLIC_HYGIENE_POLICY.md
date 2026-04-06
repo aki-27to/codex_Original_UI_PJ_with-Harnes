@@ -30,3 +30,8 @@ public proof は operator がそのまま読める品質を維持します。
 - `public_hygiene_no_blank_task_outcome_status`
 - `public_hygiene_no_raw_uuid_titles`
 - `public_hygiene_iso8601_timestamps`
+## 2026-04-06 sovereign public hygiene
+
+- `SUBJECTIVE_AGI_COMPLETE` may be reported only from checked-in current-main artifacts.
+- Local-only exports, draft streaks, or unpublished supporting surfaces must not be described as current truth.
+- `output/memory_public/export_manifest.json` is the tracked registry for sovereign supporting artifacts.

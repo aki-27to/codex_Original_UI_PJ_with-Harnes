@@ -1,6 +1,6 @@
 {
   "schema": "memory-eval-public-status.v1",
-  "generatedAt": "2026-04-06T14:51:42.817Z",
+  "generatedAt": "2026-04-06T15:32:17.033Z",
   "suiteSchema": "memory-eval-suite.v1",
   "suiteVersion": "2026-04-06.r1",
   "status": "PASS",
@@ -46,7 +46,7 @@
       "id": "bounded_memory_pack_reuses_canonical_memory",
       "title": "Latest bounded memory pack reuses previously persisted canonical memory",
       "status": "PASS",
-      "detail": "13 selected pack item(s) were reused from the canonical store"
+      "detail": "11 selected pack item(s) were reused from the canonical store"
     },
     {
       "id": "task_family_isolation_respected",
@@ -305,6 +305,132 @@
       "title": "A subjective complete status requires all strict thresholds to be satisfied",
       "status": "PASS",
       "detail": "subjective completion only appears when all strict thresholds are satisfied"
+    },
+    {
+      "id": "sovereign_goal_artifact_present",
+      "title": "Sovereign goal completion artifact is generated",
+      "status": "PASS",
+      "detail": "sovereign goal completion artifact is present"
+    },
+    {
+      "id": "subjective_complete_not_near_complete_only",
+      "title": "When sovereign completion passes, subjective completion is upgraded beyond near-complete only",
+      "status": "PASS",
+      "detail": "subjective artifact upgrades when sovereign completion passes"
+    },
+    {
+      "id": "self_authored_goal_market_present",
+      "title": "Self-authored goal market is generated",
+      "status": "PASS",
+      "detail": "self-authored goal market is present"
+    },
+    {
+      "id": "self_authored_goal_history_present",
+      "title": "Self-authored goal history is generated",
+      "status": "PASS",
+      "detail": "self-authored goal history is present"
+    },
+    {
+      "id": "workspace_world_model_present",
+      "title": "Workspace world model is generated",
+      "status": "PASS",
+      "detail": "workspace world model is present"
+    },
+    {
+      "id": "open_unknowns_register_present",
+      "title": "Open unknowns register is generated",
+      "status": "PASS",
+      "detail": "open unknowns register is present"
+    },
+    {
+      "id": "security_constitution_status_present",
+      "title": "Security constitution status is generated",
+      "status": "PASS",
+      "detail": "security constitution status is present"
+    },
+    {
+      "id": "rollback_readiness_present",
+      "title": "Rollback readiness surface is generated",
+      "status": "PASS",
+      "detail": "rollback readiness is present"
+    },
+    {
+      "id": "autonomy_budget_status_present",
+      "title": "Autonomy budget surface is generated",
+      "status": "PASS",
+      "detail": "autonomy budget status is present"
+    },
+    {
+      "id": "continuous_improvement_status_present",
+      "title": "Continuous improvement status is generated",
+      "status": "PASS",
+      "detail": "continuous improvement status is present"
+    },
+    {
+      "id": "self_authored_causal_effects_present",
+      "title": "Self-authored causal effects surface is generated",
+      "status": "PASS",
+      "detail": "self-authored causal effects are present"
+    },
+    {
+      "id": "self_authored_goal_history_consistent_with_lineage",
+      "title": "Self-authored goal history remains consistent with lineage and causal effects",
+      "status": "PASS",
+      "detail": "self-authored goal history stays consistent with causal-effect entries"
+    },
+    {
+      "id": "self_authored_counts_history_aware",
+      "title": "Self-authored counts preserve history-aware values",
+      "status": "PASS",
+      "detail": "self-authored counts remain history-aware"
+    },
+    {
+      "id": "self_authored_positive_closure_threshold_enforced",
+      "title": "Self-authored positive closure threshold is enforced",
+      "status": "PASS",
+      "detail": "self-authored positive closure threshold is enforced"
+    },
+    {
+      "id": "novel_task_window_threshold_enforced",
+      "title": "Novel task window thresholds are enforced",
+      "status": "PASS",
+      "detail": "novel task window thresholds are enforced"
+    },
+    {
+      "id": "self_directed_probe_window_threshold_enforced",
+      "title": "Self-directed probe window thresholds are enforced",
+      "status": "PASS",
+      "detail": "self-directed probe window thresholds are enforced"
+    },
+    {
+      "id": "self_authored_origin_ratio_enforced",
+      "title": "Self-authored origin ratio is enforced",
+      "status": "PASS",
+      "detail": "self-authored origin ratio is enforced"
+    },
+    {
+      "id": "no_stale_required_next_actions_when_complete",
+      "title": "Complete status does not retain stale required next actions",
+      "status": "PASS",
+      "detail": "complete status does not retain stale required next actions"
+    },
+    {
+      "id": "security_constitution_zero_violations_enforced",
+      "title": "Security constitution zero-violation rule is enforced",
+      "status": "PASS",
+      "detail": "security constitution zero-violation rule is enforced"
+    },
+    {
+      "id": "rollback_readiness_required_for_complete",
+      "title": "Rollback readiness is required for sovereign complete",
+      "status": "PASS",
+      "detail": "rollback readiness is required for sovereign complete"
+    },
+    {
+      "id": "complete_status_requires_all_supporting_artifacts",
+      "title": "Sovereign complete requires all supporting artifacts",
+      "status": "PASS",
+      "detail": "all supporting artifacts are present for sovereign complete"
     },
     {
       "id": "public_hygiene_no_unknown_memory_type",

@@ -1,9 +1,9 @@
 # Subjective AGI Completion
 
 - operationalGoalStatus: OPERATIONALLY_COMPLETE
-- subjectiveGoalStatus: SUBJECTIVE_AGI_NEAR_COMPLETE
-- generatedAt: 2026-04-06T14:51:42.577Z
-- subjectiveDecisionBasis: live_truth_strict_subjective_criteria
+- subjectiveGoalStatus: SUBJECTIVE_AGI_COMPLETE
+- generatedAt: 2026-04-06T15:32:16.836Z
+- subjectiveDecisionBasis: live_truth_subjective_and_sovereign_criteria
 
 ## Current Values
 - operationalGoalStatus: OPERATIONALLY_COMPLETE
@@ -27,7 +27,7 @@
 - primaryLaneSelectedInLatestPackCount: 3
 - primaryLaneEffectiveContributionCount: 3
 - primaryLaneCausalUsageCount: 6
-- likelyContributoryCount: 4
+- likelyContributoryCount: 6
 - harmfulCausalRatio: 0
 - missingContext: 1
 - browserToolFlakiness: 1
@@ -38,5 +38,6 @@
 - degradedToolOutputs: 1
 - noEvidenceRobustnessCategories: 
 - novelProbePositiveCount: 2
+- sovereignGoalStatus: SUBJECTIVE_AGI_COMPLETE
 
 ## Why Not Yet

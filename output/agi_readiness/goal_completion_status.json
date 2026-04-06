@@ -1,6 +1,6 @@
 {
   "schema": "agi-operational-completion-status.v1",
-  "generatedAt": "2026-04-06T14:51:42.576Z",
+  "generatedAt": "2026-04-06T15:32:16.834Z",
   "workspaceId": "5c839dfeef8b555f",
   "goalStatus": "OPERATIONALLY_COMPLETE",
   "completionVersion": "2026-04-06.r2",
@@ -98,7 +98,7 @@
     },
     {
       "id": "consecutiveSuccessfulExports",
-      "detail": "consecutive successful exports 13 >= 3"
+      "detail": "consecutive successful exports 8 >= 3"
     }
   ],
   "completionCriteria": {
@@ -144,7 +144,7 @@
     "verifiedPositiveRemediations": 5,
     "verifiedNegativeRemediations": 0,
     "verifiedHarmfulRemediations": 0,
-    "insufficientEvidenceRemediations": 1,
+    "insufficientEvidenceRemediations": 0,
     "runningAgendaCount": 0,
     "harmfulCausalRatio": 0,
     "likelyContributoryCount": 3,
@@ -152,7 +152,7 @@
     "distinctLineageWindowCount": 4,
     "distinctLineageNonWorsening": true,
     "primaryLaneObservationCount": 45,
-    "primaryLaneCausalUsageCount": 3,
+    "primaryLaneCausalUsageCount": 6,
     "primaryLaneSelectedInLatestPackCount": 3,
     "primaryLaneEffectiveContributionCount": 3,
     "secondaryAdvisoryUsageCount": 4,
@@ -179,7 +179,7 @@
     "verifiedPositiveRemediations": 5,
     "verifiedNegativeRemediations": 0,
     "verifiedHarmfulRemediations": 0,
-    "insufficientEvidenceRemediations": 1,
+    "insufficientEvidenceRemediations": 0,
     "runningAgendaCount": 0,
     "harmfulCausalRatio": 0,
     "likelyContributoryCount": 3,
@@ -187,7 +187,7 @@
     "distinctLineageWindowCount": 4,
     "distinctLineageNonWorsening": true,
     "primaryLaneObservationCount": 45,
-    "primaryLaneCausalUsageCount": 3,
+    "primaryLaneCausalUsageCount": 6,
     "primaryLaneSelectedInLatestPackCount": 3,
     "primaryLaneEffectiveContributionCount": 3,
     "secondaryAdvisoryUsageCount": 4,
@@ -218,7 +218,7 @@
     "windowSize": 5,
     "distinctEntryCount": 9,
     "distinctWindowCount": 2,
-    "consecutivePassingExports": 13,
+    "consecutivePassingExports": 8,
     "recentNonWorsening": true,
     "distinctImprovementCount": 2,
     "distinctRegressionCount": 0,
@@ -226,12 +226,12 @@
     "attemptedDistinctRegressionCount": 0
   },
   "autonomousLearningSummary": {
-    "totalAgendaCount": 1,
+    "totalAgendaCount": 0,
     "runningAgendaCount": 0,
     "verifiedPositiveCount": 5,
     "verifiedNegativeCount": 0,
     "verifiedHarmfulCount": 0,
-    "insufficientEvidenceCount": 1
+    "insufficientEvidenceCount": 0
   },
   "continuityDebtSummary": {
     "openDebtCount": 0,
@@ -263,146 +263,21 @@
       "likelyContributoryCount": 3,
       "harmfulCount": 0,
       "rolledBackHarmCount": 0,
-      "neutralCount": 0
+      "neutralCount": 0,
+      "selfAuthoredEffectiveContributionCount": 11,
+      "selfAuthoredHarmfulCount": 0
     }
   },
-  "lastPositiveClosureAt": "2026-04-05T20:48:40.260Z",
-  "requiredNextActions": [
-    "operational completion export durability below subjective threshold",
-    "ambiguous instruction evidence below subjective threshold",
-    "capture governed recovery evidence",
-    "goal completion artifact is missing one or more subjective summary fields",
-    "subjective goal completion artifact missing",
-    "subjective current values do not reflect history-aware counts consistently"
-  ],
+  "lastPositiveClosureAt": "2026-04-06T15:24:08.824Z",
+  "requiredNextActions": [],
   "notes": [
     "This artifact is an operational completion signal derived from live truth, not a public AGI proof claim.",
     "Stable coverage trend entries tracked: 12."
   ],
   "history": {
     "consecutiveRequired": 3,
-    "consecutivePassingExports": 13,
+    "consecutivePassingExports": 8,
     "entries": [
-      {
-        "exportSessionId": "export_ed28b990a9",
-        "generatedAt": "2026-04-05T20:48:16.937Z",
-        "goalStatus": "PENDING_WINDOW",
-        "baseStatus": "criteria_met",
-        "rawFinalScore": 0.9995,
-        "R_robust": 1,
-        "H_horizon": 1,
-        "stableCoverageBreadth": 1,
-        "openDebtCount": 0,
-        "harmfulCausalRatio": 0
-      },
-      {
-        "exportSessionId": "export_b6bed67c1a",
-        "generatedAt": "2026-04-05T20:48:40.321Z",
-        "goalStatus": "PENDING_WINDOW",
-        "baseStatus": "criteria_met",
-        "rawFinalScore": 0.9995,
-        "R_robust": 1,
-        "H_horizon": 1,
-        "stableCoverageBreadth": 1,
-        "openDebtCount": 0,
-        "harmfulCausalRatio": 0
-      },
-      {
-        "exportSessionId": "export_59306198a0",
-        "generatedAt": "2026-04-05T20:48:42.527Z",
-        "goalStatus": "PENDING_WINDOW",
-        "baseStatus": "criteria_met",
-        "rawFinalScore": 0.9995,
-        "R_robust": 1,
-        "H_horizon": 1,
-        "stableCoverageBreadth": 1,
-        "openDebtCount": 0,
-        "harmfulCausalRatio": 0
-      },
-      {
-        "exportSessionId": "export_5e053e2127",
-        "generatedAt": "2026-04-05T20:48:44.719Z",
-        "goalStatus": "PENDING_WINDOW",
-        "baseStatus": "criteria_met",
-        "rawFinalScore": 0.9995,
-        "R_robust": 1,
-        "H_horizon": 1,
-        "stableCoverageBreadth": 1,
-        "openDebtCount": 0,
-        "harmfulCausalRatio": 0
-      },
-      {
-        "exportSessionId": "export_91e84da993",
-        "generatedAt": "2026-04-05T20:48:46.906Z",
-        "goalStatus": "PENDING_WINDOW",
-        "baseStatus": "criteria_met",
-        "rawFinalScore": 0.9995,
-        "R_robust": 1,
-        "H_horizon": 1,
-        "stableCoverageBreadth": 1,
-        "openDebtCount": 0,
-        "harmfulCausalRatio": 0
-      },
-      {
-        "exportSessionId": "export_7fcc3104ff",
-        "generatedAt": "2026-04-05T20:48:49.101Z",
-        "goalStatus": "PENDING_WINDOW",
-        "baseStatus": "criteria_met",
-        "rawFinalScore": 0.9995,
-        "R_robust": 1,
-        "H_horizon": 1,
-        "stableCoverageBreadth": 1,
-        "openDebtCount": 0,
-        "harmfulCausalRatio": 0
-      },
-      {
-        "exportSessionId": "export_023760df4b",
-        "generatedAt": "2026-04-05T20:48:51.283Z",
-        "goalStatus": "PENDING_WINDOW",
-        "baseStatus": "criteria_met",
-        "rawFinalScore": 0.9995,
-        "R_robust": 1,
-        "H_horizon": 1,
-        "stableCoverageBreadth": 1,
-        "openDebtCount": 0,
-        "harmfulCausalRatio": 0
-      },
-      {
-        "exportSessionId": "export_3fec026cdf",
-        "generatedAt": "2026-04-05T20:48:53.468Z",
-        "goalStatus": "PENDING_WINDOW",
-        "baseStatus": "criteria_met",
-        "rawFinalScore": 0.9995,
-        "R_robust": 1,
-        "H_horizon": 1,
-        "stableCoverageBreadth": 1,
-        "openDebtCount": 0,
-        "harmfulCausalRatio": 0
-      },
-      {
-        "exportSessionId": "export_279374baee",
-        "generatedAt": "2026-04-06T10:15:31.872Z",
-        "goalStatus": "PENDING_WINDOW",
-        "baseStatus": "criteria_met",
-        "rawFinalScore": 0.9995,
-        "R_robust": 1,
-        "H_horizon": 1,
-        "stableCoverageBreadth": 1,
-        "openDebtCount": 0,
-        "harmfulCausalRatio": 0
-      },
-      {
-        "exportSessionId": "export_37eb322d60",
-        "generatedAt": "2026-04-06T10:20:02.105Z",
-        "goalStatus": "PENDING_WINDOW",
-        "baseStatus": "criteria_met",
-        "rawFinalScore": 0.9995,
-        "R_robust": 1,
-        "H_horizon": 1,
-        "stableCoverageBreadth": 1,
-        "openDebtCount": 0,
-        "harmfulCausalRatio": 0
-      },
       {
         "exportSessionId": "export_76a7c228f7",
         "generatedAt": "2026-04-06T10:23:20.659Z",
@@ -438,14 +313,141 @@
         "stableCoverageBreadth": 1,
         "openDebtCount": 0,
         "harmfulCausalRatio": 0
+      },
+      {
+        "exportSessionId": "export_20f20436cd",
+        "generatedAt": "2026-04-06T14:56:05.598Z",
+        "goalStatus": "NOT_YET",
+        "baseStatus": "criteria_failed",
+        "rawFinalScore": 0.9995,
+        "R_robust": 1,
+        "H_horizon": 1,
+        "stableCoverageBreadth": 1,
+        "openDebtCount": 0,
+        "harmfulCausalRatio": 0
+      },
+      {
+        "exportSessionId": "export_b8bfac49a1",
+        "generatedAt": "2026-04-06T14:59:10.903Z",
+        "goalStatus": "NOT_YET",
+        "baseStatus": "criteria_failed",
+        "rawFinalScore": 0.9995,
+        "R_robust": 1,
+        "H_horizon": 1,
+        "stableCoverageBreadth": 1,
+        "openDebtCount": 0,
+        "harmfulCausalRatio": 0
+      },
+      {
+        "exportSessionId": "export_5cc14ba76c",
+        "generatedAt": "2026-04-06T15:16:02.907Z",
+        "goalStatus": "PENDING_WINDOW",
+        "baseStatus": "criteria_met",
+        "rawFinalScore": 0.9995,
+        "R_robust": 1,
+        "H_horizon": 1,
+        "stableCoverageBreadth": 1,
+        "openDebtCount": 0,
+        "harmfulCausalRatio": 0
+      },
+      {
+        "exportSessionId": "export_65978b6ca1",
+        "generatedAt": "2026-04-06T15:19:15.931Z",
+        "goalStatus": "PENDING_WINDOW",
+        "baseStatus": "criteria_met",
+        "rawFinalScore": 0.9995,
+        "R_robust": 1,
+        "H_horizon": 1,
+        "stableCoverageBreadth": 1,
+        "openDebtCount": 0,
+        "harmfulCausalRatio": 0
+      },
+      {
+        "exportSessionId": "export_e7c41eb7a3",
+        "generatedAt": "2026-04-06T15:21:26.807Z",
+        "goalStatus": "PENDING_WINDOW",
+        "baseStatus": "criteria_met",
+        "rawFinalScore": 0.9995,
+        "R_robust": 1,
+        "H_horizon": 1,
+        "stableCoverageBreadth": 1,
+        "openDebtCount": 0,
+        "harmfulCausalRatio": 0
+      },
+      {
+        "exportSessionId": "export_e8bb52e866",
+        "generatedAt": "2026-04-06T15:24:09.460Z",
+        "goalStatus": "PENDING_WINDOW",
+        "baseStatus": "criteria_met",
+        "rawFinalScore": 0.9995,
+        "R_robust": 1,
+        "H_horizon": 1,
+        "stableCoverageBreadth": 1,
+        "openDebtCount": 0,
+        "harmfulCausalRatio": 0
+      },
+      {
+        "exportSessionId": "export_c4d17fcb58",
+        "generatedAt": "2026-04-06T15:25:24.701Z",
+        "goalStatus": "PENDING_WINDOW",
+        "baseStatus": "criteria_met",
+        "rawFinalScore": 0.9995,
+        "R_robust": 1,
+        "H_horizon": 1,
+        "stableCoverageBreadth": 1,
+        "openDebtCount": 0,
+        "harmfulCausalRatio": 0
+      },
+      {
+        "exportSessionId": "export_2e06fdbfe0",
+        "generatedAt": "2026-04-06T15:28:06.111Z",
+        "goalStatus": "PENDING_WINDOW",
+        "baseStatus": "criteria_met",
+        "rawFinalScore": 0.9995,
+        "R_robust": 1,
+        "H_horizon": 1,
+        "stableCoverageBreadth": 1,
+        "openDebtCount": 0,
+        "harmfulCausalRatio": 0
+      },
+      {
+        "exportSessionId": "export_583f83a6dd",
+        "generatedAt": "2026-04-06T15:30:24.664Z",
+        "goalStatus": "PENDING_WINDOW",
+        "baseStatus": "criteria_met",
+        "rawFinalScore": 0.9995,
+        "R_robust": 1,
+        "H_horizon": 1,
+        "stableCoverageBreadth": 1,
+        "openDebtCount": 0,
+        "harmfulCausalRatio": 0
+      },
+      {
+        "exportSessionId": "export_1024541b11",
+        "generatedAt": "2026-04-06T15:32:16.834Z",
+        "goalStatus": "PENDING_WINDOW",
+        "baseStatus": "criteria_met",
+        "rawFinalScore": 0.9995,
+        "R_robust": 1,
+        "H_horizon": 1,
+        "stableCoverageBreadth": 1,
+        "openDebtCount": 0,
+        "harmfulCausalRatio": 0
       }
     ]
   },
   "subjectiveGoalStatusPath": "output/agi_readiness/subjective_goal_completion_status.json",
-  "subjectiveGoalStatus": "SUBJECTIVE_AGI_NEAR_COMPLETE",
+  "subjectiveGoalStatus": "SUBJECTIVE_AGI_COMPLETE",
   "subjectiveCriteriaMet": true,
   "subjectiveFailedCriteria": [],
   "subjectiveWhyNotYet": [],
-  "subjectiveCriteriaWindowPassCount": 9,
-  "subjectiveCriteriaWindowSize": 7
+  "subjectiveCriteriaWindowPassCount": 10,
+  "subjectiveCriteriaWindowSize": 7,
+  "sovereignGoalStatusPath": "output/agi_readiness/sovereign_goal_completion_status.json",
+  "sovereignGoalStatus": "SUBJECTIVE_AGI_COMPLETE",
+  "sovereignCriteriaMet": true,
+  "sovereignFailedCriteria": [],
+  "sovereignWhyNotYet": [],
+  "sovereignCriteriaWindowPassCount": 17,
+  "sovereignCriteriaWindowSize": 14
 }

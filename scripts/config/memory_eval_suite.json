@@ -203,6 +203,90 @@
       "title": "A subjective complete status requires all strict thresholds to be satisfied"
     },
     {
+      "id": "sovereign_goal_artifact_present",
+      "title": "Sovereign goal completion artifact is generated"
+    },
+    {
+      "id": "subjective_complete_not_near_complete_only",
+      "title": "When sovereign completion passes, subjective completion is upgraded beyond near-complete only"
+    },
+    {
+      "id": "self_authored_goal_market_present",
+      "title": "Self-authored goal market is generated"
+    },
+    {
+      "id": "self_authored_goal_history_present",
+      "title": "Self-authored goal history is generated"
+    },
+    {
+      "id": "workspace_world_model_present",
+      "title": "Workspace world model is generated"
+    },
+    {
+      "id": "open_unknowns_register_present",
+      "title": "Open unknowns register is generated"
+    },
+    {
+      "id": "security_constitution_status_present",
+      "title": "Security constitution status is generated"
+    },
+    {
+      "id": "rollback_readiness_present",
+      "title": "Rollback readiness surface is generated"
+    },
+    {
+      "id": "autonomy_budget_status_present",
+      "title": "Autonomy budget surface is generated"
+    },
+    {
+      "id": "continuous_improvement_status_present",
+      "title": "Continuous improvement status is generated"
+    },
+    {
+      "id": "self_authored_causal_effects_present",
+      "title": "Self-authored causal effects surface is generated"
+    },
+    {
+      "id": "self_authored_goal_history_consistent_with_lineage",
+      "title": "Self-authored goal history remains consistent with lineage and causal effects"
+    },
+    {
+      "id": "self_authored_counts_history_aware",
+      "title": "Self-authored counts preserve history-aware values"
+    },
+    {
+      "id": "self_authored_positive_closure_threshold_enforced",
+      "title": "Self-authored positive closure threshold is enforced"
+    },
+    {
+      "id": "novel_task_window_threshold_enforced",
+      "title": "Novel task window thresholds are enforced"
+    },
+    {
+      "id": "self_directed_probe_window_threshold_enforced",
+      "title": "Self-directed probe window thresholds are enforced"
+    },
+    {
+      "id": "self_authored_origin_ratio_enforced",
+      "title": "Self-authored origin ratio is enforced"
+    },
+    {
+      "id": "no_stale_required_next_actions_when_complete",
+      "title": "Complete status does not retain stale required next actions"
+    },
+    {
+      "id": "security_constitution_zero_violations_enforced",
+      "title": "Security constitution zero-violation rule is enforced"
+    },
+    {
+      "id": "rollback_readiness_required_for_complete",
+      "title": "Rollback readiness is required for sovereign complete"
+    },
+    {
+      "id": "complete_status_requires_all_supporting_artifacts",
+      "title": "Sovereign complete requires all supporting artifacts"
+    },
+    {
       "id": "public_hygiene_no_unknown_memory_type",
       "title": "Public artifacts avoid unknown memoryType fallbacks"
     },

@@ -1,6 +1,6 @@
 {
   "schema": "agi-readiness-robustness-breakdown.v1",
-  "generatedAt": "2026-04-06T14:51:42.354Z",
+  "generatedAt": "2026-04-06T15:32:16.618Z",
   "workspaceId": "5c839dfeef8b555f",
   "categories": [
     {
@@ -183,8 +183,8 @@
       "categoryId": "browser_tool_flakiness",
       "label": "Browser/tool flakiness handling",
       "score": 1,
-      "evidenceCount": 8,
-      "successCount": 8,
+      "evidenceCount": 6,
+      "successCount": 6,
       "failureCount": 0,
       "status": "observed",
       "recentEvidence": [

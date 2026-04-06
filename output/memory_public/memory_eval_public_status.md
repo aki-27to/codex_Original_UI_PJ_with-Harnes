@@ -1,7 +1,7 @@
 # Memory Eval Public Status
 
 - Status: PASS
-- Generated At: 2026-04-06T14:51:42.817Z
+- Generated At: 2026-04-06T15:32:17.033Z
 
 ## Checks
 - canonical_store_present: PASS (canonical event log and index are present)
@@ -10,7 +10,7 @@
 - workspace_progress_updated_at_present: PASS (workspace progress projection exposes a durable updatedAt timestamp)
 - legacy_learning_compatibility_preserved: PASS (legacy learning compatibility artifacts remain addressable)
 - bounded_memory_pack_written: PASS (at least one bounded memory pack exists)
-- bounded_memory_pack_reuses_canonical_memory: PASS (13 selected pack item(s) were reused from the canonical store)
+- bounded_memory_pack_reuses_canonical_memory: PASS (11 selected pack item(s) were reused from the canonical store)
 - task_family_isolation_respected: PASS (latest bounded memory pack respects task-family isolation for hard-excluded governed memory types)
 - lane_projection_canonical_state_present: PASS (public lane projections expose canonical memory-derived lesson state for primary and secondary learning lanes)
 - promotion_health_memory_type_populated: PASS (promotion/revocation health entries expose non-empty memoryType values)
@@ -54,6 +54,27 @@
 - novel_task_acquisition_present: PASS (novel task acquisition status is present)
 - subjective_window_threshold_enforced: PASS (subjective completion window size and pass count are enforced consistently)
 - subjective_complete_case_requires_all_strict_thresholds: PASS (subjective completion only appears when all strict thresholds are satisfied)
+- sovereign_goal_artifact_present: PASS (sovereign goal completion artifact is present)
+- subjective_complete_not_near_complete_only: PASS (subjective artifact upgrades when sovereign completion passes)
+- self_authored_goal_market_present: PASS (self-authored goal market is present)
+- self_authored_goal_history_present: PASS (self-authored goal history is present)
+- workspace_world_model_present: PASS (workspace world model is present)
+- open_unknowns_register_present: PASS (open unknowns register is present)
+- security_constitution_status_present: PASS (security constitution status is present)
+- rollback_readiness_present: PASS (rollback readiness is present)
+- autonomy_budget_status_present: PASS (autonomy budget status is present)
+- continuous_improvement_status_present: PASS (continuous improvement status is present)
+- self_authored_causal_effects_present: PASS (self-authored causal effects are present)
+- self_authored_goal_history_consistent_with_lineage: PASS (self-authored goal history stays consistent with causal-effect entries)
+- self_authored_counts_history_aware: PASS (self-authored counts remain history-aware)
+- self_authored_positive_closure_threshold_enforced: PASS (self-authored positive closure threshold is enforced)
+- novel_task_window_threshold_enforced: PASS (novel task window thresholds are enforced)
+- self_directed_probe_window_threshold_enforced: PASS (self-directed probe window thresholds are enforced)
+- self_authored_origin_ratio_enforced: PASS (self-authored origin ratio is enforced)
+- no_stale_required_next_actions_when_complete: PASS (complete status does not retain stale required next actions)
+- security_constitution_zero_violations_enforced: PASS (security constitution zero-violation rule is enforced)
+- rollback_readiness_required_for_complete: PASS (rollback readiness is required for sovereign complete)
+- complete_status_requires_all_supporting_artifacts: PASS (all supporting artifacts are present for sovereign complete)
 - public_hygiene_no_unknown_memory_type: PASS (public artifacts do not expose unknown memoryType)
 - public_hygiene_validation_refs_present: PASS (validation references are populated)
 - public_hygiene_no_blank_task_outcome_status: PASS (task outcome statuses are populated)

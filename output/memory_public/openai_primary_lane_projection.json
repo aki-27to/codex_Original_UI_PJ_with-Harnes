@@ -1,6 +1,6 @@
 {
   "schema": "governed-memory-public-lane-projection.v1",
-  "generatedAt": "2026-04-06T14:51:42.464Z",
+  "generatedAt": "2026-04-06T15:32:16.714Z",
   "laneKey": "openai_primary",
   "sourceName": "OpenAI Developers Blog",
   "sourceTier": "external_primary",
@@ -14,7 +14,7 @@
     "blockedCount": 0,
     "shadowCount": 0,
     "selectedInLatestPackCount": 3,
-    "consideredForPackCount": 10,
+    "consideredForPackCount": 3,
     "advisoryReferenceCount": 0,
     "observationCount": 45,
     "awaitingObservationCount": 7,
@@ -24,10 +24,10 @@
     "familySelectionCounts": {
       "web_creative": 3
     },
-    "causalUsageCount": 3,
+    "causalUsageCount": 6,
     "surfacedToAgentCount": 3,
     "behaviorallyReferencedCount": 3,
-    "likelyContributoryCount": 3,
+    "likelyContributoryCount": 6,
     "effectiveContributionCount": 3,
     "harmfulContributionCount": 0,
     "netEffectiveContribution": 3
@@ -46,9 +46,9 @@
     "awaitingObservationCount": 7,
     "observationStatus": "awaiting_observations",
     "lastObservedAt": "2026-04-05T20:13:28.477Z",
-    "consideredForPackCount": 10,
+    "consideredForPackCount": 3,
     "advisoryReferenceCount": 0,
-    "causalUsageCount": 3,
+    "causalUsageCount": 6,
     "effectiveContributionCount": 3,
     "harmfulContributionCount": 0,
     "netEffectiveContribution": 3
@@ -61,11 +61,11 @@
     "familySelectionCounts": {
       "web_creative": 3
     },
-    "policyEligibleCount": 10,
-    "consideredForPackCount": 10,
+    "policyEligibleCount": 0,
+    "consideredForPackCount": 3,
     "advisoryReferenceCount": 0
   },
-  "causalUsageCount": 3,
+  "causalUsageCount": 6,
   "recentCausalEffects": [
     {
       "publicRef": "mem_8896adaa48",
@@ -75,7 +75,9 @@
         "turn_fba29baf0b",
         "turn_7f52ea5222",
         "turn_31e6a84e49",
-        "turn_632a9c1c65"
+        "turn_632a9c1c65",
+        "turn_4cd81a7c20",
+        "turn_bc24c69220"
       ],
       "summary": "Using skills to accelerate OSS maintenance | OpenAI Developers"
     },
@@ -87,7 +89,9 @@
         "turn_fba29baf0b",
         "turn_7f52ea5222",
         "turn_31e6a84e49",
-        "turn_632a9c1c65"
+        "turn_632a9c1c65",
+        "turn_4cd81a7c20",
+        "turn_bc24c69220"
       ],
       "summary": "Building frontend UIs with Codex and Figma | OpenAI Developers"
     },
@@ -99,7 +103,9 @@
         "turn_fba29baf0b",
         "turn_7f52ea5222",
         "turn_31e6a84e49",
-        "turn_632a9c1c65"
+        "turn_632a9c1c65",
+        "turn_4cd81a7c20",
+        "turn_bc24c69220"
       ],
       "summary": "Run long horizon tasks with Codex | OpenAI Developers"
     }

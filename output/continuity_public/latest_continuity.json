@@ -1,6 +1,6 @@
 {
   "schema": "continuity-public-summary.v1",
-  "generatedAt": "2026-04-06T14:51:42.549Z",
+  "generatedAt": "2026-04-06T15:32:16.783Z",
   "workspaceId": "5c839dfeef8b555f",
   "activeAgentTree": {
     "schema": "bounded-agent-graph.v1",
@@ -78,7 +78,7 @@
       "spec": 4,
       "intent": 1,
       "workspace_progress": 1,
-      "experience": 4,
+      "experience": 2,
       "semantic": 3,
       "preference": 0,
       "improvement": 0
@@ -122,5 +122,14 @@
   "remediationLinkedTaskCount": 6,
   "autoClosedBlockedCount": 24,
   "openDebtCount": 0,
-  "debtSeverity": "none"
+  "debtSeverity": "none",
+  "selfAuthoredTaskFlow": {
+    "selfAuthoredGoalCountWindow": 19,
+    "positiveClosureCountWindow": 11,
+    "latestRoleMix": [
+      "default",
+      "frontend_worker",
+      "reviewer"
+    ]
+  }
 }

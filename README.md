@@ -325,3 +325,10 @@ This is an internal operational completion surface, not a public AGI claim.
   - `output/agi_readiness/novel_task_acquisition.json`
 - The repo treats checked-in exported artifacts as main truth. Local-only or unpublished runs do not count as current main truth.
 - Subjective completion is stricter than operational completion. If any supporting artifact is missing or any strict threshold fails, the status must remain `NOT_YET`.
+## 2026-04-06 sovereign completion update
+
+- `output/agi_readiness/goal_completion_status.json` remains the top-level operational decision artifact.
+- `output/agi_readiness/subjective_goal_completion_status.json` now permits `SUBJECTIVE_AGI_COMPLETE` when the sovereign gate passes.
+- `output/agi_readiness/sovereign_goal_completion_status.json` is the top internal subjective gate for this repo. It is an internal live-truth gate, not a public AGI claim.
+- Checked-in exported artifacts are the current `main` truth. Local-only exports are not.
+- Sovereign supporting artifacts are tracked in `output/memory_public/export_manifest.json`.

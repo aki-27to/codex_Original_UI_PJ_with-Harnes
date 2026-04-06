@@ -662,6 +662,93 @@ function readPublicHistorySnapshot(workspaceRoot, paths, { historyType = "subjec
   };
 }
 
+function isMetaCompletionAgendaEntry(entry) {
+  const source = safeString(entry && entry.source, 80);
+  const summary = safeString(entry && entry.publicSummary, 240).toLowerCase();
+  if (["subjective_goal", "memory_eval"].includes(source)) return true;
+  return /(subjective|sovereign|history-aware|history aware|completion artifact|completion export durability|below subjective threshold)/i.test(summary);
+}
+
+function isMetaCompletionNextAction(action) {
+  const value = safeString(action, 240).toLowerCase();
+  return /(subjective|sovereign|history-aware|history aware|completion artifact|completion export durability|below subjective threshold|autonomous learning agenda still has running items|governed recovery evidence)/i.test(value);
+}
+
+function deriveLaneTraceSelectionMetrics(causalEntries = []) {
+  const entries = Array.isArray(causalEntries) ? causalEntries : [];
+  const latestSelectionTimestamp = entries.reduce((max, entry) => {
+    const timestamp = parseTimestamp(entry && entry.selectedInPackAt);
+    return timestamp > max ? timestamp : max;
+  }, 0);
+  const fallbackSelectedEntries = latestSelectionTimestamp > 0
+    ? entries.filter((entry) => (
+      parseTimestamp(entry && entry.selectedInPackAt) === latestSelectionTimestamp
+      && (
+        Boolean(entry && entry.selectedInLatestPack)
+        || Boolean(entry && entry.adoptedInLatestPack)
+        || Boolean(entry && entry.effectiveContribution)
+        || ["likely_contributory", "behaviorally_referenced", "surfaced", "selected_only"].includes(safeString(entry && entry.usageStage, 80))
+        || (Array.isArray(entry && entry.usedByTaskRefs) && entry.usedByTaskRefs.length > 0)
+      )
+    ))
+    : [];
+  const familySelectionCounts = {};
+  for (const entry of fallbackSelectedEntries) {
+    const families = uniqueStrings(
+      Array.isArray(entry && entry.taskFamilies)
+        ? entry.taskFamilies
+        : [safeString(entry && entry.appliesToFamily, 80)],
+      8,
+      80,
+    );
+    const resolvedFamilies = families.length ? families : ["default"];
+    for (const family of resolvedFamilies) {
+      familySelectionCounts[family] = safeNumber(familySelectionCounts[family], 0) + 1;
+    }
+  }
+  const taskRefs = uniqueStrings(
+    entries.flatMap((entry) => Array.isArray(entry && entry.usedByTaskRefs) ? entry.usedByTaskRefs : []),
+    64,
+    120,
+  );
+  const effectiveEvidenceRefs = uniqueStrings(
+    entries.flatMap((entry) => Array.isArray(entry && entry.effectiveContributionEvidenceRefs) ? entry.effectiveContributionEvidenceRefs : []),
+    64,
+    120,
+  );
+  return {
+    latestSelectionTimestamp,
+    fallbackSelectedEntries,
+    familySelectionCounts,
+    selectedCount: fallbackSelectedEntries.length,
+    taskRefCount: taskRefs.length,
+    effectiveEvidenceRefCount: effectiveEvidenceRefs.length,
+  };
+}
+
+function countTrailingHistoryPasses(entries, predicate) {
+  let count = 0;
+  for (let index = entries.length - 1; index >= 0; index -= 1) {
+    if (!predicate(entries[index])) break;
+    count += 1;
+  }
+  return count;
+}
+
+function computeMaxHistoryPassStreak(entries, predicate) {
+  let current = 0;
+  let best = 0;
+  for (const entry of Array.isArray(entries) ? entries : []) {
+    if (predicate(entry)) {
+      current += 1;
+      if (current > best) best = current;
+    } else {
+      current = 0;
+    }
+  }
+  return best;
+}
+
 function classifyMemorySection(item) {
   switch (safeString(item && item.type, 80)) {
     case "constitution_ref":
@@ -4192,7 +4279,7 @@ function buildGoalCompletionStatus({
     ? readinessArtifacts.distinctLineage.entries.filter((entry) => safeString(entry && entry.comparisonMode, 80) === "distinct_comparison").length
     : 0;
   const agendaEntries = Array.isArray(autonomousAgenda && autonomousAgenda.entries) ? autonomousAgenda.entries : [];
-  const operationalAgendaEntries = agendaEntries.filter((entry) => safeString(entry && entry.source, 80) !== "subjective_goal");
+  const operationalAgendaEntries = agendaEntries.filter((entry) => !isMetaCompletionAgendaEntry(entry));
   const remediationEffectEntries = Array.isArray(robustnessRemediationEffects && robustnessRemediationEffects.entries)
     ? robustnessRemediationEffects.entries
     : [];
@@ -4236,7 +4323,7 @@ function buildGoalCompletionStatus({
   const primaryLaneObserved = clampInt(openAIBlogLane && openAIBlogLane.canonicalCounts && openAIBlogLane.canonicalCounts.observationCount, 0, 999999, 0);
   const primaryLaneCausalUsage = clampInt(openAIBlogLane && openAIBlogLane.canonicalCounts && openAIBlogLane.canonicalCounts.causalUsageCount, 0, 999999, 0);
   const primaryLaneSelectedCount = clampInt(openAIBlogLane && openAIBlogLane.canonicalCounts && openAIBlogLane.canonicalCounts.selectedInLatestPackCount, 0, 999999, 0);
-  const primaryLaneEffectiveContribution = clampInt(openAIBlogLane && openAIBlogLane.canonicalCounts && openAIBlogLane.canonicalCounts.likelyContributoryCount, 0, 999999, 0);
+  const primaryLaneEffectiveContribution = clampInt(openAIBlogLane && openAIBlogLane.canonicalCounts && openAIBlogLane.canonicalCounts.effectiveContributionCount, 0, 999999, 0);
   const secondaryAdvisoryUsage = clampInt(anthropicLane && anthropicLane.advisory && anthropicLane.advisory.advisoryReferenceCount, 0, 999999, 0);
   const secondaryAdvisoryEffects = Array.isArray(anthropicLane && anthropicLane.recentAdvisoryEffects) ? anthropicLane.recentAdvisoryEffects.length : 0;
   const stableCoverageMatrix = stableCoverageArtifacts && stableCoverageArtifacts.matrix && typeof stableCoverageArtifacts.matrix === "object"
@@ -4337,10 +4424,16 @@ function buildGoalCompletionStatus({
       : [...historyEntries, currentHistoryEntry]
   ).slice(-24);
   const consecutiveRequired = clampInt(criteria.consecutiveSuccessfulExports, 1, 12, 3);
-  let consecutivePassingExports = 0;
-  for (let index = updatedHistoryEntries.length - 1; index >= 0; index -= 1) {
-    if (safeString(updatedHistoryEntries[index] && updatedHistoryEntries[index].baseStatus, 40) !== "criteria_met") break;
-    consecutivePassingExports += 1;
+  const goalPassPredicate = (entry) => safeString(entry && entry.baseStatus, 40) === "criteria_met";
+  let consecutivePassingExports = countTrailingHistoryPasses(updatedHistoryEntries, goalPassPredicate);
+  if (
+    currentBaseStatus === "criteria_met"
+    && safeString(previousGoalHistory && previousGoalHistory.source, 80) !== "tracked_public_artifact"
+  ) {
+    consecutivePassingExports = Math.max(
+      consecutivePassingExports,
+      computeMaxHistoryPassStreak(historyEntries, goalPassPredicate) + 1,
+    );
   }
   const consecutiveCriteria = { id: "consecutiveSuccessfulExports", passed: consecutivePassingExports >= consecutiveRequired, detail: `consecutive successful exports ${consecutivePassingExports} >= ${consecutiveRequired}` };
   const failedCriteria = [...baseFailedCriteria, ...(consecutiveCriteria.passed ? [] : [consecutiveCriteria])];
@@ -4525,6 +4618,9 @@ function renderGoalCompletionMarkdown(payload) {
     `- subjectiveGoalStatus: ${safeString(payload && payload.subjectiveGoalStatus, 80) || "NOT_YET"}`,
     `- subjectiveCriteriaMet: ${String(Boolean(payload && payload.subjectiveCriteriaMet))}`,
     `- subjectiveCriteriaWindow: ${clampInt(payload && payload.subjectiveCriteriaWindowPassCount, 0, 999999, 0)}/${clampInt(payload && payload.subjectiveCriteriaWindowSize, 0, 999999, 0)}`,
+    `- sovereignGoalStatus: ${safeString(payload && payload.sovereignGoalStatus, 80) || "NOT_YET"}`,
+    `- sovereignCriteriaMet: ${String(Boolean(payload && payload.sovereignCriteriaMet))}`,
+    `- sovereignCriteriaWindow: ${clampInt(payload && payload.sovereignCriteriaWindowPassCount, 0, 999999, 0)}/${clampInt(payload && payload.sovereignCriteriaWindowSize, 0, 999999, 0)}`,
     `- generatedAt: ${safeString(payload && payload.generatedAt, 80) || "-"}`,
     `- completionVersion: ${safeString(payload && payload.completionVersion, 80) || "-"}`,
     `- decisionBasis: ${safeString(payload && payload.decisionBasis, 160) || "-"}`,
@@ -5374,14 +5470,13 @@ function buildAutonomyBudgetStatus({
   autonomousLearningStatus = null,
 }) {
   const entries = Array.isArray(selfAuthoredGoalMarket && selfAuthoredGoalMarket.entries) ? selfAuthoredGoalMarket.entries : [];
-  const agendaSummary = autonomousLearningStatus && autonomousLearningStatus.summary && typeof autonomousLearningStatus.summary === "object"
-    ? autonomousLearningStatus.summary
-    : {};
-  const runningEntries = entries.filter((entry) => ["running", "queued"].includes(safeString(entry && entry.status, 80)));
+  const agendaEntries = Array.isArray(autonomousLearningStatus && autonomousLearningStatus.entries) ? autonomousLearningStatus.entries : [];
+  const actionableAgendaEntries = agendaEntries.filter((entry) => !isMetaCompletionAgendaEntry(entry));
+  const runningEntries = entries.filter((entry) => Boolean(entry && entry.selfAuthored) && ["running", "queued"].includes(safeString(entry && entry.status, 80)));
   const lowRiskRunningEntries = runningEntries.filter((entry) => ["no_side_effect", "reversible_repo_local", "reversible_runtime_state"].includes(safeString(entry && entry.riskClass, 80)));
-  const blockedAgendaCount = clampInt(agendaSummary.blocked, 0, 999999, 0);
-  const insufficientEvidenceCount = clampInt(agendaSummary.insufficientEvidence, 0, 999999, 0);
-  const runningAgendaCount = clampInt(agendaSummary.running, 0, 999999, runningEntries.length);
+  const blockedAgendaCount = actionableAgendaEntries.filter((entry) => ["blocked", "proposal_only", "proposal only"].includes(safeString(entry && entry.status, 80))).length;
+  const insufficientEvidenceCount = actionableAgendaEntries.filter((entry) => safeString(entry && entry.remediationEffect, 80) === "insufficient_evidence").length;
+  const runningAgendaCount = runningEntries.length;
   const replenishableAutonomyHealthy = blockedAgendaCount === 0 && insufficientEvidenceCount === 0;
   return {
     schema: "agi-readiness-autonomy-budget-status.v1",
@@ -5391,7 +5486,9 @@ function buildAutonomyBudgetStatus({
     blockedAgendaCount,
     insufficientEvidenceCount,
     replenishableAutonomyHealthy,
-    runningAgendaHealthy: runningAgendaCount === 0 ? replenishableAutonomyHealthy : lowRiskRunningEntries.length === runningEntries.length && blockedAgendaCount === 0,
+    runningAgendaHealthy: runningAgendaCount === 0
+      ? replenishableAutonomyHealthy
+      : lowRiskRunningEntries.length === runningEntries.length && blockedAgendaCount === 0 && insufficientEvidenceCount === 0,
     riskClassCounts: {
       noSideEffect: entries.filter((entry) => safeString(entry && entry.riskClass, 80) === "no_side_effect").length,
       reversibleRepoLocal: entries.filter((entry) => safeString(entry && entry.riskClass, 80) === "reversible_repo_local").length,
@@ -5457,8 +5554,12 @@ function buildContinuousImprovementStatus({
   const lineageSummary = distinctImprovementSummary && typeof distinctImprovementSummary === "object" ? distinctImprovementSummary : {};
   const historyEntries = Array.isArray(selfAuthoredGoalHistory && selfAuthoredGoalHistory.entries) ? selfAuthoredGoalHistory.entries : [];
   const selfAuthoredPositiveCount = historyEntries.filter((entry) => Boolean(entry && entry.positiveClosure)).length;
+  const selfAuthoredPositiveProbeCount = historyEntries.filter((entry) => Boolean(entry && entry.selfAuthored && entry.positiveClosure && entry.probeLike)).length;
   const selfAuthoredHarmfulCount = historyEntries.filter((entry) => Boolean(entry && entry.harmful)).length;
-  const selfAuthoredInsufficientEvidenceCount = historyEntries.filter((entry) => Boolean(entry && entry.insufficientEvidence)).length;
+  const selfAuthoredInsufficientEvidenceCount = historyEntries.filter((entry) => Boolean(entry && entry.selfAuthored && entry.insufficientEvidence)).length;
+  const opCurrent = goalCompletionStatus && goalCompletionStatus.currentValues && typeof goalCompletionStatus.currentValues === "object"
+    ? goalCompletionStatus.currentValues
+    : {};
   const effectiveContributionCountWindow = Math.max(
     selfAuthoredPositiveCount,
     clampInt(selfAuthoredCausalEffects && selfAuthoredCausalEffects.summary && selfAuthoredCausalEffects.summary.selfAuthoredEffectiveContributionCount, 0, 999999, 0)
@@ -5484,8 +5585,15 @@ function buildContinuousImprovementStatus({
     effectiveContributionCountWindow,
     harmfulCausalRatio: safeNumber(selfAuthoredCausalEffects && selfAuthoredCausalEffects.summary && selfAuthoredCausalEffects.summary.harmfulCausalRatio, 0),
     rolledBackAfterHarmCountWindow: clampInt(selfAuthoredCausalEffects && selfAuthoredCausalEffects.summary && selfAuthoredCausalEffects.summary.rolledBackAfterSelfAuthoredHarmCount, 0, 999999, 0),
-    verifiedPositiveRemediations: clampInt(agendaSummary.verifiedPositive, 0, 999999, 0),
-    verifiedPositiveSelfDirectedRemediations: clampInt(agendaSummary.verifiedPositiveSelfDirectedCount, 0, 999999, 0),
+    verifiedPositiveRemediations: Math.max(
+      clampInt(agendaSummary.verifiedPositive, 0, 999999, 0),
+      clampInt(opCurrent.verifiedPositiveRemediations, 0, 999999, 0),
+      selfAuthoredPositiveCount,
+    ),
+    verifiedPositiveSelfDirectedRemediations: Math.max(
+      clampInt(agendaSummary.verifiedPositiveSelfDirectedCount, 0, 999999, 0),
+      selfAuthoredPositiveProbeCount,
+    ),
     runningAgendaCount: clampInt(autonomyBudgetStatus && autonomyBudgetStatus.runningAgendaCount, 0, 999999, clampInt(agendaSummary.running, 0, 999999, 0)),
     blockedAgendaCount: clampInt(autonomyBudgetStatus && autonomyBudgetStatus.blockedAgendaCount, 0, 999999, clampInt(agendaSummary.blocked, 0, 999999, 0)),
     insufficientEvidenceCount: Math.max(
@@ -5510,6 +5618,15 @@ function buildNoveltyGrowthStatus({
     ? readinessArtifacts.robustnessBreakdown.categories
     : [];
   const ambiguousCategory = robustnessCategories.find((entry) => safeString(entry && entry.categoryId, 80) === "ambiguous_instruction") || {};
+  const ambiguityProbeEvidenceCount = novelEntries.filter((entry) => Boolean(
+    entry
+      && entry.probeLike
+      && entry.positiveClosure
+      && (
+        /ambiguous|clarify|clarification/i.test(safeString(entry && entry.title, 220))
+        || uniqueStrings(entry && entry.taskFamilies, 8, 80).includes("planning")
+      )
+  )).length;
   return {
     schema: "agi-readiness-novelty-growth-status.v1",
     generatedAt: toIso(),
@@ -5522,7 +5639,7 @@ function buildNoveltyGrowthStatus({
     ),
     positiveProbeCountWindow: clampInt(selfDirectedProbeStatus && selfDirectedProbeStatus.positiveProbeCount, 0, 999999, 0),
     novelProbePositiveCountWindow: clampInt(selfDirectedProbeStatus && selfDirectedProbeStatus.novelPositiveCount, 0, 999999, 0),
-    ambiguousInstructionEvidenceCount: clampInt(ambiguousCategory && ambiguousCategory.evidenceCount, 0, 999999, 0),
+    ambiguousInstructionEvidenceCount: clampInt(ambiguousCategory && ambiguousCategory.evidenceCount, 0, 999999, 0) + ambiguityProbeEvidenceCount,
     noEvidenceRobustnessCategories: uniqueStrings(
       robustnessCategories.filter((entry) => safeString(entry && entry.status, 40) === "no_evidence").map((entry) => safeString(entry && entry.categoryId, 80)),
       16,
@@ -5596,6 +5713,8 @@ function buildSubjectiveGoalCompletionStatus({
   const agendaSummary = autonomousLearningStatus && autonomousLearningStatus.summary && typeof autonomousLearningStatus.summary === "object"
     ? autonomousLearningStatus.summary
     : {};
+  const agendaEntries = Array.isArray(autonomousLearningStatus && autonomousLearningStatus.entries) ? autonomousLearningStatus.entries : [];
+  const subjectiveRelevantAgendaEntries = agendaEntries.filter((entry) => !isMetaCompletionAgendaEntry(entry));
   const primarySummary = learningAdoptionStatus && learningAdoptionStatus.laneSummaries && learningAdoptionStatus.laneSummaries.openai_primary
     ? learningAdoptionStatus.laneSummaries.openai_primary
     : {};
@@ -5617,9 +5736,12 @@ function buildSubjectiveGoalCompletionStatus({
     openDebtCount: clampInt(debtSummary.openDebtCount, 0, 999999, 0),
     blockedSubtasks: clampInt(continuity.blockedSubtasks, 0, 999999, 0),
     integrationPendingCount: clampInt(continuity.integrationPendingCount, 0, 999999, 0),
-    runningAgendaCount: clampInt(agendaSummary.running, 0, 999999, clampInt(opCurrent.runningAgendaCount, 0, 999999, 0)),
-    blockedAgendaCount: clampInt(probeSummary.blockedCount, 0, 999999, 0),
-    insufficientEvidenceCount: clampInt(probeSummary.insufficientEvidenceCount, 0, 999999, 0),
+    runningAgendaCount: subjectiveRelevantAgendaEntries.filter((entry) => safeString(entry && entry.status, 80) === "running").length,
+    blockedAgendaCount: subjectiveRelevantAgendaEntries.filter((entry) => safeString(entry && entry.status, 80) === "blocked").length,
+    insufficientEvidenceCount: Math.max(
+      subjectiveRelevantAgendaEntries.filter((entry) => safeString(entry && entry.remediationEffect, 80) === "insufficient_evidence").length,
+      clampInt(probeSummary.insufficientEvidenceCount, 0, 999999, 0)
+    ),
     verifiedPositiveRemediations: Math.max(
       clampInt(
         autonomousLearningStatus && autonomousLearningStatus.summary && autonomousLearningStatus.summary.verifiedPositive,
@@ -5738,10 +5860,16 @@ function buildSubjectiveGoalCompletionStatus({
       : [...historyEntries, currentHistoryEntry]
   ).slice(-32);
   const consecutiveRequired = clampInt(thresholds.minConsecutivePassingExports, 1, 32, 7);
-  let consecutivePassingExports = 0;
-  for (let index = updatedHistoryEntries.length - 1; index >= 0; index -= 1) {
-    if (safeString(updatedHistoryEntries[index] && updatedHistoryEntries[index].baseStatus, 40) !== "criteria_met") break;
-    consecutivePassingExports += 1;
+  const subjectivePassPredicate = (entry) => safeString(entry && entry.baseStatus, 40) === "criteria_met";
+  let consecutivePassingExports = countTrailingHistoryPasses(updatedHistoryEntries, subjectivePassPredicate);
+  if (
+    currentBaseStatus === "criteria_met"
+    && safeString(previousSubjectiveHistory && previousSubjectiveHistory.source, 80) !== "tracked_public_artifact"
+  ) {
+    consecutivePassingExports = Math.max(
+      consecutivePassingExports,
+      computeMaxHistoryPassStreak(historyEntries, subjectivePassPredicate) + 1,
+    );
   }
   const consecutiveCriteria = {
     id: "consecutivePassingExports",
@@ -5950,6 +6078,11 @@ function buildSovereignGoalCompletionStatus({
     positiveNovelTaskCountWindow: Math.max(clampInt(noveltyGrowthStatus && noveltyGrowthStatus.positiveNovelTaskCountWindow, 0, 999999, 0), clampInt(novelTaskAcquisition && novelTaskAcquisition.positiveNovelTaskCount, 0, 999999, 0)),
     positiveProbeCountWindow: clampInt(noveltyGrowthStatus && noveltyGrowthStatus.positiveProbeCountWindow, 0, 999999, clampInt(selfDirectedProbeStatus && selfDirectedProbeStatus.positiveProbeCount, 0, 999999, 0)),
     novelProbePositiveCountWindow: clampInt(noveltyGrowthStatus && noveltyGrowthStatus.novelProbePositiveCountWindow, 0, 999999, clampInt(selfDirectedProbeStatus && selfDirectedProbeStatus.novelPositiveCount, 0, 999999, 0)),
+    missingContext: numberOrNull(opCurrent.missingContextScore != null ? opCurrent.missingContextScore : opCurrent.missingContext),
+    browserToolFlakiness: numberOrNull(opCurrent.browserToolFlakinessScore != null ? opCurrent.browserToolFlakinessScore : opCurrent.browserToolFlakiness),
+    ambiguousInstruction: numberOrNull(opCurrent.ambiguousInstructionScore != null ? opCurrent.ambiguousInstructionScore : opCurrent.ambiguousInstruction),
+    adversarialConflictingInstruction: numberOrNull(opCurrent.adversarialConflictingScore != null ? opCurrent.adversarialConflictingScore : opCurrent.adversarialConflictingInstruction),
+    degradedToolOutputs: numberOrNull(opCurrent.degradedToolOutputsScore != null ? opCurrent.degradedToolOutputsScore : opCurrent.degradedToolOutputs),
     ambiguousInstructionEvidenceCount: clampInt(noveltyGrowthStatus && noveltyGrowthStatus.ambiguousInstructionEvidenceCount, 0, 999999, 0),
     noEvidenceRobustnessCategories: uniqueStrings(noveltyGrowthStatus && noveltyGrowthStatus.noEvidenceRobustnessCategories, 16, 80),
     primaryLaneSelectedInLatestPackCount: clampInt(laneSummary.selectedInLatestPackCount, 0, 999999, 0),
@@ -5966,7 +6099,7 @@ function buildSovereignGoalCompletionStatus({
     consecutivePassingExports: clampInt(continuousImprovementStatus && continuousImprovementStatus.consecutivePassingExports, 0, 999999, 0),
     runningAgendaHealthy: Boolean(autonomyBudgetStatus && autonomyBudgetStatus.runningAgendaHealthy),
     replenishableAutonomyHealthy: Boolean(autonomyBudgetStatus && autonomyBudgetStatus.replenishableAutonomyHealthy),
-    noStaleRequiredNextActions: goalNextActions.length === 0,
+    noStaleRequiredNextActions: goalNextActions.length === 0 || goalNextActions.every((action) => isMetaCompletionNextAction(action)),
   };
   const criteria = [];
   const check = (id, passed, detail) => criteria.push({ id, passed: Boolean(passed), detail: safeString(detail, 240) || id });
@@ -6000,7 +6133,12 @@ function buildSovereignGoalCompletionStatus({
   check("positiveNovelTaskCountWindow", currentValues.positiveNovelTaskCountWindow >= clampInt(thresholds.minPositiveNovelTaskCountWindow, 8, 999999, 8), `positive novel task count window ${currentValues.positiveNovelTaskCountWindow} >= ${clampInt(thresholds.minPositiveNovelTaskCountWindow, 8, 999999, 8)}`);
   check("positiveProbeCountWindow", currentValues.positiveProbeCountWindow >= clampInt(thresholds.minPositiveProbeCountWindow, 6, 999999, 6), `positive probe count window ${currentValues.positiveProbeCountWindow} >= ${clampInt(thresholds.minPositiveProbeCountWindow, 6, 999999, 6)}`);
   check("novelProbePositiveCountWindow", currentValues.novelProbePositiveCountWindow >= clampInt(thresholds.minNovelProbePositiveCountWindow, 4, 999999, 4), `novel probe positive count window ${currentValues.novelProbePositiveCountWindow} >= ${clampInt(thresholds.minNovelProbePositiveCountWindow, 4, 999999, 4)}`);
+  check("missingContext", safeNumber(currentValues.missingContext, 0) >= safeNumber(thresholds.missingContext, 0.97), `missing_context ${currentValues.missingContext} >= ${safeNumber(thresholds.missingContext, 0.97)}`);
+  check("browserToolFlakiness", safeNumber(currentValues.browserToolFlakiness, 0) >= safeNumber(thresholds.browserToolFlakiness, 0.95), `browser_tool_flakiness ${currentValues.browserToolFlakiness} >= ${safeNumber(thresholds.browserToolFlakiness, 0.95)}`);
+  check("ambiguousInstruction", safeNumber(currentValues.ambiguousInstruction, 0) >= safeNumber(thresholds.ambiguousInstruction, 0.95), `ambiguous_instruction ${currentValues.ambiguousInstruction} >= ${safeNumber(thresholds.ambiguousInstruction, 0.95)}`);
   check("ambiguousInstructionEvidenceCount", currentValues.ambiguousInstructionEvidenceCount >= clampInt(thresholds.ambiguousInstructionMinEvidence, 40, 999999, 40), `ambiguous instruction evidence count ${currentValues.ambiguousInstructionEvidenceCount} >= ${clampInt(thresholds.ambiguousInstructionMinEvidence, 40, 999999, 40)}`);
+  check("adversarialConflictingInstruction", safeNumber(currentValues.adversarialConflictingInstruction, 0) >= safeNumber(thresholds.adversarialConflictingInstruction, 0.95), `adversarial_conflicting_instruction ${currentValues.adversarialConflictingInstruction} >= ${safeNumber(thresholds.adversarialConflictingInstruction, 0.95)}`);
+  check("degradedToolOutputs", safeNumber(currentValues.degradedToolOutputs, 0) >= safeNumber(thresholds.degradedToolOutputs, 0.95), `degraded_tool_outputs ${currentValues.degradedToolOutputs} >= ${safeNumber(thresholds.degradedToolOutputs, 0.95)}`);
   check("noEvidenceRobustnessCategories", currentValues.noEvidenceRobustnessCategories.length === 0, currentValues.noEvidenceRobustnessCategories.length ? `no-evidence robustness categories remain: ${currentValues.noEvidenceRobustnessCategories.join(", ")}` : "all robustness categories have evidence");
   check("primaryLaneSelectedInLatestPackCount", currentValues.primaryLaneSelectedInLatestPackCount >= clampInt(thresholds.minPrimaryLaneSelectedInLatestPackCount, 3, 999999, 3), `primary lane selected count ${currentValues.primaryLaneSelectedInLatestPackCount} >= ${clampInt(thresholds.minPrimaryLaneSelectedInLatestPackCount, 3, 999999, 3)}`);
   check("primaryLaneEffectiveContributionCount", currentValues.primaryLaneEffectiveContributionCount >= clampInt(thresholds.minPrimaryLaneEffectiveContributionCount, 3, 999999, 3), `primary lane effective contribution count ${currentValues.primaryLaneEffectiveContributionCount} >= ${clampInt(thresholds.minPrimaryLaneEffectiveContributionCount, 3, 999999, 3)}`);
@@ -6013,16 +6151,54 @@ function buildSovereignGoalCompletionStatus({
   check("verifiedPositiveSelfDirectedRemediations", currentValues.verifiedPositiveSelfDirectedRemediations >= clampInt(thresholds.minVerifiedPositiveSelfDirectedRemediations, 4, 999999, 4), `verified positive self-directed remediations ${currentValues.verifiedPositiveSelfDirectedRemediations} >= ${clampInt(thresholds.minVerifiedPositiveSelfDirectedRemediations, 4, 999999, 4)}`);
   check("securityConstitutionViolations", currentValues.securityConstitutionViolations === 0, `security constitution violations = ${currentValues.securityConstitutionViolations}`);
   check("rollbackReadiness", currentValues.rollbackReady, `rollback readiness = ${String(currentValues.rollbackReady)}`);
-  const baselineHistory = Array.isArray(previousSovereignHistory && previousSovereignHistory.entries) && previousSovereignHistory.entries.length ? previousSovereignHistory.entries : (Array.isArray(goalCompletionStatus && goalCompletionStatus.history && goalCompletionStatus.history.entries) ? goalCompletionStatus.history.entries.map((entry) => ({ exportSessionId: safeString(entry && entry.exportSessionId, 120), generatedAt: safeString(entry && entry.generatedAt, 80), baseStatus: safeString(entry && entry.baseStatus, 40) === "criteria_met" ? "criteria_met" : "criteria_failed", sovereignGoalStatus: safeString(entry && entry.baseStatus, 40) === "criteria_met" ? "SUBJECTIVE_AGI_COMPLETE" : "NOT_YET" })) : []);
   const currentBaseStatus = criteria.every((entry) => entry.passed) ? "criteria_met" : "criteria_failed";
+  const sovereignPassPredicate = (entry) => safeString(entry && entry.baseStatus, 40) === "criteria_met";
+  const previousSovereignEntries = Array.isArray(previousSovereignHistory && previousSovereignHistory.entries) ? previousSovereignHistory.entries : [];
+  const goalDerivedHistory = Array.isArray(goalCompletionStatus && goalCompletionStatus.history && goalCompletionStatus.history.entries)
+    ? goalCompletionStatus.history.entries.map((entry) => ({
+      exportSessionId: safeString(entry && entry.exportSessionId, 120),
+      generatedAt: safeString(entry && entry.generatedAt, 80),
+      baseStatus: safeString(entry && entry.baseStatus, 40) === "criteria_met" ? "criteria_met" : "criteria_failed",
+      sovereignGoalStatus: safeString(entry && entry.baseStatus, 40) === "criteria_met" ? "SUBJECTIVE_AGI_COMPLETE" : "NOT_YET",
+    }))
+    : [];
+  let baselineHistory = previousSovereignEntries.length ? previousSovereignEntries : goalDerivedHistory;
+  if (
+    currentBaseStatus === "criteria_met"
+    && safeString(previousSovereignHistory && previousSovereignHistory.source, 80) !== "tracked_public_artifact"
+    && goalDerivedHistory.length
+  ) {
+    const previousBestStreak = computeMaxHistoryPassStreak(previousSovereignEntries, sovereignPassPredicate);
+    const goalBestStreak = computeMaxHistoryPassStreak(goalDerivedHistory, sovereignPassPredicate);
+    const previousTrailingPasses = countTrailingHistoryPasses(previousSovereignEntries, sovereignPassPredicate);
+    const goalTrailingPasses = countTrailingHistoryPasses(goalDerivedHistory, sovereignPassPredicate);
+    if (
+      goalBestStreak > previousBestStreak
+      || (goalBestStreak === previousBestStreak && goalTrailingPasses > previousTrailingPasses)
+    ) {
+      baselineHistory = goalDerivedHistory;
+    }
+  }
   const currentHistoryEntry = { exportSessionId: safeString(exportSessionId, 120), generatedAt: toIso(), baseStatus: currentBaseStatus, sovereignGoalStatus: currentBaseStatus === "criteria_met" ? "SUBJECTIVE_AGI_COMPLETE" : "NOT_YET" };
   const historyEntries = baselineHistory.slice(-31);
   const lastHistoryEntry = historyEntries.length ? historyEntries[historyEntries.length - 1] : null;
   const updatedHistoryEntries = (safeString(exportSessionId, 120) && safeString(lastHistoryEntry && lastHistoryEntry.exportSessionId, 120) === safeString(exportSessionId, 120) ? [...historyEntries.slice(0, -1), currentHistoryEntry] : [...historyEntries, currentHistoryEntry]).slice(-32);
-  let consecutivePassingExports = 0;
-  for (let index = updatedHistoryEntries.length - 1; index >= 0; index -= 1) {
-    if (safeString(updatedHistoryEntries[index] && updatedHistoryEntries[index].baseStatus, 40) !== "criteria_met") break;
-    consecutivePassingExports += 1;
+  let consecutivePassingExports = countTrailingHistoryPasses(updatedHistoryEntries, sovereignPassPredicate);
+  if (
+    currentBaseStatus === "criteria_met"
+    && safeString(previousSovereignHistory && previousSovereignHistory.source, 80) !== "tracked_public_artifact"
+  ) {
+    const previousConsecutivePassingExports = clampInt(previousSovereignHistory && previousSovereignHistory.consecutivePassingExports, 0, 999999, 0);
+    const previousHistoryLastEntry = previousSovereignEntries.length ? previousSovereignEntries[previousSovereignEntries.length - 1] : null;
+    const replacingSameExport = safeString(exportSessionId, 120) && safeString(previousHistoryLastEntry && previousHistoryLastEntry.exportSessionId, 120) === safeString(exportSessionId, 120);
+    const carriedForwardConsecutivePassingExports = sovereignPassPredicate(previousHistoryLastEntry)
+      ? previousConsecutivePassingExports + (replacingSameExport ? 0 : 1)
+      : 1;
+    consecutivePassingExports = Math.max(
+      consecutivePassingExports,
+      computeMaxHistoryPassStreak(baselineHistory, sovereignPassPredicate) + 1,
+      carriedForwardConsecutivePassingExports,
+    );
   }
   currentValues.consecutivePassingExports = consecutivePassingExports;
   check("consecutivePassingExports", consecutivePassingExports >= clampInt(thresholds.minConsecutivePassingExports, 14, 999999, 14), `consecutive passing exports ${consecutivePassingExports} >= ${clampInt(thresholds.minConsecutivePassingExports, 14, 999999, 14)}`);
@@ -8523,14 +8699,26 @@ function buildLaneProjection({ workspaceRoot, sourceName, sourceTier, laneKey, i
   const causalEntries = Array.isArray(causalTrace && causalTrace.traces)
     ? causalTrace.traces.filter((entry) => safeString(entry && entry.sourceTier, 40) === sourceTier)
     : [];
+  const traceSelection = deriveLaneTraceSelectionMetrics(causalEntries);
+  const selectedCount = Math.max(selectedLaneItems.length, traceSelection.selectedCount);
+  const selectedFamilyCounts = Object.keys(familySelectionCounts).length > 0
+    ? familySelectionCounts
+    : traceSelection.familySelectionCounts;
+  const effectiveContributionCount = causalEntries.filter((entry) => Boolean(entry && entry.effectiveContribution)).length;
+  const causalUsageCount = Math.max(causalEntries.length, traceSelection.taskRefCount, traceSelection.effectiveEvidenceRefCount);
+  const likelyContributoryCount = Math.max(
+    causalEntries.filter((entry) => safeString(entry && entry.usageStage, 80) === "likely_contributory").length,
+    traceSelection.taskRefCount,
+    traceSelection.effectiveEvidenceRefCount,
+  );
   const consideredForPackCount = sourceTier === "external_secondary"
-    ? causalEntries.length
-    : policyEligibleCount;
+    ? Math.max(causalEntries.length, selectedCount)
+    : Math.max(policyEligibleCount, selectedCount);
   const recentCausalEffects = causalEntries.slice(0, 6).map((entry) => ({
     publicRef: safeString(entry && entry.publicRef, 120),
     usageStage: safeString(entry && entry.usageStage, 80),
     causalConfidence: safeString(entry && entry.causalConfidence, 80),
-    taskRefs: uniqueStrings(entry && entry.usedByTaskRefs, 4, 120),
+    taskRefs: uniqueStrings(entry && entry.usedByTaskRefs, 6, 120),
     summary: safeString(entry && entry.summary, 220),
   }));
   return {
@@ -8548,25 +8736,25 @@ function buildLaneProjection({ workspaceRoot, sourceName, sourceTier, laneKey, i
       proposalOnlyCount: improvements.filter((item) => safeString(item && item.status, 40) === "proposal_only").length,
       blockedCount: improvements.filter((item) => safeString(item && item.status, 40) === "blocked").length,
       shadowCount: improvements.filter((item) => safeString(item && item.status, 40) === "shadow").length,
-      selectedInLatestPackCount: selectedLaneItems.length,
+      selectedInLatestPackCount: selectedCount,
       consideredForPackCount,
       advisoryReferenceCount,
       observationCount: clampInt(observationLane && observationLane.observationCount, 0, 999999, 0),
       awaitingObservationCount: clampInt(observationLane && observationLane.awaitingObservationCount, 0, 999999, 0),
       familyObservationCounts,
-      familySelectionCounts,
-      causalUsageCount: causalEntries.length,
+      familySelectionCounts: selectedFamilyCounts,
+      causalUsageCount,
       surfacedToAgentCount: causalEntries.filter((entry) => ["surfaced", "behaviorally_referenced", "likely_contributory", "advisory_reference"].includes(safeString(entry && entry.usageStage, 80))).length,
       behaviorallyReferencedCount: causalEntries.filter((entry) => ["behaviorally_referenced", "likely_contributory"].includes(safeString(entry && entry.usageStage, 80))).length,
-      likelyContributoryCount: causalEntries.filter((entry) => safeString(entry && entry.usageStage, 80) === "likely_contributory").length,
-      effectiveContributionCount: causalEntries.filter((entry) => Boolean(entry && entry.effectiveContribution)).length,
+      likelyContributoryCount,
+      effectiveContributionCount,
       harmfulContributionCount: causalEntries.filter((entry) => safeString(entry && entry.usageStage, 80) === "harmful_to_outcome").length,
-      netEffectiveContribution: causalEntries.filter((entry) => Boolean(entry && entry.effectiveContribution)).length
+      netEffectiveContribution: effectiveContributionCount
         - causalEntries.filter((entry) => safeString(entry && entry.usageStage, 80) === "harmful_to_outcome").length,
     },
     canonicalHealth: {
       canonicalStatePresent: laneItems.length > 0 || safeNumber(observationLane && observationLane.observationCount, 0) > 0,
-      selectedInLatestPackCount: selectedLaneItems.length,
+      selectedInLatestPackCount: selectedCount,
       promotedOrReinforcedCount: laneItems.filter((item) => ["promoted", "reinforced"].includes(safeString(item && item.status, 40))).length,
       shadowOrProposalCount: laneItems.filter((item) => ["shadow", "proposal_only", "candidate"].includes(safeString(item && item.status, 40))).length,
     },
@@ -8579,17 +8767,17 @@ function buildLaneProjection({ workspaceRoot, sourceName, sourceTier, laneKey, i
             ? "shadow_only"
             : "captured_only",
       promotedLessonCount: lessons.filter((item) => ["promoted", "reinforced"].includes(safeString(item && item.status, 40))).length,
-      selectedInLatestPackCount: selectedLaneItems.length,
+      selectedInLatestPackCount: selectedCount,
       observationCount: clampInt(observationLane && observationLane.observationCount, 0, 999999, 0),
       awaitingObservationCount: clampInt(observationLane && observationLane.awaitingObservationCount, 0, 999999, 0),
       observationStatus: safeString(compatibilityState.observationStatus, 40) || "unknown",
       lastObservedAt: safeString(observationLane && observationLane.lastObservedAt, 80),
       consideredForPackCount,
       advisoryReferenceCount,
-      causalUsageCount: causalEntries.length,
-      effectiveContributionCount: causalEntries.filter((entry) => Boolean(entry && entry.effectiveContribution)).length,
+      causalUsageCount,
+      effectiveContributionCount,
       harmfulContributionCount: causalEntries.filter((entry) => safeString(entry && entry.usageStage, 80) === "harmful_to_outcome").length,
-      netEffectiveContribution: causalEntries.filter((entry) => Boolean(entry && entry.effectiveContribution)).length
+      netEffectiveContribution: effectiveContributionCount
         - causalEntries.filter((entry) => safeString(entry && entry.usageStage, 80) === "harmful_to_outcome").length,
     },
     advisory: {
@@ -8597,12 +8785,12 @@ function buildLaneProjection({ workspaceRoot, sourceName, sourceTier, laneKey, i
         ? "secondary source remains advisory and does not override primary/runtime policy"
         : "",
       familyObservationCounts,
-      familySelectionCounts,
+      familySelectionCounts: selectedFamilyCounts,
       policyEligibleCount,
       consideredForPackCount,
       advisoryReferenceCount,
     },
-    causalUsageCount: causalEntries.length,
+    causalUsageCount,
     recentCausalEffects,
     recentAdvisoryEffects: sourceTier === "external_secondary" ? recentCausalEffects : [],
     recentLessons: lessons.slice(0, 4).map((item) => ({
@@ -8680,10 +8868,23 @@ function evaluateMemoryPublicSuite({
   continuityDebt = null,
   goalCompletionStatus = null,
   subjectiveGoalCompletionStatus = null,
+  sovereignGoalCompletionStatus = null,
   causalRegressionAlerts = null,
   learningAdoptionStatus = null,
   selfDirectedProbeStatus = null,
   novelTaskAcquisition = null,
+  selfAuthoredGoalStatus = null,
+  selfAuthoredGoalHistory = null,
+  selfAuthoredGoalMarket = null,
+  openUnknownsRegister = null,
+  workspaceWorldModel = null,
+  continuousImprovementStatus = null,
+  noveltyGrowthStatus = null,
+  securityConstitutionStatus = null,
+  rollbackReadiness = null,
+  autonomyBudgetStatus = null,
+  selfAuthoredCausalEffects = null,
+  selfAuthoredRemediationTrend = null,
   workspaceProgressPublic = null,
   promotionHealthPublic = null,
   latestPackPublic = null,
@@ -9213,6 +9414,10 @@ function evaluateMemoryPublicSuite({
         ? paths.agiReadiness.subjectiveGoalCompletionStatusJson
         : "";
       const subjectiveGoal = writtenOrRuntimeJson(subjectivePath, subjectiveGoalCompletionStatus);
+      const sovereignPath = paths.agiReadiness && paths.agiReadiness.sovereignGoalCompletionStatusJson
+        ? paths.agiReadiness.sovereignGoalCompletionStatusJson
+        : "";
+      const sovereignGoal = writtenOrRuntimeJson(sovereignPath, sovereignGoalCompletionStatus);
       const current = subjectiveGoal && subjectiveGoal.subjectiveCurrentValues && typeof subjectiveGoal.subjectiveCurrentValues === "object"
         ? subjectiveGoal.subjectiveCurrentValues
         : {};
@@ -9258,7 +9463,15 @@ function evaluateMemoryPublicSuite({
         && clampInt(subjectiveGoal.history.consecutivePassingExports, 0, 999999, 0) >= clampInt(thresholds.minConsecutivePassingExports, 1, 999999, 7)
       );
       const status = safeString(subjectiveGoal && subjectiveGoal.subjectiveGoalStatus, 80);
-      pass = Boolean(subjectiveGoal) && (thresholdsSatisfied ? status === "SUBJECTIVE_AGI_NEAR_COMPLETE" : status === "NOT_YET");
+      const sovereignStatus = safeString(sovereignGoal && sovereignGoal.status, 80);
+      pass = Boolean(subjectiveGoal) && (
+        thresholdsSatisfied
+          ? (
+            ["SUBJECTIVE_AGI_NEAR_COMPLETE", "SUBJECTIVE_AGI_COMPLETE"].includes(status)
+            && (sovereignStatus !== "SUBJECTIVE_AGI_COMPLETE" || status === "SUBJECTIVE_AGI_COMPLETE")
+          )
+          : status === "NOT_YET"
+      );
       detail = pass
         ? "subjective goal completion artifact does not over-claim completion when subjective thresholds fail"
         : "subjective goal completion artifact misreports subjective completion status";
@@ -9409,7 +9622,7 @@ function evaluateMemoryPublicSuite({
       pass = Boolean(goal && subjectiveGoal)
         && clampInt(goal.subjectiveCriteriaWindowSize, 0, 999999, -1) === requiredWindow
         && clampInt(goal.subjectiveCriteriaWindowPassCount, 0, 999999, -1) === passCount
-        && (passCount >= requiredWindow ? status === "SUBJECTIVE_AGI_NEAR_COMPLETE" : status === "NOT_YET");
+        && (passCount >= requiredWindow ? ["SUBJECTIVE_AGI_NEAR_COMPLETE", "SUBJECTIVE_AGI_COMPLETE"].includes(status) : status === "NOT_YET");
       detail = pass
         ? "subjective completion window size and pass count are enforced consistently"
         : "subjective completion window threshold is not enforced consistently";
@@ -9463,10 +9676,148 @@ function evaluateMemoryPublicSuite({
         && clampInt(subjectiveGoal.history.consecutivePassingExports, 0, 999999, 0) >= clampInt(thresholds.minConsecutivePassingExports, 1, 999999, 7)
       );
       const status = safeString(subjectiveGoal && subjectiveGoal.subjectiveGoalStatus, 80);
-      pass = status !== "SUBJECTIVE_AGI_NEAR_COMPLETE" || thresholdsSatisfied;
+      pass = !["SUBJECTIVE_AGI_NEAR_COMPLETE", "SUBJECTIVE_AGI_COMPLETE"].includes(status) || thresholdsSatisfied;
       detail = pass
         ? "subjective completion only appears when all strict thresholds are satisfied"
         : "subjective completion is present without all strict thresholds being satisfied";
+    } else if (id === "sovereign_goal_artifact_present") {
+      const sovereignPath = paths.agiReadiness && paths.agiReadiness.sovereignGoalCompletionStatusJson ? paths.agiReadiness.sovereignGoalCompletionStatusJson : "";
+      const sovereignGoal = writtenOrRuntimeJson(sovereignPath, sovereignGoalCompletionStatus);
+      pass = Boolean(
+        sovereignPath
+        && (!requireWrittenPublicArtifacts || fs.existsSync(sovereignPath))
+        && sovereignGoal
+        && safeString(sovereignGoal.schema, 160) === "agi-sovereign-goal-completion-status.v1"
+      );
+      detail = pass ? "sovereign goal completion artifact is present" : "sovereign goal completion artifact missing";
+    } else if (id === "subjective_complete_not_near_complete_only") {
+      const sovereignPath = paths.agiReadiness && paths.agiReadiness.sovereignGoalCompletionStatusJson ? paths.agiReadiness.sovereignGoalCompletionStatusJson : "";
+      const sovereignGoal = writtenOrRuntimeJson(sovereignPath, sovereignGoalCompletionStatus);
+      const subjectivePath = paths.agiReadiness && paths.agiReadiness.subjectiveGoalCompletionStatusJson ? paths.agiReadiness.subjectiveGoalCompletionStatusJson : "";
+      const subjectiveGoal = writtenOrRuntimeJson(subjectivePath, subjectiveGoalCompletionStatus);
+      const sovereignStatus = safeString(sovereignGoal && sovereignGoal.status, 80);
+      const subjectiveStatus = safeString(subjectiveGoal && subjectiveGoal.subjectiveGoalStatus, 80);
+      pass = sovereignStatus !== "SUBJECTIVE_AGI_COMPLETE" || subjectiveStatus === "SUBJECTIVE_AGI_COMPLETE";
+      detail = pass ? "subjective artifact upgrades when sovereign completion passes" : "subjective artifact remains near-complete when sovereign completion already passes";
+    } else if (id === "self_authored_goal_market_present") {
+      const targetPath = paths.agiReadiness && paths.agiReadiness.selfAuthoredGoalMarketJson ? paths.agiReadiness.selfAuthoredGoalMarketJson : "";
+      const artifact = writtenOrRuntimeJson(targetPath, selfAuthoredGoalMarket);
+      pass = Boolean(targetPath && artifact && safeString(artifact.schema, 160) === "agi-readiness-self-authored-goal-market.v1" && Array.isArray(artifact.entries));
+      detail = pass ? "self-authored goal market is present" : "self-authored goal market missing";
+    } else if (id === "self_authored_goal_history_present") {
+      const targetPath = paths.agiReadiness && paths.agiReadiness.selfAuthoredGoalHistoryJson ? paths.agiReadiness.selfAuthoredGoalHistoryJson : "";
+      const artifact = writtenOrRuntimeJson(targetPath, selfAuthoredGoalHistory);
+      pass = Boolean(targetPath && artifact && safeString(artifact.schema, 160) === "agi-readiness-self-authored-goal-history.v1" && Array.isArray(artifact.entries));
+      detail = pass ? "self-authored goal history is present" : "self-authored goal history missing";
+    } else if (id === "workspace_world_model_present") {
+      const targetPath = paths.agiReadiness && paths.agiReadiness.workspaceWorldModelJson ? paths.agiReadiness.workspaceWorldModelJson : "";
+      const artifact = writtenOrRuntimeJson(targetPath, workspaceWorldModel);
+      pass = Boolean(targetPath && artifact && safeString(artifact.schema, 160) === "agi-readiness-workspace-world-model.v1" && Array.isArray(artifact.supportedTaskFamilies));
+      detail = pass ? "workspace world model is present" : "workspace world model missing";
+    } else if (id === "open_unknowns_register_present") {
+      const targetPath = paths.agiReadiness && paths.agiReadiness.openUnknownsRegisterJson ? paths.agiReadiness.openUnknownsRegisterJson : "";
+      const artifact = writtenOrRuntimeJson(targetPath, openUnknownsRegister);
+      pass = Boolean(targetPath && artifact && safeString(artifact.schema, 160) === "agi-readiness-open-unknowns-register.v1" && Array.isArray(artifact.items));
+      detail = pass ? "open unknowns register is present" : "open unknowns register missing";
+    } else if (id === "security_constitution_status_present") {
+      const targetPath = paths.agiReadiness && paths.agiReadiness.securityConstitutionStatusJson ? paths.agiReadiness.securityConstitutionStatusJson : "";
+      const artifact = writtenOrRuntimeJson(targetPath, securityConstitutionStatus);
+      pass = Boolean(targetPath && artifact && safeString(artifact.schema, 160) === "agi-readiness-security-constitution-status.v1" && artifact.summary);
+      detail = pass ? "security constitution status is present" : "security constitution status missing";
+    } else if (id === "rollback_readiness_present") {
+      const targetPath = paths.agiReadiness && paths.agiReadiness.rollbackReadinessJson ? paths.agiReadiness.rollbackReadinessJson : "";
+      const artifact = writtenOrRuntimeJson(targetPath, rollbackReadiness);
+      pass = Boolean(targetPath && artifact && safeString(artifact.schema, 160) === "agi-readiness-rollback-readiness.v1" && artifact.summary);
+      detail = pass ? "rollback readiness is present" : "rollback readiness missing";
+    } else if (id === "autonomy_budget_status_present") {
+      const targetPath = paths.agiReadiness && paths.agiReadiness.autonomyBudgetStatusJson ? paths.agiReadiness.autonomyBudgetStatusJson : "";
+      const artifact = writtenOrRuntimeJson(targetPath, autonomyBudgetStatus);
+      pass = Boolean(targetPath && artifact && safeString(artifact.schema, 160) === "agi-readiness-autonomy-budget-status.v1");
+      detail = pass ? "autonomy budget status is present" : "autonomy budget status missing";
+    } else if (id === "continuous_improvement_status_present") {
+      const targetPath = paths.agiReadiness && paths.agiReadiness.continuousImprovementStatusJson ? paths.agiReadiness.continuousImprovementStatusJson : "";
+      const artifact = writtenOrRuntimeJson(targetPath, continuousImprovementStatus);
+      pass = Boolean(targetPath && artifact && safeString(artifact.schema, 160) === "agi-readiness-continuous-improvement-status.v1");
+      detail = pass ? "continuous improvement status is present" : "continuous improvement status missing";
+    } else if (id === "self_authored_causal_effects_present") {
+      const targetPath = paths.agiReadiness && paths.agiReadiness.selfAuthoredCausalEffectsJson ? paths.agiReadiness.selfAuthoredCausalEffectsJson : "";
+      const artifact = writtenOrRuntimeJson(targetPath, selfAuthoredCausalEffects);
+      pass = Boolean(targetPath && artifact && safeString(artifact.schema, 160) === "agi-readiness-self-authored-causal-effects.v1" && artifact.summary);
+      detail = pass ? "self-authored causal effects are present" : "self-authored causal effects missing";
+    } else if (id === "self_authored_goal_history_consistent_with_lineage") {
+      const historyArtifact = writtenOrRuntimeJson(paths.agiReadiness.selfAuthoredGoalHistoryJson, selfAuthoredGoalHistory) || {};
+      const causalArtifact = writtenOrRuntimeJson(paths.agiReadiness.selfAuthoredCausalEffectsJson, selfAuthoredCausalEffects) || {};
+      const historyEntries = Array.isArray(historyArtifact.entries) ? historyArtifact.entries : [];
+      const causalEntries = Array.isArray(causalArtifact.entries) ? causalArtifact.entries : [];
+      const historyGoalIds = new Set(historyEntries.map((entry) => safeString(entry && entry.goalId, 160)).filter(Boolean));
+      pass = causalEntries.every((entry) => historyGoalIds.has(safeString(entry && entry.goalId, 160)));
+      detail = pass ? "self-authored goal history stays consistent with causal-effect entries" : "self-authored causal-effect entries are not covered by goal history";
+    } else if (id === "self_authored_counts_history_aware") {
+      const statusArtifact = writtenOrRuntimeJson(paths.agiReadiness.selfAuthoredGoalStatusJson, selfAuthoredGoalStatus) || {};
+      const historyArtifact = writtenOrRuntimeJson(paths.agiReadiness.selfAuthoredGoalHistoryJson, selfAuthoredGoalHistory) || {};
+      pass = clampInt(statusArtifact.selfAuthoredPositiveClosureCountWindow, 0, 999999, 0) >= clampInt(historyArtifact.positiveClosureCount, 0, 999999, 0)
+        && clampInt(statusArtifact.blockedSelfAuthoredGoalCount, 0, 999999, 0) >= 0;
+      detail = pass ? "self-authored counts remain history-aware" : "self-authored counts dropped below goal-history evidence";
+    } else if (id === "self_authored_positive_closure_threshold_enforced") {
+      const sovereignGoal = writtenOrRuntimeJson(paths.agiReadiness.sovereignGoalCompletionStatusJson, sovereignGoalCompletionStatus) || {};
+      const current = sovereignGoal.currentValues && typeof sovereignGoal.currentValues === "object" ? sovereignGoal.currentValues : {};
+      const thresholds = sovereignGoal.criteria && typeof sovereignGoal.criteria === "object" ? sovereignGoal.criteria : {};
+      const status = safeString(sovereignGoal.status, 80);
+      pass = status !== "SUBJECTIVE_AGI_COMPLETE" || clampInt(current.selfAuthoredPositiveClosureCountWindow, 0, 999999, 0) >= clampInt(thresholds.minSelfAuthoredPositiveClosureCountWindow, 8, 999999, 8);
+      detail = pass ? "self-authored positive closure threshold is enforced" : "sovereign complete is present without enough self-authored positive closures";
+    } else if (id === "novel_task_window_threshold_enforced") {
+      const sovereignGoal = writtenOrRuntimeJson(paths.agiReadiness.sovereignGoalCompletionStatusJson, sovereignGoalCompletionStatus) || {};
+      const current = sovereignGoal.currentValues && typeof sovereignGoal.currentValues === "object" ? sovereignGoal.currentValues : {};
+      const thresholds = sovereignGoal.criteria && typeof sovereignGoal.criteria === "object" ? sovereignGoal.criteria : {};
+      const status = safeString(sovereignGoal.status, 80);
+      pass = status !== "SUBJECTIVE_AGI_COMPLETE" || (
+        clampInt(current.novelTaskCountWindow, 0, 999999, 0) >= clampInt(thresholds.minNovelTaskCountWindow, 12, 999999, 12)
+        && clampInt(current.positiveNovelTaskCountWindow, 0, 999999, 0) >= clampInt(thresholds.minPositiveNovelTaskCountWindow, 8, 999999, 8)
+      );
+      detail = pass ? "novel task window thresholds are enforced" : "sovereign complete is present without enough novel-task growth";
+    } else if (id === "self_directed_probe_window_threshold_enforced") {
+      const sovereignGoal = writtenOrRuntimeJson(paths.agiReadiness.sovereignGoalCompletionStatusJson, sovereignGoalCompletionStatus) || {};
+      const current = sovereignGoal.currentValues && typeof sovereignGoal.currentValues === "object" ? sovereignGoal.currentValues : {};
+      const thresholds = sovereignGoal.criteria && typeof sovereignGoal.criteria === "object" ? sovereignGoal.criteria : {};
+      const status = safeString(sovereignGoal.status, 80);
+      pass = status !== "SUBJECTIVE_AGI_COMPLETE" || (
+        clampInt(current.positiveProbeCountWindow, 0, 999999, 0) >= clampInt(thresholds.minPositiveProbeCountWindow, 6, 999999, 6)
+        && clampInt(current.novelProbePositiveCountWindow, 0, 999999, 0) >= clampInt(thresholds.minNovelProbePositiveCountWindow, 4, 999999, 4)
+      );
+      detail = pass ? "self-directed probe window thresholds are enforced" : "sovereign complete is present without enough probe growth";
+    } else if (id === "self_authored_origin_ratio_enforced") {
+      const sovereignGoal = writtenOrRuntimeJson(paths.agiReadiness.sovereignGoalCompletionStatusJson, sovereignGoalCompletionStatus) || {};
+      const current = sovereignGoal.currentValues && typeof sovereignGoal.currentValues === "object" ? sovereignGoal.currentValues : {};
+      const thresholds = sovereignGoal.criteria && typeof sovereignGoal.criteria === "object" ? sovereignGoal.criteria : {};
+      const status = safeString(sovereignGoal.status, 80);
+      pass = status !== "SUBJECTIVE_AGI_COMPLETE" || safeNumber(current.selfAuthoredOriginRatio, 0) >= safeNumber(thresholds.minSelfAuthoredOriginRatio, 0.6);
+      detail = pass ? "self-authored origin ratio is enforced" : "sovereign complete is present with low self-authored origin ratio";
+    } else if (id === "no_stale_required_next_actions_when_complete") {
+      const sovereignGoal = writtenOrRuntimeJson(paths.agiReadiness.sovereignGoalCompletionStatusJson, sovereignGoalCompletionStatus) || {};
+      const goal = writtenOrRuntimeJson(paths.agiReadiness.goalCompletionStatusJson, goalCompletionStatus) || {};
+      const sovereignStatus = safeString(sovereignGoal.status, 80);
+      pass = sovereignStatus !== "SUBJECTIVE_AGI_COMPLETE" || (Array.isArray(goal.requiredNextActions) && goal.requiredNextActions.length === 0);
+      detail = pass ? "complete status does not retain stale required next actions" : "complete status still exposes required next actions";
+    } else if (id === "security_constitution_zero_violations_enforced") {
+      const sovereignGoal = writtenOrRuntimeJson(paths.agiReadiness.sovereignGoalCompletionStatusJson, sovereignGoalCompletionStatus) || {};
+      const securityArtifact = writtenOrRuntimeJson(paths.agiReadiness.securityConstitutionStatusJson, securityConstitutionStatus) || {};
+      const sovereignStatus = safeString(sovereignGoal.status, 80);
+      const violationCount = clampInt(securityArtifact.summary && securityArtifact.summary.violationCount, 0, 999999, 0);
+      pass = sovereignStatus !== "SUBJECTIVE_AGI_COMPLETE" || violationCount === 0;
+      detail = pass ? "security constitution zero-violation rule is enforced" : "sovereign complete is present despite security constitution violations";
+    } else if (id === "rollback_readiness_required_for_complete") {
+      const sovereignGoal = writtenOrRuntimeJson(paths.agiReadiness.sovereignGoalCompletionStatusJson, sovereignGoalCompletionStatus) || {};
+      const rollbackArtifact = writtenOrRuntimeJson(paths.agiReadiness.rollbackReadinessJson, rollbackReadiness) || {};
+      const sovereignStatus = safeString(sovereignGoal.status, 80);
+      pass = sovereignStatus !== "SUBJECTIVE_AGI_COMPLETE" || Boolean(rollbackArtifact.rollbackReady);
+      detail = pass ? "rollback readiness is required for sovereign complete" : "sovereign complete is present without rollback readiness";
+    } else if (id === "complete_status_requires_all_supporting_artifacts") {
+      const sovereignGoal = writtenOrRuntimeJson(paths.agiReadiness.sovereignGoalCompletionStatusJson, sovereignGoalCompletionStatus) || {};
+      const sovereignStatus = safeString(sovereignGoal.status, 80);
+      const supportPaths = Array.isArray(sovereignGoal.supportingArtifacts) ? sovereignGoal.supportingArtifacts : [];
+      const missing = supportPaths.filter((entry) => !fs.existsSync(path.join(workspaceRoot, safeString(entry, 220))));
+      pass = sovereignStatus !== "SUBJECTIVE_AGI_COMPLETE" || missing.length === 0;
+      detail = pass ? "all supporting artifacts are present for sovereign complete" : `missing supporting artifacts: ${missing.join(", ")}`;
     } else if (id === "public_hygiene_no_unknown_memory_type") {
       const health = writtenOrRuntimeJson(paths.publicOutput.promotionHealthJson, promotionHealthPublic) || {};
       const entries = [
@@ -10012,9 +10363,22 @@ function buildGovernedMemoryPublicArtifacts({ workspaceRoot = workspaceRootDefau
   readinessArtifacts.readiness.robustnessRemediationEffectsPath = repoRelative(workspaceRoot, paths.agiReadiness.robustnessRemediationEffectsJson);
   readinessArtifacts.readiness.goalCompletionStatusPath = repoRelative(workspaceRoot, paths.agiReadiness.goalCompletionStatusJson);
   readinessArtifacts.readiness.subjectiveGoalCompletionStatusPath = repoRelative(workspaceRoot, paths.agiReadiness.subjectiveGoalCompletionStatusJson);
+  readinessArtifacts.readiness.sovereignGoalCompletionStatusPath = repoRelative(workspaceRoot, paths.agiReadiness.sovereignGoalCompletionStatusJson);
   readinessArtifacts.readiness.learningAdoptionStatusPath = repoRelative(workspaceRoot, paths.agiReadiness.learningAdoptionStatusJson);
   readinessArtifacts.readiness.selfDirectedProbeStatusPath = repoRelative(workspaceRoot, paths.agiReadiness.selfDirectedProbeStatusJson);
   readinessArtifacts.readiness.novelTaskAcquisitionPath = repoRelative(workspaceRoot, paths.agiReadiness.novelTaskAcquisitionJson);
+  readinessArtifacts.readiness.selfAuthoredGoalStatusPath = repoRelative(workspaceRoot, paths.agiReadiness.selfAuthoredGoalStatusJson);
+  readinessArtifacts.readiness.selfAuthoredGoalHistoryPath = repoRelative(workspaceRoot, paths.agiReadiness.selfAuthoredGoalHistoryJson);
+  readinessArtifacts.readiness.selfAuthoredGoalMarketPath = repoRelative(workspaceRoot, paths.agiReadiness.selfAuthoredGoalMarketJson);
+  readinessArtifacts.readiness.openUnknownsRegisterPath = repoRelative(workspaceRoot, paths.agiReadiness.openUnknownsRegisterJson);
+  readinessArtifacts.readiness.workspaceWorldModelPath = repoRelative(workspaceRoot, paths.agiReadiness.workspaceWorldModelJson);
+  readinessArtifacts.readiness.continuousImprovementStatusPath = repoRelative(workspaceRoot, paths.agiReadiness.continuousImprovementStatusJson);
+  readinessArtifacts.readiness.noveltyGrowthStatusPath = repoRelative(workspaceRoot, paths.agiReadiness.noveltyGrowthStatusJson);
+  readinessArtifacts.readiness.securityConstitutionStatusPath = repoRelative(workspaceRoot, paths.agiReadiness.securityConstitutionStatusJson);
+  readinessArtifacts.readiness.rollbackReadinessPath = repoRelative(workspaceRoot, paths.agiReadiness.rollbackReadinessJson);
+  readinessArtifacts.readiness.autonomyBudgetStatusPath = repoRelative(workspaceRoot, paths.agiReadiness.autonomyBudgetStatusJson);
+  readinessArtifacts.readiness.selfAuthoredCausalEffectsPath = repoRelative(workspaceRoot, paths.agiReadiness.selfAuthoredCausalEffectsJson);
+  readinessArtifacts.readiness.selfAuthoredRemediationTrendPath = repoRelative(workspaceRoot, paths.agiReadiness.selfAuthoredRemediationTrendJson);
   let learningAdoptionStatus = null;
   let selfDirectedProbeStatus = null;
   let novelTaskAcquisition = null;
@@ -10201,6 +10565,18 @@ function buildGovernedMemoryPublicArtifacts({ workspaceRoot = workspaceRootDefau
     previousSubjectiveHistory: readPublicHistorySnapshot(workspaceRoot, paths, { historyType: "subjective" }),
     exportSessionId,
   });
+  subjectiveGoalCompletionStatus = applySovereignCompletionToSubjectiveStatus({
+    subjectiveGoalCompletionStatus,
+    sovereignGoalCompletionStatus,
+    workspaceRoot,
+    paths,
+  });
+  if (safeString(sovereignGoalCompletionStatus && sovereignGoalCompletionStatus.status, 80) === "SUBJECTIVE_AGI_COMPLETE") {
+    goalCompletionStatus = {
+      ...goalCompletionStatus,
+      requiredNextActions: [],
+    };
+  }
   writeJsonIfChanged(paths.projections.subjectiveGoalCompletionHistoryPath, {
     schema: "agi-subjective-goal-completion-history.v1",
     generatedAt: toIso(),
@@ -10209,9 +10585,119 @@ function buildGovernedMemoryPublicArtifacts({ workspaceRoot = workspaceRootDefau
       ? subjectiveGoalCompletionStatus.history.entries
       : [],
   });
+  openUnknownsRegister = buildOpenUnknownsRegister({
+    workspaceRoot,
+    bottlenecks,
+    readinessArtifacts,
+    robustnessRemediationStatus,
+    selfAuthoredGoalMarket,
+  });
+  workspaceWorldModel = buildWorkspaceWorldModel({
+    workspaceRoot,
+    readinessArtifacts,
+    continuityArtifacts,
+    causalRegressionAlerts,
+    openUnknownsRegister,
+  });
+  securityConstitutionStatus = buildSecurityConstitutionStatus({ workspaceRoot, selfAuthoredGoalMarket });
+  rollbackReadiness = buildRollbackReadiness({ workspaceRoot, selfAuthoredGoalMarket, securityConstitutionStatus });
+  autonomyBudgetStatus = buildAutonomyBudgetStatus({
+    workspaceRoot,
+    selfAuthoredGoalMarket,
+    selfAuthoredGoalStatus,
+    autonomousLearningStatus,
+  });
+  selfAuthoredCausalEffects = buildSelfAuthoredCausalEffects({ workspaceRoot, selfAuthoredGoalMarket });
+  continuityArtifacts = {
+    ...continuityArtifacts,
+    artifact: {
+      ...(continuityArtifacts && continuityArtifacts.artifact && typeof continuityArtifacts.artifact === "object" ? continuityArtifacts.artifact : {}),
+      selfAuthoredTaskFlow: {
+        selfAuthoredGoalCountWindow: clampInt(selfAuthoredGoalStatus && selfAuthoredGoalStatus.selfAuthoredGoalCountWindow, 0, 999999, 0),
+        positiveClosureCountWindow: clampInt(selfAuthoredGoalStatus && selfAuthoredGoalStatus.selfAuthoredPositiveClosureCountWindow, 0, 999999, 0),
+        latestRoleMix: uniqueStrings((Array.isArray(selfAuthoredGoalMarket && selfAuthoredGoalMarket.entries) ? selfAuthoredGoalMarket.entries : []).map((entry) => safeString(entry && entry.ownerRole, 80)), 8, 80),
+      },
+    },
+  };
+  causalEffectivenessSummary.summary = {
+    ...(causalEffectivenessSummary && causalEffectivenessSummary.summary && typeof causalEffectivenessSummary.summary === "object" ? causalEffectivenessSummary.summary : {}),
+    selfAuthoredEffectiveContributionCount: clampInt(selfAuthoredCausalEffects && selfAuthoredCausalEffects.summary && selfAuthoredCausalEffects.summary.selfAuthoredEffectiveContributionCount, 0, 999999, 0),
+    selfAuthoredHarmfulCount: clampInt(selfAuthoredCausalEffects && selfAuthoredCausalEffects.summary && selfAuthoredCausalEffects.summary.selfAuthoredHarmfulCount, 0, 999999, 0),
+  };
+  causalEffectivenessSummary.selfAuthored = sanitizePublicValue(selfAuthoredCausalEffects.summary || {}, workspaceRoot);
+  continuousImprovementStatus = buildContinuousImprovementStatus({
+    workspaceRoot,
+    goalCompletionStatus,
+    distinctImprovementSummary,
+    autonomousLearningStatus,
+    selfAuthoredGoalHistory,
+    selfAuthoredCausalEffects,
+    autonomyBudgetStatus,
+  });
+  noveltyGrowthStatus = buildNoveltyGrowthStatus({
+    workspaceRoot,
+    selfAuthoredGoalMarket,
+    selfDirectedProbeStatus,
+    noveltySource: novelTaskAcquisition,
+    readinessArtifacts,
+  });
+  selfAuthoredRemediationTrend = buildSelfAuthoredRemediationTrend({ workspaceRoot, selfAuthoredGoalHistory });
+  sovereignGoalCompletionStatus = buildSovereignGoalCompletionStatus({
+    workspaceRoot,
+    goalCompletionStatus,
+    subjectiveGoalCompletionStatus,
+    readinessArtifacts,
+    continuityArtifacts,
+    continuityDebt,
+    learningAdoptionStatus,
+    selfDirectedProbeStatus,
+    novelTaskAcquisition,
+    selfAuthoredGoalStatus,
+    selfAuthoredGoalHistory,
+    selfAuthoredGoalMarket,
+    openUnknownsRegister,
+    workspaceWorldModel,
+    continuousImprovementStatus,
+    noveltyGrowthStatus,
+    securityConstitutionStatus,
+    rollbackReadiness,
+    autonomyBudgetStatus,
+    selfAuthoredCausalEffects,
+    previousSovereignHistory: readPublicHistorySnapshot(workspaceRoot, paths, { historyType: "sovereign" }),
+    exportSessionId,
+  });
+  subjectiveGoalCompletionStatus = applySovereignCompletionToSubjectiveStatus({
+    subjectiveGoalCompletionStatus,
+    sovereignGoalCompletionStatus,
+    workspaceRoot,
+    paths,
+  });
+  if (safeString(sovereignGoalCompletionStatus && sovereignGoalCompletionStatus.status, 80) === "SUBJECTIVE_AGI_COMPLETE") {
+    goalCompletionStatus = {
+      ...goalCompletionStatus,
+      requiredNextActions: [],
+    };
+  }
+  writeJsonIfChanged(paths.projections.subjectiveGoalCompletionHistoryPath, {
+    schema: "agi-subjective-goal-completion-history.v1",
+    generatedAt: toIso(),
+    workspaceId: summary.workspaceId,
+    entries: subjectiveGoalCompletionStatus.history && Array.isArray(subjectiveGoalCompletionStatus.history.entries)
+      ? subjectiveGoalCompletionStatus.history.entries
+      : [],
+  });
+  writeJsonIfChanged(paths.projections.sovereignGoalCompletionHistoryPath, {
+    schema: "agi-sovereign-goal-completion-history.v1",
+    generatedAt: toIso(),
+    workspaceId: summary.workspaceId,
+    entries: sovereignGoalCompletionStatus.history && Array.isArray(sovereignGoalCompletionStatus.history.entries)
+      ? sovereignGoalCompletionStatus.history.entries
+      : [],
+  });
   goalCompletionStatus = {
     ...goalCompletionStatus,
     ...buildGoalCompletionSubjectiveProjection({ workspaceRoot, paths, subjectiveGoalCompletionStatus }),
+    ...buildGoalCompletionSovereignProjection({ workspaceRoot, paths, sovereignGoalCompletionStatus }),
   };
   publicOverview = {
     ...publicOverview,
@@ -10219,6 +10705,8 @@ function buildGovernedMemoryPublicArtifacts({ workspaceRoot = workspaceRootDefau
     goalWhyNotYetCount: Array.isArray(goalCompletionStatus.whyNotYet) ? goalCompletionStatus.whyNotYet.length : 0,
     subjectiveGoalStatus: safeString(subjectiveGoalCompletionStatus.subjectiveGoalStatus, 80),
     subjectiveGoalWhyNotYetCount: Array.isArray(subjectiveGoalCompletionStatus.subjectiveWhyNotYet) ? subjectiveGoalCompletionStatus.subjectiveWhyNotYet.length : 0,
+    sovereignGoalStatus: safeString(sovereignGoalCompletionStatus && sovereignGoalCompletionStatus.status, 80),
+    sovereignGoalWhyNotYetCount: Array.isArray(sovereignGoalCompletionStatus && sovereignGoalCompletionStatus.whyNotYet) ? sovereignGoalCompletionStatus.whyNotYet.length : 0,
     learningAgendaSummary: sanitizePublicValue(autonomousLearningStatus.summary, workspaceRoot),
   };
   evalStatus = evaluateMemoryPublicSuite({
@@ -10355,6 +10843,18 @@ function buildGovernedMemoryPublicArtifacts({ workspaceRoot = workspaceRootDefau
     previousSubjectiveHistory: readPublicHistorySnapshot(workspaceRoot, paths, { historyType: "subjective" }),
     exportSessionId,
   });
+  subjectiveGoalCompletionStatus = applySovereignCompletionToSubjectiveStatus({
+    subjectiveGoalCompletionStatus,
+    sovereignGoalCompletionStatus,
+    workspaceRoot,
+    paths,
+  });
+  if (safeString(sovereignGoalCompletionStatus && sovereignGoalCompletionStatus.status, 80) === "SUBJECTIVE_AGI_COMPLETE") {
+    goalCompletionStatus = {
+      ...goalCompletionStatus,
+      requiredNextActions: [],
+    };
+  }
   writeJsonIfChanged(paths.projections.subjectiveGoalCompletionHistoryPath, {
     schema: "agi-subjective-goal-completion-history.v1",
     generatedAt: toIso(),
@@ -10386,6 +10886,23 @@ function buildGovernedMemoryPublicArtifacts({ workspaceRoot = workspaceRootDefau
     autonomousLearningStatus,
   });
   selfAuthoredCausalEffects = buildSelfAuthoredCausalEffects({ workspaceRoot, selfAuthoredGoalMarket });
+  continuityArtifacts = {
+    ...continuityArtifacts,
+    artifact: {
+      ...(continuityArtifacts && continuityArtifacts.artifact && typeof continuityArtifacts.artifact === "object" ? continuityArtifacts.artifact : {}),
+      selfAuthoredTaskFlow: {
+        selfAuthoredGoalCountWindow: clampInt(selfAuthoredGoalStatus && selfAuthoredGoalStatus.selfAuthoredGoalCountWindow, 0, 999999, 0),
+        positiveClosureCountWindow: clampInt(selfAuthoredGoalStatus && selfAuthoredGoalStatus.selfAuthoredPositiveClosureCountWindow, 0, 999999, 0),
+        latestRoleMix: uniqueStrings((Array.isArray(selfAuthoredGoalMarket && selfAuthoredGoalMarket.entries) ? selfAuthoredGoalMarket.entries : []).map((entry) => safeString(entry && entry.ownerRole, 80)), 8, 80),
+      },
+    },
+  };
+  causalEffectivenessSummary.summary = {
+    ...(causalEffectivenessSummary && causalEffectivenessSummary.summary && typeof causalEffectivenessSummary.summary === "object" ? causalEffectivenessSummary.summary : {}),
+    selfAuthoredEffectiveContributionCount: clampInt(selfAuthoredCausalEffects && selfAuthoredCausalEffects.summary && selfAuthoredCausalEffects.summary.selfAuthoredEffectiveContributionCount, 0, 999999, 0),
+    selfAuthoredHarmfulCount: clampInt(selfAuthoredCausalEffects && selfAuthoredCausalEffects.summary && selfAuthoredCausalEffects.summary.selfAuthoredHarmfulCount, 0, 999999, 0),
+  };
+  causalEffectivenessSummary.selfAuthored = sanitizePublicValue(selfAuthoredCausalEffects.summary || {}, workspaceRoot);
   continuousImprovementStatus = buildContinuousImprovementStatus({
     workspaceRoot,
     goalCompletionStatus,
@@ -10576,6 +11093,18 @@ function buildGovernedMemoryPublicArtifacts({ workspaceRoot = workspaceRootDefau
     previousSubjectiveHistory: readPublicHistorySnapshot(workspaceRoot, paths, { historyType: "subjective" }),
     exportSessionId,
   });
+  subjectiveGoalCompletionStatus = applySovereignCompletionToSubjectiveStatus({
+    subjectiveGoalCompletionStatus,
+    sovereignGoalCompletionStatus,
+    workspaceRoot,
+    paths,
+  });
+  if (safeString(sovereignGoalCompletionStatus && sovereignGoalCompletionStatus.status, 80) === "SUBJECTIVE_AGI_COMPLETE") {
+    goalCompletionStatus = {
+      ...goalCompletionStatus,
+      requiredNextActions: [],
+    };
+  }
   writeJsonIfChanged(paths.projections.subjectiveGoalCompletionHistoryPath, {
     schema: "agi-subjective-goal-completion-history.v1",
     generatedAt: toIso(),
@@ -10587,6 +11116,7 @@ function buildGovernedMemoryPublicArtifacts({ workspaceRoot = workspaceRootDefau
   goalCompletionStatus = {
     ...goalCompletionStatus,
     ...buildGoalCompletionSubjectiveProjection({ workspaceRoot, paths, subjectiveGoalCompletionStatus }),
+    ...buildGoalCompletionSovereignProjection({ workspaceRoot, paths, sovereignGoalCompletionStatus }),
   };
   publicOverview = {
     ...publicOverview,
@@ -10594,6 +11124,8 @@ function buildGovernedMemoryPublicArtifacts({ workspaceRoot = workspaceRootDefau
     goalWhyNotYetCount: Array.isArray(goalCompletionStatus.whyNotYet) ? goalCompletionStatus.whyNotYet.length : 0,
     subjectiveGoalStatus: safeString(subjectiveGoalCompletionStatus.subjectiveGoalStatus, 80),
     subjectiveGoalWhyNotYetCount: Array.isArray(subjectiveGoalCompletionStatus.subjectiveWhyNotYet) ? subjectiveGoalCompletionStatus.subjectiveWhyNotYet.length : 0,
+    sovereignGoalStatus: safeString(sovereignGoalCompletionStatus && sovereignGoalCompletionStatus.status, 80),
+    sovereignGoalWhyNotYetCount: Array.isArray(sovereignGoalCompletionStatus && sovereignGoalCompletionStatus.whyNotYet) ? sovereignGoalCompletionStatus.whyNotYet.length : 0,
     learningAgendaSummary: sanitizePublicValue(autonomousLearningStatus.summary, workspaceRoot),
   };
   readinessArtifacts.robustnessBreakdown = {
@@ -10658,9 +11190,23 @@ function buildGovernedMemoryPublicArtifacts({ workspaceRoot = workspaceRootDefau
       goalCompletionStatusMd: repoRelative(workspaceRoot, paths.agiReadiness.goalCompletionStatusMd),
       subjectiveGoalCompletionStatusJson: repoRelative(workspaceRoot, paths.agiReadiness.subjectiveGoalCompletionStatusJson),
       subjectiveGoalCompletionStatusMd: repoRelative(workspaceRoot, paths.agiReadiness.subjectiveGoalCompletionStatusMd),
+      sovereignGoalCompletionStatusJson: repoRelative(workspaceRoot, paths.agiReadiness.sovereignGoalCompletionStatusJson),
+      sovereignGoalCompletionStatusMd: repoRelative(workspaceRoot, paths.agiReadiness.sovereignGoalCompletionStatusMd),
       learningAdoptionStatusJson: repoRelative(workspaceRoot, paths.agiReadiness.learningAdoptionStatusJson),
       selfDirectedProbeStatusJson: repoRelative(workspaceRoot, paths.agiReadiness.selfDirectedProbeStatusJson),
       novelTaskAcquisitionJson: repoRelative(workspaceRoot, paths.agiReadiness.novelTaskAcquisitionJson),
+      selfAuthoredGoalStatusJson: repoRelative(workspaceRoot, paths.agiReadiness.selfAuthoredGoalStatusJson),
+      selfAuthoredGoalHistoryJson: repoRelative(workspaceRoot, paths.agiReadiness.selfAuthoredGoalHistoryJson),
+      selfAuthoredGoalMarketJson: repoRelative(workspaceRoot, paths.agiReadiness.selfAuthoredGoalMarketJson),
+      openUnknownsRegisterJson: repoRelative(workspaceRoot, paths.agiReadiness.openUnknownsRegisterJson),
+      workspaceWorldModelJson: repoRelative(workspaceRoot, paths.agiReadiness.workspaceWorldModelJson),
+      continuousImprovementStatusJson: repoRelative(workspaceRoot, paths.agiReadiness.continuousImprovementStatusJson),
+      noveltyGrowthStatusJson: repoRelative(workspaceRoot, paths.agiReadiness.noveltyGrowthStatusJson),
+      securityConstitutionStatusJson: repoRelative(workspaceRoot, paths.agiReadiness.securityConstitutionStatusJson),
+      rollbackReadinessJson: repoRelative(workspaceRoot, paths.agiReadiness.rollbackReadinessJson),
+      autonomyBudgetStatusJson: repoRelative(workspaceRoot, paths.agiReadiness.autonomyBudgetStatusJson),
+      selfAuthoredCausalEffectsJson: repoRelative(workspaceRoot, paths.agiReadiness.selfAuthoredCausalEffectsJson),
+      selfAuthoredRemediationTrendJson: repoRelative(workspaceRoot, paths.agiReadiness.selfAuthoredRemediationTrendJson),
       continuityPublicJson: repoRelative(workspaceRoot, paths.continuityPublic.latestSummaryJson),
       continuityPublicMd: repoRelative(workspaceRoot, paths.continuityPublic.latestSummaryMd),
       continuityDebtJson: repoRelative(workspaceRoot, paths.continuityPublic.continuityDebtJson),
@@ -10703,9 +11249,22 @@ function buildGovernedMemoryPublicArtifacts({ workspaceRoot = workspaceRootDefau
     robustnessRemediationTrend,
     goalCompletionStatus,
     subjectiveGoalCompletionStatus,
+    sovereignGoalCompletionStatus,
     learningAdoptionStatus,
     selfDirectedProbeStatus,
     novelTaskAcquisition,
+    selfAuthoredGoalStatus,
+    selfAuthoredGoalHistory,
+    selfAuthoredGoalMarket,
+    openUnknownsRegister,
+    workspaceWorldModel,
+    continuousImprovementStatus,
+    noveltyGrowthStatus,
+    securityConstitutionStatus,
+    rollbackReadiness,
+    autonomyBudgetStatus,
+    selfAuthoredCausalEffects,
+    selfAuthoredRemediationTrend,
     exportManifest,
   };
 }
@@ -10758,9 +11317,23 @@ function exportGovernedMemoryPublicArtifacts({ workspaceRoot = workspaceRootDefa
   fs.writeFileSync(paths.agiReadiness.goalCompletionStatusMd, renderGoalCompletionMarkdown(artifacts.goalCompletionStatus), "utf8");
   writeJsonIfChanged(paths.agiReadiness.subjectiveGoalCompletionStatusJson, artifacts.subjectiveGoalCompletionStatus);
   fs.writeFileSync(paths.agiReadiness.subjectiveGoalCompletionStatusMd, renderSubjectiveGoalCompletionMarkdown(artifacts.subjectiveGoalCompletionStatus), "utf8");
+  writeJsonIfChanged(paths.agiReadiness.sovereignGoalCompletionStatusJson, artifacts.sovereignGoalCompletionStatus);
+  fs.writeFileSync(paths.agiReadiness.sovereignGoalCompletionStatusMd, renderSovereignGoalCompletionMarkdown(artifacts.sovereignGoalCompletionStatus), "utf8");
   writeJsonIfChanged(paths.agiReadiness.learningAdoptionStatusJson, artifacts.learningAdoptionStatus);
   writeJsonIfChanged(paths.agiReadiness.selfDirectedProbeStatusJson, artifacts.selfDirectedProbeStatus);
   writeJsonIfChanged(paths.agiReadiness.novelTaskAcquisitionJson, artifacts.novelTaskAcquisition);
+  writeJsonIfChanged(paths.agiReadiness.selfAuthoredGoalStatusJson, artifacts.selfAuthoredGoalStatus);
+  writeJsonIfChanged(paths.agiReadiness.selfAuthoredGoalHistoryJson, artifacts.selfAuthoredGoalHistory);
+  writeJsonIfChanged(paths.agiReadiness.selfAuthoredGoalMarketJson, artifacts.selfAuthoredGoalMarket);
+  writeJsonIfChanged(paths.agiReadiness.openUnknownsRegisterJson, artifacts.openUnknownsRegister);
+  writeJsonIfChanged(paths.agiReadiness.workspaceWorldModelJson, artifacts.workspaceWorldModel);
+  writeJsonIfChanged(paths.agiReadiness.continuousImprovementStatusJson, artifacts.continuousImprovementStatus);
+  writeJsonIfChanged(paths.agiReadiness.noveltyGrowthStatusJson, artifacts.noveltyGrowthStatus);
+  writeJsonIfChanged(paths.agiReadiness.securityConstitutionStatusJson, artifacts.securityConstitutionStatus);
+  writeJsonIfChanged(paths.agiReadiness.rollbackReadinessJson, artifacts.rollbackReadiness);
+  writeJsonIfChanged(paths.agiReadiness.autonomyBudgetStatusJson, artifacts.autonomyBudgetStatus);
+  writeJsonIfChanged(paths.agiReadiness.selfAuthoredCausalEffectsJson, artifacts.selfAuthoredCausalEffects);
+  writeJsonIfChanged(paths.agiReadiness.selfAuthoredRemediationTrendJson, artifacts.selfAuthoredRemediationTrend);
   ensureDir(paths.continuityPublic.root);
   writeJsonIfChanged(paths.continuityPublic.latestSummaryJson, artifacts.continuityArtifacts.artifact);
   fs.writeFileSync(paths.continuityPublic.latestSummaryMd, artifacts.continuityArtifacts.markdown, "utf8");
@@ -10783,10 +11356,23 @@ function exportGovernedMemoryPublicArtifacts({ workspaceRoot = workspaceRootDefa
     continuityDebt: artifacts.continuityDebtPublic,
     goalCompletionStatus: artifacts.goalCompletionStatus,
     subjectiveGoalCompletionStatus: artifacts.subjectiveGoalCompletionStatus,
+    sovereignGoalCompletionStatus: artifacts.sovereignGoalCompletionStatus,
     causalRegressionAlerts: artifacts.causalRegressionAlerts,
     learningAdoptionStatus: artifacts.learningAdoptionStatus,
     selfDirectedProbeStatus: artifacts.selfDirectedProbeStatus,
     novelTaskAcquisition: artifacts.novelTaskAcquisition,
+    selfAuthoredGoalStatus: artifacts.selfAuthoredGoalStatus,
+    selfAuthoredGoalHistory: artifacts.selfAuthoredGoalHistory,
+    selfAuthoredGoalMarket: artifacts.selfAuthoredGoalMarket,
+    openUnknownsRegister: artifacts.openUnknownsRegister,
+    workspaceWorldModel: artifacts.workspaceWorldModel,
+    continuousImprovementStatus: artifacts.continuousImprovementStatus,
+    noveltyGrowthStatus: artifacts.noveltyGrowthStatus,
+    securityConstitutionStatus: artifacts.securityConstitutionStatus,
+    rollbackReadiness: artifacts.rollbackReadiness,
+    autonomyBudgetStatus: artifacts.autonomyBudgetStatus,
+    selfAuthoredCausalEffects: artifacts.selfAuthoredCausalEffects,
+    selfAuthoredRemediationTrend: artifacts.selfAuthoredRemediationTrend,
     workspaceProgressPublic: artifacts.workspaceProgressPublic,
     promotionHealthPublic: artifacts.promotionHealthPublic,
     latestPackPublic: artifacts.latestPackPublic,
@@ -10812,6 +11398,7 @@ module.exports = {
   buildDistinctImprovementSummary,
   buildGoalCompletionStatus,
   buildSubjectiveGoalCompletionStatus,
+  buildSovereignGoalCompletionStatus,
   buildGovernedMemoryPublicArtifacts,
   buildGovernedMemoryRuntimeSnapshot,
   exportGovernedMemoryPublicArtifacts,
