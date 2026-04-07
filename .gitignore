@@ -5,6 +5,7 @@ logs/archive/raw/turns/
 logs/archive/raw/operation_logs/
 logs/archive/
 .npm-cache/
+node_modules/
 .pw-browsers/
 .playwright-cli/
 models/piper/**/*.onnx

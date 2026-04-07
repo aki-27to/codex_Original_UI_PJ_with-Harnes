@@ -20,6 +20,13 @@ const {
   summarizeAgentGovernance,
 }=require("./scripts/lib/agent_governance_policy");
 const {
+  requestHeaderValue,
+  normalizeMimeTypeHeader,
+  validateJsonMutationContentType,
+  extractExecIdempotencyKey,
+  extractGovernanceOverride,
+}=require("./scripts/lib/http_request_guards");
+const {
   defaultOutcomesPath:defaultSkillOutcomesPath,
   evaluateSkillPortfolio,
   loadSkillCatalog,
@@ -956,47 +963,6 @@ function normalizeIdempotencyKey(value){
   if(trimmed.length>200)throw new Error("idempotency key is too long (max 200)");
   if(!/^[A-Za-z0-9._:-]+$/.test(trimmed))throw new Error("idempotency key contains unsupported characters");
   return trimmed;
-}
-function requestHeaderValue(req,name){
-  if(!req||!req.headers)return"";
-  const raw=req.headers[name];
-  if(Array.isArray(raw))return String(raw[0]||"");
-  return typeof raw==="string"?raw:"";
-}
-function normalizeMimeTypeHeader(value){
-  const raw=String(value||"").trim().toLowerCase();
-  if(!raw)return"";
-  const semicolon=raw.indexOf(";");
-  return (semicolon>=0?raw.slice(0,semicolon):raw).trim();
-}
-function validateJsonMutationContentType(req,{required=true,expectedMime=execApiRequiredContentType}={}){
-  const normalizedExpected=normalizeMimeTypeHeader(expectedMime)||execApiRequiredContentType;
-  const normalizedProvided=normalizeMimeTypeHeader(requestHeaderValue(req,"content-type"));
-  if(!normalizedProvided){
-    if(required)return{ok:false,status:415,error:`content-type must be ${normalizedExpected}`};
-    return{ok:true,status:200,error:""};
-  }
-  if(normalizedProvided!==normalizedExpected){
-    return{ok:false,status:415,error:`unsupported content-type: ${normalizedProvided} (requires ${normalizedExpected})`};
-  }
-  return{ok:true,status:200,error:""};
-}
-function extractExecIdempotencyKey(req,body){
-  const headerValue=normalizeIdempotencyKey(requestHeaderValue(req,"idempotency-key"));
-  const bodyValue=normalizeIdempotencyKey(body&&typeof body.idempotencyKey==="string"?body.idempotencyKey:"");
-  if(headerValue&&bodyValue&&headerValue!==bodyValue){
-    throw new Error("idempotency key mismatch between header and body");
-  }
-  return headerValue||bodyValue;
-}
-function extractGovernanceOverride(body){
-  const payload=body&&typeof body==="object"?body:{};
-  if(!Object.prototype.hasOwnProperty.call(payload,"governanceOverride"))return null;
-  const normalized=normalizeOverrideRequest(payload.governanceOverride);
-  if(!normalized){
-    throw new Error("invalid governanceOverride (requestedBy/by and reason are required)");
-  }
-  return normalized;
 }
 function hashSha256Hex(text){
   return crypto.createHash("sha256").update(String(text||""),"utf8").digest("hex");
@@ -16541,7 +16507,7 @@ async function requestHandler(req,res){
       }
       const raw=await readRequestBody(req,execRequestBodyLimitBytes);
       const body=raw?JSON.parse(raw):{};
-      idempotencyKey=extractExecIdempotencyKey(req,body);
+      idempotencyKey=extractExecIdempotencyKey(req,body,{normalizeIdempotencyKey});
       const rawPrompt=typeof body.prompt==="string"?body.prompt:"";
       const prompt=safeString(rawPrompt,defaultPromptCharLimit);
       const sandboxMode=normalizeSandboxMode(body.sandboxMode);
@@ -16583,7 +16549,7 @@ async function requestHandler(req,res){
         return;
       }
       const reproProfileRequested=isReproExecutionProfile(requestExecutionProfile);
-      const governanceOverride=extractGovernanceOverride(body);
+      const governanceOverride=extractGovernanceOverride(body,{normalizeOverrideRequest});
       const requestedAgentState=getOrCreateAgentState(agentName);
       const previousPlanningContext=derivePreviousPlanningContextForRequest(requestedAgentState,cwd);
       const extensionApplied=applyRequirementGuardExecExtension({

@@ -1,3 +1,6 @@
+# Owner-operated local default.
+# This repo intentionally keeps the primary parent on a high-autonomy posture for local harness work;
+# broader deployment should narrow sandbox/approval posture and rely on workspace locks plus policy review.
 sandbox_mode = "danger-full-access"
 approval_policy = "never"
 model_reasoning_effort = "high"

@@ -1,6 +1,6 @@
 ﻿# CURRENT_ARCHITECTURE
 
-Updated: 2026-04-05
+Updated: 2026-04-07
 
 ## 1) Purpose
 
@@ -10,6 +10,7 @@ This document is the active architecture spec for the Codex App Server integrati
 - Current-state architecture belongs here.
 - Historical implementation logs belong in `docs/ARCHITECTURE_CHANGELOG.md`.
 - Frozen design authority is `docs/HARNESS_CONSTITUTION.md`.
+- External workflow companions and adjacent experiments must keep their detailed inventories in dedicated docs (for example `docs/WEEKLY_REPORT_COMPANION.md`) so this file stays focused on the harness itself.
 - Repo root should stay source-first. Transient local caches, browser payloads, scratch exports, and migrated `tmp_*` material belong under `runtime/`, while governed evidence stays under `logs/` and intentional report/artifact surfaces stay under `output/`.
 - `output/` is taxonomy-driven rather than dump-oriented: named program/report artifacts stay there, while regenerable transient captures such as Playwright profile trees, ad hoc UI screenshots, demo-home scratch roots, and timestamped phase probe files belong under `runtime/output-transient/` with retention applied by housekeeping policy.
 - Narrative docs are subordinate to machine-readable contracts and runtime proof.
@@ -26,6 +27,7 @@ This document is the active architecture spec for the Codex App Server integrati
 - Fast mode now defaults to OFF for fresh local sessions unless `CODEX_FAST_MODE_DEFAULT` overrides it, and repo-scoped Codex defaults no longer re-enable Fast behind the operator default.
 - `web/01.HarnesUI/index.html` now exposes a Codex v0.116-era permission surface in the settings panel: `Agent (Auto)`, `Chat (Read Only)`, `Guardian Approvals`, `Agent (Full Access)`, and `Custom (config.toml)` are the primary operator-facing modes.
 - Fresh HarnesUI sessions now default that operator-facing permission selector to `Agent (Full Access)` / `danger-full-access`; saved browser preferences still win when present.
+- Those defaults are owner-operated local defaults for this repo, not a blanket recommendation for every deployment. Broader deployments should prefer explicit workspace locks, narrower sandbox posture, and policy review before adopting the same baseline.
 - The same settings panel now shows an always-visible permission summary card for the active mode, keeps raw config-level controls (`approval_policy`, `sandbox_mode`, guardian toggle) behind a dedicated advanced details block, and no longer exposes deprecated interactive `on-failure` approval wording.
 - The same HarnesUI settings column now also exposes a workspace-lock control strip (`このパスで lock` / `unlock`) plus live lock status text driven by `/api/runtime.workspaceGuard`, and simple view collapses the settings card down to that workspace-lock surface so design-sensitive `web_ui` turns can be recovered without leaving the main console.
 - `web/01.HarnesUI/app.js` now treats operator execution state as chat-scoped instead of console-global: each chat persists its own workspace path, desired workspace-lock root, execution profile, approval/sandbox/web-search toggles, model selection, and unsent composer draft, and room switches rehydrate those values into the visible controls before optionally syncing the server-side workspace lock to the active room.
@@ -177,16 +179,8 @@ This document is the active architecture spec for the Codex App Server integrati
   - a `Current Work` surface synchronized to the same plan focus
   - the full step list with localized status badges (`pending`, `in_progress`, `completed`, `failed`, `interrupted`, `skipped`) plus the same purpose line on each row
   - plan-focus fallback ordering of explicit `in_progress`, then blocked step, then next pending step while running, then last completed step
-- A verified external Microsoft 365 weekly-report companion now runs alongside the harness without changing the repo's main `/api/exec` path.
-- The conversational face is the Copilot Studio agent `週報下書きアシスタント` in environment `Default-1a69c0c6-e1c8-439d-8c95-0b8bc3c195d4`.
-- Evidence persistence for that companion currently uses Microsoft To Do list `Weekly Evidence` instead of the earlier SharePoint-list design assumption.
-- Started Power Automate flows currently back that weekly-report companion:
-  - `WR_TEAMS_CHANNEL_TO_EVIDENCE_V1` (`b46fc296-b725-f111-88b4-000d3acf2bda`) captures the target Teams channel into `Weekly Evidence`.
-  - `WR_OUTLOOK_SENT_TO_EVIDENCE_V1` (`3ce1784f-b825-f111-88b4-000d3acf2bda`) captures `Sent Items` mail into `Weekly Evidence`.
-  - `WR_ADD_WORK_MEMO_TO_EVIDENCE_V1` (`49e1784f-b825-f111-88b4-000d3acf2bda`) stores operator work memos into `Weekly Evidence`.
-  - `WR_GET_WEEKLY_EVIDENCE_PACKET_V1` (`54e1784f-b825-f111-88b4-000d3acf2bda`) collects `Weekly Evidence`, Outlook calendar events, and recent sent mail for Copilot Studio.
-  - `WR_WEEKLY_DRAFT_REMINDER_V1` (`60e1784f-b825-f111-88b4-000d3acf2bda`) sends the Friday 18:00 JST reminder mail that points operators back to the Copilot draft flow.
-- The Copilot Studio agent exposes `WR_ADD_WORK_MEMO_TO_EVIDENCE_V1` and `WR_GET_WEEKLY_EVIDENCE_PACKET_V1` as verified tools, and the end-to-end draft path has been validated with live Teams, Outlook, memo, and reminder runs.
+- External workflow companions may run beside the harness without changing the repo's main `/api/exec` path, but their operational inventories now live in dedicated companion docs so the core architecture spec stays harness-centric.
+- The currently verified Microsoft 365 weekly-report companion inventory and its remaining limitation now live in `docs/WEEKLY_REPORT_COMPANION.md`.
 
 ## 3) Collaboration-First Agent Topology
 
@@ -592,7 +586,7 @@ This document is the active architecture spec for the Codex App Server integrati
 - Some lower-tier operator documents remain mixed-language.
 - Live `stdio` parity still depends on the host allowing child-process spawn for the Codex app-server. In spawn-restricted sandboxes, proof/signoff `transportMode=stdio` can only fail fast with recorded evidence (`spawn EPERM`) rather than produce a full live comparison bundle.
 - Playwright browser verification can fail for the same reason in this sandbox (`browserType.launch: spawn EPERM`), so local UI changes may need a normal desktop shell for screenshot-grade browser evidence even when route checks and targeted UI logic tests pass.
-- In the current Copilot Studio tool exposure for `WR_ADD_WORK_MEMO_TO_EVIDENCE_V1`, the tested agent UI surfaced `memo_text` but not the underlying optional `memo_project` / `memo_date` fields, so memo capture is presently optimized for one-line notes rather than fully structured memo entry.
+- Some external workflow companions still have integration-specific limitations; those now stay in their dedicated companion docs instead of expanding the core harness architecture surface.
 
 ## 2026-04-05 operational completion surfaces
 

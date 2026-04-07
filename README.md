@@ -19,6 +19,17 @@ Current default runtime posture:
 - App manifests and runtime wiring live under `APP/*/app.manifest.json`.
 - Architecture details live in `docs/HARNESS_APP_PLATFORM.md`.
 
+## Core Repo Identity
+
+- This repo's core product is the governed harness itself: the standard routes, contracts, evidence surfaces, replay/eval flow, and bounded autonomous runtime.
+- App companions and external workflow integrations are adjacent surfaces, not the architecture spec for the harness.
+- Detailed companion inventories should live in dedicated docs such as `docs/WEEKLY_REPORT_COMPANION.md`, while `docs/CURRENT_ARCHITECTURE.md` stays focused on the harness core.
+
+## Default Posture Boundary
+
+- `danger-full-access`, `approval_policy = never`, and default turn-complete `commit + push` are owner-operated local defaults for this repo.
+- They are not universal deployment guidance; broader deployments should narrow sandbox/approval posture, keep explicit workspace locks, and review policy before adopting the same baseline.
+
 このリポジトリは、単なる「Codex を呼ぶだけの Web UI」ではありません。
 `codex app-server` をローカル優先で運用しつつ、既存の標準実行経路を維持したまま、要件固定、親子ガバナンス、evidence-first の release judgment、fail-closed な `agi_v1` 評価を重ねる governed harness です。
 

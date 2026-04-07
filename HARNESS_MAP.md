@@ -1,6 +1,6 @@
 # HARNESS_MAP
 
-Updated: 2026-04-05
+Updated: 2026-04-07
 
 ## 1) Purpose And Reading Order
 
@@ -23,6 +23,11 @@ Recommended read order:
 10. `scripts/config/assurance_depth_contract.json`
 11. `scripts/config/planning_decision_contract.schema.json`
 12. `scripts/config/eval_suite_default.json`
+
+Core-vs-companion boundary:
+- Core harness authority stops at the governed runtime, its contracts, and its proof surfaces.
+- Adjacent external workflow companions belong in dedicated docs such as `docs/WEEKLY_REPORT_COMPANION.md`.
+- Companion inventories are not the architecture spec for the harness itself.
 
 ## 2) Layer Map
 
@@ -146,6 +151,7 @@ Runtime invariants to keep in mind:
 - `parentDispatchGuard=enforce`
 - retired `worker` is not a normal fallback
 - turn contract and task outcome contract stay separate
+- `danger-full-access` plus auto `commit + push` are owner-operated local defaults, not the only supported deployment posture
 
 ## 6) Where To Inspect Current State
 

@@ -1,3 +1,6 @@
+# Owner-operated project defaults for this harness repo.
+# Wider deployments should narrow sandbox/approval posture through the agent config layer
+# instead of assuming these local experimentation defaults are universally appropriate.
 network_access = true
 
 [features]
