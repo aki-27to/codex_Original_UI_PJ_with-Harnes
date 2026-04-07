@@ -1,6 +1,6 @@
 # EVIDENCE_CONTRACT
 
-Updated: 2026-03-13
+Updated: 2026-04-07
 
 ## 1) Purpose
 
@@ -42,6 +42,8 @@ Define the minimum verification and reporting artifacts required before a task c
   - `node scripts/app_server_smoke_test.js`
 - Eval harness / replay / workflow policy changes:
   - `node scripts/eval_replay_api_smoke_test.js`
+- Core system changes that can affect whole-harness consistency:
+  - `node scripts/system_coherence_review_test.js`
 - `web/` changes:
   - launch the UI
   - verify `GET /api/runtime` returns HTTP 200
@@ -150,6 +152,7 @@ Every release/signoff report should make the evidence legible by including:
 - If a check is skipped, say exactly why it was skipped and what risk remains.
 - Evidence aggregation should reduce reviewer load, not hide missing checks. A neat manifest without the underlying proof is still a failure.
 - `SIGNOFF_ASSURANCE` runs should surface reviewer/tester/doc-sync status in `review_load_breakdown.json` for operator signoff.
+- If a core system change skips the whole-system coherence review, the result is `FAILED_VALIDATION`, not `COMPLETED`.
 - If a task is design-sensitive and visual evidence is missing, the correct outcome is `FAILED_VALIDATION`, not `COMPLETED`.
 
 ## 6.1) Subjective Quality Rule

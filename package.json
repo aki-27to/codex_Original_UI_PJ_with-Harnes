@@ -59,6 +59,7 @@
     "artifact:memory-public:sample": "node scripts/export_governed_memory_public_sample.js",
     "test:memory-public": "node scripts/governed_memory_public_export_test.js",
     "test:repo-hygiene:static": "node scripts/repo_static_hygiene_test.js",
+    "test:system-coherence": "node scripts/system_coherence_review_test.js",
     "test:server-request-guards": "node scripts/http_request_guards_test.js",
     "housekeeping:runtime-surface": "node scripts/organize_runtime_surface.js",
     "housekeeping:output-surface": "node scripts/organize_output_surface.js",

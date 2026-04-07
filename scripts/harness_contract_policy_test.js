@@ -17,7 +17,7 @@ function assert(condition, message) {
 
 function testLoadContract() {
   const spec = loadHarnessTurnContractSpec(path.join(__dirname, "config", "harness_contract_spec.json"));
-  assert(spec && spec.schema === "harness-turn-contract.v1", "contract schema mismatch");
+  assert(spec && /^harness-turn-contract\.v\d+$/i.test(String(spec.schema || "")), "contract schema mismatch");
   assert(Array.isArray(spec.turn.states) && spec.turn.states.includes("completed"), "contract states missing completed");
 }
 

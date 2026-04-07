@@ -43,6 +43,7 @@ Examples:
 - Playwright browser profiles and screenshot scratch trees
 - ad hoc UI capture sessions
 - timestamped phase probe files such as `phase2-long-horizon-*.json`
+- ad hoc note article drafts such as `note_article_*.md`
 - temporary bootstrap/debug payloads
 - demo-home snapshots that can be recreated locally
 
@@ -59,6 +60,7 @@ Current transient routing:
 - `output/phase2-long-horizon-*.json` -> `runtime/output-transient/phase-probes`
 - `output/phase3-lifecycle-*.json` -> `runtime/output-transient/phase-probes`
 - `output/tmp_harnesui_retry_bootstrap.js` -> `runtime/output-transient/bootstrap`
+- `output/note_article_*.md` -> `runtime/output-transient/note-articles`
 
 ## Retention
 

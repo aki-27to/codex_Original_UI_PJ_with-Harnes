@@ -42,6 +42,9 @@
     "eval_or_workflow_policy_change": [
       "node scripts/eval_replay_api_smoke_test.js"
     ],
+    "core_system_change": [
+      "node scripts/system_coherence_review_test.js"
+    ],
     "web_change": [
       "launch_ui",
       "GET /api/runtime = 200"

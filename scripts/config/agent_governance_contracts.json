@@ -20,7 +20,9 @@
   "runtimeInvariants": {
     "routingDecisionRequiredBeforeChildExecution": true,
     "blockedRequestUserInputPolicy": "blocked",
-    "retiredWorkerAllowedInNormalRuntime": false
+    "retiredWorkerAllowedInNormalRuntime": false,
+    "systemCoherenceReviewRequiredForCoreChanges": true,
+    "systemCoherenceReviewContractRef": "scripts/config/system_coherence_review_contract.json"
   },
   "contracts": {
     "frontend_worker": {

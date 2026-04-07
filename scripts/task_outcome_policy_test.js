@@ -59,6 +59,14 @@ function testFailedValidationFromGuard() {
   assert(verdict.status === "FAILED_VALIDATION", "parent dispatch guard violation should map to FAILED_VALIDATION");
 }
 
+function testFailedValidationFromSystemCoherenceReview() {
+  const verdict = deriveTaskOutcome({
+    turnStatus: "failed",
+    reason: "system_coherence_review_missing",
+  });
+  assert(verdict.status === "FAILED_VALIDATION", "missing whole-system coherence review should map to FAILED_VALIDATION");
+}
+
 function testFailedValidationFromIntentWildcard() {
   const verdict = deriveTaskOutcome({
     turnStatus: "failed",
@@ -107,6 +115,7 @@ function run() {
     ["needs input from approval", testNeedsInputFromApprovalReason],
     ["blocked from governance", testBlockedFromGovernanceReason],
     ["failed validation from parent dispatch guard", testFailedValidationFromGuard],
+    ["failed validation from whole-system coherence review", testFailedValidationFromSystemCoherenceReview],
     ["failed validation from intent wildcard", testFailedValidationFromIntentWildcard],
     ["failed default blocked", testFailedDefaultBlocked],
     ["partial outcome derivation", testPartialDelivery],

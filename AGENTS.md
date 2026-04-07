@@ -94,6 +94,9 @@
 - 証拠契約と最小検証成果物:
   - `docs/EVIDENCE_CONTRACT.md`
   - `docs/DESIGN_ACCEPTANCE_CONTRACT.md`
+- 全体整合レビュー:
+  - `docs/SYSTEM_COHERENCE_REVIEW.md`
+  - `scripts/config/system_coherence_review_contract.json`
 - 現在のアーキテクチャ仕様と変更履歴:
   - `docs/CURRENT_ARCHITECTURE.md`
   - `docs/ARCHITECTURE_CHANGELOG.md`

@@ -1,0 +1,67 @@
+{
+  "schema": "system-coherence-review-contract.v1",
+  "version": "2026-04-07.r1",
+  "sourceDoc": "docs/SYSTEM_COHERENCE_REVIEW.md",
+  "requiredCommand": "node scripts/system_coherence_review_test.js",
+  "primaryExecRoute": "POST /api/exec",
+  "allowedAuxiliaryRoutePrefix": "/api/batch/",
+  "reviewPlanes": [
+    {
+      "id": "execution_path",
+      "description": "Standard execution route remains primary and no parallel local orchestration path is introduced."
+    },
+    {
+      "id": "governance_rules",
+      "description": "Parent/child responsibilities, evidence gates, and release posture remain internally consistent."
+    },
+    {
+      "id": "machine_contracts",
+      "description": "Machine-readable contracts, outcome taxonomy, and policy manifests remain synchronized."
+    },
+    {
+      "id": "server_runtime",
+      "description": "Server behavior, runtime evidence, and release enforcement remain aligned with the contracts."
+    },
+    {
+      "id": "evaluation_memory",
+      "description": "Eval, memory, and long-horizon lifecycle surfaces remain connected to the active execution path."
+    },
+    {
+      "id": "artifact_surface",
+      "description": "Intentional artifacts, transient runtime material, and repo-root hygiene remain taxonomy-driven."
+    }
+  ],
+  "coreChangePathGlobs": [
+    "server.js",
+    "package.json",
+    "start_codex_ui.bat",
+    ".codex/**",
+    "scripts/**",
+    "web/**",
+    "docs/AGENT_OPERATING_RULES.md",
+    "docs/EVIDENCE_CONTRACT.md",
+    "docs/CURRENT_ARCHITECTURE.md",
+    "docs/ARCHITECTURE_CHANGELOG.md",
+    "docs/SYSTEM_COHERENCE_REVIEW.md"
+  ],
+  "corePromptMarkers": [
+    "/api/exec",
+    "architecture",
+    "governance",
+    "contract",
+    "eval",
+    "memory",
+    "artifact surface",
+    "lifecycle",
+    "whole-system"
+  ],
+  "requiredDocs": [
+    "docs/CURRENT_ARCHITECTURE.md",
+    "docs/ARCHITECTURE_CHANGELOG.md"
+  ],
+  "requiredMachineContracts": [
+    "scripts/config/agent_governance_contracts.json",
+    "scripts/config/evidence_contract.json",
+    "scripts/config/task_outcome_contract.json"
+  ]
+}

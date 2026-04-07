@@ -1,6 +1,6 @@
 ﻿# AGENT_OPERATING_RULES
 
-Updated: 2026-03-20
+Updated: 2026-04-07
 
 ## 1) Scope
 This document contains tier-1 operating rules referenced by `AGENTS.md`.
@@ -187,6 +187,19 @@ This document contains tier-1 operating rules referenced by `AGENTS.md`.
 - Before Step 5 Final Report, update `docs/CURRENT_ARCHITECTURE.md` with baseline and over-delivery details, design intent, related tests, and current-state impact.
 - Append a matching change entry to `docs/ARCHITECTURE_CHANGELOG.md`.
 - Missing spec synchronization blocks release and prevents `RELEASE_APPROVED`.
+
+### 11.2A Whole-System Coherence Gate
+- Core system changes must not stop at local file correctness.
+- If a change touches core harness surfaces such as `server.js`, `scripts/`, `web/`, `.codex/`, `package.json`, `start_codex_ui.bat`, or core governance/architecture docs, Parent Review must run `node scripts/system_coherence_review_test.js`.
+- The review must explicitly cover these planes:
+  - execution path
+  - governance rules
+  - machine-readable contracts
+  - server/runtime enforcement
+  - eval/memory/lifecycle alignment
+  - artifact surface taxonomy
+- Missing this review for an applicable core change is a release blocker and should be reported as `FAILED_VALIDATION`, not as a soft residual-risk note.
+- Source-of-truth contract: `scripts/config/system_coherence_review_contract.json`.
 
 ### 11.3 Performance/Intent Rule
 - Performance means maximizing user satisfaction, not only speed.

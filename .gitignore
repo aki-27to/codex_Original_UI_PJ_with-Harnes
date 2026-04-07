@@ -19,6 +19,7 @@ runtime/*
 output/appserver_tui_demo_home/
 output/playwright/
 output/tmp_harnesui_retry_bootstrap.js
+output/note_article_*.md
 docs/copilot-studio/
 output/adaptation/
 output/agi_readiness/
@@ -89,5 +90,6 @@ tmp_*.txt
 tmp_*.json
 tmp_*.out
 tmp_*.err
+share_*.html
 tmp_runtime_revision_verify/
 提出用/

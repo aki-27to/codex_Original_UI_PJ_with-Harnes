@@ -16,7 +16,16 @@ const directoryMoves = [
   ["提出用", "runtime/archive/legacy-submission-payload"]
 ];
 
-const rootTempPattern = /^tmp_.*\.(html|txt|json|out|err)$/i;
+const rootTransientFileRoutes = [
+  {
+    pattern: /^tmp_.*\.(html|txt|json|out|err)$/i,
+    resolveTarget: (name) => path.join("runtime", "tmp", name)
+  },
+  {
+    pattern: /^share_.*\.html$/i,
+    resolveTarget: (name) => path.join("runtime", "shared-pages", name)
+  }
+];
 
 function ensureDir(dirPath) {
   fs.mkdirSync(dirPath, { recursive: true });
@@ -58,10 +67,11 @@ function main() {
     if (!entry.isFile()) {
       continue;
     }
-    if (!rootTempPattern.test(entry.name)) {
+    const matchedRoute = rootTransientFileRoutes.find((route) => route.pattern.test(entry.name));
+    if (!matchedRoute) {
       continue;
     }
-    moveEntry(entry.name, path.join("runtime", "tmp", entry.name), moves);
+    moveEntry(entry.name, matchedRoute.resolveTarget(entry.name), moves);
   }
 
   const manifest = {

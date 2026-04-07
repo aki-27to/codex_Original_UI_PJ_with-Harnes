@@ -47,6 +47,7 @@ const defaultTaskOutcomeContractDefinition = Object.freeze({
     parent_material_implementation_forbidden: "FAILED_VALIDATION",
     parent_dispatch_guard_block: "FAILED_VALIDATION",
     missing_required_evidence: "FAILED_VALIDATION",
+    system_coherence_review_missing: "FAILED_VALIDATION",
     family_completion_gate_failed: "FAILED_VALIDATION",
     silent_requirement_rewrite: "FAILED_VALIDATION",
     runtime_post_lock_drift_failed: "FAILED_VALIDATION",

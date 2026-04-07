@@ -66,6 +66,15 @@
         "maxEntries": 32,
         "maxBytes": 33554432
       }
+    },
+    {
+      "pattern": "note_article_*.md",
+      "targetDir": "runtime/output-transient/note-articles",
+      "retention": {
+        "maxDays": 14,
+        "maxEntries": 32,
+        "maxBytes": 67108864
+      }
     }
   ]
 }

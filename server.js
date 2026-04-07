@@ -99,6 +99,11 @@ const {
   validateTaskOutcomeTurnCompatibility,
 }=require("./scripts/lib/task_outcome_policy");
 const {
+  defaultSystemCoherenceReviewContractPath,
+  evaluateSystemCoherenceReview,
+  loadSystemCoherenceReviewContract,
+}=require("./scripts/lib/system_coherence_review_policy");
+const {
   buildGitAutomationConfig,
   captureGitRepoState,
   runGitAutomationForTurn,
@@ -467,6 +472,7 @@ const sloFailureRateMax=Number(parseRateEnv("CODEX_SLO_FAILURE_RATE_MAX","0.25",
 const sloIdempotencyConflictRateMax=Number(parseRateEnv("CODEX_SLO_IDEMPOTENCY_CONFLICT_RATE_MAX","0.05",0,1).toFixed(4));
 const harnessTurnContractSpecPath=path.join(workspaceRoot,"scripts","config","harness_contract_spec.json");
 const taskOutcomeContractPath=path.join(workspaceRoot,"scripts","config","task_outcome_contract.json");
+const systemCoherenceReviewContractPath=path.join(workspaceRoot,"scripts","config","system_coherence_review_contract.json");
 const userFacingResponseContractPath=defaultUserFacingResponseContractPath;
 const planningModeContractPath=path.join(workspaceRoot,"scripts","config","planning_mode_contract.json");
 const assuranceModeContractPath=path.join(workspaceRoot,"scripts","config","assurance_depth_contract.json");
@@ -500,6 +506,7 @@ const conversationPersonaMemoryContextTopics=3;
 const defaultEvalSuite=loadEvalSuiteSafely();
 const harnessTurnContractSpec=loadHarnessTurnContractSpecSafely();
 const taskOutcomeContract=loadTaskOutcomeContractSafely();
+const systemCoherenceReviewContract=loadSystemCoherenceReviewContractSafely();
 const planningModeContract=loadPlanningModeContractSafely();
 const assuranceModeContract=loadAssuranceModeContractSafely();
 const taskFamilyProfilesContract=loadTaskFamilyProfilesContractSafely();
@@ -666,6 +673,23 @@ function loadTaskOutcomeContractSafely(){
       return loadTaskOutcomeContract(defaultTaskOutcomeContractPath);
     }catch{
       return summarizeTaskOutcomeContract(null);
+    }
+  }
+}
+function loadSystemCoherenceReviewContractSafely(){
+  try{
+    return loadSystemCoherenceReviewContract(systemCoherenceReviewContractPath);
+  }catch(error){
+    console.warn(`[contract] failed to load system coherence review contract from ${systemCoherenceReviewContractPath}: ${error&&error.message?error.message:String(error)}`);
+    try{
+      return loadSystemCoherenceReviewContract(defaultSystemCoherenceReviewContractPath);
+    }catch{
+      return{
+        schema:"system-coherence-review-contract.v1",
+        version:"",
+        requiredCommand:"node scripts/system_coherence_review_test.js",
+        reviewPlanes:["execution_path","governance_rules","machine_contracts","server_runtime","evaluation_memory","artifact_surface"],
+      };
     }
   }
 }
@@ -10194,11 +10218,22 @@ async function executeTurnStreaming(res,prompt,agentName,options){
       planningContext,
     });
     debugFinalize("after_doc_sync_evidence");
+    const systemCoherenceReview=evaluateSystemCoherenceReview({
+      prompt,
+      changedPaths:Array.isArray(observedSignals.sampleChangedPaths)?observedSignals.sampleChangedPaths:[],
+      sampleCommands:Array.isArray(turnStats&&turnStats.sampleCommands)?turnStats.sampleCommands:[],
+      docSyncEvidence,
+      contract:systemCoherenceReviewContract,
+    });
+    debugFinalize("after_system_coherence_review");
     const proposalOnly=Boolean(planningContext&&planningContext.dispatchPlan&&planningContext.dispatchPlan.proposalOnly);
     const reviewerEvidenceRequired=!proposalOnly&&Boolean(planningContext&&planningContext.dispatchPlan&&planningContext.dispatchPlan.reviewerRequired);
     const testerEvidenceRequired=!proposalOnly&&Boolean(planningContext&&planningContext.dispatchPlan&&planningContext.dispatchPlan.testerRequired);
     const dedicatedTestsRequired=!proposalOnly&&Boolean(planningContext&&planningContext.dispatchPlan&&planningContext.dispatchPlan.dedicatedTestsRequired);
     const missingRequiredEvidence=[];
+    if(systemCoherenceReview.required&&!systemCoherenceReview.commandObserved){
+      missingRequiredEvidence.push("system_coherence_review_missing");
+    }
     const reviewerObserved=childEvidenceLedger.some((entry)=>entry&&entry.reviewerObserved);
     const testerObserved=childEvidenceLedger.some((entry)=>entry&&entry.testerObserved)||observedSignals.commandExecutions>0;
     if(docSyncEvidence.required&&docSyncEvidence.status==="FAIL"){
@@ -10278,6 +10313,10 @@ async function executeTurnStreaming(res,prompt,agentName,options){
       :(familyCompletionGate.applies&&familyCompletionGate.status==="failed_validation"
         ?safeString(familyCompletionGate.missingHard&&familyCompletionGate.missingHard[0]&&familyCompletionGate.missingHard[0].reason,120)||"family_completion_gate_failed"
         :"");
+    if(!explicitTaskOutcomeReason&&missingRequiredEvidence.includes("system_coherence_review_missing")){
+      explicitTaskOutcomeStatus="FAILED_VALIDATION";
+      explicitTaskOutcomeReason="system_coherence_review_missing";
+    }
     const revisionProposalTexts=[
       {text:authoritativeFinalText,fallbackAgent:agentName},
       ...observedItemRecords.flatMap((record)=>{
@@ -10473,6 +10512,7 @@ async function executeTurnStreaming(res,prompt,agentName,options){
       postLockDriftSnapshot,
       runtimeRevisionGate,
       clauseCompletionScorecard,
+      systemCoherenceReview,
     });
     debugFinalize("after_evidence_aggregation");
     const evidenceManifest={
@@ -10493,6 +10533,7 @@ async function executeTurnStreaming(res,prompt,agentName,options){
       clauseCompletionScorecard,
       postLockDrift:postLockDriftSnapshot,
       docSyncEvidence,
+      systemCoherenceReview,
       childEvidenceLedger,
       familyCompletionGate,
       reviewLoadBreakdown,
