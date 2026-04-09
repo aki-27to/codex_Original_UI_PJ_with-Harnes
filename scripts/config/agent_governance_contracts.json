@@ -22,6 +22,7 @@
     "defaultRequestUserInputPolicy": "auto-default",
     "strictLaneRequestUserInputPolicy": "blocked",
     "continuousGapClosureLoop": "identify_next_gap_then_close_it_until_terminal_state",
+    "postCompletionNextTaskSynthesis": "after_each_local_completion_recompute_remaining_gap_and_queue_next_task",
     "retiredWorkerAllowedInNormalRuntime": false,
     "systemCoherenceReviewRequiredForCoreChanges": true,
     "systemCoherenceReviewContractRef": "scripts/config/system_coherence_review_contract.json"

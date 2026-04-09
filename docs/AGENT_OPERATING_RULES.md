@@ -16,6 +16,10 @@ This document contains tier-1 operating rules referenced by `AGENTS.md`.
   - Step 2 `Planning and Dispatch`: split tasks, assign specialists, define acceptance checks.
   - Step 4 `Parent Review`: validate child outcomes against baseline and over-delivery criteria.
   - Step 5 `Final Report`: emit release decision, report baseline result + added value + residual risks.
+- Loopback rule:
+  - Step 5 is not the terminal boundary for the top-level objective.
+  - if a bounded local task reaches `COMPLETED` but the top-level user objective remains unmet, the parent must immediately re-enter Step 1 with a self-authored "next missing prerequisite" task instead of idling in a satisfied state
+  - only explicit escalation boundaries, genuine external blockage, or verified top-level objective completion may stop this loop
 - Parent prohibition:
   - parent roles are governed decision owners, not material implementers
   - repo changes that affect behavior, posture, release state, or tests must map to dispatched child work

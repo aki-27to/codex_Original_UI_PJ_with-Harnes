@@ -122,6 +122,10 @@ function testPolicySnapshotHasSingleSource() {
     snapshot.runtimeInvariants.continuousGapClosureLoop === "identify_next_gap_then_close_it_until_terminal_state",
     "runtime invariants must expose the continuous gap-closure loop"
   );
+  assert(
+    snapshot.runtimeInvariants.postCompletionNextTaskSynthesis === "after_each_local_completion_recompute_remaining_gap_and_queue_next_task",
+    "runtime invariants must expose post-completion next-task synthesis"
+  );
   assert(snapshot.contracts && snapshot.contracts.frontend_worker, "policy contracts should include frontend_worker");
 }
 
