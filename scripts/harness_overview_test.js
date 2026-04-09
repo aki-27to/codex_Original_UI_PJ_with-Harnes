@@ -372,6 +372,61 @@ function createOverviewPayload(overrides = {}) {
           blockedApplyTargets: ["AGENTS.md"],
         },
       },
+      documentTooling: {
+        status: "ready",
+        availableCount: 2,
+        missingCount: 1,
+        hubScriptPath: "scripts/document_tooling.js",
+        guidePath: "docs/DOCUMENT_TOOLING_GUIDE.md",
+        bootstrapCommand: "node scripts/document_tooling.js bootstrap",
+        localInstallMode: "workspace-local",
+        toolRoot: ".tooling/document-tools",
+        venvPath: ".tooling/document-tools/venv",
+        binPath: ".tooling/document-tools/bin",
+        jdkPath: ".tooling/document-tools/jdk",
+        exampleCommands: {
+          bootstrap: "node scripts/document_tooling.js bootstrap",
+          status: "node scripts/document_tooling.js status",
+          recommend: "node scripts/document_tooling.js recommend \"convert a DOCX and PPTX bundle into markdown\"",
+          runMarkItDown: "node scripts/document_tooling.js run markitdown -- input.pdf -o output.md",
+          runOpenDataLoader: "node scripts/document_tooling.js run opendataloader-pdf -- input.pdf --format markdown",
+          runSkillNet: "node scripts/document_tooling.js run skillnet -- search \"design review\"",
+        },
+        tools: [
+          {
+            id: "markitdown",
+            name: "Microsoft MarkItDown",
+            installed: true,
+            version: "markitdown 0.1.5",
+          },
+          {
+            id: "opendataloader-pdf",
+            name: "OpenDataLoader PDF",
+            installed: false,
+            version: "",
+          },
+          {
+            id: "skillnet",
+            name: "SkillNet",
+            installed: true,
+            version: "skillnet 0.0.18",
+          },
+        ],
+        recommendedRoutes: [
+          {
+            label: "Mixed office documents to Markdown",
+            toolId: "markitdown",
+          },
+          {
+            label: "Structured PDF extraction and accessibility-heavy parsing",
+            toolId: "opendataloader-pdf",
+          },
+          {
+            label: "Skill lifecycle search, evaluation, and relationship analysis",
+            toolId: "skillnet",
+          },
+        ],
+      },
       secondaryLearning: {
         anthropicEngineering: {
           enabled: true,
@@ -1347,6 +1402,28 @@ function assertRenderedOverviewMatchesPayload(payload, elements) {
     assertContains(governedMemoryCardHtml, String(governedMemory.workspaceProgress && governedMemory.workspaceProgress.knownBlockers && governedMemory.workspaceProgress.knownBlockers[0] || "blocker"), "governed memory card must render workspace blockers");
     assertContains(governedMemoryCardHtml, String(governedMemory.latestPack && governedMemory.latestPack.memoryIds && governedMemory.latestPack.memoryIds[0] || "memory"), "governed memory card must render latest pack item ids");
   }
+  const documentTooling = payload && payload.runtime && payload.runtime.documentTooling && typeof payload.runtime.documentTooling === "object"
+    ? payload.runtime.documentTooling
+    : payload && payload.runtime && payload.runtime.document_tooling && typeof payload.runtime.document_tooling === "object"
+      ? payload.runtime.document_tooling
+      : null;
+  if (documentTooling) {
+    const documentToolingCardHtml = elements.documentToolingCard ? elements.documentToolingCard.innerHTML : "";
+    assertContains(documentToolingCardHtml, String(documentTooling.hubScriptPath || "scripts/document_tooling.js"), "document tooling card must render hub script path");
+    assertContains(documentToolingCardHtml, String(documentTooling.guidePath || "docs/DOCUMENT_TOOLING_GUIDE.md"), "document tooling card must render guide path");
+    assertContains(documentToolingCardHtml, String(documentTooling.toolRoot || ".tooling/document-tools"), "document tooling card must render local tool root");
+    assertContains(documentToolingCardHtml, String(documentTooling.exampleCommands && documentTooling.exampleCommands.bootstrap || "node scripts/document_tooling.js bootstrap"), "document tooling card must render bootstrap command");
+    assertContains(
+      documentToolingCardHtml,
+      String((documentTooling.tools && documentTooling.tools[0] && documentTooling.tools[0].name) || "Microsoft MarkItDown"),
+      "document tooling card must render tool definitions"
+    );
+    assertContains(
+      documentToolingCardHtml,
+      String((documentTooling.recommendedRoutes && documentTooling.recommendedRoutes[0] && documentTooling.recommendedRoutes[0].label) || "Mixed office documents to Markdown"),
+      "document tooling card must render recommended routes"
+    );
+  }
   const traceabilityClauses = payload && payload.traceability && Array.isArray(payload.traceability.clauses)
     ? payload.traceability.clauses
     : [];
@@ -1546,6 +1623,9 @@ async function runIntegrationCheck() {
     assert(overviewJson.runtime.phaseStatus && typeof overviewJson.runtime.phaseStatus === "object", "overview runtime must expose phaseStatus");
     assert(typeof overviewJson.runtime.phaseStatus.requirementFoundationV1 === "string", "overview runtime phaseStatus must expose requirementFoundationV1");
     assert(overviewJson.runtime.externalLearning && typeof overviewJson.runtime.externalLearning === "object", "overview runtime must expose externalLearning");
+    assert(overviewJson.runtime.documentTooling && typeof overviewJson.runtime.documentTooling === "object", "overview runtime must expose documentTooling");
+    assert(typeof overviewJson.runtime.documentTooling.status === "string", "overview runtime documentTooling must expose status");
+    assert(typeof overviewJson.runtime.documentTooling.toolRoot === "string", "overview runtime documentTooling must expose local tool root");
     assert(overviewJson.runtime.governedMemory && typeof overviewJson.runtime.governedMemory === "object", "overview runtime must expose governedMemory");
     assert(overviewJson.runtime.manualSelfImprovement && typeof overviewJson.runtime.manualSelfImprovement === "object", "overview runtime must expose manualSelfImprovement");
     assert(typeof overviewJson.runtime.manualSelfImprovement.status === "string", "overview runtime manualSelfImprovement must expose status");
@@ -1685,6 +1765,7 @@ async function main() {
       assertRegex(overviewHtml, /id=\"topologyParentLane\"/, "topologyParentLane container missing");
       assertRegex(overviewHtml, /id=\"traceabilityCard\"/, "traceabilityCard container missing");
       assertRegex(overviewHtml, /id=\"governedMemoryCard\"/, "governedMemoryCard container missing");
+      assertRegex(overviewHtml, /id=\"documentToolingCard\"/, "documentToolingCard container missing");
       assertRegex(overviewHtml, /id=\"overviewRawSnapshot\"/, "overviewRawSnapshot container missing");
       assertRegex(overviewHtml, /class=\"overview-section-shell\"/, "overview sections must expose collapsible shells");
       assertRegex(overviewHtml, /class=\"overview-section-summary\"/, "overview sections must expose collapsible summaries");

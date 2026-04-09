@@ -1,6 +1,6 @@
 # OUTPUT_SURFACE_POLICY
 
-Updated: 2026-04-04
+Updated: 2026-04-09
 
 ## Purpose
 
@@ -10,6 +10,11 @@ The harness now treats generated material as two different surfaces:
 
 - `output/`: intentional artifacts
 - `runtime/output-transient/`: regenerable transient material
+
+Within intentional `output/`, the repo also now distinguishes between:
+
+- repo-tracked intentional artifacts
+- local-only intentional artifacts
 
 This keeps the repo source-first while preserving the file-backed evidence and export model the harness depends on.
 
@@ -34,6 +39,27 @@ Rule:
 - governed memory reports are intentional output even though canonical memory truth stays under `logs/archive/raw/runtime_state/memory/`
 - `output/memory/` is the local/operator governed-memory projection and stays out of Git
 - `output/memory_public/` is the repo-safe redacted governed-memory projection and may be regenerated/checked in
+
+## Git Tracking Split
+
+Not every intentional artifact should be pushed.
+
+- Repo-tracked intentional artifacts are public-safe, review-safe proof surfaces that belong in Git history.
+- Local-only intentional artifacts are still meaningful harness outputs, but they remain ignored because they are operator-local, high-churn, or not part of the repo-safe proof surface.
+
+Examples of repo-tracked intentional output:
+- `output/agi_readiness/*.json`
+- `output/continuity_public/*.json`
+- `output/memory_public/*`
+- `output/*learning_proposals/*.json`
+- `output/phase_exit_requirement_foundation_v1.*`
+
+Examples of local-only intentional output:
+- `output/memory/*`
+- `output/agi_v1/*`
+- `output/claim_closure/*`
+- `output/repo_closure_export/*`
+- local summary/cache surfaces such as `output/public_regression_latest.json`
 
 ## Regenerable Transient
 
@@ -64,6 +90,11 @@ Current transient routing:
 - `output/tmp_harnesui_retry_bootstrap.js` -> `runtime/output-transient/bootstrap`
 - `output/note_article_*.md` -> `runtime/output-transient/note-articles`
 
+Current Git tracking policy:
+- `gitTrackedAllowPatterns` defines which intentional `output/` artifacts are allowed to stay tracked in Git
+- `localOnlyIntentionalPatterns` defines which intentional `output/` artifacts must stay ignored even though they are not transient scratch data
+- `scripts/output_surface_git_policy_test.js` enforces both the allowlist and the ignore boundary with `git check-ignore` plus a tracked-file audit
+
 ## Retention
 
 Transient output is retained with bounded policy, not forever.
@@ -74,6 +105,7 @@ Default retention:
 - byte-budget cap
 
 The policy is enforced by [organize_output_surface.js](C:\Users\akima\dev\codex_Original_UI_PJ_with-Harnes\scripts\organize_output_surface.js).
+The Git tracking split is enforced by `node scripts/output_surface_git_policy_test.js`.
 
 ## Operator Commands
 
@@ -87,8 +119,9 @@ These commands are safe to re-run. They move transient material out of `output/`
 When adding a new generated artifact:
 
 1. If a runbook, release gate, runtime overview, or machine-readable policy points at it, keep it in `output/`.
-2. If it is local debug/capture/scratch and can be recreated, route it to `runtime/output-transient/`.
-3. If uncertain, default to transient first and only promote it to `output/` when an explicit contract needs it.
+2. If it is intentional but not repo-safe or not meant to be pushed, keep it in `output/` and add it to the local-only ignore policy.
+3. If it is local debug/capture/scratch and can be recreated, route it to `runtime/output-transient/`.
+4. If uncertain, default to transient first and only promote it to `output/` when an explicit contract needs it.
 
 ## Governed Memory Export Split
 

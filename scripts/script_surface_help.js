@@ -11,6 +11,10 @@ const sections = [
     scripts: ["start", "help:scripts"],
   },
   {
+    title: "Document tooling",
+    scripts: ["tooling:document:bootstrap", "tooling:document:status"],
+  },
+  {
     title: "Quality gates",
     scripts: ["test:repo-quality", "regression:public", "gate:pr", "eval:holdout"],
   },

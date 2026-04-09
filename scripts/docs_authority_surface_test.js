@@ -22,6 +22,7 @@ function run() {
     "docs/README.md",
     "docs/BEGINNER_PATH.md",
     "docs/GLOSSARY.md",
+    "docs/DOCUMENT_TOOLING_GUIDE.md",
     "docs/archive/AI_AGENT_HARNESS_TEXTBOOK_JA.html",
   ];
   for (const relativePath of requiredDocs) {
@@ -32,6 +33,7 @@ function run() {
   const docsIndex = read("docs/README.md");
   const beginnerPath = read("docs/BEGINNER_PATH.md");
   const glossary = read("docs/GLOSSARY.md");
+  const documentToolingGuide = read("docs/DOCUMENT_TOOLING_GUIDE.md");
   const harnessMap = read("HARNESS_MAP.md");
   const architecture = read("docs/CURRENT_ARCHITECTURE.md");
   const qualityWorkflow = read(".github/workflows/quality-gates.yml");
@@ -43,7 +45,10 @@ function run() {
   assert(architecture.includes("docs/README.md"), "CURRENT_ARCHITECTURE.md must reference docs/README.md");
   assert(beginnerPath.includes("npm run help:scripts"), "BEGINNER_PATH.md must mention npm run help:scripts");
   assert(Object.prototype.hasOwnProperty.call(packageJson.scripts, "help:scripts"), "package.json must expose help:scripts");
+  assert(Object.prototype.hasOwnProperty.call(packageJson.scripts, "tooling:document:bootstrap"), "package.json must expose tooling:document:bootstrap");
+  assert(Object.prototype.hasOwnProperty.call(packageJson.scripts, "tooling:document:status"), "package.json must expose tooling:document:status");
   assert(fs.existsSync(path.join(workspaceRoot, "scripts", "script_surface_help.js")), "scripts/script_surface_help.js must exist");
+  assert(fs.existsSync(path.join(workspaceRoot, "scripts", "document_tooling.js")), "scripts/document_tooling.js must exist");
   assert(qualityWorkflow.includes("npm run test:repo-quality"), "quality-gates workflow must run npm run test:repo-quality");
   assert(
     qualityWorkflow.includes("npm run test:windows-launcher-policy"),
@@ -78,6 +83,16 @@ function run() {
     "output/",
   ]) {
     assert(glossary.toLowerCase().includes(term.toLowerCase()), `GLOSSARY.md must define ${term}`);
+  }
+
+  for (const marker of [
+    "MarkItDown",
+    "OpenDataLoader PDF",
+    "SkillNet",
+    "node scripts/document_tooling.js bootstrap",
+    "node scripts/document_tooling.js status",
+  ]) {
+    assert(documentToolingGuide.includes(marker), `DOCUMENT_TOOLING_GUIDE.md must mention ${marker}`);
   }
 
   process.stdout.write("PASS docs_authority_surface_test\n");

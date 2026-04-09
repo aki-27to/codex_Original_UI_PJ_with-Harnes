@@ -34,6 +34,7 @@ const elements = {
   replayPatternsCard: by("replayPatternsCard"),
   skillPortfolioCard: by("skillPortfolioCard"),
   externalLearningCard: by("externalLearningCard"),
+  documentToolingCard: by("documentToolingCard"),
   governedMemoryCard: by("governedMemoryCard"),
   roleChecksCard: by("roleChecksCard"),
   rawSnapshot: by("overviewRawSnapshot"),
@@ -719,6 +720,9 @@ function renderMemory(payload) {
   const externalLearning = populatedObject(memory.externalLearning)
     ? memory.externalLearning
     : (payload && payload.runtime && payload.runtime.externalLearning) || {};
+  const documentTooling = payload && payload.runtime && (payload.runtime.documentTooling || payload.runtime.document_tooling)
+    ? (payload.runtime.documentTooling || payload.runtime.document_tooling)
+    : {};
   const governedGraph = populatedObject(memory.governedGraph)
     ? memory.governedGraph
     : (payload && payload.runtime && (payload.runtime.governedMemory || payload.runtime.governed_memory)) || {};
@@ -905,6 +909,36 @@ function renderMemory(payload) {
       ${itemListHtml(anthropicProposals.slice(0, 3), "No secondary learning proposals are pending.")}
       ${itemListHtml(anthropicBacklog.slice(0, 3), "No secondary self-improvement backlog items are queued.")}
       ` : ""}
+    `;
+  }
+  if (elements.documentToolingCard) {
+    const toolingItems = toArr(documentTooling.tools).map((entry) => ({
+      title: safeText(entry.displayName || entry.id, "tool"),
+      tags: [
+        { label: entry.installed ? "available" : "missing", tone: entry.installed ? "pass" : "warn" },
+        { label: safeText(entry.category, "tool"), tone: "info" },
+      ],
+      detail: `${safeText(entry.command, "-")} / ${safeText(entry.version, "-")} / ${safeText(entry.installCommand, "-")}`,
+    }));
+    const routeItems = toArr(documentTooling.recommendedRoutes).map((entry) => ({
+      title: safeText(entry.useCase, "route"),
+      tags: [{ label: safeText(entry.toolId, "tool"), tone: "info" }],
+      detail: safeText(entry.reason, "-"),
+    }));
+    elements.documentToolingCard.innerHTML = `
+      <div class="overview-inline-tags">
+        ${tagHtml(`status ${safeText(documentTooling.status, "ready")}`, safeText(documentTooling.status, "ready") === "ready" ? "pass" : "warn")}
+        ${tagHtml(`available ${formatInteger(num(documentTooling.availableCount, 0))}`, num(documentTooling.availableCount, 0) > 0 ? "pass" : "warn")}
+        ${tagHtml(`missing ${formatInteger(num(documentTooling.missingCount, 0))}`, num(documentTooling.missingCount, 0) > 0 ? "warn" : "neutral")}
+      </div>
+      ${factRowsHtml([
+        { label: "Hub", value: safeText(documentTooling.hubScriptPath, "scripts/document_tooling.js"), detail: safeText(documentTooling.guidePath, "docs/DOCUMENT_TOOLING_GUIDE.md") },
+        { label: "Local root", value: safeText(documentTooling.toolRoot, ".tooling/document-tools"), detail: `${safeText(documentTooling.venvPath, ".tooling/document-tools/venv")} / ${safeText(documentTooling.jdkPath, ".tooling/document-tools/jdk")}` },
+        { label: "Bootstrap", value: safeText(documentTooling.exampleCommands && documentTooling.exampleCommands.bootstrap, "node scripts/document_tooling.js bootstrap"), detail: safeText(documentTooling.exampleCommands && documentTooling.exampleCommands.status, "node scripts/document_tooling.js status") },
+        { label: "Run", value: safeText(documentTooling.exampleCommands && documentTooling.exampleCommands.runMarkItDown, "node scripts/document_tooling.js run markitdown -- input.pdf -o output.md"), detail: `${safeText(documentTooling.exampleCommands && documentTooling.exampleCommands.runOpenDataLoader, "")} / ${safeText(documentTooling.exampleCommands && documentTooling.exampleCommands.runSkillNet, "")}` },
+      ])}
+      ${itemListHtml(toolingItems.slice(0, 4), "No document-tooling probe results are available.")}
+      ${itemListHtml(routeItems.slice(0, 4), "No default document-tooling routes are registered.")}
     `;
   }
   if (elements.governedMemoryCard) {

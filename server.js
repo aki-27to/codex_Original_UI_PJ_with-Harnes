@@ -197,6 +197,9 @@ const {
   buildHarnessAgiImprovementFlywheelRuntimeSummary,
 }=require("./scripts/lib/agi_improvement_flywheel_runtime");
 const {
+  buildDocumentToolingRuntimeSnapshot,
+}=require("./scripts/lib/document_tooling_runtime");
+const {
   buildGovernedMemoryRuntimeSnapshot,
   syncGovernedMemoryGraph,
 }=require("./scripts/lib/governed_memory_graph");
@@ -12766,6 +12769,9 @@ function buildRuntimeApiSnapshot(){
   const agiImprovementFlywheel=buildHarnessAgiImprovementFlywheelRuntimeSummary({
     workspaceRoot,
   });
+  const documentTooling=buildDocumentToolingRuntimeSnapshot({
+    workspaceRoot,
+  });
   const secondaryLearning={
     anthropicEngineering:buildAnthropicEngineeringLearningRuntimeStateSnapshot(),
   };
@@ -12896,6 +12902,8 @@ function buildRuntimeApiSnapshot(){
     phase_status:phaseStatus,
     externalLearning,
     external_learning:externalLearning,
+    documentTooling,
+    document_tooling:documentTooling,
     manualSelfImprovement,
     manual_self_improvement:manualSelfImprovement,
     agiImprovementFlywheel,
