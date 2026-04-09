@@ -21,6 +21,7 @@
     "routingDecisionRequiredBeforeChildExecution": true,
     "defaultRequestUserInputPolicy": "auto-default",
     "strictLaneRequestUserInputPolicy": "blocked",
+    "continuousGapClosureLoop": "identify_next_gap_then_close_it_until_terminal_state",
     "retiredWorkerAllowedInNormalRuntime": false,
     "systemCoherenceReviewRequiredForCoreChanges": true,
     "systemCoherenceReviewContractRef": "scripts/config/system_coherence_review_contract.json"

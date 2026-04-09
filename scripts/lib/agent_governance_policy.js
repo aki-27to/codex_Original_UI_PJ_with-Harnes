@@ -30,6 +30,7 @@ const defaultPolicyDefinition = Object.freeze({
     routingDecisionRequiredBeforeChildExecution: true,
     defaultRequestUserInputPolicy: "auto-default",
     strictLaneRequestUserInputPolicy: "blocked",
+    continuousGapClosureLoop: "identify_next_gap_then_close_it_until_terminal_state",
     retiredWorkerAllowedInNormalRuntime: false,
     systemCoherenceReviewRequiredForCoreChanges: true,
     systemCoherenceReviewContractRef: "scripts/config/system_coherence_review_contract.json",
@@ -319,6 +320,10 @@ function normalizeRuntimeInvariants(input, fallback) {
       fallback.strictLaneRequestUserInputPolicy,
       ["auto-default", "blocked"]
     ),
+    continuousGapClosureLoop: safeString(
+      source.continuousGapClosureLoop,
+      160
+    ) || fallback.continuousGapClosureLoop,
     retiredWorkerAllowedInNormalRuntime: normalizeBoolean(
       source.retiredWorkerAllowedInNormalRuntime,
       fallback.retiredWorkerAllowedInNormalRuntime
@@ -704,6 +709,10 @@ function getAgentGovernancePolicySnapshot() {
       strictLaneRequestUserInputPolicy: safeString(
         policy.runtimeInvariants.strictLaneRequestUserInputPolicy,
         40
+      ),
+      continuousGapClosureLoop: safeString(
+        policy.runtimeInvariants.continuousGapClosureLoop,
+        160
       ),
       retiredWorkerAllowedInNormalRuntime: Boolean(
         policy.runtimeInvariants.retiredWorkerAllowedInNormalRuntime

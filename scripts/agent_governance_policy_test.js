@@ -118,6 +118,10 @@ function testPolicySnapshotHasSingleSource() {
     snapshot.runtimeInvariants.strictLaneRequestUserInputPolicy === "blocked",
     "runtime invariants must keep strict proof/repro lanes blocked"
   );
+  assert(
+    snapshot.runtimeInvariants.continuousGapClosureLoop === "identify_next_gap_then_close_it_until_terminal_state",
+    "runtime invariants must expose the continuous gap-closure loop"
+  );
   assert(snapshot.contracts && snapshot.contracts.frontend_worker, "policy contracts should include frontend_worker");
 }
 
