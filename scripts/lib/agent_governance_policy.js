@@ -20,11 +20,19 @@ const configuredPolicyPath = (() => {
 
 const defaultPolicyDefinition = Object.freeze({
   schema: "agent-governance.v2",
-    version: "2026-03-08.r1",
+  version: "2026-03-08.r1",
   parentAgents: ["default", "intake", "release_manager"],
   parentPolicy: {
     materialImplementationForbidden: true,
     allowedOperations: ["read", "route", "dispatch", "aggregate", "review", "signoff_package"],
+  },
+  runtimeInvariants: {
+    routingDecisionRequiredBeforeChildExecution: true,
+    defaultRequestUserInputPolicy: "auto-default",
+    strictLaneRequestUserInputPolicy: "blocked",
+    retiredWorkerAllowedInNormalRuntime: false,
+    systemCoherenceReviewRequiredForCoreChanges: true,
+    systemCoherenceReviewContractRef: "scripts/config/system_coherence_review_contract.json",
   },
   contracts: {
     frontend_worker: {
@@ -286,6 +294,46 @@ function normalizeExceptionPolicy(input, fallback) {
   });
 }
 
+function normalizeRuntimeInvariantString(value, fallback, allowedValues) {
+  const normalized = safeString(value, 120).toLowerCase();
+  if (normalized && allowedValues.includes(normalized)) {
+    return normalized;
+  }
+  return fallback;
+}
+
+function normalizeRuntimeInvariants(input, fallback) {
+  const source = input && typeof input === "object" ? input : fallback;
+  return Object.freeze({
+    routingDecisionRequiredBeforeChildExecution: normalizeBoolean(
+      source.routingDecisionRequiredBeforeChildExecution,
+      fallback.routingDecisionRequiredBeforeChildExecution
+    ),
+    defaultRequestUserInputPolicy: normalizeRuntimeInvariantString(
+      source.defaultRequestUserInputPolicy,
+      fallback.defaultRequestUserInputPolicy,
+      ["auto-default", "blocked"]
+    ),
+    strictLaneRequestUserInputPolicy: normalizeRuntimeInvariantString(
+      source.strictLaneRequestUserInputPolicy,
+      fallback.strictLaneRequestUserInputPolicy,
+      ["auto-default", "blocked"]
+    ),
+    retiredWorkerAllowedInNormalRuntime: normalizeBoolean(
+      source.retiredWorkerAllowedInNormalRuntime,
+      fallback.retiredWorkerAllowedInNormalRuntime
+    ),
+    systemCoherenceReviewRequiredForCoreChanges: normalizeBoolean(
+      source.systemCoherenceReviewRequiredForCoreChanges,
+      fallback.systemCoherenceReviewRequiredForCoreChanges
+    ),
+    systemCoherenceReviewContractRef: safeString(
+      source.systemCoherenceReviewContractRef,
+      240
+    ) || fallback.systemCoherenceReviewContractRef,
+  });
+}
+
 function normalizePolicyDefinition(rawDefinition, { source = "builtin", policyPath = defaultPolicyPath } = {}) {
   const definition = rawDefinition && typeof rawDefinition === "object" ? rawDefinition : {};
   const contractsSource = definition.contracts && typeof definition.contracts === "object"
@@ -318,6 +366,10 @@ function normalizePolicyDefinition(rawDefinition, { source = "builtin", policyPa
         ? definition.parentPolicy.allowedOperations.map((entry) => safeString(entry, 80)).filter(Boolean).slice(0, 16)
         : defaultPolicyDefinition.parentPolicy.allowedOperations.slice()),
     }),
+    runtimeInvariants: normalizeRuntimeInvariants(
+      definition.runtimeInvariants,
+      defaultPolicyDefinition.runtimeInvariants
+    ),
     contracts: Object.freeze(normalizedContracts),
     exceptions: normalizeExceptionPolicy(definition.exceptions, defaultPolicyDefinition.exceptions),
   });
@@ -640,6 +692,29 @@ function getAgentGovernancePolicySnapshot() {
     parentPolicy: {
       materialImplementationForbidden: Boolean(policy.parentPolicy.materialImplementationForbidden),
       allowedOperations: Array.isArray(policy.parentPolicy.allowedOperations) ? policy.parentPolicy.allowedOperations.slice(0, 16) : [],
+    },
+    runtimeInvariants: {
+      routingDecisionRequiredBeforeChildExecution: Boolean(
+        policy.runtimeInvariants.routingDecisionRequiredBeforeChildExecution
+      ),
+      defaultRequestUserInputPolicy: safeString(
+        policy.runtimeInvariants.defaultRequestUserInputPolicy,
+        40
+      ),
+      strictLaneRequestUserInputPolicy: safeString(
+        policy.runtimeInvariants.strictLaneRequestUserInputPolicy,
+        40
+      ),
+      retiredWorkerAllowedInNormalRuntime: Boolean(
+        policy.runtimeInvariants.retiredWorkerAllowedInNormalRuntime
+      ),
+      systemCoherenceReviewRequiredForCoreChanges: Boolean(
+        policy.runtimeInvariants.systemCoherenceReviewRequiredForCoreChanges
+      ),
+      systemCoherenceReviewContractRef: safeString(
+        policy.runtimeInvariants.systemCoherenceReviewContractRef,
+        240
+      ),
     },
     contracts,
   };

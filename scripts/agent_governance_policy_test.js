@@ -109,6 +109,15 @@ function testPolicySnapshotHasSingleSource() {
   assert(snapshot && typeof snapshot === "object", "policy snapshot should be object");
   assert(snapshot.source === "file" || snapshot.source === "builtin", "policy source should be known value");
   assert(snapshot.path && snapshot.path.includes("agent_governance_contracts.json"), "policy path should target governance contracts file");
+  assert(snapshot.runtimeInvariants && typeof snapshot.runtimeInvariants === "object", "policy snapshot must expose runtime invariants");
+  assert(
+    snapshot.runtimeInvariants.defaultRequestUserInputPolicy === "auto-default",
+    "runtime invariants must keep the live request-user-input posture autonomy-first"
+  );
+  assert(
+    snapshot.runtimeInvariants.strictLaneRequestUserInputPolicy === "blocked",
+    "runtime invariants must keep strict proof/repro lanes blocked"
+  );
   assert(snapshot.contracts && snapshot.contracts.frontend_worker, "policy contracts should include frontend_worker");
 }
 

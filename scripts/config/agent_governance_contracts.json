@@ -19,7 +19,8 @@
   },
   "runtimeInvariants": {
     "routingDecisionRequiredBeforeChildExecution": true,
-    "blockedRequestUserInputPolicy": "blocked",
+    "defaultRequestUserInputPolicy": "auto-default",
+    "strictLaneRequestUserInputPolicy": "blocked",
     "retiredWorkerAllowedInNormalRuntime": false,
     "systemCoherenceReviewRequiredForCoreChanges": true,
     "systemCoherenceReviewContractRef": "scripts/config/system_coherence_review_contract.json"
