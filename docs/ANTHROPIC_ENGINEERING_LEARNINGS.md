@@ -1,6 +1,6 @@
 # ANTHROPIC_ENGINEERING_LEARNINGS
 
-Updated: 2026-04-06T13:38:57.691Z
+Updated: 2026-04-09T11:31:10.069Z
 
 This file is auto-synced from the Anthropic Engineering secondary learning lane.
 Only portable agent-engineering principles are retained here; Claude-specific mechanics do not become runtime policy.
@@ -27,6 +27,17 @@ Only portable agent-engineering principles are retained here; Claude-specific me
   - Eval developers have begun accounting for this.
   - Terminal-Bench 2.0, for instance, specifies recommended CPU and RAM on a per-task basis in their latest 2.0 release.
 
+### Scaling Managed Agents: Decoupling the brain from the hands
+
+- Source: https://www.anthropic.com/engineering/managed-agents
+- Relevance: high
+- Portability: mixed
+- Summary: Harnesses encode assumptions that go stale as models improve. Managed Agents—our hosted service for long-horizon agent work—is built around interfaces that stay stable as harnesses change.
+- Guidance:
+  - Building Managed Agents meant solving an old problem in computing: how to design a system for “ programs as yet unthought of .” Decades ago, operating systems solved this problem by virtualizing hardware into abstractions— process, file —general enough for programs that didn't exist yet.
+  - Managed Agents follow the same pattern.
+  - A running topic on the Engineering Blog is how to build effective agents and design harnesses for long-running work .
+
 ### Harness design for long-running application development
 
 - Source: https://www.anthropic.com/engineering/harness-design-long-running-apps
@@ -52,21 +63,20 @@ Only portable agent-engineering principles are retained here; Claude-specific me
   - Through our internal work and with customers at the frontier of agent development, we’ve learned how to design more rigorous and useful evals for agents.
   - Good evaluations help teams ship AI agents more confidently.
   - These same capabilities that make AI agents useful—autonomy, intelligence, and flexibility—also make them harder to evaluate.
-
-### Effective harnesses for long-running agents
-
-- Source: https://www.anthropic.com/engineering/effective-harnesses-for-long-running-agents
-- Relevance: high
-- Portability: mixed
-- Blog card date: Nov 26, 2025
-- Summary: Agents still face challenges working across many context windows. We looked to human engineers for inspiration in creating a more effective harness for long-running agents.
-- Guidance:
-  - The core challenge of long-running agents is that they must work in discrete sessions, and each new session begins with no memory of what came before.
-  - However, getting agents to make consistent progress across multiple context windows remains an open problem.
-  - As AI agents become more capable, developers are increasingly asking them to take on complex tasks requiring work that spans hours, or even days.
 
 ## Topic: context
 
+### Scaling Managed Agents: Decoupling the brain from the hands
+
+- Source: https://www.anthropic.com/engineering/managed-agents
+- Relevance: high
+- Portability: mixed
+- Summary: Harnesses encode assumptions that go stale as models improve. Managed Agents—our hosted service for long-horizon agent work—is built around interfaces that stay stable as harnesses change.
+- Guidance:
+  - Building Managed Agents meant solving an old problem in computing: how to design a system for “ programs as yet unthought of .” Decades ago, operating systems solved this problem by virtualizing hardware into abstractions— process, file —general enough for programs that didn't exist yet.
+  - Managed Agents follow the same pattern.
+  - A running topic on the Engineering Blog is how to build effective agents and design harnesses for long-running work .
+
 ### Harness design for long-running application development
 
 - Source: https://www.anthropic.com/engineering/harness-design-long-running-apps
@@ -92,18 +102,6 @@ Only portable agent-engineering principles are retained here; Claude-specific me
   - Through our internal work and with customers at the frontier of agent development, we’ve learned how to design more rigorous and useful evals for agents.
   - Good evaluations help teams ship AI agents more confidently.
   - These same capabilities that make AI agents useful—autonomy, intelligence, and flexibility—also make them harder to evaluate.
-
-### Effective harnesses for long-running agents
-
-- Source: https://www.anthropic.com/engineering/effective-harnesses-for-long-running-agents
-- Relevance: high
-- Portability: mixed
-- Blog card date: Nov 26, 2025
-- Summary: Agents still face challenges working across many context windows. We looked to human engineers for inspiration in creating a more effective harness for long-running agents.
-- Guidance:
-  - The core challenge of long-running agents is that they must work in discrete sessions, and each new session begins with no memory of what came before.
-  - However, getting agents to make consistent progress across multiple context windows remains an open problem.
-  - As AI agents become more capable, developers are increasingly asking them to take on complex tasks requiring work that spans hours, or even days.
 
 ## Topic: evals
 
@@ -160,6 +158,17 @@ Only portable agent-engineering principles are retained here; Claude-specific me
 
 ## Topic: frontend
 
+### Scaling Managed Agents: Decoupling the brain from the hands
+
+- Source: https://www.anthropic.com/engineering/managed-agents
+- Relevance: high
+- Portability: mixed
+- Summary: Harnesses encode assumptions that go stale as models improve. Managed Agents—our hosted service for long-horizon agent work—is built around interfaces that stay stable as harnesses change.
+- Guidance:
+  - Building Managed Agents meant solving an old problem in computing: how to design a system for “ programs as yet unthought of .” Decades ago, operating systems solved this problem by virtualizing hardware into abstractions— process, file —general enough for programs that didn't exist yet.
+  - Managed Agents follow the same pattern.
+  - A running topic on the Engineering Blog is how to build effective agents and design harnesses for long-running work .
+
 ### Harness design for long-running application development
 
 - Source: https://www.anthropic.com/engineering/harness-design-long-running-apps
@@ -198,18 +207,6 @@ Only portable agent-engineering principles are retained here; Claude-specific me
   - Through our internal work and with customers at the frontier of agent development, we’ve learned how to design more rigorous and useful evals for agents.
   - Good evaluations help teams ship AI agents more confidently.
   - These same capabilities that make AI agents useful—autonomy, intelligence, and flexibility—also make them harder to evaluate.
-
-### Effective harnesses for long-running agents
-
-- Source: https://www.anthropic.com/engineering/effective-harnesses-for-long-running-agents
-- Relevance: high
-- Portability: mixed
-- Blog card date: Nov 26, 2025
-- Summary: Agents still face challenges working across many context windows. We looked to human engineers for inspiration in creating a more effective harness for long-running agents.
-- Guidance:
-  - The core challenge of long-running agents is that they must work in discrete sessions, and each new session begins with no memory of what came before.
-  - However, getting agents to make consistent progress across multiple context windows remains an open problem.
-  - As AI agents become more capable, developers are increasingly asking them to take on complex tasks requiring work that spans hours, or even days.
 
 ## Topic: skills
 

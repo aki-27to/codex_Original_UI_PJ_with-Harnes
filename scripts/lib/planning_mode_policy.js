@@ -205,6 +205,18 @@ function normalizeBooleanOption(value, fallback = false) {
   return Boolean(value);
 }
 
+function normalizeIntentAutonomySettings(intentProfile) {
+  const source = intentProfile && typeof intentProfile === "object" ? intentProfile : {};
+  const autonomy = source.autonomy && typeof source.autonomy === "object" ? source.autonomy : {};
+  return {
+    interventionPreference: safeString(autonomy.interventionPreference || source.interventionPreference, 80).toLowerCase(),
+    requirementStrategy: safeString(autonomy.requirementStrategy || source.requirementStrategy, 80).toLowerCase(),
+    clarificationPolicy: safeString(autonomy.clarificationPolicy || source.clarificationPolicy, 120).toLowerCase(),
+    progressPolicy: safeString(autonomy.progressPolicy || source.progressPolicy, 80).toLowerCase(),
+    selfCorrectionPolicy: safeString(autonomy.selfCorrectionPolicy || source.selfCorrectionPolicy, 80).toLowerCase(),
+  };
+}
+
 function normalizeAssuranceMode(value, fallback = "STANDARD_ASSURANCE") {
   const normalized = safeString(value, 60).toUpperCase();
   if (allowedAssuranceModes.includes(normalized)) return normalized;
@@ -4478,9 +4490,15 @@ function buildClarificationDecision({
   acceptanceChecks = [],
   baselineScope = [],
   benchmarkCandidates = [],
+  intentProfile = null,
 } = {}) {
   const normalizedPrompt = sanitizePromptForPolicyAnalysis(prompt);
   const normalizedTaskFamily = safeString(taskFamily, 80).toLowerCase();
+  const autonomy = normalizeIntentAutonomySettings(intentProfile);
+  const autonomyPrefersMinimalIntervention =
+    autonomy.interventionPreference === "minimize_user_intervention"
+    && autonomy.requirementStrategy === "propose_then_execute"
+    && autonomy.clarificationPolicy === "ask_only_for_irreversible_or_user_reserved_decisions";
   const scopeAnchored =
     (Array.isArray(acceptanceChecks) && acceptanceChecks.length > 0)
     || (Array.isArray(baselineScope) && baselineScope.length > 0);
@@ -4537,6 +4555,15 @@ function buildClarificationDecision({
       ? true
       : Array.isArray(baselineScope) && baselineScope.length >= 2;
   if (preferenceDriven && !benchmarkAnchored && !directionAnchored && !scopeConcrete) {
+    if (autonomyPrefersMinimalIntervention) {
+      return {
+        action: "proceed",
+        reason: "autonomous_direction_inference_enabled",
+        question: "",
+        summary: "Minimal-intervention intent profile allows bounded autonomous direction inference before asking the user.",
+        missingAnchors: ["priority_axis", "benchmark_or_visual_reference"],
+      };
+    }
     return {
       action: "ask_user_once",
       reason: "web_creative_missing_direction_anchor",
@@ -4618,6 +4645,7 @@ function buildPlanningSelection({ prompt = "", options = {}, contract } = {}) {
     acceptanceChecks: extractedAcceptanceChecks,
     baselineScope,
     benchmarkCandidates,
+    intentProfile: options && options.intentProfile && typeof options.intentProfile === "object" ? options.intentProfile : null,
   });
   const acceptanceChecks = clarificationDecision.action === "proceed"
     ? provisionalAcceptanceChecks

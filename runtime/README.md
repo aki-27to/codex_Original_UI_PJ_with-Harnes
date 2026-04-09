@@ -3,7 +3,7 @@
 This directory is the dedicated home for repo-local transient runtime material.
 
 What belongs here:
-- local caches such as npm and Playwright browser downloads
+- local caches such as npm, root `.playwright-cli/`, and Playwright browser downloads
 - scratch exports, temporary verification payloads, and migrated root `tmp_*` files
 - migrated shared-page HTML captures such as root `share_*.html`
 - regenerable output that should not stay in the intentional `output/` surface, such as Playwright capture trees, timestamped phase probes, and ad hoc `note_article_*.md` drafts under `runtime/output-transient/`

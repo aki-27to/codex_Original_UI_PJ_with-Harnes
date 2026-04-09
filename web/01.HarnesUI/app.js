@@ -99,22 +99,11 @@ e.harnessCheckModeHint=by("harnessCheckModeHint");
 e.focusActionDetail=by("focusActionDetail");
 e.focusActionTitle=by("focusActionTitle");
 e.focusActionHint=by("focusActionHint");
-e.focusChatCard=by("focusChatCard");
-e.focusChatValue=by("focusChatValue");
-e.focusChatHint=by("focusChatHint");
-e.focusWorkspaceCard=by("focusWorkspaceCard");
-e.focusWorkspaceValue=by("focusWorkspaceValue");
-e.focusWorkspaceHint=by("focusWorkspaceHint");
-e.focusSendCard=by("focusSendCard");
-e.focusSendValue=by("focusSendValue");
-e.focusSendHint=by("focusSendHint");
 e.missionDraftStatus=by("missionDraftStatus");
 e.missionGoalValue=by("missionGoalValue");
 e.missionScopeValue=by("missionScopeValue");
 e.missionConstraintValue=by("missionConstraintValue");
 e.missionDoneValue=by("missionDoneValue");
-e.focusToTimelineBtn=by("focusToTimelineBtn");
-e.focusToComposerBtn=by("focusToComposerBtn");
 e.jumpToComposerBtn=by("jumpToComposerBtn");
 e.conversationSummary=by("conversationSummary");
 e.composer=by("composer");
@@ -122,6 +111,10 @@ e.composerModeChip=by("composerModeChip");
 e.composerModelChip=by("composerModelChip");
 e.composerWorkspaceChip=by("composerWorkspaceChip");
 e.composerAttachmentChip=by("composerAttachmentChip");
+e.harnessPlanNextCard=by("harnessPlanNextCard");
+e.harnessPlanNextStep=by("harnessPlanNextStep");
+e.harnessPlanNextPurpose=by("harnessPlanNextPurpose");
+e.harnessPlanNextDetail=by("harnessPlanNextDetail");
 e.opsDeck=by("opsDeck");
 const automationUi={
   panel:by("automationPanel"),
@@ -1678,7 +1671,9 @@ function buildPhaseSummariesForUi({flowItems,requirementSnapshot,displayedPlan,e
   const summaryMap={};
   summaryMap.requirements=requirementSnapshot&&requirementSnapshot.hasRequirement
     ?`${requirementSnapshot.contractStatusLabel?`状態 ${requirementSnapshot.contractStatusLabel} / `:""}目的解釈 ${requirementSnapshot.headline||"整理中"} / 受け入れ ${requirementSnapshot.acceptanceChecks.length||0} / 非対象 ${requirementSnapshot.nonGoals.length||0} / 前提 ${requirementSnapshot.assumptions.length||0}${requirementSnapshot.displayAskNext&&requirementSnapshot.displayAskNext.length?` / 質問 ${requirementSnapshot.displayAskNext.length}`:requirementSnapshot.openQuestions.length?` / 未解決 ${requirementSnapshot.openQuestions.length}`:""}${requirementSnapshot.validationVerdictLabel?` / 検証 ${requirementSnapshot.validationVerdictLabel}`:""}`
-    :`要件ロック待ち${currentStatus&&currentStatus!=="idle"?" / 依頼は送信済み":""}`;
+    :(currentStatus&&currentStatus!=="idle"
+      ?"要件整理待ち / 依頼は送信済み"
+      :"入力待ち");
   if(requirementGateBlocked){
     summaryMap.planning="要件整理が保留のため、計画には進まない";
   }else if(displayedPlan&&displayedPlan.decision==="skip"){
@@ -1925,26 +1920,47 @@ function renderWorkspaceGuardUi(){
   const selectedInsideLock=preference.locked&&selectedPath?isPathWithinForUi(preference.lockedRoot,selectedPath):false;
   const runtimeMatches=workspaceGuardPreferenceMatchesRuntimeForUi();
   let text="";
+  let titleText="";
   let tone="";
   if(workspaceGuardUiState.message){
     text=workspaceGuardUiState.message;
+    titleText=workspaceGuardUiState.message;
     tone=workspaceGuardUiState.tone;
   }else if(preference.locked){
+    const lockLabel=workspaceHintTextForUi(preference.lockedRoot,44)||compactWorkspaceLabelForUi(preference.lockedRoot)||preference.lockedRoot;
+    const selectedLabel=selectedPath?(workspaceHintTextForUi(selectedPath,34)||compactWorkspaceLabelForUi(selectedPath)||selectedPath):"";
     text=selectedPath&&!selectedInsideLock
-      ?`Lock 中: ${preference.lockedRoot} / 現在の入力先は lock 範囲外です。`
+      ?`Lock 中 / ${lockLabel} / 入力先 ${selectedLabel} は範囲外です。`
+      :`Lock 中 / ${lockLabel}`;
+    titleText=selectedPath&&!selectedInsideLock
+      ?`Lock 中: ${preference.lockedRoot} / 現在の入力先 ${selectedPath} は lock 範囲外です。`
       :`Lock 中: ${preference.lockedRoot} / この部屋ではこの配下だけ実行できます。`;
-    if(!runtimeMatches)text+=s.req.size>0?" / 実行中の turn 完了後にこの部屋の lock へ戻ります。":" / この部屋へ切り替えたので lock を同期中です。";
+    if(!runtimeMatches){
+      const suffix=s.req.size>0
+        ?" / 実行後にこの部屋の lock へ戻ります。"
+        :" / この部屋の lock を同期中です。";
+      text+=suffix;
+      titleText+=suffix;
+    }
     tone=selectedPath&&!selectedInsideLock?"warning":"locked";
   }else{
     const requiredSources=runtimeSnapshot.requiredForSources.length?runtimeSnapshot.requiredForSources.join(", "):"design-sensitive source";
+    const selectedLabel=selectedPath?(workspaceHintTextForUi(selectedPath,44)||compactWorkspaceLabelForUi(selectedPath)||selectedPath):"";
     text=selectedPath
+      ?`未固定 / ${selectedLabel} / ${requiredSources} では送信前に lock します。`
+      :"未固定: ワークスペースを選ぶと、ここから lock できます。";
+    titleText=selectedPath
       ?`未固定: ${selectedPath} / ${requiredSources} では部屋ごとに lock 後に送信します。`
       :"未固定: ワークスペースを選ぶと、ここから lock できます。";
-    if(runtimeSnapshot.locked&&!runtimeMatches)text+=" / いまのサーバ lock は別の部屋の状態です。";
+    if(runtimeSnapshot.locked&&!runtimeMatches){
+      text+=" / いまのサーバ lock は別の部屋です。";
+      titleText+=" / いまのサーバ lock は別の部屋の状態です。";
+    }
     tone="warning";
   }
   if(e.workspaceStatus){
     e.workspaceStatus.textContent=text;
+    e.workspaceStatus.title=titleText||text;
     e.workspaceStatus.classList.remove("locked","warning");
     if(tone==="locked")e.workspaceStatus.classList.add("locked");
     if(tone==="warning")e.workspaceStatus.classList.add("warning");
@@ -2646,10 +2662,6 @@ function scrollElementIntoViewForUi(target,{focus=false}={}){
     }
   }
 }
-function setFocusCardToneForUi(element,tone=""){
-  if(!element)return;
-  element.className=tone?`focus-card ${tone}`:"focus-card";
-}
 function decodeMessageHrefForUi(value){
   const text=String(value||"");
   if(!text)return"";
@@ -2923,6 +2935,25 @@ function collectMissionPathHintsForUi(text){
   });
   return[...hints].slice(0,3);
 }
+function compactWorkspaceLabelForUi(value){
+  const display=messageReferenceDisplayPathForUi(value)||String(value||"").trim();
+  if(!display)return"";
+  const normalized=display.replace(/\//g,"\\");
+  const parts=normalized.split("\\").filter(Boolean);
+  if(parts.length<=2)return normalized;
+  return parts.slice(-2).join("\\");
+}
+function workspaceHintTextForUi(value,maxLength=52){
+  const display=messageReferenceDisplayPathForUi(value)||String(value||"").trim();
+  return t1(display,maxLength);
+}
+function compactPathHintListForUi(values){
+  return toArr(values)
+    .map((value)=>messageReferenceDisplayPathForUi(value)||String(value||"").trim())
+    .map((value)=>t1(value,36))
+    .filter(Boolean)
+    .slice(0,3);
+}
 function deriveMissionDraftForUi(text,chatRecord){
   const source=String(text||"");
   const compact=compactInlineTextForUi(source);
@@ -2931,22 +2962,18 @@ function deriveMissionDraftForUi(text,chatRecord){
   const explicitConstraint=extractMissionFieldByLabelForUi(source,["制約","constraints","constraint","非対象","avoid","must avoid"]);
   const explicitDone=extractMissionFieldByLabelForUi(source,["完了条件","確認","done when","verify","verification","テスト","tests"]);
   const pathHints=collectMissionPathHintsForUi(source);
-  const selectedPath=selectedCwd();
+  const pathHintLabels=compactPathHintListForUi(pathHints);
   const explicitCount=[explicitGoal,explicitScope||pathHints[0],explicitConstraint,explicitDone].filter(Boolean).length;
-  const fallbackGoal=compact?t1(compact,88):"何を実現したいかを一文で書きます。";
-  const fallbackScope=pathHints.length
-    ?pathHints.join(" / ")
-    :selectedPath
-      ?t1(selectedPath,88)
-      :chatRecord&&chatRecord.title
-        ?`${chatRecord.title} で続ける範囲`
-        :"対象のファイル、画面、または範囲を書きます。";
+  const fallbackGoal=compact?t1(compact,52):"やりたいことを書くと表示されます。";
+  const fallbackScope=pathHintLabels.length
+    ?pathHintLabels.join(" / ")
+    :"対象未指定";
   const fallbackConstraint=compact&&/(?:維持|そのまま|避け|禁止|without|keep|do not|don't|must not|既存)/i.test(source)
-    ?t1(compact,88)
-    :"既存経路の維持、追加依存なし、触らない範囲などを書きます。";
+    ?t1(compact,52)
+    :"制約未指定";
   const fallbackDone=compact&&/(?:確認|テスト|review|検証|screenshot|docs|同期|完了条件)/i.test(source)
-    ?t1(compact,88)
-    :"テスト、画面確認、docs 同期など、完了の証拠を書きます。";
+    ?t1(compact,52)
+    :"完了条件未指定";
   return{
     goal:explicitGoal||fallbackGoal,
     scope:explicitScope||fallbackScope,
@@ -2985,6 +3012,7 @@ function renderComposerRuntimeStrip(){
 function renderMissionSupportUi(){
   renderMissionDraftPanel();
   renderComposerRuntimeStrip();
+  renderFocusPanel();
 }
 function renderMissionDraftPanel(){
   if(!e.missionDraftStatus||!e.missionGoalValue||!e.missionScopeValue||!e.missionConstraintValue||!e.missionDoneValue)return;
@@ -2992,72 +3020,156 @@ function renderMissionDraftPanel(){
   const draftSource=missionDraftSourceForUi(currentChat);
   if(!draftSource.text){
     e.missionDraftStatus.textContent="未入力";
-    e.missionGoalValue.textContent="何を実現したいかを一文で書きます。";
-    e.missionScopeValue.textContent="対象のファイル、画面、または範囲を書きます。";
-    e.missionConstraintValue.textContent="守るべき制約や避けたいことを書きます。";
-    e.missionDoneValue.textContent="テスト、画面確認、docs 同期など、完了の証拠を書きます。";
+    e.missionGoalValue.textContent="何を直したいかを書くと表示されます。";
+    e.missionScopeValue.textContent="対象未指定";
+    e.missionConstraintValue.textContent="制約未指定";
+    e.missionDoneValue.textContent="完了条件未指定";
     return;
   }
   const mission=deriveMissionDraftForUi(draftSource.text,currentChat);
   const sourceLabel=draftSource.source==="draft"?"入力中":"直前の依頼";
-  e.missionDraftStatus.textContent=`${sourceLabel} / 骨子 ${mission.explicitCount}/4`;
+  e.missionDraftStatus.textContent=mission.explicitCount>0
+    ?`${sourceLabel} / 明示 ${mission.explicitCount}/4`
+    :`${sourceLabel} / 自動整理`;
   e.missionGoalValue.textContent=mission.goal;
   e.missionScopeValue.textContent=mission.scope;
   e.missionConstraintValue.textContent=mission.constraint;
   e.missionDoneValue.textContent=mission.done;
 }
+function latestMeaningfulHarnessEventForUi(events){
+  const ignoredLabels=new Set(["dispatch","turn/start","turn/completed","turn/end","token/usage","turn/diff"]);
+  return toArr(events).find((item)=>{
+    const label=lowerText(item&&item.l);
+    return Boolean(label)&&!ignoredLabels.has(label);
+  })||null;
+}
+function harnessEventHeadlineForUi(event){
+  if(!event||typeof event!=="object")return"";
+  const label=lowerText(event.l).replace(/[\s-]+/g,"_");
+  if(label==="plan/update")return"作業計画を組み直しています";
+  if(label==="stream/open")return"応答ストリームを開いています";
+  if(label==="stream/error")return"応答ストリームの乱れを整理しています";
+  if(label==="stream/recovered")return"応答ストリームを復旧しました";
+  if(label==="turn/error")return"実行エラーの原因を整理しています";
+  if(label==="turn/needs_input")return"追加の入力が必要です";
+  if(label==="activity")return t1(String(event.d||""),88);
+  return t1(requirementTextLabelForUi(String(event.l||"")),88);
+}
+function currentHarnessPhaseForUi(flowItems){
+  const phases=toArr(flowItems);
+  let currentPhase=phases.find((phase)=>phase&&phase.state==="active")
+    ||phases.find((phase)=>phase&&phase.state==="blocked")
+    ||phases.find((phase)=>phase&&phase.state==="failed")
+    ||null;
+  if(currentPhase)return currentPhase;
+  const donePhases=phases.filter((phase)=>phase&&(phase.state==="done"||phase.state==="skipped"));
+  return donePhases.length?donePhases[donePhases.length-1]:(phases[0]||null);
+}
 function renderFocusPanel(){
-  if(!e.focusActionTitle||!e.focusChatValue||!e.focusWorkspaceValue||!e.focusSendValue)return;
+  if(!e.focusActionTitle||!e.focusActionDetail||!e.focusActionHint)return;
   const currentChat=active();
-  if(!currentChat)return;
-  const conversation=conversationSnapshotForUi(currentChat);
-  const snapshot=chatWorkspaceGuardPreferenceForUi(currentChat);
+  if(!currentChat){
+    e.focusActionTitle.className="focus-action-title";
+    e.focusActionTitle.textContent="AI はまだ依頼を読み取れていません";
+    e.focusActionDetail.textContent="会話で何をどう直したいかを書くと、ここに短く解釈を出します。";
+    e.focusActionHint.textContent="余計な補助情報は畳み、理解だけを先に見せます。";
+    return;
+  }
+  const draftSource=missionDraftSourceForUi(currentChat);
+  const mission=draftSource.text?deriveMissionDraftForUi(draftSource.text,currentChat):null;
+  const latestTurn=latestRuntimeTurnForChat(currentChat)||storedTurnSnapshotForUi(currentChat.h);
+  syncHarnessFlow(currentChat,activeHarnessCheckMode());
+  const harnessState=currentChat.h&&typeof currentChat.h==="object"?currentChat.h:createHarnessState();
+  const harnessStatus=String(harnessState.status||"idle");
+  const flowItems=toArr(harnessState.flow);
+  const displayedPlan=deriveDisplayedPlanForUi(harnessState,flowItems,harnessStatus);
+  const planFocus=displayedPlan.focus;
+  const planDecision=displayedPlan.decision||"plan";
+  const currentPhase=currentHarnessPhaseForUi(flowItems);
+  const latestEvent=latestMeaningfulHarnessEventForUi(harnessState.events);
+  const runtimeContext=deriveRuntimeTurnContextForUi(latestTurn);
+  const requirementSnapshot=buildRequirementLockSnapshotForUi(latestTurn);
+  const requirementBlocked=requirementNeedsFurtherLockForUi(requirementSnapshot);
+  const workspaceSnapshot=chatWorkspaceGuardPreferenceForUi(currentChat);
   const selectedPath=selectedCwd();
   const currentPending=pendingCountForChat(currentChat.id);
   const localPending=localPendingCountForChat(currentChat.id);
-  const selectedInsideLock=snapshot.locked&&selectedPath?isPathWithinForUi(snapshot.lockedRoot,selectedPath):false;
-  const agentLabel=operatorFacingAgentLabelForUi(currentChat.agent);
-  const hasRuntime=Boolean(s.runtime);
-
-  let actionTitle="依頼を書いて送信";
-  let actionDetail="入力先を確認してから、やることと確認方法を書きます。";
-  let actionHint="同じチャットで追記すると、前の文脈を引き継いだまま続けられます。";
+  const selectedInsideLock=workspaceSnapshot.locked&&selectedPath?isPathWithinForUi(workspaceSnapshot.lockedRoot,selectedPath):false;
+  const stopReason=harnessStopReasonSummaryForUi({
+    status:harnessStatus,
+    currentPending,
+    requirementGateBlocked:requirementBlocked,
+    requirementSnapshot,
+    lastResultType:s.last&&s.last.cid===currentChat.id?s.last.type:"",
+  });
+  const scopeSummary=requirementSnapshot.hasRequirement&&requirementSnapshot.baselineScope.length
+    ?summarizeInlineListForUi(requirementSnapshot.baselineScope,{maxItems:2})
+    :(mission&&mission.scope!=="対象未指定"?mission.scope:"");
+  const constraintSummary=requirementSnapshot.hasRequirement&&requirementSnapshot.hardConstraints.length
+    ?summarizeInlineListForUi(requirementSnapshot.hardConstraints,{maxItems:2})
+    :(mission&&mission.constraint!=="制約未指定"?mission.constraint:"");
+  const doneSummary=requirementSnapshot.hasRequirement&&requirementSnapshot.completedMeans.length
+    ?summarizeInlineListForUi(requirementSnapshot.completedMeans,{maxItems:2})
+    :(mission&&mission.done!=="完了条件未指定"?mission.done:"");
+  const interpretationTitle=requirementSnapshot.hasRequirement
+    ?(requirementSnapshot.headline||runtimeContext&&runtimeContext.userValueThesis||mission&&mission.goal||"AI は依頼の芯を整理しています")
+    :(runtimeContext&&runtimeContext.userValueThesis||mission&&mission.goal||"AI はまだ依頼を読み取れていません");
+  const liveWorkText=planDecision==="skip"
+    ?planSkipWorkLabelForUi(displayedPlan,planFocus)
+    :(planFocus&&planFocus.text?planFocus.text:"");
+  const detailParts=[];
+  if(currentPending>0&&liveWorkText)detailParts.push(`いまは ${liveWorkText}`);
+  else if(runtimeContext&&runtimeContext.userValueThesis&&runtimeContext.userValueThesis!==interpretationTitle)detailParts.push(`狙い: ${runtimeContext.userValueThesis}`);
+  if(scopeSummary)detailParts.push(`対象: ${scopeSummary}`);
+  if(constraintSummary)detailParts.push(`制約: ${constraintSummary}`);
+  if(doneSummary)detailParts.push(`完了: ${doneSummary}`);
+  let actionTitle=currentPending>0&&liveWorkText?`いまは ${liveWorkText}`:interpretationTitle;
+  let actionDetail=detailParts.join(" / ");
+  if(!actionDetail){
+    actionDetail=requirementSnapshot.hasRequirement
+      ?"要件の芯だけを短く固定しています。"
+      :(mission
+        ?"入力中の依頼から仮の解釈を組み立てています。"
+        :"会話に依頼を書くと、ここに一文で解釈を出します。");
+  }
+  const hintParts=[];
+  if(currentPhase&&currentPhase.label)hintParts.push(`フェーズ: ${currentPhase.label}`);
+  if(currentPending>0&&latestEvent){
+    const eventHeadline=harnessEventHeadlineForUi(latestEvent);
+    if(eventHeadline)hintParts.push(`直近: ${eventHeadline}`);
+  }else if(requirementBlocked){
+    hintParts.push(`止まる理由: ${stopReason.detail}`);
+  }else if(stopReason.label&&!["なし","待機なし"].includes(stopReason.label)){
+    hintParts.push(`状態: ${stopReason.label}`);
+  }
+  let actionHint=requirementSnapshot.hasRequirement
+    ?"この理解を土台に、会話欄と trace を更新しながら進みます。"
+    :(mission
+      ?`${draftSource.source==="draft"?"入力中":"直前の依頼"}から仮の解釈を作っています。違和感があれば入力欄をそのまま直してください。`
+      :"ここでは AI の理解だけを先に見せます。");
+  if(hintParts.length)actionHint=hintParts.join(" / ");
   let actionTone="";
 
-  if(!hasRuntime){
-    actionTitle="ランタイム接続を待つ";
-    actionDetail="接続できると送信と進行状況の追跡が使えます。";
-    actionHint="接続が不安定なときは、保守ツールの再接続を使います。";
-    actionTone="warning";
-  }else if(currentPending>0){
-    actionTitle="実行が終わるまで待つ";
-    actionDetail=`このチャットで ${currentPending} 件実行中です。応答は下の会話欄へ追加されます。`;
-    actionHint=localPending>0
-      ?"途中で止める必要があるときだけ「停止」を使います。"
-      :"他のチャットからの実行も含めて完了を待っています。";
+  if(currentPending>0){
+    if(localPending>0&&!hintParts.length){
+      actionHint="このチャットで実行中です。結果は会話欄と trace に流れます。";
+    }else if(!hintParts.length){
+      actionHint="別 lane の更新を反映中です。結果は会話欄と trace に流れます。";
+    }
     actionTone="running";
-  }else if(snapshot.locked&&selectedPath&&!selectedInsideLock){
-    actionTitle="入力先を lock 範囲に戻す";
-    actionDetail="現在のワークスペースが lock 中の範囲外です。";
-    actionHint="lock 中のフォルダ配下へ戻すか、unlock してから正しいパスで lock し直します。";
+  }else if(requirementBlocked){
+    if(!hintParts.length)actionHint=`今は ${requirementGateBlockerTextForUi(requirementSnapshot,"未確定の要件を解消する")} を先に片付けています。`;
+    actionTone="warning";
+  }else if(workspaceSnapshot.locked&&selectedPath&&!selectedInsideLock){
+    actionHint="workspace lock と現在の path がずれています。範囲内へ戻すか、lock を更新します。";
     actionTone="warning";
   }else if(!selectedPath){
-    actionTitle="ワークスペースを確認する";
-    actionDetail="まず入力先のフォルダを決めると、意図と変更先がずれにくくなります。";
-    actionHint="見た目変更や UI 改修では、必要に応じて lock してから送信します。";
+    actionHint="workspace 未指定です。必要なら送信前に lock してから進めます。";
     actionTone="warning";
-  }else if(!conversation.hasConversation){
-    actionTitle="依頼を書いて送信";
-    actionDetail="準備ができています。下の入力欄に、やること・対象・確認方法を書いて送信します。";
-    actionHint=snapshot.locked
-      ?"ワークスペースは lock 済みです。安心してこの範囲で依頼できます。"
-      :"見た目変更を含む依頼なら、送信前に workspace lock をすると安全です。";
   }else if(s.last&&s.last.cid===currentChat.id){
-    actionTitle="結果を見て次の依頼を書く";
-    actionDetail=s.last.type==="failed"
-      ?"直前の実行は失敗しました。原因を1つずつ切り分けて続行できます。"
-      :"直前の実行結果を確認しながら、追加修正や確認を続けられます。";
-    actionHint="同じチャットで追記すると、前の変更内容を踏まえた続きの依頼になります。";
+    actionHint=s.last.type==="failed"
+      ?"直前の実行は失敗しています。会話欄の最後の結果を見ながら依頼を足します。"
+      :"同じチャットに追記すると、前の実行文脈を引き継いで続けられます。";
     actionTone=s.last.type==="failed"?"warning":"completed";
   }
 
@@ -3065,50 +3177,6 @@ function renderFocusPanel(){
   e.focusActionTitle.textContent=actionTitle;
   e.focusActionDetail.textContent=actionDetail;
   e.focusActionHint.textContent=actionHint;
-
-  setFocusCardToneForUi(e.focusChatCard,currentPending>0?"running":"ready");
-  e.focusChatValue.textContent=currentChat.title;
-  e.focusChatHint.textContent=conversation.hasConversation
-    ?`${agentLabel} / 会話 ${conversation.messages.length} 件`
-    :`${agentLabel} / まだ依頼はありません。`;
-
-  if(snapshot.locked&&selectedInsideLock){
-    setFocusCardToneForUi(e.focusWorkspaceCard,"ready");
-    e.focusWorkspaceValue.textContent="Lock 中";
-    e.focusWorkspaceHint.textContent=t1(snapshot.lockedRoot,88);
-  }else if(snapshot.locked&&!selectedInsideLock){
-    setFocusCardToneForUi(e.focusWorkspaceCard,"warning");
-    e.focusWorkspaceValue.textContent="範囲外";
-    e.focusWorkspaceHint.textContent=`lock: ${t1(snapshot.lockedRoot,44)} / 現在: ${t1(selectedPath||"(未指定)",32)}`;
-  }else if(selectedPath){
-    setFocusCardToneForUi(e.focusWorkspaceCard,"warning");
-    e.focusWorkspaceValue.textContent="未固定";
-    e.focusWorkspaceHint.textContent=t1(selectedPath,88);
-  }else{
-    setFocusCardToneForUi(e.focusWorkspaceCard,"warning");
-    e.focusWorkspaceValue.textContent="未選択";
-    e.focusWorkspaceHint.textContent="ワークスペース欄で入力先を確認してください。";
-  }
-
-  if(!hasRuntime){
-    setFocusCardToneForUi(e.focusSendCard,"warning");
-    e.focusSendValue.textContent="接続待ち";
-    e.focusSendHint.textContent="runtime が使えると送信できます。";
-  }else if(currentPending>0){
-    setFocusCardToneForUi(e.focusSendCard,"running");
-    e.focusSendValue.textContent="実行中";
-    e.focusSendHint.textContent=`${currentPending} 件進行中です。完了までは送信を待機します。`;
-  }else if(snapshot.locked&&selectedPath&&!selectedInsideLock){
-    setFocusCardToneForUi(e.focusSendCard,"warning");
-    e.focusSendValue.textContent="要修正";
-    e.focusSendHint.textContent="lock 範囲に戻すと送信できます。";
-  }else{
-    setFocusCardToneForUi(e.focusSendCard,"ready");
-    e.focusSendValue.textContent="送信できます";
-    e.focusSendHint.textContent=conversation.hasConversation
-      ?"追加の依頼も同じ入力欄から送れます。"
-      :"入力欄に依頼を書いて送信します。";
-  }
 }
 function scheduleTopographyRefreshSoon(delayMs=180){
   if(!e.agentTopographyList)return;
@@ -3893,14 +3961,91 @@ function planWorkToneForUi(status){
   if(status==="failed"||status==="interrupted"||status==="skipped")return status;
   return"idle";
 }
+function planStepCountTextForUi(step,planSteps){
+  const stepIndex=step&&Number.isFinite(Number(step.index))?Math.max(0,Math.trunc(Number(step.index)))+1:1;
+  const total=toArr(planSteps).length;
+  return total?`${stepIndex}/${total}`:String(stepIndex);
+}
+function planPrimaryCardDetailTextForUi(step,planSteps,{isNext=false,status=""}={}){
+  if(!step){
+    if(status==="completed")return"いま見えている追加作業はありません。";
+    return isNext?"次の更新待ちです。":"まだ作業計画は見えていません。";
+  }
+  const stepRef=`Step ${planStepCountTextForUi(step,planSteps)}`;
+  if(step.status==="in_progress")return`${stepRef} を進めています。`;
+  if(step.status==="completed")return`${stepRef} は完了済みです。`;
+  if(step.status==="failed")return`${stepRef} で止まっています。`;
+  if(step.status==="interrupted")return`${stepRef} で中断しました。`;
+  if(step.status==="skipped")return`${stepRef} は省略しました。`;
+  return isNext?`${stepRef} としてこの後進みます。`:`${stepRef} に着手予定です。`;
+}
+function planNextStepForUi(planSteps,planFocus){
+  const steps=toArr(planSteps);
+  if(!steps.length)return null;
+  const focusIndex=planFocus&&Number.isFinite(Number(planFocus.index))?Math.max(0,Math.trunc(Number(planFocus.index))):-1;
+  const nextAfterFocus=steps.find((step)=>step&&step.index>focusIndex&&step.status==="pending");
+  if(nextAfterFocus)return nextAfterFocus;
+  const nextPending=steps.find((step)=>step&&step.status==="pending");
+  if(nextPending)return nextPending;
+  return null;
+}
+function harnessStopReasonSummaryForUi({status="",currentPending=0,requirementGateBlocked=false,requirementSnapshot=null,lastResultType=""}={}){
+  if(requirementGateBlocked){
+    return{
+      label:"要件未確定",
+      detail:requirementGateBlockerTextForUi(requirementSnapshot),
+      tone:"blocked",
+    };
+  }
+  if(status==="needs_input"){
+    return{
+      label:"入力待ち",
+      detail:"追加の確認または入力が必要です。",
+      tone:"blocked",
+    };
+  }
+  if(status==="failed"||lastResultType==="failed"){
+    return{
+      label:"失敗",
+      detail:"直前の実行でエラーが出ています。",
+      tone:"failed",
+    };
+  }
+  if(status==="interrupted"||lastResultType==="aborted"){
+    return{
+      label:"中断",
+      detail:"実行が途中で止まりました。",
+      tone:"failed",
+    };
+  }
+  if(currentPending>0){
+    return{
+      label:"なし",
+      detail:"止まっていません。いま実行中です。",
+      tone:"running",
+    };
+  }
+  return{
+    label:"なし",
+    detail:"止まっていません。いまは入力待ちです。",
+    tone:"idle",
+  };
+}
 function requirementGateBlockerTextForUi(snapshot,fallbackText="要件整理の保留を解消する"){
   if(!snapshot||typeof snapshot!=="object")return fallbackText;
   if(snapshot.displayAskNext&&snapshot.displayAskNext.length){
     const firstAsk=String(snapshot.displayAskNext[0]||"").trim();
-    if(firstAsk)return`要確認: ${firstAsk}`;
+    if(firstAsk)return`未確定: ${firstAsk}`;
   }
   const holdReason=String(snapshot.displayHoldReason||snapshot.contractStatusReason||"").trim();
   return holdReason||fallbackText;
+}
+function requirementGateWorkSummaryForUi(snapshot){
+  if(!snapshot||typeof snapshot!=="object")return"要件の芯を固めています";
+  if(snapshot.displayAskNext&&snapshot.displayAskNext.length)return"未確定の要件を確認しています";
+  if(snapshot.validationVerdict==="BLOCK")return"要件の芯を固めています";
+  if(snapshot.openQuestions&&snapshot.openQuestions.length)return"未解決の論点を整理しています";
+  return"要件の芯を固めています";
 }
 function requirementGatePlanPanelStateForUi(snapshot){
   const blockedLabel=snapshot&&snapshot.contractStatusLabel?snapshot.contractStatusLabel:"保留";
@@ -3908,16 +4053,16 @@ function requirementGatePlanPanelStateForUi(snapshot){
     ||(snapshot&&snapshot.openQuestions&&snapshot.openQuestions.length)
     ||0;
   const blockerText=requirementGateBlockerTextForUi(snapshot);
-  const detailParts=[`要件整理が${blockedLabel}のため、計画には進まない`];
-  if(pendingCount>0)detailParts.push(`要確認 ${pendingCount}`);
+  const detailParts=[`要件整理が${blockedLabel}のため、まだ plan は出しません。`];
+  if(pendingCount>0)detailParts.push(`未確定事項 ${pendingCount} 件`);
   return{
-    metaText:`要件整理${blockedLabel}`,
+    metaText:"要件確定待ち",
     currentStepText:blockerText,
-    currentPurposeText:"支える依頼: まず Step 1 の保留を解消する",
+    currentPurposeText:"先に要件を確定します。",
     currentDetailText:detailParts.join(" / "),
-    explanationText:"Step 1 の未解決を先に解消するまで、ここでは実行計画を表示しない。",
-    emptyText:"要件整理が固まると、ここに実行計画が表示されます。",
-    tone:"idle",
+    explanationText:"未確定事項が残っている間は、下流の step を見せず要件確認だけを前に出します。",
+    emptyText:"要件が固まると、ここに現在 step と次 step が表示されます。",
+    tone:"blocked",
   };
 }
 function normalizePlanTraceRefsForUi(value,max=24){
@@ -3942,13 +4087,13 @@ function planPurposeSummaryForUi(step,requirementSnapshot){
     normalizePlanTraceRefsForUi(step&&step.acceptanceCheckRefs,16).map((entry)=>acceptanceCheckTextById[entry]||""),
     {maxItems:2,maxChars:96,transform:requirementTextLabelForUi}
   );
-  if(acceptanceTexts.length)return`支える受け入れ: ${summarizeInlineListForUi(acceptanceTexts,{maxItems:2})}`;
+  if(acceptanceTexts.length)return`満たす条件: ${summarizeInlineListForUi(acceptanceTexts,{maxItems:2})}`;
   const requirementRefs=compactTextListForUi(
     normalizePlanTraceRefsForUi(step&&step.requirementRefs,24).map((entry)=>requirementFieldLabelForUi(entry)),
     {maxItems:2,maxChars:96}
   );
-  if(requirementRefs.length)return`支える要件: ${summarizeInlineListForUi(requirementRefs,{maxItems:2})}`;
-  return"支える依頼: 参照未接続";
+  if(requirementRefs.length)return`見る観点: ${summarizeInlineListForUi(requirementRefs,{maxItems:2})}`;
+  return"目的を整理中";
 }
 function derivePlanFocusForUi(planSteps,statusText=""){
   const steps=toArr(planSteps).map((step,index)=>{
@@ -4177,6 +4322,7 @@ function renderHarness(){
   if(!stageListEl||!stageEl||!workEl||!highlightsEl)return;
 
   const status=String(h.status||"idle");
+  const currentPending=pendingCountForChat(c.id);
   const flowItems=toArr(h.flow);
   const phaseStateText=(phase)=>{
     const state=String(phase&&phase.state||"todo");
@@ -4211,18 +4357,19 @@ function renderHarness(){
   const latestEvent=toArr(h.events)[0];
   const verdict=evaluateHarnessVerdict(h,checkMode);
   const runtimeContext=deriveRuntimeTurnContextForUi(turnForUi);
+  const stopReason=harnessStopReasonSummaryForUi({
+    status,
+    currentPending,
+    requirementGateBlocked,
+    requirementSnapshot,
+    lastResultType:s.last&&s.last.cid===c.id?s.last.type:"",
+  });
   if(complianceEl){
-    complianceEl.textContent=verdict.label;
-    complianceEl.className=`harness-now-value ${verdict.tone}`;
+    complianceEl.textContent=stopReason.label;
+    complianceEl.className=`harness-status-value ${stopReason.tone}`;
   }
   if(complianceDetailEl){
-    const detailParts=[verdict.detail];
-    if(runtimeContext&&runtimeContext.gateApplies){
-      const gateLabel=familyGateStatusLabelForUi(runtimeContext.gateStatus);
-      const gateSummary=t1(runtimeContext.gateSummary||"",120).trim();
-      detailParts.push(gateSummary?`ファミリーゲート: ${gateLabel} / ${gateSummary}`:`ファミリーゲート: ${gateLabel}`);
-    }
-    complianceDetailEl.textContent=detailParts.filter(Boolean).join(" / ");
+    complianceDetailEl.textContent=stopReason.detail;
   }
 
   const displayedPlan=deriveDisplayedPlanForUi(h,flowItems,status);
@@ -4270,27 +4417,27 @@ function renderHarness(){
     currentPhase=donePhases.length?donePhases[donePhases.length-1]:(flowItems[0]||null);
   }
   const currentPhaseSummary=currentPhase&&currentPhase.id?phaseSummaries[currentPhase.id]:"";
-  stageEl.textContent=currentPhase?`${currentPhase.label} (${phaseStateText(currentPhase)})`:"未開始";
-  stageEl.className=`harness-now-value ${phaseTone(currentPhase)}`;
+  stageEl.textContent=currentPhase?currentPhase.label:"未開始";
+  stageEl.className=`harness-status-value ${phaseTone(currentPhase)}`;
   if(requirementGateBlocked){
-    const blockerText=requirementGateBlockerTextForUi(
-      requirementSnapshot,
-      currentPhaseSummary||"要件整理の保留を解消する"
-    );
-    workEl.textContent=blockerText;
-    workEl.className="harness-now-value blocked";
+    workEl.textContent=requirementGateWorkSummaryForUi(requirementSnapshot);
+    workEl.className="harness-status-value blocked";
   }else if(planFocus){
     if(planDecision==="skip"){
       workEl.textContent=planSkipWorkLabelForUi(displayedPlan,planFocus);
     }else{
-      workEl.textContent=`${planFocus.index+1}${planSteps.length?`/${planSteps.length}`:""} / ${planFocus.text}`;
+      workEl.textContent=`step ${planFocus.index+1}${planSteps.length?` / ${planSteps.length}`:""}: ${planFocus.text}`;
     }
-    workEl.className=`harness-now-value ${planWorkToneForUi(planFocus.status)}`;
+    workEl.className=`harness-status-value ${planWorkToneForUi(planFocus.status)}`;
+  }else if(!requirementSnapshot.hasRequirement&&!currentPending){
+    workEl.textContent="入力を待っています";
+    workEl.className="harness-status-value idle";
   }else{
-    const fallbackWork=currentPhaseSummary
-      ||(latestEvent?`${latestEvent.l}${latestEvent.d?` / ${latestEvent.d}`:""}`:"");
+    const fallbackWork=currentPending>0
+      ?"実行結果を待っています"
+      :(currentPhaseSummary||(latestEvent?`${latestEvent.l}${latestEvent.d?` / ${latestEvent.d}`:""}`:""));
     workEl.textContent=fallbackWork||"待機中";
-    workEl.className=`harness-now-value ${latestEvent&&latestEvent.tone==="failed"?"failed":(status==="running"?"running":"idle")}`;
+    workEl.className=`harness-status-value ${latestEvent&&latestEvent.tone==="failed"?"failed":(status==="running"?"running":"idle")}`;
   }
   if(requirementMetaEl){
     requirementMetaEl.textContent=requirementSnapshot.hasRequirement
@@ -4371,13 +4518,11 @@ function renderHarness(){
     if(requirementBlockedPlanState){
       e.harnessPlanMeta.textContent=requirementBlockedPlanState.metaText;
     }else if(planDecision==="skip"){
-      e.harnessPlanMeta.textContent="PLAN SKIP";
+      e.harnessPlanMeta.textContent="";
     }else if(planSteps.length){
-      const metaParts=[`${completedCount}/${planSteps.length} 完了`];
-      if(displayedPlan.meta&&displayedPlan.meta.planningDepth)metaParts.push(displayedPlan.meta.planningDepth);
-      e.harnessPlanMeta.textContent=metaParts.join(" / ");
+      e.harnessPlanMeta.textContent=`${completedCount} / ${planSteps.length}`;
     }else{
-      e.harnessPlanMeta.textContent="計画待ち";
+      e.harnessPlanMeta.textContent="";
     }
   }
   if(e.harnessPlanCurrentCard){
@@ -4395,7 +4540,7 @@ function renderHarness(){
     }else if(planFocus){
       e.harnessPlanCurrentPurpose.textContent=planPurposeSummaryForUi(planFocus,requirementSnapshot);
     }else{
-      e.harnessPlanCurrentPurpose.textContent="支える依頼: plan/update 待ち";
+      e.harnessPlanCurrentPurpose.textContent="目的を整理中";
     }
   }
   if(e.harnessPlanCurrentDetail){
@@ -4403,18 +4548,52 @@ function renderHarness(){
       e.harnessPlanCurrentDetail.textContent=requirementBlockedPlanState.currentDetailText;
     }else if(planFocus){
       if(planDecision==="skip"){
-        const skipParts=[
-          planSourceLabelForUi(planSource,planDecision),
-          planSkipReasonLabelForUi(displayedPlan.skipReason),
-        ];
-        if(displayedPlan.meta&&displayedPlan.meta.planningDepth)skipParts.push(displayedPlan.meta.planningDepth);
-        e.harnessPlanCurrentDetail.textContent=skipParts.filter(Boolean).join(" / ");
+        e.harnessPlanCurrentDetail.textContent=planSkipReasonLabelForUi(displayedPlan.skipReason)||"この依頼では詳細計画を省略します。";
       }else{
-        const stepIndexText=planSteps.length?`ステップ ${planFocus.index+1} / ${planSteps.length}`:`ステップ ${planFocus.index+1}`;
-        e.harnessPlanCurrentDetail.textContent=`${planSourceLabelForUi(planSource,planDecision)} / ${planFocusLabelForUi(planFocus.mode)} / ${planStepStatusLabelForUi(planFocus.status)} / ${stepIndexText}`;
+        e.harnessPlanCurrentDetail.textContent=planPrimaryCardDetailTextForUi(planFocus,planSteps,{status});
       }
     }else{
-      e.harnessPlanCurrentDetail.textContent="このチャットではまだ明示プランが出ていません。";
+      e.harnessPlanCurrentDetail.textContent="このチャットではまだ明示 plan がありません。";
+    }
+  }
+  const nextPlanStep=requirementBlockedPlanState?null:planNextStepForUi(planSteps,planFocus);
+  if(e.harnessPlanNextCard){
+    const tone=requirementBlockedPlanState
+      ?requirementBlockedPlanState.tone
+      :(nextPlanStep?planCardToneForUi(nextPlanStep.status):(status==="running"?"running":"idle"));
+    e.harnessPlanNextCard.className=`harness-plan-current ${tone}`;
+  }
+  if(e.harnessPlanNextStep){
+    if(requirementBlockedPlanState){
+      e.harnessPlanNextStep.textContent="要件確定後に plan を作成";
+    }else if(planDecision==="skip"){
+      e.harnessPlanNextStep.textContent="詳細計画は省略";
+    }else if(nextPlanStep){
+      e.harnessPlanNextStep.textContent=nextPlanStep.text;
+    }else{
+      e.harnessPlanNextStep.textContent="次は未定です";
+    }
+  }
+  if(e.harnessPlanNextPurpose){
+    if(requirementBlockedPlanState){
+      e.harnessPlanNextPurpose.textContent="いまは下流 step を確定しません。";
+    }else if(planDecision==="skip"){
+      e.harnessPlanNextPurpose.textContent=planSkipReasonLabelForUi(displayedPlan.skipReason)||"この依頼では詳細な実行計画を省略します。";
+    }else if(nextPlanStep){
+      e.harnessPlanNextPurpose.textContent=planPurposeSummaryForUi(nextPlanStep,requirementSnapshot);
+    }else{
+      e.harnessPlanNextPurpose.textContent="現在見えている次 step はありません。";
+    }
+  }
+  if(e.harnessPlanNextDetail){
+    if(requirementBlockedPlanState){
+      e.harnessPlanNextDetail.textContent="未確定事項を解消したあと、現在 step と次 step を組み立てます。";
+    }else if(planDecision==="skip"){
+      e.harnessPlanNextDetail.textContent="詳細計画は省略し、そのまま会話を進めます。";
+    }else if(nextPlanStep){
+      e.harnessPlanNextDetail.textContent=planPrimaryCardDetailTextForUi(nextPlanStep,planSteps,{isNext:true,status});
+    }else{
+      e.harnessPlanNextDetail.textContent=planPrimaryCardDetailTextForUi(null,planSteps,{isNext:true,status});
     }
   }
   if(e.harnessPlanExplanation){
@@ -4528,6 +4707,23 @@ function traceTone(type){
   if(normalized==="completed"||normalized==="done"||normalized==="pass"||normalized==="success")return"completed";
   if(normalized==="failed"||normalized==="aborted"||normalized==="interrupted"||normalized==="needs_input")return"failed";
   return"idle";
+}
+function traceEventLabelForUi(type){
+  const normalized=lowerText(type).replace(/[\s-]+/g,"_");
+  if(normalized==="dispatch")return"依頼送信";
+  if(normalized==="turn/start")return"実行開始";
+  if(normalized==="turn/end")return"実行終了";
+  if(normalized==="turn/interrupt")return"中断要求";
+  if(normalized==="turn/error")return"実行失敗";
+  if(normalized==="turn/needs_input"||normalized==="needs_input")return"入力待ち";
+  if(normalized==="stream/open")return"stream開始";
+  if(normalized==="stream/error")return"stream失敗";
+  if(normalized==="stream/recovered")return"stream復旧";
+  if(normalized==="completed")return"完了";
+  if(normalized==="failed")return"失敗";
+  if(normalized==="aborted"||normalized==="interrupted")return"中断";
+  if(normalized==="running"||normalized==="working"||normalized==="spawned")return"進行中";
+  return type||"event";
 }
 function monitorRowEventAtForUi(row){
   if(!row||typeof row!=="object")return 0;
@@ -4735,8 +4931,17 @@ function flow(){
 
   const traceRowsForList=synthesizeTraceRowsForUi(traceRows,topographyRows,(function(){const map=new Map();s.req.forEach((item)=>{if(!item||item.cid!==currentChatId||!item.agent||isHiddenAgentForUi(item.agent))return;const name=resolveMonitorAgentNameForUi(item.agent,topographyByName)||item.agent;map.set(name,(map.get(name)||0)+1);});return map;})(),currentChatId);
   e.agentTraceList.innerHTML=traceRowsForList.length?"":'<li class="agent-trace-empty">まだトレースイベントはありません。</li>';
-  traceRowsForList.slice(0,32).forEach(x=>{const tone=traceTone(x.type)==="failed"?(x.type==="aborted"?"aborted":"failed"):traceTone(x.type);const li=document.createElement("li");li.className=`agent-trace-item ${tone}`;li.innerHTML=`<span class=\"agent-trace-time\">${tt(x.at)}</span><span class=\"agent-trace-agent\">${operatorFacingAgentLabelForUi(x.agent)}</span><span class=\"agent-trace-event\">${x.type}</span><span class=\"agent-trace-detail\">${x.detail||"-"}</span>`;e.agentTraceList.appendChild(li)});
+  traceRowsForList.slice(0,32).forEach(x=>{const tone=traceTone(x.type)==="failed"?(x.type==="aborted"?"aborted":"failed"):traceTone(x.type);const li=document.createElement("li");li.className=`agent-trace-item ${tone}`;li.innerHTML=`<span class="agent-trace-time">${tt(x.at)}</span><span class="agent-trace-head">${operatorFacingAgentLabelForUi(x.agent)} / ${traceEventLabelForUi(x.type)}</span><span class="agent-trace-detail">${t1(x.detail||"-",160)}</span>`;e.agentTraceList.appendChild(li)});
   renderAgentTopography();
+}
+function livePhasePartsForUi(){
+  const stage=e.harnessJourneyStage&&typeof e.harnessJourneyStage.textContent==="string"
+    ?e.harnessJourneyStage.textContent.trim()
+    :"";
+  const work=e.harnessJourneyWork&&typeof e.harnessJourneyWork.textContent==="string"
+    ?e.harnessJourneyWork.textContent.trim()
+    :"";
+  return{stage,work,summary:stage&&work?`${stage} / ${work}`:stage||work||""};
 }
 function live(){
   flow();
@@ -4754,10 +4959,16 @@ function live(){
     if(!bag.size&&currentChat&&currentChat.agent){
       bag.set(currentChat.agent,1);
     }
+    const phase=livePhasePartsForUi();
+    const agentSummary=[...bag.entries()].map(([n,c])=>{const label=operatorFacingAgentLabelForUi(n);return c>1?`${label} x${c}`:label;}).join(" / ")||"処理中...";
     e.liveStatus.className="live-status running";
-    e.liveStatusLabel.textContent=`実行中 (${currentPending})`;
+    e.liveStatusLabel.textContent=phase.stage||`実行中 (${currentPending})`;
     e.liveStatusElapsed.textContent=el(Date.now()-start);
-    e.liveStatusDetail.textContent=[...bag.entries()].map(([n,c])=>{const label=operatorFacingAgentLabelForUi(n);return c>1?`${label} x${c}`:label;}).join(" / ")||"処理中...";
+    e.liveStatusDetail.textContent=[
+      phase.work?`現在: ${phase.work}`:"",
+      "判定: running",
+      agentSummary?`担当: ${agentSummary}`:"",
+    ].filter(Boolean).join(" / ");
     renderPerformanceIndicator();
     if(s.ticker===null)s.ticker=setInterval(live,400);
     return;
@@ -4769,20 +4980,28 @@ function live(){
   const lastForCurrentChat=s.last&&s.last.cid===currentChatId?s.last:null;
   if(!lastForCurrentChat){
     const runningElsewhere=Math.max(0,totalPendingCount()-currentPending);
+    const phase=livePhasePartsForUi();
     e.liveStatus.className="live-status idle";
-    e.liveStatusLabel.textContent="待機中";
+    e.liveStatusLabel.textContent=runningElsewhere>0?"他チャットが実行中":"待機中";
     e.liveStatusElapsed.textContent="--:--";
     e.liveStatusDetail.textContent=runningElsewhere>0
-      ?`このチャットに実行中の要求はありません。他のチャットで ${runningElsewhere} 件動いています。`
-      :"まだ要求はありません。";
+      ?`このチャットは待機中 / 他チャット ${runningElsewhere} 件 / 判定: idle`
+      :(phase.work?`現在: ${phase.work} / 判定: idle`:"まだ要求はありません。");
     renderPerformanceIndicator();
     return;
   }
   const tone=lastForCurrentChat.type==="failed"?"failed":lastForCurrentChat.type==="aborted"?"aborted":"completed";
+  const phase=livePhasePartsForUi();
   e.liveStatus.className=`live-status ${tone}`;
-  e.liveStatusLabel.textContent=lastForCurrentChat.type==="failed"?"直前の実行は失敗":lastForCurrentChat.type==="aborted"?"直前の実行は中断":"直前の実行は完了";
+  e.liveStatusLabel.textContent=phase.stage||(
+    lastForCurrentChat.type==="failed"?"直前の実行は失敗":lastForCurrentChat.type==="aborted"?"直前の実行は中断":"直前の実行は完了"
+  );
   e.liveStatusElapsed.textContent=el(Date.now()-lastForCurrentChat.at);
-  e.liveStatusDetail.textContent=`${lastForCurrentChat.chat||"チャット"} / ${operatorFacingAgentLabelForUi(lastForCurrentChat.agent)||"agent"} / ${lastForCurrentChat.detail||""}`;
+  e.liveStatusDetail.textContent=[
+    phase.work?`現在: ${phase.work}`:"",
+    `判定: ${tone}`,
+    lastForCurrentChat.detail||"",
+  ].filter(Boolean).join(" / ");
   renderPerformanceIndicator();
 }
 function pending(){
@@ -6014,8 +6233,6 @@ function bind(){
   e.stopBtn.onclick=stop;
   e.newThreadBtn.onclick=clearChat;
   if(e.deleteChatBtn)e.deleteChatBtn.onclick=()=>deleteChat();
-  if(e.focusToTimelineBtn)e.focusToTimelineBtn.onclick=()=>scrollElementIntoViewForUi(e.timeline);
-  if(e.focusToComposerBtn)e.focusToComposerBtn.onclick=()=>scrollElementIntoViewForUi(e.promptInput,{focus:true});
   if(e.jumpToComposerBtn)e.jumpToComposerBtn.onclick=()=>scrollElementIntoViewForUi(e.promptInput,{focus:true});
   if(e.imageAttachBtn)e.imageAttachBtn.onclick=()=>{clearAttachmentError();if(e.imageInput)e.imageInput.click();};
   if(e.imageInput)e.imageInput.onchange=()=>{const files=e.imageInput&&e.imageInput.files?e.imageInput.files:[];handleAttachmentPickFiles(files);};

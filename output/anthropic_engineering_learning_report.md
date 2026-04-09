@@ -1,9 +1,9 @@
 # ANTHROPIC_ENGINEERING_LEARNING_REPORT
 
 - status: PASS
-- generatedAt: 2026-04-06T13:38:57.691Z
+- generatedAt: 2026-04-09T11:31:10.069Z
 - trackedArticles: 5
-- newArticlesThisRun: 0
+- newArticlesThisRun: 1
 - pendingProposals: 5
 - promotedDocUpdates: 5
 - ledgerPath: output/anthropic_engineering_learning_ledger.json
@@ -16,18 +16,18 @@
 ## Recent Articles
 
 - Quantifying infrastructure noise in agentic coding evals | high | https://www.anthropic.com/engineering/infrastructure-noise
+- Scaling Managed Agents: Decoupling the brain from the hands | high | https://www.anthropic.com/engineering/managed-agents
 - Harness design for long-running application development | high | https://www.anthropic.com/engineering/harness-design-long-running-apps
 - Designing AI resistant technical evaluations | high | https://www.anthropic.com/engineering/AI-resistant-technical-evaluations
 - Demystifying evals for AI agents | high | https://www.anthropic.com/engineering/demystifying-evals-for-ai-agents
-- Effective harnesses for long-running agents | high | https://www.anthropic.com/engineering/effective-harnesses-for-long-running-agents
 
 ## Pending Proposals
 
 - Quantifying infrastructure noise in agentic coding evals -> scripts/config/eval_suite_default.json (proposal_only)
+- Scaling Managed Agents: Decoupling the brain from the hands -> docs/CONTEXT_MEMORY_POLICY.md (proposal_only)
 - Harness design for long-running application development -> docs/CONTEXT_MEMORY_POLICY.md (proposal_only)
 - Designing AI resistant technical evaluations -> docs/CONTEXT_MEMORY_POLICY.md (proposal_only)
 - Demystifying evals for AI agents -> docs/CONTEXT_MEMORY_POLICY.md (proposal_only)
-- Effective harnesses for long-running agents -> docs/CONTEXT_MEMORY_POLICY.md (proposal_only)
 
 ## Self Improvement
 
@@ -45,6 +45,6 @@
 - policyDisabledCandidateCount: 1
 - proposalOnlyCount: 4
 - blockedCount: 0
-- nextPriority: Effective harnesses for long-running agents / policy_disabled
+- nextPriority: Scaling Managed Agents: Decoupling the brain from the hands / policy_disabled
 - nextPriorityAction: Enable stabilization for this lane or keep the note proposal-only.
 - nextPriorityProgress: success 0/2 / observed 0 / rate 0

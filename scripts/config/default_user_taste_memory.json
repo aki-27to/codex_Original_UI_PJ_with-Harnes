@@ -28,6 +28,15 @@
         "Build, tests, and HTTP 200 are necessary but never sufficient.",
         "Workspace targeting mistakes must be treated as hard failures."
       ],
+      "autonomy": {
+        "primaryObjective": "Realize the user's intended outcome with minimal intervention from the user.",
+        "interventionPreference": "minimize_user_intervention",
+        "requirementStrategy": "propose_then_execute",
+        "clarificationPolicy": "ask_only_for_irreversible_or_user_reserved_decisions",
+        "progressPolicy": "show_artifact_not_question",
+        "selfCorrectionPolicy": "self_correct_before_asking",
+        "promptInjectionEnabled": true
+      },
       "updatedAt": 0
     }
   }

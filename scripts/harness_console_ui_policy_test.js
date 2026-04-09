@@ -65,8 +65,11 @@ function main() {
   assertRegex(indexHtml, /id="missionScopeValue"/, "console must expose the mission scope value");
   assertRegex(indexHtml, /id="missionConstraintValue"/, "console must expose the mission constraint value");
   assertRegex(indexHtml, /id="missionDoneValue"/, "console must expose the mission completion value");
-  assertRegex(indexHtml, /id="focusWorkspaceValue"/, "console must expose the workspace focus summary");
-  assertRegex(indexHtml, /id="focusSendValue"/, "console must expose the send readiness summary");
+  assertRegex(indexHtml, /class="harness-status-card"/, "console must expose the compact harness status summary card");
+  assertRegex(indexHtml, /id="harnessJourneyWork"/, "console must expose the current work summary");
+  assertRegex(indexHtml, /id="harnessJourneyStage"/, "console must expose the current phase summary");
+  assertRegex(indexHtml, /id="harnessComplianceBadge"/, "console must expose the blocked-reason badge");
+  assertRegex(indexHtml, /id="harnessComplianceDetail"/, "console must expose the blocked-reason detail");
   assertRegex(indexHtml, /id="uiReloadBtn"/, "console must expose the quick UI reload action");
   assertRegex(indexHtml, /id="conversationSummary"/, "conversation panel must expose the summary line");
   assertRegex(indexHtml, /id="jumpToComposerBtn"/, "conversation panel must expose the jump-to-composer action");
@@ -78,15 +81,21 @@ function main() {
   assertRegex(indexHtml, /id="composerWorkspaceChip"/, "composer must expose the workspace chip");
   assertRegex(indexHtml, /id="composerAttachmentChip"/, "composer must expose the attachment chip");
   assertRegex(indexHtml, /id="opsDeck"/, "advanced telemetry must move behind the ops deck");
-  assertRegex(indexHtml, /<section class="agent-flow-panel"[\s\S]*?id="agentFlowLane"[\s\S]*?id="agentTopographyPanel"[\s\S]*?id="agentTraceList"/, "execution trace must embed the agent topography section");
+  assertRegex(indexHtml, /<section class="agent-flow-panel"[\s\S]*?id="agentTraceList"[\s\S]*?id="agentFlowLane"[\s\S]*?id="agentTopographyPanel"/, "execution trace must embed the agent topography section");
   assert.ok(!/AIエージェントかんばん/.test(indexHtml), "console must remove the standalone AIエージェントかんばん heading");
   assert.ok(!/agentTopographyToggleBtn/.test(indexHtml), "execution trace topography must remove the standalone collapse toggle");
+  assert.ok(!/focusWorkspaceValue/.test(indexHtml), "console must remove the old workspace focus card from the primary rail");
+  assert.ok(!/focusSendValue/.test(indexHtml), "console must remove the old send readiness card from the primary rail");
+  assert.ok(!/focusToTimelineBtn|focusToComposerBtn/.test(indexHtml), "console must remove the old operator shortcut buttons from the primary rail");
 
   assertRegex(stylesCss, /body\.simple-view \.performance-panel[\s\S]*?display:\s*none;/, "simple view must hide the performance panel");
   assert.ok(!/body\.telemetry-off \.harness-panel/.test(stylesCss), "telemetry-off must not hide the main harness panel");
   assertRegex(stylesCss, /\.work-panel[\s\S]*?grid-template-rows:\s*auto;/, "main work panel must let content rows size naturally to avoid overlap");
+  assertRegex(stylesCss, /\.side-panel[\s\S]*?overflow-x:\s*hidden;/, "left rail must suppress horizontal scrollbars");
+  assertRegex(stylesCss, /\.workspace-status[\s\S]*?overflow-wrap:\s*anywhere;/, "workspace status must wrap long paths instead of overflowing");
   assertRegex(stylesCss, /\.focus-panel[\s\S]*?display:\s*grid;/, "console must style the next-action focus panel");
   assertRegex(stylesCss, /\.mission-draft-card[\s\S]*?display:\s*grid;/, "console must style the mission brief card");
+  assertRegex(stylesCss, /\.harness-status-card[\s\S]*?display:\s*grid;/, "console must style the compact harness status card");
   assertRegex(stylesCss, /\.composer-runtime-strip[\s\S]*?display:\s*flex;/, "console must style the composer runtime strip");
   assertRegex(stylesCss, /\.ops-deck[\s\S]*?border:/, "console must style the advanced ops deck");
   assertRegex(stylesCss, /\.conversation-panel[\s\S]*?display:\s*grid;/, "console must style the conversation wrapper panel");
@@ -114,11 +123,13 @@ function main() {
   assertRegex(stylesCss, /\.workspace-status\.warning[\s\S]*?color:/, "workspace lock status styling must expose the warning tone");
   assertRegex(stylesCss, /\.harness-plan-current-purpose[\s\S]*?color:/, "execution plan current card must style the request-purpose line");
   assertRegex(stylesCss, /\.harness-plan-step-purpose[\s\S]*?color:/, "execution plan step list must style request-purpose lines");
+  assertRegex(stylesCss, /@media \(max-width: 1080px\)[\s\S]*?grid-template-areas:\s*\"conversation\"[\s\S]*?\"status\";/, "mobile layout must keep conversation ahead of the status rail");
 
   assertRegex(appJs, /function\s+deriveRuntimeTurnContextForUi\s*\(/, "runtime turn context helper must exist");
   assertRegex(appJs, /function\s+buildRequirementLockSnapshotForUi\s*\(/, "requirement lock snapshot helper must exist");
   assertRegex(appJs, /function\s+requirementGroupsForUi\s*\(/, "requirement group helper must exist");
   assertRegex(appJs, /function\s+requirementGatePlanPanelStateForUi\s*\(/, "execution plan panel must expose a requirement-gated hold helper");
+  assertRegex(appJs, /function\s+requirementGateWorkSummaryForUi\s*\(/, "harness status must expose a dedicated blocked-work summary helper");
   assertRegex(appJs, /function\s+planPurposeSummaryForUi\s*\(/, "execution plan panel must expose a request-purpose summary helper");
   assertRegex(appJs, /function\s+workspaceGuardSnapshotForUi\s*\(/, "workspace guard snapshot helper must exist");
   assertRegex(appJs, /function\s+workspaceGuardErrorInfoForUi\s*\(/, "workspace guard error helper must exist");
@@ -134,7 +145,7 @@ function main() {
   assertRegex(appJs, /function\s+deriveMissionDraftForUi\s*\(/, "mission draft derivation helper must exist");
   assertRegex(appJs, /function\s+renderMissionDraftPanel\s*\(/, "mission draft renderer must exist");
   assertRegex(appJs, /function\s+renderComposerRuntimeStrip\s*\(/, "composer runtime renderer must exist");
-  assertRegex(appJs, /function\s+renderMissionSupportUi\s*\(/, "mission support renderer must exist");
+  assertRegex(appJs, /function\s+renderMissionSupportUi\s*\(\)\s*\{[\s\S]*?renderMissionDraftPanel\(\);[\s\S]*?renderComposerRuntimeStrip\(\);[\s\S]*?renderFocusPanel\(\);[\s\S]*?\}/, "mission support renderer must refresh the focus summary together with the mission draft");
   assertRegex(appJs, /const\s+stack=document\.createElement\("div"\);[\s\S]*?stack\.className="timeline-stack";[\s\S]*?stack\.appendChild\(f\);[\s\S]*?e\.timeline\.appendChild\(stack\);/, "conversation transcript must render messages through the bottom-align stack wrapper");
   assertRegex(appJs, /function\s+renderFocusPanel\s*\(/, "next-action focus renderer must exist");
   assertRegex(appJs, /function\s+shouldUseStickyComposerForUi\s*\(/, "composer sticky viewport helper must exist");
@@ -157,6 +168,7 @@ function main() {
   assert.ok(!/function\s+renderCodexModeDefaults\s*\(/.test(appJs), "codex mode summary renderer should be removed with the redundant UI");
   assert.ok(!/codexModeSummary|codexModeDetail/.test(appJs), "app JS should not keep references to the removed codex mode summary nodes");
   assert.ok(!/TOPOGRAPHY_COLLAPSED_KEY|loadTopographyUiState|saveTopographyUiState|setTopographyCollapsed|agentTopographyToggleBtn/.test(appJs), "execution trace topography should not keep floating-panel collapse state");
+  assert.ok(!/focusWorkspaceValue|focusSendValue|focusToTimelineBtn|focusToComposerBtn/.test(appJs), "app JS must not keep the removed right-rail card bindings");
   assertRegex(appJs, /data-compose-preset/, "app JS must bind composer preset shortcuts");
   assertRegex(appJs, /if\(e\.uiReloadBtn\)e\.uiReloadBtn\.onclick=\(\)=>reloadUiShellForUi\(\);/, "UI reload button must be wired to a full shell reload");
   assertRegex(appJs, /timeline-empty-state/, "app JS must render the conversation empty state");
@@ -171,6 +183,8 @@ function main() {
   assertRegex(appJs, /mset\(out,`\[needs_input\] \$\{workspaceGuardError\.inlineMessage\}`\);/, "workspace lock failures must surface as needs_input in the transcript");
   assertRegex(appJs, /if\(requirementBlockedPlanState\)\{\s*e\.harnessPlanMeta\.textContent=requirementBlockedPlanState\.metaText;/, "execution plan meta must be gated by unresolved Requirement Lock state");
   assertRegex(appJs, /if\(requirementBlockedPlanState\)\{\s*e\.harnessPlanCurrentDetail\.textContent=requirementBlockedPlanState\.currentDetailText;/, "execution plan detail must stop at the requirement gate instead of showing downstream plan progress");
+  assertRegex(appJs, /stageEl\.textContent=currentPhase\?currentPhase\.label:"未開始";/, "current phase summary should avoid repeating the state label inline");
+  assertRegex(appJs, /workEl\.textContent=requirementGateWorkSummaryForUi\(requirementSnapshot\);/, "current work summary must avoid repeating the blocked-reason text verbatim");
 
   process.stdout.write("PASS harness_console_ui_policy_test\n");
 }

@@ -25,7 +25,7 @@ jobs:
         run: npm ci
 
       - name: Run public regression gate
-        run: node scripts/run_public_regression.js
+        run: npm run regression:public
 
       - name: Upload public regression artifacts
         if: always()

@@ -437,6 +437,46 @@ function run() {
     "anchored design follow-ups should stay out of DISCOVERY when the direction is already constrained"
   );
 
+  const autonomousTastePrompt = [
+    "# Goal",
+    "Redesign the landing page UI so it feels much better.",
+  ].join("\n");
+  const autonomousTasteArtifacts = buildPlanningArtifacts({
+    prompt: autonomousTastePrompt,
+    options: {
+      agentName: "default",
+      executionSource: "web_ui",
+      intentProfile: {
+        autonomy: {
+          interventionPreference: "minimize_user_intervention",
+          requirementStrategy: "propose_then_execute",
+          clarificationPolicy: "ask_only_for_irreversible_or_user_reserved_decisions",
+        },
+      },
+    },
+    contract,
+  });
+  assert.strictEqual(
+    autonomousTasteArtifacts.selection.signals.clarificationAction,
+    "proceed",
+    "minimal-intervention autonomy should allow bounded design direction inference before asking the user"
+  );
+  assert.strictEqual(
+    autonomousTasteArtifacts.selection.signals.clarificationReason,
+    "autonomous_direction_inference_enabled",
+    "minimal-intervention autonomy should expose the autonomous direction inference reason"
+  );
+  assert.notStrictEqual(
+    autonomousTasteArtifacts.selection.selectedMode,
+    "DISCOVERY",
+    "minimal-intervention autonomy should keep preference-driven design work out of DISCOVERY when bounded inference is allowed"
+  );
+  assert.deepStrictEqual(
+    autonomousTasteArtifacts.requirementContract.questionPlan.askNext,
+    [],
+    "minimal-intervention autonomy should not leave a synthetic clarification question behind for bounded design work"
+  );
+
   const fragmentaryGoalArtifacts = buildPlanningArtifacts({
     prompt: [
       "# Goal",

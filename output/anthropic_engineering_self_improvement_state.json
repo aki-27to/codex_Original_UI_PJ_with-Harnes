@@ -1,6 +1,6 @@
 {
   "schema": "self-improvement-state.v1",
-  "generatedAt": "2026-04-06T14:51:53.952Z",
+  "generatedAt": "2026-04-09T12:01:13.976Z",
   "sourceName": "Anthropic Engineering",
   "sourceTier": "secondary",
   "promotionMode": "machine_guarded_autonomy",
@@ -16,11 +16,11 @@
   "readyHintCandidateCount": 0,
   "autoApplyFrontendQualityNoteCount": 0,
   "observationStatus": "disabled",
-  "observationCount": 0,
-  "lastObservedAt": "",
+  "observationCount": 276,
+  "lastObservedAt": "2026-04-09T10:32:44.885Z",
   "requiredObservationSuccesses": 2,
   "requiredObservationSuccessRate": 0.67,
-  "awaitingObservationCount": 4,
+  "awaitingObservationCount": 3,
   "awaitingReinforcementCount": 0,
   "policyDisabledCandidateCount": 1,
   "proposalOnlyCount": 4,
@@ -33,10 +33,10 @@
   "appliedHints": [],
   "appliedFrontendQualityNotes": [],
   "nextPriority": {
-    "changeId": "effective-harnesses-for-long-running-agents-frontend-quality",
-    "proposalId": "anthropic-engineering-effective-harnesses-for-long-running-agents-self-improvement",
-    "articleId": "effective-harnesses-for-long-running-agents",
-    "title": "Effective harnesses for long-running agents",
+    "changeId": "managed-agents-frontend-quality",
+    "proposalId": "anthropic-engineering-managed-agents-self-improvement",
+    "articleId": "managed-agents",
+    "title": "Scaling Managed Agents: Decoupling the brain from the hands",
     "changeType": "frontend_quality_note",
     "readinessStatus": "policy_disabled",
     "gatingReason": "stabilization_disabled",
@@ -46,12 +46,12 @@
     "reinforcement": {
       "successCount": 0,
       "failureCount": 0,
-      "observedCount": 0,
+      "observedCount": 276,
       "successRate": 0,
       "requiredSuccesses": 2,
       "requiredSuccessRate": 0.67,
       "remainingSuccesses": 2,
-      "lastObservedAt": "",
+      "lastObservedAt": "2026-04-09T10:32:44.885Z",
       "lastOutcome": "",
       "status": "unobserved",
       "sampleTurnIds": []
@@ -59,10 +59,10 @@
   },
   "priorityBacklog": [
     {
-      "changeId": "effective-harnesses-for-long-running-agents-frontend-quality",
-      "proposalId": "anthropic-engineering-effective-harnesses-for-long-running-agents-self-improvement",
-      "articleId": "effective-harnesses-for-long-running-agents",
-      "title": "Effective harnesses for long-running agents",
+      "changeId": "managed-agents-frontend-quality",
+      "proposalId": "anthropic-engineering-managed-agents-self-improvement",
+      "articleId": "managed-agents",
+      "title": "Scaling Managed Agents: Decoupling the brain from the hands",
       "changeType": "frontend_quality_note",
       "readinessStatus": "policy_disabled",
       "gatingReason": "stabilization_disabled",
@@ -182,6 +182,14 @@
       "decision": "proposal_only"
     },
     {
+      "proposalId": "anthropic-engineering-managed-agents-self-improvement",
+      "articleId": "managed-agents",
+      "title": "Scaling Managed Agents: Decoupling the brain from the hands",
+      "changeClass": "frontend_quality_note",
+      "target": "docs/FRONTEND_QUALITY_PLAYBOOK.md",
+      "decision": "auto_apply_candidate"
+    },
+    {
       "proposalId": "anthropic-engineering-harness-design-long-running-apps-self-improvement",
       "articleId": "harness-design-long-running-apps",
       "title": "Harness design for long-running application development",
@@ -204,14 +212,6 @@
       "changeClass": "eval_extension",
       "target": "scripts/config/eval_suite_default.json",
       "decision": "proposal_only"
-    },
-    {
-      "proposalId": "anthropic-engineering-effective-harnesses-for-long-running-agents-self-improvement",
-      "articleId": "effective-harnesses-for-long-running-agents",
-      "title": "Effective harnesses for long-running agents",
-      "changeClass": "frontend_quality_note",
-      "target": "docs/FRONTEND_QUALITY_PLAYBOOK.md",
-      "decision": "auto_apply_candidate"
     }
   ]
 }

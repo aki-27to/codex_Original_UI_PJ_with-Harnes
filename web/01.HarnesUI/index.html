@@ -1,4 +1,4 @@
-﻿<!doctype html>
+<!doctype html>
 <html lang="ja">
 <head>
   <meta charset="utf-8">
@@ -8,54 +8,52 @@
   <link rel="stylesheet" href="./styles.css">
 </head>
 <body class="composer-static">
-  <div class="bg-layer"></div>
+  <div class="bg-layer" aria-hidden="true"></div>
   <div class="app-shell">
     <header class="topbar">
       <div class="brand">
         <span class="brand-dot"></span>
-        <div>
+        <div class="brand-copy">
           <h1>Codex Harness OS</h1>
-          <p>AGI に目的・境界・証拠を渡し、実行の現在地まで一目で追うための操作 UI。</p>
+          <p>会話を主役にして、必要な runtime 情報だけを静かに見せる harness UI。</p>
         </div>
       </div>
-      <div class="state-pills">
-        <button id="simpleViewToggle" class="btn mini secondary view-toggle" type="button">詳細表示</button>
-        <button id="uiReloadBtn" class="btn mini secondary" type="button">UI更新</button>
-        <span id="connectionState" class="pill disconnected">未接続</span>
-        <span id="modeState" class="pill neutral">モード</span>
-        <span id="agentState" class="pill neutral">チャット未選択</span>
-        <span id="pendingState" class="pill idle">待機なし</span>
-      </div>
+
+      <section id="liveStatus" class="live-status live-status-inline idle" aria-live="polite">
+        <div class="live-status-head">
+          <span id="liveStatusSpinner" class="live-status-spinner" aria-hidden="true"></span>
+          <strong id="liveStatusLabel" class="live-status-label">待機中</strong>
+          <span id="liveStatusElapsed" class="live-status-elapsed">--:--</span>
+        </div>
+        <p id="liveStatusDetail" class="live-status-detail">まだ要求はありません。</p>
+      </section>
+
+      <details class="topbar-tools" data-advanced="true">
+        <summary>設定</summary>
+        <div class="state-pills">
+          <button id="simpleViewToggle" class="btn mini secondary view-toggle" type="button">要点表示</button>
+          <button id="uiReloadBtn" class="btn mini secondary" type="button">更新</button>
+          <span id="connectionState" class="pill disconnected">未接続</span>
+          <span id="modeState" class="pill neutral">Mode</span>
+          <span id="agentState" class="pill neutral">Agent未選択</span>
+          <span id="pendingState" class="pill idle">待機中</span>
+        </div>
+      </details>
     </header>
 
     <main class="main-layout">
       <aside class="side-panel">
-        <section class="side-card maintenance-card">
-          <div class="maintenance-head">
-            <h3>保守ツール</h3>
-            <p>ふだんは不要です。Runtime が不安定なときだけ開いてください。</p>
-          </div>
-          <details class="maintenance-tools">
-            <summary>保守ツールを開く</summary>
-            <div class="toolbar">
-              <button id="reconnectBtn" class="btn secondary">再接続</button>
-              <button id="newThreadBtn" class="btn secondary">新規スレッド</button>
-              <button id="refreshDiagBtn" class="btn secondary" data-advanced="true">診断を更新</button>
-              <a class="btn secondary" href="./guide.html" target="_blank" rel="noopener">ガイド</a>
-              <a class="btn secondary" href="./overview.html" target="_blank" rel="noopener">全体図</a>
-            </div>
-          </details>
-        </section>
-
         <section class="chat-manager side-card" aria-live="polite">
           <div class="chat-manager-head">
-            <h3>チャット一覧</h3>
+            <div>
+              <h3>Chats</h3>
+              <p class="chat-manager-note">会話はここから切り替えます。</p>
+            </div>
             <div class="chat-manager-actions">
-              <button id="newChatBtn" class="btn mini secondary" type="button">新規</button>
-              <button id="deleteChatBtn" class="btn mini danger" type="button">削除</button>
+              <button id="newChatBtn" class="btn mini secondary" type="button">New</button>
+              <button id="deleteChatBtn" class="btn mini danger" type="button">Delete</button>
             </div>
           </div>
-          <p class="chat-manager-note">会話を切り替える場所です。`F2` で名前変更、`Delete` で削除できます。</p>
           <div id="chatList" class="chat-list">
             <article class="chat-item active">
               <span class="chat-item-line">
@@ -65,421 +63,445 @@
           </div>
         </section>
 
-        <section class="side-card settings-card">
-          <div class="settings-head">
-            <h3>実行設定</h3>
-            <p>普段は最新 Codex に合わせた上位モードを使い、必要なときだけ config-level の詳細設定へ降ります。</p>
-          </div>
-          <div class="settings-grid">
-            <article class="settings-mode-card">
-              <span class="settings-mode-eyebrow">現在の権限モード</span>
-              <strong id="executionProfileHeadline" class="settings-mode-title">Agent (Full Access)</strong>
-              <p id="executionProfileDescription" class="settings-mode-detail">サンドボックスも承認も外し、workspace 外アクセスと live Web検索を許可します。注意して使ってください。</p>
-              <div class="settings-chip-row" aria-live="polite">
-                <span id="executionProfileApprovalChip" class="settings-chip">Approval: never</span>
-                <span id="executionProfileSandboxChip" class="settings-chip">Sandbox: danger-full-access</span>
-                <span id="executionProfileSearchChip" class="settings-chip">Web: live</span>
-                <span id="executionProfileGuardianChip" class="settings-chip">Guardian: inactive</span>
-              </div>
-            </article>
-            <label>
-              権限モード
-              <select id="executionProfile">
-                <option value="auto">Agent (Auto)</option>
-                <option value="read-only">Chat (Read Only)</option>
-                <option value="guardian">Guardian Approvals</option>
-                <option value="full-access" selected>Agent (Full Access)</option>
-                <option value="custom">Custom (config.toml)</option>
-              </select>
-            </label>
-            <label>
-              モデル
-              <select id="modelName">
-                <option value="gpt-5.4" selected>gpt-5.4</option>
-                <option value="gpt-5.4-mini">gpt-5.4-mini</option>
-                <option value="gpt-5.3-codex">gpt-5.3-codex</option>
-              </select>
-            </label>
-            <label>
-              推論量
-              <select id="modelReasoningEffort">
-                <option value="minimal">minimal</option>
-                <option value="low">low</option>
-                <option value="medium">medium</option>
-                <option value="high">high</option>
-                <option value="xhigh" selected>xhigh</option>
-              </select>
-            </label>
-            <label>
-              Web検索
-              <select id="webSearchMode">
-                <option value="cached">Cached</option>
-                <option value="live" selected>Live</option>
-                <option value="disabled">Disabled</option>
-              </select>
-            </label>
-            <label class="settings-toggle">
-              <span>Fast mode</span>
-              <input id="fastModeEnabled" type="checkbox">
-            </label>
-            <label class="search-toggle">
-              補助パネル
-              <span class="toggle-line">
-                <input id="uiVisibility" type="checkbox" checked>
-                <span>補助情報も表示する</span>
-              </span>
-            </label>
-            <details id="permissionsAdvanced" class="settings-advanced" data-advanced="true">
-              <summary>詳細設定 (config-level)</summary>
-              <div class="settings-grid settings-grid-advanced">
-                <label>
-                  approval_policy
-                  <select id="approvalPolicy">
-                    <option value="on-request">on-request</option>
-                    <option value="untrusted">untrusted</option>
-                    <option value="never" selected>never</option>
-                  </select>
-                </label>
-                <label class="settings-toggle">
-                  <span>Guardian approvals</span>
-                  <input id="automaticApprovalReviewEnabled" type="checkbox">
-                </label>
-                <label>
-                  sandbox_mode
-                  <select id="sandboxMode">
-                    <option value="workspace-write">workspace-write</option>
-                    <option value="read-only">read-only</option>
-                    <option value="danger-full-access" selected>danger-full-access</option>
-                  </select>
-                </label>
-              </div>
-              <p id="permissionsAdvancedHint" class="settings-advanced-hint">Custom を選ぶと、この欄の設定がそのまま request payload に反映されます。</p>
-            </details>
-            <div class="workspace-shell">
-              <label class="workspace">
-                ワークスペース
-                <input id="workspacePath" type="text" placeholder="C:\path\to\workdir">
-              </label>
-              <div class="workspace-tools">
-                <button id="workspaceLockBtn" class="btn secondary mini" type="button">このパスで lock</button>
-                <button id="workspaceUnlockBtn" class="btn secondary mini" type="button">unlock</button>
-              </div>
-              <p id="workspaceStatus" class="workspace-status">workspace lock 状態を読み込み中です。</p>
+        <section class="side-card workspace-quick">
+          <div class="workspace-quick-head">
+            <div>
+              <h3>Workspace</h3>
+              <p class="workspace-quick-copy">入力先だけ先に固定します。</p>
             </div>
           </div>
+          <label class="workspace">
+            Path
+            <input id="workspacePath" type="text" placeholder="C:\path\to\workdir">
+          </label>
+          <div class="workspace-tools">
+            <button id="workspaceLockBtn" class="btn secondary mini" type="button">Lock</button>
+            <button id="workspaceUnlockBtn" class="btn secondary mini" type="button">Unlock</button>
+          </div>
+          <p id="workspaceStatus" class="workspace-status">workspace lock の状態をここに表示します。</p>
         </section>
+
+        <details class="side-fold" data-advanced="true">
+          <summary>実行設定</summary>
+
+          <section class="side-card settings-card">
+            <div class="settings-head">
+              <h3>Runtime</h3>
+              <p>普段は閉じたままでよい設定群です。</p>
+            </div>
+            <div class="settings-grid">
+              <article class="settings-mode-card">
+                <span class="settings-mode-eyebrow">Current runtime mode</span>
+                <strong id="executionProfileHeadline" class="settings-mode-title">Agent (Full Access)</strong>
+                <p id="executionProfileDescription" class="settings-mode-detail">workspace と live Web を許可したローカル実行です。</p>
+                <div class="settings-chip-row" aria-live="polite">
+                  <span id="executionProfileApprovalChip" class="settings-chip">Approval: never</span>
+                  <span id="executionProfileSandboxChip" class="settings-chip">Sandbox: danger-full-access</span>
+                  <span id="executionProfileSearchChip" class="settings-chip">Web: live</span>
+                  <span id="executionProfileGuardianChip" class="settings-chip">Guardian: inactive</span>
+                </div>
+              </article>
+
+              <label>
+                Profile
+                <select id="executionProfile">
+                  <option value="auto">Agent (Auto)</option>
+                  <option value="read-only">Chat (Read Only)</option>
+                  <option value="guardian">Guardian Approvals</option>
+                  <option value="full-access" selected>Agent (Full Access)</option>
+                  <option value="custom">Custom (config.toml)</option>
+                </select>
+              </label>
+
+              <label>
+                Model
+                <select id="modelName">
+                  <option value="gpt-5.4" selected>gpt-5.4</option>
+                  <option value="gpt-5.4-mini">gpt-5.4-mini</option>
+                  <option value="gpt-5.3-codex">gpt-5.3-codex</option>
+                </select>
+              </label>
+
+              <label>
+                Reasoning
+                <select id="modelReasoningEffort">
+                  <option value="minimal">minimal</option>
+                  <option value="low">low</option>
+                  <option value="medium">medium</option>
+                  <option value="high">high</option>
+                  <option value="xhigh" selected>xhigh</option>
+                </select>
+              </label>
+
+              <label>
+                Web search
+                <select id="webSearchMode">
+                  <option value="cached">Cached</option>
+                  <option value="live" selected>Live</option>
+                  <option value="disabled">Disabled</option>
+                </select>
+              </label>
+
+              <label class="settings-toggle">
+                <span>Fast mode</span>
+                <input id="fastModeEnabled" type="checkbox">
+              </label>
+
+              <label class="search-toggle">
+                UI telemetry
+                <span class="toggle-line">
+                  <input id="uiVisibility" type="checkbox" checked>
+                  <span>補助情報の詳細を表示する</span>
+                </span>
+              </label>
+
+              <details id="permissionsAdvanced" class="settings-advanced" data-advanced="true">
+                <summary>Permissions</summary>
+                <div class="settings-grid settings-grid-advanced">
+                  <label>
+                    approval_policy
+                    <select id="approvalPolicy">
+                      <option value="on-request">on-request</option>
+                      <option value="untrusted">untrusted</option>
+                      <option value="never" selected>never</option>
+                    </select>
+                  </label>
+                  <label class="settings-toggle">
+                    <span>Guardian approvals</span>
+                    <input id="automaticApprovalReviewEnabled" type="checkbox">
+                  </label>
+                  <label>
+                    sandbox_mode
+                    <select id="sandboxMode">
+                      <option value="workspace-write">workspace-write</option>
+                      <option value="read-only">read-only</option>
+                      <option value="danger-full-access" selected>danger-full-access</option>
+                    </select>
+                  </label>
+                </div>
+                <p id="permissionsAdvancedHint" class="settings-advanced-hint">Custom を選ぶと request payload に反映されます。</p>
+              </details>
+            </div>
+          </section>
+
+          <section class="side-card maintenance-card">
+            <div class="maintenance-head">
+              <h3>Maintenance</h3>
+              <p>接続と診断はここにまとめます。</p>
+            </div>
+            <details class="maintenance-tools" data-advanced="true">
+              <summary>Open tools</summary>
+              <div class="toolbar">
+                <button id="reconnectBtn" class="btn secondary">Reconnect</button>
+                <button id="newThreadBtn" class="btn secondary">New thread</button>
+                <button id="refreshDiagBtn" class="btn secondary">Refresh diagnostics</button>
+                <button id="openCmdBtn" class="btn secondary" type="button">CMD</button>
+                <a class="btn secondary" href="./guide.html" target="_blank" rel="noopener">Guide</a>
+                <a class="btn secondary" href="./overview.html" target="_blank" rel="noopener">Overview</a>
+              </div>
+            </details>
+          </section>
+        </details>
       </aside>
 
       <section class="work-panel">
-        <section id="liveStatus" class="live-status idle" aria-live="polite">
-          <div class="live-status-head">
-            <span id="liveStatusSpinner" class="live-status-spinner" aria-hidden="true"></span>
-            <strong id="liveStatusLabel" class="live-status-label">待機中</strong>
-            <span id="liveStatusElapsed" class="live-status-elapsed">--:--</span>
-          </div>
-          <p id="liveStatusDetail" class="live-status-detail">まだ要求はありません。</p>
-        </section>
+        <section class="conversation-shell">
+          <section class="conversation-panel" aria-live="polite">
+            <div class="conversation-head">
+              <div>
+                <h3>Conversation</h3>
+                <p id="conversationSummary" class="conversation-summary">会話はここに表示されます。</p>
+              </div>
+              <button id="jumpToComposerBtn" class="btn mini secondary" type="button">入力へ</button>
+            </div>
+            <section id="timeline" class="timeline" aria-live="polite"></section>
+          </section>
 
-        <section class="focus-panel" aria-live="polite">
-          <div class="focus-head">
-            <div>
-              <h3>Mission Brief</h3>
-              <p id="focusActionDetail" class="focus-action-detail">目的・対象・制約・完了条件が見える形で依頼を整えます。</p>
-            </div>
-            <div class="focus-head-tools">
-              <button id="focusToTimelineBtn" class="btn mini secondary" type="button">会話へ</button>
-              <button id="focusToComposerBtn" class="btn mini secondary" type="button">入力欄へ</button>
-            </div>
-          </div>
-          <div class="focus-brief-grid">
-            <article class="focus-summary-card">
-              <strong id="focusActionTitle" class="focus-action-title">依頼を書いて送信</strong>
-              <p id="focusActionHint" class="focus-action-hint">やること、対象、確認方法を書くと、AI が長く安定して動きやすくなります。</p>
-            </article>
-            <article class="mission-draft-card" aria-live="polite">
-              <div class="mission-draft-head">
+          <footer id="composer" class="composer">
+            <section class="composer-input" aria-label="Chat input">
+              <div class="composer-head">
                 <div>
-                  <h4>依頼の骨子</h4>
-                  <p id="missionDraftStatus" class="mission-draft-status">未入力</p>
+                  <h3>Mission</h3>
+                  <p class="composer-guide">Goal / Scope / Constraints / Done When を書くと、AI に短い粒度で渡せます。</p>
                 </div>
-                <p class="mission-draft-copy">入力中の草案か、直前の依頼から AGI が拾う骨子をここで確認できます。</p>
+                <div class="composer-shortcuts" aria-label="テンプレート">
+                  <button class="btn mini secondary composer-preset" type="button" data-compose-preset="目的:\n対象:\n制約:\n完了条件:\n">基本テンプレート</button>
+                  <button class="btn mini secondary composer-preset" type="button" data-compose-preset="目的: UIを改善したい\n対象: web/01.HarnesUI\n制約: 既存の /api/exec 経路とローカル運用は維持\n完了条件: desktop/mobile で見た目と挙動を確認し、必要なら docs を同期\n">UI改善</button>
+                  <button class="btn mini secondary composer-preset" type="button" data-compose-preset="目的: 仕様を調査して直したい\n対象:\n制約: 破壊的な変更は避ける\n完了条件: 調査結果、修正、未解決をまとめる\n">調査と修正</button>
+                </div>
               </div>
-              <div class="mission-draft-grid">
-                <article class="mission-draft-row">
-                  <span class="mission-draft-label">Goal</span>
-                  <strong id="missionGoalValue" class="mission-draft-value">何を実現したいかを書きます。</strong>
-                </article>
-                <article class="mission-draft-row">
-                  <span class="mission-draft-label">Scope</span>
-                  <strong id="missionScopeValue" class="mission-draft-value">対象のファイル、画面、または範囲を書きます。</strong>
-                </article>
-                <article class="mission-draft-row">
-                  <span class="mission-draft-label">Constraints</span>
-                  <strong id="missionConstraintValue" class="mission-draft-value">守るべき制約や避けたいことを書きます。</strong>
-                </article>
-                <article class="mission-draft-row">
-                  <span class="mission-draft-label">Done When</span>
-                  <strong id="missionDoneValue" class="mission-draft-value">どう確認できたら完了かを書きます。</strong>
-                </article>
-              </div>
-            </article>
-          </div>
-          <div class="focus-grid">
-            <article id="focusChatCard" class="focus-card">
-              <span class="focus-card-label">チャット</span>
-              <strong id="focusChatValue" class="focus-card-value">Chat 1</strong>
-              <p id="focusChatHint" class="focus-card-hint">まだ依頼はありません。</p>
-            </article>
-            <article id="focusWorkspaceCard" class="focus-card">
-              <span class="focus-card-label">ワークスペース</span>
-              <strong id="focusWorkspaceValue" class="focus-card-value">未選択</strong>
-              <p id="focusWorkspaceHint" class="focus-card-hint">入力先を確認すると安全です。</p>
-            </article>
-            <article id="focusSendCard" class="focus-card">
-              <span class="focus-card-label">送信状態</span>
-              <strong id="focusSendValue" class="focus-card-value">送信できます</strong>
-              <p id="focusSendHint" class="focus-card-hint">依頼が決まったら下の入力欄から送信します。</p>
-            </article>
-          </div>
-        </section>
 
-        <footer id="composer" class="composer">
-          <section class="composer-input" aria-label="Chat input">
-            <div class="composer-head">
-              <div>
-                <h3>Mission</h3>
-                <p class="composer-guide">目的 / 対象 / 制約 / 完了条件 を短く書くと、AGI が長時間でも意図を崩しにくくなります。</p>
+              <div id="composerRuntimeStrip" class="composer-runtime-strip" aria-live="polite">
+                <span id="composerModeChip" class="composer-runtime-chip">Mode</span>
+                <span id="composerModelChip" class="composer-runtime-chip">Model</span>
+                <span id="composerWorkspaceChip" class="composer-runtime-chip">Workspace</span>
+                <span id="composerAttachmentChip" class="composer-runtime-chip">Attachments</span>
               </div>
-              <div class="composer-shortcuts" aria-label="依頼テンプレート">
-                <button class="btn mini secondary composer-preset" type="button" data-compose-preset="目的:\n対象:\n制約:\n完了条件:\n">骨子テンプレート</button>
-                <button class="btn mini secondary composer-preset" type="button" data-compose-preset="目的: UIを改善する\n対象: web/01.HarnesUI\n制約: 既存の /api/exec 経路とローカル優先運用は維持する\n完了条件: desktop/mobile で見た目と操作を確認し、関連 docs も同期する\n">UI改善</button>
-                <button class="btn mini secondary composer-preset" type="button" data-compose-preset="目的: 不具合を直す\n対象:\n制約: 原因を切り分けて、不要な変更は増やさない\n完了条件: 原因説明、修正、関連テスト更新まで終える\n">不具合修正</button>
-              </div>
-            </div>
-            <div id="composerRuntimeStrip" class="composer-runtime-strip" aria-live="polite">
-              <span id="composerModeChip" class="composer-runtime-chip">Mode</span>
-              <span id="composerModelChip" class="composer-runtime-chip">Model</span>
-              <span id="composerWorkspaceChip" class="composer-runtime-chip">Workspace</span>
-              <span id="composerAttachmentChip" class="composer-runtime-chip">Attachments</span>
-            </div>
-            <p class="composer-tip">例: 目的 / 対象ファイル / 制約 / 完了条件 を書いてから送ると、要件ロックと検証が安定します。</p>
-            <textarea id="promptInput" rows="3" placeholder="依頼を入力してください。例: 目的: 現行UIをAGI向けに改善する / 対象: web/01.HarnesUI / 制約: /api/exec 経路維持 / 完了条件: desktop/mobile で確認"></textarea>
-            <div class="composer-tools">
-              <input id="imageInput" type="file" accept=".png,.jpg,.jpeg,.webp,.gif,image/png,image/jpeg,image/webp,image/gif" multiple hidden>
-              <button id="imageAttachBtn" class="btn secondary mini" type="button">画像を添付</button>
-              <p id="imageError" class="composer-error" role="status" aria-live="polite" hidden></p>
-            </div>
-            <article id="imagePreview" class="image-preview" hidden>
-              <p id="imagePreviewSummary" class="image-preview-summary"></p>
-              <div id="imagePreviewList" class="image-preview-list"></div>
-              <button id="imageRemoveBtn" class="btn mini secondary" type="button">すべて外す</button>
-            </article>
-          </section>
-          <div class="composer-actions">
-            <button id="stopBtn" class="btn danger" disabled>停止</button>
-            <button id="sendBtn" class="btn primary">送信</button>
-          </div>
-        </footer>
 
-        <section class="conversation-panel" aria-live="polite">
-          <div class="conversation-head">
-            <div>
-              <h3>会話と結果</h3>
-              <p id="conversationSummary" class="conversation-summary">依頼内容、途中経過、最終結果をここで追います。</p>
-            </div>
-            <button id="jumpToComposerBtn" class="btn mini secondary" type="button">入力欄へ</button>
-          </div>
-          <section id="timeline" class="timeline" aria-live="polite"></section>
-        </section>
+              <p class="composer-tip">会話の文脈を保ったまま追加依頼できます。補助情報は右側に圧縮表示されます。</p>
+              <textarea id="promptInput" rows="3" placeholder="依頼を書く。例: web/01.HarnesUI を会話中心の UI に刷新する。制約は /api/exec とローカル運用を維持。完了条件は desktop/mobile で視覚確認。"></textarea>
 
-        <section class="harness-panel" aria-live="polite">
-          <div class="harness-head">
-            <h3>進行状況</h3>
-            <div class="harness-head-tools">
-              <p>今どの段階で、何をしていて、何で判定されるかだけを表示します。</p>
-              <label class="harness-check-mode" for="harnessCheckMode">
-                判定
-                <select id="harnessCheckMode">
-                  <option value="adaptive">Adaptive</option>
-                  <option value="strict">Strict</option>
-                  <option value="relaxed">Relaxed</option>
-                </select>
-              </label>
-            </div>
-          </div>
-          <p id="harnessCheckModeHint" class="harness-check-hint">自動: 軽い依頼では小さな推定 plan を許しますが、表示する計画は明示 plan を優先します。</p>
-          <div id="harnessJourneyList" class="harness-journey-list">
-            <article class="harness-journey-step todo">
-              <h4>1. 要件整理</h4>
-              <p>待機中</p>
-            </article>
-            <article class="harness-journey-step todo">
-              <h4>2. 計画作成</h4>
-              <p>待機中</p>
-            </article>
-            <article class="harness-journey-step todo">
-              <h4>3. 実行</h4>
-              <p>待機中</p>
-            </article>
-            <article class="harness-journey-step todo">
-              <h4>4. 品質確認</h4>
-              <p>待機中</p>
-            </article>
-            <article class="harness-journey-step todo">
-              <h4>5. 報告</h4>
-              <p>待機中</p>
-            </article>
-          </div>
-          <div class="harness-now-grid">
-            <article class="harness-now-item">
-              <span class="harness-now-label">現在の段階</span>
-              <strong id="harnessJourneyStage" class="harness-now-value">未開始</strong>
-            </article>
-            <article class="harness-now-item">
-              <span class="harness-now-label">いまやっていること</span>
-              <strong id="harnessJourneyWork" class="harness-now-value">待機中</strong>
-            </article>
-            <article class="harness-now-item harness-verdict">
-              <span class="harness-now-label">合否ゲート</span>
-              <strong id="harnessComplianceBadge" class="harness-now-value idle">WAIT</strong>
-              <p id="harnessComplianceDetail" class="harness-compliance-detail">まだ最終判定はありません。</p>
-            </article>
-          </div>
-          <section class="harness-requirement-panel" aria-live="polite">
-            <div class="harness-requirement-head">
-              <div>
-                <h4>要件ロック</h4>
-                <p>Plan を立てる前に、AI がこの依頼をどう解釈し、どの方向で進もうとしているかを確認します。</p>
+              <div class="composer-tools">
+                <input id="imageInput" type="file" accept=".png,.jpg,.jpeg,.webp,.gif,image/png,image/jpeg,image/webp,image/gif" multiple hidden>
+                <button id="imageAttachBtn" class="btn secondary mini" type="button">画像を添付</button>
+                <p id="imageError" class="composer-error" role="status" aria-live="polite" hidden></p>
               </div>
-              <span id="harnessRequirementMeta" class="harness-plan-meta">整理前</span>
-            </div>
-            <p id="harnessRequirementHeadline" class="harness-requirement-headline">この欄には、Plan を立てる前に AI がいま何を目標に見ていて、どんな方針で進もうとしているかを簡潔に表示します。</p>
-            <div id="harnessRequirementSections" class="harness-requirement-sections">
-              <article class="harness-requirement-group empty">
-                <h5>AIの方針</h5>
-                <p>この依頼を AI がどう理解し、次にどう進めるつもりかだけをここに短く表示します。</p>
+
+              <article id="imagePreview" class="image-preview" hidden>
+                <p id="imagePreviewSummary" class="image-preview-summary"></p>
+                <div id="imagePreviewList" class="image-preview-list"></div>
+                <button id="imageRemoveBtn" class="btn mini secondary" type="button">すべて外す</button>
               </article>
+            </section>
+
+            <div class="composer-actions">
+              <button id="stopBtn" class="btn danger" disabled>停止</button>
+              <button id="sendBtn" class="btn primary">送信</button>
             </div>
-          </section>
-          <section class="harness-plan-panel" aria-live="polite">
-            <div class="harness-plan-head">
-              <div>
-                <h4>実行計画</h4>
-                <p>最新の計画要約と、現在進んでいるステップを表示します。</p>
-              </div>
-              <span id="harnessPlanMeta" class="harness-plan-meta">計画待ち</span>
-            </div>
-            <div class="harness-plan-grid">
-              <article id="harnessPlanCurrentCard" class="harness-plan-current idle">
-                <span class="harness-plan-current-label">現在の計画ステップ</span>
-                <strong id="harnessPlanCurrentStep" class="harness-plan-current-step">計画待ち</strong>
-                <p id="harnessPlanCurrentPurpose" class="harness-plan-current-purpose">支える依頼はここに表示されます。</p>
-                <p id="harnessPlanCurrentDetail" class="harness-plan-current-detail">このチャットではまだ計画が出ていません。</p>
-              </article>
-              <div class="harness-plan-column">
-                <p id="harnessPlanExplanation" class="harness-plan-explanation">このチャットで計画が出ると、ここに計画要約を表示します。</p>
-                <ol id="harnessPlanList" class="harness-plan-list">
-                  <li class="harness-empty">計画ステップはここに表示されます。</li>
-                </ol>
-              </div>
-            </div>
-          </section>
-          <ul id="harnessHighlights" class="harness-highlights">
-            <li class="harness-empty">要点はここに表示されます。</li>
-          </ul>
+          </footer>
         </section>
 
-        <details id="opsDeck" class="ops-deck" data-advanced="true">
-          <summary>詳細トレース / メトリクス / 診断</summary>
-          <div class="ops-deck-body">
-            <section id="performancePanel" class="performance-panel" aria-live="polite">
-              <div class="performance-head">
-                <div>
-                  <h3>セッション指標</h3>
-                  <p>このチャットで使ったトークン数と処理時間の合計です。</p>
-                </div>
-                <div class="performance-meta">
-                  <p class="performance-meta-line">セッション/スレッド: <span id="perfSessionRef">none</span></p>
-                  <p class="performance-meta-line">更新: <span id="perfUpdatedAt">--:--:--</span></p>
-                </div>
+        <aside class="status-shell">
+          <section class="operator-shell">
+            <div class="operator-head">
+              <div>
+                <h3>進行サマリー</h3>
+                <p>会話を邪魔しない範囲で、理解・進行・停止理由だけを見せます。</p>
               </div>
-              <div class="performance-grid">
-                <article class="performance-card token">
-                  <p class="performance-label">総トークン</p>
-                  <p id="perfTokenValue" class="performance-value">0</p>
-                  <p id="perfTokenDetail" class="performance-detail">in-flight +0</p>
-                  <svg id="perfTokenSpark" class="performance-spark" viewBox="0 0 100 28" preserveAspectRatio="none" aria-label="トークン推移"></svg>
+            </div>
+
+            <section class="focus-panel" aria-live="polite">
+              <p class="operator-label">AI の理解</p>
+              <div class="focus-brief-grid">
+                <article class="focus-summary-card">
+                  <span class="focus-summary-kicker">AI の理解</span>
+                  <strong id="focusActionTitle" class="focus-action-title">依頼を書くとここに要約されます。</strong>
+                  <p id="focusActionDetail" class="focus-action-detail">制約と完了条件も、ここでは短く要約して見せます。</p>
+                  <p id="focusActionHint" class="focus-action-hint">違和感があるときは入力欄の文を直すだけで更新されます。</p>
                 </article>
-                <article class="performance-card time">
-                  <p class="performance-label">処理時間 (ms)</p>
-                  <p id="perfTimeValue" class="performance-value">0</p>
-                  <p id="perfTimeDetail" class="performance-detail">in-flight +0ms</p>
-                  <svg id="perfTimeSpark" class="performance-spark" viewBox="0 0 100 28" preserveAspectRatio="none" aria-label="時間推移"></svg>
+
+                <article class="mission-draft-card" aria-live="polite">
+                  <div class="mission-draft-head">
+                    <div>
+                      <h4>Requirement lock</h4>
+                      <p id="missionDraftStatus" class="mission-draft-status">未入力</p>
+                    </div>
+                  </div>
+                  <div class="mission-draft-grid">
+                    <article class="mission-draft-row">
+                      <span class="mission-draft-label">Goal</span>
+                      <strong id="missionGoalValue" class="mission-draft-value">何を直したいかを書くと表示されます。</strong>
+                    </article>
+                    <article class="mission-draft-row">
+                      <span class="mission-draft-label">Constraints</span>
+                      <strong id="missionConstraintValue" class="mission-draft-value">制約未指定</strong>
+                    </article>
+                    <article class="mission-draft-row">
+                      <span class="mission-draft-label">Done When</span>
+                      <strong id="missionDoneValue" class="mission-draft-value">完了条件未指定</strong>
+                    </article>
+                  </div>
+                  <details class="mission-draft-fold" data-advanced="true">
+                    <summary>対象詳細</summary>
+                    <article class="mission-draft-row mission-draft-row-secondary">
+                      <span class="mission-draft-label">Scope</span>
+                      <strong id="missionScopeValue" class="mission-draft-value">対象未指定</strong>
+                    </article>
+                  </details>
                 </article>
               </div>
             </section>
 
-            <section class="agent-flow-panel" aria-live="polite">
-              <div class="agent-flow-head">
-                <div>
-                  <h3>実行トレース</h3>
-                  <p>待機 / 実行 / 完了 / 失敗の流れを時系列で表示します。</p>
+            <section class="harness-panel" aria-live="polite">
+              <p class="operator-label">今の状態</p>
+
+              <article class="harness-status-card">
+                <div class="harness-status-row">
+                  <span class="harness-status-label">今していること</span>
+                  <strong id="harnessJourneyWork" class="harness-status-value idle">待機中</strong>
                 </div>
-                <button id="clearAgentTraceBtn" class="btn mini secondary" type="button">消去</button>
-              </div>
-              <div id="agentFlowLane" class="agent-flow-lane">
-                <article class="agent-flow-empty">まだエージェント状態はありません。</article>
-              </div>
-              <section id="agentTopographyPanel" class="agent-topography-panel" aria-live="polite">
-                <div class="agent-topography-head">
-                  <div>
-                    <h4>担当エージェント</h4>
-                    <p class="agent-topography-copy"><code>/api/agent-topography</code> とこのチャットの trace を重ねて、今どの役割が動いているかを表示します。</p>
+                <div class="harness-status-row">
+                  <span class="harness-status-label">現在のフェーズ</span>
+                  <strong id="harnessJourneyStage" class="harness-status-value idle">未開始</strong>
+                </div>
+                <div class="harness-status-row harness-status-row-blocked">
+                  <div class="harness-status-row-head">
+                    <span class="harness-status-label">止まっている理由</span>
+                    <strong id="harnessComplianceBadge" class="harness-status-value idle">なし</strong>
                   </div>
-                  <button id="agentTopographyRefreshBtn" class="btn mini secondary" type="button">更新</button>
+                  <p id="harnessComplianceDetail" class="harness-compliance-detail">止まっていません。いまは入力待ちです。</p>
                 </div>
-                <p id="agentTopographyMeta" class="agent-topography-meta">読み込み中...</p>
-                <div id="agentTopographyList" class="agent-topography-list">
-                  <div class="agent-topography-empty">エージェント情報を読み込み中...</div>
+              </article>
+
+              <section class="harness-plan-panel" aria-live="polite">
+                <div class="harness-plan-head">
+                  <div>
+                    <h4>現在 / 次</h4>
+                  </div>
+                  <span id="harnessPlanMeta" class="harness-plan-meta">計画待ち</span>
+                </div>
+                <div class="harness-plan-grid harness-plan-primary">
+                  <article id="harnessPlanCurrentCard" class="harness-plan-current idle">
+                    <span class="harness-plan-current-label">今のステップ</span>
+                    <strong id="harnessPlanCurrentStep" class="harness-plan-current-step">計画待ち</strong>
+                    <p id="harnessPlanCurrentPurpose" class="harness-plan-current-purpose">支える依頼: plan/update 待ち</p>
+                    <p id="harnessPlanCurrentDetail" class="harness-plan-current-detail">このチャットではまだ明示プランが出ていません。</p>
+                  </article>
+                  <article id="harnessPlanNextCard" class="harness-plan-current idle">
+                    <span class="harness-plan-current-label">次のステップ</span>
+                    <strong id="harnessPlanNextStep" class="harness-plan-current-step">次 step はありません</strong>
+                    <p id="harnessPlanNextPurpose" class="harness-plan-current-purpose">現在見えている次 step はありません。</p>
+                    <p id="harnessPlanNextDetail" class="harness-plan-current-detail">Waiting for plan/update.</p>
+                  </article>
                 </div>
               </section>
+
+              <details class="harness-fold" data-advanced="true">
+                <summary>詳細</summary>
+                <section class="harness-requirement-panel" aria-live="polite">
+                  <div class="harness-requirement-head">
+                    <div>
+                      <h4>Requirement lock detail</h4>
+                    </div>
+                    <span id="harnessRequirementMeta" class="harness-plan-meta">整理前</span>
+                  </div>
+                  <p id="harnessRequirementHeadline" class="harness-requirement-headline">この欄には、AI がいま何を目標に見ているかを短く表示します。</p>
+                  <div id="harnessRequirementSections" class="harness-requirement-sections">
+                    <article class="harness-requirement-group empty">
+                      <h5>AIの方針</h5>
+                      <p>まだ要件の解釈はありません。</p>
+                    </article>
+                  </div>
+                </section>
+                <section class="harness-phase-panel">
+                  <h4>フェーズ詳細</h4>
+                  <div id="harnessJourneyList" class="harness-journey-list">
+                    <article class="harness-journey-step todo">
+                      <h4>1. Requirements</h4>
+                      <p class="harness-journey-state">待機中</p>
+                      <p class="harness-journey-summary">待機中</p>
+                    </article>
+                  </div>
+                  <ul id="harnessHighlights" class="harness-highlights">
+                    <li class="harness-empty">ハイライトはここに表示されます。</li>
+                  </ul>
+                </section>
+
+                <section class="harness-plan-details-panel">
+                  <h4>Plan detail</h4>
+                  <p id="harnessPlanExplanation" class="harness-plan-explanation">このチャットでは plan 説明をここに表示します。</p>
+                  <ol id="harnessPlanList" class="harness-plan-list">
+                    <li class="harness-empty">plan ステップはここに表示されます。</li>
+                  </ol>
+                </section>
+
+                <details class="harness-tools-details" data-advanced="true">
+                  <summary>Check mode</summary>
+                  <label class="harness-check-mode" for="harnessCheckMode">
+                    Check mode
+                    <select id="harnessCheckMode">
+                      <option value="adaptive">Adaptive</option>
+                      <option value="strict">Strict</option>
+                      <option value="relaxed">Relaxed</option>
+                    </select>
+                  </label>
+                  <p id="harnessCheckModeHint" class="harness-check-hint">軽い依頼では小さな plan 推定を許しますが、表示は明示 plan を優先します。</p>
+                </details>
+              </details>
+            </section>
+
+            <section class="agent-flow-panel" aria-live="polite">
+              <p class="operator-label">実行トレース</p>
               <div class="agent-trace-subhead">
-                <h4>イベント履歴</h4>
-                <p>このチャットの直近 32 件を表示します。</p>
+                <h4>直近の動き</h4>
+                <p>このチャットの直近 32 件だけを軽く追います。</p>
               </div>
               <ol id="agentTraceList" class="agent-trace-list">
                 <li class="agent-trace-empty">まだトレースイベントはありません。</li>
               </ol>
-            </section>
-
-            <section class="diagnostics-panel" aria-live="polite">
-              <div class="diagnostics-head">
-                <h3>診断</h3>
-                <p id="diagSummaryText" class="diag-summary-text">診断を読み込み中...</p>
-              </div>
-              <details id="diagDetails" class="diagnostics-details">
-                <summary id="diagDetailsSummary">詳細を表示</summary>
-                <div class="diag-grid">
-                  <article class="diag-card">
-                    <h4>Codex CLI</h4>
-                    <p id="diagCodexState" class="diag-state pending">未確認</p>
-                    <p id="diagCodexDetail" class="diag-detail">まだ確認していません。</p>
-                  </article>
-                  <article class="diag-card">
-                    <h4>Node</h4>
-                    <p id="diagNodeState" class="diag-state pending">未確認</p>
-                    <p id="diagNodeDetail" class="diag-detail">まだ確認していません。</p>
-                  </article>
-                  <article class="diag-card">
-                    <h4>Web検索</h4>
-                    <p id="diagSearchState" class="diag-state off">OFF</p>
-                    <p id="diagSearchDetail" class="diag-detail">ポリシーで無効です。</p>
-                  </article>
+              <details class="agent-flow-details" data-advanced="true">
+                <summary>トレース詳細</summary>
+                <div id="agentFlowLane" class="agent-flow-lane">
+                  <article class="agent-flow-empty">まだエージェント状況はありません。</article>
                 </div>
+
+                <section id="agentTopographyPanel" class="agent-topography-panel" aria-live="polite">
+                  <div class="agent-topography-head">
+                    <div>
+                      <h4>Topography</h4>
+                      <p class="agent-topography-copy"><code>/api/agent-topography</code> と trace を合わせて見せます。</p>
+                    </div>
+                    <button id="agentTopographyRefreshBtn" class="btn mini secondary" type="button">Refresh</button>
+                  </div>
+                  <p id="agentTopographyMeta" class="agent-topography-meta">読み込み中...</p>
+                  <div id="agentTopographyList" class="agent-topography-list">
+                    <div class="agent-topography-empty">エージェント構成を読み込み中...</div>
+                  </div>
+                </section>
+                <button id="clearAgentTraceBtn" class="btn mini secondary" type="button">Clear</button>
               </details>
             </section>
-          </div>
-        </details>
+          </section>
+
+          <details id="opsDeck" class="ops-deck" data-advanced="true">
+            <summary>Diagnostics</summary>
+            <div class="ops-deck-body">
+              <section id="performancePanel" class="performance-panel" aria-live="polite">
+                <div class="performance-head">
+                  <div>
+                    <h3>Performance</h3>
+                    <p>このチャットで使った token 数と応答時間の要約です。</p>
+                  </div>
+                  <div class="performance-meta">
+                    <p class="performance-meta-line">セッション/スレッド: <span id="perfSessionRef">none</span></p>
+                    <p class="performance-meta-line">更新: <span id="perfUpdatedAt">--:--:--</span></p>
+                  </div>
+                </div>
+                <div class="performance-grid">
+                  <article class="performance-card token">
+                    <p class="performance-label">Tokens</p>
+                    <p id="perfTokenValue" class="performance-value">0</p>
+                    <p id="perfTokenDetail" class="performance-detail">in-flight +0</p>
+                    <svg id="perfTokenSpark" class="performance-spark" viewBox="0 0 100 28" preserveAspectRatio="none" aria-label="トークン推移"></svg>
+                  </article>
+                  <article class="performance-card time">
+                    <p class="performance-label">Latency (ms)</p>
+                    <p id="perfTimeValue" class="performance-value">0</p>
+                    <p id="perfTimeDetail" class="performance-detail">in-flight +0ms</p>
+                    <svg id="perfTimeSpark" class="performance-spark" viewBox="0 0 100 28" preserveAspectRatio="none" aria-label="応答時間推移"></svg>
+                  </article>
+                </div>
+              </section>
+
+              <section class="diagnostics-panel" aria-live="polite">
+                <div class="diagnostics-head">
+                  <h3>Diagnostics</h3>
+                  <p id="diagSummaryText" class="diag-summary-text">診断を読み込み中...</p>
+                </div>
+                <details id="diagDetails" class="diagnostics-details">
+                  <summary id="diagDetailsSummary">詳細を表示</summary>
+                  <div class="diag-grid">
+                    <article class="diag-card">
+                      <h4>Codex CLI</h4>
+                      <p id="diagCodexState" class="diag-state pending">未確認</p>
+                      <p id="diagCodexDetail" class="diag-detail">まだ確認していません。</p>
+                    </article>
+                    <article class="diag-card">
+                      <h4>Node</h4>
+                      <p id="diagNodeState" class="diag-state pending">未確認</p>
+                      <p id="diagNodeDetail" class="diag-detail">まだ確認していません。</p>
+                    </article>
+                    <article class="diag-card">
+                      <h4>Web Search</h4>
+                      <p id="diagSearchState" class="diag-state off">OFF</p>
+                      <p id="diagSearchDetail" class="diag-detail">ポリシーで無効です。</p>
+                    </article>
+                  </div>
+                </details>
+              </section>
+            </div>
+          </details>
+        </aside>
       </section>
     </main>
   </div>
@@ -494,7 +516,7 @@
   <div class="compat-hidden" aria-hidden="true">
     <input id="commandFilter" type="text" value="">
     <div id="commandGrid"></div>
-    <button id="openCmdBtn" type="button"></button>
+    <button id="openCmdBtnCompat" type="button"></button>
   </div>
 
   <template id="commandTemplate">
@@ -514,4 +536,3 @@
   <script src="./app.js"></script>
 </body>
 </html>
-

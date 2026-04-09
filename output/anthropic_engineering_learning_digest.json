@@ -1,13 +1,13 @@
 {
   "schema": "anthropic-engineering-learning-digest.v1",
-  "generatedAt": "2026-04-06T13:38:57.691Z",
+  "generatedAt": "2026-04-09T11:31:10.069Z",
   "source": {
     "name": "Anthropic Engineering",
     "indexUrl": "https://www.anthropic.com/engineering"
   },
   "summary": {
     "trackedArticles": 5,
-    "newArticlesThisRun": 0,
+    "newArticlesThisRun": 1,
     "pendingProposals": 5,
     "blockedTargets": 0,
     "promotedDocUpdates": 5
@@ -28,6 +28,20 @@
           "Terminal-Bench 2.0, for instance, specifies recommended CPU and RAM on a per-task basis in their latest 2.0 release."
         ],
         "portability": "portable"
+      },
+      {
+        "articleId": "managed-agents",
+        "title": "Scaling Managed Agents: Decoupling the brain from the hands",
+        "url": "https://www.anthropic.com/engineering/managed-agents",
+        "relevance": "high",
+        "indexDateLabel": "",
+        "summary": "Harnesses encode assumptions that go stale as models improve. Managed Agents—our hosted service for long-horizon agent work—is built around interfaces that stay stable as harnesses change.",
+        "guidance": [
+          "Building Managed Agents meant solving an old problem in computing: how to design a system for “ programs as yet unthought of .” Decades ago, operating systems solved this problem by virtualizing hardware into abstractions— process, file —general enough for programs that didn't exist yet.",
+          "Managed Agents follow the same pattern.",
+          "A running topic on the Engineering Blog is how to build effective agents and design harnesses for long-running work ."
+        ],
+        "portability": "mixed"
       },
       {
         "articleId": "harness-design-long-running-apps",
@@ -58,20 +72,6 @@
           "These same capabilities that make AI agents useful—autonomy, intelligence, and flexibility—also make them harder to evaluate."
         ],
         "portability": "portable"
-      },
-      {
-        "articleId": "effective-harnesses-for-long-running-agents",
-        "title": "Effective harnesses for long-running agents",
-        "url": "https://www.anthropic.com/engineering/effective-harnesses-for-long-running-agents",
-        "relevance": "high",
-        "indexDateLabel": "Nov 26, 2025",
-        "summary": "Agents still face challenges working across many context windows. We looked to human engineers for inspiration in creating a more effective harness for long-running agents.",
-        "guidance": [
-          "The core challenge of long-running agents is that they must work in discrete sessions, and each new session begins with no memory of what came before.",
-          "However, getting agents to make consistent progress across multiple context windows remains an open problem.",
-          "As AI agents become more capable, developers are increasingly asking them to take on complex tasks requiring work that spans hours, or even days."
-        ],
-        "portability": "mixed"
       }
     ],
     "evals": [
@@ -138,6 +138,20 @@
     ],
     "context": [
       {
+        "articleId": "managed-agents",
+        "title": "Scaling Managed Agents: Decoupling the brain from the hands",
+        "url": "https://www.anthropic.com/engineering/managed-agents",
+        "relevance": "high",
+        "indexDateLabel": "",
+        "summary": "Harnesses encode assumptions that go stale as models improve. Managed Agents—our hosted service for long-horizon agent work—is built around interfaces that stay stable as harnesses change.",
+        "guidance": [
+          "Building Managed Agents meant solving an old problem in computing: how to design a system for “ programs as yet unthought of .” Decades ago, operating systems solved this problem by virtualizing hardware into abstractions— process, file —general enough for programs that didn't exist yet.",
+          "Managed Agents follow the same pattern.",
+          "A running topic on the Engineering Blog is how to build effective agents and design harnesses for long-running work ."
+        ],
+        "portability": "mixed"
+      },
+      {
         "articleId": "harness-design-long-running-apps",
         "title": "Harness design for long-running application development",
         "url": "https://www.anthropic.com/engineering/harness-design-long-running-apps",
@@ -166,23 +180,23 @@
           "These same capabilities that make AI agents useful—autonomy, intelligence, and flexibility—also make them harder to evaluate."
         ],
         "portability": "portable"
-      },
-      {
-        "articleId": "effective-harnesses-for-long-running-agents",
-        "title": "Effective harnesses for long-running agents",
-        "url": "https://www.anthropic.com/engineering/effective-harnesses-for-long-running-agents",
-        "relevance": "high",
-        "indexDateLabel": "Nov 26, 2025",
-        "summary": "Agents still face challenges working across many context windows. We looked to human engineers for inspiration in creating a more effective harness for long-running agents.",
-        "guidance": [
-          "The core challenge of long-running agents is that they must work in discrete sessions, and each new session begins with no memory of what came before.",
-          "However, getting agents to make consistent progress across multiple context windows remains an open problem.",
-          "As AI agents become more capable, developers are increasingly asking them to take on complex tasks requiring work that spans hours, or even days."
-        ],
-        "portability": "mixed"
       }
     ],
     "frontend": [
+      {
+        "articleId": "managed-agents",
+        "title": "Scaling Managed Agents: Decoupling the brain from the hands",
+        "url": "https://www.anthropic.com/engineering/managed-agents",
+        "relevance": "high",
+        "indexDateLabel": "",
+        "summary": "Harnesses encode assumptions that go stale as models improve. Managed Agents—our hosted service for long-horizon agent work—is built around interfaces that stay stable as harnesses change.",
+        "guidance": [
+          "Building Managed Agents meant solving an old problem in computing: how to design a system for “ programs as yet unthought of .” Decades ago, operating systems solved this problem by virtualizing hardware into abstractions— process, file —general enough for programs that didn't exist yet.",
+          "Managed Agents follow the same pattern.",
+          "A running topic on the Engineering Blog is how to build effective agents and design harnesses for long-running work ."
+        ],
+        "portability": "mixed"
+      },
       {
         "articleId": "harness-design-long-running-apps",
         "title": "Harness design for long-running application development",
@@ -227,20 +241,6 @@
           "These same capabilities that make AI agents useful—autonomy, intelligence, and flexibility—also make them harder to evaluate."
         ],
         "portability": "portable"
-      },
-      {
-        "articleId": "effective-harnesses-for-long-running-agents",
-        "title": "Effective harnesses for long-running agents",
-        "url": "https://www.anthropic.com/engineering/effective-harnesses-for-long-running-agents",
-        "relevance": "high",
-        "indexDateLabel": "Nov 26, 2025",
-        "summary": "Agents still face challenges working across many context windows. We looked to human engineers for inspiration in creating a more effective harness for long-running agents.",
-        "guidance": [
-          "The core challenge of long-running agents is that they must work in discrete sessions, and each new session begins with no memory of what came before.",
-          "However, getting agents to make consistent progress across multiple context windows remains an open problem.",
-          "As AI agents become more capable, developers are increasingly asking them to take on complex tasks requiring work that spans hours, or even days."
-        ],
-        "portability": "mixed"
       }
     ],
     "skills": [
@@ -290,6 +290,19 @@
       "indexDateLabel": ""
     },
     {
+      "articleId": "managed-agents",
+      "title": "Scaling Managed Agents: Decoupling the brain from the hands",
+      "url": "https://www.anthropic.com/engineering/managed-agents",
+      "relevance": "high",
+      "topicTags": [
+        "agents",
+        "context",
+        "frontend"
+      ],
+      "summary": "Harnesses encode assumptions that go stale as models improve. Managed Agents—our hosted service for long-horizon agent work—is built around interfaces that stay stable as harnesses change.",
+      "indexDateLabel": ""
+    },
+    {
       "articleId": "harness-design-long-running-apps",
       "title": "Harness design for long-running application development",
       "url": "https://www.anthropic.com/engineering/harness-design-long-running-apps",
@@ -330,19 +343,6 @@
       ],
       "summary": "The capabilities that make agents useful also make them difficult to evaluate. The strategies that work across deployments combine techniques to match the complexity of the systems they measure.",
       "indexDateLabel": "Jan 09, 2026"
-    },
-    {
-      "articleId": "effective-harnesses-for-long-running-agents",
-      "title": "Effective harnesses for long-running agents",
-      "url": "https://www.anthropic.com/engineering/effective-harnesses-for-long-running-agents",
-      "relevance": "high",
-      "topicTags": [
-        "agents",
-        "context",
-        "frontend"
-      ],
-      "summary": "Agents still face challenges working across many context windows. We looked to human engineers for inspiration in creating a more effective harness for long-running agents.",
-      "indexDateLabel": "Nov 26, 2025"
     }
   ],
   "pendingProposals": [
@@ -351,6 +351,13 @@
       "articleId": "infrastructure-noise",
       "title": "Quantifying infrastructure noise in agentic coding evals",
       "target": "scripts/config/eval_suite_default.json",
+      "status": "proposal_only"
+    },
+    {
+      "proposalId": "anthropic-engineering-managed-agents",
+      "articleId": "managed-agents",
+      "title": "Scaling Managed Agents: Decoupling the brain from the hands",
+      "target": "docs/CONTEXT_MEMORY_POLICY.md",
       "status": "proposal_only"
     },
     {
@@ -371,13 +378,6 @@
       "proposalId": "anthropic-engineering-demystifying-evals-for-ai-agents",
       "articleId": "demystifying-evals-for-ai-agents",
       "title": "Demystifying evals for AI agents",
-      "target": "docs/CONTEXT_MEMORY_POLICY.md",
-      "status": "proposal_only"
-    },
-    {
-      "proposalId": "anthropic-engineering-effective-harnesses-for-long-running-agents",
-      "articleId": "effective-harnesses-for-long-running-agents",
-      "title": "Effective harnesses for long-running agents",
       "target": "docs/CONTEXT_MEMORY_POLICY.md",
       "status": "proposal_only"
     }

@@ -6,23 +6,26 @@ Updated: 2026-04-07
 
 This file is the operator map for the harness after the front-door README.
 - Front-door identity and quick posture live in `README.md`.
+- Docs entrypoint and authority map live in `docs/README.md`.
 - Policy is human-facing.
 - Contracts are machine-readable.
 - Proof/signoff artifacts are execution evidence.
 
 Recommended read order:
 1. `README.md`
-2. `AGENTS.md`
-3. `docs/AGENT_OPERATING_RULES.md`
-4. `docs/CURRENT_ARCHITECTURE.md`
-5. `docs/HARNESS_APP_PLATFORM.md`
-6. `docs/EVIDENCE_CONTRACT.md`
-7. `scripts/config/harness_contract_spec.json`
-8. `scripts/config/task_outcome_contract.json`
-9. `scripts/config/planning_mode_contract.json`
-10. `scripts/config/assurance_depth_contract.json`
-11. `scripts/config/planning_decision_contract.schema.json`
-12. `scripts/config/eval_suite_default.json`
+2. `docs/README.md`
+3. `docs/BEGINNER_PATH.md`
+4. `AGENTS.md`
+5. `docs/AGENT_OPERATING_RULES.md`
+6. `docs/CURRENT_ARCHITECTURE.md`
+7. `docs/HARNESS_APP_PLATFORM.md`
+8. `docs/EVIDENCE_CONTRACT.md`
+9. `scripts/config/harness_contract_spec.json`
+10. `scripts/config/task_outcome_contract.json`
+11. `scripts/config/planning_mode_contract.json`
+12. `scripts/config/assurance_depth_contract.json`
+13. `scripts/config/planning_decision_contract.schema.json`
+14. `scripts/config/eval_suite_default.json`
 
 Core-vs-companion boundary:
 - Core harness authority stops at the governed runtime, its contracts, and its proof surfaces.

@@ -44,6 +44,8 @@ function testPromptEnvelope() {
     activeProfile: store.profiles[store.activeProfileId],
   });
   assert(prompt.includes("Intent-First Brief"), "prompt envelope title missing");
+  assert(prompt.includes("Primary objective:"), "primary objective directive missing");
+  assert(prompt.includes("Intervention policy:"), "intervention policy directive missing");
   assert(prompt.includes("Make the site feel real."), "original prompt missing");
 }
 
@@ -103,6 +105,11 @@ function testRuntimeSummary() {
   const store = normalizeUserTasteMemoryStore({});
   const summary = summarizeIntentFirstRuntime({ contract, store });
   assert(summary && summary.tasteMemory && summary.tasteMemory.activeProfile, "runtime summary active profile missing");
+  assert(
+    summary.tasteMemory.activeProfile.autonomy
+      && summary.tasteMemory.activeProfile.autonomy.interventionPreference === "minimize_user_intervention",
+    "runtime summary autonomy preference missing"
+  );
 }
 
 function testWorkspaceLockSourceCheck() {

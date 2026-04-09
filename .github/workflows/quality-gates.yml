@@ -1,0 +1,59 @@
+name: quality-gates
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+
+jobs:
+  repo-quality:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run repo quality gates
+        run: npm run test:repo-quality
+
+      - name: Upload repo quality artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: repo-quality-artifacts
+          if-no-files-found: warn
+          path: |
+            logs/current/*.json
+            runtime/last_root_cleanup_manifest.json
+            runtime/last_output_surface_manifest.json
+
+  windows-launcher-smoke:
+    runs-on: windows-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run Windows launcher policy smoke
+        run: npm run test:windows-launcher-policy

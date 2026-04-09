@@ -1,13 +1,13 @@
 {
   "schema": "anthropic-engineering-learning-ledger.v1",
-  "generatedAt": "2026-04-06T13:38:57.691Z",
-  "lastRunAt": "2026-04-06T13:38:57.691Z",
-  "lastSuccessAt": "2026-04-06T13:38:57.691Z",
+  "generatedAt": "2026-04-09T11:31:10.069Z",
+  "lastRunAt": "2026-04-09T11:31:10.069Z",
+  "lastSuccessAt": "2026-04-09T11:31:10.069Z",
   "lastStatus": "PASS",
   "lastReason": "",
   "summary": {
     "trackedArticles": 5,
-    "newArticlesThisRun": 0,
+    "newArticlesThisRun": 1,
     "pendingProposals": 5,
     "blockedTargets": 0,
     "promotedDocUpdates": 5
@@ -24,8 +24,8 @@
       "topicLabel": "",
       "discoveredAt": "2026-03-25T10:58:32.280Z",
       "firstReadAt": "2026-03-25T10:58:32.280Z",
-      "lastReadAt": "2026-04-06T13:38:57.691Z",
-      "contentHash": "48f1ace858407a7c2745fa78b140550bdfafafdbc54e260c2f91923aa6822111",
+      "lastReadAt": "2026-04-09T11:31:10.069Z",
+      "contentHash": "279844957df5514dd1b6d0529c311643f87d09d1b63097c683142db27788b885",
       "summary": "Infrastructure configuration can swing agentic coding benchmarks by several percentage points—sometimes more than the leaderboard gap between top models.",
       "guidance": [
         "Agentic coding evals are different: models are given a full environment where they write programs, run tests, install dependencies, and iterate over multiple turns.",
@@ -54,6 +54,40 @@
     },
     {
       "schema": "anthropic-engineering-learning-article.v1",
+      "articleId": "managed-agents",
+      "url": "https://www.anthropic.com/engineering/managed-agents",
+      "canonicalUrl": "https://www.anthropic.com/engineering/managed-agents",
+      "title": "Scaling Managed Agents: Decoupling the brain from the hands",
+      "description": "Harnesses encode assumptions that go stale as models improve. Managed Agents—our hosted service for long-horizon agent work—is built around interfaces that stay stable as harnesses change.",
+      "indexDateLabel": "",
+      "topicLabel": "",
+      "discoveredAt": "2026-04-09T11:31:10.069Z",
+      "firstReadAt": "2026-04-09T11:31:10.069Z",
+      "lastReadAt": "2026-04-09T11:31:10.069Z",
+      "contentHash": "69a463840a876deee024d656d654923a509fcad4304ad584d64ca75c955eaa88",
+      "summary": "Harnesses encode assumptions that go stale as models improve. Managed Agents—our hosted service for long-horizon agent work—is built around interfaces that stay stable as harnesses change.",
+      "guidance": [
+        "Building Managed Agents meant solving an old problem in computing: how to design a system for “ programs as yet unthought of .” Decades ago, operating systems solved this problem by virtualizing hardware into abstractions— process, file —general enough for programs that didn't exist yet.",
+        "Managed Agents follow the same pattern.",
+        "A running topic on the Engineering Blog is how to build effective agents and design harnesses for long-running work ."
+      ],
+      "headings": [],
+      "topicTags": [
+        "agents",
+        "context",
+        "frontend"
+      ],
+      "relevance": "high",
+      "portability": "mixed",
+      "promotedToDocs": [
+        "docs/ANTHROPIC_ENGINEERING_LEARNINGS.md"
+      ],
+      "proposalIds": [
+        "anthropic-engineering-managed-agents"
+      ]
+    },
+    {
+      "schema": "anthropic-engineering-learning-article.v1",
       "articleId": "harness-design-long-running-apps",
       "url": "https://www.anthropic.com/engineering/harness-design-long-running-apps",
       "canonicalUrl": "https://www.anthropic.com/engineering/harness-design-long-running-apps",
@@ -63,8 +97,8 @@
       "topicLabel": "",
       "discoveredAt": "2026-03-25T10:58:32.280Z",
       "firstReadAt": "2026-03-25T10:58:32.280Z",
-      "lastReadAt": "2026-04-06T13:38:57.691Z",
-      "contentHash": "85f8d53fa09b64b91aac16f54fa5802aae3578b3ebc37add5573cf08b91f0ad6",
+      "lastReadAt": "2026-04-09T11:31:10.069Z",
+      "contentHash": "affa83f1a92ed046ac7b1d317462de11f6a8fb6373853ffe22c9af19791a7090",
       "summary": "Harness design is key to performance at the frontier of agentic coding. Here's how we pushed Claude further in frontend design and long-running autonomous software engineering.",
       "guidance": [
         "We've previously shown that harness design has a substantial impact on the effectiveness of long running agentic coding.",
@@ -104,8 +138,8 @@
       "topicLabel": "",
       "discoveredAt": "2026-03-25T10:58:32.280Z",
       "firstReadAt": "2026-03-25T10:58:32.280Z",
-      "lastReadAt": "2026-04-06T13:38:57.691Z",
-      "contentHash": "670602d6c964f275d0c1cd7571fd2e19d59e14a6ab4357e26fa1f9ddb36a055e",
+      "lastReadAt": "2026-04-09T11:31:10.069Z",
+      "contentHash": "c9caa71837769a78f24f6b61fea2f60df94a6b3ce504d4df3aead6f8ca3a853a",
       "summary": "What we learned from three iterations of a performance engineering take-home that Claude keeps beating.",
       "guidance": [
         "Evaluating technical candidates becomes harder as AI capabilities improve.",
@@ -145,8 +179,8 @@
       "topicLabel": "",
       "discoveredAt": "2026-03-25T10:58:32.280Z",
       "firstReadAt": "2026-03-25T10:58:32.280Z",
-      "lastReadAt": "2026-04-06T13:38:57.691Z",
-      "contentHash": "e8b33dd299b2eb23cb3341ab638120ebc1ef95e94a0f27133b00c8d9b604f87b",
+      "lastReadAt": "2026-04-09T11:31:10.069Z",
+      "contentHash": "87bfbef3907bbbef90899346fbd16ae5a704e6ac8cfc2d7bd51cbc534fcb2321",
       "summary": "The capabilities that make agents useful also make them difficult to evaluate. The strategies that work across deployments combine techniques to match the complexity of the systems they measure.",
       "guidance": [
         "As we described in Building effective agents , agents operate over many turns: calling tools, modifying state, and adapting based on intermediate results.",
@@ -173,44 +207,6 @@
       ],
       "proposalIds": [
         "anthropic-engineering-demystifying-evals-for-ai-agents"
-      ]
-    },
-    {
-      "schema": "anthropic-engineering-learning-article.v1",
-      "articleId": "effective-harnesses-for-long-running-agents",
-      "url": "https://www.anthropic.com/engineering/effective-harnesses-for-long-running-agents",
-      "canonicalUrl": "https://www.anthropic.com/engineering/effective-harnesses-for-long-running-agents",
-      "title": "Effective harnesses for long-running agents",
-      "description": "Agents still face challenges working across many context windows. We looked to human engineers for inspiration in creating a more effective harness for long-running agents.",
-      "indexDateLabel": "Nov 26, 2025",
-      "topicLabel": "",
-      "discoveredAt": "2026-03-25T10:58:32.280Z",
-      "firstReadAt": "2026-03-25T10:58:32.280Z",
-      "lastReadAt": "2026-04-06T13:38:57.691Z",
-      "contentHash": "60ec7c6dc1274617d8728757e1c03dc04c2b79407ac3488c673dfd04025b634f",
-      "summary": "Agents still face challenges working across many context windows. We looked to human engineers for inspiration in creating a more effective harness for long-running agents.",
-      "guidance": [
-        "The core challenge of long-running agents is that they must work in discrete sessions, and each new session begins with no memory of what came before.",
-        "However, getting agents to make consistent progress across multiple context windows remains an open problem.",
-        "As AI agents become more capable, developers are increasingly asking them to take on complex tasks requiring work that spans hours, or even days."
-      ],
-      "headings": [
-        "The long-running agent problem",
-        "Environment management",
-        "Feature list"
-      ],
-      "topicTags": [
-        "agents",
-        "context",
-        "frontend"
-      ],
-      "relevance": "high",
-      "portability": "mixed",
-      "promotedToDocs": [
-        "docs/ANTHROPIC_ENGINEERING_LEARNINGS.md"
-      ],
-      "proposalIds": [
-        "anthropic-engineering-effective-harnesses-for-long-running-agents"
       ]
     }
   ]

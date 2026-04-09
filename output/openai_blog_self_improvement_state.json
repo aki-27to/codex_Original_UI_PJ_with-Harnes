@@ -1,6 +1,6 @@
 {
   "schema": "self-improvement-state.v1",
-  "generatedAt": "2026-04-06T14:51:53.944Z",
+  "generatedAt": "2026-04-09T12:01:13.970Z",
   "sourceName": "OpenAI Developers Blog",
   "sourceTier": "primary",
   "promotionMode": "machine_guarded_autonomy",
@@ -8,7 +8,7 @@
   "gateReason": "all_cases_passed",
   "appliedDecision": "applied",
   "appliedHintCount": 6,
-  "appliedFrontendQualityNoteCount": 3,
+  "appliedFrontendQualityNoteCount": 0,
   "appliedHintIds": [
     "realtime-perplexity-computer-runtime-retrieval",
     "designing-delightful-frontends-with-gpt-5-4-runtime-retrieval",
@@ -17,21 +17,17 @@
     "building-frontend-uis-with-codex-and-figma-runtime-retrieval",
     "run-long-horizon-tasks-with-codex-runtime-retrieval"
   ],
-  "appliedFrontendQualityNoteIds": [
-    "skills-agents-sdk-frontend-quality",
-    "building-frontend-uis-with-codex-and-figma-frontend-quality",
-    "run-long-horizon-tasks-with-codex-frontend-quality"
-  ],
+  "appliedFrontendQualityNoteIds": [],
   "rawAutoApplyChangeCount": 12,
-  "autoApplyCandidateCount": 9,
+  "autoApplyCandidateCount": 6,
   "readyHintCandidateCount": 6,
-  "autoApplyFrontendQualityNoteCount": 3,
-  "observationStatus": "awaiting_observations",
-  "observationCount": 45,
-  "lastObservedAt": "2026-04-05T20:13:28.477Z",
+  "autoApplyFrontendQualityNoteCount": 0,
+  "observationStatus": "starved",
+  "observationCount": 0,
+  "lastObservedAt": "",
   "requiredObservationSuccesses": 2,
   "requiredObservationSuccessRate": 0.67,
-  "awaitingObservationCount": 7,
+  "awaitingObservationCount": 10,
   "awaitingReinforcementCount": 0,
   "policyDisabledCandidateCount": 0,
   "proposalOnlyCount": 0,
@@ -235,184 +231,84 @@
       }
     }
   ],
-  "appliedFrontendQualityNotes": [
+  "appliedFrontendQualityNotes": [],
+  "nextPriority": {
+    "changeId": "building-frontend-uis-with-codex-and-figma-frontend-quality",
+    "proposalId": "openai-blog-building-frontend-uis-with-codex-and-figma-self-improvement",
+    "articleId": "building-frontend-uis-with-codex-and-figma",
+    "title": "Building frontend UIs with Codex and Figma | OpenAI Developers",
+    "changeType": "frontend_quality_note",
+    "readinessStatus": "awaiting_observations",
+    "gatingReason": "awaiting_runtime_observations",
+    "nextAction": "Record 2 successful targeted observations before promotion.",
+    "blastRadius": "low",
+    "priorityScore": 88,
+    "reinforcement": {
+      "successCount": 0,
+      "failureCount": 0,
+      "observedCount": 0,
+      "successRate": 0,
+      "requiredSuccesses": 2,
+      "requiredSuccessRate": 0.67,
+      "remainingSuccesses": 2,
+      "lastObservedAt": "",
+      "lastOutcome": "",
+      "status": "unobserved",
+      "sampleTurnIds": []
+    }
+  },
+  "priorityBacklog": [
     {
-      "proposalId": "openai-blog-skills-agents-sdk-self-improvement",
-      "articleId": "skills-agents-sdk",
-      "title": "Using skills to accelerate OSS maintenance | OpenAI Developers",
-      "frontendQualityNote": {
-        "noteId": "skills-agents-sdk-frontend-quality",
-        "appliesToAgents": [
-          "default",
-          "frontend_worker"
-        ],
-        "appliesToTaskFamilies": [
-          "web_creative"
-        ],
-        "topics": [
-          "agents",
-          "automation",
-          "codex",
-          "context"
-        ],
-        "lexicalTriggers": [
-          "workflow",
-          "planner",
-          "generator",
-          "evaluator"
-        ],
-        "preferredArticleIds": [
-          "skills-agents-sdk"
-        ],
-        "qualityAxes": [
-          "reference_discipline"
-        ],
-        "guidance": [
-          "repo-local skills in .agents/skills/",
-          "Repo-local skills, AGENTS.md , and GitHub Actions let us turn recurring engineering work, such as verification, release preparation, integration testing for examples, and PR review, into repeatable workflows.",
-          "repository policy in AGENTS.md"
-        ]
-      },
-      "reinforcement": {
-        "successCount": 15,
-        "failureCount": 0,
-        "observedCount": 15,
-        "successRate": 1,
-        "requiredSuccesses": 2,
-        "requiredSuccessRate": 0.67,
-        "remainingSuccesses": 0,
-        "lastObservedAt": "2026-04-05T20:13:28.477Z",
-        "lastOutcome": "",
-        "sampleTurnIds": [
-          "019d5f3e-5c3d-7af0-94e2-50f72846a978",
-          "019cd29a-0ad3-72d2-957c-30870c52eaba",
-          "019d5f42-e0bc-7a03-9606-869f782cac35",
-          "019d5f2a-f05f-78f3-bf0a-1c139efc8211",
-          "019d5f2d-7321-7421-9c99-2d0f7e20db73",
-          "019d5f17-49eb-7da1-9aec-3486d7d93c8f"
-        ],
-        "status": "eligible"
-      }
-    },
-    {
+      "changeId": "building-frontend-uis-with-codex-and-figma-frontend-quality",
       "proposalId": "openai-blog-building-frontend-uis-with-codex-and-figma-self-improvement",
       "articleId": "building-frontend-uis-with-codex-and-figma",
       "title": "Building frontend UIs with Codex and Figma | OpenAI Developers",
-      "frontendQualityNote": {
-        "noteId": "building-frontend-uis-with-codex-and-figma-frontend-quality",
-        "appliesToAgents": [
-          "default",
-          "frontend_worker"
-        ],
-        "appliesToTaskFamilies": [
-          "web_creative"
-        ],
-        "topics": [
-          "agents",
-          "codex",
-          "context",
-          "frontend"
-        ],
-        "lexicalTriggers": [
-          "context",
-          "planner",
-          "generator",
-          "evaluator"
-        ],
-        "preferredArticleIds": [
-          "building-frontend-uis-with-codex-and-figma"
-        ],
-        "qualityAxes": [
-          "responsive_quality"
-        ],
-        "guidance": [
-          "One of the core use cases of the Figma MCP server is retrieving context from Figma files and using that context in code generation. The Figma MCP server can capture information from Figma Design, Make, and FigJam files a",
-          "The Figma MCP server can capture information from Figma Design, Make, and FigJam files and pass it to Codex as part of the building process.",
-          "The Codex desktop application is purpose-built for agentic coding."
-        ]
-      },
+      "changeType": "frontend_quality_note",
+      "readinessStatus": "awaiting_observations",
+      "gatingReason": "awaiting_runtime_observations",
+      "nextAction": "Record 2 successful targeted observations before promotion.",
+      "blastRadius": "low",
+      "priorityScore": 88,
       "reinforcement": {
-        "successCount": 15,
+        "successCount": 0,
         "failureCount": 0,
-        "observedCount": 15,
-        "successRate": 1,
+        "observedCount": 0,
+        "successRate": 0,
         "requiredSuccesses": 2,
         "requiredSuccessRate": 0.67,
-        "remainingSuccesses": 0,
-        "lastObservedAt": "2026-04-05T20:13:28.477Z",
+        "remainingSuccesses": 2,
+        "lastObservedAt": "",
         "lastOutcome": "",
-        "sampleTurnIds": [
-          "019d5f3e-5c3d-7af0-94e2-50f72846a978",
-          "019cd29a-0ad3-72d2-957c-30870c52eaba",
-          "019d5f42-e0bc-7a03-9606-869f782cac35",
-          "019d5f2a-f05f-78f3-bf0a-1c139efc8211",
-          "019d5f2d-7321-7421-9c99-2d0f7e20db73",
-          "019d5f17-49eb-7da1-9aec-3486d7d93c8f"
-        ],
-        "status": "eligible"
+        "status": "unobserved",
+        "sampleTurnIds": []
       }
     },
     {
-      "proposalId": "openai-blog-run-long-horizon-tasks-with-codex-self-improvement",
-      "articleId": "run-long-horizon-tasks-with-codex",
-      "title": "Run long horizon tasks with Codex | OpenAI Developers",
-      "frontendQualityNote": {
-        "noteId": "run-long-horizon-tasks-with-codex-frontend-quality",
-        "appliesToAgents": [
-          "default",
-          "frontend_worker"
-        ],
-        "appliesToTaskFamilies": [
-          "web_creative"
-        ],
-        "topics": [
-          "agents",
-          "automation",
-          "codex",
-          "context"
-        ],
-        "lexicalTriggers": [
-          "long horizon",
-          "planner",
-          "generator",
-          "evaluator"
-        ],
-        "preferredArticleIds": [
-          "run-long-horizon-tasks-with-codex"
-        ],
-        "qualityAxes": [
-          "frontend_quality"
-        ],
-        "guidance": [
-          "These screenshots are useful because they make the core shift visible: agentic coding is increasingly about time horizon, not just one-shot intelligence.",
-          "Section focus: Takeaways for long-horizon Codex tasks",
-          "Section focus: Why Codex can stay coherent on long tasks"
-        ]
-      },
+      "changeId": "designing-delightful-frontends-with-gpt-5-4-frontend-quality",
+      "proposalId": "openai-blog-designing-delightful-frontends-with-gpt-5-4-self-improvement",
+      "articleId": "designing-delightful-frontends-with-gpt-5-4",
+      "title": "Designing delightful frontends with GPT-5.4 | OpenAI Developers",
+      "changeType": "frontend_quality_note",
+      "readinessStatus": "awaiting_observations",
+      "gatingReason": "awaiting_runtime_observations",
+      "nextAction": "Record 2 successful targeted observations before promotion.",
+      "blastRadius": "low",
+      "priorityScore": 88,
       "reinforcement": {
-        "successCount": 15,
+        "successCount": 0,
         "failureCount": 0,
-        "observedCount": 15,
-        "successRate": 1,
+        "observedCount": 0,
+        "successRate": 0,
         "requiredSuccesses": 2,
         "requiredSuccessRate": 0.67,
-        "remainingSuccesses": 0,
-        "lastObservedAt": "2026-04-05T20:13:28.477Z",
+        "remainingSuccesses": 2,
+        "lastObservedAt": "",
         "lastOutcome": "",
-        "sampleTurnIds": [
-          "019d5f3e-5c3d-7af0-94e2-50f72846a978",
-          "019cd29a-0ad3-72d2-957c-30870c52eaba",
-          "019d5f42-e0bc-7a03-9606-869f782cac35",
-          "019d5f2a-f05f-78f3-bf0a-1c139efc8211",
-          "019d5f2d-7321-7421-9c99-2d0f7e20db73",
-          "019d5f17-49eb-7da1-9aec-3486d7d93c8f"
-        ],
-        "status": "eligible"
+        "status": "unobserved",
+        "sampleTurnIds": []
       }
     }
   ],
-  "nextPriority": null,
-  "priorityBacklog": [],
   "proposalSummaries": [
     {
       "proposalId": "openai-blog-realtime-perplexity-computer-self-improvement",

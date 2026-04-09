@@ -4,10 +4,10 @@ const fs = require("fs");
 const path = require("path");
 
 const workspaceRoot = path.resolve(__dirname, "..");
-const runtimeRoot = path.join(workspaceRoot, "runtime");
-const manifestPath = path.join(runtimeRoot, "last_root_cleanup_manifest.json");
+const defaultRuntimeRoot = path.join(workspaceRoot, "runtime");
+const defaultManifestPath = path.join(defaultRuntimeRoot, "last_root_cleanup_manifest.json");
 
-const directoryMoves = [
+const defaultDirectoryMoves = [
   [".npm-cache", "runtime/npm-cache"],
   [".pw-browsers", "runtime/pw-browsers"],
   [".playwright-cli", "runtime/playwright-cli"],
@@ -16,7 +16,7 @@ const directoryMoves = [
   ["提出用", "runtime/archive/legacy-submission-payload"]
 ];
 
-const rootTransientFileRoutes = [
+const defaultRootTransientFileRoutes = [
   {
     pattern: /^tmp_.*\.(html|txt|json|out|err)$/i,
     resolveTarget: (name) => path.join("runtime", "tmp", name)
@@ -31,8 +31,8 @@ function ensureDir(dirPath) {
   fs.mkdirSync(dirPath, { recursive: true });
 }
 
-function uniqueDestination(relativeTarget) {
-  const absoluteTarget = path.join(workspaceRoot, relativeTarget);
+function uniqueDestination(root, relativeTarget) {
+  const absoluteTarget = path.join(root, relativeTarget);
   if (!fs.existsSync(absoluteTarget)) {
     return absoluteTarget;
   }
@@ -41,28 +41,36 @@ function uniqueDestination(relativeTarget) {
   return path.join(parsed.dir, `${parsed.name}-${stamp}${parsed.ext}`);
 }
 
-function moveEntry(sourceName, targetRelativePath, moves) {
-  const sourcePath = path.join(workspaceRoot, sourceName);
+function moveEntry(root, sourceName, targetRelativePath, moves) {
+  const sourcePath = path.join(root, sourceName);
   if (!fs.existsSync(sourcePath)) {
     return;
   }
-  const targetPath = uniqueDestination(targetRelativePath);
+  const targetPath = uniqueDestination(root, targetRelativePath);
   ensureDir(path.dirname(targetPath));
   fs.renameSync(sourcePath, targetPath);
   moves.push({
     source: sourceName.replace(/\\/g, "/"),
-    destination: path.relative(workspaceRoot, targetPath).replace(/\\/g, "/")
+    destination: path.relative(root, targetPath).replace(/\\/g, "/")
   });
 }
 
-function main() {
+function organizeRuntimeSurface(options = {}) {
+  const root = path.resolve(options.workspaceRoot || workspaceRoot);
+  const runtimeRoot = path.resolve(options.runtimeRoot || path.join(root, "runtime"));
+  const manifestPath = path.resolve(options.manifestPath || path.join(runtimeRoot, "last_root_cleanup_manifest.json"));
+  const directoryMoves = Array.isArray(options.directoryMoves) ? options.directoryMoves : defaultDirectoryMoves;
+  const rootTransientFileRoutes = Array.isArray(options.rootTransientFileRoutes)
+    ? options.rootTransientFileRoutes
+    : defaultRootTransientFileRoutes;
+
   ensureDir(runtimeRoot);
   const moves = [];
   for (const [sourceName, targetRelativePath] of directoryMoves) {
-    moveEntry(sourceName, targetRelativePath, moves);
+    moveEntry(root, sourceName, targetRelativePath, moves);
   }
 
-  const rootEntries = fs.readdirSync(workspaceRoot, { withFileTypes: true });
+  const rootEntries = fs.readdirSync(root, { withFileTypes: true });
   for (const entry of rootEntries) {
     if (!entry.isFile()) {
       continue;
@@ -71,7 +79,7 @@ function main() {
     if (!matchedRoute) {
       continue;
     }
-    moveEntry(entry.name, matchedRoute.resolveTarget(entry.name), moves);
+    moveEntry(root, entry.name, matchedRoute.resolveTarget(entry.name), moves);
   }
 
   const manifest = {
@@ -82,7 +90,18 @@ function main() {
   };
   ensureDir(path.dirname(manifestPath));
   fs.writeFileSync(manifestPath, JSON.stringify(manifest, null, 2));
+  return manifest;
+}
+
+function main() {
+  const manifest = organizeRuntimeSurface();
   console.log(JSON.stringify(manifest, null, 2));
 }
 
-main();
+if (require.main === module) {
+  main();
+}
+
+module.exports = {
+  organizeRuntimeSurface,
+};

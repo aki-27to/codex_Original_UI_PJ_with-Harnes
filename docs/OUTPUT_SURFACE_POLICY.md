@@ -41,6 +41,7 @@ These do not belong in the intentional artifact surface.
 
 Examples:
 - Playwright browser profiles and screenshot scratch trees
+- ad hoc Blender render/export scratch trees
 - ad hoc UI capture sessions
 - timestamped phase probe files such as `phase2-long-horizon-*.json`
 - ad hoc note article drafts such as `note_article_*.md`
@@ -57,6 +58,7 @@ Machine-readable policy lives at [output_surface_policy.json](C:\Users\akima\dev
 Current transient routing:
 - `output/playwright` -> `runtime/output-transient/playwright`
 - `output/appserver_tui_demo_home` -> `runtime/output-transient/appserver_tui_demo_home`
+- `output/blender` -> `runtime/output-transient/blender`
 - `output/phase2-long-horizon-*.json` -> `runtime/output-transient/phase-probes`
 - `output/phase3-lifecycle-*.json` -> `runtime/output-transient/phase-probes`
 - `output/tmp_harnesui_retry_bootstrap.js` -> `runtime/output-transient/bootstrap`

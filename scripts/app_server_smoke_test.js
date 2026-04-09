@@ -1058,11 +1058,55 @@ async function run() {
           prefers: ["realness"],
           rejects: ["template UI"],
           requiredProof: ["desktop screenshot"],
+          autonomy: {
+            primaryObjective: "Ship the user's intended result with minimal intervention.",
+            interventionPreference: "minimize_user_intervention",
+            requirementStrategy: "propose_then_execute",
+            clarificationPolicy: "ask_only_for_irreversible_or_user_reserved_decisions",
+            progressPolicy: "show_artifact_not_question",
+            selfCorrectionPolicy: "self_correct_before_asking",
+            promptInjectionEnabled: true,
+          },
         },
       },
     });
     if (!intentPatchRes.json || intentPatchRes.json.ok !== true || !intentPatchRes.json.intentFirst) {
       throw new Error("POST /api/intent/profile did not return updated intentFirst");
+    }
+    const intentPartialPatchRes = await requestHttpJson({
+      method: "POST",
+      path: "/api/intent/profile",
+      timeoutMs: 15000,
+      port: harnessPort,
+      headers: {
+        ...authenticatedExecHeaders,
+        "Content-Type": "application/json",
+      },
+      body: {
+        action: "update_intent_profile",
+        profile: {
+          autonomy: {
+            progressPolicy: "artifact_first",
+          },
+        },
+      },
+    });
+    if (
+      !intentPartialPatchRes.json ||
+      intentPartialPatchRes.json.ok !== true ||
+      !intentPartialPatchRes.json.intentFirst ||
+      !intentPartialPatchRes.json.intentFirst.tasteMemory ||
+      !intentPartialPatchRes.json.intentFirst.tasteMemory.activeProfile ||
+      !intentPartialPatchRes.json.intentFirst.tasteMemory.activeProfile.autonomy
+    ) {
+      throw new Error("partial POST /api/intent/profile did not return intentFirst");
+    }
+    const patchedAutonomy = intentPartialPatchRes.json.intentFirst.tasteMemory.activeProfile.autonomy;
+    if (patchedAutonomy.progressPolicy !== "artifact_first") {
+      throw new Error("partial POST /api/intent/profile did not update the requested autonomy field");
+    }
+    if (patchedAutonomy.interventionPreference !== "minimize_user_intervention") {
+      throw new Error("partial POST /api/intent/profile should preserve previously configured autonomy fields");
     }
     const intentResetRes = await requestHttpJson({
       method: "POST",
@@ -1193,6 +1237,12 @@ async function run() {
       !runtimeReady.intentFirst.tasteMemory.activeProfile
     ) {
       throw new Error("runtime intentFirst did not expose activeProfile");
+    }
+    if (
+      !runtimeReady.intentFirst.tasteMemory.activeProfile.autonomy ||
+      runtimeReady.intentFirst.tasteMemory.activeProfile.autonomy.interventionPreference !== "minimize_user_intervention"
+    ) {
+      throw new Error("runtime intentFirst activeProfile did not expose autonomy preferences");
     }
     if (
       !runtimeReady.intentFirst.workspaceLock ||

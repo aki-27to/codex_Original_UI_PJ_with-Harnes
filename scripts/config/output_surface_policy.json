@@ -37,6 +37,15 @@
         "maxEntries": 32,
         "maxBytes": 268435456
       }
+    },
+    {
+      "source": "output/blender",
+      "target": "runtime/output-transient/blender",
+      "retention": {
+        "maxDays": 30,
+        "maxEntries": 64,
+        "maxBytes": 2147483648
+      }
     }
   ],
   "transientOutputFiles": [

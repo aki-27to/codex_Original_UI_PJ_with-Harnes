@@ -26,9 +26,11 @@ function main() {
   ensureDir(workspaceRoot);
   ensureDir(path.join(workspaceRoot, "output", "playwright", "session-a"));
   ensureDir(path.join(workspaceRoot, "output", "playwright", "session-b"));
+  ensureDir(path.join(workspaceRoot, "output", "blender", "robot"));
   ensureDir(path.join(workspaceRoot, "output", "agi_v1"));
   writeFile(path.join(workspaceRoot, "output", "playwright", "session-a", "capture-a.png"), "a");
   writeFile(path.join(workspaceRoot, "output", "playwright", "session-b", "capture-b.png"), "b");
+  writeFile(path.join(workspaceRoot, "output", "blender", "robot", "frame-001.png"), "c");
   writeFile(path.join(workspaceRoot, "output", "phase2-long-horizon-123.json"), "{}");
   writeFile(path.join(workspaceRoot, "output", "phase3-lifecycle-456.json"), "{}");
   writeFile(path.join(workspaceRoot, "output", "tmp_harnesui_retry_bootstrap.js"), "console.log('tmp');");
@@ -49,6 +51,15 @@ function main() {
         target: "runtime/output-transient/playwright",
         retention: {
           maxDays: 14,
+          maxEntries: 10,
+          maxBytes: 1024 * 1024
+        }
+      },
+      {
+        source: "output/blender",
+        target: "runtime/output-transient/blender",
+        retention: {
+          maxDays: 30,
           maxEntries: 10,
           maxBytes: 1024 * 1024
         }
@@ -98,7 +109,9 @@ function main() {
   const manifest = organizeOutputSurface({ workspaceRoot, policyPath, manifestPath });
 
   assert.strictEqual(fs.existsSync(path.join(workspaceRoot, "output", "playwright")), false, "playwright output should move out of output/");
+  assert.strictEqual(fs.existsSync(path.join(workspaceRoot, "output", "blender")), false, "blender output should move out of output/");
   assert.strictEqual(fs.existsSync(path.join(workspaceRoot, "runtime", "output-transient", "playwright")), true, "playwright output should land under runtime/output-transient");
+  assert.strictEqual(fs.existsSync(path.join(workspaceRoot, "runtime", "output-transient", "blender", "robot", "frame-001.png")), true, "blender output should land under runtime/output-transient");
   assert.strictEqual(fs.existsSync(path.join(workspaceRoot, "runtime", "output-transient", "phase-probes", "phase2-long-horizon-123.json")), true, "phase2 probe should move to transient phase probes");
   assert.strictEqual(fs.existsSync(path.join(workspaceRoot, "runtime", "output-transient", "phase-probes", "phase3-lifecycle-456.json")), true, "phase3 probe should move to transient phase probes");
   assert.strictEqual(fs.existsSync(path.join(workspaceRoot, "runtime", "output-transient", "bootstrap", "tmp_harnesui_retry_bootstrap.js")), true, "bootstrap scratch should move to transient bootstrap root");

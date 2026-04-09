@@ -109,12 +109,12 @@ function run() {
   );
   assert.strictEqual(
     planPurposeSummaryForUi({ acceptanceCheckRefs: ["ac-1"] }, snapshot),
-    "支える受け入れ: Verify browser rendering and documentation sync",
+    "満たす条件: Verify browser rendering and documentation sync",
     "plan purpose should fall back to acceptance checks when no request clause ref exists"
   );
   assert.strictEqual(
     planPurposeSummaryForUi({ requirementRefs: ["explicitGoal"] }, snapshot),
-    "支える要件: 明示ゴール",
+    "見る観点: 明示ゴール",
     "plan purpose should fall back to requirement field labels when only requirement refs exist"
   );
 }

@@ -17,6 +17,7 @@ tools/kokoro-fastapi/.env
 runtime/*
 !runtime/README.md
 output/appserver_tui_demo_home/
+output/blender/
 output/playwright/
 output/tmp_harnesui_retry_bootstrap.js
 output/note_article_*.md

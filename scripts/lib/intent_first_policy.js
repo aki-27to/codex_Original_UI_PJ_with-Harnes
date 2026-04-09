@@ -97,6 +97,15 @@ const defaultTasteProfile = Object.freeze({
     "Build, tests, and HTTP 200 are necessary but never sufficient.",
     "Workspace targeting mistakes must be treated as hard failures.",
   ],
+  autonomy: {
+    primaryObjective: "Realize the user's intended outcome with minimal intervention from the user.",
+    interventionPreference: "minimize_user_intervention",
+    requirementStrategy: "propose_then_execute",
+    clarificationPolicy: "ask_only_for_irreversible_or_user_reserved_decisions",
+    progressPolicy: "show_artifact_not_question",
+    selfCorrectionPolicy: "self_correct_before_asking",
+    promptInjectionEnabled: true,
+  },
   updatedAt: 0,
 });
 
@@ -157,6 +166,22 @@ function normalizeTextList(value, { maxItems = 8, maxChars = 180 } = {}) {
 
 function normalizeUrlList(value, { maxItems = 6 } = {}) {
   return normalizeTextList(value, { maxItems, maxChars: 240 }).filter((entry) => /^https?:\/\//i.test(entry));
+}
+
+function normalizeAutonomyProfile(source, fallback) {
+  const input = source && typeof source === "object" ? source : {};
+  const base = fallback && typeof fallback === "object" ? fallback : defaultTasteProfile.autonomy;
+  return {
+    primaryObjective: compactText(input.primaryObjective, 220) || compactText(base.primaryObjective, 220),
+    interventionPreference: compactText(input.interventionPreference, 80).toLowerCase() || compactText(base.interventionPreference, 80).toLowerCase() || "minimize_user_intervention",
+    requirementStrategy: compactText(input.requirementStrategy, 80).toLowerCase() || compactText(base.requirementStrategy, 80).toLowerCase() || "propose_then_execute",
+    clarificationPolicy: compactText(input.clarificationPolicy, 120).toLowerCase() || compactText(base.clarificationPolicy, 120).toLowerCase() || "ask_only_for_irreversible_or_user_reserved_decisions",
+    progressPolicy: compactText(input.progressPolicy, 80).toLowerCase() || compactText(base.progressPolicy, 80).toLowerCase() || "show_artifact_not_question",
+    selfCorrectionPolicy: compactText(input.selfCorrectionPolicy, 80).toLowerCase() || compactText(base.selfCorrectionPolicy, 80).toLowerCase() || "self_correct_before_asking",
+    promptInjectionEnabled: input.promptInjectionEnabled !== undefined
+      ? input.promptInjectionEnabled !== false
+      : base.promptInjectionEnabled !== false,
+  };
 }
 
 function readJsonFileOrNull(targetPath) {
@@ -232,6 +257,10 @@ function normalizeTasteProfile(source, fallback = defaultTasteProfile) {
     input.requiredProof,
     { maxItems: 10, maxChars: 180 }
   );
+  const autonomy = normalizeAutonomyProfile(
+    input.autonomy,
+    base.autonomy
+  );
   return {
     id,
     label: compactText(input.label, 120) || compactText(base.label, 120) || id,
@@ -248,6 +277,7 @@ function normalizeTasteProfile(source, fallback = defaultTasteProfile) {
     benchmarkUrls: benchmarkUrls.length ? benchmarkUrls : normalizeUrlList(base.benchmarkUrls || base.benchmarkSites, { maxItems: 6 }),
     notes: notes.length ? notes : normalizeTextList(base.notes || base.benchmarkNotes, { maxItems: 10, maxChars: 200 }),
     requiredProof: requiredProof.length ? requiredProof : normalizeTextList(base.requiredProof, { maxItems: 10, maxChars: 180 }),
+    autonomy,
     updatedAt: safePositiveInt(input.updatedAt, base.updatedAt || 0),
   };
 }
@@ -354,14 +384,19 @@ function requiresWorkspaceLockForSource({ contract, executionSource = "" } = {})
   return requiredSources.includes(source);
 }
 
-function buildIntentFirstPrompt({ prompt = "", contract, activeProfile } = {}) {
-  const normalizedPrompt = compactText(prompt, 24000);
+function buildIntentDirectivePrefix({ contract, activeProfile, designSensitive = true } = {}) {
   const normalizedContract = normalizeDesignAcceptanceContract(contract || defaultDesignAcceptanceContract);
   const profile = normalizeTasteProfile(activeProfile || defaultTasteProfile, defaultTasteProfile);
   const lines = [
     normalizedContract.promptEnvelope.title || "Intent-First Brief",
+    `Primary objective: ${profile.autonomy.primaryObjective}`,
     `North star: ${profile.northStar}`,
     `Quality bar: ${profile.qualityBar}`,
+    `Intervention policy: ${profile.autonomy.interventionPreference}`,
+    `Requirement strategy: ${profile.autonomy.requirementStrategy}`,
+    `Clarification policy: ${profile.autonomy.clarificationPolicy}`,
+    `Progress policy: ${profile.autonomy.progressPolicy}`,
+    `Self-correction policy: ${profile.autonomy.selfCorrectionPolicy}`,
   ];
   if (profile.mustHaves.length) {
     lines.push(`Must keep: ${profile.mustHaves.join(" | ")}`);
@@ -369,12 +404,20 @@ function buildIntentFirstPrompt({ prompt = "", contract, activeProfile } = {}) {
   if (profile.avoid.length) {
     lines.push(`Do not ship: ${profile.avoid.join(" | ")}`);
   }
-  if (profile.benchmarkUrls.length) {
+  if (designSensitive && profile.benchmarkUrls.length) {
     lines.push(`Benchmark refs: ${profile.benchmarkUrls.join(" | ")}`);
   }
-  if (normalizedContract.promptEnvelope.completionRule) {
+  if (designSensitive && normalizedContract.promptEnvelope.completionRule) {
     lines.push(`Completion rule: ${normalizedContract.promptEnvelope.completionRule}`);
   }
+  return lines.join("\n");
+}
+
+function buildIntentFirstPrompt({ prompt = "", contract, activeProfile, designSensitive = true } = {}) {
+  const normalizedPrompt = compactText(prompt, 24000);
+  const lines = [
+    buildIntentDirectivePrefix({ contract, activeProfile, designSensitive }),
+  ];
   lines.push("");
   lines.push("Original request:");
   lines.push(normalizedPrompt);
@@ -523,6 +566,9 @@ function summarizeIntentFirstRuntime({ contract, store } = {}) {
         prefers: profile.mustHaves.slice(),
         rejects: profile.avoid.slice(),
         requiredProof: profile.requiredProof.slice(),
+        autonomy: {
+          ...profile.autonomy,
+        },
       },
     },
   };
@@ -532,7 +578,9 @@ module.exports = {
   defaultDesignAcceptanceContractPath,
   defaultTasteMemorySeedPath,
   buildIntentFirstPrompt,
+  buildIntentDirectivePrefix,
   evaluateIntentFirstGates,
+  activeTasteProfile,
   isDesignSensitiveRequest,
   loadDesignAcceptanceContract,
   loadUserTasteMemoryStore,
