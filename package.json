@@ -12,6 +12,7 @@
     "help:scripts": "node scripts/script_surface_help.js",
     "test:web-autonomy-copy": "node scripts/web_autonomy_copy_test.js",
     "test:docs-authority": "node scripts/docs_authority_surface_test.js",
+    "test:github-governance-surface": "node scripts/github_copilot_governance_surface_test.js",
     "test:docs:drift": "npm run test:web-autonomy-copy && npm run test:docs-authority",
     "regression:public": "node scripts/run_public_regression.js",
     "gate:pr": "npm run test:repo-quality && npm run regression:public",
@@ -71,7 +72,7 @@
     "test:housekeeping:runtime-surface": "node scripts/organize_runtime_surface_test.js",
     "test:housekeeping:output-surface": "node scripts/organize_output_surface_test.js",
     "test:windows-launcher-policy": "node scripts/start_codex_ui_launcher_policy_test.js",
-    "test:repo-quality": "npm run test:repo-hygiene:static && npm run test:docs:drift && npm run test:system-coherence && npm run test:server-request-guards && npm run test:housekeeping:runtime-surface && npm run test:housekeeping:output-surface && node scripts/current_surface_truth_test.js"
+    "test:repo-quality": "npm run test:repo-hygiene:static && npm run test:docs:drift && npm run test:github-governance-surface && npm run test:system-coherence && npm run test:server-request-guards && npm run test:housekeeping:runtime-surface && npm run test:housekeeping:output-surface && node scripts/current_surface_truth_test.js"
   },
   "keywords": [
     "codex",

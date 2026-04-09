@@ -7,6 +7,7 @@ Updated: 2026-04-09
 This document is the active architecture spec for the Codex App Server integration harness.
 - Front-door identity doc: `README.md`. It positions the repo as a local-first governed decision system, not just a local Web + CLI wrapper.
 - Docs entrypoint and authority map: `docs/README.md`.
+- GitHub-native Copilot governance mirrors live under `.github/copilot-instructions.md`, `.github/instructions/`, and `.github/agents/`; they project the same local constitution and authority boundaries into GitHub-facing surfaces without replacing `AGENTS.md` or machine-readable contracts.
 - Beginner one-page guide: `docs/BEGINNER_PATH.md`.
 - Shared terminology: `docs/GLOSSARY.md`.
 - Operator map: `HARNESS_MAP.md`.
@@ -585,6 +586,8 @@ This document is the active architecture spec for the Codex App Server integrati
 - Governance/runtime posture changes in `.codex/` or parent-role docs:
   - run `node scripts/project_codex_config_policy_test.js`
   - verify parent role config posture and role-boundary wording stay aligned across `.codex/config.toml`, `.codex/agents/*.toml`, and `docs/AGENT_OPERATING_RULES.md`
+- GitHub-native governance surface changes in `.github/copilot-instructions.md`, `.github/instructions/`, or `.github/agents/`:
+  - run `node scripts/github_copilot_governance_surface_test.js`
 - Spec sync before `RELEASE_APPROVED`:
   - update this file
   - append a matching entry to `docs/ARCHITECTURE_CHANGELOG.md`
