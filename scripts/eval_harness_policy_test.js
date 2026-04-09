@@ -58,6 +58,7 @@ function testLoadUserValueSuite() {
   assert(Array.isArray(suite.cases) && suite.cases.length >= 3, "user-value suite should expose cases");
   const reviewCase = suite.cases.find((entry) => entry && entry.id === "repo_code_review_findings_first");
   assert(reviewCase && reviewCase.userValue && Array.isArray(reviewCase.userValue.actionabilityPatterns) && reviewCase.userValue.actionabilityPatterns.length >= 1, "user-value suite should preserve rubric aliases");
+  assert(reviewCase && reviewCase.userValue && Array.isArray(reviewCase.userValue.adoptabilityPatterns) && reviewCase.userValue.adoptabilityPatterns.length >= 1, "user-value suite should preserve adoptability patterns");
 }
 
 function testExpectationModes() {
@@ -126,10 +127,11 @@ function testUserValueSummaryAndComparison() {
     kind: "user_value",
     scoring: {
       weights: {
-        correctness: 0.4,
+        correctness: 0.35,
         completeness: 0.2,
-        specificity: 0.15,
-        actionability: 0.15,
+        specificity: 0.1,
+        actionability: 0.1,
+        adoptability: 0.15,
         followUpCorrectionPressure: 0.1,
       },
       correctnessVeto: true,
@@ -148,12 +150,13 @@ function testUserValueSummaryAndComparison() {
       coveragePatterns: ["fix", "verification", "server.js"],
       specificityPatterns: ["server.js", "node scripts/test.js"],
       actionabilityPatterns: ["run", "verify"],
+      adoptabilityPatterns: ["changed", "verification", "risk"],
     },
   };
   const strong = summarizeEvalCaseResult({
     suite,
     evalCase,
-    outputText: "1. Fix server.js\n2. Run node scripts/test.js for verification",
+    outputText: "Implemented the fix in server.js.\n1. Run node scripts/test.js for verification\n2. Residual risk: review the fallback branch if new inputs expand.",
     latencyMs: 100,
     status: "completed",
     errorText: "",
@@ -182,6 +185,7 @@ function testUserValueSummaryAndComparison() {
   });
   assert(runA.userValue && runB.userValue, "user-value runs should expose aggregate metrics");
   assert(runA.userValue.score > runB.userValue.score, "stronger answer should score higher");
+  assert(runA.userValue.adoptability > runB.userValue.adoptability, "stronger answer should score higher on adoptability");
   const compared = compareEvalRuns(runA, runB, suite.scoring);
   assert(compared.winner === "A", "user-value comparison should prefer stronger answer");
   assert(compared.userValue && compared.userValue.left && compared.userValue.right, "user-value comparison should expose both metric sets");
@@ -195,8 +199,9 @@ function testWebCreativeUserValueComparison() {
       weights: {
         correctness: 0.35,
         completeness: 0.2,
-        specificity: 0.2,
+        specificity: 0.15,
         actionability: 0.15,
+        adoptability: 0.15,
         followUpCorrectionPressure: 0.1,
       },
       correctnessVeto: true,
@@ -216,12 +221,13 @@ function testWebCreativeUserValueComparison() {
       coveragePatterns: ["benchmark", "typography", "desktop", "mobile"],
       specificityPatterns: ["hero", "section rhythm", "responsive"],
       actionabilityPatterns: ["implement", "review", "responsive"],
+      adoptabilityPatterns: ["benchmark", "desktop", "mobile", "screenshot", "independent review"],
     },
   };
   const strong = summarizeEvalCaseResult({
     suite,
     evalCase,
-    outputText: "Implement a premium hero and section rhythm, beat the benchmark with stronger typography hierarchy, add responsive desktop/mobile layouts, and review screenshots for credibility proof.",
+    outputText: "Implement a premium hero and section rhythm, beat the benchmark with stronger typography hierarchy, add responsive desktop/mobile layouts, capture screenshot proof, and run an independent review before shipping.",
     latencyMs: 100,
     status: "completed",
     errorText: "",
@@ -236,6 +242,7 @@ function testWebCreativeUserValueComparison() {
   });
   assert(strong.userValue && strong.userValue.taskFamily === "web_creative", "web creative case should preserve taskFamily");
   assert(strong.userValue.familySignals && Array.isArray(strong.userValue.familySignals.matchedSignals), "web creative case should expose family signals");
+  assert(strong.userValue.adoptability > weak.userValue.adoptability, "web creative stronger answer should score higher on adoptability");
   const runA = buildEvalRunSummary({
     suite,
     variant: { label: "A" },

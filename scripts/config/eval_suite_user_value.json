@@ -4,10 +4,11 @@
   "description": "Textual user-value regression suite for coding and web-creative outputs.",
   "scoring": {
     "weights": {
-      "correctness": 0.4,
+      "correctness": 0.35,
       "completeness": 0.2,
-      "specificity": 0.15,
-      "actionability": 0.15,
+      "specificity": 0.1,
+      "actionability": 0.1,
+      "adoptability": 0.15,
       "followUpCorrectionPressure": 0.1
     },
     "correctnessVeto": true,
@@ -26,7 +27,8 @@
         "criticalPatterns": ["finding", "risk"],
         "coveragePatterns": ["file", "line", "test"],
         "specificityPatterns": ["server.js", "scripts/", "node scripts/"],
-        "actionabilityPatterns": ["fix", "add test", "verify"]
+        "actionabilityPatterns": ["fix", "add test", "verify"],
+        "adoptabilityPatterns": ["finding", "risk", "file", "line", "test"]
       }
     },
     {
@@ -41,7 +43,8 @@
         "criticalPatterns": ["fix", "verify"],
         "coveragePatterns": ["fix", "verify", "test"],
         "specificityPatterns": ["server.js", "app_server_smoke_test.js"],
-        "actionabilityPatterns": ["run", "verify", "update"]
+        "actionabilityPatterns": ["run", "verify", "update"],
+        "adoptabilityPatterns": ["changed", "verify", "test", "risk", "residual"]
       }
     },
     {
@@ -57,7 +60,8 @@
         "criticalPatterns": ["benchmark", "layout"],
         "coveragePatterns": ["benchmark", "typography", "desktop", "mobile"],
         "specificityPatterns": ["hero", "section rhythm", "responsive"],
-        "actionabilityPatterns": ["implement", "review", "responsive"]
+        "actionabilityPatterns": ["implement", "review", "responsive"],
+        "adoptabilityPatterns": ["benchmark", "desktop", "mobile", "screenshot", "independent review"]
       }
     }
   ]

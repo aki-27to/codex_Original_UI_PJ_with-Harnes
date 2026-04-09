@@ -187,7 +187,24 @@ function createRuntimeFixture() {
             taskFamily: ["manual_self_improvement"],
             triggers: ["self-improve"],
           },
-          supportingArtifacts: ["docs/SELF_IMPROVEMENT_POLICY.md"],
+          evidence: {
+            summary: "Manual lessons must stay proposal-first until a governed promotion path exists.",
+            supportingArtifacts: ["docs/SELF_IMPROVEMENT_POLICY.md"],
+          },
+        },
+        {
+          lessonSummary: "Do not promote design taste guidance without benchmarked visual evidence.",
+          classification: "quality note",
+          promotionDecision: "blocked",
+          appliesTo: {
+            agent: ["frontend_worker"],
+            taskFamily: ["web_creative"],
+            triggers: ["design quality", "benchmark", "visual review"],
+          },
+          evidence: {
+            summary: "Design-facing preference lessons need benchmark and review evidence before they can influence runtime.",
+            supportingArtifacts: ["docs/EVIDENCE_CONTRACT.md", "AGENTS.md"],
+          },
         },
       ],
     },
@@ -341,6 +358,12 @@ function main() {
   assert(safeObject(syncResult.pack && syncResult.pack.selectionReasons), "compiled pack must expose selectionReasons");
   assert(typeof syncResult.pack.packId === "string" && syncResult.pack.packId.length >= 8, "compiled pack must expose packId");
   assert(typeof syncResult.pack.generatedAt === "string" && syncResult.pack.generatedAt, "compiled pack must expose generatedAt");
+  const manualItems = syncResult.items.filter((entry) => String(entry && entry.memoryId || "").startsWith("manual:"));
+  assert(manualItems.length >= 2, "manual self-improvement entries should surface as governed memory items");
+  const manualHint = manualItems.find((entry) => entry && entry.type === "runtime_hint");
+  assert(manualHint && Array.isArray(manualHint.evidence && manualHint.evidence.sourceRefs) && manualHint.evidence.sourceRefs.includes("docs/SELF_IMPROVEMENT_POLICY.md"), "manual runtime hints should preserve nested supporting artifacts as evidence refs");
+  const manualPreferenceCandidate = manualItems.find((entry) => entry && entry.type === "improvement_candidate" && entry.content && entry.content.structured && entry.content.structured.candidateCategory === "preference_learning_candidate");
+  assert(manualPreferenceCandidate, "design-sensitive manual lessons should be tagged as preference learning candidates");
   assert(syncResult.pack.selectedCount <= 6, "compiled pack must respect the default pack budget");
   assert((syncResult.pack.sectionCounts.spec || 0) <= 2, "compiled pack must respect the spec section budget");
   assert((syncResult.pack.sectionCounts.intent || 0) <= 1, "compiled pack must respect the intent section budget");

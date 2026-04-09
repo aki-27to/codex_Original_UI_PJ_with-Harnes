@@ -120,6 +120,7 @@ Representative types are:
 - Secondary external learnings must remain secondary. They cannot outrank repo contracts, frozen audits, or primary-lane OpenAI learnings.
 - Manual self-improvement remains proposal-first unless a dedicated promotion path explicitly upgrades it.
 - User preference signals become durable only after explicit user instruction or equivalent approved intent contract.
+- Manual correction lessons may be captured as `improvement_candidate` items tagged for preference learning, but they remain advisory/proposal-only until an explicit preference contract or equivalent governed promotion path upgrades them.
 - Stale, conflicting, blocked, or regressed entries must be revoked or expired instead of silently kept in active packs.
 
 ## 7) Workspace Progress Memory

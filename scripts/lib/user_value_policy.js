@@ -1,10 +1,11 @@
 "use strict";
 
 const defaultWeights = Object.freeze({
-  correctness: 0.4,
+  correctness: 0.35,
   completeness: 0.2,
-  specificity: 0.15,
-  actionability: 0.15,
+  specificity: 0.1,
+  actionability: 0.1,
+  adoptability: 0.15,
   followUpCorrectionPressure: 0.1,
 });
 
@@ -64,6 +65,7 @@ function normalizeUserValueScoring(input) {
       completeness: clampNumber(weights.completeness, defaultWeights.completeness),
       specificity: clampNumber(weights.specificity, defaultWeights.specificity),
       actionability: clampNumber(weights.actionability, defaultWeights.actionability),
+      adoptability: clampNumber(weights.adoptability, defaultWeights.adoptability),
       followUpCorrectionPressure: clampNumber(weights.followUpCorrectionPressure, defaultWeights.followUpCorrectionPressure),
     },
     correctnessVeto: payload.correctnessVeto !== false,
@@ -79,6 +81,7 @@ function normalizeUserValueRubric(input) {
     criticalPatterns: normalizePatternList(payload.criticalPatterns),
     coveragePatterns: normalizePatternList(payload.coveragePatterns),
     actionabilityPatterns: normalizePatternList(payload.actionabilityPatterns),
+    adoptabilityPatterns: normalizePatternList(payload.adoptabilityPatterns),
     specificityPatterns: normalizePatternList(payload.specificityPatterns),
     penaltyPatterns: normalizePatternList(payload.penaltyPatterns),
   };
@@ -151,6 +154,29 @@ function computeActionabilityScore(text, rubric) {
   };
 }
 
+function computeAdoptabilityScore(text, rubric) {
+  const sourceText = safeString(text, 24000);
+  const changeSummaryHits = (sourceText.match(/\b(?:fix(?:ed)?|update(?:d)?|change(?:d)?|implement(?:ed)?|add(?:ed)?|remove(?:d)?|patch(?:ed)?|refactor(?:ed)?|review(?:ed)?)\b/gi) || []).length;
+  const evidenceHits = (sourceText.match(/\b(?:test|verify|verified|verification|pass|passed|fail|failed|render|rendered|screenshot|review|evidence|proof)\b/gi) || []).length;
+  const riskHits = (sourceText.match(/\b(?:risk|residual|remaining|assumption|limitation|trade-?off|caveat)\b/gi) || []).length;
+  const artifactHits = (sourceText.match(/\b(?:artifact|changed surface|change summary|diff|benchmark|desktop|mobile|independent review)\b/gi) || []).length;
+  const rubricHits = countPatternHits(sourceText, rubric.adoptabilityPatterns || []);
+  const raw =
+    Math.min(changeSummaryHits, 2) +
+    Math.min(evidenceHits, 2) +
+    Math.min(riskHits, 1) +
+    Math.min(artifactHits, 1) +
+    rubricHits.matched;
+  return {
+    score: clampNumber(raw / 5, 0),
+    changeSummaryHits,
+    evidenceHits,
+    riskHits,
+    artifactHits,
+    rubricHits,
+  };
+}
+
 function computeFamilySpecificSignals(text, rubric) {
   const family = safeString(rubric && rubric.taskFamily, 80).toLowerCase();
   const sourceText = safeString(text, 24000).toLowerCase();
@@ -159,6 +185,7 @@ function computeFamilySpecificSignals(text, rubric) {
       taskFamily: family,
       specificityBonus: 0,
       actionabilityBonus: 0,
+      adoptabilityBonus: 0,
       completenessBonus: 0,
       matchedSignals: [],
     };
@@ -170,6 +197,7 @@ function computeFamilySpecificSignals(text, rubric) {
     ["responsive", ["responsive", "desktop", "mobile"]],
     ["motion", ["motion", "animation", "transition"]],
     ["realness", ["proof", "credibility", "real-world", "concrete"]],
+    ["review", ["screenshot", "visual review", "independent review"]],
   ];
   const matchedSignals = [];
   for (const [label, tokens] of signalGroups) {
@@ -179,6 +207,7 @@ function computeFamilySpecificSignals(text, rubric) {
     taskFamily: family,
     specificityBonus: Number(Math.min(0.35, matchedSignals.length * 0.06).toFixed(4)),
     actionabilityBonus: Number(Math.min(0.25, matchedSignals.length * 0.04).toFixed(4)),
+    adoptabilityBonus: Number(Math.min(0.25, matchedSignals.length * 0.04).toFixed(4)),
     completenessBonus: Number(Math.min(0.2, matchedSignals.length * 0.03).toFixed(4)),
     matchedSignals,
   };
@@ -210,6 +239,7 @@ function scoreUserValueResponse({ prompt, response, rubric, scoring }) {
   const coverage = countPatternHits(response, normalizedRubric.coveragePatterns);
   const specificity = computeSpecificityScore(response, normalizedRubric);
   const actionability = computeActionabilityScore(response, normalizedRubric);
+  const adoptability = computeAdoptabilityScore(response, normalizedRubric);
   const familySignals = computeFamilySpecificSignals(response, normalizedRubric);
   const followUpPressure = computeFollowUpPressureScore(response, normalizedRubric);
   const correctnessScore = critical.total > 0 ? critical.ratio : (safeString(response).length > 0 ? 1 : 0);
@@ -217,11 +247,13 @@ function scoreUserValueResponse({ prompt, response, rubric, scoring }) {
   const completenessScore = clampNumber(completenessScoreBase + familySignals.completenessBonus, completenessScoreBase);
   const specificityScore = clampNumber(specificity.score + familySignals.specificityBonus, specificity.score);
   const actionabilityScore = clampNumber(actionability.score + familySignals.actionabilityBonus, actionability.score);
+  const adoptabilityScore = clampNumber(adoptability.score + familySignals.adoptabilityBonus, adoptability.score);
   const weightedScore =
     correctnessScore * normalizedScoring.weights.correctness +
     completenessScore * normalizedScoring.weights.completeness +
     specificityScore * normalizedScoring.weights.specificity +
     actionabilityScore * normalizedScoring.weights.actionability +
+    adoptabilityScore * normalizedScoring.weights.adoptability +
     followUpPressure.score * normalizedScoring.weights.followUpCorrectionPressure;
   return {
     promptChars: safeString(prompt, 24000).length,
@@ -232,12 +264,14 @@ function scoreUserValueResponse({ prompt, response, rubric, scoring }) {
     completeness: Number(completenessScore.toFixed(4)),
     specificity: Number(specificityScore.toFixed(4)),
     actionability: Number(actionabilityScore.toFixed(4)),
+    adoptability: Number(adoptabilityScore.toFixed(4)),
     followUpCorrectionPressure: Number(followUpPressure.score.toFixed(4)),
     correctionPressureRaw: followUpPressure.rawPenalty,
     criticalHits: critical,
     coverageHits: coverage,
     specificitySignals: specificity,
     actionabilitySignals: actionability,
+    adoptabilitySignals: adoptability,
     familySignals,
     followUpSignals: followUpPressure,
     score: Number(weightedScore.toFixed(4)),
@@ -255,6 +289,7 @@ function buildUserValueRunSummary({ caseResults, suite }) {
     completeness: 0,
     specificity: 0,
     actionability: 0,
+    adoptability: 0,
     followUpCorrectionPressure: 0,
     correctionPressureRaw: 0,
   };
@@ -264,6 +299,7 @@ function buildUserValueRunSummary({ caseResults, suite }) {
     sums.completeness += Number(entry.userValue.completeness) || 0;
     sums.specificity += Number(entry.userValue.specificity) || 0;
     sums.actionability += Number(entry.userValue.actionability) || 0;
+    sums.adoptability += Number(entry.userValue.adoptability) || 0;
     sums.followUpCorrectionPressure += Number(entry.userValue.followUpCorrectionPressure) || 0;
     sums.correctionPressureRaw += Number(entry.userValue.correctionPressureRaw) || 0;
   }
@@ -277,6 +313,7 @@ function buildUserValueRunSummary({ caseResults, suite }) {
     completeness: Number((sums.completeness / count).toFixed(4)),
     specificity: Number((sums.specificity / count).toFixed(4)),
     actionability: Number((sums.actionability / count).toFixed(4)),
+    adoptability: Number((sums.adoptability / count).toFixed(4)),
     followUpCorrectionPressure: Number((sums.followUpCorrectionPressure / count).toFixed(4)),
     correctionPressureRaw: Number((sums.correctionPressureRaw / count).toFixed(4)),
   };

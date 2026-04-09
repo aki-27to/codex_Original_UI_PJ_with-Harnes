@@ -1809,6 +1809,16 @@ function buildSemanticAndImprovementItems({ workspaceRoot, runtime }) {
     }));
   }
   for (const lesson of Array.isArray(manual.entries) ? manual.entries.slice(0, 6) : []) {
+    const lessonEvidence = lesson && lesson.evidence && typeof lesson.evidence === "object" ? lesson.evidence : {};
+    const supportingArtifacts = uniqueStrings([
+      ...((Array.isArray(lessonEvidence.supportingArtifacts) ? lessonEvidence.supportingArtifacts : [])),
+      ...((Array.isArray(lesson && lesson.supportingArtifacts) ? lesson.supportingArtifacts : [])),
+    ], 8, 220);
+    const lessonTaskFamilies = uniqueStrings(lesson && lesson.appliesTo && lesson.appliesTo.taskFamily, 8, 80);
+    const lessonTriggers = uniqueStrings(lesson && lesson.appliesTo && lesson.appliesTo.triggers, 10, 80);
+    const preferenceCandidate = safeString(lesson && lesson.classification, 80).toLowerCase() === "quality note"
+      || lessonTaskFamilies.includes("web_creative")
+      || lessonTriggers.some((entry) => /benchmark|visual review|design quality|taste|preference|must avoid/i.test(safeString(entry, 120)));
     items.push(buildBaseItem({
       memoryId: `manual:${stableHash(lesson).slice(0, 12)}`,
       type: safeString(lesson && lesson.classification, 80).toLowerCase() === "runtime hint" ? "runtime_hint" : "improvement_candidate",
@@ -1817,21 +1827,30 @@ function buildSemanticAndImprovementItems({ workspaceRoot, runtime }) {
       sourceTier: "manual",
       scope: {
         workspaceId,
-        taskFamilies: uniqueStrings(lesson && lesson.appliesTo && lesson.appliesTo.taskFamily, 8, 80),
+        taskFamilies: lessonTaskFamilies,
         agents: uniqueStrings(lesson && lesson.appliesTo && lesson.appliesTo.agent, 8, 80),
         ownedPaths: [],
       },
       summary: safeString(lesson && lesson.lessonSummary, 320),
-      structured: lesson,
+      structured: {
+        ...lesson,
+        evidence: lessonEvidence,
+        supportingArtifacts,
+        candidateCategory: preferenceCandidate ? "preference_learning_candidate" : "general_manual_learning_candidate",
+      },
       evidence: {
-        sourceRefs: uniqueStrings(lesson && lesson.supportingArtifacts, 8, 220),
-        supportCount: 1,
+        sourceRefs: supportingArtifacts,
+        supportCount: Math.max(1, supportingArtifacts.length),
         confidence: 0.7,
         lastValidatedAt: safeString(manual.generatedAt, 80) || toIso(),
       },
       retrieval: {
-        topics: uniqueStrings([safeString(lesson && lesson.classification, 80), ...((lesson && lesson.appliesTo && lesson.appliesTo.taskFamily) || [])], 8, 80),
-        lexicalTriggers: uniqueStrings(lesson && lesson.appliesTo && lesson.appliesTo.triggers, 10, 80),
+        topics: uniqueStrings([
+          safeString(lesson && lesson.classification, 80),
+          ...(preferenceCandidate ? ["preference_learning_candidate"] : []),
+          ...lessonTaskFamilies,
+        ], 8, 80),
+        lexicalTriggers: lessonTriggers,
         priority: 58,
       },
     }));
