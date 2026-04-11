@@ -6569,6 +6569,8 @@ async function runPrompt(raw,cid=s.active,options={}){
   const c=chat(cid),prompt=String(raw||"").trim();
   if(!c)return;
   const notifyOnTerminal=cid===s.active;
+  const voiceTurn=Boolean(options&&options.fromVoice);
+  const voiceSessionForChat=realtimeVoiceState.active&&cid===s.active;
   void ensureNotificationAudioReady();
   const currentPending=pendingCountForChat(c.id);
   if(currentPending>0){
@@ -6617,10 +6619,14 @@ async function runPrompt(raw,cid=s.active,options={}){
   }
   const out=msg(c.id,"assistant","Codex","");
   if(!out)return;
+  if(voiceSessionForChat){
+    stopRealtimeVoiceRecognition({pauseForTurn:true});
+    stopRealtimeVoicePlayback();
+  }
   madd(out,`[waiting] Standard Codex: ON${imagePayloads.length?` (${imagePayloads.length} images attached)`:""}\n`);
   const rid=`req-${Date.now()}-${Math.random().toString(36).slice(2,8)}`;
   const ctl=new AbortController();
-  s.req.set(rid,{cid:c.id,agent:runAgent,at:Date.now(),controller:ctl,notifyOnTerminal});
+  s.req.set(rid,{cid:c.id,agent:runAgent,at:Date.now(),controller:ctl,notifyOnTerminal,voiceTurn});
   c.pending+=1;
   pending();
   live();
