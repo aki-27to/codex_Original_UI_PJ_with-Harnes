@@ -1,6 +1,6 @@
 {
-  "schema": "memory-type-catalog.v1",
-  "version": "2026-04-04.r1",
+  "schema": "memory-type-catalog.v2",
+  "version": "2026-04-11.r1",
   "types": [
     {
       "id": "constitution_ref",
@@ -49,6 +49,42 @@
       "authorityTier": 5,
       "defaultStatus": "promoted",
       "projectionBucket": "failure_patterns"
+    },
+    {
+      "id": "procedure_pattern",
+      "authorityTier": 5,
+      "defaultStatus": "promoted",
+      "projectionBucket": "procedure_patterns"
+    },
+    {
+      "id": "execution_strategy",
+      "authorityTier": 5,
+      "defaultStatus": "promoted",
+      "projectionBucket": "execution_strategies"
+    },
+    {
+      "id": "review_failure_pattern",
+      "authorityTier": 5,
+      "defaultStatus": "promoted",
+      "projectionBucket": "review_failure_patterns"
+    },
+    {
+      "id": "adoption_feedback",
+      "authorityTier": 5,
+      "defaultStatus": "captured",
+      "projectionBucket": "adoption_feedback"
+    },
+    {
+      "id": "evaluation_lesson",
+      "authorityTier": 5,
+      "defaultStatus": "promoted",
+      "projectionBucket": "evaluation_lessons"
+    },
+    {
+      "id": "skill_candidate",
+      "authorityTier": 6,
+      "defaultStatus": "candidate",
+      "projectionBucket": "skill_candidates"
     },
     {
       "id": "runtime_hint",

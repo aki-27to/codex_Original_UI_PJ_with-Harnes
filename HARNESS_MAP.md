@@ -1,12 +1,16 @@
 # HARNESS_MAP
 
-Updated: 2026-04-07
+Authority role: `navigation / entrypoint only`  
+Authority registry: `authority-registry.v1`
+
+Updated: 2026-04-11
 
 ## 1) Purpose And Reading Order
 
 This file is the operator map for the harness after the front-door README.
 - Front-door identity and quick posture live in `README.md`.
 - Docs entrypoint and authority map live in `docs/README.md`.
+- Single-source authority precedence lives in `scripts/config/authority_registry.json`.
 - Policy is human-facing.
 - Contracts are machine-readable.
 - Proof/signoff artifacts are execution evidence.
@@ -34,8 +38,12 @@ Core-vs-companion boundary:
 
 ## 2) Layer Map
 
-- Tier-0 / constitutional:
+- Tier-0 / authority order:
+  - `docs/HARNESS_CONSTITUTION.md`
   - `AGENTS.md`
+  - `docs/CURRENT_ARCHITECTURE.md`
+  - `docs/EVIDENCE_CONTRACT.md`
+  - `scripts/config/authority_registry.json`
 - Tier-1 / operating policy:
   - `docs/AGENT_OPERATING_RULES.md`
   - `docs/HARNESS_APP_PLATFORM.md`
@@ -223,8 +231,8 @@ Use `goal_completion_status.json` as the top-level operational status file. It r
   - `output/memory_public/export_manifest.json`
 
 `SUBJECTIVE_AGI_NEAR_COMPLETE` is an upper gate on top of `OPERATIONALLY_COMPLETE`. Missing supporting artifacts, missing history-aware counts, or a failed strict threshold must keep the subjective status at `NOT_YET`.
-## 2026-04-06 sovereign completion surfaces
+## 2026-04-06 governed-autonomy completion compatibility surfaces
 
-- `output/agi_readiness/sovereign_goal_completion_status.json` is the highest completion gate in the existing governed export flow.
-- The sovereign gate depends on checked-in self-authored, world-model, security, rollback, and causal-effect surfaces under `output/agi_readiness/`.
-- Missing or inconsistent supporting artifacts must keep the sovereign status at `NOT_YET`.
+- `output/agi_readiness/sovereign_goal_completion_status.json` remains as a legacy compatibility artifact name inside the existing governed export flow.
+- The active interpretation is governed autonomy readiness, not AI sovereignty. The artifact stays for continuity with older exports while higher authority docs use governed-autonomy wording.
+- Missing or inconsistent supporting artifacts must keep that compatibility status at `NOT_YET`.

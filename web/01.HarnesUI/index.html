@@ -238,8 +238,27 @@
                 <span id="composerAttachmentChip" class="composer-runtime-chip">Attachments</span>
               </div>
 
+              <section id="openaiVoiceStrip" class="composer-voice-strip" aria-label="Codex voice">
+                <div class="composer-voice-head">
+                  <strong class="composer-voice-title">Codex Voice</strong>
+                  <select id="openaiVoiceLangSelect" class="composer-voice-select" aria-label="Recognition language">
+                    <option value="browser">Browser default</option>
+                    <option value="ja-JP">日本語 (ja-JP)</option>
+                    <option value="en-US">English (en-US)</option>
+                  </select>
+                  <select id="openaiVoiceSelect" class="composer-voice-select" aria-label="Speech output">
+                    <option value="browser">Browser TTS</option>
+                    <option value="kokoro">Kokoro</option>
+                  </select>
+                  <button id="openaiVoiceStartBtn" class="btn mini secondary" type="button">Start Voice</button>
+                  <button id="openaiVoiceStopBtn" class="btn mini secondary" type="button" disabled>Stop Voice</button>
+                </div>
+                <p id="openaiVoiceStatus" class="composer-voice-status" aria-live="polite">Voice idle.</p>
+                <p id="openaiVoiceTranscript" class="composer-voice-transcript" hidden></p>
+              </section>
+
               <p class="composer-tip">会話の文脈を保ったまま追加依頼できます。補助情報は右側に圧縮表示されます。</p>
-              <textarea id="promptInput" rows="3" placeholder="依頼を書く。例: web/01.HarnesUI を会話中心の UI に刷新する。制約は /api/exec とローカル運用を維持。完了条件は desktop/mobile で視覚確認。"></textarea>
+              <textarea id="promptInput" rows="3" placeholder=""></textarea>
 
               <div class="composer-tools">
                 <input id="imageInput" type="file" accept=".png,.jpg,.jpeg,.webp,.gif,image/png,image/jpeg,image/webp,image/gif" multiple hidden>

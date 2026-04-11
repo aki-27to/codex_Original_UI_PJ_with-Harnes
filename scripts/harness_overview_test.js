@@ -427,6 +427,28 @@ function createOverviewPayload(overrides = {}) {
           },
         ],
       },
+      authorityRegistry: {
+        schema: "authority-registry.v1",
+        registryPath: "scripts/config/authority_registry.json",
+        driftStatus: "aligned",
+        singleSupremePath: "docs/HARNESS_CONSTITUTION.md",
+        precedence: [
+          { order: 1, id: "supreme_frozen_constitution", path: "docs/HARNESS_CONSTITUTION.md", role: "single supreme frozen constitution" },
+          { order: 2, id: "operational_constitution", path: "AGENTS.md", role: "operational constitution / runtime behavior constraints" },
+        ],
+      },
+      deploymentPosture: {
+        schema: "deployment-posture-profiles.v1",
+        profilePath: "scripts/config/deployment_posture_profiles.json",
+        activeProfile: "portable_local",
+        activeLabel: "Portable Local",
+        referenceArchitectureDefault: 1,
+        profiles: [
+          { id: "owner_local", label: "Owner Local" },
+          { id: "portable_local", label: "Portable Local" },
+          { id: "reviewed_team", label: "Reviewed Team" },
+        ],
+      },
       secondaryLearning: {
         anthropicEngineering: {
           enabled: true,
@@ -568,6 +590,16 @@ function createOverviewPayload(overrides = {}) {
         enabled: true,
         token: "",
         tokenRedacted: 1,
+      },
+      iterationControl: {
+        schema: "iteration-control-contract.v1",
+        path: "scripts/config/iteration_control_contract.json",
+        releaseState: "fail_closed",
+      },
+      adoptionReadinessContract: {
+        schema: "adoption-readiness-evaluator-contract.v1",
+        path: "scripts/config/adoption_readiness_evaluator_contract.json",
+        dimensionCount: 7,
       },
       execApi: {
         replayApi: {
@@ -1308,6 +1340,10 @@ function assertRenderedOverviewMatchesPayload(payload, elements) {
     assertContains(elements.signoffEvidenceCard.innerHTML, String(workflowSuiteId), "signoff evidence must render workflow contract");
   }
   assertContains(elements.runtimePostureCard.innerHTML, "task-family-profiles.v1", "runtime posture must render family profile contract");
+  assertContains(elements.runtimePostureCard.innerHTML, "Portable Local", "runtime posture must render deployment posture");
+  assertContains(elements.runtimePostureCard.innerHTML, "authority-registry.v1", "runtime posture must render authority registry");
+  assertContains(elements.runtimePostureCard.innerHTML, "iteration-control-contract.v1", "runtime posture must render iteration control contract");
+  assertContains(elements.runtimePostureCard.innerHTML, "adoption-readiness-evaluator-contract.v1", "runtime posture must render adoption readiness contract");
   const familyCompletionGate = payload
     && payload.runtime
     && payload.runtime.latestTurn
@@ -1626,6 +1662,14 @@ async function runIntegrationCheck() {
     assert(overviewJson.runtime.documentTooling && typeof overviewJson.runtime.documentTooling === "object", "overview runtime must expose documentTooling");
     assert(typeof overviewJson.runtime.documentTooling.status === "string", "overview runtime documentTooling must expose status");
     assert(typeof overviewJson.runtime.documentTooling.toolRoot === "string", "overview runtime documentTooling must expose local tool root");
+    assert(overviewJson.runtime.authorityRegistry && typeof overviewJson.runtime.authorityRegistry === "object", "overview runtime must expose authorityRegistry");
+    assert.strictEqual(String(overviewJson.runtime.authorityRegistry.schema || ""), "authority-registry.v1", "overview runtime authorityRegistry schema mismatch");
+    assert(overviewJson.runtime.deploymentPosture && typeof overviewJson.runtime.deploymentPosture === "object", "overview runtime must expose deploymentPosture");
+    assert(typeof overviewJson.runtime.deploymentPosture.activeProfile === "string", "overview runtime deploymentPosture must expose activeProfile");
+    assert(overviewJson.runtime.iterationControl && typeof overviewJson.runtime.iterationControl === "object", "overview runtime must expose iterationControl");
+    assert.strictEqual(String(overviewJson.runtime.iterationControl.schema || ""), "iteration-control-contract.v1", "overview runtime iterationControl schema mismatch");
+    assert(overviewJson.runtime.adoptionReadinessContract && typeof overviewJson.runtime.adoptionReadinessContract === "object", "overview runtime must expose adoptionReadinessContract");
+    assert.strictEqual(String(overviewJson.runtime.adoptionReadinessContract.schema || ""), "adoption-readiness-evaluator-contract.v1", "overview runtime adoptionReadinessContract schema mismatch");
     assert(overviewJson.runtime.governedMemory && typeof overviewJson.runtime.governedMemory === "object", "overview runtime must expose governedMemory");
     assert(overviewJson.runtime.manualSelfImprovement && typeof overviewJson.runtime.manualSelfImprovement === "object", "overview runtime must expose manualSelfImprovement");
     assert(typeof overviewJson.runtime.manualSelfImprovement.status === "string", "overview runtime manualSelfImprovement must expose status");

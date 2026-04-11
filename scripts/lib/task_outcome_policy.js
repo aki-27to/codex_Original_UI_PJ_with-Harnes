@@ -6,8 +6,8 @@ const path = require("path");
 const defaultTaskOutcomeContractPath = path.join(__dirname, "..", "config", "task_outcome_contract.json");
 
 const defaultTaskOutcomeContractDefinition = Object.freeze({
-  schema: "task-outcome-contract.v2",
-  version: "2026-03-08.r1",
+  schema: "task-outcome-contract.v3",
+  version: "2026-04-11.r1",
   proofCarryingRequiredFields: [
     "task_id",
     "actor",
@@ -19,6 +19,10 @@ const defaultTaskOutcomeContractDefinition = Object.freeze({
     "acceptance_coverage",
     "handoff_readiness",
   ],
+  decisionArtifacts: {
+    required: ["iteration_decision.json", "release_decision.json"],
+    derived: ["adoption_readiness_eval.json", "escalation_decision.json"],
+  },
   statuses: [
     { id: "COMPLETED", class: "success", terminal: true },
     { id: "BLOCKED", class: "blocked", terminal: true },
@@ -53,6 +57,9 @@ const defaultTaskOutcomeContractDefinition = Object.freeze({
     runtime_post_lock_drift_failed: "FAILED_VALIDATION",
     return_to_intake_required: "BLOCKED",
     release_clause_unsatisfied: "FAILED_VALIDATION",
+    required_evidence_failures_present: "FAILED_VALIDATION",
+    budget_exhausted_while_value_remaining: "BLOCKED",
+    release_conditions_unsatisfied: "PARTIAL",
     "intent_*": "FAILED_VALIDATION",
     partial_delivery: "PARTIAL",
   },
@@ -214,6 +221,14 @@ function normalizeTaskOutcomeContract(input) {
       ? payload.proofCarryingRequiredFields.map((entry) => safeString(entry, 120)).filter(Boolean).slice(0, 24)
       : defaultTaskOutcomeContractDefinition.proofCarryingRequiredFields.slice(),
     statuses: Object.freeze(statuses),
+    decisionArtifacts: Object.freeze({
+      required: Array.isArray(payload.decisionArtifacts && payload.decisionArtifacts.required)
+        ? payload.decisionArtifacts.required.map((entry) => safeString(entry, 120)).filter(Boolean).slice(0, 12)
+        : defaultTaskOutcomeContractDefinition.decisionArtifacts.required.slice(),
+      derived: Array.isArray(payload.decisionArtifacts && payload.decisionArtifacts.derived)
+        ? payload.decisionArtifacts.derived.map((entry) => safeString(entry, 120)).filter(Boolean).slice(0, 12)
+        : defaultTaskOutcomeContractDefinition.decisionArtifacts.derived.slice(),
+    }),
     turnStateDefaults: normalizeTurnStateDefaults(payload.turnStateDefaults, validStatusIds),
     turnStateHints: normalizeTurnStateHints(payload.turnStateHints, validStatusIds),
     reasonMap: normalizeReasonMap(payload.reasonMap, validStatusIds),
@@ -275,6 +290,7 @@ function summarizeTaskOutcomeContract(spec) {
     version: contract.version,
     proofCarryingRequiredFields: Array.isArray(contract.proofCarryingRequiredFields) ? contract.proofCarryingRequiredFields.slice(0, 24) : [],
     statuses: contract.statuses.map((entry) => entry.id),
+    decisionArtifacts: contract.decisionArtifacts,
     turnStateDefaults: contract.turnStateDefaults,
     turnStateHints: contract.turnStateHints,
     reasonMapKeys: Object.keys(contract.reasonMap).slice(0, 32),

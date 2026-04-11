@@ -4,6 +4,7 @@ const fs = require("fs");
 const path = require("path");
 const {
   loadOpenAIBlogLearningPolicy,
+  loadSelfImprovementPromotionPolicy,
   refreshSelfImprovementArtifacts,
 } = require("./openai_blog_learning");
 const {
@@ -108,8 +109,32 @@ function summarizeSelfImprovementResult(result) {
   };
 }
 
+function buildTargetedRegressionPlan({ policy, result, lane }) {
+  const loadedPromotionPolicy = loadSelfImprovementPromotionPolicy(policy);
+  const promotionPolicy = loadedPromotionPolicy && loadedPromotionPolicy.policy ? loadedPromotionPolicy.policy : {};
+  const state = result && result.state && typeof result.state === "object" ? result.state : {};
+  const queue = Array.isArray(state.priorityBacklog) ? state.priorityBacklog : [];
+  const changeTypes = Array.from(new Set(queue.map((entry) => safeString(entry && entry.changeType, 120)).filter(Boolean)));
+  const targetedChecks = Array.from(new Set(changeTypes.flatMap((changeType) => {
+    const checks = promotionPolicy && promotionPolicy.targetedRegression && promotionPolicy.targetedRegression[changeType];
+    return Array.isArray(checks) ? checks : [];
+  })));
+  return {
+    schema: "self-improvement-targeted-regression-plan.v1",
+    generatedAt: new Date().toISOString(),
+    lane: safeString(lane, 80) || safeString(result && result.policy && result.policy.source && result.policy.source.name, 120) || "external_learning",
+    promotionPolicyPath: safeString(loadedPromotionPolicy && loadedPromotionPolicy.path, 260),
+    changeTypes,
+    targetedChecks,
+    readyToGateCount: Number(state.autoApplyCandidateCount) || 0,
+    proposalOnlyCount: Number(state.proposalOnlyCount) || 0,
+    blockedCount: Number(state.blockedCount) || 0,
+  };
+}
+
 module.exports = {
   applySimulatedBreak,
+  buildTargetedRegressionPlan,
   clonePolicyForDryRun,
   collectManagedTargets,
   loadLearningPolicyByLane,

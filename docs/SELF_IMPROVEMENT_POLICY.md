@@ -1,6 +1,6 @@
 # SELF_IMPROVEMENT_POLICY
 
-Updated: 2026-04-03
+Updated: 2026-04-11
 
 ## 1) Purpose
 
@@ -12,6 +12,12 @@ Define how the harness turns learned external guidance into governed self-improv
 - Improvement proposal generation may be autonomous.
 - Promotion into runtime behavior must be machine-gated.
 - `AGENTS.md` and frozen Step 1/2 files stay outside automatic promotion.
+- The promotion lifecycle is now:
+  - `proposal_only`
+  - `shadow_candidate`
+  - `gated_candidate`
+  - `auto_apply_candidate`
+  - `blocked`
 
 ## 3) Machine-Readable Surfaces
 
@@ -30,10 +36,14 @@ Define how the harness turns learned external guidance into governed self-improv
   - for bounded low-risk `runtime_retrieval_hint` changes
   - and for reinforced `frontend_quality_note` changes that target the mutable `docs/FRONTEND_QUALITY_PLAYBOOK.md`
   - requires self-improvement eval gate `PASS`
+- `shadow_candidate`
+  - for medium-blast-radius planner and decomposition changes that must be observed before they can influence the active lane
+- `gated_candidate`
+  - for medium-blast-radius retry/recovery, memory-pack, and skill-surface changes that require explicit targeted regression before adoption
 - `proposal_only`
   - for docs, eval ideas, frontend quality notes, operator-policy notes, or runtime-policy tuning that should not silently change runtime behavior
 - `blocked`
-  - for constitutional targets and frozen Requirement-Driven Foundation V1 targets
+  - for constitutional targets, authority registry, approval/safety boundaries, core release gate, core evaluator hard gate, and frozen Requirement-Driven Foundation V1 targets
 - Manual capture lane
   - writes only the compressed latest artifact at `output/manual_self_improvement/latest.json`
   - defaults every entry to `proposal-only` unless a separate governed lane reclassifies it
@@ -53,6 +63,7 @@ Define how the harness turns learned external guidance into governed self-improv
   - baseline-ready retrieval does not regress into skip/disable
 - Only a `PASS` gate may promote auto-apply runtime hints.
 - If the latest candidate fails, the harness may retain the last passing applied hint set instead of widening drift.
+- `scripts/self_improvement_apply.js` must run checkpoint -> candidate apply -> targeted regression -> rollback -> audit log before any medium/high blast-radius adoption can move past shadow/gated status.
 
 ## 5.1) Reinforcement and Stabilization
 
@@ -76,6 +87,13 @@ Define how the harness turns learned external guidance into governed self-improv
 ## 6) Runtime Scope
 
 - Auto-applied self-improvement currently changes bounded runtime retrieval hints plus reinforced frontend quality notes for the primary OpenAI learning lane.
+- Governed self-improvement candidates may now also target:
+  - `planner_strategy`
+  - `decomposition_policy`
+  - `tool_selection_policy`
+  - `retry_recovery_policy`
+  - `memory_pack_policy`
+  - `skill_surface_policy`
 - Secondary learning sources remain proposal-first and must not outrank the primary lane.
 - Runtime self-improvement remains advisory. It does not rewrite requirement contracts, approval boundaries, or release gates.
 - Manual capture is not a runtime lane. It is a non-constitutional storage surface for compressed, on-demand retrieval of lessons that still need separate governance before any promotion.

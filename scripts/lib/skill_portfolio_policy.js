@@ -159,7 +159,7 @@ function normalizePromotionRule(rawRule, fallbackRule) {
 
 function normalizePolicy(rawPolicy, { source, policyPath }) {
   const fallback = {
-    schema: "skill-portfolio-policy.v1",
+    schema: "skill-portfolio-policy.v2",
     version: "builtin",
     classes: knownClasses,
     coverageLabels: knownCoverageLabels,
@@ -174,6 +174,16 @@ function normalizePolicy(rawPolicy, { source, policyPath }) {
       roleToGlobal: { minRuns: 12, minSuccessRate: 0.90, minPrimaryScore: 0.87, maxGuardFailures: 0 },
     },
     guardrail: { blockPromotionOnGuardFailure: true },
+    promotionEvidence: {
+      requireReproducibilityEvidence: true,
+      requireAdoptionFeedbackLink: true,
+      requireEvaluationLessonLink: true,
+    },
+    revocationPolicy: {
+      revokeOnRegression: true,
+      revokeOnGuardFailure: true,
+      maxSilentRegressions: 0,
+    },
   };
 
   const input = rawPolicy && typeof rawPolicy === "object" ? rawPolicy : {};
@@ -219,6 +229,36 @@ function normalizePolicy(rawPolicy, { source, policyPath }) {
       blockPromotionOnGuardFailure: normalizeBoolean(
         input.guardrail && input.guardrail.blockPromotionOnGuardFailure,
         fallback.guardrail.blockPromotionOnGuardFailure
+      ),
+    }),
+    promotionEvidence: Object.freeze({
+      requireReproducibilityEvidence: normalizeBoolean(
+        input.promotionEvidence && input.promotionEvidence.requireReproducibilityEvidence,
+        fallback.promotionEvidence.requireReproducibilityEvidence
+      ),
+      requireAdoptionFeedbackLink: normalizeBoolean(
+        input.promotionEvidence && input.promotionEvidence.requireAdoptionFeedbackLink,
+        fallback.promotionEvidence.requireAdoptionFeedbackLink
+      ),
+      requireEvaluationLessonLink: normalizeBoolean(
+        input.promotionEvidence && input.promotionEvidence.requireEvaluationLessonLink,
+        fallback.promotionEvidence.requireEvaluationLessonLink
+      ),
+    }),
+    revocationPolicy: Object.freeze({
+      revokeOnRegression: normalizeBoolean(
+        input.revocationPolicy && input.revocationPolicy.revokeOnRegression,
+        fallback.revocationPolicy.revokeOnRegression
+      ),
+      revokeOnGuardFailure: normalizeBoolean(
+        input.revocationPolicy && input.revocationPolicy.revokeOnGuardFailure,
+        fallback.revocationPolicy.revokeOnGuardFailure
+      ),
+      maxSilentRegressions: normalizeInt(
+        input.revocationPolicy && input.revocationPolicy.maxSilentRegressions,
+        fallback.revocationPolicy.maxSilentRegressions,
+        0,
+        100
       ),
     }),
   });
@@ -271,6 +311,19 @@ function normalizeSkillEntry(skillId, rawEntry, policy) {
   if (!guardMetrics.length) {
     metadataIssues.push("missing_guard_metrics");
   }
+  const promotionEvidence = entry.promotionEvidence && typeof entry.promotionEvidence === "object" ? entry.promotionEvidence : {};
+  const revocationPolicy = entry.revocationPolicy && typeof entry.revocationPolicy === "object" ? entry.revocationPolicy : {};
+  const maturity = safeString(entry.maturity, 80).toLowerCase();
+  const enforceEvidenceLinks = maturity === "promoted" || maturity === "governed";
+  if (enforceEvidenceLinks && policy.promotionEvidence.requireReproducibilityEvidence && !safeString(promotionEvidence.reproducibilityRef, 260)) {
+    metadataIssues.push("missing_reproducibility_ref");
+  }
+  if (enforceEvidenceLinks && policy.promotionEvidence.requireAdoptionFeedbackLink && !safeString(promotionEvidence.adoptionFeedbackRef, 260)) {
+    metadataIssues.push("missing_adoption_feedback_ref");
+  }
+  if (enforceEvidenceLinks && policy.promotionEvidence.requireEvaluationLessonLink && !safeString(promotionEvidence.evaluationLessonRef, 260)) {
+    metadataIssues.push("missing_evaluation_lesson_ref");
+  }
 
   return Object.freeze({
     id: safeString(skillId, 120),
@@ -281,6 +334,21 @@ function normalizeSkillEntry(skillId, rawEntry, policy) {
     intent: safeString(entry.intent, 500),
     primaryMetric,
     guardMetrics: Object.freeze(guardMetrics),
+    promotionEvidence: Object.freeze({
+      reproducibilityRef: safeString(promotionEvidence.reproducibilityRef, 260),
+      adoptionFeedbackRef: safeString(promotionEvidence.adoptionFeedbackRef, 260),
+      evaluationLessonRef: safeString(promotionEvidence.evaluationLessonRef, 260),
+    }),
+    revocationPolicy: Object.freeze({
+      revokeOnRegression: normalizeBoolean(revocationPolicy.revokeOnRegression, policy.revocationPolicy.revokeOnRegression),
+      revokeOnGuardFailure: normalizeBoolean(revocationPolicy.revokeOnGuardFailure, policy.revocationPolicy.revokeOnGuardFailure),
+      maxSilentRegressions: normalizeInt(
+        revocationPolicy.maxSilentRegressions,
+        policy.revocationPolicy.maxSilentRegressions,
+        0,
+        100
+      ),
+    }),
     metadataIssues: Object.freeze(metadataIssues),
   });
 }

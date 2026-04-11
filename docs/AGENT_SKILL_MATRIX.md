@@ -1,6 +1,6 @@
 # AGENT_SKILL_MATRIX
 
-Updated: 2026-03-07
+Updated: 2026-04-11
 
 ## 0) Skill ID Consistency
 
@@ -23,6 +23,7 @@ Updated: 2026-03-07
 Policy source of truth:
 - `scripts/config/skill_portfolio_policy.json`
 - `scripts/config/skill_catalog.json`
+- `logs/archive/raw/runtime_state/memory/projections/skill_candidates/`
 
 ## 2) Role Assignment Summary
 
@@ -88,6 +89,7 @@ Compatibility note:
 - `scenario -> role`: min runs `6`, success rate `>= 0.84`, average primary score `>= 0.80`, guard failures `<= 0`
 - `role -> global`: min runs `12`, success rate `>= 0.90`, average primary score `>= 0.87`, guard failures `<= 0`
 - If `blockPromotionOnGuardFailure=1`, any guard failure blocks promotion.
+- Skill promotion now also requires evidence-linked reproducibility and may be revoked when regression, staleness, or contradictory adoption feedback is observed.
 
 Outcome evidence format (`logs/skill_outcomes.jsonl`, one JSON per line):
 - `skill`

@@ -374,6 +374,12 @@ function getMemoryPaths(workspaceRoot = workspaceRootDefault) {
       preferenceProfilesRoot: path.join(projectionsRoot, "preference_profiles"),
       semanticLessonsRoot: path.join(projectionsRoot, "semantic_lessons"),
       failurePatternsRoot: path.join(projectionsRoot, "failure_patterns"),
+      procedurePatternsRoot: path.join(projectionsRoot, "procedure_patterns"),
+      executionStrategiesRoot: path.join(projectionsRoot, "execution_strategies"),
+      reviewFailurePatternsRoot: path.join(projectionsRoot, "review_failure_patterns"),
+      adoptionFeedbackRoot: path.join(projectionsRoot, "adoption_feedback"),
+      evaluationLessonsRoot: path.join(projectionsRoot, "evaluation_lessons"),
+      skillCandidatesRoot: path.join(projectionsRoot, "skill_candidates"),
       activeRuntimeHintsRoot: path.join(projectionsRoot, "active_runtime_hints"),
       improvementStateRoot: path.join(projectionsRoot, "improvement_state"),
       evalObservationsRoot: path.join(projectionsRoot, "eval_observations"),
@@ -766,6 +772,14 @@ function classifyMemorySection(item) {
     case "failure_pattern":
     case "runtime_hint":
       return "semantic";
+    case "procedure_pattern":
+    case "execution_strategy":
+      return "procedure";
+    case "review_failure_pattern":
+    case "adoption_feedback":
+    case "evaluation_lesson":
+      return "evaluation";
+    case "skill_candidate":
     case "improvement_candidate":
       return "improvement";
     default:
@@ -7950,6 +7964,8 @@ function compileMemoryPack({ workspaceRoot, runtime, items }) {
     workspace_progress: 0,
     experience: 0,
     semantic: 0,
+    procedure: 0,
+    evaluation: 0,
     preference: 0,
     improvement: 0,
   };
@@ -7971,6 +7987,8 @@ function compileMemoryPack({ workspaceRoot, runtime, items }) {
     workspace_progress: [],
     experience: [],
     semantic: [],
+    procedure: [],
+    evaluation: [],
     preference: [],
     improvement: [],
   };
@@ -8332,6 +8350,12 @@ function syncGovernedMemoryGraph({ workspaceRoot = workspaceRootDefault, runtime
   writeJsonIfChanged(path.join(paths.projections.semanticLessonsRoot, "primary.json"), items.filter((item) => item.type === "semantic_lesson" && item.sourceTier === "external_primary"));
   writeJsonIfChanged(path.join(paths.projections.semanticLessonsRoot, "secondary.json"), items.filter((item) => item.type === "semantic_lesson" && item.sourceTier === "external_secondary"));
   writeJsonIfChanged(path.join(paths.projections.failurePatternsRoot, "latest.json"), items.filter((item) => item.type === "failure_pattern"));
+  writeJsonIfChanged(path.join(paths.projections.procedurePatternsRoot, "latest.json"), items.filter((item) => item.type === "procedure_pattern"));
+  writeJsonIfChanged(path.join(paths.projections.executionStrategiesRoot, "latest.json"), items.filter((item) => item.type === "execution_strategy"));
+  writeJsonIfChanged(path.join(paths.projections.reviewFailurePatternsRoot, "latest.json"), items.filter((item) => item.type === "review_failure_pattern"));
+  writeJsonIfChanged(path.join(paths.projections.adoptionFeedbackRoot, "latest.json"), items.filter((item) => item.type === "adoption_feedback"));
+  writeJsonIfChanged(path.join(paths.projections.evaluationLessonsRoot, "latest.json"), items.filter((item) => item.type === "evaluation_lesson"));
+  writeJsonIfChanged(path.join(paths.projections.skillCandidatesRoot, "latest.json"), items.filter((item) => item.type === "skill_candidate"));
   writeJsonIfChanged(path.join(paths.projections.activeRuntimeHintsRoot, "latest.json"), items.filter((item) => item.type === "runtime_hint"));
   writeJsonIfChanged(path.join(paths.projections.improvementStateRoot, "latest.json"), items.filter((item) => item.type === "improvement_candidate"));
   writeJsonIfChanged(path.join(paths.projections.evalObservationsRoot, "latest.json"), items.filter((item) => item.type === "eval_observation"));

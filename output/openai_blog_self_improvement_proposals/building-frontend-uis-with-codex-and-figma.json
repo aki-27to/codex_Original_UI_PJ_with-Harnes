@@ -1,7 +1,7 @@
 {
   "schema": "self-improvement-proposal.v1",
   "proposalId": "openai-blog-building-frontend-uis-with-codex-and-figma-self-improvement",
-  "createdAt": "2026-04-09T12:01:13.970Z",
+  "createdAt": "2026-04-11T03:35:45.350Z",
   "sourceLane": "OpenAI Developers Blog",
   "sourceTier": "primary",
   "articleId": "building-frontend-uis-with-codex-and-figma",
@@ -9,9 +9,9 @@
   "sourceUrl": "https://developers.openai.com/blog/building-frontend-uis-with-codex-and-figma",
   "relevance": "high",
   "portability": "portable",
-  "changeClass": "runtime_retrieval_hint",
-  "target": "runtime/external-learning/runtime-retrieval",
-  "objective": "Improve runtime retrieval targeting using article-specific guidance from Building frontend UIs with Codex and Figma | OpenAI Developers.",
+  "changeClass": "planner_strategy",
+  "target": "scripts/lib/planning_mode_policy.js",
+  "objective": "Propose governed planning strategy improvements based on Building frontend UIs with Codex and Figma | OpenAI Developers.",
   "evidence": {
     "summary": "Use Codex and Figma to bring real, running interfaces into Figma, refine them, and bring changes back to Codex.",
     "guidance": [
@@ -31,33 +31,6 @@
     "articleProposalId": "openai-blog-building-frontend-uis-with-codex-and-figma"
   },
   "candidateChange": {
-    "runtimeRetrievalHint": {
-      "hintId": "building-frontend-uis-with-codex-and-figma-runtime-retrieval",
-      "appliesToAgents": [
-        "default",
-        "frontend_worker"
-      ],
-      "appliesToTaskFamilies": [
-        "web_creative"
-      ],
-      "topics": [
-        "agents",
-        "codex",
-        "context",
-        "frontend"
-      ],
-      "lexicalTriggers": [
-        "context",
-        "planner",
-        "generator",
-        "evaluator"
-      ],
-      "preferredArticleIds": [
-        "building-frontend-uis-with-codex-and-figma"
-      ],
-      "topicBoost": 3,
-      "articleBoost": 8
-    },
     "frontendQualityNote": {
       "noteId": "building-frontend-uis-with-codex-and-figma-frontend-quality",
       "appliesToAgents": [
@@ -93,15 +66,15 @@
     }
   },
   "promotion": {
-    "decision": "auto_apply_candidate",
-    "rationale": "bounded_low_risk_runtime_hint",
+    "decision": "blocked",
+    "rationale": "boundary_blocked",
     "riskFlags": [
-      "machine_gate_required"
+      "constitutional_or_frozen_boundary"
     ]
   },
   "gate": {
-    "required": true,
-    "status": "pending",
+    "required": false,
+    "status": "not_applicable",
     "caseIds": [
       "web_creative_benchmark",
       "frontend_context_iteration",

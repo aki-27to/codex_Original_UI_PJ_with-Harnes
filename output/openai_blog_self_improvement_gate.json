@@ -1,8 +1,8 @@
 {
   "schema": "self-improvement-eval-gate.v1",
-  "generatedAt": "2026-04-09T12:01:13.970Z",
+  "generatedAt": "2026-04-11T03:35:45.350Z",
   "status": "PASS",
-  "reason": "all_cases_passed",
+  "reason": "no_auto_apply_candidates",
   "passedCount": 3,
   "failedCount": 0,
   "failedCaseIds": [],
@@ -12,45 +12,17 @@
       "pass": true,
       "failures": [],
       "baseline": {
-        "status": "ready",
-        "reason": "matched_official_articles",
-        "matchedTopics": [
-          "frontend",
-          "evals",
-          "codex"
-        ],
-        "articleIds": [
-          "one-year-of-responses",
-          "skills-agents-sdk"
-        ],
-        "matchedFrontendQualityNoteIds": [],
-        "promptBlockChars": 1201
+        "status": "skipped",
+        "reason": "no_auto_apply_candidates",
+        "matchedTopics": [],
+        "articleIds": []
       },
       "candidate": {
-        "status": "ready",
-        "reason": "matched_official_articles",
-        "matchedTopics": [
-          "frontend",
-          "evals",
-          "codex"
-        ],
-        "matchedHintIds": [
-          "realtime-perplexity-computer-runtime-retrieval",
-          "designing-delightful-frontends-with-gpt-5-4-runtime-retrieval",
-          "one-year-of-responses-runtime-retrieval",
-          "skills-agents-sdk-runtime-retrieval",
-          "building-frontend-uis-with-codex-and-figma-runtime-retrieval",
-          "run-long-horizon-tasks-with-codex-runtime-retrieval"
-        ],
-        "matchedFrontendQualityNoteIds": [],
-        "articleIds": [
-          "one-year-of-responses",
-          "skills-agents-sdk"
-        ],
-        "promptBlockChars": 1201
-      },
-      "limits": {
-        "maxPromptBlockChars": 1700
+        "status": "skipped",
+        "reason": "no_auto_apply_candidates",
+        "matchedTopics": [],
+        "matchedHintIds": [],
+        "articleIds": []
       }
     },
     {
@@ -58,48 +30,17 @@
       "pass": true,
       "failures": [],
       "baseline": {
-        "status": "ready",
-        "reason": "matched_official_articles",
-        "matchedTopics": [
-          "frontend",
-          "evals",
-          "codex",
-          "context"
-        ],
-        "articleIds": [
-          "one-year-of-responses",
-          "skills-agents-sdk"
-        ],
-        "matchedFrontendQualityNoteIds": [],
-        "promptBlockChars": 1210
+        "status": "skipped",
+        "reason": "no_auto_apply_candidates",
+        "matchedTopics": [],
+        "articleIds": []
       },
       "candidate": {
-        "status": "ready",
-        "reason": "matched_official_articles",
-        "matchedTopics": [
-          "frontend",
-          "evals",
-          "codex",
-          "context",
-          "safety"
-        ],
-        "matchedHintIds": [
-          "designing-delightful-frontends-with-gpt-5-4-runtime-retrieval",
-          "realtime-perplexity-computer-runtime-retrieval",
-          "one-year-of-responses-runtime-retrieval",
-          "skills-agents-sdk-runtime-retrieval",
-          "building-frontend-uis-with-codex-and-figma-runtime-retrieval",
-          "run-long-horizon-tasks-with-codex-runtime-retrieval"
-        ],
-        "matchedFrontendQualityNoteIds": [],
-        "articleIds": [
-          "one-year-of-responses",
-          "skills-agents-sdk"
-        ],
-        "promptBlockChars": 1218
-      },
-      "limits": {
-        "maxPromptBlockChars": 1700
+        "status": "skipped",
+        "reason": "no_auto_apply_candidates",
+        "matchedTopics": [],
+        "matchedHintIds": [],
+        "articleIds": []
       }
     },
     {
@@ -108,27 +49,16 @@
       "failures": [],
       "baseline": {
         "status": "skipped",
-        "reason": "agent_not_targeted",
-        "matchedTopics": [
-          "codex"
-        ],
-        "articleIds": [],
-        "matchedFrontendQualityNoteIds": [],
-        "promptBlockChars": 0
+        "reason": "no_auto_apply_candidates",
+        "matchedTopics": [],
+        "articleIds": []
       },
       "candidate": {
         "status": "skipped",
-        "reason": "agent_not_targeted",
-        "matchedTopics": [
-          "codex"
-        ],
+        "reason": "no_auto_apply_candidates",
+        "matchedTopics": [],
         "matchedHintIds": [],
-        "matchedFrontendQualityNoteIds": [],
-        "articleIds": [],
-        "promptBlockChars": 0
-      },
-      "limits": {
-        "maxPromptBlockChars": 400
+        "articleIds": []
       }
     }
   ]

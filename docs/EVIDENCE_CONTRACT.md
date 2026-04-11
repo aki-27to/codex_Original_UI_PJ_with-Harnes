@@ -1,6 +1,9 @@
 # EVIDENCE_CONTRACT
 
-Updated: 2026-04-07
+Authority role: `proof contract truth`  
+Authority registry: `authority-registry.v1`
+
+Updated: 2026-04-11
 
 ## 1) Purpose
 
@@ -8,6 +11,8 @@ Define the minimum verification and reporting artifacts required before a task c
 - Machine-readable evidence source of truth: `scripts/config/evidence_contract.json`.
 - Machine-readable outcome taxonomy source: `scripts/config/task_outcome_contract.json`.
 - Machine-readable business decision source: `scripts/config/release_decision_contract.json`.
+- Iteration control source: `scripts/config/iteration_control_contract.json`.
+- Adoption readiness source: `scripts/config/adoption_readiness_evaluator_contract.json`.
 
 ## 2) Evidence Classes
 
@@ -66,6 +71,9 @@ Define the minimum verification and reporting artifacts required before a task c
   - `routing_decision.json`
   - `task_outcomes.json`
   - `review_bundle.json`
+  - `adoption_readiness_eval.json`
+  - `iteration_decision.json`
+  - `escalation_decision.json`
   - `release_decision.json`
 - Each turn artifact bundle should also aggregate execution evidence into companion files:
   - `requirement_contract.json`

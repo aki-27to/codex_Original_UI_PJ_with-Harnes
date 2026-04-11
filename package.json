@@ -13,6 +13,12 @@
     "tooling:document:bootstrap": "node scripts/document_tooling.js bootstrap",
     "tooling:document:status": "node scripts/document_tooling.js status",
     "test:document-tooling": "node scripts/document_tooling_runtime_test.js",
+    "test:harness-overview": "node scripts/harness_overview_test.js",
+    "test:authority-registry": "node scripts/authority_registry_test.js",
+    "test:deployment-posture": "node scripts/deployment_posture_profile_test.js",
+    "test:iteration-control": "node scripts/iteration_control_policy_test.js",
+    "test:adoption-readiness": "node scripts/adoption_readiness_policy_test.js",
+    "test:self-improvement-governance": "node scripts/self_improvement_governance_test.js",
     "test:web-autonomy-copy": "node scripts/web_autonomy_copy_test.js",
     "test:docs-authority": "node scripts/docs_authority_surface_test.js",
     "test:github-governance-surface": "node scripts/github_copilot_governance_surface_test.js",
@@ -76,7 +82,7 @@
     "test:housekeeping:output-surface": "node scripts/organize_output_surface_test.js",
     "test:housekeeping:output-git-policy": "node scripts/output_surface_git_policy_test.js",
     "test:windows-launcher-policy": "node scripts/start_codex_ui_launcher_policy_test.js",
-    "test:repo-quality": "npm run test:document-tooling && npm run test:repo-hygiene:static && npm run test:docs:drift && npm run test:github-governance-surface && npm run test:system-coherence && npm run test:server-request-guards && npm run test:housekeeping:runtime-surface && npm run test:housekeeping:output-surface && npm run test:housekeeping:output-git-policy && node scripts/current_surface_truth_test.js"
+    "test:repo-quality": "npm run test:document-tooling && npm run test:harness-overview && npm run test:authority-registry && npm run test:deployment-posture && npm run test:iteration-control && npm run test:adoption-readiness && npm run test:self-improvement-governance && npm run test:repo-hygiene:static && npm run test:docs:drift && npm run test:github-governance-surface && npm run test:system-coherence && npm run test:server-request-guards && npm run test:housekeeping:runtime-surface && npm run test:housekeeping:output-surface && npm run test:housekeeping:output-git-policy && node scripts/current_surface_truth_test.js"
   },
   "keywords": [
     "codex",

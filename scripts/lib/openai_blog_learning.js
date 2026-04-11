@@ -795,9 +795,27 @@ function buildArticleProposal(article, policy, nowIso) {
 
 function normalizeSelfImprovementPromotionPolicy(policy, workspaceRoot = workspaceRootDefault) {
   const source = policy && typeof policy === "object" ? policy : {};
+  const normalizeChangeClassMap = (input) => {
+    const out = {};
+    const raw = input && typeof input === "object" ? input : {};
+    for (const [changeClass, entry] of Object.entries(raw)) {
+      const id = safeString(changeClass, 120);
+      const payload = entry && typeof entry === "object" ? entry : {};
+      if (!id) continue;
+      out[id] = {
+        defaultLifecycle: safeString(payload.defaultLifecycle, 80) || "proposal_only",
+        blastRadius: safeString(payload.blastRadius, 40) || "medium",
+      };
+    }
+    return out;
+  };
   return {
-    schema: safeString(source.schema, 120) || "self-improvement-promotion-policy.v1",
+    schema: safeString(source.schema, 120) || "self-improvement-promotion-policy.v2",
     mode: safeString(source.mode, 80) || "machine_guarded_autonomy",
+    lifecycles: Array.isArray(source.lifecycles)
+      ? source.lifecycles.map((entry) => safeString(entry, 80)).filter(Boolean)
+      : ["proposal_only", "shadow_candidate", "gated_candidate", "auto_apply_candidate", "blocked"],
+    changeClasses: normalizeChangeClassMap(source.changeClasses),
     autoApply: {
       changeClasses: Array.isArray(source && source.autoApply && source.autoApply.changeClasses)
         ? source.autoApply.changeClasses.map((entry) => safeString(entry, 120)).filter(Boolean)
@@ -806,6 +824,16 @@ function normalizeSelfImprovementPromotionPolicy(policy, workspaceRoot = workspa
         ? Boolean(source.autoApply.requireGatePass)
         : true,
       maxAutoApplyPerLane: Math.max(1, Math.min(40, Math.trunc(Number(source && source.autoApply && source.autoApply.maxAutoApplyPerLane) || 12))),
+    },
+    shadowCandidate: {
+      changeClasses: Array.isArray(source && source.shadowCandidate && source.shadowCandidate.changeClasses)
+        ? source.shadowCandidate.changeClasses.map((entry) => safeString(entry, 120)).filter(Boolean)
+        : [],
+    },
+    gatedCandidate: {
+      changeClasses: Array.isArray(source && source.gatedCandidate && source.gatedCandidate.changeClasses)
+        ? source.gatedCandidate.changeClasses.map((entry) => safeString(entry, 120)).filter(Boolean)
+        : [],
     },
     proposalOnly: {
       targets: Array.isArray(source && source.proposalOnly && source.proposalOnly.targets)
@@ -819,7 +847,21 @@ function normalizeSelfImprovementPromotionPolicy(policy, workspaceRoot = workspa
       targets: Array.isArray(source && source.blocked && source.blocked.targets)
         ? source.blocked.targets.map((entry) => safeString(entry, 260)).filter(Boolean)
         : [],
+      changeClasses: Array.isArray(source && source.blocked && source.blocked.changeClasses)
+        ? source.blocked.changeClasses.map((entry) => safeString(entry, 120)).filter(Boolean)
+        : [],
     },
+    targetedRegression: Object.entries(source && source.targetedRegression && typeof source.targetedRegression === "object"
+      ? source.targetedRegression
+      : {})
+      .reduce((acc, [changeClass, checks]) => {
+        const id = safeString(changeClass, 120);
+        if (!id) return acc;
+        acc[id] = Array.isArray(checks)
+          ? checks.map((entry) => safeString(entry, 120)).filter(Boolean).slice(0, 12)
+          : [];
+        return acc;
+      }, {}),
     evalGate: {
       schema: safeString(source && source.evalGate && source.evalGate.schema, 120) || "self-improvement-eval-gate.v1",
       cases: Array.isArray(source && source.evalGate && source.evalGate.cases)
@@ -859,6 +901,24 @@ function loadSelfImprovementPromotionPolicy(policy) {
 
 function buildLearningActionClass(article, policy) {
   const tags = Array.isArray(article && article.topicTags) ? article.topicTags : [];
+  if (tags.includes("agents") && tags.includes("context")) {
+    return "planner_strategy";
+  }
+  if (tags.includes("agents") && tags.includes("automation")) {
+    return "decomposition_policy";
+  }
+  if (tags.includes("codex") && tags.includes("skills")) {
+    return "tool_selection_policy";
+  }
+  if (tags.includes("automation")) {
+    return "retry_recovery_policy";
+  }
+  if (tags.includes("context")) {
+    return "memory_pack_policy";
+  }
+  if (tags.includes("skills")) {
+    return "skill_surface_policy";
+  }
   const isPrimary = safeString(policy && policy.source && policy.source.tier, 40) !== "secondary";
   const runtimeRetrievalEnabled = Boolean(policy && policy.runtimeRetrieval && policy.runtimeRetrieval.enabled);
   const runtimeTopics = new Set(Array.isArray(policy && policy.runtimeRetrieval && policy.runtimeRetrieval.topicPriority)
@@ -882,6 +942,18 @@ function buildLearningActionClass(article, policy) {
 
 function buildLearningActionTarget(changeClass) {
   switch (safeString(changeClass, 120)) {
+    case "planner_strategy":
+      return "scripts/lib/planning_mode_policy.js";
+    case "decomposition_policy":
+      return "scripts/config/task_family_profiles.json";
+    case "tool_selection_policy":
+      return "scripts/config/skill_catalog.json";
+    case "retry_recovery_policy":
+      return "docs/AGENT_OPERATING_RULES.md";
+    case "memory_pack_policy":
+      return "scripts/config/memory_retrieval_policy.json";
+    case "skill_surface_policy":
+      return "docs/AGENT_SKILL_MATRIX.md";
     case "runtime_retrieval_hint":
       return "runtime/external-learning/runtime-retrieval";
     case "eval_extension":
@@ -901,6 +973,18 @@ function buildLearningActionTarget(changeClass) {
 function buildLearningObjective(article, changeClass) {
   const title = safeString(article && article.title, 200) || "learning";
   switch (safeString(changeClass, 120)) {
+    case "planner_strategy":
+      return `Propose governed planning strategy improvements based on ${title}.`;
+    case "decomposition_policy":
+      return `Propose governed decomposition policy improvements based on ${title}.`;
+    case "tool_selection_policy":
+      return `Propose governed tool and skill selection improvements based on ${title}.`;
+    case "retry_recovery_policy":
+      return `Propose governed retry and recovery improvements based on ${title}.`;
+    case "memory_pack_policy":
+      return `Propose bounded memory-pack policy improvements based on ${title}.`;
+    case "skill_surface_policy":
+      return `Propose governed skill-surface improvements based on ${title}.`;
     case "runtime_retrieval_hint":
       return `Improve runtime retrieval targeting using article-specific guidance from ${title}.`;
     case "eval_extension":
@@ -1048,6 +1132,24 @@ function classifySelfImprovementPromotion({ changeClass = "", target = "", laneP
       ? promotionPolicy.proposalOnly.changeClasses.map((entry) => safeString(entry, 120)).filter(Boolean)
       : []
   );
+  const shadowCandidateClasses = new Set(
+    promotionPolicy && promotionPolicy.shadowCandidate && Array.isArray(promotionPolicy.shadowCandidate.changeClasses)
+      ? promotionPolicy.shadowCandidate.changeClasses.map((entry) => safeString(entry, 120)).filter(Boolean)
+      : []
+  );
+  const gatedCandidateClasses = new Set(
+    promotionPolicy && promotionPolicy.gatedCandidate && Array.isArray(promotionPolicy.gatedCandidate.changeClasses)
+      ? promotionPolicy.gatedCandidate.changeClasses.map((entry) => safeString(entry, 120)).filter(Boolean)
+      : []
+  );
+  const blockedClasses = new Set(
+    promotionPolicy && promotionPolicy.blocked && Array.isArray(promotionPolicy.blocked.changeClasses)
+      ? promotionPolicy.blocked.changeClasses.map((entry) => safeString(entry, 120)).filter(Boolean)
+      : []
+  );
+  const classDefaults = promotionPolicy && promotionPolicy.changeClasses && typeof promotionPolicy.changeClasses === "object"
+    ? promotionPolicy.changeClasses
+    : {};
   if (!normalizedTarget) {
     return {
       decision: "blocked",
@@ -1055,11 +1157,32 @@ function classifySelfImprovementPromotion({ changeClass = "", target = "", laneP
       riskFlags: ["missing_target"],
     };
   }
+  if (blockedClasses.has(normalizedClass)) {
+    return {
+      decision: "blocked",
+      rationale: "change_class_blocked",
+      riskFlags: ["constitutional_or_frozen_boundary"],
+    };
+  }
   if (blockedTargets.has(normalizedTarget)) {
     return {
       decision: "blocked",
       rationale: "boundary_blocked",
       riskFlags: ["constitutional_or_frozen_boundary"],
+    };
+  }
+  if (shadowCandidateClasses.has(normalizedClass)) {
+    return {
+      decision: "shadow_candidate",
+      rationale: "shadow_evaluation_required",
+      riskFlags: ["machine_gate_required", "shadow_lane_required"],
+    };
+  }
+  if (gatedCandidateClasses.has(normalizedClass)) {
+    return {
+      decision: "gated_candidate",
+      rationale: "targeted_regression_required",
+      riskFlags: ["machine_gate_required", "gated_lane_required"],
     };
   }
   if (proposalOnlyTargets.has(normalizedTarget) || proposalOnlyClasses.has(normalizedClass)) {
@@ -1074,6 +1197,20 @@ function classifySelfImprovementPromotion({ changeClass = "", target = "", laneP
       decision: "auto_apply_candidate",
       rationale: "bounded_low_risk_runtime_hint",
       riskFlags: ["machine_gate_required"],
+    };
+  }
+  if (classDefaults[normalizedClass] && safeString(classDefaults[normalizedClass].defaultLifecycle, 80) === "shadow_candidate") {
+    return {
+      decision: "shadow_candidate",
+      rationale: "shadow_default",
+      riskFlags: ["machine_gate_required", "shadow_lane_required"],
+    };
+  }
+  if (classDefaults[normalizedClass] && safeString(classDefaults[normalizedClass].defaultLifecycle, 80) === "gated_candidate") {
+    return {
+      decision: "gated_candidate",
+      rationale: "gated_default",
+      riskFlags: ["machine_gate_required", "gated_lane_required"],
     };
   }
   return {
@@ -2216,6 +2353,9 @@ function inferSelfImprovementBlastRadius(changeClass, target) {
   if (normalizedClass === "eval_extension" || normalizedClass === "memory_policy_note" || normalizedClass === "operator_policy_note") {
     return "medium";
   }
+  if (["planner_strategy", "decomposition_policy", "tool_selection_policy", "retry_recovery_policy", "memory_pack_policy", "skill_surface_policy"].includes(normalizedClass)) {
+    return "medium";
+  }
   return "high";
 }
 
@@ -2291,6 +2431,8 @@ function buildSelfImprovementChangeEntry({
   const isPrimary = safeString(proposal && proposal.sourceTier, 40) !== "secondary";
   const readinessWeights = {
     ready_to_gate: 100,
+    gated_candidate: 90,
+    shadow_candidate: 84,
     awaiting_reinforcement: 80,
     awaiting_observations: 70,
     policy_disabled: 45,
@@ -2543,13 +2685,25 @@ function buildCandidateSelfImprovementState({ policy, promotionPolicy, proposals
         changeType: safeString(proposal && proposal.changeClass, 120) || "proposal_note",
         changeTarget: safeString(proposal && proposal.target, 260),
         changePayload: { id: safeString(proposal && proposal.proposalId, 160) },
-        readinessStatus: decision === "blocked" ? "blocked" : decision === "auto_apply_candidate" ? "ready_to_gate" : "proposal_only",
-        gatingReason: decision === "blocked" ? "blocked_target" : decision === "auto_apply_candidate" ? "proposal_ready" : "promotion_policy_proposal_only",
+        readinessStatus: decision === "blocked"
+          ? "blocked"
+          : decision === "auto_apply_candidate"
+            ? "ready_to_gate"
+            : decision,
+        gatingReason: decision === "blocked"
+          ? "blocked_target"
+          : decision === "auto_apply_candidate"
+            ? "proposal_ready"
+            : `${decision || "proposal_only"}_required`,
         nextAction: decision === "blocked"
           ? "Leave this target outside self-improvement auto-promotion."
           : decision === "auto_apply_candidate"
             ? "Retain only if the eval gate stays PASS."
-            : "Keep this proposal in the review backlog until explicitly promoted.",
+            : decision === "shadow_candidate"
+              ? "Keep this change in the shadow lane until targeted comparisons stay non-regressive."
+              : decision === "gated_candidate"
+                ? "Keep this change behind targeted regression until adoption readiness stays PASS."
+                : "Keep this proposal in the review backlog until explicitly promoted.",
       }));
     }
   }

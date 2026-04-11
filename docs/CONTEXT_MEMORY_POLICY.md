@@ -1,6 +1,6 @@
 # CONTEXT_MEMORY_POLICY
 
-Updated: 2026-04-04
+Updated: 2026-04-11
 
 ## 1) Purpose
 
@@ -110,6 +110,12 @@ Representative types are:
 - `eval_observation`
 - `semantic_lesson`
 - `failure_pattern`
+- `procedure_pattern`
+- `execution_strategy`
+- `review_failure_pattern`
+- `adoption_feedback`
+- `evaluation_lesson`
+- `skill_candidate`
 - `runtime_hint`
 - `improvement_candidate`
 
@@ -163,7 +169,7 @@ The machine-readable retrieval policy lives in:
 That policy governs:
 
 - `defaultPackBudget`
-- per-section budgets (`spec`, `intent`, `workspace_progress`, `experience`, `semantic`, `preference`, `improvement`)
+- per-section budgets (`spec`, `intent`, `workspace_progress`, `experience`, `procedure`, `evaluation`, `semantic`, `preference`, `improvement`)
 - `minimumSelectionScore`
 - `highConfidenceScore`
 
@@ -217,7 +223,14 @@ The deterministic fallback sample is a two-pass fixture export. It intentionally
 
 - Parent/runtime overview may read the full compiled governed memory summary for the current workspace.
 - Child agents receive only the bounded pack relevant to their role, task family, owned paths, and acceptance checks.
+- Procedural and evaluation memory are first-class retrieval inputs, but they remain role-scoped and bounded. Children should receive only the procedure/eval slices that are relevant to their owned task lane.
 - Read-only roles receive evidence/review/failure memory, not broad implementation history.
+
+## 10.1) Skill Promotion Link
+
+- `skill_candidate` memory is advisory until reproducibility and evidence linkage are confirmed.
+- Successful procedure/evaluation lessons may be promoted into `scripts/config/skill_catalog.json` only when reproducibility, evidence refs, and guard metrics satisfy `docs/SKILL_PORTFOLIO_GOVERNANCE.md`.
+- Regressed or stale promoted skills must remain revocable; memory promotion does not imply irreversible skill adoption.
 - Unrelated thread history must not be injected into child prompts.
 
 ## 11) Safety

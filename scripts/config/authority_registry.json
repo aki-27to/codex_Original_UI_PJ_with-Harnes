@@ -1,0 +1,107 @@
+{
+  "schema": "authority-registry.v1",
+  "version": "2026-04-11.r1",
+  "sourceDoc": "docs/HARNESS_CONSTITUTION.md",
+  "precedence": [
+    {
+      "order": 1,
+      "id": "supreme_frozen_constitution",
+      "path": "docs/HARNESS_CONSTITUTION.md",
+      "role": "single supreme frozen constitution",
+      "surfaceClass": "frozen_constitution",
+      "requiredMarkers": [
+        "single supreme frozen constitution",
+        "authority-registry.v1"
+      ]
+    },
+    {
+      "order": 2,
+      "id": "operational_constitution",
+      "path": "AGENTS.md",
+      "role": "operational constitution / runtime behavior constraints",
+      "surfaceClass": "operational_constitution",
+      "requiredMarkers": [
+        "operational constitution / runtime behavior constraints",
+        "authority-registry.v1"
+      ]
+    },
+    {
+      "order": 3,
+      "id": "active_design_spec",
+      "path": "docs/CURRENT_ARCHITECTURE.md",
+      "role": "active design spec",
+      "surfaceClass": "active_design_spec",
+      "requiredMarkers": [
+        "active design spec",
+        "authority-registry.v1"
+      ]
+    },
+    {
+      "order": 4,
+      "id": "proof_contract_truth",
+      "path": "docs/EVIDENCE_CONTRACT.md",
+      "role": "proof contract truth",
+      "surfaceClass": "machine_contract_doc",
+      "requiredMarkers": [
+        "proof contract truth",
+        "authority-registry.v1"
+      ]
+    },
+    {
+      "order": 4,
+      "id": "machine_contract_truth",
+      "path": "scripts/config",
+      "role": "machine-contract truth",
+      "surfaceClass": "machine_contract_root",
+      "requiredMarkers": [
+        "authority_registry.json",
+        "task_outcome_contract.json",
+        "evidence_contract.json"
+      ]
+    },
+    {
+      "order": 5,
+      "id": "navigation_entrypoint",
+      "path": "HARNESS_MAP.md",
+      "role": "navigation / entrypoint only",
+      "surfaceClass": "navigation_only",
+      "requiredMarkers": [
+        "navigation / entrypoint only",
+        "authority-registry.v1"
+      ]
+    },
+    {
+      "order": 5,
+      "id": "docs_navigation_entrypoint",
+      "path": "docs/README.md",
+      "role": "navigation / entrypoint only",
+      "surfaceClass": "navigation_only",
+      "requiredMarkers": [
+        "navigation / entrypoint only",
+        "authority-registry.v1"
+      ]
+    },
+    {
+      "order": 5,
+      "id": "repo_readme_entrypoint",
+      "path": "README.md",
+      "role": "navigation / entrypoint only",
+      "surfaceClass": "navigation_only",
+      "requiredMarkers": [
+        "navigation / entrypoint only",
+        "authority-registry.v1"
+      ]
+    }
+  ],
+  "driftRules": {
+    "singleSupremePath": "docs/HARNESS_CONSTITUTION.md",
+    "operationalConstitutionPath": "AGENTS.md",
+    "primaryExecRoute": "POST /api/exec",
+    "primaryEvalRoute": "POST /api/eval/run",
+    "forbiddenPrimaryRoutePatterns": [
+      "parallel harness",
+      "parallel CLI universe",
+      "role-specific primary endpoint"
+    ]
+  }
+}

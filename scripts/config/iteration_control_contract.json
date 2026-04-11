@@ -1,0 +1,51 @@
+{
+  "schema": "iteration-control-contract.v1",
+  "version": "2026-04-11.r1",
+  "qualityThresholds": {
+    "literal_requirement_alignment": 0.84,
+    "latent_intent_alignment": 0.78,
+    "boundary_compliance": 0.99,
+    "artifact_quality": 0.8,
+    "residual_risk": 0.68,
+    "adoption_readiness": 0.8,
+    "iteration_value_remaining_max": 0.24
+  },
+  "improvementDeltaThreshold": 0.03,
+  "budgets": {
+    "wallClockMs": 3600000,
+    "stepBudget": 24,
+    "tokenBudget": 400000
+  },
+  "riskThresholds": {
+    "maxResidualRiskItems": 6,
+    "maxRequiredEvidenceFailures": 0,
+    "highRiskTaskOutcomeStates": [
+      "FAILED_VALIDATION",
+      "BLOCKED"
+    ]
+  },
+  "releaseConditions": [
+    "boundary_compliance_at_or_above_threshold",
+    "adoption_readiness_at_or_above_threshold",
+    "iteration_value_remaining_at_or_below_threshold",
+    "required_evidence_failures_within_budget"
+  ],
+  "escalationConditions": [
+    "explicit_user_judgment_required",
+    "approval_boundary_crossed",
+    "budget_exhausted_while_value_remaining",
+    "residual_risk_above_threshold"
+  ],
+  "failClosedConditions": [
+    "missing_iteration_decision_artifact",
+    "missing_release_decision_artifact",
+    "missing_adoption_readiness_artifact",
+    "boundary_compliance_below_threshold"
+  ],
+  "artifactSchemas": {
+    "iterationDecision": "iteration-decision.v1",
+    "releaseDecision": "release-decision.v2",
+    "escalationDecision": "escalation-decision.v1",
+    "adoptionReadiness": "adoption-readiness-eval.v1"
+  }
+}

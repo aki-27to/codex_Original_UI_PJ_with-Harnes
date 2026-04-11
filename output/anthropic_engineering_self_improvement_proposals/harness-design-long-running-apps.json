@@ -1,7 +1,7 @@
 {
   "schema": "self-improvement-proposal.v1",
   "proposalId": "anthropic-engineering-harness-design-long-running-apps-self-improvement",
-  "createdAt": "2026-04-09T12:01:13.976Z",
+  "createdAt": "2026-04-11T03:35:45.362Z",
   "sourceLane": "Anthropic Engineering",
   "sourceTier": "secondary",
   "articleId": "harness-design-long-running-apps",
@@ -9,9 +9,9 @@
   "sourceUrl": "https://www.anthropic.com/engineering/harness-design-long-running-apps",
   "relevance": "high",
   "portability": "portable",
-  "changeClass": "eval_extension",
-  "target": "scripts/config/eval_suite_default.json",
-  "objective": "Propose eval-strengthening guidance based on Harness design for long-running application development.",
+  "changeClass": "planner_strategy",
+  "target": "scripts/lib/planning_mode_policy.js",
+  "objective": "Propose governed planning strategy improvements based on Harness design for long-running application development.",
   "evidence": {
     "summary": "Harness design is key to performance at the frontier of agentic coding. Here's how we pushed Claude further in frontend design and long-running autonomous software engineering.",
     "guidance": [
@@ -67,10 +67,10 @@
     }
   },
   "promotion": {
-    "decision": "proposal_only",
-    "rationale": "governed_review_required",
+    "decision": "blocked",
+    "rationale": "boundary_blocked",
     "riskFlags": [
-      "governed_review_required"
+      "constitutional_or_frozen_boundary"
     ]
   },
   "gate": {

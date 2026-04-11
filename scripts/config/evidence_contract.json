@@ -1,6 +1,6 @@
 {
-  "schema": "evidence-contract.v1",
-  "version": "2026-03-08.r1",
+  "schema": "evidence-contract.v2",
+  "version": "2026-04-11.r1",
   "sourceDoc": "docs/EVIDENCE_CONTRACT.md",
   "evidenceClasses": {
     "implementation": [
@@ -63,6 +63,9 @@
     "evidence_manifest.json",
     "stage_timeline.json",
     "flow_trace_summary.json",
-    "review_load_breakdown.json"
+    "review_load_breakdown.json",
+    "iteration_decision.json",
+    "release_decision.json",
+    "adoption_readiness_eval.json"
   ]
 }

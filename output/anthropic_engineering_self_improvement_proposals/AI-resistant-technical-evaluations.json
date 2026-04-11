@@ -1,7 +1,7 @@
 {
   "schema": "self-improvement-proposal.v1",
   "proposalId": "anthropic-engineering-AI-resistant-technical-evaluations-self-improvement",
-  "createdAt": "2026-04-09T12:01:13.976Z",
+  "createdAt": "2026-04-11T03:35:45.362Z",
   "sourceLane": "Anthropic Engineering",
   "sourceTier": "secondary",
   "articleId": "AI-resistant-technical-evaluations",
@@ -9,9 +9,9 @@
   "sourceUrl": "https://www.anthropic.com/engineering/AI-resistant-technical-evaluations",
   "relevance": "high",
   "portability": "mixed",
-  "changeClass": "eval_extension",
-  "target": "scripts/config/eval_suite_default.json",
-  "objective": "Propose eval-strengthening guidance based on Designing AI resistant technical evaluations.",
+  "changeClass": "skill_surface_policy",
+  "target": "docs/AGENT_SKILL_MATRIX.md",
+  "objective": "Propose governed skill-surface improvements based on Designing AI resistant technical evaluations.",
   "evidence": {
     "summary": "What we learned from three iterations of a performance engineering take-home that Claude keeps beating.",
     "guidance": [
@@ -64,10 +64,11 @@
     }
   },
   "promotion": {
-    "decision": "proposal_only",
-    "rationale": "governed_review_required",
+    "decision": "gated_candidate",
+    "rationale": "targeted_regression_required",
     "riskFlags": [
-      "governed_review_required"
+      "machine_gate_required",
+      "gated_lane_required"
     ]
   },
   "gate": {

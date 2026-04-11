@@ -1,6 +1,6 @@
 {
-  "schema": "memory-item-schema.v1",
-  "version": "2026-04-04.r1",
+  "schema": "memory-item-schema.v2",
+  "version": "2026-04-11.r1",
   "description": "Canonical governed memory item contract for the harness.",
   "required": [
     "memoryId",
@@ -25,6 +25,12 @@
       "eval_observation",
       "semantic_lesson",
       "failure_pattern",
+      "procedure_pattern",
+      "execution_strategy",
+      "review_failure_pattern",
+      "adoption_feedback",
+      "evaluation_lesson",
+      "skill_candidate",
       "runtime_hint",
       "improvement_candidate"
     ],

@@ -1,7 +1,7 @@
 {
   "schema": "self-improvement-proposal.v1",
   "proposalId": "openai-blog-run-long-horizon-tasks-with-codex-self-improvement",
-  "createdAt": "2026-04-09T12:01:13.970Z",
+  "createdAt": "2026-04-11T03:35:45.350Z",
   "sourceLane": "OpenAI Developers Blog",
   "sourceTier": "primary",
   "articleId": "run-long-horizon-tasks-with-codex",
@@ -9,9 +9,9 @@
   "sourceUrl": "https://developers.openai.com/blog/run-long-horizon-tasks-with-codex",
   "relevance": "high",
   "portability": "portable",
-  "changeClass": "runtime_retrieval_hint",
-  "target": "runtime/external-learning/runtime-retrieval",
-  "objective": "Improve runtime retrieval targeting using article-specific guidance from Run long horizon tasks with Codex | OpenAI Developers.",
+  "changeClass": "planner_strategy",
+  "target": "scripts/lib/planning_mode_policy.js",
+  "objective": "Propose governed planning strategy improvements based on Run long horizon tasks with Codex | OpenAI Developers.",
   "evidence": {
     "summary": "This was an experiment, not a production rollout. But it performed well on the parts that matter for long-horizon work: following the spec, staying on task, running verification, and repairing failures as it went.",
     "guidance": [
@@ -34,33 +34,6 @@
     "articleProposalId": "openai-blog-run-long-horizon-tasks-with-codex"
   },
   "candidateChange": {
-    "runtimeRetrievalHint": {
-      "hintId": "run-long-horizon-tasks-with-codex-runtime-retrieval",
-      "appliesToAgents": [
-        "default",
-        "frontend_worker"
-      ],
-      "appliesToTaskFamilies": [
-        "web_creative"
-      ],
-      "topics": [
-        "agents",
-        "automation",
-        "codex",
-        "context"
-      ],
-      "lexicalTriggers": [
-        "long horizon",
-        "planner",
-        "generator",
-        "evaluator"
-      ],
-      "preferredArticleIds": [
-        "run-long-horizon-tasks-with-codex"
-      ],
-      "topicBoost": 3,
-      "articleBoost": 8
-    },
     "frontendQualityNote": {
       "noteId": "run-long-horizon-tasks-with-codex-frontend-quality",
       "appliesToAgents": [
@@ -96,15 +69,15 @@
     }
   },
   "promotion": {
-    "decision": "auto_apply_candidate",
-    "rationale": "bounded_low_risk_runtime_hint",
+    "decision": "blocked",
+    "rationale": "boundary_blocked",
     "riskFlags": [
-      "machine_gate_required"
+      "constitutional_or_frozen_boundary"
     ]
   },
   "gate": {
-    "required": true,
-    "status": "pending",
+    "required": false,
+    "status": "not_applicable",
     "caseIds": [
       "web_creative_benchmark",
       "frontend_context_iteration",

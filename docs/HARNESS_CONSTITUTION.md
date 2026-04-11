@@ -1,10 +1,15 @@
 # HARNESS_CONSTITUTION
 
-Updated: 2026-03-08
+Authority role: `single supreme frozen constitution`  
+Authority registry: `authority-registry.v1`
+
+Updated: 2026-04-11
 
 ## 1) Frozen Goal
 
 This harness is an autonomy-first governed decision system for delegated execution.
+
+This file is the single supreme frozen constitution. Lower layers may clarify or extend, but they must not outrank it. The machine-readable authority order is fixed in `scripts/config/authority_registry.json`.
 
 Its primary goal is:
 
@@ -226,6 +231,14 @@ The following may only be preserved or strengthened:
 - parent does not perform material implementation
 - `RoutingDecision` exists before child execution
 - top-level run state uses terminal business decision states
+
+Deployment posture is profile-backed rather than hard-coded as universal truth:
+
+- `owner_local`
+- `portable_local`
+- `reviewed_team`
+
+The reference architecture default is `portable_local`. `danger-full-access`, `approval_policy = never`, and local auto `commit + push` are valid only when explicitly operating under the `owner_local` profile or an equivalent higher-authority operator decision.
 
 ## 7) Critical Invariants
 

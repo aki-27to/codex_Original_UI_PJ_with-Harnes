@@ -1,6 +1,6 @@
 # SKILL_PORTFOLIO_GOVERNANCE
 
-Updated: 2026-03-06
+Updated: 2026-04-11
 
 ## 1) Goal
 
@@ -54,6 +54,10 @@ Every cataloged skill must declare:
    - `guardFailures <= 0`
 3. Guard hard stop:
    - when `blockPromotionOnGuardFailure` is enabled, any guard failure blocks promotion.
+4. Evidence-linked reproducibility:
+   - promoted or governed skills must carry reproducible evidence refs, not only narrative success claims.
+5. Revocation:
+   - regressed, stale, or contradicted promoted skills must be revocable through the policy and catalog sync path rather than left permanently promoted.
 
 ## 6) Operational Workflow
 
@@ -75,7 +79,8 @@ Event format:
 
 4. Re-run audit and check promotion candidates.
 5. Reflect accepted promotions by changing the skill class in catalog.
-6. If assignments or package names changed, sync the human docs in the same change set.
+6. Sync any reproducibility / revocation metadata required by `scripts/config/skill_portfolio_policy.json`.
+7. If assignments or package names changed, sync the human docs in the same change set.
 
 ## 7) Release Gate Rule
 

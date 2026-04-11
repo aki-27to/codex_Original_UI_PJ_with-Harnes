@@ -1,7 +1,7 @@
 {
   "schema": "anthropic-engineering-learning-proposal.v1",
   "proposalId": "anthropic-engineering-managed-agents",
-  "createdAt": "2026-04-09T11:31:10.069Z",
+  "createdAt": "2026-04-11T03:35:45.362Z",
   "articleId": "managed-agents",
   "title": "Scaling Managed Agents: Decoupling the brain from the hands",
   "sourceUrl": "https://www.anthropic.com/engineering/managed-agents",

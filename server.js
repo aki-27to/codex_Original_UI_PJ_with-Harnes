@@ -86,6 +86,26 @@ const {
   validateTaskOutcomeTurnCompatibility,
 }=require("./scripts/lib/task_outcome_policy");
 const {
+  defaultAuthorityRegistryPath,
+  buildAuthorityRuntimeSummary,
+  loadAuthorityRegistry,
+}=require("./scripts/lib/authority_registry");
+const {
+  buildDeploymentPostureRuntimeSummary,
+}=require("./scripts/lib/deployment_posture_profile");
+const {
+  defaultContractPath:defaultAdoptionReadinessContractPath,
+  evaluateAdoptionReadiness,
+  evaluateEvalRunAdoptionReadiness,
+  loadAdoptionReadinessContract,
+}=require("./scripts/lib/adoption_readiness_policy");
+const {
+  defaultIterationControlContractPath,
+  buildEscalationDecision,
+  buildIterationDecision,
+  loadIterationControlContract,
+}=require("./scripts/lib/iteration_control_policy");
+const {
   defaultSystemCoherenceReviewContractPath,
   evaluateSystemCoherenceReview,
   loadSystemCoherenceReviewContract,
@@ -362,6 +382,7 @@ const executionProfileEnvKey="CODEX_EXECUTION_PROFILE";
 const runtimeExecutionProfile=normalizeExecutionProfile(process.env[executionProfileEnvKey],"standard");
 const codexConfigPath=path.join(workspaceRoot,".codex","config.toml");
 const userCodexConfigPath=userHomeDir?path.join(userHomeDir,".codex","config.toml"):"";
+const defaultParentAgentConfigPath=path.join(workspaceRoot,".codex","agents","default.toml");
 const defaultExecModelFallbackName="gpt-5.4";
 const defaultExecModelReasoningEffortFallback="xhigh";
 const legacyExecModelAliases=Object.freeze({
@@ -428,6 +449,11 @@ const kokoroVoiceServiceBaseUrl=normalizeKokoroServiceBaseUrl(process.env.CODEX_
 const kokoroDefaultModel=safeString(process.env.CODEX_KOKORO_DEFAULT_MODEL,80)||"kokoro";
 const kokoroDefaultVoice=safeString(process.env.CODEX_KOKORO_DEFAULT_VOICE,80)||"af_heart";
 const kokoroDefaultLangCode=safeString(process.env.CODEX_KOKORO_DEFAULT_LANG_CODE,8)||"a";
+const openAIRealtimeApiKey=safeString(process.env.OPENAI_API_KEY,400)||"";
+const openAIRealtimeClientSecretTimeoutMs=parsePositiveIntEnv("CODEX_OPENAI_REALTIME_CLIENT_SECRET_TIMEOUT_MS",15000,3000,120000);
+const openAIRealtimeModel=safeString(process.env.CODEX_OPENAI_REALTIME_MODEL,80)||"gpt-realtime";
+const openAIRealtimeDefaultVoice=safeString(process.env.CODEX_OPENAI_REALTIME_DEFAULT_VOICE,40).toLowerCase()||"marin";
+const openAIRealtimeDefaultInstructions=safeString(process.env.CODEX_OPENAI_REALTIME_DEFAULT_INSTRUCTIONS,4000)||"";
 const execIdempotencyTtlMs=parsePositiveIntEnv("CODEX_EXEC_IDEMPOTENCY_TTL_MS",30*60*1000,30*1000,24*60*60*1000);
 const harnessMemorySchema="harness-execution-memory.v1";
 const harnessMemoryPathEnvKey="CODEX_HARNESS_MEMORY_PATH";
@@ -465,6 +491,10 @@ const sloIdempotencyConflictRateMax=Number(parseRateEnv("CODEX_SLO_IDEMPOTENCY_C
 const harnessTurnContractSpecPath=path.join(workspaceRoot,"scripts","config","harness_contract_spec.json");
 const taskOutcomeContractPath=path.join(workspaceRoot,"scripts","config","task_outcome_contract.json");
 const systemCoherenceReviewContractPath=path.join(workspaceRoot,"scripts","config","system_coherence_review_contract.json");
+const authorityRegistryPath=path.join(workspaceRoot,"scripts","config","authority_registry.json");
+const iterationControlContractPath=path.join(workspaceRoot,"scripts","config","iteration_control_contract.json");
+const adoptionReadinessContractPath=path.join(workspaceRoot,"scripts","config","adoption_readiness_evaluator_contract.json");
+const deploymentPostureProfilesPath=path.join(workspaceRoot,"scripts","config","deployment_posture_profiles.json");
 const userFacingResponseContractPath=defaultUserFacingResponseContractPath;
 const planningModeContractPath=path.join(workspaceRoot,"scripts","config","planning_mode_contract.json");
 const assuranceModeContractPath=path.join(workspaceRoot,"scripts","config","assurance_depth_contract.json");
@@ -499,6 +529,9 @@ const defaultEvalSuite=loadEvalSuiteSafely();
 const harnessTurnContractSpec=loadHarnessTurnContractSpecSafely();
 const taskOutcomeContract=loadTaskOutcomeContractSafely();
 const systemCoherenceReviewContract=loadSystemCoherenceReviewContractSafely();
+const authorityRegistry=loadAuthorityRegistrySafely();
+const iterationControlContract=loadIterationControlContractSafely();
+const adoptionReadinessContract=loadAdoptionReadinessContractSafely();
 const planningModeContract=loadPlanningModeContractSafely();
 const assuranceModeContract=loadAssuranceModeContractSafely();
 const taskFamilyProfilesContract=loadTaskFamilyProfilesContractSafely();
@@ -553,6 +586,11 @@ const conversationRuntime=createConversationRuntime({
   kokoroDefaultModel,
   kokoroDefaultVoice,
   kokoroDefaultLangCode,
+  openAIRealtimeApiKey,
+  openAIRealtimeClientSecretTimeoutMs,
+  openAIRealtimeModel,
+  openAIRealtimeDefaultVoice,
+  openAIRealtimeDefaultInstructions,
   safeString,
   normalizeExecutionState,
   summarizeErrorForOperationLog,
@@ -564,6 +602,7 @@ const conversationRuntime=createConversationRuntime({
 const {
   getConversationRuntimeSnapshot,
   getKokoroVoiceRuntimeSnapshot,
+  getOpenAIRealtimeVoiceRuntimeSnapshot,
   normalizeConversationMessage,
   normalizeConversationMode,
   normalizeConversationLevel,
@@ -577,7 +616,9 @@ const {
   resolveConversationRequestErrorStatus,
   resolvePiperVoiceRequestErrorStatus,
   resolveKokoroVoiceRequestErrorStatus,
+  resolveOpenAIRealtimeVoiceRequestErrorStatus,
   requestKokoroSpeech,
+  requestOpenAIRealtimeClientSecret,
 }=conversationRuntime;
 
 const allowedOperationLogLevels=new Set(["off","core","standard","verbose"]);
@@ -725,6 +766,54 @@ function loadSystemCoherenceReviewContractSafely(){
         requiredCommand:"node scripts/system_coherence_review_test.js",
         reviewPlanes:["execution_path","governance_rules","machine_contracts","server_runtime","evaluation_memory","artifact_surface"],
       };
+    }
+  }
+}
+function loadAuthorityRegistrySafely(){
+  try{
+    return loadAuthorityRegistry(authorityRegistryPath);
+  }catch(error){
+    console.warn(`[contract] failed to load authority registry from ${authorityRegistryPath}: ${error&&error.message?error.message:String(error)}`);
+    try{
+      return loadAuthorityRegistry(defaultAuthorityRegistryPath);
+    }catch{
+      return{
+        schema:"authority-registry.v1",
+        version:"",
+        sourceDoc:"docs/HARNESS_CONSTITUTION.md",
+        precedence:[],
+        driftRules:{
+          singleSupremePath:"docs/HARNESS_CONSTITUTION.md",
+          operationalConstitutionPath:"AGENTS.md",
+          primaryExecRoute:"POST /api/exec",
+          primaryEvalRoute:"POST /api/eval/run",
+          forbiddenPrimaryRoutePatterns:[],
+        },
+      };
+    }
+  }
+}
+function loadIterationControlContractSafely(){
+  try{
+    return loadIterationControlContract(iterationControlContractPath);
+  }catch(error){
+    console.warn(`[contract] failed to load iteration control contract from ${iterationControlContractPath}: ${error&&error.message?error.message:String(error)}`);
+    try{
+      return loadIterationControlContract(defaultIterationControlContractPath);
+    }catch{
+      return loadIterationControlContract();
+    }
+  }
+}
+function loadAdoptionReadinessContractSafely(){
+  try{
+    return loadAdoptionReadinessContract(adoptionReadinessContractPath);
+  }catch(error){
+    console.warn(`[contract] failed to load adoption readiness contract from ${adoptionReadinessContractPath}: ${error&&error.message?error.message:String(error)}`);
+    try{
+      return loadAdoptionReadinessContract(defaultAdoptionReadinessContractPath);
+    }catch{
+      return loadAdoptionReadinessContract();
     }
   }
 }
@@ -4242,6 +4331,9 @@ class TurnArtifactRecorder{
     this.files.routingDecision=path.join(targetDir,"routing_decision.json");
     this.files.taskOutcomes=path.join(targetDir,"task_outcomes.json");
     this.files.reviewBundle=path.join(targetDir,"review_bundle.json");
+    this.files.adoptionReadinessEval=path.join(targetDir,"adoption_readiness_eval.json");
+    this.files.iterationDecision=path.join(targetDir,"iteration_decision.json");
+    this.files.escalationDecision=path.join(targetDir,"escalation_decision.json");
     this.files.releaseDecision=path.join(targetDir,"release_decision.json");
     this.files.discoveryOutcome=path.join(targetDir,"discovery_outcome.json");
     this.files.conformanceReport=path.join(targetDir,"conformance_report.json");
@@ -4386,7 +4478,7 @@ class TurnArtifactRecorder{
       this.stderrChunks+=1;
     }
   }
-  finalize({status,errorText,completedAt,approvalAudits,observedSignals,taskOutcomeStatus,taskOutcomeReason,planningContext,planningDecisionContract,requirementContract,dispatchPlan,evidenceManifest,stageTimeline,flowTraceSummary,reviewLoadBreakdown,requestFrame,routingDecision,taskOutcomes,reviewBundle,releaseDecision,discoveryOutcome,conformanceReport,operatorViewSummary}={}){
+  finalize({status,errorText,completedAt,approvalAudits,observedSignals,taskOutcomeStatus,taskOutcomeReason,planningContext,planningDecisionContract,requirementContract,dispatchPlan,evidenceManifest,stageTimeline,flowTraceSummary,reviewLoadBreakdown,requestFrame,routingDecision,taskOutcomes,reviewBundle,adoptionReadinessEval,iterationDecision,escalationDecision,releaseDecision,discoveryOutcome,conformanceReport,operatorViewSummary}={}){
     if(!this.canWrite())return null;
     this.writeEvent("turn.completed",{
       status:safeString(status,40)||"unknown",
@@ -4424,6 +4516,9 @@ class TurnArtifactRecorder{
       this.writeJsonArtifact(this.files.routingDecision,routingDecision&&typeof routingDecision==="object"?routingDecision:null),
       this.writeJsonArtifact(this.files.taskOutcomes,taskOutcomes&&typeof taskOutcomes==="object"?taskOutcomes:null),
       this.writeJsonArtifact(this.files.reviewBundle,reviewBundle&&typeof reviewBundle==="object"?reviewBundle:null),
+      this.writeJsonArtifact(this.files.adoptionReadinessEval,adoptionReadinessEval&&typeof adoptionReadinessEval==="object"?adoptionReadinessEval:null),
+      this.writeJsonArtifact(this.files.iterationDecision,iterationDecision&&typeof iterationDecision==="object"?iterationDecision:null),
+      this.writeJsonArtifact(this.files.escalationDecision,escalationDecision&&typeof escalationDecision==="object"?escalationDecision:null),
       this.writeJsonArtifact(this.files.releaseDecision,releaseDecision&&typeof releaseDecision==="object"?releaseDecision:null),
       this.writeJsonArtifact(this.files.discoveryOutcome,discoveryOutcome&&typeof discoveryOutcome==="object"?discoveryOutcome:null),
       this.writeJsonArtifact(this.files.conformanceReport,conformanceReport&&typeof conformanceReport==="object"?conformanceReport:null),
@@ -4517,6 +4612,9 @@ class TurnArtifactRecorder{
       routingDecisionPath:fs.existsSync(this.files.routingDecision)?this.files.routingDecision:"",
       taskOutcomesPath:fs.existsSync(this.files.taskOutcomes)?this.files.taskOutcomes:"",
       reviewBundlePath:fs.existsSync(this.files.reviewBundle)?this.files.reviewBundle:"",
+      adoptionReadinessEvalPath:fs.existsSync(this.files.adoptionReadinessEval)?this.files.adoptionReadinessEval:"",
+      iterationDecisionPath:fs.existsSync(this.files.iterationDecision)?this.files.iterationDecision:"",
+      escalationDecisionPath:fs.existsSync(this.files.escalationDecision)?this.files.escalationDecision:"",
       releaseDecisionPath:fs.existsSync(this.files.releaseDecision)?this.files.releaseDecision:"",
       discoveryOutcomePath:fs.existsSync(this.files.discoveryOutcome)?this.files.discoveryOutcome:"",
       conformanceReportPath:fs.existsSync(this.files.conformanceReport)?this.files.conformanceReport:"",
@@ -10128,7 +10226,7 @@ async function executeTurnStreaming(res,prompt,agentName,options){
         ...missingRequiredEvidence,
       ])).slice(0,16),
       requiredEvidenceFailures:missingRequiredEvidence,
-      evidenceSources:["events.ndjson","items.ndjson","manifest.json","requirement_validation.json","evidence_manifest.json","stage_timeline.json","flow_trace_summary.json","review_load_breakdown.json"],
+      evidenceSources:["events.ndjson","items.ndjson","manifest.json","requirement_validation.json","evidence_manifest.json","stage_timeline.json","flow_trace_summary.json","review_load_breakdown.json","review_bundle.json","adoption_readiness_eval.json","iteration_decision.json","escalation_decision.json","release_decision.json"],
       finalOutcome:{
         status:finalStatus,
         taskOutcomeStatus:taskOutcome.status,
@@ -10164,10 +10262,11 @@ async function executeTurnStreaming(res,prompt,agentName,options){
       runtimeRevisionGate,
       postLockDrift:postLockDriftSnapshot,
     };
+    const evidenceContractSpec=loadConstitutionConfigJson("evidence_contract.json");
     const routingDecision=buildRoutingDecision({
       selection:planningContext&&planningContext.selection?planningContext.selection:{},
       dispatchPlan:planningContext&&planningContext.dispatchPlan?planningContext.dispatchPlan:{},
-      evidenceContract:loadConstitutionConfigJson("evidence_contract.json"),
+      evidenceContract:evidenceContractSpec,
     });
     const taskOutcomesArtifact=buildTaskOutcomesArtifact({
       childEvidenceLedger,
@@ -10186,6 +10285,42 @@ async function executeTurnStreaming(res,prompt,agentName,options){
       finalOutcome:currentTurnSummaryForConformance.finalOutcome,
       clauseCompletionScorecard,
     });
+    const adoptionReadinessEval=evaluateAdoptionReadiness({
+      acceptanceResults,
+      reviewBundle,
+      finalOutcome:currentTurnSummaryForConformance.finalOutcome,
+      clauseCompletionScorecard,
+      residualRisks:currentTurnSummaryForConformance.residualRisks,
+      assumptions:currentTurnSummaryForConformance.assumptions,
+      requiredEvidenceFailures:missingRequiredEvidence,
+      evidenceRefs:["evidence_manifest.json","flow_trace_summary.json","review_load_breakdown.json","review_bundle.json"],
+      expectedEvidenceRefCount:Array.isArray(evidenceContractSpec&&evidenceContractSpec.requiredTurnArtifacts)?evidenceContractSpec.requiredTurnArtifacts.length:7,
+      maxResidualRiskItems:iterationControlContract&&iterationControlContract.riskThresholds&&Number.isFinite(Number(iterationControlContract.riskThresholds.maxResidualRiskItems))
+        ?Number(iterationControlContract.riskThresholds.maxResidualRiskItems)
+        :6,
+    },adoptionReadinessContract);
+    const iterationDecision=buildIterationDecision({
+      evaluator:adoptionReadinessEval,
+      finalOutcome:currentTurnSummaryForConformance.finalOutcome,
+      residualRisks:currentTurnSummaryForConformance.residualRisks,
+      assumptions:currentTurnSummaryForConformance.assumptions,
+      requiredEvidenceFailures:missingRequiredEvidence,
+      stepCount:Math.max(0,observedStreamEvents.length+observedItemRecords.length),
+      startedAt:turnRecord.startedAt,
+      now:Date.now(),
+    },iterationControlContract);
+    const escalationDecision=buildEscalationDecision({
+      contract:iterationControlContract,
+      iterationDecision,
+      finalOutcome:currentTurnSummaryForConformance.finalOutcome,
+    });
+    reviewBundle.adoption_readiness=adoptionReadinessEval;
+    reviewBundle.iteration_decision=iterationDecision;
+    reviewBundle.recommended_release_state=iterationDecision.action==="RELEASE"
+      ?safeString(reviewBundle.recommended_release_state,80)||"RELEASE_APPROVED"
+      :iterationDecision.action==="NEEDS_INPUT"
+        ?"EXTERNAL_ACTION_REQUIRED"
+        :"RELEASE_BLOCKED";
     const releaseDecision=buildReleaseDecision({
       finalOutcome:currentTurnSummaryForConformance.finalOutcome,
       reviewBundle,
@@ -10198,6 +10333,8 @@ async function executeTurnStreaming(res,prompt,agentName,options){
       rationaleNotes:[
         `turn_status=${finalStatus}`,
         `task_outcome_status=${taskOutcome.status}`,
+        `adoption_readiness=${Number(adoptionReadinessEval&&adoptionReadinessEval.scores&&adoptionReadinessEval.scores.adoption_readiness||0).toFixed(4)}`,
+        `iteration_action=${safeString(iterationDecision&&iterationDecision.action,80)||"UNSET"}`,
       ],
     });
     const conformanceReport=buildConformanceReport({
@@ -10208,7 +10345,7 @@ async function executeTurnStreaming(res,prompt,agentName,options){
       childEvidenceLedger,
       acceptanceResults,
       requiredEvidenceFailures:missingRequiredEvidence,
-      evidenceRefs:["evidence_manifest.json","flow_trace_summary.json","review_load_breakdown.json","release_decision.json"],
+      evidenceRefs:["evidence_manifest.json","flow_trace_summary.json","review_load_breakdown.json","adoption_readiness_eval.json","iteration_decision.json","release_decision.json"],
       replayBundleRefs:[safeString(turnRecord.threadId,160)],
       rationaleNotes:[
         `turn_status=${finalStatus}`,
@@ -10483,6 +10620,9 @@ async function executeTurnStreaming(res,prompt,agentName,options){
         routingDecision,
         taskOutcomes:taskOutcomesArtifact,
         reviewBundle,
+        adoptionReadinessEval,
+        iterationDecision,
+        escalationDecision,
         releaseDecision,
         discoveryOutcome:conformanceReport&&conformanceReport.discoveryOutcome?conformanceReport.discoveryOutcome:null,
         conformanceReport,
@@ -10502,6 +10642,9 @@ async function executeTurnStreaming(res,prompt,agentName,options){
         turnRecord.routingDecisionPath=artifactResult.routingDecisionPath||null;
         turnRecord.taskOutcomesPath=artifactResult.taskOutcomesPath||null;
         turnRecord.reviewBundlePath=artifactResult.reviewBundlePath||null;
+        turnRecord.adoptionReadinessEvalPath=artifactResult.adoptionReadinessEvalPath||null;
+        turnRecord.iterationDecisionPath=artifactResult.iterationDecisionPath||null;
+        turnRecord.escalationDecisionPath=artifactResult.escalationDecisionPath||null;
         turnRecord.releaseDecisionPath=artifactResult.releaseDecisionPath||null;
         turnRecord.conformanceReportPath=artifactResult.conformanceReportPath||null;
         turnRecord.operatorViewSummaryPath=artifactResult.operatorViewSummaryPath||null;
@@ -12747,6 +12890,12 @@ function buildRuntimeApiSnapshot(){
   const slo=buildSloRuntimeSnapshot();
   const staticApps=buildStaticAppsRuntimeSnapshot();
   const gitAutomation=buildGitAutomationRuntimeSnapshot();
+  const authorityModel=buildAuthorityRuntimeSummary({registry:authorityRegistry});
+  const deploymentPosture=buildDeploymentPostureRuntimeSummary({
+    approvalPolicy:readTopLevelCodexConfigString(defaultParentAgentConfigPath,"approval_policy")||"on-request",
+    sandboxMode:readTopLevelCodexConfigString(defaultParentAgentConfigPath,"sandbox_mode")||"workspace-write",
+    autoCommitAndPush:Boolean(gitAutomation&&gitAutomation.autocommitEnabled&&gitAutomation.autopushEnabled),
+  });
   const evalHarness={
     suite:buildEvalSuiteSummary(defaultEvalSuite),
     configPath:summarizePathForOperationLog(evalSuiteConfigPath,220),
@@ -12772,6 +12921,21 @@ function buildRuntimeApiSnapshot(){
   const documentTooling=buildDocumentToolingRuntimeSnapshot({
     workspaceRoot,
   });
+  const iterationControlSummary={
+    schema:safeString(iterationControlContract&&iterationControlContract.schema,80)||"iteration-control-contract.v1",
+    version:safeString(iterationControlContract&&iterationControlContract.version,80)||"",
+    path:summarizePathForOperationLog(iterationControlContractPath,220),
+    qualityThresholds:iterationControlContract&&iterationControlContract.qualityThresholds?iterationControlContract.qualityThresholds:{},
+    budgets:iterationControlContract&&iterationControlContract.budgets?iterationControlContract.budgets:{},
+    releaseState:"fail_closed",
+  };
+  const adoptionReadinessSummary={
+    schema:safeString(adoptionReadinessContract&&adoptionReadinessContract.schema,80)||"adoption-readiness-evaluator-contract.v1",
+    version:safeString(adoptionReadinessContract&&adoptionReadinessContract.version,80)||"",
+    path:summarizePathForOperationLog(adoptionReadinessContractPath,220),
+    dimensions:Array.isArray(adoptionReadinessContract&&adoptionReadinessContract.dimensions)?adoptionReadinessContract.dimensions:[],
+    dimensionCount:Array.isArray(adoptionReadinessContract&&adoptionReadinessContract.dimensions)?adoptionReadinessContract.dimensions.length:0,
+  };
   const secondaryLearning={
     anthropicEngineering:buildAnthropicEngineeringLearningRuntimeStateSnapshot(),
   };
@@ -12891,6 +13055,10 @@ function buildRuntimeApiSnapshot(){
     static_apps:staticApps,
     gitAutomation,
     git_automation:gitAutomation,
+    authorityRegistry:authorityModel,
+    authority_registry:authorityModel,
+    deploymentPosture,
+    deployment_posture:deploymentPosture,
     harnessMemory,
     harness_memory:harnessMemory,
     governedMemory,
@@ -12904,6 +13072,10 @@ function buildRuntimeApiSnapshot(){
     external_learning:externalLearning,
     documentTooling,
     document_tooling:documentTooling,
+    iterationControl:iterationControlSummary,
+    iteration_control:iterationControlSummary,
+    adoptionReadinessContract:adoptionReadinessSummary,
+    adoption_readiness_contract:adoptionReadinessSummary,
     manualSelfImprovement,
     manual_self_improvement:manualSelfImprovement,
     agiImprovementFlywheel,
@@ -12997,6 +13169,8 @@ function buildRuntimeApiSnapshot(){
     piper_voice_api:getPiperRuntimeSnapshot({workspaceRoot}),
     kokoroVoiceApi:getKokoroVoiceRuntimeSnapshot(),
     kokoro_voice_api:getKokoroVoiceRuntimeSnapshot(),
+    openaiRealtimeVoiceApi:getOpenAIRealtimeVoiceRuntimeSnapshot(),
+    openai_realtime_voice_api:getOpenAIRealtimeVoiceRuntimeSnapshot(),
     evidenceArtifacts:{
       enabled:turnArtifactsEnabled,
       root:summarizePathForOperationLog(turnArtifactsRoot,220),
@@ -15441,6 +15615,54 @@ async function requestHandler(req,res){
           artifactOutputRoot:path.join(workspaceRoot,"output","agi_v1",reportId),
         });
       }
+      const adoptionReadiness=evaluateEvalRunAdoptionReadiness({
+        suite,
+        runs,
+        verifier,
+        comparison,
+      },adoptionReadinessContract);
+      const iterationDecision=buildIterationDecision({
+        evaluator:adoptionReadiness,
+        finalOutcome:{
+          taskOutcomeStatus:safeString(verifier&&verifier.verdict,80).toUpperCase()==="PASS"?"COMPLETED":"FAILED_VALIDATION",
+          taskOutcomeReason:safeString(verifier&&verifier.reason,160)||"independent_verifier",
+        },
+        residualRisks:Array.isArray(adoptionReadiness&&adoptionReadiness.residualRisks)?adoptionReadiness.residualRisks:[],
+        missingEvidence:Array.isArray(adoptionReadiness&&adoptionReadiness.blockers)?adoptionReadiness.blockers.filter((entry)=>/evidence/i.test(safeString(entry,160))):[],
+        stepCount:maxCases,
+      },iterationControlContract);
+      const evalReviewBundle={
+        schema:"review-bundle.v1",
+        recommended_release_state:iterationDecision.action==="RELEASE"?"RELEASE_APPROVED":iterationDecision.action==="NEEDS_INPUT"?"EXTERNAL_ACTION_REQUIRED":"RELEASE_BLOCKED",
+        blockers:Array.isArray(adoptionReadiness&&adoptionReadiness.blockers)?adoptionReadiness.blockers:[],
+      };
+      const runLevelReleaseDecision=buildReleaseDecision({
+        finalOutcome:{
+          taskOutcomeStatus:safeString(verifier&&verifier.verdict,80).toUpperCase()==="PASS"?"COMPLETED":"FAILED_VALIDATION",
+          taskOutcomeReason:safeString(iterationDecision&&iterationDecision.reason,160)||"eval_iteration_decision",
+        },
+        reviewBundle:evalReviewBundle,
+        signoffRefs:["verifier","comparison"],
+        replayBundleRefs:[reportId],
+        residualRisks:Array.isArray(adoptionReadiness&&adoptionReadiness.residualRisks)?adoptionReadiness.residualRisks:[],
+        assumptions:Array.isArray(adoptionReadiness&&adoptionReadiness.assumptions)?adoptionReadiness.assumptions:[],
+        missingEvidence:Array.isArray(adoptionReadiness&&adoptionReadiness.blockers)?adoptionReadiness.blockers.filter((entry)=>/evidence/i.test(safeString(entry,160))):[],
+        clauseCompletionScorecard:{
+          status:iterationDecision.action==="RELEASE"?"PASS":"FAIL",
+          clauses:[],
+        },
+        rationaleNotes:[
+          `adoption_readiness=${Number(adoptionReadiness&&adoptionReadiness.scores&&adoptionReadiness.scores.adoption_readiness||0).toFixed(4)}`,
+          `iteration_action=${safeString(iterationDecision&&iterationDecision.action,80)||"UNSET"}`,
+        ],
+      });
+      const escalationDecision=buildEscalationDecision({
+        contract:iterationControlContract,
+        iterationDecision,
+        finalOutcome:{
+          taskOutcomeReason:safeString(iterationDecision&&iterationDecision.reason,160)||"eval_iteration_decision",
+        },
+      });
       const report={
         runId:reportId,
         generatedAt:Date.now(),
@@ -15451,6 +15673,10 @@ async function requestHandler(req,res){
         runs,
         comparison,
         verifier,
+        adoptionReadiness,
+        iterationDecision,
+        escalationDecision,
+        releaseDecision:runLevelReleaseDecision,
         probePersistence:{
           requested:persistProbeResults?1:0,
           persistedRecords:persistedProbeRecords.length,
@@ -15828,6 +16054,53 @@ async function requestHandler(req,res){
         ok:false,
         error:error&&error.message?error.message:String(error),
         code:safeString(error&&error.code?String(error.code):"",80)||undefined,
+      });
+    }
+    return;
+  }
+
+  if(req.method==="POST"&&pathname==="/api/voice/openai/realtime/client-secret"){
+    try{
+      const validation=validateControlMutationRequest(req,{action:"exec",enforceActionAllowlist:false});
+      if(!validation.ok){
+        sendJson(res,validation.status,{ok:false,error:validation.error});
+        return;
+      }
+      const contentTypeValidation=validateJsonMutationContentType(req,{required:true,expectedMime:conversationApiRequiredContentType});
+      if(!contentTypeValidation.ok){
+        sendJson(res,contentTypeValidation.status,{ok:false,error:contentTypeValidation.error});
+        return;
+      }
+      const raw=await readRequestBody(req,defaultRequestBodyLimitBytes);
+      const body=raw?JSON.parse(raw):{};
+      const voice=safeString(body.voice,40);
+      const instructions=safeString(body.instructions,4000);
+      const clientSecret=await requestOpenAIRealtimeClientSecret({voice,instructions});
+      const session=clientSecret&&clientSecret.session&&typeof clientSecret.session==="object"
+        ?{
+          type:safeString(clientSecret.session.type,40),
+          model:safeString(clientSecret.session.model,80),
+          audio:clientSecret.session.audio&&typeof clientSecret.session.audio==="object"
+            ?{
+              output:clientSecret.session.audio.output&&typeof clientSecret.session.audio.output==="object"
+                ?{voice:safeString(clientSecret.session.audio.output.voice,40)}
+                :undefined,
+            }
+            :undefined,
+        }
+        :undefined;
+      sendJson(res,200,{
+        ok:true,
+        value:safeString(clientSecret&&clientSecret.value,320),
+        expiresAt:Number.isFinite(Number(clientSecret&&clientSecret.expires_at))
+          ?Math.max(0,Math.trunc(Number(clientSecret.expires_at)))
+          :0,
+        session,
+      });
+    }catch(error){
+      sendJson(res,resolveOpenAIRealtimeVoiceRequestErrorStatus(error),{
+        ok:false,
+        error:error&&error.message?error.message:String(error),
       });
     }
     return;

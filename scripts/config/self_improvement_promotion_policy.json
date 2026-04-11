@@ -1,6 +1,63 @@
 {
-  "schema": "self-improvement-promotion-policy.v1",
+  "schema": "self-improvement-promotion-policy.v2",
   "mode": "machine_guarded_autonomy",
+  "lifecycles": [
+    "proposal_only",
+    "shadow_candidate",
+    "gated_candidate",
+    "auto_apply_candidate",
+    "blocked"
+  ],
+  "changeClasses": {
+    "runtime_retrieval_hint": {
+      "defaultLifecycle": "auto_apply_candidate",
+      "blastRadius": "low"
+    },
+    "frontend_quality_note": {
+      "defaultLifecycle": "auto_apply_candidate",
+      "blastRadius": "low"
+    },
+    "planner_strategy": {
+      "defaultLifecycle": "shadow_candidate",
+      "blastRadius": "medium"
+    },
+    "decomposition_policy": {
+      "defaultLifecycle": "shadow_candidate",
+      "blastRadius": "medium"
+    },
+    "tool_selection_policy": {
+      "defaultLifecycle": "shadow_candidate",
+      "blastRadius": "medium"
+    },
+    "retry_recovery_policy": {
+      "defaultLifecycle": "gated_candidate",
+      "blastRadius": "medium"
+    },
+    "memory_pack_policy": {
+      "defaultLifecycle": "gated_candidate",
+      "blastRadius": "medium"
+    },
+    "skill_surface_policy": {
+      "defaultLifecycle": "gated_candidate",
+      "blastRadius": "medium"
+    },
+    "memory_policy_note": {
+      "defaultLifecycle": "proposal_only",
+      "blastRadius": "medium"
+    },
+    "eval_extension": {
+      "defaultLifecycle": "proposal_only",
+      "blastRadius": "medium"
+    },
+    "operator_policy_note": {
+      "defaultLifecycle": "proposal_only",
+      "blastRadius": "medium"
+    },
+    "runtime_policy_tuning": {
+      "defaultLifecycle": "proposal_only",
+      "blastRadius": "medium"
+    }
+  },
   "autoApply": {
     "changeClasses": [
       "runtime_retrieval_hint",
@@ -8,6 +65,20 @@
     ],
     "requireGatePass": true,
     "maxAutoApplyPerLane": 12
+  },
+  "shadowCandidate": {
+    "changeClasses": [
+      "planner_strategy",
+      "decomposition_policy",
+      "tool_selection_policy"
+    ]
+  },
+  "gatedCandidate": {
+    "changeClasses": [
+      "retry_recovery_policy",
+      "memory_pack_policy",
+      "skill_surface_policy"
+    ]
   },
   "proposalOnly": {
     "targets": [
@@ -31,11 +102,57 @@
   "blocked": {
     "targets": [
       "AGENTS.md",
+      "docs/HARNESS_CONSTITUTION.md",
       "docs/PHASE_REQUIREMENT_FOUNDATION_V1.md",
       "scripts/lib/planning_mode_policy.js",
+      "scripts/config/authority_registry.json",
       "scripts/config/requirement_contract.schema.json",
       "scripts/config/dispatch_plan.schema.json",
-      "scripts/lib/requirement_revision_policy.js"
+      "scripts/lib/requirement_revision_policy.js",
+      "scripts/config/iteration_control_contract.json",
+      "scripts/config/task_outcome_contract.json",
+      "scripts/config/evidence_contract.json",
+      "scripts/config/adoption_readiness_evaluator_contract.json"
+    ],
+    "changeClasses": [
+      "constitution",
+      "authority_registry",
+      "approval_boundary",
+      "safety_boundary",
+      "core_release_gate",
+      "core_evaluator_hard_gate"
+    ]
+  },
+  "targetedRegression": {
+    "runtime_retrieval_hint": [
+      "public_regression"
+    ],
+    "frontend_quality_note": [
+      "public_regression"
+    ],
+    "planner_strategy": [
+      "public_regression",
+      "self_improvement_gate"
+    ],
+    "decomposition_policy": [
+      "public_regression",
+      "self_improvement_gate"
+    ],
+    "tool_selection_policy": [
+      "public_regression",
+      "self_improvement_gate"
+    ],
+    "retry_recovery_policy": [
+      "public_regression",
+      "self_improvement_gate"
+    ],
+    "memory_pack_policy": [
+      "public_regression",
+      "memory_eval"
+    ],
+    "skill_surface_policy": [
+      "public_regression",
+      "skill_portfolio_audit"
     ]
   },
   "evalGate": {

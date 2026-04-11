@@ -1,6 +1,6 @@
 {
-  "schema": "system-coherence-review-contract.v1",
-  "version": "2026-04-07.r1",
+  "schema": "system-coherence-review-contract.v2",
+  "version": "2026-04-11.r1",
   "sourceDoc": "docs/SYSTEM_COHERENCE_REVIEW.md",
   "requiredCommand": "node scripts/system_coherence_review_test.js",
   "primaryExecRoute": "POST /api/exec",
@@ -60,8 +60,12 @@
     "docs/ARCHITECTURE_CHANGELOG.md"
   ],
   "requiredMachineContracts": [
+    "scripts/config/authority_registry.json",
     "scripts/config/agent_governance_contracts.json",
+    "scripts/config/adoption_readiness_evaluator_contract.json",
+    "scripts/config/deployment_posture_profiles.json",
     "scripts/config/evidence_contract.json",
+    "scripts/config/iteration_control_contract.json",
     "scripts/config/task_outcome_contract.json"
   ]
 }

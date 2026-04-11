@@ -40,6 +40,11 @@ function createConversationRuntime(options = {}) {
     kokoroDefaultModel,
     kokoroDefaultVoice,
     kokoroDefaultLangCode,
+    openAIRealtimeApiKey,
+    openAIRealtimeClientSecretTimeoutMs,
+    openAIRealtimeModel,
+    openAIRealtimeDefaultVoice,
+    openAIRealtimeDefaultInstructions,
     safeString,
     normalizeExecutionState,
     summarizeErrorForOperationLog,
@@ -105,6 +110,47 @@ function createConversationRuntime(options = {}) {
       limits: {
         bodyBytes: kokoroVoiceRequestBodyLimitBytes,
         timeoutMs: kokoroVoiceRequestTimeoutMs,
+      },
+    };
+  }
+
+  function openAIRealtimeVoiceConfigured() {
+    return Boolean(safeString(openAIRealtimeApiKey, 400));
+  }
+
+  const openAIRealtimeVoices = Object.freeze([
+    "alloy",
+    "ash",
+    "ballad",
+    "coral",
+    "echo",
+    "sage",
+    "shimmer",
+    "verse",
+    "marin",
+    "cedar",
+  ]);
+
+  function normalizeOpenAIRealtimeVoice(value) {
+    const raw = safeString(value, 40).toLowerCase();
+    return openAIRealtimeVoices.includes(raw) ? raw : openAIRealtimeDefaultVoice;
+  }
+
+  function getOpenAIRealtimeVoiceRuntimeSnapshot() {
+    const configured = openAIRealtimeVoiceConfigured();
+    return {
+      provider: "openai-realtime",
+      transport: "webrtc",
+      endpoint: "POST /api/voice/openai/realtime/client-secret",
+      configured,
+      setupHint: configured ? "" : "Set OPENAI_API_KEY to enable OpenAI Realtime voice.",
+      model: openAIRealtimeModel,
+      defaultVoice: openAIRealtimeDefaultVoice,
+      voices: openAIRealtimeVoices.slice(),
+      originCheck: true,
+      contentType: conversationApiRequiredContentType,
+      limits: {
+        timeoutMs: openAIRealtimeClientSecretTimeoutMs,
       },
     };
   }
@@ -558,6 +604,26 @@ function createConversationRuntime(options = {}) {
     return 500;
   }
 
+  function resolveOpenAIRealtimeVoiceRequestErrorStatus(error) {
+    if (error instanceof SyntaxError) {
+      return 400;
+    }
+    if (Number.isFinite(Number(error && error.statusCode))) {
+      return Math.max(400, Math.min(599, Math.trunc(Number(error.statusCode))));
+    }
+    const message = safeString(error && error.message ? error.message : String(error), 240).toLowerCase();
+    if (message === "openai realtime voice is not configured") {
+      return 503;
+    }
+    if (message.startsWith("invalid openai realtime voice")) {
+      return 400;
+    }
+    if (message.startsWith("openai realtime client secret failed")) {
+      return 502;
+    }
+    return 500;
+  }
+
   function requestKokoroSpeech({ text, model, voice, langCode, speed } = {}) {
     return new Promise((resolve, reject) => {
       let endpointUrl;
@@ -654,9 +720,108 @@ function createConversationRuntime(options = {}) {
     });
   }
 
+  function requestOpenAIRealtimeClientSecret({ voice, instructions } = {}) {
+    return new Promise((resolve, reject) => {
+      if (!openAIRealtimeVoiceConfigured()) {
+        const error = new Error("openai realtime voice is not configured");
+        error.statusCode = 503;
+        reject(error);
+        return;
+      }
+      const normalizedVoice = normalizeOpenAIRealtimeVoice(voice);
+      if (!normalizedVoice) {
+        const error = new Error(`invalid openai realtime voice: ${safeString(voice, 80) || "(empty)"}`);
+        error.statusCode = 400;
+        reject(error);
+        return;
+      }
+      const normalizedInstructions = safeString(instructions, 4000) || openAIRealtimeDefaultInstructions;
+      const payload = {
+        session: {
+          type: "realtime",
+          model: openAIRealtimeModel,
+          audio: {
+            output: {
+              voice: normalizedVoice,
+            },
+          },
+        },
+      };
+      if (normalizedInstructions) {
+        payload.session.instructions = normalizedInstructions;
+      }
+      const requestBody = Buffer.from(JSON.stringify(payload), "utf8");
+      const req = https.request({
+        protocol: "https:",
+        hostname: "api.openai.com",
+        port: 443,
+        path: "/v1/realtime/client_secrets",
+        method: "POST",
+        headers: {
+          authorization: `Bearer ${openAIRealtimeApiKey}`,
+          "content-type": "application/json; charset=utf-8",
+          "content-length": requestBody.length,
+        },
+      }, (upstream) => {
+        const chunks = [];
+        upstream.on("data", (chunk) => {
+          chunks.push(Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk));
+        });
+        upstream.on("end", () => {
+          const statusCode = Number.isFinite(Number(upstream.statusCode)) ? Math.trunc(Number(upstream.statusCode)) : 502;
+          const bodyBuffer = Buffer.concat(chunks);
+          const rawBody = bodyBuffer.toString("utf8");
+          let parsed = {};
+          try {
+            parsed = rawBody ? JSON.parse(rawBody) : {};
+          } catch {
+            parsed = {};
+          }
+          if (statusCode >= 200 && statusCode < 300) {
+            resolve(parsed);
+            return;
+          }
+          const upstreamError =
+            safeString(
+              parsed && parsed.error && typeof parsed.error === "object"
+                ? parsed.error.message || parsed.error.code || JSON.stringify(parsed.error)
+                : "",
+              320
+            )
+            || safeString(rawBody, 320)
+            || `openai realtime client secret failed (HTTP ${statusCode})`;
+          const error = new Error(upstreamError.startsWith("openai realtime client secret failed")
+            ? upstreamError
+            : `openai realtime client secret failed: ${upstreamError}`);
+          error.statusCode = statusCode >= 500 ? 502 : Math.max(400, Math.min(599, statusCode));
+          error.code = "openai_realtime_client_secret_http";
+          reject(error);
+        });
+      });
+      req.setTimeout(openAIRealtimeClientSecretTimeoutMs, () => {
+        req.destroy(new Error(`openai realtime client secret timed out after ${openAIRealtimeClientSecretTimeoutMs}ms`));
+      });
+      req.on("error", (error) => {
+        const wrapped = new Error(safeString(error && error.message ? error.message : "openai realtime client secret request failed", 220) || "openai realtime client secret request failed");
+        wrapped.code = safeString(error && error.code ? String(error.code) : "", 80) || "openai_realtime_client_secret_error";
+        if (/timed out/i.test(wrapped.message)) {
+          wrapped.statusCode = 504;
+        } else if (wrapped.code === "ECONNREFUSED" || wrapped.code === "EHOSTUNREACH" || wrapped.code === "ENOTFOUND") {
+          wrapped.statusCode = 503;
+        } else {
+          wrapped.statusCode = 502;
+        }
+        reject(wrapped);
+      });
+      req.write(requestBody);
+      req.end();
+    });
+  }
+
   return {
     getConversationRuntimeSnapshot,
     getKokoroVoiceRuntimeSnapshot,
+    getOpenAIRealtimeVoiceRuntimeSnapshot,
     normalizeConversationMessage,
     normalizeConversationMode,
     normalizeConversationLevel,
@@ -670,7 +835,9 @@ function createConversationRuntime(options = {}) {
     resolveConversationRequestErrorStatus,
     resolvePiperVoiceRequestErrorStatus,
     resolveKokoroVoiceRequestErrorStatus,
+    resolveOpenAIRealtimeVoiceRequestErrorStatus,
     requestKokoroSpeech,
+    requestOpenAIRealtimeClientSecret,
   };
 }
 

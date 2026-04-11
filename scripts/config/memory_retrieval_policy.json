@@ -1,13 +1,15 @@
 {
-  "schema": "memory-retrieval-policy.v1",
-  "version": "2026-04-04.r1",
+  "schema": "memory-retrieval-policy.v2",
+  "version": "2026-04-11.r1",
   "defaultPackBudget": 18,
   "sectionBudgets": {
     "spec": 4,
     "intent": 3,
     "workspace_progress": 2,
-    "experience": 4,
+    "experience": 3,
     "semantic": 3,
+    "procedure": 2,
+    "evaluation": 2,
     "preference": 1,
     "improvement": 1
   },
@@ -35,6 +37,7 @@
       "constitution_ref",
       "preference_signal",
       "semantic_lesson",
+      "review_failure_pattern",
       "runtime_hint",
       "improvement_candidate",
       "failure_pattern"
@@ -42,6 +45,7 @@
     "penalizedTypes": [
       "constitution_ref",
       "eval_observation",
+      "evaluation_lesson",
       "episodic_event"
     ],
     "explicitMismatchPenalty": 0.38

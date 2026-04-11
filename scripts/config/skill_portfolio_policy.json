@@ -1,6 +1,6 @@
 {
-  "schema": "skill-portfolio-policy.v1",
-  "version": "2026-03-07.r2",
+  "schema": "skill-portfolio-policy.v2",
+  "version": "2026-04-11.r1",
   "classes": [
     "global",
     "role",
@@ -106,5 +106,15 @@
   },
   "guardrail": {
     "blockPromotionOnGuardFailure": true
+  },
+  "promotionEvidence": {
+    "requireReproducibilityEvidence": true,
+    "requireAdoptionFeedbackLink": true,
+    "requireEvaluationLessonLink": true
+  },
+  "revocationPolicy": {
+    "revokeOnRegression": true,
+    "revokeOnGuardFailure": true,
+    "maxSilentRegressions": 0
   }
 }

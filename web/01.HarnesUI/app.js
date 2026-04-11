@@ -38,6 +38,15 @@ const SETTINGS_KEY_LEGACY="codex-console-settings-v2";
 const CHAT_STATE_KEY="codex-console-chat-v1";
 const CHAT_STATE_VERSION=1;
 const CHAT_MESSAGE_LIMIT=240;
+const REALTIME_VOICE_TTS_PROVIDER_KEY="codex-harnesui-voice-tts-v1";
+const REALTIME_VOICE_LANG_KEY="codex-harnesui-voice-lang-v1";
+const REALTIME_VOICE_TTS_PROVIDERS=Object.freeze(["browser","kokoro"]);
+const REALTIME_VOICE_LANG_OPTIONS=Object.freeze([
+  {value:"browser",label:"Browser default"},
+  {value:"ja-JP",label:"日本語 (ja-JP)"},
+  {value:"en-US",label:"English (en-US)"},
+]);
+const LEGACY_COMPOSER_SAMPLE_PROMPT="依頼を書く。例: web/01.HarnesUI を会話中心の UI に刷新する。制約は /api/exec とローカル運用を維持。完了条件は desktop/mobile で視覚確認。";
 const HARNESS_CHECK_MODE_KEY="codex-harness-check-mode-v2";
 const HARNESS_CHECK_MODE_KEY_LEGACY="codex-harness-check-mode-v1";
 const HARNESS_CHECK_MODES={ADAPTIVE:"adaptive",STRICT:"strict",RELAXED:"relaxed"};
@@ -111,6 +120,13 @@ e.composerModeChip=by("composerModeChip");
 e.composerModelChip=by("composerModelChip");
 e.composerWorkspaceChip=by("composerWorkspaceChip");
 e.composerAttachmentChip=by("composerAttachmentChip");
+e.openaiVoiceStrip=by("openaiVoiceStrip");
+e.openaiVoiceLangSelect=by("openaiVoiceLangSelect");
+e.openaiVoiceSelect=by("openaiVoiceSelect");
+e.openaiVoiceStartBtn=by("openaiVoiceStartBtn");
+e.openaiVoiceStopBtn=by("openaiVoiceStopBtn");
+e.openaiVoiceStatus=by("openaiVoiceStatus");
+e.openaiVoiceTranscript=by("openaiVoiceTranscript");
 e.harnessPlanNextCard=by("harnessPlanNextCard");
 e.harnessPlanNextStep=by("harnessPlanNextStep");
 e.harnessPlanNextPurpose=by("harnessPlanNextPurpose");
@@ -148,6 +164,25 @@ const notificationAudioState={
   unlocked:false,
   unlockBound:false,
   lastPlayAt:0,
+};
+const realtimeVoiceState={
+  active:false,
+  starting:false,
+  listening:false,
+  speaking:false,
+  pausedForTurn:false,
+  status:"Voice idle.",
+  transcript:"",
+  ttsProvider:"browser",
+  recognitionLang:"browser",
+  recognition:null,
+  silenceMs:1400,
+  silenceTimer:null,
+  restartTimer:null,
+  pendingText:"",
+  interimText:"",
+  kokoroAudio:null,
+  kokoroAbortController:null,
 };
 function by(id){return document.getElementById(id)}
 function shouldUseStickyComposerForUi(viewportHeight=window.innerHeight){
@@ -700,10 +735,14 @@ function serializeChatSettingsForStorage(settings){
     workspaceLockRoot:normalized.workspaceLockRoot,
   };
 }
+function sanitizeDraftPromptForUi(value){
+  const text=typeof value==="string"?value:"";
+  return text===LEGACY_COMPOSER_SAMPLE_PROMPT?"":text;
+}
 function ensureChatScopedStateForUi(chatRecord=active()){
   if(!chatRecord||typeof chatRecord!=="object")return null;
   chatRecord.settings=normalizeChatSettingsForUi(chatRecord.settings);
-  if(typeof chatRecord.draftPrompt!=="string")chatRecord.draftPrompt="";
+  chatRecord.draftPrompt=sanitizeDraftPromptForUi(chatRecord.draftPrompt);
   if(!Array.isArray(chatRecord.draftAttachments))chatRecord.draftAttachments=[];
   return chatRecord;
 }
@@ -729,7 +768,7 @@ function syncActiveChatScopedStateFromUi(){
     workspacePath:selectedCwd(),
     workspaceLockRoot:existingLockRoot,
   },current.settings);
-  current.draftPrompt=e.promptInput&&typeof e.promptInput.value==="string"?e.promptInput.value:"";
+  current.draftPrompt=sanitizeDraftPromptForUi(e.promptInput&&typeof e.promptInput.value==="string"?e.promptInput.value:"");
   current.draftAttachments=Array.isArray(composerAttachment.items)?composerAttachment.items:[];
   scheduleSaveChatState();
   return current;
@@ -768,7 +807,7 @@ function applyChatScopedStateToUi(chatRecord){
     e.workspacePath.value=settings.workspacePath||runtimeWorkspace||"";
   }
   if(e.promptInput){
-    e.promptInput.value=typeof current.draftPrompt==="string"?current.draftPrompt:"";
+    e.promptInput.value=sanitizeDraftPromptForUi(current.draftPrompt);
     syncPromptInputHeight({resetToBase:!e.promptInput.value,remeasureBase:true});
   }
   composerAttachment.error="";
@@ -1826,6 +1865,460 @@ const controlApiAllows=(action)=>{
   if(!wanted||!cfg||!Array.isArray(cfg.actionAllowlist))return false;
   return cfg.actionAllowlist.includes(wanted);
 };
+function normalizeRealtimeVoiceTtsProvider(value){
+  const raw=String(value||"").trim().toLowerCase();
+  return REALTIME_VOICE_TTS_PROVIDERS.includes(raw)?raw:"browser";
+}
+function normalizeRealtimeVoiceRecognitionLang(value){
+  const raw=String(value||"").trim();
+  return REALTIME_VOICE_LANG_OPTIONS.some((entry)=>entry.value===raw)?raw:"browser";
+}
+function loadRealtimeVoiceTtsProvider(){
+  try{
+    return normalizeRealtimeVoiceTtsProvider(localStorage.getItem(REALTIME_VOICE_TTS_PROVIDER_KEY)||"browser");
+  }catch{
+    return "browser";
+  }
+}
+function storeRealtimeVoiceTtsProvider(value){
+  try{
+    localStorage.setItem(REALTIME_VOICE_TTS_PROVIDER_KEY,normalizeRealtimeVoiceTtsProvider(value));
+  }catch{}
+}
+function loadRealtimeVoiceRecognitionLang(){
+  try{
+    return normalizeRealtimeVoiceRecognitionLang(localStorage.getItem(REALTIME_VOICE_LANG_KEY)||"browser");
+  }catch{
+    return "browser";
+  }
+}
+function storeRealtimeVoiceRecognitionLang(value){
+  try{
+    localStorage.setItem(REALTIME_VOICE_LANG_KEY,normalizeRealtimeVoiceRecognitionLang(value));
+  }catch{}
+}
+function resolvedRealtimeVoiceRecognitionLang(){
+  if(realtimeVoiceState.recognitionLang&&realtimeVoiceState.recognitionLang!=="browser"){
+    return realtimeVoiceState.recognitionLang;
+  }
+  const browserLang=typeof navigator!=="undefined"&&typeof navigator.language==="string"&&navigator.language.trim()
+    ?navigator.language.trim()
+    :"";
+  return browserLang||"ja-JP";
+}
+function realtimeVoiceBrowserSupported(){
+  return typeof window!=="undefined"&&Boolean(window.SpeechRecognition||window.webkitSpeechRecognition);
+}
+function realtimeVoiceBrowserTtsSupported(){
+  return typeof window!=="undefined"&&Boolean(window.speechSynthesis);
+}
+function hydrateRealtimeVoicePreferences(){
+  if(!realtimeVoiceState.recognitionLang){
+    realtimeVoiceState.recognitionLang=loadRealtimeVoiceRecognitionLang();
+  }else{
+    realtimeVoiceState.recognitionLang=normalizeRealtimeVoiceRecognitionLang(realtimeVoiceState.recognitionLang);
+  }
+  realtimeVoiceState.ttsProvider=normalizeRealtimeVoiceTtsProvider(realtimeVoiceState.ttsProvider||loadRealtimeVoiceTtsProvider());
+}
+function populateRealtimeVoiceControls(){
+  hydrateRealtimeVoicePreferences();
+  if(e.openaiVoiceLangSelect){
+    const currentLang=normalizeRealtimeVoiceRecognitionLang(realtimeVoiceState.recognitionLang||e.openaiVoiceLangSelect.value);
+    e.openaiVoiceLangSelect.innerHTML="";
+    REALTIME_VOICE_LANG_OPTIONS.forEach((entry)=>{
+      const opt=document.createElement("option");
+      opt.value=entry.value;
+      opt.textContent=entry.label;
+      e.openaiVoiceLangSelect.appendChild(opt);
+    });
+    e.openaiVoiceLangSelect.value=currentLang;
+    realtimeVoiceState.recognitionLang=currentLang;
+  }
+  if(e.openaiVoiceSelect){
+    const currentProvider=normalizeRealtimeVoiceTtsProvider(realtimeVoiceState.ttsProvider||e.openaiVoiceSelect.value);
+    e.openaiVoiceSelect.innerHTML="";
+    REALTIME_VOICE_TTS_PROVIDERS.forEach((provider)=>{
+      const opt=document.createElement("option");
+      opt.value=provider;
+      opt.textContent=provider==="kokoro"?"Kokoro":"Browser TTS";
+      e.openaiVoiceSelect.appendChild(opt);
+    });
+    e.openaiVoiceSelect.value=currentProvider;
+    realtimeVoiceState.ttsProvider=currentProvider;
+  }
+}
+function setRealtimeVoiceStatus(text){
+  realtimeVoiceState.status=String(text||"").trim()||"Voice idle.";
+}
+function setRealtimeVoiceTranscript(text){
+  const normalized=String(text||"").replace(/\s+/g," ").trim();
+  realtimeVoiceState.transcript=normalized.length>600?normalized.slice(-600):normalized;
+}
+function clearRealtimeVoiceSilenceTimer(){
+  if(realtimeVoiceState.silenceTimer){
+    clearTimeout(realtimeVoiceState.silenceTimer);
+    realtimeVoiceState.silenceTimer=null;
+  }
+}
+function clearRealtimeVoiceRestartTimer(){
+  if(realtimeVoiceState.restartTimer){
+    clearTimeout(realtimeVoiceState.restartTimer);
+    realtimeVoiceState.restartTimer=null;
+  }
+}
+function clearRealtimeVoiceBuffers(){
+  realtimeVoiceState.pendingText="";
+  realtimeVoiceState.interimText="";
+}
+function cancelBrowserSpeechSynthesis(){
+  if(!realtimeVoiceBrowserTtsSupported())return;
+  try{
+    window.speechSynthesis.cancel();
+  }catch{}
+}
+function stopKokoroPlayback(){
+  if(realtimeVoiceState.kokoroAbortController){
+    try{realtimeVoiceState.kokoroAbortController.abort();}catch{}
+    realtimeVoiceState.kokoroAbortController=null;
+  }
+  const currentAudio=realtimeVoiceState.kokoroAudio;
+  if(currentAudio){
+    try{currentAudio.pause();currentAudio.currentTime=0;}catch{}
+    if(currentAudio.__objectUrl){
+      try{URL.revokeObjectURL(currentAudio.__objectUrl);}catch{}
+    }
+  }
+  realtimeVoiceState.kokoroAudio=null;
+}
+function stopRealtimeVoicePlayback(){
+  cancelBrowserSpeechSynthesis();
+  stopKokoroPlayback();
+  realtimeVoiceState.speaking=false;
+}
+function speechReadyTextForUi(text){
+  const normalized=String(text||"")
+    .replace(/```[\s\S]*?```/g," ")
+    .replace(/`([^`]+)`/g,"$1")
+    .replace(/\[([^\]]+)\]\(([^)]+)\)/g,"$1")
+    .replace(/[#>*_~-]+/g," ")
+    .replace(/\s+/g," ")
+    .trim();
+  if(!normalized)return"";
+  return normalized.length>420?`${normalized.slice(0,420)}...`:normalized;
+}
+function estimateSpeechTimeoutMsForUi(text){
+  const length=String(text||"").trim().length;
+  return Math.max(9000,Math.min(45000,length*110));
+}
+function speakRealtimeVoiceWithBrowser(text){
+  return new Promise((resolve)=>{
+    if(!realtimeVoiceBrowserTtsSupported()){
+      setRealtimeVoiceStatus("Browser TTS is unavailable. Keeping the reply in text only.");
+      renderRealtimeVoiceUi();
+      resolve(false);
+      return;
+    }
+    cancelBrowserSpeechSynthesis();
+    const utterance=new SpeechSynthesisUtterance(text);
+    utterance.lang=resolvedRealtimeVoiceRecognitionLang();
+    utterance.rate=1;
+    utterance.pitch=1;
+    utterance.onstart=()=>{
+      realtimeVoiceState.speaking=true;
+      setRealtimeVoiceStatus("Speaking reply...");
+      renderRealtimeVoiceUi();
+    };
+    const finalize=(ok,statusText)=>{
+      realtimeVoiceState.speaking=false;
+      if(statusText)setRealtimeVoiceStatus(statusText);
+      renderRealtimeVoiceUi();
+      resolve(ok);
+    };
+    utterance.onend=()=>finalize(true,"Voice reply finished.");
+    utterance.onerror=()=>finalize(false,"Voice playback failed.");
+    try{
+      window.speechSynthesis.speak(utterance);
+    }catch{
+      finalize(false,"Voice playback failed.");
+    }
+  });
+}
+async function speakRealtimeVoiceWithKokoro(text){
+  stopKokoroPlayback();
+  const abortController=typeof AbortController==="function"?new AbortController():null;
+  realtimeVoiceState.kokoroAbortController=abortController;
+  realtimeVoiceState.speaking=true;
+  setRealtimeVoiceStatus("Speaking via Kokoro...");
+  renderRealtimeVoiceUi();
+  let audio=null;
+  try{
+    const response=await fetch("/api/voice/kokoro",{
+      method:"POST",
+      headers:{"Content-Type":"application/json"},
+      body:JSON.stringify({text}),
+      signal:abortController?abortController.signal:undefined,
+    });
+    if(!response.ok){
+      let detail=`Kokoro playback request failed (HTTP ${response.status}).`;
+      try{
+        const payload=parseJsonSafe(await response.text())||{};
+        if(payload&&typeof payload.error==="string"&&payload.error.trim())detail=payload.error.trim();
+      }catch{}
+      throw new Error(detail);
+    }
+    const audioBlob=await response.blob();
+    if(!audioBlob||!audioBlob.size)throw new Error("Kokoro returned empty audio.");
+    const objectUrl=URL.createObjectURL(audioBlob);
+    audio=new Audio(objectUrl);
+    audio.__objectUrl=objectUrl;
+    realtimeVoiceState.kokoroAudio=audio;
+    await new Promise((resolve,reject)=>{
+      const cleanup=()=>{
+        audio.onended=null;
+        audio.onerror=null;
+      };
+      audio.onended=()=>{cleanup();resolve(true);};
+      audio.onerror=()=>{cleanup();reject(new Error("Kokoro audio playback failed."));};
+      audio.play().catch((error)=>{cleanup();reject(error instanceof Error?error:new Error("Kokoro audio playback failed."));});
+    });
+    realtimeVoiceState.speaking=false;
+    setRealtimeVoiceStatus("Voice reply finished.");
+    renderRealtimeVoiceUi();
+    return true;
+  }catch(error){
+    if(!(error&&error.name==="AbortError")){
+      setRealtimeVoiceStatus(error&&error.message?error.message:"Kokoro playback failed.");
+    }
+    realtimeVoiceState.speaking=false;
+    renderRealtimeVoiceUi();
+    return false;
+  }finally{
+    if(audio&&audio.__objectUrl){
+      try{URL.revokeObjectURL(audio.__objectUrl);}catch{}
+    }
+    if(realtimeVoiceState.kokoroAudio===audio)realtimeVoiceState.kokoroAudio=null;
+    if(realtimeVoiceState.kokoroAbortController===abortController)realtimeVoiceState.kokoroAbortController=null;
+  }
+}
+async function speakRealtimeVoiceWithTimeout(text){
+  const spoken=speechReadyTextForUi(text);
+  if(!spoken)return false;
+  let timeoutId=null;
+  try{
+    const timeoutMs=estimateSpeechTimeoutMsForUi(spoken);
+    const timeoutPromise=new Promise((resolve)=>{
+      timeoutId=window.setTimeout(()=>{
+        stopRealtimeVoicePlayback();
+        setRealtimeVoiceStatus("Voice playback timed out. Continuing in text.");
+        renderRealtimeVoiceUi();
+        resolve(false);
+      },timeoutMs);
+    });
+    const playbackPromise=realtimeVoiceState.ttsProvider==="kokoro"
+      ?speakRealtimeVoiceWithKokoro(spoken)
+      :speakRealtimeVoiceWithBrowser(spoken);
+    return await Promise.race([playbackPromise,timeoutPromise]);
+  }finally{
+    if(timeoutId!==null)clearTimeout(timeoutId);
+  }
+}
+function queueRealtimeVoiceRecognitionRestart(delayMs=280){
+  clearRealtimeVoiceRestartTimer();
+  if(!realtimeVoiceState.active||realtimeVoiceState.pausedForTurn||realtimeVoiceState.speaking||pendingCountForChat(s.active)>0)return;
+  realtimeVoiceState.restartTimer=window.setTimeout(()=>{
+    realtimeVoiceState.restartTimer=null;
+    startRealtimeVoiceRecognition();
+  },Math.max(0,Math.trunc(Number(delayMs)||0)));
+}
+function startRealtimeVoiceRecognition(){
+  const recognition=realtimeVoiceState.recognition;
+  if(!realtimeVoiceState.active||realtimeVoiceState.pausedForTurn||realtimeVoiceState.speaking||pendingCountForChat(s.active)>0)return false;
+  if(!recognition)return false;
+  if(realtimeVoiceState.listening)return true;
+  recognition.lang=resolvedRealtimeVoiceRecognitionLang();
+  try{
+    recognition.start();
+    return true;
+  }catch(error){
+    const message=error&&error.message?error.message:"Voice start failed.";
+    if(!/already started/i.test(message)){
+      setRealtimeVoiceStatus(message);
+      renderRealtimeVoiceUi();
+    }
+    return false;
+  }
+}
+function stopRealtimeVoiceRecognition({pauseForTurn=false}={}){
+  realtimeVoiceState.pausedForTurn=Boolean(pauseForTurn);
+  clearRealtimeVoiceSilenceTimer();
+  clearRealtimeVoiceRestartTimer();
+  const recognition=realtimeVoiceState.recognition;
+  if(recognition){
+    try{recognition.stop();}catch{}
+  }
+  realtimeVoiceState.listening=false;
+}
+function flushRealtimeVoiceInput(){
+  clearRealtimeVoiceSilenceTimer();
+  if(!realtimeVoiceState.active||realtimeVoiceState.pausedForTurn||realtimeVoiceState.speaking||pendingCountForChat(s.active)>0)return false;
+  const utterance=`${realtimeVoiceState.pendingText} ${realtimeVoiceState.interimText}`.replace(/\s+/g," ").trim();
+  if(!utterance)return false;
+  clearRealtimeVoiceBuffers();
+  setRealtimeVoiceTranscript(`You: ${utterance}`);
+  stopRealtimeVoiceRecognition({pauseForTurn:true});
+  setRealtimeVoiceStatus("Sending to Codex...");
+  renderRealtimeVoiceUi();
+  void runPrompt(utterance,s.active,{fromVoice:true}).catch((error)=>{
+    msg(s.active,"system","System",`Voice send failed: ${error&&error.message?error.message:"unknown"}`);
+  });
+  return true;
+}
+function handleRealtimeVoiceRecognitionResult(event){
+  if(!event||!event.results)return;
+  let finalText="";
+  let interimText="";
+  for(let index=event.resultIndex||0;index<event.results.length;index+=1){
+    const result=event.results[index];
+    if(!result||!result[0])continue;
+    const text=String(result[0].transcript||"").trim();
+    if(!text)continue;
+    if(result.isFinal)finalText=`${finalText} ${text}`.trim();
+    else interimText=`${interimText} ${text}`.trim();
+  }
+  if(finalText){
+    realtimeVoiceState.pendingText=`${realtimeVoiceState.pendingText} ${finalText}`.replace(/\s+/g," ").trim();
+  }
+  realtimeVoiceState.interimText=interimText;
+  const visible=`${realtimeVoiceState.pendingText} ${realtimeVoiceState.interimText}`.replace(/\s+/g," ").trim();
+  if(visible){
+    setRealtimeVoiceTranscript(`You: ${visible}`);
+  }
+  if(visible){
+    clearRealtimeVoiceSilenceTimer();
+    realtimeVoiceState.silenceTimer=window.setTimeout(()=>flushRealtimeVoiceInput(),realtimeVoiceState.silenceMs);
+  }
+  if(realtimeVoiceState.active&&!realtimeVoiceState.pausedForTurn){
+    setRealtimeVoiceStatus(`Listening (${resolvedRealtimeVoiceRecognitionLang()})... auto-send after ${Math.round(realtimeVoiceState.silenceMs/100)/10}s silence.`);
+    renderRealtimeVoiceUi();
+  }
+}
+function ensureRealtimeVoiceRecognition(){
+  if(realtimeVoiceState.recognition||!realtimeVoiceBrowserSupported())return realtimeVoiceState.recognition;
+  const SpeechRecognition=window.SpeechRecognition||window.webkitSpeechRecognition;
+  if(typeof SpeechRecognition!=="function")return null;
+  const recognition=new SpeechRecognition();
+  recognition.lang=resolvedRealtimeVoiceRecognitionLang();
+  recognition.continuous=true;
+  recognition.interimResults=true;
+  recognition.maxAlternatives=1;
+  recognition.onstart=()=>{
+    realtimeVoiceState.listening=true;
+    setRealtimeVoiceStatus(`Listening (${resolvedRealtimeVoiceRecognitionLang()})... auto-send after ${Math.round(realtimeVoiceState.silenceMs/100)/10}s silence.`);
+    renderRealtimeVoiceUi();
+  };
+  recognition.onresult=handleRealtimeVoiceRecognitionResult;
+  recognition.onerror=(event)=>{
+    const code=String(event&&event.error||"unknown").trim();
+    if(code==="aborted")return;
+    if(code==="not-allowed"||code==="service-not-allowed"){
+      stopRealtimeVoiceSession("Microphone permission denied.");
+      return;
+    }
+    if(code==="audio-capture"){
+      stopRealtimeVoiceSession("Microphone device unavailable.");
+      return;
+    }
+    if(code==="no-speech"){
+      setRealtimeVoiceStatus(`Listening (${resolvedRealtimeVoiceRecognitionLang()})... no speech detected yet.`);
+      renderRealtimeVoiceUi();
+      return;
+    }
+    setRealtimeVoiceStatus(`Voice input error: ${code||"unknown"}`);
+    renderRealtimeVoiceUi();
+  };
+  recognition.onend=()=>{
+    realtimeVoiceState.listening=false;
+    renderRealtimeVoiceUi();
+    if(realtimeVoiceState.active&&!realtimeVoiceState.pausedForTurn&&!realtimeVoiceState.speaking&&pendingCountForChat(s.active)===0){
+      queueRealtimeVoiceRecognitionRestart(280);
+      return;
+    }
+    if(!realtimeVoiceState.active&&!realtimeVoiceState.speaking){
+      setRealtimeVoiceStatus("Voice idle.");
+      renderRealtimeVoiceUi();
+    }
+  };
+  realtimeVoiceState.recognition=recognition;
+  return recognition;
+}
+function cleanupRealtimeVoiceSession(){
+  clearRealtimeVoiceSilenceTimer();
+  clearRealtimeVoiceRestartTimer();
+  clearRealtimeVoiceBuffers();
+  stopRealtimeVoicePlayback();
+  const recognition=realtimeVoiceState.recognition;
+  if(recognition){
+    try{recognition.stop();}catch{}
+  }
+  realtimeVoiceState.listening=false;
+  realtimeVoiceState.pausedForTurn=false;
+}
+function stopRealtimeVoiceSession(statusText="Voice stopped."){
+  cleanupRealtimeVoiceSession();
+  realtimeVoiceState.active=false;
+  realtimeVoiceState.starting=false;
+  setRealtimeVoiceStatus(statusText);
+  renderRealtimeVoiceUi();
+}
+function renderRealtimeVoiceUi(){
+  if(!e.openaiVoiceStrip||!e.openaiVoiceStatus)return;
+  populateRealtimeVoiceControls();
+  const browserSupported=realtimeVoiceBrowserSupported();
+  const canStart=browserSupported&&!realtimeVoiceState.active&&!realtimeVoiceState.starting;
+  let statusText=realtimeVoiceState.status;
+  if(!browserSupported){
+    statusText="SpeechRecognition microphone input is unavailable in this browser.";
+  }else if(!statusText){
+    statusText=realtimeVoiceState.active?"Voice ready. Speak naturally; silence auto-sends.":"Voice idle.";
+  }else if(realtimeVoiceState.ttsProvider==="browser"&&!realtimeVoiceBrowserTtsSupported()&&!realtimeVoiceState.speaking){
+    statusText=`${statusText} Browser TTS is unavailable; replies stay text-only.`;
+  }
+  e.openaiVoiceStatus.textContent=statusText;
+  if(e.openaiVoiceStartBtn)e.openaiVoiceStartBtn.disabled=!canStart;
+  if(e.openaiVoiceStopBtn)e.openaiVoiceStopBtn.disabled=!(realtimeVoiceState.active||realtimeVoiceState.starting);
+  if(e.openaiVoiceSelect)e.openaiVoiceSelect.disabled=realtimeVoiceState.starting;
+  if(e.openaiVoiceLangSelect)e.openaiVoiceLangSelect.disabled=realtimeVoiceState.starting||realtimeVoiceState.active;
+  if(e.openaiVoiceTranscript){
+    const transcript=String(realtimeVoiceState.transcript||"").trim();
+    e.openaiVoiceTranscript.hidden=!transcript;
+    e.openaiVoiceTranscript.textContent=transcript?`Transcript: ${transcript}`:"";
+  }
+}
+async function startRealtimeVoiceSession(){
+  if(realtimeVoiceState.active||realtimeVoiceState.starting)return;
+  if(!realtimeVoiceBrowserSupported())throw new Error("SpeechRecognition microphone input is unavailable in this browser.");
+  hydrateRealtimeVoicePreferences();
+  realtimeVoiceState.starting=true;
+  realtimeVoiceState.transcript="";
+  clearRealtimeVoiceBuffers();
+  setRealtimeVoiceStatus("Starting Codex voice...");
+  renderRealtimeVoiceUi();
+  try{
+    const recognition=ensureRealtimeVoiceRecognition();
+    if(!recognition)throw new Error("SpeechRecognition microphone input is unavailable in this browser.");
+    realtimeVoiceState.active=true;
+    realtimeVoiceState.pausedForTurn=false;
+    realtimeVoiceState.starting=false;
+    setRealtimeVoiceStatus("Voice ready. Speak naturally; silence auto-sends.");
+    renderRealtimeVoiceUi();
+    queueRealtimeVoiceRecognitionRestart(0);
+  }catch(error){
+    realtimeVoiceState.active=false;
+    realtimeVoiceState.starting=false;
+    stopRealtimeVoiceSession(`Voice start failed: ${error&&error.message?error.message:"unknown"}`);
+    throw error;
+  }
+}
 function normalizePathForUi(value){
   const raw=typeof value==="string"?value.trim():"";
   if(!raw)return"";
@@ -3012,6 +3505,7 @@ function renderComposerRuntimeStrip(){
 function renderMissionSupportUi(){
   renderMissionDraftPanel();
   renderComposerRuntimeStrip();
+  renderRealtimeVoiceUi();
   renderFocusPanel();
 }
 function renderMissionDraftPanel(){
@@ -3241,7 +3735,7 @@ function mkChat(o={}){
     perf:createPerformanceState(),
     forceNewSession:o.forceNewSession!==false,
     settings:normalizeChatSettingsForUi(o.settings,fallbackSettings),
-    draftPrompt:typeof o.draftPrompt==="string"?o.draftPrompt:"",
+    draftPrompt:sanitizeDraftPromptForUi(o.draftPrompt),
     draftAttachments:Array.isArray(o.draftAttachments)?o.draftAttachments:[],
   };
   s.chats.push(c);
@@ -3250,6 +3744,7 @@ function mkChat(o={}){
   return c;
 }
 function msg(cid,role,title,text){const c=chat(cid);if(!c)return null;const m={id:`m-${s.nextMsg++}`,role,title,time:new Date().toLocaleTimeString(),content:text||""};c.messages.push(m);scheduleSaveChatState();if(cid===s.active)renderTimeline();renderChatList();return{cid,id:m.id}}
+function mget(r){const c=chat(r&&r.cid);if(!c)return"";const m=c.messages.find(x=>x.id===r.id);return m&&typeof m.content==="string"?m.content:""}
 function mset(r,t){const c=chat(r.cid);if(!c)return;const m=c.messages.find(x=>x.id===r.id);if(!m)return;m.content=t;scheduleSaveChatState();if(r.cid===s.active)renderTimeline()}
 function madd(r,t){const c=chat(r.cid);if(!c)return;const m=c.messages.find(x=>x.id===r.id);if(!m)return;m.content+=t||"";scheduleSaveChatState();if(r.cid===s.active)renderTimeline()}
 function extName(name){const v=String(name||"").trim();const i=v.lastIndexOf(".");return i<0?"":v.slice(i).toLowerCase();}
@@ -5166,7 +5661,7 @@ function normalizeSavedChat(raw,index){
     perf:createPerformanceState(),
     forceNewSession,
     settings:normalizeChatSettingsForUi(raw.settings,fallbackSettings),
-    draftPrompt:typeof raw.draftPrompt==="string"?raw.draftPrompt:"",
+    draftPrompt:sanitizeDraftPromptForUi(raw.draftPrompt),
     draftAttachments:[],
   };
 }
@@ -5322,7 +5817,7 @@ function saveChatStateNow(){
         forceNewSession:Boolean(chatRecord.forceNewSession),
         h:serializeHarnessState(chatRecord.h),
         settings:serializeChatSettingsForStorage(chatRecord.settings),
-        draftPrompt:typeof chatRecord.draftPrompt==="string"?chatRecord.draftPrompt:"",
+        draftPrompt:sanitizeDraftPromptForUi(chatRecord.draftPrompt),
         messages:toArr(chatRecord.messages).slice(-CHAT_MESSAGE_LIMIT).map((message)=>({
           id:message.id,
           role:message.role,
@@ -6237,6 +6732,14 @@ function bind(){
   if(e.imageAttachBtn)e.imageAttachBtn.onclick=()=>{clearAttachmentError();if(e.imageInput)e.imageInput.click();};
   if(e.imageInput)e.imageInput.onchange=()=>{const files=e.imageInput&&e.imageInput.files?e.imageInput.files:[];handleAttachmentPickFiles(files);};
   if(e.imageRemoveBtn)e.imageRemoveBtn.onclick=()=>removeAttachmentFromComposer();
+  if(e.openaiVoiceSelect)e.openaiVoiceSelect.onchange=()=>{
+    realtimeVoiceState.voice=String(e.openaiVoiceSelect.value||"").trim();
+    renderRealtimeVoiceUi();
+  };
+  if(e.openaiVoiceStartBtn)e.openaiVoiceStartBtn.onclick=()=>startRealtimeVoiceSession().catch((error)=>{
+    msg(s.active,"system","System",`Voice start failed: ${error&&error.message?error.message:"unknown"}`);
+  });
+  if(e.openaiVoiceStopBtn)e.openaiVoiceStopBtn.onclick=()=>stopRealtimeVoiceSession("Voice stopped.");
   if(e.openCmdBtn)e.openCmdBtn.onclick=async()=>{
     try{
       if(!controlApiAllows("open_workspace_shell")){
@@ -6316,6 +6819,7 @@ function bind(){
   });
   document.querySelectorAll("[data-preset]").forEach(btn=>btn.onclick=()=>{e.promptInput.value=btn.getAttribute("data-preset")||"";syncPromptInputHeight();renderMissionSupportUi();e.sendBtn.click()});
   window.addEventListener("resize",()=>{syncPromptInputHeight({remeasureBase:true});scheduleComposerViewportSyncForUi();});
+  window.addEventListener("beforeunload",()=>cleanupRealtimeVoiceSession());
   if(e.commandFilter)e.commandFilter.oninput=()=>renderCommands(e.commandFilter.value);
   e.executionProfile.onchange=()=>{
     if(e.executionProfile.value==="custom"){profileSync();saveSettings();updateSearchDiag();renderMissionSupportUi();return}

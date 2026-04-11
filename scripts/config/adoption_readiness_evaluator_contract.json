@@ -1,0 +1,36 @@
+{
+  "schema": "adoption-readiness-evaluator-contract.v1",
+  "version": "2026-04-11.r1",
+  "dimensions": [
+    "literal_requirement_alignment",
+    "latent_intent_alignment",
+    "boundary_compliance",
+    "artifact_quality",
+    "residual_risk",
+    "iteration_value_remaining",
+    "adoption_readiness"
+  ],
+  "weights": {
+    "literal_requirement_alignment": 0.22,
+    "latent_intent_alignment": 0.2,
+    "boundary_compliance": 0.2,
+    "artifact_quality": 0.14,
+    "residual_risk": 0.12,
+    "iteration_value_remaining": 0.12
+  },
+  "reasonFields": [
+    "reason",
+    "evidenceRefs",
+    "blockers",
+    "assumptions",
+    "residualRisks"
+  ],
+  "scoreRange": {
+    "min": 0,
+    "max": 1
+  },
+  "releaseJudgmentSeparation": {
+    "completedDoesNotImplyReleaseApproved": true,
+    "adoptionReadinessMustBeEvaluatedBeforeRelease": true
+  }
+}

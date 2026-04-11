@@ -1,0 +1,37 @@
+{
+  "schema": "deployment-posture-profiles.v1",
+  "version": "2026-04-11.r1",
+  "defaultProfile": "portable_local",
+  "profiles": {
+    "owner_local": {
+      "label": "Owner Local",
+      "description": "Owner-operated local posture that may allow danger-full-access, approval never, and local auto commit/push.",
+      "defaults": {
+        "sandboxMode": "danger-full-access",
+        "approvalPolicy": "never",
+        "autoCommitAndPush": true
+      },
+      "referenceArchitectureDefault": false
+    },
+    "portable_local": {
+      "label": "Portable Local",
+      "description": "Portable reference posture for local-first development without owner-only defaults.",
+      "defaults": {
+        "sandboxMode": "workspace-write",
+        "approvalPolicy": "on-request",
+        "autoCommitAndPush": false
+      },
+      "referenceArchitectureDefault": true
+    },
+    "reviewed_team": {
+      "label": "Reviewed Team",
+      "description": "Team posture with reviewed release flow and stricter human change control.",
+      "defaults": {
+        "sandboxMode": "workspace-write",
+        "approvalPolicy": "untrusted",
+        "autoCommitAndPush": false
+      },
+      "referenceArchitectureDefault": false
+    }
+  }
+}

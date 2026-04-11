@@ -497,8 +497,32 @@ function renderRuntime(payload) {
     safeText(phaseStatus.auditReportPath, ""),
     toArr(phaseStatus.failedCheckIds).length ? `missing ${toArr(phaseStatus.failedCheckIds).join(", ")}` : "",
   ].filter(Boolean).join(" / ");
+  const authorityRegistry = runtime && runtime.authorityRegistry && typeof runtime.authorityRegistry === "object"
+    ? runtime.authorityRegistry
+    : runtime && runtime.authority_registry && typeof runtime.authority_registry === "object"
+      ? runtime.authority_registry
+      : {};
+  const deploymentPosture = runtime && runtime.deploymentPosture && typeof runtime.deploymentPosture === "object"
+    ? runtime.deploymentPosture
+    : runtime && runtime.deployment_posture && typeof runtime.deployment_posture === "object"
+      ? runtime.deployment_posture
+      : {};
+  const iterationControl = runtime && runtime.iterationControl && typeof runtime.iterationControl === "object"
+    ? runtime.iterationControl
+    : runtime && runtime.iteration_control && typeof runtime.iteration_control === "object"
+      ? runtime.iteration_control
+      : {};
+  const adoptionReadinessContract = runtime && runtime.adoptionReadinessContract && typeof runtime.adoptionReadinessContract === "object"
+    ? runtime.adoptionReadinessContract
+    : runtime && runtime.adoption_readiness_contract && typeof runtime.adoption_readiness_contract === "object"
+      ? runtime.adoption_readiness_contract
+      : {};
   elements.runtimePostureCard.innerHTML = factRowsHtml([
     { label: "Execution Profile", value: safeText(runtime.executionProfile, "unknown"), detail: `active agent ${runtimeActiveAgent(runtime)} / default exec ${runtimeDefaultExecAgent(runtime)}` },
+    { label: "Deployment Posture", value: safeText(deploymentPosture.activeLabel || deploymentPosture.activeProfile, "portable_local"), detail: `${safeText(deploymentPosture.profilePath, "scripts/config/deployment_posture_profiles.json")} / default ${safeText(deploymentPosture.referenceArchitectureDefault ? "reference" : "owner-or-explicit", "")}` },
+    { label: "Authority Registry", value: safeText(authorityRegistry.schema, "authority-registry.v1"), detail: `${safeText(authorityRegistry.registryPath, "scripts/config/authority_registry.json")} / ${safeText(authorityRegistry.driftStatus, "aligned")}` },
+    { label: "Iteration Control", value: safeText(iterationControl.schema, "iteration-control-contract.v1"), detail: `${safeText(iterationControl.path || iterationControl.contractPath, "scripts/config/iteration_control_contract.json")} / release ${safeText(iterationControl.releaseState || iterationControl.releaseGate, "governed")}` },
+    { label: "Adoption Readiness", value: safeText(adoptionReadinessContract.schema, "adoption-readiness-evaluator-contract.v1"), detail: `${safeText(adoptionReadinessContract.path || adoptionReadinessContract.contractPath, "scripts/config/adoption_readiness_evaluator_contract.json")} / ${formatInteger(num(adoptionReadinessContract.dimensionCount, 0))} dimensions` },
     { label: "Request User Input", value: safeText(runtime.nonInteractiveUserInput && runtime.nonInteractiveUserInput.policy, "unknown"), detail: safeText(runtime.nonInteractiveUserInput && runtime.nonInteractiveUserInput.envKey, "") },
     { label: "Parent Dispatch Guard", value: safeText(runtime.parentDispatchGuard && runtime.parentDispatchGuard.mode, "off"), detail: `maxRetries ${formatInteger(num(runtime.parentDispatchGuard && runtime.parentDispatchGuard.maxRetries, 0))}` },
     { label: "Planning Contracts", value: safeText(runtime.planningContracts && runtime.planningContracts.schema, "planning-mode-contract.v1"), detail: `${safeText(runtime.planningContracts && runtime.planningContracts.path, "")} / ${safeText(runtime.planningContracts && runtime.planningContracts.assurancePath, "")}` },

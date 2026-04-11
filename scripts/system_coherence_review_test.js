@@ -28,11 +28,19 @@ function readJson(relativePath) {
 
 function testLoadContract() {
   const contract = loadSystemCoherenceReviewContract(defaultSystemCoherenceReviewContractPath);
-  assert(contract.schema === "system-coherence-review-contract.v1", "system coherence review contract schema mismatch");
+  assert(contract.schema === "system-coherence-review-contract.v2", "system coherence review contract schema mismatch");
   assert(contract.requiredCommand === "node scripts/system_coherence_review_test.js", "required command mismatch");
   const planeIds = contract.reviewPlanes.map((entry) => entry.id);
   for (const expected of ["execution_path", "governance_rules", "machine_contracts", "server_runtime", "evaluation_memory", "artifact_surface"]) {
     assert(planeIds.includes(expected), `missing review plane: ${expected}`);
+  }
+  for (const expectedContract of [
+    "scripts/config/authority_registry.json",
+    "scripts/config/adoption_readiness_evaluator_contract.json",
+    "scripts/config/deployment_posture_profiles.json",
+    "scripts/config/iteration_control_contract.json",
+  ]) {
+    assert(contract.requiredMachineContracts.includes(expectedContract), `missing required machine contract: ${expectedContract}`);
   }
 }
 
