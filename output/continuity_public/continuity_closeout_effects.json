@@ -1,15 +1,71 @@
 {
   "schema": "continuity-closeout-effects.v1",
-  "generatedAt": "2026-04-06T15:32:16.717Z",
+  "generatedAt": "2026-04-12T02:52:33.406Z",
   "workspaceId": "5c839dfeef8b555f",
   "summary": {
-    "openDebtCount": 0,
+    "openDebtCount": 7,
     "blockedSubtasks": 0,
     "integrationPendingCount": 0,
-    "autoCloseEligibleCount": 26,
+    "autoCloseEligibleCount": 33,
     "resolvedCount": 24
   },
   "items": [
+    {
+      "debtId": "debt_5cb3f169ae",
+      "debtClass": "verifier_failed",
+      "status": "active blocker",
+      "requiredCloseoutAction": "rerun verifier after governed remediation evidence is captured",
+      "linkedRemediationAgendaId": "agenda_bdbb268944",
+      "publicSummary": "coordinator must rerun verifier after governed remediation evidence is captured"
+    },
+    {
+      "debtId": "debt_10f213817a",
+      "debtClass": "verifier_failed",
+      "status": "active blocker",
+      "requiredCloseoutAction": "rerun verifier after governed remediation evidence is captured",
+      "linkedRemediationAgendaId": "agenda_bdbb268944",
+      "publicSummary": "coordinator must rerun verifier after governed remediation evidence is captured"
+    },
+    {
+      "debtId": "debt_992577b230",
+      "debtClass": "verifier_failed",
+      "status": "active blocker",
+      "requiredCloseoutAction": "rerun verifier after governed remediation evidence is captured",
+      "linkedRemediationAgendaId": "agenda_70dcc144bc",
+      "publicSummary": "coordinator must rerun verifier after governed remediation evidence is captured"
+    },
+    {
+      "debtId": "debt_24cbb29ab6",
+      "debtClass": "verifier_failed",
+      "status": "active blocker",
+      "requiredCloseoutAction": "rerun verifier after governed remediation evidence is captured",
+      "linkedRemediationAgendaId": "agenda_14b59b5d5b",
+      "publicSummary": "coordinator must rerun verifier after governed remediation evidence is captured"
+    },
+    {
+      "debtId": "debt_d0854c335f",
+      "debtClass": "verifier_failed",
+      "status": "active blocker",
+      "requiredCloseoutAction": "rerun verifier after governed remediation evidence is captured",
+      "linkedRemediationAgendaId": "agenda_70dcc144bc",
+      "publicSummary": "coordinator must rerun verifier after governed remediation evidence is captured"
+    },
+    {
+      "debtId": "debt_06801aff46",
+      "debtClass": "verifier_failed",
+      "status": "active blocker",
+      "requiredCloseoutAction": "rerun verifier after governed remediation evidence is captured",
+      "linkedRemediationAgendaId": "agenda_bdbb268944",
+      "publicSummary": "coordinator must rerun verifier after governed remediation evidence is captured"
+    },
+    {
+      "debtId": "debt_fb624e8f2d",
+      "debtClass": "verifier_failed",
+      "status": "active blocker",
+      "requiredCloseoutAction": "rerun verifier after governed remediation evidence is captured",
+      "linkedRemediationAgendaId": "agenda_dfbd6ab367",
+      "publicSummary": "coordinator must rerun verifier after governed remediation evidence is captured"
+    },
     {
       "debtId": "debt_d17c4beb96",
       "debtClass": "verifier_failed",
@@ -111,7 +167,7 @@
       "debtClass": "verifier_failed",
       "status": "resolved",
       "requiredCloseoutAction": "rerun verifier after governed remediation evidence is captured",
-      "linkedRemediationAgendaId": "agenda_e3baa53ec1",
+      "linkedRemediationAgendaId": "agenda_bdbb268944",
       "publicSummary": "coordinator debt auto-closed after governed replacement evidence"
     },
     {
@@ -119,7 +175,7 @@
       "debtClass": "verifier_failed",
       "status": "resolved",
       "requiredCloseoutAction": "rerun verifier after governed remediation evidence is captured",
-      "linkedRemediationAgendaId": "agenda_e3baa53ec1",
+      "linkedRemediationAgendaId": "agenda_bdbb268944",
       "publicSummary": "coordinator debt auto-closed after governed replacement evidence"
     },
     {
@@ -127,7 +183,7 @@
       "debtClass": "verifier_failed",
       "status": "resolved",
       "requiredCloseoutAction": "rerun verifier after governed remediation evidence is captured",
-      "linkedRemediationAgendaId": "agenda_e3baa53ec1",
+      "linkedRemediationAgendaId": "agenda_bdbb268944",
       "publicSummary": "coordinator debt auto-closed after governed replacement evidence"
     },
     {
@@ -143,63 +199,7 @@
       "debtClass": "verifier_failed",
       "status": "resolved",
       "requiredCloseoutAction": "rerun verifier after governed remediation evidence is captured",
-      "linkedRemediationAgendaId": "agenda_e3baa53ec1",
-      "publicSummary": "coordinator debt auto-closed after governed replacement evidence"
-    },
-    {
-      "debtId": "debt_f1587c1418",
-      "debtClass": "verifier_failed",
-      "status": "invalidated",
-      "requiredCloseoutAction": "rerun verifier after governed remediation evidence is captured",
-      "linkedRemediationAgendaId": "agenda_14b59b5d5b",
-      "publicSummary": "coordinator debt invalidated because the task family is outside current governed coverage"
-    },
-    {
-      "debtId": "debt_d2d8062765",
-      "debtClass": "verifier_failed",
-      "status": "resolved",
-      "requiredCloseoutAction": "rerun verifier after governed remediation evidence is captured",
-      "linkedRemediationAgendaId": "agenda_70dcc144bc",
-      "publicSummary": "coordinator debt auto-closed after governed replacement evidence"
-    },
-    {
-      "debtId": "debt_64c15dbfed",
-      "debtClass": "verifier_failed",
-      "status": "resolved",
-      "requiredCloseoutAction": "rerun verifier after governed remediation evidence is captured",
-      "linkedRemediationAgendaId": "agenda_70dcc144bc",
-      "publicSummary": "coordinator debt auto-closed after governed replacement evidence"
-    },
-    {
-      "debtId": "debt_7dae7bb1e4",
-      "debtClass": "verifier_failed",
-      "status": "resolved",
-      "requiredCloseoutAction": "rerun verifier after governed remediation evidence is captured",
-      "linkedRemediationAgendaId": "agenda_e3baa53ec1",
-      "publicSummary": "coordinator debt auto-closed after governed replacement evidence"
-    },
-    {
-      "debtId": "debt_ad0c5b1720",
-      "debtClass": "verifier_failed",
-      "status": "invalidated",
-      "requiredCloseoutAction": "rerun verifier after governed remediation evidence is captured",
-      "linkedRemediationAgendaId": "agenda_14b59b5d5b",
-      "publicSummary": "coordinator debt invalidated because the task family is outside current governed coverage"
-    },
-    {
-      "debtId": "debt_e8146cd8a5",
-      "debtClass": "verifier_failed",
-      "status": "resolved",
-      "requiredCloseoutAction": "rerun verifier after governed remediation evidence is captured",
-      "linkedRemediationAgendaId": "agenda_dfbd6ab367",
-      "publicSummary": "coordinator debt auto-closed after governed replacement evidence"
-    },
-    {
-      "debtId": "debt_6ca347b15b",
-      "debtClass": "verifier_failed",
-      "status": "resolved",
-      "requiredCloseoutAction": "rerun verifier after governed remediation evidence is captured",
-      "linkedRemediationAgendaId": "agenda_70dcc144bc",
+      "linkedRemediationAgendaId": "agenda_bdbb268944",
       "publicSummary": "coordinator debt auto-closed after governed replacement evidence"
     }
   ]

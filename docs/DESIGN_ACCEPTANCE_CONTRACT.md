@@ -1,42 +1,37 @@
 # DESIGN_ACCEPTANCE_CONTRACT
 
-Updated: 2026-03-13
+Updated: 2026-04-12
 
-## 1) Purpose
+## 1) 目的
 
-Define the extra contract that applies when the user is judging the output by taste, quality, and benchmark superiority rather than only by runtime correctness.
+design-sensitive work の completion gate を固定します。build/test/200 は十分条件ではなく、visual intent と benchmark superiority を別に判定します。
 
 ## 2) Hard Requirements
 
-- A benchmark or reference to beat must be fixed.
-- The user's taste memory must be available and applied.
-- The target workspace must be locked before execution.
-- Visual evidence must exist.
-- Independent review must exist.
-- Technical verification must still exist.
+以下が欠けたら `COMPLETED` にしてはいけません。
+
+- active taste memory または同等の intent contract
+- benchmark / reference target の明示
+- desktop screenshot review
+- mobile screenshot review
+- independent reviewer / tester verdict
 
 ## 3) Failure Rule
 
-- If any hard requirement above is missing, the task is not complete even when build/test/API checks pass.
-- The correct task outcome is `FAILED_VALIDATION`.
+次のいずれかが欠けるなら `FAILED_VALIDATION` です。
+
+- visual evidence
+- benchmark reasoning
+- independent review
+- benchmark superiority を問うタスクで PASS/FAIL を明示していない
 
 ## 4) Default Taste Signals for This Harness
 
-- Strongly prefer:
-  - real-world information density
-  - typography with hierarchy and tension
-  - concrete proof such as photos, numbers, certifications, or outcomes
-- Strongly reject:
-  - AI-looking generic layouts
-  - glassmorphism as a default visual language
-  - uniform card grids with weak hierarchy
-  - cheap dashboard aesthetics
+既定では次を好みます。
 
-## 5) Runtime Sources
+- intent first
+- benchmark-aware
+- no empty polish
+- no false-complete visual claim
 
-- Machine-readable contract:
-  - `scripts/config/design_acceptance_contract.json`
-- Seed taste memory:
-  - `scripts/config/default_user_taste_memory.json`
-- Mutable persisted taste memory:
-  - `logs/user_taste_memory.json`
+詳細は current taste memory と task-specific contract を優先します。

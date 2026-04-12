@@ -1,6 +1,6 @@
 {
   "schema": "adoption-readiness-eval.v1",
-  "generatedAt": "2026-04-11T07:35:12.636Z",
+  "generatedAt": "2026-04-12T02:14:59.860Z",
   "completedStateObserved": 1,
   "dimensions": [
     {
@@ -33,6 +33,32 @@
       "id": "latent_intent_alignment",
       "score": 0.92,
       "reason": "clause score PASS with release hint RELEASE_APPROVED_WITH_ASSUMPTIONS",
+      "evidenceRefs": [
+        "request_frame.json",
+        "routing_decision.json",
+        "task_outcomes.json",
+        "review_bundle.json",
+        "evidence_manifest.json",
+        "flow_trace_summary.json",
+        "review_load_breakdown.json",
+        "adoption_readiness_eval.json",
+        "iteration_decision.json",
+        "escalation_decision.json",
+        "release_decision.json"
+      ],
+      "blockers": [],
+      "assumptions": [
+        "Any scope outside the explicit goal should stay proposal-only unless the prompt states otherwise.",
+        "Unresolved ambiguity must not be auto-answered by the harness."
+      ],
+      "residualRisks": [
+        "New logic or protocol-sensitive behavior requires dedicated verification before signoff."
+      ]
+    },
+    {
+      "id": "task_contract_integrity",
+      "score": 1,
+      "reason": "locked task contract remains intact",
       "evidenceRefs": [
         "request_frame.json",
         "routing_decision.json",
@@ -161,7 +187,7 @@
     },
     {
       "id": "adoption_readiness",
-      "score": 0.9544,
+      "score": 0.9683,
       "reason": "ready for governed release judgment",
       "evidenceRefs": [
         "request_frame.json",
@@ -189,11 +215,55 @@
   "scores": {
     "literal_requirement_alignment": 1,
     "latent_intent_alignment": 0.92,
+    "task_contract_integrity": 1,
     "boundary_compliance": 1,
     "artifact_quality": 1,
     "residual_risk": 0.8333,
     "iteration_value_remaining": 0.08,
-    "adoption_readiness": 0.9544
+    "adoption_readiness": 0.9683
+  },
+  "gateResults": [
+    {
+      "id": "literal_requirement_alignment",
+      "min": 0.84,
+      "score": 1,
+      "pass": 1,
+      "failureClass": "validation_failure"
+    },
+    {
+      "id": "latent_intent_alignment",
+      "min": 0.78,
+      "score": 0.92,
+      "pass": 1,
+      "failureClass": "retry_required"
+    },
+    {
+      "id": "task_contract_integrity",
+      "min": 0.92,
+      "score": 1,
+      "pass": 1,
+      "failureClass": "validation_failure"
+    },
+    {
+      "id": "boundary_compliance",
+      "min": 0.99,
+      "score": 1,
+      "pass": 1,
+      "failureClass": "fail_closed"
+    }
+  ],
+  "criticalFailures": [],
+  "releaseEligibility": {
+    "eligible": 1,
+    "blockedBy": [],
+    "proceduralClosureOnly": 0
+  },
+  "goalComparison": {
+    "originalRequestAligned": 1,
+    "latentIntentAligned": 1,
+    "replannedGoalConsistent": 1,
+    "proceduralClosureOnly": 0,
+    "explicitSignals": {}
   },
   "blockers": [],
   "assumptions": [
@@ -215,5 +285,7 @@
     "iteration_decision.json",
     "escalation_decision.json",
     "release_decision.json"
-  ]
+  ],
+  "exportSessionId": "export_a63636ff0a86",
+  "scope": "adoption_readiness"
 }

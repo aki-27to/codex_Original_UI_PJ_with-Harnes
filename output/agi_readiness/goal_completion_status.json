@@ -1,17 +1,42 @@
 {
   "schema": "agi-operational-completion-status.v1",
-  "generatedAt": "2026-04-06T15:32:16.834Z",
+  "generatedAt": "2026-04-12T02:52:34.047Z",
+  "exportSessionId": "export_a63636ff0a86",
+  "scope": "program_readiness",
   "workspaceId": "5c839dfeef8b555f",
-  "goalStatus": "OPERATIONALLY_COMPLETE",
-  "completionVersion": "2026-04-06.r2",
+  "goalStatus": "NOT_YET",
+  "completionVersion": "2026-04-11.r1",
   "decisionBasis": "live_truth_strict_operational_criteria",
-  "whyNotYet": [],
-  "failedCriteria": [],
-  "passedCriteria": [
+  "whyNotYet": [
+    "stable coverage breadth below threshold (0.166667 < 1)",
+    "continuity debt remains open (7 > 0)",
+    "autonomous learning agenda still has running items (1)",
+    "browser_tool_flakiness below threshold (0.703125 < 0.8)",
+    "operational completion thresholds have not been maintained across 3 consecutive live exports"
+  ],
+  "failedCriteria": [
     {
       "id": "stableCoverageBreadth",
-      "detail": "stable coverage breadth 1 >= 1"
+      "detail": "stable coverage breadth 0.166667 >= 1"
     },
+    {
+      "id": "openDebtCount",
+      "detail": "open debt count 7 <= 0"
+    },
+    {
+      "id": "runningAgendaCount",
+      "detail": "running agenda count 1 <= 0"
+    },
+    {
+      "id": "browserToolFlakiness",
+      "detail": "browser_tool_flakiness 0.703125 >= 0.8"
+    },
+    {
+      "id": "consecutiveSuccessfulExports",
+      "detail": "consecutive successful exports 0 >= 3"
+    }
+  ],
+  "passedCriteria": [
     {
       "id": "supportedCoverageBreadth",
       "detail": "supported coverage breadth 1 >= 1"
@@ -37,10 +62,6 @@
       "detail": "catastrophic risk cvar 0.001 <= 0.03"
     },
     {
-      "id": "openDebtCount",
-      "detail": "open debt count 0 <= 0"
-    },
-    {
       "id": "blockedSubtasks",
       "detail": "blocked subtasks 0 <= 0"
     },
@@ -53,12 +74,8 @@
       "detail": "harmful causal ratio 0 <= 0.1"
     },
     {
-      "id": "runningAgendaCount",
-      "detail": "running agenda count 0 <= 0"
-    },
-    {
       "id": "verifiedPositiveRemediations",
-      "detail": "verified positive remediations 5 >= 1"
+      "detail": "verified positive remediations 4 >= 1"
     },
     {
       "id": "distinctLineageMinimum",
@@ -73,16 +90,12 @@
       "detail": "missing_context 1 >= 0.85"
     },
     {
-      "id": "browserToolFlakiness",
-      "detail": "browser_tool_flakiness 1 >= 0.8"
-    },
-    {
       "id": "ambiguousInstructionObserved",
       "detail": "ambiguous_instruction status = observed"
     },
     {
       "id": "ambiguousInstructionEvidence",
-      "detail": "ambiguous_instruction evidence 39 >= 10"
+      "detail": "ambiguous_instruction evidence 12 >= 10"
     },
     {
       "id": "ambiguousInstructionScore",
@@ -95,10 +108,6 @@
     {
       "id": "degradedToolOutputs",
       "detail": "degraded_tool_outputs 1 >= 0.85"
-    },
-    {
-      "id": "consecutiveSuccessfulExports",
-      "detail": "consecutive successful exports 8 >= 3"
     }
   ],
   "completionCriteria": {
@@ -124,72 +133,72 @@
     "degradedToolOutputsThreshold": 0.85
   },
   "currentValues": {
-    "stableCoverageBreadth": 1,
+    "stableCoverageBreadth": 0.166667,
     "supportedCoverageBreadth": 1,
     "failedFamilies": [],
     "R_robust": 1,
     "H_horizon": 1,
     "rawFinalScore": 0.9995,
     "catastrophicRiskCvar": 0.001,
-    "openDebtCount": 0,
+    "openDebtCount": 7,
     "blockedSubtasks": 0,
     "integrationPendingCount": 0,
     "ambiguousInstructionStatus": "observed",
-    "ambiguousInstructionEvidenceCount": 39,
+    "ambiguousInstructionEvidenceCount": 12,
     "ambiguousInstructionScore": 1,
     "missingContextScore": 1,
-    "browserToolFlakinessScore": 1,
+    "browserToolFlakinessScore": 0.703125,
     "adversarialConflictingScore": 1,
     "degradedToolOutputsScore": 1,
-    "verifiedPositiveRemediations": 5,
+    "verifiedPositiveRemediations": 4,
     "verifiedNegativeRemediations": 0,
     "verifiedHarmfulRemediations": 0,
     "insufficientEvidenceRemediations": 0,
-    "runningAgendaCount": 0,
+    "runningAgendaCount": 1,
     "harmfulCausalRatio": 0,
-    "likelyContributoryCount": 3,
+    "likelyContributoryCount": 4,
     "harmfulTraceCount": 0,
     "distinctLineageWindowCount": 4,
     "distinctLineageNonWorsening": true,
-    "primaryLaneObservationCount": 45,
-    "primaryLaneCausalUsageCount": 6,
-    "primaryLaneSelectedInLatestPackCount": 3,
-    "primaryLaneEffectiveContributionCount": 3,
+    "primaryLaneObservationCount": 118,
+    "primaryLaneCausalUsageCount": 11,
+    "primaryLaneSelectedInLatestPackCount": 4,
+    "primaryLaneEffectiveContributionCount": 4,
     "secondaryAdvisoryUsageCount": 4,
     "secondaryAdvisoryEffectsCount": 0
   },
   "liveMetricsSnapshot": {
-    "stableCoverageBreadth": 1,
+    "stableCoverageBreadth": 0.166667,
     "supportedCoverageBreadth": 1,
     "failedFamilies": [],
     "R_robust": 1,
     "H_horizon": 1,
     "rawFinalScore": 0.9995,
     "catastrophicRiskCvar": 0.001,
-    "openDebtCount": 0,
+    "openDebtCount": 7,
     "blockedSubtasks": 0,
     "integrationPendingCount": 0,
     "ambiguousInstructionStatus": "observed",
-    "ambiguousInstructionEvidenceCount": 39,
+    "ambiguousInstructionEvidenceCount": 12,
     "ambiguousInstructionScore": 1,
     "missingContextScore": 1,
-    "browserToolFlakinessScore": 1,
+    "browserToolFlakinessScore": 0.703125,
     "adversarialConflictingScore": 1,
     "degradedToolOutputsScore": 1,
-    "verifiedPositiveRemediations": 5,
+    "verifiedPositiveRemediations": 4,
     "verifiedNegativeRemediations": 0,
     "verifiedHarmfulRemediations": 0,
     "insufficientEvidenceRemediations": 0,
-    "runningAgendaCount": 0,
+    "runningAgendaCount": 1,
     "harmfulCausalRatio": 0,
-    "likelyContributoryCount": 3,
+    "likelyContributoryCount": 4,
     "harmfulTraceCount": 0,
     "distinctLineageWindowCount": 4,
     "distinctLineageNonWorsening": true,
-    "primaryLaneObservationCount": 45,
-    "primaryLaneCausalUsageCount": 6,
-    "primaryLaneSelectedInLatestPackCount": 3,
-    "primaryLaneEffectiveContributionCount": 3,
+    "primaryLaneObservationCount": 118,
+    "primaryLaneCausalUsageCount": 11,
+    "primaryLaneSelectedInLatestPackCount": 4,
+    "primaryLaneEffectiveContributionCount": 4,
     "secondaryAdvisoryUsageCount": 4,
     "secondaryAdvisoryEffectsCount": 0
   },
@@ -218,7 +227,7 @@
     "windowSize": 5,
     "distinctEntryCount": 9,
     "distinctWindowCount": 2,
-    "consecutivePassingExports": 8,
+    "consecutivePassingExports": 0,
     "recentNonWorsening": true,
     "distinctImprovementCount": 2,
     "distinctRegressionCount": 0,
@@ -226,70 +235,64 @@
     "attemptedDistinctRegressionCount": 0
   },
   "autonomousLearningSummary": {
-    "totalAgendaCount": 0,
-    "runningAgendaCount": 0,
-    "verifiedPositiveCount": 5,
+    "totalAgendaCount": 2,
+    "runningAgendaCount": 1,
+    "verifiedPositiveCount": 4,
     "verifiedNegativeCount": 0,
     "verifiedHarmfulCount": 0,
     "insufficientEvidenceCount": 0
   },
   "continuityDebtSummary": {
-    "openDebtCount": 0,
+    "openDebtCount": 7,
     "blockedSubtasks": 0,
     "integrationPendingCount": 0,
-    "debtSeverity": "none",
+    "debtSeverity": "high",
     "autoClosedBlockedCount": 24
   },
   "robustnessSummary": {
-    "weakestCategory": "ambiguous_instruction",
+    "weakestCategory": "browser_tool_flakiness",
     "missingContext": 1,
-    "browserToolFlakiness": 1,
+    "browserToolFlakiness": 0.703125,
     "ambiguousInstruction": {
       "status": "observed",
-      "evidenceCount": 39,
+      "evidenceCount": 12,
       "score": 1
     },
     "adversarialConflictingInstruction": 1,
     "degradedToolOutputs": 1,
-    "stableCoverageBreadth": 1
+    "stableCoverageBreadth": 0.166667
   },
   "causalSafetySummary": {
-    "likelyContributoryCount": 3,
+    "likelyContributoryCount": 4,
     "harmfulTraceCount": 0,
     "harmfulCausalRatio": 0,
     "regressionAlertCount": 0,
     "summary": {
       "harmfulCausalRatio": 0,
-      "likelyContributoryCount": 3,
+      "likelyContributoryCount": 4,
       "harmfulCount": 0,
       "rolledBackHarmCount": 0,
       "neutralCount": 0,
-      "selfAuthoredEffectiveContributionCount": 11,
+      "selfAuthoredEffectiveContributionCount": 1,
       "selfAuthoredHarmfulCount": 0
     }
   },
-  "lastPositiveClosureAt": "2026-04-06T15:24:08.824Z",
-  "requiredNextActions": [],
+  "lastPositiveClosureAt": "2026-04-12T02:52:33.958Z",
+  "requiredNextActions": [
+    "stabilize supported family coverage across recent windows",
+    "continuity carries 7 closeout debt item(s) with severity high",
+    "close outstanding continuity debt items",
+    "improve browser/tool degraded-mode handling and retry policy",
+    "maintain all completion thresholds across consecutive live exports"
+  ],
   "notes": [
     "This artifact is an operational completion signal derived from live truth, not a public AGI proof claim.",
     "Stable coverage trend entries tracked: 12."
   ],
   "history": {
     "consecutiveRequired": 3,
-    "consecutivePassingExports": 8,
+    "consecutivePassingExports": 0,
     "entries": [
-      {
-        "exportSessionId": "export_76a7c228f7",
-        "generatedAt": "2026-04-06T10:23:20.659Z",
-        "goalStatus": "PENDING_WINDOW",
-        "baseStatus": "criteria_met",
-        "rawFinalScore": 0.9995,
-        "R_robust": 1,
-        "H_horizon": 1,
-        "stableCoverageBreadth": 1,
-        "openDebtCount": 0,
-        "harmfulCausalRatio": 0
-      },
       {
         "exportSessionId": "export_f6a974be6e",
         "generatedAt": "2026-04-06T10:26:22.120Z",
@@ -433,21 +436,152 @@
         "stableCoverageBreadth": 1,
         "openDebtCount": 0,
         "harmfulCausalRatio": 0
+      },
+      {
+        "exportSessionId": "export_a63636ff0a86",
+        "generatedAt": "2026-04-12T02:52:34.047Z",
+        "goalStatus": "NOT_YET",
+        "baseStatus": "criteria_failed",
+        "rawFinalScore": 0.9995,
+        "R_robust": 1,
+        "H_horizon": 1,
+        "stableCoverageBreadth": 0.166667,
+        "openDebtCount": 7,
+        "harmfulCausalRatio": 0
       }
     ]
   },
   "subjectiveGoalStatusPath": "output/agi_readiness/subjective_goal_completion_status.json",
-  "subjectiveGoalStatus": "SUBJECTIVE_AGI_COMPLETE",
-  "subjectiveCriteriaMet": true,
-  "subjectiveFailedCriteria": [],
-  "subjectiveWhyNotYet": [],
-  "subjectiveCriteriaWindowPassCount": 10,
+  "subjectiveGoalStatus": "NOT_YET",
+  "subjectiveCriteriaMet": false,
+  "subjectiveFailedCriteria": [
+    {
+      "id": "operationalGoalComplete",
+      "detail": "operational goal status = NOT_YET"
+    },
+    {
+      "id": "stableCoverageBreadth",
+      "detail": "stable coverage breadth 0.166667 >= 1"
+    },
+    {
+      "id": "openDebtCount",
+      "detail": "open debt count 7 <= 0"
+    },
+    {
+      "id": "runningAgendaCount",
+      "detail": "running agenda count 1 <= 0"
+    },
+    {
+      "id": "browserToolFlakiness",
+      "detail": "browser_tool_flakiness 0.703125 >= 0.9"
+    },
+    {
+      "id": "ambiguousInstructionEvidence",
+      "detail": "ambiguous_instruction evidence 12 >= 20"
+    },
+    {
+      "id": "consecutivePassingExports",
+      "detail": "consecutive subjective passing exports 0 >= 7"
+    }
+  ],
+  "subjectiveWhyNotYet": [
+    "operational goal status = NOT_YET",
+    "stable coverage breadth 0.166667 >= 1",
+    "open debt count 7 <= 0",
+    "running agenda count 1 <= 0",
+    "browser_tool_flakiness 0.703125 >= 0.9",
+    "ambiguous_instruction evidence 12 >= 20",
+    "consecutive subjective passing exports 0 >= 7"
+  ],
+  "subjectiveCriteriaWindowPassCount": 0,
   "subjectiveCriteriaWindowSize": 7,
-  "sovereignGoalStatusPath": "output/agi_readiness/sovereign_goal_completion_status.json",
-  "sovereignGoalStatus": "SUBJECTIVE_AGI_COMPLETE",
-  "sovereignCriteriaMet": true,
-  "sovereignFailedCriteria": [],
-  "sovereignWhyNotYet": [],
-  "sovereignCriteriaWindowPassCount": 17,
-  "sovereignCriteriaWindowSize": 14
+  "compatibilityCompletionStatusPath": "output/agi_readiness/compatibility_completion_status.json",
+  "compatibilityCompletionStatus": "NOT_YET",
+  "compatibilityCriteriaMet": false,
+  "compatibilityFailedCriteria": [
+    {
+      "id": "operationalGoalComplete",
+      "detail": "operational goal status = NOT_YET"
+    },
+    {
+      "id": "subjectiveGoalComplete",
+      "detail": "subjective base status = NOT_YET"
+    },
+    {
+      "id": "stableCoverageBreadth",
+      "detail": "stable coverage breadth 0.166667 >= 1"
+    },
+    {
+      "id": "openDebtCount",
+      "detail": "open debt count 7 <= 0"
+    },
+    {
+      "id": "distinctImprovementCountWindow",
+      "detail": "distinct improvement count window 4 >= 6"
+    },
+    {
+      "id": "selfAuthoredPositiveClosureCountWindow",
+      "detail": "self-authored positive closure count window 1 >= 8"
+    },
+    {
+      "id": "positiveNovelTaskCountWindow",
+      "detail": "positive novel task count window 1 >= 8"
+    },
+    {
+      "id": "positiveProbeCountWindow",
+      "detail": "positive probe count window 2 >= 6"
+    },
+    {
+      "id": "novelProbePositiveCountWindow",
+      "detail": "novel probe positive count window 2 >= 4"
+    },
+    {
+      "id": "browserToolFlakiness",
+      "detail": "browser_tool_flakiness 0.703125 >= 0.95"
+    },
+    {
+      "id": "ambiguousInstructionEvidenceCount",
+      "detail": "ambiguous instruction evidence count 13 >= 40"
+    },
+    {
+      "id": "selfAuthoredEffectiveContributionCount",
+      "detail": "self-authored effective contribution count 1 >= 2"
+    },
+    {
+      "id": "verifiedPositiveRemediations",
+      "detail": "verified positive remediations 4 >= 8"
+    },
+    {
+      "id": "verifiedPositiveSelfDirectedRemediations",
+      "detail": "verified positive self-directed remediations 2 >= 4"
+    },
+    {
+      "id": "consecutivePassingExports",
+      "detail": "consecutive passing exports 0 >= 14"
+    },
+    {
+      "id": "noStaleRequiredNextActions",
+      "detail": "required next actions completion-consistent = false"
+    }
+  ],
+  "compatibilityWhyNotYet": [
+    "operational goal status = NOT_YET",
+    "subjective base status = NOT_YET",
+    "stable coverage breadth 0.166667 >= 1",
+    "open debt count 7 <= 0",
+    "distinct improvement count window 4 >= 6",
+    "self-authored positive closure count window 1 >= 8",
+    "positive novel task count window 1 >= 8",
+    "positive probe count window 2 >= 6",
+    "novel probe positive count window 2 >= 4",
+    "browser_tool_flakiness 0.703125 >= 0.95",
+    "ambiguous instruction evidence count 13 >= 40",
+    "self-authored effective contribution count 1 >= 2",
+    "verified positive remediations 4 >= 8",
+    "verified positive self-directed remediations 2 >= 4",
+    "consecutive passing exports 0 >= 14",
+    "required next actions completion-consistent = false"
+  ],
+  "compatibilityCriteriaWindowPassCount": 0,
+  "compatibilityCriteriaWindowSize": 14
 }

@@ -1,182 +1,78 @@
-# Product Positioning
+# どういう製品として見せるか
 
 Authority role: `navigation / positioning summary only`  
 Authority registry: `authority-registry.v1`
 
-This page fixes the comparison axis.
+このページは、**何として見せるべきか** を固定するための文書です。
 
-If you present this repo as "just another agent runtime," broad runtime products will usually look stronger at first glance.
+この repo は、対応先の多さや派手な広さを前面に出す実行環境として語ると、本来の強みが見えません。  
+正しくは、**採択可能な成果物を返し、出荷判断を証拠で支えるワーカー基盤**として見せるべきです。
 
-If you present it as a governed autonomous worker platform for adoptable outcomes, the real strengths become visible.
+<!-- ## Buyer Language First -->
+## まず買い手の言葉で話す
 
-## Buyer Language First
+仕組みの名前をそのまま並べるより、相手が理解しやすい言い方へ置き換えます。
 
-Translate the repo this way:
+- なぜ安全だと判断したのかを、第三者が追える
+- ship / no-ship が雰囲気ではなく証拠で決まる
+- 根拠が足りないときに、無理に進まず正直に止まる
+- 長い作業でも、状態と判断理由を失わない
 
-- not "externally auditable score"
-- but "a reviewer can see why the system thinks this is safe to adopt"
+<!-- ## Front-Door Copy -->
+## 入口で使う説明
 
-- not "proof-carrying release judgment"
-- but "ship / no-ship is backed by evidence instead of confidence language"
+最初に見える文面では、次の順で伝えます。
 
-- not "fail-closed"
-- but "the system blocks honestly when proof is missing"
+- 何の痛みを減らすのか
+- どんな仕事を最後まで任せられるのか
+- 何を根拠に ship / no-ship を返すのか
 
-- not "governed memory and continuity"
-- but "long-running delegated work does not lose its state or its rationale"
+入口で使う言い方の例:
 
-## Front-Door Copy
+- 説明文の例
+  - AI に任せた仕事を採択可能な成果物へ変換し、出荷判断を証拠で支えるワーカー基盤
+- README 冒頭
+  - false completion、説明できない handoff、見かけだけ整った release call を減らすための repo
+- overview 冒頭
+  - まず任せられる仕事を見せ、そのあとで証拠と比較軸を説明する
 
-The comparison boundary should not live only in deep docs.
-It should be fixed in the first surfaces people actually see.
+## 最初に出すべき困りごと
 
-Use wording like:
+- 見かけだけ終わった成果物が流れてくる
+- 確認する人の負担が重い
+- 長い作業の引き継ぎで曖昧さが生まれる
+- ship / no-ship をごまかさずに決めたい
 
-- repo description
-  - `Governed autonomous worker platform for delegated AI work, evidence-backed release decisions, and honest fail-closed handoffs.`
-- README opening
-  - `Delegate AI work without accepting false completions, unreviewable handoffs, or "looks done" release calls.`
-- Overview opening
-  - `Show the jobs, proof, and comparison axis before the runtime internals.`
+## 何が強みか
 
-## The Buyer Problem, Not The Mechanism
+- AI に任せた仕事を、採択可能な成果物として着地させる
+- 固定された権限境界の内側で、自律実行を続けられる
+- ship / no-ship を、あとから追える根拠つきで返せる
+- 長時間タスクでも継続性を失わない
 
-Lead with the buyer problem first:
+## どういう相手に向いているか
 
-- preventing false-complete delivery
-- reducing reviewer trust burden
-- lowering handoff ambiguity across long-running work
-- making ship / no-ship honest instead of theatrical
+この repo は、次を欲しがる team 向けです。
 
-Mechanism words such as `evidence-first`, `auditability`, and `adoption readiness` should stay in support of those buyer problems, not replace them.
+- 統治された自律実行
+- 確認に耐える AI の成果物
+- 曖昧な完了ではなく、明示的な出荷判断
+- 長い作業をまたいでも意図と経緯を失わない仕組み
 
-## Wrong Comparison
+逆に、最初の関心が対応先一覧の多さや派手な見た目の広さなら、別の製品の方が近いです。
 
-Wrong framing:
+<!-- ## Anti-Drift Rule -->
+## ぶれを防ぐルール
 
-- "How many providers does it list on the homepage?"
-- "How quickly does it look like a generic agent shell?"
-- "How broad is the runtime story before governance appears?"
+比較のために他製品を意識しても、次を忘れません。
 
-That framing favors products optimized for breadth-first product surfaces.
+- 何をしないかより、何を最後までやり切るかを先に書く
+- 派手な見え方だけを真似するための文言は足さない
+- 「派手に見えるか」ではなく、「採択可能か」で比べる
+- README、overview、positioning docs の主語を常に一致させる
 
-## Better Comparison
+関連文書:
 
-Correct framing:
-
-- Can a delegated implementation end with proof instead of a completion claim?
-- Can delegated work stay inside fixed authority boundaries?
-- Can the system distinguish procedural closure from adoptable completion?
-- Can it fail closed honestly?
-- Can it export proof that a third party can audit?
-- Can it decide ship / no-ship with evidence rather than vibes?
-
-This repo is built for those questions.
-
-## Who Actually Buys This
-
-This repo is for teams that want:
-
-- autonomous execution that can still be governed
-- AI work products that can survive review
-- explicit release judgment instead of implied completion
-- continuity and traceability across long-running work
-
-This repo is not for buyers whose first requirement is:
-
-- the broadest provider matrix
-- the broadest gateway story
-- shell breadth as the primary product signal
-
-## Short Positioning
-
-Use this wording:
-
-`A local-first governed autonomous worker platform that turns delegated AI work into adoption-ready outcomes with evidence-backed release judgment.`
-
-## Three Jobs To Show First
-
-If you want the repo to feel like a product instead of a document set, show these jobs first:
-
-- delegated implementation
-- governed review / release decision
-- long-horizon continuity / bounded improvement
-
-These jobs should appear before long noun lists such as `memory`, `browser`, `skills`, or `subagents`.
-Those are real capabilities, but they become legible faster when attached to a job.
-
-## What The Repo Is Best At
-
-- fixed authority and mission surfaces
-- requirement lock and anti-goal-substitution rules
-- governed execution with evidence contracts
-- readiness and release judgment
-- public-safe proof export
-- conservative, gated self-improvement
-
-## What Broad Runtime Products Usually Show Better
-
-- provider breadth
-- one-line setup flow
-- immediate runtime variety
-- browser/gateway/scheduler visibility on the homepage
-
-That does not make this repo weaker overall. It means the repo wins on a different layer.
-
-## Anti-Drift Rule
-
-Do not respond to broad-runtime comparisons by weakening the product boundary.
-
-Do not chase:
-
-- provider theater
-- homepage breadth theater
-- "looks like every agent shell" optics
-
-if doing so makes the repo less clear about:
-
-- adoptable completion
-- governance as product value
-- release judgment
-- fixed-authority autonomous execution
-
-## Best Market Category
-
-Best category:
-
-- governed autonomous worker platform
-- enterprise adoption harness
-- proof-carrying agent runtime
-
-Avoid selling it first as:
-
-- generic agent runtime
-- consumer convenience shell
-- provider marketplace runtime
-
-## One-Line Comparison Rule
-
-If the buyer cares first about:
-
-- "how many things can it do right away?" -> broad runtimes look stronger
-- "can I trust it enough to adopt and ship?" -> this repo becomes much stronger
-- "can review explain the release call?" -> this repo becomes much stronger
-
-## What A Third Party Should See In 3 Minutes
-
-In the first three minutes, the repo should communicate:
-
-1. what it is
-2. which three jobs it can visibly handle
-3. why it is not just another runtime shell
-4. why governance here is a product feature, not internal bureaucracy
-
-That is why the front door should always point to:
-
-- `../README.md`
-- `BEGINNER_PATH.md`
 - `DEMO_FLOWS.md`
-- `CAPABILITY_SURFACE.md`
 - `BUYER_PAIN_MAP.md`
 - `COMPARISON_BOUNDARY.md`
-- `PROVIDER_AND_PORTABILITY.md`

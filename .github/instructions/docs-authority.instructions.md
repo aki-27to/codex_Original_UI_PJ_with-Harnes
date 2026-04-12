@@ -5,7 +5,8 @@ applyTo: "README.md,HARNESS_MAP.md,docs/**/*.md,.github/copilot-instructions.md,
 These files describe authority, operating policy, and operator guidance.
 
 Documentation rules:
-- `AGENTS.md` stays the tier-0 constitution
+- `docs/HARNESS_CONSTITUTION.md` stays the single supreme frozen constitution
+- `AGENTS.md` stays the operational constitution / runtime behavior constraints
 - `docs/AGENT_OPERATING_RULES.md` stays tier-1 operating policy
 - machine-readable contracts under `scripts/config/` outrank narrative prose if they disagree
 - `docs/CURRENT_ARCHITECTURE.md` is the active architecture spec

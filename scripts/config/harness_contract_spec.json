@@ -52,6 +52,7 @@
       "EXTERNAL_ACTION_REQUIRED",
       "HARNESS_FAILURE"
     ],
-    "completedTaskOutcomeDoesNotImplyReleaseApproved": true
+    "completedTaskOutcomeDoesNotImplyReleaseApproved": true,
+    "governancePromotionRequiresEvalOrProtectedValidation": true
   }
 }

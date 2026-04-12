@@ -1,138 +1,8 @@
 {
   "schema": "agi-readiness-stable-coverage-trend.v1",
-  "generatedAt": "2026-04-06T15:32:16.716Z",
+  "generatedAt": "2026-04-12T02:52:33.405Z",
   "workspaceId": "5c839dfeef8b555f",
   "entries": [
-    {
-      "generatedAt": "2026-04-06T15:15:43.161Z",
-      "stableCoverageBreadth": 1,
-      "stableCoveredFamilies": [
-        "deterministic_code",
-        "web_creative",
-        "planning",
-        "workflow_execution",
-        "evaluation_review",
-        "tool_use_browser_like"
-      ],
-      "unstableFamilies": []
-    },
-    {
-      "generatedAt": "2026-04-06T15:16:02.784Z",
-      "stableCoverageBreadth": 1,
-      "stableCoveredFamilies": [
-        "deterministic_code",
-        "web_creative",
-        "planning",
-        "workflow_execution",
-        "evaluation_review",
-        "tool_use_browser_like"
-      ],
-      "unstableFamilies": []
-    },
-    {
-      "generatedAt": "2026-04-06T15:19:15.805Z",
-      "stableCoverageBreadth": 1,
-      "stableCoveredFamilies": [
-        "deterministic_code",
-        "web_creative",
-        "planning",
-        "workflow_execution",
-        "evaluation_review",
-        "tool_use_browser_like"
-      ],
-      "unstableFamilies": []
-    },
-    {
-      "generatedAt": "2026-04-06T15:21:26.683Z",
-      "stableCoverageBreadth": 1,
-      "stableCoveredFamilies": [
-        "deterministic_code",
-        "web_creative",
-        "planning",
-        "workflow_execution",
-        "evaluation_review",
-        "tool_use_browser_like"
-      ],
-      "unstableFamilies": []
-    },
-    {
-      "generatedAt": "2026-04-06T15:24:09.338Z",
-      "stableCoverageBreadth": 1,
-      "stableCoveredFamilies": [
-        "deterministic_code",
-        "web_creative",
-        "planning",
-        "workflow_execution",
-        "evaluation_review",
-        "tool_use_browser_like"
-      ],
-      "unstableFamilies": []
-    },
-    {
-      "generatedAt": "2026-04-06T15:25:24.580Z",
-      "stableCoverageBreadth": 1,
-      "stableCoveredFamilies": [
-        "deterministic_code",
-        "web_creative",
-        "planning",
-        "workflow_execution",
-        "evaluation_review",
-        "tool_use_browser_like"
-      ],
-      "unstableFamilies": []
-    },
-    {
-      "generatedAt": "2026-04-06T15:28:05.992Z",
-      "stableCoverageBreadth": 1,
-      "stableCoveredFamilies": [
-        "deterministic_code",
-        "web_creative",
-        "planning",
-        "workflow_execution",
-        "evaluation_review",
-        "tool_use_browser_like"
-      ],
-      "unstableFamilies": []
-    },
-    {
-      "generatedAt": "2026-04-06T15:28:49.968Z",
-      "stableCoverageBreadth": 1,
-      "stableCoveredFamilies": [
-        "deterministic_code",
-        "web_creative",
-        "planning",
-        "workflow_execution",
-        "evaluation_review",
-        "tool_use_browser_like"
-      ],
-      "unstableFamilies": []
-    },
-    {
-      "generatedAt": "2026-04-06T15:29:44.042Z",
-      "stableCoverageBreadth": 1,
-      "stableCoveredFamilies": [
-        "deterministic_code",
-        "web_creative",
-        "planning",
-        "workflow_execution",
-        "evaluation_review",
-        "tool_use_browser_like"
-      ],
-      "unstableFamilies": []
-    },
-    {
-      "generatedAt": "2026-04-06T15:30:16.369Z",
-      "stableCoverageBreadth": 1,
-      "stableCoveredFamilies": [
-        "deterministic_code",
-        "web_creative",
-        "planning",
-        "workflow_execution",
-        "evaluation_review",
-        "tool_use_browser_like"
-      ],
-      "unstableFamilies": []
-    },
     {
       "generatedAt": "2026-04-06T15:30:24.541Z",
       "stableCoverageBreadth": 1,
@@ -158,6 +28,146 @@
         "tool_use_browser_like"
       ],
       "unstableFamilies": []
+    },
+    {
+      "generatedAt": "2026-04-11T08:38:31.453Z",
+      "stableCoverageBreadth": 0.5,
+      "stableCoveredFamilies": [
+        "deterministic_code",
+        "planning",
+        "evaluation_review"
+      ],
+      "unstableFamilies": [
+        "web_creative",
+        "workflow_execution",
+        "tool_use_browser_like"
+      ]
+    },
+    {
+      "generatedAt": "2026-04-11T08:39:30.856Z",
+      "stableCoverageBreadth": 0.5,
+      "stableCoveredFamilies": [
+        "deterministic_code",
+        "planning",
+        "evaluation_review"
+      ],
+      "unstableFamilies": [
+        "web_creative",
+        "workflow_execution",
+        "tool_use_browser_like"
+      ]
+    },
+    {
+      "generatedAt": "2026-04-11T11:26:15.764Z",
+      "stableCoverageBreadth": 0.5,
+      "stableCoveredFamilies": [
+        "deterministic_code",
+        "planning",
+        "evaluation_review"
+      ],
+      "unstableFamilies": [
+        "web_creative",
+        "workflow_execution",
+        "tool_use_browser_like"
+      ]
+    },
+    {
+      "generatedAt": "2026-04-11T11:28:49.666Z",
+      "stableCoverageBreadth": 0.5,
+      "stableCoveredFamilies": [
+        "deterministic_code",
+        "planning",
+        "evaluation_review"
+      ],
+      "unstableFamilies": [
+        "web_creative",
+        "workflow_execution",
+        "tool_use_browser_like"
+      ]
+    },
+    {
+      "generatedAt": "2026-04-11T11:29:37.657Z",
+      "stableCoverageBreadth": 0.5,
+      "stableCoveredFamilies": [
+        "deterministic_code",
+        "planning",
+        "evaluation_review"
+      ],
+      "unstableFamilies": [
+        "web_creative",
+        "workflow_execution",
+        "tool_use_browser_like"
+      ]
+    },
+    {
+      "generatedAt": "2026-04-11T11:32:37.107Z",
+      "stableCoverageBreadth": 0.5,
+      "stableCoveredFamilies": [
+        "deterministic_code",
+        "planning",
+        "evaluation_review"
+      ],
+      "unstableFamilies": [
+        "web_creative",
+        "workflow_execution",
+        "tool_use_browser_like"
+      ]
+    },
+    {
+      "generatedAt": "2026-04-12T01:15:46.927Z",
+      "stableCoverageBreadth": 0.5,
+      "stableCoveredFamilies": [
+        "deterministic_code",
+        "planning",
+        "evaluation_review"
+      ],
+      "unstableFamilies": [
+        "web_creative",
+        "workflow_execution",
+        "tool_use_browser_like"
+      ]
+    },
+    {
+      "generatedAt": "2026-04-12T01:19:39.503Z",
+      "stableCoverageBreadth": 0.5,
+      "stableCoveredFamilies": [
+        "deterministic_code",
+        "planning",
+        "evaluation_review"
+      ],
+      "unstableFamilies": [
+        "web_creative",
+        "workflow_execution",
+        "tool_use_browser_like"
+      ]
+    },
+    {
+      "generatedAt": "2026-04-12T02:15:13.462Z",
+      "stableCoverageBreadth": 0.5,
+      "stableCoveredFamilies": [
+        "web_creative",
+        "evaluation_review",
+        "tool_use_browser_like"
+      ],
+      "unstableFamilies": [
+        "deterministic_code",
+        "planning",
+        "workflow_execution"
+      ]
+    },
+    {
+      "generatedAt": "2026-04-12T02:52:33.405Z",
+      "stableCoverageBreadth": 0.166667,
+      "stableCoveredFamilies": [
+        "evaluation_review"
+      ],
+      "unstableFamilies": [
+        "deterministic_code",
+        "web_creative",
+        "planning",
+        "workflow_execution",
+        "tool_use_browser_like"
+      ]
     }
   ]
 }

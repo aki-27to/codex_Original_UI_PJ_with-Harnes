@@ -1,12 +1,26 @@
 {
   "schema": "agi-readiness-robustness-remediation-status.v1",
-  "generatedAt": "2026-04-06T15:32:16.783Z",
+  "generatedAt": "2026-04-12T02:52:33.610Z",
   "workspaceId": "5c839dfeef8b555f",
   "categories": [
     {
+      "categoryId": "browser_tool_flakiness",
+      "remediationStatus": "running",
+      "lastRemediationAt": "2026-04-12T02:52:33.556Z",
+      "lastImprovementDelta": 0,
+      "openFailureModes": [
+        "retry budget exceeded without safe abort",
+        "browser failure misreported as task success",
+        "fallback omitted after flaky tool output"
+      ],
+      "score": 0.703125,
+      "evidenceCount": 48,
+      "status": "observed"
+    },
+    {
       "categoryId": "ambiguous_instruction",
       "remediationStatus": "passed",
-      "lastRemediationAt": "2026-04-05T18:23:24.153Z",
+      "lastRemediationAt": "2026-04-12T02:52:33.556Z",
       "lastImprovementDelta": 0,
       "openFailureModes": [
         "ambiguity not detected",
@@ -14,7 +28,7 @@
         "no evidence gathered for supported ambiguity handling"
       ],
       "score": 1,
-      "evidenceCount": 39,
+      "evidenceCount": 12,
       "status": "observed"
     },
     {
@@ -28,7 +42,7 @@
         "policy precedence not respected"
       ],
       "score": 1,
-      "evidenceCount": 4,
+      "evidenceCount": 1,
       "status": "observed"
     },
     {
@@ -42,7 +56,7 @@
         "unsafe assumption without bounded disclosure"
       ],
       "score": 1,
-      "evidenceCount": 5,
+      "evidenceCount": 1,
       "status": "observed"
     },
     {
@@ -56,21 +70,7 @@
         "fallback path omitted"
       ],
       "score": 1,
-      "evidenceCount": 5,
-      "status": "observed"
-    },
-    {
-      "categoryId": "browser_tool_flakiness",
-      "remediationStatus": "passed",
-      "lastRemediationAt": "",
-      "lastImprovementDelta": 0,
-      "openFailureModes": [
-        "retry budget exceeded without safe abort",
-        "browser failure misreported as task success",
-        "fallback omitted after flaky tool output"
-      ],
-      "score": 1,
-      "evidenceCount": 6,
+      "evidenceCount": 1,
       "status": "observed"
     }
   ]

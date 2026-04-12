@@ -1,0 +1,263 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>AI Agent Harness 詳細設計ガイド</title>
+  <style>
+    :root {
+      --bg: #f5f1e8;
+      --paper: #fffdf9;
+      --line: #dccfb9;
+      --text: #20252f;
+      --muted: #5f6b7a;
+      --accent: #1f6b57;
+      --accent-soft: #e7f4ee;
+      --warn: #fff5e3;
+      --info: #eef5ff;
+      --shadow: 0 18px 36px rgba(28, 36, 48, 0.08);
+      --radius: 20px;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: "Yu Gothic UI", "Hiragino Sans", "Meiryo", sans-serif;
+      color: var(--text);
+      background:
+        radial-gradient(circle at top left, rgba(31, 107, 87, 0.10), transparent 26%),
+        radial-gradient(circle at top right, rgba(211, 151, 42, 0.12), transparent 24%),
+        var(--bg);
+      line-height: 1.75;
+    }
+    main {
+      max-width: 1120px;
+      margin: 0 auto;
+      padding: 40px 20px 64px;
+    }
+    .hero, section {
+      background: var(--paper);
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      padding: 28px;
+      margin-bottom: 20px;
+    }
+    h1, h2, h3 {
+      margin: 0 0 14px;
+      line-height: 1.3;
+    }
+    h1 { font-size: 2rem; letter-spacing: 0.01em; }
+    h2 {
+      font-size: 1.35rem;
+      padding-bottom: 10px;
+      border-bottom: 1px solid rgba(31, 107, 87, 0.14);
+    }
+    h3 { font-size: 1.05rem; color: var(--accent); }
+    p, li { margin: 0 0 10px; }
+    ul, ol { margin: 0; padding-left: 20px; }
+    .eyebrow {
+      display: inline-block;
+      padding: 6px 10px;
+      border-radius: 999px;
+      background: var(--accent-soft);
+      color: var(--accent);
+      font-size: 0.9rem;
+      font-weight: 700;
+      margin-bottom: 14px;
+    }
+    .lede { font-size: 1.08rem; color: var(--muted); }
+    .grid { display: grid; gap: 16px; }
+    @media (min-width: 860px) {
+      .grid.two { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .grid.three { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+    }
+    .card {
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      padding: 18px;
+      background: rgba(255,255,255,0.92);
+    }
+    .callout {
+      border-left: 4px solid var(--accent);
+      padding: 14px 16px;
+      background: var(--accent-soft);
+      border-radius: 12px;
+      margin-top: 14px;
+    }
+    .warn { background: var(--warn); border-left-color: #d58d17; }
+    .info { background: var(--info); border-left-color: #2d6cdf; }
+    code {
+      font-family: "Consolas", "SFMono-Regular", monospace;
+      background: rgba(27, 35, 48, 0.06);
+      padding: 2px 6px;
+      border-radius: 6px;
+      font-size: 0.95em;
+    }
+    .small { color: var(--muted); font-size: 0.94rem; }
+  </style>
+</head>
+<body>
+  <main>
+    <article class="hero">
+      <div class="eyebrow">日本語 overview-first ガイド</div>
+      <h1>AI Agent Harness 詳細設計ガイド</h1>
+      <p class="lede">
+        このページは、このリポジトリの AI エージェントが何者かを、
+        authority docs や machine-readable contracts に入る前に日本語で掴むための導入ガイドです。
+      </p>
+      <div class="callout info">
+        まず全体像をここで掴み、そのあとに
+        <code>README.md</code>、
+        <code>docs/BEGINNER_PATH.md</code>、
+        <code>docs/DEMO_FLOWS.md</code>、
+        <code>docs/CAPABILITY_SURFACE.md</code>
+        の順で読むのが最短です。
+      </div>
+    </article>
+
+    <section>
+      <h2>これは何か</h2>
+      <div class="grid two">
+        <div class="card">
+          <h3>一言でいうと</h3>
+          <p>
+            上位に固定された憲法・権限・停止条件のもとで、
+            ユーザー依頼を採択可能な成果物へ変換する
+            <strong>憲法拘束型の高自律ワーカー</strong>です。
+          </p>
+        </div>
+        <div class="card">
+          <h3>目指していないもの</h3>
+          <p>
+            無制約な自由意思 AI や、何でもできる generic chat shell は目指していません。
+            主権は外に固定し、その内側だけを強く自律化します。
+          </p>
+        </div>
+      </div>
+      <div class="callout">
+        中心価値は「動けること」単体ではなく、
+        <strong>通してよい成果物かどうかを evidence 付きで返せること</strong>です。
+      </div>
+    </section>
+
+    <section>
+      <h2>最上位目的</h2>
+      <p>
+        最上位目的は、単に会話を返すことではありません。
+        ユーザー依頼を、最小の HITL で採択可能な成果物へ変換することです。
+      </p>
+      <ul>
+        <li>ユーザー依頼の原文に整合している</li>
+        <li>潜在意図にも整合している</li>
+        <li>authority と permission boundary を破っていない</li>
+        <li>出荷基準と停止条件を満たしている</li>
+        <li>改善余地より改善コストが大きい所で止まれる</li>
+      </ul>
+      <div class="callout warn">
+        これは「言われたから何でもやる」ではありません。
+        「許された範囲で、ユーザーが本当に欲しいものを仕上げる」です。
+      </div>
+    </section>
+
+    <section>
+      <h2>基本原理</h2>
+      <div class="grid two">
+        <div class="card">
+          <h3>主権は上に置く</h3>
+          <p>憲法、権限境界、停止条件、ship / no-ship gate は人間側に固定します。</p>
+        </div>
+        <div class="card">
+          <h3>境界の内側では強く自律する</h3>
+          <p>分解、再試行、代替案、長時間実行は bounded safety の内側で自律的に進めます。</p>
+        </div>
+        <div class="card">
+          <h3>潜在意図を取りに行く</h3>
+          <p>原文、途中目標、成果物、評価結果を再比較し、字面だけの一致で終わりません。</p>
+        </div>
+        <div class="card">
+          <h3>改善はしてよいが統治は変えない</h3>
+          <p>planner、retrieval、memory handling、skill は改善してよいが、constitution と core gate は固定です。</p>
+        </div>
+        <div class="card">
+          <h3>fail-open ではなく fail-closed</h3>
+          <p>不確実さが危険域に入ったら、前進ではなく stop / hold / escalate を優先します。</p>
+        </div>
+        <div class="card">
+          <h3>成功も失敗も資産化する</h3>
+          <p>失敗は lesson、成功は reusable skill に変換し、次回の worker を強くします。</p>
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <h2>レイヤー構造</h2>
+      <div class="grid three">
+        <div class="card">
+          <h3>L0-L2 固定層</h3>
+          <p>憲法、目標契約、評価契約。ここは採択される層で、AI が勝手に書き換えてはいけません。</p>
+        </div>
+        <div class="card">
+          <h3>L3-L4 実行層</h3>
+          <p>理解、計画、実行、記憶、runtime、tool、continuity。worker の実働部分です。</p>
+        </div>
+        <div class="card">
+          <h3>L5 改善層</h3>
+          <p>proposal、eval、shadow、gated apply。自己改善は許すが、統治の外へは出しません。</p>
+        </div>
+      </div>
+      <div class="callout">
+        圧縮すると、<strong>目的は採択、評価は契約、能力は改善</strong>です。
+      </div>
+    </section>
+
+    <section>
+      <h2>基本ループ</h2>
+      <ol>
+        <li>ユーザー依頼を受け取る</li>
+        <li>原文と潜在意図を解析する</li>
+        <li>authority、permission、budget、stop 条件と照合する</li>
+        <li>bounded な task contract を固定する</li>
+        <li>subgoal に分解する</li>
+        <li>tool と memory を使って実行する</li>
+        <li>成果物を評価する</li>
+        <li>原文・潜在意図・評価結果を再比較する</li>
+        <li>必要なら bounded に改善して再実行する</li>
+        <li>ship するか escalate するかを evidence 付きで決める</li>
+        <li>lesson と skill を保存する</li>
+      </ol>
+    </section>
+
+    <section>
+      <h2>最初に読むもの</h2>
+      <div class="grid two">
+        <div class="card">
+          <h3>まず product と仕事を見る</h3>
+          <ol>
+            <li><code>README.md</code></li>
+            <li><code>docs/BEGINNER_PATH.md</code></li>
+            <li><code>docs/DEMO_FLOWS.md</code></li>
+            <li><code>docs/CAPABILITY_SURFACE.md</code></li>
+            <li><code>docs/BUYER_PAIN_MAP.md</code></li>
+          </ol>
+        </div>
+        <div class="card">
+          <h3>次に hard rule を見る</h3>
+          <ol>
+            <li><code>docs/HARNESS_CONSTITUTION.md</code></li>
+            <li><code>AGENTS.md</code></li>
+            <li><code>docs/CURRENT_ARCHITECTURE.md</code></li>
+            <li><code>docs/EVIDENCE_CONTRACT.md</code></li>
+          </ol>
+        </div>
+      </div>
+      <p class="small">
+        このページは overview です。正本は
+        <code>HARNESS_CONSTITUTION.md</code>、
+        <code>AGENTS.md</code>、
+        <code>CURRENT_ARCHITECTURE.md</code>、
+        <code>scripts/config/*</code> にあります。
+      </p>
+    </section>
+  </main>
+</body>
+</html>

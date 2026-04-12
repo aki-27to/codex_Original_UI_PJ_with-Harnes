@@ -1,139 +1,98 @@
 # AGI Operational Completion
 
-## 2026-04-05 update
+Updated: 2026-04-12
 
-- This document defines operational completion for this harness, not a public AGI claim.
-- The top-level decision artifact is `output/agi_readiness/goal_completion_status.json`.
-- `goalStatus = "OPERATIONALLY_COMPLETE"` is allowed only when strict live criteria pass, including stable coverage, robustness, horizon, continuity debt closeout, causal safety, distinct lineage quality, and three consecutive passing live exports.
-- Supporting public artifacts include:
-  - `output/agi_readiness/stable_coverage_matrix.json`
-  - `output/agi_readiness/stable_coverage_trend.json`
-  - `output/agi_readiness/robustness_breakdown.json`
-  - `output/agi_readiness/causal_regression_alerts.json`
-  - `output/agi_readiness/distinct_improvement_summary.json`
-  - `output/continuity_public/continuity_debt.json`
-  - `output/continuity_public/continuity_debt_trend.json`
-  - `output/memory_public/causal_effectiveness_summary.json`
+## 1) この文書が扱う completion
 
-## 2026-04-06 subjective completion update
+この repo で扱う completion は、自由意思や自己主権の意味での completion ではありません。  
+対象は、**固定された憲法の内側で動くワーカーが、どこまで運用上きちんと閉じているか** です。
 
-- `output/agi_readiness/subjective_goal_completion_status.json` is now the tracked companion artifact for subjective completion.
-- `goal_completion_status.json` stays focused on operational completion, but now carries a summarized subjective status, failed criteria, why-not-yet reasons, and the enforced subjective window counts.
-- Subjective completion is fail-closed and stricter than operational completion.
-- Current main truth for the subjective decision requires the checked-in supporting artifacts:
-  - `output/agi_readiness/learning_adoption_status.json`
-  - `output/agi_readiness/self_directed_probe_status.json`
-  - `output/agi_readiness/novel_task_acquisition.json`
-- A local export does not become main truth until the tracked artifacts exist on `main`.
+つまり「AGI」という語を使うときも、何でも自己判断する存在を意味するのではなく、
+ユーザー依頼を採択可能な成果物へ変換する運用知能として、どこまで completion を満たしているかを見ます。
 
-この文書は、この repo における「AGI を公開証明した」状態ではなく、**運用上の到達判定**を定義します。
+## 2) 何を正本として見るか
 
-## これは何か
+- 見出しになる surface: `output/governance_public/worker_decision_surface.json`
+- プログラム全体の readiness: `output/agi_readiness/goal_completion_status.json`
+- 主観品質の補助面: `output/agi_readiness/subjective_goal_completion_status.json`
+- 互換層: `output/agi_readiness/compatibility_completion_status.json`
+- 古い互換別名: `output/agi_readiness/sovereign_goal_completion_status.json`
 
-- public claim ではなく、repo 内の live truth と public proof が十分に閉じた状態を判定するための基準です。
-- governed memory、autonomous learning、continuity closeout、readiness、causal trace をまとめて見たときに、
-  - bottleneck を検出できる
-  - remediation agenda を自律生成できる
-  - effect を evidence-backed に検証できる
-  - harmful lesson を revoke できる
-  - distinct lineage で improvement / regression を追える
-  - continuity debt を閉じられる
-  状態を「operational completion」と呼びます。
+`sovereign` は互換用に残るだけで、いまの見出し語彙でも、現在の判断基準でもありません。
 
-## これは何ではないか
+## 3) 何を満たせば completion と言えるか
 
-- 公開の場で AGI を証明するものではありません。
-- unsupported / not evaluated / missing evidence を PASS 扱いするものではありません。
-- self snapshot を distinct victory と見なすものではありません。
+completion は 1 つの score ではなく、次をまとめて見ます。
 
-## Truth source と public proof
+1. L0 / L1 / L2 を破っていない
+2. literal request と latent intent に整合している
+3. release-quality evidence がある
+4. open debt が headline score をごまかしていない
+5. self-improvement が bounded / auditable / non-regressive である
 
-- live truth:
-  - `logs/archive/raw/runtime_state/memory/`
-  - readiness / continuity / causal trace / autonomous learning の canonical projection
-- public proof:
-  - `output/memory_public/*`
-  - `output/agi_readiness/*`
-  - `output/continuity_public/*`
+## 4) operational completion の最低条件
 
-public proof は redacted projection であり、live truth をそのまま dump しません。
+最低でも次を満たす必要があります。
 
-## Goal completion criteria
+- 採択可能な成果物になっている
+- constitutional / permission boundary の内側にある
+- signoff に足る evidence がある
+- stable coverage の breadth がある
+- residual risk が明示されている
+- blocked agenda を放置していない
 
-`output/agi_readiness/goal_completion_status.json` は次を判定します。
+## 5) subjective completion の考え方
 
-- `stableCoverageBreadth = 1`
-- `R_robust >= 0.93`
-- `H_horizon >= 0.97`
-- `rawFinalScore >= 0.90`
-- `openDebtCount = 0`
-- `blockedSubtasks = 0`
-- `integrationPendingCount = 0`
-- `ambiguous_instruction.status != "no_evidence"`
-- `missing_context.score >= 0.80`
-- `browser_tool_flakiness.score >= 0.75`
-- verified positive remediation が最小件数以上
-- distinct lineage が最小件数以上で non-worsening
-- harmful causal trace 比率が閾値以下
+主観品質を含む task では、単に PASS が並ぶだけでは不十分です。
 
-これらをすべて満たしたときだけ、`goalStatus = "OPERATIONALLY_COMPLETE"` にできます。
-1 つでも落ちていれば `goalStatus = "NOT_YET"` です。
+- benchmark superiority or parity を問う
+- screenshot / reviewer / tester を持つ
+- false-complete delivery を避ける
+- 追加反復の期待値が低いことを示す
 
-## `goal_completion_status.json` の意味
+## 6) 複数の score view
 
-最低限、次を含みます。
+readiness は 1 つの数字ではなく、複数の見え方を持ちます。
 
-- `goalStatus`
-- `whyNotYet`
-- `completionCriteria`
-- `currentValues`
-- `lastPositiveClosureAt`
-- `requiredNextActions`
+- internal governed score
+- externally auditable score
+- display final score
+- blocked / insufficient-evidence / continuity debt による cap
 
-見方:
+## 7) 何を置き換えたか
 
-- `goalStatus`
-  - 現時点の到達判定
-- `whyNotYet`
-  - どの条件がまだ足りないか
-- `currentValues`
-  - readiness / debt / remediation / causal trace の現在値
-- `requiredNextActions`
-  - 次に閉じるべき改善項目
+以下の薄い leaf docs は、この文書に統合されています。
 
-## まだ未達のときに見る場所
+- rollback readiness
+- self-directed capability closure
+- sovereign agent completion
+- workspace world model
+- continuity closeout policy
+- robustness remediation
+- governed autonomous learning loop
+- improvement lineage
+- public hygiene policy
+- governed live capability loop note
 
-優先的に確認する場所は次です。
+## 8) 関連 surface
 
-- `output/agi_readiness/latest_readiness.json`
-  - breadth / robustness / horizon / score
-- `output/agi_readiness/robustness_breakdown.json`
-  - robustness category ごとの弱点
-- `output/agi_readiness/autonomous_learning_status.json`
-  - agenda と remediation effect
-- `output/agi_readiness/causal_learning_trace.json`
-  - lesson / hint が runtime にどう効いたか
-- `output/agi_readiness/distinct_improvement_lineage.json`
-  - distinct improvement history
-- `output/continuity_public/continuity_debt.json`
-  - closeout されていない debt
+- buyer-facing framing: `BUYER_PAIN_MAP.md`
+- comparison framing: `PRODUCT_POSITIONING.md`
+- capability framing: `CAPABILITY_SURFACE.md`
+- active implementation shape: `CURRENT_ARCHITECTURE.md`
+- eval extension: `AGI_V1_EVAL_FRAMEWORK.md`
 
-## 運用上「AGI に非常に近い」とみなす条件
+## Autonomous Learning Count Contract
 
-この repo では、次を満たしたときに「運用上、AGI に非常に近い」と判断します。
+- `currentVerifiedPositiveCount`: verified-positive entries in the current `exportSessionId` window.
+- `historicalVerifiedPositiveCount`: cumulative verified-positive carry from prior `exportSessionId` windows only.
+- `summary.verifiedPositive`: strict equality with `currentVerifiedPositiveCount`.
+- `countSemantics`: machine-readable contract embedded in the artifact and enforced by strict public eval.
+- This supporting contract does not change the headline: `worker_decision_surface` stays primary, while program readiness / subjective companion / compatibility remain separate scopes.
 
-- learning loop が自律的に回る
-- effect verification が fail-closed
-- harmful lesson が revoke される
-- beneficial lesson が reinforce される
-- distinct lineage が継続的 improvement を示す
-- continuity debt が閉じている
-- public proof から bottleneck / remediation / effect / debt closeout が読める
-
-ただし、これは operational completion であり、public AGI claim とは別です。
-## 2026-04-06 sovereign completion update
-
-- `OPERATIONALLY_COMPLETE` remains the lower gate.
-- `SUBJECTIVE_AGI_NEAR_COMPLETE` remains the intermediate fail-closed gate.
-- `SUBJECTIVE_AGI_COMPLETE` is allowed only when `output/agi_readiness/sovereign_goal_completion_status.json` passes on current `main`.
-- This is an internal current-main truth gate, not a public claim about AGI in the general sense.
+<!-- compatibility markers:
+POST /api/exec
+POST /api/eval/run
+worker_decision_surface.json
+program-readiness
+-->

@@ -35,7 +35,9 @@ function run() {
   }
 
   const copilotInstructions = read(".github/copilot-instructions.md");
+  assert(copilotInstructions.includes("docs/HARNESS_CONSTITUTION.md"), "copilot instructions must reference HARNESS_CONSTITUTION.md");
   assert(copilotInstructions.includes("AGENTS.md"), "copilot instructions must reference AGENTS.md");
+  assert(copilotInstructions.includes("1. `docs/HARNESS_CONSTITUTION.md`"), "copilot instructions must prioritize HARNESS_CONSTITUTION.md first");
   assert(copilotInstructions.includes("POST /api/exec"), "copilot instructions must preserve POST /api/exec");
   assert(copilotInstructions.includes(".github/instructions/"), "copilot instructions must point to .github/instructions/");
   assert(copilotInstructions.includes(".github/agents/"), "copilot instructions must point to .github/agents/");
@@ -53,7 +55,9 @@ function run() {
   );
 
   const docsInstructions = read(".github/instructions/docs-authority.instructions.md");
+  assert(docsInstructions.includes("docs/HARNESS_CONSTITUTION.md"), "docs instructions must reference HARNESS_CONSTITUTION.md");
   assert(docsInstructions.includes("AGENTS.md"), "docs instructions must reference AGENTS.md");
+  assert(!docsInstructions.includes("tier-0 constitution"), "docs instructions must not claim AGENTS.md is tier-0");
   assert(
     docsInstructions.includes("scripts/config/"),
     "docs instructions must reference machine-readable contracts under scripts/config/"
@@ -86,6 +90,7 @@ function run() {
   const researcherAgent = read(".github/agents/researcher.agent.md");
   assert(researcherAgent.includes('tools: ["read", "search"]'), "researcher agent must stay read-only");
   assert(researcherAgent.includes("do not edit files"), "researcher agent must forbid edits");
+  assert(researcherAgent.includes("docs/HARNESS_CONSTITUTION.md"), "researcher agent must compare facts against HARNESS_CONSTITUTION.md");
 
   const implementerAgent = read(".github/agents/implementer.agent.md");
   assert(

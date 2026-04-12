@@ -5,7 +5,18 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Codex Harness OS</title>
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Ccircle cx='32' cy='32' r='28' fill='%231db86a'/%3E%3Ccircle cx='32' cy='32' r='12' fill='%23050b16'/%3E%3C/svg%3E">
-  <link rel="stylesheet" href="./styles.css">
+  <link id="appStylesheet" rel="stylesheet" href="./styles.css">
+  <script>
+    (function(){
+      const params = new URLSearchParams(window.location.search || "");
+      const cacheBust = params.get("ui_reload");
+      const versionSeed = cacheBust || "20260412-carryover-v5";
+      const version = encodeURIComponent(versionSeed);
+      const stylesheet = document.getElementById("appStylesheet");
+      if(stylesheet)stylesheet.href = `./styles.css?ui_reload=${version}`;
+      window.__HARNESS_UI_ASSET_VERSION__ = version;
+    })();
+  </script>
 </head>
 <body class="composer-static">
   <div class="bg-layer" aria-hidden="true"></div>
@@ -238,25 +249,6 @@
                 <span id="composerAttachmentChip" class="composer-runtime-chip">Attachments</span>
               </div>
 
-              <section id="openaiVoiceStrip" class="composer-voice-strip" aria-label="Codex voice">
-                <div class="composer-voice-head">
-                  <strong class="composer-voice-title">Codex Voice</strong>
-                  <select id="openaiVoiceLangSelect" class="composer-voice-select" aria-label="Recognition language">
-                    <option value="browser">Browser default</option>
-                    <option value="ja-JP">日本語 (ja-JP)</option>
-                    <option value="en-US">English (en-US)</option>
-                  </select>
-                  <select id="openaiVoiceSelect" class="composer-voice-select" aria-label="Speech output">
-                    <option value="browser">Browser TTS</option>
-                    <option value="kokoro">Kokoro</option>
-                  </select>
-                  <button id="openaiVoiceStartBtn" class="btn mini secondary" type="button">Start Voice</button>
-                  <button id="openaiVoiceStopBtn" class="btn mini secondary" type="button" disabled>Stop Voice</button>
-                </div>
-                <p id="openaiVoiceStatus" class="composer-voice-status" aria-live="polite">Voice idle.</p>
-                <p id="openaiVoiceTranscript" class="composer-voice-transcript" hidden></p>
-              </section>
-
               <p class="composer-tip">会話の文脈を保ったまま追加依頼できます。補助情報は右側に圧縮表示されます。</p>
               <textarea id="promptInput" rows="3" placeholder=""></textarea>
 
@@ -293,7 +285,7 @@
               <p class="operator-label">AI の理解</p>
               <div class="focus-brief-grid">
                 <article class="focus-summary-card">
-                  <span class="focus-summary-kicker">AI の理解</span>
+                  <span class="focus-summary-kicker">要約</span>
                   <strong id="focusActionTitle" class="focus-action-title">依頼を書くとここに要約されます。</strong>
                   <p id="focusActionDetail" class="focus-action-detail">制約と完了条件も、ここでは短く要約して見せます。</p>
                   <p id="focusActionHint" class="focus-action-hint">違和感があるときは入力欄の文を直すだけで更新されます。</p>
@@ -302,28 +294,28 @@
                 <article class="mission-draft-card" aria-live="polite">
                   <div class="mission-draft-head">
                     <div>
-                      <h4>Requirement lock</h4>
+                      <h4>要件の確定状況</h4>
                       <p id="missionDraftStatus" class="mission-draft-status">未入力</p>
                     </div>
                   </div>
                   <div class="mission-draft-grid">
                     <article class="mission-draft-row">
-                      <span class="mission-draft-label">Goal</span>
+                      <span class="mission-draft-label">主目的</span>
                       <strong id="missionGoalValue" class="mission-draft-value">何を直したいかを書くと表示されます。</strong>
                     </article>
                     <article class="mission-draft-row">
-                      <span class="mission-draft-label">Constraints</span>
+                      <span class="mission-draft-label">成功ライン</span>
                       <strong id="missionConstraintValue" class="mission-draft-value">制約未指定</strong>
                     </article>
                     <article class="mission-draft-row">
-                      <span class="mission-draft-label">Done When</span>
+                      <span class="mission-draft-label">守る線</span>
                       <strong id="missionDoneValue" class="mission-draft-value">完了条件未指定</strong>
                     </article>
                   </div>
                   <details class="mission-draft-fold" data-advanced="true">
-                    <summary>対象詳細</summary>
+                    <summary>補足</summary>
                     <article class="mission-draft-row mission-draft-row-secondary">
-                      <span class="mission-draft-label">Scope</span>
+                      <span class="mission-draft-label">見ている範囲</span>
                       <strong id="missionScopeValue" class="mission-draft-value">対象未指定</strong>
                     </article>
                   </details>
@@ -340,7 +332,23 @@
                   <strong id="harnessJourneyWork" class="harness-status-value idle">待機中</strong>
                 </div>
                 <div class="harness-status-row">
-                  <span class="harness-status-label">現在のフェーズ</span>
+                  <span class="harness-status-label">現在地</span>
+                  <strong id="harnessLifecycleCurrent" class="harness-status-value idle">1. 依頼理解</strong>
+                </div>
+                <div class="harness-status-row harness-status-row-flow">
+                  <div class="harness-status-row-head">
+                    <span class="harness-status-label">仕事の流れ</span>
+                  </div>
+                  <ol id="harnessLifecycleList" class="harness-lifecycle-list">
+                    <li class="harness-lifecycle-step todo">
+                      <span class="harness-lifecycle-step-index">1</span>
+                      <span class="harness-lifecycle-step-label">依頼理解</span>
+                    </li>
+                  </ol>
+                  <p id="harnessLifecycleDetail" class="harness-lifecycle-detail">依頼を受けると、ここに今どの段を見ているかを表示します。</p>
+                </div>
+                <div class="harness-status-row">
+                  <span class="harness-status-label">内部フェーズ</span>
                   <strong id="harnessJourneyStage" class="harness-status-value idle">未開始</strong>
                 </div>
                 <div class="harness-status-row harness-status-row-blocked">
@@ -552,6 +560,13 @@
     </article>
   </template>
 
-  <script src="./app.js"></script>
+  <script id="appScript">
+    (function(){
+      const script = document.createElement("script");
+      const version = window.__HARNESS_UI_ASSET_VERSION__;
+      script.src = version ? `./app.js?ui_reload=${version}` : "./app.js";
+      document.body.appendChild(script);
+    })();
+  </script>
 </body>
 </html>

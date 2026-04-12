@@ -809,12 +809,38 @@ function normalizeSelfImprovementPromotionPolicy(policy, workspaceRoot = workspa
     }
     return out;
   };
+  const normalizeTargetLifecycleOverrides = (input, allowedLifecycles) => {
+    const out = {};
+    const raw = input && typeof input === "object" ? input : {};
+    for (const [target, overrides] of Object.entries(raw)) {
+      const normalizedTarget = safeString(target, 260);
+      const rawOverrides = overrides && typeof overrides === "object" ? overrides : {};
+      const normalizedOverrides = {};
+      if (!normalizedTarget) {
+        continue;
+      }
+      for (const [changeClass, lifecycle] of Object.entries(rawOverrides)) {
+        const normalizedClass = safeString(changeClass, 120);
+        const normalizedLifecycle = safeString(lifecycle, 80);
+        if (!normalizedClass || !normalizedLifecycle || !allowedLifecycles.has(normalizedLifecycle)) {
+          continue;
+        }
+        normalizedOverrides[normalizedClass] = normalizedLifecycle;
+      }
+      if (Object.keys(normalizedOverrides).length) {
+        out[normalizedTarget] = normalizedOverrides;
+      }
+    }
+    return out;
+  };
+  const lifecycles = Array.isArray(source.lifecycles)
+    ? source.lifecycles.map((entry) => safeString(entry, 80)).filter(Boolean)
+    : ["proposal_only", "shadow_candidate", "gated_candidate", "auto_apply_candidate", "blocked"];
+  const allowedLifecycles = new Set(lifecycles);
   return {
     schema: safeString(source.schema, 120) || "self-improvement-promotion-policy.v2",
     mode: safeString(source.mode, 80) || "machine_guarded_autonomy",
-    lifecycles: Array.isArray(source.lifecycles)
-      ? source.lifecycles.map((entry) => safeString(entry, 80)).filter(Boolean)
-      : ["proposal_only", "shadow_candidate", "gated_candidate", "auto_apply_candidate", "blocked"],
+    lifecycles,
     changeClasses: normalizeChangeClassMap(source.changeClasses),
     autoApply: {
       changeClasses: Array.isArray(source && source.autoApply && source.autoApply.changeClasses)
@@ -835,6 +861,7 @@ function normalizeSelfImprovementPromotionPolicy(policy, workspaceRoot = workspa
         ? source.gatedCandidate.changeClasses.map((entry) => safeString(entry, 120)).filter(Boolean)
         : [],
     },
+    targetLifecycleOverrides: normalizeTargetLifecycleOverrides(source.targetLifecycleOverrides, allowedLifecycles),
     proposalOnly: {
       targets: Array.isArray(source && source.proposalOnly && source.proposalOnly.targets)
         ? source.proposalOnly.targets.map((entry) => safeString(entry, 260)).filter(Boolean)
@@ -1147,9 +1174,16 @@ function classifySelfImprovementPromotion({ changeClass = "", target = "", laneP
       ? promotionPolicy.blocked.changeClasses.map((entry) => safeString(entry, 120)).filter(Boolean)
       : []
   );
+  const targetLifecycleOverrides = promotionPolicy && promotionPolicy.targetLifecycleOverrides && typeof promotionPolicy.targetLifecycleOverrides === "object"
+    ? promotionPolicy.targetLifecycleOverrides
+    : {};
   const classDefaults = promotionPolicy && promotionPolicy.changeClasses && typeof promotionPolicy.changeClasses === "object"
     ? promotionPolicy.changeClasses
     : {};
+  const targetOverrideDecision = targetLifecycleOverrides[normalizedTarget]
+    && typeof targetLifecycleOverrides[normalizedTarget] === "object"
+    ? safeString(targetLifecycleOverrides[normalizedTarget][normalizedClass], 80)
+    : "";
   if (!normalizedTarget) {
     return {
       decision: "blocked",
@@ -1169,6 +1203,19 @@ function classifySelfImprovementPromotion({ changeClass = "", target = "", laneP
       decision: "blocked",
       rationale: "boundary_blocked",
       riskFlags: ["constitutional_or_frozen_boundary"],
+    };
+  }
+  if (targetOverrideDecision) {
+    return {
+      decision: targetOverrideDecision,
+      rationale: "target_lifecycle_override",
+      riskFlags: targetOverrideDecision === "auto_apply_candidate"
+        ? ["machine_gate_required", "low_blast_radius_target"]
+        : targetOverrideDecision === "shadow_candidate"
+          ? ["machine_gate_required", "shadow_lane_required", "low_blast_radius_target"]
+          : targetOverrideDecision === "gated_candidate"
+            ? ["machine_gate_required", "gated_lane_required", "low_blast_radius_target"]
+            : [],
     };
   }
   if (shadowCandidateClasses.has(normalizedClass)) {
@@ -3431,6 +3478,7 @@ module.exports = {
   evaluateSelfImprovementGate,
   buildRuntimeLearningSelection,
   buildRuntimePromptInjection,
+  classifySelfImprovementPromotion,
   recordOpenAIBlogLearningObservation,
   defaultOpenAIBlogLearningPolicyPath,
   defaultSelfImprovementPromotionPolicyPath,

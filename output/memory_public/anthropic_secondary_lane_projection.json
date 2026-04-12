@@ -1,6 +1,6 @@
 {
   "schema": "governed-memory-public-lane-projection.v1",
-  "generatedAt": "2026-04-06T15:32:16.714Z",
+  "generatedAt": "2026-04-12T02:52:33.403Z",
   "laneKey": "anthropic_secondary",
   "sourceName": "Anthropic Engineering",
   "sourceTier": "external_secondary",
@@ -66,7 +66,7 @@
   "recentAdvisoryEffects": [],
   "recentLessons": [
     {
-      "publicRef": "mem_eb22755f1b",
+      "publicRef": "mem_3c9d327d49",
       "status": "shadow",
       "summary": "Quantifying infrastructure noise in agentic coding evals",
       "topics": [
@@ -75,7 +75,16 @@
       ]
     },
     {
-      "publicRef": "mem_2da5d0942d",
+      "publicRef": "mem_9d28a24299",
+      "status": "shadow",
+      "summary": "Scaling Managed Agents: Decoupling the brain from the hands",
+      "topics": [
+        "secondary",
+        "portable-principles"
+      ]
+    },
+    {
+      "publicRef": "mem_04607dfd77",
       "status": "shadow",
       "summary": "Harness design for long-running application development",
       "topics": [
@@ -84,18 +93,9 @@
       ]
     },
     {
-      "publicRef": "mem_d49d4d7482",
+      "publicRef": "mem_0cc563c755",
       "status": "shadow",
       "summary": "Designing AI resistant technical evaluations",
-      "topics": [
-        "secondary",
-        "portable-principles"
-      ]
-    },
-    {
-      "publicRef": "mem_4d3940e83d",
-      "status": "shadow",
-      "summary": "Demystifying evals for AI agents",
       "topics": [
         "secondary",
         "portable-principles"
@@ -108,17 +108,17 @@
     "appliedDecision": "none",
     "observationStatus": "disabled",
     "observationCount": 0,
-    "proposalOnlyCount": 4,
-    "blockedCount": 0,
+    "proposalOnlyCount": 2,
+    "blockedCount": 3,
     "awaitingObservationCount": 4,
-    "policyDisabledCandidateCount": 1,
+    "policyDisabledCandidateCount": 0,
     "lastObservedAt": "",
     "nextPriority": {
-      "title": "Effective harnesses for long-running agents",
+      "title": "Designing AI resistant technical evaluations",
       "changeType": "frontend_quality_note",
-      "readinessStatus": "policy_disabled",
-      "gatingReason": "stabilization_disabled",
-      "nextAction": "Enable stabilization for this lane or keep the note proposal-only."
+      "readinessStatus": "proposal_only",
+      "gatingReason": "promotion_policy_proposal_only",
+      "nextAction": "Keep this frontend quality note as proposal-only guidance."
     }
   },
   "compatibilityPaths": {

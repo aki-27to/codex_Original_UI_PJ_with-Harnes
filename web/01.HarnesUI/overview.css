@@ -247,6 +247,44 @@
   gap: 12px;
 }
 
+.capability-grid {
+  align-items: start;
+}
+
+.overview-capability-card,
+.overview-demo-card {
+  min-height: 100%;
+  align-content: start;
+}
+
+.overview-capability-summary {
+  margin: 0;
+  color: #b4c7e8;
+  font-size: 13px;
+  line-height: 1.6;
+}
+
+.overview-action-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: auto;
+}
+
+.overview-action-link {
+  text-decoration: none;
+}
+
+.overview-demo-steps {
+  margin: 0;
+  padding-left: 18px;
+  display: grid;
+  gap: 8px;
+  color: #c6d7f2;
+  font-size: 13px;
+  line-height: 1.55;
+}
+
 .overview-panel-head p {
   margin: 6px 0 0;
   color: #9db1d5;
@@ -554,4 +592,12 @@
   .overview-anchor-nav {
     gap: 8px 12px;
   }
+}
+
+.overview-section-summary::after {
+  content: "Expand";
+}
+
+.overview-section-shell[open] .overview-section-summary::after {
+  content: "Collapse";
 }

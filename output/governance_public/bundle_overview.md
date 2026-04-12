@@ -1,6 +1,6 @@
 # GOVERNANCE_PUBLIC_BUNDLE
 
-Generated: 2026-04-11T07:35:12.638Z
+Generated: 2026-04-12T02:14:59.862Z
 Source signoff summary: `logs/current/latest_signoff_summary.json`
 Source bundle: `logs/bundles/signoff/signoff-2026-03-09T12-31-59-842Z-24dd95`
 Source turn: `logs/bundles/signoff/signoff-2026-03-09T12-31-59-842Z-24dd95/raw/turns/2026-03-09/019cd29a-09de-7670-8c38-eade454f7cb2__019cd29a-0ad3-72d2-957c-30870c52eaba`
@@ -8,6 +8,8 @@ Selected turn id: `019cd29a-0ad3-72d2-957c-30870c52eaba`
 Planning depth: `STANDARD_PLANNING`
 Assurance depth: `SIGNOFF_ASSURANCE`
 Final decision: `RELEASE_APPROVED`
+Worker outcome: `ADOPTABLE_COMPLETE`
+Operator action: `ADOPT`
 
 This directory is a repo-safe redacted governance trace.
 Raw `logs/` evidence remains local-only; this export copies the public-auditable request -> routing -> execution -> review -> release chain into tracked `output/` artifacts.
@@ -33,3 +35,4 @@ Raw `logs/` evidence remains local-only; this export copies the public-auditable
 - `adoption_readiness_eval.json` <- `derived_from_public_trace`
 - `iteration_decision.json` <- `derived_from_public_trace`
 - `escalation_decision.json` <- `derived_from_public_trace`
+- `worker_decision_surface.json` <- `derived_from_public_trace`

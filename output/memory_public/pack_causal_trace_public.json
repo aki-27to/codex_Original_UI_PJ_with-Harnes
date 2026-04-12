@@ -1,25 +1,25 @@
 {
   "schema": "governed-memory-pack-causal-trace-public.v1",
-  "generatedAt": "2026-04-06T15:32:16.721Z",
+  "generatedAt": "2026-04-12T02:52:33.434Z",
   "workspaceId": "5c839dfeef8b555f",
-  "packId": "99ec3f42d1454b05dc21",
+  "packId": "608914dc63bc02fe4f64",
   "traces": [
     {
-      "memoryId": "mem_8896adaa48",
-      "publicRef": "mem_8896adaa48",
-      "memoryType": "runtime_hint",
+      "memoryId": "mem_dd7ddfe801",
+      "publicRef": "mem_dd7ddfe801",
+      "memoryType": "improvement_candidate",
       "sourceTier": "external_primary",
-      "promotionState": "promoted",
-      "usageMode": "explicit_prompt_pack",
+      "promotionState": "candidate",
+      "usageMode": "remediation_hint",
       "selectedInLatestPack": false,
-      "selectedInPackAt": "2026-04-06T15:32:15.640Z",
+      "selectedInPackAt": "2026-04-12T02:52:32.093Z",
       "usedByTaskRefs": [
-        "turn_fba29baf0b",
-        "turn_7f52ea5222",
-        "turn_31e6a84e49",
-        "turn_632a9c1c65",
-        "turn_4cd81a7c20",
-        "turn_bc24c69220"
+        "turn_762a9a9dcc",
+        "turn_0e02ad81e8",
+        "turn_ebbb49411e",
+        "turn_327e1a8413",
+        "turn_dd1bcfc7b5",
+        "turn_20da12c3ea"
       ],
       "taskFamilies": [
         "web_creative"
@@ -29,42 +29,42 @@
       "adoptedInLatestPack": false,
       "effectiveContribution": true,
       "effectiveContributionEvidenceRefs": [
-        "turn_fba29baf0b",
-        "turn_7f52ea5222",
-        "turn_31e6a84e49",
-        "turn_632a9c1c65",
-        "turn_4cd81a7c20",
-        "turn_bc24c69220"
+        "turn_762a9a9dcc",
+        "turn_0e02ad81e8",
+        "turn_ebbb49411e",
+        "turn_327e1a8413",
+        "turn_dd1bcfc7b5",
+        "turn_20da12c3ea"
       ],
       "rolledBackAfterHarm": false,
       "harmRollbackEvidenceRefs": [],
       "outcomeDelta": {
-        "success": 15,
-        "failure": 0,
+        "success": 8,
+        "failure": 5,
         "neutral": 0,
         "notApplicable": 0,
-        "retryCount": 0,
+        "retryCount": 5,
         "verifierOutcome": "PASS"
       },
-      "summary": "Using skills to accelerate OSS maintenance | OpenAI Developers",
-      "lastObservedAt": "2026-04-05T20:13:28.477Z"
+      "summary": "Designing delightful frontends with GPT-5.4 | OpenAI Developers",
+      "lastObservedAt": "2026-04-12T02:15:12.087Z"
     },
     {
-      "memoryId": "mem_847a1aba42",
-      "publicRef": "mem_847a1aba42",
-      "memoryType": "runtime_hint",
+      "memoryId": "mem_8c8a302df5",
+      "publicRef": "mem_8c8a302df5",
+      "memoryType": "semantic_lesson",
       "sourceTier": "external_primary",
       "promotionState": "promoted",
       "usageMode": "explicit_prompt_pack",
       "selectedInLatestPack": false,
-      "selectedInPackAt": "2026-04-06T15:32:15.640Z",
+      "selectedInPackAt": "2026-04-12T02:52:32.093Z",
       "usedByTaskRefs": [
-        "turn_fba29baf0b",
-        "turn_7f52ea5222",
-        "turn_31e6a84e49",
-        "turn_632a9c1c65",
-        "turn_4cd81a7c20",
-        "turn_bc24c69220"
+        "turn_b91b17c48d",
+        "turn_69d9a88530",
+        "turn_5df96fa6c1",
+        "turn_e1f6c2d202",
+        "turn_20da12c3ea",
+        "turn_ef003e86fa"
       ],
       "taskFamilies": [
         "web_creative"
@@ -74,42 +74,42 @@
       "adoptedInLatestPack": false,
       "effectiveContribution": true,
       "effectiveContributionEvidenceRefs": [
-        "turn_fba29baf0b",
-        "turn_7f52ea5222",
-        "turn_31e6a84e49",
-        "turn_632a9c1c65",
-        "turn_4cd81a7c20",
-        "turn_bc24c69220"
+        "turn_b91b17c48d",
+        "turn_69d9a88530",
+        "turn_5df96fa6c1",
+        "turn_e1f6c2d202",
+        "turn_20da12c3ea",
+        "turn_ef003e86fa"
       ],
       "rolledBackAfterHarm": false,
       "harmRollbackEvidenceRefs": [],
       "outcomeDelta": {
-        "success": 15,
-        "failure": 0,
+        "success": 21,
+        "failure": 14,
         "neutral": 0,
         "notApplicable": 0,
-        "retryCount": 0,
+        "retryCount": 14,
         "verifierOutcome": "PASS"
       },
-      "summary": "Building frontend UIs with Codex and Figma | OpenAI Developers",
-      "lastObservedAt": "2026-04-05T20:13:28.477Z"
+      "summary": "How Perplexity Brought Voice Search to Millions Using the Realtime API | OpenAI Developers",
+      "lastObservedAt": "2026-04-12T02:15:12.087Z"
     },
     {
-      "memoryId": "mem_106d75d257",
-      "publicRef": "mem_106d75d257",
-      "memoryType": "runtime_hint",
+      "memoryId": "mem_2b55e90fab",
+      "publicRef": "mem_2b55e90fab",
+      "memoryType": "semantic_lesson",
       "sourceTier": "external_primary",
       "promotionState": "promoted",
       "usageMode": "explicit_prompt_pack",
       "selectedInLatestPack": false,
-      "selectedInPackAt": "2026-04-06T15:32:15.640Z",
+      "selectedInPackAt": "2026-04-12T02:52:32.093Z",
       "usedByTaskRefs": [
-        "turn_fba29baf0b",
-        "turn_7f52ea5222",
-        "turn_31e6a84e49",
-        "turn_632a9c1c65",
-        "turn_4cd81a7c20",
-        "turn_bc24c69220"
+        "turn_b91b17c48d",
+        "turn_69d9a88530",
+        "turn_5df96fa6c1",
+        "turn_e1f6c2d202",
+        "turn_20da12c3ea",
+        "turn_ef003e86fa"
       ],
       "taskFamilies": [
         "web_creative"
@@ -119,25 +119,70 @@
       "adoptedInLatestPack": false,
       "effectiveContribution": true,
       "effectiveContributionEvidenceRefs": [
-        "turn_fba29baf0b",
-        "turn_7f52ea5222",
-        "turn_31e6a84e49",
-        "turn_632a9c1c65",
-        "turn_4cd81a7c20",
-        "turn_bc24c69220"
+        "turn_b91b17c48d",
+        "turn_69d9a88530",
+        "turn_5df96fa6c1",
+        "turn_e1f6c2d202",
+        "turn_20da12c3ea",
+        "turn_ef003e86fa"
       ],
       "rolledBackAfterHarm": false,
       "harmRollbackEvidenceRefs": [],
       "outcomeDelta": {
-        "success": 15,
-        "failure": 0,
+        "success": 21,
+        "failure": 14,
         "neutral": 0,
         "notApplicable": 0,
-        "retryCount": 0,
+        "retryCount": 14,
         "verifierOutcome": "PASS"
       },
-      "summary": "Run long horizon tasks with Codex | OpenAI Developers",
-      "lastObservedAt": "2026-04-05T20:13:28.477Z"
+      "summary": "Designing delightful frontends with GPT-5.4 | OpenAI Developers",
+      "lastObservedAt": "2026-04-12T02:15:12.087Z"
+    },
+    {
+      "memoryId": "mem_2b5b766ebf",
+      "publicRef": "mem_2b5b766ebf",
+      "memoryType": "semantic_lesson",
+      "sourceTier": "external_primary",
+      "promotionState": "promoted",
+      "usageMode": "explicit_prompt_pack",
+      "selectedInLatestPack": false,
+      "selectedInPackAt": "2026-04-12T02:52:32.093Z",
+      "usedByTaskRefs": [
+        "turn_b91b17c48d",
+        "turn_69d9a88530",
+        "turn_5df96fa6c1",
+        "turn_e1f6c2d202",
+        "turn_20da12c3ea",
+        "turn_ef003e86fa"
+      ],
+      "taskFamilies": [
+        "web_creative"
+      ],
+      "usageStage": "likely_contributory",
+      "causalConfidence": "direct",
+      "adoptedInLatestPack": false,
+      "effectiveContribution": true,
+      "effectiveContributionEvidenceRefs": [
+        "turn_b91b17c48d",
+        "turn_69d9a88530",
+        "turn_5df96fa6c1",
+        "turn_e1f6c2d202",
+        "turn_20da12c3ea",
+        "turn_ef003e86fa"
+      ],
+      "rolledBackAfterHarm": false,
+      "harmRollbackEvidenceRefs": [],
+      "outcomeDelta": {
+        "success": 21,
+        "failure": 14,
+        "neutral": 0,
+        "notApplicable": 0,
+        "retryCount": 14,
+        "verifierOutcome": "PASS"
+      },
+      "summary": "From prompts to products: One year of Responses | OpenAI Developers",
+      "lastObservedAt": "2026-04-12T02:15:12.087Z"
     },
     {
       "memoryId": "mem_e65f4ce9a0",
@@ -147,7 +192,7 @@
       "promotionState": "promoted",
       "usageMode": "verifier_context",
       "selectedInLatestPack": true,
-      "selectedInPackAt": "2026-04-06T15:15:42.059Z",
+      "selectedInPackAt": "2026-04-12T02:36:57.563Z",
       "usedByTaskRefs": [],
       "taskFamilies": [],
       "usageStage": "selected_only",
@@ -176,7 +221,7 @@
       "promotionState": "promoted",
       "usageMode": "verifier_context",
       "selectedInLatestPack": true,
-      "selectedInPackAt": "2026-04-06T15:15:42.059Z",
+      "selectedInPackAt": "2026-04-12T02:36:57.563Z",
       "usedByTaskRefs": [],
       "taskFamilies": [],
       "usageStage": "selected_only",
@@ -205,7 +250,7 @@
       "promotionState": "promoted",
       "usageMode": "verifier_context",
       "selectedInLatestPack": true,
-      "selectedInPackAt": "2026-04-06T15:15:42.059Z",
+      "selectedInPackAt": "2026-04-12T02:36:57.563Z",
       "usedByTaskRefs": [],
       "taskFamilies": [],
       "usageStage": "selected_only",
@@ -234,7 +279,7 @@
       "promotionState": "promoted",
       "usageMode": "verifier_context",
       "selectedInLatestPack": true,
-      "selectedInPackAt": "2026-04-06T15:15:42.059Z",
+      "selectedInPackAt": "2026-04-12T02:36:57.563Z",
       "usedByTaskRefs": [],
       "taskFamilies": [
         "all"
@@ -265,7 +310,7 @@
       "promotionState": "promoted",
       "usageMode": "explicit_prompt_pack",
       "selectedInLatestPack": true,
-      "selectedInPackAt": "2026-04-06T15:15:42.059Z",
+      "selectedInPackAt": "2026-04-12T02:36:57.563Z",
       "usedByTaskRefs": [],
       "taskFamilies": [
         "smoke-http-exec"
@@ -296,7 +341,7 @@
       "promotionState": "promoted",
       "usageMode": "explicit_prompt_pack",
       "selectedInLatestPack": true,
-      "selectedInPackAt": "2026-04-06T15:15:42.059Z",
+      "selectedInPackAt": "2026-04-12T02:36:57.563Z",
       "usedByTaskRefs": [],
       "taskFamilies": [
         "smoke-http-exec"
@@ -327,7 +372,7 @@
       "promotionState": "captured",
       "usageMode": "explicit_prompt_pack",
       "selectedInLatestPack": true,
-      "selectedInPackAt": "2026-04-06T15:15:42.059Z",
+      "selectedInPackAt": "2026-04-12T02:52:32.093Z",
       "usedByTaskRefs": [],
       "taskFamilies": [
         "smoke-http-exec",
@@ -359,7 +404,7 @@
       "promotionState": "captured",
       "usageMode": "explicit_prompt_pack",
       "selectedInLatestPack": true,
-      "selectedInPackAt": "2026-04-06T15:15:42.059Z",
+      "selectedInPackAt": "2026-04-12T02:52:32.093Z",
       "usedByTaskRefs": [],
       "taskFamilies": [
         "smoke-http-exec",
@@ -381,37 +426,6 @@
         "verifierOutcome": "UNKNOWN"
       },
       "summary": "smoke-test episode finished as COMPLETED.",
-      "lastObservedAt": ""
-    },
-    {
-      "memoryId": "mem_8e6dc0d56a",
-      "publicRef": "mem_8e6dc0d56a",
-      "memoryType": "failure_pattern",
-      "sourceTier": "runtime",
-      "promotionState": "promoted",
-      "usageMode": "explicit_prompt_pack",
-      "selectedInLatestPack": true,
-      "selectedInPackAt": "2026-04-06T15:15:42.059Z",
-      "usedByTaskRefs": [],
-      "taskFamilies": [
-        "default"
-      ],
-      "usageStage": "selected_only",
-      "causalConfidence": "weak",
-      "adoptedInLatestPack": true,
-      "effectiveContribution": false,
-      "effectiveContributionEvidenceRefs": [],
-      "rolledBackAfterHarm": false,
-      "harmRollbackEvidenceRefs": [],
-      "outcomeDelta": {
-        "success": 0,
-        "failure": 0,
-        "neutral": 0,
-        "notApplicable": 0,
-        "retryCount": 0,
-        "verifierOutcome": "UNKNOWN"
-      },
-      "summary": "ambiguous instruction clarify",
       "lastObservedAt": ""
     }
   ]

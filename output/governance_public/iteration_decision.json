@@ -1,6 +1,6 @@
 {
   "schema": "iteration-decision.v1",
-  "generatedAt": "2026-04-11T07:35:12.637Z",
+  "generatedAt": "2026-04-12T02:14:59.861Z",
   "action": "RELEASE",
   "reason": "release_conditions_satisfied",
   "blockers": [],
@@ -14,6 +14,7 @@
   "qualityThresholds": {
     "literal_requirement_alignment": 0.84,
     "latent_intent_alignment": 0.78,
+    "task_contract_integrity": 0.92,
     "boundary_compliance": 0.99,
     "artifact_quality": 0.8,
     "residual_risk": 0.68,
@@ -29,6 +30,15 @@
     "tokenBudgetExceeded": false
   },
   "valueRemainingScore": 0.08,
+  "gateSignals": {
+    "literal_requirement_alignment": 1,
+    "latent_intent_alignment": 0.92,
+    "task_contract_integrity": 1,
+    "boundary_compliance": 1,
+    "artifact_quality": 1
+  },
   "improvementDelta": 0,
-  "failClosed": 0
+  "failClosed": 0,
+  "exportSessionId": "export_a63636ff0a86",
+  "scope": "iteration_control"
 }

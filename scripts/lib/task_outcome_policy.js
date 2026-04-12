@@ -7,7 +7,7 @@ const defaultTaskOutcomeContractPath = path.join(__dirname, "..", "config", "tas
 
 const defaultTaskOutcomeContractDefinition = Object.freeze({
   schema: "task-outcome-contract.v3",
-  version: "2026-04-11.r1",
+  version: "2026-04-11.r2",
   proofCarryingRequiredFields: [
     "task_id",
     "actor",
@@ -18,10 +18,12 @@ const defaultTaskOutcomeContractDefinition = Object.freeze({
     "unresolved_items",
     "acceptance_coverage",
     "handoff_readiness",
+    "goal_alignment_trace",
+    "adoption_decision_basis",
   ],
   decisionArtifacts: {
     required: ["iteration_decision.json", "release_decision.json"],
-    derived: ["adoption_readiness_eval.json", "escalation_decision.json"],
+    derived: ["adoption_readiness_eval.json", "escalation_decision.json", "worker_decision_surface.json"],
   },
   statuses: [
     { id: "COMPLETED", class: "success", terminal: true },
@@ -58,6 +60,13 @@ const defaultTaskOutcomeContractDefinition = Object.freeze({
     return_to_intake_required: "BLOCKED",
     release_clause_unsatisfied: "FAILED_VALIDATION",
     required_evidence_failures_present: "FAILED_VALIDATION",
+    goal_substitution_detected: "FAILED_VALIDATION",
+    silent_task_contract_rewrite: "FAILED_VALIDATION",
+    literal_alignment_below_threshold: "FAILED_VALIDATION",
+    task_contract_integrity_below_threshold: "FAILED_VALIDATION",
+    procedural_closure_without_adoption: "FAILED_VALIDATION",
+    latent_intent_alignment_below_threshold: "PARTIAL",
+    artifact_quality_below_threshold: "PARTIAL",
     budget_exhausted_while_value_remaining: "BLOCKED",
     release_conditions_unsatisfied: "PARTIAL",
     "intent_*": "FAILED_VALIDATION",

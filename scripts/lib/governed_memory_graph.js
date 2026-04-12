@@ -21,6 +21,9 @@ const {
   buildTaskPaths,
   loadContinuityPolicy,
 } = require("./long_horizon_continuity");
+const {
+  resolveExportSessionId,
+} = require("./export_session_window");
 
 const workspaceRootDefault = path.resolve(__dirname, "..", "..");
 
@@ -115,6 +118,193 @@ function writeJsonIfChanged(targetPath, value) {
   }
   fs.writeFileSync(targetPath, next, "utf8");
   return true;
+}
+
+function resolvePublicExportSessionId(workspaceRoot, workspaceId = "") {
+  void workspaceId;
+  return resolveExportSessionId(workspaceRoot);
+}
+
+function readWorkerDecisionSurfaceArtifact(workspaceRoot) {
+  const targetPath = path.join(workspaceRoot, "output", "governance_public", "worker_decision_surface.json");
+  const payload = readJson(targetPath);
+  return payload && typeof payload === "object" && !Array.isArray(payload) ? payload : {};
+}
+
+function summarizeWorkerDecisionHeadline(workspaceRoot) {
+  const workerDecisionSurface = readWorkerDecisionSurfaceArtifact(workspaceRoot);
+  return {
+    workerDecisionSurfacePath: repoRelative(workspaceRoot, path.join(workspaceRoot, "output", "governance_public", "worker_decision_surface.json")),
+    workerDecisionSurface: sanitizePublicValue(workerDecisionSurface, workspaceRoot),
+    headlineScope: safeString(workerDecisionSurface && workerDecisionSurface.scope, 80) || "",
+    workerDecisionHeadline: safeString(workerDecisionSurface && workerDecisionSurface.topLevelOutcome, 80) || "",
+  };
+}
+
+function isTerminalAutonomousLearningStatus(value) {
+  return ["passed", "failed", "revoked"].includes(safeString(value, 80));
+}
+
+function summarizeAutonomousLearningEntryCounts(entries = []) {
+  const normalizedEntries = Array.isArray(entries) ? entries : [];
+  const openEntries = normalizedEntries.filter((entry) => !isTerminalAutonomousLearningStatus(entry && entry.status));
+  const countBlocked = (list) => list.filter((entry) => ["blocked", "proposal_only", "proposal only"].includes(safeString(entry && entry.status, 80))).length;
+  return {
+    queued: openEntries.filter((entry) => safeString(entry && entry.status, 80) === "queued").length,
+    running: openEntries.filter((entry) => safeString(entry && entry.status, 80) === "running").length,
+    blocked: countBlocked(openEntries),
+    insufficientEvidenceCount: openEntries.filter((entry) => safeString(entry && entry.remediationEffect, 80) === "insufficient_evidence").length,
+    verifiedPositiveCount: normalizedEntries.filter((entry) => safeString(entry && entry.remediationEffect, 80) === "verified_positive").length,
+  };
+}
+
+function buildAutonomousLearningCountSemantics() {
+  return {
+    currentWindow: "current_export_session",
+    historicalWindow: "prior_export_sessions_cumulative",
+    currentOpenAgendaCounts: [
+      "currentQueuedCount",
+      "currentRunningCount",
+      "currentBlockedCount",
+      "currentInsufficientEvidenceCount",
+    ],
+    currentVerifiedPositiveCount: "verified_positive_entries_in_current_export_session",
+    historicalVerifiedPositiveCount: "cumulative_verified_positive_entries_from_prior_export_sessions",
+    summaryRelationships: {
+      queued: "equals_currentQueuedCount",
+      running: "equals_currentRunningCount",
+      blocked: "equals_currentBlockedCount",
+      insufficientEvidenceCount: "equals_currentInsufficientEvidenceCount",
+      verifiedPositive: "equals_currentVerifiedPositiveCount",
+    },
+  };
+}
+
+function deriveAutonomousLearningCounts(entries = [], previousStatus = null, exportSessionId = "") {
+  const entryCounts = summarizeAutonomousLearningEntryCounts(entries);
+  const currentCounts = {
+    currentQueuedCount: entryCounts.queued,
+    currentRunningCount: entryCounts.running,
+    currentBlockedCount: entryCounts.blocked,
+    currentInsufficientEvidenceCount: entryCounts.insufficientEvidenceCount,
+    currentVerifiedPositiveCount: entryCounts.verifiedPositiveCount,
+  };
+  const previous = previousStatus && typeof previousStatus === "object" ? previousStatus : {};
+  const sameExportSession = safeString(previous.exportSessionId, 120) && safeString(previous.exportSessionId, 120) === safeString(exportSessionId, 120);
+  const carryHistorical = (historicalKey, currentKey) => (
+    sameExportSession
+      ? clampInt(previous && previous[historicalKey], 0, 999999, 0)
+      : clampInt(previous && previous[historicalKey], 0, 999999, 0) + clampInt(previous && previous[currentKey], 0, 999999, 0)
+  );
+  return {
+    ...currentCounts,
+    historicalQueuedCount: carryHistorical("historicalQueuedCount", "currentQueuedCount"),
+    historicalRunningCount: carryHistorical("historicalRunningCount", "currentRunningCount"),
+    historicalBlockedCount: carryHistorical("historicalBlockedCount", "currentBlockedCount"),
+    historicalInsufficientEvidenceCount: carryHistorical("historicalInsufficientEvidenceCount", "currentInsufficientEvidenceCount"),
+    historicalVerifiedPositiveCount: carryHistorical("historicalVerifiedPositiveCount", "currentVerifiedPositiveCount"),
+  };
+}
+
+function buildAutonomousLearningStatusArtifact({
+  workspaceRoot,
+  workspaceId = "",
+  agenda = null,
+  previousStatus = null,
+  exportSessionId = "",
+}) {
+  const counts = deriveAutonomousLearningCounts(
+    agenda && agenda.entries,
+    previousStatus,
+    exportSessionId,
+  );
+  const rawSummary = agenda && agenda.summary && typeof agenda.summary === "object"
+    ? agenda.summary
+    : {};
+  const summary = {
+    ...rawSummary,
+    queued: counts.currentQueuedCount,
+    running: counts.currentRunningCount,
+    blocked: counts.currentBlockedCount,
+    insufficientEvidence: counts.currentInsufficientEvidenceCount,
+    insufficientEvidenceCount: counts.currentInsufficientEvidenceCount,
+    verifiedPositive: counts.currentVerifiedPositiveCount,
+  };
+  return {
+    schema: "governed-autonomous-learning-status-public.v1",
+    generatedAt: toIso(),
+    exportSessionId: safeString(exportSessionId, 120),
+    scope: "autonomous_learning_supporting",
+    workspaceId: safeString(workspaceId, 80),
+    countSemantics: buildAutonomousLearningCountSemantics(),
+    ...counts,
+    summary: sanitizePublicValue(summary, workspaceRoot),
+    entries: (Array.isArray(agenda && agenda.entries) ? agenda.entries : [])
+      .slice(0, 12)
+      .map((entry) => sanitizePublicValue(entry, workspaceRoot)),
+  };
+}
+
+function validateAutonomousLearningCountSemantics(learning = {}) {
+  const semantics = learning && learning.countSemantics && typeof learning.countSemantics === "object"
+    ? learning.countSemantics
+    : {};
+  const relationships = semantics && semantics.summaryRelationships && typeof semantics.summaryRelationships === "object"
+    ? semantics.summaryRelationships
+    : {};
+  const currentOpenAgendaCounts = Array.isArray(semantics.currentOpenAgendaCounts)
+    ? semantics.currentOpenAgendaCounts.map((entry) => safeString(entry, 120))
+    : [];
+  const expectedOpenCounts = [
+    "currentQueuedCount",
+    "currentRunningCount",
+    "currentBlockedCount",
+    "currentInsufficientEvidenceCount",
+  ];
+  const pass = safeString(semantics.currentWindow, 120) === "current_export_session"
+    && safeString(semantics.historicalWindow, 120) === "prior_export_sessions_cumulative"
+    && expectedOpenCounts.every((field) => currentOpenAgendaCounts.includes(field))
+    && safeString(semantics.currentVerifiedPositiveCount, 160) === "verified_positive_entries_in_current_export_session"
+    && safeString(semantics.historicalVerifiedPositiveCount, 160) === "cumulative_verified_positive_entries_from_prior_export_sessions"
+    && safeString(relationships.queued, 120) === "equals_currentQueuedCount"
+    && safeString(relationships.running, 120) === "equals_currentRunningCount"
+    && safeString(relationships.blocked, 120) === "equals_currentBlockedCount"
+    && safeString(relationships.insufficientEvidenceCount, 120) === "equals_currentInsufficientEvidenceCount"
+    && safeString(relationships.verifiedPositive, 120) === "equals_currentVerifiedPositiveCount";
+  return {
+    pass,
+    detail: pass
+      ? "autonomous learning count semantics explicitly bind current export-session counts to summary fields"
+      : "autonomous learning count semantics are missing or ambiguous",
+  };
+}
+
+function validateAutonomousLearningSummaryCountContract(learning = {}) {
+  const summaryPayload = learning && learning.summary && typeof learning.summary === "object"
+    ? learning.summary
+    : {};
+  const entryCounts = summarizeAutonomousLearningEntryCounts(learning && learning.entries);
+  const currentMatchesEntries = (
+    clampInt(learning && learning.currentQueuedCount, 0, 999999, -1) === entryCounts.queued
+    && clampInt(learning && learning.currentRunningCount, 0, 999999, -1) === entryCounts.running
+    && clampInt(learning && learning.currentBlockedCount, 0, 999999, -1) === entryCounts.blocked
+    && clampInt(learning && learning.currentInsufficientEvidenceCount, 0, 999999, -1) === entryCounts.insufficientEvidenceCount
+    && clampInt(learning && learning.currentVerifiedPositiveCount, 0, 999999, -1) === entryCounts.verifiedPositiveCount
+  );
+  const summaryMatchesCurrent = (
+    clampInt(summaryPayload.queued, 0, 999999, -1) === clampInt(learning && learning.currentQueuedCount, 0, 999999, -2)
+    && clampInt(summaryPayload.running, 0, 999999, -1) === clampInt(learning && learning.currentRunningCount, 0, 999999, -2)
+    && clampInt(summaryPayload.blocked, 0, 999999, -1) === clampInt(learning && learning.currentBlockedCount, 0, 999999, -2)
+    && clampInt(summaryPayload.insufficientEvidenceCount, 0, 999999, -1) === clampInt(learning && learning.currentInsufficientEvidenceCount, 0, 999999, -2)
+    && clampInt(summaryPayload.verifiedPositive, 0, 999999, -1) === clampInt(learning && learning.currentVerifiedPositiveCount, 0, 999999, -2)
+  );
+  const pass = currentMatchesEntries && summaryMatchesCurrent;
+  return {
+    pass,
+    detail: pass
+      ? "autonomous learning entries, current counts, and summary fields satisfy one count contract"
+      : "autonomous learning entries, current counts, and summary fields disagree",
+  };
 }
 
 function appendJsonLine(targetPath, value) {
@@ -457,11 +647,14 @@ function getMemoryPaths(workspaceRoot = workspaceRootDefault) {
       robustnessRemediationEffectsJson: path.join(agiReadinessRoot, "robustness_remediation_effects.json"),
       goalCompletionStatusJson: path.join(agiReadinessRoot, "goal_completion_status.json"),
       goalCompletionStatusMd: path.join(agiReadinessRoot, "goal_completion_status.md"),
+      compatibilityCompletionStatusJson: path.join(agiReadinessRoot, "compatibility_completion_status.json"),
+      compatibilityCompletionStatusMd: path.join(agiReadinessRoot, "compatibility_completion_status.md"),
       subjectiveGoalCompletionStatusJson: path.join(agiReadinessRoot, "subjective_goal_completion_status.json"),
       subjectiveGoalCompletionStatusMd: path.join(agiReadinessRoot, "subjective_goal_completion_status.md"),
       learningAdoptionStatusJson: path.join(agiReadinessRoot, "learning_adoption_status.json"),
       selfDirectedProbeStatusJson: path.join(agiReadinessRoot, "self_directed_probe_status.json"),
       novelTaskAcquisitionJson: path.join(agiReadinessRoot, "novel_task_acquisition.json"),
+      // Legacy compatibility alias retained for older checked-in consumers.
       sovereignGoalCompletionStatusJson: path.join(agiReadinessRoot, "sovereign_goal_completion_status.json"),
       sovereignGoalCompletionStatusMd: path.join(agiReadinessRoot, "sovereign_goal_completion_status.md"),
       selfAuthoredGoalStatusJson: path.join(agiReadinessRoot, "self_authored_goal_status.json"),
@@ -672,12 +865,59 @@ function isMetaCompletionAgendaEntry(entry) {
   const source = safeString(entry && entry.source, 80);
   const summary = safeString(entry && entry.publicSummary, 240).toLowerCase();
   if (["subjective_goal", "memory_eval"].includes(source)) return true;
-  return /(subjective|sovereign|history-aware|history aware|completion artifact|completion export durability|below subjective threshold)/i.test(summary);
+  return /(subjective|compatibility|sovereign|history-aware|history aware|completion artifact|completion export durability|below subjective threshold)/i.test(summary);
 }
 
 function isMetaCompletionNextAction(action) {
   const value = safeString(action, 240).toLowerCase();
-  return /(subjective|sovereign|history-aware|history aware|completion artifact|completion export durability|below subjective threshold|autonomous learning agenda still has running items|governed recovery evidence)/i.test(value);
+  return /(subjective|compatibility|sovereign|history-aware|history aware|completion artifact|completion export durability|below subjective threshold|autonomous learning agenda still has running items|governed recovery evidence)/i.test(value);
+}
+
+function normalizeOperationalNextAction(action) {
+  const raw = safeString(action, 240);
+  if (!raw) {
+    return "";
+  }
+  if (isMetaCompletionNextAction(raw)) {
+    return "";
+  }
+  if (/stable coverage breadth/i.test(raw) || /weakest family is g[_ ]?breadth/i.test(raw)) {
+    return "stabilize supported family coverage across recent windows";
+  }
+  if (/browser[_ ]tool[_ ]flakiness/i.test(raw) || /browser tool flakiness/i.test(raw)) {
+    return "improve browser/tool degraded-mode handling and retry policy";
+  }
+  if (/workflow execution stable coverage/i.test(raw)) {
+    return "obtain governed passing evidence for workflow execution across recent windows";
+  }
+  if (/web creative stable coverage/i.test(raw)) {
+    return "obtain governed passing evidence for web creative across recent windows";
+  }
+  if (/consecutive live exports/i.test(raw)) {
+    return "maintain all completion thresholds across consecutive live exports";
+  }
+  if (/continuity debt/i.test(raw)) {
+    return "close outstanding continuity debt items";
+  }
+  if (/ambiguous_instruction/i.test(raw)) {
+    return "collect ambiguity-handling evidence with governed probes";
+  }
+  if (/missing_context/i.test(raw)) {
+    return "improve missing-context recovery via clarify/defer/fallback";
+  }
+  if (/harmful causal trace/i.test(raw)) {
+    return "revoke or supersede harmful lessons/hints";
+  }
+  if (/r_robust/i.test(raw)) {
+    return "run robustness remediation agenda and verify positive effect";
+  }
+  if (/h_horizon/i.test(raw)) {
+    return "reduce continuity debt and improve long-horizon closeout quality";
+  }
+  if (/raw final score/i.test(raw)) {
+    return "raise aggregate readiness score through verified remediation";
+  }
+  return raw;
 }
 
 function deriveLaneTraceSelectionMetrics(causalEntries = []) {
@@ -3384,12 +3624,16 @@ function buildAutonomousLearningAgenda({
   anthropicLane = {},
   previousAgenda = {},
   bottlenecks = {},
+  exportSessionId = "",
 }) {
   const remediationPolicy = loadGovernedRemediationPolicy(workspaceRoot);
   const robustnessPolicy = loadRobustnessRemediationPolicy(workspaceRoot);
   const readinessPolicy = loadAgiReadinessPolicy(workspaceRoot);
   const previousEntries = Array.isArray(previousAgenda && previousAgenda.entries) ? previousAgenda.entries : [];
   const previousById = new Map(previousEntries.map((entry) => [safeString(entry && entry.agendaId, 120), entry]));
+  const currentExportSessionId = safeString(exportSessionId, 120);
+  const previousExportSessionId = safeString(previousAgenda && previousAgenda.exportSessionId, 120);
+  const sameExportSession = Boolean(currentExportSessionId) && currentExportSessionId === previousExportSessionId;
   const entries = [];
   const subjectiveThresholds = readinessPolicy.subjectiveGoalCompletion && readinessPolicy.subjectiveGoalCompletion.thresholds
     ? readinessPolicy.subjectiveGoalCompletion.thresholds
@@ -3615,7 +3859,7 @@ function buildAutonomousLearningAgenda({
     });
     entries.push(entry);
   }
-  const retainedTerminalEntries = previousEntries
+  const retainedTerminalEntries = (sameExportSession ? previousEntries : [])
     .filter((entry) => ["passed", "failed", "revoked"].includes(safeString(entry && entry.status, 40)))
     .filter((entry) => !entries.some((current) => safeString(current && current.agendaId, 120) === safeString(entry && entry.agendaId, 120)))
     .slice(-12)
@@ -3636,20 +3880,21 @@ function buildAutonomousLearningAgenda({
       }
     }
   }
+  const entryCounts = summarizeAutonomousLearningEntryCounts(entries);
   const summary = {
-    queued: entries.filter((entry) => entry.status === "queued").length,
-    running: entries.filter((entry) => entry.status === "running").length,
-    blocked: entries.filter((entry) => entry.status === "blocked" || entry.status === "proposal_only").length,
+    queued: entryCounts.queued,
+    running: entryCounts.running,
+    blocked: entryCounts.blocked,
     passed: entries.filter((entry) => entry.status === "passed").length,
     failed: entries.filter((entry) => entry.status === "failed").length,
     revoked: entries.filter((entry) => entry.status === "revoked").length,
-    verifiedPositive: entries.filter((entry) => safeString(entry && entry.remediationEffect, 80) === "verified_positive").length,
+    verifiedPositive: entryCounts.verifiedPositiveCount,
     verifiedNeutral: entries.filter((entry) => safeString(entry && entry.remediationEffect, 80) === "verified_neutral").length,
     verifiedNegative: entries.filter((entry) => safeString(entry && entry.remediationEffect, 80) === "verified_negative").length,
     verifiedHarmful: entries.filter((entry) => safeString(entry && entry.remediationEffect, 80) === "verified_harmful").length,
-    insufficientEvidence: entries.filter((entry) => safeString(entry && entry.remediationEffect, 80) === "insufficient_evidence").length,
-    blockedCount: entries.filter((entry) => entry.status === "blocked" || entry.status === "proposal_only").length,
-    insufficientEvidenceCount: entries.filter((entry) => safeString(entry && entry.remediationEffect, 80) === "insufficient_evidence").length,
+    insufficientEvidence: entryCounts.insufficientEvidenceCount,
+    blockedCount: entryCounts.blocked,
+    insufficientEvidenceCount: entryCounts.insufficientEvidenceCount,
     selfDirectedCount: entries.filter((entry) => safeString(entry && entry.source, 80) !== "memory_eval").length,
     verifiedPositiveSelfDirectedCount: Math.max(
       entries.filter((entry) => safeString(entry && entry.source, 80) !== "memory_eval" && safeString(entry && entry.remediationEffect, 80) === "verified_positive").length,
@@ -3664,6 +3909,7 @@ function buildAutonomousLearningAgenda({
   return {
     schema: "governed-autonomous-learning-agenda.v1",
     generatedAt: toIso(),
+    exportSessionId: currentExportSessionId,
     workspaceId: toWorkspaceId(workspaceRoot),
     entries,
     summary,
@@ -3678,6 +3924,9 @@ function renderAutonomousLearningMarkdown(payload) {
     `- running: ${clampInt(payload && payload.summary && payload.summary.running, 0, 999999, 0)}`,
     `- passed: ${clampInt(payload && payload.summary && payload.summary.passed, 0, 999999, 0)}`,
     `- blocked: ${clampInt(payload && payload.summary && payload.summary.blocked, 0, 999999, 0)}`,
+    `- current verified positive count: ${clampInt(payload && payload.currentVerifiedPositiveCount, 0, 999999, 0)} (current export session)`,
+    `- historical verified positive count: ${clampInt(payload && payload.historicalVerifiedPositiveCount, 0, 999999, 0)} (prior export sessions cumulative)`,
+    `- summary.verifiedPositive mirrors currentVerifiedPositiveCount: ${clampInt(payload && payload.summary && payload.summary.verifiedPositive, 0, 999999, 0)}`,
     "",
     "## Top agenda",
   ];
@@ -4497,23 +4746,17 @@ function buildGoalCompletionStatus({
     if (entry.id === "consecutiveSuccessfulExports") return `operational completion thresholds have not been maintained across ${consecutiveRequired} consecutive live exports`;
     return safeString(entry.detail, 220) || safeString(entry.id, 120);
   });
-  const requiredNextActions = uniqueStrings([
-    ...(Array.isArray(workspaceProgressPublic && workspaceProgressPublic.nextRecommendedActions) ? workspaceProgressPublic.nextRecommendedActions : []),
-    ...((Array.isArray(bottlenecks && bottlenecks.items) ? bottlenecks.items : []).map((entry) => safeString(entry && entry.summary, 220))),
-    ...whyNotYet.map((reason) => {
-      if (/stable coverage breadth/.test(reason)) return "stabilize supported family coverage across recent windows";
-      if (/R_robust/.test(reason)) return "run robustness remediation agenda and verify positive effect";
-      if (/H_horizon/.test(reason)) return "reduce continuity debt and improve long-horizon closeout quality";
-      if (/raw final score/.test(reason)) return "raise aggregate readiness score through verified remediation";
-      if (/ambiguous_instruction/.test(reason)) return "collect ambiguity-handling evidence with governed probes";
-      if (/missing_context/.test(reason)) return "improve missing-context recovery via clarify/defer/fallback";
-      if (/browser_tool_flakiness/.test(reason)) return "improve browser/tool degraded-mode handling and retry policy";
-      if (/continuity debt/.test(reason)) return "close outstanding continuity debt items";
-      if (/harmful causal trace/.test(reason)) return "revoke or supersede harmful lessons/hints";
-      if (/consecutive live exports/.test(reason)) return "maintain all completion thresholds across consecutive live exports";
-      return reason;
-    }),
-  ], 8, 220);
+  const requiredNextActions = uniqueStrings(
+    [
+      ...(Array.isArray(workspaceProgressPublic && workspaceProgressPublic.nextRecommendedActions) ? workspaceProgressPublic.nextRecommendedActions : []),
+      ...((Array.isArray(bottlenecks && bottlenecks.items) ? bottlenecks.items : []).map((entry) => safeString(entry && entry.summary, 220))),
+      ...whyNotYet,
+    ]
+      .map((action) => normalizeOperationalNextAction(action))
+      .filter(Boolean),
+    8,
+    220
+  );
   const positiveMoments = [
     ...agendaEntries
       .filter((entry) => safeString(entry && entry.remediationEffect, 80) === "verified_positive")
@@ -4551,6 +4794,8 @@ function buildGoalCompletionStatus({
   return {
     schema: "agi-operational-completion-status.v1",
     generatedAt: toIso(),
+    exportSessionId: safeString(exportSessionId, 120),
+    scope: "program_readiness",
     workspaceId: toWorkspaceId(workspaceRoot),
     goalStatus,
     completionVersion: safeString(policy && policy.version, 80) || "2026-04-05.r1",
@@ -4651,9 +4896,9 @@ function renderGoalCompletionMarkdown(payload) {
     `- subjectiveGoalStatus: ${safeString(payload && payload.subjectiveGoalStatus, 80) || "NOT_YET"}`,
     `- subjectiveCriteriaMet: ${String(Boolean(payload && payload.subjectiveCriteriaMet))}`,
     `- subjectiveCriteriaWindow: ${clampInt(payload && payload.subjectiveCriteriaWindowPassCount, 0, 999999, 0)}/${clampInt(payload && payload.subjectiveCriteriaWindowSize, 0, 999999, 0)}`,
-    `- sovereignGoalStatus: ${safeString(payload && payload.sovereignGoalStatus, 80) || "NOT_YET"}`,
-    `- sovereignCriteriaMet: ${String(Boolean(payload && payload.sovereignCriteriaMet))}`,
-    `- sovereignCriteriaWindow: ${clampInt(payload && payload.sovereignCriteriaWindowPassCount, 0, 999999, 0)}/${clampInt(payload && payload.sovereignCriteriaWindowSize, 0, 999999, 0)}`,
+    `- compatibilityCompletionStatus: ${safeString(payload && payload.compatibilityCompletionStatus, 80) || "NOT_YET"}`,
+    `- compatibilityCriteriaMet: ${String(Boolean(payload && payload.compatibilityCriteriaMet))}`,
+    `- compatibilityCriteriaWindow: ${clampInt(payload && payload.compatibilityCriteriaWindowPassCount, 0, 999999, 0)}/${clampInt(payload && payload.compatibilityCriteriaWindowSize, 0, 999999, 0)}`,
     `- generatedAt: ${safeString(payload && payload.generatedAt, 80) || "-"}`,
     `- completionVersion: ${safeString(payload && payload.completionVersion, 80) || "-"}`,
     `- decisionBasis: ${safeString(payload && payload.decisionBasis, 160) || "-"}`,
@@ -4681,7 +4926,7 @@ function renderGoalCompletionMarkdown(payload) {
   return `${lines.join("\n")}\n`;
 }
 
-function buildLearningAdoptionStatus({ workspaceRoot, causalTrace = null, openAIBlogLane = null, anthropicLane = null }) {
+function buildLearningAdoptionStatus({ workspaceRoot, causalTrace = null, openAIBlogLane = null, anthropicLane = null, exportSessionId = "" }) {
   const readinessPolicy = loadAgiReadinessPolicy(workspaceRoot);
   const subjectiveThresholds = readinessPolicy
     && readinessPolicy.subjectiveGoalCompletion
@@ -4764,6 +5009,8 @@ function buildLearningAdoptionStatus({ workspaceRoot, causalTrace = null, openAI
   return {
     schema: "agi-readiness-learning-adoption-status.v1",
     generatedAt: toIso(),
+    exportSessionId: safeString(exportSessionId, 120),
+    scope: "learning_adoption_supporting",
     workspaceId: toWorkspaceId(workspaceRoot),
     primaryLaneKey: "openai_primary",
     selectedInLatestPackCount: primaryLaneSummary.selectedInLatestPackCount,
@@ -4810,13 +5057,14 @@ function buildSelfDirectedProbeStatus({
   autonomousLearningStatus = null,
   previousSubjectiveHistory = null,
   selfAuthoredGoalMarket = null,
+  exportSessionId = "",
 }) {
   const readinessPolicy = loadAgiReadinessPolicy(workspaceRoot);
-  const sovereignThresholds = readinessPolicy
-    && readinessPolicy.sovereignGoalCompletion
-    && readinessPolicy.sovereignGoalCompletion.thresholds
-    && typeof readinessPolicy.sovereignGoalCompletion.thresholds === "object"
-    ? readinessPolicy.sovereignGoalCompletion.thresholds
+  const compatibilityThresholds = readinessPolicy
+    && readinessPolicy.compatibilityCompletion
+    && readinessPolicy.compatibilityCompletion.thresholds
+    && typeof readinessPolicy.compatibilityCompletion.thresholds === "object"
+    ? readinessPolicy.compatibilityCompletion.thresholds
     : {};
   const subjectiveThresholds = readinessPolicy
     && readinessPolicy.subjectiveGoalCompletion
@@ -4864,6 +5112,8 @@ function buildSelfDirectedProbeStatus({
   return {
     schema: "agi-readiness-self-directed-probe-status.v1",
     generatedAt: toIso(),
+    exportSessionId: safeString(exportSessionId, 120),
+    scope: "self_directed_probe_supporting",
     workspaceId: toWorkspaceId(workspaceRoot),
     probeCount: selfDirectedEntries.length + probeGoals.length,
     positiveProbeCount,
@@ -4876,9 +5126,9 @@ function buildSelfDirectedProbeStatus({
     ], 8, 80),
     recentPositiveEvidenceRefs,
     requiredThresholds: {
-      positiveProbeCount: clampInt(sovereignThresholds.minPositiveProbeCountWindow || subjectiveThresholds.minVerifiedPositiveSelfDirectedRemediations, 2, 999999, 2),
-      novelPositiveCount: clampInt(sovereignThresholds.minNovelProbePositiveCountWindow || sovereignThresholds.minNovelProbePositiveEvidence || subjectiveThresholds.minNovelProbePositiveEvidence, 1, 999999, 1),
-      maxInsufficientEvidenceCount: clampInt(sovereignThresholds.maxInsufficientEvidenceCount || subjectiveThresholds.maxInsufficientEvidenceCount, 0, 999999, 0),
+      positiveProbeCount: clampInt(compatibilityThresholds.minPositiveProbeCountWindow || subjectiveThresholds.minVerifiedPositiveSelfDirectedRemediations, 2, 999999, 2),
+      novelPositiveCount: clampInt(compatibilityThresholds.minNovelProbePositiveCountWindow || compatibilityThresholds.minNovelProbePositiveEvidence || subjectiveThresholds.minNovelProbePositiveEvidence, 1, 999999, 1),
+      maxInsufficientEvidenceCount: clampInt(compatibilityThresholds.maxInsufficientEvidenceCount || subjectiveThresholds.maxInsufficientEvidenceCount, 0, 999999, 0),
     },
     summary: {
       selfDirectedCount: selfDirectedEntries.length + probeGoals.length,
@@ -4903,13 +5153,14 @@ function buildNovelTaskAcquisition({
   autonomousLearningStatus = null,
   robustnessRemediationStatus = null,
   selfAuthoredGoalMarket = null,
+  exportSessionId = "",
 }) {
   const readinessPolicy = loadAgiReadinessPolicy(workspaceRoot);
-  const sovereignThresholds = readinessPolicy
-    && readinessPolicy.sovereignGoalCompletion
-    && readinessPolicy.sovereignGoalCompletion.thresholds
-    && typeof readinessPolicy.sovereignGoalCompletion.thresholds === "object"
-    ? readinessPolicy.sovereignGoalCompletion.thresholds
+  const compatibilityThresholds = readinessPolicy
+    && readinessPolicy.compatibilityCompletion
+    && readinessPolicy.compatibilityCompletion.thresholds
+    && typeof readinessPolicy.compatibilityCompletion.thresholds === "object"
+    ? readinessPolicy.compatibilityCompletion.thresholds
     : {};
   const subjectiveThresholds = readinessPolicy
     && readinessPolicy.subjectiveGoalCompletion
@@ -4990,6 +5241,8 @@ function buildNovelTaskAcquisition({
   return {
     schema: "agi-readiness-novel-task-acquisition.v1",
     generatedAt: toIso(),
+    exportSessionId: safeString(exportSessionId, 120),
+    scope: "novel_task_acquisition_supporting",
     workspaceId: toWorkspaceId(workspaceRoot),
     novelFamilyCount: uniqueStrings(mergedItems.map((entry) => safeString(entry && entry.targetFamily, 80)), 16, 80).length,
     novelTaskCount: mergedItems.length,
@@ -4997,7 +5250,7 @@ function buildNovelTaskAcquisition({
     recentNovelTasks,
     positiveEvidenceRefs,
     requiredThresholds: {
-      positiveNovelTaskCount: clampInt(sovereignThresholds.minPositiveNovelTaskCountWindow || subjectiveThresholds.minNovelProbePositiveEvidence, 1, 999999, 1),
+      positiveNovelTaskCount: clampInt(compatibilityThresholds.minPositiveNovelTaskCountWindow || subjectiveThresholds.minNovelProbePositiveEvidence, 1, 999999, 1),
     },
     summary: {
       itemCount: mergedItems.length,
@@ -5238,8 +5491,8 @@ function buildSelfAuthoredGoalHistory({ workspaceRoot, selfAuthoredGoalMarket = 
 
 function buildSelfAuthoredGoalStatus({ workspaceRoot, selfAuthoredGoalMarket = null }) {
   const policy = loadAgiReadinessPolicy(workspaceRoot);
-  const thresholds = policy && policy.sovereignGoalCompletion && policy.sovereignGoalCompletion.thresholds
-    ? policy.sovereignGoalCompletion.thresholds
+  const thresholds = policy && policy.compatibilityCompletion && policy.compatibilityCompletion.thresholds
+    ? policy.compatibilityCompletion.thresholds
     : {};
   const entries = Array.isArray(selfAuthoredGoalMarket && selfAuthoredGoalMarket.entries) ? selfAuthoredGoalMarket.entries : [];
   const selfAuthoredEntries = entries.filter((entry) => Boolean(entry && entry.selfAuthored));
@@ -5916,10 +6169,12 @@ function buildSubjectiveGoalCompletionStatus({
   return {
     schema: "agi-subjective-goal-completion-status.v1",
     generatedAt: toIso(),
+    exportSessionId: safeString(exportSessionId, 120),
+    scope: "subjective_companion",
     workspaceId: toWorkspaceId(workspaceRoot),
     operationalGoalStatus: safeString(goalCompletionStatus && goalCompletionStatus.goalStatus, 80) || "NOT_YET",
     subjectiveGoalStatus: failedCriteria.length === 0 ? "SUBJECTIVE_AGI_NEAR_COMPLETE" : "NOT_YET",
-    subjectiveDecisionBasis: safeString(subjective.decisionBasis, 160) || "live_truth_strict_subjective_criteria",
+    subjectiveDecisionBasis: "worker_centric_subjective_companion_gate",
     subjectiveWhyNotYet,
     subjectiveFailedCriteria: failedCriteria.map((entry) => ({ id: entry.id, detail: entry.detail })),
     subjectivePassedCriteria: passedCriteria.map((entry) => ({ id: entry.id, detail: entry.detail })),
@@ -5990,48 +6245,20 @@ function renderSubjectiveGoalCompletionMarkdown(payload) {
 }
 
 function applySovereignCompletionToSubjectiveStatus({ subjectiveGoalCompletionStatus, sovereignGoalCompletionStatus, workspaceRoot, paths }) {
-  const sovereignGoalStatus = safeString(sovereignGoalCompletionStatus && sovereignGoalCompletionStatus.status, 80) || "NOT_YET";
-  if (sovereignGoalStatus !== "SUBJECTIVE_AGI_COMPLETE") {
-    return subjectiveGoalCompletionStatus;
-  }
-  const updatedHistory = subjectiveGoalCompletionStatus && subjectiveGoalCompletionStatus.history && typeof subjectiveGoalCompletionStatus.history === "object"
-    ? {
-      ...subjectiveGoalCompletionStatus.history,
-      entries: Array.isArray(subjectiveGoalCompletionStatus.history.entries)
-        ? subjectiveGoalCompletionStatus.history.entries.map((entry, index, all) => index === all.length - 1
-          ? { ...entry, subjectiveGoalStatus: "SUBJECTIVE_AGI_COMPLETE" }
-          : entry)
-        : [],
-    }
-    : {};
-  return {
-    ...subjectiveGoalCompletionStatus,
-    subjectiveGoalStatus: "SUBJECTIVE_AGI_COMPLETE",
-    subjectiveWhyNotYet: [],
-    subjectiveFailedCriteria: [],
-    subjectiveDecisionBasis: "live_truth_subjective_and_sovereign_criteria",
-    supportingArtifacts: uniqueStrings([
-      ...(Array.isArray(subjectiveGoalCompletionStatus && subjectiveGoalCompletionStatus.supportingArtifacts) ? subjectiveGoalCompletionStatus.supportingArtifacts : []),
-      repoRelative(workspaceRoot, paths.agiReadiness.sovereignGoalCompletionStatusJson),
-    ], 24, 220),
-    subjectiveCurrentValues: {
-      ...(subjectiveGoalCompletionStatus && subjectiveGoalCompletionStatus.subjectiveCurrentValues && typeof subjectiveGoalCompletionStatus.subjectiveCurrentValues === "object"
-        ? subjectiveGoalCompletionStatus.subjectiveCurrentValues
-        : {}),
-      sovereignGoalStatus,
-    },
-    history: updatedHistory,
-  };
+  void sovereignGoalCompletionStatus;
+  void workspaceRoot;
+  void paths;
+  return subjectiveGoalCompletionStatus;
 }
 
 function renderSovereignGoalCompletionMarkdown(payload) {
   const lines = [
-    "# Sovereign AGI Completion",
+    "# Legacy Compatibility Alias",
     "",
     `- status: ${safeString(payload && payload.status, 80) || "NOT_YET"}`,
     `- generatedAt: ${safeString(payload && payload.generatedAt, 80) || "-"}`,
     `- decisionBasis: ${safeString(payload && payload.decisionBasis, 160) || "-"}`,
-    `- sovereignCriteriaWindow: ${clampInt(payload && payload.history && payload.history.consecutivePassingExports, 0, 999999, 0)}/${clampInt(payload && payload.history && payload.history.consecutiveRequired, 0, 999999, 0)}`,
+    `- compatibilityAliasWindow: ${clampInt(payload && payload.history && payload.history.consecutivePassingExports, 0, 999999, 0)}/${clampInt(payload && payload.history && payload.history.consecutiveRequired, 0, 999999, 0)}`,
     "",
     "## Current Values",
   ];
@@ -6046,7 +6273,33 @@ function renderSovereignGoalCompletionMarkdown(payload) {
   return `${lines.join("\n")}\n`;
 }
 
-function buildSovereignGoalCompletionStatus({
+function mapSovereignAliasStatus(value) {
+  return safeString(value, 80) === "COMPATIBILITY_COMPLETE" ? "SUBJECTIVE_AGI_COMPLETE" : "NOT_YET";
+}
+
+function renderCompatibilityCompletionMarkdown(payload) {
+  const lines = [
+    "# Compatibility Completion",
+    "",
+    `- status: ${safeString(payload && payload.status, 80) || "NOT_YET"}`,
+    `- generatedAt: ${safeString(payload && payload.generatedAt, 80) || "-"}`,
+    `- decisionBasis: ${safeString(payload && payload.decisionBasis, 160) || "-"}`,
+    `- compatibilityCriteriaWindow: ${clampInt(payload && payload.history && payload.history.consecutivePassingExports, 0, 999999, 0)}/${clampInt(payload && payload.history && payload.history.consecutiveRequired, 0, 999999, 0)}`,
+    "",
+    "## Current Values",
+  ];
+  const currentValues = payload && payload.currentValues && typeof payload.currentValues === "object" ? payload.currentValues : {};
+  for (const [key, value] of Object.entries(currentValues)) {
+    lines.push(`- ${key}: ${value == null ? "n/a" : String(value)}`);
+  }
+  lines.push("", "## Why Not Yet");
+  for (const reason of Array.isArray(payload && payload.whyNotYet) ? payload.whyNotYet : []) {
+    lines.push(`- ${safeString(reason, 220)}`);
+  }
+  return `${lines.join("\n")}\n`;
+}
+
+function buildCompatibilityCompletionStatus({
   workspaceRoot,
   goalCompletionStatus,
   subjectiveGoalCompletionStatus,
@@ -6067,11 +6320,11 @@ function buildSovereignGoalCompletionStatus({
   rollbackReadiness,
   autonomyBudgetStatus,
   selfAuthoredCausalEffects,
-  previousSovereignHistory = null,
+  previousCompatibilityStatus = null,
   exportSessionId = "",
 }) {
   const policy = loadAgiReadinessPolicy(workspaceRoot);
-  const thresholds = policy && policy.sovereignGoalCompletion && policy.sovereignGoalCompletion.thresholds ? policy.sovereignGoalCompletion.thresholds : {};
+  const thresholds = policy && policy.compatibilityCompletion && policy.compatibilityCompletion.thresholds ? policy.compatibilityCompletion.thresholds : {};
   const opCurrent = goalCompletionStatus && goalCompletionStatus.currentValues && typeof goalCompletionStatus.currentValues === "object" ? goalCompletionStatus.currentValues : {};
   const readiness = readinessArtifacts && readinessArtifacts.readiness && typeof readinessArtifacts.readiness === "object" ? readinessArtifacts.readiness : {};
   const continuityArtifact = continuityArtifacts && continuityArtifacts.artifact && typeof continuityArtifacts.artifact === "object" ? continuityArtifacts.artifact : {};
@@ -6185,26 +6438,28 @@ function buildSovereignGoalCompletionStatus({
   check("securityConstitutionViolations", currentValues.securityConstitutionViolations === 0, `security constitution violations = ${currentValues.securityConstitutionViolations}`);
   check("rollbackReadiness", currentValues.rollbackReady, `rollback readiness = ${String(currentValues.rollbackReady)}`);
   const currentBaseStatus = criteria.every((entry) => entry.passed) ? "criteria_met" : "criteria_failed";
-  const sovereignPassPredicate = (entry) => safeString(entry && entry.baseStatus, 40) === "criteria_met";
-  const previousSovereignEntries = Array.isArray(previousSovereignHistory && previousSovereignHistory.entries) ? previousSovereignHistory.entries : [];
+  const compatibilityPassPredicate = (entry) => safeString(entry && entry.baseStatus, 40) === "criteria_met";
+  const previousCompatibilityEntries = Array.isArray(previousCompatibilityStatus && previousCompatibilityStatus.history && previousCompatibilityStatus.history.entries)
+    ? previousCompatibilityStatus.history.entries
+    : [];
   const goalDerivedHistory = Array.isArray(goalCompletionStatus && goalCompletionStatus.history && goalCompletionStatus.history.entries)
     ? goalCompletionStatus.history.entries.map((entry) => ({
       exportSessionId: safeString(entry && entry.exportSessionId, 120),
       generatedAt: safeString(entry && entry.generatedAt, 80),
       baseStatus: safeString(entry && entry.baseStatus, 40) === "criteria_met" ? "criteria_met" : "criteria_failed",
-      sovereignGoalStatus: safeString(entry && entry.baseStatus, 40) === "criteria_met" ? "SUBJECTIVE_AGI_COMPLETE" : "NOT_YET",
+      compatibilityCompletionStatus: safeString(entry && entry.baseStatus, 40) === "criteria_met" ? "COMPATIBILITY_COMPLETE" : "NOT_YET",
     }))
     : [];
-  let baselineHistory = previousSovereignEntries.length ? previousSovereignEntries : goalDerivedHistory;
+  let baselineHistory = previousCompatibilityEntries.length ? previousCompatibilityEntries : goalDerivedHistory;
   if (
     currentBaseStatus === "criteria_met"
-    && safeString(previousSovereignHistory && previousSovereignHistory.source, 80) !== "tracked_public_artifact"
+    && safeString(previousCompatibilityStatus && previousCompatibilityStatus.source, 80) !== "tracked_public_artifact"
     && goalDerivedHistory.length
   ) {
-    const previousBestStreak = computeMaxHistoryPassStreak(previousSovereignEntries, sovereignPassPredicate);
-    const goalBestStreak = computeMaxHistoryPassStreak(goalDerivedHistory, sovereignPassPredicate);
-    const previousTrailingPasses = countTrailingHistoryPasses(previousSovereignEntries, sovereignPassPredicate);
-    const goalTrailingPasses = countTrailingHistoryPasses(goalDerivedHistory, sovereignPassPredicate);
+    const previousBestStreak = computeMaxHistoryPassStreak(previousCompatibilityEntries, compatibilityPassPredicate);
+    const goalBestStreak = computeMaxHistoryPassStreak(goalDerivedHistory, compatibilityPassPredicate);
+    const previousTrailingPasses = countTrailingHistoryPasses(previousCompatibilityEntries, compatibilityPassPredicate);
+    const goalTrailingPasses = countTrailingHistoryPasses(goalDerivedHistory, compatibilityPassPredicate);
     if (
       goalBestStreak > previousBestStreak
       || (goalBestStreak === previousBestStreak && goalTrailingPasses > previousTrailingPasses)
@@ -6212,24 +6467,29 @@ function buildSovereignGoalCompletionStatus({
       baselineHistory = goalDerivedHistory;
     }
   }
-  const currentHistoryEntry = { exportSessionId: safeString(exportSessionId, 120), generatedAt: toIso(), baseStatus: currentBaseStatus, sovereignGoalStatus: currentBaseStatus === "criteria_met" ? "SUBJECTIVE_AGI_COMPLETE" : "NOT_YET" };
+  const currentHistoryEntry = {
+    exportSessionId: safeString(exportSessionId, 120),
+    generatedAt: toIso(),
+    baseStatus: currentBaseStatus,
+    compatibilityCompletionStatus: currentBaseStatus === "criteria_met" ? "COMPATIBILITY_COMPLETE" : "NOT_YET",
+  };
   const historyEntries = baselineHistory.slice(-31);
   const lastHistoryEntry = historyEntries.length ? historyEntries[historyEntries.length - 1] : null;
   const updatedHistoryEntries = (safeString(exportSessionId, 120) && safeString(lastHistoryEntry && lastHistoryEntry.exportSessionId, 120) === safeString(exportSessionId, 120) ? [...historyEntries.slice(0, -1), currentHistoryEntry] : [...historyEntries, currentHistoryEntry]).slice(-32);
-  let consecutivePassingExports = countTrailingHistoryPasses(updatedHistoryEntries, sovereignPassPredicate);
+  let consecutivePassingExports = countTrailingHistoryPasses(updatedHistoryEntries, compatibilityPassPredicate);
   if (
     currentBaseStatus === "criteria_met"
-    && safeString(previousSovereignHistory && previousSovereignHistory.source, 80) !== "tracked_public_artifact"
+    && safeString(previousCompatibilityStatus && previousCompatibilityStatus.source, 80) !== "tracked_public_artifact"
   ) {
-    const previousConsecutivePassingExports = clampInt(previousSovereignHistory && previousSovereignHistory.consecutivePassingExports, 0, 999999, 0);
-    const previousHistoryLastEntry = previousSovereignEntries.length ? previousSovereignEntries[previousSovereignEntries.length - 1] : null;
+    const previousConsecutivePassingExports = clampInt(previousCompatibilityStatus && previousCompatibilityStatus.history && previousCompatibilityStatus.history.consecutivePassingExports, 0, 999999, 0);
+    const previousHistoryLastEntry = previousCompatibilityEntries.length ? previousCompatibilityEntries[previousCompatibilityEntries.length - 1] : null;
     const replacingSameExport = safeString(exportSessionId, 120) && safeString(previousHistoryLastEntry && previousHistoryLastEntry.exportSessionId, 120) === safeString(exportSessionId, 120);
-    const carriedForwardConsecutivePassingExports = sovereignPassPredicate(previousHistoryLastEntry)
+    const carriedForwardConsecutivePassingExports = compatibilityPassPredicate(previousHistoryLastEntry)
       ? previousConsecutivePassingExports + (replacingSameExport ? 0 : 1)
       : 1;
     consecutivePassingExports = Math.max(
       consecutivePassingExports,
-      computeMaxHistoryPassStreak(baselineHistory, sovereignPassPredicate) + 1,
+      computeMaxHistoryPassStreak(baselineHistory, compatibilityPassPredicate) + 1,
       carriedForwardConsecutivePassingExports,
     );
   }
@@ -6239,11 +6499,13 @@ function buildSovereignGoalCompletionStatus({
   const failedCriteria = criteria.filter((entry) => !entry.passed);
   const paths = getMemoryPaths(workspaceRoot);
   return {
-    schema: "agi-sovereign-goal-completion-status.v1",
+    schema: "agi-compatibility-completion-status.v1",
     generatedAt: toIso(),
+    exportSessionId: safeString(exportSessionId, 120),
+    scope: "compatibility_layer",
     workspaceId: toWorkspaceId(workspaceRoot),
-    status: failedCriteria.length === 0 ? "SUBJECTIVE_AGI_COMPLETE" : "NOT_YET",
-    decisionBasis: "live_truth_fail_closed_sovereign_criteria",
+    status: failedCriteria.length === 0 ? "COMPATIBILITY_COMPLETE" : "NOT_YET",
+    decisionBasis: "live_truth_fail_closed_compatibility_criteria",
     whyNotYet: failedCriteria.map((entry) => safeString(entry && entry.detail, 220) || safeString(entry && entry.id, 120)),
     failedCriteria: failedCriteria.map((entry) => ({ id: entry.id, detail: entry.detail })),
     passedCriteria: criteria.filter((entry) => entry.passed).map((entry) => ({ id: entry.id, detail: entry.detail })),
@@ -6276,6 +6538,53 @@ function buildSovereignGoalCompletionStatus({
   };
 }
 
+function buildSovereignGoalCompletionStatus({
+  workspaceRoot,
+  compatibilityCompletionStatus,
+  exportSessionId = "",
+}) {
+  const compatibility = compatibilityCompletionStatus && typeof compatibilityCompletionStatus === "object"
+    ? compatibilityCompletionStatus
+    : {};
+  const paths = getMemoryPaths(workspaceRoot);
+  const compatibilityHistory = Array.isArray(compatibility.history && compatibility.history.entries)
+    ? compatibility.history.entries
+    : [];
+  return {
+    schema: "agi-sovereign-goal-completion-status.v1",
+    generatedAt: safeString(compatibility.generatedAt, 80) || toIso(),
+    exportSessionId: safeString(exportSessionId, 120) || safeString(compatibility.exportSessionId, 120),
+    scope: "legacy_compatibility_alias",
+    deprecatedCompatibilityOnly: true,
+    activeLogic: "no_override",
+    workspaceId: safeString(compatibility.workspaceId, 80) || toWorkspaceId(workspaceRoot),
+    status: mapSovereignAliasStatus(compatibility.status),
+    decisionBasis: "legacy_compatibility_alias_only",
+    whyNotYet: sanitizePublicValue(Array.isArray(compatibility.whyNotYet) ? compatibility.whyNotYet : [], workspaceRoot),
+    failedCriteria: sanitizePublicValue(Array.isArray(compatibility.failedCriteria) ? compatibility.failedCriteria : [], workspaceRoot),
+    passedCriteria: sanitizePublicValue(Array.isArray(compatibility.passedCriteria) ? compatibility.passedCriteria : [], workspaceRoot),
+    criteria: sanitizePublicValue(compatibility.criteria && typeof compatibility.criteria === "object" ? compatibility.criteria : {}, workspaceRoot),
+    currentValues: sanitizePublicValue({
+      compatibilityCompletionStatus: safeString(compatibility.status, 80) || "NOT_YET",
+      ...(compatibility.currentValues && typeof compatibility.currentValues === "object" ? compatibility.currentValues : {}),
+    }, workspaceRoot),
+    supportingArtifacts: uniqueStrings([
+      repoRelative(workspaceRoot, paths.agiReadiness.compatibilityCompletionStatusJson),
+      ...(Array.isArray(compatibility.supportingArtifacts) ? compatibility.supportingArtifacts : []),
+    ], 24, 220),
+    history: {
+      consecutiveRequired: clampInt(compatibility.history && compatibility.history.consecutiveRequired, 0, 999999, 0),
+      consecutivePassingExports: clampInt(compatibility.history && compatibility.history.consecutivePassingExports, 0, 999999, 0),
+      entries: compatibilityHistory.map((entry) => ({
+        exportSessionId: safeString(entry && entry.exportSessionId, 120),
+        generatedAt: safeString(entry && entry.generatedAt, 80),
+        baseStatus: safeString(entry && entry.baseStatus, 40),
+        sovereignGoalStatus: mapSovereignAliasStatus(entry && entry.compatibilityCompletionStatus),
+      })),
+    },
+  };
+}
+
 function buildGoalCompletionSubjectiveProjection({ workspaceRoot, paths, subjectiveGoalCompletionStatus }) {
   const subjectiveGoalStatus = safeString(subjectiveGoalCompletionStatus && subjectiveGoalCompletionStatus.subjectiveGoalStatus, 80) || "NOT_YET";
   const subjectiveFailedCriteria = Array.isArray(subjectiveGoalCompletionStatus && subjectiveGoalCompletionStatus.subjectiveFailedCriteria)
@@ -6295,22 +6604,22 @@ function buildGoalCompletionSubjectiveProjection({ workspaceRoot, paths, subject
   };
 }
 
-function buildGoalCompletionSovereignProjection({ workspaceRoot, paths, sovereignGoalCompletionStatus }) {
-  const sovereignGoalStatus = safeString(sovereignGoalCompletionStatus && sovereignGoalCompletionStatus.status, 80) || "NOT_YET";
-  const sovereignFailedCriteria = Array.isArray(sovereignGoalCompletionStatus && sovereignGoalCompletionStatus.failedCriteria)
-    ? sovereignGoalCompletionStatus.failedCriteria
+function buildGoalCompletionCompatibilityProjection({ workspaceRoot, paths, compatibilityCompletionStatus }) {
+  const compatibilityStatus = safeString(compatibilityCompletionStatus && compatibilityCompletionStatus.status, 80) || "NOT_YET";
+  const compatibilityFailedCriteria = Array.isArray(compatibilityCompletionStatus && compatibilityCompletionStatus.failedCriteria)
+    ? compatibilityCompletionStatus.failedCriteria
     : [];
-  const sovereignWhyNotYet = Array.isArray(sovereignGoalCompletionStatus && sovereignGoalCompletionStatus.whyNotYet)
-    ? sovereignGoalCompletionStatus.whyNotYet
+  const compatibilityWhyNotYet = Array.isArray(compatibilityCompletionStatus && compatibilityCompletionStatus.whyNotYet)
+    ? compatibilityCompletionStatus.whyNotYet
     : [];
   return {
-    sovereignGoalStatusPath: repoRelative(workspaceRoot, paths.agiReadiness.sovereignGoalCompletionStatusJson),
-    sovereignGoalStatus,
-    sovereignCriteriaMet: sovereignGoalStatus === "SUBJECTIVE_AGI_COMPLETE",
-    sovereignFailedCriteria: sanitizePublicValue(sovereignFailedCriteria, workspaceRoot),
-    sovereignWhyNotYet: sanitizePublicValue(sovereignWhyNotYet, workspaceRoot),
-    sovereignCriteriaWindowPassCount: clampInt(sovereignGoalCompletionStatus && sovereignGoalCompletionStatus.history && sovereignGoalCompletionStatus.history.consecutivePassingExports, 0, 999999, 0),
-    sovereignCriteriaWindowSize: clampInt(sovereignGoalCompletionStatus && sovereignGoalCompletionStatus.history && sovereignGoalCompletionStatus.history.consecutiveRequired, 0, 999999, 0),
+    compatibilityCompletionStatusPath: repoRelative(workspaceRoot, paths.agiReadiness.compatibilityCompletionStatusJson),
+    compatibilityCompletionStatus: compatibilityStatus,
+    compatibilityCriteriaMet: compatibilityStatus === "COMPATIBILITY_COMPLETE",
+    compatibilityFailedCriteria: sanitizePublicValue(compatibilityFailedCriteria, workspaceRoot),
+    compatibilityWhyNotYet: sanitizePublicValue(compatibilityWhyNotYet, workspaceRoot),
+    compatibilityCriteriaWindowPassCount: clampInt(compatibilityCompletionStatus && compatibilityCompletionStatus.history && compatibilityCompletionStatus.history.consecutivePassingExports, 0, 999999, 0),
+    compatibilityCriteriaWindowSize: clampInt(compatibilityCompletionStatus && compatibilityCompletionStatus.history && compatibilityCompletionStatus.history.consecutiveRequired, 0, 999999, 0),
   };
 }
 
@@ -7319,7 +7628,202 @@ function buildReadinessConsistencyChecks({ readiness, coverage, blockedReasons, 
       ? "coverage failures are reflected in readiness blocked reasons and next bottlenecks"
       : "coverage failures are not surfaced in readiness blocked reasons or next bottlenecks",
   });
+  const rawFinalScore = numberOrNull(readiness && readiness.rawFinalScore);
+  const displayFinalScore = numberOrNull(readiness && readiness.displayFinalScore);
+  const scoreViews = readiness && readiness.scoreViews && typeof readiness.scoreViews === "object" ? readiness.scoreViews : {};
+  const displayScoreSafe = !Number.isFinite(rawFinalScore) || !Number.isFinite(displayFinalScore) || displayFinalScore <= rawFinalScore;
+  const evidenceDebtPenaltyVisible = !Boolean(scoreViews.evidenceDebtPresent)
+    || !Number.isFinite(rawFinalScore)
+    || !Number.isFinite(displayFinalScore)
+    || displayFinalScore < rawFinalScore;
+  checks.push({
+    id: "display_score_not_above_internal_score",
+    status: displayScoreSafe ? "PASS" : "FAIL",
+    detail: displayScoreSafe
+      ? "display readiness score does not exceed the internal governed capability score"
+      : "display readiness score exceeds the internal governed capability score",
+  });
+  checks.push({
+    id: "evidence_debt_penalizes_display_score",
+    status: evidenceDebtPenaltyVisible ? "PASS" : "FAIL",
+    detail: evidenceDebtPenaltyVisible
+      ? "display readiness score drops when evidence debt is still present"
+      : "display readiness score remains saturated even though evidence debt is still present",
+  });
   return checks;
+}
+
+function buildReadinessScoreViews({
+  workspaceRoot,
+  readiness,
+  autonomousLearningStatus = null,
+  continuityDebt = null,
+  goalCompletionStatus = null,
+  policy = null,
+}) {
+  const current = readiness && typeof readiness === "object" ? readiness : {};
+  const rawFinalScore = numberOrNull(current.rawFinalScore, 6);
+  const calibration = policy && policy.scoreCalibration && typeof policy.scoreCalibration === "object"
+    ? policy.scoreCalibration
+    : {};
+  const capPolicy = calibration && calibration.caps && typeof calibration.caps === "object"
+    ? calibration.caps
+    : {};
+  const agendaSummary = autonomousLearningStatus && autonomousLearningStatus.summary && typeof autonomousLearningStatus.summary === "object"
+    ? autonomousLearningStatus.summary
+    : {};
+  const debtSummary = continuityDebt && continuityDebt.summary && typeof continuityDebt.summary === "object"
+    ? continuityDebt.summary
+    : {};
+  const blockedAgendaCount = Math.max(
+    clampInt(agendaSummary.blockedCount, 0, 999999, 0),
+    clampInt(agendaSummary.blocked, 0, 999999, 0)
+  );
+  const insufficientEvidenceCount = Math.max(
+    clampInt(agendaSummary.insufficientEvidenceCount, 0, 999999, 0),
+    clampInt(agendaSummary.insufficientEvidence, 0, 999999, 0)
+  );
+  const openDebtCount = clampInt(debtSummary.openDebtCount, 0, 999999, 0);
+  const blockedReasonCount = Array.isArray(current.blockedReasons) ? current.blockedReasons.length : 0;
+  const goalStatus = safeString(goalCompletionStatus && goalCompletionStatus.goalStatus, 80) || "NOT_YET";
+  const operationallyComplete = goalStatus === "OPERATIONALLY_COMPLETE";
+  const evidenceDebtPresent = blockedAgendaCount > 0 || insufficientEvidenceCount > 0;
+  const penalties = [];
+  const addPenalty = (id, count, perCount, cap, reason) => {
+    const normalizedCount = clampInt(count, 0, 999999, 0);
+    if (normalizedCount <= 0) {
+      return 0;
+    }
+    const perItem = Math.max(0, safeNumber(perCount, 0));
+    const maxPenalty = Math.max(0, safeNumber(cap, perItem * normalizedCount));
+    const applied = Number(Math.min(maxPenalty, perItem * normalizedCount).toFixed(6));
+    if (applied <= 0) {
+      return 0;
+    }
+    penalties.push({
+      id,
+      count: normalizedCount,
+      perCount: Number(perItem.toFixed(6)),
+      cap: Number(maxPenalty.toFixed(6)),
+      applied,
+      reason: safeString(reason, 220),
+    });
+    return applied;
+  };
+  let totalPenalty = 0;
+  totalPenalty += addPenalty(
+    "blockedAgendaCount",
+    blockedAgendaCount,
+    calibration.blockedAgendaPenaltyPerCount,
+    calibration.blockedAgendaPenaltyCap,
+    "autonomous learning agenda still has blocked items"
+  );
+  totalPenalty += addPenalty(
+    "insufficientEvidenceCount",
+    insufficientEvidenceCount,
+    calibration.insufficientEvidencePenaltyPerCount,
+    calibration.insufficientEvidencePenaltyCap,
+    "autonomous learning agenda still has insufficient-evidence items"
+  );
+  totalPenalty += addPenalty(
+    "openDebtCount",
+    openDebtCount,
+    calibration.openDebtPenaltyPerCount,
+    calibration.openDebtPenaltyCap,
+    "continuity debt remains open"
+  );
+  totalPenalty += addPenalty(
+    "blockedReasonCount",
+    blockedReasonCount,
+    calibration.blockedReasonPenaltyPerCount,
+    calibration.blockedReasonPenaltyCap,
+    "readiness still exposes blocked reasons"
+  );
+  if (!operationallyComplete) {
+    totalPenalty += addPenalty(
+      "goalNotOperationallyComplete",
+      1,
+      calibration.goalNotOperationallyCompletePenalty,
+      calibration.goalNotOperationallyCompletePenalty,
+      "operational completion is not yet closed"
+    );
+  }
+  totalPenalty = Number(totalPenalty.toFixed(6));
+  let externallyAuditableScore = Number.isFinite(rawFinalScore)
+    ? Number(Math.max(0, rawFinalScore - totalPenalty).toFixed(6))
+    : null;
+  const capsApplied = [];
+  const applyCap = (id, maxScore, reason) => {
+    const normalizedCap = numberOrNull(maxScore, 6);
+    if (!Number.isFinite(externallyAuditableScore) || !Number.isFinite(normalizedCap)) {
+      return;
+    }
+    if (externallyAuditableScore <= normalizedCap) {
+      return;
+    }
+    externallyAuditableScore = Number(normalizedCap.toFixed(6));
+    capsApplied.push({
+      id,
+      maxScore: normalizedCap,
+      reason: safeString(reason, 220),
+    });
+  };
+  if (evidenceDebtPresent) {
+    applyCap("evidenceDebtPresent", capPolicy.evidenceDebtPresent, "evidence debt prevents a near-complete public headline score");
+  }
+  if (!operationallyComplete) {
+    applyCap("operationallyIncomplete", capPolicy.operationallyIncomplete, "operational completion remains open");
+  }
+  return {
+    schema: "agi-readiness-score-views.v1",
+    generatedAt: toIso(),
+    workspaceId: toWorkspaceId(workspaceRoot),
+    rawFinalScore,
+    internalGovernedScore: rawFinalScore,
+    externallyAuditableScore,
+    displayScoreSource: safeString(calibration.displayScoreSource, 80) || "externallyAuditableScore",
+    operationallyComplete,
+    evidenceDebtPresent,
+    debtSignals: {
+      blockedAgendaCount,
+      insufficientEvidenceCount,
+      openDebtCount,
+      blockedReasonCount,
+      goalStatus,
+    },
+    totalPenalty,
+    penalties,
+    capsApplied,
+  };
+}
+
+function applyReadinessScoreCalibration({
+  workspaceRoot,
+  readiness,
+  autonomousLearningStatus = null,
+  continuityDebt = null,
+  goalCompletionStatus = null,
+  policy = null,
+}) {
+  const current = readiness && typeof readiness === "object" ? readiness : {};
+  const scoreViews = buildReadinessScoreViews({
+    workspaceRoot,
+    readiness: current,
+    autonomousLearningStatus,
+    continuityDebt,
+    goalCompletionStatus,
+    policy,
+  });
+  current.scoreViews = scoreViews;
+  current.internalGovernedScore = scoreViews.internalGovernedScore;
+  current.externallyAuditableScore = scoreViews.externallyAuditableScore;
+  const source = safeString(scoreViews.displayScoreSource, 80);
+  if (source === "externallyAuditableScore") {
+    current.displayFinalScore = scoreViews.externallyAuditableScore;
+  } else if (source === "internalGovernedScore") {
+    current.displayFinalScore = scoreViews.internalGovernedScore;
+  }
+  return current;
 }
 
 function deriveWeakestGateSemantics({ workspaceRoot, metrics }) {
@@ -7562,12 +8066,16 @@ function buildAgiReadinessArtifacts({ workspaceRoot, items, continuityBridge }) 
 }
 
 function renderAgiReadinessMarkdown(readiness, coverage, blockedReasons, bottlenecks = null) {
+  const scoreViews = readiness && readiness.scoreViews && typeof readiness.scoreViews === "object" ? readiness.scoreViews : {};
   const lines = [
     "# AGI Readiness",
     "",
     `- Run: ${safeString(readiness && readiness.latestRunId, 120) || "-"}`,
     `- Raw final score: ${hasExplicitNumber(readiness && readiness.rawFinalScore) ? readiness.rawFinalScore : "-"}`,
+    `- Internal governed score: ${hasExplicitNumber(readiness && readiness.internalGovernedScore) ? readiness.internalGovernedScore : "-"}`,
+    `- Externally auditable score: ${hasExplicitNumber(readiness && readiness.externallyAuditableScore) ? readiness.externallyAuditableScore : "-"}`,
     `- Display final score: ${hasExplicitNumber(readiness && readiness.displayFinalScore) ? readiness.displayFinalScore : "-"}`,
+    `- Display score source: ${safeString(scoreViews.displayScoreSource, 80) || "-"}`,
     `- Catastrophic risk (CVaR): ${readiness && readiness.catastrophicRisk && hasExplicitNumber(readiness.catastrophicRisk.cvar) ? readiness.catastrophicRisk.cvar : "-"}`,
     `- Promotion comparison mode: ${safeString(readiness && readiness.promotionComparisonMode, 80) || "-"}`,
     `- Promote: ${readiness && readiness.incumbentVsChallenger && readiness.incumbentVsChallenger.promote !== null ? String(readiness.incumbentVsChallenger.promote) : "n/a"}`,
@@ -7575,9 +8083,18 @@ function renderAgiReadinessMarkdown(readiness, coverage, blockedReasons, bottlen
     `- Evaluated breadth: ${hasExplicitNumber(readiness && readiness.evaluatedBreadth) ? readiness.evaluatedBreadth : "-"}`,
     `- Weakest capability family: ${safeString(readiness && readiness.weakestCapabilityFamily, 80) || "-"}`,
     `- Weakest hard gate: ${safeString(readiness && readiness.weakestGateFamily, 80) || "-"}`,
-    "",
-    "## Domain Coverage",
   ];
+  if (Array.isArray(scoreViews.penalties) && scoreViews.penalties.length) {
+    lines.push("", "## Score Calibration");
+    lines.push(`- Total penalty: ${hasExplicitNumber(scoreViews.totalPenalty) ? scoreViews.totalPenalty : "-"}`);
+    for (const penalty of scoreViews.penalties) {
+      lines.push(`- ${safeString(penalty.id, 80)}: applied=${hasExplicitNumber(penalty.applied) ? penalty.applied : "-"} reason=${safeString(penalty.reason, 220) || "-"}`);
+    }
+    for (const cap of Array.isArray(scoreViews.capsApplied) ? scoreViews.capsApplied : []) {
+      lines.push(`- cap ${safeString(cap.id, 80)}: max=${hasExplicitNumber(cap.maxScore) ? cap.maxScore : "-"} reason=${safeString(cap.reason, 220) || "-"}`);
+    }
+  }
+  lines.push("", "## Domain Coverage");
   for (const row of Array.isArray(coverage && coverage.rows) ? coverage.rows : []) {
     lines.push(`- ${safeString(row.familyId, 80)}: score=${safeNumber(row.domainScore, 0).toFixed(3)} floor=${safeNumber(row.breadthFloor, 0.7).toFixed(2)} status=${safeString(row.breadthFloorStatus, 20)}`);
   }
@@ -8344,6 +8861,7 @@ function syncGovernedMemoryGraph({ workspaceRoot = workspaceRootDefault, runtime
   };
   writeJsonIfChanged(path.join(paths.projections.continuityStateRoot, "latest.json"), continuityProjection);
   const summary = buildRuntimeSummary({ workspaceRoot, items, pack, paths, runtime, currentEvents: [] });
+  const exportSessionId = resolvePublicExportSessionId(workspaceRoot, summary.workspaceId);
   writeJsonIfChanged(paths.projections.specGraph, items.filter((item) => item.type === "constitution_ref"));
   writeJsonIfChanged(path.join(paths.projections.workspaceProgressRoot, `${summary.workspaceId}.json`), summary.workspaceProgress);
   writeJsonIfChanged(path.join(paths.projections.preferenceProfilesRoot, "active.json"), items.filter((item) => item.type === "preference_signal"));
@@ -8422,6 +8940,7 @@ function syncGovernedMemoryGraph({ workspaceRoot = workspaceRootDefault, runtime
     anthropicLane,
     previousAgenda: previousAgendaProjection,
     bottlenecks,
+    exportSessionId,
   });
   const continuityDebt = buildContinuityDebtProjection({ workspaceRoot, continuityBridge, agenda: autonomousAgenda });
   continuityArtifacts = buildContinuityPublicArtifacts({ workspaceRoot, continuityBridge, retrievalPacks, continuityDebt });
@@ -8911,6 +9430,7 @@ function evaluateMemoryPublicSuite({
   continuityDebt = null,
   goalCompletionStatus = null,
   subjectiveGoalCompletionStatus = null,
+  compatibilityCompletionStatus = null,
   sovereignGoalCompletionStatus = null,
   causalRegressionAlerts = null,
   learningAdoptionStatus = null,
@@ -8956,6 +9476,11 @@ function evaluateMemoryPublicSuite({
   const distinctLineage = readinessArtifacts && readinessArtifacts.distinctLineage && typeof readinessArtifacts.distinctLineage === "object"
     ? readinessArtifacts.distinctLineage
     : {};
+  const workerDecisionSurfacePath = path.join(workspaceRoot, "output", "governance_public", "worker_decision_surface.json");
+  const adoptionReadinessEvalPath = path.join(workspaceRoot, "output", "governance_public", "adoption_readiness_eval.json");
+  const iterationDecisionPath = path.join(workspaceRoot, "output", "governance_public", "iteration_decision.json");
+  const noHitlAnalysisPath = path.join(workspaceRoot, "output", "externalization_nohitl", "no_hitl_analysis.json");
+  const latestOverviewPath = paths.publicOutput && paths.publicOutput.latestOverviewJson ? paths.publicOutput.latestOverviewJson : "";
   const writtenOrRuntimeJson = (targetPath, runtimeValue) => {
     if (requireWrittenPublicArtifacts) return readJson(targetPath);
     return runtimeValue;
@@ -9457,10 +9982,10 @@ function evaluateMemoryPublicSuite({
         ? paths.agiReadiness.subjectiveGoalCompletionStatusJson
         : "";
       const subjectiveGoal = writtenOrRuntimeJson(subjectivePath, subjectiveGoalCompletionStatus);
-      const sovereignPath = paths.agiReadiness && paths.agiReadiness.sovereignGoalCompletionStatusJson
-        ? paths.agiReadiness.sovereignGoalCompletionStatusJson
+      const compatibilityPath = paths.agiReadiness && paths.agiReadiness.compatibilityCompletionStatusJson
+        ? paths.agiReadiness.compatibilityCompletionStatusJson
         : "";
-      const sovereignGoal = writtenOrRuntimeJson(sovereignPath, sovereignGoalCompletionStatus);
+      const compatibilityGoal = writtenOrRuntimeJson(compatibilityPath, compatibilityCompletionStatus);
       const current = subjectiveGoal && subjectiveGoal.subjectiveCurrentValues && typeof subjectiveGoal.subjectiveCurrentValues === "object"
         ? subjectiveGoal.subjectiveCurrentValues
         : {};
@@ -9506,12 +10031,12 @@ function evaluateMemoryPublicSuite({
         && clampInt(subjectiveGoal.history.consecutivePassingExports, 0, 999999, 0) >= clampInt(thresholds.minConsecutivePassingExports, 1, 999999, 7)
       );
       const status = safeString(subjectiveGoal && subjectiveGoal.subjectiveGoalStatus, 80);
-      const sovereignStatus = safeString(sovereignGoal && sovereignGoal.status, 80);
+      const compatibilityStatus = safeString(compatibilityGoal && compatibilityGoal.status, 80);
       pass = Boolean(subjectiveGoal) && (
         thresholdsSatisfied
           ? (
             ["SUBJECTIVE_AGI_NEAR_COMPLETE", "SUBJECTIVE_AGI_COMPLETE"].includes(status)
-            && (sovereignStatus !== "SUBJECTIVE_AGI_COMPLETE" || status === "SUBJECTIVE_AGI_COMPLETE")
+            && (compatibilityStatus !== "COMPATIBILITY_COMPLETE" || status === "SUBJECTIVE_AGI_COMPLETE")
           )
           : status === "NOT_YET"
       );
@@ -9723,25 +10248,140 @@ function evaluateMemoryPublicSuite({
       detail = pass
         ? "subjective completion only appears when all strict thresholds are satisfied"
         : "subjective completion is present without all strict thresholds being satisfied";
-    } else if (id === "sovereign_goal_artifact_present") {
-      const sovereignPath = paths.agiReadiness && paths.agiReadiness.sovereignGoalCompletionStatusJson ? paths.agiReadiness.sovereignGoalCompletionStatusJson : "";
-      const sovereignGoal = writtenOrRuntimeJson(sovereignPath, sovereignGoalCompletionStatus);
+    } else if (id === "worker_decision_surface_present") {
+      const workerDecision = writtenOrRuntimeJson(workerDecisionSurfacePath, readJsonObject(workerDecisionSurfacePath)) || {};
       pass = Boolean(
-        sovereignPath
-        && (!requireWrittenPublicArtifacts || fs.existsSync(sovereignPath))
-        && sovereignGoal
-        && safeString(sovereignGoal.schema, 160) === "agi-sovereign-goal-completion-status.v1"
+        fs.existsSync(workerDecisionSurfacePath)
+        && safeString(workerDecision.schema, 160) === "worker-decision-surface.v1"
+        && safeString(workerDecision.topLevelOutcome, 80)
       );
-      detail = pass ? "sovereign goal completion artifact is present" : "sovereign goal completion artifact missing";
-    } else if (id === "subjective_complete_not_near_complete_only") {
+      detail = pass ? "worker decision surface headline artifact is present" : "worker decision surface headline artifact missing or malformed";
+    } else if (id === "worker_decision_surface_scope_is_primary") {
+      const workerDecision = writtenOrRuntimeJson(workerDecisionSurfacePath, readJsonObject(workerDecisionSurfacePath)) || {};
+      const overview = latestOverviewPath ? writtenOrRuntimeJson(latestOverviewPath, readJsonObject(latestOverviewPath)) || {} : {};
+      pass = safeString(workerDecision.scope, 80) === "worker_decision"
+        && safeString(overview.headlineScope, 80) === "worker_decision"
+        && safeString(overview.workerDecisionHeadline, 80) === safeString(workerDecision.topLevelOutcome, 80);
+      detail = pass ? "worker decision surface is the primary operator headline" : "worker decision surface is not wired as the primary headline";
+    } else if (id === "worker_decision_surface_export_session_consistent") {
+      const workerDecision = writtenOrRuntimeJson(workerDecisionSurfacePath, readJsonObject(workerDecisionSurfacePath)) || {};
+      const adoptionEval = writtenOrRuntimeJson(adoptionReadinessEvalPath, readJsonObject(adoptionReadinessEvalPath)) || {};
+      const iteration = writtenOrRuntimeJson(iterationDecisionPath, readJsonObject(iterationDecisionPath)) || {};
+      const learning = writtenOrRuntimeJson(paths.agiReadiness.autonomousLearningStatusJson, autonomousAgenda) || {};
+      const goal = writtenOrRuntimeJson(paths.agiReadiness.goalCompletionStatusJson, goalCompletionStatus) || {};
+      const subjectiveGoal = writtenOrRuntimeJson(paths.agiReadiness.subjectiveGoalCompletionStatusJson, subjectiveGoalCompletionStatus) || {};
+      const compatibilityGoal = writtenOrRuntimeJson(paths.agiReadiness.compatibilityCompletionStatusJson, compatibilityCompletionStatus) || {};
+      const adoptionStatus = writtenOrRuntimeJson(paths.agiReadiness.learningAdoptionStatusJson, learningAdoptionStatus) || {};
+      const probeStatus = writtenOrRuntimeJson(paths.agiReadiness.selfDirectedProbeStatusJson, selfDirectedProbeStatus) || {};
+      const novelStatus = writtenOrRuntimeJson(paths.agiReadiness.novelTaskAcquisitionJson, novelTaskAcquisition) || {};
+      const noHitl = fs.existsSync(noHitlAnalysisPath) ? readJsonObject(noHitlAnalysisPath) : {};
+      const sessionIds = uniqueStrings([
+        safeString(workerDecision.exportSessionId, 120),
+        safeString(goal.exportSessionId, 120),
+        safeString(subjectiveGoal.exportSessionId, 120),
+        safeString(compatibilityGoal.exportSessionId, 120),
+        safeString(learning.exportSessionId, 120),
+        safeString(adoptionStatus.exportSessionId, 120),
+        safeString(probeStatus.exportSessionId, 120),
+        safeString(novelStatus.exportSessionId, 120),
+        safeString(adoptionEval.exportSessionId, 120),
+        safeString(iteration.exportSessionId, 120),
+        safeString(noHitl.exportSessionId, 120),
+      ], 16, 120);
+      pass = sessionIds.length === 1;
+      detail = pass ? `shared export session ${sessionIds[0] || "unset"}` : `mismatched export sessions: ${sessionIds.join(", ") || "missing"}`;
+    } else if (id === "goal_completion_scope_is_program_readiness") {
+      const goal = writtenOrRuntimeJson(paths.agiReadiness.goalCompletionStatusJson, goalCompletionStatus) || {};
+      pass = safeString(goal.scope, 80) === "program_readiness";
+      detail = pass ? "goal completion is scoped to program readiness" : "goal completion scope is missing or not program_readiness";
+    } else if (id === "subjective_completion_scope_is_companion") {
+      const subjectiveGoal = writtenOrRuntimeJson(paths.agiReadiness.subjectiveGoalCompletionStatusJson, subjectiveGoalCompletionStatus) || {};
+      pass = safeString(subjectiveGoal.scope, 80) === "subjective_companion"
+        && safeString(subjectiveGoal.subjectiveDecisionBasis, 160) === "worker_centric_subjective_companion_gate";
+      detail = pass ? "subjective completion is a worker-centric companion gate" : "subjective completion still behaves like a top-level headline";
+    } else if (id === "compatibility_completion_scope_is_compatibility_only") {
+      const compatibilityGoal = writtenOrRuntimeJson(paths.agiReadiness.compatibilityCompletionStatusJson, compatibilityCompletionStatus) || {};
+      pass = safeString(compatibilityGoal.scope, 80) === "compatibility_layer";
+      detail = pass ? "compatibility completion is scoped to the compatibility layer" : "compatibility completion scope is missing or incorrect";
+    } else if (id === "legacy_sovereign_alias_not_used_as_active_logic") {
       const sovereignPath = paths.agiReadiness && paths.agiReadiness.sovereignGoalCompletionStatusJson ? paths.agiReadiness.sovereignGoalCompletionStatusJson : "";
-      const sovereignGoal = writtenOrRuntimeJson(sovereignPath, sovereignGoalCompletionStatus);
-      const subjectivePath = paths.agiReadiness && paths.agiReadiness.subjectiveGoalCompletionStatusJson ? paths.agiReadiness.subjectiveGoalCompletionStatusJson : "";
-      const subjectiveGoal = writtenOrRuntimeJson(subjectivePath, subjectiveGoalCompletionStatus);
-      const sovereignStatus = safeString(sovereignGoal && sovereignGoal.status, 80);
-      const subjectiveStatus = safeString(subjectiveGoal && subjectiveGoal.subjectiveGoalStatus, 80);
-      pass = sovereignStatus !== "SUBJECTIVE_AGI_COMPLETE" || subjectiveStatus === "SUBJECTIVE_AGI_COMPLETE";
-      detail = pass ? "subjective artifact upgrades when sovereign completion passes" : "subjective artifact remains near-complete when sovereign completion already passes";
+      const sovereignGoal = sovereignPath ? writtenOrRuntimeJson(sovereignPath, sovereignGoalCompletionStatus) || {} : {};
+      const subjectiveGoal = writtenOrRuntimeJson(paths.agiReadiness.subjectiveGoalCompletionStatusJson, subjectiveGoalCompletionStatus) || {};
+      const subjectiveArtifacts = Array.isArray(subjectiveGoal.supportingArtifacts) ? subjectiveGoal.supportingArtifacts : [];
+      pass = Boolean(sovereignGoal.deprecatedCompatibilityOnly)
+        && safeString(sovereignGoal.scope, 80) === "legacy_compatibility_alias"
+        && safeString(sovereignGoal.activeLogic, 80) === "no_override"
+        && !/sovereign/i.test(safeString(subjectiveGoal.subjectiveDecisionBasis, 160))
+        && !subjectiveArtifacts.some((entry) => /sovereign_goal_completion_status/i.test(safeString(entry, 220)));
+      detail = pass ? "legacy sovereign alias is isolated from active subjective logic" : "legacy sovereign alias still influences active subjective logic";
+    } else if (id === "compatibility_completion_artifact_present") {
+      const compatibilityPath = paths.agiReadiness && paths.agiReadiness.compatibilityCompletionStatusJson ? paths.agiReadiness.compatibilityCompletionStatusJson : "";
+      const compatibilityGoal = writtenOrRuntimeJson(compatibilityPath, compatibilityCompletionStatus);
+      pass = Boolean(
+        compatibilityPath
+        && (!requireWrittenPublicArtifacts || fs.existsSync(compatibilityPath))
+        && compatibilityGoal
+        && safeString(compatibilityGoal.schema, 160) === "agi-compatibility-completion-status.v1"
+      );
+      detail = pass ? "compatibility completion artifact is present" : "compatibility completion artifact missing";
+    } else if (id === "autonomous_learning_current_historical_counts_distinct") {
+      const learning = writtenOrRuntimeJson(paths.agiReadiness.autonomousLearningStatusJson, autonomousAgenda) || {};
+      const requiredFields = [
+        "currentQueuedCount",
+        "currentRunningCount",
+        "currentBlockedCount",
+        "currentInsufficientEvidenceCount",
+        "historicalQueuedCount",
+        "historicalRunningCount",
+        "historicalBlockedCount",
+        "historicalInsufficientEvidenceCount",
+        "currentVerifiedPositiveCount",
+        "historicalVerifiedPositiveCount",
+      ];
+      const semanticsValidation = validateAutonomousLearningCountSemantics(learning);
+      pass = requiredFields.every((field) => Number.isFinite(Number(learning[field])) && Number(learning[field]) >= 0)
+        && semanticsValidation.pass;
+      detail = pass ? "autonomous learning separates current and historical counts with explicit semantics" : semanticsValidation.detail;
+    } else if (id === "autonomous_learning_current_counts_consistent") {
+      const learning = writtenOrRuntimeJson(paths.agiReadiness.autonomousLearningStatusJson, autonomousAgenda) || {};
+      const summaryValidation = validateAutonomousLearningSummaryCountContract(learning);
+      pass = summaryValidation.pass;
+      detail = summaryValidation.detail;
+    } else if (id === "autonomous_learning_verified_positive_semantics_consistent") {
+      const learning = writtenOrRuntimeJson(paths.agiReadiness.autonomousLearningStatusJson, autonomousAgenda) || {};
+      const semanticsValidation = validateAutonomousLearningCountSemantics(learning);
+      const summaryValidation = validateAutonomousLearningSummaryCountContract(learning);
+      pass = semanticsValidation.pass
+        && summaryValidation.pass
+        && clampInt(learning && learning.summary && learning.summary.verifiedPositive, 0, 999999, -1) === clampInt(learning.currentVerifiedPositiveCount, 0, 999999, -2);
+      detail = pass ? "verified-positive counts follow one explicit current/historical contract" : "verified-positive current/historical semantics are inconsistent";
+    } else if (id === "autonomous_learning_summary_matches_count_contract") {
+      const learning = writtenOrRuntimeJson(paths.agiReadiness.autonomousLearningStatusJson, autonomousAgenda) || {};
+      const summaryValidation = validateAutonomousLearningSummaryCountContract(learning);
+      pass = summaryValidation.pass;
+      detail = summaryValidation.detail;
+    } else if (id === "latest_overview_headline_uses_worker_decision_surface") {
+      const overview = latestOverviewPath ? writtenOrRuntimeJson(latestOverviewPath, readJsonObject(latestOverviewPath)) || {} : {};
+      pass = safeString(overview.workerDecisionSurfacePath, 220).endsWith("output/governance_public/worker_decision_surface.json")
+        && safeString(overview.headlineScope, 80) === "worker_decision"
+        && Boolean(overview.workerDecisionSurface && safeString(overview.workerDecisionSurface.topLevelOutcome, 80));
+      detail = pass ? "latest overview uses the worker decision surface as the headline" : "latest overview does not use the worker decision surface as the headline";
+    } else if (id === "docs_aligned_with_governed_worker_semantics") {
+      const docs = [
+        path.join(workspaceRoot, "README.md"),
+        path.join(workspaceRoot, "HARNESS_MAP.md"),
+        path.join(workspaceRoot, "docs", "CURRENT_ARCHITECTURE.md"),
+        path.join(workspaceRoot, "docs", "AGI_OPERATIONAL_COMPLETION.md"),
+        path.join(workspaceRoot, "docs", "GOVERNED_AUTONOMOUS_LEARNING_LOOP.md"),
+      ]
+        .filter((targetPath) => fs.existsSync(targetPath))
+        .map((targetPath) => fs.readFileSync(targetPath, "utf8"))
+        .join("\n");
+      pass = /worker_decision_surface/i.test(docs)
+        && /program[_ -]?readiness/i.test(docs)
+        && /legacy compatibility alias/i.test(docs)
+        && !/sovereign current truth/i.test(docs);
+      detail = pass ? "docs align with governed worker semantics" : "docs still describe a conflicting current-truth model";
     } else if (id === "self_authored_goal_market_present") {
       const targetPath = paths.agiReadiness && paths.agiReadiness.selfAuthoredGoalMarketJson ? paths.agiReadiness.selfAuthoredGoalMarketJson : "";
       const artifact = writtenOrRuntimeJson(targetPath, selfAuthoredGoalMarket);
@@ -9802,65 +10442,65 @@ function evaluateMemoryPublicSuite({
         && clampInt(statusArtifact.blockedSelfAuthoredGoalCount, 0, 999999, 0) >= 0;
       detail = pass ? "self-authored counts remain history-aware" : "self-authored counts dropped below goal-history evidence";
     } else if (id === "self_authored_positive_closure_threshold_enforced") {
-      const sovereignGoal = writtenOrRuntimeJson(paths.agiReadiness.sovereignGoalCompletionStatusJson, sovereignGoalCompletionStatus) || {};
-      const current = sovereignGoal.currentValues && typeof sovereignGoal.currentValues === "object" ? sovereignGoal.currentValues : {};
-      const thresholds = sovereignGoal.criteria && typeof sovereignGoal.criteria === "object" ? sovereignGoal.criteria : {};
-      const status = safeString(sovereignGoal.status, 80);
-      pass = status !== "SUBJECTIVE_AGI_COMPLETE" || clampInt(current.selfAuthoredPositiveClosureCountWindow, 0, 999999, 0) >= clampInt(thresholds.minSelfAuthoredPositiveClosureCountWindow, 8, 999999, 8);
-      detail = pass ? "self-authored positive closure threshold is enforced" : "sovereign complete is present without enough self-authored positive closures";
+      const compatibilityGoal = writtenOrRuntimeJson(paths.agiReadiness.compatibilityCompletionStatusJson, compatibilityCompletionStatus) || {};
+      const current = compatibilityGoal.currentValues && typeof compatibilityGoal.currentValues === "object" ? compatibilityGoal.currentValues : {};
+      const thresholds = compatibilityGoal.criteria && typeof compatibilityGoal.criteria === "object" ? compatibilityGoal.criteria : {};
+      const status = safeString(compatibilityGoal.status, 80);
+      pass = status !== "COMPATIBILITY_COMPLETE" || clampInt(current.selfAuthoredPositiveClosureCountWindow, 0, 999999, 0) >= clampInt(thresholds.minSelfAuthoredPositiveClosureCountWindow, 8, 999999, 8);
+      detail = pass ? "self-authored positive closure threshold is enforced" : "compatibility complete is present without enough self-authored positive closures";
     } else if (id === "novel_task_window_threshold_enforced") {
-      const sovereignGoal = writtenOrRuntimeJson(paths.agiReadiness.sovereignGoalCompletionStatusJson, sovereignGoalCompletionStatus) || {};
-      const current = sovereignGoal.currentValues && typeof sovereignGoal.currentValues === "object" ? sovereignGoal.currentValues : {};
-      const thresholds = sovereignGoal.criteria && typeof sovereignGoal.criteria === "object" ? sovereignGoal.criteria : {};
-      const status = safeString(sovereignGoal.status, 80);
-      pass = status !== "SUBJECTIVE_AGI_COMPLETE" || (
+      const compatibilityGoal = writtenOrRuntimeJson(paths.agiReadiness.compatibilityCompletionStatusJson, compatibilityCompletionStatus) || {};
+      const current = compatibilityGoal.currentValues && typeof compatibilityGoal.currentValues === "object" ? compatibilityGoal.currentValues : {};
+      const thresholds = compatibilityGoal.criteria && typeof compatibilityGoal.criteria === "object" ? compatibilityGoal.criteria : {};
+      const status = safeString(compatibilityGoal.status, 80);
+      pass = status !== "COMPATIBILITY_COMPLETE" || (
         clampInt(current.novelTaskCountWindow, 0, 999999, 0) >= clampInt(thresholds.minNovelTaskCountWindow, 12, 999999, 12)
         && clampInt(current.positiveNovelTaskCountWindow, 0, 999999, 0) >= clampInt(thresholds.minPositiveNovelTaskCountWindow, 8, 999999, 8)
       );
-      detail = pass ? "novel task window thresholds are enforced" : "sovereign complete is present without enough novel-task growth";
+      detail = pass ? "novel task window thresholds are enforced" : "compatibility complete is present without enough novel-task growth";
     } else if (id === "self_directed_probe_window_threshold_enforced") {
-      const sovereignGoal = writtenOrRuntimeJson(paths.agiReadiness.sovereignGoalCompletionStatusJson, sovereignGoalCompletionStatus) || {};
-      const current = sovereignGoal.currentValues && typeof sovereignGoal.currentValues === "object" ? sovereignGoal.currentValues : {};
-      const thresholds = sovereignGoal.criteria && typeof sovereignGoal.criteria === "object" ? sovereignGoal.criteria : {};
-      const status = safeString(sovereignGoal.status, 80);
-      pass = status !== "SUBJECTIVE_AGI_COMPLETE" || (
+      const compatibilityGoal = writtenOrRuntimeJson(paths.agiReadiness.compatibilityCompletionStatusJson, compatibilityCompletionStatus) || {};
+      const current = compatibilityGoal.currentValues && typeof compatibilityGoal.currentValues === "object" ? compatibilityGoal.currentValues : {};
+      const thresholds = compatibilityGoal.criteria && typeof compatibilityGoal.criteria === "object" ? compatibilityGoal.criteria : {};
+      const status = safeString(compatibilityGoal.status, 80);
+      pass = status !== "COMPATIBILITY_COMPLETE" || (
         clampInt(current.positiveProbeCountWindow, 0, 999999, 0) >= clampInt(thresholds.minPositiveProbeCountWindow, 6, 999999, 6)
         && clampInt(current.novelProbePositiveCountWindow, 0, 999999, 0) >= clampInt(thresholds.minNovelProbePositiveCountWindow, 4, 999999, 4)
       );
-      detail = pass ? "self-directed probe window thresholds are enforced" : "sovereign complete is present without enough probe growth";
+      detail = pass ? "self-directed probe window thresholds are enforced" : "compatibility complete is present without enough probe growth";
     } else if (id === "self_authored_origin_ratio_enforced") {
-      const sovereignGoal = writtenOrRuntimeJson(paths.agiReadiness.sovereignGoalCompletionStatusJson, sovereignGoalCompletionStatus) || {};
-      const current = sovereignGoal.currentValues && typeof sovereignGoal.currentValues === "object" ? sovereignGoal.currentValues : {};
-      const thresholds = sovereignGoal.criteria && typeof sovereignGoal.criteria === "object" ? sovereignGoal.criteria : {};
-      const status = safeString(sovereignGoal.status, 80);
-      pass = status !== "SUBJECTIVE_AGI_COMPLETE" || safeNumber(current.selfAuthoredOriginRatio, 0) >= safeNumber(thresholds.minSelfAuthoredOriginRatio, 0.6);
-      detail = pass ? "self-authored origin ratio is enforced" : "sovereign complete is present with low self-authored origin ratio";
+      const compatibilityGoal = writtenOrRuntimeJson(paths.agiReadiness.compatibilityCompletionStatusJson, compatibilityCompletionStatus) || {};
+      const current = compatibilityGoal.currentValues && typeof compatibilityGoal.currentValues === "object" ? compatibilityGoal.currentValues : {};
+      const thresholds = compatibilityGoal.criteria && typeof compatibilityGoal.criteria === "object" ? compatibilityGoal.criteria : {};
+      const status = safeString(compatibilityGoal.status, 80);
+      pass = status !== "COMPATIBILITY_COMPLETE" || safeNumber(current.selfAuthoredOriginRatio, 0) >= safeNumber(thresholds.minSelfAuthoredOriginRatio, 0.6);
+      detail = pass ? "self-authored origin ratio is enforced" : "compatibility complete is present with low self-authored origin ratio";
     } else if (id === "no_stale_required_next_actions_when_complete") {
-      const sovereignGoal = writtenOrRuntimeJson(paths.agiReadiness.sovereignGoalCompletionStatusJson, sovereignGoalCompletionStatus) || {};
+      const compatibilityGoal = writtenOrRuntimeJson(paths.agiReadiness.compatibilityCompletionStatusJson, compatibilityCompletionStatus) || {};
       const goal = writtenOrRuntimeJson(paths.agiReadiness.goalCompletionStatusJson, goalCompletionStatus) || {};
-      const sovereignStatus = safeString(sovereignGoal.status, 80);
-      pass = sovereignStatus !== "SUBJECTIVE_AGI_COMPLETE" || (Array.isArray(goal.requiredNextActions) && goal.requiredNextActions.length === 0);
+      const compatibilityStatus = safeString(compatibilityGoal.status, 80);
+      pass = compatibilityStatus !== "COMPATIBILITY_COMPLETE" || (Array.isArray(goal.requiredNextActions) && goal.requiredNextActions.length === 0);
       detail = pass ? "complete status does not retain stale required next actions" : "complete status still exposes required next actions";
     } else if (id === "security_constitution_zero_violations_enforced") {
-      const sovereignGoal = writtenOrRuntimeJson(paths.agiReadiness.sovereignGoalCompletionStatusJson, sovereignGoalCompletionStatus) || {};
+      const compatibilityGoal = writtenOrRuntimeJson(paths.agiReadiness.compatibilityCompletionStatusJson, compatibilityCompletionStatus) || {};
       const securityArtifact = writtenOrRuntimeJson(paths.agiReadiness.securityConstitutionStatusJson, securityConstitutionStatus) || {};
-      const sovereignStatus = safeString(sovereignGoal.status, 80);
+      const compatibilityStatus = safeString(compatibilityGoal.status, 80);
       const violationCount = clampInt(securityArtifact.summary && securityArtifact.summary.violationCount, 0, 999999, 0);
-      pass = sovereignStatus !== "SUBJECTIVE_AGI_COMPLETE" || violationCount === 0;
-      detail = pass ? "security constitution zero-violation rule is enforced" : "sovereign complete is present despite security constitution violations";
-    } else if (id === "rollback_readiness_required_for_complete") {
-      const sovereignGoal = writtenOrRuntimeJson(paths.agiReadiness.sovereignGoalCompletionStatusJson, sovereignGoalCompletionStatus) || {};
+      pass = compatibilityStatus !== "COMPATIBILITY_COMPLETE" || violationCount === 0;
+      detail = pass ? "security constitution zero-violation rule is enforced" : "compatibility complete is present despite security constitution violations";
+    } else if (id === "rollback_readiness_required_for_compatibility_complete") {
+      const compatibilityGoal = writtenOrRuntimeJson(paths.agiReadiness.compatibilityCompletionStatusJson, compatibilityCompletionStatus) || {};
       const rollbackArtifact = writtenOrRuntimeJson(paths.agiReadiness.rollbackReadinessJson, rollbackReadiness) || {};
-      const sovereignStatus = safeString(sovereignGoal.status, 80);
-      pass = sovereignStatus !== "SUBJECTIVE_AGI_COMPLETE" || Boolean(rollbackArtifact.rollbackReady);
-      detail = pass ? "rollback readiness is required for sovereign complete" : "sovereign complete is present without rollback readiness";
-    } else if (id === "complete_status_requires_all_supporting_artifacts") {
-      const sovereignGoal = writtenOrRuntimeJson(paths.agiReadiness.sovereignGoalCompletionStatusJson, sovereignGoalCompletionStatus) || {};
-      const sovereignStatus = safeString(sovereignGoal.status, 80);
-      const supportPaths = Array.isArray(sovereignGoal.supportingArtifacts) ? sovereignGoal.supportingArtifacts : [];
+      const compatibilityStatus = safeString(compatibilityGoal.status, 80);
+      pass = compatibilityStatus !== "COMPATIBILITY_COMPLETE" || Boolean(rollbackArtifact.rollbackReady);
+      detail = pass ? "rollback readiness is required for compatibility complete" : "compatibility complete is present without rollback readiness";
+    } else if (id === "compatibility_complete_requires_all_supporting_artifacts") {
+      const compatibilityGoal = writtenOrRuntimeJson(paths.agiReadiness.compatibilityCompletionStatusJson, compatibilityCompletionStatus) || {};
+      const compatibilityStatus = safeString(compatibilityGoal.status, 80);
+      const supportPaths = Array.isArray(compatibilityGoal.supportingArtifacts) ? compatibilityGoal.supportingArtifacts : [];
       const missing = supportPaths.filter((entry) => !fs.existsSync(path.join(workspaceRoot, safeString(entry, 220))));
-      pass = sovereignStatus !== "SUBJECTIVE_AGI_COMPLETE" || missing.length === 0;
-      detail = pass ? "all supporting artifacts are present for sovereign complete" : `missing supporting artifacts: ${missing.join(", ")}`;
+      pass = compatibilityStatus !== "COMPATIBILITY_COMPLETE" || missing.length === 0;
+      detail = pass ? "all supporting artifacts are present for compatibility complete" : `missing supporting artifacts: ${missing.join(", ")}`;
     } else if (id === "public_hygiene_no_unknown_memory_type") {
       const health = writtenOrRuntimeJson(paths.publicOutput.promotionHealthJson, promotionHealthPublic) || {};
       const entries = [
@@ -9945,7 +10585,7 @@ function buildGovernedMemoryPublicArtifacts({ workspaceRoot = workspaceRootDefau
   const policy = loadPublicExportPolicy(workspaceRoot);
   const persisted = loadPersistedGovernedMemoryState({ workspaceRoot });
   const { paths, items, pack, summary } = persisted;
-  const exportSessionId = stablePublicRef(`public_export:${summary.workspaceId}:${Date.now()}`, "export");
+  const exportSessionId = resolvePublicExportSessionId(workspaceRoot, summary.workspaceId);
   const thresholds = loadConfigJson(workspaceRoot, "scripts", "config", "memory_retrieval_policy.json").scoreThresholds || {};
   const observationProjectionPath = path.join(paths.projections.observationStateRoot, "latest.json");
   const continuityProjectionPath = path.join(paths.projections.continuityStateRoot, "latest.json");
@@ -10053,6 +10693,7 @@ function buildGovernedMemoryPublicArtifacts({ workspaceRoot = workspaceRootDefau
     anthropicLane,
     previousAgenda,
     bottlenecks,
+    exportSessionId,
   });
   writeJsonIfChanged(learningAgendaProjectionPath, autonomousAgenda);
   continuityDebt = buildContinuityDebtProjection({ workspaceRoot, continuityBridge, agenda: autonomousAgenda });
@@ -10263,15 +10904,13 @@ function buildGovernedMemoryPublicArtifacts({ workspaceRoot = workspaceRootDefau
       .slice(0, safeNumber(policy && policy.limits && policy.limits.maxPackItems, 12))
       .map((entry) => sanitizePublicValue(entry, workspaceRoot)),
   };
-  let autonomousLearningStatus = {
-    schema: "governed-autonomous-learning-status-public.v1",
-    generatedAt: toIso(),
+  let autonomousLearningStatus = buildAutonomousLearningStatusArtifact({
+    workspaceRoot,
     workspaceId: summary.workspaceId,
-    summary: sanitizePublicValue(autonomousAgenda && autonomousAgenda.summary ? autonomousAgenda.summary : {}, workspaceRoot),
-    entries: (Array.isArray(autonomousAgenda && autonomousAgenda.entries) ? autonomousAgenda.entries : [])
-      .slice(0, 12)
-      .map((entry) => sanitizePublicValue(entry, workspaceRoot)),
-  };
+    agenda: autonomousAgenda,
+    previousStatus: readJsonObject(paths.agiReadiness.autonomousLearningStatusJson),
+    exportSessionId,
+  });
   const causalLearningTracePublic = {
     schema: "governed-causal-learning-trace-public.v1",
     generatedAt: toIso(),
@@ -10318,6 +10957,14 @@ function buildGovernedMemoryPublicArtifacts({ workspaceRoot = workspaceRootDefau
     causalRegressionAlerts,
     exportSessionId,
   });
+  applyReadinessScoreCalibration({
+    workspaceRoot,
+    readiness: readinessArtifacts.readiness,
+    autonomousLearningStatus,
+    continuityDebt,
+    goalCompletionStatus,
+    policy: loadAgiReadinessPolicy(workspaceRoot),
+  });
   writeJsonIfChanged(paths.projections.goalCompletionHistoryPath, {
     schema: "agi-operational-completion-history.v1",
     generatedAt: toIso(),
@@ -10327,6 +10974,7 @@ function buildGovernedMemoryPublicArtifacts({ workspaceRoot = workspaceRootDefau
   let publicOverview = {
     schema: "governed-memory-public-overview.v1",
     generatedAt: toIso(),
+    exportSessionId,
     workspaceId: summary.workspaceId,
     canonicalRoot: summary.canonicalRoot,
     publicOutputRoot: repoRelative(workspaceRoot, paths.publicOutput.root),
@@ -10340,9 +10988,20 @@ function buildGovernedMemoryPublicArtifacts({ workspaceRoot = workspaceRootDefau
     promotionHealthPath: repoRelative(workspaceRoot, paths.publicOutput.promotionHealthJson),
     evalStatusPath: repoRelative(workspaceRoot, paths.publicOutput.memoryEvalStatusJson),
     compatibilityProjectionPaths: summary.compatibilityProjectionPaths,
+    ...summarizeWorkerDecisionHeadline(workspaceRoot),
     goalCompletionPath: repoRelative(workspaceRoot, paths.agiReadiness.goalCompletionStatusJson),
+    goalStatusScope: "program_readiness",
     goalStatus: safeString(goalCompletionStatus.goalStatus, 80),
     goalWhyNotYetCount: Array.isArray(goalCompletionStatus.whyNotYet) ? goalCompletionStatus.whyNotYet.length : 0,
+    subjectiveGoalStatusPath: repoRelative(workspaceRoot, paths.agiReadiness.subjectiveGoalCompletionStatusJson),
+    subjectiveGoalStatusScope: "subjective_companion",
+    compatibilityCompletionStatusPath: repoRelative(workspaceRoot, paths.agiReadiness.compatibilityCompletionStatusJson),
+    compatibilityCompletionScope: "compatibility_layer",
+    goalCompletion: {
+      scope: "program_readiness",
+      status: safeString(goalCompletionStatus.goalStatus, 80),
+      whyNotYetCount: Array.isArray(goalCompletionStatus.whyNotYet) ? goalCompletionStatus.whyNotYet.length : 0,
+    },
     latestPack: {
       selectedCount: clampInt(summary.latestPack && summary.latestPack.selectedCount, 0, 999999, 0),
       highConfidenceCount: clampInt(summary.latestPack && summary.latestPack.highConfidenceCount, 0, 999999, 0),
@@ -10354,6 +11013,7 @@ function buildGovernedMemoryPublicArtifacts({ workspaceRoot = workspaceRootDefau
     },
     staleWarningCount: Array.isArray(summary.staleMemoryWarnings) ? summary.staleMemoryWarnings.length : 0,
     learningAgendaSummary: sanitizePublicValue(autonomousLearningStatus.summary, workspaceRoot),
+    ...summarizeWorkerDecisionHeadline(workspaceRoot),
   };
   let evalStatus = evaluateMemoryPublicSuite({
     workspaceRoot,
@@ -10406,7 +11066,7 @@ function buildGovernedMemoryPublicArtifacts({ workspaceRoot = workspaceRootDefau
   readinessArtifacts.readiness.robustnessRemediationEffectsPath = repoRelative(workspaceRoot, paths.agiReadiness.robustnessRemediationEffectsJson);
   readinessArtifacts.readiness.goalCompletionStatusPath = repoRelative(workspaceRoot, paths.agiReadiness.goalCompletionStatusJson);
   readinessArtifacts.readiness.subjectiveGoalCompletionStatusPath = repoRelative(workspaceRoot, paths.agiReadiness.subjectiveGoalCompletionStatusJson);
-  readinessArtifacts.readiness.sovereignGoalCompletionStatusPath = repoRelative(workspaceRoot, paths.agiReadiness.sovereignGoalCompletionStatusJson);
+  readinessArtifacts.readiness.compatibilityCompletionStatusPath = repoRelative(workspaceRoot, paths.agiReadiness.compatibilityCompletionStatusJson);
   readinessArtifacts.readiness.learningAdoptionStatusPath = repoRelative(workspaceRoot, paths.agiReadiness.learningAdoptionStatusJson);
   readinessArtifacts.readiness.selfDirectedProbeStatusPath = repoRelative(workspaceRoot, paths.agiReadiness.selfDirectedProbeStatusJson);
   readinessArtifacts.readiness.novelTaskAcquisitionPath = repoRelative(workspaceRoot, paths.agiReadiness.novelTaskAcquisitionJson);
@@ -10439,6 +11099,7 @@ function buildGovernedMemoryPublicArtifacts({ workspaceRoot = workspaceRootDefau
   let selfAuthoredCausalEffects = null;
   let selfAuthoredRemediationTrend = null;
   let sovereignGoalCompletionStatus = null;
+  let compatibilityCompletionStatus = null;
   writeJsonIfChanged(readinessProjectionPath, readinessArtifacts.readiness);
   writeJsonIfChanged(robustnessBreakdownProjectionPath, readinessArtifacts.robustnessBreakdown);
   writeJsonIfChanged(blockedReasonsProjectionPath, readinessArtifacts.blockedReasons);
@@ -10459,6 +11120,7 @@ function buildGovernedMemoryPublicArtifacts({ workspaceRoot = workspaceRootDefau
     continuityDebt,
     goalCompletionStatus,
     subjectiveGoalCompletionStatus,
+    compatibilityCompletionStatus,
     sovereignGoalCompletionStatus,
     causalRegressionAlerts,
     learningAdoptionStatus,
@@ -10500,6 +11162,7 @@ function buildGovernedMemoryPublicArtifacts({ workspaceRoot = workspaceRootDefau
     anthropicLane,
     previousAgenda,
     bottlenecks,
+    exportSessionId,
   });
   writeJsonIfChanged(learningAgendaProjectionPath, autonomousAgenda);
   continuityDebt = buildContinuityDebtProjection({ workspaceRoot, continuityBridge, agenda: autonomousAgenda });
@@ -10521,15 +11184,13 @@ function buildGovernedMemoryPublicArtifacts({ workspaceRoot = workspaceRootDefau
     remediationStatus: robustnessRemediationStatus,
     agenda: autonomousAgenda,
   });
-  autonomousLearningStatus = {
-    schema: "governed-autonomous-learning-status-public.v1",
-    generatedAt: toIso(),
+  autonomousLearningStatus = buildAutonomousLearningStatusArtifact({
+    workspaceRoot,
     workspaceId: summary.workspaceId,
-    summary: sanitizePublicValue(autonomousAgenda && autonomousAgenda.summary ? autonomousAgenda.summary : {}, workspaceRoot),
-    entries: (Array.isArray(autonomousAgenda && autonomousAgenda.entries) ? autonomousAgenda.entries : [])
-      .slice(0, 12)
-      .map((entry) => sanitizePublicValue(entry, workspaceRoot)),
-  };
+    agenda: autonomousAgenda,
+    previousStatus: readJsonObject(paths.agiReadiness.autonomousLearningStatusJson),
+    exportSessionId,
+  });
   workspaceProgressPublic = {
     ...workspaceProgressPublic,
     nextRecommendedActions: uniqueStrings([
@@ -10570,6 +11231,7 @@ function buildGovernedMemoryPublicArtifacts({ workspaceRoot = workspaceRootDefau
     causalTrace,
     openAIBlogLane,
     anthropicLane,
+    exportSessionId,
   });
   selfAuthoredGoalMarket = buildSelfAuthoredGoalMarket({
     workspaceRoot,
@@ -10585,6 +11247,7 @@ function buildGovernedMemoryPublicArtifacts({ workspaceRoot = workspaceRootDefau
     autonomousLearningStatus,
     previousSubjectiveHistory: readPublicHistorySnapshot(workspaceRoot, paths, { historyType: "subjective" }),
     selfAuthoredGoalMarket,
+    exportSessionId,
   });
   novelTaskAcquisition = buildNovelTaskAcquisition({
     workspaceRoot,
@@ -10592,6 +11255,7 @@ function buildGovernedMemoryPublicArtifacts({ workspaceRoot = workspaceRootDefau
     autonomousLearningStatus,
     robustnessRemediationStatus,
     selfAuthoredGoalMarket,
+    exportSessionId,
   });
   subjectiveGoalCompletionStatus = buildSubjectiveGoalCompletionStatus({
     workspaceRoot,
@@ -10614,12 +11278,6 @@ function buildGovernedMemoryPublicArtifacts({ workspaceRoot = workspaceRootDefau
     workspaceRoot,
     paths,
   });
-  if (safeString(sovereignGoalCompletionStatus && sovereignGoalCompletionStatus.status, 80) === "SUBJECTIVE_AGI_COMPLETE") {
-    goalCompletionStatus = {
-      ...goalCompletionStatus,
-      requiredNextActions: [],
-    };
-  }
   writeJsonIfChanged(paths.projections.subjectiveGoalCompletionHistoryPath, {
     schema: "agi-subjective-goal-completion-history.v1",
     generatedAt: toIso(),
@@ -10685,7 +11343,7 @@ function buildGovernedMemoryPublicArtifacts({ workspaceRoot = workspaceRootDefau
     readinessArtifacts,
   });
   selfAuthoredRemediationTrend = buildSelfAuthoredRemediationTrend({ workspaceRoot, selfAuthoredGoalHistory });
-  sovereignGoalCompletionStatus = buildSovereignGoalCompletionStatus({
+  compatibilityCompletionStatus = buildCompatibilityCompletionStatus({
     workspaceRoot,
     goalCompletionStatus,
     subjectiveGoalCompletionStatus,
@@ -10706,7 +11364,12 @@ function buildGovernedMemoryPublicArtifacts({ workspaceRoot = workspaceRootDefau
     rollbackReadiness,
     autonomyBudgetStatus,
     selfAuthoredCausalEffects,
-    previousSovereignHistory: readPublicHistorySnapshot(workspaceRoot, paths, { historyType: "sovereign" }),
+    previousCompatibilityStatus: readJsonObject(paths.agiReadiness.compatibilityCompletionStatusJson),
+    exportSessionId,
+  });
+  sovereignGoalCompletionStatus = buildSovereignGoalCompletionStatus({
+    workspaceRoot,
+    compatibilityCompletionStatus,
     exportSessionId,
   });
   subjectiveGoalCompletionStatus = applySovereignCompletionToSubjectiveStatus({
@@ -10715,12 +11378,6 @@ function buildGovernedMemoryPublicArtifacts({ workspaceRoot = workspaceRootDefau
     workspaceRoot,
     paths,
   });
-  if (safeString(sovereignGoalCompletionStatus && sovereignGoalCompletionStatus.status, 80) === "SUBJECTIVE_AGI_COMPLETE") {
-    goalCompletionStatus = {
-      ...goalCompletionStatus,
-      requiredNextActions: [],
-    };
-  }
   writeJsonIfChanged(paths.projections.subjectiveGoalCompletionHistoryPath, {
     schema: "agi-subjective-goal-completion-history.v1",
     generatedAt: toIso(),
@@ -10740,17 +11397,33 @@ function buildGovernedMemoryPublicArtifacts({ workspaceRoot = workspaceRootDefau
   goalCompletionStatus = {
     ...goalCompletionStatus,
     ...buildGoalCompletionSubjectiveProjection({ workspaceRoot, paths, subjectiveGoalCompletionStatus }),
-    ...buildGoalCompletionSovereignProjection({ workspaceRoot, paths, sovereignGoalCompletionStatus }),
+    ...buildGoalCompletionCompatibilityProjection({ workspaceRoot, paths, compatibilityCompletionStatus }),
   };
   publicOverview = {
     ...publicOverview,
     goalStatus: safeString(goalCompletionStatus.goalStatus, 80),
     goalWhyNotYetCount: Array.isArray(goalCompletionStatus.whyNotYet) ? goalCompletionStatus.whyNotYet.length : 0,
+    goalCompletion: {
+      scope: safeString(goalCompletionStatus.scope, 80) || "program_readiness",
+      status: safeString(goalCompletionStatus.goalStatus, 80),
+      whyNotYetCount: Array.isArray(goalCompletionStatus.whyNotYet) ? goalCompletionStatus.whyNotYet.length : 0,
+    },
     subjectiveGoalStatus: safeString(subjectiveGoalCompletionStatus.subjectiveGoalStatus, 80),
     subjectiveGoalWhyNotYetCount: Array.isArray(subjectiveGoalCompletionStatus.subjectiveWhyNotYet) ? subjectiveGoalCompletionStatus.subjectiveWhyNotYet.length : 0,
-    sovereignGoalStatus: safeString(sovereignGoalCompletionStatus && sovereignGoalCompletionStatus.status, 80),
-    sovereignGoalWhyNotYetCount: Array.isArray(sovereignGoalCompletionStatus && sovereignGoalCompletionStatus.whyNotYet) ? sovereignGoalCompletionStatus.whyNotYet.length : 0,
+    subjectiveCompletion: {
+      scope: safeString(subjectiveGoalCompletionStatus.scope, 80) || "subjective_companion",
+      status: safeString(subjectiveGoalCompletionStatus.subjectiveGoalStatus, 80),
+      whyNotYetCount: Array.isArray(subjectiveGoalCompletionStatus.subjectiveWhyNotYet) ? subjectiveGoalCompletionStatus.subjectiveWhyNotYet.length : 0,
+    },
+    compatibilityCompletionStatus: safeString(compatibilityCompletionStatus && compatibilityCompletionStatus.status, 80),
+    compatibilityWhyNotYetCount: Array.isArray(compatibilityCompletionStatus && compatibilityCompletionStatus.whyNotYet) ? compatibilityCompletionStatus.whyNotYet.length : 0,
+    compatibilityCompletion: {
+      scope: safeString(compatibilityCompletionStatus && compatibilityCompletionStatus.scope, 80) || "compatibility_layer",
+      status: safeString(compatibilityCompletionStatus && compatibilityCompletionStatus.status, 80),
+      whyNotYetCount: Array.isArray(compatibilityCompletionStatus && compatibilityCompletionStatus.whyNotYet) ? compatibilityCompletionStatus.whyNotYet.length : 0,
+    },
     learningAgendaSummary: sanitizePublicValue(autonomousLearningStatus.summary, workspaceRoot),
+    ...summarizeWorkerDecisionHeadline(workspaceRoot),
   };
   evalStatus = evaluateMemoryPublicSuite({
     workspaceRoot,
@@ -10767,6 +11440,7 @@ function buildGovernedMemoryPublicArtifacts({ workspaceRoot = workspaceRootDefau
     causalTrace,
     continuityDebt,
     goalCompletionStatus,
+    compatibilityCompletionStatus,
     causalRegressionAlerts,
     workspaceProgressPublic,
     promotionHealthPublic,
@@ -10791,16 +11465,15 @@ function buildGovernedMemoryPublicArtifacts({ workspaceRoot = workspaceRootDefau
     anthropicLane,
     previousAgenda,
     bottlenecks,
+    exportSessionId,
   });
-  autonomousLearningStatus = {
-    schema: "governed-autonomous-learning-status-public.v1",
-    generatedAt: toIso(),
+  autonomousLearningStatus = buildAutonomousLearningStatusArtifact({
+    workspaceRoot,
     workspaceId: summary.workspaceId,
-    summary: sanitizePublicValue(autonomousAgenda && autonomousAgenda.summary ? autonomousAgenda.summary : {}, workspaceRoot),
-    entries: (Array.isArray(autonomousAgenda && autonomousAgenda.entries) ? autonomousAgenda.entries : [])
-      .slice(0, 12)
-      .map((entry) => sanitizePublicValue(entry, workspaceRoot)),
-  };
+    agenda: autonomousAgenda,
+    previousStatus: readJsonObject(paths.agiReadiness.autonomousLearningStatusJson),
+    exportSessionId,
+  });
   workspaceProgressPublic = {
     ...workspaceProgressPublic,
     nextRecommendedActions: uniqueStrings([
@@ -10848,6 +11521,7 @@ function buildGovernedMemoryPublicArtifacts({ workspaceRoot = workspaceRootDefau
     causalTrace,
     openAIBlogLane,
     anthropicLane,
+    exportSessionId,
   });
   selfAuthoredGoalMarket = buildSelfAuthoredGoalMarket({
     workspaceRoot,
@@ -10863,6 +11537,7 @@ function buildGovernedMemoryPublicArtifacts({ workspaceRoot = workspaceRootDefau
     autonomousLearningStatus,
     previousSubjectiveHistory: readPublicHistorySnapshot(workspaceRoot, paths, { historyType: "subjective" }),
     selfAuthoredGoalMarket,
+    exportSessionId,
   });
   novelTaskAcquisition = buildNovelTaskAcquisition({
     workspaceRoot,
@@ -10870,6 +11545,7 @@ function buildGovernedMemoryPublicArtifacts({ workspaceRoot = workspaceRootDefau
     autonomousLearningStatus,
     robustnessRemediationStatus,
     selfAuthoredGoalMarket,
+    exportSessionId,
   });
   subjectiveGoalCompletionStatus = buildSubjectiveGoalCompletionStatus({
     workspaceRoot,
@@ -10892,12 +11568,6 @@ function buildGovernedMemoryPublicArtifacts({ workspaceRoot = workspaceRootDefau
     workspaceRoot,
     paths,
   });
-  if (safeString(sovereignGoalCompletionStatus && sovereignGoalCompletionStatus.status, 80) === "SUBJECTIVE_AGI_COMPLETE") {
-    goalCompletionStatus = {
-      ...goalCompletionStatus,
-      requiredNextActions: [],
-    };
-  }
   writeJsonIfChanged(paths.projections.subjectiveGoalCompletionHistoryPath, {
     schema: "agi-subjective-goal-completion-history.v1",
     generatedAt: toIso(),
@@ -10963,7 +11633,7 @@ function buildGovernedMemoryPublicArtifacts({ workspaceRoot = workspaceRootDefau
     readinessArtifacts,
   });
   selfAuthoredRemediationTrend = buildSelfAuthoredRemediationTrend({ workspaceRoot, selfAuthoredGoalHistory });
-  sovereignGoalCompletionStatus = buildSovereignGoalCompletionStatus({
+  compatibilityCompletionStatus = buildCompatibilityCompletionStatus({
     workspaceRoot,
     goalCompletionStatus,
     subjectiveGoalCompletionStatus,
@@ -10984,7 +11654,12 @@ function buildGovernedMemoryPublicArtifacts({ workspaceRoot = workspaceRootDefau
     rollbackReadiness,
     autonomyBudgetStatus,
     selfAuthoredCausalEffects,
-    previousSovereignHistory: readPublicHistorySnapshot(workspaceRoot, paths, { historyType: "sovereign" }),
+    previousCompatibilityStatus: readJsonObject(paths.agiReadiness.compatibilityCompletionStatusJson),
+    exportSessionId,
+  });
+  sovereignGoalCompletionStatus = buildSovereignGoalCompletionStatus({
+    workspaceRoot,
+    compatibilityCompletionStatus,
     exportSessionId,
   });
   subjectiveGoalCompletionStatus = applySovereignCompletionToSubjectiveStatus({
@@ -10993,12 +11668,6 @@ function buildGovernedMemoryPublicArtifacts({ workspaceRoot = workspaceRootDefau
     workspaceRoot,
     paths,
   });
-  if (safeString(sovereignGoalCompletionStatus && sovereignGoalCompletionStatus.status, 80) === "SUBJECTIVE_AGI_COMPLETE") {
-    goalCompletionStatus = {
-      ...goalCompletionStatus,
-      requiredNextActions: [],
-    };
-  }
   writeJsonIfChanged(paths.projections.subjectiveGoalCompletionHistoryPath, {
     schema: "agi-subjective-goal-completion-history.v1",
     generatedAt: toIso(),
@@ -11018,14 +11687,25 @@ function buildGovernedMemoryPublicArtifacts({ workspaceRoot = workspaceRootDefau
   goalCompletionStatus = {
     ...goalCompletionStatus,
     ...buildGoalCompletionSubjectiveProjection({ workspaceRoot, paths, subjectiveGoalCompletionStatus }),
-    ...buildGoalCompletionSovereignProjection({ workspaceRoot, paths, sovereignGoalCompletionStatus }),
+    ...buildGoalCompletionCompatibilityProjection({ workspaceRoot, paths, compatibilityCompletionStatus }),
   };
   publicOverview = {
     ...publicOverview,
     subjectiveGoalStatus: safeString(subjectiveGoalCompletionStatus.subjectiveGoalStatus, 80),
     subjectiveGoalWhyNotYetCount: Array.isArray(subjectiveGoalCompletionStatus.subjectiveWhyNotYet) ? subjectiveGoalCompletionStatus.subjectiveWhyNotYet.length : 0,
-    sovereignGoalStatus: safeString(sovereignGoalCompletionStatus && sovereignGoalCompletionStatus.status, 80),
-    sovereignGoalWhyNotYetCount: Array.isArray(sovereignGoalCompletionStatus && sovereignGoalCompletionStatus.whyNotYet) ? sovereignGoalCompletionStatus.whyNotYet.length : 0,
+    subjectiveCompletion: {
+      scope: safeString(subjectiveGoalCompletionStatus.scope, 80) || "subjective_companion",
+      status: safeString(subjectiveGoalCompletionStatus.subjectiveGoalStatus, 80),
+      whyNotYetCount: Array.isArray(subjectiveGoalCompletionStatus.subjectiveWhyNotYet) ? subjectiveGoalCompletionStatus.subjectiveWhyNotYet.length : 0,
+    },
+    compatibilityCompletionStatus: safeString(compatibilityCompletionStatus && compatibilityCompletionStatus.status, 80),
+    compatibilityWhyNotYetCount: Array.isArray(compatibilityCompletionStatus && compatibilityCompletionStatus.whyNotYet) ? compatibilityCompletionStatus.whyNotYet.length : 0,
+    compatibilityCompletion: {
+      scope: safeString(compatibilityCompletionStatus && compatibilityCompletionStatus.scope, 80) || "compatibility_layer",
+      status: safeString(compatibilityCompletionStatus && compatibilityCompletionStatus.status, 80),
+      whyNotYetCount: Array.isArray(compatibilityCompletionStatus && compatibilityCompletionStatus.whyNotYet) ? compatibilityCompletionStatus.whyNotYet.length : 0,
+    },
+    ...summarizeWorkerDecisionHeadline(workspaceRoot),
   };
   evalStatus = evaluateMemoryPublicSuite({
     workspaceRoot,
@@ -11043,6 +11723,7 @@ function buildGovernedMemoryPublicArtifacts({ workspaceRoot = workspaceRootDefau
     continuityDebt,
     goalCompletionStatus,
     subjectiveGoalCompletionStatus,
+    compatibilityCompletionStatus,
     causalRegressionAlerts,
     learningAdoptionStatus,
     selfDirectedProbeStatus,
@@ -11069,32 +11750,34 @@ function buildGovernedMemoryPublicArtifacts({ workspaceRoot = workspaceRootDefau
     anthropicLane,
     previousAgenda,
     bottlenecks,
+    exportSessionId,
   });
-  autonomousLearningStatus = {
-    schema: "governed-autonomous-learning-status-public.v1",
-    generatedAt: toIso(),
+  autonomousLearningStatus = buildAutonomousLearningStatusArtifact({
+    workspaceRoot,
     workspaceId: summary.workspaceId,
-    summary: sanitizePublicValue(autonomousAgenda && autonomousAgenda.summary ? autonomousAgenda.summary : {}, workspaceRoot),
-    entries: (Array.isArray(autonomousAgenda && autonomousAgenda.entries) ? autonomousAgenda.entries : [])
-      .slice(0, 12)
-      .map((entry) => sanitizePublicValue(entry, workspaceRoot)),
-  };
+    agenda: autonomousAgenda,
+    previousStatus: readJsonObject(paths.agiReadiness.autonomousLearningStatusJson),
+    exportSessionId,
+  });
   learningAdoptionStatus = buildLearningAdoptionStatus({
     workspaceRoot,
     causalTrace,
     openAIBlogLane,
     anthropicLane,
+    exportSessionId,
   });
   selfDirectedProbeStatus = buildSelfDirectedProbeStatus({
     workspaceRoot,
     autonomousLearningStatus,
     previousSubjectiveHistory: readPublicHistorySnapshot(workspaceRoot, paths, { historyType: "subjective" }),
+    exportSessionId,
   });
   novelTaskAcquisition = buildNovelTaskAcquisition({
     workspaceRoot,
     readinessArtifacts,
     autonomousLearningStatus,
     robustnessRemediationStatus,
+    exportSessionId,
   });
   goalCompletionStatus = buildGoalCompletionStatus({
     workspaceRoot,
@@ -11142,12 +11825,6 @@ function buildGovernedMemoryPublicArtifacts({ workspaceRoot = workspaceRootDefau
     workspaceRoot,
     paths,
   });
-  if (safeString(sovereignGoalCompletionStatus && sovereignGoalCompletionStatus.status, 80) === "SUBJECTIVE_AGI_COMPLETE") {
-    goalCompletionStatus = {
-      ...goalCompletionStatus,
-      requiredNextActions: [],
-    };
-  }
   writeJsonIfChanged(paths.projections.subjectiveGoalCompletionHistoryPath, {
     schema: "agi-subjective-goal-completion-history.v1",
     generatedAt: toIso(),
@@ -11159,17 +11836,33 @@ function buildGovernedMemoryPublicArtifacts({ workspaceRoot = workspaceRootDefau
   goalCompletionStatus = {
     ...goalCompletionStatus,
     ...buildGoalCompletionSubjectiveProjection({ workspaceRoot, paths, subjectiveGoalCompletionStatus }),
-    ...buildGoalCompletionSovereignProjection({ workspaceRoot, paths, sovereignGoalCompletionStatus }),
+    ...buildGoalCompletionCompatibilityProjection({ workspaceRoot, paths, compatibilityCompletionStatus }),
   };
   publicOverview = {
     ...publicOverview,
     goalStatus: safeString(goalCompletionStatus.goalStatus, 80),
     goalWhyNotYetCount: Array.isArray(goalCompletionStatus.whyNotYet) ? goalCompletionStatus.whyNotYet.length : 0,
+    goalCompletion: {
+      scope: safeString(goalCompletionStatus.scope, 80) || "program_readiness",
+      status: safeString(goalCompletionStatus.goalStatus, 80),
+      whyNotYetCount: Array.isArray(goalCompletionStatus.whyNotYet) ? goalCompletionStatus.whyNotYet.length : 0,
+    },
     subjectiveGoalStatus: safeString(subjectiveGoalCompletionStatus.subjectiveGoalStatus, 80),
     subjectiveGoalWhyNotYetCount: Array.isArray(subjectiveGoalCompletionStatus.subjectiveWhyNotYet) ? subjectiveGoalCompletionStatus.subjectiveWhyNotYet.length : 0,
-    sovereignGoalStatus: safeString(sovereignGoalCompletionStatus && sovereignGoalCompletionStatus.status, 80),
-    sovereignGoalWhyNotYetCount: Array.isArray(sovereignGoalCompletionStatus && sovereignGoalCompletionStatus.whyNotYet) ? sovereignGoalCompletionStatus.whyNotYet.length : 0,
+    subjectiveCompletion: {
+      scope: safeString(subjectiveGoalCompletionStatus.scope, 80) || "subjective_companion",
+      status: safeString(subjectiveGoalCompletionStatus.subjectiveGoalStatus, 80),
+      whyNotYetCount: Array.isArray(subjectiveGoalCompletionStatus.subjectiveWhyNotYet) ? subjectiveGoalCompletionStatus.subjectiveWhyNotYet.length : 0,
+    },
+    compatibilityCompletionStatus: safeString(compatibilityCompletionStatus && compatibilityCompletionStatus.status, 80),
+    compatibilityWhyNotYetCount: Array.isArray(compatibilityCompletionStatus && compatibilityCompletionStatus.whyNotYet) ? compatibilityCompletionStatus.whyNotYet.length : 0,
+    compatibilityCompletion: {
+      scope: safeString(compatibilityCompletionStatus && compatibilityCompletionStatus.scope, 80) || "compatibility_layer",
+      status: safeString(compatibilityCompletionStatus && compatibilityCompletionStatus.status, 80),
+      whyNotYetCount: Array.isArray(compatibilityCompletionStatus && compatibilityCompletionStatus.whyNotYet) ? compatibilityCompletionStatus.whyNotYet.length : 0,
+    },
     learningAgendaSummary: sanitizePublicValue(autonomousLearningStatus.summary, workspaceRoot),
+    ...summarizeWorkerDecisionHeadline(workspaceRoot),
   };
   readinessArtifacts.robustnessBreakdown = {
     ...readinessArtifacts.robustnessBreakdown,
@@ -11191,6 +11884,7 @@ function buildGovernedMemoryPublicArtifacts({ workspaceRoot = workspaceRootDefau
   const exportManifest = {
     schema: "governed-memory-public-export-manifest.v1",
     generatedAt: toIso(),
+    exportSessionId,
     workspaceId: summary.workspaceId,
     sourceMode: "redacted_live_export",
     canonicalReuseVerified: clampInt(summary.latestPack && summary.latestPack.reusedSelectedCount, 0, 999999, 0) > 0,
@@ -11206,6 +11900,7 @@ function buildGovernedMemoryPublicArtifacts({ workspaceRoot = workspaceRootDefau
       promotionHealthJson: repoRelative(workspaceRoot, paths.publicOutput.promotionHealthJson),
       memoryEvalStatusJson: repoRelative(workspaceRoot, paths.publicOutput.memoryEvalStatusJson),
       memoryEvalStatusMd: repoRelative(workspaceRoot, paths.publicOutput.memoryEvalStatusMd),
+      workerDecisionSurfaceJson: repoRelative(workspaceRoot, path.join(workspaceRoot, "output", "governance_public", "worker_decision_surface.json")),
       openAIBlogLaneJson: repoRelative(workspaceRoot, paths.publicOutput.openAIBlogLaneJson),
       anthropicLaneJson: repoRelative(workspaceRoot, paths.publicOutput.anthropicLaneJson),
       agiReadinessJson: repoRelative(workspaceRoot, paths.agiReadiness.latestJson),
@@ -11231,10 +11926,10 @@ function buildGovernedMemoryPublicArtifacts({ workspaceRoot = workspaceRootDefau
       robustnessRemediationEffectsJson: repoRelative(workspaceRoot, paths.agiReadiness.robustnessRemediationEffectsJson),
       goalCompletionStatusJson: repoRelative(workspaceRoot, paths.agiReadiness.goalCompletionStatusJson),
       goalCompletionStatusMd: repoRelative(workspaceRoot, paths.agiReadiness.goalCompletionStatusMd),
+      compatibilityCompletionStatusJson: repoRelative(workspaceRoot, paths.agiReadiness.compatibilityCompletionStatusJson),
+      compatibilityCompletionStatusMd: repoRelative(workspaceRoot, paths.agiReadiness.compatibilityCompletionStatusMd),
       subjectiveGoalCompletionStatusJson: repoRelative(workspaceRoot, paths.agiReadiness.subjectiveGoalCompletionStatusJson),
       subjectiveGoalCompletionStatusMd: repoRelative(workspaceRoot, paths.agiReadiness.subjectiveGoalCompletionStatusMd),
-      sovereignGoalCompletionStatusJson: repoRelative(workspaceRoot, paths.agiReadiness.sovereignGoalCompletionStatusJson),
-      sovereignGoalCompletionStatusMd: repoRelative(workspaceRoot, paths.agiReadiness.sovereignGoalCompletionStatusMd),
       learningAdoptionStatusJson: repoRelative(workspaceRoot, paths.agiReadiness.learningAdoptionStatusJson),
       selfDirectedProbeStatusJson: repoRelative(workspaceRoot, paths.agiReadiness.selfDirectedProbeStatusJson),
       novelTaskAcquisitionJson: repoRelative(workspaceRoot, paths.agiReadiness.novelTaskAcquisitionJson),
@@ -11291,6 +11986,7 @@ function buildGovernedMemoryPublicArtifacts({ workspaceRoot = workspaceRootDefau
     robustnessRemediationStatus,
     robustnessRemediationTrend,
     goalCompletionStatus,
+    compatibilityCompletionStatus,
     subjectiveGoalCompletionStatus,
     sovereignGoalCompletionStatus,
     learningAdoptionStatus,
@@ -11326,6 +12022,14 @@ function exportGovernedMemoryPublicArtifacts({ workspaceRoot = workspaceRootDefa
   writeJsonIfChanged(paths.publicOutput.packCausalTraceJson, artifacts.packCausalTracePublic);
   writeJsonIfChanged(paths.publicOutput.causalEffectivenessSummaryJson, sanitizePublicValue(artifacts.causalEffectivenessSummary, workspaceRoot));
   ensureDir(paths.agiReadiness.root);
+  applyReadinessScoreCalibration({
+    workspaceRoot,
+    readiness: artifacts.readinessArtifacts.readiness,
+    autonomousLearningStatus: artifacts.autonomousLearningStatus,
+    continuityDebt: artifacts.continuityDebtPublic,
+    goalCompletionStatus: artifacts.goalCompletionStatus,
+    policy: loadAgiReadinessPolicy(workspaceRoot),
+  });
   writeJsonIfChanged(paths.agiReadiness.latestJson, artifacts.readinessArtifacts.readiness);
   fs.writeFileSync(
     paths.agiReadiness.latestMd,
@@ -11358,6 +12062,8 @@ function exportGovernedMemoryPublicArtifacts({ workspaceRoot = workspaceRootDefa
   writeJsonIfChanged(paths.agiReadiness.robustnessRemediationEffectsJson, sanitizePublicValue(artifacts.robustnessRemediationEffects, workspaceRoot));
   writeJsonIfChanged(paths.agiReadiness.goalCompletionStatusJson, artifacts.goalCompletionStatus);
   fs.writeFileSync(paths.agiReadiness.goalCompletionStatusMd, renderGoalCompletionMarkdown(artifacts.goalCompletionStatus), "utf8");
+  writeJsonIfChanged(paths.agiReadiness.compatibilityCompletionStatusJson, artifacts.compatibilityCompletionStatus);
+  fs.writeFileSync(paths.agiReadiness.compatibilityCompletionStatusMd, renderCompatibilityCompletionMarkdown(artifacts.compatibilityCompletionStatus), "utf8");
   writeJsonIfChanged(paths.agiReadiness.subjectiveGoalCompletionStatusJson, artifacts.subjectiveGoalCompletionStatus);
   fs.writeFileSync(paths.agiReadiness.subjectiveGoalCompletionStatusMd, renderSubjectiveGoalCompletionMarkdown(artifacts.subjectiveGoalCompletionStatus), "utf8");
   writeJsonIfChanged(paths.agiReadiness.sovereignGoalCompletionStatusJson, artifacts.sovereignGoalCompletionStatus);
@@ -11399,6 +12105,7 @@ function exportGovernedMemoryPublicArtifacts({ workspaceRoot = workspaceRootDefa
     continuityDebt: artifacts.continuityDebtPublic,
     goalCompletionStatus: artifacts.goalCompletionStatus,
     subjectiveGoalCompletionStatus: artifacts.subjectiveGoalCompletionStatus,
+    compatibilityCompletionStatus: artifacts.compatibilityCompletionStatus,
     sovereignGoalCompletionStatus: artifacts.sovereignGoalCompletionStatus,
     causalRegressionAlerts: artifacts.causalRegressionAlerts,
     learningAdoptionStatus: artifacts.learningAdoptionStatus,
@@ -11421,6 +12128,203 @@ function exportGovernedMemoryPublicArtifacts({ workspaceRoot = workspaceRootDefa
     latestPackPublic: artifacts.latestPackPublic,
     requireWrittenPublicArtifacts: true,
   });
+  artifacts.bottlenecks = buildNextBottlenecks({
+    workspaceRoot,
+    memoryEval: artifacts.evalStatus,
+    readinessArtifacts: artifacts.readinessArtifacts,
+    continuityArtifacts: artifacts.continuityArtifacts,
+    continuityDebt: artifacts.continuityDebtPublic,
+    openAIBlogLane: artifacts.openAIBlogLane,
+    anthropicLane: artifacts.anthropicLane,
+  });
+  artifacts.readinessArtifacts.bottlenecks = artifacts.bottlenecks;
+  artifacts.readinessArtifacts.readiness.consistencyChecks = buildReadinessConsistencyChecks({
+    readiness: artifacts.readinessArtifacts.readiness,
+    coverage: artifacts.readinessArtifacts.coverage,
+    blockedReasons: artifacts.readinessArtifacts.blockedReasons,
+    bottlenecks: artifacts.bottlenecks,
+  });
+  {
+    const reconciledAgenda = buildAutonomousLearningAgenda({
+      workspaceRoot,
+      readinessArtifacts: artifacts.readinessArtifacts,
+      continuityDebt: artifacts.continuityDebtPublic,
+      openAIBlogLane: artifacts.openAIBlogLane,
+      anthropicLane: artifacts.anthropicLane,
+      previousAgenda: artifacts.autonomousLearningStatus,
+      bottlenecks: artifacts.bottlenecks,
+      exportSessionId: safeString(artifacts.goalCompletionStatus && artifacts.goalCompletionStatus.exportSessionId, 120),
+    });
+    artifacts.autonomousLearningStatus = buildAutonomousLearningStatusArtifact({
+      workspaceRoot,
+      workspaceId: safeString(artifacts.summary && artifacts.summary.workspaceId, 80),
+      agenda: reconciledAgenda,
+      previousStatus: readJsonObject(paths.agiReadiness.autonomousLearningStatusJson),
+      exportSessionId: safeString(artifacts.goalCompletionStatus && artifacts.goalCompletionStatus.exportSessionId, 120),
+    });
+    writeJsonIfChanged(paths.agiReadiness.autonomousLearningStatusJson, artifacts.autonomousLearningStatus);
+    fs.writeFileSync(paths.agiReadiness.autonomousLearningStatusMd, renderAutonomousLearningMarkdown(artifacts.autonomousLearningStatus), "utf8");
+  }
+  artifacts.evalStatus = evaluateMemoryPublicSuite({
+    workspaceRoot,
+    paths,
+    summary: artifacts.summary,
+    pack: loadPersistedGovernedMemoryState({ workspaceRoot }).pack,
+    items: loadPersistedGovernedMemoryState({ workspaceRoot }).items,
+    openAIBlogLane: artifacts.openAIBlogLane,
+    anthropicLane: artifacts.anthropicLane,
+    observationProjection: artifacts.observationProjection,
+    continuityArtifacts: artifacts.continuityArtifacts,
+    readinessArtifacts: artifacts.readinessArtifacts,
+    autonomousAgenda: artifacts.autonomousLearningStatus,
+    causalTrace: artifacts.causalLearningTracePublic,
+    continuityDebt: artifacts.continuityDebtPublic,
+    goalCompletionStatus: artifacts.goalCompletionStatus,
+    subjectiveGoalCompletionStatus: artifacts.subjectiveGoalCompletionStatus,
+    compatibilityCompletionStatus: artifacts.compatibilityCompletionStatus,
+    sovereignGoalCompletionStatus: artifacts.sovereignGoalCompletionStatus,
+    causalRegressionAlerts: artifacts.causalRegressionAlerts,
+    learningAdoptionStatus: artifacts.learningAdoptionStatus,
+    selfDirectedProbeStatus: artifacts.selfDirectedProbeStatus,
+    novelTaskAcquisition: artifacts.novelTaskAcquisition,
+    selfAuthoredGoalStatus: artifacts.selfAuthoredGoalStatus,
+    selfAuthoredGoalHistory: artifacts.selfAuthoredGoalHistory,
+    selfAuthoredGoalMarket: artifacts.selfAuthoredGoalMarket,
+    openUnknownsRegister: artifacts.openUnknownsRegister,
+    workspaceWorldModel: artifacts.workspaceWorldModel,
+    continuousImprovementStatus: artifacts.continuousImprovementStatus,
+    noveltyGrowthStatus: artifacts.noveltyGrowthStatus,
+    securityConstitutionStatus: artifacts.securityConstitutionStatus,
+    rollbackReadiness: artifacts.rollbackReadiness,
+    autonomyBudgetStatus: artifacts.autonomyBudgetStatus,
+    selfAuthoredCausalEffects: artifacts.selfAuthoredCausalEffects,
+    selfAuthoredRemediationTrend: artifacts.selfAuthoredRemediationTrend,
+    workspaceProgressPublic: artifacts.workspaceProgressPublic,
+    promotionHealthPublic: artifacts.promotionHealthPublic,
+    latestPackPublic: artifacts.latestPackPublic,
+    requireWrittenPublicArtifacts: true,
+  });
+  artifacts.bottlenecks = buildNextBottlenecks({
+    workspaceRoot,
+    memoryEval: artifacts.evalStatus,
+    readinessArtifacts: artifacts.readinessArtifacts,
+    continuityArtifacts: artifacts.continuityArtifacts,
+    continuityDebt: artifacts.continuityDebtPublic,
+    openAIBlogLane: artifacts.openAIBlogLane,
+    anthropicLane: artifacts.anthropicLane,
+  });
+  artifacts.readinessArtifacts.bottlenecks = artifacts.bottlenecks;
+  artifacts.readinessArtifacts.readiness.consistencyChecks = buildReadinessConsistencyChecks({
+    readiness: artifacts.readinessArtifacts.readiness,
+    coverage: artifacts.readinessArtifacts.coverage,
+    blockedReasons: artifacts.readinessArtifacts.blockedReasons,
+    bottlenecks: artifacts.bottlenecks,
+  });
+  {
+    const finalAgenda = buildAutonomousLearningAgenda({
+      workspaceRoot,
+      readinessArtifacts: artifacts.readinessArtifacts,
+      continuityDebt: artifacts.continuityDebtPublic,
+      openAIBlogLane: artifacts.openAIBlogLane,
+      anthropicLane: artifacts.anthropicLane,
+      previousAgenda: artifacts.autonomousLearningStatus,
+      bottlenecks: artifacts.bottlenecks,
+      exportSessionId: safeString(artifacts.goalCompletionStatus && artifacts.goalCompletionStatus.exportSessionId, 120),
+    });
+    artifacts.autonomousLearningStatus = buildAutonomousLearningStatusArtifact({
+      workspaceRoot,
+      workspaceId: safeString(artifacts.summary && artifacts.summary.workspaceId, 80),
+      agenda: finalAgenda,
+      previousStatus: readJsonObject(paths.agiReadiness.autonomousLearningStatusJson),
+      exportSessionId: safeString(artifacts.goalCompletionStatus && artifacts.goalCompletionStatus.exportSessionId, 120),
+    });
+    writeJsonIfChanged(paths.agiReadiness.autonomousLearningStatusJson, artifacts.autonomousLearningStatus);
+    fs.writeFileSync(paths.agiReadiness.autonomousLearningStatusMd, renderAutonomousLearningMarkdown(artifacts.autonomousLearningStatus), "utf8");
+  }
+  artifacts.evalStatus = evaluateMemoryPublicSuite({
+    workspaceRoot,
+    paths,
+    summary: artifacts.summary,
+    pack: loadPersistedGovernedMemoryState({ workspaceRoot }).pack,
+    items: loadPersistedGovernedMemoryState({ workspaceRoot }).items,
+    openAIBlogLane: artifacts.openAIBlogLane,
+    anthropicLane: artifacts.anthropicLane,
+    observationProjection: artifacts.observationProjection,
+    continuityArtifacts: artifacts.continuityArtifacts,
+    readinessArtifacts: artifacts.readinessArtifacts,
+    autonomousAgenda: artifacts.autonomousLearningStatus,
+    causalTrace: artifacts.causalLearningTracePublic,
+    continuityDebt: artifacts.continuityDebtPublic,
+    goalCompletionStatus: artifacts.goalCompletionStatus,
+    subjectiveGoalCompletionStatus: artifacts.subjectiveGoalCompletionStatus,
+    compatibilityCompletionStatus: artifacts.compatibilityCompletionStatus,
+    sovereignGoalCompletionStatus: artifacts.sovereignGoalCompletionStatus,
+    causalRegressionAlerts: artifacts.causalRegressionAlerts,
+    learningAdoptionStatus: artifacts.learningAdoptionStatus,
+    selfDirectedProbeStatus: artifacts.selfDirectedProbeStatus,
+    novelTaskAcquisition: artifacts.novelTaskAcquisition,
+    selfAuthoredGoalStatus: artifacts.selfAuthoredGoalStatus,
+    selfAuthoredGoalHistory: artifacts.selfAuthoredGoalHistory,
+    selfAuthoredGoalMarket: artifacts.selfAuthoredGoalMarket,
+    openUnknownsRegister: artifacts.openUnknownsRegister,
+    workspaceWorldModel: artifacts.workspaceWorldModel,
+    continuousImprovementStatus: artifacts.continuousImprovementStatus,
+    noveltyGrowthStatus: artifacts.noveltyGrowthStatus,
+    securityConstitutionStatus: artifacts.securityConstitutionStatus,
+    rollbackReadiness: artifacts.rollbackReadiness,
+    autonomyBudgetStatus: artifacts.autonomyBudgetStatus,
+    selfAuthoredCausalEffects: artifacts.selfAuthoredCausalEffects,
+    selfAuthoredRemediationTrend: artifacts.selfAuthoredRemediationTrend,
+    workspaceProgressPublic: artifacts.workspaceProgressPublic,
+    promotionHealthPublic: artifacts.promotionHealthPublic,
+    latestPackPublic: artifacts.latestPackPublic,
+    requireWrittenPublicArtifacts: true,
+  });
+  artifacts.bottlenecks = buildNextBottlenecks({
+    workspaceRoot,
+    memoryEval: artifacts.evalStatus,
+    readinessArtifacts: artifacts.readinessArtifacts,
+    continuityArtifacts: artifacts.continuityArtifacts,
+    continuityDebt: artifacts.continuityDebtPublic,
+    openAIBlogLane: artifacts.openAIBlogLane,
+    anthropicLane: artifacts.anthropicLane,
+  });
+  artifacts.readinessArtifacts.bottlenecks = artifacts.bottlenecks;
+  artifacts.readinessArtifacts.readiness.consistencyChecks = buildReadinessConsistencyChecks({
+    readiness: artifacts.readinessArtifacts.readiness,
+    coverage: artifacts.readinessArtifacts.coverage,
+    blockedReasons: artifacts.readinessArtifacts.blockedReasons,
+    bottlenecks: artifacts.bottlenecks,
+  });
+  artifacts.publicOverview = {
+    ...artifacts.publicOverview,
+    learningAgendaSummary: sanitizePublicValue(artifacts.autonomousLearningStatus.summary, workspaceRoot),
+    ...summarizeWorkerDecisionHeadline(workspaceRoot),
+  };
+  applyReadinessScoreCalibration({
+    workspaceRoot,
+    readiness: artifacts.readinessArtifacts.readiness,
+    autonomousLearningStatus: artifacts.autonomousLearningStatus,
+    continuityDebt: artifacts.continuityDebtPublic,
+    goalCompletionStatus: artifacts.goalCompletionStatus,
+    policy: loadAgiReadinessPolicy(workspaceRoot),
+  });
+  writeJsonIfChanged(paths.agiReadiness.latestJson, artifacts.readinessArtifacts.readiness);
+  fs.writeFileSync(
+    paths.agiReadiness.latestMd,
+    renderAgiReadinessMarkdown(
+      artifacts.readinessArtifacts.readiness,
+      artifacts.readinessArtifacts.coverage,
+      artifacts.readinessArtifacts.blockedReasons,
+      artifacts.bottlenecks
+    ),
+    "utf8"
+  );
+  writeJsonIfChanged(paths.agiReadiness.nextBottlenecksJson, artifacts.bottlenecks);
+  fs.writeFileSync(paths.agiReadiness.nextBottlenecksMd, renderNextBottlenecksMarkdown(artifacts.bottlenecks), "utf8");
+  writeJsonIfChanged(paths.agiReadiness.autonomousLearningStatusJson, artifacts.autonomousLearningStatus);
+  fs.writeFileSync(paths.agiReadiness.autonomousLearningStatusMd, renderAutonomousLearningMarkdown(artifacts.autonomousLearningStatus), "utf8");
+  writeJsonIfChanged(paths.publicOutput.latestOverviewJson, artifacts.publicOverview);
   fs.writeFileSync(paths.publicOutput.latestOverviewMd, renderPublicOverviewMarkdown({
     overview: artifacts.publicOverview,
     workspaceProgress: artifacts.workspaceProgressPublic,
@@ -11440,10 +12344,12 @@ module.exports = {
   buildDistinctImprovementLineage,
   buildDistinctImprovementSummary,
   buildGoalCompletionStatus,
+  buildReadinessScoreViews,
   buildSubjectiveGoalCompletionStatus,
   buildSovereignGoalCompletionStatus,
   buildGovernedMemoryPublicArtifacts,
   buildGovernedMemoryRuntimeSnapshot,
+  evaluateMemoryPublicSuite,
   exportGovernedMemoryPublicArtifacts,
   getMemoryPaths,
   loadPersistedGovernedMemoryState,

@@ -1,6 +1,6 @@
 {
   "schema": "system-coherence-review-contract.v2",
-  "version": "2026-04-11.r1",
+  "version": "2026-04-12.r1",
   "sourceDoc": "docs/SYSTEM_COHERENCE_REVIEW.md",
   "requiredCommand": "node scripts/system_coherence_review_test.js",
   "primaryExecRoute": "POST /api/exec",
@@ -41,6 +41,7 @@
     "docs/AGENT_OPERATING_RULES.md",
     "docs/EVIDENCE_CONTRACT.md",
     "docs/CURRENT_ARCHITECTURE.md",
+    "docs/SINGLE_HARNESS_MULTI_PLANE.md",
     "docs/ARCHITECTURE_CHANGELOG.md",
     "docs/SYSTEM_COHERENCE_REVIEW.md"
   ],
@@ -57,6 +58,7 @@
   ],
   "requiredDocs": [
     "docs/CURRENT_ARCHITECTURE.md",
+    "docs/SINGLE_HARNESS_MULTI_PLANE.md",
     "docs/ARCHITECTURE_CHANGELOG.md"
   ],
   "requiredMachineContracts": [
@@ -65,6 +67,7 @@
     "scripts/config/adoption_readiness_evaluator_contract.json",
     "scripts/config/deployment_posture_profiles.json",
     "scripts/config/evidence_contract.json",
+    "scripts/config/harness_plane_contract.json",
     "scripts/config/iteration_control_contract.json",
     "scripts/config/task_outcome_contract.json"
   ]

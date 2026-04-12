@@ -127,6 +127,18 @@
       "title": "Operational goal completion artifact is generated"
     },
     {
+      "id": "worker_decision_surface_present",
+      "title": "Worker decision surface headline artifact is generated"
+    },
+    {
+      "id": "worker_decision_surface_scope_is_primary",
+      "title": "Worker decision surface remains the primary operator-facing headline"
+    },
+    {
+      "id": "worker_decision_surface_export_session_consistent",
+      "title": "Worker headline and supporting artifacts share the same export session"
+    },
+    {
       "id": "stable_coverage_surface_present",
       "title": "Stable coverage matrix and trend are generated"
     },
@@ -141,6 +153,10 @@
     {
       "id": "goal_completion_status_consistent",
       "title": "Operational goal completion status matches current readiness, debt, and learning metrics"
+    },
+    {
+      "id": "goal_completion_scope_is_program_readiness",
+      "title": "Operational goal completion is explicitly scoped as program readiness"
     },
     {
       "id": "goal_completion_not_yet_when_criteria_fail",
@@ -165,6 +181,10 @@
     {
       "id": "subjective_goal_not_yet_when_subjective_criteria_fail",
       "title": "Subjective goal completion remains NOT_YET when strict subjective criteria are not satisfied"
+    },
+    {
+      "id": "subjective_completion_scope_is_companion",
+      "title": "Subjective completion remains a worker-centric companion gate"
     },
     {
       "id": "primary_lane_latest_pack_adoption_reflected",
@@ -203,12 +223,40 @@
       "title": "A subjective complete status requires all strict thresholds to be satisfied"
     },
     {
-      "id": "sovereign_goal_artifact_present",
-      "title": "Sovereign goal completion artifact is generated"
+      "id": "compatibility_completion_artifact_present",
+      "title": "Compatibility completion artifact is generated"
     },
     {
-      "id": "subjective_complete_not_near_complete_only",
-      "title": "When sovereign completion passes, subjective completion is upgraded beyond near-complete only"
+      "id": "compatibility_completion_scope_is_compatibility_only",
+      "title": "Compatibility completion is explicitly scoped to the compatibility layer"
+    },
+    {
+      "id": "legacy_sovereign_alias_not_used_as_active_logic",
+      "title": "Legacy sovereign alias does not override active worker or subjective logic"
+    },
+    {
+      "id": "autonomous_learning_current_historical_counts_distinct",
+      "title": "Autonomous learning separates current and historical counts"
+    },
+    {
+      "id": "autonomous_learning_current_counts_consistent",
+      "title": "Autonomous learning current counts stay consistent with the public summary"
+    },
+    {
+      "id": "autonomous_learning_verified_positive_semantics_consistent",
+      "title": "Autonomous learning verified-positive counts use one explicit current versus historical contract"
+    },
+    {
+      "id": "autonomous_learning_summary_matches_count_contract",
+      "title": "Autonomous learning summary fields match the count contract and entry totals"
+    },
+    {
+      "id": "latest_overview_headline_uses_worker_decision_surface",
+      "title": "Latest overview uses the worker decision surface as the headline"
+    },
+    {
+      "id": "docs_aligned_with_governed_worker_semantics",
+      "title": "Docs are aligned with governed worker current-truth semantics"
     },
     {
       "id": "self_authored_goal_market_present",
@@ -279,12 +327,12 @@
       "title": "Security constitution zero-violation rule is enforced"
     },
     {
-      "id": "rollback_readiness_required_for_complete",
-      "title": "Rollback readiness is required for sovereign complete"
+      "id": "rollback_readiness_required_for_compatibility_complete",
+      "title": "Rollback readiness is required for compatibility complete"
     },
     {
-      "id": "complete_status_requires_all_supporting_artifacts",
-      "title": "Sovereign complete requires all supporting artifacts"
+      "id": "compatibility_complete_requires_all_supporting_artifacts",
+      "title": "Compatibility complete requires all supporting artifacts"
     },
     {
       "id": "public_hygiene_no_unknown_memory_type",

@@ -1,13 +1,14 @@
-# Docs README
+# 文書案内
 
 Authority role: `navigation / entrypoint only`  
 Authority registry: `authority-registry.v1`
 
-This page is the docs entrypoint. It exists to answer one question quickly:
+このページは docs 全体の入口です。  
+「どこから読めばよいか」「何が正本か」を迷わないように、読む順番を固定します。
 
-`Which document should I read next for the job I am trying to do?`
+## 最初に読む順番
 
-If you are new here, do not start by reading everything. Start from:
+新しく入る人は、まず次の順で読んでください。
 
 1. `../README.md`
 2. `BEGINNER_PATH.md`
@@ -21,21 +22,28 @@ If you are new here, do not start by reading everything. Start from:
 10. `../AGENTS.md`
 11. `CURRENT_ARCHITECTURE.md`
 
-That order gives you:
+この順で分かること:
 
-1. product identity
-2. five-minute operator path
-3. fixed demo jobs
-4. visible capability breadth
-5. buyer pain translation
-6. market/category framing
-7. comparison guardrail
-8. honest portability posture
-9. frozen authority and mission
-10. runtime execution constraints
-11. active technical shape
+1. この repo が何を目指しているか
+2. どこを触れば全体像がつかめるか
+3. 代表的な仕事は何か
+4. 何ができるか
+5. 何の痛みを減らすのか
+6. どういう製品カテゴリで見るべきか
+7. 何と比べてはいけないか
+8. 持ち運びや対応範囲の境界をどう置いているか
+9. 何が固定ルールか
+10. 実行時に何を守るか
+11. いまの技術構成がどうなっているか
 
-## Canonical Authority
+<!-- Single-Harness Plane Doc -->
+## 1 つのハーネスの中で役割を分ける考え方
+
+- `SINGLE_HARNESS_MULTI_PLANE.md`
+  - 1 つのハーネスの中で、実行・評価・監視・統治がどう分かれているかを説明する
+
+<!-- Canonical Authority -->
+## 正本の権威文書
 
 - `HARNESS_CONSTITUTION.md`
   - single supreme frozen constitution
@@ -48,13 +56,14 @@ That order gives you:
 - `../scripts/config/authority_registry.json`
   - authority precedence and drift markers
 
-Use this section when the question is:
+次の問いに答えるときは、まずここを見ます。
 
-- what is fixed
-- what is allowed to move
-- what counts as truth
+- 何が固定か
+- 何が動いてよいか
+- どの文書が最終的な判断基準か
 
-## Operational Runbooks
+<!-- Operational Runbooks -->
+## 運用の手順書
 
 - `AGENT_OPERATING_RULES.md`
 - `APP_SERVER_PROTOCOL_RUNBOOK.md`
@@ -62,39 +71,28 @@ Use this section when the question is:
 - `SELF_IMPROVEMENT_POLICY.md`
 - `SKILL_PORTFOLIO_GOVERNANCE.md`
 
-Use this section when the question is:
+運用の流れや、継続・記憶・改善の扱いを知りたいときに読みます。
 
-- how the harness should run
-- how memory is handled
-- how self-improvement is gated
-- how operational routines work in practice
+## 全体像をつかむ資料
 
-## Overview Guides
+- `human/AI_AGENT_HARNESS_DETAILED_DESIGN.html`
+  - 現役の overview-first ガイド
+- `human/legacy/AI_AGENT_HARNESS_TEXTBOOK_JA.html`
+  - 古い長文教材。思想理解には使えるが、正本ではない
 
-- `AI_AGENT_HARNESS_DETAILED_DESIGN.html`
-  - active overview-first guide for understanding what this worker is
-- `archive/AI_AGENT_HARNESS_TEXTBOOK_JA.html`
-  - older long-form Japanese textbook kept as archive material
-
-Use this section when the question is:
-
-- what this AI agent is in plain language
-- where to start with a plain-language overview before reading the authority docs
-- which overview is active versus archived
-
-## Companion And Adjacent Surfaces
+<!-- Companion And Adjacent Surfaces -->
+## 付随資料と周辺資料
 
 - `HARNESS_APP_PLATFORM.md`
 - `WEEKLY_REPORT_COMPANION.md`
 - `DOCUMENT_TOOLING_GUIDE.md`
+- `integrations/copilot-studio/weekly-report-agent-design.md`
+- `samples/agi_v1/agi_v1_report.md`
 
-Use this section when the question is:
+正本ではありませんが、運用や周辺機能を理解するのに役立つ資料です。
 
-- what sits beside the harness
-- what is a companion surface rather than core harness truth
-- how repo-local document tooling works
-
-## Research And Learning Notes
+<!-- Research And Learning Notes -->
+## 学習メモと研究ノート
 
 - `OPENAI_DEVELOPER_LEARNINGS.md`
 - `ANTHROPIC_ENGINEERING_LEARNINGS.md`
@@ -102,57 +100,22 @@ Use this section when the question is:
 - `SECONDARY_LEARNING_SOURCES.md`
 - `FRONTEND_QUALITY_PLAYBOOK.md`
 
-Use this section when the question is:
+外部記事から何を取り込んでいるか、到達度や改善方針をどう考えているかを追うときに読みます。
 
-- what the repo learned
-- how capability or robustness changed over time
-- which research notes informed current policy
-- which checked-in readiness/proof surfaces currently matter
-
-## Archive And Compatibility
+<!-- Archive And Compatibility -->
+## 互換用・履歴用の資料
 
 - `SYSTEM_ARCHITECTURE.md`
 
-Use this section when the question is:
+現行の説明ではなく、互換や履歴のために残している資料です。
 
-- where the older long-form material moved
-- where historical architecture explanations still live
-- what should be treated as reference rather than active truth
+## 迷ったら戻る場所
 
-## Fast Navigation
-
-- beginner path: `BEGINNER_PATH.md`
-- demo flows: `DEMO_FLOWS.md`
-- capability surface: `CAPABILITY_SURFACE.md`
-- buyer pain map: `BUYER_PAIN_MAP.md`
-- product positioning: `PRODUCT_POSITIONING.md`
-- comparison boundary: `COMPARISON_BOUNDARY.md`
-- provider posture: `PROVIDER_AND_PORTABILITY.md`
-- front-door product doc: `../README.md`
-- glossary: `GLOSSARY.md`
-- operator map: `../HARNESS_MAP.md`
-- script surface help: `npm run help:scripts`
-
-## Common Tasks
-
-- start local server: `npm start`
-- launch local UI on Windows: `../start_codex_ui.bat`
-- inspect scripts: `npm run help:scripts`
-- run repo quality gate: `npm run test:repo-quality`
-- run public regression: `npm run regression:public`
-
-## Reading Strategy
-
-Read by intent, not by volume.
-
-- If you want to use the repo: `../README.md` -> `BEGINNER_PATH.md`
-- If you want the three fixed product demos first: `DEMO_FLOWS.md`
-- If you want to explain what the repo can do: `CAPABILITY_SURFACE.md`
-- If you want to explain why someone should buy or adopt it: `BUYER_PAIN_MAP.md`
-- If you want to explain how it should be sold: `PRODUCT_POSITIONING.md`
-- If you want to keep the comparison axis honest: `COMPARISON_BOUNDARY.md`
-- If you want the honest portability story: `PROVIDER_AND_PORTABILITY.md`
-- If you want a quick overview first: `AI_AGENT_HARNESS_DETAILED_DESIGN.html`
-- If you want the hard rules: `HARNESS_CONSTITUTION.md` -> `../AGENTS.md`
-- If you want the active implementation shape: `CURRENT_ARCHITECTURE.md`
-- If you want to verify claims: `EVIDENCE_CONTRACT.md` -> `../output/` -> `../logs/current/`
+- repo の入口: `../README.md`
+- 最短の読み順: `BEGINNER_PATH.md`
+- 代表的な仕事: `DEMO_FLOWS.md`
+- できること: `CAPABILITY_SURFACE.md`
+- 何の痛みを減らすか: `BUYER_PAIN_MAP.md`
+- 比較の境界: `COMPARISON_BOUNDARY.md`
+- 製品としての見せ方: `PRODUCT_POSITIONING.md`
+- 対応範囲の考え方: `PROVIDER_AND_PORTABILITY.md`

@@ -61,6 +61,11 @@ output/claim_closure/
 output/external_audit_bundle/
 output/external_audit_closure/
 output/externalization_nohitl/
+output/governance_public/
+!output/governance_public/
+output/governance_public/*
+!output/governance_public/*.json
+!output/governance_public/*.md
 output/improvement/
 output/manual_self_improvement/
 output/memory/

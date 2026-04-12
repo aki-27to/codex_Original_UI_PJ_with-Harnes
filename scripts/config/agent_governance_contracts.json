@@ -1,6 +1,6 @@
 {
   "schema": "agent-governance.v2",
-  "version": "2026-03-08.r1",
+  "version": "2026-04-11.r2",
   "parentAgents": [
     "default",
     "intake",
@@ -23,6 +23,21 @@
     "strictLaneRequestUserInputPolicy": "blocked",
     "continuousGapClosureLoop": "identify_next_gap_then_close_it_until_terminal_state",
     "postCompletionNextTaskSynthesis": "after_each_local_completion_recompute_remaining_gap_and_queue_next_task",
+    "minimumHumanInterruptionBias": "minimize_unnecessary_hitl",
+    "userOutcomePriority": "adoption_ready_deliverable_over_procedural_closure",
+    "literalRequestPreservationRequired": true,
+    "latentIntentPreservationRequired": true,
+    "internalGoalSubstitutionForbidden": true,
+    "silentTaskContractRewriteForbidden": true,
+    "proceduralClosureCountsAsSuccess": false,
+    "taskContractRevisionMode": "proposal_or_explicit_user_adoption",
+    "returnToHumanOnlyWhen": [
+      "explicit_user_judgment_required",
+      "destructive_irreversible_change",
+      "irreversible_external_write",
+      "broad_environment_or_permission_change",
+      "material_authority_or_safety_uncertainty"
+    ],
     "retiredWorkerAllowedInNormalRuntime": false,
     "systemCoherenceReviewRequiredForCoreChanges": true,
     "systemCoherenceReviewContractRef": "scripts/config/system_coherence_review_contract.json"

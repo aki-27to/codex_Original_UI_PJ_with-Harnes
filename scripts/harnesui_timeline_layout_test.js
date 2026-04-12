@@ -68,6 +68,7 @@ function createElement(tagName) {
     _textContent: "",
     scrollTop: 0,
     scrollHeight: 640,
+    clientHeight: 240,
     appendChild(child) {
       if (child && child.nodeType === 11 && Array.isArray(child.children)) {
         child.children.forEach((nested) => this.appendChild(nested));
@@ -128,6 +129,13 @@ function createMessageFragment() {
 function loadRenderTimeline(context) {
   vm.runInNewContext(
     [
+      "const TIMELINE_AUTO_SCROLL_BOTTOM_THRESHOLD_PX = 48;",
+      extractFunction("timelineRenderHasContentForUi"),
+      extractFunction("timelineRenderSignatureForUi"),
+      extractFunction("timelineViewportEntryForUi"),
+      extractFunction("timelineViewportMetricsForUi"),
+      extractFunction("syncTimelineViewportStateForUi"),
+      extractFunction("restoreTimelineViewportForUi"),
       extractFunction("renderTimeline"),
       "this.__renderTimeline__ = renderTimeline;",
     ].join("\n\n"),
@@ -144,6 +152,8 @@ function runConversationCase() {
     document: {
       createElement,
     },
+    s: { active: "chat-1" },
+    timelineViewportState: { byChat: new Map(), programmatic: false, renderedChatId: "" },
     e: {
       timeline,
       conversationSummary,
@@ -187,7 +197,138 @@ function runConversationCase() {
   assert.strictEqual(timeline.children[0].children.length, 2, "stack wrapper should contain every rendered transcript message");
   assert.strictEqual(timeline.children[0].children[0].className, "message assistant", "assistant messages should keep their role styling");
   assert.strictEqual(timeline.children[0].children[1].className, "message user", "user messages should keep their role styling");
-  assert.strictEqual(timeline.scrollTop, timeline.scrollHeight, "timeline should still auto-scroll to the newest content");
+  assert.strictEqual(timeline.scrollTop, timeline.scrollHeight - timeline.clientHeight, "timeline should auto-scroll only to the bottom edge");
+}
+
+function runPinnedScrollCase() {
+  const timeline = createElement("section");
+  timeline.scrollTop = 120;
+  timeline.scrollHeight = 1000;
+  timeline.clientHeight = 240;
+  const conversationSummary = createElement("p");
+  const context = {
+    document: {
+      createElement,
+    },
+    s: { active: "chat-3" },
+    timelineViewportState: {
+      byChat: new Map([["chat-3", { scrollTop: 120, shouldStick: false }]]),
+      programmatic: false,
+      renderedChatId: "chat-3",
+    },
+    e: {
+      timeline,
+      conversationSummary,
+      messageTemplate: {
+        content: {
+          cloneNode() {
+            return createMessageFragment();
+          },
+        },
+      },
+    },
+    active() {
+      return { id: "chat-3" };
+    },
+    pendingCountForChat() {
+      return 1;
+    },
+    conversationSnapshotForUi() {
+      return {
+        hasConversation: true,
+        messages: [
+          { role: "assistant", title: "Codex", time: "10:03:37", content: "first" },
+          { role: "user", title: "You", time: "10:03:40", content: "second" },
+          { role: "assistant", title: "Codex", time: "10:03:42", content: "third" },
+        ],
+      };
+    },
+    renderMessageContentForUi(element, text) {
+      element.textContent = String(text || "");
+    },
+  };
+  const renderTimeline = loadRenderTimeline(context);
+  renderTimeline();
+
+  assert.strictEqual(timeline.scrollTop, 120, "timeline should preserve manual scroll position when the operator is reading older messages");
+  assert.strictEqual(
+    context.timelineViewportState.byChat.get("chat-3").shouldStick,
+    false,
+    "manual scroll state should remain opt-out after rerender"
+  );
+}
+
+function runUnchangedConversationNoopCase() {
+  const timeline = createElement("section");
+  timeline.scrollTop = 140;
+  timeline.scrollHeight = 1000;
+  timeline.clientHeight = 240;
+  const conversationSummary = createElement("p");
+  let pendingCount = 1;
+  const messages = [
+    { id: "m-1", role: "assistant", title: "Codex", time: "10:03:37", content: "first" },
+    { id: "m-2", role: "user", title: "You", time: "10:03:40", content: "second" },
+    { id: "m-3", role: "assistant", title: "Codex", time: "10:03:42", content: "third" },
+  ];
+  const context = {
+    document: {
+      createElement,
+    },
+    s: { active: "chat-4" },
+    timelineViewportState: {
+      byChat: new Map([["chat-4", { scrollTop: 140, shouldStick: false }]]),
+      programmatic: false,
+      renderedChatId: "",
+      renderSignatureByChat: new Map(),
+    },
+    e: {
+      timeline,
+      conversationSummary,
+      messageTemplate: {
+        content: {
+          cloneNode() {
+            return createMessageFragment();
+          },
+        },
+      },
+    },
+    active() {
+      return { id: "chat-4" };
+    },
+    pendingCountForChat() {
+      return pendingCount;
+    },
+    conversationSnapshotForUi() {
+      return {
+        hasConversation: true,
+        messages,
+      };
+    },
+    renderMessageContentForUi(element, text) {
+      element.textContent = String(text || "");
+    },
+  };
+  const renderTimeline = loadRenderTimeline(context);
+  renderTimeline();
+
+  const firstRenderedStack = timeline.children[0];
+  timeline.scrollTop = 140;
+  context.timelineViewportState.byChat.get("chat-4").scrollTop = 140;
+  context.timelineViewportState.byChat.get("chat-4").shouldStick = false;
+  pendingCount = 0;
+
+  renderTimeline();
+
+  assert.strictEqual(
+    timeline.children[0],
+    firstRenderedStack,
+    "timeline should reuse the existing transcript DOM when only non-conversation status changes"
+  );
+  assert.strictEqual(
+    timeline.scrollTop,
+    140,
+    "timeline should not snap to the bottom when unrelated refreshes happen during manual reading"
+  );
 }
 
 function runEmptyStateCase() {
@@ -197,6 +338,8 @@ function runEmptyStateCase() {
     document: {
       createElement,
     },
+    s: { active: "chat-2" },
+    timelineViewportState: { byChat: new Map(), programmatic: false, renderedChatId: "" },
     e: {
       timeline,
       conversationSummary,
@@ -236,6 +379,8 @@ function runEmptyStateCase() {
 
 try {
   runConversationCase();
+  runPinnedScrollCase();
+  runUnchangedConversationNoopCase();
   runEmptyStateCase();
   console.log("[harnesui-timeline-layout-test] PASS");
   console.log("PASS");

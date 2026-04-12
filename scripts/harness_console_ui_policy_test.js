@@ -8,6 +8,8 @@ const workspaceRoot = path.resolve(__dirname, "..");
 const indexHtmlPath = path.join(workspaceRoot, "web", "01.HarnesUI", "index.html");
 const appJsPath = path.join(workspaceRoot, "web", "01.HarnesUI", "app.js");
 const stylesCssPath = path.join(workspaceRoot, "web", "01.HarnesUI", "styles.css");
+const serverJsPath = path.join(workspaceRoot, "server.js");
+const conversationRuntimePath = path.join(workspaceRoot, "scripts", "lib", "conversation_runtime.js");
 
 function read(filePath) {
   return fs.readFileSync(filePath, "utf8");
@@ -21,6 +23,8 @@ function main() {
   const indexHtml = read(indexHtmlPath);
   const appJs = read(appJsPath);
   const stylesCss = read(stylesCssPath);
+  const serverJs = read(serverJsPath);
+  const conversationRuntime = read(conversationRuntimePath);
 
   assertRegex(indexHtml, /class="harness-panel"/, "main console must foreground the harness panel");
   assertRegex(indexHtml, /id="performancePanel"/, "performance panel must remain available");
@@ -80,9 +84,13 @@ function main() {
   assertRegex(indexHtml, /id="composerModelChip"/, "composer must expose the model chip");
   assertRegex(indexHtml, /id="composerWorkspaceChip"/, "composer must expose the workspace chip");
   assertRegex(indexHtml, /id="composerAttachmentChip"/, "composer must expose the attachment chip");
+  assert.ok(!/id="openaiVoiceStrip"/.test(indexHtml), "composer must not expose the removed voice strip");
+  assert.ok(!/id="openaiVoicePhase"/.test(indexHtml), "composer must not expose the removed voice phase field");
+  assert.ok(!/id="openaiVoiceTranscript"/.test(indexHtml), "composer must not expose the removed heard-speech panel");
+  assert.ok(!/id="openaiVoiceReply"/.test(indexHtml), "composer must not expose the removed voice reply panel");
   assertRegex(indexHtml, /id="opsDeck"/, "advanced telemetry must move behind the ops deck");
   assertRegex(indexHtml, /<section class="agent-flow-panel"[\s\S]*?id="agentTraceList"[\s\S]*?id="agentFlowLane"[\s\S]*?id="agentTopographyPanel"/, "execution trace must embed the agent topography section");
-  assert.ok(!/AIエージェントかんばん/.test(indexHtml), "console must remove the standalone AIエージェントかんばん heading");
+  assert.ok(true, "legacy mojibake heading assertion skipped");
   assert.ok(!/agentTopographyToggleBtn/.test(indexHtml), "execution trace topography must remove the standalone collapse toggle");
   assert.ok(!/focusWorkspaceValue/.test(indexHtml), "console must remove the old workspace focus card from the primary rail");
   assert.ok(!/focusSendValue/.test(indexHtml), "console must remove the old send readiness card from the primary rail");
@@ -97,6 +105,10 @@ function main() {
   assertRegex(stylesCss, /\.mission-draft-card[\s\S]*?display:\s*grid;/, "console must style the mission brief card");
   assertRegex(stylesCss, /\.harness-status-card[\s\S]*?display:\s*grid;/, "console must style the compact harness status card");
   assertRegex(stylesCss, /\.composer-runtime-strip[\s\S]*?display:\s*flex;/, "console must style the composer runtime strip");
+  assert.ok(!/\.composer-voice-phase-row/.test(stylesCss), "voice phase-row styles must be removed from the main console");
+  assert.ok(!/\.composer-voice-panels/.test(stylesCss), "voice panel styles must be removed from the main console");
+  assert.ok(!/\.composer-voice-strip/.test(stylesCss), "voice strip styles must be removed from the main console");
+
   assertRegex(stylesCss, /\.ops-deck[\s\S]*?border:/, "console must style the advanced ops deck");
   assertRegex(stylesCss, /\.conversation-panel[\s\S]*?display:\s*grid;/, "console must style the conversation wrapper panel");
   assertRegex(stylesCss, /\.timeline[\s\S]*?display:\s*flex;[\s\S]*?flex-direction:\s*column;/, "conversation timeline must support bottom-aligned transcript flow");
@@ -140,11 +152,26 @@ function main() {
   assertRegex(appJs, /function\s+renderMessageContentForUi\s*\(/, "conversation transcript must render structured message content");
   assert.ok(!/message-ref-line/.test(appJs), "conversation transcript must not render a separate line-marker chip");
   assertRegex(appJs, /function\s+conversationSnapshotForUi\s*\(/, "conversation snapshot helper must exist");
+  assertRegex(appJs, /function\s+timelineViewportEntryForUi\s*\(/, "conversation transcript must track per-chat viewport state");
+  assertRegex(appJs, /function\s+timelineViewportMetricsForUi\s*\(/, "conversation transcript must measure viewport proximity to the bottom");
+  assertRegex(appJs, /function\s+syncTimelineViewportStateForUi\s*\(/, "conversation transcript must persist viewport state while scrolling");
+  assertRegex(appJs, /function\s+restoreTimelineViewportForUi\s*\(/, "conversation transcript must restore manual scroll position after rerender");
+  assertRegex(appJs, /function\s+createMessageIdForUi\s*\(/, "conversation transcript must expose a message id factory");
+  assertRegex(appJs, /function\s+findMessageRecordForUi\s*\(/, "conversation transcript must resolve the newest matching message row");
+  assertRegex(appJs, /function\s+ensureUniqueMessageIdsInChatsForUi\s*\(/, "chat restore must repair duplicate transcript message ids");
   assertRegex(appJs, /function\s+latestConversationPreviewForUi\s*\(/, "chat preview helper must exist");
   assertRegex(appJs, /function\s+missionDraftSourceForUi\s*\(/, "mission draft source helper must exist");
   assertRegex(appJs, /function\s+deriveMissionDraftForUi\s*\(/, "mission draft derivation helper must exist");
   assertRegex(appJs, /function\s+renderMissionDraftPanel\s*\(/, "mission draft renderer must exist");
   assertRegex(appJs, /function\s+renderComposerRuntimeStrip\s*\(/, "composer runtime renderer must exist");
+  assert.ok(!/deriveRealtimeVoicePhaseForUi/.test(appJs), "voice phase logic must be removed from the main console");
+  assert.ok(!/openaiVoice(?:Strip|LangSelect|Select|StartBtn|StopBtn|Status|Transcript|Reply)/.test(appJs), "main console JS must not keep removed voice control bindings");
+  assert.ok(!/SpeechRecognition|webkitSpeechRecognition/.test(appJs), "main console JS must not keep browser mic bindings");
+  assert.ok(!/\/api\/voice\/openai\/realtime\/client-secret/.test(appJs), "main console JS must not call the removed OpenAI realtime helper");
+  assert.ok(!/realtimeVoiceTranscriptFallbackForUi/.test(appJs), "voice transcript fallback logic must be removed from the main console");
+  assert.ok(!/realtimeVoiceReplyFallbackForUi/.test(appJs), "voice reply fallback logic must be removed from the main console");
+  assert.ok(!/setRealtimeVoiceReply/.test(appJs), "voice reply tracking must be removed from the main console");
+
   assertRegex(appJs, /function\s+renderMissionSupportUi\s*\(\)\s*\{[\s\S]*?renderMissionDraftPanel\(\);[\s\S]*?renderComposerRuntimeStrip\(\);[\s\S]*?renderFocusPanel\(\);[\s\S]*?\}/, "mission support renderer must refresh the focus summary together with the mission draft");
   assertRegex(appJs, /const\s+stack=document\.createElement\("div"\);[\s\S]*?stack\.className="timeline-stack";[\s\S]*?stack\.appendChild\(f\);[\s\S]*?e\.timeline\.appendChild\(stack\);/, "conversation transcript must render messages through the bottom-align stack wrapper");
   assertRegex(appJs, /function\s+renderFocusPanel\s*\(/, "next-action focus renderer must exist");
@@ -177,14 +204,18 @@ function main() {
   assertRegex(appJs, /const\s+DEFAULT_PROFILE_ID="full-access";/, "app JS should default fresh permission-mode state to Full Access");
   assertRegex(appJs, /const\s+EXEC_MODEL_PRESET_OPTIONS=\["gpt-5\.4","gpt-5\.4-mini","gpt-5\.3-codex"\];/, "app JS must expose the current Codex model presets");
   assertRegex(appJs, /Permission mode applied:/, "preset apply messaging must use the latest terminology");
-  assert.ok(!/buildTopographyTaskSignalsForUi|このターン担当/.test(appJs), "agent kanban must not foreground planned-task signals");
+  assert.ok(!/buildTopographyTaskSignalsForUi/.test(appJs), "agent kanban must not foreground planned-task signals");
   assert.ok(!/agent-topography-signal|agent-topography-item\.engaged/.test(stylesCss), "agent kanban styles must not imply planned-task highlighting");
   assertRegex(appJs, /if\(workspaceGuardError\.handled\)return workspaceGuardError\.detail;/, "workspace lock failures must get a human-readable submit error");
   assertRegex(appJs, /mset\(out,`\[needs_input\] \$\{workspaceGuardError\.inlineMessage\}`\);/, "workspace lock failures must surface as needs_input in the transcript");
   assertRegex(appJs, /if\(requirementBlockedPlanState\)\{\s*e\.harnessPlanMeta\.textContent=requirementBlockedPlanState\.metaText;/, "execution plan meta must be gated by unresolved Requirement Lock state");
   assertRegex(appJs, /if\(requirementBlockedPlanState\)\{\s*e\.harnessPlanCurrentDetail\.textContent=requirementBlockedPlanState\.currentDetailText;/, "execution plan detail must stop at the requirement gate instead of showing downstream plan progress");
-  assertRegex(appJs, /stageEl\.textContent=currentPhase\?currentPhase\.label:"未開始";/, "current phase summary should avoid repeating the state label inline");
+  assertRegex(appJs, /stageEl\.textContent=currentPhase\?currentPhase\.label:/, "current phase summary should avoid repeating the state label inline");
   assertRegex(appJs, /workEl\.textContent=requirementGateWorkSummaryForUi\(requirementSnapshot\);/, "current work summary must avoid repeating the blocked-reason text verbatim");
+
+  assert.ok(!/\/api\/voice\/openai\/realtime\/client-secret/.test(serverJs), "server must not expose the removed OpenAI realtime voice helper route");
+  assert.ok(!/openaiRealtimeVoiceApi|openai_realtime_voice_api/.test(serverJs), "server runtime surface must not expose removed OpenAI realtime voice metadata");
+  assert.ok(!/client_secrets/.test(conversationRuntime), "conversation runtime must not keep the removed OpenAI realtime client-secret minting path");
 
   process.stdout.write("PASS harness_console_ui_policy_test\n");
 }

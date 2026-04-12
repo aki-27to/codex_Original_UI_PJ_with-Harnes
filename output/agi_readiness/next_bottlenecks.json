@@ -1,12 +1,17 @@
 {
   "schema": "agi-readiness-next-bottlenecks.v1",
-  "generatedAt": "2026-04-06T15:32:16.829Z",
+  "generatedAt": "2026-04-12T02:52:34.779Z",
   "workspaceId": "5c839dfeef8b555f",
   "items": [
     {
-      "classification": "evidence bottleneck",
-      "summary": "subjective current values do not reflect history-aware counts consistently",
-      "source": "memory_eval"
+      "classification": "capability bottleneck",
+      "summary": "weakest family is G_breadth",
+      "source": "agi_readiness"
+    },
+    {
+      "classification": "scope/coverage bottleneck",
+      "summary": "continuity carries 7 closeout debt item(s) with severity high",
+      "source": "continuity"
     }
   ]
 }

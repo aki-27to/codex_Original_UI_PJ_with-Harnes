@@ -126,6 +126,35 @@ function testPolicySnapshotHasSingleSource() {
     snapshot.runtimeInvariants.postCompletionNextTaskSynthesis === "after_each_local_completion_recompute_remaining_gap_and_queue_next_task",
     "runtime invariants must expose post-completion next-task synthesis"
   );
+  assert(
+    snapshot.runtimeInvariants.userOutcomePriority === "adoption_ready_deliverable_over_procedural_closure",
+    "runtime invariants must prioritize adoption-ready user outcomes over procedural closure"
+  );
+  assert(
+    snapshot.runtimeInvariants.literalRequestPreservationRequired === true,
+    "runtime invariants must preserve literal request alignment"
+  );
+  assert(
+    snapshot.runtimeInvariants.latentIntentPreservationRequired === true,
+    "runtime invariants must preserve latent intent alignment"
+  );
+  assert(
+    snapshot.runtimeInvariants.internalGoalSubstitutionForbidden === true,
+    "runtime invariants must forbid internal goal substitution"
+  );
+  assert(
+    snapshot.runtimeInvariants.silentTaskContractRewriteForbidden === true,
+    "runtime invariants must forbid silent task-contract rewrites"
+  );
+  assert(
+    snapshot.runtimeInvariants.proceduralClosureCountsAsSuccess === false,
+    "runtime invariants must reject procedural closure as sufficient success"
+  );
+  assert(
+    Array.isArray(snapshot.runtimeInvariants.returnToHumanOnlyWhen)
+      && snapshot.runtimeInvariants.returnToHumanOnlyWhen.includes("explicit_user_judgment_required"),
+    "runtime invariants must expose narrow return-to-human conditions"
+  );
   assert(snapshot.contracts && snapshot.contracts.frontend_worker, "policy contracts should include frontend_worker");
 }
 

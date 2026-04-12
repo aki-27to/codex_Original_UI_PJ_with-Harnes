@@ -1,6 +1,6 @@
 {
   "schema": "agi-readiness-live-policy.v1",
-  "version": "2026-04-06.r2",
+  "version": "2026-04-11.r1",
   "coverageBuckets": [
     {
       "id": "deterministic_code",
@@ -50,6 +50,22 @@
     "tieTolerance": 0.005,
     "pressureMarginThreshold": 0.03,
     "explainWithMargins": true
+  },
+  "scoreCalibration": {
+    "displayScoreSource": "externallyAuditableScore",
+    "blockedAgendaPenaltyPerCount": 0.08,
+    "blockedAgendaPenaltyCap": 0.24,
+    "insufficientEvidencePenaltyPerCount": 0.1,
+    "insufficientEvidencePenaltyCap": 0.2,
+    "openDebtPenaltyPerCount": 0.04,
+    "openDebtPenaltyCap": 0.12,
+    "blockedReasonPenaltyPerCount": 0.02,
+    "blockedReasonPenaltyCap": 0.08,
+    "goalNotOperationallyCompletePenalty": 0.04,
+    "caps": {
+      "evidenceDebtPresent": 0.89,
+      "operationallyIncomplete": 0.94
+    }
   },
   "stableCoverage": {
     "windowSize": 3,
@@ -125,9 +141,9 @@
       "requireSelfDirectedNovelProbeEvidence": true
     }
   },
-  "sovereignGoalCompletion": {
+  "compatibilityCompletion": {
     "enabled": true,
-    "decisionBasis": "live_truth_strict_sovereign_subjective_criteria",
+    "decisionBasis": "live_truth_fail_closed_compatibility_criteria",
     "thresholds": {
       "stableCoverageBreadth": 1,
       "supportedCoverageBreadth": 1,

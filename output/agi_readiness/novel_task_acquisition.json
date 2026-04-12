@@ -1,14 +1,16 @@
 {
   "schema": "agi-readiness-novel-task-acquisition.v1",
-  "generatedAt": "2026-04-06T15:32:16.833Z",
+  "generatedAt": "2026-04-12T02:52:33.987Z",
+  "exportSessionId": "export_a63636ff0a86",
+  "scope": "novel_task_acquisition_supporting",
   "workspaceId": "5c839dfeef8b555f",
   "novelFamilyCount": 2,
   "novelTaskCount": 2,
-  "positiveNovelTaskCount": 2,
+  "positiveNovelTaskCount": 1,
   "recentNovelTasks": [
     {
-      "targetCategory": "self_directed_probe",
-      "targetFamily": "default",
+      "targetCategory": "ambiguous_instruction",
+      "targetFamily": "planning",
       "beforeScore": null,
       "currentScore": null,
       "evidenceCount": 1,
@@ -20,37 +22,37 @@
       ]
     },
     {
-      "targetCategory": "ambiguous_instruction",
-      "targetFamily": "planning",
+      "targetCategory": "browser_tool_flakiness",
+      "targetFamily": "tool_use_browser_like",
       "beforeScore": null,
-      "currentScore": null,
-      "evidenceCount": 1,
+      "currentScore": 0.703125,
+      "evidenceCount": 48,
       "status": "observed",
       "remediationRef": "<agenda-ref>",
-      "positiveEvidence": true,
+      "positiveEvidence": false,
       "positiveEvidenceRefs": [
         "<agenda-ref>"
       ]
     }
   ],
   "positiveEvidenceRefs": [
-    "agenda_3fa1bc95bc",
-    "agenda_e3baa53ec1"
+    "agenda_bdbb268944",
+    "agenda_49ed0e35fb"
   ],
   "requiredThresholds": {
     "positiveNovelTaskCount": 8
   },
   "summary": {
     "itemCount": 2,
-    "positiveCount": 2,
+    "positiveCount": 1,
     "novelFamilyCount": 2,
     "novelTaskCount": 2,
-    "positiveNovelTaskCount": 2
+    "positiveNovelTaskCount": 1
   },
   "items": [
     {
-      "targetCategory": "self_directed_probe",
-      "targetFamily": "default",
+      "targetCategory": "ambiguous_instruction",
+      "targetFamily": "planning",
       "beforeScore": null,
       "currentScore": null,
       "evidenceCount": 1,
@@ -62,14 +64,14 @@
       ]
     },
     {
-      "targetCategory": "ambiguous_instruction",
-      "targetFamily": "planning",
+      "targetCategory": "browser_tool_flakiness",
+      "targetFamily": "tool_use_browser_like",
       "beforeScore": null,
-      "currentScore": null,
-      "evidenceCount": 1,
+      "currentScore": 0.703125,
+      "evidenceCount": 48,
       "status": "observed",
       "remediationRef": "<agenda-ref>",
-      "positiveEvidence": true,
+      "positiveEvidence": false,
       "positiveEvidenceRefs": [
         "<agenda-ref>"
       ]

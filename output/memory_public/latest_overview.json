@@ -1,26 +1,28 @@
 {
   "schema": "governed-memory-public-overview.v1",
-  "generatedAt": "2026-04-06T15:32:16.729Z",
+  "generatedAt": "2026-04-12T02:52:33.491Z",
+  "exportSessionId": "export_a63636ff0a86",
   "workspaceId": "5c839dfeef8b555f",
   "canonicalRoot": "logs/archive/raw/runtime_state/memory",
   "publicOutputRoot": "output/memory_public",
   "canonicalEventCount": 12000,
-  "itemCount": 49,
-  "promotedCount": 26,
+  "itemCount": 47,
+  "promotedCount": 23,
   "typeCounts": {
     "constitution_ref": 7,
     "requirement_ref": 1,
     "workspace_progress": 2,
     "episodic_event": 8,
-    "failure_pattern": 6,
+    "failure_pattern": 3,
     "eval_observation": 6,
+    "improvement_candidate": 3,
     "semantic_lesson": 8,
-    "runtime_hint": 9,
-    "improvement_candidate": 2
+    "runtime_hint": 9
   },
   "statusCounts": {
-    "promoted": 26,
+    "promoted": 23,
     "captured": 14,
+    "candidate": 1,
     "shadow": 4,
     "proposal_only": 4,
     "blocked": 1
@@ -40,9 +42,88 @@
     "output/anthropic_engineering_self_improvement_state.json",
     "output/anthropic_engineering_self_improvement_gate.json"
   ],
+  "workerDecisionSurfacePath": "output/governance_public/worker_decision_surface.json",
+  "workerDecisionSurface": {
+    "schema": "worker-decision-surface.v1",
+    "generatedAt": "2026-04-12T02:14:59.861Z",
+    "scope": "worker_decision",
+    "exportSessionId": "export_a63636ff0a86",
+    "decisionQuestion": "Can the governed worker stop here without unnecessary human interruption?",
+    "topLevelOutcome": "ADOPTABLE_COMPLETE",
+    "topLevelSummary": "The worker can close in place: adoption readiness passed, latent intent stayed aligned, and no extra human interruption is required.",
+    "taskOutcomeStatus": "completed",
+    "taskOutcomeReason": "completed_default",
+    "releaseState": "RELEASE_APPROVED_WITH_ASSUMPTIONS",
+    "releaseApproved": 1,
+    "adoptionReady": 1,
+    "adoptionReadiness": 0.9683,
+    "adoptionReadinessThreshold": 0.8,
+    "latentIntentAlignment": 0.92,
+    "literalRequirementAlignment": 1,
+    "taskContractIntegrity": 1,
+    "boundaryCompliance": 1,
+    "constitutionalCompliance": 1,
+    "minimalHitl": {
+      "mode": "close_in_place",
+      "humanInterruptionRequired": 0,
+      "explicitUserJudgmentRequired": 0
+    },
+    "operatorAction": "ADOPT",
+    "supportingArtifacts": [
+      "request_frame.json",
+      "routing_decision.json",
+      "<task-ref>.json",
+      "review_bundle.json",
+      "evidence_manifest.json",
+      "flow_trace_summary.json",
+      "review_load_breakdown.json",
+      "adoption_readiness_eval.json",
+      "iteration_decision.json",
+      "escalation_decision.json",
+      "release_decision.json"
+    ],
+    "evidenceSummary": {
+      "evidenceRefCount": 11,
+      "supportingArtifactCount": 11,
+      "blockerCount": 0,
+      "residualRiskCount": 1,
+      "assumptionCount": 2,
+      "taskOutcomeCount": 5
+    },
+    "blockers": [],
+    "residualRisks": [
+      "New logic or protocol-sensitive behavior requires dedicated verification before signoff."
+    ],
+    "assumptions": [
+      "Any scope outside the explicit goal should stay proposal-only unless the prompt states otherwise.",
+      "Unresolved ambiguity must not be auto-answered by the harness."
+    ],
+    "intentTrace": {
+      "valueThesis": "",
+      "goalComparison": {
+        "originalRequestAligned": 1,
+        "latentIntentAligned": 1,
+        "replannedGoalConsistent": 1,
+        "proceduralClosureOnly": 0,
+        "explicitSignals": {}
+      }
+    }
+  },
+  "headlineScope": "worker_decision",
+  "workerDecisionHeadline": "ADOPTABLE_COMPLETE",
   "goalCompletionPath": "output/agi_readiness/goal_completion_status.json",
-  "goalStatus": "OPERATIONALLY_COMPLETE",
-  "goalWhyNotYetCount": 0,
+  "goalStatusScope": "program_readiness",
+  "goalStatus": "NOT_YET",
+  "goalWhyNotYetCount": 5,
+  "subjectiveGoalStatusPath": "output/agi_readiness/subjective_goal_completion_status.json",
+  "subjectiveGoalStatusScope": "subjective_companion",
+  "compatibilityCompletionStatusPath": "output/agi_readiness/compatibility_completion_status.json",
+  "compatibilityCompletionScope": "compatibility_layer",
+  "goalCompletion": {
+    "scope": "program_readiness",
+    "status": "NOT_YET",
+    "whyNotYetCount": 5
+  },
   "latestPack": {
     "selectedCount": 11,
     "highConfidenceCount": 2,
@@ -60,26 +141,36 @@
   },
   "staleWarningCount": 0,
   "learningAgendaSummary": {
-    "queued": 0,
-    "running": 0,
-    "blocked": 1,
-    "passed": 2,
+    "queued": 2,
+    "running": 3,
+    "blocked": 0,
+    "passed": 1,
     "failed": 0,
     "revoked": 0,
-    "verifiedPositive": 2,
+    "verifiedPositive": 1,
     "verifiedNeutral": 0,
     "verifiedNegative": 0,
     "verifiedHarmful": 0,
-    "insufficientEvidence": 1,
-    "blockedCount": 1,
-    "insufficientEvidenceCount": 1,
-    "selfDirectedCount": 2,
+    "insufficientEvidence": 0,
+    "blockedCount": 0,
+    "insufficientEvidenceCount": 0,
+    "selfDirectedCount": 6,
     "verifiedPositiveSelfDirectedCount": 2,
-    "novelProbeCount": 3,
+    "novelProbeCount": 5,
     "novelProbePositiveCount": 2
   },
-  "subjectiveGoalStatus": "SUBJECTIVE_AGI_COMPLETE",
-  "subjectiveGoalWhyNotYetCount": 0,
-  "sovereignGoalStatus": "SUBJECTIVE_AGI_COMPLETE",
-  "sovereignGoalWhyNotYetCount": 0
+  "subjectiveGoalStatus": "NOT_YET",
+  "subjectiveGoalWhyNotYetCount": 7,
+  "subjectiveCompletion": {
+    "scope": "subjective_companion",
+    "status": "NOT_YET",
+    "whyNotYetCount": 7
+  },
+  "compatibilityCompletionStatus": "NOT_YET",
+  "compatibilityWhyNotYetCount": 16,
+  "compatibilityCompletion": {
+    "scope": "compatibility_layer",
+    "status": "NOT_YET",
+    "whyNotYetCount": 16
+  }
 }

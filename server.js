@@ -31,7 +31,10 @@ const {
 const {defaultPromptCharLimit,buildPromptAudit,evaluateImagePayloadBudget,formatBytes}=require("./scripts/lib/exec_payload_policy");
 const {buildAdversarialShadowReview,shadowReviewVersion}=require("./scripts/lib/adversarial_shadow_policy");
 const {buildAdversarialRetryPrompt,shouldRetryAdversarialLoop}=require("./scripts/lib/adversarial_loop_policy");
-const {stripUnsolicitedClosingProposal}=require("./scripts/lib/user_facing_response_policy");
+const {
+  stripInternalProcessDisclosure,
+  stripUnsolicitedClosingProposal,
+}=require("./scripts/lib/user_facing_response_policy");
 const {
   defaultUserFacingResponseContractPath,
   loadUserFacingResponseContract,
@@ -62,6 +65,7 @@ const {
   loadAgiBundleFromPath,
 }=require("./scripts/lib/agi_v1_profile");
 const {
+  assertEvalLaneAccess,
   defaultEvalLanePolicyPath,
   loadEvalLanePolicy,
   summarizeEvalLane,
@@ -86,9 +90,18 @@ const {
   loadAuthorityRegistry,
 }=require("./scripts/lib/authority_registry");
 const {
+  defaultHarnessPlaneContractPath,
+  loadHarnessPlaneContract,
+  normalizeHarnessPlaneContract,
+}=require("./scripts/lib/harness_plane_contract");
+const {
   defaultContractPath:defaultAdoptionReadinessContractPath,
   loadAdoptionReadinessContract,
 }=require("./scripts/lib/adoption_readiness_policy");
+const {
+  defaultWorkerDecisionSurfaceContractPath,
+  loadWorkerDecisionSurfaceContract,
+}=require("./scripts/lib/worker_decision_surface");
 const {
   defaultIterationControlContractPath,
   loadIterationControlContract,
@@ -519,8 +532,10 @@ const harnessTurnContractSpecPath=path.join(workspaceRoot,"scripts","config","ha
 const taskOutcomeContractPath=path.join(workspaceRoot,"scripts","config","task_outcome_contract.json");
 const systemCoherenceReviewContractPath=path.join(workspaceRoot,"scripts","config","system_coherence_review_contract.json");
 const authorityRegistryPath=path.join(workspaceRoot,"scripts","config","authority_registry.json");
+const harnessPlaneContractPath=path.join(workspaceRoot,"scripts","config","harness_plane_contract.json");
 const iterationControlContractPath=path.join(workspaceRoot,"scripts","config","iteration_control_contract.json");
 const adoptionReadinessContractPath=path.join(workspaceRoot,"scripts","config","adoption_readiness_evaluator_contract.json");
+const workerDecisionSurfaceContractPath=path.join(workspaceRoot,"scripts","config","worker_decision_surface_contract.json");
 const deploymentPostureProfilesPath=path.join(workspaceRoot,"scripts","config","deployment_posture_profiles.json");
 const userFacingResponseContractPath=defaultUserFacingResponseContractPath;
 const planningModeContractPath=path.join(workspaceRoot,"scripts","config","planning_mode_contract.json");
@@ -557,8 +572,10 @@ const harnessTurnContractSpec=loadHarnessTurnContractSpecSafely();
 const taskOutcomeContract=loadTaskOutcomeContractSafely();
 const systemCoherenceReviewContract=loadSystemCoherenceReviewContractSafely();
 const authorityRegistry=loadAuthorityRegistrySafely();
+const harnessPlaneContract=loadHarnessPlaneContractSafely();
 const iterationControlContract=loadIterationControlContractSafely();
 const adoptionReadinessContract=loadAdoptionReadinessContractSafely();
+const workerDecisionSurfaceContract=loadWorkerDecisionSurfaceContractSafely();
 const planningModeContract=loadPlanningModeContractSafely();
 const assuranceModeContract=loadAssuranceModeContractSafely();
 const taskFamilyProfilesContract=loadTaskFamilyProfilesContractSafely();
@@ -812,6 +829,18 @@ function loadAuthorityRegistrySafely(){
     }
   }
 }
+function loadHarnessPlaneContractSafely(){
+  try{
+    return loadHarnessPlaneContract(harnessPlaneContractPath);
+  }catch(error){
+    console.warn(`[contract] failed to load harness plane contract from ${harnessPlaneContractPath}: ${error&&error.message?error.message:String(error)}`);
+    try{
+      return loadHarnessPlaneContract(defaultHarnessPlaneContractPath);
+    }catch{
+      return normalizeHarnessPlaneContract(null);
+    }
+  }
+}
 function loadIterationControlContractSafely(){
   try{
     return loadIterationControlContract(iterationControlContractPath);
@@ -833,6 +862,18 @@ function loadAdoptionReadinessContractSafely(){
       return loadAdoptionReadinessContract(defaultAdoptionReadinessContractPath);
     }catch{
       return loadAdoptionReadinessContract();
+    }
+  }
+}
+function loadWorkerDecisionSurfaceContractSafely(){
+  try{
+    return loadWorkerDecisionSurfaceContract(workerDecisionSurfaceContractPath);
+  }catch(error){
+    console.warn(`[contract] failed to load worker decision surface contract from ${workerDecisionSurfaceContractPath}: ${error&&error.message?error.message:String(error)}`);
+    try{
+      return loadWorkerDecisionSurfaceContract(defaultWorkerDecisionSurfaceContractPath);
+    }catch{
+      return loadWorkerDecisionSurfaceContract();
     }
   }
 }
@@ -6769,6 +6810,14 @@ class CodexAppServerClient{
     this.childTerminated=false;
     this.terminatedTransportError=null;
   }
+  hasUsableChild(){
+    if(this.transportMode==="mock-fixture"){
+      return Boolean(this.child)&&!this.stopping;
+    }
+    const child=this.child;
+    const stdin=child&&child.stdin;
+    return Boolean(child&&!this.stopping&&!this.childTerminated&&stdin&&!stdin.destroyed&&!child.killed);
+  }
   shouldTraceRpcMethod(method){
     return method==="initialize"
       ||method==="thread/start"
@@ -6777,7 +6826,16 @@ class CodexAppServerClient{
       ||method==="turn/interrupt";
   }
   async ensureStarted(){
-    if(this.child&&!this.stopping)return;
+    if(this.hasUsableChild())return;
+    if(this.child&&!this.stopping){
+      logOperation("appserver.restart_required",{
+        reason:"stale_child_detected",
+        childTerminated:this.childTerminated?1:0,
+        stdinDestroyed:this.child&&this.child.stdin&&this.child.stdin.destroyed?1:0,
+        killed:this.child&&this.child.killed?1:0,
+      });
+      this.handleProcessTermination(new Error("app-server is not running"),this.child);
+    }
     if(!this.startPromise)this.startPromise=this.start();
     try{
       await this.startPromise;
@@ -6865,7 +6923,11 @@ class CodexAppServerClient{
     const child=this.child;
     const stdin=child&&child.stdin;
     if(this.childTerminated&&this.terminatedTransportError)throw this.terminatedTransportError;
-    if(!child||!stdin||stdin.destroyed)throw new Error("app-server is not running");
+    if(!child||!stdin||stdin.destroyed){
+      const err=new Error("app-server is not running");
+      if(child)this.handleProcessTermination(err,child);
+      throw this.terminatedTransportError||err;
+    }
     const payload=`${JSON.stringify(msg)}\n`;
     await new Promise((resolve,reject)=>{
       let settled=false;
@@ -6937,7 +6999,16 @@ class CodexAppServerClient{
   }
   async sendRequest(method,params,timeoutMs=120000){
     await this.ensureStarted();
-    return this.sendRequestRaw(method,params,timeoutMs);
+    try{
+      return await this.sendRequestRaw(method,params,timeoutMs);
+    }catch(error){
+      const message=safeString(error&&error.message?error.message:String(error),220);
+      if(message==="app-server is not running"&&!this.stopping&&this.transportMode!=="mock-fixture"){
+        await this.ensureStarted();
+        return this.sendRequestRaw(method,params,timeoutMs);
+      }
+      throw error;
+    }
   }
   setTurnContext(threadId,turnId,context){
     this.turnContexts.set(this.turnKey(threadId,turnId),context||{});
@@ -8775,9 +8846,13 @@ function stripLeadingCompletionClaim(text){
     .trim();
 }
 function rewriteClientFinalTextForOutcome(text,{taskOutcomeStatus="",prompt=""}={}){
+  const disclosureStripped=stripInternalProcessDisclosure({
+    answer:stripPlanningStatusDirective(text),
+    responseContract:userFacingResponseContract,
+  });
   const stripped=stripUnsolicitedClosingProposal({
     prompt,
-    answer:stripPlanningStatusDirective(text),
+    answer:disclosureStripped,
     taskOutcomeStatus,
     responseContract:userFacingResponseContract,
   });
@@ -12613,6 +12688,10 @@ function buildRuntimeApiSnapshot(){
     iterationControlContractPath,
     adoptionReadinessContract,
     adoptionReadinessContractPath,
+    workerDecisionSurfaceContract,
+    workerDecisionSurfaceContractPath,
+    harnessPlaneContract,
+    harnessPlaneContractPath,
     summarizePathForOperationLog,
   });
   const authorityModel=governanceRuntimeSurface.authorityModel;
@@ -12622,6 +12701,9 @@ function buildRuntimeApiSnapshot(){
     configPath:summarizePathForOperationLog(evalSuiteConfigPath,220),
     lanePolicyPath:summarizePathForOperationLog(evalLanePolicyPath,220),
     publicLaneId:safeString(evalLanePolicy&&evalLanePolicy.publicLaneId,80)||"public_regression",
+    protectedPaths:Array.isArray(evalLanePolicy&&evalLanePolicy.protectedPaths)
+      ?evalLanePolicy.protectedPaths.map(entry=>summarizePathForOperationLog(entry,220))
+      :[],
     lanes:Array.isArray(evalLanePolicy&&evalLanePolicy.lanes)
       ?evalLanePolicy.lanes.map((entry)=>summarizeEvalLane(entry))
       :[],
@@ -12644,6 +12726,38 @@ function buildRuntimeApiSnapshot(){
   });
   const iterationControlSummary=governanceRuntimeSurface.iterationControlSummary;
   const adoptionReadinessSummary=governanceRuntimeSurface.adoptionReadinessSummary;
+  const workerDecisionSurfaceSummary=governanceRuntimeSurface.workerDecisionSurfaceSummary;
+  const harnessPlaneSummary=governanceRuntimeSurface.harnessPlaneSummary;
+  const currentWorkerDecisionSurface=(()=>{try{const candidatePath=path.join(workspaceRoot,"output","governance_public","worker_decision_surface.json");if(fs.existsSync(candidatePath)){const parsed=JSON.parse(fs.readFileSync(candidatePath,"utf8"));if(parsed&&typeof parsed==="object"&&!Array.isArray(parsed))return parsed;}}catch{}return null;})();
+  const currentLatestOverview=(()=>{try{const candidatePath=path.join(workspaceRoot,"output","memory_public","latest_overview.json");if(fs.existsSync(candidatePath)){const parsed=JSON.parse(fs.readFileSync(candidatePath,"utf8"));if(parsed&&typeof parsed==="object"&&!Array.isArray(parsed))return parsed;}}catch{}return null;})();
+  const currentGoalCompletion=(()=>{try{const candidatePath=path.join(workspaceRoot,"output","agi_readiness","goal_completion_status.json");if(fs.existsSync(candidatePath)){const parsed=JSON.parse(fs.readFileSync(candidatePath,"utf8"));if(parsed&&typeof parsed==="object"&&!Array.isArray(parsed))return parsed;}}catch{}return null;})();
+  const currentSubjectiveCompletion=(()=>{try{const candidatePath=path.join(workspaceRoot,"output","agi_readiness","subjective_goal_completion_status.json");if(fs.existsSync(candidatePath)){const parsed=JSON.parse(fs.readFileSync(candidatePath,"utf8"));if(parsed&&typeof parsed==="object"&&!Array.isArray(parsed))return parsed;}}catch{}return null;})();
+  const currentCompatibilityCompletion=(()=>{try{const candidatePath=path.join(workspaceRoot,"output","agi_readiness","compatibility_completion_status.json");if(fs.existsSync(candidatePath)){const parsed=JSON.parse(fs.readFileSync(candidatePath,"utf8"));if(parsed&&typeof parsed==="object"&&!Array.isArray(parsed))return parsed;}}catch{}return null;})();
+  const currentTruth={
+    headlineScope:currentLatestOverview&&currentLatestOverview.headlineScope?currentLatestOverview.headlineScope:(currentWorkerDecisionSurface&&currentWorkerDecisionSurface.scope?currentWorkerDecisionSurface.scope:""),
+    workerDecisionSurface:currentWorkerDecisionSurface||null,
+    goalCompletion:currentLatestOverview&&currentLatestOverview.goalCompletion&&typeof currentLatestOverview.goalCompletion==="object"
+      ?currentLatestOverview.goalCompletion
+      :{
+        scope:currentGoalCompletion&&currentGoalCompletion.scope?currentGoalCompletion.scope:"",
+        status:currentGoalCompletion&&currentGoalCompletion.goalStatus?currentGoalCompletion.goalStatus:"",
+        whyNotYetCount:Array.isArray(currentGoalCompletion&&currentGoalCompletion.whyNotYet)?currentGoalCompletion.whyNotYet.length:0,
+      },
+    subjectiveCompletion:currentLatestOverview&&currentLatestOverview.subjectiveCompletion&&typeof currentLatestOverview.subjectiveCompletion==="object"
+      ?currentLatestOverview.subjectiveCompletion
+      :{
+        scope:currentSubjectiveCompletion&&currentSubjectiveCompletion.scope?currentSubjectiveCompletion.scope:"",
+        status:currentSubjectiveCompletion&&currentSubjectiveCompletion.subjectiveGoalStatus?currentSubjectiveCompletion.subjectiveGoalStatus:"",
+        whyNotYetCount:Array.isArray(currentSubjectiveCompletion&&currentSubjectiveCompletion.subjectiveWhyNotYet)?currentSubjectiveCompletion.subjectiveWhyNotYet.length:0,
+      },
+    compatibilityCompletion:currentLatestOverview&&currentLatestOverview.compatibilityCompletion&&typeof currentLatestOverview.compatibilityCompletion==="object"
+      ?currentLatestOverview.compatibilityCompletion
+      :{
+        scope:currentCompatibilityCompletion&&currentCompatibilityCompletion.scope?currentCompatibilityCompletion.scope:"",
+        status:currentCompatibilityCompletion&&currentCompatibilityCompletion.status?currentCompatibilityCompletion.status:"",
+        whyNotYetCount:Array.isArray(currentCompatibilityCompletion&&currentCompatibilityCompletion.whyNotYet)?currentCompatibilityCompletion.whyNotYet.length:0,
+      },
+  };
   const secondaryLearning={
     anthropicEngineering:buildAnthropicEngineeringLearningRuntimeStateSnapshot(),
   };
@@ -12782,8 +12896,32 @@ function buildRuntimeApiSnapshot(){
     document_tooling:documentTooling,
     iterationControl:iterationControlSummary,
     iteration_control:iterationControlSummary,
+    workerDecisionSurface:currentWorkerDecisionSurface||workerDecisionSurfaceSummary,
+    worker_decision_surface:currentWorkerDecisionSurface||workerDecisionSurfaceSummary,
+    workerDecisionSupport:{
+      goalStatus:currentTruth.goalCompletion&&currentTruth.goalCompletion.status?currentTruth.goalCompletion.status:"",
+      goalStatusScope:currentTruth.goalCompletion&&currentTruth.goalCompletion.scope?currentTruth.goalCompletion.scope:"",
+      subjectiveGoalStatus:currentTruth.subjectiveCompletion&&currentTruth.subjectiveCompletion.status?currentTruth.subjectiveCompletion.status:"",
+      subjectiveGoalStatusScope:currentTruth.subjectiveCompletion&&currentTruth.subjectiveCompletion.scope?currentTruth.subjectiveCompletion.scope:"",
+      compatibilityCompletionStatus:currentTruth.compatibilityCompletion&&currentTruth.compatibilityCompletion.status?currentTruth.compatibilityCompletion.status:"",
+      compatibilityCompletionScope:currentTruth.compatibilityCompletion&&currentTruth.compatibilityCompletion.scope?currentTruth.compatibilityCompletion.scope:"",
+    },
+    worker_decision_support:{
+      goalStatus:currentTruth.goalCompletion&&currentTruth.goalCompletion.status?currentTruth.goalCompletion.status:"",
+      goalStatusScope:currentTruth.goalCompletion&&currentTruth.goalCompletion.scope?currentTruth.goalCompletion.scope:"",
+      subjectiveGoalStatus:currentTruth.subjectiveCompletion&&currentTruth.subjectiveCompletion.status?currentTruth.subjectiveCompletion.status:"",
+      subjectiveGoalStatusScope:currentTruth.subjectiveCompletion&&currentTruth.subjectiveCompletion.scope?currentTruth.subjectiveCompletion.scope:"",
+      compatibilityCompletionStatus:currentTruth.compatibilityCompletion&&currentTruth.compatibilityCompletion.status?currentTruth.compatibilityCompletion.status:"",
+      compatibilityCompletionScope:currentTruth.compatibilityCompletion&&currentTruth.compatibilityCompletion.scope?currentTruth.compatibilityCompletion.scope:"",
+    },
+    currentTruth,
+    current_truth:currentTruth,
     adoptionReadinessContract:adoptionReadinessSummary,
     adoption_readiness_contract:adoptionReadinessSummary,
+    workerDecisionSurfaceContract:workerDecisionSurfaceSummary,
+    worker_decision_surface_contract:workerDecisionSurfaceSummary,
+    harnessPlanes:harnessPlaneSummary,
+    harness_planes:harnessPlaneSummary,
     manualSelfImprovement,
     manual_self_improvement:manualSelfImprovement,
     agiImprovementFlywheel,
@@ -15154,6 +15292,26 @@ async function requestHandler(req,res){
           :body.persistProbeResults
       );
       const laneId=safeString(body&&body.laneId,80).toLowerCase().replace(/[\s-]+/g,"_")||safeString(evalLanePolicy&&evalLanePolicy.publicLaneId,80).toLowerCase()||"public_regression";
+      const evalActor=safeString(body&&body.actor,80).toLowerCase()||"developer";
+      const configuredEvalLane=Array.isArray(evalLanePolicy&&evalLanePolicy.lanes)
+        ?evalLanePolicy.lanes.find((entry)=>safeString(entry&&entry.id,80)===laneId)||null
+        :null;
+      if(configuredEvalLane){
+        try{
+          assertEvalLaneAccess({
+            policy:evalLanePolicy,
+            laneId,
+            actor:evalActor,
+            accessMode:"execute",
+            env:process.env,
+          });
+        }catch(error){
+          const message=safeString(error&&error.message?error.message:String(error),220)||"eval_lane_access_denied";
+          const status=/eval_lane_unlock_required/i.test(message)?423:/unknown_eval_lane/i.test(message)?404:403;
+          sendJson(res,status,{ok:false,error:message,laneId,actor:evalActor});
+          return;
+        }
+      }
       const reportId=`eval-${Date.now()}-${crypto.randomBytes(4).toString("hex")}`;
       const manifestInput=agiProfile&&evaluationOptions.manifest&&typeof evaluationOptions.manifest==="object"
         ?evaluationOptions.manifest
@@ -15199,9 +15357,7 @@ async function requestHandler(req,res){
         }
       }
       const comparison=runs.length>=2?compareEvalRuns(runs[0],runs[1]):{winner:"single",reason:"single_variant"};
-      const laneVerifierPolicy=Array.isArray(evalLanePolicy&&evalLanePolicy.lanes)
-        ?(evalLanePolicy.lanes.find((entry)=>safeString(entry&&entry.id,80)===laneId)||null)
-        :null;
+      const laneVerifierPolicy=configuredEvalLane;
       const verifier=buildIndependentVerifierReport({
         laneId,
         suite,

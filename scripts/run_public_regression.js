@@ -42,6 +42,7 @@ async function runPublicRegression({
       headers: harness.authHeaders,
       body: {
         laneId: lane.id,
+        actor,
         suite,
         variants: [
           {

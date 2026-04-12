@@ -32,6 +32,21 @@ const defaultPolicyDefinition = Object.freeze({
     strictLaneRequestUserInputPolicy: "blocked",
     continuousGapClosureLoop: "identify_next_gap_then_close_it_until_terminal_state",
     postCompletionNextTaskSynthesis: "after_each_local_completion_recompute_remaining_gap_and_queue_next_task",
+    minimumHumanInterruptionBias: "minimize_unnecessary_hitl",
+    userOutcomePriority: "adoption_ready_deliverable_over_procedural_closure",
+    literalRequestPreservationRequired: true,
+    latentIntentPreservationRequired: true,
+    internalGoalSubstitutionForbidden: true,
+    silentTaskContractRewriteForbidden: true,
+    proceduralClosureCountsAsSuccess: false,
+    taskContractRevisionMode: "proposal_or_explicit_user_adoption",
+    returnToHumanOnlyWhen: [
+      "explicit_user_judgment_required",
+      "destructive_irreversible_change",
+      "irreversible_external_write",
+      "broad_environment_or_permission_change",
+      "material_authority_or_safety_uncertainty",
+    ],
     retiredWorkerAllowedInNormalRuntime: false,
     systemCoherenceReviewRequiredForCoreChanges: true,
     systemCoherenceReviewContractRef: "scripts/config/system_coherence_review_contract.json",
@@ -304,6 +319,24 @@ function normalizeRuntimeInvariantString(value, fallback, allowedValues) {
   return fallback;
 }
 
+function normalizeRuntimeInvariantStringList(values, fallback, allowedValues) {
+  const out = [];
+  for (const value of Array.isArray(values) ? values : fallback) {
+    const normalized = safeString(value, 120).toLowerCase();
+    if (!normalized) {
+      continue;
+    }
+    if (Array.isArray(allowedValues) && allowedValues.length && !allowedValues.includes(normalized)) {
+      continue;
+    }
+    if (out.includes(normalized)) {
+      continue;
+    }
+    out.push(normalized);
+  }
+  return Object.freeze(out.length ? out : fallback.slice());
+}
+
 function normalizeRuntimeInvariants(input, fallback) {
   const source = input && typeof input === "object" ? input : fallback;
   return Object.freeze({
@@ -329,6 +362,52 @@ function normalizeRuntimeInvariants(input, fallback) {
       source.postCompletionNextTaskSynthesis,
       160
     ) || fallback.postCompletionNextTaskSynthesis,
+    minimumHumanInterruptionBias: normalizeRuntimeInvariantString(
+      source.minimumHumanInterruptionBias,
+      fallback.minimumHumanInterruptionBias,
+      ["minimize_unnecessary_hitl", "operator_confirm_first"]
+    ),
+    userOutcomePriority: normalizeRuntimeInvariantString(
+      source.userOutcomePriority,
+      fallback.userOutcomePriority,
+      ["adoption_ready_deliverable_over_procedural_closure", "procedural_closure_first"]
+    ),
+    literalRequestPreservationRequired: normalizeBoolean(
+      source.literalRequestPreservationRequired,
+      fallback.literalRequestPreservationRequired
+    ),
+    latentIntentPreservationRequired: normalizeBoolean(
+      source.latentIntentPreservationRequired,
+      fallback.latentIntentPreservationRequired
+    ),
+    internalGoalSubstitutionForbidden: normalizeBoolean(
+      source.internalGoalSubstitutionForbidden,
+      fallback.internalGoalSubstitutionForbidden
+    ),
+    silentTaskContractRewriteForbidden: normalizeBoolean(
+      source.silentTaskContractRewriteForbidden,
+      fallback.silentTaskContractRewriteForbidden
+    ),
+    proceduralClosureCountsAsSuccess: normalizeBoolean(
+      source.proceduralClosureCountsAsSuccess,
+      fallback.proceduralClosureCountsAsSuccess
+    ),
+    taskContractRevisionMode: normalizeRuntimeInvariantString(
+      source.taskContractRevisionMode,
+      fallback.taskContractRevisionMode,
+      ["proposal_or_explicit_user_adoption", "parent_override_only"]
+    ),
+    returnToHumanOnlyWhen: normalizeRuntimeInvariantStringList(
+      source.returnToHumanOnlyWhen,
+      fallback.returnToHumanOnlyWhen,
+      [
+        "explicit_user_judgment_required",
+        "destructive_irreversible_change",
+        "irreversible_external_write",
+        "broad_environment_or_permission_change",
+        "material_authority_or_safety_uncertainty",
+      ]
+    ),
     retiredWorkerAllowedInNormalRuntime: normalizeBoolean(
       source.retiredWorkerAllowedInNormalRuntime,
       fallback.retiredWorkerAllowedInNormalRuntime
@@ -723,6 +802,36 @@ function getAgentGovernancePolicySnapshot() {
         policy.runtimeInvariants.postCompletionNextTaskSynthesis,
         160
       ),
+      minimumHumanInterruptionBias: safeString(
+        policy.runtimeInvariants.minimumHumanInterruptionBias,
+        80
+      ),
+      userOutcomePriority: safeString(
+        policy.runtimeInvariants.userOutcomePriority,
+        120
+      ),
+      literalRequestPreservationRequired: Boolean(
+        policy.runtimeInvariants.literalRequestPreservationRequired
+      ),
+      latentIntentPreservationRequired: Boolean(
+        policy.runtimeInvariants.latentIntentPreservationRequired
+      ),
+      internalGoalSubstitutionForbidden: Boolean(
+        policy.runtimeInvariants.internalGoalSubstitutionForbidden
+      ),
+      silentTaskContractRewriteForbidden: Boolean(
+        policy.runtimeInvariants.silentTaskContractRewriteForbidden
+      ),
+      proceduralClosureCountsAsSuccess: Boolean(
+        policy.runtimeInvariants.proceduralClosureCountsAsSuccess
+      ),
+      taskContractRevisionMode: safeString(
+        policy.runtimeInvariants.taskContractRevisionMode,
+        120
+      ),
+      returnToHumanOnlyWhen: Array.isArray(policy.runtimeInvariants.returnToHumanOnlyWhen)
+        ? policy.runtimeInvariants.returnToHumanOnlyWhen.slice(0, 16)
+        : [],
       retiredWorkerAllowedInNormalRuntime: Boolean(
         policy.runtimeInvariants.retiredWorkerAllowedInNormalRuntime
       ),

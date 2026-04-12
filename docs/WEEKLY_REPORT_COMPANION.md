@@ -1,38 +1,21 @@
 # Weekly Report Companion
 
-Updated: 2026-04-07
+Updated: 2026-04-12
 
 ## Purpose
 
-This document holds the external workflow-companion detail that should not live in the core harness architecture spec.
-
-- Core harness authority remains in `README.md`, `AGENTS.md`, `HARNESS_MAP.md`, and `docs/CURRENT_ARCHITECTURE.md`.
-- The weekly-report companion is an adjacent integration that uses the harness as one governed backend surface; it is not the definition of the harness itself.
-- Keeping the integration inventory here prevents `docs/CURRENT_ARCHITECTURE.md` from mixing repo-core architecture with one external workflow's operational details.
+この文書は、weekly-report companion の inventory と boundary を core architecture から分離して管理するための companion doc です。
 
 ## Boundary To The Harness
 
-- The main harness route stays unchanged: `POST /api/exec`.
-- The companion is allowed to sit beside the harness only if it does not introduce a new parallel harness or bypass the existing governed export/eval flow.
-- Companion-specific operational details belong here, not in the core architecture spec.
+- core execution path は `POST /api/exec` / `POST /api/eval/run`
+- weekly-report companion は adjacent workflow であり、core authority を再定義しない
+- 詳細 inventory はこの文書に閉じる
 
 ## Current Verified Companion Inventory
 
-- Conversational face:
-  - Copilot Studio agent `週報下書きアシスタント`
-  - environment `Default-1a69c0c6-e1c8-439d-8c95-0b8bc3c195d4`
-- Evidence persistence:
-  - Microsoft To Do list `Weekly Evidence`
-- Started Power Automate flows:
-  - `WR_TEAMS_CHANNEL_TO_EVIDENCE_V1` (`b46fc296-b725-f111-88b4-000d3acf2bda`)
-  - `WR_OUTLOOK_SENT_TO_EVIDENCE_V1` (`3ce1784f-b825-f111-88b4-000d3acf2bda`)
-  - `WR_ADD_WORK_MEMO_TO_EVIDENCE_V1` (`49e1784f-b825-f111-88b4-000d3acf2bda`)
-  - `WR_GET_WEEKLY_EVIDENCE_PACKET_V1` (`54e1784f-b825-f111-88b4-000d3acf2bda`)
-  - `WR_WEEKLY_DRAFT_REMINDER_V1` (`60e1784f-b825-f111-88b4-000d3acf2bda`)
-- Verified tool exposure:
-  - `WR_ADD_WORK_MEMO_TO_EVIDENCE_V1`
-  - `WR_GET_WEEKLY_EVIDENCE_PACKET_V1`
+現時点で検証済みの companion surface と limitation をここにまとめ、`CURRENT_ARCHITECTURE.md` には詳細を埋め込まないようにします。
 
 ## Known Limitation
 
-- In the current Copilot Studio tool exposure for `WR_ADD_WORK_MEMO_TO_EVIDENCE_V1`, the tested agent UI surfaced `memo_text` but not the optional `memo_project` / `memo_date` fields. Memo capture therefore remains optimized for short one-line notes instead of fully structured memo entry.
+companion inventory は adjacent workflow なので、core governed worker の completion claim とは分けて扱います。

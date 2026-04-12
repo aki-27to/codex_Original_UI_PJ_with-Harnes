@@ -3,6 +3,7 @@
 
 const assert = require("assert");
 const {
+  classifySelfImprovementPromotion,
   defaultSelfImprovementPromotionPolicyPath,
   loadSelfImprovementPromotionPolicy,
 } = require("./lib/openai_blog_learning");
@@ -28,6 +29,34 @@ function main() {
   assert(Array.isArray(policy.shadowCandidate && policy.shadowCandidate.changeClasses), "shadow candidate classes must exist");
   assert(Array.isArray(policy.gatedCandidate && policy.gatedCandidate.changeClasses), "gated candidate classes must exist");
   assert(Array.isArray(policy.blocked && policy.blocked.changeClasses), "blocked change classes must exist");
+  assert.strictEqual(
+    policy.targetLifecycleOverrides["scripts/config/memory_retrieval_policy.json"].memory_pack_policy,
+    "shadow_candidate",
+    "memory retrieval policy should be eligible for shadow-candidate self-improvement"
+  );
+  assert.strictEqual(
+    policy.targetLifecycleOverrides["docs/AGENT_SKILL_MATRIX.md"].skill_surface_policy,
+    "shadow_candidate",
+    "skill matrix should be eligible for shadow-candidate self-improvement"
+  );
+
+  const memoryPackDecision = classifySelfImprovementPromotion({
+    changeClass: "memory_pack_policy",
+    target: "scripts/config/memory_retrieval_policy.json",
+    lanePolicy: {},
+    promotionPolicy: policy,
+  });
+  assert.strictEqual(memoryPackDecision.decision, "shadow_candidate", "memory retrieval policy override should soften lifecycle to shadow candidate");
+  assert.strictEqual(memoryPackDecision.rationale, "target_lifecycle_override", "memory retrieval policy override should explain the relaxed lifecycle");
+
+  const skillSurfaceDecision = classifySelfImprovementPromotion({
+    changeClass: "skill_surface_policy",
+    target: "docs/AGENT_SKILL_MATRIX.md",
+    lanePolicy: {},
+    promotionPolicy: policy,
+  });
+  assert.strictEqual(skillSurfaceDecision.decision, "shadow_candidate", "skill matrix override should soften lifecycle to shadow candidate");
+  assert.strictEqual(skillSurfaceDecision.rationale, "target_lifecycle_override", "skill matrix override should explain the relaxed lifecycle");
 
   const targetedPlan = buildTargetedRegressionPlan({
     policy: loaded.path,

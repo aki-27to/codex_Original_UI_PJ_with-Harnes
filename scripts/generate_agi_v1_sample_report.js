@@ -10,7 +10,7 @@ const {
 } = require("./lib/agi_v1_profile");
 
 const workspaceRoot = path.resolve(__dirname, "..");
-const artifactRoot = path.join(workspaceRoot, "docs", "examples", "agi_v1_sample");
+const artifactRoot = path.join(workspaceRoot, "docs", "samples", "agi_v1");
 
 function makeMetric(family_name, submetric_name, value, options = {}) {
   const metric = {

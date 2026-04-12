@@ -1,6 +1,6 @@
 {
   "schema": "agi-readiness-causal-regression-alerts.v1",
-  "generatedAt": "2026-04-06T15:32:16.717Z",
+  "generatedAt": "2026-04-12T02:52:33.406Z",
   "workspaceId": "5c839dfeef8b555f",
   "harmfulCausalRatio": 0,
   "alerts": []

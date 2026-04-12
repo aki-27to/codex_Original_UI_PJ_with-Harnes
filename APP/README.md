@@ -15,7 +15,6 @@ Current role:
 Current apps:
 - `01.english-conversation-app`
 - `02.talkApp`
-- `03.プレゼン上達AI`
 
 Each app contains one `app.manifest.json`.
 

@@ -1,0 +1,204 @@
+{
+  "schema": "single-harness-multi-plane-contract.v1",
+  "version": "2026-04-12.r1",
+  "sourceDoc": "docs/SINGLE_HARNESS_MULTI_PLANE.md",
+  "repoIdentity": {
+    "mode": "single_governed_harness",
+    "positioning": "execution-centered governed harness with embedded evaluation and governance",
+    "boundaryRule": "split_trust_boundary_not_repo",
+    "parallelHarnessesForbidden": true
+  },
+  "primaryRoutes": {
+    "execution": "POST /api/exec",
+    "evaluation": "POST /api/eval/run"
+  },
+  "planes": {
+    "execution": {
+      "label": "Execution plane",
+      "primaryRoute": "POST /api/exec",
+      "responsibilities": [
+        "request interpretation",
+        "planning",
+        "tool use",
+        "child dispatch",
+        "continuity",
+        "artifact capture"
+      ],
+      "optimizationTargets": [
+        "adoption-ready deliverable",
+        "minimal unnecessary HITL",
+        "latency and cost efficiency",
+        "continuity quality"
+      ],
+      "forbiddenProtectedInputs": [
+        "hidden grader assets",
+        "holdout metadata",
+        "protected eval manifests",
+        "grader internals"
+      ]
+    },
+    "evaluation": {
+      "label": "Evaluation plane",
+      "primaryRoute": "POST /api/eval/run",
+      "responsibilities": [
+        "replay",
+        "scoring",
+        "regression detection",
+        "protected grading",
+        "benchmark and readiness checks",
+        "fail-closed validation"
+      ],
+      "optimizationTargets": [
+        "comparability",
+        "reproducibility",
+        "leakage resistance",
+        "regression sensitivity"
+      ],
+      "protectedAssetRoots": [
+        "protected/holdout",
+        "protected/blackbox"
+      ]
+    },
+    "monitoring": {
+      "label": "Monitoring plane",
+      "responsibilities": [
+        "production and runtime drift detection",
+        "telemetry and operator-visible health",
+        "post-eval observation",
+        "post-release observation"
+      ],
+      "surfaceRoots": [
+        "logs/current",
+        "logs/archive",
+        "output",
+        "runtime"
+      ],
+      "operatorSurfaces": [
+        "GET /api/runtime",
+        "GET /api/harness/overview",
+        "logs/current/operator_summary.json",
+        "output/governance_public/bundle_overview.json",
+        "output/memory_public/latest_overview.json"
+      ]
+    },
+    "governance": {
+      "label": "Governance plane",
+      "responsibilities": [
+        "signoff",
+        "release judgment",
+        "promotion or no-promotion",
+        "adoption or block decision",
+        "policy-aligned stop decision"
+      ],
+      "headlineSurface": "output/governance_public/worker_decision_surface.json",
+      "supportingSurfaces": [
+        "output/agi_readiness/goal_completion_status.json",
+        "output/agi_readiness/subjective_goal_completion_status.json",
+        "output/agi_readiness/compatibility_completion_status.json",
+        "output/governance_public/bundle_overview.json",
+        "output/governance_public/signoff_summary.json"
+      ],
+      "promotionRule": "not_from_exec_self_claim_alone"
+    }
+  },
+  "trustBoundaries": {
+    "executionCannotDependOn": [
+      "hidden grader assets",
+      "holdout metadata",
+      "protected eval manifests",
+      "grader internals"
+    ],
+    "evaluationReadsExecutionArtifacts": [
+      "logs/archive/raw",
+      "output/governance_public",
+      "output/agi_readiness",
+      "output/continuity_public",
+      "output/memory_public"
+    ],
+    "protectedEvalAssetRoots": [
+      "protected/holdout",
+      "protected/blackbox"
+    ],
+    "protectedEvalAssetsVisibleOnlyTo": [
+      "evaluation_plane"
+    ],
+    "governancePromotionRequires": [
+      "evaluation_outputs",
+      "protected_validation_or_equivalent_signoff"
+    ],
+    "workerCurrentTruthOwner": "worker_centric",
+    "sovereignCanBeLegacyAliasOnly": true
+  },
+  "currentTruthSurfaces": {
+    "headlineGovernanceSurface": "output/governance_public/worker_decision_surface.json",
+    "programReadinessSurface": "output/agi_readiness/goal_completion_status.json",
+    "subjectiveCompanionSurface": "output/agi_readiness/subjective_goal_completion_status.json",
+    "compatibilitySurface": "output/agi_readiness/compatibility_completion_status.json",
+    "legacyAliasSurface": "output/agi_readiness/sovereign_goal_completion_status.json"
+  },
+  "strictChecks": [
+    {
+      "id": "execution_plane_defined",
+      "scope": "docs_and_runtime"
+    },
+    {
+      "id": "evaluation_plane_defined",
+      "scope": "docs_and_runtime"
+    },
+    {
+      "id": "monitoring_plane_defined",
+      "scope": "docs_and_runtime"
+    },
+    {
+      "id": "governance_plane_defined",
+      "scope": "docs_and_runtime"
+    },
+    {
+      "id": "execution_plane_primary_route_is_api_exec",
+      "scope": "route_contract"
+    },
+    {
+      "id": "evaluation_plane_primary_route_is_api_eval_run",
+      "scope": "route_contract"
+    },
+    {
+      "id": "worker_decision_surface_scoped_to_governance",
+      "scope": "current_truth"
+    },
+    {
+      "id": "goal_completion_scoped_to_program_readiness",
+      "scope": "current_truth"
+    },
+    {
+      "id": "subjective_completion_scoped_to_companion",
+      "scope": "current_truth"
+    },
+    {
+      "id": "compatibility_completion_scoped_to_compatibility",
+      "scope": "current_truth"
+    },
+    {
+      "id": "protected_eval_assets_not_exposed_to_execution",
+      "scope": "trust_boundary"
+    },
+    {
+      "id": "hidden_holdout_not_required_by_exec_path",
+      "scope": "trust_boundary"
+    },
+    {
+      "id": "governance_not_promoted_from_exec_self_claim_alone",
+      "scope": "governance_gate"
+    },
+    {
+      "id": "docs_aligned_with_single_harness_multi_plane_architecture",
+      "scope": "docs"
+    }
+  ],
+  "requiredDocs": [
+    "README.md",
+    "docs/CURRENT_ARCHITECTURE.md",
+    "docs/AGI_OPERATIONAL_COMPLETION.md",
+    "docs/APP_SERVER_PROTOCOL_RUNBOOK.md",
+    "docs/SINGLE_HARNESS_MULTI_PLANE.md"
+  ]
+}

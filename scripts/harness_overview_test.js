@@ -1848,6 +1848,10 @@ async function runIntegrationCheck() {
     assert.strictEqual(String(overviewJson.runtime.iterationControl.schema || ""), "iteration-control-contract.v1", "overview runtime iterationControl schema mismatch");
     assert(overviewJson.runtime.adoptionReadinessContract && typeof overviewJson.runtime.adoptionReadinessContract === "object", "overview runtime must expose adoptionReadinessContract");
     assert.strictEqual(String(overviewJson.runtime.adoptionReadinessContract.schema || ""), "adoption-readiness-evaluator-contract.v1", "overview runtime adoptionReadinessContract schema mismatch");
+    assert(overviewJson.runtime.harnessPlanes && typeof overviewJson.runtime.harnessPlanes === "object", "overview runtime must expose harnessPlanes");
+    assert.strictEqual(String(overviewJson.runtime.harnessPlanes.schema || ""), "single-harness-multi-plane-contract.v1", "overview runtime harnessPlanes schema mismatch");
+    assert.strictEqual(String(overviewJson.runtime.harnessPlanes.primaryRoutes && overviewJson.runtime.harnessPlanes.primaryRoutes.execution || ""), "POST /api/exec", "overview runtime harnessPlanes execution route mismatch");
+    assert.strictEqual(String(overviewJson.runtime.harnessPlanes.primaryRoutes && overviewJson.runtime.harnessPlanes.primaryRoutes.evaluation || ""), "POST /api/eval/run", "overview runtime harnessPlanes evaluation route mismatch");
     assert(overviewJson.runtime.governedMemory && typeof overviewJson.runtime.governedMemory === "object", "overview runtime must expose governedMemory");
     assert(overviewJson.runtime.manualSelfImprovement && typeof overviewJson.runtime.manualSelfImprovement === "object", "overview runtime must expose manualSelfImprovement");
     assert(typeof overviewJson.runtime.manualSelfImprovement.status === "string", "overview runtime manualSelfImprovement must expose status");

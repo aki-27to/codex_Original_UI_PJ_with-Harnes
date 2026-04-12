@@ -36,6 +36,7 @@ async function runHoldoutEval({
       headers: harness.authHeaders,
       body: {
         laneId: lane.id,
+        actor,
         suite,
         variants: [
           {

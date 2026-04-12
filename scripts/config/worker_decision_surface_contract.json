@@ -1,0 +1,39 @@
+{
+  "schema": "worker-decision-surface-contract.v1",
+  "version": "2026-04-12.r1",
+  "artifactSchema": "worker-decision-surface.v1",
+  "defaultScope": "worker_decision",
+  "decisionQuestion": "Can the governed worker stop here without unnecessary human interruption?",
+  "topLevelOutcomes": [
+    "ADOPTABLE_COMPLETE",
+    "AUTONOMOUS_RETRY",
+    "NEEDS_USER_JUDGMENT",
+    "EXTERNALLY_BLOCKED",
+    "FAILED_VALIDATION"
+  ],
+  "minimalHitlModes": [
+    "close_in_place",
+    "continue_autonomously",
+    "user_judgment_required",
+    "external_blocker",
+    "fail_closed"
+  ],
+  "releaseApprovedStates": [
+    "RELEASE_APPROVED",
+    "RELEASE_APPROVED_WITH_ASSUMPTIONS"
+  ],
+  "adoptionReadinessThreshold": 0.8,
+  "requiredFields": [
+    "scope",
+    "exportSessionId",
+    "topLevelOutcome",
+    "topLevelSummary",
+    "taskOutcomeStatus",
+    "releaseState",
+    "adoptionReadiness",
+    "latentIntentAlignment",
+    "minimalHitl",
+    "operatorAction",
+    "evidenceSummary"
+  ]
+}

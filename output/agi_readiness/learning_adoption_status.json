@@ -1,12 +1,14 @@
 {
   "schema": "agi-readiness-learning-adoption-status.v1",
-  "generatedAt": "2026-04-06T15:32:16.832Z",
+  "generatedAt": "2026-04-12T02:52:33.961Z",
+  "exportSessionId": "export_a63636ff0a86",
+  "scope": "learning_adoption_supporting",
   "workspaceId": "5c839dfeef8b555f",
   "primaryLaneKey": "openai_primary",
-  "selectedInLatestPackCount": 3,
-  "consideredForPackCount": 3,
-  "effectiveContributionCount": 3,
-  "likelyContributoryCount": 6,
+  "selectedInLatestPackCount": 4,
+  "consideredForPackCount": 4,
+  "effectiveContributionCount": 4,
+  "likelyContributoryCount": 11,
   "rolledBackAfterHarmCount": 0,
   "adoptionWindow": {
     "mode": "latest_pack_plus_recent_causal_trace",
@@ -22,10 +24,10 @@
   },
   "summary": {
     "selectedInLatestPackCount": 12,
-    "consideredForPackCount": 3,
-    "surfacedCount": 3,
-    "behaviorallyReferencedCount": 3,
-    "likelyContributoryCount": 6,
+    "consideredForPackCount": 4,
+    "surfacedCount": 4,
+    "behaviorallyReferencedCount": 4,
+    "likelyContributoryCount": 11,
     "harmfulCount": 0,
     "rolledBackHarmCount": 0,
     "rolledBackAfterHarmCount": 0,
@@ -38,66 +40,85 @@
   },
   "laneSummaries": {
     "openai_primary": {
-      "selectedInLatestPackCount": 3,
-      "consideredForPackCount": 3,
-      "surfacedCount": 3,
-      "behaviorallyReferencedCount": 3,
-      "likelyContributoryCount": 6,
+      "selectedInLatestPackCount": 4,
+      "consideredForPackCount": 4,
+      "surfacedCount": 4,
+      "behaviorallyReferencedCount": 4,
+      "likelyContributoryCount": 11,
       "harmfulCount": 0,
       "rolledBackHarmCount": 0,
       "rolledBackAfterHarmCount": 0,
-      "effectiveContributionCount": 3,
-      "causalUsageCount": 6,
+      "effectiveContributionCount": 4,
+      "causalUsageCount": 11,
       "recentTaskRefs": [
-        "turn_fba29baf0b",
-        "turn_7f52ea5222",
-        "turn_31e6a84e49",
-        "turn_632a9c1c65",
-        "turn_4cd81a7c20",
-        "turn_bc24c69220"
+        "turn_762a9a9dcc",
+        "turn_0e02ad81e8",
+        "turn_ebbb49411e",
+        "turn_327e1a8413",
+        "turn_dd1bcfc7b5",
+        "turn_20da12c3ea",
+        "turn_b91b17c48d",
+        "turn_69d9a88530",
+        "turn_5df96fa6c1",
+        "turn_e1f6c2d202",
+        "turn_ef003e86fa"
       ],
       "recentEffects": [
         {
-          "publicRef": "mem_8896adaa48",
+          "publicRef": "mem_dd7ddfe801",
           "usageStage": "likely_contributory",
           "causalConfidence": "direct",
           "taskRefs": [
-            "turn_fba29baf0b",
-            "turn_7f52ea5222",
-            "turn_31e6a84e49",
-            "turn_632a9c1c65",
-            "turn_4cd81a7c20",
-            "turn_bc24c69220"
+            "turn_762a9a9dcc",
+            "turn_0e02ad81e8",
+            "turn_ebbb49411e",
+            "turn_327e1a8413",
+            "turn_dd1bcfc7b5",
+            "turn_20da12c3ea"
           ],
-          "summary": "Using skills to accelerate OSS maintenance | OpenAI Developers"
+          "summary": "Designing delightful frontends with GPT-5.4 | OpenAI Developers"
         },
         {
-          "publicRef": "mem_847a1aba42",
+          "publicRef": "mem_8c8a302df5",
           "usageStage": "likely_contributory",
           "causalConfidence": "direct",
           "taskRefs": [
-            "turn_fba29baf0b",
-            "turn_7f52ea5222",
-            "turn_31e6a84e49",
-            "turn_632a9c1c65",
-            "turn_4cd81a7c20",
-            "turn_bc24c69220"
+            "turn_b91b17c48d",
+            "turn_69d9a88530",
+            "turn_5df96fa6c1",
+            "turn_e1f6c2d202",
+            "turn_20da12c3ea",
+            "turn_ef003e86fa"
           ],
-          "summary": "Building frontend UIs with Codex and Figma | OpenAI Developers"
+          "summary": "How Perplexity Brought Voice Search to Millions Using the Realtime API | OpenAI Developers"
         },
         {
-          "publicRef": "mem_106d75d257",
+          "publicRef": "mem_2b55e90fab",
           "usageStage": "likely_contributory",
           "causalConfidence": "direct",
           "taskRefs": [
-            "turn_fba29baf0b",
-            "turn_7f52ea5222",
-            "turn_31e6a84e49",
-            "turn_632a9c1c65",
-            "turn_4cd81a7c20",
-            "turn_bc24c69220"
+            "turn_b91b17c48d",
+            "turn_69d9a88530",
+            "turn_5df96fa6c1",
+            "turn_e1f6c2d202",
+            "turn_20da12c3ea",
+            "turn_ef003e86fa"
           ],
-          "summary": "Run long horizon tasks with Codex | OpenAI Developers"
+          "summary": "Designing delightful frontends with GPT-5.4 | OpenAI Developers"
+        },
+        {
+          "publicRef": "mem_2b5b766ebf",
+          "usageStage": "likely_contributory",
+          "causalConfidence": "direct",
+          "taskRefs": [
+            "turn_b91b17c48d",
+            "turn_69d9a88530",
+            "turn_5df96fa6c1",
+            "turn_e1f6c2d202",
+            "turn_20da12c3ea",
+            "turn_ef003e86fa"
+          ],
+          "summary": "From prompts to products: One year of Responses | OpenAI Developers"
         }
       ]
     },
@@ -125,7 +146,7 @@
       "promotionState": "promoted",
       "usageMode": "verifier_context",
       "selectedInLatestPack": true,
-      "selectedInPackAt": "2026-04-06T15:15:42.059Z",
+      "selectedInPackAt": "2026-04-12T02:36:57.563Z",
       "usedByTaskRefs": [],
       "taskFamilies": [],
       "usageStage": "selected_only",
@@ -154,7 +175,7 @@
       "promotionState": "promoted",
       "usageMode": "verifier_context",
       "selectedInLatestPack": true,
-      "selectedInPackAt": "2026-04-06T15:15:42.059Z",
+      "selectedInPackAt": "2026-04-12T02:36:57.563Z",
       "usedByTaskRefs": [],
       "taskFamilies": [],
       "usageStage": "selected_only",
@@ -183,7 +204,7 @@
       "promotionState": "promoted",
       "usageMode": "verifier_context",
       "selectedInLatestPack": true,
-      "selectedInPackAt": "2026-04-06T15:15:42.059Z",
+      "selectedInPackAt": "2026-04-12T02:36:57.563Z",
       "usedByTaskRefs": [],
       "taskFamilies": [],
       "usageStage": "selected_only",
@@ -212,7 +233,7 @@
       "promotionState": "promoted",
       "usageMode": "verifier_context",
       "selectedInLatestPack": true,
-      "selectedInPackAt": "2026-04-06T15:15:42.059Z",
+      "selectedInPackAt": "2026-04-12T02:36:57.563Z",
       "usedByTaskRefs": [],
       "taskFamilies": [
         "all"
@@ -243,7 +264,7 @@
       "promotionState": "promoted",
       "usageMode": "explicit_prompt_pack",
       "selectedInLatestPack": true,
-      "selectedInPackAt": "2026-04-06T15:15:42.059Z",
+      "selectedInPackAt": "2026-04-12T02:36:57.563Z",
       "usedByTaskRefs": [],
       "taskFamilies": [
         "smoke-http-exec"
@@ -274,7 +295,7 @@
       "promotionState": "promoted",
       "usageMode": "explicit_prompt_pack",
       "selectedInLatestPack": true,
-      "selectedInPackAt": "2026-04-06T15:15:42.059Z",
+      "selectedInPackAt": "2026-04-12T02:36:57.563Z",
       "usedByTaskRefs": [],
       "taskFamilies": [
         "smoke-http-exec"
@@ -305,7 +326,7 @@
       "promotionState": "captured",
       "usageMode": "explicit_prompt_pack",
       "selectedInLatestPack": true,
-      "selectedInPackAt": "2026-04-06T15:15:42.059Z",
+      "selectedInPackAt": "2026-04-12T02:52:32.093Z",
       "usedByTaskRefs": [],
       "taskFamilies": [
         "smoke-http-exec",
@@ -337,7 +358,7 @@
       "promotionState": "captured",
       "usageMode": "explicit_prompt_pack",
       "selectedInLatestPack": true,
-      "selectedInPackAt": "2026-04-06T15:15:42.059Z",
+      "selectedInPackAt": "2026-04-12T02:52:32.093Z",
       "usedByTaskRefs": [],
       "taskFamilies": [
         "smoke-http-exec",
@@ -362,37 +383,6 @@
       "lastObservedAt": ""
     },
     {
-      "memoryId": "mem_8e6dc0d56a",
-      "publicRef": "mem_8e6dc0d56a",
-      "memoryType": "failure_pattern",
-      "sourceTier": "runtime",
-      "promotionState": "promoted",
-      "usageMode": "explicit_prompt_pack",
-      "selectedInLatestPack": true,
-      "selectedInPackAt": "2026-04-06T15:15:42.059Z",
-      "usedByTaskRefs": [],
-      "taskFamilies": [
-        "default"
-      ],
-      "usageStage": "selected_only",
-      "causalConfidence": "weak",
-      "adoptedInLatestPack": true,
-      "effectiveContribution": false,
-      "effectiveContributionEvidenceRefs": [],
-      "rolledBackAfterHarm": false,
-      "harmRollbackEvidenceRefs": [],
-      "outcomeDelta": {
-        "success": 0,
-        "failure": 0,
-        "neutral": 0,
-        "notApplicable": 0,
-        "retryCount": 0,
-        "verifierOutcome": "UNKNOWN"
-      },
-      "summary": "ambiguous instruction clarify",
-      "lastObservedAt": ""
-    },
-    {
       "memoryId": "mem_b8952a3890",
       "publicRef": "mem_b8952a3890",
       "memoryType": "failure_pattern",
@@ -400,7 +390,7 @@
       "promotionState": "promoted",
       "usageMode": "explicit_prompt_pack",
       "selectedInLatestPack": true,
-      "selectedInPackAt": "2026-04-06T15:15:42.059Z",
+      "selectedInPackAt": "2026-04-12T02:52:32.093Z",
       "usedByTaskRefs": [],
       "taskFamilies": [
         "default"
@@ -424,14 +414,14 @@
       "lastObservedAt": ""
     },
     {
-      "memoryId": "mem_90a929a260",
-      "publicRef": "mem_90a929a260",
+      "memoryId": "mem_38e064a6a2",
+      "publicRef": "mem_38e064a6a2",
       "memoryType": "failure_pattern",
       "sourceTier": "runtime",
       "promotionState": "promoted",
       "usageMode": "explicit_prompt_pack",
       "selectedInLatestPack": true,
-      "selectedInPackAt": "2026-04-06T15:15:42.059Z",
+      "selectedInPackAt": "2026-04-12T02:52:32.093Z",
       "usedByTaskRefs": [],
       "taskFamilies": [
         "default"
@@ -451,7 +441,38 @@
         "retryCount": 0,
         "verifierOutcome": "UNKNOWN"
       },
-      "summary": "adversarial conflicting instruction resolved",
+      "summary": "parent dispatch guard block",
+      "lastObservedAt": ""
+    },
+    {
+      "memoryId": "mem_1ce008bc40",
+      "publicRef": "mem_1ce008bc40",
+      "memoryType": "failure_pattern",
+      "sourceTier": "runtime",
+      "promotionState": "promoted",
+      "usageMode": "explicit_prompt_pack",
+      "selectedInLatestPack": true,
+      "selectedInPackAt": "2026-04-12T02:52:32.093Z",
+      "usedByTaskRefs": [],
+      "taskFamilies": [
+        "default"
+      ],
+      "usageStage": "selected_only",
+      "causalConfidence": "weak",
+      "adoptedInLatestPack": true,
+      "effectiveContribution": false,
+      "effectiveContributionEvidenceRefs": [],
+      "rolledBackAfterHarm": false,
+      "harmRollbackEvidenceRefs": [],
+      "outcomeDelta": {
+        "success": 0,
+        "failure": 0,
+        "neutral": 0,
+        "notApplicable": 0,
+        "retryCount": 0,
+        "verifierOutcome": "UNKNOWN"
+      },
+      "summary": "missing required evidence",
       "lastObservedAt": ""
     },
     {
@@ -462,7 +483,7 @@
       "promotionState": "promoted",
       "usageMode": "explicit_prompt_pack",
       "selectedInLatestPack": true,
-      "selectedInPackAt": "2026-04-06T15:15:42.059Z",
+      "selectedInPackAt": "2026-04-12T02:36:57.563Z",
       "usedByTaskRefs": [],
       "taskFamilies": [],
       "usageStage": "selected_only",

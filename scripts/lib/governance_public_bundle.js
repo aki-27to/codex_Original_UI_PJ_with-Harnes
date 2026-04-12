@@ -1,5 +1,6 @@
 "use strict";
 
+const crypto = require("crypto");
 const fs = require("fs");
 const path = require("path");
 const {
@@ -11,10 +12,21 @@ const {
   buildIterationDecision,
   loadIterationControlContract,
 } = require("./iteration_control_policy");
+const {
+  buildWorkerDecisionSurface,
+} = require("./worker_decision_surface");
+const {
+  loadHarnessPlaneContract,
+  summarizeHarnessPlaneContract,
+} = require("./harness_plane_contract");
+const {
+  resolveExportSessionIdFromCandidates,
+} = require("./export_session_window");
 
 const workspaceRoot = path.resolve(__dirname, "..", "..");
 const defaultLatestSignoffSummaryPath = path.join(workspaceRoot, "logs", "current", "latest_signoff_summary.json");
 const defaultOutputDir = path.join(workspaceRoot, "output", "governance_public");
+const defaultHarnessPlaneContractPath = path.join(workspaceRoot, "scripts", "config", "harness_plane_contract.json");
 
 const exportedSourceArtifacts = Object.freeze([
   { exportName: "signoff_summary.json", baseKey: "bundleRoot", sourceName: "signoff_summary.json" },
@@ -86,6 +98,11 @@ function writeJson(filePath, value) {
 
 function writeText(filePath, value) {
   fs.writeFileSync(filePath, `${String(value || "").replace(/\r?\n?$/, "\n")}`, "utf8");
+}
+
+function stableRef(prefix, seed) {
+  const digest = crypto.createHash("sha256").update(String(seed || "")).digest("hex").slice(0, 12);
+  return `${prefix}_${digest}`;
 }
 
 function replaceAllLiteral(input, from, to) {
@@ -296,6 +313,7 @@ function deriveSupplementalGovernanceArtifacts({
   reviewBundle,
   releaseDecision,
   latestRunSummary,
+  latestSignoffSummary,
   taskOutcomes,
   evidenceContract,
   exportedEvidenceRefs,
@@ -321,6 +339,21 @@ function deriveSupplementalGovernanceArtifacts({
   const residualRisks = uniqueStrings(reviewBundle && reviewBundle.residual_risk, 16);
   const assumptions = uniqueStrings(requestFrame && requestFrame.assumption_policy, 12);
   const clauseCompletionScorecard = deriveClauseCompletionScorecard(reviewBundle, acceptanceResults, finalOutcome);
+  const bundleRef = latestSignoffSummary && latestSignoffSummary.bundleRef && typeof latestSignoffSummary.bundleRef === "object"
+    ? latestSignoffSummary.bundleRef
+    : {};
+  const exportSessionId = resolveExportSessionIdFromCandidates(workspaceRoot, [
+    latestRunSummary && latestRunSummary.turnId,
+    latestRunSummary && latestRunSummary.turn_id,
+    latestRunSummary && latestRunSummary.runId,
+    latestRunSummary && latestRunSummary.run_id,
+    latestSignoffSummary && latestSignoffSummary.selectedTurnId,
+    latestSignoffSummary && latestSignoffSummary.selected_turn_id,
+    bundleRef.bundlePath,
+    bundleRef.summaryPath,
+    latestSignoffSummary && (latestSignoffSummary.finalDecision || latestSignoffSummary.final_decision),
+    "governance-public",
+  ]);
   const iterationHint = {
     action: deriveIterationHintAction(reviewBundle, releaseDecision, finalOutcome),
     blockers: uniqueStrings([
@@ -347,6 +380,8 @@ function deriveSupplementalGovernanceArtifacts({
       ? Number(iterationControlContract.riskThresholds.maxResidualRiskItems)
       : 6,
   }, adoptionReadinessContract);
+  adoptionReadinessEval.exportSessionId = exportSessionId;
+  adoptionReadinessEval.scope = "adoption_readiness";
   const iterationDecision = buildIterationDecision({
     evaluator: adoptionReadinessEval,
     finalOutcome,
@@ -355,15 +390,38 @@ function deriveSupplementalGovernanceArtifacts({
     requiredEvidenceFailures: missingEvidence,
     stepCount: Array.isArray(taskOutcomes && taskOutcomes.task_outcomes) ? taskOutcomes.task_outcomes.length : 0,
   }, iterationControlContract);
+  iterationDecision.exportSessionId = exportSessionId;
+  iterationDecision.scope = "iteration_control";
   const escalationDecision = buildEscalationDecision({
     contract: iterationControlContract,
     iterationDecision,
     finalOutcome,
   });
+  escalationDecision.exportSessionId = exportSessionId;
+  escalationDecision.scope = "operator_escalation";
+  const workerDecisionSurface = buildWorkerDecisionSurface({
+    finalOutcome,
+    adoptionReadinessEval,
+    iterationDecision,
+    escalationDecision,
+    releaseDecision,
+    reviewBundle,
+    requestFrame,
+    taskOutcomes,
+    exportSessionId,
+    supportingArtifacts: exportedEvidenceRefs.concat([
+      "adoption_readiness_eval.json",
+      "iteration_decision.json",
+      "release_decision.json",
+      "review_bundle.json",
+    ]),
+    evidenceRefs: exportedEvidenceRefs,
+  });
   return {
     adoption_readiness_eval: adoptionReadinessEval,
     iteration_decision: iterationDecision,
     escalation_decision: escalationDecision,
+    worker_decision_surface: workerDecisionSurface,
   };
 }
 
@@ -375,6 +433,8 @@ function buildOverview({
   latestRunSummary,
   signoffSummary,
   exportedFiles,
+  workerDecisionSurface,
+  harnessPlaneSummary,
 }) {
   return {
     schema: "governance-public-bundle-overview.v1",
@@ -403,6 +463,24 @@ function buildOverview({
         ? latestSignoffSummary.signoffReady
         : signoffSummary && signoffSummary.signoffReady
     ),
+    workerDecision: workerDecisionSurface && typeof workerDecisionSurface === "object"
+      ? {
+        scope: safeString(workerDecisionSurface.scope, 80) || "worker_decision",
+        exportSessionId: safeString(workerDecisionSurface.exportSessionId, 120),
+        topLevelOutcome: safeString(workerDecisionSurface.topLevelOutcome, 80),
+        topLevelSummary: safeString(workerDecisionSurface.topLevelSummary, 240),
+        operatorAction: safeString(workerDecisionSurface.operatorAction, 80),
+        minimalHitlMode: safeString(
+          workerDecisionSurface.minimalHitl && workerDecisionSurface.minimalHitl.mode,
+          80
+        ),
+        adoptionReady: Number(workerDecisionSurface.adoptionReadiness) >= 0.8 ? 1 : 0,
+      }
+      : {},
+    harnessIdentity: harnessPlaneSummary && harnessPlaneSummary.repoIdentity ? harnessPlaneSummary.repoIdentity : {},
+    primaryRoutes: harnessPlaneSummary && harnessPlaneSummary.primaryRoutes ? harnessPlaneSummary.primaryRoutes : {},
+    planes: harnessPlaneSummary && harnessPlaneSummary.planes ? harnessPlaneSummary.planes : {},
+    currentTruthSurfaces: harnessPlaneSummary && harnessPlaneSummary.currentTruthSurfaces ? harnessPlaneSummary.currentTruthSurfaces : {},
     exportedFiles,
   };
 }
@@ -419,6 +497,11 @@ function buildOverviewMarkdown(overview, exportManifest) {
     `Planning depth: \`${safeString(overview.selectedPlanningDepth, 80)}\``,
     `Assurance depth: \`${safeString(overview.selectedAssuranceDepth, 80)}\``,
     `Final decision: \`${safeString(overview.finalDecision, 80)}\``,
+    `Worker outcome: \`${safeString(overview.workerDecision && overview.workerDecision.topLevelOutcome, 80) || "UNKNOWN"}\``,
+    `Operator action: \`${safeString(overview.workerDecision && overview.workerDecision.operatorAction, 80) || "UNKNOWN"}\``,
+    `Harness identity: \`${safeString(overview.harnessIdentity && overview.harnessIdentity.mode, 80) || "unknown"}\``,
+    `Execution route: \`${safeString(overview.primaryRoutes && overview.primaryRoutes.execution, 120) || "unknown"}\``,
+    `Evaluation route: \`${safeString(overview.primaryRoutes && overview.primaryRoutes.evaluation, 120) || "unknown"}\``,
     "",
     "This directory is a repo-safe redacted governance trace.",
     "Raw `logs/` evidence remains local-only; this export copies the public-auditable request -> routing -> execution -> review -> release chain into tracked `output/` artifacts.",
@@ -438,6 +521,7 @@ function exportGovernancePublicBundle({
   const resolvedLatestSignoffSummaryPath = resolveWorkspacePath(latestSignoffSummaryPath);
   const latestSignoffSummary = readJson(resolvedLatestSignoffSummaryPath);
   assertExportableSignoffSummary(latestSignoffSummary, resolvedLatestSignoffSummaryPath);
+  const harnessPlaneSummary = summarizeHarnessPlaneContract(loadHarnessPlaneContract(defaultHarnessPlaneContractPath));
   const {
     bundleRoot,
     latestRunSummaryPath,
@@ -490,6 +574,7 @@ function exportGovernancePublicBundle({
     reviewBundle: exportedObjects["review_bundle.json"] || {},
     releaseDecision: exportedObjects["release_decision.json"] || {},
     latestRunSummary: exportedObjects["latest_run_summary.json"] || latestRunSummary,
+    latestSignoffSummary: sanitizedLatestSignoffSummary,
     taskOutcomes: exportedObjects["task_outcomes.json"] || {},
     evidenceContract,
     exportedEvidenceRefs,
@@ -515,6 +600,8 @@ function exportGovernancePublicBundle({
     latestRunSummary: exportedObjects["latest_run_summary.json"] || latestRunSummary,
     signoffSummary: exportedObjects["signoff_summary.json"] || latestSignoffSummary,
     exportedFiles: exportedArtifacts.map((entry) => entry.file),
+    workerDecisionSurface: exportedObjects["worker_decision_surface.json"] || supplementalArtifacts.worker_decision_surface,
+    harnessPlaneSummary,
   });
   const exportManifest = {
     schema: "governance-public-bundle-manifest.v1",

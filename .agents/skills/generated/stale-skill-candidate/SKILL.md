@@ -1,6 +1,6 @@
 ---
-name: "stale-skill-candidate"
-description: "Archive-only generated skill used to test stale-skill pruning and archival flows."
+name: stale-skill-candidate
+description: Archive-only generated skill used to test prune flow.
 ---
 
 # Stale Skill Candidate

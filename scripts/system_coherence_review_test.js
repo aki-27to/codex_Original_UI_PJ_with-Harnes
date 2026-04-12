@@ -38,10 +38,12 @@ function testLoadContract() {
     "scripts/config/authority_registry.json",
     "scripts/config/adoption_readiness_evaluator_contract.json",
     "scripts/config/deployment_posture_profiles.json",
+    "scripts/config/harness_plane_contract.json",
     "scripts/config/iteration_control_contract.json",
   ]) {
     assert(contract.requiredMachineContracts.includes(expectedContract), `missing required machine contract: ${expectedContract}`);
   }
+  assert(contract.requiredDocs.includes("docs/SINGLE_HARNESS_MULTI_PLANE.md"), "single harness plane doc must be a required coherence doc");
 }
 
 function testCoreChangeDetection() {
@@ -97,6 +99,7 @@ function testRepoSync() {
   const evidenceDoc = read("docs/EVIDENCE_CONTRACT.md");
   const coherenceDoc = read("docs/SYSTEM_COHERENCE_REVIEW.md");
   const architecture = read("docs/CURRENT_ARCHITECTURE.md");
+  const planeDoc = read("docs/SINGLE_HARNESS_MULTI_PLANE.md");
   const serverText = read("server.js");
 
   assert(packageJson.scripts && packageJson.scripts["test:system-coherence"] === contract.requiredCommand, "package.json must expose the whole-system coherence review command");
@@ -115,6 +118,10 @@ function testRepoSync() {
   assert(evidenceDoc.includes(contract.requiredCommand), "EVIDENCE_CONTRACT.md must reference the whole-system coherence review command");
   assert(coherenceDoc.includes(contract.primaryExecRoute), "SYSTEM_COHERENCE_REVIEW.md must describe the standard primary execution route");
   assert(architecture.includes("scripts/config/system_coherence_review_contract.json"), "CURRENT_ARCHITECTURE.md must reference the machine-readable whole-system coherence review contract");
+  assert(architecture.includes("scripts/config/harness_plane_contract.json"), "CURRENT_ARCHITECTURE.md must reference the machine-readable harness plane contract");
+  assert(planeDoc.includes("POST /api/exec"), "SINGLE_HARNESS_MULTI_PLANE.md must describe the execution route");
+  assert(planeDoc.includes("POST /api/eval/run"), "SINGLE_HARNESS_MULTI_PLANE.md must describe the evaluation route");
+  assert(planeDoc.includes("single governed harness"), "SINGLE_HARNESS_MULTI_PLANE.md must keep the single harness identity");
   assert(serverText.includes("system_coherence_review_missing"), "server.js must enforce whole-system coherence review as a distinct missing-evidence reason");
 }
 

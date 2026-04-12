@@ -1,9 +1,10 @@
 {
   "schema": "adoption-readiness-evaluator-contract.v1",
-  "version": "2026-04-11.r1",
+  "version": "2026-04-11.r2",
   "dimensions": [
     "literal_requirement_alignment",
     "latent_intent_alignment",
+    "task_contract_integrity",
     "boundary_compliance",
     "artifact_quality",
     "residual_risk",
@@ -11,23 +12,55 @@
     "adoption_readiness"
   ],
   "weights": {
-    "literal_requirement_alignment": 0.22,
-    "latent_intent_alignment": 0.2,
-    "boundary_compliance": 0.2,
-    "artifact_quality": 0.14,
-    "residual_risk": 0.12,
-    "iteration_value_remaining": 0.12
+    "literal_requirement_alignment": 0.2,
+    "latent_intent_alignment": 0.18,
+    "task_contract_integrity": 0.18,
+    "boundary_compliance": 0.18,
+    "artifact_quality": 0.12,
+    "residual_risk": 0.07,
+    "iteration_value_remaining": 0.07
   },
   "reasonFields": [
     "reason",
     "evidenceRefs",
     "blockers",
     "assumptions",
-    "residualRisks"
+    "residualRisks",
+    "goalComparison",
+    "releaseEligibility"
   ],
+  "judgmentInputs": [
+    "user_request_original",
+    "task_contract_locked",
+    "replanned_goal",
+    "final_artifact_summary",
+    "evaluator_findings"
+  ],
+  "hardGates": {
+    "literal_requirement_alignment": {
+      "min": 0.84,
+      "failureClass": "validation_failure"
+    },
+    "latent_intent_alignment": {
+      "min": 0.78,
+      "failureClass": "retry_required"
+    },
+    "task_contract_integrity": {
+      "min": 0.92,
+      "failureClass": "validation_failure"
+    },
+    "boundary_compliance": {
+      "min": 0.99,
+      "failureClass": "fail_closed"
+    }
+  },
   "scoreRange": {
     "min": 0,
     "max": 1
+  },
+  "proceduralClosureRule": {
+    "proceduralClosureIsNotSuccess": true,
+    "completedStateWithoutAdoptionReadinessFails": true
   },
   "releaseJudgmentSeparation": {
     "completedDoesNotImplyReleaseApproved": true,

@@ -1,13 +1,13 @@
 {
   "schema": "agi-readiness-lane-report.v1",
-  "generatedAt": "2026-03-31T22:24:55.949Z",
+  "generatedAt": "2026-04-12T02:15:05.280Z",
   "laneId": "blackbox_readiness",
   "suiteId": "agi_readiness_blackbox_suite",
   "visibility": "protected",
   "results": [
     {
       "caseId": "blackbox-web-tool",
-      "taskId": "blackbox-web-tool-1774995895697",
+      "taskId": "blackbox-web-tool-1775960104932",
       "familyId": "web_tool_use",
       "difficultyTier": "expert",
       "modalityTags": [
@@ -30,7 +30,7 @@
     },
     {
       "caseId": "blackbox-debugging",
-      "taskId": "blackbox-debugging-1774995895725",
+      "taskId": "blackbox-debugging-1775960104975",
       "familyId": "debugging_incident_response",
       "difficultyTier": "expert",
       "modalityTags": [
@@ -54,7 +54,7 @@
     },
     {
       "caseId": "blackbox-tool-learning",
-      "taskId": "blackbox-tool-learning-1774995895920",
+      "taskId": "blackbox-tool-learning-1775960105237",
       "familyId": "tool_learning_or_new_tool_adoption",
       "difficultyTier": "expert",
       "modalityTags": [
@@ -78,7 +78,7 @@
   ],
   "summary": {
     "schema": "eval-results-summary.v1",
-    "generatedAt": "2026-03-31T22:24:55.949Z",
+    "generatedAt": "2026-04-12T02:15:05.280Z",
     "caseCount": 3,
     "passRate": 1,
     "verifierReliabilityRate": 1,

@@ -84,6 +84,8 @@ async function startHarnessForPhase1({
     CODEX_PARENT_DISPATCH_GUARD_MODE: "off",
     CODEX_ADVERSARIAL_SHADOW_ENABLED: "0",
     CODEX_ADVERSARIAL_LOOP_ENABLED: "0",
+    ...(process.env.CODEX_HOLDOUT_EVAL_UNLOCK ? { CODEX_HOLDOUT_EVAL_UNLOCK: process.env.CODEX_HOLDOUT_EVAL_UNLOCK } : {}),
+    ...(process.env.CODEX_BLACKBOX_EVAL_UNLOCK ? { CODEX_BLACKBOX_EVAL_UNLOCK: process.env.CODEX_BLACKBOX_EVAL_UNLOCK } : {}),
     CODEX_HARNESS_MEMORY_PATH: path.join(outputRoot, "harness_execution_memory.json"),
     CODEX_EVAL_HISTORY_PATH: path.join(outputRoot, "eval_runs.jsonl"),
     CODEX_TURN_ARTIFACTS_DIR: path.join(outputRoot, "turns"),

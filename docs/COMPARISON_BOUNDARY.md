@@ -1,76 +1,77 @@
-# Comparison Boundary
+# 比較の境界線
 
 Authority role: `navigation / comparison guard only`  
 Authority registry: `authority-registry.v1`
 
-This page exists to stop the wrong comparison before it distorts the product.
+このページは、**間違った比較で製品の形がゆがまないようにするための境界線**です。
 
-## Wrong First Question
+<!-- ## Wrong First Question -->
+## 最初に置いてはいけない問い
 
-Do not start with:
+次の問いから入ってはいけません。
 
-- "How many providers does it support?"
-- "How much does it look like a generic agent shell?"
-- "Does it have the same homepage breadth theater as broad runtime products?"
+- どれだけ多くの対応先を持つか
+- 何でもできる汎用エージェントのように見えるか
+- breadth-first product と同じ派手な表紙を持っているか
 
-Those questions bias the repo toward the wrong category.
+これらは、この repo を間違ったカテゴリへ引きずります。
 
-## Right First Question
+<!-- ## Right First Question -->
+## 最初に置くべき問い
 
-Start with:
+この repo を測るなら、次の問いから入ります。
 
-- Can this runtime do delegated work and still keep fixed authority boundaries intact?
-- Can it stop honestly when proof is missing?
-- Can it tell the difference between "something ran" and "the result is adoptable"?
-- Can a third party audit what happened?
-- Can long-horizon work resume without losing intent, proof, or release state?
+- 委ねた仕事を、固定された権限境界の内側で最後まで進められるか
+- proof が薄いときに正直に止まれるか
+- 「何かが動いた」と「採択可能な成果物である」を区別できるか
+- 第三者があとから判断根拠を追えるか
+- 長い作業を、意図と証拠を失わずに再開できるか
 
-## What Category This Repo Actually Fits
+## この repo が属するカテゴリ
 
-Best-fit category:
+最も近いカテゴリ:
 
 - governed autonomous worker platform
 - enterprise adoption harness
 - proof-carrying agent runtime
 
-Not the primary category:
+第一カテゴリではないもの:
 
-- broad runtime shell
-- provider marketplace runtime
-- consumer convenience agent shell
+- breadth-first runtime shell
+- 接続先の多さを売りにする実行基盤
+- 手軽さを前面に出した消費者向けエージェント環境
 
-## Why This Boundary Matters
+## なぜこの境界が大事か
 
-If people compare it on the wrong axis:
+間違った軸で比べると、次が起きます。
 
-- the repo looks weaker than it is
-- the runtime breadth gets undervalued
-- governance looks like bureaucracy instead of product value
-- teams are tempted to chase generic-runtime features that weaken the core strategy
+- repo が本来より弱く見える
+- 実行できる仕事の幅が見えなくなる
+- governance が官僚的な足かせに見える
+- roadmap が汎用実行環境向けの機能に引っ張られる
 
-The risk is not only "losing a comparison."
-The risk is bending the roadmap toward the wrong product.
+問題は比較に負けることだけではありません。  
+製品そのものが間違った方向へ曲がることです。
 
-## Strategic Guardrail
+## 守るべき戦略ガード
 
-Do not add or prioritize features only because they make the repo resemble a broad runtime shell more closely.
+ただ breadth-first runtime shell に近づけるためだけの機能は足しません。
 
-Do prioritize features when they:
+優先するのは次です。
 
-- make governed execution more visible
-- reduce buyer uncertainty
-- make breadth easier to see and touch
-- strengthen adoption-ready outcomes
-- preserve the fixed-authority / fail-closed / evidence-first core
+- governed execution を visible にする
+- buyer uncertainty を減らす
+- 幅を仕事単位で見せる
+- adoption-ready outcome を強くする
+- fixed-authority / fail-closed / evidence-first の core を守る
 
-## One-Line Rule
+<!-- ## One-Line Rule -->
+## 一行ルール
 
-`Compare this repo on adoptability, not on generic shell breadth.`
+この repo は「どれだけ派手に広く見えるか」ではなく、採択可能性で比べる。
 
-## Use This Doc When
+## この文書を使う場面
 
-Read this page when the question is:
-
-- "what should we compare this against?"
-- "why is a broad runtime comparison misleading?"
-- "how do we avoid drifting the product toward the wrong market shape?"
+- 何と比べるべきかを決めるとき
+- breadth-first runtime comparison がなぜずれるのか説明するとき
+- roadmap がぶれていないか見直すとき

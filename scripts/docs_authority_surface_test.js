@@ -43,7 +43,8 @@ function run() {
     "docs/HARNESS_CONSTITUTION.md",
     "docs/CURRENT_ARCHITECTURE.md",
     "docs/EVIDENCE_CONTRACT.md",
-    "docs/archive/AI_AGENT_HARNESS_TEXTBOOK_JA.html",
+    "docs/human/AI_AGENT_HARNESS_DETAILED_DESIGN.html",
+    "docs/human/legacy/AI_AGENT_HARNESS_TEXTBOOK_JA.html",
   ];
   for (const relativePath of requiredDocs) {
     assertOk(fs.existsSync(path.join(workspaceRoot, relativePath)), `${relativePath} must exist`);
@@ -149,6 +150,10 @@ function run() {
     "COMPARISON_BOUNDARY.md",
     "PRODUCT_POSITIONING.md",
     "PROVIDER_AND_PORTABILITY.md",
+    "human/AI_AGENT_HARNESS_DETAILED_DESIGN.html",
+    "human/legacy/AI_AGENT_HARNESS_TEXTBOOK_JA.html",
+    "integrations/copilot-studio/weekly-report-agent-design.md",
+    "samples/agi_v1/agi_v1_report.md",
   ]) {
     assertOk(docsIndex.includes(marker), `docs/README.md must reference ${marker}`);
   }

@@ -100,6 +100,14 @@ function splitLines(text) {
     .filter(Boolean);
 }
 
+function containsInternalProcessDisclosure(text, responseContract = defaultUserFacingResponseContract) {
+  const contract = resolveResponseContract(responseContract);
+  if (!contract.internalProcessDisclosure.enabled) {
+    return false;
+  }
+  return containsAnyLiteral(text, contract.internalProcessDisclosure.prohibitedPhrases);
+}
+
 function detectUnsolicitedClosingProposal({
   prompt = "",
   answer = "",
@@ -182,6 +190,36 @@ function stripUnsolicitedClosingProposal({
   return changed ? current : original;
 }
 
+function stripInternalProcessDisclosure({
+  answer = "",
+  responseContract = defaultUserFacingResponseContract,
+} = {}) {
+  const original = safeTrimmedString(answer, 16000);
+  const contract = resolveResponseContract(responseContract);
+  if (!original || !contract.internalProcessDisclosure.enabled) {
+    return original;
+  }
+
+  let current = original;
+  let changed = false;
+
+  const originalParagraphs = splitParagraphs(current);
+  const filteredParagraphs = originalParagraphs.filter((paragraph) => !containsInternalProcessDisclosure(paragraph, contract));
+  if (filteredParagraphs.length !== originalParagraphs.length) {
+    current = filteredParagraphs.join("\n\n").trim();
+    changed = true;
+  }
+
+  const originalLines = splitLines(current);
+  const filteredLines = originalLines.filter((line) => !containsInternalProcessDisclosure(line, contract));
+  if (filteredLines.length !== originalLines.length) {
+    current = filteredLines.join("\n").trim();
+    changed = true;
+  }
+
+  return changed ? current : original;
+}
+
 function leadContainsCompletionClaim(text, responseContract = defaultUserFacingResponseContract) {
   const contract = resolveResponseContract(responseContract);
   if (!contract.completionClaims.requireCompletedTaskOutcome) {
@@ -196,9 +234,11 @@ function leadContainsCompletionClaim(text, responseContract = defaultUserFacingR
 
 module.exports = {
   defaultUserFacingResponseContract,
+  containsInternalProcessDisclosure,
   detectUnsolicitedClosingProposal,
   extractExactReplyContract,
   leadContainsCompletionClaim,
   promptAllowsOptionalFollowUp,
+  stripInternalProcessDisclosure,
   stripUnsolicitedClosingProposal,
 };

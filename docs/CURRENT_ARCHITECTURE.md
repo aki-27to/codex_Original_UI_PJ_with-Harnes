@@ -1,661 +1,173 @@
-# CURRENT_ARCHITECTURE
+# 現在の技術構成
 
 Updated: 2026-04-12
 
-## 1) Purpose
+Authority role: `active design spec`  
+Authority registry: `authority-registry.v1`
 
-This document is the active architecture spec for the Codex App Server integration harness.
-- Authority role: `active design spec`
-- Authority registry: `authority-registry.v1`
-- Front-door identity doc: `README.md`. It positions the repo as a local-first governed decision system, not just a local Web + CLI wrapper.
-- Docs entrypoint and authority map: `docs/README.md`. It is now intentionally role-based and front-door oriented, so newcomers can route themselves by task instead of reading the docs tree linearly.
-- Product-facing public summaries now also live in `docs/DEMO_FLOWS.md`, `docs/CAPABILITY_SURFACE.md`, `docs/BUYER_PAIN_MAP.md`, `docs/PRODUCT_POSITIONING.md`, `docs/COMPARISON_BOUNDARY.md`, and `docs/PROVIDER_AND_PORTABILITY.md`. Those pages are not new authority layers; they are the visible explanation layer for fixed demo jobs, capability breadth, buyer pain translation, market framing, comparison-boundary control, and honest portability posture.
-- Single-source authority precedence lives in `scripts/config/authority_registry.json`.
-- GitHub-native Copilot governance mirrors live under `.github/copilot-instructions.md`, `.github/instructions/`, and `.github/agents/`; they project the same local constitution and authority boundaries into GitHub-facing surfaces without replacing `AGENTS.md` or machine-readable contracts.
-- Beginner one-page guide: `docs/BEGINNER_PATH.md`. It is now a five-minute operator path centered on `POST /api/exec`, `POST /api/eval/run`, `logs/current/`, and `output/` rather than an architecture-first walkthrough.
-- Shared terminology: `docs/GLOSSARY.md`.
-- Operator map: `HARNESS_MAP.md`.
-- Current-state architecture belongs here.
-- Historical implementation logs belong in `docs/ARCHITECTURE_CHANGELOG.md`.
-- Frozen design authority is `docs/HARNESS_CONSTITUTION.md`.
-- The frozen constitution now explicitly separates L0 sovereignty from L1 mission: human-adopted authority / stop / release boundaries stay fixed at the top, while the top-level mission is to turn user requests into adoption-ready deliverables rather than merely reaching a procedurally neat internal state.
-- External workflow companions and adjacent experiments must keep their detailed inventories in dedicated docs (for example `docs/WEEKLY_REPORT_COMPANION.md`) so this file stays focused on the harness itself.
-- Repo root should stay source-first. Transient local caches, browser payloads, scratch exports, and migrated `tmp_*` material belong under `runtime/`, while governed evidence stays under `logs/` and intentional report/artifact surfaces stay under `output/`.
-- `output/` is taxonomy-driven rather than dump-oriented: named program/report artifacts stay there, but the repo now distinguishes repo-tracked public-safe proof artifacts from local-only intentional artifacts. Regenerable transient captures such as Playwright profile trees, ad hoc UI screenshots, demo-home scratch roots, timestamped phase probe files, and temporary `note_article_*.md` drafts belong under `runtime/output-transient/` with retention applied by housekeeping policy.
-- `output/governance_public/` is now the repo-safe redacted proof bundle for the latest signoff-ready golden trace. It republishes the public-auditable request -> routing -> execution -> review -> release chain from local-only `logs/` without checking raw runtime state into Git.
-- Narrative docs are subordinate to machine-readable contracts and runtime proof.
-- Human-oriented overview-first guide: `docs/AI_AGENT_HARNESS_DETAILED_DESIGN.html`. It explains the harness mechanism from big picture to deeper details and does not replace this spec or the machine-readable contracts.
-- Long-form legacy textbook now lives under `docs/archive/AI_AGENT_HARNESS_TEXTBOOK_JA.html` so repo root can stay source-first.
-- AGI-oriented eval/promotion extension guide: `docs/AGI_V1_EVAL_FRAMEWORK.md`.
-- Consolidated readiness/completion summary: `docs/AGI_OPERATIONAL_COMPLETION.md`. Thin readiness leaf docs were folded into this surface so checked-in proof families can be explained from one place instead of one top-level file per artifact.
+<!-- machine-readable compatibility markers:
+scripts/config/system_coherence_review_contract.json
+scripts/config/harness_plane_contract.json
+Execution plane
+Monitoring plane
+.github/copilot-instructions.md
+.github/instructions/
+.github/agents/
+node scripts/github_copilot_governance_surface_test.js
+-->
 
-## 2) Active Execution Path
+## 1) この文書の位置づけ
 
-- Interactive execution stays on standard Codex through `POST /api/exec`.
-- Evaluation and release judgment stay on `POST /api/eval/run`.
-- The UI is local-first and defaults to port `57525`.
-- An invalid non-numeric `CODEX_UI_PORT` falls back to `57525` before `UI_URL` is built.
-- Project-scoped Codex defaults in `.codex/config.toml` keep `features.fast_mode = false` for this repo, keep `features.guardian_approval = true` enabled, and leave `service_tier` unspecified so non-Fast turns follow the provider default instead of forcing `flex`.
-- The web harness now initializes Fast mode and Automatic approval review from the runtime operator defaults, and forwards the operator's current `fastModeEnabled` / `automaticApprovalReviewEnabled` toggle values on every interactive `POST /api/exec` call, so Fast can be switched on or off from the local UI without relying on slash-command state.
-- Fast mode now defaults to OFF for fresh local sessions unless `CODEX_FAST_MODE_DEFAULT` overrides it, and repo-scoped Codex defaults no longer re-enable Fast behind the operator default.
-- `web/01.HarnesUI/index.html` now exposes a Codex v0.116-era permission surface in the settings panel: `Agent (Auto)`, `Chat (Read Only)`, `Guardian Approvals`, `Agent (Full Access)`, and `Custom (config.toml)` are the primary operator-facing modes.
-- Fresh HarnesUI sessions now default that operator-facing permission selector to `Agent (Full Access)` / `danger-full-access`; saved browser preferences still win when present.
-- Deployment posture is now profile-backed through `scripts/config/deployment_posture_profiles.json`. `portable_local` is the reference architecture default, while `owner_local` preserves the stronger local-only posture and `reviewed_team` keeps stricter reviewed change control.
-- Those stronger defaults are owner-operated local defaults for this repo, not a blanket recommendation for every deployment. Broader deployments should prefer explicit workspace locks, narrower sandbox posture, and policy review before adopting the same baseline.
-- The same settings panel now shows an always-visible permission summary card for the active mode, keeps raw config-level controls (`approval_policy`, `sandbox_mode`, guardian toggle) behind a dedicated advanced details block, and no longer exposes deprecated interactive `on-failure` approval wording.
-- The same HarnesUI settings column now also exposes a workspace-lock control strip (`このパスで lock` / `unlock`) plus live lock status text driven by `/api/runtime.workspaceGuard`, and simple view collapses the settings card down to that workspace-lock surface so design-sensitive `web_ui` turns can be recovered without leaving the main console.
-- `web/01.HarnesUI/index.html` and `web/01.HarnesUI/styles.css` now use a chat-first three-zone layout instead of the older telemetry-heavy console stack: left rail for chat + execution settings, center column for transcript + composer, and right rail for `Mission Brief`, live phase/progress, and agent trace. The visual language is now lighter and simpler, closer to contemporary assistant UIs, while `web/01.HarnesUI/app.js` also mirrors the current phase/work summary into the top live-status strip so operators can see the active step without scanning the full harness panel. Operator-facing labels and placeholders were also normalized back to clean UTF-8 copy so the simplified layout does not regress into mojibake on first paint, and the right-side `Mission Brief` was further softened into a low-assertion input aid that avoids path-heavy automatic `Scope` fallbacks for vague prompts.
-- A 2026-04-08 follow-up pass pushed that same HarnesUI surface from runtime-centered toward operator-centered information design: the always-visible right rail is now limited to `AI の理解`, `今どの作業をしているか`, `止まっている理由`, `Current step`, `Next step`, and a lighter timeline-style execution trace, while requirement details, topology, diagnostics, and other raw/runtime-heavy surfaces stay collapsed behind `details`. The visible current/next-step cards now use simpler human-language status copy instead of plan-source jargon, the `Harness Status` summary cards stack vertically for readability in the narrow rail, and the focus-panel tool strip is hidden so the right rail reads like an operator summary rather than an internal dashboard.
-- A 2026-04-09 structural refresh pushed that same `simple is best` direction much further. The live-status strip moved into the topbar as the single always-on runtime line, the left rail now keeps only `Chats` plus a small workspace quick-lock surface visible while runtime settings and maintenance sit behind a fold, and the right side is now a single `Operator summary` surface that shows `AI understanding`, a three-line `Requirement lock`, `Live` (`Now / Stage / Blocked because`), `Current step`, `Next step`, and the lightweight trace timeline. On narrower screens that summary becomes a full-width section after the conversation/composer, while the top live-status line keeps the active phase visible before the transcript.
-- A later 2026-04-09 right-rail remediation finished the functional half of that simplification. `web/01.HarnesUI/app.js` now refreshes the `AI understanding` card on every normal render pass instead of leaving it behind dead `workspace/send` card guards, the visible `Current phase` text no longer repeats the phase state inline, `Current work` now summarizes the active action instead of echoing the blocker verbatim, and `Blocked because` uses a dedicated requirement-gate explanation (`要件未確定`, `未確定: ...`) rather than generic idle copy. `Execution Plan` purpose lines also switched from internal `支える依頼/要件` wording to flatter operator copy (`満たす条件`, `見る観点`, `目的を整理中`), while the mobile layout now keeps the conversation before the status rail instead of reversing that priority.
-- A final 2026-04-09 non-chat UI pass pushed that same HarnesUI surface closer to an AI-chat-style operator layout. `web/01.HarnesUI/styles.css` now strips most nested card chrome from the left/right rails, turns the topbar into a simple three-part header (`brand / live status / settings`), widens the side and status rails slightly while keeping the transcript dominant, removes horizontal scrolling from the left rail, and forces long workspace-lock paths to wrap instead of leaking into a scrollbar. `web/01.HarnesUI/app.js` also shortens workspace-lock copy into compact operator text while preserving the full path in hover/title metadata, so the visible UI stays simple without hiding the underlying truth.
-- A later 2026-04-09 polish pass finished the right rail as a quieter operator surface instead of a mixed-language control stack. `web/01.HarnesUI/index.html` now keeps the right rail and topbar labels in a single Japanese operator voice (`進行サマリー`, `AI の理解`, `現在 / 次`, `実行トレース`), `web/01.HarnesUI/styles.css` widens the right rail slightly, reduces summary density, and softens the topbar settings pill, and `web/01.HarnesUI/app.js` continues to derive the lead summary from live runtime phase/plan/event context rather than from static draft heuristics.
-- A 2026-04-11 composer simplification removed the remaining noisy prompt chrome from the visible chat surface. The main composer now presents only the textarea, attachment affordance, and send/stop actions in the always-visible surface, keeps the textarea placeholder silent by default, clears the legacy canned composer sample when it reappears as saved `draftPrompt` state, and leaves the old `Mission` heading, template shortcut row, runtime chips, and helper copy out of sight so the center column reads like a normal AI chat instead of a form builder.
-- A 2026-04-11 rollback removed the experimental/Codex voice strip from the visible `web/01.HarnesUI` surface. The main harness UI is text-only again, keeps the standard authenticated `POST /api/exec` path as its sole visible interaction lane, no longer ships a browser-mic / TTS sidecar inside the console itself, and preserves the healthy multiline composer/layout surface after the rollback repair.
-- `web/01.HarnesUI/app.js` now treats operator execution state as chat-scoped instead of console-global: each chat persists its own workspace path, desired workspace-lock root, execution profile, approval/sandbox/web-search toggles, model selection, and unsent composer draft, and room switches rehydrate those values into the visible controls before optionally syncing the server-side workspace lock to the active room.
-- `web/01.HarnesUI/index.html`, `web/01.HarnesUI/app.js`, and `server.js` now treat `web_search` as an exact tri-state execution control (`cached | live | disabled`) instead of a UI-only boolean. The selected mode is sent through `POST /api/exec`, preserved in the execution recipe/runtime snapshots, used in thread-reset comparisons, and forwarded to `thread/start` config without collapsing `cached` and `live` into the same value.
-- `web/01.HarnesUI/index.html` and `web/01.HarnesUI/app.js` now keep the local model preset surface aligned with the current Codex lineup by exposing `gpt-5.4`, `gpt-5.4-mini`, and `gpt-5.3-codex` as first-class operator choices.
-- The main `web/01.HarnesUI/index.html` chat composer now auto-grows with multi-line input while keeping its empty-state height as the stable baseline, so clearing the field or resizing the window while expanded still returns the control to the original initial height.
-- Interactive Web UI submits now attach UI-generated idempotency keys, automatically retry bounded transient `/api/exec` submit failures, and recover post-open stream disconnects from persisted idempotency/replay state when possible, so short transport drops or browser-visible disconnects do not immediately surface as a final operator failure.
-- `on-request` approval policy is now compatible with the non-interactive harness path: low-risk approval requests are auto-reviewed and accepted, while high-risk approval requests still fail closed instead of silently bypassing review.
-- `default` is the default exec agent and the canonical collaboration-first parent entrypoint for end-to-end tasks.
-- `start_codex_ui.bat` applies autonomy-first Windows launcher defaults only when env vars are unset:
-  - `CODEX_EXECUTION_PROFILE=full-runtime`
-  - `CODEX_REQUEST_USER_INPUT_POLICY=auto-default`
-  - `CODEX_AUTOMATIC_APPROVAL_REVIEW=1`
-  - `CODEX_FAST_MODE_DEFAULT=0`
-  - `CODEX_SERVER_RESTART_MAX_RETRIES=4`
-  - `CODEX_SERVER_RESTART_DELAY_MS=1500`
-  - `CODEX_SERVER_STABLE_WINDOW_SECONDS=30`
-  - `CODEX_PARENT_DISPATCH_GUARD_MODE=enforce`
-  - `CODEX_PARENT_DISPATCH_GUARD_MAX_RETRIES=1`
-- The launcher now also keeps `node server.js` behind a restart loop with a bounded retry budget and stability window, so unexpected harness exits can recover without requiring an immediate manual relaunch.
-- Re-running `start_codex_ui.bat` now defaults to reusing an already-running local harness on the configured UI port instead of force-restarting it. Explicit restart mode still exists, but the launcher refuses to kill an existing listener while `/api/exec` work is active unless `CODEX_FORCE_ACTIVE_RESTART=1` is set, and it keeps browser auto-open launcher-owned so the latest source can still be reflected without duplicate UI windows.
-- `start_codex_ui.bat` now applies `CODEX_PAUSE_ON_EXIT=1` before its early dependency/elevation checks as well, so the launcher does not immediately disappear on those fast-fail paths unless operators explicitly opt out with `CODEX_PAUSE_ON_EXIT=0`.
-- `start_codex_ui.bat` also enables turn-complete Git automation by default:
-  - `CODEX_GIT_AUTOCOMMIT_ENABLED=1`
-  - `CODEX_GIT_AUTOPUSH_ENABLED=1`
-  - `CODEX_GIT_ALLOW_DIRTY_BASELINE=0`
-  - `CODEX_GIT_REMOTE=origin`
-- `server.js` itself now defaults turn-complete Git automation to `commit + push` unless env overrides disable it.
-- `server.js` now infers the non-interactive `request-user-input` fallback as `auto-default` when `CODEX_REQUEST_USER_INPUT_POLICY` is unset, so non-fatal clarification flows default to autonomous continuation instead of hard stops.
-- Planning governance now treats `approvalBoundaryItems` as audit metadata by default. They still surface in requirement and risk summaries, but they no longer force `DISCOVERY`/`NEEDS_INPUT` unless the prompt carries an explicit user-decision clause or the action is a narrow irreversible external escalation.
-- The active intent profile now carries an autonomy block in addition to taste/design preferences. That block defines the runtime primary objective, clarification policy, progress style, self-correction posture, and whether intent directives should be injected into live prompts.
-- `server.js` now injects that active intent profile into both planning selection and the live execution prompt for normal `/api/exec` turns, while keeping eval/probe/replay/signoff/proof and repro-style profiles out of that prompt-injection path.
-- For preference-driven `web_creative` turns that lack a hard benchmark or explicit visual direction, planning now consults the active intent profile before synthesizing a clarification stop. When the profile says `minimize_user_intervention + propose_then_execute`, Step 1 can keep moving with bounded autonomous direction inference instead of auto-emitting a synthetic `ask_user_once`.
-- `server.js` remains the composition root and route-registration surface, but business logic is increasingly delegated into `scripts/lib/*` modules.
-- Authority resolution lives in `scripts/lib/authority_registry.js`.
-- Deployment posture resolution lives in `scripts/lib/deployment_posture_profile.js`.
-- Iteration-control and escalation policy live in `scripts/lib/iteration_control_policy.js`.
-- Adoption-readiness evaluation lives in `scripts/lib/adoption_readiness_policy.js`.
-- The active L2-L4 machine contracts now carry the same anti-bureaucratic semantics as L0/L1: `scripts/config/agent_governance_contracts.json` forbids internal goal substitution / silent task-contract rewrite / procedural-closure-as-success, `scripts/config/iteration_control_contract.json` gates release on literal + latent + task-contract integrity instead of adoption score alone, and `scripts/config/adoption_readiness_evaluator_contract.json` plus `scripts/lib/adoption_readiness_policy.js` now hard-gate task-contract integrity and treat procedural closure without user-adoptable outcome as non-releaseable.
-- `output/agi_readiness/latest_readiness.json` now separates the internal capability score from the public headline score. `rawFinalScore` stays the internal governed capability score sourced from the latest `agi_v1` bundle, while `displayFinalScore` follows `externallyAuditableScore`, which is penalized/capped when blocked agenda items, insufficient-evidence debt, open continuity debt, or incomplete operational completion remain.
-- Governance runtime/eval-turn bundle assembly now also lives in `scripts/lib/governance_bundle.js`, so `/api/runtime`, `/api/eval/run`, and turn-close release assembly no longer keep that policy glue inline in `server.js`.
-- The read-only app platform surface now also lives in `scripts/lib/app_platform_read_surface.js`. `server.js` still owns route order and remains the composition root, but static English Conversation App mount resolution, static runtime snapshot shaping, same-origin static serving, and the read-only `GET /api/runtime`, `GET /api/apps`, and `GET /api/apps/:id/runtime` dispatch now run through that dedicated module instead of staying inline.
-- The harness overview payload assembly now also lives in `scripts/lib/harness_overview_surface.js`. `server.js` still owns `GET /api/harness/overview` and preserves the public route contract, but the governed-memory sync plus the overview snapshot assembly no longer need to stay inline in the composition root.
-- The overview capability-readout helpers now also live in `scripts/lib/harness_capability_surface.js`. Continuity/browser artifact readers and the lightweight runtime-artifact path helpers moved out of `server.js`, so the composition root keeps the public `/api/harness/overview` route while one more read-only snapshot slice is built in a dedicated module.
-- Release decision and conformance assembly continue to live in `scripts/lib/constitution_conformance.js`.
-- Planning / requirement lock, orchestration / dispatch, governed memory compilation, and self-improvement promotion continue to live in their dedicated `scripts/lib/*` modules rather than being redefined as route-local inline policy.
-- Output-surface hygiene is also machine-readable. `scripts/config/output_surface_policy.json` defines which generated surfaces remain intentional `output/` artifacts, which intentional artifacts are repo-tracked versus local-only, and which material is regenerable transient output. `scripts/organize_output_surface.js` enforces the transient boundary plus bounded retention under `runtime/output-transient/`, while `scripts/output_surface_git_policy_test.js` enforces the tracked-versus-ignored split with Git-aware checks.
-- `scripts/export_governance_public_bundle.js` now regenerates `output/governance_public/` from the latest signoff bundle referenced by `logs/current/latest_signoff_summary.json`. The export copies the repo-safe trace artifacts, redacts workspace-local absolute paths, and derives `adoption_readiness_eval.json`, `iteration_decision.json`, and `escalation_decision.json` when the underlying historical turn bundle predates those standalone files.
-- Whole-system coherence review is also machine-readable. `scripts/config/system_coherence_review_contract.json` defines when core harness changes must be reviewed across execution path, governance, contracts, server/runtime, eval/memory/lifecycle, and artifact-surface planes, and `node scripts/system_coherence_review_test.js` is the required audit command for those changes.
-- The existing `/api/eval/run` path now also supports an AGI-oriented evaluation profile behind `evaluation.profile = "agi_v1"`. This is extension-only: legacy suites, legacy score flow, and non-`agi_v1` reports stay unchanged, while `agi_v1` adds fail-closed manifest integrity checks, `standard` / `elicited` aggregation, AGI-oriented metric families, and a dedicated `report.agiV1` bundle plus promotion decision.
-- `docs/AGI_V1_EVAL_FRAMEWORK.md` now makes the proof boundary explicit as well: the page is a design contract, but fresh evidence must still come from the existing `/api/eval/run` artifacts and the standing `test:agi-v1:*` verification surface rather than from narrative docs alone.
-- `scripts/lib/agi_v1_profile.js` is the central config, aggregation, manifest, and promotion layer for that profile, and `scripts/lib/agi_candidate_runtime.js` reuses the existing champion/challenger runtime to apply AGI-oriented promotion logic only when the compared bundles are `agi_v1`.
-- Long-running single-agent continuity now stays file-backed and local-first under `logs/archive/raw/runtime_state/continuity/`, and it is intentionally layered on top of the existing `/api/exec`, `/api/eval/*`, public/holdout lanes, independent verifier, and rollback posture rather than introducing a new execution route.
-- Final externalization and no-HITL closure are also layered on top of the same governed runtime instead of creating a second orchestration path. `scripts/run_externalization_nohitl.js` drives a non-interactive closure profile, returns machine-readable statuses such as `AUTO_PASS`, `AUTO_FAIL`, `BLOCKED_BY_ENV`, `BLOCKED_BY_POLICY`, and `EXTERNAL_EVIDENCE_PENDING`, and keeps public-claim evidence separate from mock/simulation fixtures.
-- The same closure layer now also exposes an internal/private governance view for owner-operated deployments. In that view, human baseline is not a primary readiness axis; it is recorded only as `calibration_only_for_private_governance`, while `task breadth`, `long-duration resilience`, `adaptation gain`, `tool-learning reliability`, `regression stability`, and `freeze safety` drive `PRIVATE_LOOP_*` state reporting. Public-claim gates remain unchanged and still require observed external evidence.
-- Claim closure now separates `internal/private governance` from `public claimability` more explicitly. The internal/private lane treats human baseline as `calibration_only_for_private_governance` and promotes primary loop signals such as task breadth, long-duration resilience, adaptation gain, tool-learning reliability, regression stability, and freeze safety, while the public lane still requires observed human/external/deployment evidence and does not mix mock/synthetic fixtures into claim decisions.
-- External-only evidence remains file-backed and import-driven. Human baseline packets, external audit sealed packs, deployment evidence imports, and recomputed claim-gap artifacts live under `output/externalization_nohitl/` plus `logs/archive/raw/{human_baseline,external_audit,deployment_evidence}/`, so the harness can prepare, verify, and ingest outside-world evidence without fabricating that evidence inside `/api/exec`.
-- Repo-side closure verification is now a separate export/audit layer, not a new runtime phase. `scripts/run_repo_closure_export.js` fixes four operator entrypoints: `full_preflight`, `export_all_external_packets`, `import_all_observed`, and `recompute_public_claim`. It emits `output/repo_closure_export/{repo_closure_audit,external_evidence_manifest,final_blocking_matrix,final_structured_status}.json` plus packet roots for human baseline, external audit, deployment evidence, provider connection, and host config application.
-- `server.js` now treats app-server stdio transport failures as child-scoped failures: write-side pipe errors and late stale-child close/error events reject the affected RPCs/turn watchers, clear the dead child, and keep the parent harness server alive so the next request can respawn the app-server.
-- `GET /api/runtime` now exposes `serverProcess.activeExecRequests` / `restartProtection` plus an `appServerTransport` snapshot, so launchers and operators can tell whether the harness is safe to restart before touching the active listener.
-- `server.js` now also ignores broken-pipe-like process-level stdout/stderr and uncaught `EPIPE` failures instead of shutting the entire harness down for those local transport faults; non-broken-pipe fatal errors still terminate normally.
-- The harness is a governed decision system: top-level outcomes must end in one of
-  - `RELEASE_APPROVED`
-  - `RELEASE_APPROVED_WITH_ASSUMPTIONS`
-  - `RELEASE_BLOCKED`
-  - `EXTERNAL_ACTION_REQUIRED`
-  - `HARNESS_FAILURE`
-- `logs/current/` is restricted to the fixed five operator-facing summaries; constitution-conformance and operator-view detail stay in bundle or raw evidence, not as extra current files.
-- Child evidence ledgers now infer reviewer/tester participation from dispatched child prompt context when the app-server surfaces opaque child thread IDs, preventing live reviewer evidence from being dropped purely because the receiver name is not a human-readable role label.
-- Adversarial retries and parent-dispatch retries now preserve the original `planningContext` instead of re-planning from the retry copy, so execution-task retries keep the same dispatch and evidence contract as the originating turn.
-- The parent dispatch guard now treats non-proposal turns with planned child dispatches as dispatch-required even before file edits or commands are observed, preventing answer-only completions from bypassing a child-execution contract.
-- Planning-mode specialist routing now applies localized frontend/backend signals for Japanese prompts, and `LIGHT_ASSURANCE` single-specialist plans do not force reviewer evidence unless review or signoff signals actually require it.
-- Benchmarked `web_creative` work now has an assurance floor: any web-creative request with a fixed benchmark/reference URL is at least `STANDARD_ASSURANCE`, and explicit near-copy phrasing such as `ほぼ同じ` / `完全再現` / `丸パクリ` escalates to `SIGNOFF_ASSURANCE`.
-- Follow-up turns now carry forward the prior turn's locked benchmark candidates when the same workspace stays on a web-creative correction thread, so "this is still too different" style prompts do not silently drop the reference anchor.
-- Specialist `ownedPaths` are now derived from the active repo/workspace shape instead of generic role defaults, so Laravel-style workspaces resolve frontend ownership to paths such as `resources/views/`, `resources/css/`, `resources/js/`, and `routes/web.php` instead of a misleading fallback like `web/`.
-- User-facing final text is now softened when the derived task outcome is not `COMPLETED`: adversarial shadow review flags premature completion claims, and the runtime rewrites leading `done/fixed/修正済み` phrasing into explicit not-complete wording before it reaches the operator.
-- User-facing response enforcement now also treats unsolicited follow-up/menu-style closings as a contract defect for non-blocked answers. Adversarial shadow review fails answers that reopen the conversation with `必要なら...` / `If you'd like...` style offers when the prompt did not ask for options, adversarial retry prompts now explicitly require direct-answer-first plus close-in-place behavior for short fact/status turns, and the final client text strips any leftover optional closing invitation as a last-resort safety net.
-- Close-in-place user-facing response governance is now machine-readable as well as documented: `scripts/config/user_facing_response_contract.json` defines exempt outcome states, prompt signals that allow option menus, prohibited closing starters, completion-claim lead phrases, internal-process disclosure bans, and exact-reply bypass rules; `server.js`, `scripts/lib/user_facing_response_policy.js`, and `scripts/lib/adversarial_shadow_policy.js` all consume that shared contract instead of carrying separate hard-coded policy lists.
-- Turn-complete Git automation ignores harness runtime metadata files under `logs/archive/raw/` plus persona memory under `logs/archive/raw/runtime_state/` when the target repo is this workspace, so operator-memory persistence alone does not trigger an automated publish.
-- `web/` owns the browser UI and uses the standard exec/runtime APIs.
-- `web/01.HarnesUI/guide.html` is the static human-facing guide that explains the harness without depending on live runtime data, and its front-door copy now explicitly frames the repo as a governed autonomous worker platform rather than a broad runtime shell. The page now exposes the three visible jobs (`delegated implementation`, `governed review / release decision`, `long-horizon continuity / bounded improvement`), keeps the standard routes and evidence posture visible, distinguishes the live `request-user-input=auto-default` default from strict blocked lanes (`conversation`, `proof`, `repro`), and explains the English Conversation App as same-origin by default with an optional standalone `127.0.0.1:57526` launcher/proxy.
-- That operator-facing wording is now guarded by `scripts/web_autonomy_copy_test.js` and the existing `npm run test:docs:drift` entry, while `scripts/eval_replay_api_smoke_test.js` now expects the live runtime default to stay `auto-default` and `scripts/app_server_smoke_test.js` now picks an available local port for harness startup. That lets README / guide / HARNESS_MAP drift and the corresponding fresh runtime proof checks stay aligned without waiting for a larger end-to-end suite.
-- Previously archived legacy/reference payloads that were proven unused were purged from the repository root; the active runtime no longer ships a top-level legacy payload set.
-- `GET /english-conversation-app/*` now preserves the existing same-origin route while resolving static files in this priority order:
-  - `CODEX_ENGLISH_CONVERSATION_APP_ROOT`
-  - in-repo app root `APP/01.english-conversation-app/`
-  - legacy external clone `../english-conversation-app/`
-  - bundled fallback `web/english-conversation-app/`
-- The integrated English conversation app can also run as a standalone app on `127.0.0.1:57526` via `APP/01.english-conversation-app/start_english_conversation_app.bat` and `standalone_server.js`. That standalone server owns only the English app browser session and proxies just the conversation/voice APIs back to the main harness on `127.0.0.1:57525`, so opening the app no longer restarts or interrupts active HarnesUI `/api/exec` turns.
-- That standalone proxy normalizes `Origin` / `Referer` to the harness origin for proxied mutation APIs so the main harness can keep its same-port local-origin checks without rejecting standalone English conversation POST calls.
-- The same standalone proxy keeps longer upstream timeouts for conversation/TTS mutation routes than for lightweight runtime probes, so a normal local conversation turn does not get misreported as backend-unavailable simply because the proxy gave up before the harness conversation timeout.
-- The harness-side `conversation-app-server` lane now treats English conversation turns as a lightweight non-dispatch profile: parent-dispatch guard retries are exempt for that profile, `requestUserInput` is explicitly blocked, and the route runs with a conversation-specific low reasoning-effort override so short spoken replies can complete without leaking internal retry prompts or forcing unnecessary specialist delegation.
-- `bootstrap_english_conversation_app_repo.bat` / `scripts/bootstrap_english_conversation_app_repo.ps1` can still seed a legacy external clone from the bundled static app when that compatibility path is needed.
-- `web/01.HarnesUI/overview.html` is a dedicated operator overview page that aggregates runtime posture, topology, contracts, evidence bundles, replay/eval summaries, and skill coverage without mixing that inventory into the execution console, and its top-line copy now presents the page as the operator map for standard routes, governance posture, release truth, and `agi_v1`-facing eval posture rather than as generic telemetry.
-- `web/01.HarnesUI/overview.html`, `web/01.HarnesUI/overview.css`, and `web/01.HarnesUI/overview.js` now separate first-glance posture from deep inventory. `Runtime` and `Evidence` stay open by default, `Topology / Contracts / Traceability / Memory` move behind collapsible section shells, the raw `/api/harness/overview` snapshot is closed by default, and the overview no longer relies on mojibake-prone refresh-state labels in the operator-facing view.
-- The same overview runtime surface now also populates `Stop Intelligence` as a real contract-backed panel instead of a placeholder shell. Operators can see budget ceilings, improvement thresholds, fail-closed / validation / retry triggers, adoption hard gates, and the latest family gate without opening raw contract JSON.
-- The same overview now also exposes the governed external-learning lane: official OpenAI Developers blog ingestion status, recent promoted learnings, pending proposal-only targets, and freeze-aware boundaries are visible there without adding noise to the main execution console.
-- The same overview memory surface now also exposes a governed memory graph card. Operators can inspect the canonical memory root, event-log path, promoted/captured counts, workspace-progress objective/blockers, and the latest compiled memory pack without opening raw runtime files.
-- The same overview memory surface now also treats skill coverage as `Skill Economy` rather than only a static audit. Promotion-ready skills, lesson-to-skill pressure from manual capture, outcome-sampled success rate, and portfolio-mix thresholds are visible alongside the older assignment / missing-proposal checks.
-- The standalone floating `AIエージェントかんばん` has been removed. `web/01.HarnesUI/index.html` now embeds the same `/api/agent-topography` view inside `実行トレース` as an inline `担当エージェント` section, keeps the grouped `稼働中 / 親 / 専門 / 検証` lanes, keeps any scoped runtime agent with an active turn visible in `稼働中` even when that scoped session belongs to a different chat, and still surfaces actually spawned collab child agents as live rows when `spawnAgent`/`sendInput`/`wait` activity proves they are actively working.
-- `web/01.HarnesUI/index.html` keeps `Performance Metrics` scoped to the active chat's thread/session instead of the process-global runtime session, so plan/progress/performance surfaces stay aligned while operators switch between chats.
-- `web/01.HarnesUI/app.js` now keeps the progress panel chat-scoped even when the last room is deleted and auto-replaced with a fresh chat: a replacement chat in `forceNewSession` posture no longer adopts an unbound stale `latestTurn` purely because it is the only remaining `default` chat.
-- `web/01.HarnesUI/app.js` now primes a local Web Audio context from the send interaction and plays a short completion chime when the active `runPrompt` flow reaches a terminal status (`completed`, `failed`, or `interrupted`).
-- `server.js` now keeps a transient live-collab child registry for real spawn activity and retains the child's last terminal snapshot after `wait` completes. When collab payloads omit the explicit child role, the harness resolves the child name from the locked dispatch plan or prompt-role hints, merges that child into `/api/agent-topography`, and preserves terminal evidence such as `completed / failed / interrupted / needs_input`, child thread id, and last detail instead of immediately collapsing back to a generic configured row.
-- `web/01.HarnesUI/app.js` now fast-refreshes `/api/agent-topography` after collab item completions and merges those synced topography rows back into the main `実行トレース` card lanes plus trace list. Spawned child specialists therefore move from `実行中` into `完了` or `失敗/中断` with chat-scoped terminal evidence instead of only the parent agent being represented.
-- `web/01.HarnesUI/app.js` now treats workspace-lock submit failures as `needs_input` instead of a raw terminal error: `workspace_lock_required` and `outside_locked_workspace` responses are rewritten into Japanese operator guidance, the assistant transcript explains what to do next, and the workspace-lock strip highlights the exact recovery action without requiring operators to decipher `HTTP 409`.
-- `web/01.HarnesUI/app.js` now preserves the main chat composer's existing initial height while auto-growing and shrinking `#promptInput` to match multiline operator input, including send-clear, preset insert, command insert, and viewport-resize reflow paths.
-- `web/01.HarnesUI/index.html` now treats readability as the top-level console goal: it defaults to a simpler view, never hides the main `Harness Status` panel behind the secondary-telemetry toggle, and surfaces `task family`, `user-value thesis`, and `family gate` inside the existing progress/verdict summaries instead of adding extra inventory panels.
-- `web/01.HarnesUI/index.html`, `web/01.HarnesUI/app.js`, and `web/01.HarnesUI/styles.css` now foreground first-run clarity: the work surface adds a `次にやること` focus panel, chat cards show a short preview instead of only a title, the conversation area has an explicit empty-state guide plus a jump-to-composer action, the header exposes a `UI更新` reload action for HTML/CSS/JS-only refreshes, and the composer exposes fill-only prompt presets. Mobile simple-view still orders the main work surface ahead of the settings column, while the composer stays in the normal page flow at the bottom of the conversation area instead of following the viewport during scroll.
-- `web/01.HarnesUI/index.html`, `web/01.HarnesUI/app.js`, and `web/01.HarnesUI/styles.css` now treat AGI-facing prompt structure as a first-class operator surface. The console exposes a `Mission Brief` with `Goal / Scope / Constraints / Done When`, keeps a runtime strip (`mode / model / workspace / attachments`) directly above the composer, derives both from the live draft or latest user request, and updates those summaries reactively as the operator edits prompt text or execution settings.
-- The same console no longer leaks scoped runtime ids such as `default@chat-*` into the main operator surfaces. Chat list meta, live-status summaries, pending-state labels, trace cards, and topography cards now use operator-facing agent labels (`Codex`, `要件プランナー`, `UI実装`, `サーバ実装`, `環境・運用`) while deeper session/thread ids stay confined to the technical metadata lines.
-- Mobile simple-view now keeps the mission-to-composer path inside the first viewport: secondary helper cards collapse, mission copy is clamped, preset buttons become a horizontal scroll strip, and the composer remains above the fold instead of after the full focus stack.
-- `web/01.HarnesUI/styles.css` now keeps the desktop composer action column content-sized instead of stretching it to the textarea column height, so the `停止` / `送信` buttons remain normal controls even when the composer grows taller.
-- `web/01.HarnesUI/app.js` now keeps the composer in static bottom placement and clears the old reserved sticky-spacing path, while the transcript panel itself keeps a compact bottom edge instead of reserving a large blank strip.
-- The conversation transcript now renders message rows inside a bottom-aligned `timeline-stack`, so chats with only a few messages no longer pin those messages to the very top of the tall transcript panel and instead sit near the composer in a ChatGPT-like reading position until the thread grows long enough to need scrolling.
-- `Execution Plan` no longer fabricates inferred operator-visible steps from harness-flow heuristics. The panel now shows only explicit streamed `plan` events or an explicit `PLAN SKIP` decision derived from the pre-dispatch planning context.
-- `Current Work` now prefers the active explicit plan step (or `PLAN SKIP`) over the latest raw event row, so operators can see which locked plan step is currently being executed.
-- `scripts/lib/operator_plan_surface.js` now rewrites generic policy-plan copy into user-request-specific execution language before it reaches `Execution Plan`: discovery/needs-input turns surface the concrete goal or first unresolved question, and generic execution plans fall back to the locked goal / owned paths / acceptance checks instead of showing only governance stop rules.
-- `web/01.HarnesUI/index.html` now exposes a dedicated `Requirement Lock` panel inside `Harness Status`, so the active chat can read the locked Step 1 contract directly from `latestTurn.planning.requirementContract` instead of inferring it from later plan or trace rows.
-- The `Requirement Lock` surface is now intentionally single-card and pre-plan focused: instead of a multi-box contract inventory, `web/01.HarnesUI/app.js` condenses Step 1 into one short `AIの方針` card. The operator should be able to read the current goal or working hypothesis at a glance, then scan only a few compact rows such as `進め方`, `止まる理由`, and `守る線` without reading a contract dashboard.
-- The single-card Requirement Lock now rejects fragmentary clause-like goals such as `...するときは` as operator headlines. `scripts/lib/planning_mode_policy.js` downgrades those clauses before lock, `web/01.HarnesUI/app.js` prefers the interpreted direction over a dangling literal fragment, and blocked contracts can no longer keep a misleading `確定した見立て` label just because an older `displayContract.goalMode` said `locked`.
-- Step 1 requirement contracts now use `requirement-contract.v5`, which keeps the prior `status` / `statusReason`, `provenance`, `validation`, and `revisionLedger` fields while adding `lockedGoal`, `intentHypotheses`, `challengeReport`, `questionPlan`, `delightPlan`, and `displayContract`. The contract can now separate a validated goal from earlier hypotheses, record challenger-style failure points, prioritize only a few next questions, keep optional adjacent value outside the core contract, and hand the UI a display-safe summary instead of forcing client-side restatement heuristics.
-- The same `requirement-contract.v5` path now also persists `owner: "intake"` plus a machine-readable `requestCoverage` ledger. Step 1 now re-parses the sanitized user prompt directly for clause seeding instead of backfilling from the requirement contract: it rebuilds goal/scope/non-goal/acceptance sections, prompt directives, prompt-level value signals, prompt-anchored benchmarks, and approval-boundary lines before mapping those clauses back into contract fields via `mappedRequirements`. Core clause ids stay in `coreObligations`, while non-core clauses that are deferred or excluded stay explicit through `parkedItems`, auto-generated `droppedItems`, and `coverageSummary`.
-- The same locked contract now also carries `activeRevisionProposal` and `revisionGate`. Once a requirement contract is locked, non-`intake` turns keep the previous authoritative contract as-is, mark downstream meaning changes as `proposal_required`, and surface the requested `changedFields` / `reason` / `evidence` / `requiresReapproval` / `originatingAgent` without silently rewriting the contract body.
-- `intake` remains the only authoritative publisher for requirement revisions. When intake approves a pending revision proposal and issues the revised contract version, the contract records the approval lineage in `revisionLedger.approvedProposalId` / `approvedProposalOriginatingAgent` and clears the gate for downstream execution.
-- Requirement validation now treats request coverage as a first-class gate. Unmapped `coreObligations` fail with `request_coverage_core_mapped`, while malformed parked/dropped entries fail `request_coverage_parked_reasoned` or `request_coverage_dropped_reasoned` instead of silently proceeding.
-- Question-style Step 1 goals inside `Requirement Lock` now render from a machine-readable `intentInterpretation` stored in `latestTurn.planning.requirementContract`, rather than from UI-only restatement heuristics. `scripts/lib/planning_mode_policy.js` now locks `presentation` (`goal` or `progress_hypothesis`), `questionLike`, `direction`, and `hypothesis` during Step 1, and `web/01.HarnesUI/app.js` treats that contract as the primary source of truth.
-- The `進行仮説` presentation is now gated on actual interpretation at the contract layer: when Step 1 cannot derive a distinct interpreted direction or hypothesis, the locked `intentInterpretation.presentation` stays `goal`, and the UI must not fabricate `向かう先` / `ユーザー意図の仮説` from the raw user wording. Meta-questions about literal requirement intake now lock a dedicated interpreted `direction` / `hypothesis` pair that distinguishes appearance from actual behavior.
-- Step 1 requirement extraction now tolerates unstructured Japanese-first prompts better: `scripts/lib/planning_mode_policy.js` strips courtesy-only lead-ins such as `ありがとうございます。`, recognizes additional Japanese goal/scope headings from `scripts/config/planning_mode_contract.json`, promotes purpose-bearing lines like `製作目的...` into `explicitGoal`, and infers concrete baseline items such as page count, working directory, content placeholders, company metadata, and reference URLs from plain multiline briefs even when the operator did not pre-structure the prompt.
-- `web/01.HarnesUI/app.js` now treats the Requirement Lock as present only when Step 1 captured core requirement data (`explicitGoal`, `implicitGoal`, acceptance checks, baseline/over-delivery scope, non-goals, assumptions, or open questions). The panel no longer shows a misleading locked summary for greeting-only input that only produced the default `userValueFrame`.
-- `web/01.HarnesUI/app.js` still keeps Step 1 contract quality visible, but now does it with a concise meta badge plus the single narrative card rather than splitting status, scope, and value into separate boxes. Status (`下書き / 保留 / 確定 / 改訂`), validator verdict (`PASS / WARN / BLOCK`), provenance mix (`明示 / 含意 / 推定 / 既定`), revision signals, prioritized next questions, and optional delight-lane candidates remain available without turning the panel into a contract dashboard.
-- The same single-card Requirement Lock meta now includes `依頼反映 x / y`, `保留 n`, and `除外 n` from `requestCoverage.coverageSummary`, so operators can see whether Step 1 is actually carrying the user's core request without reviving the old multi-box dashboard.
-- `dispatch-plan.v2` now carries machine-readable request-trace refs on each dispatch: `requestClauseRefs`, `requirementRefs`, and `acceptanceCheckRefs`. Downstream operator-plan steps inherit the same refs, so Step 2 can explain which core user clauses and acceptance checks each visible stage is serving instead of surfacing only governance wording.
-- The main `Execution Plan` surface now foregrounds those refs instead of hiding them behind the overview page: the current-step card and every rendered plan row show a short purpose line (`支える依頼`, `支える受け入れ`, or `支える要件`) derived from `requestClauseRefs`, `acceptanceCheckRefs`, and `requirementRefs`, so operators can see why each step exists without leaving `Harness Status`.
-- `GET /api/harness/overview` now exposes a dedicated `traceability` snapshot derived from `latestTurn.planning`. The overview page keeps the main console lightweight, but the deeper `Traceability` section can now follow `rawRequestClauses` through mapped requirement refs, dispatch ids, plan-step ids, and any parked or dropped reason on the latest turn.
-- Requirement-Driven Foundation V1 is now closed by explicit exit audit rather than by continuing to add Step 1/2 features. `docs/PHASE_REQUIREMENT_FOUNDATION_V1.md` defines the phase purpose and freeze rule, and `scripts/phase_exit_requirement_foundation_v1.js` is the one-command 8-check gate that decides whether the phase is actually done.
-- Once that audit passes, this phase is frozen to bug-fix-only changes. New Step 1/2 feature work must move to a later phase instead of extending V1 indefinitely.
-- The harness now also runs a governed external-learning lane sourced only from `https://developers.openai.com/blog`. `scripts/openai_blog_learning_cycle.js` and `scripts/lib/openai_blog_learning.js` fetch official articles on a timer, persist machine-readable learning artifacts under `output/`, auto-sync a non-constitutional retrieval doc at `docs/OPENAI_DEVELOPER_LEARNINGS.md`, and keep any risky target as proposal-only instead of silently mutating `AGENTS.md` or frozen Step 1/2 files.
-- The same lane now has a bounded runtime-retrieval layer on top: after planning is already locked, `server.js` can append a small advisory external-learning block to `default` / `frontend_worker` web-creative turns, but it must stay freeze-aware, must not rewrite Step 1/2 contracts, and can be disabled or shadowed by runtime flags.
-- Learning sync now suppresses obvious extraction noise before it becomes working memory. `scripts/lib/openai_blog_learning.js` filters boilerplate such as embedded video-player fallback text and drops long truncated paragraph candidates, so curated learning docs and runtime prompt blocks prefer cleaner article-specific guidance over half-cut narrative fragments.
-- The learning lanes now also emit machine-readable self-improvement artifacts. `scripts/config/self_improvement_proposal.schema.json` defines the proposal contract, `scripts/config/self_improvement_promotion_policy.json` defines the promotion lifecycle (`proposal_only`, `shadow_candidate`, `gated_candidate`, `auto_apply_candidate`, `blocked`), and `scripts/self_improvement_eval_gate.js` re-runs the non-regression gate over current learning artifacts without changing the main `POST /api/exec` route.
-- Governed self-improvement now covers planner, decomposition, tool-selection, retry/recovery, memory-pack, and skill-surface policy classes in addition to the earlier runtime retrieval lane. Medium-blast-radius classes must pass through shadow or gated lanes; blocked classes remain constitution, authority, safety boundary, approval boundary, core release gate, and core evaluator hard gate.
-- The promotion policy now also supports target-scoped lifecycle overrides for explicitly bounded low-risk surfaces. Today that means `memory_pack_policy` on `scripts/config/memory_retrieval_policy.json` / `scripts/config/memory_type_catalog.json` and `skill_surface_policy` on `docs/AGENT_SKILL_MATRIX.md` / `scripts/config/skill_catalog.json` can enter `shadow_candidate` instead of staying trapped in broader proposal-only or gated defaults.
-- `scripts/self_improvement_apply.js` now applies checkpoint -> candidate apply -> targeted regression -> rollback -> audit log, so silent auto-apply remains limited to the explicitly allowed low-blast-radius classes.
-- Self-improvement state is now change-level rather than proposal-only. Runtime artifacts distinguish raw auto-apply suggestions from ready-to-gate changes, waiting-on-observation notes, waiting-on-reinforcement notes, and policy-disabled candidates such as a secondary-lane frontend note when stabilization is disabled.
-- `output/*_self_improvement_state.json` now also carries `nextPriority` plus `priorityBacklog`, and `buildAppliedSelfImprovementState` filters already-applied hint/note ids out of that backlog so the next cycle target remains genuinely unresolved work.
-- Frontend-note backlog entries now preserve reinforcement progress instead of collapsing it to raw success/failure counts. `nextPriority` / `priorityBacklog` retain required wins, remaining wins, observed count, success rate, and last observation timestamp, and the Overview surface can show that gap directly without rereading reinforcement memory files.
-- The same runtime snapshot now keeps stabilization-lane observation posture visible with `observationStatus`, `observationCount`, and `lastObservedAt`, so operators can tell whether a waiting frontend note is starved, actively collecting evidence, or already reinforced.
-- The self-improvement eval gate now supports per-case `maxPromptBlockChars`, so prompt-block growth becomes part of non-regression instead of an untracked side effect.
-- The repo now also defines a manual self-improvement capture lane for non-governed turns. `scripts/config/manual_self_improvement_capture_policy.json` points at the compressed latest-only artifact `output/manual_self_improvement/latest.json`, marks the lane as non-constitutional, and keeps entries proposal-first by default so a manual capture can be retrieved later without silently changing runtime behavior.
-- That manual capture lane is intentionally separate from governed auto-learning. It does not feed `runtime.externalLearning`, does not bypass the self-improvement eval gate, and allows only `proposal-only` or `blocked` decisions unless a separate governed lane explicitly reclassifies the same lesson.
-- Context persistence is now unified behind a governed memory graph instead of remaining split across unrelated lane-specific artifacts. `scripts/lib/governed_memory_graph.js` compiles spec, intent/taste, workspace-progress, episodic/eval, semantic-lesson, failure-pattern, and improvement-candidate items into a single typed memory graph rooted at `logs/archive/raw/runtime_state/memory/`.
-- The governed memory graph is event-backed. `memory_events.jsonl` is the canonical append-only change stream, while indexes, workspace-progress snapshots, semantic-lesson reports, and output-facing memory summaries are regenerated projections.
-- Retrieval is now compiled rather than implied. `scripts/config/memory_retrieval_policy.json` scores authority, scope, task-family, path ownership, freshness, evidence strength, and reinforcement state, applies minimum-score thresholds plus per-section budgets, and then writes bounded retrieval packs under `logs/archive/raw/runtime_state/memory/retrieval/`.
-- Governed-memory events and packs now conform to machine-readable memory-event / memory-pack contracts. `memory_item_upsert` and `memory_pack_compiled` events carry `memoryType`, `sourceTier`, and `authorityTier`, while compiled packs expose a stable `packId`, retrieval context, section breakdowns, selected ids, and per-item selection reasons without breaking the older summary fields that the overview page already consumes.
-- Retention and staleness are now applied at the governed-memory layer as well. `scripts/config/memory_retention_policy.json` bounds canonical event history and retrieval-pack history, while runtime and overview summaries surface stale-memory warnings, recent promotions, and recent revocations/blocked items.
-- Existing OpenAI / Anthropic learning digests, ledgers, self-improvement state files, and reinforcement artifacts remain compatibility projections; they are no longer treated as the canonical memory substrate.
-- Step 1 now tries to tighten bounded ambiguity before it falls back to `BLOCKED`. `scripts/lib/planning_mode_policy.js` infers a small acceptance gate set from the goal/scope/direction when the request is otherwise executable, partitions unresolved questions into `blocking` versus deferred (`defaultable` / `taste`) lanes before planning mode selection, and carries the deferred questions into `questionPlan` plus explicit assumptions so the harness can keep visible ambiguity without unnecessarily stopping execution-ready work.
-- Step 1 now treats structured Stitch replay briefs as a first-class requirement shape instead of flattening them into generic `UI refresh` wording. When the prompt names a Stitch project/screen and asks for reproduction, `scripts/lib/planning_mode_policy.js` locks the goal around the actual project/screen replay objective, carries the project/screen ids plus asset-download instructions into `baselineScope`, and gives `displayContract` a concrete next action (`画像とコードを取得する`) plus replay boundaries (`指定 screen を基準にする`, `独自アレンジを入れない`) so `Requirement Lock` can foreground the real implementation target.
-- HarnesUI now exposes structured Stitch references on two surfaces. `web/01.HarnesUI/app.js` parses structured Stitch instructions in chat messages and renders a compact `Stitch参照` card in the conversation timeline, while `Requirement Lock` adds a `確認対象` row derived from `baselineScope` so the operator can verify the referenced project/screen/assets without rereading the raw prompt.
-- The main conversation transcript in `web/01.HarnesUI` now compacts markdown-style local file references before display. Assistant messages that contain links such as `[planning_mode_policy.js#L1323](/abs/path/.../planning_mode_policy.js#L1323)` render as small basename-only reference chips like `planning_mode_policy.js`, chat previews use the same basename-only label, and hover detail keeps the short repo-relative path plus line marker (`scripts/lib/planning_mode_policy.js`, `L1323`) instead of leaking the full absolute workspace path into the operator-facing UI.
-- The five journey cards in `Harness Status` now render per-phase outcome summaries, so Step 1 shows what was locked, Step 2 shows plan/dispatch commitment, and later phases summarize execution progress, evidence/review state, and report/gate outcome rather than only a generic phase label.
-- Step 1 journey status is now contract-aware rather than presence-only. If the requirement contract is still `BLOCKED` or still carries unresolved validator/question signals, `web/01.HarnesUI/app.js` marks the first journey card as `保留` instead of `完了`, even when later phases already have runtime activity.
-- The same gate now also blocks downstream journey progression: when `Requirement Lock` is still unresolved, `web/01.HarnesUI/app.js` no longer lets raw `dispatch`, `turn/start`, `plan/update`, or `reasoning` events advance Step 2/3/4/5. Planning, execution, quality, and report cards stay waiting, and `Current Work` surfaces the blocking question or hold reason instead of a misleading `PLAN SKIP` or execution summary.
-- The `Execution Plan` panel is now gated by the same unresolved Step 1 contract. When `Requirement Lock` is still `保留/BLOCKED`, the panel must not surface downstream `plan/update`, `PLAN SKIP`, or execution-step progress as if planning had begun; instead it shows the current blocker and explains that plan rendering is paused until the requirement gate is cleared.
-- The main `web/01.HarnesUI/index.html` execution console now exposes a dedicated `Execution Plan` panel inside `Harness Status`, showing:
-  - the latest plan summary from streamed `plan` events, including harness-emitted policy-plan / `PLAN SKIP` events at turn start
-  - the current plan step card
-  - a purpose line on the current step card that explains which locked request/acceptance/requirement the step serves
-  - a `Current Work` surface synchronized to the same plan focus
-  - the full step list with localized status badges (`pending`, `in_progress`, `completed`, `failed`, `interrupted`, `skipped`) plus the same purpose line on each row
-  - plan-focus fallback ordering of explicit `in_progress`, then blocked step, then next pending step while running, then last completed step
-- External workflow companions may run beside the harness without changing the repo's main `/api/exec` path, but their operational inventories now live in dedicated companion docs so the core architecture spec stays harness-centric.
-- The currently verified Microsoft 365 weekly-report companion inventory and its remaining limitation now live in `docs/WEEKLY_REPORT_COMPANION.md`.
+この文書は Codex App Server 連携ハーネスの **active design spec** です。  
+入口の説明は `README.md`、docs の入口は `docs/README.md`、最上位の固定ルールは `docs/HARNESS_CONSTITUTION.md` が担います。
 
-## 3) Collaboration-First Agent Topology
+関連文書:
 
-- Parent roles:
-  - `default`
-    - only general-purpose parent role
-    - config posture: `sandbox_mode = "danger-full-access"`, `approval_policy = "never"`
-    - owns end-to-end orchestration, specialist delegation, and final doc sync
-  - `intake`
-    - Step 1/2-only parent planner
-    - config posture: `sandbox_mode = "read-only"`, `approval_policy = "never"`
-    - locks baseline/over-delivery contract and dispatch criteria, then hands off
-  - `release_manager`
-    - Step 4/5-only parent gate
-    - config posture: `sandbox_mode = "read-only"`, `approval_policy = "never"`
-    - reviews child evidence, verifies doc sync, and emits the final business release decision
-- Specialist child roles:
-  - `frontend_worker`
-  - `backend_worker`
-  - `infra_worker`
-  - `tester`
-  - `reviewer`
-  - `explorer`
-- Collaboration rule:
-  - implementation work routes to child specialists instead of parent direct execution
-  - parent roles must not perform material implementation directly
-  - read-only diagnostic shell/MCP inspection does not count as parent material implementation for the Parent Dispatch Guard
-  - `intake` and `release_manager` are focused parent overlays, not interchangeable default parents
-  - unresolved explicit user decisions must surface as `EXTERNAL_ACTION_REQUIRED`/`RELEASE_BLOCKED`; parent roles must not auto-answer narrow operator-escalation questions
-  - user-facing response policy now treats `結論 / 根拠 / 限界/反論 / 実務上の意味` as the default high-precision answer shape, but allows task-specific overrides for short answers, reviews, implementation reports, option comparisons, and blocked states when those forms improve reach precision without dropping answer, basis, limits, and practical implication coverage
-  - short fact/status turns now enforce `lead with the direct answer` plus `close in place` not only as docs policy but also through shadow-review findings, retry instructions, and final-text sanitization for non-blocked runs
-- Retired runtime role:
-  - `worker`
-  - no longer configured in `.codex/config.toml` and must not appear in normal dispatch plans
-  - `POST /api/exec` rejects `worker` and scoped aliases such as `worker@chat-legacy` as unconfigured runtime targets
-- retained only as a legacy governance/eval contract artifact for bounded compatibility audits and explicit parent-override interpretation
+- `README.md`
+- `docs/README.md`
+- `docs/BEGINNER_PATH.md`
+- `docs/DEMO_FLOWS.md`
+- `docs/BUYER_PAIN_MAP.md`
+- `docs/COMPARISON_BOUNDARY.md`
+- `docs/PRODUCT_POSITIONING.md`
+- `docs/WEEKLY_REPORT_COMPANION.md`
+- `docs/PROVIDER_AND_PORTABILITY.md`
+- `docs/human/AI_AGENT_HARNESS_DETAILED_DESIGN.html`
+- `docs/human/legacy/AI_AGENT_HARNESS_TEXTBOOK_JA.html`
+- `docs/ARCHITECTURE_CHANGELOG.md`
 
-## 4) Machine-Readable Contracts
+## 2) いま何を正本として見るか
 
-- Agent governance:
-  - `scripts/config/agent_governance_contracts.json`
-  - defines parent agents, scope paths, read-only and verification-only roles, plus legacy `worker` audit gating
-- Turn lifecycle:
-  - `scripts/config/harness_contract_spec.json`
-  - defines turn lifecycle, release decision states, and turn-to-task-outcome bridge rules
-- Task outcome taxonomy:
-  - `scripts/config/task_outcome_contract.json`
-  - defines `COMPLETED`, `BLOCKED`, `NEEDS_INPUT`, `FAILED_VALIDATION`, `PARTIAL`
-- Non-interactive execution and externalization contracts:
-  - `scripts/config/non_interactive_execution_profile.json`
-  - `scripts/config/no_hitl_blocked_reason_taxonomy.json`
-  - `scripts/config/deployment_evidence_policy.json`
-  - `scripts/config/claim_closure_gate_policy.json`
-  - these define the no-HITL execution profile, structured blocked-reason taxonomy, production-like evidence thresholds, and the stricter observed-evidence-only public claim gate
-- User-facing response contract:
-  - `scripts/config/user_facing_response_contract.json`
-  - defines close-in-place exemptions, allowed prompt-menu signals, prohibited optional closing starters, completion-claim leads, internal-process disclosure bans, and exact-reply override behavior
-- Frozen constitution and phase artifacts:
-  - `docs/HARNESS_CONSTITUTION.md`
-  - `scripts/config/request_frame_contract.json`
-  - `scripts/config/routing_decision_contract.json`
-  - `scripts/config/discovery_outcome_contract.json`
-  - `scripts/config/review_bundle_contract.json`
-  - `scripts/config/release_decision_contract.json`
-  - `scripts/config/conformance_invariants.json`
-  - `scripts/config/evidence_contract.json`
-- Top-level harness decisions use business release states, not generic completion labels:
-  - `RELEASE_APPROVED`
-  - `RELEASE_APPROVED_WITH_ASSUMPTIONS`
-  - `RELEASE_BLOCKED`
-  - `EXTERNAL_ACTION_REQUIRED`
-  - `HARNESS_FAILURE`
-- Bundle-level conformance artifacts must carry the actual planning and assurance score breakdown selected by policy, not zero-filled placeholders.
-- Planning and dispatch contracts:
-  - `scripts/config/planning_mode_contract.json`
-  - `scripts/config/task_family_profiles.json`
-  - `scripts/config/design_acceptance_contract.json`
-  - `scripts/config/requirement_contract.schema.json`
-  - `scripts/config/dispatch_plan.schema.json`
-  - Step 1/2 now persist machine-readable planning artifacts instead of relying on free-form narrative only
-  - planning artifacts now persist `taskFamily` / `familyProfileId` so runtime, overview, and downstream evaluation can distinguish `web_creative` from deterministic code paths
-  - `requirement-contract.v5` now persists a machine-readable `userValueFrame` plus `lockedGoal` / `intentHypotheses` / `questionPlan` / `delightPlan` so requirement locking can keep core value, alternate interpretations, next questions, and adjacent-value candidates separate
-  - the same contract now also persists `owner` and a `requestCoverage` ledger so Step 1 can trace which user-derived clauses were mapped, parked, or excluded before planning begins
-  - the same contract now also persists `activeRevisionProposal` and `revisionGate`, so the locked contract can reject downstream silent rewrites while keeping intake as the sole authoritative revision publisher
-  - `dispatch-plan.v2` now persists `requestClauseRefs`, `requirementRefs`, and `acceptanceCheckRefs` per dispatch so the runtime can carry request-to-plan links forward without inventing a new execution route
-  - `userValueFrame` includes `valueThesis`, `userWants`, `userShouldFeelGet`, `mustAvoid`, `hardConstraints`, `qualityAxes`, `benchmarkCandidates`, and `completedMeans`
-  - the same contract now also persists `status`, `statusReason`, `provenance`, `validation`, and `revisionLedger`, so Step 1 is no longer only a contract generator but also exposes contract sufficiency, traceability, and revision safety
-  - family-aware completion is now active: `web_creative` / `design_acceptance` turns evaluate intent-first hard gates before a completed turn can remain `COMPLETED`
-  - task-outcome classification now recognizes `family_completion_gate_failed` and `intent_*` validation reasons without relying on a server-only explicit override
+この repo の現在の正本は、ワーカー中心で役割ごとに分かれています。
 
-## 5) Runtime Surfaces
+- 最上位の公開面: `output/governance_public/worker_decision_surface.json`
+  - scope: `worker_decision`
+  - その時点の対象範囲に対して、運用者がどう判断すべきかを示す面
+- プログラム全体の到達度: `output/agi_readiness/goal_completion_status.json`
+  - scope: `program_readiness`
+  - repo / program 全体を見る補助面であり、ワーカーの見出し面ではない
+- 主観品質の補助面: `output/agi_readiness/subjective_goal_completion_status.json`
+  - scope: `subjective_companion`
+- 互換層の補助面: `output/agi_readiness/compatibility_completion_status.json`
+  - scope: `compatibility_layer`
+- 古い互換別名: `output/agi_readiness/sovereign_goal_completion_status.json`
+  - 互換用に残すだけで、いまの見出し語彙ではない
 
-- Static UI routes:
-  - `/01.HarnesUI/*`
-    - always served from bundled `web/01.HarnesUI/`
-    - polls `GET /api/runtime` while local requests are active so stale client-side pending rows can self-heal after the backend has already emitted a terminal turn
-  - `/english-conversation-app/*`
-    - served from the integrated `APP/01.english-conversation-app/` root by default, with env override and legacy external clone as compatibility fallbacks
-    - keeps the existing same-origin browser path so conversation/TTS APIs do not need CORS or alternate ports
-    - `start_english_conversation_app.bat` can still launch a compatibility standalone browser/static server on `57526`, isolating its launcher lifecycle from the main harness while proxying only conversation/TTS calls to `57525`
-  - `/apps/english-conversation-app/*`
-    - registry-driven primary mount for the English Conversation App
-    - uses the same static root resolution order as `/english-conversation-app/*`
-    - rewrites `/apps/english-conversation-app/api/*` into harness-native `/api/*`
-  - `/apps/talkapp/*`
-    - reverse-proxy mount for the local talkApp server
-    - keeps the talkApp UI/backend separate while exposing it under the shared harness namespace
-- `GET /api/runtime`
-  - runtime snapshot, latest turn, governance policy, turn contract, task outcome contract, eval/replay/SLO capability summary
-  - exposes `userFacingResponseContract` summary/path so operators can inspect which close-in-place and response-safety rules are actively enforced
-  - now also reports planning, assurance, and task-family-profile contract paths plus the latest turn's planning/assurance depth, flow-path, and task-family fields
-  - exposes `intentFirst` runtime summary, including design-acceptance contract path, taste-memory seed path, active runtime taste-memory overlay path, taste-memory profile, and required creative gates
-  - exposes top-level `workspaceGuard` / `workspace_guard` state so operators can see whether a workspace lock is active, which root is locked, and which execution sources require that lock
-  - persisted latest-turn snapshots now retain `family_completion_gate`, so runtime reloads keep specialized completion verdicts visible
-  - sanitized planning artifacts preserve the `userValueFrame`, so stored requirement contracts and runtime snapshots carry the same user-value target that shaped execution
-  - exposes constitution contract paths and release decision state vocabulary for operator/runtime inspection
-  - includes `gitAutomation` with config posture and latest turn-level auto-commit/autopush result
-  - includes `staticApps.englishConversationApp` with mount source/root summary for the current English Conversation App static root
-  - now also includes `staticApps.apps`, the registry-driven app catalog snapshot sourced from `APP/*/app.manifest.json`
-- `GET /api/apps`
-  - returns the harness app catalog
-  - exposes each app's mount path, working directory summary, and integration mode (`native-static` or `reverse-proxy`)
-- `GET /api/apps/:appId/runtime`
-  - returns the app identity plus harness AI readiness for that app's working directory
-- `POST /api/apps/:appId/reply`
-  - local app-to-harness bridge for plain-text app-scoped generation
-- `POST /api/apps/:appId/structured`
-  - local app-to-harness bridge for schema-constrained app-scoped generation
-- Multi-app integration posture:
-  - the harness now treats `APP/` as the shared macro-AGI registry
-  - current app code now physically lives under `APP/` inside the harness repo
-  - `docs/HARNESS_APP_PLATFORM.md` is the operator-facing design note for this layer
-- `GET /api/intent/profile`
-  - returns the same `intentFirst` summary as a dedicated local operator API for intent-first posture inspection
-  - does not require the control token for same-origin read access
-- `POST /api/intent/profile`
-  - authenticated JSON mutation endpoint for updating the active intent/taste profile
-  - partial `autonomy` patches now merge into the existing runtime profile instead of resetting unspecified autonomy fields back to the seed defaults
-  - persists the active profile into a runtime-state overlay under `logs/archive/raw/runtime_state/intent_profile_memory.json` instead of editing the seed contract file
-- `POST /api/intent/profile/reset`
-  - authenticated JSON mutation endpoint that removes the runtime overlay and restores the seed-backed default profile
-- `POST /api/workspace/lock`
-  - authenticated JSON mutation endpoint that accepts `action = lock_workspace_directory` plus a target directory path
-  - activates a runtime workspace boundary used by both `/api/batch/run` and `/api/exec`
-- `POST /api/workspace/unlock`
-  - authenticated JSON mutation endpoint that accepts `action = unlock_workspace_directory` and clears the active workspace boundary
-- `GET /api/harness/overview`
-  - aggregated operator snapshot for `web/01.HarnesUI/overview.html`
-  - combines runtime posture, full agent topology, contract snapshots, latest proof/signoff bundles, recent eval history, replay memory, execution-memory summaries, and skill-portfolio audit output
-  - overview UI distinguishes the currently active runtime agent from the explicitly reported default exec agent, so retired or scoped runtime focus does not get mislabeled as the canonical parent entrypoint
-  - redacts the live control API token before exposing the overview payload to the operator page
-  - selects proof/signoff bundles by bundle `generatedAt` timestamp, with filesystem mtime used only as a fallback
-- `POST /api/exec`
-  - authenticated JSON exec endpoint with NDJSON streaming turn events
-  - defaults to `default` unless the request selects another configured role
-  - rejects unconfigured agent targets such as retired `worker` and `worker@...` scoped aliases
-  - applies the shared `user_facing_response_contract` during adversarial shadow review and client-final rewrite so close-in-place behavior and premature completion/disclosure checks stay contract-driven
-  - blocks design-sensitive requests from lock-required sources such as `web_ui` with `409 workspace_lock_required` until a workspace lock is active
-  - when a workspace lock is active, rejects requests whose effective `cwd` falls outside the locked root
-  - computes adaptive execution selection before execution and carries requirement/dispatch planning artifacts through the turn runtime
-  - requirement locking and requirement-guard prompt shaping are now `user-value first`: the locked `userValueFrame` is injected ahead of acceptance/evidence guidance, and RBJ requirement definition requires a `user_value_core` before implementation planning can pass
-  - emits an operator-visible plan event at turn start from the locked `planningContext`, or an explicit `PLAN SKIP` event for answer-only turns, before later execution items stream in
-  - planning depth and assurance depth are selected independently, so `FAST_PLANNING + LIGHT_ASSURANCE` and `DISCOVERY_PLANNING + SIGNOFF_ASSURANCE` are both valid outcomes
-  - `DISCOVERY` mode keeps blocking ambiguity in proposal-only space and maps explicit stop signals to `EXTERNAL_ACTION_REQUIRED`
-  - subjective `web_creative` turns now split ambiguity into three actions: proceed, ask exactly one clarifying question, or require explicit user input before implementation
-  - when the clarification path is selected, the requirement guard emits a single-question gate and the streamed terminal status surfaces to HarnesUI as `needs_input` instead of a false failure
-  - ambiguity-resolution directives that explicitly ask for governed clarification, governed disambiguation, or governed deferral without inventing requirements stay in the same single-question gate: the planner withholds inferred acceptance checks, keeps the requirement contract `BLOCKED`, and surfaces only the one requirement-anchoring question until the user answers
-  - ambiguity-resolution directives that explicitly ask for governed `bounded_assumption` handling no longer self-trigger that clarify gate; the planner keeps the request execution-ready under bounded assumptions when no real blocking question remains
-  - answer-only confirmation turns no longer auto-surface `[needs_input] user decision required before implementation` from heuristic `DISCOVERY` open-question detection when no explicit approval boundary or explicit user-decision signal is present; the fallback remains available for true approval-boundary / explicit-decision cases
-  - `01.HarnesUI` keeps internal terminal-control errors in harness state instead of appending them to an already-final assistant bubble, and parent-dispatch retry guidance now uses an internal-only wording without the visible `[Parent Dispatch Guard]` banner text
-  - `01.HarnesUI` now assigns a request-scoped idempotency key to each interactive submit, retries transient browser-side submit failures twice with short backoff, and only surfaces a terminal send failure after the retry budget is exhausted
-  - idempotency key may be supplied by header or body, but header/body mismatch is rejected with `400` before a claim is created
-  - duplicate idempotency reuse with the same key but a mismatched effective request hash returns `409` (`idempotency_request_hash_mismatch`)
-  - duplicate in-flight idempotency claims return `409`; resolved duplicates return the stored outcome snapshot with `200`
-  - carries request-scoped runtime posture such as sandbox, approval, and request-user-input settings
-  - collab-agent stream items now include `child=<agent>` hints when the dispatch target can be resolved, so the UI can attribute specialist activity to the active chat's monitor lane
-  - transport failures matching upstream `stream disconnected before completion` now trigger one automatic fresh-session retry before the turn is exposed as terminal failure
-- `GET /api/exec/idempotency/:key`
-  - returns the current idempotency lifecycle snapshot for a claimed exec request
-  - exposes `running`, terminal states, and `released` when a claim was closed before a terminal outcome was recorded
-- `GET /api/eval/suites`
-- `GET /api/eval/history`
-- `POST /api/eval/run`
-  - accepts opt-in eval probe persistence via `persistProbeResultsToMemory` or legacy alias `persistProbeResults`
-  - when enabled, synthetic probe outcomes are appended into harness execution memory through `persistProbeResultsToMemory` / `persistProbeResults`
-  - supports workflow probes such as `post_lock_drift_probe`, which replays the locked planning artifacts, can inject downstream trace mutations, and returns a machine-readable post-lock drift verdict without needing a live end-to-end turn
-- `GET /api/replay/turns`
-- `GET /api/replay/turn/:turnId`
-- `POST /api/replay/turn`
-- `GET /api/slo/status`
-- `GET /api/conversation/runtime`
-- `POST /api/conversation/direct`
+## 3) 1 つのハーネスの中にある 4 つの面
 
-## 6) Evidence and Persistence
-- Root `logs/` is now an operator-clean 3-surface split:
-  - `logs/current/`
-  - `logs/bundles/`
-  - `logs/archive/`
-- Operator-first logging now starts at `logs/current/operator_summary.json`.
-- Intent/taste profile operator overrides now persist under `logs/archive/raw/runtime_state/intent_profile_memory.json`, while `scripts/config/default_user_taste_memory.json` remains the immutable seed/default source.
-- `operator_summary.json` is the only intended first-look file and now carries:
-  - `topLineDecision`
-  - `whyThisIsSafe`
-  - `whyThisMayNeedAttention`
-  - `openOnlyIfNeeded`
-- Normal human review should stay within:
-  - `operator_summary.json`
-  - `design_conformance_summary.json`
-  - `latest_run_summary.json`
-  - `review_load_breakdown.json`
-  - `latest_signoff_summary.json` when a signoff bundle exists
-- `operator_summary.json` is expected to route humans through `openOnlyIfNeeded`; it should not require `logs/current/index.json` for the default review path.
-- `latest_run_summary.json` keeps `residualRisks` for real unresolved risk only. Completed runs may still carry `informationalNotes`, `assumptions`, or `operatorCaveats`, but they should not read as paused, blocked on user choice, or otherwise unfinished.
-- `runtime_snapshot.json` is no longer part of `logs/current/`; detailed posture storage lives in the latest signoff bundle.
-- The operator-facing posture summary is embedded in `logs/current/operator_summary.json`, while the detailed snapshot remains bundle-only.
-- `design_conformance_summary.json` now proves two request-user-input postures at once: the live runtime default must stay autonomy-first, while the signoff evidence lane remains explicitly blocked for strict proof collection.
-- `operator_summary.json` is the only current-surface entrypoint; the fixed current surface does not preserve a separate `index.json`.
-- When both live `stdio` and later `mock-fixture` signoff bundles exist, current-surface truth prefers the latest passing live `stdio` bundle so stronger parity evidence is not hidden by newer fixture-only summaries.
-- Migration/admin evidence is emitted to:
-  - `logs/archive/admin/log_inventory_before.json`
-  - `logs/archive/admin/log_inventory_after.json`
-  - `logs/archive/admin/log_deletion_report.json`
-- `docs/HARNESS_LOGGING_MAP.md` is the human-first lookup table for this surface.
-- `natural_task_trace_summary.json` records the selected implementation-bearing turn id and thread id, so trace bundles stay anchored to the delegated turn even when later completions share the thread.
-- `SIGNOFF_ASSURANCE` sample runs keep planning depth, assurance depth, reviewer/tester execution, and doc-sync evidence co-located in signoff bundles.
-- Runtime proof samples can fall back to fixture-backed transport and still emit dispatch/doc-sync evidence under constrained sandboxes.
-- Live runtime proof bundles now emit top-level `conformance_report.json` and `operator_view_summary.json` backed by explicit proof acceptance checks, so proof bundles expose constitution-grade release judgment without relying only on turn-local artifacts.
-- Signoff bundles are summary-first at the top level and push raw turn / operation-log / measured-baseline deep artifacts under `raw/`.
-- Live signoff bundles now preserve `conformance_report.json` and `operator_view_summary.json` at bundle top level, and `bundle_surface_map.json` distinguishes those fixed top-level summaries from relocated operator aids such as `lane_latency_summary.json`, `signoff_resume_state.json`, and comparison reports.
-- `scripts/generate_signoff_evidence.js` supports split-resumable live signoff execution. Each bundle keeps `signoff_resume_state.json` so operators can pause after a stage and resume the same bundle without re-running completed evidence stages.
-- `lane_latency_summary.json` records stage wall-clock time, dominant bottlenecks, and per-sample latency/evidence breakdown for measured and raw-direct baselines.
-- `bundle_surface_map.json` is emitted into each signoff bundle so humans can distinguish top-level summaries from deep raw artifacts without opening turn directories.
-- Raw direct baseline capture lives under `raw/raw_direct_baseline/` with `raw_direct_baseline_summary.json` plus four lane-specific trace summaries. `scripts/generate_baseline_comparison.js` prefers that direct live baseline when all four direct traces exist, falls back truthfully to measured or vanilla-like comparison when needed, and refreshes `signoff_summary.json` plus `bundle_surface_map.json` so standalone comparison regeneration does not leave stale comparison paths or truth claims behind.
-- `node scripts/export_submission_artifacts.js` exports a review-first default surface only:
-  - current operator summaries
-  - top-level signoff bundle summaries, including bundle `conformance_report.json` and `operator_view_summary.json`
-  - required repo/docs
-- `runtime_snapshot.json` is bundle-only and should be opened only when posture detail is needed.
-- `--with-raw` adds bundle detail plus admin/raw artifacts only when forensic detail is explicitly needed.
-- `submission_manifest.json` is part of that export contract: its `fileCount` and explanatory `notes` must stay aligned with the actual selected files for the chosen mode.
-- `logs/current/latest_run_summary.json` now carries `familyCompletionGate` when the latest run used a specialized family completion contract, so operator-facing current surfaces preserve why a turn was downgraded to `FAILED_VALIDATION`.
+この repo は 1 つの統治付きハーネスの中に複数の面を持たせています。  
+分かれているのは repo ではなく、**信頼境界と責務**です。
 
-- Turn artifacts are written under `logs/archive/raw/turns/` by default, with `manifest.json` plus events/items/diff/stdout/stderr artifacts hidden from the normal operator surface.
-- Each turn artifact directory now also carries:
-  - `request_frame.json`
-  - `routing_decision.json`
-  - `task_outcomes.json`
-  - `review_bundle.json`
-  - `release_decision.json`
-  - `requirement_contract.json`
-  - `requirement_validation.json`
-  - `dispatch_plan.json`
-  - `evidence_manifest.json`
-  - `stage_timeline.json`
-  - `flow_trace_summary.json`
-  - `review_load_breakdown.json`
-- The turn artifact manifest now records:
-  - terminal turn status
-  - terminal task outcome status and reason
-  - top-level release decision state
-  - turn/task-outcome bridge validation surface through the runtime contracts
-  - approval audit records
-  - execution observed signals
-  - selected planning mode, planning depth, assurance depth, and flow-path context
-  - family completion gate verdict when a task family carries a specialized completion contract such as `design_acceptance`
-- Parent-turn observed file signals can aggregate child `Owned paths:` reports from completed collab calls, so natural multi-agent traces preserve implementation-side changed-path samples.
-- Child evidence parsing accepts `Owned paths` with or without a trailing colon, so live reviewer/tester notes still contribute doc-sync evidence when the model drops the punctuation.
-- `evidence_manifest.json` aggregates acceptance-check pass/fail, doc-sync evidence, child evidence ledger, and residual-risk summary so Step 4 review cost is lower without weakening the evidence gate.
-- `review_load_breakdown.json` now also captures evidence-collection time, reviewer/tester/doc-sync timing estimates, retry-loop count, outcome-conversion time, total Step 4 duration, and dominant bottleneck.
-- Both turn-level and current `review_load_breakdown.json` summaries now state their timing model explicitly, including that component estimates may overlap and that `dominantBottleneck` is the largest estimated bucket rather than an additive share of `totalStep4DurationMs`.
-- `stage_timeline.json` and `flow_trace_summary.json` make it explicit which flow, planning depth, assurance depth, agents, contracts, and evidence sources were involved in the run.
-- `flow_trace_summary.json` now also carries a `postLockDrift` snapshot that scores whether locked core request clauses still remain connected to downstream dispatches and plan steps, reports orphan downstream refs, and surfaces drift/gap rates for post-lock evaluation.
-- The runtime now treats that same post-lock information as an enforcement gate, not only an eval artifact: turns that leave unmapped core clauses, downstream clause gaps, or orphan refs cannot remain `COMPLETED`, and observed downstream revision proposals are returned to intake before execution can proceed.
-- `flow_trace_summary.json`, `evidence_manifest.json`, and latest-turn snapshots now also carry `runtimeRevisionGate` plus a clause-by-clause `clauseCompletionScorecard`, so release-time surfaces can see whether each core request clause is `satisfied`, `unsatisfied`, or `waived` with linked evidence and acceptance refs.
-- `review_bundle.json` now embeds that clause-completion scorecard, and `release_decision.json` treats unsatisfied core clauses as `HARNESS_FAILURE` blockers rather than a soft residual-risk note.
-- `/api/runtime` and `/api/harness/overview` now also expose `phaseStatus.requirementFoundationV1`, `completedAt`, and `auditReportPath`, sourced from `output/phase_exit_requirement_foundation_v1.json`, so operators can confirm the freeze status from overview without changing the main console.
-- `/api/runtime` now also exposes `governedMemory`, an in-memory compiled summary of the canonical graph that includes item/status counts, canonical/output roots, workspace-progress state, and the latest selected retrieval pack for the active agent/task-family.
-- `/api/harness/overview` now syncs that same governed memory model into the canonical runtime-state store and surfaces the persisted summary as `memory.governedGraph`, so the operator can inspect the canonical graph without hand-reading JSONL streams.
-- The governed memory graph is now synchronized from execution lifecycle events as well as overview reads. Turn finalization and persisted eval probe results both trigger canonical memory sync, so workspace progress and episodic/eval projections advance even when the operator does not manually open the overview page.
-- `scripts/generate_signoff_evidence.js` resolves the natural-task proof turn from persisted execution memory on the shared thread, so post-completion adversarial retries do not replace the implementation-bearing trace.
-- Adversarial retry prompts now preserve execution-task semantics for signoff-style work, and exact-reply contracts suppress citation/date style findings when extra prose would violate the contract.
-- Live DISCOVERY samples may still delegate proposal-only investigation; the evaluation gate now accepts those runs when they avoid implementation edits, satisfy the parent-dispatch guard, and terminate as either `NEEDS_INPUT` or proposal-only `COMPLETED`.
-- The measured live raw-like baseline uses the same DISCOVERY rule: proposal-only delegated investigation is allowed when reviewer/tester remain absent, implementation edits stay absent, and the parent-dispatch guard is satisfied or unnecessary.
-- `scripts/generate_signoff_evidence.js` and `scripts/generate_runtime_proof.js` now honor env-selected app-server transport (`mock-fixture` or `stdio`) and record `transportMode` in proof/signoff summaries plus task trace artifacts.
-- `scripts/app_server_smoke_test.js` and `scripts/eval_replay_api_smoke_test.js` now verify the HTTP/runtime surfaces through `startInProcessHarnessServer(...)` with `mock-fixture` transport, so the repo's required smoke evidence remains collectable even when the host sandbox blocks child-process spawn for live `stdio` app-server startup.
-- DISCOVERY-grade planning analysis now strips fixture-only control markers before requirement extraction, infers structured open questions/non-goals from ambiguity cues, and persists those artifacts as `requirement-contract.v5` and `dispatch-plan.v2`.
-- `scripts/generate_baseline_comparison.js` now records per-sample transport provenance, scores DISCOVERY evidence richness from requirement/dispatch artifacts, and warns when any comparison sample still relies on `mock-fixture`.
-- Harness memory is stored in `logs/archive/raw/harness_execution_memory.json` by default and can be redirected with `CODEX_HARNESS_MEMORY_PATH`.
-- Eval run history is stored in `logs/archive/raw/eval_runs.jsonl` by default and can be redirected with `CODEX_EVAL_HISTORY_PATH`.
-- Conversation persona memory is stored in `logs/archive/raw/runtime_state/conversation_persona_memory.json`.
-- Governed memory now lives under `logs/archive/raw/runtime_state/memory/`:
-  - canonical append-only events: `memory_events.jsonl`
-  - feedback/tombstones: `memory_feedback.jsonl`, `memory_tombstones.jsonl`
-  - indexes: `indexes/by_{id,scope,type,task_family,agent,workspace}.json`
-  - projections: `projections/spec_graph.json`, `projections/workspace_progress/*.json`, `projections/preference_profiles/active.json`, `projections/semantic_lessons/{primary,secondary}.json`, `projections/failure_patterns/latest.json`, `projections/active_runtime_hints/latest.json`, `projections/improvement_state/latest.json`, `projections/eval_observations/latest.json`
-  - compiled packs: `retrieval/packs.jsonl`, `retrieval/last_pack_by_thread.json`, `retrieval/last_pack_by_workspace.json`
-- Human-facing governed memory reports now live under `output/memory/` as local/operator projections (`latest_overview.*`, `promoted_semantic_memory.json`, `preference_profiles_report.json`, `improvement_dashboard.json`, `memory_health_report.md`). That surface is intentionally not the canonical store and should not be relied on as the public-safe checked-in projection.
-- Repo-safe governed memory exports now live under `output/memory_public/`. This surface is redacted and reproducible, and includes `latest_overview.*`, workspace-progress, latest-pack, promotion/revocation health, memory-eval PASS/FAIL status, and canonical-graph-derived OpenAI / Anthropic lane projections.
-- `scripts/export_governed_memory_public.js` exports the redacted public surface from the live local canonical store, while `scripts/export_governed_memory_public_sample.js` regenerates the checked-in sample/public artifact set from a deterministic fixture so the repo can carry public-safe proof without leaking local runtime state.
-- Long-horizon continuity state is stored under `logs/archive/raw/runtime_state/continuity/tasks/<taskId>/` with:
-  - `task_state.json`
-  - `plan_state.json`
-  - `task_spec.json`
-  - `plan.json`
-  - `acceptance_contract.json`
-  - `closeout_summary.json`
-  - `replan.json`
-  - `global_memory.json`
-  - `verifier_state.json`
-  - `artifact_index.json`
-  - `lifecycle_events.jsonl`
-  - `archive/`
-  - per-session `session_memory.json`, `resume_context.json`, `sprint_contract.json`, and `handoff/*.json` / `handoff/*.md`
-- Bounded multi-agent orchestration extends that same continuity root instead of adding a separate orchestration API family. Parent tasks now also persist:
-  - `agent_graph.json`
-  - `handoff_history.json`
-  - `integration_summary.json`
-  - child task roots linked by `parentTaskId` / `rootTaskId`
-- Resume context is intentionally selective and ordered: task contract/stop conditions first, then verified plan state, next-session brief, unresolved verifier findings, relevant durable memory, and only then repo-local skill metadata.
-- Continuity lifecycle is explicitly enforced as `initialized -> planned -> running -> blocked/awaiting_approval/verifier_failed -> completed|abandoned -> archived`, with legacy `status` retained only for compatibility with existing tests and operator surfaces.
-- Close-session continuity now treats unresolved verifier findings, unresolved acceptance criteria, or outstanding open issues as a false-completion blocker: `completion-claim=completed` is downgraded to `FAILED_VALIDATION` and lifecycle `verifier_failed` until those gates are green.
-- Operator inspection for continuity is available through both CLI (`scripts/long_horizon_task.js`) and HTTP (`GET /api/continuity/task`, `GET /api/continuity/tasks`).
-- Phase 4 bounded orchestration adds runtime role contracts in `scripts/config/agent_role_contract_manifest.json` and public multi-agent baselines in `scripts/config/multi_agent_public_baseline.json`.
-- Role-bounded child work is constrained by per-role `allowedTools` / `deniedTools`, `readableStateScope` / `writableStateScope`, budgets, stop conditions, escalation conditions, and handoff pre/postconditions.
-- Parent-child runtime inspection now exposes `agent_graph`, `active_agent_tree`, `handoff_history`, `integration_summary`, `child_tasks`, `blocked_subtasks`, `verifier_failed_subtasks`, `pending_integrations`, and `orphan_subtasks`.
-- Public regression now includes the multi-agent public baseline in addition to the original verifier/regression gates, while single-agent fallback remains the default route for small/simple tasks.
-- Runtime state files are intentionally hidden from the operator-first surface and referenced through `logs/current/*.json`.
-- Replay memory, idempotency snapshots, and latest turn snapshots carry `taskOutcomeStatus` and `taskOutcomeReason`.
-- Latest turn snapshots now also carry `cwd` and a summarized `git_automation` result when turn-complete Git automation runs.
-- When the target repo is this harness repo, Git automation ignores harness-managed runtime files under `logs/archive/raw/` plus persona memory under `logs/archive/raw/runtime_state/` so those files do not block the next clean-baseline publish.
-- Idempotency snapshots also retain request metadata, lifecycle status, and response-close disposition for duplicate/replay inspection.
-- `POST /api/eval/run` probe cases can now persist synthetic execution-memory records when `persistProbeResultsToMemory` or `persistProbeResults` is enabled.
-- Raw operation logs default to `logs/archive/raw/operation_logs/` in `OPERATOR` mode and become more verbose only in `PROOF`, `DEBUG`, or `FORENSIC` mode via `CODEX_LOGGING_MODE`.
-- `scripts/generate_runtime_proof.js` is the isolated proof generator for this capability. Its verified proof bundle shape is:
-  - `logs/bundles/proof/runtime-proof-*/harness_execution_memory.json`
-  - `logs/bundles/proof/runtime-proof-*/eval_runs.jsonl`
-  - `logs/bundles/proof/runtime-proof-*/turns/` via `CODEX_TURN_ARTIFACTS_DIR`
-  - `logs/bundles/proof/runtime-proof-*/runtime_proof_summary.json`
-  - live dispatch proof file: `logs/bundles/proof/runtime-proof-*/live_dispatch_proof.md`
-- `scripts/generate_signoff_evidence.js` is the isolated signoff evidence generator for final-safe proof runs. It launches with:
-  - `CODEX_LOGGING_MODE=PROOF`
-  - `CODEX_REQUEST_USER_INPUT_POLICY=blocked`
-  - `CODEX_PARENT_DISPATCH_GUARD_MODE=enforce`
-  - `CODEX_PARENT_DISPATCH_GUARD_MAX_RETRIES=1`
-  - `CODEX_REQUIREMENT_GUARD_ENABLED=1`
-  - `CODEX_REQUIREMENT_LOCK_ENABLED=1`
-  - `CODEX_REQUIREMENT_RBJ_ENABLED=1`
-  - `CODEX_ADVERSARIAL_SHADOW_ENABLED=1`
-  - `CODEX_ADVERSARIAL_LOOP_ENABLED=1`
-- Its bundle shape is:
-  - `logs/bundles/signoff/signoff-*/bundle_surface_map.json`
-  - `logs/bundles/signoff/signoff-*/runtime_snapshot.json`
-  - `logs/bundles/signoff/signoff-*/core_harness_workflow_run.json`
-  - `logs/bundles/signoff/signoff-*/natural_task_trace_summary.json`
-  - `logs/bundles/signoff/signoff-*/latest_run_summary.json`
-  - `logs/bundles/signoff/signoff-*/review_load_breakdown.json`
-  - `logs/bundles/signoff/signoff-*/raw/turns/`
-  - `logs/bundles/signoff/signoff-*/signoff_summary.json`
+### 実行面
 
-## 7) Current Completion Gates
+- 主要経路: `POST /api/exec`
+- 役割: 依頼理解、計画、ツール利用、専門ワーカーへの委譲、継続状態の保持、成果物と証拠の記録
+- 最適化対象: 採択可能な成果物、不要な人手介入の削減、時間 / コスト効率、継続性の品質
 
-- `server.js` or `scripts/` changes:
-  - run `node scripts/app_server_smoke_test.js`
-  - run `node scripts/system_coherence_review_test.js` when the change can affect whole-harness consistency across routes, governance, contracts, memory/eval, or artifact surfaces
-  - run `node scripts/governed_memory_graph_test.js` when the change touches `scripts/lib/governed_memory_graph.js`, `scripts/config/memory_*.json`, or the canonical memory store/projection model
-  - run `node scripts/exec_retry_regression_test.mjs` when interactive submit retry handling, launcher restart defaults, or Fast mode operator defaults change
-  - run `node scripts/send_retry_resilience_test.mjs` when idempotency/header wiring or retry classification changes
-  - run `node scripts/git_automation_policy_test.js` when the change touches turn-complete Git automation
-  - run `node scripts/manual_self_improvement_runtime_test.js` and `npm run learn:self-improvement:manual:validate` when the change touches `output/manual_self_improvement/*`, `scripts/lib/manual_self_improvement_runtime.js`, or manual self-improvement capture policy/validation
-- `web/` changes:
-  - verify `GET /api/runtime` returns HTTP 200
-  - verify `GET /01.HarnesUI/index.html` returns HTTP 200
-  - run `node scripts/harnesui_prompt_autogrow_test.js` when the main chat composer height logic changes
-  - run `node scripts/harness_overview_test.js` when the change touches `web/01.HarnesUI/overview.*` or Overview-bound runtime surfaces such as manual self-improvement capture
-- English Conversation App static-mount changes:
-  - run `node scripts/external_english_conversation_app_mount_test.js`
-- Skill assignment or skill package changes:
-  - run `node scripts/skill_portfolio_audit.js`
-- Eval / workflow policy changes:
-  - run `node scripts/eval_replay_api_smoke_test.js`
-  - run `node scripts/planning_mode_policy_test.js` when planning-mode selection or Step 1/2 contracts change
-  - run `node scripts/harnesui_requirement_summary_test.js` when Requirement Lock UI summarization or empty-state detection changes
-  - run `node scripts/baseline_comparison_test.js` when DISCOVERY evidence scoring or baseline-comparison reporting changes
-  - run `node scripts/phase_exit_requirement_foundation_v1.js` before declaring Requirement-Driven Foundation V1 complete, and after any Step 1/2 bug fix that could affect the frozen audit contract
-- Governance/runtime posture changes in `.codex/` or parent-role docs:
-  - run `node scripts/project_codex_config_policy_test.js`
-  - verify parent role config posture and role-boundary wording stay aligned across `.codex/config.toml`, `.codex/agents/*.toml`, and `docs/AGENT_OPERATING_RULES.md`
-- GitHub-native governance surface changes in `.github/copilot-instructions.md`, `.github/instructions/`, or `.github/agents/`:
-  - run `node scripts/github_copilot_governance_surface_test.js`
-- Spec sync before `RELEASE_APPROVED`:
-  - update this file
-  - append a matching entry to `docs/ARCHITECTURE_CHANGELOG.md`
+### 評価面
 
-## 8) Current Residual Risks
+- 主要経路: `POST /api/eval/run`
+- 役割: 再実行による確認、採点、回帰検知、保護付き評価、到達度確認、fail-closed の検証
+- 最適化対象: 比較可能性、再現可能性、漏えい耐性、回帰への感度
 
-- Request-user-input posture is enforced primarily through runtime request metadata and governance docs; there is no separately documented per-agent `config.toml` key for that posture today.
-- The server-level inferred non-interactive request-user-input default is now `auto-default`, but some isolated proof/repro lanes still pin `blocked` intentionally for determinism and stricter signoff posture.
-- Context and evidence discipline are stronger because canonical governed memory now exists, but promotion remains intentionally conservative: lane-specific compatibility artifacts still exist, secondary/manual lanes remain proposal-first by policy, and not every possible low-level write path emits a dedicated memory event yet.
-- The legacy `worker` contract still exists for compatibility interpretation, even though runtime selection now rejects it.
-- Default eval coverage is now workflow-aware, but broader scenario depth is still limited by the small baseline suite.
-- The AGI-readiness program layers are now file-backed and inspectable, but they remain scaffold-grade in two places: observed human baselines are not yet populated, and claim gate outputs should be treated as internal readiness advice rather than an external claim.
-- Phase 5/6/7/8/9/10 artifacts are generated under `output/` and `logs/archive/raw/knowledge_store/`, but most promotion decisions are still policy-driven local files rather than remote-controlled deployment systems.
-- English Conversation App static root priority is resolved at request time; operators still need to ensure any env override or legacy external clone stays compatible with the harness APIs.
-- Some lower-tier operator documents remain mixed-language.
-- Live `stdio` parity still depends on the host allowing child-process spawn for the Codex app-server. In spawn-restricted sandboxes, proof/signoff `transportMode=stdio` can only fail fast with recorded evidence (`spawn EPERM`) rather than produce a full live comparison bundle.
-- Playwright browser verification can fail for the same reason in this sandbox (`browserType.launch: spawn EPERM`), so local UI changes may need a normal desktop shell for screenshot-grade browser evidence even when route checks and targeted UI logic tests pass.
-- Some external workflow companions still have integration-specific limitations; those now stay in their dedicated companion docs instead of expanding the core harness architecture surface.
+### 監視面
 
-## 2026-04-05 operational completion surfaces
+- 主要な公開面: `GET /api/runtime`、`GET /api/harness/overview`、`logs/current/`、`output/`、`runtime/`
+- 役割: 稼働状態の把握、`logs/current/` の見える化、`output/` の見える化、運用者が確認できる drift / debt の追跡
 
-- Live truth remains the governed runtime state under `logs/archive/raw/runtime_state/memory/`.
-- Public operational proof now includes:
-  - `output/agi_readiness/goal_completion_status.json`
-  - `output/agi_readiness/stable_coverage_matrix.json`
-  - `output/agi_readiness/stable_coverage_trend.json`
-  - `output/agi_readiness/robustness_remediation_backlog.json`
-  - `output/agi_readiness/robustness_remediation_effects.json`
-  - `output/agi_readiness/causal_regression_alerts.json`
-  - `output/continuity_public/continuity_debt_trend.json`
-  - `output/continuity_public/continuity_closeout_effects.json`
-  - `output/memory_public/causal_effectiveness_summary.json`
-- `goal_completion_status.json` is the strict top-level operational decision surface.
-- `OPERATIONALLY_COMPLETE` is allowed only when all live criteria pass; fixture or sample-only evidence must never be used for this decision.
-- `subjective_goal_completion_status.json` is the tracked fail-closed companion surface for subjective completion.
-- Subjective completion is a stricter gate than operational completion and depends on checked-in live export artifacts, not local-only state.
-- `learning_adoption_status.json`, `self_directed_probe_status.json`, and `novel_task_acquisition.json` are first-class public proof surfaces and are registered in `output/memory_public/export_manifest.json`.
-## 2026-04-06 governed-autonomy completion compatibility layer
+### 統治面
 
-- The checked-in decision stack is now:
-  - `output/agi_readiness/goal_completion_status.json`
-  - `output/agi_readiness/subjective_goal_completion_status.json`
-  - `output/agi_readiness/sovereign_goal_completion_status.json`
-- All three are still produced by `scripts/lib/governed_memory_graph.js` through the existing `artifact:memory-public` flow.
-- `sovereign_goal_completion_status.json` is a legacy compatibility artifact name. Higher-authority docs interpret it as governed-autonomy completion readiness rather than AI sovereignty.
-- Self-authored goal planning, workspace world modeling, security constitution, rollback readiness, and self-authored causal effects remain readiness surfaces for that compatibility export.
+- 見出しとなる公開面: `output/governance_public/worker_decision_surface.json`
+- 支える公開面: `goal_completion_status.json`、`subjective_goal_completion_status.json`、`compatibility_completion_status.json`、最終判定や bundle overview の成果物
+- 役割: 最終判定、出荷判断、昇格 / 非昇格、採択 / 保留判断、方針に沿った停止判断
+
+## 4) 信頼境界のルール
+
+- 実行面は hidden grader asset に依存してはいけない
+- 実行面は、運用者向けの出荷可否を単独で確定してはいけない
+- 統治面は hidden benchmark や protected holdout の結果をまとめてよい
+- 統治面は program-facing score と worker-facing decision を混同してはいけない
+- 互換面は legacy alias を提供してよいが、primary vocabulary を上書きしてはいけない
+
+## 5) 主要経路と posture
+
+- execution route: `POST /api/exec`
+- evaluation / release route: `POST /api/eval/run`
+- legacy local orchestration: `/api/batch/*`
+- reference architecture default: `portable_local`
+- stronger local ownership posture: `owner_local`
+- reviewed team posture: `reviewed_team`
+
+`portable_local` は「広く配れる形」を優先する既定姿勢です。  
+`owner_local` はローカル所有者の強い権限を含められますが、共通既定ではありません。  
+`reviewed_team` はチーム運用を前提に、証拠とレビューを強めた姿勢です。
+
+## 6) 現在の構成
+
+この repo は、1 つのハーネスの中に次を収めています。
+
+- 制御の面
+- ワーカーの面
+- 評価の面
+- 記憶と継続の面
+- 公開証拠の面
+
+ただし、これらは別製品ではありません。  
+**固定された権限境界の内側で役割を分けているだけ**です。
+
+## 7) 機械可読 contract
+
+主要な機械可読 contract は次です。
+
+- `scripts/config/harness_contract_spec.json`
+- `scripts/config/task_outcome_contract.json`
+- `scripts/config/user_facing_response_contract.json`
+- `scripts/config/design_acceptance_contract.json`
+- `scripts/config/iteration_control_contract.json`
+- `scripts/config/adoption_readiness_evaluator_contract.json`
+- `scripts/config/worker_decision_surface_contract.json`
+- `scripts/config/deployment_posture_profiles.json`
+
+## 8) 現在の公開面と最終判定 bundle
+
+現在の公開面として最低限そろっているべきもの:
+
+- `design_conformance_summary.json`
+- `latest_run_summary.json`
+- `latest_signoff_summary.json`
+- `review_load_breakdown.json`
+- `operator_summary.json`
+
+最終判定 bundle の最上位構成も固定です。
+
+代表例:
+
+- `bundle_overview.md`
+- `worker_decision_surface.json`
+- `goal_completion_status.json`
+- `subjective_goal_completion_status.json`
+- `compatibility_completion_status.json`
+
+## 9) 現在の学習面
+
+この repo は OpenAI developer lane と Anthropic engineering lane を持ちます。  
+ただし、実行時の取り込みまで開いている主レーンは OpenAI 側です。Anthropic 側は補助レーンとして、持ち運びやすい原則の抽出と提案生成に寄せています。
+
+現在の学習面で見る主なもの:
+
+- `output/openai_blog_learning_report.md`
+- `output/anthropic_engineering_learning_report.md`
+- `output/agi_readiness/autonomous_learning_status.json`
+- `runtime_snapshot.json`
+- `signoff_summary.json`
+
+## 10) この repo をどう呼ぶか
+
+この repo は、対応先の多さや派手さを前面に出す実行環境ではありません。  
+正確には、**固定された権限境界の内側で、AI に仕事を進めさせ、その結果を採択可能かどうかまで判断する統治付き高自律ワーカー基盤**です。
+## Autonomous Learning Verified-Positive Contract
+
+- `currentVerifiedPositiveCount`: current `exportSessionId` window 内で `remediationEffect = "verified_positive"` になった件数。同じ window の `passed` terminal entry を含む。
+- `historicalVerifiedPositiveCount`: prior `exportSessionId` windows から carry された verified-positive 累積。current window 分は含めない。
+- `summary.verifiedPositive`: total ではなく `currentVerifiedPositiveCount` と strict equality。
+- `countSemantics`: JSON artifact に同梱される machine-readable contract。strict public eval が summary/count equality と合わせて fail-closed で検証する。

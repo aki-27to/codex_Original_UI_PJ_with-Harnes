@@ -80,6 +80,20 @@
       "skill_surface_policy"
     ]
   },
+  "targetLifecycleOverrides": {
+    "scripts/config/memory_retrieval_policy.json": {
+      "memory_pack_policy": "shadow_candidate"
+    },
+    "scripts/config/memory_type_catalog.json": {
+      "memory_pack_policy": "shadow_candidate"
+    },
+    "docs/AGENT_SKILL_MATRIX.md": {
+      "skill_surface_policy": "shadow_candidate"
+    },
+    "scripts/config/skill_catalog.json": {
+      "skill_surface_policy": "shadow_candidate"
+    }
+  },
   "proposalOnly": {
     "targets": [
       "docs/AGENT_OPERATING_RULES.md",

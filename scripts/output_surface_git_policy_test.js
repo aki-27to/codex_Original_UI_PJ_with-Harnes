@@ -1,7 +1,7 @@
 "use strict";
 
 const assert = require("assert");
-const { execFileSync } = require("child_process");
+const { spawnSync } = require("child_process");
 const fs = require("fs");
 const path = require("path");
 
@@ -39,27 +39,43 @@ function synthesizeProbePath(pattern) {
   return `${normalized}/sample.txt`;
 }
 
+function runGit(args, { allowFailure = false } = {}) {
+  const result = spawnSync("git", args, {
+    cwd: workspaceRoot,
+    windowsHide: true,
+    encoding: "utf8",
+    timeout: 30000,
+  });
+  if (!allowFailure && (result.error || result.status !== 0)) {
+    const stderr = typeof result.stderr === "string" ? result.stderr.trim() : "";
+    const stdout = typeof result.stdout === "string" ? result.stdout.trim() : "";
+    const reason = result.error
+      ? result.error.message
+      : (stderr || stdout || `exit code ${result.status}`);
+    throw new Error(`git ${args.join(" ")} failed: ${reason}`);
+  }
+  return result;
+}
+
 function gitCheckIgnore(relativePath) {
   const normalized = normalizeRelativePath(relativePath);
-  try {
-    execFileSync("git", ["check-ignore", "-q", normalized], {
-      cwd: workspaceRoot,
-      stdio: "ignore",
-    });
+  const result = runGit(["check-ignore", "-q", normalized], { allowFailure: true });
+  if (result.status === 0 && !result.error) {
     return true;
-  } catch (error) {
-    if (error && error.status === 1) {
-      return false;
-    }
-    throw error;
   }
+  if (!result.error && result.status === 1) {
+    return false;
+  }
+  const stderr = typeof result.stderr === "string" ? result.stderr.trim() : "";
+  const stdout = typeof result.stdout === "string" ? result.stdout.trim() : "";
+  const reason = result.error
+    ? result.error.message
+    : (stderr || stdout || `exit code ${result.status}`);
+  throw new Error(`git check-ignore -q ${normalized} failed: ${reason}`);
 }
 
 function gitTrackedOutputFiles() {
-  const raw = execFileSync("git", ["ls-files", "output"], {
-    cwd: workspaceRoot,
-    encoding: "utf8",
-  });
+  const raw = runGit(["ls-files", "output"]).stdout;
   return raw
     .split(/\r?\n/)
     .map((line) => line.trim())

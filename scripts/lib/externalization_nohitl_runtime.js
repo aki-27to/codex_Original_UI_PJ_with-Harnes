@@ -20,6 +20,7 @@ const { describeSecretProviders, probeSecretProvider } = require("./secret_provi
 const defaultNonInteractiveProfilePath = path.join(__dirname, "..", "config", "non_interactive_execution_profile.json");
 const defaultNoHitlBlockedReasonTaxonomyPath = path.join(__dirname, "..", "config", "no_hitl_blocked_reason_taxonomy.json");
 const defaultDeploymentEvidencePolicyPath = path.join(__dirname, "..", "config", "deployment_evidence_policy.json");
+const { resolveExportSessionId } = require("./export_session_window");
 
 function safeString(value, max = 4000) {
   if (typeof value !== "string") return "";
@@ -52,6 +53,10 @@ function appendJsonLine(targetPath, payload) {
 
 function workspaceRootFrom(input) {
   return input || path.resolve(__dirname, "..", "..");
+}
+
+function resolveSharedExportSessionId(workspaceRoot) {
+  return resolveExportSessionId(workspaceRoot);
 }
 
 function rel(workspaceRoot, absolutePath) {
@@ -910,6 +915,7 @@ function analyzeNoHitl({
   return {
     schema: "no-hitl-analysis-report.v1",
     generatedAt: nowIso(),
+    exportSessionId: resolveSharedExportSessionId(workspaceRoot),
     profile,
     taxonomy,
     classifications,

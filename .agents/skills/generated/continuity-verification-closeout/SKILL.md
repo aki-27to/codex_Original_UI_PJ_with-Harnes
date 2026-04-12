@@ -1,6 +1,6 @@
 ---
-name: "continuity-verification-closeout"
-description: "Use after a successful long-horizon execution to combine changed surface, verification state, and next-session brief into a continuity-aware closeout."
+name: continuity-verification-closeout
+description: Use after a successful long-horizon execution to combine changed surface, verification state, and next-session brief.
 ---
 
 # Continuity Verification Closeout

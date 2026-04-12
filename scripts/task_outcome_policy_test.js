@@ -18,8 +18,9 @@ function assert(condition, message) {
 
 function testLoadContract() {
   const spec = loadTaskOutcomeContract(path.join(__dirname, "config", "task_outcome_contract.json"));
-  assert(spec && spec.schema === "task-outcome-contract.v2", "task outcome contract schema mismatch");
+  assert(spec && spec.schema === "task-outcome-contract.v3", "task outcome contract schema mismatch");
   assert(Array.isArray(spec.statuses) && spec.statuses.some((entry) => entry.id === "NEEDS_INPUT"), "task outcome statuses missing NEEDS_INPUT");
+  assert(Array.isArray(spec.proofCarryingRequiredFields) && spec.proofCarryingRequiredFields.includes("goal_alignment_trace"), "task outcome proof fields must include goal_alignment_trace");
 }
 
 function testValidateStatus() {
@@ -75,6 +76,22 @@ function testFailedValidationFromIntentWildcard() {
   assert(verdict.status === "FAILED_VALIDATION", "intent_* reasons should map to FAILED_VALIDATION");
 }
 
+function testFailedValidationFromGoalSubstitution() {
+  const verdict = deriveTaskOutcome({
+    turnStatus: "completed",
+    reason: "goal_substitution_detected",
+  });
+  assert(verdict.status === "FAILED_VALIDATION", "goal substitution must map to FAILED_VALIDATION even after procedural completion");
+}
+
+function testPartialFromLatentIntentThreshold() {
+  const verdict = deriveTaskOutcome({
+    turnStatus: "completed",
+    reason: "latent_intent_alignment_below_threshold",
+  });
+  assert(verdict.status === "PARTIAL", "latent intent under-threshold should map to PARTIAL");
+}
+
 function testFailedDefaultBlocked() {
   const verdict = deriveTaskOutcome({
     turnStatus: "failed",
@@ -117,6 +134,8 @@ function run() {
     ["failed validation from parent dispatch guard", testFailedValidationFromGuard],
     ["failed validation from whole-system coherence review", testFailedValidationFromSystemCoherenceReview],
     ["failed validation from intent wildcard", testFailedValidationFromIntentWildcard],
+    ["failed validation from goal substitution", testFailedValidationFromGoalSubstitution],
+    ["partial from latent intent threshold", testPartialFromLatentIntentThreshold],
     ["failed default blocked", testFailedDefaultBlocked],
     ["partial outcome derivation", testPartialDelivery],
     ["turn compatibility", testTurnCompatibility],

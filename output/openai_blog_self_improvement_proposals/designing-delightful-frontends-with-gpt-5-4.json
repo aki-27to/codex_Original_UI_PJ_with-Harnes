@@ -1,7 +1,7 @@
 {
   "schema": "self-improvement-proposal.v1",
   "proposalId": "openai-blog-designing-delightful-frontends-with-gpt-5-4-self-improvement",
-  "createdAt": "2026-04-11T03:35:45.350Z",
+  "createdAt": "2026-04-12T05:11:01.949Z",
   "sourceLane": "OpenAI Developers Blog",
   "sourceTier": "primary",
   "articleId": "designing-delightful-frontends-with-gpt-5-4",
@@ -69,11 +69,12 @@
     }
   },
   "promotion": {
-    "decision": "gated_candidate",
-    "rationale": "targeted_regression_required",
+    "decision": "shadow_candidate",
+    "rationale": "target_lifecycle_override",
     "riskFlags": [
       "machine_gate_required",
-      "gated_lane_required"
+      "shadow_lane_required",
+      "low_blast_radius_target"
     ]
   },
   "gate": {

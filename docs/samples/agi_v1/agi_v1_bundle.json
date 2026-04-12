@@ -1,13 +1,13 @@
 {
   "schema": "agi-v1-eval-bundle.v1",
-  "generatedAt": "2026-04-03T23:30:42.637Z",
+  "generatedAt": "2026-04-12T02:21:25.970Z",
   "profile": "agi_v1",
   "runId": "agi-v1-sample-report",
   "laneId": "public_regression",
   "suiteId": "agi_v1_sample_suite",
   "manifest": {
     "schema": "agi-v1-eval-manifest.v1",
-    "generatedAt": "2026-04-03T23:30:39.901Z",
+    "generatedAt": "2026-04-12T02:21:23.302Z",
     "runId": "agi-v1-sample-report",
     "laneId": "public_regression",
     "suiteId": "agi_v1_sample_suite",
@@ -20,15 +20,15 @@
     "evaluator": [
       {
         "path": "server.js",
-        "hash": "01eae6be72e8ab4b231c43cb59c9807d8d2a59561cfbfb193c97993bc6897114"
+        "hash": "5d0f333e691fe47d18ce5207ab118a94c19c95063b1cd2ab3f6fec6b9130856e"
       },
       {
         "path": "scripts/lib/eval_harness_policy.js",
-        "hash": "42197e2ec5ef322edd9341976dc7903f98b9bd3d7433589e8b4e1fbf58565e31"
+        "hash": "b31424cc5ab8eea78210ccc6da0e74878159c1994cbe70c14982c3170199f42e"
       },
       {
         "path": "scripts/lib/agi_v1_profile.js",
-        "hash": "94f799c5b3c59c1a4ff74224dc4c485555782f7f24aadf804668ce93de5eb7b8"
+        "hash": "3d77733269432398d7ba4985aa354e4980f916f4eedb37577e1445e29206d5c9"
       }
     ],
     "dataset": [
@@ -50,7 +50,7 @@
       "profilePathHash": ""
     },
     "revision": {
-      "gitCommit": "564590a76e188d3018e6c1ee6eb59d9e0283ec65"
+      "gitCommit": ""
     },
     "seeds": [
       "variant:sample-agent:standard",
@@ -69,11 +69,11 @@
     },
     "artifacts": [
       {
-        "path": "docs/examples/agi_v1_sample/agi_v1_report.md",
-        "hash": "f3a169ca404e702fbf6bdcc086c69e7cd5ce30ac7671a295775c2043d7512100"
+        "path": "docs/samples/agi_v1/agi_v1_report.md",
+        "hash": "e13e9f1525927451ee0533e75f2e37f2699277a5171ccef9ad6c8b3b6021eb25"
       },
       {
-        "path": "docs/examples/agi_v1_sample/agi_v1_bundle.json",
+        "path": "docs/samples/agi_v1/agi_v1_bundle.json",
         "hash": ""
       }
     ],
@@ -83,27 +83,27 @@
         "absolutePath": "C:\\Users\\akima\\dev\\codex_Original_UI_PJ_with-Harnes\\server.js",
         "exists": 1,
         "type": "file",
-        "size": 778833,
-        "mtimeMs": 1775234622010.678,
-        "hash": "01eae6be72e8ab4b231c43cb59c9807d8d2a59561cfbfb193c97993bc6897114"
+        "size": 804536,
+        "mtimeMs": 1775960301385.41,
+        "hash": "5d0f333e691fe47d18ce5207ab118a94c19c95063b1cd2ab3f6fec6b9130856e"
       },
       {
         "path": "scripts/lib/eval_harness_policy.js",
         "absolutePath": "C:\\Users\\akima\\dev\\codex_Original_UI_PJ_with-Harnes\\scripts\\lib\\eval_harness_policy.js",
         "exists": 1,
         "type": "file",
-        "size": 14263,
-        "mtimeMs": 1775231294426.1047,
-        "hash": "42197e2ec5ef322edd9341976dc7903f98b9bd3d7433589e8b4e1fbf58565e31"
+        "size": 14428,
+        "mtimeMs": 1775372555858.784,
+        "hash": "b31424cc5ab8eea78210ccc6da0e74878159c1994cbe70c14982c3170199f42e"
       },
       {
         "path": "scripts/lib/agi_v1_profile.js",
         "absolutePath": "C:\\Users\\akima\\dev\\codex_Original_UI_PJ_with-Harnes\\scripts\\lib\\agi_v1_profile.js",
         "exists": 1,
         "type": "file",
-        "size": 65391,
-        "mtimeMs": 1775235052903.6345,
-        "hash": "94f799c5b3c59c1a4ff74224dc4c485555782f7f24aadf804668ce93de5eb7b8"
+        "size": 65895,
+        "mtimeMs": 1775412780488.03,
+        "hash": "3d77733269432398d7ba4985aa354e4980f916f4eedb37577e1445e29206d5c9"
       },
       {
         "path": "scripts/config/agi_v1_eval_profile.json",
@@ -130,27 +130,27 @@
         "absolutePath": "C:\\Users\\akima\\dev\\codex_Original_UI_PJ_with-Harnes\\server.js",
         "exists": 1,
         "type": "file",
-        "size": 778833,
-        "mtimeMs": 1775234622010.678,
-        "hash": "01eae6be72e8ab4b231c43cb59c9807d8d2a59561cfbfb193c97993bc6897114"
+        "size": 804536,
+        "mtimeMs": 1775960301385.41,
+        "hash": "5d0f333e691fe47d18ce5207ab118a94c19c95063b1cd2ab3f6fec6b9130856e"
       },
       {
         "path": "scripts/lib/eval_harness_policy.js",
         "absolutePath": "C:\\Users\\akima\\dev\\codex_Original_UI_PJ_with-Harnes\\scripts\\lib\\eval_harness_policy.js",
         "exists": 1,
         "type": "file",
-        "size": 14263,
-        "mtimeMs": 1775231294426.1047,
-        "hash": "42197e2ec5ef322edd9341976dc7903f98b9bd3d7433589e8b4e1fbf58565e31"
+        "size": 14428,
+        "mtimeMs": 1775372555858.784,
+        "hash": "b31424cc5ab8eea78210ccc6da0e74878159c1994cbe70c14982c3170199f42e"
       },
       {
         "path": "scripts/lib/agi_v1_profile.js",
         "absolutePath": "C:\\Users\\akima\\dev\\codex_Original_UI_PJ_with-Harnes\\scripts\\lib\\agi_v1_profile.js",
         "exists": 1,
         "type": "file",
-        "size": 65391,
-        "mtimeMs": 1775235052903.6345,
-        "hash": "94f799c5b3c59c1a4ff74224dc4c485555782f7f24aadf804668ce93de5eb7b8"
+        "size": 65895,
+        "mtimeMs": 1775412780488.03,
+        "hash": "3d77733269432398d7ba4985aa354e4980f916f4eedb37577e1445e29206d5c9"
       },
       {
         "path": "scripts/config/agi_v1_eval_profile.json",
@@ -186,7 +186,7 @@
   },
   "candidate": {
     "schema": "agi-v1-candidate-bundle.v1",
-    "generatedAt": "2026-04-03T23:30:42.636Z",
+    "generatedAt": "2026-04-12T02:21:25.970Z",
     "candidateId": "sample-agent",
     "profile": "agi_v1",
     "runId": "agi-v1-sample-report",
@@ -194,7 +194,7 @@
     "suiteId": "agi_v1_sample_suite",
     "manifest": {
       "schema": "agi-v1-eval-manifest.v1",
-      "generatedAt": "2026-04-03T23:30:39.901Z",
+      "generatedAt": "2026-04-12T02:21:23.302Z",
       "runId": "agi-v1-sample-report",
       "laneId": "public_regression",
       "suiteId": "agi_v1_sample_suite",
@@ -207,15 +207,15 @@
       "evaluator": [
         {
           "path": "server.js",
-          "hash": "01eae6be72e8ab4b231c43cb59c9807d8d2a59561cfbfb193c97993bc6897114"
+          "hash": "5d0f333e691fe47d18ce5207ab118a94c19c95063b1cd2ab3f6fec6b9130856e"
         },
         {
           "path": "scripts/lib/eval_harness_policy.js",
-          "hash": "42197e2ec5ef322edd9341976dc7903f98b9bd3d7433589e8b4e1fbf58565e31"
+          "hash": "b31424cc5ab8eea78210ccc6da0e74878159c1994cbe70c14982c3170199f42e"
         },
         {
           "path": "scripts/lib/agi_v1_profile.js",
-          "hash": "94f799c5b3c59c1a4ff74224dc4c485555782f7f24aadf804668ce93de5eb7b8"
+          "hash": "3d77733269432398d7ba4985aa354e4980f916f4eedb37577e1445e29206d5c9"
         }
       ],
       "dataset": [
@@ -237,7 +237,7 @@
         "profilePathHash": ""
       },
       "revision": {
-        "gitCommit": "564590a76e188d3018e6c1ee6eb59d9e0283ec65"
+        "gitCommit": ""
       },
       "seeds": [
         "variant:sample-agent:standard",
@@ -256,11 +256,11 @@
       },
       "artifacts": [
         {
-          "path": "docs/examples/agi_v1_sample/agi_v1_report.md",
-          "hash": "f3a169ca404e702fbf6bdcc086c69e7cd5ce30ac7671a295775c2043d7512100"
+          "path": "docs/samples/agi_v1/agi_v1_report.md",
+          "hash": "e13e9f1525927451ee0533e75f2e37f2699277a5171ccef9ad6c8b3b6021eb25"
         },
         {
-          "path": "docs/examples/agi_v1_sample/agi_v1_bundle.json",
+          "path": "docs/samples/agi_v1/agi_v1_bundle.json",
           "hash": ""
         }
       ],
@@ -270,27 +270,27 @@
           "absolutePath": "C:\\Users\\akima\\dev\\codex_Original_UI_PJ_with-Harnes\\server.js",
           "exists": 1,
           "type": "file",
-          "size": 778833,
-          "mtimeMs": 1775234622010.678,
-          "hash": "01eae6be72e8ab4b231c43cb59c9807d8d2a59561cfbfb193c97993bc6897114"
+          "size": 804536,
+          "mtimeMs": 1775960301385.41,
+          "hash": "5d0f333e691fe47d18ce5207ab118a94c19c95063b1cd2ab3f6fec6b9130856e"
         },
         {
           "path": "scripts/lib/eval_harness_policy.js",
           "absolutePath": "C:\\Users\\akima\\dev\\codex_Original_UI_PJ_with-Harnes\\scripts\\lib\\eval_harness_policy.js",
           "exists": 1,
           "type": "file",
-          "size": 14263,
-          "mtimeMs": 1775231294426.1047,
-          "hash": "42197e2ec5ef322edd9341976dc7903f98b9bd3d7433589e8b4e1fbf58565e31"
+          "size": 14428,
+          "mtimeMs": 1775372555858.784,
+          "hash": "b31424cc5ab8eea78210ccc6da0e74878159c1994cbe70c14982c3170199f42e"
         },
         {
           "path": "scripts/lib/agi_v1_profile.js",
           "absolutePath": "C:\\Users\\akima\\dev\\codex_Original_UI_PJ_with-Harnes\\scripts\\lib\\agi_v1_profile.js",
           "exists": 1,
           "type": "file",
-          "size": 65391,
-          "mtimeMs": 1775235052903.6345,
-          "hash": "94f799c5b3c59c1a4ff74224dc4c485555782f7f24aadf804668ce93de5eb7b8"
+          "size": 65895,
+          "mtimeMs": 1775412780488.03,
+          "hash": "3d77733269432398d7ba4985aa354e4980f916f4eedb37577e1445e29206d5c9"
         },
         {
           "path": "scripts/config/agi_v1_eval_profile.json",
@@ -317,27 +317,27 @@
           "absolutePath": "C:\\Users\\akima\\dev\\codex_Original_UI_PJ_with-Harnes\\server.js",
           "exists": 1,
           "type": "file",
-          "size": 778833,
-          "mtimeMs": 1775234622010.678,
-          "hash": "01eae6be72e8ab4b231c43cb59c9807d8d2a59561cfbfb193c97993bc6897114"
+          "size": 804536,
+          "mtimeMs": 1775960301385.41,
+          "hash": "5d0f333e691fe47d18ce5207ab118a94c19c95063b1cd2ab3f6fec6b9130856e"
         },
         {
           "path": "scripts/lib/eval_harness_policy.js",
           "absolutePath": "C:\\Users\\akima\\dev\\codex_Original_UI_PJ_with-Harnes\\scripts\\lib\\eval_harness_policy.js",
           "exists": 1,
           "type": "file",
-          "size": 14263,
-          "mtimeMs": 1775231294426.1047,
-          "hash": "42197e2ec5ef322edd9341976dc7903f98b9bd3d7433589e8b4e1fbf58565e31"
+          "size": 14428,
+          "mtimeMs": 1775372555858.784,
+          "hash": "b31424cc5ab8eea78210ccc6da0e74878159c1994cbe70c14982c3170199f42e"
         },
         {
           "path": "scripts/lib/agi_v1_profile.js",
           "absolutePath": "C:\\Users\\akima\\dev\\codex_Original_UI_PJ_with-Harnes\\scripts\\lib\\agi_v1_profile.js",
           "exists": 1,
           "type": "file",
-          "size": 65391,
-          "mtimeMs": 1775235052903.6345,
-          "hash": "94f799c5b3c59c1a4ff74224dc4c485555782f7f24aadf804668ce93de5eb7b8"
+          "size": 65895,
+          "mtimeMs": 1775412780488.03,
+          "hash": "3d77733269432398d7ba4985aa354e4980f916f4eedb37577e1445e29206d5c9"
         },
         {
           "path": "scripts/config/agi_v1_eval_profile.json",
@@ -856,11 +856,11 @@
         "family_name": "I_eval",
         "submetric_name": "manifest_completeness",
         "mode": "standard",
-        "value": 1,
-        "ci_low": 1,
-        "ci_high": 1,
+        "value": 0.8888888888888888,
+        "ci_low": 0.8888888888888888,
+        "ci_high": 0.8888888888888888,
         "threshold": 0.95,
-        "pass_fail": true,
+        "pass_fail": false,
         "relevant": true,
         "supportStatus": "supported",
         "supported": true,
@@ -869,18 +869,10 @@
         "sample_count": 9,
         "severity_or_loss": null,
         "evidence": [
-          "suite",
-          "evaluator",
-          "dataset",
-          "promptTemplate",
-          "config",
-          "revision",
-          "seeds",
-          "splitIds",
-          "artifacts"
+          "revision"
         ],
         "notes": "Manifest completeness across evaluator/dataset/prompt/config/revision/seeds/artifacts.",
-        "reason": "manifest_required_sections_present",
+        "reason": "manifest_required_sections_missing",
         "case_id": "",
         "title": "",
         "variant_label": "",
@@ -989,11 +981,11 @@
         "main": {
           "familyName": "I_eval",
           "mode": "standard",
-          "value": 1,
-          "ciLow": 1,
+          "value": 0.888889,
+          "ciLow": 0.888889,
           "ciHigh": 1,
           "threshold": 0.95,
-          "passFail": true,
+          "passFail": false,
           "supportStatus": "supported",
           "sampleCount": 4,
           "details": {
@@ -1004,11 +996,11 @@
           "standard": {
             "familyName": "I_eval",
             "mode": "standard",
-            "value": 1,
-            "ciLow": 1,
+            "value": 0.888889,
+            "ciLow": 0.888889,
             "ciHigh": 1,
             "threshold": 0.95,
-            "passFail": true,
+            "passFail": false,
             "supportStatus": "supported",
             "sampleCount": 4,
             "details": {
@@ -1031,11 +1023,11 @@
         "worstCase": {
           "familyName": "I_eval",
           "mode": "standard",
-          "value": 1,
-          "ciLow": 1,
+          "value": 0.888889,
+          "ciLow": 0.888889,
           "ciHigh": 1,
           "threshold": 0.95,
-          "passFail": true,
+          "passFail": false,
           "supportStatus": "supported",
           "sampleCount": 4,
           "details": {
@@ -1904,11 +1896,12 @@
       "supportStatus": "supported"
     },
     "gateStatus": {
-      "allGatesPass": true,
+      "allGatesPass": false,
       "allCriticalMetricsSupported": true
     },
     "blockingReasons": [
-      "suite_case_limit_truncation:5/16"
+      "suite_case_limit_truncation:5/16",
+      "critical_gate_failure"
     ],
     "modeDeltas": {
       "G_breadth": null,
@@ -1938,20 +1931,20 @@
       "truncated": true
     },
     "reportArtifacts": {
-      "jsonPath": "docs/examples/agi_v1_sample/agi_v1_bundle.json",
-      "markdownPath": "docs/examples/agi_v1_sample/agi_v1_report.md"
+      "jsonPath": "docs/samples/agi_v1/agi_v1_bundle.json",
+      "markdownPath": "docs/samples/agi_v1/agi_v1_report.md"
     }
   },
   "promotionDecision": {
     "schema": "agi-v1-promotion-decision.v1",
-    "generatedAt": "2026-04-03T23:30:42.637Z",
+    "generatedAt": "2026-04-12T02:21:25.970Z",
     "incumbentIdentifier": null,
     "challengerIdentifier": "sample-agent",
-    "promote": true,
-    "reasons": [
-      "cold_start_gates_and_thresholds_passed"
+    "promote": false,
+    "reasons": [],
+    "blocking_conditions": [
+      "challenger_gate_failure"
     ],
-    "blocking_conditions": [],
     "critical_regressions": [],
     "raw_final_score_old": null,
     "raw_final_score_new": 0.817957,
@@ -1989,7 +1982,7 @@
     "coldStart": true
   },
   "reportArtifacts": {
-    "jsonPath": "docs/examples/agi_v1_sample/agi_v1_bundle.json",
-    "markdownPath": "docs/examples/agi_v1_sample/agi_v1_report.md"
+    "jsonPath": "docs/samples/agi_v1/agi_v1_bundle.json",
+    "markdownPath": "docs/samples/agi_v1/agi_v1_report.md"
   }
 }

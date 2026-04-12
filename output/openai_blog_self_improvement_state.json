@@ -1,6 +1,6 @@
 {
   "schema": "self-improvement-state.v1",
-  "generatedAt": "2026-04-11T03:35:45.350Z",
+  "generatedAt": "2026-04-12T05:11:01.949Z",
   "sourceName": "OpenAI Developers Blog",
   "sourceTier": "primary",
   "promotionMode": "machine_guarded_autonomy",
@@ -22,12 +22,12 @@
   "autoApplyCandidateCount": 0,
   "readyHintCandidateCount": 0,
   "autoApplyFrontendQualityNoteCount": 0,
-  "observationStatus": "unobserved",
+  "observationStatus": "starved",
   "observationCount": 0,
   "lastObservedAt": "",
   "requiredObservationSuccesses": 2,
   "requiredObservationSuccessRate": 0.67,
-  "awaitingObservationCount": 0,
+  "awaitingObservationCount": 11,
   "awaitingReinforcementCount": 0,
   "policyDisabledCandidateCount": 0,
   "proposalOnlyCount": 1,
@@ -424,7 +424,7 @@
       "title": "Designing delightful frontends with GPT-5.4 | OpenAI Developers",
       "changeClass": "memory_pack_policy",
       "target": "scripts/config/memory_retrieval_policy.json",
-      "decision": "gated_candidate"
+      "decision": "shadow_candidate"
     },
     {
       "proposalId": "openai-blog-one-year-of-responses-self-improvement",

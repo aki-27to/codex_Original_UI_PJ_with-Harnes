@@ -1,58 +1,63 @@
-# Governed Autonomous Learning Loop
+# GOVERNED_AUTONOMOUS_LEARNING_LOOP
 
-## 2026-04-05 update
+Updated: 2026-04-12
 
-- Bottlenecks from readiness, robustness, continuity debt, and harmful lessons are converted into governed agenda entries.
-- The loop is: detect bottleneck, create remediation agenda item, run remediation task, verify effect with evidence, then promote, reinforce, revoke, or roll back.
-- Primary public surfaces:
-  - `output/agi_readiness/autonomous_learning_status.json`
-  - `output/agi_readiness/robustness_remediation_backlog.json`
-  - `output/agi_readiness/robustness_remediation_effects.json`
-  - `output/agi_readiness/self_directed_probe_status.json`
-  - `output/agi_readiness/novel_task_acquisition.json`
+## Current Window Rule
 
-## 2026-04-06 subjective support surfaces
+`output/agi_readiness/autonomous_learning_status.json` is a supporting learning surface for the current export session.
 
-- Self-directed probe outcomes are now exported as a first-class public surface in `output/agi_readiness/self_directed_probe_status.json`.
-- Novel task/probe acquisition evidence is exported in `output/agi_readiness/novel_task_acquisition.json`.
-- These artifacts are supporting proof for subjective completion. Missing artifacts or insufficient evidence must keep the subjective status at `NOT_YET`.
+- `currentQueuedCount`
+- `currentRunningCount`
+- `currentBlockedCount`
+- `currentInsufficientEvidenceCount`
+- `currentVerifiedPositiveCount`
 
-このハーネスでは、改善は単なる提案管理ではなく、次の閉ループとして扱います。
+These current counts are the only learning-agenda counts allowed to block or clear fail-closed completion decisions.
 
-1. readiness / continuity / memory projection から bottleneck を検出する  
-2. bottleneck を `learning agenda` に変換する  
-3. governed remediation task として実行または保留する  
-4. outcome を observation と causal trace に記録する  
-5. lesson / hint / lineage / readiness を再計算する  
+- `currentVerifiedPositiveCount` counts `verified_positive` entries inside the current `exportSessionId` window.
+- Current verified-positive counts include same-window `passed` terminal entries.
+- `summary.verifiedPositive` must equal `currentVerifiedPositiveCount`.
+- The JSON artifact exposes this as a machine-readable `countSemantics` contract, and strict public eval must reject ambiguity.
 
-## Truth source
-- live truth: `logs/archive/raw/runtime_state/memory`
-- public proof:
-  - `output/agi_readiness/autonomous_learning_status.json`
-  - `output/agi_readiness/causal_learning_trace.json`
-  - `output/agi_readiness/distinct_improvement_lineage.json`
-  - `output/continuity_public/continuity_debt.json`
+## Historical Trend Rule
 
-## Safety posture
-- fail-open は許可しません。
-- evidence 不足の remediation は `proposal_only` または `blocked` に落ちます。
-- primary / secondary learning lane の序列は維持します。
+The same artifact also preserves trend-only history.
 
-## Current meaning
-- `queued`: 起票済みで未着手
-- `running`: 自律実行または自律計測の対象
-- `passed`: 改善効果が確認済み
-- `failed`: 実行したが改善効果なし
-- `blocked`: evidence / policy / dependency により停止
-- `revoked`: harmful / stale / unsafe のため撤回
-## 2026-04-06 sovereign autonomy surfaces
+- `historicalQueuedCount`
+- `historicalRunningCount`
+- `historicalBlockedCount`
+- `historicalInsufficientEvidenceCount`
+- `historicalVerifiedPositiveCount`
 
-- The governed loop now emits:
-  - `output/agi_readiness/self_authored_goal_market.json`
-  - `output/agi_readiness/self_authored_goal_history.json`
-  - `output/agi_readiness/open_unknowns_register.json`
-  - `output/agi_readiness/workspace_world_model.json`
-  - `output/agi_readiness/security_constitution_status.json`
-  - `output/agi_readiness/rollback_readiness.json`
-  - `output/agi_readiness/autonomy_budget_status.json`
-- Autonomy in this repo means self-authored goal selection inside the security constitution, not unrestricted destructive behavior.
+Historical counts are for learning trend review, not for silently changing the current completion gate.
+
+- `historicalVerifiedPositiveCount` is the cumulative carry from prior `exportSessionId` windows only.
+- When a new export session starts, the previous session's `currentVerifiedPositiveCount` rolls into `historicalVerifiedPositiveCount`.
+- Same-session rerenders must not move current verified-positive counts into history.
+
+## Same Semantic Window
+
+The following supporting artifacts must share the same `exportSessionId`:
+
+- `output/governance_public/worker_decision_surface.json`
+- `output/governance_public/adoption_readiness_eval.json`
+- `output/governance_public/iteration_decision.json`
+- `output/externalization_nohitl/no_hitl_analysis.json`
+- `output/agi_readiness/goal_completion_status.json`
+- `output/agi_readiness/subjective_goal_completion_status.json`
+- `output/agi_readiness/compatibility_completion_status.json`
+- `output/agi_readiness/autonomous_learning_status.json`
+- `output/agi_readiness/learning_adoption_status.json`
+- `output/agi_readiness/self_directed_probe_status.json`
+- `output/agi_readiness/novel_task_acquisition.json`
+
+If the semantic window mismatches, strict public eval must fail.
+
+## Headline Relationship
+
+The learning loop is not the headline current truth.
+
+- Headline: `output/governance_public/worker_decision_surface.json`
+- Supporting program readiness: `output/agi_readiness/goal_completion_status.json`
+- Supporting subjective companion: `output/agi_readiness/subjective_goal_completion_status.json`
+- Supporting compatibility layer: `output/agi_readiness/compatibility_completion_status.json`

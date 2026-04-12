@@ -1,6 +1,6 @@
 {
   "schema": "governance-public-bundle-overview.v1",
-  "generatedAt": "2026-04-11T07:35:12.638Z",
+  "generatedAt": "2026-04-12T02:14:59.862Z",
   "sourceLatestSignoffSummary": "logs/current/latest_signoff_summary.json",
   "sourceBundleRoot": "logs/bundles/signoff/signoff-2026-03-09T12-31-59-842Z-24dd95",
   "sourceTurnDir": "logs/bundles/signoff/signoff-2026-03-09T12-31-59-842Z-24dd95/raw/turns/2026-03-09/019cd29a-09de-7670-8c38-eade454f7cb2__019cd29a-0ad3-72d2-957c-30870c52eaba",
@@ -15,6 +15,15 @@
   "finalDecision": "RELEASE_APPROVED",
   "runtimePostureSafe": true,
   "signoffReady": true,
+  "workerDecision": {
+    "scope": "worker_decision",
+    "exportSessionId": "export_a63636ff0a86",
+    "topLevelOutcome": "ADOPTABLE_COMPLETE",
+    "topLevelSummary": "The worker can close in place: adoption readiness passed, latent intent stayed aligned, and no extra human interruption is required.",
+    "operatorAction": "ADOPT",
+    "minimalHitlMode": "close_in_place",
+    "adoptionReady": 1
+  },
   "exportedFiles": [
     "latest_signoff_summary.json",
     "signoff_summary.json",
@@ -35,6 +44,7 @@
     "dispatch_plan.json",
     "adoption_readiness_eval.json",
     "iteration_decision.json",
-    "escalation_decision.json"
+    "escalation_decision.json",
+    "worker_decision_surface.json"
   ]
 }

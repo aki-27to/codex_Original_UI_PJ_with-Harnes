@@ -1,69 +1,66 @@
-# Demo Flows
+# 代表的な仕事の流れ
 
 Authority role: `navigation / demo surface only`  
 Authority registry: `authority-registry.v1`
 
-This page fixes the three demo jobs that should be visible before anyone reads deep architecture.
+このページは、深い設計書を読む前に **何を見せるべきか** を固定する文書です。  
+記憶や自己改善の名前を先に並べるのではなく、読む人が最後まで追える仕事から入ります。
 
-Do not lead with `memory`, `subagents`, or `self-improvement` as isolated nouns.
-Lead with the work a reviewer or operator can actually watch end to end.
+<!-- ## The Three Fixed Demo Jobs -->
+## 3 つの固定デモ
 
-## The Three Fixed Demo Jobs
-
-| Job | Start point | What you should see | Proof to open | Question it answers |
+| 仕事 | 開始点 | 見えるもの | 開く証拠 | 答える問い |
 | --- | --- | --- | --- | --- |
-| Implement and finish with proof | `POST /api/exec` or `Console` | Active worker, specialist dispatch, task outcome, runtime proof, and signoff in `Overview` | `output/governance_public/`, `output/agi_readiness/` | Can this worker do delegated implementation and stop honestly? |
-| Decide ship / no-ship honestly | `POST /api/eval/run` or `Overview -> Evidence` | Latest signoff, eval history, runtime proof, and readiness state in one place | `output/governance_public/bundle_overview.md`, `output/agi_readiness/goal_completion_status.md` | Can review trust the release call without reading raw logs? |
-| Resume across sessions without guesswork | `Overview -> Memory` plus `/api/continuity/*` | Current objective, memory pack, continuity debt, handoff count, and recovery state | `output/memory_public/`, `output/continuity_public/` | Can long-running work resume without losing intent, proof, or rationale? |
+| 証拠つきで実装を終える | `POST /api/exec` または Console | 稼働中のワーカー、専門ワーカーへの委譲、成果記録、実行の根拠、最終判定 | `output/governance_public/`、`output/agi_readiness/` | 委ねた実装作業を正直に終えられるか |
+| 出荷してよいかを正直に決める | `POST /api/eval/run` または Overview -> Evidence | 最新の最終判定、評価履歴、実行の根拠、到達度 | `output/governance_public/bundle_overview.md`、`output/agi_readiness/goal_completion_status.md` | 出荷判断を根拠つきで信頼できるか |
+| 途中からでも迷わず再開する | Overview -> Memory と `/api/continuity/*` | 現在の目的、記憶のまとめ、継続上の負債、引き継ぎ回数、復旧状態 | `output/memory_public/`、`output/continuity_public/` | 長時間タスクを意図と証拠を失わずに再開できるか |
 
-## 1) Implement And Finish With Proof
+## 1) 証拠つきで実装を終える
 
-Use this when the question is:
+このデモで見たいのは次です。
 
-- can the worker do real delegated implementation work
-- can it use specialists instead of pretending one agent did everything
-- can it finish with proof instead of an answer-only completion claim
+- worker が委ねられた実装を最後まで進められるか
+- 1 つの agent が全部やったように見せず、専門ワーカーを使い分けられるか
+- 口頭の完了主張ではなく、証拠つきで終われるか
 
-Recommended path:
+推奨導線:
 
-1. Open `Console` and run the normal delegated-work path.
-2. Open `Overview` and read `Capabilities` as job surfaces.
-3. Check `Evidence` for the latest runtime proof and signoff.
-4. Open `output/governance_public/bundle_overview.md` if you want the repo-safe public trace.
+1. Console から通常の委譲実行経路を走らせる
+2. Overview で Capabilities を仕事単位で読む
+3. Evidence で最新の実行根拠と最終判定を見る
+4. 詳しい trace が必要なら `output/governance_public/bundle_overview.md` を開く
 
-## 2) Decide Ship / No-Ship Honestly
+## 2) 出荷してよいかを正直に決める
 
-Use this when the question is:
+このデモで見たいのは次です。
 
-- can the runtime distinguish "something ran" from "this is adoptable"
-- can a reviewer explain why the system thinks release is safe
-- can the system block honestly when proof is missing
+- 何かが動いたことと、採択可能な成果物であることを区別できるか
+- 確認する人が「なぜ安全だと判断したか」を説明できるか
+- 根拠が薄いときに正直に block できるか
 
-Recommended path:
+推奨導線:
 
-1. Open `Overview -> Evidence`.
-2. Check the latest signoff, eval history, and runtime proof together.
-3. Open `output/agi_readiness/goal_completion_status.md`.
-4. Open `output/governance_public/bundle_overview.md`.
+1. Overview -> Evidence を開く
+2. 最新の最終判定、評価履歴、実行根拠をまとめて見る
+3. `output/agi_readiness/goal_completion_status.md` を開く
+4. `output/governance_public/bundle_overview.md` を開く
 
-## 3) Resume Across Sessions Without Guesswork
+## 3) 途中からでも迷わず再開する
 
-Use this when the question is:
+このデモで見たいのは次です。
 
-- can the runtime keep continuity across long-running work
-- can the next session inherit intent and proof instead of tribal memory
-- can improvement stay bounded instead of becoming opaque self-rewrite
+- 長時間の作業でも継続性を保てるか
+- 次の session が曖昧な記憶ではなく統治された状態を引き継げるか
+- 見えない自己書き換えではなく、制御された改善に留まれるか
 
-Recommended path:
+推奨導線:
 
-1. Open `Overview -> Memory`.
-2. Inspect the current objective, compiled pack, and continuity debt.
-3. Open `/api/continuity/tasks?state=all`.
-4. Cross-check `output/memory_public/` and `output/continuity_public/`.
+1. Overview -> Memory を開く
+2. 現在の目的、まとめられた記憶、継続上の負債を見る
+3. `/api/continuity/tasks?state=all` を確認する
+4. `output/memory_public/` と `output/continuity_public/` を照合する
 
-## Where These Jobs Should Be Visible
-
-The fixed demo jobs should be visible from:
+## この 3 つはどこで見えるべきか
 
 - `../README.md`
 - `../web/01.HarnesUI/overview.html`
@@ -71,6 +68,7 @@ The fixed demo jobs should be visible from:
 - `BUYER_PAIN_MAP.md`
 - `PRODUCT_POSITIONING.md`
 
-## One-Line Rule
+<!-- ## One-Line Rule -->
+## 一行ルール
 
-`Show the work first, then explain the mechanism.`
+仕組みを先に語るのではなく、まず「どんな仕事を最後まで任せられるか」を見せる。

@@ -14,6 +14,13 @@ const {
   buildEscalationDecision,
   buildIterationDecision,
 } = require("./iteration_control_policy");
+const {
+  buildWorkerDecisionSurface,
+  summarizeWorkerDecisionSurfaceContract,
+} = require("./worker_decision_surface");
+const {
+  summarizeHarnessPlaneContract,
+} = require("./harness_plane_contract");
 
 function safeString(value, max = 240) {
   if (typeof value !== "string") {
@@ -56,6 +63,10 @@ function buildGovernanceRuntimeSurface({
   iterationControlContractPath,
   adoptionReadinessContract,
   adoptionReadinessContractPath,
+  workerDecisionSurfaceContract,
+  workerDecisionSurfaceContractPath,
+  harnessPlaneContract,
+  harnessPlaneContractPath,
   summarizePathForOperationLog,
 } = {}) {
   const authorityModel = buildAuthorityRuntimeSummary({ registry });
@@ -106,6 +117,14 @@ function buildGovernanceRuntimeSurface({
       ? adoptionReadinessContract.proceduralClosureRule
       : {},
   };
+  const workerDecisionSurfaceSummary = {
+    ...summarizeWorkerDecisionSurfaceContract(workerDecisionSurfaceContract),
+    path: summarizePath(workerDecisionSurfaceContractPath, summarizePathForOperationLog),
+  };
+  const harnessPlaneSummary = {
+    ...summarizeHarnessPlaneContract(harnessPlaneContract),
+    path: summarizePath(harnessPlaneContractPath, summarizePathForOperationLog),
+  };
   if (authorityRegistryPath) {
     authorityModel.registryPath = summarizePath(authorityRegistryPath, summarizePathForOperationLog);
   }
@@ -114,6 +133,8 @@ function buildGovernanceRuntimeSurface({
     deploymentPosture,
     iterationControlSummary,
     adoptionReadinessSummary,
+    workerDecisionSurfaceSummary,
+    harnessPlaneSummary,
   };
 }
 
@@ -178,6 +199,14 @@ function buildEvalRunGovernanceBundle({
       taskOutcomeReason: safeString(iterationDecision && iterationDecision.reason, 160) || "eval_iteration_decision",
     },
   });
+  const workerDecisionSurface = buildWorkerDecisionSurface({
+    finalOutcome,
+    adoptionReadinessEval: adoptionReadiness,
+    iterationDecision,
+    escalationDecision,
+    releaseDecision,
+    reviewBundle,
+  });
   return {
     finalOutcome,
     adoptionReadiness,
@@ -185,6 +214,7 @@ function buildEvalRunGovernanceBundle({
     reviewBundle,
     releaseDecision,
     escalationDecision,
+    workerDecisionSurface,
   };
 }
 
@@ -304,6 +334,14 @@ function buildTurnGovernanceBundle({
       `task_outcome_status=${safeString(taskOutcomeStatus, 80) || "unknown"}`,
     ],
   });
+  const workerDecisionSurface = buildWorkerDecisionSurface({
+    finalOutcome: summary.finalOutcome,
+    adoptionReadinessEval,
+    iterationDecision,
+    escalationDecision,
+    releaseDecision,
+    reviewBundle,
+  });
   return {
     reviewBundle,
     adoptionReadinessEval,
@@ -311,6 +349,7 @@ function buildTurnGovernanceBundle({
     escalationDecision,
     releaseDecision,
     conformanceReport,
+    workerDecisionSurface,
   };
 }
 

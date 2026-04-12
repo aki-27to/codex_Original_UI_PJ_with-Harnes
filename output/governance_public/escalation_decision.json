@@ -1,6 +1,6 @@
 {
   "schema": "escalation-decision.v1",
-  "generatedAt": "2026-04-11T07:35:12.637Z",
+  "generatedAt": "2026-04-12T02:14:59.861Z",
   "escalationRequired": 0,
   "action": "RELEASE",
   "reason": "release_conditions_satisfied",
@@ -11,5 +11,7 @@
   ],
   "residualRisks": [
     "New logic or protocol-sensitive behavior requires dedicated verification before signoff."
-  ]
+  ],
+  "exportSessionId": "export_a63636ff0a86",
+  "scope": "operator_escalation"
 }

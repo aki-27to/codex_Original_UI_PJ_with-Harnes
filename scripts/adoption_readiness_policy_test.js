@@ -12,6 +12,7 @@ function main() {
   const contract = loadAdoptionReadinessContract();
   assert.strictEqual(contract.schema, "adoption-readiness-evaluator-contract.v1", "adoption readiness schema mismatch");
   assert(contract.dimensions.includes("latent_intent_alignment"), "latent intent dimension must exist");
+  assert(contract.dimensions.includes("task_contract_integrity"), "task-contract integrity dimension must exist");
   assert(contract.dimensions.includes("adoption_readiness"), "adoption readiness dimension must exist");
 
   const passing = evaluateAdoptionReadiness({
@@ -41,7 +42,9 @@ function main() {
   }, contract);
   assert.strictEqual(Number(passing.completedStateObserved || 0), 1, "completed state must be observed for passing case");
   assert(Number(passing.scores.adoption_readiness) >= 0.8, "passing case must be adoption-ready");
+  assert(Number(passing.scores.task_contract_integrity) >= 0.92, "passing case must preserve task-contract integrity");
   assert.strictEqual(passing.blockers.length, 0, "passing case must not carry blockers");
+  assert.strictEqual(Number(passing.releaseEligibility && passing.releaseEligibility.eligible || 0), 1, "passing case must be release-eligible");
 
   const failing = evaluateAdoptionReadiness({
     acceptanceResults: [
@@ -70,6 +73,36 @@ function main() {
   }, contract);
   assert(Number(failing.scores.adoption_readiness) < 0.8, "failing case must stay below adoption threshold");
   assert(failing.blockers.includes("visual_review_missing"), "failing case must preserve blockers");
+  assert.strictEqual(Number(failing.releaseEligibility && failing.releaseEligibility.eligible || 0), 0, "failing case must not be release-eligible");
+
+  const goalSubstitution = evaluateAdoptionReadiness({
+    acceptanceResults: [
+      { id: "ac-1", status: "PASS" },
+      { id: "ac-2", status: "PASS" },
+    ],
+    reviewBundle: {
+      recommended_release_state: "RELEASE_APPROVED",
+      blockers: ["goal_substitution_detected"],
+    },
+    finalOutcome: {
+      taskOutcomeStatus: "COMPLETED",
+      taskOutcomeReason: "goal_substitution_detected",
+    },
+    clauseCompletionScorecard: {
+      status: "PASS",
+    },
+    residualRisks: [],
+    assumptions: [],
+    evidenceRefs: ["review_bundle.json", "release_decision.json", "iteration_decision.json", "adoption_readiness_eval.json"],
+    expectedEvidenceRefCount: 4,
+    iterationDecision: {
+      action: "RELEASE",
+      blockers: ["goal_substitution_detected"],
+    },
+  }, contract);
+  assert(Number(goalSubstitution.scores.task_contract_integrity) < 0.92, "goal substitution must break task-contract integrity");
+  assert(goalSubstitution.blockers.includes("goal_substitution_detected"), "goal substitution must surface as blocker");
+  assert.strictEqual(Number(goalSubstitution.releaseEligibility && goalSubstitution.releaseEligibility.eligible || 0), 0, "goal substitution must block release");
 
   const evalRun = evaluateEvalRunAdoptionReadiness({
     suite: { suiteId: "public_regression" },

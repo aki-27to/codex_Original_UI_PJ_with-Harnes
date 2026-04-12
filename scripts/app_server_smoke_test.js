@@ -1264,11 +1264,29 @@ async function run() {
     if (governancePolicy.contracts.worker.requiresParentOverride !== true) {
       throw new Error("runtime governancePolicy worker.requiresParentOverride was not true");
     }
+    if (!runtimeReady.workerDecisionSurface || typeof runtimeReady.workerDecisionSurface !== "object") {
+      throw new Error("runtime did not expose workerDecisionSurface headline");
+    }
+    if (runtimeReady.workerDecisionSurface.scope !== "worker_decision") {
+      throw new Error("runtime workerDecisionSurface did not expose worker_decision scope");
+    }
+    if (!runtimeReady.currentTruth || typeof runtimeReady.currentTruth !== "object") {
+      throw new Error("runtime did not expose currentTruth hierarchy");
+    }
+    if (!runtimeReady.currentTruth.goalCompletion || runtimeReady.currentTruth.goalCompletion.scope !== "program_readiness") {
+      throw new Error("runtime currentTruth.goalCompletion did not expose program_readiness scope");
+    }
+    if (!runtimeReady.currentTruth.subjectiveCompletion || runtimeReady.currentTruth.subjectiveCompletion.scope !== "subjective_companion") {
+      throw new Error("runtime currentTruth.subjectiveCompletion did not expose subjective_companion scope");
+    }
+    if (!runtimeReady.currentTruth.compatibilityCompletion || runtimeReady.currentTruth.compatibilityCompletion.scope !== "compatibility_layer") {
+      throw new Error("runtime currentTruth.compatibilityCompletion did not expose compatibility_layer scope");
+    }
     console.log("[smoke] 9/25 runtime reports latest_turn, app catalog, and artifact/idempotency capability");
     if (!runtimeReady.staticApps || typeof runtimeReady.staticApps !== "object") {
       throw new Error("runtime did not expose staticApps");
     }
-    if (!Array.isArray(runtimeReady.staticApps.apps) || runtimeReady.staticApps.apps.length < 3) {
+    if (!Array.isArray(runtimeReady.staticApps.apps) || runtimeReady.staticApps.apps.length < 2) {
       throw new Error("runtime staticApps.apps did not expose the registry-backed app list");
     }
     const runtimeAppIds = new Set(
@@ -1276,7 +1294,7 @@ async function run() {
         .map((entry) => (entry && typeof entry.id === "string" ? entry.id : ""))
         .filter(Boolean)
     );
-    for (const requiredAppId of ["english-conversation-app", "talkapp", "presentation-coach"]) {
+    for (const requiredAppId of ["english-conversation-app", "talkapp"]) {
       if (!runtimeAppIds.has(requiredAppId)) {
         throw new Error(`runtime staticApps.apps missing ${requiredAppId}`);
       }
@@ -1291,7 +1309,7 @@ async function run() {
     if (appsCatalog.statusCode !== 200 || !appsCatalog.json || appsCatalog.json.ok !== true) {
       throw new Error("GET /api/apps did not return ok");
     }
-    if (!Array.isArray(appsCatalog.json.apps) || appsCatalog.json.apps.length < 3) {
+    if (!Array.isArray(appsCatalog.json.apps) || appsCatalog.json.apps.length < 2) {
       throw new Error("GET /api/apps did not return the full app registry");
     }
     const englishCatalogEntry = appsCatalog.json.apps.find(
@@ -1299,26 +1317,6 @@ async function run() {
     );
     if (!englishCatalogEntry || englishCatalogEntry.mountPath !== "/apps/english-conversation-app") {
       throw new Error("GET /api/apps did not expose the English app mount");
-    }
-    const presentationRuntime = await requestHttpJson({
-      method: "GET",
-      path: "/api/apps/presentation-coach/runtime",
-      timeoutMs: 15000,
-      port: harnessPort,
-      headers: localOriginHeaders,
-    });
-    if (presentationRuntime.statusCode !== 200 || !presentationRuntime.json || presentationRuntime.json.ok !== true) {
-      throw new Error("GET /api/apps/presentation-coach/runtime did not return ok");
-    }
-    if (
-      !presentationRuntime.json.app ||
-      presentationRuntime.json.app.id !== "presentation-coach" ||
-      presentationRuntime.json.app.mountPath !== "/apps/presentation-coach"
-    ) {
-      throw new Error("GET /api/apps/presentation-coach/runtime returned an unexpected app payload");
-    }
-    if (!presentationRuntime.json.ai || typeof presentationRuntime.json.ai.ready !== "boolean") {
-      throw new Error("GET /api/apps/presentation-coach/runtime did not expose AI readiness");
     }
     const englishMountIndex = await requestHttpJson({
       method: "GET",

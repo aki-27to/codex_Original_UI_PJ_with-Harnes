@@ -1,81 +1,40 @@
 # Provider And Portability
 
-Authority role: `navigation / portability summary only`  
+Authority role: `navigation / portability boundary only`  
 Authority registry: `authority-registry.v1`
 
-This page exists to stop overclaiming.
+このページは、「この repo が portability をどう扱っているか」を正直に説明するための文書です。
 
-## Current Truth
+## 現在の立ち位置
 
-Today, the repo is first-class in this posture:
+この repo は portability を無視しているわけではありません。  
+ただし、**provider の多さを主価値にした broad runtime product** を目指しているわけでもありません。
 
-- local-first
-- Codex App Server centered
-- governed execution through `POST /api/exec`
-- governed evaluation and release through `POST /api/eval/run`
+現在の中心は次です。
 
-That is the real product center.
+- Codex App Server 連携を軸にした local-first 実行
+- `POST /api/exec` と `POST /api/eval/run` を固定した運用
+- authority、evidence、release judgment をぶらさないこと
 
-## What "Portable" Means Here
+## 既定 posture
 
-`portable_local` in this repo means:
+- architecture default: `portable_local`
+- 強いローカル権限を使う posture: `owner_local`
+- レビュー付き change control を前提にした posture: `reviewed_team`
 
-- deployment posture is not hard-coded to one owner-only setup
-- the governed runtime can be used in a more general local/reviewed-team posture
-- stronger owner-local defaults are not treated as universal truth
+## portability で優先すること
 
-It does **not** mean:
+- provider を増やすことより、authority と evidence を壊さないこと
+- execution path を増やすことより、主要 route を固定すること
+- broad runtime product に見せることより、adoptability を守ること
 
-- every model provider is first-class already
-- every endpoint family is interchangeable
-- the repo is already a generic provider marketplace
+## いまやらないこと
 
-## Honest Portability Claim
+- broad runtime product と同じ provider breadth を追うこと
+- breadth を見せるためだけに execution path を増やすこと
+- governance を薄めて portability を優先すること
 
-Good claim:
+## 一言でいうと
 
-- posture-portable local governed harness
-- deployment-portable within the repo's authority and review model
-
-Bad claim:
-
-- fully provider-agnostic agent runtime
-- same breadth of provider integration as broad runtime products
-
-## What Exists Around The Core
-
-Adjacent surfaces do exist:
-
-- companion app platform
-- externalization and repo-closure exports
-- provider/deployment evidence packets in the closure flow
-
-But those do not add up to a broad runtime provider matrix on their own.
-
-## What Would Need To Exist To Claim Broad Provider Portability
-
-To honestly compete on a Hermes-style provider axis, the repo would need visible first-class support for:
-
-- provider configuration surface
-- provider-specific runtime adapters
-- provider capability matrix
-- provider-specific quick starts
-- parity claims backed by tests or proof bundles
-
-Until then, the repo should not market itself as the broadest portable runtime.
-
-## How To Talk About It Today
-
-Use wording like:
-
-- Codex-first today
-- local-first and governance-first
-- posture-portable, not provider-maximal
-- built for adoptability before provider breadth
-
-## Best Companion Links
-
-- product front door: `../README.md`
-- capability surface: `CAPABILITY_SURFACE.md`
-- product positioning: `PRODUCT_POSITIONING.md`
-- active architecture: `CURRENT_ARCHITECTURE.md`
+この repo は portability を否定しません。  
+ただし、**採択可能性を先に守り、その範囲で portability を扱う** という順番を崩しません。

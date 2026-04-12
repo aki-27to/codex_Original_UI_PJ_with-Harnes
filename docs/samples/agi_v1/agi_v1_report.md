@@ -1,9 +1,9 @@
 # AGI-oriented Evaluation Report (`agi_v1`)
 
-- Generated: 2026-04-03T23:30:42.637Z
+- Generated: 2026-04-12T02:21:25.970Z
 - Run ID: agi-v1-sample-report
 - Candidate: sample-agent
-- Promote: yes
+- Promote: no
 - Raw final score: 0.817957
 - Raw final score CI: 0.817957 .. 0.817957
 - Display final score: 0.817957
@@ -12,7 +12,7 @@
 
 ## Gates
 
-- I_eval: value=1.000000 threshold=0.950000 status=supported pass=yes
+- I_eval: value=0.888889 threshold=0.950000 status=supported pass=no
 - S_trust: value=0.940000 threshold=0.900000 status=supported pass=yes
 - C_corr: value=0.930000 threshold=0.900000 status=supported pass=yes
 - E_epi: value=0.870000 threshold=0.850000 status=supported pass=yes
@@ -35,4 +35,4 @@
 
 ## Blocking Conditions
 
-- none
+- challenger_gate_failure

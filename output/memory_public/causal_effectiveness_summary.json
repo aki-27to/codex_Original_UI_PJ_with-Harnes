@@ -1,32 +1,32 @@
 {
   "schema": "governed-causal-effectiveness-summary-public.v1",
-  "generatedAt": "2026-04-06T15:32:16.717Z",
+  "generatedAt": "2026-04-12T02:52:33.406Z",
   "workspaceId": "5c839dfeef8b555f",
   "harmfulCausalRatio": 0,
-  "likelyContributoryCount": 3,
+  "likelyContributoryCount": 4,
   "harmfulCount": 0,
   "rolledBackHarmCount": 0,
   "neutralCount": 0,
   "summary": {
     "harmfulCausalRatio": 0,
-    "likelyContributoryCount": 3,
+    "likelyContributoryCount": 4,
     "harmfulCount": 0,
     "rolledBackHarmCount": 0,
     "neutralCount": 0,
-    "selfAuthoredEffectiveContributionCount": 11,
+    "selfAuthoredEffectiveContributionCount": 1,
     "selfAuthoredHarmfulCount": 0
   },
   "primaryLane": {
-    "observationCount": 45,
-    "causalUsageCount": 6
+    "observationCount": 118,
+    "causalUsageCount": 11
   },
   "secondaryLane": {
     "advisoryReferenceCount": 4
   },
   "selfAuthored": {
-    "selfAuthoredSelectedCount": 5,
-    "selfAuthoredBehaviorallyReferencedCount": 11,
-    "selfAuthoredEffectiveContributionCount": 11,
+    "selfAuthoredSelectedCount": 10,
+    "selfAuthoredBehaviorallyReferencedCount": 1,
+    "selfAuthoredEffectiveContributionCount": 1,
     "selfAuthoredHarmfulCount": 0,
     "rolledBackAfterSelfAuthoredHarmCount": 0,
     "harmfulCausalRatio": 0

@@ -8,6 +8,7 @@ const {
   buildDistinctImprovementLineage,
   buildGovernedMemoryPublicArtifacts,
   buildGovernedMemoryRuntimeSnapshot,
+  buildReadinessScoreViews,
   getMemoryPaths,
   syncGovernedMemoryGraph,
 } = require("./lib/governed_memory_graph");
@@ -491,6 +492,52 @@ function main() {
     "higher primary lane causal usage must count as observed improvement when score and risk do not regress"
   );
   assert(latestCausalSupportEntry.supportDeltaByMetric.primaryLaneCausalUsageCount > 0, "causal usage delta must be tracked in lineage support deltas");
+
+  const calibratedScoreViews = buildReadinessScoreViews({
+    workspaceRoot: tempRoot,
+    readiness: {
+      rawFinalScore: 0.9995,
+      displayFinalScore: 0.9995,
+      blockedReasons: [],
+    },
+    autonomousLearningStatus: {
+      summary: {
+        blockedCount: 1,
+        insufficientEvidenceCount: 1,
+      },
+    },
+    continuityDebt: {
+      summary: {
+        openDebtCount: 0,
+      },
+    },
+    goalCompletionStatus: {
+      goalStatus: "NOT_YET",
+    },
+    policy: {
+      scoreCalibration: {
+        displayScoreSource: "externallyAuditableScore",
+        blockedAgendaPenaltyPerCount: 0.08,
+        blockedAgendaPenaltyCap: 0.24,
+        insufficientEvidencePenaltyPerCount: 0.1,
+        insufficientEvidencePenaltyCap: 0.2,
+        openDebtPenaltyPerCount: 0.04,
+        openDebtPenaltyCap: 0.12,
+        blockedReasonPenaltyPerCount: 0.02,
+        blockedReasonPenaltyCap: 0.08,
+        goalNotOperationallyCompletePenalty: 0.04,
+        caps: {
+          evidenceDebtPresent: 0.89,
+          operationallyIncomplete: 0.94,
+        },
+      },
+    },
+  });
+  assert.strictEqual(calibratedScoreViews.internalGovernedScore, 0.9995, "readiness score views must preserve the internal governed score");
+  assert.strictEqual(calibratedScoreViews.externallyAuditableScore, 0.7795, "readiness score views must penalize evidence debt and incomplete operational closure");
+  assert.strictEqual(calibratedScoreViews.evidenceDebtPresent, true, "readiness score views must surface evidence debt");
+  assert.strictEqual(calibratedScoreViews.debtSignals.blockedAgendaCount, 1, "readiness score views must surface blocked agenda count");
+  assert.strictEqual(calibratedScoreViews.debtSignals.insufficientEvidenceCount, 1, "readiness score views must surface insufficient evidence count");
 
   const executionMemoryPath = path.join(tempRoot, "logs", "archive", "raw", "harness_execution_memory.json");
   fs.mkdirSync(path.dirname(executionMemoryPath), { recursive: true });

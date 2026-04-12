@@ -67,6 +67,8 @@ function main() {
   const bundleSignoffSummary = readJson(path.join(workspaceRoot, latestSignoffSummary.bundleRef.summaryPath));
   const bundleRoot = path.join(workspaceRoot, latestSignoffSummary.bundleRef.bundlePath);
   const bundleSurfaceMap = readJson(path.join(bundleRoot, "bundle_surface_map.json"));
+  const latestOverview = readJson(path.join(workspaceRoot, "output", "memory_public", "latest_overview.json"));
+  const workerDecisionSurface = readJson(path.join(workspaceRoot, "output", "governance_public", "worker_decision_surface.json"));
 
   const designConformanceStatus = String(designSummary.overallDesignConformance && designSummary.overallDesignConformance.status || "fail");
   const latestRunStatus = taskOutcomeStatus(latestRunSummary);
@@ -137,6 +139,14 @@ function main() {
   assert.strictEqual(latestSignoffSummary.coreHarnessWorkflowPassed, Boolean(bundleSignoffSummary.assertions && bundleSignoffSummary.assertions.coreHarnessWorkflowPassed), "latest_signoff_summary coreHarnessWorkflowPassed must match bundle truth");
   assert.strictEqual(latestSignoffSummary.naturalTaskTracePassed, Boolean(bundleSignoffSummary.assertions && bundleSignoffSummary.assertions.naturalTaskTracePassed), "latest_signoff_summary naturalTaskTracePassed must match bundle truth");
   assert.strictEqual(latestSignoffSummary.signoffReady, Boolean(bundleSignoffSummary.allPassed), "latest_signoff_summary signoffReady must match bundle truth");
+  assert.strictEqual(workerDecisionSurface.scope, "worker_decision", "worker decision surface must expose worker_decision scope");
+  assertNonEmptyString(workerDecisionSurface.exportSessionId, "worker_decision_surface.exportSessionId");
+  assertNonEmptyString(workerDecisionSurface.topLevelOutcome, "worker_decision_surface.topLevelOutcome");
+  assert.strictEqual(latestOverview.headlineScope, "worker_decision", "latest overview headline scope must be worker_decision");
+  assert.strictEqual(latestOverview.goalCompletion.scope, "program_readiness", "latest overview goal completion must expose program_readiness scope");
+  assert.strictEqual(latestOverview.subjectiveCompletion.scope, "subjective_companion", "latest overview subjective completion must expose subjective_companion scope");
+  assert.strictEqual(latestOverview.compatibilityCompletion.scope, "compatibility_layer", "latest overview compatibility completion must expose compatibility_layer scope");
+  assert.strictEqual(latestOverview.workerDecisionSurface.exportSessionId, workerDecisionSurface.exportSessionId, "latest overview worker decision surface must share exportSessionId with the headline artifact");
 
   const allowedBundleTopLevel = [
     "bundle_surface_map.json",
@@ -177,10 +187,9 @@ function main() {
   assert.deepStrictEqual(bundleSurfaceMap.openFirst, expectedOpenFirstEntries, "bundle_surface_map.openFirst must list the fixed operator-facing signoff review set");
 
   const loggingSpec = fs.readFileSync(path.join(workspaceRoot, "docs", "HARNESS_LOGGING_SPEC.md"), "utf8");
-  const loggingConformance = fs.readFileSync(path.join(workspaceRoot, "docs", "HARNESS_LOGGING_CONFORMANCE.md"), "utf8");
   const loggingMap = fs.readFileSync(path.join(workspaceRoot, "docs", "HARNESS_LOGGING_MAP.md"), "utf8");
   const currentArchitecture = fs.readFileSync(path.join(workspaceRoot, "docs", "CURRENT_ARCHITECTURE.md"), "utf8");
-  const docsText = [loggingSpec, loggingConformance, loggingMap, currentArchitecture].join("\n");
+  const docsText = [loggingSpec, loggingMap, currentArchitecture].join("\n");
 
   for (const fileName of allowedFiles) {
     assert.ok(docsText.includes(fileName), `docs must reference ${fileName}`);
@@ -192,13 +201,6 @@ function main() {
   ]) {
     assert.ok(!docsText.includes(disallowed), `docs must not present ${disallowed} as current truth`);
   }
-  if (/Overall status:\s*PASS/.test(loggingConformance)) {
-    assert.strictEqual(designConformanceStatus, "pass", "PASS conformance doc requires pass design summary");
-    assert.strictEqual(latestRunStatus, "COMPLETED", "PASS conformance doc requires completed latest run");
-    assert.strictEqual(latestSignoffSummary.signoffReady, true, "PASS conformance doc requires signoffReady=true");
-    assert.strictEqual(currentFiles.length, 5, "PASS conformance doc requires exactly five current files");
-  }
-
   process.stdout.write("PASS current_surface_truth_test\n");
 }
 

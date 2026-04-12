@@ -221,9 +221,74 @@ async function testWriteFailureAllowsRestartWithoutStaleCloseRegression() {
   }
 }
 
+async function testDestroyedStdinBeforeRequestRespawnsChild() {
+  const firstChild = createFakeAppServerChild({
+    failThreadStartWrite: false,
+    threadId: "thread-initial",
+  });
+  const secondChild = createFakeAppServerChild({
+    failThreadStartWrite: false,
+    threadId: "thread-restarted",
+  });
+  const spawnedChildren = [firstChild, secondChild];
+  const originalTransport = process.env.CODEX_APP_SERVER_TRANSPORT;
+  process.env.CODEX_APP_SERVER_TRANSPORT = "stdio";
+  const { serverModule, restore } = loadServerModuleWithSpawn(() => {
+    const next = spawnedChildren.shift();
+    if (!next) {
+      throw new Error("unexpected extra spawn");
+    }
+    return next;
+  });
+  const client = new serverModule.__riskAudit.CodexAppServerClient(process.cwd());
+  const agentState = serverModule.__codexModes.createBaseAgentState();
+  agentState.fastModeEnabled = true;
+  agentState.lastFastModeEnabled = true;
+  const threadStartConfig = serverModule.__codexModes.buildThreadStartConfig(
+    agentState,
+    false,
+    "blocked",
+    "gpt-5",
+    "medium",
+    true,
+    agentState.automaticApprovalReviewEnabled
+  );
+  try {
+    await client.ensureStarted();
+    assert.strictEqual(client.child, firstChild, "initial child should be active after ensureStarted");
+    firstChild.stdin.destroyed = true;
+    setTimeout(() => firstChild.emit("close", 1), 80);
+    const recovered = await client.sendRequest(
+      "thread/start",
+      {
+        cwd: process.cwd(),
+        approvalPolicy: "never",
+        sandbox: "workspace-write",
+        config: threadStartConfig,
+      },
+      5000
+    );
+    assert.strictEqual(recovered.thread.id, "thread-restarted", "destroyed stdin should trigger a child respawn before thread/start");
+    assert.strictEqual(firstChild.threadStartRequests.length, 0, "stale child should not receive the recovery thread/start request");
+    assert.strictEqual(secondChild.threadStartRequests.length, 1, "replacement child should receive the first live thread/start request");
+    assert.strictEqual(client.child, secondChild, "replacement child should become current after stale-stdin recovery");
+    await sleep(140);
+    assert.strictEqual(client.child, secondChild, "late close from stale destroyed child must not clobber the replacement child");
+  } finally {
+    client.stop();
+    restore();
+    if (originalTransport === undefined) {
+      delete process.env.CODEX_APP_SERVER_TRANSPORT;
+    } else {
+      process.env.CODEX_APP_SERVER_TRANSPORT = originalTransport;
+    }
+  }
+}
+
 async function run() {
   const tests = [
     ["write failure is contained and restart survives stale close", testWriteFailureAllowsRestartWithoutStaleCloseRegression],
+    ["destroyed stdin before request forces a clean respawn", testDestroyedStdinBeforeRequestRespawnsChild],
   ];
   let passed = 0;
   for (const [name, fn] of tests) {

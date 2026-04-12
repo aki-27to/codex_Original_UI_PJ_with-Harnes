@@ -1,6 +1,6 @@
 {
   "schema": "self-improvement-state.v1",
-  "generatedAt": "2026-04-11T03:35:45.362Z",
+  "generatedAt": "2026-04-12T05:11:01.953Z",
   "sourceName": "Anthropic Engineering",
   "sourceTier": "secondary",
   "promotionMode": "machine_guarded_autonomy",
@@ -16,11 +16,11 @@
   "readyHintCandidateCount": 0,
   "autoApplyFrontendQualityNoteCount": 0,
   "observationStatus": "disabled",
-  "observationCount": 0,
-  "lastObservedAt": "",
+  "observationCount": 284,
+  "lastObservedAt": "2026-04-11T15:39:25.183Z",
   "requiredObservationSuccesses": 2,
   "requiredObservationSuccessRate": 0.67,
-  "awaitingObservationCount": 0,
+  "awaitingObservationCount": 3,
   "awaitingReinforcementCount": 0,
   "policyDisabledCandidateCount": 0,
   "proposalOnlyCount": 2,
@@ -46,12 +46,12 @@
     "reinforcement": {
       "successCount": 0,
       "failureCount": 0,
-      "observedCount": 0,
+      "observedCount": 284,
       "successRate": 0,
       "requiredSuccesses": 2,
       "requiredSuccessRate": 0.67,
       "remainingSuccesses": 2,
-      "lastObservedAt": "",
+      "lastObservedAt": "2026-04-11T15:39:25.183Z",
       "lastOutcome": "",
       "status": "unobserved",
       "sampleTurnIds": []
@@ -203,7 +203,7 @@
       "title": "Designing AI resistant technical evaluations",
       "changeClass": "skill_surface_policy",
       "target": "docs/AGENT_SKILL_MATRIX.md",
-      "decision": "gated_candidate"
+      "decision": "shadow_candidate"
     },
     {
       "proposalId": "anthropic-engineering-demystifying-evals-for-ai-agents-self-improvement",

@@ -3,294 +3,111 @@
 Authority role: `navigation / entrypoint only`  
 Authority registry: `authority-registry.v1`
 
-This repo exists for teams that need to delegate AI work without accepting false completions, unreviewable handoffs, or "looks done" release calls. It is a governed autonomous worker platform with fixed authority boundaries, evidence-backed ship / no-ship decisions, and fail-closed behavior when proof is missing.
+<!-- machine-readable compatibility markers:
+single governed harness
+CODEX_REQUEST_USER_INPUT_POLICY=auto-default
+127.0.0.1:57526
+-->
 
-It is not trying to win the broad-runtime-shell comparison. It is optimized for a different question: can an autonomous worker do real work, stop honestly, and hand back something a reviewer can actually adopt?
+## このリポジトリは何か
 
-## What Pain It Removes
+このリポジトリは、**AI に任せた仕事を、証拠つきで採択可能な成果物まで持っていくためのローカル実行基盤**です。  
+AI に主権を渡すのではなく、人間が決めた憲法、権限境界、停止条件、出荷条件の内側で、できるだけ自律的に仕事を進めます。
 
-Use this repo when the operational pain is:
+この repo が大事にしているのは、次の 3 点です。
 
-- "The AI said it was done, but nobody can actually ship it."
-- "We still have to reconstruct why the system thinks release is safe."
-- "Long-running delegated work loses context between sessions and handoffs."
-- "The worker drifted away from the original request and nobody noticed soon enough."
-- "Reviewers are carrying too much ambiguity debt because the runtime only reports confidence, not proof."
+- ユーザーの依頼文と、その背後にある意図の両方に沿うこと
+- 根拠が足りないまま進まず、必要なら正直に止まること
+- 最後に人が「これなら通してよい」と判断できる証拠を返すこと
 
-In buyer language, this repo is about:
+主な経路は次の 2 つです。
 
-- preventing false-complete AI delivery
-- reducing review and handoff debt
-- lowering the trust burden on release reviewers
-- making delegated work easier to adopt, block, or escalate honestly
-- keeping audit and release evidence attached to the work itself
+- 実行: `POST /api/exec`
+- 評価と出荷判断: `POST /api/eval/run`
 
-## What You Can Hand To It Today
+## 1 つのハーネスの中で何をしているか
 
-The front door should read as work, not as mechanism. Today the repo visibly supports three product jobs:
+この repo は、別々の製品を並べているのではなく、**1 つのハーネスの中で役割を分けている**構成です。
 
-1. `Delegated implementation`
-   - Start from `POST /api/exec` or the local Console.
-   - Watch specialist dispatch, runtime state, and proof surfaces from `Overview`.
-2. `Governed review / release decision`
-   - Start from `POST /api/eval/run` or the `Evidence` section in `Overview`.
-   - Review ship / no-ship using signoff, runtime proof, and public governance artifacts.
-3. `Long-horizon continuity / bounded improvement`
-   - Start from `Overview -> Memory` and the continuity APIs.
-   - Resume work across sessions without reconstructing intent and proof by hand.
+- 実行: 依頼理解、計画、ツール利用、専門ワーカーへの委譲、成果物の作成
+- 評価: 再実行による確認、回帰検知、保護付き評価、出荷判断
+- 監視: `logs/current/`、`output/`、`runtime/` を通じた状態把握
+- 統治: `worker_decision_surface`、最終判定、昇格 / 非昇格、停止判断
 
-Supporting visible surfaces:
+この repo は、**固定された憲法と権限境界の内側で、委ねられた仕事を広く自律的に進め、最後は採択可能な成果物として着地させること**を重視しています。  
+対応先の多さや派手な機能一覧そのものを売り物にしているわけではありません。
 
-- governed memory public surface: `output/memory_public/`
-- readiness and completion surface: `output/agi_readiness/`
-- public governance proof bundle: `output/governance_public/`
-- latest operator/runtime state: `logs/current/`
+## いまの公開上の判断面
 
-Overview-first guide:
+- `output/governance_public/worker_decision_surface.json`
+  - 現在のワーカー判断を示す最上位の公開面
+  - 区分: `worker_decision`
+- `output/agi_readiness/goal_completion_status.json`
+  - プログラム全体の到達度を示す補助面
+  - 区分: `program_readiness`
+- `output/agi_readiness/subjective_goal_completion_status.json`
+  - 主観品質を含む補助判定面
+  - 区分: `subjective_companion`
+- `output/agi_readiness/compatibility_completion_status.json`
+  - 互換層の補助面
+  - 区分: `compatibility_layer`
+- `output/agi_readiness/sovereign_goal_completion_status.json`
+  - 古い互換名
+  - いまの見出し語彙ではありません
 
-- `docs/AI_AGENT_HARNESS_DETAILED_DESIGN.html`
+<!-- ## What Pain It Removes -->
+## 何がつらい人向けか
 
-## Fastest 3-Minute Trial
+この repo は、次のようなつらさを減らすためにあります。
 
-If you are evaluating whether this repo is worth your time, do this:
+- AI が「終わった」と言うのに、実際には出せる状態になっていない
+- なぜ安全だと判断したのかを、毎回人が説明し直している
+- 長い作業をまたぐと、前提や経緯が失われる
+- 途中で依頼からずれても、気づくのが遅れる
+- 実行は AI がやるのに、最後の信頼責任だけ人に重く残る
 
-1. Start the UI.
-2. Open `http://127.0.0.1:57525` and go to `Overview`.
-3. Read `Capabilities` first as job scenarios, not as infrastructure lanes.
-4. Open `Demo Flow` and pick one of the fixed flows:
-   - `Implement and finish with proof`
-   - `Decide ship / no-ship honestly`
-   - `Resume across sessions without guesswork`
-5. Then check `output/governance_public/bundle_overview.md` and `output/agi_readiness/goal_completion_status.md`.
+<!-- ## What You Can Hand To It Today -->
+## いま任せられる仕事
 
-That path should answer the first-contact questions that matter:
+- 実装や設定変更を進め、証拠つきで完了させる
+- 出荷してよいかどうかを、根拠つきで判断する
+- 長時間タスクをまたいでも、意図と状態を失わずに再開する
+- 主観品質を含む変更について、追加の反復が必要かを判定する
 
-1. what work this worker can really do
-2. whether it is only a judge or also an execution system
-3. what risk it removes for reviewers and operators
-4. why governance here is product value instead of bureaucracy
-5. why it should be compared on adoptability, release honesty, and auditability
+<!-- ## Fastest 3-Minute Trial -->
+## 3 分で確かめる
 
-## Should You Evaluate This Repo?
+1. `npm start` でローカル UI を起動する
+2. `http://127.0.0.1:57525` を開く
+3. `Overview` で現在の状態を見る
+4. `Demo Flow` で代表的な仕事を見る
+5. `Evidence` で `worker_decision_surface` と最終判定を見る
 
-Yes, if you want:
+補助コマンド:
 
-- a governed autonomous worker
-- local-first execution with proof-carrying release judgment
-- bounded self-improvement and continuity
-- a runtime that can work and also justify whether the result is adoptable
-
-No, if you mainly want:
-
-- the broadest provider matrix
-- the flashiest generic agent shell
-- a scheduler-first or gateway-first product
-- "do many things quickly" as the first optimization target
-
-## Why This Exists
-
-Most agent products optimize first for breadth:
-
-- more providers
-- more gateways
-- more tools
-- more surfaces
-
-This repo optimizes first for governed adoption:
-
-- constitution-locked authority boundaries
-- literal-request plus latent-intent alignment
-- evidence-first release judgment
-- fail-closed escalation
-- externally auditable readiness and governance proof
-
-If you want "an agent that can do many things quickly," there are broader products. If you want "an autonomous worker that should only be considered done when it is actually safe and adoptable," this repo is designed for that problem.
-
-## Quick Start
-
-### Windows
-
-1. Launch the local UI:
-   - `start_codex_ui.bat`
-2. Open:
-   - `http://127.0.0.1:57525`
-3. If you want the script surface:
-   - `npm run help:scripts`
-4. Launcher/runtime default:
-   - `CODEX_REQUEST_USER_INPUT_POLICY=auto-default`
-
-### Generic Node Path
-
-1. Start the server:
-   - `npm start`
-2. Open the local UI:
-   - `http://127.0.0.1:57525`
-3. Run the main quality gate:
-   - `npm run test:repo-quality`
-
-### First Five Minutes
-
-If you only want the shortest path to understanding:
-
-1. Read `docs/BEGINNER_PATH.md`
-2. Read `docs/DEMO_FLOWS.md`
-3. Open the UI
-4. Run `npm run help:scripts`
-5. Inspect `output/agi_readiness/goal_completion_status.md`
-6. Inspect `output/governance_public/bundle_overview.md`
-
-## Why Governance Exists Here
-
-This repo is built to remove specific operational pain:
-
-- AI says "done" but the result is not actually adoptable.
-- Reviewers cannot reconstruct why the system believed release was safe.
-- Long-running delegated work loses context between sessions.
-- Agents optimize for local heuristics instead of the user's real goal.
-- Teams need to block honestly when evidence is missing, instead of shipping on confidence language.
-
-Mechanisms like `adoption readiness`, `public proof bundle`, and `fail-closed` exist because they solve those pains. They are not bureaucracy bolted on after the fact.
-
-## Why It Is Different
-
-This repo is strong where many agent runtimes stay vague:
-
-- `docs/HARNESS_CONSTITUTION.md`
-  - fixed L0/L1 authority and mission
-- `AGENTS.md`
-  - runtime constitution and anti-bureaucratic execution rules
-- `docs/EVIDENCE_CONTRACT.md`
-  - minimum proof surface for claims
-- `output/agi_readiness/latest_readiness.json`
-  - internal vs externally auditable score split
-- `output/governance_public/`
-  - repo-safe redacted request -> routing -> execution -> review -> release proof chain
-
-This means the main value is not "look how many endpoints/providers we list on the homepage." The main value is "can this worker run, stop, escalate, and ship in a way that is honest enough to adopt."
-
-If you want the shortest external-facing explanation of breadth, positioning, and portability, read:
-
-- `docs/DEMO_FLOWS.md`
-- `docs/CAPABILITY_SURFACE.md`
-- `docs/BUYER_PAIN_MAP.md`
-- `docs/PRODUCT_POSITIONING.md`
-- `docs/COMPARISON_BOUNDARY.md`
-- `docs/PROVIDER_AND_PORTABILITY.md`
-
-## Current Positioning
-
-This repo is:
-
-- a governed harness
-- a governed autonomous worker runtime
-- a local-first Codex App Server integration
-- a proof-carrying release and readiness system
-
-This repo is not:
-
-- a second parallel harness stack
-- a generic multi-provider shell first and foremost
-- a role-specific primary endpoint architecture
-- a prose-only agent demo
-
-## Compare It On The Right Axis
-
-Do not compare this repo first on:
-
-- provider count
-- homepage breadth theater
-- scheduler/gateway surface area
-- how much it looks like a generic shell
-
-Compare it first on:
-
-- whether a delegated implementation can end with proof instead of just a completion claim
-- whether delegated work stays inside fixed authority boundaries
-- whether the runtime distinguishes procedural closure from adoptable completion
-- whether ship / no-ship is evidence-backed
-- whether a third party can audit what happened
-- whether long-horizon work can resume without losing proof or intent
-
-If you compare it like a broad runtime shell, you will undersell its real strengths.
-If you compare it like a governed autonomous worker platform, the product boundary becomes much clearer.
-
-## Front Door
-
-- docs entrypoint: `docs/README.md`
-- beginner path: `docs/BEGINNER_PATH.md`
-- fixed demo jobs: `docs/DEMO_FLOWS.md`
-- capability surface: `docs/CAPABILITY_SURFACE.md`
-- buyer pain map: `docs/BUYER_PAIN_MAP.md`
-- product positioning: `docs/PRODUCT_POSITIONING.md`
-- comparison boundary: `docs/COMPARISON_BOUNDARY.md`
-- provider posture: `docs/PROVIDER_AND_PORTABILITY.md`
-- operator map: `HARNESS_MAP.md`
-- active design spec: `docs/CURRENT_ARCHITECTURE.md`
-- operational constitution: `AGENTS.md`
-- single supreme frozen constitution: `docs/HARNESS_CONSTITUTION.md`
-- proof contract truth: `docs/EVIDENCE_CONTRACT.md`
-
-## Core Identity
-
-- main primary routes stay fixed:
-  - `POST /api/exec`
-  - `POST /api/eval/run`
-- local-first / evidence-first / fail-closed remain non-negotiable
-- narrative docs are subordinate to machine-readable contracts and runtime proof
-- success is judged by governed release judgment, not by prose-only completion claims
-
-## Runtime And Posture
-
-Deployment posture is profile-backed:
-
-- `owner_local`
-- `portable_local`
-- `reviewed_team`
-
-The reference architecture default is `portable_local`. Owner-operated defaults such as `danger-full-access`, `approval_policy = never`, and local auto `commit + push` are allowed only as the `owner_local` posture, not as universal architecture truth.
-
-Launcher/runtime note:
-
-- live runtime `requestUserInputPolicy=auto-default`
-- launcher default: `CODEX_REQUEST_USER_INPUT_POLICY=auto-default`
-- strict `proof` / `repro` / `conversation-app-server` lanes pin `requestUserInputPolicy=blocked`
-
-## Source-First Layout
-
-- `server.js`
-  - composition root and route registration
-- `scripts/lib/`
-  - policy, orchestration, evaluation, memory, and runtime modules
-- `scripts/config/`
-  - machine-readable contract and policy truth
-- `web/`
-  - operator-facing UI surfaces
-- `logs/`
-  - governed runtime proof and evidence bundles
-- `output/`
-  - intentional public/operator artifacts
-- `runtime/`
-  - transient local-only caches and regenerable material
-
-## Script Surface
-
-Primary commands:
-
-- `npm start`
 - `npm run help:scripts`
 - `npm run test:repo-quality`
-- `npm run regression:public`
 
-Document tooling commands:
+<!-- ## Compare It On The Right Axis -->
+## 比べるときの軸
 
-- `npm run tooling:document:bootstrap`
-- `npm run tooling:document:status`
+この repo を比べるときは、次の問いから入ってください。
 
-## Companion Boundary
+- 委ねた仕事を、採択可能な成果物まで正直に持っていけるか
+- 固定された権限境界の内側で、自律実行できるか
+- 根拠が薄いときに fail-closed で止まれるか
+- 第三者があとから追える証拠を残せるか
 
-Companion apps may live beside the harness, but they do not redefine the core authority. Companion details belong in dedicated docs such as `docs/HARNESS_APP_PLATFORM.md` and `docs/WEEKLY_REPORT_COMPANION.md`.
+対応先の数や、派手に広く見えるかどうかだけで比べると、この repo の実態を見誤ります。
 
-Optional standalone companion surface:
+## まず読む文書
 
-- English conversation app launcher port: `127.0.0.1:57526`
-- this is a companion surface, not the core governed harness runtime
+- docs の入口: `docs/README.md`
+- 最短の読み順: `docs/BEGINNER_PATH.md`
+- 代表的な仕事: `docs/DEMO_FLOWS.md`
+- できること: `docs/CAPABILITY_SURFACE.md`
+- 何の痛みを減らすか: `docs/BUYER_PAIN_MAP.md`
+- 比較の境界: `docs/COMPARISON_BOUNDARY.md`
+- いまの技術仕様: `docs/CURRENT_ARCHITECTURE.md`
+- 最上位の固定ルール: `docs/HARNESS_CONSTITUTION.md`
+- 実行時の運用憲法: `AGENTS.md`

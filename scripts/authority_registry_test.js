@@ -16,6 +16,12 @@ function read(relativePath) {
   return fs.readFileSync(path.join(workspaceRoot, relativePath), "utf8");
 }
 
+const expectedAgentsBoundaryLine =
+  "\u3053\u306e\u30d5\u30a1\u30a4\u30eb\u306f\u6700\u4e0a\u4f4d\u61b2\u6cd5\u3067\u306f\u306a\u304f\u3001runtime behavior constraints \u3092\u5b9a\u3081\u308b operational constitution \u3067\u3059\u3002";
+
+const deprecatedSupremeClaim =
+  "\u3053\u306e\u30d5\u30a1\u30a4\u30eb\u306f\u6700\u4e0a\u4f4d\u306e\u61b2\u6cd5";
+
 function main() {
   const registry = loadAuthorityRegistry();
   assert.strictEqual(registry.schema, "authority-registry.v1", "authority registry schema mismatch");
@@ -50,12 +56,19 @@ function main() {
   const harnessMap = read("HARNESS_MAP.md");
   const docsIndex = read("docs/README.md");
   const architecture = read("docs/CURRENT_ARCHITECTURE.md");
+  const agents = read("AGENTS.md");
   const constitution = read("docs/HARNESS_CONSTITUTION.md");
 
   assert(readme.includes("authority-registry.v1"), "README.md must mention authority-registry.v1");
   assert(harnessMap.includes("authority-registry.v1"), "HARNESS_MAP.md must mention authority-registry.v1");
   assert(docsIndex.includes("authority-registry.v1"), "docs/README.md must mention authority-registry.v1");
   assert(architecture.includes("authority-registry.v1"), "CURRENT_ARCHITECTURE.md must mention authority-registry.v1");
+  assert(agents.includes("operational constitution"), "AGENTS.md must stay the operational constitution");
+  assert(
+    agents.includes(expectedAgentsBoundaryLine),
+    "AGENTS.md must keep the Japanese operational constitution boundary line"
+  );
+  assert(!agents.includes(deprecatedSupremeClaim), "AGENTS.md must not claim supreme authority");
   assert(constitution.includes("single supreme frozen constitution"), "HARNESS_CONSTITUTION.md must declare the single supreme frozen constitution role");
 
   process.stdout.write("PASS authority_registry_test\n");

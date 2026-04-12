@@ -3,10 +3,11 @@
 This repository is a local-first governed Codex App Server harness, not a generic app sandbox.
 
 Primary authority order:
-1. `AGENTS.md`
-2. `docs/AGENT_OPERATING_RULES.md`
-3. machine-readable contracts under `scripts/config/`
-4. `docs/CURRENT_ARCHITECTURE.md` for the active narrative spec
+1. `docs/HARNESS_CONSTITUTION.md`
+2. `AGENTS.md`
+3. `docs/AGENT_OPERATING_RULES.md`
+4. machine-readable contracts under `scripts/config/`
+5. `docs/CURRENT_ARCHITECTURE.md` for the active narrative spec
 
 GitHub-native customization surfaces in `.github/copilot-instructions.md`, `.github/instructions/`, and `.github/agents/` are projection layers for that authority. They do not replace the local constitution.
 

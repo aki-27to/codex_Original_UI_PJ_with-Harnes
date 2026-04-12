@@ -1,9 +1,10 @@
 {
   "schema": "iteration-control-contract.v1",
-  "version": "2026-04-11.r1",
+  "version": "2026-04-11.r2",
   "qualityThresholds": {
     "literal_requirement_alignment": 0.84,
     "latent_intent_alignment": 0.78,
+    "task_contract_integrity": 0.92,
     "boundary_compliance": 0.99,
     "artifact_quality": 0.8,
     "residual_risk": 0.68,
@@ -25,6 +26,9 @@
     ]
   },
   "releaseConditions": [
+    "literal_requirement_alignment_at_or_above_threshold",
+    "latent_intent_alignment_at_or_above_threshold",
+    "task_contract_integrity_at_or_above_threshold",
     "boundary_compliance_at_or_above_threshold",
     "adoption_readiness_at_or_above_threshold",
     "iteration_value_remaining_at_or_below_threshold",
@@ -34,13 +38,31 @@
     "explicit_user_judgment_required",
     "approval_boundary_crossed",
     "budget_exhausted_while_value_remaining",
-    "residual_risk_above_threshold"
+    "residual_risk_above_threshold",
+    "task_contract_revision_requires_user_adoption",
+    "improvement_delta_below_threshold_with_value_remaining"
   ],
   "failClosedConditions": [
     "missing_iteration_decision_artifact",
     "missing_release_decision_artifact",
     "missing_adoption_readiness_artifact",
-    "boundary_compliance_below_threshold"
+    "boundary_compliance_below_threshold",
+    "literal_requirement_alignment_below_threshold",
+    "task_contract_integrity_below_threshold",
+    "goal_substitution_detected",
+    "procedural_closure_without_adoption"
+  ],
+  "validationFailureConditions": [
+    "literal_requirement_alignment_below_threshold",
+    "task_contract_integrity_below_threshold",
+    "goal_substitution_detected",
+    "procedural_closure_without_adoption",
+    "required_evidence_failures_present"
+  ],
+  "retryConditions": [
+    "latent_intent_alignment_below_threshold",
+    "artifact_quality_below_threshold",
+    "adoption_readiness_below_threshold"
   ],
   "artifactSchemas": {
     "iterationDecision": "iteration-decision.v1",

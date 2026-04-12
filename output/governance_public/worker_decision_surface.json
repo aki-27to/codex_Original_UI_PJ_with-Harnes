@@ -1,0 +1,66 @@
+{
+  "schema": "worker-decision-surface.v1",
+  "generatedAt": "2026-04-12T02:14:59.861Z",
+  "scope": "worker_decision",
+  "exportSessionId": "export_a63636ff0a86",
+  "decisionQuestion": "Can the governed worker stop here without unnecessary human interruption?",
+  "topLevelOutcome": "ADOPTABLE_COMPLETE",
+  "topLevelSummary": "The worker can close in place: adoption readiness passed, latent intent stayed aligned, and no extra human interruption is required.",
+  "taskOutcomeStatus": "COMPLETED",
+  "taskOutcomeReason": "completed_default",
+  "releaseState": "RELEASE_APPROVED_WITH_ASSUMPTIONS",
+  "releaseApproved": 1,
+  "adoptionReady": 1,
+  "adoptionReadiness": 0.9683,
+  "adoptionReadinessThreshold": 0.8,
+  "latentIntentAlignment": 0.92,
+  "literalRequirementAlignment": 1,
+  "taskContractIntegrity": 1,
+  "boundaryCompliance": 1,
+  "constitutionalCompliance": 1,
+  "minimalHitl": {
+    "mode": "close_in_place",
+    "humanInterruptionRequired": 0,
+    "explicitUserJudgmentRequired": 0
+  },
+  "operatorAction": "ADOPT",
+  "supportingArtifacts": [
+    "request_frame.json",
+    "routing_decision.json",
+    "task_outcomes.json",
+    "review_bundle.json",
+    "evidence_manifest.json",
+    "flow_trace_summary.json",
+    "review_load_breakdown.json",
+    "adoption_readiness_eval.json",
+    "iteration_decision.json",
+    "escalation_decision.json",
+    "release_decision.json"
+  ],
+  "evidenceSummary": {
+    "evidenceRefCount": 11,
+    "supportingArtifactCount": 11,
+    "blockerCount": 0,
+    "residualRiskCount": 1,
+    "assumptionCount": 2,
+    "taskOutcomeCount": 5
+  },
+  "blockers": [],
+  "residualRisks": [
+    "New logic or protocol-sensitive behavior requires dedicated verification before signoff."
+  ],
+  "assumptions": [
+    "Any scope outside the explicit goal should stay proposal-only unless the prompt states otherwise.",
+    "Unresolved ambiguity must not be auto-answered by the harness."
+  ],
+  "intentTrace": {
+    "valueThesis": "",
+    "goalComparison": {
+      "originalRequestAligned": 1,
+      "latentIntentAligned": 1,
+      "replannedGoalConsistent": 1,
+      "proceduralClosureOnly": 0,
+      "explicitSignals": {}
+    }
+  }
+}

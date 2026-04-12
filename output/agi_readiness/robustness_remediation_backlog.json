@@ -1,6 +1,18 @@
 {
   "schema": "agi-readiness-robustness-remediation-backlog.v1",
-  "generatedAt": "2026-04-06T15:32:16.784Z",
+  "generatedAt": "2026-04-12T02:52:33.611Z",
   "workspaceId": "5c839dfeef8b555f",
-  "items": []
+  "items": [
+    {
+      "categoryId": "browser_tool_flakiness",
+      "remediationStatus": "running",
+      "evidenceCount": 48,
+      "score": 0.703125,
+      "openFailureModes": [
+        "retry budget exceeded without safe abort",
+        "browser failure misreported as task success",
+        "fallback omitted after flaky tool output"
+      ]
+    }
+  ]
 }

@@ -1,54 +1,68 @@
-﻿# APP_SERVER_PROTOCOL_RUNBOOK
+# APP_SERVER_PROTOCOL_RUNBOOK
 
-Updated: 2026-03-07
+Updated: 2026-04-12
 
-## 1) Purpose
-Protocol/runtime guardrails for Codex App Server integration in this repository.
-- This is a runbook for protocol behavior and verification, not a replacement for tier-0 governance in `AGENTS.md`.
-- Route, port, and execution-path defaults here must stay aligned with the repository overlay in `AGENTS.md`.
+## Plane Separation and Protected Inputs
+
+This protocol serves one governed harness with multiple internal planes.
+
+- Execution plane stays on `POST /api/exec`
+- Evaluation plane stays on `POST /api/eval/run`
+- Monitoring plane observes runtime health and evidence surfaces
+- Governance plane consumes evaluation/signoff outputs and does not promote from execution self-claim alone
+
+Protected eval assets remain evaluation-only.
+
+- protected roots: `protected/holdout`, `protected/blackbox`
+- hidden holdout metadata must not be required by the execution path
+- grader internals and protected manifests must not be mixed into the execution plane
+- protected eval lanes are fail-closed and require the evaluation-side access policy
+
+## 1) 目的
+
+この文書は Codex App Server protocol behavior と verification の runbook です。最上位統治は `docs/HARNESS_CONSTITUTION.md` と `AGENTS.md` に残り、この文書は実装・検証手順だけを扱います。
 
 ## 2) Protocol Contract
-- Handshake order is strict:
-  1. `initialize` request
-  2. `initialized` notification
-- Message transport:
-  - JSONL over stdio
-  - JSON-RPC style envelope (`method` / `params` / `id`)
-- Turn terminal contract:
-  - `turn/completed` is terminal for each turn
-  - terminal status must be one of: `completed`, `interrupted`, `failed`
-- Machine-readable sources:
-  - turn lifecycle: `scripts/config/harness_contract_spec.json`
-  - task outcome taxonomy: `scripts/config/task_outcome_contract.json`
-  - runtime agent governance: `scripts/config/agent_governance_contracts.json`
 
-## 3) Implementation Scope
-- Keep execution path on standard Codex via `POST /api/exec`.
-- Avoid local custom orchestration, role fan-out endpoints, and legacy alternate flows.
+この repo の primary route は次の 2 本です。
 
-## 4) Verification Minimum
-- If `server.js` or `scripts/` changed:
-  - run `node scripts/app_server_smoke_test.js`
-- If `web/` changed:
-  - launch UI and verify `GET /api/runtime` returns HTTP 200
+- interactive execution: `POST /api/exec`
+- eval / release judgment: `POST /api/eval/run`
+
+既存 local workflow として `/api/batch/*` は許容しますが、独自 orchestration branch を増やす場所にはしません。
+
+## 3) 実装スコープ
+
+server 側では次を壊さないこと。
+
+- local-first
+- default port `57525`
+- standard Codex route の維持
+- eval / release の primary route 維持
+- invalid `CODEX_UI_PORT` は `57525` fallback
+
+## 4) 最小検証
+
+protocol-facing change では最低でも次を確認します。
+
+- `GET /api/runtime` が HTTP 200
+- `POST /api/exec` の standard path が生きている
+- `POST /api/eval/run` の primary route が生きている
+- 必要なら `node scripts/app_server_smoke_test.js`
+- eval/replay change なら `node scripts/eval_replay_api_smoke_test.js`
 
 ## 5) Runtime Troubleshooting Checklist
-1. Confirm runtime probe:
-   - `GET /api/runtime` returns expected `apiVersion`, `mode`, `contractSpec`, and `taskOutcomeContract`.
-   - `GET /api/agent-topography` does not list retired `worker` as a configured runtime agent.
-2. Confirm app-server lifecycle logs:
-   - initialize sent
-   - initialized notification sent
-   - `thread/start` and turn lifecycle events appear as expected.
-3. Confirm turn termination:
-   - each turn ends with `turn/completed` and valid terminal status.
-   - each terminal turn exposes `taskOutcomeStatus` / `taskOutcomeReason` consistent with the task outcome contract.
-   - turn status and task outcome status satisfy the bridge rules in `scripts/config/harness_contract_spec.json`.
-4. Confirm no protocol drift:
-   - envelope fields and JSONL framing are preserved.
-5. Confirm runtime agent guard:
-   - `POST /api/exec` rejects unconfigured or retired agents such as `worker`.
 
-## 6) Evidence Expectations
-- Include command, result summary, and PASS/FAIL in final report.
-- If checks are skipped, state reason and residual risk explicitly.
+- UI が壊れて見える場合
+  - `GET /api/runtime` を先に確認
+  - `server.js` と `web/01.HarnesUI/app.js` の contract drift を疑う
+- port 問題
+  - `CODEX_UI_PORT` が不正な値なら `57525` fallback
+- route 問題
+  - `/api/exec` と `/api/eval/run` を最優先で確認
+- approval / sandbox 問題
+  - posture summary と runtime snapshot を見る
+
+## 6) この文書の使い方
+
+この文書は protocol incident の runbook です。release 可否の証拠契約は `docs/EVIDENCE_CONTRACT.md` を、current implementation shape は `docs/CURRENT_ARCHITECTURE.md` を見てください。
