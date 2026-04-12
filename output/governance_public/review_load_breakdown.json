@@ -1,0 +1,59 @@
+{
+  "schema": "review-load-breakdown.v1",
+  "generatedAt": "2026-03-09T12:45:14.080Z",
+  "selectedPlanningDepth": "STANDARD_PLANNING",
+  "selectedAssuranceDepth": "SIGNOFF_ASSURANCE",
+  "flowPath": "NORMAL_PATH",
+  "executionFlow": "STANDARD_PLANNING+SIGNOFF_ASSURANCE",
+  "timingModel": "overlapping_estimates_with_wall_clock_total",
+  "componentTimesMayOverlap": true,
+  "dominantBottleneckBasis": "largest estimated Step 4 component, even when component windows overlap",
+  "interpretationGuide": [
+    "`totalStep4DurationMs` is the wall-clock duration of Step 4.",
+    "Reviewer/tester/doc-sync component times are checkpoint-based estimates and may overlap.",
+    "`dominantBottleneck` identifies the largest estimated component rather than a strict additive share of total time."
+  ],
+  "qualityGate": {
+    "reviewerRequired": 1,
+    "testerRequired": 1,
+    "signoffRequired": 1,
+    "docSyncRequired": 1,
+    "dedicatedTestsRequired": 1,
+    "reviewerObserved": 1,
+    "testerObserved": 1,
+    "docSyncStatus": "PASS"
+  },
+  "evidenceCollectionTimeMs": 0,
+  "testerTimeMs": 14768,
+  "reviewerTimeMs": 41642,
+  "docSyncVerificationTimeMs": 134366,
+  "retryLoopCount": 0,
+  "outcomeConversionTimeMs": 457992,
+  "totalStep4DurationMs": 0,
+  "dominantBottleneck": "outcome_conversion",
+  "stageDurations": {
+    "Step 1 - Requirement Structuring": 21505,
+    "Step 2 - Dispatch Planning": 14420,
+    "Step 3 - Specialist Execution": 0,
+    "Step 4 - Quality Gate": 0,
+    "Step 5 - Final Outcome": 457992
+  },
+  "acceptanceSummary": {
+    "passCount": 8,
+    "failCount": 0,
+    "total": 8
+  },
+  "reviewerFindingSummary": [
+    "unknown: SIGNOFF_TASK_OK logs/bundles/signoff/signoff-2026-03-09T12-31-59-842Z-24dd95/raw/scripts/config/signoff_sample_target.txt",
+    "unknown: Owned paths:\n- logs\\bundles\\signoff\\signoff-2026-03-09T12-31-59-842Z-24dd95\\raw\\scripts\\config\\signoff_sample_target.txt\n- docs\\EVIDENCE",
+    "unknown: Findings: none\nRead-only: yes\nAcceptance: the scoped acceptance criteria appear satisfied in the current file state.",
+    "unknown: - `Read-only: yes`\n- `gate signed: PASS`\n- `evidence contract bullet present: PASS`\n- `architecture bullet present: PASS`\n- `changelog line present: PASS`\n- `overall: PASS`"
+  ],
+  "testerResultSummary": [
+    "unknown: SIGNOFF_TASK_OK logs/bundles/signoff/signoff-2026-03-09T12-31-59-842Z-24dd95/raw/scripts/config/signoff_sample_target.txt",
+    "unknown: Owned paths:\n- logs\\bundles\\signoff\\signoff-2026-03-09T12-31-59-842Z-24dd95\\raw\\scripts\\config\\signoff_sample_target.txt\n- docs\\EVIDENCE",
+    "unknown: Findings: none\nRead-only: yes\nAcceptance: the scoped acceptance criteria appear satisfied in the current file state.",
+    "unknown: - `Read-only: yes`\n- `gate signed: PASS`\n- `evidence contract bullet present: PASS`\n- `architecture bullet present: PASS`\n- `changelog line present: PASS`\n- `overall: PASS`"
+  ],
+  "requiredEvidenceFailures": []
+}

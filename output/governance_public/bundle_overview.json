@@ -1,0 +1,40 @@
+{
+  "schema": "governance-public-bundle-overview.v1",
+  "generatedAt": "2026-04-11T07:35:12.638Z",
+  "sourceLatestSignoffSummary": "logs/current/latest_signoff_summary.json",
+  "sourceBundleRoot": "logs/bundles/signoff/signoff-2026-03-09T12-31-59-842Z-24dd95",
+  "sourceTurnDir": "logs/bundles/signoff/signoff-2026-03-09T12-31-59-842Z-24dd95/raw/turns/2026-03-09/019cd29a-09de-7670-8c38-eade454f7cb2__019cd29a-0ad3-72d2-957c-30870c52eaba",
+  "selectedTurnId": "019cd29a-0ad3-72d2-957c-30870c52eaba",
+  "selectedPlanningDepth": "STANDARD_PLANNING",
+  "selectedAssuranceDepth": "SIGNOFF_ASSURANCE",
+  "finalOutcome": {
+    "status": "completed",
+    "taskOutcomeStatus": "COMPLETED",
+    "taskOutcomeReason": "completed_default"
+  },
+  "finalDecision": "RELEASE_APPROVED",
+  "runtimePostureSafe": true,
+  "signoffReady": true,
+  "exportedFiles": [
+    "latest_signoff_summary.json",
+    "signoff_summary.json",
+    "latest_run_summary.json",
+    "natural_task_trace_summary.json",
+    "request_frame.json",
+    "routing_decision.json",
+    "task_outcomes.json",
+    "review_bundle.json",
+    "release_decision.json",
+    "evidence_manifest.json",
+    "flow_trace_summary.json",
+    "stage_timeline.json",
+    "review_load_breakdown.json",
+    "conformance_report.json",
+    "operator_view_summary.json",
+    "requirement_contract.json",
+    "dispatch_plan.json",
+    "adoption_readiness_eval.json",
+    "iteration_decision.json",
+    "escalation_decision.json"
+  ]
+}

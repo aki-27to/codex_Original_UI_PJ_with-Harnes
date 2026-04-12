@@ -1,0 +1,34 @@
+{
+  "schema": "iteration-decision.v1",
+  "generatedAt": "2026-04-11T07:35:12.637Z",
+  "action": "RELEASE",
+  "reason": "release_conditions_satisfied",
+  "blockers": [],
+  "assumptions": [
+    "Any scope outside the explicit goal should stay proposal-only unless the prompt states otherwise.",
+    "Unresolved ambiguity must not be auto-answered by the harness."
+  ],
+  "residualRisks": [
+    "New logic or protocol-sensitive behavior requires dedicated verification before signoff."
+  ],
+  "qualityThresholds": {
+    "literal_requirement_alignment": 0.84,
+    "latent_intent_alignment": 0.78,
+    "boundary_compliance": 0.99,
+    "artifact_quality": 0.8,
+    "residual_risk": 0.68,
+    "adoption_readiness": 0.8,
+    "iteration_value_remaining_max": 0.24
+  },
+  "budgets": {
+    "elapsedMs": 0,
+    "stepCount": 5,
+    "tokenCount": 0,
+    "wallClockExceeded": false,
+    "stepBudgetExceeded": false,
+    "tokenBudgetExceeded": false
+  },
+  "valueRemainingScore": 0.08,
+  "improvementDelta": 0,
+  "failClosed": 0
+}

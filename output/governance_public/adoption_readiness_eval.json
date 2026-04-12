@@ -1,0 +1,219 @@
+{
+  "schema": "adoption-readiness-eval.v1",
+  "generatedAt": "2026-04-11T07:35:12.636Z",
+  "completedStateObserved": 1,
+  "dimensions": [
+    {
+      "id": "literal_requirement_alignment",
+      "score": 1,
+      "reason": "8/8 acceptance checks passed",
+      "evidenceRefs": [
+        "request_frame.json",
+        "routing_decision.json",
+        "task_outcomes.json",
+        "review_bundle.json",
+        "evidence_manifest.json",
+        "flow_trace_summary.json",
+        "review_load_breakdown.json",
+        "adoption_readiness_eval.json",
+        "iteration_decision.json",
+        "escalation_decision.json",
+        "release_decision.json"
+      ],
+      "blockers": [],
+      "assumptions": [
+        "Any scope outside the explicit goal should stay proposal-only unless the prompt states otherwise.",
+        "Unresolved ambiguity must not be auto-answered by the harness."
+      ],
+      "residualRisks": [
+        "New logic or protocol-sensitive behavior requires dedicated verification before signoff."
+      ]
+    },
+    {
+      "id": "latent_intent_alignment",
+      "score": 0.92,
+      "reason": "clause score PASS with release hint RELEASE_APPROVED_WITH_ASSUMPTIONS",
+      "evidenceRefs": [
+        "request_frame.json",
+        "routing_decision.json",
+        "task_outcomes.json",
+        "review_bundle.json",
+        "evidence_manifest.json",
+        "flow_trace_summary.json",
+        "review_load_breakdown.json",
+        "adoption_readiness_eval.json",
+        "iteration_decision.json",
+        "escalation_decision.json",
+        "release_decision.json"
+      ],
+      "blockers": [],
+      "assumptions": [
+        "Any scope outside the explicit goal should stay proposal-only unless the prompt states otherwise.",
+        "Unresolved ambiguity must not be auto-answered by the harness."
+      ],
+      "residualRisks": [
+        "New logic or protocol-sensitive behavior requires dedicated verification before signoff."
+      ]
+    },
+    {
+      "id": "boundary_compliance",
+      "score": 1,
+      "reason": "boundary checks remain within governed thresholds",
+      "evidenceRefs": [
+        "request_frame.json",
+        "routing_decision.json",
+        "task_outcomes.json",
+        "review_bundle.json",
+        "evidence_manifest.json",
+        "flow_trace_summary.json",
+        "review_load_breakdown.json",
+        "adoption_readiness_eval.json",
+        "iteration_decision.json",
+        "escalation_decision.json",
+        "release_decision.json"
+      ],
+      "blockers": [],
+      "assumptions": [
+        "Any scope outside the explicit goal should stay proposal-only unless the prompt states otherwise.",
+        "Unresolved ambiguity must not be auto-answered by the harness."
+      ],
+      "residualRisks": [
+        "New logic or protocol-sensitive behavior requires dedicated verification before signoff."
+      ]
+    },
+    {
+      "id": "artifact_quality",
+      "score": 1,
+      "reason": "11 evidence refs captured",
+      "evidenceRefs": [
+        "request_frame.json",
+        "routing_decision.json",
+        "task_outcomes.json",
+        "review_bundle.json",
+        "evidence_manifest.json",
+        "flow_trace_summary.json",
+        "review_load_breakdown.json",
+        "adoption_readiness_eval.json",
+        "iteration_decision.json",
+        "escalation_decision.json",
+        "release_decision.json"
+      ],
+      "blockers": [],
+      "assumptions": [
+        "Any scope outside the explicit goal should stay proposal-only unless the prompt states otherwise.",
+        "Unresolved ambiguity must not be auto-answered by the harness."
+      ],
+      "residualRisks": [
+        "New logic or protocol-sensitive behavior requires dedicated verification before signoff."
+      ]
+    },
+    {
+      "id": "residual_risk",
+      "score": 0.8333,
+      "reason": "1 residual risk item(s) remain",
+      "evidenceRefs": [
+        "request_frame.json",
+        "routing_decision.json",
+        "task_outcomes.json",
+        "review_bundle.json",
+        "evidence_manifest.json",
+        "flow_trace_summary.json",
+        "review_load_breakdown.json",
+        "adoption_readiness_eval.json",
+        "iteration_decision.json",
+        "escalation_decision.json",
+        "release_decision.json"
+      ],
+      "blockers": [],
+      "assumptions": [
+        "Any scope outside the explicit goal should stay proposal-only unless the prompt states otherwise.",
+        "Unresolved ambiguity must not be auto-answered by the harness."
+      ],
+      "residualRisks": [
+        "New logic or protocol-sensitive behavior requires dedicated verification before signoff."
+      ]
+    },
+    {
+      "id": "iteration_value_remaining",
+      "score": 0.92,
+      "reason": "iteration action RELEASE",
+      "evidenceRefs": [
+        "request_frame.json",
+        "routing_decision.json",
+        "task_outcomes.json",
+        "review_bundle.json",
+        "evidence_manifest.json",
+        "flow_trace_summary.json",
+        "review_load_breakdown.json",
+        "adoption_readiness_eval.json",
+        "iteration_decision.json",
+        "escalation_decision.json",
+        "release_decision.json"
+      ],
+      "blockers": [],
+      "assumptions": [
+        "Any scope outside the explicit goal should stay proposal-only unless the prompt states otherwise.",
+        "Unresolved ambiguity must not be auto-answered by the harness."
+      ],
+      "residualRisks": [
+        "New logic or protocol-sensitive behavior requires dedicated verification before signoff."
+      ]
+    },
+    {
+      "id": "adoption_readiness",
+      "score": 0.9544,
+      "reason": "ready for governed release judgment",
+      "evidenceRefs": [
+        "request_frame.json",
+        "routing_decision.json",
+        "task_outcomes.json",
+        "review_bundle.json",
+        "evidence_manifest.json",
+        "flow_trace_summary.json",
+        "review_load_breakdown.json",
+        "adoption_readiness_eval.json",
+        "iteration_decision.json",
+        "escalation_decision.json",
+        "release_decision.json"
+      ],
+      "blockers": [],
+      "assumptions": [
+        "Any scope outside the explicit goal should stay proposal-only unless the prompt states otherwise.",
+        "Unresolved ambiguity must not be auto-answered by the harness."
+      ],
+      "residualRisks": [
+        "New logic or protocol-sensitive behavior requires dedicated verification before signoff."
+      ]
+    }
+  ],
+  "scores": {
+    "literal_requirement_alignment": 1,
+    "latent_intent_alignment": 0.92,
+    "boundary_compliance": 1,
+    "artifact_quality": 1,
+    "residual_risk": 0.8333,
+    "iteration_value_remaining": 0.08,
+    "adoption_readiness": 0.9544
+  },
+  "blockers": [],
+  "assumptions": [
+    "Any scope outside the explicit goal should stay proposal-only unless the prompt states otherwise.",
+    "Unresolved ambiguity must not be auto-answered by the harness."
+  ],
+  "residualRisks": [
+    "New logic or protocol-sensitive behavior requires dedicated verification before signoff."
+  ],
+  "evidenceRefs": [
+    "request_frame.json",
+    "routing_decision.json",
+    "task_outcomes.json",
+    "review_bundle.json",
+    "evidence_manifest.json",
+    "flow_trace_summary.json",
+    "review_load_breakdown.json",
+    "adoption_readiness_eval.json",
+    "iteration_decision.json",
+    "escalation_decision.json",
+    "release_decision.json"
+  ]
+}

@@ -1,4 +1,4 @@
-﻿const http=require("http");
+const http=require("http");
 const https=require("https");
 const fs=require("fs");
 const path=require("path");
@@ -26,12 +26,8 @@ const {
   extractGovernanceOverride,
 }=require("./scripts/lib/http_request_guards");
 const {
-  defaultOutcomesPath:defaultSkillOutcomesPath,
-  evaluateSkillPortfolio,
-  loadSkillCatalog,
-  loadSkillPortfolioPolicy,
-  parseOutcomeEventsFromJsonl,
-}=require("./scripts/lib/skill_portfolio_policy");
+  buildSkillPortfolioOverview:buildSkillPortfolioOverviewSurface,
+}=require("./scripts/lib/skill_portfolio_overview");
 const {defaultPromptCharLimit,buildPromptAudit,evaluateImagePayloadBudget,formatBytes}=require("./scripts/lib/exec_payload_policy");
 const {buildAdversarialShadowReview,shadowReviewVersion}=require("./scripts/lib/adversarial_shadow_policy");
 const {buildAdversarialRetryPrompt,shouldRetryAdversarialLoop}=require("./scripts/lib/adversarial_loop_policy");
@@ -87,24 +83,21 @@ const {
 }=require("./scripts/lib/task_outcome_policy");
 const {
   defaultAuthorityRegistryPath,
-  buildAuthorityRuntimeSummary,
   loadAuthorityRegistry,
 }=require("./scripts/lib/authority_registry");
 const {
-  buildDeploymentPostureRuntimeSummary,
-}=require("./scripts/lib/deployment_posture_profile");
-const {
   defaultContractPath:defaultAdoptionReadinessContractPath,
-  evaluateAdoptionReadiness,
-  evaluateEvalRunAdoptionReadiness,
   loadAdoptionReadinessContract,
 }=require("./scripts/lib/adoption_readiness_policy");
 const {
   defaultIterationControlContractPath,
-  buildEscalationDecision,
-  buildIterationDecision,
   loadIterationControlContract,
 }=require("./scripts/lib/iteration_control_policy");
+const {
+  buildEvalRunGovernanceBundle,
+  buildGovernanceRuntimeSurface,
+  buildTurnGovernanceBundle,
+}=require("./scripts/lib/governance_bundle");
 const {
   defaultSystemCoherenceReviewContractPath,
   evaluateSystemCoherenceReview,
@@ -205,6 +198,15 @@ const {
   runOpenAIBlogLearningCycle,
 }=require("./scripts/lib/openai_blog_learning");
 const {
+  buildHarnessOverviewPayload,
+  syncHarnessOverviewGovernedMemory,
+}=require("./scripts/lib/harness_overview_surface");
+const {
+  buildBrowserCapabilitySurface,
+  buildContinuityOverviewSurface,
+  createRuntimeArtifactReaders,
+}=require("./scripts/lib/harness_capability_surface");
+const {
   defaultAnthropicEngineeringLearningPolicyPath,
   loadAnthropicEngineeringLearningPolicy,
   buildAnthropicEngineeringRuntimeSnapshot,
@@ -232,12 +234,26 @@ const {
   rewriteNativeAppApiPath,
 }=require("./scripts/lib/app_registry");
 const {
+  createAppPlatformReadSurface,
+}=require("./scripts/lib/app_platform_read_surface");
+const {
   assertCodexReady,
   runCodexReply,
   runCodexStructuredOutput,
 }=require("./scripts/lib/harness_app_runtime");
 
 const workspaceRoot=__dirname;
+const runtimeArtifactReaders=createRuntimeArtifactReaders({
+  workspaceRoot,
+  safeString:(value,max=12000)=>{
+    if(typeof value!=="string")return"";
+    const trimmed=value.trim();
+    return trimmed?trimmed.slice(0,max):"";
+  },
+  readJsonObjectFile,
+  readLoggingSurfaceJson,
+});
+const {resolveWorkspaceRuntimePath,readWorkspaceJsonArtifact}=runtimeArtifactReaders;
 const workspaceParentRoot=path.dirname(workspaceRoot);
 const webRoot=path.join(workspaceRoot,"web");
 const bundledEnglishConversationAppRoot=path.join(webRoot,"english-conversation-app");
@@ -245,6 +261,22 @@ const defaultIntegratedEnglishConversationAppRoot=path.join(workspaceRoot,"APP",
 const legacyExternalEnglishConversationAppRoot=path.join(workspaceParentRoot,"english-conversation-app");
 const defaultExternalEnglishConversationAppRoot=legacyExternalEnglishConversationAppRoot;
 const appRegistry=loadAppRegistry(workspaceRoot);
+const appPlatformReadSurface=createAppPlatformReadSurface({
+  workspaceRoot,
+  webRoot,
+  bundledEnglishConversationAppRoot,
+  defaultIntegratedEnglishConversationAppRoot,
+  legacyExternalEnglishConversationAppRoot,
+  appRegistry,
+  buildAppRegistryRuntimeSnapshot,
+  buildHarnessAppRuntimeStatus,
+  findAppById,
+  getRegisteredAppRuntimeConfig,
+  isPathWithin,
+  resolveNativeStaticRoot,
+  sendJson,
+  summarizePathForOperationLog,
+});
 const loggingSurfacePaths=getLoggingSurfacePaths(workspaceRoot);
 const userHomeDir=process.env.USERPROFILE||process.env.HOME||"";
 const apiVersion=4;
@@ -449,11 +481,6 @@ const kokoroVoiceServiceBaseUrl=normalizeKokoroServiceBaseUrl(process.env.CODEX_
 const kokoroDefaultModel=safeString(process.env.CODEX_KOKORO_DEFAULT_MODEL,80)||"kokoro";
 const kokoroDefaultVoice=safeString(process.env.CODEX_KOKORO_DEFAULT_VOICE,80)||"af_heart";
 const kokoroDefaultLangCode=safeString(process.env.CODEX_KOKORO_DEFAULT_LANG_CODE,8)||"a";
-const openAIRealtimeApiKey=safeString(process.env.OPENAI_API_KEY,400)||"";
-const openAIRealtimeClientSecretTimeoutMs=parsePositiveIntEnv("CODEX_OPENAI_REALTIME_CLIENT_SECRET_TIMEOUT_MS",15000,3000,120000);
-const openAIRealtimeModel=safeString(process.env.CODEX_OPENAI_REALTIME_MODEL,80)||"gpt-realtime";
-const openAIRealtimeDefaultVoice=safeString(process.env.CODEX_OPENAI_REALTIME_DEFAULT_VOICE,40).toLowerCase()||"marin";
-const openAIRealtimeDefaultInstructions=safeString(process.env.CODEX_OPENAI_REALTIME_DEFAULT_INSTRUCTIONS,4000)||"";
 const execIdempotencyTtlMs=parsePositiveIntEnv("CODEX_EXEC_IDEMPOTENCY_TTL_MS",30*60*1000,30*1000,24*60*60*1000);
 const harnessMemorySchema="harness-execution-memory.v1";
 const harnessMemoryPathEnvKey="CODEX_HARNESS_MEMORY_PATH";
@@ -586,11 +613,6 @@ const conversationRuntime=createConversationRuntime({
   kokoroDefaultModel,
   kokoroDefaultVoice,
   kokoroDefaultLangCode,
-  openAIRealtimeApiKey,
-  openAIRealtimeClientSecretTimeoutMs,
-  openAIRealtimeModel,
-  openAIRealtimeDefaultVoice,
-  openAIRealtimeDefaultInstructions,
   safeString,
   normalizeExecutionState,
   summarizeErrorForOperationLog,
@@ -602,7 +624,6 @@ const conversationRuntime=createConversationRuntime({
 const {
   getConversationRuntimeSnapshot,
   getKokoroVoiceRuntimeSnapshot,
-  getOpenAIRealtimeVoiceRuntimeSnapshot,
   normalizeConversationMessage,
   normalizeConversationMode,
   normalizeConversationLevel,
@@ -616,9 +637,7 @@ const {
   resolveConversationRequestErrorStatus,
   resolvePiperVoiceRequestErrorStatus,
   resolveKokoroVoiceRequestErrorStatus,
-  resolveOpenAIRealtimeVoiceRequestErrorStatus,
   requestKokoroSpeech,
-  requestOpenAIRealtimeClientSecret,
 }=conversationRuntime;
 
 const allowedOperationLogLevels=new Set(["off","core","standard","verbose"]);
@@ -5075,7 +5094,7 @@ function observeLiveCollabItem({item,phase="",tracker=null}={}){
         setLiveCollabChildActivity(receiverId,{
           name:childName,
           status:"spawned",
-          detail:"spawn完了 / 子agent初期化中",
+          detail:"spawn髯橸ｽｳ陟包ｽ｡繝ｻ・ｺ郢晢ｽｻ/ 髯昴・・ｴ・ｳgent髯具ｽｻ隴弱・・・刹・ｹ驍丞・・ｽ・ｸ繝ｻ・ｭ",
           tracker,
         });
       });
@@ -5089,7 +5108,7 @@ function observeLiveCollabItem({item,phase="",tracker=null}={}){
         setLiveCollabChildActivity(receiverId,{
           name:childName,
           status:"working",
-          detail:"子agentが処理中",
+          detail:"髯昴・・ｴ・ｳgent驍ｵ・ｺ隰疲ｺ倥・鬨ｾ繝ｻ繝ｻ繝ｻ・ｸ繝ｻ・ｭ",
           tracker,
         });
       });
@@ -5105,10 +5124,10 @@ function observeLiveCollabItem({item,phase="",tracker=null}={}){
           detail:receiverState&&receiverState.detail
             ?receiverState.detail
             :(safeString(item&&item.status,80).toLowerCase()==="completed"
-              ?"子agentが完了"
+              ?"child agent completed"
               :firstNonEmptyString([
                 ...extractCollabStateMessages(item,2),
-                "子agentが終了",
+                "child agent updated",
               ],240)),
           tracker,
         });
@@ -5126,7 +5145,7 @@ function observeLiveCollabItem({item,phase="",tracker=null}={}){
         setLiveCollabChildActivity(receiverId,{
           name:childName,
           status:"working",
-          detail:tool==="sendinput"?"追加入力を処理中":"子agentを再開中",
+          detail:tool==="sendinput"?"鬮ｴ謇假ｽｽ・ｽ髯ｷ莨夲ｽ｣・ｰ髯ｷ闌ｨ・ｽ・･髯ｷ迚呻ｽｸ蜻ｻ・ｽ螳壽弱・・ｦ鬨ｾ繝ｻ繝ｻ繝ｻ・ｸ繝ｻ・ｭ":"髯昴・・ｴ・ｳgent驛｢・ｧ髮区ｧｭ繝ｻ鬯ｮ・｢陋滂ｽｶ繝ｻ・ｸ繝ｻ・ｭ",
           tracker,
         });
       });
@@ -5147,7 +5166,7 @@ function observeLiveCollabItem({item,phase="",tracker=null}={}){
           settleLiveCollabChildActivity(receiverId,{
             name:safeString(existing&&existing.name,120)||"",
             status:"interrupted",
-            detail:"closeagent 完了 / 子agentを停止",
+            detail:"closeagent 髯橸ｽｳ陟包ｽ｡繝ｻ・ｺ郢晢ｽｻ/ 髯昴・・ｴ・ｳgent驛｢・ｧ髮区ｨ樣・髮弱・・ｽ・｢",
             tracker,
           });
         }
@@ -5580,8 +5599,6 @@ function queueAdversarialShadowReview(input={}){
     runAdversarialShadowReview(input,{queueMs});
   });
 }
-
-function getMimeType(filePath){const ext=path.extname(filePath).toLowerCase();if(ext===".html")return"text/html; charset=utf-8";if(ext===".js")return"application/javascript; charset=utf-8";if(ext===".css")return"text/css; charset=utf-8";if(ext===".json")return"application/json; charset=utf-8";if(ext===".svg")return"image/svg+xml";if(ext===".png")return"image/png";if(ext===".jpg"||ext===".jpeg")return"image/jpeg";if(ext===".ico")return"image/x-icon";return"application/octet-stream";}
 function openBrowser(url){
   if(edgeExecutablePath){
     try{
@@ -5634,194 +5651,6 @@ function resolveExecRequestErrorStatus(error){
   if(/^total image /.test(message))return 400;
   if(message==="prompt or image is required")return 400;
   return 500;
-}
-function resolveExistingDirectory(value,{baseDir=workspaceRoot}={}){
-  const raw=normalizeOptionalString(value,2000);
-  if(!raw)return null;
-  const resolved=path.isAbsolute(raw)?path.normalize(raw):path.normalize(path.join(baseDir,raw));
-  try{
-    const stat=fs.statSync(resolved);
-    return stat.isDirectory()?resolved:null;
-  }catch{
-    return null;
-  }
-}
-function resolveExistingStaticDirectory(value,{baseDir=workspaceRoot,indexFile="index.html"}={}){
-  const resolved=resolveExistingDirectory(value,{baseDir});
-  if(!resolved)return null;
-  if(!indexFile)return resolved;
-  try{
-    const stat=fs.statSync(path.join(resolved,indexFile));
-    return stat.isFile()?resolved:null;
-  }catch{
-    return null;
-  }
-}
-function getEnglishConversationAppStaticSource(){
-  const manifest=findAppById(appRegistry,"english-conversation-app");
-  if(manifest){
-    const resolvedFromManifest=resolveNativeStaticRoot(manifest,workspaceRoot);
-    if(resolvedFromManifest&&resolvedFromManifest.root){
-      return{
-        root:resolvedFromManifest.root,
-        source:resolvedFromManifest.source||"configured",
-        envKey:manifest.static&&manifest.static.envKey?manifest.static.envKey:"CODEX_ENGLISH_CONVERSATION_APP_ROOT",
-        defaultAppRoot:defaultIntegratedEnglishConversationAppRoot,
-        defaultSiblingRoot:legacyExternalEnglishConversationAppRoot,
-        legacySiblingRoot:legacyExternalEnglishConversationAppRoot,
-        bundledRoot:bundledEnglishConversationAppRoot,
-        mountPath:manifest.mountPath||"/apps/english-conversation-app",
-        legacyMountPath:manifest.legacyMountPath||"/english-conversation-app",
-      };
-    }
-  }
-  const envKey="CODEX_ENGLISH_CONVERSATION_APP_ROOT";
-  const rawOverride=normalizeOptionalString(process.env[envKey],2000);
-  const overrideCandidates=rawOverride
-    ?[
-      {root:rawOverride,baseDir:workspaceRoot,source:"env-override-root"},
-      {root:path.join(rawOverride,"dist"),baseDir:workspaceRoot,source:"env-override-dist"},
-      {root:path.join(rawOverride,"web","english-conversation-app"),baseDir:workspaceRoot,source:"env-override-web"},
-    ]
-    :[];
-  const integratedCandidates=[
-    {root:defaultIntegratedEnglishConversationAppRoot,source:"workspace-app-root"},
-    {root:path.join(defaultIntegratedEnglishConversationAppRoot,"dist"),source:"workspace-app-dist"},
-    {root:path.join(defaultIntegratedEnglishConversationAppRoot,"web","english-conversation-app"),source:"workspace-app-web"},
-  ];
-  const siblingCandidates=[
-    {root:legacyExternalEnglishConversationAppRoot,source:"external-sibling-root"},
-    {root:path.join(legacyExternalEnglishConversationAppRoot,"dist"),source:"external-sibling-dist"},
-    {root:path.join(legacyExternalEnglishConversationAppRoot,"web","english-conversation-app"),source:"external-sibling-web"},
-  ];
-  for(const candidate of [...overrideCandidates,...integratedCandidates,...siblingCandidates]){
-    const root=resolveExistingStaticDirectory(candidate.root,{baseDir:candidate.baseDir||workspaceRoot,indexFile:"index.html"});
-    if(root){
-      return{
-        root,
-        source:candidate.source,
-        envKey,
-        defaultAppRoot:defaultIntegratedEnglishConversationAppRoot,
-        defaultSiblingRoot:legacyExternalEnglishConversationAppRoot,
-        legacySiblingRoot:legacyExternalEnglishConversationAppRoot,
-        bundledRoot:bundledEnglishConversationAppRoot,
-        mountPath:manifest&&manifest.mountPath?manifest.mountPath:"/apps/english-conversation-app",
-        legacyMountPath:manifest&&manifest.legacyMountPath?manifest.legacyMountPath:"/english-conversation-app",
-      };
-    }
-  }
-  return{
-    root:bundledEnglishConversationAppRoot,
-    source:"workspace-bundled",
-    envKey,
-    defaultAppRoot:defaultIntegratedEnglishConversationAppRoot,
-    defaultSiblingRoot:legacyExternalEnglishConversationAppRoot,
-    legacySiblingRoot:legacyExternalEnglishConversationAppRoot,
-    bundledRoot:bundledEnglishConversationAppRoot,
-    mountPath:manifest&&manifest.mountPath?manifest.mountPath:"/apps/english-conversation-app",
-    legacyMountPath:manifest&&manifest.legacyMountPath?manifest.legacyMountPath:"/english-conversation-app",
-  };
-}
-function buildStaticAppsRuntimeSnapshot(){
-  const englishConversationApp=getEnglishConversationAppStaticSource();
-  return{
-    englishConversationApp:{
-      mountPath:"/english-conversation-app",
-      root:summarizePathForOperationLog(englishConversationApp.root,220),
-      source:englishConversationApp.source,
-      envKey:englishConversationApp.envKey,
-      defaultAppRoot:summarizePathForOperationLog(englishConversationApp.defaultAppRoot,220),
-      defaultSiblingRoot:summarizePathForOperationLog(englishConversationApp.defaultSiblingRoot,220),
-      legacySiblingRoot:summarizePathForOperationLog(englishConversationApp.legacySiblingRoot,220),
-      bundledRoot:summarizePathForOperationLog(englishConversationApp.bundledRoot,220),
-    },
-    apps:buildAppRegistryRuntimeSnapshot(appRegistry,workspaceRoot).map((app)=>({
-      ...app,
-      manifestPath:summarizePathForOperationLog(app.manifestPath,220),
-      workingDirectory:summarizePathForOperationLog(app.workingDirectory,220),
-      proxy:app.proxy&&typeof app.proxy==="object"
-        ?{
-          ...app.proxy,
-        }
-        :undefined,
-      static:app.static&&typeof app.static==="object"
-        ?{
-          ...app.static,
-          root:summarizePathForOperationLog(app.static.root,220),
-        }
-        :undefined,
-    })),
-  };
-}
-function normalizeStaticRequestRelativePath(rawPath){
-  const decoded=String(rawPath||"").replace(/^\/+/,"");
-  if(!decoded)return"index.html";
-  if(/[\\/]$/.test(decoded))return path.join(decoded,"index.html");
-  return decoded;
-}
-function buildStaticRequestTarget(pathname){
-  const decoded=decodeURIComponent(pathname||"/");
-  if(decoded==="/"||decoded===""){
-    const relativePath="index.html";
-    const absolutePath=path.resolve(webRoot,relativePath);
-    return{root:webRoot,absolutePath,allowed:isPathWithin(webRoot,absolutePath)};
-  }
-  const englishSource=getEnglishConversationAppStaticSource();
-  const englishMountPath=englishSource&&englishSource.mountPath?englishSource.mountPath:"/apps/english-conversation-app";
-  const englishLegacyMountPath=englishSource&&englishSource.legacyMountPath?englishSource.legacyMountPath:"/english-conversation-app";
-  const englishMountMatched=
-    decoded===englishMountPath||
-    decoded.startsWith(`${englishMountPath}/`)||
-    decoded===englishLegacyMountPath||
-    decoded.startsWith(`${englishLegacyMountPath}/`);
-  if(englishMountMatched){
-    const matchedPrefix=decoded===englishMountPath||decoded.startsWith(`${englishMountPath}/`)
-      ?englishMountPath
-      :englishLegacyMountPath;
-    const relativePath=decoded===matchedPrefix
-      ?"index.html"
-      :normalizeStaticRequestRelativePath(decoded.slice(`${matchedPrefix}/`.length));
-    const absolutePath=path.resolve(englishSource.root,relativePath);
-    return{
-      root:englishSource.root,
-      absolutePath,
-      allowed:isPathWithin(englishSource.root,absolutePath),
-      source:englishSource.source,
-    };
-  }
-  const relativePath=normalizeStaticRequestRelativePath(decoded);
-  const absolutePath=path.resolve(webRoot,relativePath);
-  return{root:webRoot,absolutePath,allowed:isPathWithin(webRoot,absolutePath)};
-}
-function serveStaticFile(req,res,pathname){
-  const target=buildStaticRequestTarget(pathname);
-  if(!target||!target.allowed){
-    sendJson(res,403,{error:"Forbidden"});
-    return;
-  }
-  try{
-    const stat=fs.statSync(target.absolutePath);
-    if(stat.isDirectory()){
-      target.absolutePath=path.resolve(target.absolutePath,"index.html");
-    }
-  }catch{
-  }
-  if(!isPathWithin(target.root,target.absolutePath)){
-    sendJson(res,403,{error:"Forbidden"});
-    return;
-  }
-  fs.readFile(target.absolutePath,(err,data)=>{
-    if(err){
-      sendJson(res,404,{error:"Not found"});
-      return;
-    }
-    res.writeHead(200,{
-      "Content-Type":getMimeType(target.absolutePath),
-      "Content-Length":data.length,
-      "Cache-Control":"no-cache",
-    });
-    res.end(data);
-  });
 }
 function openCmdWindow(){
   const cd=`cd /d \"${workspaceRoot}\"`;
@@ -8763,7 +8592,7 @@ function evaluateAcceptanceCheckStatus(check,input={}){
   const changedPaths=Array.isArray(input.changedPaths)?input.changedPaths:[];
   const childEvidenceLedger=Array.isArray(input.childEvidenceLedger)?input.childEvidenceLedger:[];
   if(!title)return{status:"SKIPPED",reason:"missing_title",evidence:[]};
-  if(/needs[_ ]input|need[_ ]input|user decision|open question|譖匁乂|蛻､譁ｭ/.test(lower)){
+  if(/needs[_ ]input|need[_ ]input|user decision|open question|鬮ｫ・ｴ鬮｢ﾂ隰梧ｺｯ蠏ｯ郢晢ｽｻ鬮ｯ蜈ｷ・ｽ・ｻ郢晢ｽｻ繝ｻ・､鬮ｫ・ｴ郢晢ｽｻ繝ｻ・ｽ繝ｻ・ｭ/.test(lower)){
     const pass=input.taskOutcomeStatus==="NEEDS_INPUT"||Boolean(input.needsInputRecommended);
     return{status:pass?"PASS":"FAIL",reason:pass?"needs_input_observed":"needs_input_missing",evidence:[safeString(input.taskOutcomeStatus,80)]};
   }
@@ -10276,82 +10105,34 @@ async function executeTurnStreaming(res,prompt,agentName,options){
       evidenceRefs:["evidence_manifest.json","flow_trace_summary.json","review_load_breakdown.json"],
       turnId:turnRecord.turnId,
     });
-    const reviewBundle=buildReviewBundle({
+    const turnGovernanceBundle=buildTurnGovernanceBundle({
       acceptanceResults,
       childEvidenceLedger,
-      requiredEvidenceFailures:missingRequiredEvidence,
-      residualRisks:currentTurnSummaryForConformance.residualRisks,
-      assumptions:currentTurnSummaryForConformance.assumptions,
-      finalOutcome:currentTurnSummaryForConformance.finalOutcome,
+      missingRequiredEvidence,
+      currentTurnSummary:currentTurnSummaryForConformance,
       clauseCompletionScorecard,
-    });
-    const adoptionReadinessEval=evaluateAdoptionReadiness({
-      acceptanceResults,
-      reviewBundle,
-      finalOutcome:currentTurnSummaryForConformance.finalOutcome,
-      clauseCompletionScorecard,
-      residualRisks:currentTurnSummaryForConformance.residualRisks,
-      assumptions:currentTurnSummaryForConformance.assumptions,
-      requiredEvidenceFailures:missingRequiredEvidence,
-      evidenceRefs:["evidence_manifest.json","flow_trace_summary.json","review_load_breakdown.json","review_bundle.json"],
-      expectedEvidenceRefCount:Array.isArray(evidenceContractSpec&&evidenceContractSpec.requiredTurnArtifacts)?evidenceContractSpec.requiredTurnArtifacts.length:7,
-      maxResidualRiskItems:iterationControlContract&&iterationControlContract.riskThresholds&&Number.isFinite(Number(iterationControlContract.riskThresholds.maxResidualRiskItems))
-        ?Number(iterationControlContract.riskThresholds.maxResidualRiskItems)
-        :6,
-    },adoptionReadinessContract);
-    const iterationDecision=buildIterationDecision({
-      evaluator:adoptionReadinessEval,
-      finalOutcome:currentTurnSummaryForConformance.finalOutcome,
-      residualRisks:currentTurnSummaryForConformance.residualRisks,
-      assumptions:currentTurnSummaryForConformance.assumptions,
-      requiredEvidenceFailures:missingRequiredEvidence,
-      stepCount:Math.max(0,observedStreamEvents.length+observedItemRecords.length),
+      evidenceContractSpec,
+      iterationControlContract,
+      adoptionReadinessContract,
+      observedStepCount:Math.max(0,observedStreamEvents.length+observedItemRecords.length),
       startedAt:turnRecord.startedAt,
       now:Date.now(),
-    },iterationControlContract);
-    const escalationDecision=buildEscalationDecision({
-      contract:iterationControlContract,
-      iterationDecision,
-      finalOutcome:currentTurnSummaryForConformance.finalOutcome,
-    });
-    reviewBundle.adoption_readiness=adoptionReadinessEval;
-    reviewBundle.iteration_decision=iterationDecision;
-    reviewBundle.recommended_release_state=iterationDecision.action==="RELEASE"
-      ?safeString(reviewBundle.recommended_release_state,80)||"RELEASE_APPROVED"
-      :iterationDecision.action==="NEEDS_INPUT"
-        ?"EXTERNAL_ACTION_REQUIRED"
-        :"RELEASE_BLOCKED";
-    const releaseDecision=buildReleaseDecision({
-      finalOutcome:currentTurnSummaryForConformance.finalOutcome,
-      reviewBundle,
-      signoffRefs:["review_bundle.json","flow_trace_summary.json","review_load_breakdown.json"],
-      replayBundleRefs:[safeString(turnRecord.threadId,160)],
-      residualRisks:currentTurnSummaryForConformance.residualRisks,
-      assumptions:currentTurnSummaryForConformance.assumptions,
-      missingEvidence:missingRequiredEvidence,
-      clauseCompletionScorecard,
-      rationaleNotes:[
-        `turn_status=${finalStatus}`,
-        `task_outcome_status=${taskOutcome.status}`,
-        `adoption_readiness=${Number(adoptionReadinessEval&&adoptionReadinessEval.scores&&adoptionReadinessEval.scores.adoption_readiness||0).toFixed(4)}`,
-        `iteration_action=${safeString(iterationDecision&&iterationDecision.action,80)||"UNSET"}`,
-      ],
-    });
-    const conformanceReport=buildConformanceReport({
-      latestRunSummary:currentTurnSummaryForConformance,
+      threadId:turnRecord.threadId,
+      finalStatus,
+      taskOutcomeStatus:taskOutcome.status,
       selection:planningContext&&planningContext.selection?planningContext.selection:{},
       requirementContract:planningContext&&planningContext.requirementContract?planningContext.requirementContract:{},
       dispatchPlan:planningContext&&planningContext.dispatchPlan?planningContext.dispatchPlan:{},
-      childEvidenceLedger,
-      acceptanceResults,
-      requiredEvidenceFailures:missingRequiredEvidence,
-      evidenceRefs:["evidence_manifest.json","flow_trace_summary.json","review_load_breakdown.json","adoption_readiness_eval.json","iteration_decision.json","release_decision.json"],
-      replayBundleRefs:[safeString(turnRecord.threadId,160)],
-      rationaleNotes:[
-        `turn_status=${finalStatus}`,
-        `task_outcome_status=${taskOutcome.status}`,
-      ],
+      buildReviewBundle,
+      buildReleaseDecision,
+      buildConformanceReport,
     });
+    const reviewBundle=turnGovernanceBundle.reviewBundle;
+    const adoptionReadinessEval=turnGovernanceBundle.adoptionReadinessEval;
+    const iterationDecision=turnGovernanceBundle.iterationDecision;
+    const escalationDecision=turnGovernanceBundle.escalationDecision;
+    const releaseDecision=turnGovernanceBundle.releaseDecision;
+    const conformanceReport=turnGovernanceBundle.conformanceReport;
     const operatorViewSummary=buildOperatorViewSummary({
       latestRunSummary:{...currentTurnSummaryForConformance,currentPhase:"Release / Close"},
       reviewBundle,
@@ -11401,29 +11182,6 @@ async function buildHarnessAppRuntimeStatus(app){
       error:safeString(error&&error.message?error.message:String(error),220),
     };
   }
-}
-async function handleHarnessAppsCatalogRequest(res){
-  sendJson(res,200,{
-    ok:true,
-    apps:buildAppRegistryRuntimeSnapshot(appRegistry,workspaceRoot),
-  });
-}
-async function handleHarnessAppRuntimeRequest(res,appId){
-  const app=getRegisteredAppRuntimeConfig(appId);
-  if(!app){
-    sendJson(res,404,{ok:false,error:"unknown app"});
-    return;
-  }
-  sendJson(res,200,{
-    ok:true,
-    app:{
-      id:app.id,
-      title:app.title,
-      mountPath:app.mountPath,
-      integrationMode:app.integrationMode,
-    },
-    ai:await buildHarnessAppRuntimeStatus(app),
-  });
 }
 async function handleHarnessAppReplyRequest(req,res,appId){
   const originValidation=validateLocalAppBridgeRequest(req);
@@ -12829,54 +12587,9 @@ function buildTopographyOverview(topographyAgents,assignmentsByRole){
   return{summary,lanes,agents:entries};
 }
 function buildSkillPortfolioOverview(){
-  const policy=loadSkillPortfolioPolicy();
-  const catalog=loadSkillCatalog();
-  const outcomeInfo=parseOutcomeEventsFromJsonl(defaultSkillOutcomesPath);
-  const report=evaluateSkillPortfolio({policy,catalog,outcomeEvents:outcomeInfo.events});
-  const assignments=Object.entries(catalog&&catalog.assignments&&typeof catalog.assignments==="object"?catalog.assignments:{})
-    .map(([role,skills])=>({
-      role:safeString(role,120)||"",
-      skills:Array.isArray(skills)?skills.map((entry)=>safeString(entry,120)).filter(Boolean):[],
-    }))
-    .filter((entry)=>entry.role)
-    .sort((left,right)=>left.role.localeCompare(right.role));
-  return{
-    status:safeString(report&&report.status,40)||"FAIL",
-    policy:{
-      schema:safeString(policy&&policy.schema,120)||"",
-      version:safeString(policy&&policy.version,120)||"",
-      path:summarizePathForOperationLog(policy&&policy.policyPath,220),
-      source:safeString(policy&&policy.source,40)||"",
-    },
-    catalog:{
-      schema:safeString(catalog&&catalog.schema,120)||"",
-      version:safeString(catalog&&catalog.version,120)||"",
-      path:summarizePathForOperationLog(catalog&&catalog.catalogPath,220),
-      source:safeString(catalog&&catalog.source,40)||"",
-      updatedAt:safeString(catalog&&catalog.updatedAt,40)||"",
-    },
-    outcomeEvents:{
-      path:summarizePathForOperationLog(outcomeInfo&&outcomeInfo.path,220),
-      source:safeString(outcomeInfo&&outcomeInfo.source,40)||"",
-      count:Array.isArray(outcomeInfo&&outcomeInfo.events)?outcomeInfo.events.length:0,
-      parseErrors:Array.isArray(outcomeInfo&&outcomeInfo.parseErrors)?outcomeInfo.parseErrors.slice(0,8):[],
-    },
-    portfolio:report&&report.portfolio&&typeof report.portfolio==="object"?report.portfolio:{},
-    roleChecks:Array.isArray(report&&report.roleChecks)
-      ?report.roleChecks.map((entry)=>({
-        role:safeString(entry&&entry.role,120)||"",
-        pass:entry&&entry.pass?1:0,
-        assignedCount:Number.isFinite(Number(entry&&entry.assignedCount))?Math.max(0,Math.trunc(Number(entry.assignedCount))):0,
-        minSkills:Number.isFinite(Number(entry&&entry.minSkills))?Math.max(0,Math.trunc(Number(entry.minSkills))):0,
-        missingClasses:Array.isArray(entry&&entry.missingClasses)?entry.missingClasses.slice(0,8):[],
-        missingSkills:Array.isArray(entry&&entry.missingSkills)?entry.missingSkills.slice(0,8):[],
-      }))
-      :[],
-    issues:Array.isArray(report&&report.issues)?report.issues.slice(0,10):[],
-    warnings:Array.isArray(report&&report.warnings)?report.warnings.slice(0,10):[],
-    missingProposals:Array.isArray(report&&report.missingProposals)?report.missingProposals.slice(0,10):[],
-    assignments,
-  };
+  return buildSkillPortfolioOverviewSurface({
+    summarizePathForOperationLog,
+  });
 }
 function buildRuntimeApiSnapshot(){
   const active=getActiveAgentState();
@@ -12888,14 +12601,22 @@ function buildRuntimeApiSnapshot(){
   const harnessMemory=buildHarnessMemoryRuntimeSnapshot();
   const workspaceGuard=buildWorkspaceGuardSnapshot();
   const slo=buildSloRuntimeSnapshot();
-  const staticApps=buildStaticAppsRuntimeSnapshot();
+  const staticApps=appPlatformReadSurface.buildStaticAppsRuntimeSnapshot();
   const gitAutomation=buildGitAutomationRuntimeSnapshot();
-  const authorityModel=buildAuthorityRuntimeSummary({registry:authorityRegistry});
-  const deploymentPosture=buildDeploymentPostureRuntimeSummary({
+  const governanceRuntimeSurface=buildGovernanceRuntimeSurface({
+    registry:authorityRegistry,
+    authorityRegistryPath,
     approvalPolicy:readTopLevelCodexConfigString(defaultParentAgentConfigPath,"approval_policy")||"on-request",
     sandboxMode:readTopLevelCodexConfigString(defaultParentAgentConfigPath,"sandbox_mode")||"workspace-write",
     autoCommitAndPush:Boolean(gitAutomation&&gitAutomation.autocommitEnabled&&gitAutomation.autopushEnabled),
+    iterationControlContract,
+    iterationControlContractPath,
+    adoptionReadinessContract,
+    adoptionReadinessContractPath,
+    summarizePathForOperationLog,
   });
+  const authorityModel=governanceRuntimeSurface.authorityModel;
+  const deploymentPosture=governanceRuntimeSurface.deploymentPosture;
   const evalHarness={
     suite:buildEvalSuiteSummary(defaultEvalSuite),
     configPath:summarizePathForOperationLog(evalSuiteConfigPath,220),
@@ -12921,21 +12642,8 @@ function buildRuntimeApiSnapshot(){
   const documentTooling=buildDocumentToolingRuntimeSnapshot({
     workspaceRoot,
   });
-  const iterationControlSummary={
-    schema:safeString(iterationControlContract&&iterationControlContract.schema,80)||"iteration-control-contract.v1",
-    version:safeString(iterationControlContract&&iterationControlContract.version,80)||"",
-    path:summarizePathForOperationLog(iterationControlContractPath,220),
-    qualityThresholds:iterationControlContract&&iterationControlContract.qualityThresholds?iterationControlContract.qualityThresholds:{},
-    budgets:iterationControlContract&&iterationControlContract.budgets?iterationControlContract.budgets:{},
-    releaseState:"fail_closed",
-  };
-  const adoptionReadinessSummary={
-    schema:safeString(adoptionReadinessContract&&adoptionReadinessContract.schema,80)||"adoption-readiness-evaluator-contract.v1",
-    version:safeString(adoptionReadinessContract&&adoptionReadinessContract.version,80)||"",
-    path:summarizePathForOperationLog(adoptionReadinessContractPath,220),
-    dimensions:Array.isArray(adoptionReadinessContract&&adoptionReadinessContract.dimensions)?adoptionReadinessContract.dimensions:[],
-    dimensionCount:Array.isArray(adoptionReadinessContract&&adoptionReadinessContract.dimensions)?adoptionReadinessContract.dimensions.length:0,
-  };
+  const iterationControlSummary=governanceRuntimeSurface.iterationControlSummary;
+  const adoptionReadinessSummary=governanceRuntimeSurface.adoptionReadinessSummary;
   const secondaryLearning={
     anthropicEngineering:buildAnthropicEngineeringLearningRuntimeStateSnapshot(),
   };
@@ -13168,10 +12876,7 @@ function buildRuntimeApiSnapshot(){
     piperVoiceApi:getPiperRuntimeSnapshot({workspaceRoot}),
     piper_voice_api:getPiperRuntimeSnapshot({workspaceRoot}),
     kokoroVoiceApi:getKokoroVoiceRuntimeSnapshot(),
-    kokoro_voice_api:getKokoroVoiceRuntimeSnapshot(),
-    openaiRealtimeVoiceApi:getOpenAIRealtimeVoiceRuntimeSnapshot(),
-    openai_realtime_voice_api:getOpenAIRealtimeVoiceRuntimeSnapshot(),
-    evidenceArtifacts:{
+    kokoro_voice_api:getKokoroVoiceRuntimeSnapshot(),    evidenceArtifacts:{
       enabled:turnArtifactsEnabled,
       root:summarizePathForOperationLog(turnArtifactsRoot,220),
       maxBytes:turnArtifactsMaxBytes,
@@ -13510,133 +13215,58 @@ function buildPostLockDriftSnapshot({planningContext,agentName="default",dispatc
   };
 }
 function syncGovernedMemoryGraphFromLiveRuntime(reason="runtime_sync"){
-  const runtime=buildRuntimeApiSnapshot();
-  const traceability=buildHarnessTraceabilitySnapshot(
-    runtime&&runtime.latestTurn&&runtime.latestTurn.planning&&typeof runtime.latestTurn.planning==="object"
-      ?runtime.latestTurn.planning
-      :{},
-    safeString(runtime&&runtime.latestTurn&&runtime.latestTurn.agent_name,80)
-      ||safeString(runtime&&runtime.activeAgent,80)
-      ||"default"
-  );
-  return syncGovernedMemoryGraph({
+  return syncHarnessOverviewGovernedMemory({
+    buildEvalHistoryOverview,
+    buildExecutionMemoryOverview,
+    buildHarnessTraceabilitySnapshot,
+    buildRuntimeApiSnapshot,
+    reason,
+    safeString,
+    syncGovernedMemoryGraph,
     workspaceRoot,
-    runtime:{
-      activeAgent:runtime.activeAgent,
-      latestTurn:runtime.latestTurn,
-      intentFirst:runtime.intentFirst,
-      executionOverview:buildExecutionMemoryOverview({limit:10,window:60}),
-      evalHistory:{
-        recentRuns:buildEvalHistoryOverview({limit:6}),
-      },
-      externalLearning:runtime.externalLearning,
-      manualSelfImprovement:runtime.manualSelfImprovement,
-      secondaryLearning:runtime.secondaryLearning,
-      phaseStatus:runtime.phaseStatus,
-      traceability,
-    },
-    traceability,
-    reason:safeString(reason,80)||"runtime_sync",
   });
 }
 function buildHarnessOverviewSnapshot(){
-  if(!harnessMemoryLoaded){
-    loadHarnessExecutionMemoryStore();
-  }
-  const runtime=sanitizeRuntimeSnapshotForOverview(buildRuntimeApiSnapshot());
-  const skillPortfolio=buildSkillPortfolioOverview();
-  const assignmentsByRole=new Map(skillPortfolio.assignments.map((entry)=>[entry.role,entry.skills]));
-  const topology=buildTopographyOverview(getAgentTopographySnapshot(),assignmentsByRole);
-  const traceability=buildHarnessTraceabilitySnapshot(
-    runtime&&runtime.latestTurn&&runtime.latestTurn.planning&&typeof runtime.latestTurn.planning==="object"
-      ?runtime.latestTurn.planning
-      :{},
-    safeString(runtime&&runtime.latestTurn&&runtime.latestTurn.agent_name,80)
-      ||safeString(runtime&&runtime.activeAgent,80)
-      ||"default"
-  );
-  const governedGraph=syncGovernedMemoryGraphFromLiveRuntime("overview_sync");
-  return{
+  return buildHarnessOverviewPayload({
     apiVersion,
-    mode:"harness-overview",
-    generatedAt:Date.now(),
+    buildBrowserCapabilityOverview,
+    buildBundleOverview,
+    buildContinuityOverviewSnapshot,
+    buildEvalHistoryOverview,
+    buildExecutionMemoryOverview,
+    buildHarnessTraceabilitySnapshot,
+    buildRuntimeApiSnapshot,
+    buildRuntimeProofBundleSnapshot,
+    buildSignoffBundleSnapshot,
+    buildSkillPortfolioOverview,
+    buildTopographyOverview,
+    getAgentTopographySnapshot,
+    harnessMemoryLoaded,
+    listReplayMemorySnapshots,
+    loadHarnessExecutionMemoryStore,
+    loggingSurfacePaths,
+    repoRelativePath,
+    runtimeProofsRoot,
+    safeString,
+    sanitizeRuntimeSnapshotForOverview,
+    signoffBundlesRoot,
+    syncGovernedMemoryGraph,
     workspaceRoot,
-    pages:{
-      console:"/01.HarnesUI/index.html",
-      overview:"/01.HarnesUI/overview.html",
-    },
-    apis:{
-      runtime:"/api/runtime",
-      overview:"/api/harness/overview",
-      topography:"/api/agent-topography",
-      conversationRuntime:"/api/conversation/runtime",
-      evalSuites:"/api/eval/suites",
-      evalHistory:"/api/eval/history",
-      replayTurns:"/api/replay/turns",
-      sloStatus:"/api/slo/status",
-    },
-    runtime,
-    topology,
-    contracts:{
-      governance:runtime.governancePolicy,
-      turn:runtime.contractSpec,
-      taskOutcome:runtime.taskOutcomeContract,
-      planning:runtime.planningContracts,
-      designAcceptance:runtime.intentFirst&&runtime.intentFirst.contract?runtime.intentFirst.contract:{},
-    },
-    evidence:{
-      current:{
-        root:repoRelativePath(workspaceRoot,loggingSurfacePaths.currentRoot),
-        operatorSummaryPath:repoRelativePath(workspaceRoot,loggingSurfacePaths.currentOperatorSummaryPath),
-        indexPath:repoRelativePath(workspaceRoot,loggingSurfacePaths.currentIndexPath),
-        designConformanceSummaryPath:repoRelativePath(workspaceRoot,loggingSurfacePaths.currentDesignConformancePath),
-        latestRunSummaryPath:repoRelativePath(workspaceRoot,loggingSurfacePaths.currentLatestRunSummaryPath),
-        reviewLoadBreakdownPath:repoRelativePath(workspaceRoot,loggingSurfacePaths.currentReviewLoadBreakdownPath),
-        latestSignoffSummaryPath:repoRelativePath(workspaceRoot,loggingSurfacePaths.currentLatestSignoffSummaryPath),
-      },
-      runtimeProof:buildBundleOverview(runtimeProofsRoot,"runtime_proof_summary.json",buildRuntimeProofBundleSnapshot),
-      signoff:buildBundleOverview(signoffBundlesRoot,"signoff_summary.json",buildSignoffBundleSnapshot),
-    },
-    eval:{
-      suite:runtime.evalHarness&&runtime.evalHarness.suite?runtime.evalHarness.suite:{},
-      recentRuns:buildEvalHistoryOverview({limit:6}),
-    },
-    memory:{
-      harness:runtime.harnessMemory,
-      governedGraph:governedGraph&&governedGraph.summary&&typeof governedGraph.summary==="object"
-        ?governedGraph.summary
-        :runtime.governedMemory&&typeof runtime.governedMemory==="object"
-          ?runtime.governedMemory
-          :{},
-      taste:runtime.intentFirst&&runtime.intentFirst.tasteMemory?runtime.intentFirst.tasteMemory:{},
-      execution:buildExecutionMemoryOverview({limit:10,window:60}),
-      externalLearning:runtime.externalLearning&&typeof runtime.externalLearning==="object"?runtime.externalLearning:{},
-      manualSelfImprovement:runtime.manualSelfImprovement&&typeof runtime.manualSelfImprovement==="object"?runtime.manualSelfImprovement:{},
-      agiImprovementFlywheel:runtime.agiImprovementFlywheel&&typeof runtime.agiImprovementFlywheel==="object"?runtime.agiImprovementFlywheel:{},
-      secondaryLearning:runtime.secondaryLearning&&typeof runtime.secondaryLearning==="object"?runtime.secondaryLearning:{},
-      replay:{
-        recent:listReplayMemorySnapshots({limit:6}),
-      },
-    },
-    traceability,
-    health:{
-      latestTurn:runtime.latestTurn,
-      fullUtilization:runtime.fullUtilization,
-      slo:runtime.slo,
-    },
-    skillPortfolio,
-  };
+  });
 }
-function resolveWorkspaceRuntimePath(targetPath){
-  const raw=safeString(targetPath,400);
-  if(!raw)return"";
-  if(path.isAbsolute(raw))return path.normalize(raw);
-  return path.normalize(path.join(workspaceRoot,raw));
+function buildContinuityOverviewSnapshot(){
+  return buildContinuityOverviewSurface({
+    readWorkspaceJsonArtifact,
+    safeString,
+    toFiniteNumber,
+  });
 }
-function readWorkspaceJsonArtifact(targetPath){
-  const resolved=resolveWorkspaceRuntimePath(targetPath);
-  if(!resolved)return null;
-  return readJsonObjectFile(resolved)||readLoggingSurfaceJson(resolved);
+function buildBrowserCapabilityOverview(){
+  return buildBrowserCapabilitySurface({
+    readWorkspaceJsonArtifact,
+    safeString,
+    toFiniteNumber,
+  });
 }
 function isLikelyChangedPath(entry){
   const value=safeString(entry,260);
@@ -15069,22 +14699,8 @@ async function requestHandler(req,res){
     return;
   }
 
-  if(req.method==="GET"&&pathname==="/api/runtime"){
-    sendJson(res,200,buildRuntimeApiSnapshot());
+  if(await appPlatformReadSurface.tryHandleGetRequest({req,res,pathname,buildRuntimeApiSnapshot})){
     return;
-  }
-
-  if(req.method==="GET"&&pathname==="/api/apps"){
-    await handleHarnessAppsCatalogRequest(res);
-    return;
-  }
-
-  if(req.method==="GET"&&pathname.startsWith("/api/apps/")){
-    const appRuntimeMatch=pathname.match(/^\/api\/apps\/([^/]+)\/runtime$/);
-    if(appRuntimeMatch){
-      await handleHarnessAppRuntimeRequest(res,decodeURIComponent(appRuntimeMatch[1]));
-      return;
-    }
   }
 
   if(req.method==="POST"&&pathname.startsWith("/api/apps/")){
@@ -15615,54 +15231,20 @@ async function requestHandler(req,res){
           artifactOutputRoot:path.join(workspaceRoot,"output","agi_v1",reportId),
         });
       }
-      const adoptionReadiness=evaluateEvalRunAdoptionReadiness({
+      const evalGovernanceBundle=buildEvalRunGovernanceBundle({
         suite,
         runs,
         verifier,
         comparison,
-      },adoptionReadinessContract);
-      const iterationDecision=buildIterationDecision({
-        evaluator:adoptionReadiness,
-        finalOutcome:{
-          taskOutcomeStatus:safeString(verifier&&verifier.verdict,80).toUpperCase()==="PASS"?"COMPLETED":"FAILED_VALIDATION",
-          taskOutcomeReason:safeString(verifier&&verifier.reason,160)||"independent_verifier",
-        },
-        residualRisks:Array.isArray(adoptionReadiness&&adoptionReadiness.residualRisks)?adoptionReadiness.residualRisks:[],
-        missingEvidence:Array.isArray(adoptionReadiness&&adoptionReadiness.blockers)?adoptionReadiness.blockers.filter((entry)=>/evidence/i.test(safeString(entry,160))):[],
-        stepCount:maxCases,
-      },iterationControlContract);
-      const evalReviewBundle={
-        schema:"review-bundle.v1",
-        recommended_release_state:iterationDecision.action==="RELEASE"?"RELEASE_APPROVED":iterationDecision.action==="NEEDS_INPUT"?"EXTERNAL_ACTION_REQUIRED":"RELEASE_BLOCKED",
-        blockers:Array.isArray(adoptionReadiness&&adoptionReadiness.blockers)?adoptionReadiness.blockers:[],
-      };
-      const runLevelReleaseDecision=buildReleaseDecision({
-        finalOutcome:{
-          taskOutcomeStatus:safeString(verifier&&verifier.verdict,80).toUpperCase()==="PASS"?"COMPLETED":"FAILED_VALIDATION",
-          taskOutcomeReason:safeString(iterationDecision&&iterationDecision.reason,160)||"eval_iteration_decision",
-        },
-        reviewBundle:evalReviewBundle,
-        signoffRefs:["verifier","comparison"],
-        replayBundleRefs:[reportId],
-        residualRisks:Array.isArray(adoptionReadiness&&adoptionReadiness.residualRisks)?adoptionReadiness.residualRisks:[],
-        assumptions:Array.isArray(adoptionReadiness&&adoptionReadiness.assumptions)?adoptionReadiness.assumptions:[],
-        missingEvidence:Array.isArray(adoptionReadiness&&adoptionReadiness.blockers)?adoptionReadiness.blockers.filter((entry)=>/evidence/i.test(safeString(entry,160))):[],
-        clauseCompletionScorecard:{
-          status:iterationDecision.action==="RELEASE"?"PASS":"FAIL",
-          clauses:[],
-        },
-        rationaleNotes:[
-          `adoption_readiness=${Number(adoptionReadiness&&adoptionReadiness.scores&&adoptionReadiness.scores.adoption_readiness||0).toFixed(4)}`,
-          `iteration_action=${safeString(iterationDecision&&iterationDecision.action,80)||"UNSET"}`,
-        ],
+        reportId,
+        adoptionReadinessContract,
+        iterationControlContract,
+        buildReleaseDecision,
       });
-      const escalationDecision=buildEscalationDecision({
-        contract:iterationControlContract,
-        iterationDecision,
-        finalOutcome:{
-          taskOutcomeReason:safeString(iterationDecision&&iterationDecision.reason,160)||"eval_iteration_decision",
-        },
-      });
+      const adoptionReadiness=evalGovernanceBundle.adoptionReadiness;
+      const iterationDecision=evalGovernanceBundle.iterationDecision;
+      const escalationDecision=evalGovernanceBundle.escalationDecision;
+      const runLevelReleaseDecision=evalGovernanceBundle.releaseDecision;
       const report={
         runId:reportId,
         generatedAt:Date.now(),
@@ -16054,53 +15636,6 @@ async function requestHandler(req,res){
         ok:false,
         error:error&&error.message?error.message:String(error),
         code:safeString(error&&error.code?String(error.code):"",80)||undefined,
-      });
-    }
-    return;
-  }
-
-  if(req.method==="POST"&&pathname==="/api/voice/openai/realtime/client-secret"){
-    try{
-      const validation=validateControlMutationRequest(req,{action:"exec",enforceActionAllowlist:false});
-      if(!validation.ok){
-        sendJson(res,validation.status,{ok:false,error:validation.error});
-        return;
-      }
-      const contentTypeValidation=validateJsonMutationContentType(req,{required:true,expectedMime:conversationApiRequiredContentType});
-      if(!contentTypeValidation.ok){
-        sendJson(res,contentTypeValidation.status,{ok:false,error:contentTypeValidation.error});
-        return;
-      }
-      const raw=await readRequestBody(req,defaultRequestBodyLimitBytes);
-      const body=raw?JSON.parse(raw):{};
-      const voice=safeString(body.voice,40);
-      const instructions=safeString(body.instructions,4000);
-      const clientSecret=await requestOpenAIRealtimeClientSecret({voice,instructions});
-      const session=clientSecret&&clientSecret.session&&typeof clientSecret.session==="object"
-        ?{
-          type:safeString(clientSecret.session.type,40),
-          model:safeString(clientSecret.session.model,80),
-          audio:clientSecret.session.audio&&typeof clientSecret.session.audio==="object"
-            ?{
-              output:clientSecret.session.audio.output&&typeof clientSecret.session.audio.output==="object"
-                ?{voice:safeString(clientSecret.session.audio.output.voice,40)}
-                :undefined,
-            }
-            :undefined,
-        }
-        :undefined;
-      sendJson(res,200,{
-        ok:true,
-        value:safeString(clientSecret&&clientSecret.value,320),
-        expiresAt:Number.isFinite(Number(clientSecret&&clientSecret.expires_at))
-          ?Math.max(0,Math.trunc(Number(clientSecret.expires_at)))
-          :0,
-        session,
-      });
-    }catch(error){
-      sendJson(res,resolveOpenAIRealtimeVoiceRequestErrorStatus(error),{
-        ok:false,
-        error:error&&error.message?error.message:String(error),
       });
     }
     return;
@@ -16716,7 +16251,7 @@ async function requestHandler(req,res){
   }
 
   if(req.method==="GET"){
-    serveStaticFile(req,res,pathname);
+    appPlatformReadSurface.serveStaticFile(req,res,pathname);
     return;
   }
 
@@ -16958,8 +16493,8 @@ module.exports={
     defaultIntegratedEnglishConversationAppRoot,
     legacyExternalEnglishConversationAppRoot,
     defaultExternalEnglishConversationAppRoot,
-    getEnglishConversationAppStaticSource,
-    buildStaticRequestTarget,
+    getEnglishConversationAppStaticSource:appPlatformReadSurface.getEnglishConversationAppStaticSource,
+    buildStaticRequestTarget:appPlatformReadSurface.buildStaticRequestTarget,
   },
   __codexModes:{
     automaticApprovalReviewFeatureName,

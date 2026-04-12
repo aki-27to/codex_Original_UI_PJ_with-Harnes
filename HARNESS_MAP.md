@@ -3,13 +3,15 @@
 Authority role: `navigation / entrypoint only`  
 Authority registry: `authority-registry.v1`
 
-Updated: 2026-04-11
+Updated: 2026-04-12
 
 ## 1) Purpose And Reading Order
 
 This file is the operator map for the harness after the front-door README.
 - Front-door identity and quick posture live in `README.md`.
 - Docs entrypoint and authority map live in `docs/README.md`.
+- Active overview-first explanation lives in `docs/AI_AGENT_HARNESS_DETAILED_DESIGN.html`.
+- Product-facing demo, capability, buyer-pain, positioning, comparison-boundary, and portability summaries live in `docs/DEMO_FLOWS.md`, `docs/CAPABILITY_SURFACE.md`, `docs/BUYER_PAIN_MAP.md`, `docs/PRODUCT_POSITIONING.md`, `docs/COMPARISON_BOUNDARY.md`, and `docs/PROVIDER_AND_PORTABILITY.md`.
 - Single-source authority precedence lives in `scripts/config/authority_registry.json`.
 - Policy is human-facing.
 - Contracts are machine-readable.
@@ -17,19 +19,26 @@ This file is the operator map for the harness after the front-door README.
 
 Recommended read order:
 1. `README.md`
-2. `docs/README.md`
-3. `docs/BEGINNER_PATH.md`
-4. `AGENTS.md`
-5. `docs/AGENT_OPERATING_RULES.md`
-6. `docs/CURRENT_ARCHITECTURE.md`
-7. `docs/HARNESS_APP_PLATFORM.md`
-8. `docs/EVIDENCE_CONTRACT.md`
-9. `scripts/config/harness_contract_spec.json`
-10. `scripts/config/task_outcome_contract.json`
-11. `scripts/config/planning_mode_contract.json`
-12. `scripts/config/assurance_depth_contract.json`
-13. `scripts/config/planning_decision_contract.schema.json`
-14. `scripts/config/eval_suite_default.json`
+2. `docs/AI_AGENT_HARNESS_DETAILED_DESIGN.html`
+3. `docs/README.md`
+4. `docs/BEGINNER_PATH.md`
+5. `docs/DEMO_FLOWS.md`
+6. `docs/CAPABILITY_SURFACE.md`
+7. `docs/BUYER_PAIN_MAP.md`
+8. `docs/PRODUCT_POSITIONING.md`
+9. `docs/COMPARISON_BOUNDARY.md`
+10. `docs/PROVIDER_AND_PORTABILITY.md`
+11. `AGENTS.md`
+12. `docs/AGENT_OPERATING_RULES.md`
+13. `docs/CURRENT_ARCHITECTURE.md`
+14. `docs/HARNESS_APP_PLATFORM.md`
+15. `docs/EVIDENCE_CONTRACT.md`
+16. `scripts/config/harness_contract_spec.json`
+17. `scripts/config/task_outcome_contract.json`
+18. `scripts/config/planning_mode_contract.json`
+19. `scripts/config/assurance_depth_contract.json`
+20. `scripts/config/planning_decision_contract.schema.json`
+21. `scripts/config/eval_suite_default.json`
 
 Core-vs-companion boundary:
 - Core harness authority stops at the governed runtime, its contracts, and its proof surfaces.

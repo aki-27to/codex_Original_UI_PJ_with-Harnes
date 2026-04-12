@@ -1,0 +1,23 @@
+{
+  "schema": "ReleaseDecision.v1",
+  "terminal_state": "RELEASE_APPROVED_WITH_ASSUMPTIONS",
+  "rationale": [
+    "turn_status=completed",
+    "task_outcome_status=COMPLETED",
+    "completed_default",
+    "review_severity=medium"
+  ],
+  "signoff_refs": [
+    "review_bundle.json",
+    "flow_trace_summary.json",
+    "review_load_breakdown.json"
+  ],
+  "blocker_list": [],
+  "waived_risks": [
+    "New logic or protocol-sensitive behavior requires dedicated verification before signoff."
+  ],
+  "remaining_conditions": [],
+  "replay_bundle_refs": [
+    "019cd29a-09de-7670-8c38-eade454f7cb2"
+  ]
+}

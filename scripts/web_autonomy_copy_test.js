@@ -24,6 +24,26 @@ assert.ok(
   "guide must mention the standalone English conversation launcher port"
 );
 assert.ok(
+  guideHtml.includes("Delegated implementation"),
+  "guide must expose delegated implementation as a visible job"
+);
+assert.ok(
+  guideHtml.includes("Governed review / release decision"),
+  "guide must expose governed review / release decision as a visible job"
+);
+assert.ok(
+  guideHtml.includes("Long-horizon continuity / bounded improvement"),
+  "guide must expose long-horizon continuity / bounded improvement as a visible job"
+);
+assert.ok(
+  guideHtml.includes("broad runtime shell"),
+  "guide must guard the wrong comparison axis"
+);
+assert.ok(
+  guideHtml.includes("adoptability") && guideHtml.includes("release honesty") && guideHtml.includes("auditability"),
+  "guide must present the correct comparison axis"
+);
+assert.ok(
   /CODEX_REQUEST_USER_INPUT_POLICY=auto-default/.test(readme),
   "README must document the launcher default as auto-default"
 );

@@ -1,59 +1,158 @@
 # BEGINNER_PATH
 
-この repo を最短で理解するための 1 ページです。
+This is the shortest path to understanding the repo in about five minutes.
 
-## 1) まず何者か
+If you want a quick overview before the canonical front door,
+open `AI_AGENT_HARNESS_DETAILED_DESIGN.html` first and then come back here.
 
-これは governed harness / agent OS です。
+## 0) Decide If This Repo Is Even For You
 
-- 主経路は `POST /api/exec`
-- 評価と昇格は `POST /api/eval/run`
-- `agi_v1` は既存 eval flow の extension-only profile
+Use this repo if your first concern is:
 
-単なる narrow app ではなく、AI 実行、証拠、評価、release decision をまとめて扱う repo です。
+- whether AI-produced work is actually adoptable
+- whether autonomous execution stays inside fixed authority boundaries
+- whether a reviewer can audit why the system thinks release is safe
 
-## 2) どこが truth source か
+Do not start here if your first concern is:
 
-まず見る場所:
-- ルール: `../AGENTS.md`
-- 全体像: `../HARNESS_MAP.md`
-- 今の設計: `CURRENT_ARCHITECTURE.md`
-- 証拠条件: `EVIDENCE_CONTRACT.md`
-- 機械可読 contract: `../scripts/config/`
+- provider count
+- gateway breadth
+- scheduler-first convenience
+- "broadest shell" optics
 
-迷ったら、narrative doc だけで決めず、machine-readable contract と runtime proof も見ます。
+## 1) What This Repo Is
 
-## 3) 実行されたら何を見るか
+This repo is a governed harness and governed autonomous worker runtime.
 
-- 直近の operator summary: `logs/current/`
-- proof / signoff bundle: `logs/bundles/`
-- intentional artifacts: `output/`
-- transient local material: `runtime/`
+Its center of gravity is not "the broadest possible agent shell."
+Its center of gravity is:
 
-覚え方:
-- `logs/` = governed evidence
-- `output/` = intentional artifacts
-- `runtime/` = transient local material
+- fixed authority boundaries
+- adoption-ready outcomes
+- evidence-first release judgment
+- fail-closed escalation
+- public/auditable output surfaces
 
-## 4) 実行の流れ
+The two primary runtime routes are:
 
-1. 依頼が UI か app surface から入る
-2. Harness が `POST /api/exec` で実行する
-3. 実行結果の要約が `logs/current/` に出る
-4. 必要なら `POST /api/eval/run` で eval / promotion を回す
-5. release decision は evidence と contract から決まる
+- execution: `POST /api/exec`
+- evaluation and release judgment: `POST /api/eval/run`
 
-## 5) 最初に触るコマンド
+## 2) What To Open First
 
-- 起動: `../start_codex_ui.bat`
-- UI: `http://127.0.0.1:57525`
-- コマンド一覧: `npm run help:scripts`
-- public regression: `npm run regression:public`
-- repo quality gate: `npm run test:repo-quality`
+1. `../README.md`
+2. `DEMO_FLOWS.md`
+3. `CAPABILITY_SURFACE.md`
+4. `BUYER_PAIN_MAP.md`
+5. `PRODUCT_POSITIONING.md`
+6. `COMPARISON_BOUNDARY.md`
+7. `PROVIDER_AND_PORTABILITY.md`
+8. `../AGENTS.md`
+9. `CURRENT_ARCHITECTURE.md`
+10. `EVIDENCE_CONTRACT.md`
+11. `../HARNESS_MAP.md`
 
-## 6) 迷ったら
+Read them in that order if you only need the shortest usable mental model.
 
-- app の話か、harness core の話かを先に分ける
-- companion detail は core architecture に混ぜない
-- `output/` に置くべきか、`runtime/` に逃がすべきかを先に決める
-- owner-local defaults と universal guidance を混同しない
+That order tells you:
+
+1. what it is
+2. which three demo jobs to watch first
+3. what it can visibly do
+4. why anyone should want it
+5. how to frame it against broad runtime products
+6. what its portability claim really is
+
+## 3) What To Run First
+
+Windows local path:
+
+1. `../start_codex_ui.bat`
+2. Open `http://127.0.0.1:57525`
+3. Run `npm run help:scripts`
+
+Generic Node path:
+
+1. `npm start`
+2. Open `http://127.0.0.1:57525`
+3. Run `npm run help:scripts`
+
+## 3.1) What To Click First
+
+When the UI opens, start with:
+
+1. `Overview`
+2. `Capabilities`
+3. `Demo Flow`
+
+That is the fastest way to answer:
+
+- does this runtime actually do work?
+- what can it do right now?
+- which fixed product jobs should I try first?
+- where do memory, continuity, browser recovery, and self-improvement show up?
+
+## 4) Where Truth Shows Up At Runtime
+
+- latest operator/runtime surface: `logs/current/`
+- intentional public/operator artifacts: `output/`
+- local-only transient material: `runtime/`
+
+Useful first stops:
+
+- `output/agi_readiness/goal_completion_status.md`
+- `output/governance_public/bundle_overview.md`
+- `output/memory_public/summary.md`
+
+## 5) What Success Looks Like Here
+
+The repo does not treat a procedurally neat run as enough.
+
+The target is an adoption-ready outcome that is:
+
+- aligned to the literal request
+- aligned to latent user intent
+- inside authority and safety boundaries
+- strong enough to ship or to block honestly
+- supported by evidence
+
+## 6) What To Ignore At First
+
+Do not start by trying to read every script or every changelog entry.
+
+You can ignore these on the first pass:
+
+- deep archive material
+- long historical implementation logs
+- every program-phase command in `package.json`
+
+Start with the front door, then the active runtime path, then the proof surfaces.
+
+## 7) Fast Mental Model
+
+Use this shorthand:
+
+- `README.md`
+  - product identity
+- `AGENTS.md`
+  - runtime execution constitution
+- `CURRENT_ARCHITECTURE.md`
+  - active system shape
+- `EVIDENCE_CONTRACT.md`
+  - what claims need to be believable
+- `logs/current/`
+  - what the harness thinks is happening now
+- `output/`
+  - what the repo intentionally exposes
+
+## 8) Common Commands
+
+- `npm run help:scripts`
+- `npm run test:repo-quality`
+- `npm run regression:public`
+- `npm run artifact:governance-public`
+- `npm run artifact:memory-public`
+
+## 9) One-Sentence Positioning
+
+If Hermes-style products optimize first for breadth, this repo optimizes first for governed adoption.

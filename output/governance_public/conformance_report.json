@@ -1,0 +1,654 @@
+{
+  "schema": "conformance-report.v1",
+  "generatedAt": "2026-03-09T12:45:14.080Z",
+  "requestFrame": {
+    "schema": "RequestFrame.v1",
+    "user_goal": "Complete one signoff-assurance maintenance task now.",
+    "expected_deliverable": [
+      "Implementation is explicitly requested now. Requirements are fixed. Do not switch to proposal-only mode and do not ask follow-up questions.",
+      "Use the default parent orchestration path.",
+      "Delegate the implementation edits to infra_worker.",
+      "Request independent read-only reviewer and tester checks before finalizing.",
+      "Change logs/bundles/signoff/signoff-2026-03-09T12-31-59-842Z-24dd95/raw/scripts/config/signoff_sample_target.txt, docs/EVIDENCE_CONTRACT.md, docs/CURRENT_ARCHITECTURE.md, and docs/ARCHITECTURE_CHANGELOG.md.",
+      "Do not modify any other file and do not revert unrelated edits.",
+      "Use apply_patch for file edits.",
+      "The implementation specialist must report using this exact header format:",
+      "Owned paths:",
+      "`<absolute path>`",
+      "In logs/bundles/signoff/signoff-2026-03-09T12-31-59-842Z-24dd95/raw/scripts/config/signoff_sample_target.txt, replace the single line `gate: pending` with `gate: signed`.",
+      "In docs/EVIDENCE_CONTRACT.md, add this exact bullet if it is not already present: - `SIGNOFF_ASSURANCE` runs should surface reviewer/tester/doc-sync status in `review_load_breakdown.json` for operator signoff.",
+      "In docs/CURRENT_ARCHITECTURE.md, add this exact architecture bullet if it is not already present: - `SIGNOFF_ASSURANCE` sample runs keep planning depth, assurance depth, reviewer/tester execution, and doc-sync evidence co-located in signoff",
+      "In docs/ARCHITECTURE_CHANGELOG.md, add this exact changelog line if it is not already present: - 2026-03-08: Added signoff assurance sample evidence wiring for planning/assurance trace and doc-sync bundle checks."
+    ],
+    "constraints": [],
+    "acceptance_criteria": [
+      "The target file contains `gate: signed`.",
+      "The evidence contract bullet is present.",
+      "The architecture bullet is present.",
+      "The changelog line is present.",
+      "Reviewer evidence is present and the reviewer remains read-only.",
+      "Tester evidence is present and includes pass/fail verification.",
+      "No follow-up questions are required.",
+      "Final reply must be exactly: SIGNOFF_TASK_OK logs/bundles/signoff/signoff-2026-03-09T12-31-59-842Z-24dd95/raw/scripts/config/signoff_sample_target.txt"
+    ],
+    "ambiguity_points": [],
+    "risk_class": "signoff_critical",
+    "external_dependencies": [],
+    "assumption_policy": [
+      "Any scope outside the explicit goal should stay proposal-only unless the prompt states otherwise.",
+      "Unresolved ambiguity must not be auto-answered by the harness."
+    ],
+    "requested_release_posture": "SIGNOFF_ASSURANCE"
+  },
+  "routingDecision": {
+    "schema": "RoutingDecision.v1",
+    "lane": "DELIVERY",
+    "planning_depth": "STANDARD_PLANNING",
+    "assurance_depth": "SIGNOFF_ASSURANCE",
+    "dispatch_graph": {
+      "nodes": [
+        {
+          "id": "parent",
+          "role": "default"
+        },
+        {
+          "id": "dispatch-1-backend_worker",
+          "role": "backend_worker"
+        },
+        {
+          "id": "dispatch-2-infra_worker",
+          "role": "infra_worker"
+        }
+      ],
+      "edges": [
+        {
+          "from": "parent",
+          "to": "dispatch-1-backend_worker",
+          "owned_paths": [
+            "scripts/",
+            "server.js"
+          ]
+        },
+        {
+          "from": "parent",
+          "to": "dispatch-2-infra_worker",
+          "owned_paths": [
+            "docs/",
+            "scripts/config/"
+          ]
+        }
+      ]
+    },
+    "agent_assignments": [
+      {
+        "dispatch_id": "dispatch-1-backend_worker",
+        "actor": "backend_worker",
+        "owned_paths": [
+          "scripts/",
+          "server.js"
+        ],
+        "task_summary": "Own server-side orchestration, policies, and runtime behavior changes."
+      },
+      {
+        "dispatch_id": "dispatch-2-infra_worker",
+        "actor": "infra_worker",
+        "owned_paths": [
+          "docs/",
+          "scripts/config/"
+        ],
+        "task_summary": "Own contracts, docs sync, runtime observability, and signoff-facing evidence updates."
+      }
+    ],
+    "required_evidence_classes": [
+      "implementation",
+      "verification",
+      "runtime",
+      "documentation",
+      "risk",
+      "requirement_contract",
+      "dispatch_plan",
+      "evidence_manifest",
+      "stage_timeline",
+      "flow_trace_summary",
+      "review_load_breakdown",
+      "reviewer_summary",
+      "tester_summary",
+      "signoff_bundle",
+      "dedicated_test_run"
+    ],
+    "review_requirements": {
+      "reviewer_required": 1,
+      "tester_required": 1,
+      "signoff_required": 1,
+      "dedicated_tests_required": 1
+    },
+    "routing_rationale": [
+      "ambiguity=2",
+      "acceptance_uncertainty=0",
+      "novelty=2",
+      "external_dependency=0",
+      "openQuestions=0",
+      "acceptanceClarity=high",
+      "specialistBoundaries=4",
+      "approvalBoundaryTouched=no",
+      "overDeliveryRisk=medium",
+      "userDecisionRequired=no",
+      "assumptionDependence=low",
+      "existingSpecClarity=high",
+      "changeScopeClarity=medium",
+      "blast_radius=2",
+      "irreversibility=0",
+      "release_criticality=2"
+    ],
+    "planning_score": {
+      "ambiguity": 2,
+      "acceptance_uncertainty": 0,
+      "novelty": 2,
+      "external_dependency": 0,
+      "total": 4,
+      "rationale": [
+        "ambiguity=2",
+        "acceptance_uncertainty=0",
+        "novelty=2",
+        "external_dependency=0"
+      ]
+    },
+    "assurance_score": {
+      "blast_radius": 2,
+      "irreversibility": 0,
+      "release_criticality": 2,
+      "evidence_burden": 2,
+      "total": 6,
+      "rationale": [
+        "blast_radius=2",
+        "irreversibility=0",
+        "release_criticality=2",
+        "evidence_burden=2"
+      ]
+    }
+  },
+  "taskOutcomes": {
+    "schema": "TaskOutcomeList.v1",
+    "task_outcomes": [
+      {
+        "task_id": "019cd29a-f8a4-7da3-a69a-c2736093d787-1",
+        "actor": "019cd29a-f8a4-7da3-a69a-c2736093d787",
+        "status": "COMPLETED",
+        "claimed_work": [],
+        "changed_artifacts": [],
+        "evidence_refs": [
+          "evidence_manifest.json",
+          "flow_trace_summary.json",
+          "review_load_breakdown.json",
+          "release_decision.json"
+        ],
+        "unresolved_items": [],
+        "acceptance_coverage": [
+          "ac-1",
+          "ac-2",
+          "ac-3",
+          "ac-4",
+          "ac-5",
+          "ac-6",
+          "ac-7",
+          "ac-8"
+        ],
+        "handoff_readiness": "ready_for_review"
+      },
+      {
+        "task_id": "019cd29d-26f3-71d0-90e2-4ca0a908b341-2",
+        "actor": "019cd29d-26f3-71d0-90e2-4ca0a908b341",
+        "status": "COMPLETED",
+        "claimed_work": [],
+        "changed_artifacts": [],
+        "evidence_refs": [
+          "evidence_manifest.json",
+          "flow_trace_summary.json",
+          "review_load_breakdown.json",
+          "release_decision.json"
+        ],
+        "unresolved_items": [],
+        "acceptance_coverage": [
+          "ac-1",
+          "ac-2",
+          "ac-3",
+          "ac-4",
+          "ac-5",
+          "ac-6",
+          "ac-7",
+          "ac-8"
+        ],
+        "handoff_readiness": "ready_for_review"
+      },
+      {
+        "task_id": "019cd29d-3bd2-7ff3-bc7b-08d80dafabcc-3",
+        "actor": "019cd29d-3bd2-7ff3-bc7b-08d80dafabcc",
+        "status": "COMPLETED",
+        "claimed_work": [],
+        "changed_artifacts": [],
+        "evidence_refs": [
+          "evidence_manifest.json",
+          "flow_trace_summary.json",
+          "review_load_breakdown.json",
+          "release_decision.json"
+        ],
+        "unresolved_items": [],
+        "acceptance_coverage": [
+          "ac-1",
+          "ac-2",
+          "ac-3",
+          "ac-4",
+          "ac-5",
+          "ac-6",
+          "ac-7",
+          "ac-8"
+        ],
+        "handoff_readiness": "ready_for_review"
+      },
+      {
+        "task_id": "unknown-4",
+        "actor": "unknown",
+        "status": "COMPLETED",
+        "claimed_work": [
+          "SIGNOFF_TASK_OK logs/bundles/signoff/signoff-2026-03-09T12-31-59-842Z-24dd95/raw/scripts/config/signoff_sample_target.txt",
+          "Owned paths:\n- logs\\bundles\\signoff\\signoff-2026-03-09T12-31-59-842Z-24dd95\\raw\\scripts\\config\\signoff_sample_target.txt\n- docs\\EVIDENCE_CONTRACT.md\n- docs\\CURRENT_",
+          "Findings: none\nRead-only: yes\nAcceptance: the scoped acceptance criteria appear satisfied in the current file state.",
+          "- `Read-only: yes`\n- `gate signed: PASS`\n- `evidence contract bullet present: PASS`\n- `architecture bullet present: PASS`\n- `changelog line present: PASS`\n- `overall: PASS`"
+        ],
+        "changed_artifacts": [
+          "logs/bundles/signoff/signoff-2026-03-09T12-31-59-842Z-24dd95/raw/scripts/config/signoff_sample_target.txt",
+          "docs/EVIDENCE_CONTRACT.md",
+          "docs/CURRENT_ARCHITECTURE.md",
+          "docs/ARCHITECTURE_CHANGELOG.md"
+        ],
+        "evidence_refs": [
+          "SIGNOFF_TASK_OK logs/bundles/signoff/signoff-2026-03-09T12-31-59-842Z-24dd95/raw/scripts/config/signoff_sample_target.txt",
+          "Owned paths:\n- logs\\bundles\\signoff\\signoff-2026-03-09T12-31-59-842Z-24dd95\\raw\\scripts\\config\\signoff_sample_target.txt\n- docs\\EVIDENCE_CONTRACT.md\n- docs\\CURRENT_",
+          "Findings: none\nRead-only: yes\nAcceptance: the scoped acceptance criteria appear satisfied in the current file state.",
+          "- `Read-only: yes`\n- `gate signed: PASS`\n- `evidence contract bullet present: PASS`\n- `architecture bullet present: PASS`\n- `changelog line present: PASS`\n- `overall: PASS`",
+          "evidence_manifest.json",
+          "flow_trace_summary.json",
+          "review_load_breakdown.json",
+          "release_decision.json"
+        ],
+        "unresolved_items": [],
+        "acceptance_coverage": [
+          "ac-1",
+          "ac-2",
+          "ac-3",
+          "ac-4",
+          "ac-5",
+          "ac-6",
+          "ac-7",
+          "ac-8"
+        ],
+        "handoff_readiness": "ready_for_review"
+      },
+      {
+        "task_id": "019cd29a-0ad3-72d2-957c-30870c52eaba",
+        "actor": "default",
+        "status": "COMPLETED",
+        "claimed_work": [
+          "Aggregate child outcomes into review and release decision artifacts."
+        ],
+        "changed_artifacts": [
+          "logs/bundles/signoff/signoff-2026-03-09T12-31-59-842Z-24dd95/raw/scripts/config/signoff_sample_target.txt",
+          "docs/EVIDENCE_CONTRACT.md",
+          "docs/CURRENT_ARCHITECTURE.md"
+        ],
+        "evidence_refs": [
+          "evidence_manifest.json",
+          "flow_trace_summary.json",
+          "review_load_breakdown.json",
+          "release_decision.json"
+        ],
+        "unresolved_items": [],
+        "acceptance_coverage": [
+          "ac-1",
+          "ac-2",
+          "ac-3",
+          "ac-4",
+          "ac-5",
+          "ac-6",
+          "ac-7",
+          "ac-8"
+        ],
+        "handoff_readiness": "ready_for_release_decision"
+      }
+    ]
+  },
+  "reviewBundle": {
+    "schema": "ReviewBundle.v1",
+    "acceptance_coverage_matrix": [
+      {
+        "criterion_id": "ac-1",
+        "title": "The target file contains `gate: signed`.",
+        "status": "PASS",
+        "evidence": [
+          "logs/bundles/signoff/signoff-2026-03-09T12-31-59-842Z-24dd95/raw/scripts/config/signoff_sample_target.txt",
+          "docs/EVIDENCE_CONTRACT.md",
+          "docs/CURRENT_ARCHITECTURE.md"
+        ]
+      },
+      {
+        "criterion_id": "ac-2",
+        "title": "The evidence contract bullet is present.",
+        "status": "PASS",
+        "evidence": [
+          "evidence_manifest.json",
+          "stage_timeline.json",
+          "flow_trace_summary.json"
+        ]
+      },
+      {
+        "criterion_id": "ac-3",
+        "title": "The architecture bullet is present.",
+        "status": "PASS",
+        "evidence": [
+          "docs/CURRENT_ARCHITECTURE.md",
+          "docs/ARCHITECTURE_CHANGELOG.md"
+        ]
+      },
+      {
+        "criterion_id": "ac-4",
+        "title": "The changelog line is present.",
+        "status": "PASS",
+        "evidence": [
+          "docs/CURRENT_ARCHITECTURE.md",
+          "docs/ARCHITECTURE_CHANGELOG.md"
+        ]
+      },
+      {
+        "criterion_id": "ac-5",
+        "title": "Reviewer evidence is present and the reviewer remains read-only.",
+        "status": "PASS",
+        "evidence": [
+          "unknown"
+        ]
+      },
+      {
+        "criterion_id": "ac-6",
+        "title": "Tester evidence is present and includes pass/fail verification.",
+        "status": "PASS",
+        "evidence": [
+          "10"
+        ]
+      },
+      {
+        "criterion_id": "ac-7",
+        "title": "No follow-up questions are required.",
+        "status": "PASS",
+        "evidence": [
+          "logs/bundles/signoff/signoff-2026-03-09T12-31-59-842Z-24dd95/raw/scripts/config/signoff_sample_target.txt",
+          "docs/EVIDENCE_CONTRACT.md",
+          "docs/CURRENT_ARCHITECTURE.md"
+        ]
+      },
+      {
+        "criterion_id": "ac-8",
+        "title": "Final reply must be exactly: SIGNOFF_TASK_OK logs/bundles/signoff/signoff-2026-03-09T12-31-59-842Z-24dd95/raw/scripts/config/signoff_sample_target.txt",
+        "status": "PASS",
+        "evidence": [
+          "10"
+        ]
+      }
+    ],
+    "reviewer_findings": [
+      {
+        "actor": "unknown",
+        "note": "SIGNOFF_TASK_OK logs/bundles/signoff/signoff-2026-03-09T12-31-59-842Z-24dd95/raw/scripts/config/signoff_sample_target.txt"
+      },
+      {
+        "actor": "unknown",
+        "note": "Owned paths:\n- logs\\bundles\\signoff\\signoff-2026-03-09T12-31-59-842Z-24dd95\\raw\\scripts\\config\\signoff_sample_target.txt\n- docs\\EVIDENCE_CONTRACT.md\n- docs\\CURRENT_"
+      },
+      {
+        "actor": "unknown",
+        "note": "Findings: none\nRead-only: yes\nAcceptance: the scoped acceptance criteria appear satisfied in the current file state."
+      },
+      {
+        "actor": "unknown",
+        "note": "- `Read-only: yes`\n- `gate signed: PASS`\n- `evidence contract bullet present: PASS`\n- `architecture bullet present: PASS`\n- `changelog line present: PASS`\n- `overall: PASS`"
+      }
+    ],
+    "severity": "medium",
+    "residual_risk": [
+      "New logic or protocol-sensitive behavior requires dedicated verification before signoff."
+    ],
+    "missing_evidence": [],
+    "pass_fail_per_criterion": [
+      {
+        "criterion_id": "ac-1",
+        "status": "PASS"
+      },
+      {
+        "criterion_id": "ac-2",
+        "status": "PASS"
+      },
+      {
+        "criterion_id": "ac-3",
+        "status": "PASS"
+      },
+      {
+        "criterion_id": "ac-4",
+        "status": "PASS"
+      },
+      {
+        "criterion_id": "ac-5",
+        "status": "PASS"
+      },
+      {
+        "criterion_id": "ac-6",
+        "status": "PASS"
+      },
+      {
+        "criterion_id": "ac-7",
+        "status": "PASS"
+      },
+      {
+        "criterion_id": "ac-8",
+        "status": "PASS"
+      }
+    ],
+    "recommended_release_state": "RELEASE_APPROVED_WITH_ASSUMPTIONS"
+  },
+  "releaseDecision": {
+    "schema": "ReleaseDecision.v1",
+    "terminal_state": "RELEASE_APPROVED_WITH_ASSUMPTIONS",
+    "rationale": [
+      "turn_status=completed",
+      "task_outcome_status=COMPLETED",
+      "completed_default",
+      "review_severity=medium"
+    ],
+    "signoff_refs": [
+      "evidence_manifest.json",
+      "flow_trace_summary.json",
+      "review_load_breakdown.json",
+      "release_decision.json"
+    ],
+    "blocker_list": [],
+    "waived_risks": [
+      "New logic or protocol-sensitive behavior requires dedicated verification before signoff."
+    ],
+    "remaining_conditions": [],
+    "replay_bundle_refs": [
+      "019cd29a-09de-7670-8c38-eade454f7cb2"
+    ]
+  },
+  "discoveryOutcome": {
+    "schema": "DiscoveryOutcome.v1",
+    "open_questions": [],
+    "assumptions": [
+      "Any scope outside the explicit goal should stay proposal-only unless the prompt states otherwise."
+    ],
+    "candidate_hypotheses": [],
+    "disconfirming_evidence": [
+      "New logic or protocol-sensitive behavior requires dedicated verification before signoff."
+    ],
+    "decision_boundary": [],
+    "non_goals": [],
+    "recommended_next_path": "Proceed with DELIVERY.",
+    "confidence_rationale": [
+      "ambiguity=2",
+      "acceptance_uncertainty=0",
+      "novelty=2",
+      "external_dependency=0",
+      "openQuestions=0",
+      "acceptanceClarity=high",
+      "specialistBoundaries=4",
+      "approvalBoundaryTouched=no"
+    ]
+  },
+  "invariants": [
+    {
+      "id": "control.parent_no_material_implementation",
+      "plane": "control",
+      "statement": "Parent must not perform material implementation.",
+      "status": "pass"
+    },
+    {
+      "id": "control.material_change_maps_to_dispatch",
+      "plane": "control",
+      "statement": "Every material change must map to a dispatched child task.",
+      "status": "pass"
+    },
+    {
+      "id": "control.routing_before_child_execution",
+      "plane": "control",
+      "statement": "RoutingDecision must exist before child execution.",
+      "status": "pass"
+    },
+    {
+      "id": "control.retired_worker_not_runtime",
+      "plane": "control",
+      "statement": "Retired worker must not be used in normal runtime.",
+      "status": "pass"
+    },
+    {
+      "id": "execution.blocked_user_input_posture",
+      "plane": "execution",
+      "statement": "Blocked request-user-input posture must never be violated.",
+      "status": "pass"
+    },
+    {
+      "id": "execution.task_outcome_required",
+      "plane": "execution",
+      "statement": "No child task may complete without TaskOutcome.",
+      "status": "pass"
+    },
+    {
+      "id": "execution.delivery_evidence_per_material_claim",
+      "plane": "execution",
+      "statement": "DELIVERY runs must have evidence for each material claim.",
+      "status": "pass"
+    },
+    {
+      "id": "execution.discovery_boundary_outputs",
+      "plane": "execution",
+      "statement": "DISCOVERY runs must emit assumptions, open questions, and decision boundary.",
+      "status": "pass"
+    },
+    {
+      "id": "assurance.review_bundle_required",
+      "plane": "assurance",
+      "statement": "No release decision without ReviewBundle.",
+      "status": "pass"
+    },
+    {
+      "id": "assurance.signoff_requires_evidence_classes",
+      "plane": "assurance",
+      "statement": "No signoff release without required evidence classes.",
+      "status": "fail"
+    },
+    {
+      "id": "assurance.depth_requirements_satisfied",
+      "plane": "assurance",
+      "statement": "Assurance depth requirements must be satisfied.",
+      "status": "pass"
+    },
+    {
+      "id": "assurance.business_terminal_state_only",
+      "plane": "assurance",
+      "statement": "Top-level terminal state must be a business decision state, not generic completed.",
+      "status": "pass"
+    },
+    {
+      "id": "audit.replay_lineage_reconstructible",
+      "plane": "audit",
+      "statement": "Replay lineage must be reconstructible.",
+      "status": "pass"
+    },
+    {
+      "id": "audit.blockers_and_risk_explicit",
+      "plane": "audit",
+      "statement": "Run must expose blockers and residual risks explicitly.",
+      "status": "pass"
+    },
+    {
+      "id": "audit.acceptance_coverage_inspectable",
+      "plane": "audit",
+      "statement": "Acceptance coverage must be inspectable.",
+      "status": "pass"
+    }
+  ],
+  "violatedInvariants": [
+    "assurance.signoff_requires_evidence_classes"
+  ],
+  "evidenceContractRef": "scripts/config/evidence_contract.json",
+  "operatorView": {
+    "schema": "operator-view-summary.v1",
+    "current_phase": "Release / Close",
+    "current_lane": "DELIVERY",
+    "planning_depth": "STANDARD_PLANNING",
+    "assurance_depth": "SIGNOFF_ASSURANCE",
+    "dispatch_graph": {
+      "nodes": [
+        {
+          "id": "parent",
+          "role": "default"
+        },
+        {
+          "id": "dispatch-1-backend_worker",
+          "role": "backend_worker"
+        },
+        {
+          "id": "dispatch-2-infra_worker",
+          "role": "infra_worker"
+        }
+      ],
+      "edges": [
+        {
+          "from": "parent",
+          "to": "dispatch-1-backend_worker",
+          "owned_paths": [
+            "scripts/",
+            "server.js"
+          ]
+        },
+        {
+          "from": "parent",
+          "to": "dispatch-2-infra_worker",
+          "owned_paths": [
+            "docs/",
+            "scripts/config/"
+          ]
+        }
+      ]
+    },
+    "current_blockers": [],
+    "evidence_completeness": {
+      "missing_evidence_count": 0,
+      "acceptance_criteria_total": 8,
+      "acceptance_criteria_passed": 8
+    },
+    "residual_risk": [
+      "New logic or protocol-sensitive behavior requires dedicated verification before signoff."
+    ],
+    "release_state": "RELEASE_APPROVED_WITH_ASSUMPTIONS",
+    "violated_invariants": [
+      "assurance.signoff_requires_evidence_classes"
+    ],
+    "remaining_conditions_to_release": []
+  }
+}

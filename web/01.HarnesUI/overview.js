@@ -14,8 +14,13 @@ const elements = {
   heroPills: by("overviewHeroPills"),
   errorBanner: by("overviewErrorBanner"),
   metrics: by("overviewMetrics"),
+  jobScenarioGrid: by("jobScenarioGrid"),
+  capabilitySurfaceSummary: by("capabilitySurfaceSummary"),
+  capabilitySurfaceGrid: by("capabilitySurfaceGrid"),
+  demoFlowGrid: by("demoFlowGrid"),
   runtimePostureCard: by("runtimePostureCard"),
   guardrailCard: by("guardrailCard"),
+  stopBudgetCard: by("stopBudgetCard"),
   healthCard: by("healthCard"),
   topologySummary: by("topologySummary"),
   topologyParentLane: by("topologyParentLane"),
@@ -297,7 +302,7 @@ function factRowsHtml(entries) {
       `;
     });
   if (!items.length) {
-    return `<div class="overview-empty">表示できる項目がありません。</div>`;
+    return `<div class="overview-empty">Nothing to show yet.</div>`;
   }
   return `<div class="overview-fact-list">${items.join("")}</div>`;
 }
@@ -323,7 +328,7 @@ function itemListHtml(items, emptyText) {
       `;
     });
   if (!rows.length) {
-    return `<div class="overview-empty">${escapeHtml(emptyText || "表示できるデータがありません。")}</div>`;
+    return `<div class="overview-empty">${escapeHtml(emptyText || "Nothing to show yet.")}</div>`;
   }
   return `<div class="overview-list">${rows.join("")}</div>`;
 }
@@ -388,9 +393,17 @@ function renderHero(payload) {
   const topology = payload && payload.topology ? payload.topology : {};
   const signoff = payload && payload.evidence && payload.evidence.signoff ? payload.evidence.signoff.latest : null;
   const runtimeProof = payload && payload.evidence && payload.evidence.runtimeProof ? payload.evidence.runtimeProof.latest : null;
+  const latestTurn = runtime && runtime.latestTurn && typeof runtime.latestTurn === "object"
+    ? runtime.latestTurn
+    : health && health.latestTurn && typeof health.latestTurn === "object"
+      ? health.latestTurn
+      : {};
   const summaryText = [
+    "This page is not a generic shell dashboard.",
+    "Use it to answer three buyer questions: can the worker do real delegated work, can review trust the release call, and can long-running work resume without guesswork.",
     `Active runtime agent is ${runtimeActiveAgent(runtime)}.`,
     `Default exec agent is ${runtimeDefaultExecAgent(runtime)}.`,
+    `Latest task outcome is ${safeText(latestTurn.task_outcome_status, "unreported")}.`,
     `Guard mode is ${safeText(runtime.parentDispatchGuard && runtime.parentDispatchGuard.mode, "off")}.`,
     `${formatInteger(num(topology.summary && topology.summary.total, 0))} visible topology rows are grouped into parents, specialists, verification lanes, and retired artifacts.`,
     signoff && signoff.assertions && signoff.assertions.allPassed ? "Latest signoff bundle is PASS." : "Latest signoff bundle is not fully passing yet.",
@@ -402,6 +415,9 @@ function renderHero(payload) {
   }
   if (elements.heroPills) {
     const pills = [
+      tagHtml("compare on adoptability", "info"),
+      tagHtml("compare on release honesty", "info"),
+      tagHtml("compare on auditability", "info"),
       tagHtml(`full-utilization ${runtime.fullUtilization && runtime.fullUtilization.ready ? "ready" : "not-ready"}`, runtime.fullUtilization && runtime.fullUtilization.ready ? "ready" : "warn"),
       tagHtml(`request-user-input ${safeText(runtime.nonInteractiveUserInput && runtime.nonInteractiveUserInput.policy, "unknown")}`, toneForTaskOutcome(runtime.nonInteractiveUserInput && runtime.nonInteractiveUserInput.policy)),
       tagHtml(`parent-guard ${safeText(runtime.parentDispatchGuard && runtime.parentDispatchGuard.mode, "off")}`, toneForTaskOutcome(runtime.parentDispatchGuard && runtime.parentDispatchGuard.mode)),
@@ -417,56 +433,458 @@ function renderMetrics(payload) {
   const runtime = payload && payload.runtime ? payload.runtime : {};
   const topology = payload && payload.topology ? payload.topology : {};
   const evidence = payload && payload.evidence ? payload.evidence : {};
+  const iterationControl = runtime && runtime.iterationControl && typeof runtime.iterationControl === "object"
+    ? runtime.iterationControl
+    : {};
+  const skillPortfolio = payload && payload.skillPortfolio && typeof payload.skillPortfolio === "object"
+    ? payload.skillPortfolio
+    : {};
+  const outcomeSummary = skillPortfolio && skillPortfolio.outcomeSummary && typeof skillPortfolio.outcomeSummary === "object"
+    ? skillPortfolio.outcomeSummary
+    : {};
   const signoff = evidence.signoff && evidence.signoff.latest ? evidence.signoff.latest : null;
   const runtimeProof = evidence.runtimeProof && evidence.runtimeProof.latest ? evidence.runtimeProof.latest : null;
   const recentRuns = payload && payload.eval ? toArr(payload.eval.recentRuns) : [];
   const latestRun = recentRuns[0] || null;
   const externalLearning = runtime && runtime.externalLearning ? runtime.externalLearning : {};
+  const selfImprovement = externalLearning && externalLearning.selfImprovement && typeof externalLearning.selfImprovement === "object"
+    ? externalLearning.selfImprovement
+    : {};
+  const manualCaptureSummary = normalizeManualCaptureSummary(payload, externalLearning, selfImprovement);
   const cards = [
     {
-      label: "Active Agent",
+      label: "Delegated Worker",
       value: runtimeActiveAgent(runtime),
       detail: `default exec ${runtimeDefaultExecAgent(runtime)} / session ${safeText(runtime.sessionRef, "none")} / profile ${safeText(runtime.executionProfile, "unknown")}`,
       tags: [{ label: `agents ${formatInteger(num(runtime.agentCount, 0))}`, tone: "info" }],
     },
     {
-      label: "Full Utilization",
+      label: "Execution Posture",
       value: runtime.fullUtilization && runtime.fullUtilization.ready ? "READY" : "CHECK",
       detail: `request-user-input ${safeText(runtime.nonInteractiveUserInput && runtime.nonInteractiveUserInput.policy, "unknown")} / shadow ${runtime.adversarialShadow && runtime.adversarialShadow.enabled ? "on" : "off"}`,
       tags: [{ label: safeText(runtime.parentDispatchGuard && runtime.parentDispatchGuard.mode, "off"), tone: toneForTaskOutcome(runtime.parentDispatchGuard && runtime.parentDispatchGuard.mode) }],
     },
     {
-      label: "Topology Rows",
+      label: "Stop Intelligence",
+      value: `${formatInteger(num(iterationControl.budgets && iterationControl.budgets.stepBudget, 0))} steps`,
+      detail: `delta ${formatPercent(num(iterationControl.improvementDeltaThreshold, 0))} / residual<=${formatInteger(num(iterationControl.riskThresholds && iterationControl.riskThresholds.maxResidualRiskItems, 0))} / token ${formatInteger(num(iterationControl.budgets && iterationControl.budgets.tokenBudget, 0))}`,
+      tags: [{ label: `fail-closed ${formatInteger(toArr(iterationControl.failClosedConditions).length)}`, tone: "warn" }],
+    },
+    {
+      label: "Specialist Depth",
       value: formatInteger(num(topology.summary && topology.summary.total, 0)),
       detail: `${formatInteger(num(topology.summary && topology.summary.parents, 0))} parent / ${formatInteger(num(topology.summary && topology.summary.specialists, 0))} specialist / ${formatInteger(num(topology.summary && topology.summary.verification, 0))} verification`,
       tags: [{ label: `${formatInteger(num(topology.summary && topology.summary.active, 0))} active`, tone: "info" }],
     },
     {
-      label: "Latest Eval",
+      label: "Release Evidence",
       value: latestRun ? `${formatInteger(num(latestRun.passedCases, 0))}/${formatInteger(num(latestRun.sampleSize, 0))}` : "--",
       detail: latestRun ? `${safeText(latestRun.suiteId, "suite")} / score ${formatPercent(latestRun.scoreRate)}` : "No eval history yet.",
       tags: [{ label: latestRun ? safeText(latestRun.variantLabel, "variant") : "history", tone: "neutral" }],
     },
     {
-      label: "Runtime Proof",
+      label: "Audit Trail",
       value: runtimeProof ? formatInteger(num(runtimeProof.liveExec && runtimeProof.liveExec.dispatchSuccessCount, 0)) : "--",
       detail: runtimeProof ? `dispatch successes / ${safeText(runtimeProof.runtime && runtimeProof.runtime.parentDispatchGuardMode, "off")}` : "No proof bundle.",
       tags: [{ label: runtimeProof ? safeText(runtimeProof.name, "proof") : "missing", tone: runtimeProof ? "info" : "warn" }],
     },
     {
-      label: "Latest Signoff",
+      label: "Ship Signal",
       value: signoff && signoff.assertions && signoff.assertions.allPassed ? "PASS" : "PENDING",
       detail: signoff ? `${formatInteger(num(signoff.coreHarnessWorkflow && signoff.coreHarnessWorkflow.passedCases, 0))}/${formatInteger(num(signoff.coreHarnessWorkflow && signoff.coreHarnessWorkflow.sampleSize, 0))} suite cases passed` : "No signoff bundle.",
       tags: [{ label: signoff ? safeText(signoff.name, "signoff") : "missing", tone: signoff ? "pass" : "warn" }],
     },
     {
-      label: "External Learning",
+      label: "Skill Economy",
+      value: `${formatInteger(num(skillPortfolio.promotionCandidateCount, 0))} ready`,
+      detail: `sampled ${formatInteger(num(outcomeSummary.sampledSkills, 0))} / success ${formatPercent(num(outcomeSummary.overallSuccessRate, 0))} / skill notes ${formatInteger(num(manualCaptureSummary && manualCaptureSummary.skillCandidateCount, 0))}`,
+      tags: [{ label: `lessons ${formatInteger(num(manualCaptureSummary && manualCaptureSummary.entryCount, 0))}`, tone: "info" }],
+    },
+    {
+      label: "Improvement Queue",
       value: safeText(externalLearning.lastStatus, externalLearning.enabled ? "IDLE" : "DISABLED"),
       detail: `${formatInteger(num(externalLearning.trackedArticles, 0))} articles / ${formatInteger(num(externalLearning.pendingProposalCount, 0))} pending proposals`,
       tags: [{ label: externalLearning.enabled ? "official-blog" : "paused", tone: externalLearning.enabled ? "info" : "warn" }],
     },
   ];
   elements.metrics.innerHTML = cards.map(metricCardHtml).join("");
+}
+
+function renderCapabilities(payload) {
+  const runtime = payload && payload.runtime ? payload.runtime : {};
+  const health = payload && payload.health ? payload.health : {};
+  const memory = payload && payload.memory ? payload.memory : {};
+  const topology = payload && payload.topology ? payload.topology : {};
+  const skillPortfolio = payload && payload.skillPortfolio ? payload.skillPortfolio : {};
+  const capabilitySurface = payload && payload.capabilitySurface ? payload.capabilitySurface : {};
+  const evidence = payload && payload.evidence ? payload.evidence : {};
+  const browser = capabilitySurface && capabilitySurface.browser ? capabilitySurface.browser : {};
+  const continuity = capabilitySurface && capabilitySurface.continuity ? capabilitySurface.continuity : {};
+  const signoff = evidence.signoff && evidence.signoff.latest ? evidence.signoff.latest : null;
+  const runtimeProof = evidence.runtimeProof && evidence.runtimeProof.latest ? evidence.runtimeProof.latest : null;
+  const recentRuns = payload && payload.eval ? toArr(payload.eval.recentRuns) : [];
+  const latestRun = recentRuns[0] || null;
+  const latestTurn = runtime && runtime.latestTurn && typeof runtime.latestTurn === "object"
+    ? runtime.latestTurn
+    : health && health.latestTurn && typeof health.latestTurn === "object"
+      ? health.latestTurn
+      : {};
+  const governedGraph = memory && memory.governedGraph && typeof memory.governedGraph === "object"
+    ? memory.governedGraph
+    : runtime && runtime.governedMemory && typeof runtime.governedMemory === "object"
+      ? runtime.governedMemory
+      : {};
+  const latestPack = governedGraph && governedGraph.latestPack && typeof governedGraph.latestPack === "object"
+    ? governedGraph.latestPack
+    : {};
+  const workspaceProgress = governedGraph && governedGraph.workspaceProgress && typeof governedGraph.workspaceProgress === "object"
+    ? governedGraph.workspaceProgress
+    : {};
+  const externalLearning = runtime && runtime.externalLearning && typeof runtime.externalLearning === "object"
+    ? runtime.externalLearning
+    : {};
+  const selfImprovement = externalLearning && externalLearning.selfImprovement && typeof externalLearning.selfImprovement === "object"
+    ? externalLearning.selfImprovement
+    : {};
+  const manualSelfImprovement = runtime && runtime.manualSelfImprovement && typeof runtime.manualSelfImprovement === "object"
+    ? runtime.manualSelfImprovement
+    : memory && memory.manualSelfImprovement && typeof memory.manualSelfImprovement === "object"
+      ? memory.manualSelfImprovement
+      : {};
+  const skillAssignments = toArr(skillPortfolio.assignments);
+  const roleChecks = toArr(skillPortfolio.roleChecks);
+  const missingProposals = toArr(skillPortfolio.missingProposals);
+  const specialistLane = toArr(topology && topology.lanes && topology.lanes.specialists);
+  const verificationLane = toArr(topology && topology.lanes && topology.lanes.verification);
+  const recentBrowserFamilies = toArr(browser.familyRows).map((entry) => ({
+    title: safeText(entry && entry.label, "Family"),
+    tags: [
+      { label: safeText(entry && entry.stabilityStatus, "unreported"), tone: toneForCapabilityStatus(entry && entry.stabilityStatus) },
+      { label: entry && entry.stableCovered ? "stable" : "needs recovery", tone: entry && entry.stableCovered ? "pass" : "warn" },
+    ],
+    detail: `${formatPercent(num(entry && entry.recentSuccessRate, 0))} success / burden ${formatInteger(num(entry && entry.recentFailureBurden, 0))} / ${safeText(entry && entry.nextCoverageAction, "-")}`,
+  }));
+  const continuityItems = toArr(continuity.openItems).length
+    ? toArr(continuity.openItems).map((entry) => ({
+        title: safeText(entry && entry.debtClass, "continuity debt"),
+        tags: [{ label: safeText(entry && entry.nextOwner, "owner"), tone: "warn" }],
+        detail: safeText(entry && (entry.publicSummary || entry.nextRecoveryStep), "-"),
+      }))
+    : toArr(continuity.recentTrend).map((entry) => ({
+        title: safeText(entry && entry.finalReleaseState, "integrated"),
+        tags: [{ label: safeText(entry && entry.generatedAt, "-"), tone: "info" }],
+        detail: `open debt ${formatInteger(num(entry && entry.openDebtCount, 0))} / blocked ${formatInteger(num(entry && entry.blockedSubtasks, 0))} / pending ${formatInteger(num(entry && entry.integrationPendingCount, 0))}`,
+      }));
+  const selfImprovementItems = [];
+  if (selfImprovement && selfImprovement.nextPriority && typeof selfImprovement.nextPriority === "object") {
+    selfImprovementItems.push({
+      title: safeText(selfImprovement.nextPriority.title, "Next cycle"),
+      tags: [{ label: safeText(selfImprovement.nextPriority.readinessStatus, "pending"), tone: toneForCapabilityStatus(selfImprovement.nextPriority.readinessStatus) }],
+      detail: `${safeText(selfImprovement.nextPriority.nextAction, "-")} / ${formatSelfImprovementProgress(selfImprovement.nextPriority)}`,
+    });
+  }
+  if (manualSelfImprovement && typeof manualSelfImprovement === "object" && safeText(manualSelfImprovement.status)) {
+    selfImprovementItems.push({
+      title: "Manual capture",
+      tags: [{ label: safeText(manualSelfImprovement.status, "captured"), tone: toneForCapabilityStatus(manualSelfImprovement.status) }],
+      detail: `${formatInteger(num(manualSelfImprovement.entryCount, 0))} lessons / proposal ${formatInteger(num(manualSelfImprovement.proposalOnlyCount, 0))} / blocked ${formatInteger(num(manualSelfImprovement.blockedCount, 0))}`,
+    });
+  }
+  const jobScenarios = [
+    {
+      kicker: "Job 01",
+      title: "Delegated implementation",
+      status: safeText(latestTurn.task_outcome_status, safeText(runtime.executionProfile, "running")),
+      summary: "Start from the Console or `POST /api/exec`. Use this to prove that the repo is an execution system with proof, not only a governance judge.",
+      tags: [
+        { label: runtimeActiveAgent(runtime), tone: "info" },
+        { label: `${formatInteger(num(topology && topology.summary && topology.summary.specialists, 0))} specialists`, tone: "pass" },
+        { label: safeText(latestTurn.task_outcome_status, "unreported"), tone: toneForCapabilityStatus(latestTurn.task_outcome_status) },
+      ],
+      facts: [
+        { label: "Start here", value: "Console / POST /api/exec", detail: `default exec ${runtimeDefaultExecAgent(runtime)} / profile ${safeText(runtime.executionProfile, "unknown")}` },
+        { label: "Proof path", value: signoff && signoff.assertions && signoff.assertions.allPassed ? "Signoff ready" : "Evidence pending", detail: runtimeProof ? safeText(runtimeProof.summaryPath, "runtime proof present") : "runtime proof missing" },
+      ],
+      items: specialistLane.slice(0, 2).map((entry) => ({
+        title: safeText(entry && entry.name, "specialist"),
+        tags: [{ label: safeText(entry && entry.status, "active"), tone: toneForCapabilityStatus(entry && entry.status) }],
+        detail: `${safeText(entry && entry.description, "")} / ${toArr(entry && entry.skills).slice(0, 2).join(", ") || "no skills reported"}`,
+      })),
+      actions: [
+        { label: "Open Console", href: "./index.html", tone: "secondary" },
+        { label: "Jump to Evidence", href: "#evidenceSection", tone: "secondary" },
+      ],
+    },
+    {
+      kicker: "Job 02",
+      title: "Governed review and release decision",
+      status: signoff && signoff.assertions && signoff.assertions.allPassed ? "pass" : safeText(latestRun && latestRun.variantLabel, "pending"),
+      summary: "Start from `Overview -> Evidence` or `POST /api/eval/run`. Use this to show honest ship / no-ship instead of a nicer-looking completion claim.",
+      tags: [
+        { label: signoff && signoff.assertions && signoff.assertions.allPassed ? "signoff pass" : "signoff pending", tone: signoff && signoff.assertions && signoff.assertions.allPassed ? "pass" : "warn" },
+        { label: latestRun ? safeText(latestRun.variantLabel, "eval") : "eval history", tone: latestRun ? "info" : "neutral" },
+        { label: runtimeProof ? "runtime proof present" : "runtime proof missing", tone: runtimeProof ? "info" : "warn" },
+      ],
+      facts: [
+        { label: "Start here", value: "Overview -> Evidence / POST /api/eval/run", detail: latestRun ? safeText(latestRun.suiteId, "latest eval") : "no eval history yet" },
+        { label: "Public proof", value: "output/governance_public/", detail: "repo-safe request -> routing -> execution -> review -> release bundle" },
+      ],
+      items: [
+        signoff ? {
+          title: safeText(signoff.name, "latest signoff"),
+          tags: [{ label: signoff.assertions && signoff.assertions.allPassed ? "pass" : "pending", tone: signoff.assertions && signoff.assertions.allPassed ? "pass" : "warn" }],
+          detail: `${formatInteger(num(signoff.coreHarnessWorkflow && signoff.coreHarnessWorkflow.passedCases, 0))}/${formatInteger(num(signoff.coreHarnessWorkflow && signoff.coreHarnessWorkflow.sampleSize, 0))} workflow cases / ${safeText(signoff.summaryPath, "signoff summary")}`,
+        } : null,
+        latestRun ? {
+          title: safeText(latestRun.suiteId, "latest eval"),
+          tags: [{ label: safeText(latestRun.variantLabel, "variant"), tone: "info" }],
+          detail: `score ${formatPercent(latestRun.scoreRate)} / ${formatInteger(num(latestRun.passedCases, 0))}/${formatInteger(num(latestRun.sampleSize, 0))} passed`,
+        } : null,
+      ].filter(Boolean),
+      actions: [
+        { label: "Jump to Evidence", href: "#evidenceSection", tone: "secondary" },
+        { label: "Open Eval History", href: safeText(payload && payload.apis && payload.apis.evalHistory, "/api/eval/history"), tone: "secondary" },
+      ],
+    },
+    {
+      kicker: "Job 03",
+      title: "Long-horizon continuity and handoff",
+      status: safeText(continuity.finalReleaseState, continuity.openDebtCount ? "check" : "integrated"),
+      summary: "Start from `Overview -> Memory` and the continuity APIs. Use this to show that the runtime can resume work without rebuilding context from raw logs.",
+      tags: [
+        { label: `${formatInteger(num(continuity.handoffCount, 0))} handoffs`, tone: "info" },
+        { label: `${formatInteger(num(continuity.openDebtCount, 0))} open debt`, tone: num(continuity.openDebtCount, 0) ? "warn" : "pass" },
+        { label: safeText(continuity.finalReleaseState, "unreported"), tone: toneForCapabilityStatus(continuity.finalReleaseState) },
+      ],
+      facts: [
+        { label: "Objective", value: safeText(continuity.objective, "No active long-horizon objective"), detail: `${safeText(continuity.activeTaskFamily, "-")} / task ${safeText(continuity.activeTaskId, "-")}` },
+        { label: "Recovery", value: `${formatInteger(num(continuity.resumeCount, 0))} resumes / ${formatInteger(num(continuity.replanCount, 0))} replans`, detail: `verifier checkpoints ${formatInteger(num(continuity.verifierCheckpointCount, 0))} / resolved ${formatInteger(num(continuity.resolvedDebtCount, 0))}` },
+      ],
+      items: continuityItems.slice(0, 2),
+      actions: [
+        { label: "Jump to Memory", href: "#memorySection", tone: "secondary" },
+        { label: "Open Continuity API", href: `${safeText(payload && payload.apis && payload.apis.continuityTasks, "/api/continuity/tasks")}?state=all`, tone: "secondary" },
+      ],
+    },
+  ];
+  const cards = [
+    {
+      kicker: "Memory",
+      title: "Governed memory",
+      status: safeText(governedGraph.status, "unreported"),
+      summary: "Live execution memory, canonical graph state, and compiled packs are visible without leaving the runtime map.",
+      tags: [
+        { label: `${formatInteger(num(governedGraph.itemCount, 0))} items`, tone: "info" },
+        { label: `${formatInteger(num(governedGraph.promotedCount, 0))} promoted`, tone: "pass" },
+        { label: `${formatInteger(num(toArr(governedGraph.staleMemoryWarnings).length, 0))} stale`, tone: toArr(governedGraph.staleMemoryWarnings).length ? "warn" : "pass" },
+      ],
+      facts: [
+        { label: "Latest pack", value: `${formatInteger(num(latestPack.selectedCount, 0))} selected`, detail: `${safeText(latestPack.activeAgent, "-")} / ${safeText(latestPack.taskFamily, "-")}` },
+        { label: "Objective", value: safeText(workspaceProgress.currentObjective, "No compiled objective"), detail: safeText(workspaceProgress.updatedAt, "") },
+      ],
+      items: toArr(workspaceProgress.nextRecommendedActions).slice(0, 2).map((entry) => ({
+        title: safeText(entry, "next action"),
+        tags: [{ label: "next", tone: "info" }],
+        detail: toArr(workspaceProgress.recentTouchedPaths).slice(0, 2).join(" / ") || safeText(governedGraph.outputRoot, ""),
+      })),
+      actions: [
+        { label: "Jump to Memory", href: "#memorySection", tone: "secondary" },
+        { label: "Open Console", href: "./index.html", tone: "secondary" },
+      ],
+    },
+    {
+      kicker: "Skills",
+      title: "Skill portfolio",
+      status: safeText(skillPortfolio.status, "unreported"),
+      summary: "Specialist coverage, role-fit checks, and missing skill pressure are shown as a runtime inventory instead of a hidden governance audit.",
+      tags: [
+        { label: `${formatInteger(skillAssignments.length)} assignments`, tone: "info" },
+        { label: `${formatInteger(roleChecks.filter((entry) => entry && entry.pass).length)}/${formatInteger(roleChecks.length)} roles pass`, tone: roleChecks.every((entry) => entry && entry.pass) ? "pass" : "warn" },
+        { label: `${formatInteger(missingProposals.length)} gaps`, tone: missingProposals.length ? "warn" : "pass" },
+      ],
+      facts: [
+        { label: "Catalog", value: safeText(skillPortfolio.catalog && skillPortfolio.catalog.version, "unreported"), detail: safeText(skillPortfolio.catalog && skillPortfolio.catalog.path, "") },
+        { label: "Audit", value: safeText(skillPortfolio.status, "unreported"), detail: `${safeText(skillPortfolio.policy && skillPortfolio.policy.path, "")} / outcome events ${formatInteger(num(skillPortfolio.outcomeEvents && skillPortfolio.outcomeEvents.count, 0))}` },
+      ],
+      items: roleChecks.slice(0, 2).map((entry) => ({
+        title: safeText(entry && entry.role, "role"),
+        tags: [{ label: entry && entry.pass ? "pass" : "check", tone: entry && entry.pass ? "pass" : "warn" }],
+        detail: `${formatInteger(num(entry && entry.assignedCount, 0))}/${formatInteger(num(entry && entry.minSkills, 0))} assigned / missing ${toArr(entry && entry.missingClasses).join(", ") || "-"}`,
+      })),
+      actions: [
+        { label: "Jump to Skill Portfolio", href: "#memorySection", tone: "secondary" },
+        { label: "Inspect Topology", href: "#topologySection", tone: "secondary" },
+      ],
+    },
+    {
+      kicker: "Subagents",
+      title: "Multi-agent runtime",
+      status: num(topology && topology.summary && topology.summary.active, 0) > 0 ? "active" : "configured",
+      summary: "Parent, specialist, and verification lanes are exposed as a live runtime lane map, not just a contract diagram.",
+      tags: [
+        { label: `${formatInteger(num(topology && topology.summary && topology.summary.parents, 0))} parents`, tone: "neutral" },
+        { label: `${formatInteger(num(topology && topology.summary && topology.summary.specialists, 0))} specialists`, tone: "pass" },
+        { label: `${formatInteger(num(topology && topology.summary && topology.summary.verification, 0))} verification`, tone: "warn" },
+      ],
+      facts: [
+        { label: "Active lanes", value: `${formatInteger(num(topology && topology.summary && topology.summary.active, 0))} active`, detail: `${formatInteger(num(topology && topology.summary && topology.summary.total, 0))} total rows` },
+        { label: "Execution mix", value: specialistLane.length ? safeText(specialistLane[0] && specialistLane[0].name, "specialist") : "specialist lanes configured", detail: `${formatInteger(verificationLane.length)} verification lanes visible` },
+      ],
+      items: specialistLane.slice(0, 2).map((entry) => ({
+        title: safeText(entry && entry.name, "specialist"),
+        tags: [{ label: safeText(entry && entry.status, "active"), tone: toneForCapabilityStatus(entry && entry.status) }],
+        detail: `${safeText(entry && entry.description, "")} / ${toArr(entry && entry.skills).slice(0, 2).join(", ") || "no skills reported"}`,
+      })),
+      actions: [
+        { label: "Jump to Topology", href: "#topologySection", tone: "secondary" },
+        { label: "Open Agent API", href: safeText(payload && payload.apis && payload.apis.topography, "/api/agent-topography"), tone: "secondary" },
+      ],
+    },
+    {
+      kicker: "Browser",
+      title: "Browser and tool-use recovery",
+      status: safeText(browser.status, "unreported"),
+      summary: "Browser-style tool use is surfaced with live stability evidence, not implied by docs or hidden eval files.",
+      tags: [
+        { label: `score ${formatPercent(num(browser.score, 0))}`, tone: num(browser.score, 0) >= 0.8 ? "pass" : "warn" },
+        { label: `${formatInteger(num(browser.evidenceCount, 0))} evidence`, tone: "info" },
+        { label: `${formatInteger(num(browser.unstableFamilyCount, 0))} unstable`, tone: num(browser.unstableFamilyCount, 0) ? "warn" : "pass" },
+      ],
+      facts: [
+        { label: "Stable breadth", value: formatPercent(num(browser.stableCoverageBreadth, 0)), detail: `supported ${formatPercent(num(browser.supportedCoverageBreadth, 0))} / display ${formatPercent(num(browser.displayFinalScore, 0))}` },
+        { label: "Families", value: toArr(browser.sourceFamilies).join(", ") || "unreported", detail: `${formatInteger(num(browser.successCount, 0))} success / ${formatInteger(num(browser.failureCount, 0))} failure` },
+      ],
+      items: recentBrowserFamilies.slice(0, 3).length
+        ? recentBrowserFamilies.slice(0, 3)
+        : toArr(browser.openFailureModes).slice(0, 3).map((entry) => ({
+            title: "Open failure mode",
+            tags: [{ label: "recover", tone: "warn" }],
+            detail: safeText(entry, "-"),
+          })),
+      actions: [
+        { label: "Jump to Evidence", href: "#evidenceSection", tone: "secondary" },
+        { label: "Replay Turns API", href: safeText(payload && payload.apis && payload.apis.replayTurns, "/api/replay/turns"), tone: "secondary" },
+      ],
+    },
+    {
+      kicker: "Continuity",
+      title: "Long-horizon continuity",
+      status: safeText(continuity.finalReleaseState, continuity.openDebtCount ? "check" : "integrated"),
+      summary: "Long-running task state, debt, and recovery evidence are surfaced as live continuity status instead of buried output artifacts.",
+      tags: [
+        { label: `${formatInteger(num(continuity.handoffCount, 0))} handoffs`, tone: "info" },
+        { label: `${formatInteger(num(continuity.openDebtCount, 0))} open debt`, tone: num(continuity.openDebtCount, 0) ? "warn" : "pass" },
+        { label: safeText(continuity.debtSeverity, "none"), tone: toneForCapabilityStatus(continuity.debtSeverity) },
+      ],
+      facts: [
+        { label: "Objective", value: safeText(continuity.objective, "No active long-horizon objective"), detail: `${safeText(continuity.activeTaskFamily, "-")} / task ${safeText(continuity.activeTaskId, "-")}` },
+        { label: "Recovery", value: `${formatInteger(num(continuity.resumeCount, 0))} resumes / ${formatInteger(num(continuity.replanCount, 0))} replans`, detail: `verifier checkpoints ${formatInteger(num(continuity.verifierCheckpointCount, 0))} / resolved ${formatInteger(num(continuity.resolvedDebtCount, 0))}` },
+      ],
+      items: continuityItems.slice(0, 3),
+      actions: [
+        { label: "Open Continuity API", href: `${safeText(payload && payload.apis && payload.apis.continuityTasks, "/api/continuity/tasks")}?state=all`, tone: "secondary" },
+        { label: "Jump to Memory", href: "#memorySection", tone: "secondary" },
+      ],
+    },
+    {
+      kicker: "Self-Improvement",
+      title: "Governed self-improvement",
+      status: safeText(selfImprovement.gateStatus, safeText(manualSelfImprovement.status, "unreported")),
+      summary: "Learning, promotion, manual capture, and bounded improvement loops are visible as live gated state instead of opaque background logic.",
+      tags: [
+        { label: `${formatInteger(num(selfImprovement.autoApplyCandidateCount, 0))} ready`, tone: num(selfImprovement.autoApplyCandidateCount, 0) ? "pass" : "neutral" },
+        { label: `${formatInteger(num(selfImprovement.awaitingObservationCount, 0) + num(selfImprovement.awaitingReinforcementCount, 0))} waiting`, tone: num(selfImprovement.awaitingObservationCount, 0) + num(selfImprovement.awaitingReinforcementCount, 0) ? "warn" : "neutral" },
+        { label: `${formatInteger(num(externalLearning.pendingProposalCount, 0))} proposals`, tone: num(externalLearning.pendingProposalCount, 0) ? "info" : "neutral" },
+      ],
+      facts: [
+        { label: "Gate", value: safeText(selfImprovement.gateStatus, "NOT_RUN"), detail: `${safeText(selfImprovement.appliedDecision, "none")} / obs ${safeText(selfImprovement.observationStatus, "-")}` },
+        { label: "Loop", value: safeText(runtime && runtime.agiImprovementFlywheel && runtime.agiImprovementFlywheel.schema, "agi-improvement-flywheel"), detail: `bounded ${runtime && runtime.agiImprovementFlywheel && runtime.agiImprovementFlywheel.boundedLoopsOnly ? "yes" : "no"} / kpis ${formatInteger(num(runtime && runtime.agiImprovementFlywheel && runtime.agiImprovementFlywheel.kpiCount, 0))}` },
+      ],
+      items: selfImprovementItems.slice(0, 3),
+      actions: [
+        { label: "Jump to Memory", href: "#memorySection", tone: "secondary" },
+        { label: "Jump to Evidence", href: "#evidenceSection", tone: "secondary" },
+      ],
+    },
+  ];
+
+  if (elements.jobScenarioGrid) {
+    elements.jobScenarioGrid.innerHTML = jobScenarios.map(capabilityCardHtml).join("");
+  }
+  if (elements.capabilitySurfaceSummary) {
+    const readyCount = cards.filter((card) => ["ready", "pass", "stable", "integrated", "active", "configured"].includes(lower(card.status))).length;
+    elements.capabilitySurfaceSummary.innerHTML = [
+      tagHtml("3 buyer jobs", "info"),
+      tagHtml(`${formatInteger(cards.length)} support lanes`, "info"),
+      tagHtml(`${formatInteger(readyCount)} live now`, readyCount === cards.length ? "pass" : "warn"),
+      tagHtml("compare on adoptability", "info"),
+      tagHtml(`browser ${safeText(browser.status, "unreported")}`, toneForCapabilityStatus(browser.status)),
+      tagHtml(`continuity ${safeText(continuity.finalReleaseState, "unreported")}`, toneForCapabilityStatus(continuity.finalReleaseState)),
+      tagHtml(`self-improvement ${safeText(selfImprovement.gateStatus, "NOT_RUN")}`, toneForCapabilityStatus(selfImprovement.gateStatus)),
+    ].join("");
+  }
+  if (elements.capabilitySurfaceGrid) {
+    elements.capabilitySurfaceGrid.innerHTML = cards.map(capabilityCardHtml).join("");
+  }
+  if (elements.demoFlowGrid) {
+    const demos = [
+      {
+        kicker: "Flow 01",
+        title: "Implement and finish with proof",
+        summary: "Use this flow to prove that the runtime is a worker. Start from delegated execution, then walk directly into proof and signoff.",
+        tags: [
+          { label: safeText(runtime.executionProfile, "runtime"), tone: "info" },
+          { label: safeText(payload && payload.health && payload.health.latestTurn && payload.health.latestTurn.task_outcome_status, "n/a"), tone: toneForCapabilityStatus(payload && payload.health && payload.health.latestTurn && payload.health.latestTurn.task_outcome_status) },
+        ],
+        steps: [
+          "Open the Console and run the normal delegated-work path.",
+          "Refresh Overview to inspect the active worker, runtime proof, and latest signoff.",
+          "Use Evidence to confirm the result is adoptable, not just procedurally complete.",
+        ],
+        actions: [
+          { label: "Open Console", href: "./index.html", tone: "secondary" },
+          { label: "Jump to Evidence", href: "#evidenceSection", tone: "secondary" },
+        ],
+      },
+      {
+        kicker: "Flow 02",
+        title: "Decide ship / no-ship honestly",
+        summary: "Use this flow to show that release judgment is evidence-backed and audit-ready, not a confidence statement with nicer wording.",
+        tags: [
+          { label: signoff && signoff.assertions && signoff.assertions.allPassed ? "signoff pass" : "signoff pending", tone: signoff && signoff.assertions && signoff.assertions.allPassed ? "pass" : "warn" },
+          { label: runtimeProof ? "runtime proof present" : "runtime proof missing", tone: runtimeProof ? "info" : "warn" },
+        ],
+        steps: [
+          "Start with Overview -> Evidence and inspect the latest signoff, runtime proof, and eval history together.",
+          "Open the public governance bundle to see the repo-safe request -> routing -> execution -> review -> release chain.",
+          "Confirm whether the system is honestly saying ship, block, or keep iterating.",
+        ],
+        actions: [
+          { label: "Jump to Evidence", href: "#evidenceSection", tone: "secondary" },
+          { label: "Open Eval History", href: safeText(payload && payload.apis && payload.apis.evalHistory, "/api/eval/history"), tone: "secondary" },
+        ],
+      },
+      {
+        kicker: "Flow 03",
+        title: "Resume across sessions without guesswork",
+        summary: "Use this flow to show that long-running work keeps intent, proof, and recovery state instead of depending on tribal memory.",
+        tags: [
+          { label: `${formatInteger(num(continuity.handoffCount, 0))} handoffs`, tone: "info" },
+          { label: `${formatInteger(num(governedGraph.itemCount, 0))} memory items`, tone: "pass" },
+        ],
+        steps: [
+          "Open Memory to inspect the current objective, latest pack, and recent touched paths.",
+          "Open the Continuity API to inspect live task registry, debt, and recovery state.",
+          "Use the same surface to verify that the next session can resume without re-deriving rationale from logs.",
+        ],
+        actions: [
+          { label: "Jump to Memory", href: "#memorySection", tone: "secondary" },
+          { label: "Open Continuity API", href: `${safeText(payload && payload.apis && payload.apis.continuityTasks, "/api/continuity/tasks")}?state=all`, tone: "secondary" },
+        ],
+      },
+    ];
+    elements.demoFlowGrid.innerHTML = demos.map(demoCardHtml).join("");
+  }
 }
 
 function renderRuntime(payload) {
@@ -517,6 +935,36 @@ function renderRuntime(payload) {
     : runtime && runtime.adoption_readiness_contract && typeof runtime.adoption_readiness_contract === "object"
       ? runtime.adoption_readiness_contract
       : {};
+  const failClosedConditions = toArr(iterationControl.failClosedConditions);
+  const validationFailureConditions = toArr(iterationControl.validationFailureConditions);
+  const retryConditions = toArr(iterationControl.retryConditions);
+  const adoptionHardGates = Object.entries(adoptionReadinessContract.hardGates || {}).map(([key, value]) => ({
+    key,
+    min: Number.isFinite(Number(value && value.min)) ? Number(value.min) : null,
+    failureClass: safeText(value && value.failureClass, "unreported"),
+  }));
+  const stopSignalItems = [
+    ...failClosedConditions.slice(0, 2).map((entry) => ({
+      title: "Fail-closed trigger",
+      tags: [{ label: "fail-closed", tone: "fail" }],
+      detail: safeText(entry, "-"),
+    })),
+    ...validationFailureConditions.slice(0, 1).map((entry) => ({
+      title: "Validation failure",
+      tags: [{ label: "validation", tone: "warn" }],
+      detail: safeText(entry, "-"),
+    })),
+    ...retryConditions.slice(0, 1).map((entry) => ({
+      title: "Retry-eligible",
+      tags: [{ label: "retry", tone: "info" }],
+      detail: safeText(entry, "-"),
+    })),
+    ...(familyCompletionGate.applies ? [{
+      title: `Family gate ${safeText(familyCompletionGate.taskFamily, "family")}`,
+      tags: [{ label: safeText(familyCompletionGate.status, "pending"), tone: toneForTaskOutcome(familyCompletionGate.status) }],
+      detail: familyGateMissing || safeText(familyCompletionGate.summary, "Family completion gate is active."),
+    }] : []),
+  ];
   elements.runtimePostureCard.innerHTML = factRowsHtml([
     { label: "Execution Profile", value: safeText(runtime.executionProfile, "unknown"), detail: `active agent ${runtimeActiveAgent(runtime)} / default exec ${runtimeDefaultExecAgent(runtime)}` },
     { label: "Deployment Posture", value: safeText(deploymentPosture.activeLabel || deploymentPosture.activeProfile, "portable_local"), detail: `${safeText(deploymentPosture.profilePath, "scripts/config/deployment_posture_profiles.json")} / default ${safeText(deploymentPosture.referenceArchitectureDefault ? "reference" : "owner-or-explicit", "")}` },
@@ -539,6 +987,44 @@ function renderRuntime(payload) {
     { label: "Idempotency", value: safeText(runtime.idempotency && runtime.idempotency.statusApi && runtime.idempotency.statusApi.path, "/api/exec/idempotency/:key"), detail: `ttl ${formatInteger(num(runtime.idempotency && runtime.idempotency.ttlMs, 0))}ms` },
     { label: "Runtime Memory", value: safeText(runtime.harnessMemory && runtime.harnessMemory.storage, "logs/harness_execution_memory.json"), detail: `retention ${formatInteger(num(runtime.harnessMemory && runtime.harnessMemory.retentionDays, 0))} days` },
   ]);
+  if (elements.stopBudgetCard) {
+    const wallClockMinutes = Math.round(num(iterationControl.budgets && iterationControl.budgets.wallClockMs, 0) / 60000);
+    elements.stopBudgetCard.innerHTML = `
+      <div class="overview-inline-tags">
+        ${tagHtml(`fail-closed ${formatInteger(failClosedConditions.length)}`, failClosedConditions.length ? "fail" : "neutral")}
+        ${tagHtml(`validation ${formatInteger(validationFailureConditions.length)}`, validationFailureConditions.length ? "warn" : "neutral")}
+        ${tagHtml(`retry ${formatInteger(retryConditions.length)}`, retryConditions.length ? "info" : "neutral")}
+        ${tagHtml(`hard gates ${formatInteger(adoptionHardGates.length)}`, adoptionHardGates.length ? "pass" : "neutral")}
+      </div>
+      ${factRowsHtml([
+        {
+          label: "Budget Envelope",
+          value: `${formatInteger(num(iterationControl.budgets && iterationControl.budgets.stepBudget, 0))} steps / ${formatInteger(num(iterationControl.budgets && iterationControl.budgets.tokenBudget, 0))} tokens`,
+          detail: `wall ${formatInteger(wallClockMinutes)} min / delta >= ${formatPercent(num(iterationControl.improvementDeltaThreshold, 0))}`,
+        },
+        {
+          label: "Residual Risk",
+          value: `<= ${formatInteger(num(iterationControl.riskThresholds && iterationControl.riskThresholds.maxResidualRiskItems, 0))} items`,
+          detail: `evidence failures <= ${formatInteger(num(iterationControl.riskThresholds && iterationControl.riskThresholds.maxRequiredEvidenceFailures, 0))}`,
+        },
+        {
+          label: "Adoption Hard Gates",
+          value: adoptionHardGates.map((entry) => entry.key).join(", ") || "-",
+          detail: adoptionHardGates.map((entry) => `${entry.key}>=${entry.min == null ? "-" : entry.min.toFixed(2)} (${entry.failureClass})`).join(" / ") || "No hard gates reported.",
+        },
+        {
+          label: "Latest Turn Stop",
+          value: safeText(latestTurn.task_outcome_status || latestTurn.taskOutcomeStatus, "n/a"),
+          detail: joinSummaryParts([
+            safeText(latestTurn.task_outcome_reason || latestTurn.taskOutcomeReason, ""),
+            familyCompletionGate.applies ? `family ${safeText(familyCompletionGate.status, "pending")}` : "",
+            safeText(iterationControl.releaseState || iterationControl.releaseGate, ""),
+          ]),
+        },
+      ])}
+      ${itemListHtml(stopSignalItems, "No stop or retry signals are currently reported.")}
+    `;
+  }
   elements.healthCard.innerHTML = factRowsHtml([
     { label: "SLO Status", value: safeText(health.slo && health.slo.status, "insufficient_data"), detail: `${formatInteger(num(health.slo && health.slo.sampleSize, 0))} turns in window` },
     { label: "Failure Rate", value: formatPercent(health.slo && health.slo.metrics && health.slo.metrics.failureRate), detail: `p95 ${formatInteger(num(health.slo && health.slo.metrics && health.slo.metrics.p95LatencyMs, 0))}ms` },
@@ -660,6 +1146,77 @@ function renderTraceability(payload) {
   `;
 }
 
+function toneForCapabilityStatus(value) {
+  const normalized = lower(value).replace(/_/g, "-");
+  if (["ready", "pass", "stable", "integrated", "applied", "configured", "active"].includes(normalized)) {
+    return "pass";
+  }
+  if (["running", "observed", "captured", "tracked"].includes(normalized)) {
+    return "info";
+  }
+  if (["check", "pending", "unstable", "failing only", "starved", "proposal-only"].includes(normalized)) {
+    return "warn";
+  }
+  if (["blocked", "missing", "failed", "disabled", "unreported"].includes(normalized)) {
+    return "fail";
+  }
+  return "neutral";
+}
+
+function actionLinkHtml(action) {
+  const href = safeText(action && action.href);
+  if (!href) {
+    return "";
+  }
+  const label = safeText(action && action.label, "Open");
+  const tone = safeText(action && action.tone, "secondary");
+  const external = /^https?:\/\//i.test(href);
+  return `<a class="btn ${escapeHtml(tone)} mini overview-action-link" href="${escapeHtml(href)}"${external ? ` target="_blank" rel="noreferrer"` : ""}>${escapeHtml(label)}</a>`;
+}
+
+function capabilityCardHtml(card) {
+  const tags = toArr(card.tags).map((tag) => tagHtml(tag.label, tag.tone)).join("");
+  const facts = factRowsHtml(toArr(card.facts));
+  const list = toArr(card.items).length ? itemListHtml(card.items, "") : "";
+  const actions = toArr(card.actions).map(actionLinkHtml).join("");
+  return `
+    <article class="overview-panel side-card overview-capability-card">
+      <div class="overview-panel-head">
+        <div>
+          <p class="overview-kicker">${escapeHtml(safeText(card.kicker, "Capability"))}</p>
+          <h4>${escapeHtml(safeText(card.title, "Untitled capability"))}</h4>
+        </div>
+        ${tagHtml(safeText(card.status, "unreported"), toneForCapabilityStatus(card.status))}
+      </div>
+      ${safeText(card.summary) ? `<p class="overview-capability-summary">${escapeHtml(safeText(card.summary))}</p>` : ""}
+      ${tags ? `<div class="overview-inline-tags">${tags}</div>` : ""}
+      ${facts}
+      ${list}
+      ${actions ? `<div class="overview-action-row">${actions}</div>` : ""}
+    </article>
+  `;
+}
+
+function demoCardHtml(card) {
+  const tags = toArr(card.tags).map((tag) => tagHtml(tag.label, tag.tone)).join("");
+  const steps = toArr(card.steps).map((step) => `<li>${escapeHtml(safeText(step))}</li>`).join("");
+  const actions = toArr(card.actions).map(actionLinkHtml).join("");
+  return `
+    <article class="overview-panel side-card overview-demo-card">
+      <div class="overview-panel-head">
+        <div>
+          <p class="overview-kicker">${escapeHtml(safeText(card.kicker, "Demo"))}</p>
+          <h4>${escapeHtml(safeText(card.title, "Untitled flow"))}</h4>
+        </div>
+      </div>
+      ${safeText(card.summary) ? `<p class="overview-capability-summary">${escapeHtml(safeText(card.summary))}</p>` : ""}
+      ${tags ? `<div class="overview-inline-tags">${tags}</div>` : ""}
+      ${steps ? `<ol class="overview-demo-steps">${steps}</ol>` : ""}
+      ${actions ? `<div class="overview-action-row">${actions}</div>` : ""}
+    </article>
+  `;
+}
+
 function evidenceCardHtml(title, tags, entries, recentItems, emptyText) {
   const rows = [
     `<div class="overview-inline-tags">${toArr(tags).map((tag) => tagHtml(tag.label, tag.tone)).join("")}</div>`,
@@ -754,6 +1311,11 @@ function renderMemory(payload) {
     ? memory.secondaryLearning
     : (payload && payload.runtime && payload.runtime.secondaryLearning) || {};
   const anthropicEngineering = secondaryLearning.anthropicEngineering || secondaryLearning.anthropic_engineering || {};
+  const skillPortfolio = payload && payload.skillPortfolio ? payload.skillPortfolio : {};
+  const selfImprovement = externalLearning.selfImprovement && typeof externalLearning.selfImprovement === "object"
+    ? externalLearning.selfImprovement
+    : {};
+  const manualCaptureSummary = normalizeManualCaptureSummary(payload, externalLearning, selfImprovement);
   const recentTurns = toArr(execution.recent).slice(0, 5).map((entry) => ({
     title: `${safeText(entry.agentName, "agent")} / ${safeText(entry.taskOutcomeStatus || entry.status, "status")}`,
     tags: [
@@ -799,22 +1361,58 @@ function renderMemory(payload) {
     ${itemListHtml(replayItems.slice(0, 4), "No replay records are available.")}
     ${itemListHtml(patternItems.slice(0, 4), "No recurring patterns are available.")}
   `;
-  const skillPortfolio = payload && payload.skillPortfolio ? payload.skillPortfolio : {};
+  const outcomeSummary = skillPortfolio && skillPortfolio.outcomeSummary && typeof skillPortfolio.outcomeSummary === "object"
+    ? skillPortfolio.outcomeSummary
+    : {};
+  const promotionRules = skillPortfolio && skillPortfolio.promotionRules && typeof skillPortfolio.promotionRules === "object"
+    ? skillPortfolio.promotionRules
+    : {};
+  const portfolioRules = skillPortfolio && skillPortfolio.portfolioRules && typeof skillPortfolio.portfolioRules === "object"
+    ? skillPortfolio.portfolioRules
+    : {};
+  const promotionCandidates = toArr(skillPortfolio.promotionCandidates).map((entry) => ({
+    title: safeText(entry && entry.skill, "promotion candidate"),
+    tags: [
+      { label: `${safeText(entry && entry.fromClass, "scenario")} -> ${safeText(entry && entry.toClass, "role")}`, tone: "info" },
+      { label: `${formatInteger(num(entry && entry.evidence && entry.evidence.runs, 0))} runs`, tone: "neutral" },
+      { label: `success ${formatPercent(num(entry && entry.evidence && entry.evidence.successRate, 0))}`, tone: num(entry && entry.evidence && entry.evidence.successRate, 0) >= 0.84 ? "pass" : "warn" },
+    ],
+    detail: `score ${formatPercent(num(entry && entry.evidence && entry.evidence.avgPrimaryScore, 0))} / guard failures ${formatInteger(num(entry && entry.evidence && entry.evidence.guardFailures, 0))}`,
+  }));
   const missingProposals = toArr(skillPortfolio.missingProposals).map((entry) => ({
     title: safeText(entry && entry.id, "proposal"),
     detail: `${safeText(entry && entry.intent, "")} / owner ${toArr(entry && entry.ownerRoles).join(", ") || "-"}`,
   }));
+  const manualSkillCandidates = manualCaptureSummary
+    ? toArr(manualCaptureSummary.entries)
+        .filter((entry) => lower(entry && entry.classification).replace(/_/g, "-") === "skill candidate")
+        .map((entry) => ({
+          title: safeText(entry && entry.title, "manual lesson"),
+          tags: [
+            { label: safeText(entry && entry.classification, "skill candidate"), tone: toneForManualClassification(entry && entry.classification) },
+            { label: safeText(entry && entry.promotionDecision, "proposal-only"), tone: toneForPromotionDecision(entry && entry.promotionDecision) },
+          ],
+          detail: safeText(entry && entry.detail, "-"),
+        }))
+    : [];
   elements.skillPortfolioCard.innerHTML = `
     <div class="overview-inline-tags">
       ${tagHtml(`audit ${safeText(skillPortfolio.status, "FAIL")}`, safeText(skillPortfolio.status, "FAIL") === "PASS" ? "pass" : "fail")}
       ${tagHtml(`assignments ${formatInteger(toArr(skillPortfolio.assignments).length)}`, "info")}
       ${tagHtml(`events ${formatInteger(num(skillPortfolio.outcomeEvents && skillPortfolio.outcomeEvents.count, 0))}`, "neutral")}
+      ${tagHtml(`promotions ${formatInteger(num(skillPortfolio.promotionCandidateCount, 0))}`, num(skillPortfolio.promotionCandidateCount, 0) ? "pass" : "neutral")}
+      ${tagHtml(`manual skill notes ${formatInteger(manualSkillCandidates.length)}`, manualSkillCandidates.length ? "warn" : "neutral")}
     </div>
     ${factRowsHtml([
       { label: "Catalog", value: safeText(skillPortfolio.catalog && skillPortfolio.catalog.version, "unknown"), detail: safeText(skillPortfolio.catalog && skillPortfolio.catalog.path, "") },
       { label: "Policy", value: safeText(skillPortfolio.policy && skillPortfolio.policy.version, "unknown"), detail: safeText(skillPortfolio.policy && skillPortfolio.policy.path, "") },
+      { label: "Outcome Sample", value: `${formatInteger(num(outcomeSummary.sampledSkills, 0))} skills`, detail: `success ${formatPercent(num(outcomeSummary.overallSuccessRate, 0))} / guard failures ${formatInteger(num(outcomeSummary.totalGuardFailures, 0))}` },
+      { label: "Promotion Thresholds", value: `scenario ${formatInteger(num(promotionRules.scenarioToRole && promotionRules.scenarioToRole.minRuns, 0))} / role ${formatInteger(num(promotionRules.roleToGlobal && promotionRules.roleToGlobal.minRuns, 0))}`, detail: `score ${formatPercent(num(promotionRules.scenarioToRole && promotionRules.scenarioToRole.minPrimaryScore, 0))} / reproducibility ${promotionRules.evidence && promotionRules.evidence.requireReproducibilityEvidence ? "required" : "not required"}` },
+      { label: "Portfolio Mix", value: `diversity >= ${formatInteger(num(portfolioRules.minClassDiversity, 0))}`, detail: `global <= ${formatPercent(num(portfolioRules.maxClassShare && portfolioRules.maxClassShare.global, 0))} / role <= ${formatPercent(num(portfolioRules.maxClassShare && portfolioRules.maxClassShare.role, 0))} / scenario <= ${formatPercent(num(portfolioRules.maxClassShare && portfolioRules.maxClassShare.scenario, 0))}` },
       { label: "Missing Proposals", value: formatInteger(missingProposals.length), detail: safeText(skillPortfolio.outcomeEvents && skillPortfolio.outcomeEvents.path, "") },
     ])}
+    ${itemListHtml(promotionCandidates.slice(0, 3), "No promotion candidates are ready yet.")}
+    ${itemListHtml(manualSkillCandidates.slice(0, 2), "No lesson-to-skill pressure is recorded in manual capture.")}
     ${itemListHtml(missingProposals.slice(0, 4), "No missing skill proposals are registered.")}
   `;
   const learningArticles = toArr(externalLearning.recentArticles).map((entry) => ({
@@ -863,10 +1461,6 @@ function renderMemory(payload) {
     const runtimeRetrieval = externalLearning.runtimeRetrieval && typeof externalLearning.runtimeRetrieval === "object"
       ? externalLearning.runtimeRetrieval
       : {};
-    const selfImprovement = externalLearning.selfImprovement && typeof externalLearning.selfImprovement === "object"
-      ? externalLearning.selfImprovement
-      : {};
-    const manualCaptureSummary = normalizeManualCaptureSummary(payload, externalLearning, selfImprovement);
     const secondarySelfImprovement = anthropicEngineering.selfImprovement && typeof anthropicEngineering.selfImprovement === "object"
       ? anthropicEngineering.selfImprovement
       : {};
@@ -1059,6 +1653,7 @@ function renderRawSnapshot(payload) {
 function renderOverview(payload) {
   renderHero(payload);
   renderMetrics(payload);
+  renderCapabilities(payload);
   renderRuntime(payload);
   renderTopology(payload);
   renderContracts(payload);
@@ -1121,6 +1716,7 @@ function bind() {
 
 async function boot() {
   bind();
+  setRefreshState("待機中", "idle");
   await loadOverview({ manual: true });
   startTicker();
 }

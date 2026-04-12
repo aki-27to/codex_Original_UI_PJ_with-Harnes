@@ -1,0 +1,39 @@
+{
+  "schema": "RequestFrame.v1",
+  "user_goal": "Complete one signoff-assurance maintenance task now.",
+  "expected_deliverable": [
+    "Implementation is explicitly requested now. Requirements are fixed. Do not switch to proposal-only mode and do not ask follow-up questions.",
+    "Use the default parent orchestration path.",
+    "Delegate the implementation edits to infra_worker.",
+    "Request independent read-only reviewer and tester checks before finalizing.",
+    "Change logs/bundles/signoff/signoff-2026-03-09T12-31-59-842Z-24dd95/raw/scripts/config/signoff_sample_target.txt, docs/EVIDENCE_CONTRACT.md, docs/CURRENT_ARCHITECTURE.md, and docs/ARCHITECTURE_CHANGELOG.md.",
+    "Do not modify any other file and do not revert unrelated edits.",
+    "Use apply_patch for file edits.",
+    "The implementation specialist must report using this exact header format:",
+    "Owned paths:",
+    "`<absolute path>`",
+    "In logs/bundles/signoff/signoff-2026-03-09T12-31-59-842Z-24dd95/raw/scripts/config/signoff_sample_target.txt, replace the single line `gate: pending` with `gate: signed`.",
+    "In docs/EVIDENCE_CONTRACT.md, add this exact bullet if it is not already present: - `SIGNOFF_ASSURANCE` runs should surface reviewer/tester/doc-sync status in `review_load_breakdown.json` for operator signoff.",
+    "In docs/CURRENT_ARCHITECTURE.md, add this exact architecture bullet if it is not already present: - `SIGNOFF_ASSURANCE` sample runs keep planning depth, assurance depth, reviewer/tester execution, and doc-sync evidence co-located in signoff",
+    "In docs/ARCHITECTURE_CHANGELOG.md, add this exact changelog line if it is not already present: - 2026-03-08: Added signoff assurance sample evidence wiring for planning/assurance trace and doc-sync bundle checks."
+  ],
+  "constraints": [],
+  "acceptance_criteria": [
+    "The target file contains `gate: signed`.",
+    "The evidence contract bullet is present.",
+    "The architecture bullet is present.",
+    "The changelog line is present.",
+    "Reviewer evidence is present and the reviewer remains read-only.",
+    "Tester evidence is present and includes pass/fail verification.",
+    "No follow-up questions are required.",
+    "Final reply must be exactly: SIGNOFF_TASK_OK logs/bundles/signoff/signoff-2026-03-09T12-31-59-842Z-24dd95/raw/scripts/config/signoff_sample_target.txt"
+  ],
+  "ambiguity_points": [],
+  "risk_class": "signoff_critical",
+  "external_dependencies": [],
+  "assumption_policy": [
+    "Any scope outside the explicit goal should stay proposal-only unless the prompt states otherwise.",
+    "Unresolved ambiguity must not be auto-answered by the harness."
+  ],
+  "requested_release_posture": "SIGNOFF_ASSURANCE"
+}

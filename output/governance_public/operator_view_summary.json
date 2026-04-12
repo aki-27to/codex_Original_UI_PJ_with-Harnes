@@ -1,0 +1,55 @@
+{
+  "schema": "operator-view-summary.v1",
+  "current_phase": "Release / Close",
+  "current_lane": "DELIVERY",
+  "planning_depth": "STANDARD_PLANNING",
+  "assurance_depth": "SIGNOFF_ASSURANCE",
+  "dispatch_graph": {
+    "nodes": [
+      {
+        "id": "parent",
+        "role": "default"
+      },
+      {
+        "id": "dispatch-1-backend_worker",
+        "role": "backend_worker"
+      },
+      {
+        "id": "dispatch-2-infra_worker",
+        "role": "infra_worker"
+      }
+    ],
+    "edges": [
+      {
+        "from": "parent",
+        "to": "dispatch-1-backend_worker",
+        "owned_paths": [
+          "scripts/",
+          "server.js"
+        ]
+      },
+      {
+        "from": "parent",
+        "to": "dispatch-2-infra_worker",
+        "owned_paths": [
+          "docs/",
+          "scripts/config/"
+        ]
+      }
+    ]
+  },
+  "current_blockers": [],
+  "evidence_completeness": {
+    "missing_evidence_count": 0,
+    "acceptance_criteria_total": 8,
+    "acceptance_criteria_passed": 8
+  },
+  "residual_risk": [
+    "New logic or protocol-sensitive behavior requires dedicated verification before signoff."
+  ],
+  "release_state": "RELEASE_APPROVED_WITH_ASSUMPTIONS",
+  "violated_invariants": [
+    "assurance.signoff_requires_evidence_classes"
+  ],
+  "remaining_conditions_to_release": []
+}

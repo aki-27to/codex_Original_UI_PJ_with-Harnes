@@ -7,6 +7,7 @@ const http = require("http");
 const path = require("path");
 const vm = require("vm");
 const { startInProcessHarnessServer } = require("./lib/in_process_harness_server");
+const { buildHarnessOverviewPayload } = require("./lib/harness_overview_surface");
 
 const workspaceRoot = path.resolve(__dirname, "..");
 const serverJsPath = path.join(workspaceRoot, "server.js");
@@ -595,11 +596,41 @@ function createOverviewPayload(overrides = {}) {
         schema: "iteration-control-contract.v1",
         path: "scripts/config/iteration_control_contract.json",
         releaseState: "fail_closed",
+        improvementDeltaThreshold: 0.03,
+        budgets: {
+          wallClockMs: 3600000,
+          stepBudget: 24,
+          tokenBudget: 400000,
+        },
+        riskThresholds: {
+          maxResidualRiskItems: 6,
+          maxRequiredEvidenceFailures: 0,
+        },
+        failClosedConditions: [
+          "goal_substitution_detected",
+          "procedural_closure_without_adoption",
+        ],
+        validationFailureConditions: [
+          "task_contract_integrity_below_threshold",
+        ],
+        retryConditions: [
+          "artifact_quality_below_threshold",
+        ],
       },
       adoptionReadinessContract: {
         schema: "adoption-readiness-evaluator-contract.v1",
         path: "scripts/config/adoption_readiness_evaluator_contract.json",
         dimensionCount: 7,
+        hardGates: {
+          literal_requirement_alignment: {
+            min: 0.84,
+            failureClass: "validation_failure",
+          },
+          boundary_compliance: {
+            min: 0.99,
+            failureClass: "fail_closed",
+          },
+        },
       },
       execApi: {
         replayApi: {
@@ -1204,6 +1235,53 @@ function createOverviewPayload(overrides = {}) {
       catalog: { version: "2026.03", path: "scripts/config/skill_catalog.json" },
       policy: { version: "2026.03", path: "scripts/config/skill_portfolio_policy.json" },
       outcomeEvents: { path: "logs/skill-outcome-events.jsonl", count: 1 },
+      outcomeSummary: {
+        sampledSkills: 3,
+        totalRuns: 14,
+        totalSuccesses: 12,
+        overallSuccessRate: 0.8571,
+        totalGuardFailures: 0,
+      },
+      promotionCandidateCount: 1,
+      promotionCandidates: [
+        {
+          skill: "api-contract-testgen",
+          fromClass: "scenario",
+          toClass: "role",
+          evidence: {
+            runs: 8,
+            successes: 7,
+            successRate: 0.875,
+            avgPrimaryScore: 0.88,
+            guardFailures: 0,
+          },
+        },
+      ],
+      promotionRules: {
+        scenarioToRole: {
+          minRuns: 6,
+          minSuccessRate: 0.84,
+          minPrimaryScore: 0.8,
+          maxGuardFailures: 0,
+        },
+        roleToGlobal: {
+          minRuns: 12,
+          minSuccessRate: 0.9,
+          minPrimaryScore: 0.87,
+          maxGuardFailures: 0,
+        },
+        evidence: {
+          requireReproducibilityEvidence: true,
+        },
+      },
+      portfolioRules: {
+        minClassDiversity: 3,
+        maxClassShare: {
+          global: 0.45,
+          role: 0.55,
+          scenario: 0.7,
+        },
+      },
       missingProposals: [],
       roleChecks: [
         {
@@ -1223,7 +1301,66 @@ function createOverviewPayload(overrides = {}) {
     apis: {
       runtime: "/api/runtime",
       overview: "/api/harness/overview",
+      topography: "/api/agent-topography",
+      replayTurns: "/api/replay/turns",
+      continuityTask: "/api/continuity/task",
+      continuityTasks: "/api/continuity/tasks",
       evalRun: "POST /api/eval/run",
+    },
+    capabilitySurface: {
+      browser: {
+        schema: "browser-capability-overview.v1",
+        status: "running",
+        score: 0.703488,
+        evidenceCount: 43,
+        successCount: 26,
+        failureCount: 17,
+        stableCoverageBreadth: 0.5,
+        supportedCoverageBreadth: 1,
+        displayFinalScore: 0.94,
+        sourceFamilies: ["web_creative", "workflow_execution", "tool_use_browser_like"],
+        unstableFamilyCount: 3,
+        openFailureModes: [
+          "retry budget exceeded without safe abort",
+          "browser failure misreported as task success",
+        ],
+        familyRows: [
+          {
+            familyId: "web_creative",
+            label: "Web Creative",
+            stableCovered: false,
+            stabilityStatus: "unstable",
+            recentSuccessRate: 0.3333,
+            recentFailureBurden: 2,
+            nextCoverageAction: "reduce failure burden and verifier debt in recent windows",
+          },
+        ],
+      },
+      continuity: {
+        schema: "continuity-public-summary.v1",
+        finalReleaseState: "integrated",
+        activeTaskId: "task_486b48ffcf",
+        activeTaskFamily: "deterministic_code",
+        objective: "verifier failure should force replan and recovery",
+        handoffCount: 362,
+        blockedSubtasks: 0,
+        integrationPendingCount: 0,
+        openDebtCount: 0,
+        debtSeverity: "none",
+        resumeCount: 2,
+        replanCount: 0,
+        verifierCheckpointCount: 4,
+        resolvedDebtCount: 24,
+        recentTrend: [
+          {
+            generatedAt: "2026-04-11T11:32:37.108Z",
+            openDebtCount: 0,
+            blockedSubtasks: 0,
+            integrationPendingCount: 0,
+            finalReleaseState: "integrated",
+          },
+        ],
+      },
     },
   };
   return mergeObjects(payload, overrides);
@@ -1307,6 +1444,18 @@ function assertRenderedOverviewMatchesPayload(payload, elements) {
   );
   assertContains(elements.overviewHeroText.textContent, payloadActiveAgent(payload), "hero must render the active runtime agent");
   assertContains(elements.overviewHeroText.textContent, payloadDefaultExecAgent(payload), "hero must render the default exec agent");
+  assertContains(elements.jobScenarioGrid.innerHTML, "Delegated implementation", "job scenarios must render delegated implementation");
+  assertContains(elements.jobScenarioGrid.innerHTML, "Governed review and release decision", "job scenarios must render governed review");
+  assertContains(elements.jobScenarioGrid.innerHTML, "Long-horizon continuity and handoff", "job scenarios must render continuity handoff");
+  assertContains(elements.capabilitySurfaceGrid.innerHTML, "Governed memory", "capability surface must render memory lane");
+  assertContains(elements.capabilitySurfaceGrid.innerHTML, "Skill portfolio", "capability surface must render skill lane");
+  assertContains(elements.capabilitySurfaceGrid.innerHTML, "Multi-agent runtime", "capability surface must render subagent lane");
+  assertContains(elements.capabilitySurfaceGrid.innerHTML, "Browser and tool-use recovery", "capability surface must render browser lane");
+  assertContains(elements.capabilitySurfaceGrid.innerHTML, "Long-horizon continuity", "capability surface must render continuity lane");
+  assertContains(elements.capabilitySurfaceGrid.innerHTML, "Governed self-improvement", "capability surface must render self-improvement lane");
+  assertContains(elements.demoFlowGrid.innerHTML, "Implement and finish with proof", "demo flow must render governed delivery path");
+  assertContains(elements.demoFlowGrid.innerHTML, "Decide ship / no-ship honestly", "demo flow must render release decision path");
+  assertContains(elements.demoFlowGrid.innerHTML, "Resume across sessions without guesswork", "demo flow must render continuity path");
   const specialists = payload && payload.topology && payload.topology.lanes && Array.isArray(payload.topology.lanes.specialists)
     ? payload.topology.lanes.specialists
     : [];
@@ -1339,11 +1488,28 @@ function assertRenderedOverviewMatchesPayload(payload, elements) {
   if (workflowSuiteId) {
     assertContains(elements.signoffEvidenceCard.innerHTML, String(workflowSuiteId), "signoff evidence must render workflow contract");
   }
+  const browserSurface = payload && payload.capabilitySurface && payload.capabilitySurface.browser && typeof payload.capabilitySurface.browser === "object"
+    ? payload.capabilitySurface.browser
+    : null;
+  if (browserSurface) {
+    assertContains(elements.capabilitySurfaceGrid.innerHTML, String(browserSurface.sourceFamilies[0] || "web_creative"), "capability surface must render browser source families");
+    assertContains(elements.capabilitySurfaceGrid.innerHTML, String(browserSurface.openFailureModes[0] || "retry budget exceeded without safe abort"), "capability surface must render browser failure modes");
+  }
+  const continuitySurface = payload && payload.capabilitySurface && payload.capabilitySurface.continuity && typeof payload.capabilitySurface.continuity === "object"
+    ? payload.capabilitySurface.continuity
+    : null;
+  if (continuitySurface) {
+    assertContains(elements.capabilitySurfaceGrid.innerHTML, String(continuitySurface.objective || "continuity objective"), "capability surface must render continuity objective");
+    assertContains(elements.capabilitySurfaceGrid.innerHTML, String(continuitySurface.finalReleaseState || "integrated"), "capability surface must render continuity release state");
+  }
   assertContains(elements.runtimePostureCard.innerHTML, "task-family-profiles.v1", "runtime posture must render family profile contract");
   assertContains(elements.runtimePostureCard.innerHTML, "Portable Local", "runtime posture must render deployment posture");
   assertContains(elements.runtimePostureCard.innerHTML, "authority-registry.v1", "runtime posture must render authority registry");
   assertContains(elements.runtimePostureCard.innerHTML, "iteration-control-contract.v1", "runtime posture must render iteration control contract");
   assertContains(elements.runtimePostureCard.innerHTML, "adoption-readiness-evaluator-contract.v1", "runtime posture must render adoption readiness contract");
+  assertContains(elements.stopBudgetCard.innerHTML, "24 steps / 400,000 tokens", "stop intelligence must render contract budgets");
+  assertContains(elements.stopBudgetCard.innerHTML, "goal_substitution_detected", "stop intelligence must render fail-closed triggers");
+  assertContains(elements.stopBudgetCard.innerHTML, "literal_requirement_alignment", "stop intelligence must render adoption hard gates");
   const familyCompletionGate = payload
     && payload.runtime
     && payload.runtime.latestTurn
@@ -1360,6 +1526,7 @@ function assertRenderedOverviewMatchesPayload(payload, elements) {
   if (familyCompletionGate && familyCompletionGate.applies) {
     assertContains(elements.healthCard.innerHTML, String(familyCompletionGate.status || "pending"), "health card must render family completion gate status");
     assertContains(elements.healthCard.innerHTML, String(familyCompletionGate.completionContract || "contract"), "health card must render family completion gate contract");
+    assertContains(elements.stopBudgetCard.innerHTML, String(familyCompletionGate.status || "pending"), "stop intelligence must render the latest family gate status");
   }
   const phaseStatus = payload && payload.runtime && payload.runtime.phaseStatus && typeof payload.runtime.phaseStatus === "object"
     ? payload.runtime.phaseStatus
@@ -1424,6 +1591,17 @@ function assertRenderedOverviewMatchesPayload(payload, elements) {
         assertContains(externalLearningCardHtml, String(secondaryLearning.anthropicEngineering.selfImprovement.nextPriority.title || "candidate"), "external learning card must render secondary next-cycle priority title");
       }
     }
+  }
+  const skillPortfolio = payload && payload.skillPortfolio && typeof payload.skillPortfolio === "object"
+    ? payload.skillPortfolio
+    : null;
+  if (skillPortfolio) {
+    const skillPortfolioCardHtml = elements.skillPortfolioCard ? elements.skillPortfolioCard.innerHTML : "";
+    assertContains(skillPortfolioCardHtml, String(skillPortfolio.outcomeSummary && skillPortfolio.outcomeSummary.sampledSkills || "3"), "skill economy must render sampled skill count");
+    assertContains(skillPortfolioCardHtml, String(skillPortfolio.promotionCandidates && skillPortfolio.promotionCandidates[0] && skillPortfolio.promotionCandidates[0].skill || "api-contract-testgen"), "skill economy must render promotion candidates");
+    assertContains(skillPortfolioCardHtml, "scenario 6 / role 12", "skill economy must render promotion thresholds");
+    assertContains(skillPortfolioCardHtml, "diversity >= 3", "skill economy must render portfolio mix rules");
+    assertContains(skillPortfolioCardHtml, "Lock the lesson contract before deciding promotion or storage.", "skill economy must render manual skill-candidate lessons");
   }
   const governedMemory = payload && payload.memory && payload.memory.governedGraph && typeof payload.memory.governedGraph === "object"
     ? payload.memory.governedGraph
@@ -1684,8 +1862,13 @@ async function runIntegrationCheck() {
     assert(overviewJson.evidence && typeof overviewJson.evidence === "object", "overview evidence missing");
     assert(overviewJson.memory && typeof overviewJson.memory === "object", "overview memory missing");
     assert(overviewJson.skillPortfolio && typeof overviewJson.skillPortfolio === "object", "overview skillPortfolio missing");
+    assert(overviewJson.capabilitySurface && typeof overviewJson.capabilitySurface === "object", "overview capabilitySurface missing");
+    assert(overviewJson.capabilitySurface.browser && typeof overviewJson.capabilitySurface.browser === "object", "overview browser capability missing");
+    assert(overviewJson.capabilitySurface.continuity && typeof overviewJson.capabilitySurface.continuity === "object", "overview continuity capability missing");
     assert.strictEqual(overviewJson.pages && overviewJson.pages.overview, "/01.HarnesUI/overview.html", "overview page path mismatch");
     assert(Array.isArray(overviewJson.eval && overviewJson.eval.recentRuns), "overview recent eval runs must be an array");
+    assert.strictEqual(String(overviewJson.apis && overviewJson.apis.continuityTasks || ""), "/api/continuity/tasks", "overview continuity tasks path mismatch");
+    assert.strictEqual(String(overviewJson.apis && overviewJson.apis.continuityTask || ""), "/api/continuity/task", "overview continuity task path mismatch");
     assert(overviewJson.runtime.controlApi && typeof overviewJson.runtime.controlApi === "object", "overview controlApi missing");
     assert.strictEqual(String(overviewJson.runtime.controlApi.token || ""), "", "overview must redact controlApi.token");
     assert.strictEqual(Number(overviewJson.runtime.controlApi.tokenRedacted || 0), 1, "overview must mark controlApi.token as redacted");
@@ -1806,6 +1989,9 @@ async function main() {
   checks.push(
     runCheck("overview html declares primary panels", () => {
       assertRegex(overviewHtml, /id=\"overviewMetrics\"/, "overviewMetrics container missing");
+      assertRegex(overviewHtml, /id=\"jobScenarioGrid\"/, "jobScenarioGrid container missing");
+      assertRegex(overviewHtml, /id=\"capabilitySurfaceGrid\"/, "capabilitySurfaceGrid container missing");
+      assertRegex(overviewHtml, /id=\"demoFlowGrid\"/, "demoFlowGrid container missing");
       assertRegex(overviewHtml, /id=\"topologyParentLane\"/, "topologyParentLane container missing");
       assertRegex(overviewHtml, /id=\"traceabilityCard\"/, "traceabilityCard container missing");
       assertRegex(overviewHtml, /id=\"governedMemoryCard\"/, "governedMemoryCard container missing");
@@ -1840,6 +2026,74 @@ async function main() {
     runCheck("server exposes overview route and builder", () => {
       assertRegex(serverJs, /function buildHarnessOverviewSnapshot\(\)/, "buildHarnessOverviewSnapshot() missing");
       assertRegex(serverJs, /pathname===\"\/api\/harness\/overview\"/, "GET /api/harness/overview route missing");
+    })
+  );
+  checks.push(
+    runCheck("overview surface module builds governed graph payload with explicit deps", () => {
+      const snapshot = buildHarnessOverviewPayload({
+        apiVersion: "test",
+        buildBrowserCapabilityOverview: () => ({ browser: true }),
+        buildBundleOverview: () => ({ latest: null, recent: [] }),
+        buildContinuityOverviewSnapshot: () => ({ continuity: true }),
+        buildEvalHistoryOverview: () => ([{ runId: "eval-1" }]),
+        buildExecutionMemoryOverview: () => ({ items: [] }),
+        buildHarnessTraceabilitySnapshot: () => ({ clauses: [] }),
+        buildRuntimeApiSnapshot: () => ({
+          activeAgent: "default",
+          latestTurn: {
+            planning: {},
+            agent_name: "default",
+          },
+          governancePolicy: { schema: "governance.v1" },
+          contractSpec: { schema: "turn.v1" },
+          taskOutcomeContract: { schema: "task-outcome.v1" },
+          planningContracts: { schema: "planning.v1" },
+          intentFirst: {
+            contract: { schema: "design.v1" },
+            tasteMemory: {},
+          },
+          harnessMemory: {},
+          externalLearning: {},
+          manualSelfImprovement: {},
+          agiImprovementFlywheel: {},
+          secondaryLearning: {},
+          fullUtilization: {},
+          slo: {},
+          evalHarness: {
+            suite: {},
+          },
+          governedMemory: {},
+        }),
+        buildRuntimeProofBundleSnapshot: () => ({}),
+        buildSignoffBundleSnapshot: () => ({}),
+        buildSkillPortfolioOverview: () => ({ assignments: [] }),
+        buildTopographyOverview: () => ({ parent: [], specialists: [] }),
+        getAgentTopographySnapshot: () => ({}),
+        harnessMemoryLoaded: true,
+        listReplayMemorySnapshots: () => ([]),
+        loadHarnessExecutionMemoryStore: () => {
+          throw new Error("loadHarnessExecutionMemoryStore should not run for the module smoke check");
+        },
+        loggingSurfacePaths: {
+          currentRoot: "logs/current",
+          currentOperatorSummaryPath: "logs/current/operator_summary.json",
+          currentIndexPath: "logs/current/index.json",
+          currentDesignConformancePath: "logs/current/design_conformance_summary.json",
+          currentLatestRunSummaryPath: "logs/current/latest_run_summary.json",
+          currentReviewLoadBreakdownPath: "logs/current/review_load_breakdown.json",
+          currentLatestSignoffSummaryPath: "logs/current/latest_signoff_summary.json",
+        },
+        repoRelativePath: (_root, targetPath) => String(targetPath || ""),
+        runtimeProofsRoot: "logs/bundles/runtime_proof",
+        safeString: (value, max = 12000) => (typeof value === "string" ? value.trim().slice(0, max) : ""),
+        sanitizeRuntimeSnapshotForOverview: (value) => value,
+        signoffBundlesRoot: "logs/bundles/signoff",
+        syncGovernedMemoryGraph: () => ({ summary: { nodes: 1 } }),
+        workspaceRoot: workspaceRoot,
+      });
+
+      assert.deepStrictEqual(snapshot.memory.governedGraph, { nodes: 1 }, "module must preserve governed graph summary");
+      assert(Array.isArray(snapshot.eval.recentRuns), "module must keep recent eval runs structured");
     })
   );
 

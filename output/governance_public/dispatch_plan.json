@@ -1,0 +1,104 @@
+{
+  "schema": "dispatch-plan.v2",
+  "source": "runtime_inferred_pre_dispatch",
+  "promptHash": "b89aceb44c5dbd4fc7f3f635a6c6d67971f8459f9ca957f9f53dcb387ed99ad8",
+  "planningMode": "NORMAL",
+  "planningDepth": "STANDARD_PLANNING",
+  "assuranceDepth": "SIGNOFF_ASSURANCE",
+  "flowPath": "NORMAL_PATH",
+  "executionFlow": "STANDARD_PLANNING+SIGNOFF_ASSURANCE",
+  "proposalOnly": 0,
+  "reviewerRequired": 1,
+  "testerRequired": 1,
+  "signoffRequired": 1,
+  "dedicatedTestsRequired": 1,
+  "dispatches": [
+    {
+      "dispatchId": "dispatch-1-backend_worker",
+      "ownerAgent": "backend_worker",
+      "ownedPaths": [
+        "scripts/",
+        "server.js"
+      ],
+      "taskSummary": "Own server-side orchestration, policies, and runtime behavior changes.",
+      "acceptanceChecks": [
+        "ac-1",
+        "ac-2",
+        "ac-3",
+        "ac-4",
+        "ac-5",
+        "ac-6",
+        "ac-7",
+        "ac-8"
+      ],
+      "toolsMcpRequirements": [
+        "apply_patch",
+        "shell_command",
+        "node"
+      ],
+      "reviewerRequired": 1,
+      "testerRequired": 1,
+      "signoffRequired": 1,
+      "escalationPoint": "Escalate if owned paths or acceptance checks drift from the requirement contract.",
+      "expectedEvidence": [
+        "file_change",
+        "verification_command",
+        "artifact_manifest",
+        "signoff_trace",
+        "dedicated_test_run"
+      ]
+    },
+    {
+      "dispatchId": "dispatch-2-infra_worker",
+      "ownerAgent": "infra_worker",
+      "ownedPaths": [
+        "docs/",
+        "scripts/config/"
+      ],
+      "taskSummary": "Own contracts, docs sync, runtime observability, and signoff-facing evidence updates.",
+      "acceptanceChecks": [
+        "ac-1",
+        "ac-2",
+        "ac-3",
+        "ac-4",
+        "ac-5",
+        "ac-6",
+        "ac-7",
+        "ac-8"
+      ],
+      "toolsMcpRequirements": [
+        "apply_patch",
+        "shell_command",
+        "node"
+      ],
+      "reviewerRequired": 1,
+      "testerRequired": 1,
+      "signoffRequired": 1,
+      "escalationPoint": "Escalate if owned paths or acceptance checks drift from the requirement contract.",
+      "expectedEvidence": [
+        "contract_update",
+        "doc_sync",
+        "artifact_manifest",
+        "signoff_bundle"
+      ]
+    }
+  ],
+  "sharedEscalationPoints": [
+    "Escalate if owned paths or acceptance checks drift from the requirement contract."
+  ],
+  "expectedEvidence": [
+    "requirement_contract",
+    "dispatch_plan",
+    "evidence_manifest",
+    "stage_timeline",
+    "flow_trace_summary",
+    "review_load_breakdown",
+    "reviewer_summary",
+    "tester_summary",
+    "signoff_bundle",
+    "dedicated_test_run"
+  ],
+  "residualRisks": [
+    "New logic or protocol-sensitive behavior requires dedicated verification before signoff."
+  ]
+}

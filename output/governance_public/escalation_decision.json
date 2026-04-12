@@ -1,0 +1,15 @@
+{
+  "schema": "escalation-decision.v1",
+  "generatedAt": "2026-04-11T07:35:12.637Z",
+  "escalationRequired": 0,
+  "action": "RELEASE",
+  "reason": "release_conditions_satisfied",
+  "blockers": [],
+  "assumptions": [
+    "Any scope outside the explicit goal should stay proposal-only unless the prompt states otherwise.",
+    "Unresolved ambiguity must not be auto-answered by the harness."
+  ],
+  "residualRisks": [
+    "New logic or protocol-sensitive behavior requires dedicated verification before signoff."
+  ]
+}

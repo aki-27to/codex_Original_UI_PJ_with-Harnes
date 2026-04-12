@@ -1,0 +1,110 @@
+{
+  "schema": "governance-public-bundle-manifest.v1",
+  "generatedAt": "2026-04-11T07:35:12.638Z",
+  "sourceLatestSignoffSummary": "logs/current/latest_signoff_summary.json",
+  "sourceLatestRunSummary": "logs/bundles/signoff/signoff-2026-03-09T12-31-59-842Z-24dd95/latest_run_summary.json",
+  "sourceBundleRoot": "logs/bundles/signoff/signoff-2026-03-09T12-31-59-842Z-24dd95",
+  "sourceTurnDir": "logs/bundles/signoff/signoff-2026-03-09T12-31-59-842Z-24dd95/raw/turns/2026-03-09/019cd29a-09de-7670-8c38-eade454f7cb2__019cd29a-0ad3-72d2-957c-30870c52eaba",
+  "exportedArtifacts": [
+    {
+      "file": "latest_signoff_summary.json",
+      "source": "logs/current/latest_signoff_summary.json",
+      "derived": 0
+    },
+    {
+      "file": "signoff_summary.json",
+      "source": "logs/bundles/signoff/signoff-2026-03-09T12-31-59-842Z-24dd95/signoff_summary.json",
+      "derived": 0
+    },
+    {
+      "file": "latest_run_summary.json",
+      "source": "logs/bundles/signoff/signoff-2026-03-09T12-31-59-842Z-24dd95/latest_run_summary.json",
+      "derived": 0
+    },
+    {
+      "file": "natural_task_trace_summary.json",
+      "source": "logs/bundles/signoff/signoff-2026-03-09T12-31-59-842Z-24dd95/natural_task_trace_summary.json",
+      "derived": 0
+    },
+    {
+      "file": "request_frame.json",
+      "source": "logs/bundles/signoff/signoff-2026-03-09T12-31-59-842Z-24dd95/raw/turns/2026-03-09/019cd29a-09de-7670-8c38-eade454f7cb2__019cd29a-0ad3-72d2-957c-30870c52eaba/request_frame.json",
+      "derived": 0
+    },
+    {
+      "file": "routing_decision.json",
+      "source": "logs/bundles/signoff/signoff-2026-03-09T12-31-59-842Z-24dd95/raw/turns/2026-03-09/019cd29a-09de-7670-8c38-eade454f7cb2__019cd29a-0ad3-72d2-957c-30870c52eaba/routing_decision.json",
+      "derived": 0
+    },
+    {
+      "file": "task_outcomes.json",
+      "source": "logs/bundles/signoff/signoff-2026-03-09T12-31-59-842Z-24dd95/raw/turns/2026-03-09/019cd29a-09de-7670-8c38-eade454f7cb2__019cd29a-0ad3-72d2-957c-30870c52eaba/task_outcomes.json",
+      "derived": 0
+    },
+    {
+      "file": "review_bundle.json",
+      "source": "logs/bundles/signoff/signoff-2026-03-09T12-31-59-842Z-24dd95/raw/turns/2026-03-09/019cd29a-09de-7670-8c38-eade454f7cb2__019cd29a-0ad3-72d2-957c-30870c52eaba/review_bundle.json",
+      "derived": 0
+    },
+    {
+      "file": "release_decision.json",
+      "source": "logs/bundles/signoff/signoff-2026-03-09T12-31-59-842Z-24dd95/raw/turns/2026-03-09/019cd29a-09de-7670-8c38-eade454f7cb2__019cd29a-0ad3-72d2-957c-30870c52eaba/release_decision.json",
+      "derived": 0
+    },
+    {
+      "file": "evidence_manifest.json",
+      "source": "logs/bundles/signoff/signoff-2026-03-09T12-31-59-842Z-24dd95/raw/turns/2026-03-09/019cd29a-09de-7670-8c38-eade454f7cb2__019cd29a-0ad3-72d2-957c-30870c52eaba/evidence_manifest.json",
+      "derived": 0
+    },
+    {
+      "file": "flow_trace_summary.json",
+      "source": "logs/bundles/signoff/signoff-2026-03-09T12-31-59-842Z-24dd95/raw/turns/2026-03-09/019cd29a-09de-7670-8c38-eade454f7cb2__019cd29a-0ad3-72d2-957c-30870c52eaba/flow_trace_summary.json",
+      "derived": 0
+    },
+    {
+      "file": "stage_timeline.json",
+      "source": "logs/bundles/signoff/signoff-2026-03-09T12-31-59-842Z-24dd95/raw/turns/2026-03-09/019cd29a-09de-7670-8c38-eade454f7cb2__019cd29a-0ad3-72d2-957c-30870c52eaba/stage_timeline.json",
+      "derived": 0
+    },
+    {
+      "file": "review_load_breakdown.json",
+      "source": "logs/bundles/signoff/signoff-2026-03-09T12-31-59-842Z-24dd95/raw/turns/2026-03-09/019cd29a-09de-7670-8c38-eade454f7cb2__019cd29a-0ad3-72d2-957c-30870c52eaba/review_load_breakdown.json",
+      "derived": 0
+    },
+    {
+      "file": "conformance_report.json",
+      "source": "logs/bundles/signoff/signoff-2026-03-09T12-31-59-842Z-24dd95/raw/turns/2026-03-09/019cd29a-09de-7670-8c38-eade454f7cb2__019cd29a-0ad3-72d2-957c-30870c52eaba/conformance_report.json",
+      "derived": 0
+    },
+    {
+      "file": "operator_view_summary.json",
+      "source": "logs/bundles/signoff/signoff-2026-03-09T12-31-59-842Z-24dd95/raw/turns/2026-03-09/019cd29a-09de-7670-8c38-eade454f7cb2__019cd29a-0ad3-72d2-957c-30870c52eaba/operator_view_summary.json",
+      "derived": 0
+    },
+    {
+      "file": "requirement_contract.json",
+      "source": "logs/bundles/signoff/signoff-2026-03-09T12-31-59-842Z-24dd95/raw/turns/2026-03-09/019cd29a-09de-7670-8c38-eade454f7cb2__019cd29a-0ad3-72d2-957c-30870c52eaba/requirement_contract.json",
+      "derived": 0
+    },
+    {
+      "file": "dispatch_plan.json",
+      "source": "logs/bundles/signoff/signoff-2026-03-09T12-31-59-842Z-24dd95/raw/turns/2026-03-09/019cd29a-09de-7670-8c38-eade454f7cb2__019cd29a-0ad3-72d2-957c-30870c52eaba/dispatch_plan.json",
+      "derived": 0
+    },
+    {
+      "file": "adoption_readiness_eval.json",
+      "source": "derived_from_public_trace",
+      "derived": 1
+    },
+    {
+      "file": "iteration_decision.json",
+      "source": "derived_from_public_trace",
+      "derived": 1
+    },
+    {
+      "file": "escalation_decision.json",
+      "source": "derived_from_public_trace",
+      "derived": 1
+    }
+  ]
+}

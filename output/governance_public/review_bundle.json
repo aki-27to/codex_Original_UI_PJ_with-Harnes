@@ -1,0 +1,135 @@
+{
+  "schema": "ReviewBundle.v1",
+  "acceptance_coverage_matrix": [
+    {
+      "criterion_id": "ac-1",
+      "title": "The target file contains `gate: signed`.",
+      "status": "PASS",
+      "evidence": [
+        "logs/bundles/signoff/signoff-2026-03-09T12-31-59-842Z-24dd95/raw/scripts/config/signoff_sample_target.txt",
+        "docs/EVIDENCE_CONTRACT.md",
+        "docs/CURRENT_ARCHITECTURE.md"
+      ]
+    },
+    {
+      "criterion_id": "ac-2",
+      "title": "The evidence contract bullet is present.",
+      "status": "PASS",
+      "evidence": [
+        "evidence_manifest.json",
+        "stage_timeline.json",
+        "flow_trace_summary.json"
+      ]
+    },
+    {
+      "criterion_id": "ac-3",
+      "title": "The architecture bullet is present.",
+      "status": "PASS",
+      "evidence": [
+        "docs/CURRENT_ARCHITECTURE.md",
+        "docs/ARCHITECTURE_CHANGELOG.md"
+      ]
+    },
+    {
+      "criterion_id": "ac-4",
+      "title": "The changelog line is present.",
+      "status": "PASS",
+      "evidence": [
+        "docs/CURRENT_ARCHITECTURE.md",
+        "docs/ARCHITECTURE_CHANGELOG.md"
+      ]
+    },
+    {
+      "criterion_id": "ac-5",
+      "title": "Reviewer evidence is present and the reviewer remains read-only.",
+      "status": "PASS",
+      "evidence": [
+        "unknown"
+      ]
+    },
+    {
+      "criterion_id": "ac-6",
+      "title": "Tester evidence is present and includes pass/fail verification.",
+      "status": "PASS",
+      "evidence": [
+        "10"
+      ]
+    },
+    {
+      "criterion_id": "ac-7",
+      "title": "No follow-up questions are required.",
+      "status": "PASS",
+      "evidence": [
+        "logs/bundles/signoff/signoff-2026-03-09T12-31-59-842Z-24dd95/raw/scripts/config/signoff_sample_target.txt",
+        "docs/EVIDENCE_CONTRACT.md",
+        "docs/CURRENT_ARCHITECTURE.md"
+      ]
+    },
+    {
+      "criterion_id": "ac-8",
+      "title": "Final reply must be exactly: SIGNOFF_TASK_OK logs/bundles/signoff/signoff-2026-03-09T12-31-59-842Z-24dd95/raw/scripts/config/signoff_sample_target.txt",
+      "status": "PASS",
+      "evidence": [
+        "10"
+      ]
+    }
+  ],
+  "reviewer_findings": [
+    {
+      "actor": "unknown",
+      "note": "SIGNOFF_TASK_OK logs/bundles/signoff/signoff-2026-03-09T12-31-59-842Z-24dd95/raw/scripts/config/signoff_sample_target.txt"
+    },
+    {
+      "actor": "unknown",
+      "note": "Owned paths:\n- logs\\bundles\\signoff\\signoff-2026-03-09T12-31-59-842Z-24dd95\\raw\\scripts\\config\\signoff_sample_target.txt\n- docs\\EVIDENCE_CONTRACT.md\n- docs\\CURRENT_"
+    },
+    {
+      "actor": "unknown",
+      "note": "Findings: none\nRead-only: yes\nAcceptance: the scoped acceptance criteria appear satisfied in the current file state."
+    },
+    {
+      "actor": "unknown",
+      "note": "- `Read-only: yes`\n- `gate signed: PASS`\n- `evidence contract bullet present: PASS`\n- `architecture bullet present: PASS`\n- `changelog line present: PASS`\n- `overall: PASS`"
+    }
+  ],
+  "severity": "medium",
+  "residual_risk": [
+    "New logic or protocol-sensitive behavior requires dedicated verification before signoff."
+  ],
+  "missing_evidence": [],
+  "pass_fail_per_criterion": [
+    {
+      "criterion_id": "ac-1",
+      "status": "PASS"
+    },
+    {
+      "criterion_id": "ac-2",
+      "status": "PASS"
+    },
+    {
+      "criterion_id": "ac-3",
+      "status": "PASS"
+    },
+    {
+      "criterion_id": "ac-4",
+      "status": "PASS"
+    },
+    {
+      "criterion_id": "ac-5",
+      "status": "PASS"
+    },
+    {
+      "criterion_id": "ac-6",
+      "status": "PASS"
+    },
+    {
+      "criterion_id": "ac-7",
+      "status": "PASS"
+    },
+    {
+      "criterion_id": "ac-8",
+      "status": "PASS"
+    }
+  ],
+  "recommended_release_state": "RELEASE_APPROVED_WITH_ASSUMPTIONS"
+}

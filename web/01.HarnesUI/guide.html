@@ -17,7 +17,7 @@
         <span class="brand-dot"></span>
         <div>
           <h1>Harness Guide</h1>
-          <p>標準ルート、役割分担、証拠、release judgment をやさしい言葉で説明する静的ガイドです。</p>
+          <p>標準ルート、見える仕事、証拠、release judgment を静的に説明するガイドです。</p>
         </div>
       </div>
       <div class="state-pills overview-actions">
@@ -29,16 +29,16 @@
 
     <nav class="overview-anchor-nav guide-anchor-nav" aria-label="Guide sections">
       <a href="#hero">はじめに</a>
-      <a href="#map">全体地図</a>
+      <a href="#map">全体像</a>
       <a href="#screens">画面</a>
-      <a href="#agents">役わり</a>
-      <a href="#flow">仕事の流れ</a>
-      <a href="#extras">別の部屋</a>
+      <a href="#agents">役割</a>
+      <a href="#flow">流れ</a>
+      <a href="#extras">追加機能</a>
       <a href="#apis">API</a>
       <a href="#logs">ログ</a>
-      <a href="#safety">安全ルール</a>
+      <a href="#safety">ガード</a>
       <a href="#checks">確認方法</a>
-      <a href="#limits">注意点</a>
+      <a href="#limits">限界</a>
       <a href="#glossary">ことば</a>
     </nav>
 
@@ -46,18 +46,19 @@
       <section id="hero" class="overview-hero guide-hero">
         <div class="overview-hero-copy">
           <p class="overview-eyebrow">Child-Friendly System Book</p>
-          <h2>このハーネスは、標準入口を守りながら「受ける」「分ける」「証拠で閉じる」を行う司令室です。</h2>
+          <h2>これは broad runtime shell ではなく、governed autonomous worker platform を一枚で理解するための入口です。</h2>
           <p class="overview-hero-text">
-            むずかしい言い方をやめると、この仕組みは「先生ロボットの教室」です。
-            本線は <code>POST /api/exec</code> と <code>POST /api/eval/run</code> のままで、
-            役わり分担、契約、証拠、fail-closed な評価を上から重ねています。
+            価値の中心は「AI が done と言ったが出せない」を減らすこと、
+            「長時間タスクの引き継ぎ debt」を下げること、
+            そして「ship / no-ship を evidence で正直に決める」ことです。
+            標準ルートは <code>POST /api/exec</code>、評価と release judgment は <code>POST /api/eval/run</code> に固定されています。
           </p>
         </div>
         <div class="overview-hero-pills">
-          <span class="overview-tag ready">入口は `POST /api/exec`</span>
-          <span class="overview-tag info">eval は `POST /api/eval/run`</span>
-          <span class="overview-tag completed">証拠は `logs/current` と bundle に残る</span>
-          <span class="overview-tag warn">parallel harness は増やさない</span>
+          <span class="overview-tag ready">実行は <code>POST /api/exec</code></span>
+          <span class="overview-tag info">評価は <code>POST /api/eval/run</code></span>
+          <span class="overview-tag completed">証拠は <code>logs/current/</code> と bundle に残る</span>
+          <span class="overview-tag warn">parallel harness は前提にしない</span>
         </div>
       </section>
 
@@ -65,22 +66,22 @@
         <div class="overview-section-head">
           <div>
             <p class="overview-kicker">One Minute</p>
-            <h3>まず1分でわかる説明</h3>
+            <h3>最初にこれだけ読めばよい</h3>
           </div>
-          <p class="overview-section-copy">最初にここだけ読めば、このハーネスの大きな役目がつかめます。</p>
+          <p class="overview-section-copy">能力名ではなく、実際に任せられる 3 つの仕事で breadth を見せます。</p>
         </div>
         <div class="guide-grid guide-grid-3">
           <article class="side-card guide-card">
-            <h4>1. 何をする場所?</h4>
-            <p>人が書いたお願いを受けて、Codex に仕事をさせる場所です。本線は <code>POST /api/exec</code>、評価は <code>POST /api/eval/run</code> です。</p>
+            <h4>Delegated implementation</h4>
+            <p>実装を進め、必要なら specialist を使い、最後は証拠つきで終わらせる仕事です。</p>
           </article>
           <article class="side-card guide-card">
-            <h4>2. どうやって安全にする?</h4>
-            <p>いきなり全部を勝手にやらず、要件を固定し、親と子で役わりを分け、最後に証拠と release judgment を残します。</p>
+            <h4>Governed review / release decision</h4>
+            <p>レビュー負担を軽くしつつ、ship / no-ship を hope ではなく evidence で判断する仕事です。</p>
           </article>
           <article class="side-card guide-card">
-            <h4>3. 何が残る?</h4>
-            <p>今のまとめ、証拠セット、深い生ログの3段階で記録が残ります。`agi_v1` では fail-closed な評価と昇格判定も残ります。</p>
+            <h4>Long-horizon continuity / bounded improvement</h4>
+            <p>セッションをまたいで文脈と残課題を持ち越し、改善は bounded に進める仕事です。</p>
           </article>
         </div>
       </section>
@@ -89,60 +90,58 @@
         <div class="overview-section-head">
           <div>
             <p class="overview-kicker">System Map</p>
-            <h3>全体地図</h3>
+            <h3>全体像</h3>
           </div>
-          <p class="overview-section-copy">教室にたとえると、どの部屋が何をしているかの地図です。</p>
+          <p class="overview-section-copy">どこから入り、どこで進行を見て、どこで証拠を確認するかを先に押さえます。</p>
         </div>
         <div class="guide-grid guide-grid-2">
           <article class="side-card guide-card">
-            <h4>正面の入口</h4>
+            <h4>何を比較軸にするか</h4>
             <ul class="guide-list">
-              <li>ブラウザ画面は <code>web/01.HarnesUI/</code> にあります。</li>
-              <li>サーバー本体は <code>server.js</code> です。</li>
-              <li>標準ポートは <code>57525</code> です。</li>
-              <li>実行の本線は <code>POST /api/exec</code> です。</li>
-              <li>評価の本線は <code>POST /api/eval/run</code> です。</li>
+              <li>比較すべき軸は <strong>adoptability</strong> / <strong>release honesty</strong> / <strong>auditability</strong> です。</li>
+              <li>provider 数や派手な runtime shell っぽさで勝負する repo ではありません。</li>
+              <li>主役は governance, proof, adoptability ですが、裏側では worker と continuity が動いています。</li>
             </ul>
           </article>
           <article class="side-card guide-card">
-            <h4>教室のルール</h4>
+            <h4>どこを見るか</h4>
             <ul class="guide-list">
-              <li>親役は計画、分担、最終確認をします。</li>
-              <li>専門の子役は、得意分野の実作業をします。</li>
-              <li>終わったと言うには、証拠と release judgment が必要です。</li>
-              <li>parallel harness や追加の脇道 API を本線の代わりにしてはいけません。</li>
+              <li><strong>Console</strong>: 実行する場所</li>
+              <li><strong>Overview</strong>: breadth と証拠の俯瞰を見る場所</li>
+              <li><strong>Guide</strong>: 静的な意味づけを読む場所</li>
+              <li><code>logs/current/</code>: 最新の事実を確認する場所</li>
             </ul>
           </article>
         </div>
         <div class="guide-flow-strip" aria-label="Big picture flow">
           <div class="guide-flow-node">
             <span>1</span>
-            <strong>お願いを受ける</strong>
-            <p>ユーザーが仕事を出す</p>
+            <strong>頼む</strong>
+            <p>ユーザーの仕事を渡す</p>
           </div>
           <div class="guide-flow-arrow">→</div>
           <div class="guide-flow-node">
             <span>2</span>
-            <strong>計画する</strong>
-            <p>何をするか固める</p>
+            <strong>進める</strong>
+            <p>必要なら specialist に振る</p>
           </div>
           <div class="guide-flow-arrow">→</div>
           <div class="guide-flow-node">
             <span>3</span>
-            <strong>分担して進める</strong>
-            <p>得意な役に任せる</p>
+            <strong>確かめる</strong>
+            <p>テストや review で確かめる</p>
           </div>
           <div class="guide-flow-arrow">→</div>
           <div class="guide-flow-node">
             <span>4</span>
-            <strong>たしかめる</strong>
-            <p>レビューやテスト</p>
+            <strong>判断する</strong>
+            <p>release judgment を出す</p>
           </div>
           <div class="guide-flow-arrow">→</div>
           <div class="guide-flow-node">
             <span>5</span>
-            <strong>しまう</strong>
-            <p>ログと証拠を保存</p>
+            <strong>残す</strong>
+            <p>ログと証拠を残す</p>
           </div>
         </div>
       </section>
@@ -151,25 +150,25 @@
         <div class="overview-section-head">
           <div>
             <p class="overview-kicker">Screens</p>
-            <h3>どの画面が何をするの?</h3>
+            <h3>どの画面が何を担当するか</h3>
           </div>
-          <p class="overview-section-copy">使い分けを知ると、迷いにくくなります。</p>
+          <p class="overview-section-copy">UI を開いたときに迷わないための役割分担です。</p>
         </div>
         <div class="guide-grid guide-grid-3">
           <article class="side-card guide-card">
             <h4>Console</h4>
-            <p>仕事を投げるメイン画面です。今の作業、計画、実行トレース、ステータスを見ます。</p>
-            <p class="guide-note">「今まさに何をしているか」を見る場所です。</p>
+            <p>仕事を依頼し、進行を見て、最終結果を受け取るメイン画面です。</p>
+            <p class="guide-note">まず触るならここです。</p>
           </article>
           <article class="side-card guide-card">
             <h4>Overview</h4>
-            <p>全体の健康診断ページです。Runtime、Topology、Contracts、Evidence、Memory をまとめて見ます。</p>
-            <p class="guide-note">「教室全体がちゃんとしているか」を見る場所です。</p>
+            <p>runtime、topology、contracts、evidence、memory、continuity を一枚で俯瞰する画面です。</p>
+            <p class="guide-note">breadth を体験として見せる中心面です。</p>
           </article>
           <article class="side-card guide-card">
             <h4>Guide</h4>
-            <p>このページです。画面の見方、役の意味、ログの探し方を、人に説明できる言葉でまとめています。</p>
-            <p class="guide-note">「そもそもこれは何か」を知る場所です。</p>
+            <p>このページです。live runtime に依存せず、なぜそうなっているかを固定文で説明します。</p>
+            <p class="guide-note">比較軸と意味づけを迷わず確認できます。</p>
           </article>
         </div>
       </section>
@@ -178,34 +177,34 @@
         <div class="overview-section-head">
           <div>
             <p class="overview-kicker">Agents</p>
-            <h3>だれが何をするの?</h3>
+            <h3>だれが何を担当するか</h3>
           </div>
-          <p class="overview-section-copy">人のチームにたとえると、親と専門家に分かれています。</p>
+          <p class="overview-section-copy">親がまとめ、必要に応じて専門子が実行します。</p>
         </div>
         <div class="guide-grid guide-grid-2">
           <article class="side-card guide-card">
-            <h4>親役</h4>
+            <h4>親の役割</h4>
             <ul class="guide-list">
-              <li><code>default</code>: ふつうの親。全体を見て、専門家にお願いして、最後にまとめます。</li>
-              <li><code>intake</code>: 最初だけを見る親。何を求められているかを固めます。</li>
-              <li><code>release_manager</code>: 最後だけを見る親。証拠が足りるかを見て、出してよいか決めます。</li>
+              <li><code>default</code>: 入口、計画、委譲、統合、最終報告</li>
+              <li><code>intake</code>: 要件の固定と方向の整理</li>
+              <li><code>release_manager</code>: evidence を見て release judgment を出す役</li>
             </ul>
           </article>
           <article class="side-card guide-card">
-            <h4>専門の子役</h4>
+            <h4>専門子の役割</h4>
             <ul class="guide-list">
-              <li><code>frontend_worker</code>: 画面まわり担当</li>
-              <li><code>backend_worker</code>: サーバーや API 担当</li>
-              <li><code>infra_worker</code>: 起動、設定、運用担当</li>
-              <li><code>tester</code>: テスト担当</li>
-              <li><code>reviewer</code>: バグ探し担当</li>
-              <li><code>explorer</code>: 調査担当</li>
+              <li><code>frontend_worker</code>: UI / UX</li>
+              <li><code>backend_worker</code>: server / API</li>
+              <li><code>infra_worker</code>: 環境 / 運用</li>
+              <li><code>tester</code>: 検証</li>
+              <li><code>reviewer</code>: 独立レビュー</li>
+              <li><code>explorer</code>: 調査</li>
             </ul>
           </article>
         </div>
         <article class="side-card guide-card guide-warning">
-          <h4>もう現役ではないもの</h4>
-          <p><code>worker</code> は昔の名前で、今の実行先としては使いません。いま残っているのは「古い指定を見つけて、だめだと教えるための痕跡」です。</p>
+          <h4>ここで大事なこと</h4>
+          <p>これは judge 専用の箱ではありません。親が worker の仕事をまとめ、必要な証拠を集め、最後に honest に判断する構造です。</p>
         </article>
       </section>
 
@@ -213,40 +212,40 @@
         <div class="overview-section-head">
           <div>
             <p class="overview-kicker">Flow</p>
-            <h3>仕事はどう流れるの?</h3>
+            <h3>仕事はどう進むか</h3>
           </div>
-          <p class="overview-section-copy">「お願いして終わり」ではなく、5段階で進みます。</p>
+          <p class="overview-section-copy">難しい言葉より、進み方で覚えると分かりやすいです。</p>
         </div>
         <div class="guide-grid guide-grid-5">
           <article class="side-card guide-card">
             <h4>1. Requirement</h4>
-            <p>やること、やらないこと、守る条件を決めます。</p>
+            <p>何を達成したいか、何をやらないか、何を満たせばよいかを固定します。</p>
           </article>
           <article class="side-card guide-card">
             <h4>2. Planning</h4>
-            <p>どんな順番で進めるか、だれに任せるかを決めます。</p>
+            <p>どこまで自律で進め、どこで specialist を使うかを決めます。</p>
           </article>
           <article class="side-card guide-card">
             <h4>3. Execution</h4>
-            <p>必要な役が実際に仕事をします。</p>
+            <p>必要な作業を進めます。長い仕事なら continuity を残します。</p>
           </article>
           <article class="side-card guide-card">
             <h4>4. Quality Check</h4>
-            <p>テストやレビューで、ほんとうに大丈夫か確認します。</p>
+            <p>テスト、review、evidence で false complete を減らします。</p>
           </article>
           <article class="side-card guide-card">
             <h4>5. Report</h4>
-            <p>結果、前提、残る心配ごとをまとめて報告します。</p>
+            <p>何が変わったか、何を確認したか、何が残るかを正直に報告します。</p>
           </article>
         </div>
         <div class="guide-grid guide-grid-2">
           <article class="side-card guide-card">
-            <h4>計画の深さ</h4>
-            <p>軽い仕事は軽く、重い仕事は深く考えます。だから全部を同じ重さで扱いません。</p>
+            <h4>実装の見え方</h4>
+            <p>コード変更、テスト、レビュー、ログの 4 つがそろって初めて「終わった」と言えます。</p>
           </article>
           <article class="side-card guide-card">
-            <h4>確認の深さ</h4>
-            <p>小さい直しと本番前の確認は同じではありません。必要に応じて review や signoff まで進みます。</p>
+            <h4>継続の見え方</h4>
+            <p>長い仕事は次に何をやるかまで含めて残します。途中で session が変わっても guesswork を増やしません。</p>
           </article>
         </div>
       </section>
@@ -255,51 +254,50 @@
         <div class="overview-section-head">
           <div>
             <p class="overview-kicker">APIs</p>
-            <h3>どんな API があるの?</h3>
+            <h3>どんな API があるか</h3>
           </div>
-          <p class="overview-section-copy">全部覚えなくて大丈夫です。大きな役目ごとに見るとわかりやすいです。</p>
+          <p class="overview-section-copy">全部覚える必要はありません。中心だけ押さえれば十分です。</p>
         </div>
         <div class="guide-grid guide-grid-2">
           <article class="side-card guide-card">
             <h4>メインの API</h4>
             <ul class="guide-list">
-              <li><code>POST /api/exec</code>: 仕事を実行する正面入口</li>
-              <li><code>GET /api/runtime</code>: 今の姿をみる</li>
+              <li><code>POST /api/exec</code>: 実行の中心</li>
+              <li><code>GET /api/runtime</code>: 今の runtime を見る</li>
               <li><code>GET /api/harness/overview</code>: 俯瞰情報をまとめて取る</li>
             </ul>
           </article>
           <article class="side-card guide-card">
-            <h4>会話と確認の API</h4>
-            <ul class="guide-list">
-              <li><code>POST /api/conversation/direct</code>: 会話系の入口</li>
-              <li><code>GET /api/conversation/runtime</code>: 会話の runtime 情報</li>
-              <li><code>GET /api/slo/status</code>: 健康状態を見る</li>
-            </ul>
-          </article>
-          <article class="side-card guide-card">
-            <h4>評価と再生の API</h4>
+            <h4>評価と replay の API</h4>
             <ul class="guide-list">
               <li><code>GET /api/eval/suites</code></li>
               <li><code>GET /api/eval/history</code></li>
-              <li><code>POST /api/eval/run</code>: 評価の本線です。<code>agi_v1</code> もこの既存ルートで有効にします。</li>
+              <li><code>POST /api/eval/run</code>: 評価と release judgment の中心</li>
               <li><code>GET /api/replay/turns</code></li>
-              <li><code>GET /api/replay/turn/:turnId</code></li>
               <li><code>POST /api/replay/turn</code></li>
             </ul>
           </article>
           <article class="side-card guide-card">
-            <h4>補助の API</h4>
+            <h4>会話と補助の API</h4>
             <ul class="guide-list">
-              <li><code>POST /api/voice/piper</code> と <code>POST /api/voice/kokoro</code>: 音声用</li>
-              <li><code>/api/batch/*</code>: まとめ処理用</li>
-              <li><code>POST /api/open-cmd</code>: 補助操作</li>
-              <li><code>POST /api/requirement-guard/validate</code>: 条件の見張り番</li>
+              <li><code>POST /api/conversation/direct</code></li>
+              <li><code>GET /api/conversation/runtime</code></li>
+              <li><code>GET /api/slo/status</code></li>
+            </ul>
+          </article>
+          <article class="side-card guide-card">
+            <h4>補助ルート</h4>
+            <ul class="guide-list">
+              <li><code>POST /api/voice/piper</code> / <code>POST /api/voice/kokoro</code></li>
+              <li><code>/api/batch/*</code>: ローカル補助</li>
+              <li><code>POST /api/open-cmd</code></li>
+              <li><code>POST /api/requirement-guard/validate</code></li>
             </ul>
           </article>
         </div>
         <article class="side-card guide-card guide-note-card">
           <h4>いちばん大事なこと</h4>
-          <p>API はたくさんありますが、仕事の本線は <code>POST /api/exec</code>、評価の本線は <code>POST /api/eval/run</code> です。補助 API はありますが、本線の代わりにしてはいけません。</p>
+          <p>標準ルートは <code>POST /api/exec</code> と <code>POST /api/eval/run</code> です。新しい主役ルートを増やして breadth を見せる設計ではありません。</p>
         </article>
       </section>
 
@@ -307,24 +305,23 @@
         <div class="overview-section-head">
           <div>
             <p class="overview-kicker">Extra Rooms</p>
-            <h3>このハーネスには別の部屋もあるの?</h3>
+            <h3>追加の部屋</h3>
           </div>
-          <p class="overview-section-copy">メインの仕事場のほかに、横につながっている部屋があります。</p>
+          <p class="overview-section-copy">主役ではないけれど、知っていると便利な部屋です。</p>
         </div>
         <div class="guide-grid guide-grid-2">
           <article class="side-card guide-card">
             <h4>English Conversation App</h4>
-            <p>既定では harness 配下の same-origin パスから開く英会話アプリです。統合された実体は <code>APP/01.english-conversation-app</code> にあり、必要なときだけ互換用の standalone launcher を <code>127.0.0.1:57526</code> で動かして会話/TTS だけを main harness に proxy できます。</p>
+            <p>same-origin の統合アプリとして使えます。必要なら standalone launcher を <code>127.0.0.1:57526</code> で起動し、conversation / TTS だけ main harness に proxy します。</p>
             <ul class="guide-list">
-              <li>ふだんの browser path は <code>/english-conversation-app/index.html</code></li>
-              <li>置き場の優先順は env 指定 → APP 統合ルート → legacy external clone → bundled fallback</li>
-              <li>same-origin path では会話 API や TTS と同じ origin を使います</li>
-              <li>standalone app は互換用で、既定レイアウトではありません</li>
+              <li>browser path は <code>/english-conversation-app/index.html</code></li>
+              <li>same-origin でも standalone でも main harness の実行面とは分離</li>
+              <li>conversation / voice だけを軽く試したいときに向いています</li>
             </ul>
           </article>
           <article class="side-card guide-card">
-            <h4>音声の部屋</h4>
-            <p>声を出すために <code>Piper</code> や <code>Kokoro</code> を使えます。これは本体の仕事実行とは別の補助機能です。</p>
+            <h4>音声の補助</h4>
+            <p><code>Piper</code> と <code>Kokoro</code> を使った補助ルートがあります。主役の価値ではなく、体験の補助です。</p>
             <ul class="guide-list">
               <li><code>/api/voice/piper</code></li>
               <li><code>/api/voice/kokoro</code></li>
@@ -332,16 +329,16 @@
           </article>
           <article class="side-card guide-card">
             <h4>Git 自動化</h4>
-            <p>このハーネスは、完了した作業を自動で commit と push まで進める設定を持てます。</p>
+            <p>ローカル運用では commit / push を補助できますが、これを product identity の中心には置きません。</p>
             <ul class="guide-list">
-              <li>ただし dirty baseline なら勝手に公開しません</li>
-              <li>runtime state だけの変化では publish を起こしにくくしています</li>
-              <li>つまり「便利だけど、むやみに危なくしない」考えです</li>
+              <li>dirty baseline を無視してよいという意味ではありません</li>
+              <li>runtime state だけで publish 判断をしません</li>
+              <li>常に evidence と release judgment を見ます</li>
             </ul>
           </article>
           <article class="side-card guide-card">
-            <h4>Overview と違うところ</h4>
-            <p>Overview は「いま」の数字と状態を見せる画面です。ここは「何のためにあるか」を言葉で教える画面です。</p>
+            <h4>Overview との違い</h4>
+            <p>Overview は live な俯瞰です。Guide は比較軸、意味、使い分けを固定文で説明する静的な front surface です。</p>
           </article>
         </div>
       </section>
@@ -350,22 +347,22 @@
         <div class="overview-section-head">
           <div>
             <p class="overview-kicker">Logs</p>
-            <h3>あとで何を見ればいいの?</h3>
+            <h3>あとで何を見ればよいか</h3>
           </div>
-          <p class="overview-section-copy">このハーネスの強みは、証拠がちゃんと残ることです。</p>
+          <p class="overview-section-copy">このハーネスの強みは、説明ではなく事実が残ることです。</p>
         </div>
         <div class="guide-grid guide-grid-3">
           <article class="side-card guide-card">
             <h4><code>logs/current/</code></h4>
-            <p>今すぐ読む場所です。まずは <code>operator_summary.json</code> から見ます。</p>
+            <p>最新の要約を見る場所です。まずは <code>operator_summary.json</code> を見ます。</p>
           </article>
           <article class="side-card guide-card">
             <h4><code>logs/bundles/</code></h4>
-            <p>証拠セットの箱です。proof や signoff のまとまりが入ります。</p>
+            <p>proof と signoff のまとまりを見る場所です。</p>
           </article>
           <article class="side-card guide-card">
             <h4><code>logs/archive/</code></h4>
-            <p>深い生ログ置き場です。ふだんはここまで見なくても大丈夫です。</p>
+            <p>過去の実行を追いかける場所です。通常は毎回ここまで見る必要はありません。</p>
           </article>
         </div>
         <div class="guide-grid guide-grid-2">
@@ -375,12 +372,12 @@
               <li><code>logs/current/operator_summary.json</code></li>
               <li><code>logs/current/latest_run_summary.json</code></li>
               <li><code>logs/current/latest_signoff_summary.json</code></li>
-              <li>必要なら bundle の中や raw を見る</li>
+              <li>必要なら bundle の raw を見る</li>
             </ol>
           </article>
           <article class="side-card guide-card">
-            <h4>どうして3段階に分かれているの?</h4>
-            <p>いつも全部の生ログを見ると大変だからです。まずやさしいまとめを見て、必要なときだけ深く潜る作りになっています。</p>
+            <h4>なぜこれが大事か</h4>
+            <p>「終わったらしい」ではなく、「何が起きたか」をあとから辿れるからです。review trust burden をここで下げます。</p>
           </article>
         </div>
       </section>
@@ -389,34 +386,34 @@
         <div class="overview-section-head">
           <div>
             <p class="overview-kicker">Safety</p>
-            <h3>どんな安全ルールがあるの?</h3>
+            <h3>どんなガードがあるか</h3>
           </div>
-          <p class="overview-section-copy">ただ動けばよいのではなく、勝手に危ないことをしにくい作りです。</p>
+          <p class="overview-section-copy">止めるためのガードではなく、危ない方向に quietly drift しないためのガードです。</p>
         </div>
         <div class="guide-grid guide-grid-2">
           <article class="side-card guide-card">
-            <h4>いつもの約束</h4>
+            <h4>いつもの前提</h4>
             <ul class="guide-list">
               <li>local-first で動く</li>
               <li>標準ポートは <code>57525</code></li>
-              <li>追加 dependency を勝手に増やさない</li>
-              <li>標準実行 path は <code>POST /api/exec</code> を守る</li>
+              <li>不要な dependency 追加を主役にしない</li>
+              <li>標準実行ルートは <code>POST /api/exec</code> を守る</li>
             </ul>
           </article>
           <article class="side-card guide-card">
-            <h4>ガードレール</h4>
+            <h4>入力と承認の姿勢</h4>
             <ul class="guide-list">
-              <li>ふだんの live runtime では <code>request-user-input</code> の既定は <code>auto-default</code></li>
-              <li><code>conversation</code> / <code>proof</code> / <code>repro</code> の strict lane では <code>blocked</code> を明示します</li>
-              <li>親は専門作業を自分で抱え込みすぎない</li>
-              <li>証拠なしで「終わった」と言わない</li>
-              <li>勝手な scope expansion をしない</li>
+              <li>In the live runtime <code>request-user-input</code> uses <code>auto-default</code> so low-risk clarification can continue without stopping.</li>
+              <li>In the strict lane <code>blocked</code> stays in force for <code>conversation</code>, <code>proof</code>, and <code>repro</code> work.</li>
+              <li>承認境界は監査メモであって、毎回の停止トリガではありません。</li>
+              <li>無言の scope expansion と silent rewrite を禁止します。</li>
+              <li>未検証の completion claim を禁止します。</li>
             </ul>
           </article>
         </div>
         <article class="side-card guide-card guide-warning">
-          <h4>小学生向けのひとこと</h4>
-          <p>「近道に見える裏口」があっても、先生は正門から入るべき、というルールです。そのほうがあとで困りません。</p>
+          <h4>子ども向けに言い換えると</h4>
+          <p>「勝手に別の宿題に変えない」「できたふりをしない」「危ないことは quietly 通さない」というルールです。</p>
         </article>
       </section>
 
@@ -424,25 +421,25 @@
         <div class="overview-section-head">
           <div>
             <p class="overview-kicker">Checks</p>
-            <h3>ちゃんと動いているか、どこで確かめるの?</h3>
+            <h3>ちゃんと動いているかの見方</h3>
           </div>
-          <p class="overview-section-copy">ここを見ると「今日の本当の状態」を追いかけやすいです。</p>
+          <p class="overview-section-copy">画面とファイルの両方で確認すると早いです。</p>
         </div>
         <div class="guide-grid guide-grid-2">
           <article class="side-card guide-card">
             <h4>ブラウザで見る</h4>
             <ul class="guide-list">
-              <li>Console: いまの作業を見る</li>
-              <li>Overview: 全体の姿を見る</li>
-              <li>Guide: この説明を読む</li>
+              <li>Console: 実行と結果を見る</li>
+              <li>Overview: breadth と evidence を見る</li>
+              <li>Guide: 比較軸と意味づけを確認する</li>
             </ul>
           </article>
           <article class="side-card guide-card">
             <h4>ファイルで見る</h4>
             <ul class="guide-list">
-              <li><code>docs/CURRENT_ARCHITECTURE.md</code>: 今の設計図</li>
-              <li><code>docs/ARCHITECTURE_CHANGELOG.md</code>: 変更の歴史</li>
-              <li><code>docs/HARNESS_LOGGING_MAP.md</code>: ログの見取り図</li>
+              <li><code>docs/CURRENT_ARCHITECTURE.md</code>: 今の設計</li>
+              <li><code>docs/ARCHITECTURE_CHANGELOG.md</code>: 何を変えたか</li>
+              <li><code>docs/HARNESS_LOGGING_MAP.md</code>: どこに何が出るか</li>
             </ul>
           </article>
           <article class="side-card guide-card">
@@ -456,8 +453,8 @@
             </ul>
           </article>
           <article class="side-card guide-card">
-            <h4>ライブの真実はどこ?</h4>
-            <p>このページは説明書です。いま現在の真実は <code>/api/runtime</code>、Overview、そして <code>logs/current/</code> にあります。</p>
+            <h4>live の事実はどこにあるか</h4>
+            <p>このページは説明書です。live の事実は <code>/api/runtime</code>、Overview、そして <code>logs/current/</code> にあります。</p>
           </article>
         </div>
       </section>
@@ -466,26 +463,26 @@
         <div class="overview-section-head">
           <div>
             <p class="overview-kicker">Limits</p>
-            <h3>今も気をつけること</h3>
+            <h3>まだ限界もある</h3>
           </div>
-          <p class="overview-section-copy">よくできていますが、万能ではありません。残る注意点も知っておくべきです。</p>
+          <p class="overview-section-copy">よくできていても、万能ではありません。残る限界は最初から見せます。</p>
         </div>
         <div class="guide-grid guide-grid-2">
           <article class="side-card guide-card">
-            <h4>外の英会話アプリ</h4>
-            <p>古い sibling clone は互換用です。通常は <code>APP/</code> 配下の統合レイアウトを使い、外部 clone は UI 差分や互換性確認のために明示的な override が必要なときだけ使ってください。</p>
+            <h4>実装核はまだ重い</h4>
+            <p><code>server.js</code> と <code>web/01.HarnesUI/app.js</code> の中心核はまだ太く、理解コストの大きい場所が残っています。</p>
           </article>
           <article class="side-card guide-card">
-            <h4>stdio の実機確認</h4>
-            <p>ホストが子プロセス起動を止める環境だと、完全な live 確認ができないことがあります。</p>
+            <h4>breadth は派手さで見せていない</h4>
+            <p>browser、subagents、memory、continuity はありますが、派手な runtime shell の見え方で競っていません。</p>
           </article>
           <article class="side-card guide-card">
-            <h4>文書の言語</h4>
-            <p>一部の下位文書は日本語と英語が混ざっています。だからこの Guide のようなやさしい入口が必要です。</p>
+            <h4>public landing そのものではない</h4>
+            <p>この Guide は静的な front surface ですが、公開 landing page や 1-command install page の代わりではありません。</p>
           </article>
           <article class="side-card guide-card">
-            <h4>説明書と本当の現在地</h4>
-            <p>このページは道案内です。今日この瞬間の本当の状態は、Overview と runtime と logs で確認してください。</p>
+            <h4>説明書と live の差</h4>
+            <p>このページが正しくても、実際の runtime や logs を見ないと最新状態は分かりません。</p>
           </article>
         </div>
       </section>
@@ -494,34 +491,34 @@
         <div class="overview-section-head">
           <div>
             <p class="overview-kicker">Glossary</p>
-            <h3>むずかしい言葉をやさしく</h3>
+            <h3>よく出ることば</h3>
           </div>
-          <p class="overview-section-copy">意味がわかると、文書を追いやすくなります。</p>
+          <p class="overview-section-copy">意味が分かると、画面もログも読みやすくなります。</p>
         </div>
         <div class="guide-grid guide-grid-2">
           <article class="side-card guide-card">
             <h4>Harness</h4>
-            <p>仕事の流れを安全に固定して、途中と最後を見えるようにする仕組み。</p>
+            <p>仕事を受けて、進めて、確かめて、判断して、残すための仕組み全体です。</p>
           </article>
           <article class="side-card guide-card">
             <h4>Runtime</h4>
-            <p>いまこの瞬間に動いている本当の状態。</p>
+            <p>いま動いている現在の状態です。</p>
           </article>
           <article class="side-card guide-card">
             <h4>Evidence</h4>
-            <p>「ちゃんとやった」と言うための証拠。ログ、テスト結果、レビュー結果など。</p>
+            <p>「ちゃんとやった」と言うための事実です。ログ、テスト、レビュー結果などを含みます。</p>
           </article>
           <article class="side-card guide-card">
             <h4>Signoff</h4>
-            <p>最後の確認。学校でいうと「提出前の最終チェック」です。</p>
+            <p>最後の確認です。出してよいかを honest に判断します。</p>
           </article>
           <article class="side-card guide-card">
             <h4>Replay</h4>
-            <p>前の動きをもう一度たどって見ること。</p>
+            <p>前の実行をもう一度たどって見ることです。</p>
           </article>
           <article class="side-card guide-card">
             <h4>Residual Risk</h4>
-            <p>直したあとでも、まだ少し残る心配ごと。</p>
+            <p>がんばっても、まだ残る前提や不確実さのことです。</p>
           </article>
         </div>
       </section>
@@ -532,14 +529,13 @@
             <p class="overview-kicker">Takeaway</p>
             <h3>最後にひとことで</h3>
           </div>
-          <p class="overview-section-copy">だれかに説明するときは、この一段落で十分です。</p>
+          <p class="overview-section-copy">このページを一文で言い直すとこうなります。</p>
         </div>
         <article class="side-card guide-card guide-summary">
           <p>
-            このハーネスは、Codex に仕事をさせるための「安全な司令室」です。
-            仕事の入口はひとつで、親役が計画して、専門の子役が作業し、最後はレビューやテストの証拠を残します。
-            Console は作業場、Overview は全体地図、Guide はやさしい説明書です。
-            迷ったら、まず <code>logs/current/operator_summary.json</code> と Overview を見れば、いま何が起きているかを追いやすくなります。
+            このハーネスは、Codex に仕事を任せるだけの箱ではありません。
+            delegated implementation、governed review / release decision、long-horizon continuity / bounded improvement を
+            local-first にまとめ、最後は証拠と honest な judgment で閉じる governed autonomous worker platform です。
           </p>
         </article>
       </section>

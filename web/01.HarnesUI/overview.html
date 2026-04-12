@@ -16,7 +16,7 @@
         <span class="brand-dot"></span>
         <div>
           <h1>Harness Overview</h1>
-          <p>Standard routes, governance posture, contracts, evidence, release truth, and agi_v1-facing eval posture in one operator map.</p>
+          <p>Buyer-facing jobs, comparison boundary, proof surfaces, and live runtime truth in one operator map.</p>
         </div>
       </div>
       <div class="state-pills overview-actions">
@@ -29,6 +29,8 @@
     </header>
 
     <nav class="overview-anchor-nav" aria-label="Overview sections">
+      <a href="#capabilitySection">Capabilities</a>
+      <a href="#demoSection">Demo Flow</a>
       <a href="#runtimeSection">Runtime</a>
       <a href="#topologySection">Topology</a>
       <a href="#contractsSection">Contracts</a>
@@ -40,9 +42,9 @@
     <main class="overview-layout">
       <section class="overview-hero">
         <div class="overview-hero-copy">
-          <p class="overview-eyebrow">System Map</p>
-          <h2>Governed harness control plane and live proof, kept separate from the execution console.</h2>
-          <p id="overviewHeroText" class="overview-hero-text">Loading runtime posture for the standard execution route, the existing evaluation route, and their governed evidence surfaces.</p>
+          <p class="overview-eyebrow">Product Surface</p>
+          <h2>See the jobs this governed worker can take off your plate before you inspect the runtime internals.</h2>
+          <p id="overviewHeroText" class="overview-hero-text">Loading delegated-work posture, release proof, continuity state, and the comparison axis that keeps this repo out of the generic shell bucket.</p>
         </div>
         <div id="overviewHeroPills" class="overview-hero-pills"></div>
       </section>
@@ -50,6 +52,40 @@
       <section id="overviewErrorBanner" class="overview-error-banner hidden" aria-live="polite"></section>
 
       <section id="overviewMetrics" class="overview-metrics" aria-live="polite"></section>
+
+      <section id="capabilitySection" class="overview-section">
+        <details class="overview-section-shell" open>
+          <summary class="overview-section-summary">
+            <div class="overview-section-head">
+              <div>
+                <p class="overview-kicker">Capabilities</p>
+                <h3>The jobs this runtime can visibly handle now</h3>
+              </div>
+              <p class="overview-section-copy">Start from delegated implementation, governed release judgment, or long-horizon continuity. Each card shows the start point, live state, proof surface, and where to touch next.</p>
+            </div>
+          </summary>
+          <div class="overview-section-body">
+            <div id="jobScenarioGrid" class="overview-grid overview-grid-3" aria-live="polite"></div>
+            <div id="capabilitySurfaceSummary" class="overview-inline-stat-grid"></div>
+            <div id="capabilitySurfaceGrid" class="overview-grid overview-grid-3 capability-grid" aria-live="polite"></div>
+          </div>
+        </details>
+      </section>
+
+      <section id="demoSection" class="overview-section">
+        <details class="overview-section-shell" open>
+          <summary class="overview-section-summary">
+            <div class="overview-section-head">
+              <div>
+                <p class="overview-kicker">Demo Flow</p>
+                <h3>Three fixed demo jobs</h3>
+              </div>
+              <p class="overview-section-copy">Use these when you want to prove value fast: implement and finish with proof, decide ship / no-ship honestly, or resume a long-running task without reconstructing context from logs.</p>
+            </div>
+          </summary>
+          <div id="demoFlowGrid" class="overview-section-body overview-grid overview-grid-3" aria-live="polite"></div>
+        </details>
+      </section>
 
       <section id="runtimeSection" class="overview-section">
         <details class="overview-section-shell" open>
@@ -62,7 +98,7 @@
               <p class="overview-section-copy">The page below mirrors live defaults and operator-facing APIs instead of inferring them from docs.</p>
             </div>
           </summary>
-          <div class="overview-section-body overview-grid overview-grid-3">
+          <div class="overview-section-body overview-grid overview-grid-4">
             <article class="side-card overview-panel">
               <div class="overview-panel-head">
                 <h4>Runtime Posture</h4>
@@ -76,6 +112,13 @@
                 <p>Dispatch, user-input, requirement, and adversarial policies.</p>
               </div>
               <div id="guardrailCard"></div>
+            </article>
+            <article class="side-card overview-panel">
+              <div class="overview-panel-head">
+                <h4>Stop Intelligence</h4>
+                <p>Budgets, thresholds, fail-closed triggers, and when the runtime should stop instead of bluffing.</p>
+              </div>
+              <div id="stopBudgetCard"></div>
             </article>
             <article class="side-card overview-panel">
               <div class="overview-panel-head">
@@ -272,8 +315,8 @@
               </article>
               <article class="side-card overview-panel">
                 <div class="overview-panel-head">
-                  <h4>Skill Portfolio</h4>
-                  <p>Role coverage, missing proposals, and audit status.</p>
+                  <h4>Skill Economy</h4>
+                  <p>Reusable wins, missing skill proposals, and lesson-to-skill pressure.</p>
                 </div>
                 <div id="skillPortfolioCard"></div>
               </article>

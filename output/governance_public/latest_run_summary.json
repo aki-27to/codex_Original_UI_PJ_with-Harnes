@@ -1,0 +1,43 @@
+{
+  "schema": "bundle-latest-run-summary.v1",
+  "generatedAt": "2026-03-09T12:45:14.382Z",
+  "bundleRoot": "logs/bundles/signoff/signoff-2026-03-09T12-31-59-842Z-24dd95",
+  "turnId": "019cd29a-0ad3-72d2-957c-30870c52eaba",
+  "executionProfile": "full-runtime",
+  "selectedPlanningDepth": "STANDARD_PLANNING",
+  "selectedAssuranceDepth": "SIGNOFF_ASSURANCE",
+  "executionFlow": "STANDARD_PLANNING+SIGNOFF_ASSURANCE",
+  "finalOutcome": {
+    "status": "completed",
+    "taskOutcomeStatus": "COMPLETED",
+    "taskOutcomeReason": "completed_default"
+  },
+  "usedAgents": [
+    "019cd29a-f8a4-7da3-a69a-c2736093d787",
+    "019cd29d-26f3-71d0-90e2-4ca0a908b341",
+    "019cd29d-3bd2-7ff3-bc7b-08d80dafabcc",
+    "default",
+    "unknown"
+  ],
+  "dispatchCount": 3,
+  "dispatchSuccessCount": 3,
+  "reviewerObserved": true,
+  "testerObserved": true,
+  "docSyncSummary": {
+    "required": 1,
+    "status": "PASS",
+    "updatedPaths": [
+      "docs/CURRENT_ARCHITECTURE.md",
+      "docs/ARCHITECTURE_CHANGELOG.md"
+    ],
+    "architectureUpdated": 1,
+    "changelogUpdated": 1,
+    "harnessMapUpdated": 0,
+    "missing": []
+  },
+  "evidenceRefs": {
+    "signoffTaskTraceSummary": "logs/bundles/signoff/signoff-2026-03-09T12-31-59-842Z-24dd95/raw/summaries/signoff_task_trace_summary.json",
+    "reviewLoadBreakdown": "logs/bundles/signoff/signoff-2026-03-09T12-31-59-842Z-24dd95/review_load_breakdown.json",
+    "artifactManifestPath": "logs/bundles/signoff/signoff-2026-03-09T12-31-59-842Z-24dd95/raw/turns/2026-03-09/019cd29a-09de-7670-8c38-eade454f7cb2__019cd29a-0ad3-72d2-957c-30870c52eaba/manifest.json"
+  }
+}

@@ -1,0 +1,162 @@
+{
+  "schema": "flow-trace-summary.v1",
+  "generatedAt": "2026-03-09T12:45:14.080Z",
+  "selectedPlanningMode": "NORMAL",
+  "selectedPlanningDepth": "STANDARD_PLANNING",
+  "selectedAssuranceDepth": "SIGNOFF_ASSURANCE",
+  "planningModeReasons": [
+    "ambiguity=2",
+    "acceptance_uncertainty=0",
+    "novelty=2",
+    "external_dependency=0",
+    "openQuestions=0",
+    "acceptanceClarity=high",
+    "specialistBoundaries=4",
+    "approvalBoundaryTouched=no",
+    "overDeliveryRisk=medium",
+    "userDecisionRequired=no",
+    "assumptionDependence=low",
+    "existingSpecClarity=high",
+    "changeScopeClarity=medium"
+  ],
+  "assuranceDepthReasons": [
+    "blast_radius=2",
+    "irreversibility=0",
+    "release_criticality=2",
+    "evidence_burden=2",
+    "changeKinds=runtime|governance",
+    "reviewerSuggested=yes",
+    "testerSuggested=yes",
+    "signoffImportance=high",
+    "irreversibleRisk=no",
+    "newLogicRisk=no",
+    "regressionRisk=high"
+  ],
+  "flowPath": "NORMAL_PATH",
+  "executionFlow": "STANDARD_PLANNING+SIGNOFF_ASSURANCE",
+  "usedAgents": [
+    "default",
+    "019cd29a-f8a4-7da3-a69a-c2736093d787",
+    "019cd29d-26f3-71d0-90e2-4ca0a908b341",
+    "019cd29d-3bd2-7ff3-bc7b-08d80dafabcc",
+    "unknown"
+  ],
+  "dispatchCount": 3,
+  "dispatchSuccessCount": 3,
+  "reviewerExecuted": 1,
+  "testerExecuted": 1,
+  "usedContracts": [
+    "scripts/config/harness_contract_spec.json",
+    "scripts/config/task_outcome_contract.json",
+    "scripts/config/planning_mode_contract.json",
+    "scripts/config/assurance_depth_contract.json",
+    "scripts/config/planning_decision_contract.schema.json",
+    "scripts/config/requirement_contract.schema.json",
+    "scripts/config/dispatch_plan.schema.json"
+  ],
+  "usedPolicies": [
+    "AGENTS.md",
+    "docs/AGENT_OPERATING_RULES.md",
+    "docs/EVIDENCE_CONTRACT.md"
+  ],
+  "usedSkills": [],
+  "finalOutcome": {
+    "status": "completed",
+    "taskOutcomeStatus": "COMPLETED",
+    "taskOutcomeReason": "completed_default",
+    "parentDispatchReason": ""
+  },
+  "acceptanceSummary": {
+    "passCount": 8,
+    "failCount": 0,
+    "total": 8
+  },
+  "evidenceSources": [
+    "events.ndjson",
+    "items.ndjson",
+    "manifest.json",
+    "evidence_manifest.json",
+    "stage_timeline.json",
+    "flow_trace_summary.json",
+    "review_load_breakdown.json"
+  ],
+  "childEvidenceLedger": [
+    {
+      "agent": "019cd29a-f8a4-7da3-a69a-c2736093d787",
+      "dispatchCount": 1,
+      "completedCount": 1,
+      "failedCount": 0,
+      "ownedPaths": [],
+      "skills": [],
+      "evidenceNotes": [],
+      "reviewerObserved": 0,
+      "testerObserved": 0,
+      "firstSeenAt": 1773059902691,
+      "lastSeenAt": 1773059902691
+    },
+    {
+      "agent": "019cd29d-26f3-71d0-90e2-4ca0a908b341",
+      "dispatchCount": 1,
+      "completedCount": 1,
+      "failedCount": 0,
+      "ownedPaths": [],
+      "skills": [],
+      "evidenceNotes": [],
+      "reviewerObserved": 0,
+      "testerObserved": 0,
+      "firstSeenAt": 1773060045656,
+      "lastSeenAt": 1773060045656
+    },
+    {
+      "agent": "019cd29d-3bd2-7ff3-bc7b-08d80dafabcc",
+      "dispatchCount": 1,
+      "completedCount": 1,
+      "failedCount": 0,
+      "ownedPaths": [],
+      "skills": [],
+      "evidenceNotes": [],
+      "reviewerObserved": 0,
+      "testerObserved": 0,
+      "firstSeenAt": 1773060051050,
+      "lastSeenAt": 1773060051050
+    },
+    {
+      "agent": "unknown",
+      "dispatchCount": 25,
+      "completedCount": 11,
+      "failedCount": 0,
+      "ownedPaths": [
+        "logs/bundles/signoff/signoff-2026-03-09T12-31-59-842Z-24dd95/raw/scripts/config/signoff_sample_target.txt",
+        "docs/EVIDENCE_CONTRACT.md",
+        "docs/CURRENT_ARCHITECTURE.md",
+        "docs/ARCHITECTURE_CHANGELOG.md"
+      ],
+      "skills": [],
+      "evidenceNotes": [
+        "SIGNOFF_TASK_OK logs/bundles/signoff/signoff-2026-03-09T12-31-59-842Z-24dd95/raw/scripts/config/signoff_sample_target.txt",
+        "Owned paths:\n- logs\\bundles\\signoff\\signoff-2026-03-09T12-31-59-842Z-24dd95\\raw\\scripts\\config\\signoff_sample_target.txt\n- docs\\EVIDENCE_CONTRACT.md\n- docs\\CURRENT_",
+        "Findings: none\nRead-only: yes\nAcceptance: the scoped acceptance criteria appear satisfied in the current file state.",
+        "- `Read-only: yes`\n- `gate signed: PASS`\n- `evidence contract bullet present: PASS`\n- `architecture bullet present: PASS`\n- `changelog line present: PASS`\n- `overall: PASS`"
+      ],
+      "reviewerObserved": 1,
+      "testerObserved": 1,
+      "firstSeenAt": 1773059896612,
+      "lastSeenAt": 1773060299256
+    }
+  ],
+  "docSyncEvidence": {
+    "required": 1,
+    "status": "PASS",
+    "updatedPaths": [
+      "docs/CURRENT_ARCHITECTURE.md",
+      "docs/ARCHITECTURE_CHANGELOG.md"
+    ],
+    "architectureUpdated": 1,
+    "changelogUpdated": 1,
+    "harnessMapUpdated": 0,
+    "missing": []
+  },
+  "residualRiskSummary": [
+    "New logic or protocol-sensitive behavior requires dedicated verification before signoff."
+  ]
+}
