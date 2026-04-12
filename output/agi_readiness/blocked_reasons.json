@@ -1,6 +1,6 @@
 {
   "schema": "agi-readiness-blocked-reasons.v1",
-  "generatedAt": "2026-04-12T02:52:33.234Z",
+  "generatedAt": "2026-04-12T08:44:26.943Z",
   "workspaceId": "5c839dfeef8b555f",
   "reasons": [],
   "promotionComparisonMode": "distinct_comparison",

@@ -1,12 +1,14 @@
 {
   "schema": "governed-memory-workspace-progress-public.v1",
-  "generatedAt": "2026-04-12T02:52:33.434Z",
+  "generatedAt": "2026-04-12T08:44:27.145Z",
   "workspaceId": "5c839dfeef8b555f",
-  "updatedAt": "2026-04-12T02:52:32.080Z",
+  "updatedAt": "2026-04-12T08:44:25.709Z",
   "currentObjective": "verifier failure should force replan and recovery",
   "currentMilestones": [
-    "verifier failed: Long Duration Simulated Trial",
-    "completed: Blackbox unseen tool adoption",
+    "completed: Simple planning task falls back to single agent path",
+    "completed: verifier handoff for Research baseline through planner/researcher/verifier",
+    "completed: researcher handoff for Research baseline through planner/researcher/verifier",
+    "completed: planner handoff for Research baseline through planner/researcher/verifier",
     "latest turn status: completed",
     "family gate: not applicable"
   ],
@@ -16,7 +18,7 @@
     "simulated child verifier failure"
   ],
   "knownRisks": [
-    "missing required evidence",
+    "silent requirement rewrite",
     "completed default"
   ],
   "recentTouchedPaths": [
@@ -28,21 +30,21 @@
   "nextRecommendedActions": [
     "browser tool flakiness below subjective threshold",
     "weakest family is G breadth",
-    "continuity carries 7 closeout debt item(s) with severity high",
+    "web creative stable coverage below subjective threshold",
     "capture governed recovery evidence",
-    "deterministic code stable coverage below subjective threshold",
-    "web creative stable coverage below subjective threshold"
+    "running agenda counts differ across artifacts without an explicit gate vs supporting basis",
+    "continuity carries 7 closeout debt item(s) with severity high"
   ],
   "lastSuccessfulValidation": [
     {
       "reference": "turn_4773037f53",
       "taskOutcomeStatus": "unknown_status",
-      "completedAt": "2026-04-12T02:15:05.182Z"
+      "completedAt": "2026-04-12T08:33:37.443Z"
     },
     {
       "reference": "turn_4773037f53",
       "taskOutcomeStatus": "unknown_status",
-      "completedAt": "2026-04-12T02:15:05.208Z"
+      "completedAt": "2026-04-12T08:33:37.481Z"
     }
   ],
   "lastFailedValidation": [

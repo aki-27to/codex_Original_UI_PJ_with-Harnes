@@ -1,6 +1,6 @@
 {
   "schema": "agi-subjective-goal-completion-status.v1",
-  "generatedAt": "2026-04-12T02:52:34.072Z",
+  "generatedAt": "2026-04-12T08:44:27.952Z",
   "exportSessionId": "export_a63636ff0a86",
   "scope": "subjective_companion",
   "workspaceId": "5c839dfeef8b555f",
@@ -9,10 +9,12 @@
   "subjectiveDecisionBasis": "worker_centric_subjective_companion_gate",
   "subjectiveWhyNotYet": [
     "operational goal status = NOT_YET",
-    "stable coverage breadth 0.166667 >= 1",
+    "stable coverage breadth 0.333333 >= 1",
     "open debt count 7 <= 0",
     "running agenda count 1 <= 0",
-    "browser_tool_flakiness 0.703125 >= 0.9",
+    "primary lane effective contribution count 0 >= 1",
+    "harmful causal ratio 1 <= 0",
+    "browser_tool_flakiness 0.418367 >= 0.9",
     "ambiguous_instruction evidence 12 >= 20",
     "consecutive subjective passing exports 0 >= 7"
   ],
@@ -23,7 +25,7 @@
     },
     {
       "id": "stableCoverageBreadth",
-      "detail": "stable coverage breadth 0.166667 >= 1"
+      "detail": "stable coverage breadth 0.333333 >= 1"
     },
     {
       "id": "openDebtCount",
@@ -34,8 +36,16 @@
       "detail": "running agenda count 1 <= 0"
     },
     {
+      "id": "primaryLaneEffectiveContributionCount",
+      "detail": "primary lane effective contribution count 0 >= 1"
+    },
+    {
+      "id": "harmfulCausalRatio",
+      "detail": "harmful causal ratio 1 <= 0"
+    },
+    {
       "id": "browserToolFlakiness",
-      "detail": "browser_tool_flakiness 0.703125 >= 0.9"
+      "detail": "browser_tool_flakiness 0.418367 >= 0.9"
     },
     {
       "id": "ambiguousInstructionEvidence",
@@ -105,23 +115,15 @@
     },
     {
       "id": "primaryLaneSelectedInLatestPackCount",
-      "detail": "primary lane selected count 4 >= 1"
-    },
-    {
-      "id": "primaryLaneEffectiveContributionCount",
-      "detail": "primary lane effective contribution count 4 >= 1"
+      "detail": "primary lane selected count 10 >= 1"
     },
     {
       "id": "primaryLaneCausalUsageCount",
-      "detail": "primary lane causal usage count 11 >= 3"
+      "detail": "primary lane causal usage count 10 >= 3"
     },
     {
       "id": "likelyContributoryCount",
-      "detail": "likely contributory count 11 >= 3"
-    },
-    {
-      "id": "harmfulCausalRatio",
-      "detail": "harmful causal ratio 0 <= 0"
+      "detail": "likely contributory count 10 >= 3"
     },
     {
       "id": "missingContext",
@@ -186,7 +188,7 @@
   },
   "subjectiveCurrentValues": {
     "operationalGoalStatus": "NOT_YET",
-    "stableCoverageBreadth": 0.166667,
+    "stableCoverageBreadth": 0.333333,
     "supportedCoverageBreadth": 1,
     "rawFinalScore": 0.9995,
     "R_robust": 1,
@@ -203,13 +205,13 @@
     "distinctImprovementCount": 4,
     "distinctRegressionCount": 0,
     "recentNonWorsening": true,
-    "primaryLaneSelectedInLatestPackCount": 4,
-    "primaryLaneEffectiveContributionCount": 4,
-    "primaryLaneCausalUsageCount": 11,
-    "likelyContributoryCount": 11,
-    "harmfulCausalRatio": 0,
+    "primaryLaneSelectedInLatestPackCount": 10,
+    "primaryLaneEffectiveContributionCount": 0,
+    "primaryLaneCausalUsageCount": 10,
+    "likelyContributoryCount": 10,
+    "harmfulCausalRatio": 1,
     "missingContext": 1,
-    "browserToolFlakiness": 0.703125,
+    "browserToolFlakiness": 0.418367,
     "ambiguousInstructionStatus": "observed",
     "ambiguousInstructionEvidenceCount": 12,
     "ambiguousInstruction": 1,
@@ -235,7 +237,7 @@
   ],
   "lineageSummary": {
     "schema": "agi-readiness-distinct-improvement-summary.v1",
-    "generatedAt": "2026-04-12T02:52:33.431Z",
+    "generatedAt": "2026-04-12T08:44:27.143Z",
     "workspaceId": "5c839dfeef8b555f",
     "distinctWindowSize": 2,
     "distinctComparisonCount": 2,
@@ -256,32 +258,55 @@
     "historicalCriteriaMetWindowSeen": true
   },
   "learningAdoptionSummary": {
-    "selectedInLatestPackCount": 12,
-    "consideredForPackCount": 4,
-    "surfacedCount": 4,
-    "behaviorallyReferencedCount": 4,
-    "likelyContributoryCount": 11,
-    "harmfulCount": 0,
-    "rolledBackHarmCount": 0,
-    "rolledBackAfterHarmCount": 0,
+    "selectedInLatestPackCount": 14,
+    "consideredForPackCount": 11,
+    "surfacedCount": 0,
+    "behaviorallyReferencedCount": 0,
+    "likelyContributoryCount": 10,
+    "harmfulCount": 4,
+    "rolledBackHarmCount": 6,
+    "rolledBackAfterHarmCount": 6,
     "familyCounts": {
-      "default": 7,
+      "web_creative": 9,
+      "default": 4,
       "all": 1,
-      "smoke-http-exec": 4,
-      "smoke_test": 2
+      "tool_use_browser_like": 3,
+      "workflow_execution": 3,
+      "evaluation_review": 1
     }
   },
   "autonomousLearningSummary": {
-    "selfDirectedCount": 6,
-    "probeCount": 6,
+    "selfDirectedCount": 8,
+    "probeCount": 8,
     "positiveProbeCount": 2,
     "negativeProbeCount": 0,
     "verifiedPositiveSelfDirectedCount": 2,
     "blockedCount": 0,
     "insufficientEvidenceCount": 0,
-    "novelProbeCount": 5,
+    "novelProbeCount": 7,
     "novelPositiveCount": 2,
-    "novelProbePositiveCount": 2
+    "novelProbePositiveCount": 2,
+    "gateRunningAgendaCount": 1,
+    "supportingCurrentRunningCount": 3,
+    "excludedMetaCompletionRunningCount": 2
+  },
+  "runningAgendaDecisionBasis": {
+    "mode": "fail_closed_gate_subset_with_supporting_broader_surface",
+    "gateScope": "non_meta_completion_non_memory_eval_learning_agenda_entries_in_current_export_session",
+    "supportingScope": "all_non_memory_eval_learning_agenda_entries_in_current_export_session",
+    "exclusionRule": "isMetaCompletionAgendaEntry",
+    "sourceArtifactPath": "output/agi_readiness/autonomous_learning_status.json",
+    "sourceArtifactField": "gateDecisionCounts.running",
+    "supportingArtifactField": "currentRunningCount",
+    "gateRunningAgendaCount": 1,
+    "supportingCurrentRunningCount": 3,
+    "excludedMetaCompletionRunningCount": 2,
+    "gateBlockedAgendaCount": 0,
+    "supportingCurrentBlockedCount": 0,
+    "excludedMetaCompletionBlockedCount": 0,
+    "gateInsufficientEvidenceCount": 0,
+    "supportingCurrentInsufficientEvidenceCount": 0,
+    "excludedMetaCompletionInsufficientEvidenceCount": 0
   },
   "robustnessSummary": {
     "noEvidenceCategories": [],
@@ -289,8 +314,8 @@
       {
         "categoryId": "browser_tool_flakiness",
         "status": "observed",
-        "evidenceCount": 48,
-        "score": 0.703125
+        "evidenceCount": 49,
+        "score": 0.418367
       },
       {
         "categoryId": "ambiguous_instruction",
@@ -327,31 +352,6 @@
     "consecutiveRequired": 7,
     "consecutivePassingExports": 0,
     "entries": [
-      {
-        "exportSessionId": "export_18e7886291",
-        "generatedAt": "2026-04-05T20:18:39.358Z",
-        "baseStatus": "criteria_failed",
-        "subjectiveGoalStatus": "NOT_YET",
-        "rawFinalScore": 0.9995,
-        "R_robust": 1,
-        "H_horizon": 1,
-        "distinctImprovementCount": 2,
-        "verifiedPositiveRemediations": 5,
-        "verifiedPositiveSelfDirectedRemediations": 1,
-        "runningAgendaCount": 1,
-        "blockedAgendaCount": 0,
-        "insufficientEvidenceCount": 0,
-        "stableCoverageBreadth": 1,
-        "missingContext": 1,
-        "browserToolFlakiness": 1,
-        "degradedToolOutputs": 1,
-        "primaryLaneSelectedInLatestPackCount": 3,
-        "primaryLaneEffectiveContributionCount": 3,
-        "likelyContributoryCount": 3,
-        "ambiguousInstructionEvidenceCount": 24,
-        "novelProbePositiveCount": 1,
-        "harmfulCausalRatio": 0
-      },
       {
         "exportSessionId": "export_3a3f49208e",
         "generatedAt": "2026-04-05T20:18:41.506Z",
@@ -929,7 +929,7 @@
       },
       {
         "exportSessionId": "export_a63636ff0a86",
-        "generatedAt": "2026-04-12T02:52:34.072Z",
+        "generatedAt": "2026-04-12T08:44:27.951Z",
         "baseStatus": "criteria_failed",
         "subjectiveGoalStatus": "NOT_YET",
         "rawFinalScore": 0.9995,
@@ -941,16 +941,16 @@
         "runningAgendaCount": 1,
         "blockedAgendaCount": 0,
         "insufficientEvidenceCount": 0,
-        "stableCoverageBreadth": 0.166667,
+        "stableCoverageBreadth": 0.333333,
         "missingContext": 1,
-        "browserToolFlakiness": 0.703125,
+        "browserToolFlakiness": 0.418367,
         "degradedToolOutputs": 1,
-        "primaryLaneSelectedInLatestPackCount": 4,
-        "primaryLaneEffectiveContributionCount": 4,
-        "likelyContributoryCount": 11,
+        "primaryLaneSelectedInLatestPackCount": 10,
+        "primaryLaneEffectiveContributionCount": 0,
+        "likelyContributoryCount": 10,
         "ambiguousInstructionEvidenceCount": 12,
         "novelProbePositiveCount": 2,
-        "harmfulCausalRatio": 0
+        "harmfulCausalRatio": 1
       }
     ]
   }

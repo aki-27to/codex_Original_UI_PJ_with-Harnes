@@ -8,9 +8,10 @@ const path = require("path");
 const vm = require("vm");
 const { startInProcessHarnessServer } = require("./lib/in_process_harness_server");
 const { buildHarnessOverviewPayload } = require("./lib/harness_overview_surface");
+const { resolveServerImplementationPath } = require("./lib/server_source_path");
 
 const workspaceRoot = path.resolve(__dirname, "..");
-const serverJsPath = path.join(workspaceRoot, "server.js");
+const { implementationPath: serverJsPath } = resolveServerImplementationPath(workspaceRoot);
 const overviewHtmlPath = path.join(workspaceRoot, "web", "01.HarnesUI", "overview.html");
 const overviewJsPath = path.join(workspaceRoot, "web", "01.HarnesUI", "overview.js");
 const indexHtmlPath = path.join(workspaceRoot, "web", "01.HarnesUI", "index.html");

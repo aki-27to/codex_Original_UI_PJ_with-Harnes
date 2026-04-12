@@ -1,7 +1,7 @@
 # ANTHROPIC_ENGINEERING_LEARNING_REPORT
 
 - status: PASS
-- generatedAt: 2026-04-11T15:55:39.672Z
+- generatedAt: 2026-04-12T08:33:36.690Z
 - trackedArticles: 5
 - newArticlesThisRun: 0
 - pendingProposals: 5
@@ -38,13 +38,13 @@
 - observationStatus: disabled
 - observationCount: 0
 - lastObservedAt: -
-- rawAutoApplyChangeCount: 1
+- rawAutoApplyChangeCount: 0
 - readyAutoApplyChangeCount: 0
 - awaitingObservationCount: 0
 - awaitingReinforcementCount: 0
-- policyDisabledCandidateCount: 1
-- proposalOnlyCount: 4
-- blockedCount: 0
-- nextPriority: Scaling Managed Agents: Decoupling the brain from the hands / policy_disabled
-- nextPriorityAction: Enable stabilization for this lane or keep the note proposal-only.
+- policyDisabledCandidateCount: 0
+- proposalOnlyCount: 2
+- blockedCount: 3
+- nextPriority: Designing AI resistant technical evaluations / proposal_only
+- nextPriorityAction: Keep this frontend quality note as proposal-only guidance.
 - nextPriorityProgress: success 0/2 / observed 0 / rate 0

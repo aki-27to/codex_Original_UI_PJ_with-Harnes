@@ -4,6 +4,7 @@
 const assert = require("assert");
 const fs = require("fs");
 const path = require("path");
+const { resolveServerImplementationPath } = require("./lib/server_source_path");
 
 function read(relativePath) {
   return fs.readFileSync(path.join(__dirname, "..", relativePath), "utf8");
@@ -20,13 +21,15 @@ function run() {
     "runPrompt finalizer should not overwrite needs_input back to completed"
   );
 
-  const serverSource = read("server.js");
+  const { implementationPath: serverPath } = resolveServerImplementationPath(path.join(__dirname, ".."));
+  const serverSource = fs.readFileSync(serverPath, "utf8");
   assert(
     /taskOutcome\.status==="NEEDS_INPUT"\?"needs_input":finalStatus/.test(serverSource),
     "server should surface NEEDS_INPUT turns to the client as needs_input status"
   );
   assert(
-    /const clientFinalText=stripPlanningStatusDirective\(authoritativeFinalText\);/.test(serverSource),
+    /const clientFinalText=stripPlanningStatusDirective\(authoritativeFinalText\);/.test(serverSource)
+      || /const clientFinalText=rewriteClientFinalTextForOutcome\(authoritativeFinalText,\{taskOutcomeStatus:taskOutcome\.status\}\);/.test(serverSource),
     "server should strip STATUS directives before emitting final text to the client"
   );
 }

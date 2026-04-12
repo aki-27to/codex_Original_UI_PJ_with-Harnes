@@ -89,6 +89,21 @@ readiness は 1 つの数字ではなく、複数の見え方を持ちます。
 - `summary.verifiedPositive`: strict equality with `currentVerifiedPositiveCount`.
 - `countSemantics`: machine-readable contract embedded in the artifact and enforced by strict public eval.
 - This supporting contract does not change the headline: `worker_decision_surface` stays primary, while program readiness / subjective companion / compatibility remain separate scopes.
+- `worker_completion_status.json` is allowed as a supplemental worker-stop artifact only. It may expose background readiness debt, but it must not replace the worker headline.
+
+## Residual semantics closure
+
+- `goal_completion_status.json` and `subjective_goal_completion_status.json` now expose `runningAgendaDecisionBasis`.
+- `autonomous_learning_status.json` keeps the broader supporting counts and exposes the gate-consumed subset through `gateDecisionCounts`.
+- `self_directed_probe_status.json` exposes `currentSnapshot`, `effectiveHistoryAware`, `requiredThresholds`, `meetsThresholds`, and `thresholdDecisionBasis`.
+- `novel_task_acquisition.json` exposes the same threshold-basis fields, including the explicit no-history-uplift case.
+- `worker_completion_status.json` binds `worker_decision_surface` to the background program-readiness context and makes the non-blocking learning debt explicit through machine-readable counts.
+
+## Reporting order
+
+- Task verdict first, Program readiness second.
+- Do not lead an ordinary task report with program-readiness NOT_YET.
+- Program readiness can become blocking only when the user explicitly asks for readiness, release, or whole-harness completion.
 
 <!-- compatibility markers:
 POST /api/exec

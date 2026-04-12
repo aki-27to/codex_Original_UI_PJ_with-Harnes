@@ -4,10 +4,16 @@
 const assert = require("assert");
 const fs = require("fs");
 const path = require("path");
+const { resolveServerImplementationPath } = require("./lib/server_source_path");
 
 const workspaceRoot = path.resolve(__dirname, "..");
-const serverSource = fs.readFileSync(path.join(workspaceRoot, "server.js"), "utf8");
+const { implementationPath: serverPath } = resolveServerImplementationPath(workspaceRoot);
+const serverSource = fs.readFileSync(serverPath, "utf8");
 const {
+  promptRequestsResidualIncompletionExplanation,
+  promptRequestsProgramReadinessBlocking,
+  stripLeadingResidualIncompletionLead,
+  stripLeadingProgramReadinessLead,
   stripInternalProcessDisclosure,
 } = require(path.join(workspaceRoot, "scripts", "lib", "user_facing_response_policy.js"));
 
@@ -36,9 +42,80 @@ function run() {
     "normal user-facing text must remain untouched"
   );
 
+  assert.strictEqual(
+    promptRequestsProgramReadinessBlocking("Please assess release readiness for the whole_harness_completion gate."),
+    true,
+    "explicit readiness/release prompt should activate program-readiness blocking mode"
+  );
+  assert.strictEqual(
+    promptRequestsProgramReadinessBlocking("Fix the worker-centric completion wording."),
+    false,
+    "ordinary task prompt should keep program readiness non-blocking"
+  );
+  assert.strictEqual(
+    promptRequestsResidualIncompletionExplanation("Why is this not complete yet?"),
+    true,
+    "explicit incompletion prompt should preserve blocker-leading answers"
+  );
+  assert.strictEqual(
+    promptRequestsResidualIncompletionExplanation("Fix the completion wording regression."),
+    false,
+    "ordinary completion prompt should not preserve blocker-leading answers by default"
+  );
+
+  const ordinaryAnswer = [
+    "program readiness is NOT_YET for the repo overall.",
+    "",
+    "The requested task is complete and the task verdict stays primary.",
+  ].join("\n");
+  assert.strictEqual(
+    stripLeadingProgramReadinessLead({
+      prompt: "Fix the completion wording regression.",
+      answer: ordinaryAnswer,
+      taskOutcomeStatus: "COMPLETED",
+    }),
+    "The requested task is complete and the task verdict stays primary.",
+    "ordinary completed task answers must not lead with program readiness"
+  );
+
+  assert.strictEqual(
+    stripLeadingProgramReadinessLead({
+      prompt: "Assess release readiness for the repo.",
+      answer: ordinaryAnswer,
+      taskOutcomeStatus: "COMPLETED",
+    }),
+    ordinaryAnswer,
+    "explicit readiness requests may still lead with program readiness"
+  );
+
+  const ordinaryResidualLead = [
+    "This is still not complete because residual architecture debt remains.",
+    "",
+    "The requested task is complete and the task verdict stays primary.",
+  ].join("\n");
+  assert.strictEqual(
+    stripLeadingResidualIncompletionLead({
+      prompt: "Fix the completion wording regression.",
+      answer: ordinaryResidualLead,
+      taskOutcomeStatus: "COMPLETED",
+    }),
+    "The requested task is complete and the task verdict stays primary.",
+    "ordinary completed task answers must not lead with residual incompletion debt"
+  );
+
+  assert.strictEqual(
+    stripLeadingResidualIncompletionLead({
+      prompt: "Why is this not complete yet?",
+      answer: ordinaryResidualLead,
+      taskOutcomeStatus: "COMPLETED",
+    }),
+    ordinaryResidualLead,
+    "explicit blocker prompts may still lead with residual incompletion"
+  );
+
   assert(
-    /const\s+disclosureStripped=stripInternalProcessDisclosure\(\{[\s\S]*?answer:stripPlanningStatusDirective\(text\),[\s\S]*?\}\);[\s\S]*?const\s+stripped=stripUnsolicitedClosingProposal\(/.test(serverSource),
-    "rewriteClientFinalTextForOutcome must strip internal-process disclosure before close-in-place moderation"
+    /const\s+disclosureStripped=stripInternalProcessDisclosure\(\{[\s\S]*?answer:stripPlanningStatusDirective\(text\),[\s\S]*?\}\);[\s\S]*?const\s+reportingStripped=stripLeadingProgramReadinessLead\(\{[\s\S]*?\}\);[\s\S]*?const\s+residualStripped=stripLeadingResidualIncompletionLead\(\{[\s\S]*?\}\);[\s\S]*?const\s+stripped=stripUnsolicitedClosingProposal\(/.test(serverSource),
+    "rewriteClientFinalTextForOutcome must strip internal-process disclosure, then program-readiness drift, then residual incompletion drift, before close-in-place moderation"
   );
 
   process.stdout.write("PASS user_facing_response_policy_test\n");

@@ -23,6 +23,8 @@ function main() {
   assert(/runtimeUrl='http:\/\/127\.0\.0\.1:'\+\$port\+'\/api\/runtime'/.test(launcher), "launcher must probe the local runtime endpoint before restarting");
   assert(/function Get-HarnessPids/.test(launcher), "launcher must resolve the owning PID when evaluating an existing harness");
   assert(/function Get-LatestHarnessRuntimeWriteTime/.test(launcher), "launcher must compare existing harness age against runtime files");
+  assert(/Join-Path \$LaunchDir 'server_impl\.js'/.test(launcher), "launcher must include server_impl.js in stale-runtime detection");
+  assert(/Join-Path \$LaunchDir 'server'/.test(launcher), "launcher must include the modular server directory in stale-runtime detection");
   assert(/if\(\$restart -eq '0' -and -not \$staleRuntime\)\{ Write-Output \('\[launcher\] existing harness detected on port '\+\$port\+'; reusing without restart\.'\); exit 10 \}/.test(launcher), "launcher must only reuse when the existing harness is not stale");
   assert(/runtime files are newer than the process; restarting stale harness/.test(launcher), "launcher must restart stale harness processes automatically");
   assert(/if\(\$hasActive -and \$forceActive -ne '1'\)\{[\s\S]*existing harness has active \/api\/exec work; refusing restart while work is in progress\.[\s\S]*exit 11 \}/.test(launcher), "launcher must refuse to restart while active exec work is in progress unless forced");

@@ -21,6 +21,10 @@ function testLoadContract() {
   assert(spec && spec.schema === "task-outcome-contract.v3", "task outcome contract schema mismatch");
   assert(Array.isArray(spec.statuses) && spec.statuses.some((entry) => entry.id === "NEEDS_INPUT"), "task outcome statuses missing NEEDS_INPUT");
   assert(Array.isArray(spec.proofCarryingRequiredFields) && spec.proofCarryingRequiredFields.includes("goal_alignment_trace"), "task outcome proof fields must include goal_alignment_trace");
+  assert(spec.authoritySeparation && spec.authoritySeparation.programReadinessBlockingDefault === false, "program readiness must stay non-blocking by default");
+  assert(spec.authoritySeparation.blockingActivation.requiresExplicitUserRequest === true, "program readiness blocking must require explicit user request");
+  assert(spec.authoritySeparation.blockingActivation.ordinaryTaskCompletion.taskVerdictPrimary === true, "ordinary task completion must keep task verdict primary");
+  assert(spec.authoritySeparation.blockingActivation.ordinaryTaskCompletion.programReadinessMayBlockTaskCompletion === false, "ordinary task completion must not be blocked by program readiness by default");
 }
 
 function testValidateStatus() {
@@ -124,6 +128,24 @@ function testTurnCompatibility() {
   assert(mismatch.reason === "task_outcome_turn_state_mismatch", "mismatch should report turn-state mismatch");
 }
 
+function testReleaseConditionsIgnoredForOrdinaryTask() {
+  const verdict = deriveTaskOutcome({
+    turnStatus: "completed",
+    reason: "release_conditions_unsatisfied",
+    prompt: "Fix the worker-completion semantics regression.",
+  });
+  assert(verdict.status === "COMPLETED", "release conditions must not block ordinary task completion by default");
+}
+
+function testReleaseConditionsAppliedForExplicitReleaseScope() {
+  const verdict = deriveTaskOutcome({
+    turnStatus: "completed",
+    reason: "release_conditions_unsatisfied",
+    requestedDecisionScopes: ["release"],
+  });
+  assert(verdict.status === "PARTIAL", "explicit release scope must preserve release condition gating");
+}
+
 function run() {
   const tests = [
     ["load contract", testLoadContract],
@@ -139,6 +161,8 @@ function run() {
     ["failed default blocked", testFailedDefaultBlocked],
     ["partial outcome derivation", testPartialDelivery],
     ["turn compatibility", testTurnCompatibility],
+    ["release conditions ignored for ordinary tasks", testReleaseConditionsIgnoredForOrdinaryTask],
+    ["release conditions applied for explicit release scope", testReleaseConditionsAppliedForExplicitReleaseScope],
   ];
   let passed = 0;
   for (const [name, fn] of tests) {

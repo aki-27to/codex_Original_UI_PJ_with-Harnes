@@ -11,6 +11,7 @@ const {
 } = require("./lib/governance_bundle");
 const {
   assertExportableSignoffSummary,
+  deriveSupplementalGovernanceArtifacts,
   exportGovernancePublicBundle,
 } = require("./lib/governance_public_bundle");
 const {
@@ -172,6 +173,7 @@ function main() {
     "iteration_decision.json",
     "escalation_decision.json",
     "worker_decision_surface.json",
+    "worker_completion_status.json",
     "release_decision.json",
     "bundle_overview.json",
     "bundle_overview.md",
@@ -184,21 +186,35 @@ function main() {
     exportedManifest.exportedArtifacts.some((entry) => entry.file === "adoption_readiness_eval.json" && entry.derived === 1),
     "public governance export must record derived adoption_readiness_eval.json"
   );
+  assert(
+    exportedManifest.exportedArtifacts.some((entry) => entry.file === "worker_completion_status.json" && entry.derived === 1),
+    "public governance export must record derived worker_completion_status.json"
+  );
   const adoptionReadiness = JSON.parse(fs.readFileSync(path.join(exportOutputDir, "adoption_readiness_eval.json"), "utf8"));
   const iterationDecision = JSON.parse(fs.readFileSync(path.join(exportOutputDir, "iteration_decision.json"), "utf8"));
   const workerDecisionSurface = JSON.parse(fs.readFileSync(path.join(exportOutputDir, "worker_decision_surface.json"), "utf8"));
+  const workerCompletionStatus = JSON.parse(fs.readFileSync(path.join(exportOutputDir, "worker_completion_status.json"), "utf8"));
   assert.strictEqual(adoptionReadiness.schema, "adoption-readiness-eval.v1", "public export must emit adoption readiness eval");
   assert.strictEqual(adoptionReadiness.scope, "adoption_readiness", "public export must scope adoption readiness eval");
   assert.ok(String(iterationDecision.action || "").length > 0, "public export must emit iteration decision action");
   assert.strictEqual(iterationDecision.scope, "iteration_control", "public export must scope iteration decision");
   assert.strictEqual(workerDecisionSurface.schema, "worker-decision-surface.v1", "public export must emit worker decision surface");
   assert.strictEqual(workerDecisionSurface.scope, "worker_decision", "public export worker decision surface must expose worker_decision scope");
+  assert.strictEqual(workerCompletionStatus.schema, "worker-completion-status.v1", "public export must emit worker completion companion");
+  assert.strictEqual(workerCompletionStatus.scope, "worker_completion", "public export worker completion companion must expose worker_completion scope");
   assert.ok(String(workerDecisionSurface.exportSessionId || "").length > 0, "public export worker decision surface must expose exportSessionId");
+  assert.strictEqual(workerCompletionStatus.exportSessionId, workerDecisionSurface.exportSessionId, "worker completion companion must share the worker headline exportSessionId");
   assert.strictEqual(adoptionReadiness.exportSessionId, workerDecisionSurface.exportSessionId, "derived governance artifacts must share exportSessionId");
   assert.strictEqual(iterationDecision.exportSessionId, workerDecisionSurface.exportSessionId, "derived governance artifacts must share exportSessionId");
   assert.strictEqual(workerDecisionSurface.topLevelOutcome, "ADOPTABLE_COMPLETE", "public export worker decision surface must summarize adoptable completion");
   assert.ok(String(workerDecisionSurface.topLevelSummary || "").length > 0, "public export worker decision surface must expose topLevelSummary");
+  assert.strictEqual(workerCompletionStatus.headlineArtifactPath, "output/governance_public/worker_decision_surface.json", "worker completion companion must point at the worker headline");
+  assert.strictEqual(workerCompletionStatus.headlineWorkerOutcome, workerDecisionSurface.topLevelOutcome, "worker completion companion must mirror the worker headline outcome");
+  assert.strictEqual(workerCompletionStatus.decisionMeaning, "worker_headline_stop_semantics_with_background_program_readiness_context", "worker completion companion must expose its decision meaning");
+  assert.strictEqual(workerCompletionStatus.backgroundArtifactSessionConsistency, "aligned", "worker completion companion must only trust aligned readiness sidecars");
+  assert.strictEqual(workerCompletionStatus.backgroundArtifactInputsTrusted, true, "worker completion companion must mark aligned readiness sidecars as trusted");
   assert.strictEqual(publicExport.overview.workerDecision.scope, "worker_decision", "public overview must expose worker decision scope");
+  assert.strictEqual(publicExport.overview.workerCompletion.scope, "worker_completion", "public overview must expose worker completion scope");
   assert.strictEqual(publicExport.overview.harnessIdentity.mode, "single_governed_harness", "public overview must expose single harness identity");
   assert.strictEqual(publicExport.overview.primaryRoutes.execution, "POST /api/exec", "public overview must expose execution route");
   assert.strictEqual(publicExport.overview.primaryRoutes.evaluation, "POST /api/eval/run", "public overview must expose evaluation route");
@@ -216,6 +232,50 @@ function main() {
     "RELEASE_APPROVED",
     "public governance export must surface the signoff final decision"
   );
+  const mismatchedSupplemental = deriveSupplementalGovernanceArtifacts({
+    requestFrame: { assumption_policy: [] },
+    reviewBundle: {
+      blockers: [],
+      missing_evidence: [],
+      residual_risk: [],
+      recommended_release_state: "RELEASE_APPROVED_WITH_ASSUMPTIONS",
+      acceptance_checks: [{ id: "acc-1", status: "PASS" }],
+    },
+    releaseDecision: {
+      terminal_state: "RELEASE_APPROVED_WITH_ASSUMPTIONS",
+      blocker_list: [],
+    },
+    latestRunSummary: {
+      turnId: "turn-current",
+      finalOutcome: {
+        taskOutcomeStatus: "COMPLETED",
+        taskOutcomeReason: "completed_default",
+      },
+    },
+    latestSignoffSummary: {
+      selectedTurnId: "turn-current",
+      finalDecision: "RELEASE_APPROVED_WITH_ASSUMPTIONS",
+      bundleRef: {},
+    },
+    taskOutcomes: {
+      task_outcomes: [{ id: "step-1", status: "completed" }],
+    },
+    evidenceContract: {
+      requiredTurnArtifacts: ["review_bundle.json"],
+    },
+    exportedEvidenceRefs: ["review_bundle.json"],
+    adoptionReadinessContract,
+    iterationControlContract,
+    backgroundReadinessArtifacts: {
+      goalCompletionStatus: { exportSessionId: "export_stale_goal", goalStatus: "NOT_YET" },
+      subjectiveGoalCompletionStatus: { exportSessionId: "export_stale_subjective", subjectiveGoalStatus: "NOT_YET" },
+      compatibilityCompletionStatus: { exportSessionId: "export_stale_compatibility", status: "NOT_YET" },
+    },
+  });
+  assert.strictEqual(mismatchedSupplemental.worker_completion_status.backgroundArtifactSessionConsistency, "missing_or_mismatched", "worker completion companion must fail closed when background readiness sessions do not match");
+  assert.strictEqual(mismatchedSupplemental.worker_completion_status.backgroundArtifactInputsTrusted, false, "worker completion companion must not trust mismatched readiness sidecars");
+  assert.strictEqual(mismatchedSupplemental.worker_completion_status.programReadinessStatus, "UNKNOWN", "worker completion companion must not project stale program readiness across sessions");
+  assert(Array.isArray(mismatchedSupplemental.worker_completion_status.backgroundProgramReadinessWhyNotYet) && mismatchedSupplemental.worker_completion_status.backgroundProgramReadinessWhyNotYet.length > 0, "worker completion companion must explain why stale background readiness sidecars were omitted");
 
   assert.doesNotThrow(
     () => assertExportableSignoffSummary({

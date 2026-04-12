@@ -1,6 +1,6 @@
 {
   "schema": "continuity-public-summary.v1",
-  "generatedAt": "2026-04-12T02:52:33.610Z",
+  "generatedAt": "2026-04-12T08:44:27.357Z",
   "workspaceId": "5c839dfeef8b555f",
   "activeAgentTree": {
     "schema": "bounded-agent-graph.v1",
@@ -68,7 +68,7 @@
     "orphanChildTaskIds": [],
     "generatedAt": "2026-03-31T22:25:29.949Z"
   },
-  "handoffCount": 377,
+  "handoffCount": 401,
   "blockedSubtasks": 0,
   "verifierFailedSubtasks": 0,
   "integrationPendingCount": 0,
@@ -78,7 +78,7 @@
       "spec": 4,
       "intent": 1,
       "workspace_progress": 1,
-      "experience": 2,
+      "experience": 0,
       "semantic": 3,
       "procedure": 0,
       "evaluation": 0,
@@ -89,10 +89,12 @@
       "spec": 4,
       "intent": 1,
       "workspace_progress": 1,
-      "experience": 0,
+      "experience": 3,
       "semantic": 3,
+      "procedure": 0,
+      "evaluation": 0,
       "preference": 0,
-      "improvement": 0
+      "improvement": 1
     },
     "coordinator": {
       "intent": 1,
@@ -137,7 +139,7 @@
   "openDebtCount": 7,
   "debtSeverity": "high",
   "selfAuthoredTaskFlow": {
-    "selfAuthoredGoalCountWindow": 17,
+    "selfAuthoredGoalCountWindow": 19,
     "positiveClosureCountWindow": 1,
     "latestRoleMix": [
       "default",

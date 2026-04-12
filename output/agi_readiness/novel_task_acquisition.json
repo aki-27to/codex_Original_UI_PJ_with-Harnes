@@ -1,6 +1,6 @@
 {
   "schema": "agi-readiness-novel-task-acquisition.v1",
-  "generatedAt": "2026-04-12T02:52:33.987Z",
+  "generatedAt": "2026-04-12T08:44:27.872Z",
   "exportSessionId": "export_a63636ff0a86",
   "scope": "novel_task_acquisition_supporting",
   "workspaceId": "5c839dfeef8b555f",
@@ -25,8 +25,8 @@
       "targetCategory": "browser_tool_flakiness",
       "targetFamily": "tool_use_browser_like",
       "beforeScore": null,
-      "currentScore": 0.703125,
-      "evidenceCount": 48,
+      "currentScore": 0.418367,
+      "evidenceCount": 49,
       "status": "observed",
       "remediationRef": "<agenda-ref>",
       "positiveEvidence": false,
@@ -39,8 +39,34 @@
     "agenda_bdbb268944",
     "agenda_49ed0e35fb"
   ],
+  "currentSnapshot": {
+    "novelFamilyCount": 2,
+    "novelTaskCount": 2,
+    "positiveNovelTaskCount": 1
+  },
+  "effectiveHistoryAware": {
+    "novelFamilyCount": 2,
+    "novelTaskCount": 2,
+    "positiveNovelTaskCount": 1,
+    "historyLift": {
+      "positiveNovelTaskCount": 0
+    },
+    "historyAware": false
+  },
   "requiredThresholds": {
     "positiveNovelTaskCount": 8
+  },
+  "meetsThresholds": {
+    "positiveNovelTaskCount": false,
+    "overall": false
+  },
+  "thresholdDecisionBasis": {
+    "mode": "current_snapshot_no_history_uplift",
+    "failClosed": true,
+    "thresholdConsumer": "compatibility_positive_novel_task_window",
+    "positiveNovelTaskCount": "currentSnapshot.positiveNovelTaskCount",
+    "historySourcePath": "",
+    "historySource": "none"
   },
   "summary": {
     "itemCount": 2,
@@ -67,8 +93,8 @@
       "targetCategory": "browser_tool_flakiness",
       "targetFamily": "tool_use_browser_like",
       "beforeScore": null,
-      "currentScore": 0.703125,
-      "evidenceCount": 48,
+      "currentScore": 0.418367,
+      "evidenceCount": 49,
       "status": "observed",
       "remediationRef": "<agenda-ref>",
       "positiveEvidence": false,

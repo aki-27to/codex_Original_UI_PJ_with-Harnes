@@ -1,6 +1,6 @@
 {
   "schema": "single-harness-multi-plane-contract.v1",
-  "version": "2026-04-12.r1",
+  "version": "2026-04-12.r2",
   "sourceDoc": "docs/SINGLE_HARNESS_MULTI_PLANE.md",
   "repoIdentity": {
     "mode": "single_governed_harness",
@@ -136,6 +136,68 @@
     "compatibilitySurface": "output/agi_readiness/compatibility_completion_status.json",
     "legacyAliasSurface": "output/agi_readiness/sovereign_goal_completion_status.json"
   },
+  "currentTruthSemantics": {
+    "workerHeadline": {
+      "primarySurface": "output/governance_public/worker_decision_surface.json",
+      "primaryMeaning": "worker_centric_governance_headline",
+      "supplementalOnlyArtifactsAllowed": true
+    },
+    "programReadiness": {
+      "surface": "output/agi_readiness/goal_completion_status.json",
+      "runningAgendaCountField": "currentValues.runningAgendaCount",
+      "runningAgendaDecisionScope": "completion_gate_consumed_subset",
+      "runningAgendaDecisionSource": {
+        "surface": "output/agi_readiness/autonomous_learning_status.json",
+        "field": "gateDecisionCounts.running"
+      }
+    },
+    "subjectiveCompanion": {
+      "surface": "output/agi_readiness/subjective_goal_completion_status.json",
+      "runningAgendaCountField": "subjectiveCurrentValues.runningAgendaCount",
+      "blockedAgendaCountField": "subjectiveCurrentValues.blockedAgendaCount",
+      "insufficientEvidenceCountField": "subjectiveCurrentValues.insufficientEvidenceCount",
+      "runningAgendaDecisionScope": "completion_gate_consumed_subset_with_subjective_companion_overlay"
+    },
+    "autonomousLearning": {
+      "surface": "output/agi_readiness/autonomous_learning_status.json",
+      "supportingCurrentRunningCountField": "currentRunningCount",
+      "supportingDecisionScope": "current_non_memory_eval_supporting_surface",
+      "gateDecisionCountsField": "gateDecisionCounts",
+      "excludedMetaCompletionCountsField": "excludedMetaCompletionCounts",
+      "gateDecisionCountsRequired": true
+    },
+    "thresholdBasisSurfaces": {
+      "selfDirectedProbe": {
+        "surface": "output/agi_readiness/self_directed_probe_status.json",
+        "requiredObjects": [
+          "currentSnapshot",
+          "effectiveHistoryAware",
+          "requiredThresholds",
+          "meetsThresholds",
+          "thresholdDecisionBasis"
+        ],
+        "decisionMode": "history_aware_effective_counts",
+        "failClosed": true
+      },
+      "novelTaskAcquisition": {
+        "surface": "output/agi_readiness/novel_task_acquisition.json",
+        "requiredObjects": [
+          "currentSnapshot",
+          "effectiveHistoryAware",
+          "requiredThresholds",
+          "meetsThresholds",
+          "thresholdDecisionBasis"
+        ],
+        "decisionMode": "current_snapshot_no_history_uplift",
+        "failClosed": true
+      }
+    },
+    "legacySovereign": {
+      "surface": "output/agi_readiness/sovereign_goal_completion_status.json",
+      "role": "compatibility_alias_only",
+      "primaryCurrentTruthForbidden": true
+    }
+  },
   "strictChecks": [
     {
       "id": "execution_plane_defined",
@@ -172,6 +234,18 @@
     {
       "id": "subjective_completion_scoped_to_companion",
       "scope": "current_truth"
+    },
+    {
+      "id": "running_agenda_current_truth_semantics_declared",
+      "scope": "current_truth_contract"
+    },
+    {
+      "id": "threshold_basis_current_truth_semantics_declared",
+      "scope": "current_truth_contract"
+    },
+    {
+      "id": "legacy_sovereign_not_primary_current_truth",
+      "scope": "current_truth_contract"
     },
     {
       "id": "compatibility_completion_scoped_to_compatibility",

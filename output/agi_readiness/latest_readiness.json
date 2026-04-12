@@ -1,6 +1,6 @@
 {
   "schema": "agi-readiness-live-summary.v1",
-  "generatedAt": "2026-04-12T02:52:33.234Z",
+  "generatedAt": "2026-04-12T08:44:26.943Z",
   "workspaceId": "5c839dfeef8b555f",
   "latestRunId": "eval-1775415298684-6e4ae77c",
   "profile": "agi_v1",
@@ -213,7 +213,7 @@
   },
   "evaluatedBreadth": 1,
   "supportedCoverageBreadth": 1,
-  "stableCoverageBreadth": 0.166667,
+  "stableCoverageBreadth": 0.333333,
   "coverageFamilyCount": 6,
   "coveredFamilyCount": 6,
   "failedFamilies": [],
@@ -267,7 +267,7 @@
   "improvementEvidenceClass": "distinct_hold",
   "scoreViews": {
     "schema": "agi-readiness-score-views.v1",
-    "generatedAt": "2026-04-12T02:52:34.780Z",
+    "generatedAt": "2026-04-12T08:44:28.841Z",
     "workspaceId": "5c839dfeef8b555f",
     "rawFinalScore": 0.9995,
     "internalGovernedScore": 0.9995,

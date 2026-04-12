@@ -7,6 +7,7 @@ const { EventEmitter } = require("events");
 const path = require("path");
 
 const serverModulePath = path.resolve(__dirname, "..", "server.js");
+const serverImplementationPath = path.resolve(__dirname, "..", "server_impl.js");
 
 function sleep(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms));
@@ -16,17 +17,20 @@ function loadServerModuleWithSpawn(spawnImpl) {
   const originalSpawn = childProcess.spawn;
   childProcess.spawn = spawnImpl;
   delete require.cache[serverModulePath];
+  delete require.cache[serverImplementationPath];
   try {
     return {
       serverModule: require(serverModulePath),
       restore() {
         childProcess.spawn = originalSpawn;
         delete require.cache[serverModulePath];
+        delete require.cache[serverImplementationPath];
       },
     };
   } catch (error) {
     childProcess.spawn = originalSpawn;
     delete require.cache[serverModulePath];
+    delete require.cache[serverImplementationPath];
     throw error;
   }
 }

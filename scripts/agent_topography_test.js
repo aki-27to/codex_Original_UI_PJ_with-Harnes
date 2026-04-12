@@ -6,6 +6,7 @@ const { spawn } = require("child_process");
 const fs = require("fs");
 const http = require("http");
 const path = require("path");
+const { resolveServerImplementationPath } = require("./lib/server_source_path");
 
 const workspaceRoot = path.resolve(__dirname, "..");
 function resolveHarnessAppJsPath() {
@@ -20,7 +21,10 @@ function resolveHarnessAppJsPath() {
   return found;
 }
 const appJsPath = resolveHarnessAppJsPath();
-const serverJsPath = path.join(workspaceRoot, "server.js");
+const {
+  wrapperPath: serverEntryPath,
+  implementationPath: serverJsPath,
+} = resolveServerImplementationPath(workspaceRoot);
 const serverModule = require(serverJsPath);
 
 function sleep(ms) {
@@ -144,7 +148,7 @@ async function runIntegrationCheck() {
   const port = pickTestPort();
   let childError = null;
   let childExit = null;
-  const child = spawn(process.execPath, [serverJsPath], {
+  const child = spawn(process.execPath, [serverEntryPath], {
     cwd: workspaceRoot,
     env: {
       ...process.env,

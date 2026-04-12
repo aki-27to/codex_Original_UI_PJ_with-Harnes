@@ -24,8 +24,12 @@ const {
 const {
   resolveExportSessionId,
 } = require("./export_session_window");
+const {
+  buildWorkerCompletionStatus,
+} = require("./worker_completion_status");
 
 const workspaceRootDefault = path.resolve(__dirname, "..", "..");
+const WORKER_COMPLETION_DIVERGENCE_DETAIL = "worker completion companion diverges from the worker headline or its background readiness basis";
 
 function safeString(value, max = 400) {
   if (typeof value === "string") {
@@ -131,11 +135,20 @@ function readWorkerDecisionSurfaceArtifact(workspaceRoot) {
   return payload && typeof payload === "object" && !Array.isArray(payload) ? payload : {};
 }
 
+function readWorkerCompletionStatusArtifact(workspaceRoot) {
+  const targetPath = path.join(workspaceRoot, "output", "governance_public", "worker_completion_status.json");
+  const payload = readJson(targetPath);
+  return payload && typeof payload === "object" && !Array.isArray(payload) ? payload : {};
+}
+
 function summarizeWorkerDecisionHeadline(workspaceRoot) {
   const workerDecisionSurface = readWorkerDecisionSurfaceArtifact(workspaceRoot);
+  const workerCompletionStatus = readWorkerCompletionStatusArtifact(workspaceRoot);
   return {
     workerDecisionSurfacePath: repoRelative(workspaceRoot, path.join(workspaceRoot, "output", "governance_public", "worker_decision_surface.json")),
     workerDecisionSurface: sanitizePublicValue(workerDecisionSurface, workspaceRoot),
+    workerCompletionStatusPath: repoRelative(workspaceRoot, path.join(workspaceRoot, "output", "governance_public", "worker_completion_status.json")),
+    workerCompletionStatus: sanitizePublicValue(workerCompletionStatus, workspaceRoot),
     headlineScope: safeString(workerDecisionSurface && workerDecisionSurface.scope, 80) || "",
     workerDecisionHeadline: safeString(workerDecisionSurface && workerDecisionSurface.topLevelOutcome, 80) || "",
   };
@@ -147,14 +160,15 @@ function isTerminalAutonomousLearningStatus(value) {
 
 function summarizeAutonomousLearningEntryCounts(entries = []) {
   const normalizedEntries = Array.isArray(entries) ? entries : [];
-  const openEntries = normalizedEntries.filter((entry) => !isTerminalAutonomousLearningStatus(entry && entry.status));
+  const countedEntries = normalizedEntries.filter((entry) => safeString(entry && entry.source, 80) !== "memory_eval");
+  const openEntries = countedEntries.filter((entry) => !isTerminalAutonomousLearningStatus(entry && entry.status));
   const countBlocked = (list) => list.filter((entry) => ["blocked", "proposal_only", "proposal only"].includes(safeString(entry && entry.status, 80))).length;
   return {
     queued: openEntries.filter((entry) => safeString(entry && entry.status, 80) === "queued").length,
     running: openEntries.filter((entry) => safeString(entry && entry.status, 80) === "running").length,
     blocked: countBlocked(openEntries),
     insufficientEvidenceCount: openEntries.filter((entry) => safeString(entry && entry.remediationEffect, 80) === "insufficient_evidence").length,
-    verifiedPositiveCount: normalizedEntries.filter((entry) => safeString(entry && entry.remediationEffect, 80) === "verified_positive").length,
+    verifiedPositiveCount: countedEntries.filter((entry) => safeString(entry && entry.remediationEffect, 80) === "verified_positive").length,
   };
 }
 
@@ -162,14 +176,26 @@ function buildAutonomousLearningCountSemantics() {
   return {
     currentWindow: "current_export_session",
     historicalWindow: "prior_export_sessions_cumulative",
+    countedEntryScope: "non_memory_eval_learning_agenda_entries",
     currentOpenAgendaCounts: [
       "currentQueuedCount",
       "currentRunningCount",
       "currentBlockedCount",
       "currentInsufficientEvidenceCount",
     ],
-    currentVerifiedPositiveCount: "verified_positive_entries_in_current_export_session",
-    historicalVerifiedPositiveCount: "cumulative_verified_positive_entries_from_prior_export_sessions",
+    currentVerifiedPositiveCount: "verified_positive_non_memory_eval_entries_in_current_export_session",
+    historicalVerifiedPositiveCount: "cumulative_verified_positive_non_memory_eval_entries_from_prior_export_sessions",
+    gateDecisionCounts: {
+      scope: "completion_gate_consumed_subset",
+      countedEntryScope: "non_memory_eval_learning_agenda_entries_in_current_export_session",
+      sourceRule: "exclude_meta_completion_entries_via_isMetaCompletionAgendaEntry",
+      openAgendaFields: [
+        "queued",
+        "running",
+        "blocked",
+        "insufficientEvidenceCount",
+      ],
+    },
     summaryRelationships: {
       queued: "equals_currentQueuedCount",
       running: "equals_currentRunningCount",
@@ -177,6 +203,113 @@ function buildAutonomousLearningCountSemantics() {
       insufficientEvidenceCount: "equals_currentInsufficientEvidenceCount",
       verifiedPositive: "equals_currentVerifiedPositiveCount",
     },
+    decisionRelationships: {
+      goalRunningAgendaCount: "equals_gateDecisionCounts.running",
+      subjectiveRunningAgendaCount: "equals_gateDecisionCounts.running",
+      subjectiveBlockedAgendaCount: "equals_gateDecisionCounts.blocked",
+      subjectiveInsufficientEvidenceCount: "equals_max(gateDecisionCounts.insufficientEvidenceCount,selfDirectedProbeStatus.summary.insufficientEvidenceCount)",
+    },
+  };
+}
+
+function summarizeGateConsumedAgendaCounts(entries = []) {
+  const normalizedEntries = Array.isArray(entries) ? entries : [];
+  const gateEntries = normalizedEntries.filter((entry) => !isMetaCompletionAgendaEntry(entry));
+  const supportingCounts = summarizeAutonomousLearningEntryCounts(normalizedEntries);
+  const gateCounts = summarizeAutonomousLearningEntryCounts(gateEntries);
+  const supportingOpenCounts = {
+    queued: supportingCounts.queued,
+    running: supportingCounts.running,
+    blocked: supportingCounts.blocked,
+    insufficientEvidenceCount: supportingCounts.insufficientEvidenceCount,
+  };
+  const gateOpenCounts = {
+    queued: gateCounts.queued,
+    running: gateCounts.running,
+    blocked: gateCounts.blocked,
+    insufficientEvidenceCount: gateCounts.insufficientEvidenceCount,
+  };
+  return {
+    gateEntries,
+    supportingOpenCounts,
+    gateOpenCounts,
+    excludedMetaCompletionCounts: {
+      queued: Math.max(supportingOpenCounts.queued - gateOpenCounts.queued, 0),
+      running: Math.max(supportingOpenCounts.running - gateOpenCounts.running, 0),
+      blocked: Math.max(supportingOpenCounts.blocked - gateOpenCounts.blocked, 0),
+      insufficientEvidenceCount: Math.max(supportingOpenCounts.insufficientEvidenceCount - gateOpenCounts.insufficientEvidenceCount, 0),
+    },
+  };
+}
+
+function normalizeOpenAgendaCounts(counts = {}) {
+  const payload = counts && typeof counts === "object" ? counts : {};
+  return {
+    queued: clampInt(payload.queued, 0, 999999, 0),
+    running: clampInt(payload.running, 0, 999999, 0),
+    blocked: clampInt(payload.blocked, 0, 999999, 0),
+    insufficientEvidenceCount: clampInt(payload.insufficientEvidenceCount, 0, 999999, 0),
+  };
+}
+
+function resolveRunningAgendaDecisionCounts({
+  autonomousLearningStatus = null,
+  agendaEntries = [],
+} = {}) {
+  const learning = autonomousLearningStatus && typeof autonomousLearningStatus === "object"
+    ? autonomousLearningStatus
+    : {};
+  const gateDecisionCounts = learning && learning.gateDecisionCounts && typeof learning.gateDecisionCounts === "object"
+    ? learning.gateDecisionCounts
+    : null;
+  const supportingCurrentCounts = gateDecisionCounts && gateDecisionCounts.supportingCurrentCounts && typeof gateDecisionCounts.supportingCurrentCounts === "object"
+    ? gateDecisionCounts.supportingCurrentCounts
+    : null;
+  const excludedMetaCompletionCounts = gateDecisionCounts && gateDecisionCounts.excludedMetaCompletionCounts && typeof gateDecisionCounts.excludedMetaCompletionCounts === "object"
+    ? gateDecisionCounts.excludedMetaCompletionCounts
+    : null;
+  if (gateDecisionCounts && supportingCurrentCounts && excludedMetaCompletionCounts) {
+    return {
+      gateEntries: Array.isArray(agendaEntries) ? agendaEntries.filter((entry) => !isMetaCompletionAgendaEntry(entry)) : [],
+      supportingOpenCounts: normalizeOpenAgendaCounts(supportingCurrentCounts),
+      gateOpenCounts: normalizeOpenAgendaCounts(gateDecisionCounts),
+      excludedMetaCompletionCounts: normalizeOpenAgendaCounts(excludedMetaCompletionCounts),
+      source: "autonomous_learning_status.gateDecisionCounts",
+    };
+  }
+  return {
+    ...summarizeGateConsumedAgendaCounts(agendaEntries),
+    source: "agenda_entries_projection",
+  };
+}
+
+function buildRunningAgendaDecisionBasis(agendaCounts = {}) {
+  const gateOpenCounts = agendaCounts && agendaCounts.gateOpenCounts && typeof agendaCounts.gateOpenCounts === "object"
+    ? agendaCounts.gateOpenCounts
+    : {};
+  const supportingOpenCounts = agendaCounts && agendaCounts.supportingOpenCounts && typeof agendaCounts.supportingOpenCounts === "object"
+    ? agendaCounts.supportingOpenCounts
+    : {};
+  const excludedMetaCompletionCounts = agendaCounts && agendaCounts.excludedMetaCompletionCounts && typeof agendaCounts.excludedMetaCompletionCounts === "object"
+    ? agendaCounts.excludedMetaCompletionCounts
+    : {};
+  return {
+    mode: "fail_closed_gate_subset_with_supporting_broader_surface",
+    gateScope: "non_meta_completion_non_memory_eval_learning_agenda_entries_in_current_export_session",
+    supportingScope: "all_non_memory_eval_learning_agenda_entries_in_current_export_session",
+    exclusionRule: "isMetaCompletionAgendaEntry",
+    sourceArtifactPath: "output/agi_readiness/autonomous_learning_status.json",
+    sourceArtifactField: "gateDecisionCounts.running",
+    supportingArtifactField: "currentRunningCount",
+    gateRunningAgendaCount: clampInt(gateOpenCounts.running, 0, 999999, 0),
+    supportingCurrentRunningCount: clampInt(supportingOpenCounts.running, 0, 999999, 0),
+    excludedMetaCompletionRunningCount: clampInt(excludedMetaCompletionCounts.running, 0, 999999, 0),
+    gateBlockedAgendaCount: clampInt(gateOpenCounts.blocked, 0, 999999, 0),
+    supportingCurrentBlockedCount: clampInt(supportingOpenCounts.blocked, 0, 999999, 0),
+    excludedMetaCompletionBlockedCount: clampInt(excludedMetaCompletionCounts.blocked, 0, 999999, 0),
+    gateInsufficientEvidenceCount: clampInt(gateOpenCounts.insufficientEvidenceCount, 0, 999999, 0),
+    supportingCurrentInsufficientEvidenceCount: clampInt(supportingOpenCounts.insufficientEvidenceCount, 0, 999999, 0),
+    excludedMetaCompletionInsufficientEvidenceCount: clampInt(excludedMetaCompletionCounts.insufficientEvidenceCount, 0, 999999, 0),
   };
 }
 
@@ -213,6 +346,7 @@ function buildAutonomousLearningStatusArtifact({
   previousStatus = null,
   exportSessionId = "",
 }) {
+  const gateConsumedAgendaCounts = summarizeGateConsumedAgendaCounts(agenda && agenda.entries);
   const counts = deriveAutonomousLearningCounts(
     agenda && agenda.entries,
     previousStatus,
@@ -238,8 +372,24 @@ function buildAutonomousLearningStatusArtifact({
     workspaceId: safeString(workspaceId, 80),
     countSemantics: buildAutonomousLearningCountSemantics(),
     ...counts,
+    gateDecisionCounts: {
+      scope: "completion_gate_consumed_subset",
+      sourceRule: "exclude_meta_completion_entries_via_isMetaCompletionAgendaEntry",
+      queued: clampInt(gateConsumedAgendaCounts.gateOpenCounts && gateConsumedAgendaCounts.gateOpenCounts.queued, 0, 999999, 0),
+      running: clampInt(gateConsumedAgendaCounts.gateOpenCounts && gateConsumedAgendaCounts.gateOpenCounts.running, 0, 999999, 0),
+      blocked: clampInt(gateConsumedAgendaCounts.gateOpenCounts && gateConsumedAgendaCounts.gateOpenCounts.blocked, 0, 999999, 0),
+      insufficientEvidenceCount: clampInt(gateConsumedAgendaCounts.gateOpenCounts && gateConsumedAgendaCounts.gateOpenCounts.insufficientEvidenceCount, 0, 999999, 0),
+      supportingCurrentCounts: {
+        queued: counts.currentQueuedCount,
+        running: counts.currentRunningCount,
+        blocked: counts.currentBlockedCount,
+        insufficientEvidenceCount: counts.currentInsufficientEvidenceCount,
+      },
+      excludedMetaCompletionCounts: sanitizePublicValue(gateConsumedAgendaCounts.excludedMetaCompletionCounts, workspaceRoot),
+    },
     summary: sanitizePublicValue(summary, workspaceRoot),
     entries: (Array.isArray(agenda && agenda.entries) ? agenda.entries : [])
+      .filter((entry) => safeString(entry && entry.source, 80) !== "memory_eval")
       .slice(0, 12)
       .map((entry) => sanitizePublicValue(entry, workspaceRoot)),
   };
@@ -252,6 +402,9 @@ function validateAutonomousLearningCountSemantics(learning = {}) {
   const relationships = semantics && semantics.summaryRelationships && typeof semantics.summaryRelationships === "object"
     ? semantics.summaryRelationships
     : {};
+  const decisionRelationships = semantics && semantics.decisionRelationships && typeof semantics.decisionRelationships === "object"
+    ? semantics.decisionRelationships
+    : {};
   const currentOpenAgendaCounts = Array.isArray(semantics.currentOpenAgendaCounts)
     ? semantics.currentOpenAgendaCounts.map((entry) => safeString(entry, 120))
     : [];
@@ -263,14 +416,20 @@ function validateAutonomousLearningCountSemantics(learning = {}) {
   ];
   const pass = safeString(semantics.currentWindow, 120) === "current_export_session"
     && safeString(semantics.historicalWindow, 120) === "prior_export_sessions_cumulative"
+    && safeString(semantics.countedEntryScope, 160) === "non_memory_eval_learning_agenda_entries"
     && expectedOpenCounts.every((field) => currentOpenAgendaCounts.includes(field))
-    && safeString(semantics.currentVerifiedPositiveCount, 160) === "verified_positive_entries_in_current_export_session"
-    && safeString(semantics.historicalVerifiedPositiveCount, 160) === "cumulative_verified_positive_entries_from_prior_export_sessions"
+    && safeString(semantics.currentVerifiedPositiveCount, 200) === "verified_positive_non_memory_eval_entries_in_current_export_session"
+    && safeString(semantics.historicalVerifiedPositiveCount, 220) === "cumulative_verified_positive_non_memory_eval_entries_from_prior_export_sessions"
+    && safeString(semantics && semantics.gateDecisionCounts && semantics.gateDecisionCounts.countedEntryScope, 200) === "non_memory_eval_learning_agenda_entries_in_current_export_session"
     && safeString(relationships.queued, 120) === "equals_currentQueuedCount"
     && safeString(relationships.running, 120) === "equals_currentRunningCount"
     && safeString(relationships.blocked, 120) === "equals_currentBlockedCount"
     && safeString(relationships.insufficientEvidenceCount, 120) === "equals_currentInsufficientEvidenceCount"
-    && safeString(relationships.verifiedPositive, 120) === "equals_currentVerifiedPositiveCount";
+    && safeString(relationships.verifiedPositive, 120) === "equals_currentVerifiedPositiveCount"
+    && safeString(decisionRelationships.goalRunningAgendaCount, 160) === "equals_gateDecisionCounts.running"
+    && safeString(decisionRelationships.subjectiveRunningAgendaCount, 160) === "equals_gateDecisionCounts.running"
+    && safeString(decisionRelationships.subjectiveBlockedAgendaCount, 160) === "equals_gateDecisionCounts.blocked"
+    && safeString(decisionRelationships.subjectiveInsufficientEvidenceCount, 240) === "equals_max(gateDecisionCounts.insufficientEvidenceCount,selfDirectedProbeStatus.summary.insufficientEvidenceCount)";
   return {
     pass,
     detail: pass
@@ -304,6 +463,117 @@ function validateAutonomousLearningSummaryCountContract(learning = {}) {
     detail: pass
       ? "autonomous learning entries, current counts, and summary fields satisfy one count contract"
       : "autonomous learning entries, current counts, and summary fields disagree",
+  };
+}
+
+function validateSelfDirectedProbeThresholdBasis(probeStatus = {}) {
+  const currentSnapshot = probeStatus && probeStatus.currentSnapshot && typeof probeStatus.currentSnapshot === "object"
+    ? probeStatus.currentSnapshot
+    : {};
+  const effectiveHistoryAware = probeStatus && probeStatus.effectiveHistoryAware && typeof probeStatus.effectiveHistoryAware === "object"
+    ? probeStatus.effectiveHistoryAware
+    : {};
+  const requiredThresholds = probeStatus && probeStatus.requiredThresholds && typeof probeStatus.requiredThresholds === "object"
+    ? probeStatus.requiredThresholds
+    : {};
+  const meetsThresholds = probeStatus && probeStatus.meetsThresholds && typeof probeStatus.meetsThresholds === "object"
+    ? probeStatus.meetsThresholds
+    : {};
+  const thresholdDecisionBasis = probeStatus && probeStatus.thresholdDecisionBasis && typeof probeStatus.thresholdDecisionBasis === "object"
+    ? probeStatus.thresholdDecisionBasis
+    : {};
+  const recomputedPositive = clampInt(effectiveHistoryAware.positiveProbeCount, 0, 999999, -1) >= clampInt(requiredThresholds.positiveProbeCount, 0, 999999, -2);
+  const recomputedNovel = clampInt(effectiveHistoryAware.novelPositiveCount, 0, 999999, -1) >= clampInt(requiredThresholds.novelPositiveCount, 0, 999999, -2);
+  const recomputedInsufficient = clampInt(effectiveHistoryAware.insufficientEvidenceCount, 0, 999999, -1) <= clampInt(requiredThresholds.maxInsufficientEvidenceCount, 0, 999999, -2);
+  const pass = Number.isFinite(Number(currentSnapshot.positiveProbeCount))
+    && Number.isFinite(Number(currentSnapshot.novelPositiveCount))
+    && Number.isFinite(Number(currentSnapshot.insufficientEvidenceCount))
+    && Number.isFinite(Number(effectiveHistoryAware.positiveProbeCount))
+    && Number.isFinite(Number(effectiveHistoryAware.novelPositiveCount))
+    && Number.isFinite(Number(effectiveHistoryAware.insufficientEvidenceCount))
+    && effectiveHistoryAware.historicalCarry && typeof effectiveHistoryAware.historicalCarry === "object"
+    && effectiveHistoryAware.historyLift && typeof effectiveHistoryAware.historyLift === "object"
+    && Number.isFinite(Number(requiredThresholds.positiveProbeCount))
+    && Number.isFinite(Number(requiredThresholds.novelPositiveCount))
+    && Number.isFinite(Number(requiredThresholds.maxInsufficientEvidenceCount))
+    && typeof meetsThresholds.positiveProbeCount === "boolean"
+    && typeof meetsThresholds.novelPositiveCount === "boolean"
+    && typeof meetsThresholds.insufficientEvidenceCount === "boolean"
+    && typeof meetsThresholds.overall === "boolean"
+    && safeString(thresholdDecisionBasis.mode, 160) === "history_aware_effective_counts"
+    && thresholdDecisionBasis.failClosed === true
+    && safeString(thresholdDecisionBasis.historySourcePath, 220) === "output/agi_readiness/subjective_goal_completion_status.json"
+    && safeString(thresholdDecisionBasis.positiveProbeCount, 240) === "max(currentSnapshot.positiveProbeCount, effectiveHistoryAware.historicalCarry.positiveProbeCountFloor)"
+    && safeString(thresholdDecisionBasis.novelPositiveCount, 240) === "max(currentSnapshot.novelPositiveCount, effectiveHistoryAware.historicalCarry.novelPositiveCountFloor)"
+    && safeString(thresholdDecisionBasis.insufficientEvidenceCount, 240) === "currentSnapshot.insufficientEvidenceCount"
+    && clampInt(probeStatus.positiveProbeCount, 0, 999999, -2) === clampInt(effectiveHistoryAware.positiveProbeCount, 0, 999999, -3)
+    && clampInt(probeStatus.novelPositiveCount, 0, 999999, -2) === clampInt(effectiveHistoryAware.novelPositiveCount, 0, 999999, -3)
+    && clampInt(effectiveHistoryAware.positiveProbeCount, 0, 999999, -1) >= clampInt(currentSnapshot.positiveProbeCount, 0, 999999, -1)
+    && clampInt(effectiveHistoryAware.novelPositiveCount, 0, 999999, -1) >= clampInt(currentSnapshot.novelPositiveCount, 0, 999999, -1)
+    && clampInt(effectiveHistoryAware.insufficientEvidenceCount, 0, 999999, -1) === clampInt(currentSnapshot.insufficientEvidenceCount, 0, 999999, -2)
+    && clampInt(effectiveHistoryAware.historyLift && effectiveHistoryAware.historyLift.positiveProbeCount, 0, 999999, -1) === Math.max(
+      clampInt(effectiveHistoryAware.positiveProbeCount, 0, 999999, 0) - clampInt(currentSnapshot.positiveProbeCount, 0, 999999, 0),
+      0
+    )
+    && clampInt(effectiveHistoryAware.historyLift && effectiveHistoryAware.historyLift.novelPositiveCount, 0, 999999, -1) === Math.max(
+      clampInt(effectiveHistoryAware.novelPositiveCount, 0, 999999, 0) - clampInt(currentSnapshot.novelPositiveCount, 0, 999999, 0),
+      0
+    )
+    && meetsThresholds.positiveProbeCount === recomputedPositive
+    && meetsThresholds.novelPositiveCount === recomputedNovel
+    && meetsThresholds.insufficientEvidenceCount === recomputedInsufficient
+    && meetsThresholds.overall === (recomputedPositive && recomputedNovel && recomputedInsufficient);
+  return {
+    pass,
+    detail: pass
+      ? "self-directed probe threshold basis is explicit and internally consistent"
+      : "self-directed probe threshold basis is missing, contradictory, or fail-open",
+  };
+}
+
+function validateNovelTaskThresholdBasis(novelTask = {}) {
+  const currentSnapshot = novelTask && novelTask.currentSnapshot && typeof novelTask.currentSnapshot === "object"
+    ? novelTask.currentSnapshot
+    : {};
+  const effectiveHistoryAware = novelTask && novelTask.effectiveHistoryAware && typeof novelTask.effectiveHistoryAware === "object"
+    ? novelTask.effectiveHistoryAware
+    : {};
+  const requiredThresholds = novelTask && novelTask.requiredThresholds && typeof novelTask.requiredThresholds === "object"
+    ? novelTask.requiredThresholds
+    : {};
+  const meetsThresholds = novelTask && novelTask.meetsThresholds && typeof novelTask.meetsThresholds === "object"
+    ? novelTask.meetsThresholds
+    : {};
+  const thresholdDecisionBasis = novelTask && novelTask.thresholdDecisionBasis && typeof novelTask.thresholdDecisionBasis === "object"
+    ? novelTask.thresholdDecisionBasis
+    : {};
+  const recomputedPositive = clampInt(effectiveHistoryAware.positiveNovelTaskCount, 0, 999999, -1) >= clampInt(requiredThresholds.positiveNovelTaskCount, 0, 999999, -2);
+  const pass = Number.isFinite(Number(currentSnapshot.positiveNovelTaskCount))
+    && Number.isFinite(Number(currentSnapshot.novelTaskCount))
+    && Number.isFinite(Number(currentSnapshot.novelFamilyCount))
+    && Number.isFinite(Number(effectiveHistoryAware.positiveNovelTaskCount))
+    && Number.isFinite(Number(effectiveHistoryAware.novelTaskCount))
+    && Number.isFinite(Number(effectiveHistoryAware.novelFamilyCount))
+    && Number.isFinite(Number(requiredThresholds.positiveNovelTaskCount))
+    && typeof effectiveHistoryAware.historyAware === "boolean"
+    && effectiveHistoryAware.historyLift && typeof effectiveHistoryAware.historyLift === "object"
+    && typeof meetsThresholds.positiveNovelTaskCount === "boolean"
+    && typeof meetsThresholds.overall === "boolean"
+    && safeString(thresholdDecisionBasis.mode, 160) === "current_snapshot_no_history_uplift"
+    && thresholdDecisionBasis.failClosed === true
+    && safeString(thresholdDecisionBasis.historySource, 80) === "none"
+    && safeString(thresholdDecisionBasis.positiveNovelTaskCount, 240) === "currentSnapshot.positiveNovelTaskCount"
+    && clampInt(novelTask.positiveNovelTaskCount, 0, 999999, -2) === clampInt(effectiveHistoryAware.positiveNovelTaskCount, 0, 999999, -3)
+    && clampInt(effectiveHistoryAware.positiveNovelTaskCount, 0, 999999, -2) === clampInt(currentSnapshot.positiveNovelTaskCount, 0, 999999, -3)
+    && effectiveHistoryAware.historyAware === false
+    && clampInt(effectiveHistoryAware.historyLift && effectiveHistoryAware.historyLift.positiveNovelTaskCount, 0, 999999, -1) === 0
+    && meetsThresholds.positiveNovelTaskCount === recomputedPositive
+    && meetsThresholds.overall === recomputedPositive;
+  return {
+    pass,
+    detail: pass
+      ? "novel-task threshold basis is explicit and internally consistent"
+      : "novel-task threshold basis is missing, contradictory, or fail-open",
   };
 }
 
@@ -542,6 +812,7 @@ function getMemoryPaths(workspaceRoot = workspaceRootDefault) {
   const publicOutputRoot = path.join(workspaceRoot, "output", "memory_public");
   const agiReadinessRoot = path.join(workspaceRoot, "output", "agi_readiness");
   const continuityPublicRoot = path.join(workspaceRoot, "output", "continuity_public");
+  const governancePublicRoot = path.join(workspaceRoot, "output", "governance_public");
   return {
     workspaceRoot,
     root,
@@ -621,6 +892,11 @@ function getMemoryPaths(workspaceRoot = workspaceRootDefault) {
       packCausalTraceJson: path.join(publicOutputRoot, "pack_causal_trace_public.json"),
       causalEffectivenessSummaryJson: path.join(publicOutputRoot, "causal_effectiveness_summary.json"),
       exportManifestJson: path.join(publicOutputRoot, "export_manifest.json"),
+    },
+    governancePublic: {
+      root: governancePublicRoot,
+      workerDecisionSurfaceJson: path.join(governancePublicRoot, "worker_decision_surface.json"),
+      workerCompletionStatusJson: path.join(governancePublicRoot, "worker_completion_status.json"),
     },
     agiReadiness: {
       root: agiReadinessRoot,
@@ -704,6 +980,7 @@ function ensureMemoryLayout(paths) {
     paths.retrieval.root,
     paths.output.root,
     paths.publicOutput.root,
+    paths.governancePublic.root,
     paths.agiReadiness.root,
     paths.continuityPublic.root,
   ].forEach(ensureDir);
@@ -4521,12 +4798,65 @@ function renderDistinctLineageMarkdown(payload) {
   return `${lines.join("\n")}\n`;
 }
 
+function buildWorkspaceProgressNextRecommendedActions({
+  workspaceRoot,
+  workspaceProgress = {},
+  autonomousAgenda = null,
+  continuityDebt = null,
+  bottlenecks = null,
+  limit = 6,
+}) {
+  const agendaTopActions = (Array.isArray(autonomousAgenda && autonomousAgenda.entries) ? autonomousAgenda.entries : [])
+    .filter((entry) => ["running", "queued", "passed"].includes(safeString(entry && entry.status, 40)))
+    .slice(0, 3)
+    .map((entry) => safeString(entry && entry.publicSummary, 220));
+  const debtActions = (Array.isArray(continuityDebt && continuityDebt.items) ? continuityDebt.items : [])
+    .slice(0, 3)
+    .map((entry) => safeString(entry && entry.nextRecoveryStep, 220));
+  const bottleneckActions = (Array.isArray(bottlenecks && bottlenecks.items) ? bottlenecks.items : [])
+    .slice(0, 3)
+    .map((entry) => safeString(entry && entry.summary, 220));
+  return coerceSummaryList(
+    uniqueStrings([
+      ...coerceSummaryList(workspaceProgress && workspaceProgress.nextRecommendedActions, workspaceRoot, 6),
+      ...agendaTopActions,
+      ...debtActions,
+      ...bottleneckActions,
+    ], 12, 220),
+    workspaceRoot,
+    limit
+  );
+}
+
+function buildGoalCompletionRequiredNextActions({
+  workspaceRoot,
+  workspaceProgressPublic = null,
+  bottlenecks = null,
+  whyNotYet = [],
+  limit = 8,
+}) {
+  return uniqueStrings(
+    [
+      ...(Array.isArray(workspaceProgressPublic && workspaceProgressPublic.nextRecommendedActions)
+        ? workspaceProgressPublic.nextRecommendedActions
+        : []),
+      ...((Array.isArray(bottlenecks && bottlenecks.items) ? bottlenecks.items : []).map((entry) => safeString(entry && entry.summary, 220))),
+      ...(Array.isArray(whyNotYet) ? whyNotYet : []),
+    ]
+      .map((action) => normalizeOperationalNextAction(action))
+      .filter(Boolean),
+    limit,
+    220
+  );
+}
+
 function buildGoalCompletionStatus({
   workspaceRoot,
   readinessArtifacts,
   continuityArtifacts,
   continuityDebt,
   autonomousAgenda,
+  autonomousLearningStatus = null,
   robustnessRemediationEffects = null,
   causalTrace,
   openAIBlogLane,
@@ -4561,6 +4891,10 @@ function buildGoalCompletionStatus({
     ? readinessArtifacts.distinctLineage.entries.filter((entry) => safeString(entry && entry.comparisonMode, 80) === "distinct_comparison").length
     : 0;
   const agendaEntries = Array.isArray(autonomousAgenda && autonomousAgenda.entries) ? autonomousAgenda.entries : [];
+  const runningAgendaCounts = resolveRunningAgendaDecisionCounts({
+    autonomousLearningStatus,
+    agendaEntries,
+  });
   const operationalAgendaEntries = agendaEntries.filter((entry) => !isMetaCompletionAgendaEntry(entry));
   const remediationEffectEntries = Array.isArray(robustnessRemediationEffects && robustnessRemediationEffects.entries)
     ? robustnessRemediationEffects.entries
@@ -4577,7 +4911,7 @@ function buildGoalCompletionStatus({
   const verifiedNegativeCount = operationalAgendaEntries.filter((entry) => safeString(entry && entry.remediationEffect, 80) === "verified_negative").length;
   const verifiedHarmfulCount = operationalAgendaEntries.filter((entry) => safeString(entry && entry.remediationEffect, 80) === "verified_harmful").length;
   const insufficientEvidenceCount = operationalAgendaEntries.filter((entry) => safeString(entry && entry.remediationEffect, 80) === "insufficient_evidence").length;
-  const runningAgendaCount = operationalAgendaEntries.filter((entry) => safeString(entry && entry.status, 80) === "running").length;
+  const runningAgendaCount = clampInt(runningAgendaCounts.gateOpenCounts && runningAgendaCounts.gateOpenCounts.running, 0, 999999, 0);
   const likelyContributoryCount = traces.filter((entry) => safeString(entry && entry.usageStage, 80) === "likely_contributory").length;
   const harmfulTraceCount = traces.filter((entry) => safeString(entry && entry.usageStage, 80) === "harmful_to_outcome").length;
   const harmfulCausalRatio = safeRatio(harmfulTraceCount, likelyContributoryCount + harmfulTraceCount, likelyContributoryCount + harmfulTraceCount > 0 ? null : 1);
@@ -4658,6 +4992,7 @@ function buildGoalCompletionStatus({
     secondaryAdvisoryUsageCount: secondaryAdvisoryUsage,
     secondaryAdvisoryEffectsCount: secondaryAdvisoryEffects,
   };
+  const runningAgendaDecisionBasis = buildRunningAgendaDecisionBasis(runningAgendaCounts);
   const criteriaEvaluations = [
     { id: "stableCoverageBreadth", passed: currentValues.stableCoverageBreadth >= safeNumber(criteria.stableCoverageBreadth, 1), detail: `stable coverage breadth ${currentValues.stableCoverageBreadth} >= ${safeNumber(criteria.stableCoverageBreadth, 1)}` },
     { id: "supportedCoverageBreadth", passed: currentValues.supportedCoverageBreadth >= safeNumber(criteria.supportedCoverageBreadth, 1), detail: `supported coverage breadth ${currentValues.supportedCoverageBreadth} >= ${safeNumber(criteria.supportedCoverageBreadth, 1)}` },
@@ -4746,17 +5081,13 @@ function buildGoalCompletionStatus({
     if (entry.id === "consecutiveSuccessfulExports") return `operational completion thresholds have not been maintained across ${consecutiveRequired} consecutive live exports`;
     return safeString(entry.detail, 220) || safeString(entry.id, 120);
   });
-  const requiredNextActions = uniqueStrings(
-    [
-      ...(Array.isArray(workspaceProgressPublic && workspaceProgressPublic.nextRecommendedActions) ? workspaceProgressPublic.nextRecommendedActions : []),
-      ...((Array.isArray(bottlenecks && bottlenecks.items) ? bottlenecks.items : []).map((entry) => safeString(entry && entry.summary, 220))),
-      ...whyNotYet,
-    ]
-      .map((action) => normalizeOperationalNextAction(action))
-      .filter(Boolean),
-    8,
-    220
-  );
+  const requiredNextActions = buildGoalCompletionRequiredNextActions({
+    workspaceRoot,
+    workspaceProgressPublic,
+    bottlenecks,
+    whyNotYet,
+    limit: 8,
+  });
   const positiveMoments = [
     ...agendaEntries
       .filter((entry) => safeString(entry && entry.remediationEffect, 80) === "verified_positive")
@@ -4842,11 +5173,15 @@ function buildGoalCompletionStatus({
     autonomousLearningSummary: {
       totalAgendaCount: operationalAgendaEntries.length,
       runningAgendaCount,
+      gateRunningAgendaCount: runningAgendaDecisionBasis.gateRunningAgendaCount,
+      supportingCurrentRunningCount: runningAgendaDecisionBasis.supportingCurrentRunningCount,
+      excludedMetaCompletionRunningCount: runningAgendaDecisionBasis.excludedMetaCompletionRunningCount,
       verifiedPositiveCount,
       verifiedNegativeCount,
       verifiedHarmfulCount,
       insufficientEvidenceCount,
     },
+    runningAgendaDecisionBasis,
     continuityDebtSummary: {
       openDebtCount: currentValues.openDebtCount,
       blockedSubtasks: currentValues.blockedSubtasks,
@@ -4910,6 +5245,15 @@ function renderGoalCompletionMarkdown(payload) {
     : {};
   for (const [key, value] of Object.entries(currentValues)) {
     lines.push(`- ${key}: ${value == null ? "n/a" : String(value)}`);
+  }
+  const runningAgendaDecisionBasis = payload && payload.runningAgendaDecisionBasis && typeof payload.runningAgendaDecisionBasis === "object"
+    ? payload.runningAgendaDecisionBasis
+    : {};
+  if (Object.keys(runningAgendaDecisionBasis).length) {
+    lines.push("", "## Running Agenda Semantics");
+    for (const [key, value] of Object.entries(runningAgendaDecisionBasis)) {
+      lines.push(`- ${key}: ${value == null ? "n/a" : String(value)}`);
+    }
   }
   lines.push("", "## Why Not Yet");
   for (const reason of Array.isArray(payload && payload.whyNotYet) ? payload.whyNotYet : []) {
@@ -5077,16 +5421,24 @@ function buildSelfDirectedProbeStatus({
   const probeGoals = collectSelfAuthoredProbeGoals(selfAuthoredGoalMarket, { limit: 32 });
   const novelProbeEntries = selfDirectedEntries.filter((entry) => /probe:/i.test(safeString(entry && entry.proposedEvalProbe, 120)) || safeString(entry && entry.targetCategory, 80) === "ambiguous_instruction");
   const historicalSignals = summarizeSubjectiveHistorySignals(previousSubjectiveHistory);
+  const currentPositiveProbeCount = selfDirectedEntries.filter((entry) => safeString(entry && entry.remediationEffect, 80) === "verified_positive").length
+    + probeGoals.filter((entry) => Boolean(entry && entry.positiveClosure)).length;
   const positiveProbeCount = Math.max(
-    selfDirectedEntries.filter((entry) => safeString(entry && entry.remediationEffect, 80) === "verified_positive").length + probeGoals.filter((entry) => Boolean(entry && entry.positiveClosure)).length,
+    currentPositiveProbeCount,
     historicalSignals.maxVerifiedPositiveSelfDirectedRemediations,
   );
   const negativeProbeCount = selfDirectedEntries.filter((entry) => ["verified_negative", "verified_harmful"].includes(safeString(entry && entry.remediationEffect, 80))).length;
+  const currentNovelPositiveCount = novelProbeEntries.filter((entry) => safeString(entry && entry.remediationEffect, 80) === "verified_positive").length
+    + probeGoals.filter((entry) => Boolean(entry && entry.positiveClosure && entry.novel)).length;
   const novelPositiveCount = Math.max(
-    novelProbeEntries.filter((entry) => safeString(entry && entry.remediationEffect, 80) === "verified_positive").length
-      + probeGoals.filter((entry) => Boolean(entry && entry.positiveClosure && entry.novel)).length,
+    currentNovelPositiveCount,
     historicalSignals.maxNovelProbePositiveCount,
   );
+  const probeCount = selfDirectedEntries.length + probeGoals.length;
+  const novelProbeCount = novelProbeEntries.length + probeGoals.filter((entry) => Boolean(entry && entry.novel)).length;
+  const blockedCount = selfDirectedEntries.filter((entry) => ["blocked", "proposal_only", "proposal only"].includes(safeString(entry && entry.status, 80))).length;
+  const insufficientEvidenceCount = selfDirectedEntries.filter((entry) => safeString(entry && entry.remediationEffect, 80) === "insufficient_evidence").length
+    + probeGoals.filter((entry) => Boolean(entry && entry.insufficientEvidence)).length;
   const recentProbeEntries = takeRecentEntries(selfDirectedEntries, {
     limit: 8,
     timestampSelector: (entry) => entry && entry.lastUpdatedAt,
@@ -5109,37 +5461,86 @@ function buildSelfDirectedProbeStatus({
     8,
     120,
   );
+  const requiredThresholds = {
+    positiveProbeCount: clampInt(compatibilityThresholds.minPositiveProbeCountWindow || subjectiveThresholds.minVerifiedPositiveSelfDirectedRemediations, 2, 999999, 2),
+    novelPositiveCount: clampInt(compatibilityThresholds.minNovelProbePositiveCountWindow || compatibilityThresholds.minNovelProbePositiveEvidence || subjectiveThresholds.minNovelProbePositiveEvidence, 1, 999999, 1),
+    maxInsufficientEvidenceCount: clampInt(compatibilityThresholds.maxInsufficientEvidenceCount || subjectiveThresholds.maxInsufficientEvidenceCount, 0, 999999, 0),
+  };
+  const currentSnapshot = {
+    probeCount,
+    positiveProbeCount: currentPositiveProbeCount,
+    negativeProbeCount,
+    blockedCount,
+    insufficientEvidenceCount,
+    novelProbeCount,
+    novelPositiveCount: currentNovelPositiveCount,
+    verifiedPositiveSelfDirectedCount: currentPositiveProbeCount,
+    novelProbePositiveCount: currentNovelPositiveCount,
+  };
+  const effectiveHistoryAware = {
+    probeCount,
+    positiveProbeCount,
+    negativeProbeCount,
+    blockedCount,
+    insufficientEvidenceCount,
+    novelProbeCount,
+    novelPositiveCount,
+    verifiedPositiveSelfDirectedCount: positiveProbeCount,
+    novelProbePositiveCount: novelPositiveCount,
+    historicalCarry: {
+      positiveProbeCountFloor: clampInt(historicalSignals.maxVerifiedPositiveSelfDirectedRemediations, 0, 999999, 0),
+      novelPositiveCountFloor: clampInt(historicalSignals.maxNovelProbePositiveCount, 0, 999999, 0),
+      historicalCriteriaMetWindowSeen: Boolean(historicalSignals.hadCriteriaMetWindow),
+    },
+    historyLift: {
+      positiveProbeCount: Math.max(positiveProbeCount - currentPositiveProbeCount, 0),
+      novelPositiveCount: Math.max(novelPositiveCount - currentNovelPositiveCount, 0),
+    },
+  };
+  const meetsThresholds = {
+    positiveProbeCount: effectiveHistoryAware.positiveProbeCount >= requiredThresholds.positiveProbeCount,
+    novelPositiveCount: effectiveHistoryAware.novelPositiveCount >= requiredThresholds.novelPositiveCount,
+    insufficientEvidenceCount: effectiveHistoryAware.insufficientEvidenceCount <= requiredThresholds.maxInsufficientEvidenceCount,
+  };
+  meetsThresholds.overall = Object.values(meetsThresholds).every(Boolean);
   return {
     schema: "agi-readiness-self-directed-probe-status.v1",
     generatedAt: toIso(),
     exportSessionId: safeString(exportSessionId, 120),
     scope: "self_directed_probe_supporting",
     workspaceId: toWorkspaceId(workspaceRoot),
-    probeCount: selfDirectedEntries.length + probeGoals.length,
+    probeCount,
     positiveProbeCount,
     negativeProbeCount,
-    novelProbeCount: novelProbeEntries.length + probeGoals.filter((entry) => Boolean(entry && entry.novel)).length,
+    novelProbeCount,
     novelPositiveCount,
     recentProbeFamilies: uniqueStrings([
       ...recentProbeEntries.map((entry) => safeString(entry && (entry.targetFamily || entry.proposedTaskFamily), 80) || "default"),
       ...probeGoals.flatMap((entry) => entry && Array.isArray(entry.taskFamilies) ? entry.taskFamilies : []),
     ], 8, 80),
     recentPositiveEvidenceRefs,
-    requiredThresholds: {
-      positiveProbeCount: clampInt(compatibilityThresholds.minPositiveProbeCountWindow || subjectiveThresholds.minVerifiedPositiveSelfDirectedRemediations, 2, 999999, 2),
-      novelPositiveCount: clampInt(compatibilityThresholds.minNovelProbePositiveCountWindow || compatibilityThresholds.minNovelProbePositiveEvidence || subjectiveThresholds.minNovelProbePositiveEvidence, 1, 999999, 1),
-      maxInsufficientEvidenceCount: clampInt(compatibilityThresholds.maxInsufficientEvidenceCount || subjectiveThresholds.maxInsufficientEvidenceCount, 0, 999999, 0),
+    currentSnapshot,
+    effectiveHistoryAware,
+    requiredThresholds,
+    meetsThresholds,
+    thresholdDecisionBasis: {
+      mode: "history_aware_effective_counts",
+      failClosed: true,
+      thresholdConsumer: "subjective_and_compatibility_probe_windows",
+      historySourcePath: "output/agi_readiness/subjective_goal_completion_status.json",
+      positiveProbeCount: "max(currentSnapshot.positiveProbeCount, effectiveHistoryAware.historicalCarry.positiveProbeCountFloor)",
+      novelPositiveCount: "max(currentSnapshot.novelPositiveCount, effectiveHistoryAware.historicalCarry.novelPositiveCountFloor)",
+      insufficientEvidenceCount: "currentSnapshot.insufficientEvidenceCount",
     },
     summary: {
-      selfDirectedCount: selfDirectedEntries.length + probeGoals.length,
-      probeCount: selfDirectedEntries.length + probeGoals.length,
+      selfDirectedCount: probeCount,
+      probeCount,
       positiveProbeCount,
       negativeProbeCount,
       verifiedPositiveSelfDirectedCount: positiveProbeCount,
-      blockedCount: selfDirectedEntries.filter((entry) => ["blocked", "proposal_only", "proposal only"].includes(safeString(entry && entry.status, 80))).length,
-      insufficientEvidenceCount: selfDirectedEntries.filter((entry) => safeString(entry && entry.remediationEffect, 80) === "insufficient_evidence").length
-        + probeGoals.filter((entry) => Boolean(entry && entry.insufficientEvidence)).length,
-      novelProbeCount: novelProbeEntries.length + probeGoals.filter((entry) => Boolean(entry && entry.novel)).length,
+      blockedCount,
+      insufficientEvidenceCount,
+      novelProbeCount,
       novelPositiveCount,
       novelProbePositiveCount: novelPositiveCount,
     },
@@ -5231,6 +5632,8 @@ function buildNovelTaskAcquisition({
     seenKeys.add(key);
     mergedItems.push(item);
   }
+  const novelFamilyCount = uniqueStrings(mergedItems.map((entry) => safeString(entry && entry.targetFamily, 80)), 16, 80).length;
+  const novelTaskCount = mergedItems.length;
   const positiveNovelTaskCount = mergedItems.filter((entry) => entry && entry.positiveEvidence).length;
   const recentNovelTasks = sanitizePublicValue(mergedItems.slice(0, 12), workspaceRoot);
   const positiveEvidenceRefs = uniqueStrings(
@@ -5238,25 +5641,55 @@ function buildNovelTaskAcquisition({
     12,
     120,
   );
+  const requiredThresholds = {
+    positiveNovelTaskCount: clampInt(compatibilityThresholds.minPositiveNovelTaskCountWindow || subjectiveThresholds.minNovelProbePositiveEvidence, 1, 999999, 1),
+  };
+  const currentSnapshot = {
+    novelFamilyCount,
+    novelTaskCount,
+    positiveNovelTaskCount,
+  };
+  const effectiveHistoryAware = {
+    novelFamilyCount,
+    novelTaskCount,
+    positiveNovelTaskCount,
+    historyLift: {
+      positiveNovelTaskCount: 0,
+    },
+    historyAware: false,
+  };
+  const meetsThresholds = {
+    positiveNovelTaskCount: effectiveHistoryAware.positiveNovelTaskCount >= requiredThresholds.positiveNovelTaskCount,
+  };
+  meetsThresholds.overall = Object.values(meetsThresholds).every(Boolean);
   return {
     schema: "agi-readiness-novel-task-acquisition.v1",
     generatedAt: toIso(),
     exportSessionId: safeString(exportSessionId, 120),
     scope: "novel_task_acquisition_supporting",
     workspaceId: toWorkspaceId(workspaceRoot),
-    novelFamilyCount: uniqueStrings(mergedItems.map((entry) => safeString(entry && entry.targetFamily, 80)), 16, 80).length,
-    novelTaskCount: mergedItems.length,
+    novelFamilyCount,
+    novelTaskCount,
     positiveNovelTaskCount,
     recentNovelTasks,
     positiveEvidenceRefs,
-    requiredThresholds: {
-      positiveNovelTaskCount: clampInt(compatibilityThresholds.minPositiveNovelTaskCountWindow || subjectiveThresholds.minNovelProbePositiveEvidence, 1, 999999, 1),
+    currentSnapshot,
+    effectiveHistoryAware,
+    requiredThresholds,
+    meetsThresholds,
+    thresholdDecisionBasis: {
+      mode: "current_snapshot_no_history_uplift",
+      failClosed: true,
+      thresholdConsumer: "compatibility_positive_novel_task_window",
+      positiveNovelTaskCount: "currentSnapshot.positiveNovelTaskCount",
+      historySourcePath: "",
+      historySource: "none",
     },
     summary: {
-      itemCount: mergedItems.length,
+      itemCount: novelTaskCount,
       positiveCount: positiveNovelTaskCount,
-      novelFamilyCount: uniqueStrings(mergedItems.map((entry) => safeString(entry && entry.targetFamily, 80)), 16, 80).length,
-      novelTaskCount: mergedItems.length,
+      novelFamilyCount,
+      novelTaskCount,
       positiveNovelTaskCount,
     },
     items: recentNovelTasks,
@@ -6000,7 +6433,10 @@ function buildSubjectiveGoalCompletionStatus({
     ? autonomousLearningStatus.summary
     : {};
   const agendaEntries = Array.isArray(autonomousLearningStatus && autonomousLearningStatus.entries) ? autonomousLearningStatus.entries : [];
-  const subjectiveRelevantAgendaEntries = agendaEntries.filter((entry) => !isMetaCompletionAgendaEntry(entry));
+  const runningAgendaCounts = resolveRunningAgendaDecisionCounts({
+    autonomousLearningStatus,
+    agendaEntries,
+  });
   const primarySummary = learningAdoptionStatus && learningAdoptionStatus.laneSummaries && learningAdoptionStatus.laneSummaries.openai_primary
     ? learningAdoptionStatus.laneSummaries.openai_primary
     : {};
@@ -6011,6 +6447,7 @@ function buildSubjectiveGoalCompletionStatus({
   const noEvidenceCategories = robustness.filter((entry) => safeString(entry && entry.status, 40) === "no_evidence").map((entry) => safeString(entry && entry.categoryId, 80)).filter(Boolean);
   const previousEntries = Array.isArray(previousSubjectiveHistory && previousSubjectiveHistory.entries) ? previousSubjectiveHistory.entries : [];
   const historicalSubjectiveSignals = summarizeSubjectiveHistorySignals(previousSubjectiveHistory);
+  const gateInsufficientEvidenceCount = clampInt(runningAgendaCounts.gateOpenCounts && runningAgendaCounts.gateOpenCounts.insufficientEvidenceCount, 0, 999999, 0);
   const currentValues = {
     operationalGoalStatus: safeString(goalCompletionStatus && goalCompletionStatus.goalStatus, 80) || "NOT_YET",
     stableCoverageBreadth: safeNumber(opCurrent.stableCoverageBreadth, 0),
@@ -6022,10 +6459,10 @@ function buildSubjectiveGoalCompletionStatus({
     openDebtCount: clampInt(debtSummary.openDebtCount, 0, 999999, 0),
     blockedSubtasks: clampInt(continuity.blockedSubtasks, 0, 999999, 0),
     integrationPendingCount: clampInt(continuity.integrationPendingCount, 0, 999999, 0),
-    runningAgendaCount: subjectiveRelevantAgendaEntries.filter((entry) => safeString(entry && entry.status, 80) === "running").length,
-    blockedAgendaCount: subjectiveRelevantAgendaEntries.filter((entry) => safeString(entry && entry.status, 80) === "blocked").length,
+    runningAgendaCount: clampInt(runningAgendaCounts.gateOpenCounts && runningAgendaCounts.gateOpenCounts.running, 0, 999999, 0),
+    blockedAgendaCount: clampInt(runningAgendaCounts.gateOpenCounts && runningAgendaCounts.gateOpenCounts.blocked, 0, 999999, 0),
     insufficientEvidenceCount: Math.max(
-      subjectiveRelevantAgendaEntries.filter((entry) => safeString(entry && entry.remediationEffect, 80) === "insufficient_evidence").length,
+      gateInsufficientEvidenceCount,
       clampInt(probeSummary.insufficientEvidenceCount, 0, 999999, 0)
     ),
     verifiedPositiveRemediations: Math.max(
@@ -6072,6 +6509,7 @@ function buildSubjectiveGoalCompletionStatus({
       historicalSubjectiveSignals.maxNovelProbePositiveCount,
     ),
   };
+  const runningAgendaDecisionBasis = buildRunningAgendaDecisionBasis(runningAgendaCounts);
   const criteriaEvaluations = [
     { id: "operationalGoalComplete", passed: currentValues.operationalGoalStatus === "OPERATIONALLY_COMPLETE", detail: `operational goal status = ${currentValues.operationalGoalStatus}` },
     { id: "stableCoverageBreadth", passed: currentValues.stableCoverageBreadth >= safeNumber(thresholds.stableCoverageBreadth, 1), detail: `stable coverage breadth ${currentValues.stableCoverageBreadth} >= ${safeNumber(thresholds.stableCoverageBreadth, 1)}` },
@@ -6197,7 +6635,13 @@ function buildSubjectiveGoalCompletionStatus({
     ],
     lineageSummary: sanitizePublicValue(distinctImprovementSummary, workspaceRoot),
     learningAdoptionSummary: sanitizePublicValue(learningAdoptionStatus && learningAdoptionStatus.summary ? learningAdoptionStatus.summary : {}, workspaceRoot),
-    autonomousLearningSummary: sanitizePublicValue(selfDirectedProbeStatus && selfDirectedProbeStatus.summary ? selfDirectedProbeStatus.summary : {}, workspaceRoot),
+    autonomousLearningSummary: sanitizePublicValue({
+      ...(selfDirectedProbeStatus && selfDirectedProbeStatus.summary ? selfDirectedProbeStatus.summary : {}),
+      gateRunningAgendaCount: runningAgendaDecisionBasis.gateRunningAgendaCount,
+      supportingCurrentRunningCount: runningAgendaDecisionBasis.supportingCurrentRunningCount,
+      excludedMetaCompletionRunningCount: runningAgendaDecisionBasis.excludedMetaCompletionRunningCount,
+    }, workspaceRoot),
+    runningAgendaDecisionBasis,
     robustnessSummary: sanitizePublicValue({
       noEvidenceCategories,
       categories: robustness.map((entry) => ({
@@ -6236,6 +6680,15 @@ function renderSubjectiveGoalCompletionMarkdown(payload) {
     : {};
   for (const [key, value] of Object.entries(currentValues)) {
     lines.push(`- ${key}: ${value == null ? "n/a" : String(value)}`);
+  }
+  const runningAgendaDecisionBasis = payload && payload.runningAgendaDecisionBasis && typeof payload.runningAgendaDecisionBasis === "object"
+    ? payload.runningAgendaDecisionBasis
+    : {};
+  if (Object.keys(runningAgendaDecisionBasis).length) {
+    lines.push("", "## Running Agenda Semantics");
+    for (const [key, value] of Object.entries(runningAgendaDecisionBasis)) {
+      lines.push(`- ${key}: ${value == null ? "n/a" : String(value)}`);
+    }
   }
   lines.push("", "## Why Not Yet");
   for (const reason of Array.isArray(payload && payload.subjectiveWhyNotYet) ? payload.subjectiveWhyNotYet : []) {
@@ -8192,9 +8645,20 @@ function buildContinuityPublicArtifacts({ workspaceRoot, continuityBridge, retri
   return { artifact, markdown };
 }
 
-function buildNextBottlenecks({ workspaceRoot, memoryEval, readinessArtifacts, continuityArtifacts, continuityDebt = null, openAIBlogLane, anthropicLane }) {
+function buildNextBottlenecks({ workspaceRoot, memoryEval, readinessArtifacts, continuityArtifacts, continuityDebt = null, openAIBlogLane, anthropicLane, workerCompletionStatus = null }) {
   const items = [];
-  const evalFailures = Array.isArray(memoryEval && memoryEval.checks) ? memoryEval.checks.filter((entry) => safeString(entry && entry.status, 20) !== "PASS") : [];
+  const suppressResolvedWorkerCompletionDivergence = Boolean(
+    workerCompletionStatus
+    && safeString(workerCompletionStatus.backgroundArtifactSessionConsistency, 80) === "aligned"
+    && Boolean(workerCompletionStatus.backgroundArtifactInputsTrusted) === true
+  );
+  const evalFailures = Array.isArray(memoryEval && memoryEval.checks)
+    ? memoryEval.checks.filter((entry) => {
+      if (safeString(entry && entry.status, 20) === "PASS") return false;
+      const detail = safeString(entry && (entry.detail || entry.title), 240);
+      return !(suppressResolvedWorkerCompletionDivergence && detail === WORKER_COMPLETION_DIVERGENCE_DETAIL);
+    })
+    : [];
   if (evalFailures.length) {
     items.push({
       classification: "evidence bottleneck",
@@ -9431,6 +9895,7 @@ function evaluateMemoryPublicSuite({
   goalCompletionStatus = null,
   subjectiveGoalCompletionStatus = null,
   compatibilityCompletionStatus = null,
+  workerCompletionStatus = null,
   sovereignGoalCompletionStatus = null,
   causalRegressionAlerts = null,
   learningAdoptionStatus = null,
@@ -9477,6 +9942,9 @@ function evaluateMemoryPublicSuite({
     ? readinessArtifacts.distinctLineage
     : {};
   const workerDecisionSurfacePath = path.join(workspaceRoot, "output", "governance_public", "worker_decision_surface.json");
+  const workerCompletionStatusPath = paths.governancePublic && paths.governancePublic.workerCompletionStatusJson
+    ? paths.governancePublic.workerCompletionStatusJson
+    : path.join(workspaceRoot, "output", "governance_public", "worker_completion_status.json");
   const adoptionReadinessEvalPath = path.join(workspaceRoot, "output", "governance_public", "adoption_readiness_eval.json");
   const iterationDecisionPath = path.join(workspaceRoot, "output", "governance_public", "iteration_decision.json");
   const noHitlAnalysisPath = path.join(workspaceRoot, "output", "externalization_nohitl", "no_hitl_analysis.json");
@@ -9834,6 +10302,86 @@ function evaluateMemoryPublicSuite({
       detail = pass
         ? "operational goal completion status matches readiness, debt, and learning state"
         : "operational goal completion status is inconsistent with readiness or debt state";
+    } else if (id === "running_agenda_semantics_explicit") {
+      const learningPath = paths.agiReadiness && paths.agiReadiness.autonomousLearningStatusJson
+        ? paths.agiReadiness.autonomousLearningStatusJson
+        : "";
+      const learning = requireWrittenPublicArtifacts
+        ? readJson(learningPath)
+        : (readJsonObject(learningPath) || null);
+      const goalPath = paths.agiReadiness && paths.agiReadiness.goalCompletionStatusJson
+        ? paths.agiReadiness.goalCompletionStatusJson
+        : "";
+      const goal = writtenOrRuntimeJson(goalPath, goalCompletionStatus);
+      const subjectivePath = paths.agiReadiness && paths.agiReadiness.subjectiveGoalCompletionStatusJson
+        ? paths.agiReadiness.subjectiveGoalCompletionStatusJson
+        : "";
+      const subjectiveGoal = writtenOrRuntimeJson(subjectivePath, subjectiveGoalCompletionStatus);
+      const gateCounts = learning && learning.gateDecisionCounts && typeof learning.gateDecisionCounts === "object"
+        ? learning.gateDecisionCounts
+        : {};
+      const goalCurrent = goal && goal.currentValues && typeof goal.currentValues === "object" ? goal.currentValues : {};
+      const goalBasis = goal && goal.runningAgendaDecisionBasis && typeof goal.runningAgendaDecisionBasis === "object"
+        ? goal.runningAgendaDecisionBasis
+        : {};
+      const subjectiveCurrent = subjectiveGoal && subjectiveGoal.subjectiveCurrentValues && typeof subjectiveGoal.subjectiveCurrentValues === "object"
+        ? subjectiveGoal.subjectiveCurrentValues
+        : {};
+      const subjectiveBasis = subjectiveGoal && subjectiveGoal.runningAgendaDecisionBasis && typeof subjectiveGoal.runningAgendaDecisionBasis === "object"
+        ? subjectiveGoal.runningAgendaDecisionBasis
+        : {};
+      const supportingRunning = clampInt(learning && learning.currentRunningCount, 0, 999999, -1);
+      const supportingBlocked = clampInt(learning && learning.currentBlockedCount, 0, 999999, -1);
+      const supportingInsufficient = clampInt(learning && learning.currentInsufficientEvidenceCount, 0, 999999, -1);
+      const gateRunning = clampInt(gateCounts.running, 0, 999999, -1);
+      const gateBlocked = clampInt(gateCounts.blocked, 0, 999999, -1);
+      const gateInsufficient = clampInt(gateCounts.insufficientEvidenceCount, 0, 999999, -1);
+      const supportingCounts = gateCounts && gateCounts.supportingCurrentCounts && typeof gateCounts.supportingCurrentCounts === "object"
+        ? gateCounts.supportingCurrentCounts
+        : {};
+      const excludedCounts = gateCounts && gateCounts.excludedMetaCompletionCounts && typeof gateCounts.excludedMetaCompletionCounts === "object"
+        ? gateCounts.excludedMetaCompletionCounts
+        : {};
+      pass = Boolean(learning && goal && subjectiveGoal)
+        && safeString(gateCounts.scope, 120) === "completion_gate_consumed_subset"
+        && safeString(gateCounts.sourceRule, 120) === "exclude_meta_completion_entries_via_isMetaCompletionAgendaEntry"
+        && gateRunning >= 0
+        && gateBlocked >= 0
+        && gateInsufficient >= 0
+        && supportingRunning >= 0
+        && supportingBlocked >= 0
+        && supportingInsufficient >= 0
+        && clampInt(supportingCounts.running, 0, 999999, -2) === supportingRunning
+        && clampInt(supportingCounts.blocked, 0, 999999, -2) === supportingBlocked
+        && clampInt(supportingCounts.insufficientEvidenceCount, 0, 999999, -2) === supportingInsufficient
+        && clampInt(goalCurrent.runningAgendaCount, 0, 999999, -2) === gateRunning
+        && clampInt(subjectiveCurrent.runningAgendaCount, 0, 999999, -2) === gateRunning
+        && clampInt(subjectiveCurrent.blockedAgendaCount, 0, 999999, -2) === gateBlocked
+        && clampInt(goalBasis.gateRunningAgendaCount, 0, 999999, -2) === gateRunning
+        && clampInt(goalBasis.supportingCurrentRunningCount, 0, 999999, -2) === supportingRunning
+        && clampInt(goalBasis.gateBlockedAgendaCount, 0, 999999, -2) === gateBlocked
+        && clampInt(goalBasis.supportingCurrentBlockedCount, 0, 999999, -2) === supportingBlocked
+        && clampInt(goalBasis.gateInsufficientEvidenceCount, 0, 999999, -2) === gateInsufficient
+        && clampInt(goalBasis.supportingCurrentInsufficientEvidenceCount, 0, 999999, -2) === supportingInsufficient
+        && clampInt(subjectiveBasis.gateRunningAgendaCount, 0, 999999, -2) === gateRunning
+        && clampInt(subjectiveBasis.supportingCurrentRunningCount, 0, 999999, -2) === supportingRunning
+        && clampInt(subjectiveBasis.gateBlockedAgendaCount, 0, 999999, -2) === gateBlocked
+        && clampInt(subjectiveBasis.supportingCurrentBlockedCount, 0, 999999, -2) === supportingBlocked
+        && clampInt(subjectiveBasis.gateInsufficientEvidenceCount, 0, 999999, -2) === gateInsufficient
+        && clampInt(subjectiveBasis.supportingCurrentInsufficientEvidenceCount, 0, 999999, -2) === supportingInsufficient
+        && clampInt(subjectiveCurrent.insufficientEvidenceCount, 0, 999999, -2) >= gateInsufficient
+        && clampInt(excludedCounts.running, 0, 999999, -2) === Math.max(supportingRunning - gateRunning, 0)
+        && clampInt(excludedCounts.blocked, 0, 999999, -2) === Math.max(supportingBlocked - gateBlocked, 0)
+        && clampInt(excludedCounts.insufficientEvidenceCount, 0, 999999, -2) === Math.max(supportingInsufficient - gateInsufficient, 0)
+        && clampInt(goalBasis.excludedMetaCompletionRunningCount, 0, 999999, -2) === clampInt(excludedCounts.running, 0, 999999, -3)
+        && clampInt(goalBasis.excludedMetaCompletionBlockedCount, 0, 999999, -2) === clampInt(excludedCounts.blocked, 0, 999999, -3)
+        && clampInt(goalBasis.excludedMetaCompletionInsufficientEvidenceCount, 0, 999999, -2) === clampInt(excludedCounts.insufficientEvidenceCount, 0, 999999, -3)
+        && clampInt(subjectiveBasis.excludedMetaCompletionRunningCount, 0, 999999, -2) === clampInt(excludedCounts.running, 0, 999999, -3)
+        && clampInt(subjectiveBasis.excludedMetaCompletionBlockedCount, 0, 999999, -2) === clampInt(excludedCounts.blocked, 0, 999999, -3)
+        && clampInt(subjectiveBasis.excludedMetaCompletionInsufficientEvidenceCount, 0, 999999, -2) === clampInt(excludedCounts.insufficientEvidenceCount, 0, 999999, -3);
+      detail = pass
+        ? "gate-consumed running agenda counts are explicit and consistent with the broader supporting surface"
+        : "running agenda counts differ across artifacts without an explicit gate-vs-supporting basis";
     } else if (id === "goal_completion_not_yet_when_criteria_fail") {
       const goalPath = paths.agiReadiness && paths.agiReadiness.goalCompletionStatusJson
         ? paths.agiReadiness.goalCompletionStatusJson
@@ -10129,10 +10677,28 @@ function evaluateMemoryPublicSuite({
         && Number.isFinite(Number(probeStatus.novelPositiveCount))
         && Array.isArray(probeStatus.recentProbeFamilies)
         && Array.isArray(probeStatus.recentPositiveEvidenceRefs)
+        && probeStatus.currentSnapshot && typeof probeStatus.currentSnapshot === "object"
+        && probeStatus.effectiveHistoryAware && typeof probeStatus.effectiveHistoryAware === "object"
         && probeStatus.requiredThresholds
         && typeof probeStatus.requiredThresholds === "object"
+        && probeStatus.meetsThresholds
+        && typeof probeStatus.meetsThresholds === "object"
+        && probeStatus.thresholdDecisionBasis
+        && typeof probeStatus.thresholdDecisionBasis === "object"
       );
       detail = pass ? "self-directed probe surface exposes required counts and thresholds" : "self-directed probe surface is missing required fields";
+    } else if (id === "self_directed_probe_threshold_basis_explicit") {
+      const probePath = paths.agiReadiness && paths.agiReadiness.selfDirectedProbeStatusJson
+        ? paths.agiReadiness.selfDirectedProbeStatusJson
+        : "";
+      const probeStatus = writtenOrRuntimeJson(probePath, selfDirectedProbeStatus);
+      const validation = validateSelfDirectedProbeThresholdBasis(probeStatus);
+      pass = Boolean(
+        probePath
+        && (!requireWrittenPublicArtifacts || fs.existsSync(probePath))
+        && validation.pass
+      );
+      detail = validation.detail;
     } else if (id === "self_directed_probe_status_present") {
       const probePath = paths.agiReadiness && paths.agiReadiness.selfDirectedProbeStatusJson
         ? paths.agiReadiness.selfDirectedProbeStatusJson
@@ -10158,10 +10724,28 @@ function evaluateMemoryPublicSuite({
         && Number.isFinite(Number(novel.positiveNovelTaskCount))
         && Array.isArray(novel.recentNovelTasks)
         && Array.isArray(novel.positiveEvidenceRefs)
+        && novel.currentSnapshot && typeof novel.currentSnapshot === "object"
+        && novel.effectiveHistoryAware && typeof novel.effectiveHistoryAware === "object"
         && novel.requiredThresholds
         && typeof novel.requiredThresholds === "object"
+        && novel.meetsThresholds
+        && typeof novel.meetsThresholds === "object"
+        && novel.thresholdDecisionBasis
+        && typeof novel.thresholdDecisionBasis === "object"
       );
       detail = pass ? "novel task acquisition surface exposes required counts and thresholds" : "novel task acquisition surface is missing required fields";
+    } else if (id === "novel_task_threshold_basis_explicit") {
+      const novelPath = paths.agiReadiness && paths.agiReadiness.novelTaskAcquisitionJson
+        ? paths.agiReadiness.novelTaskAcquisitionJson
+        : "";
+      const novel = writtenOrRuntimeJson(novelPath, novelTaskAcquisition);
+      const validation = validateNovelTaskThresholdBasis(novel);
+      pass = Boolean(
+        novelPath
+        && (!requireWrittenPublicArtifacts || fs.existsSync(novelPath))
+        && validation.pass
+      );
+      detail = validation.detail;
     } else if (id === "novel_task_acquisition_present") {
       const novelPath = paths.agiReadiness && paths.agiReadiness.novelTaskAcquisitionJson
         ? paths.agiReadiness.novelTaskAcquisitionJson
@@ -10290,6 +10874,112 @@ function evaluateMemoryPublicSuite({
       ], 16, 120);
       pass = sessionIds.length === 1;
       detail = pass ? `shared export session ${sessionIds[0] || "unset"}` : `mismatched export sessions: ${sessionIds.join(", ") || "missing"}`;
+    } else if (id === "worker_completion_status_present") {
+      const workerCompletion = writtenOrRuntimeJson(workerCompletionStatusPath, workerCompletionStatus) || {};
+      pass = Boolean(
+        (!requireWrittenPublicArtifacts || fs.existsSync(workerCompletionStatusPath))
+        && safeString(workerCompletion.schema, 160) === "worker-completion-status.v1"
+        && safeString(workerCompletion.scope, 80) === "worker_completion"
+        && safeString(workerCompletion.workerGoalStatus, 80)
+      );
+      detail = pass ? "worker completion companion artifact is present" : "worker completion companion artifact missing or malformed";
+    } else if (id === "worker_completion_status_consistent") {
+      const workerCompletion = writtenOrRuntimeJson(workerCompletionStatusPath, workerCompletionStatus) || {};
+      const workerDecision = writtenOrRuntimeJson(workerDecisionSurfacePath, readJsonObject(workerDecisionSurfacePath)) || {};
+      const goal = writtenOrRuntimeJson(paths.agiReadiness.goalCompletionStatusJson, goalCompletionStatus) || {};
+      const subjectiveGoal = writtenOrRuntimeJson(paths.agiReadiness.subjectiveGoalCompletionStatusJson, subjectiveGoalCompletionStatus) || {};
+      const compatibilityGoal = writtenOrRuntimeJson(paths.agiReadiness.compatibilityCompletionStatusJson, compatibilityCompletionStatus) || {};
+      const learning = writtenOrRuntimeJson(paths.agiReadiness.autonomousLearningStatusJson, autonomousAgenda) || {};
+      const gateCounts = learning.gateDecisionCounts && typeof learning.gateDecisionCounts === "object"
+        ? learning.gateDecisionCounts
+        : {};
+      const excludedCounts = gateCounts.excludedMetaCompletionCounts && typeof gateCounts.excludedMetaCompletionCounts === "object"
+        ? gateCounts.excludedMetaCompletionCounts
+        : {};
+      const sessionIds = uniqueStrings([
+        safeString(workerCompletion.exportSessionId, 120),
+        safeString(workerDecision.exportSessionId, 120),
+        safeString(goal.exportSessionId, 120),
+        safeString(subjectiveGoal.exportSessionId, 120),
+        safeString(compatibilityGoal.exportSessionId, 120),
+        safeString(learning.exportSessionId, 120),
+      ], 8, 120);
+      const activeLearningDebtOpen = (
+        clampInt(learning.currentRunningCount, 0, 999999, 0) > 0
+        || clampInt(learning.currentBlockedCount, 0, 999999, 0) > 0
+        || clampInt(learning.currentInsufficientEvidenceCount, 0, 999999, 0) > 0
+      );
+      const headlineWorkerComplete = safeString(workerCompletion.headlineWorkerOutcome, 80) === "ADOPTABLE_COMPLETE";
+      pass = Boolean(
+        safeString(workerCompletion.decisionMeaning, 240) === "worker_headline_stop_semantics_with_background_program_readiness_context"
+        && safeString(workerCompletion.headlineArtifactPath, 220).endsWith("output/governance_public/worker_decision_surface.json")
+        && sessionIds.length === 1
+        && safeString(workerCompletion.headlineWorkerOutcome, 80) === safeString(workerDecision.topLevelOutcome, 80)
+        && safeString(workerCompletion.workerGoalStatus, 80) === (headlineWorkerComplete ? "WORKER_COMPLETE" : "NOT_YET")
+        && safeString(workerCompletion.backgroundArtifactSessionConsistency, 80) === "aligned"
+        && Boolean(workerCompletion.backgroundArtifactInputsTrusted) === true
+        && safeString(workerCompletion.programReadinessStatus, 80) === safeString(goal.goalStatus, 80)
+        && safeString(workerCompletion.subjectiveCompanionStatus, 80) === safeString(subjectiveGoal.subjectiveGoalStatus, 80)
+        && safeString(workerCompletion.compatibilityStatus, 80) === safeString(compatibilityGoal.status, 80)
+        && clampInt(workerCompletion.gateRunningAgendaCount, 0, 999999, -1) === clampInt(goal && goal.currentValues && goal.currentValues.runningAgendaCount, 0, 999999, -2)
+        && clampInt(workerCompletion.gateBlockedAgendaCount, 0, 999999, -1) === clampInt(subjectiveGoal && subjectiveGoal.subjectiveCurrentValues && subjectiveGoal.subjectiveCurrentValues.blockedAgendaCount, 0, 999999, -2)
+        && clampInt(workerCompletion.gateInsufficientEvidenceCount, 0, 999999, -1) === clampInt(gateCounts.insufficientEvidenceCount, 0, 999999, -2)
+        && clampInt(workerCompletion.supportingCurrentRunningCount, 0, 999999, -1) === clampInt(learning.currentRunningCount, 0, 999999, -2)
+        && clampInt(workerCompletion.supportingCurrentBlockedCount, 0, 999999, -1) === clampInt(learning.currentBlockedCount, 0, 999999, -2)
+        && clampInt(workerCompletion.supportingCurrentInsufficientEvidenceCount, 0, 999999, -1) === clampInt(learning.currentInsufficientEvidenceCount, 0, 999999, -2)
+        && clampInt(workerCompletion.excludedMetaCompletionRunningCount, 0, 999999, -1) === clampInt(excludedCounts.running, 0, 999999, -2)
+        && clampInt(workerCompletion.excludedMetaCompletionBlockedCount, 0, 999999, -1) === clampInt(excludedCounts.blocked, 0, 999999, -2)
+        && clampInt(workerCompletion.excludedMetaCompletionInsufficientEvidenceCount, 0, 999999, -1) === clampInt(excludedCounts.insufficientEvidenceCount, 0, 999999, -2)
+        && Boolean(workerCompletion.activeLearningDebtOpen) === activeLearningDebtOpen
+        && workerCompletion.activeLearningDebtDecisionBasis
+        && safeString(workerCompletion.activeLearningDebtDecisionBasis.mode, 160) === "supporting_non_memory_eval_open_counts_with_gate_subset_explicit"
+        && workerCompletion.programReadinessBlockingWorkerStop === false
+        && workerCompletion.activeLearningDebtBlocksWorkerStop === false
+        && JSON.stringify(uniqueStrings(workerCompletion.backgroundProgramReadinessWhyNotYet, 12)) === JSON.stringify(uniqueStrings(goal.whyNotYet, 12))
+        && Array.isArray(workerCompletion.supportingArtifacts)
+        && workerCompletion.supportingArtifacts.includes("output/governance_public/worker_decision_surface.json")
+        && workerCompletion.supportingArtifacts.includes("output/agi_readiness/goal_completion_status.json")
+        && workerCompletion.supportingArtifacts.includes("output/agi_readiness/subjective_goal_completion_status.json")
+        && workerCompletion.supportingArtifacts.includes("output/agi_readiness/compatibility_completion_status.json")
+        && workerCompletion.supportingArtifacts.includes("output/agi_readiness/autonomous_learning_status.json")
+        && (
+          !headlineWorkerComplete
+          || (
+            Array.isArray(workerCompletion.failedCriteria)
+            && workerCompletion.failedCriteria.length === 0
+            && Array.isArray(workerCompletion.whyNotYet)
+            && workerCompletion.whyNotYet.length === 0
+          )
+        )
+        && (
+          headlineWorkerComplete
+          || (
+            Array.isArray(workerCompletion.failedCriteria)
+            && workerCompletion.failedCriteria.length > 0
+            && Array.isArray(workerCompletion.whyNotYet)
+            && workerCompletion.whyNotYet.length > 0
+          )
+        )
+      );
+      detail = pass
+        ? `worker completion companion stays aligned with worker headline under export session ${sessionIds[0] || "unset"}`
+        : WORKER_COMPLETION_DIVERGENCE_DETAIL;
+    } else if (id === "worker_completion_alignment_not_stale_in_downstream_surfaces") {
+      const workerCompletion = writtenOrRuntimeJson(workerCompletionStatusPath, workerCompletionStatus) || {};
+      const goal = writtenOrRuntimeJson(paths.agiReadiness.goalCompletionStatusJson, goalCompletionStatus) || {};
+      const unknowns = writtenOrRuntimeJson(paths.agiReadiness.openUnknownsRegisterJson, openUnknownsRegister) || {};
+      const blockerResolved = safeString(workerCompletion.backgroundArtifactSessionConsistency, 80) === "aligned"
+        && Boolean(workerCompletion.backgroundArtifactInputsTrusted) === true
+        && safeString(workerCompletion.decisionMeaning, 240) === "worker_headline_stop_semantics_with_background_program_readiness_context";
+      const staleMentions = uniqueStrings([
+        ...(Array.isArray(goal && goal.requiredNextActions) ? goal.requiredNextActions : []),
+        ...(Array.isArray(workspaceProgressPublic && workspaceProgressPublic.nextRecommendedActions) ? workspaceProgressPublic.nextRecommendedActions : []),
+        ...((Array.isArray(unknowns && unknowns.items) ? unknowns.items : []).map((entry) => safeString(entry && entry.summary, 240))),
+      ], 24, 240).filter((entry) => entry === WORKER_COMPLETION_DIVERGENCE_DETAIL);
+      pass = !blockerResolved || staleMentions.length === 0;
+      detail = pass
+        ? "downstream remediation surfaces do not retain a stale worker-companion divergence blocker"
+        : "downstream remediation surfaces still report a resolved worker-companion divergence blocker";
     } else if (id === "goal_completion_scope_is_program_readiness") {
       const goal = writtenOrRuntimeJson(paths.agiReadiness.goalCompletionStatusJson, goalCompletionStatus) || {};
       pass = safeString(goal.scope, 80) === "program_readiness";
@@ -10805,16 +11495,6 @@ function buildGovernedMemoryPublicArtifacts({ workspaceRoot = workspaceRootDefau
   });
   writeJsonIfChanged(bottlenecksProjectionPath, bottlenecks);
   const workspaceProgress = sanitizePublicValue(summary.workspaceProgress || {}, workspaceRoot);
-  const agendaTopActions = (Array.isArray(autonomousAgenda && autonomousAgenda.entries) ? autonomousAgenda.entries : [])
-    .filter((entry) => ["running", "queued", "passed"].includes(safeString(entry && entry.status, 40)))
-    .slice(0, 3)
-    .map((entry) => safeString(entry && entry.publicSummary, 220));
-  const debtActions = (Array.isArray(continuityDebt && continuityDebt.items) ? continuityDebt.items : [])
-    .slice(0, 3)
-    .map((entry) => safeString(entry && entry.nextRecoveryStep, 220));
-  const bottleneckActions = (Array.isArray(bottlenecks && bottlenecks.items) ? bottlenecks.items : [])
-    .slice(0, 3)
-    .map((entry) => safeString(entry && entry.summary, 220));
   let workspaceProgressPublic = {
     schema: "governed-memory-workspace-progress-public.v1",
     generatedAt: toIso(),
@@ -10825,16 +11505,14 @@ function buildGovernedMemoryPublicArtifacts({ workspaceRoot = workspaceRootDefau
     knownBlockers: coerceSummaryList(workspaceProgress.knownBlockers, workspaceRoot, safeNumber(policy && policy.limits && policy.limits.maxBlockers, 6)),
     knownRisks: coerceSummaryList(workspaceProgress.knownRisks, workspaceRoot, safeNumber(policy && policy.limits && policy.limits.maxRisks, 6)),
     recentTouchedPaths: uniqueStrings(workspaceProgress.recentTouchedPaths, safeNumber(policy && policy.limits && policy.limits.maxTouchedPaths, 8), 220).map((entry) => normalizePublicPath(workspaceRoot, entry)),
-    nextRecommendedActions: coerceSummaryList(
-      uniqueStrings([
-        ...coerceSummaryList(workspaceProgress.nextRecommendedActions, workspaceRoot, 6),
-        ...agendaTopActions,
-        ...debtActions,
-        ...bottleneckActions,
-      ], 12, 220),
+    nextRecommendedActions: buildWorkspaceProgressNextRecommendedActions({
       workspaceRoot,
-      safeNumber(policy && policy.limits && policy.limits.maxNextActions, 6)
-    ),
+      workspaceProgress,
+      autonomousAgenda,
+      continuityDebt,
+      bottlenecks,
+      limit: safeNumber(policy && policy.limits && policy.limits.maxNextActions, 6),
+    }),
     lastSuccessfulValidation: Array.isArray(workspaceProgress.lastSuccessfulValidation) ? workspaceProgress.lastSuccessfulValidation.slice(0, 2).map((entry) => ({
       reference: normalizePublicReference(entry && (entry.reference || entry.turnId), "turn"),
       taskOutcomeStatus: normalizePublicStatus(entry && entry.taskOutcomeStatus),
@@ -10944,6 +11622,7 @@ function buildGovernedMemoryPublicArtifacts({ workspaceRoot = workspaceRootDefau
     continuityArtifacts,
     continuityDebt,
     autonomousAgenda,
+    autonomousLearningStatus,
     robustnessRemediationEffects,
     causalTrace,
     openAIBlogLane,
@@ -11098,6 +11777,7 @@ function buildGovernedMemoryPublicArtifacts({ workspaceRoot = workspaceRootDefau
   let autonomyBudgetStatus = null;
   let selfAuthoredCausalEffects = null;
   let selfAuthoredRemediationTrend = null;
+  let workerCompletionStatus = null;
   let sovereignGoalCompletionStatus = null;
   let compatibilityCompletionStatus = null;
   writeJsonIfChanged(readinessProjectionPath, readinessArtifacts.readiness);
@@ -11119,6 +11799,7 @@ function buildGovernedMemoryPublicArtifacts({ workspaceRoot = workspaceRootDefau
     causalTrace,
     continuityDebt,
     goalCompletionStatus,
+    workerCompletionStatus,
     subjectiveGoalCompletionStatus,
     compatibilityCompletionStatus,
     sovereignGoalCompletionStatus,
@@ -11151,6 +11832,7 @@ function buildGovernedMemoryPublicArtifacts({ workspaceRoot = workspaceRootDefau
     continuityDebt,
     openAIBlogLane,
     anthropicLane,
+    workerCompletionStatus,
   });
   readinessArtifacts.bottlenecks = bottlenecks;
   writeJsonIfChanged(bottlenecksProjectionPath, bottlenecks);
@@ -11193,14 +11875,14 @@ function buildGovernedMemoryPublicArtifacts({ workspaceRoot = workspaceRootDefau
   });
   workspaceProgressPublic = {
     ...workspaceProgressPublic,
-    nextRecommendedActions: uniqueStrings([
-      ...(Array.isArray(workspaceProgressPublic.nextRecommendedActions) ? workspaceProgressPublic.nextRecommendedActions : []),
-      ...(Array.isArray(autonomousAgenda && autonomousAgenda.entries) ? autonomousAgenda.entries : [])
-        .filter((entry) => ["running", "queued"].includes(safeString(entry && entry.status, 40)))
-        .map((entry) => safeString(entry && entry.publicSummary, 220)),
-      ...(Array.isArray(bottlenecks && bottlenecks.items) ? bottlenecks.items : [])
-        .map((entry) => safeString(entry && entry.summary, 220)),
-    ], safeNumber(policy && policy.limits && policy.limits.maxNextActions, 6), 220),
+    nextRecommendedActions: buildWorkspaceProgressNextRecommendedActions({
+      workspaceRoot,
+      workspaceProgress,
+      autonomousAgenda,
+      continuityDebt,
+      bottlenecks,
+      limit: safeNumber(policy && policy.limits && policy.limits.maxNextActions, 6),
+    }),
   };
   goalCompletionStatus = buildGoalCompletionStatus({
     workspaceRoot,
@@ -11208,6 +11890,7 @@ function buildGovernedMemoryPublicArtifacts({ workspaceRoot = workspaceRootDefau
     continuityArtifacts,
     continuityDebt,
     autonomousAgenda,
+    autonomousLearningStatus,
     robustnessRemediationEffects,
     causalTrace,
     openAIBlogLane,
@@ -11399,6 +12082,100 @@ function buildGovernedMemoryPublicArtifacts({ workspaceRoot = workspaceRootDefau
     ...buildGoalCompletionSubjectiveProjection({ workspaceRoot, paths, subjectiveGoalCompletionStatus }),
     ...buildGoalCompletionCompatibilityProjection({ workspaceRoot, paths, compatibilityCompletionStatus }),
   };
+  workerCompletionStatus = buildWorkerCompletionStatus({
+    workerDecisionSurface: readWorkerDecisionSurfaceArtifact(workspaceRoot),
+    goalCompletionStatus,
+    subjectiveGoalCompletionStatus,
+    compatibilityCompletionStatus,
+    exportSessionId,
+    headlineArtifactPath: repoRelative(workspaceRoot, paths.governancePublic.workerDecisionSurfaceJson),
+  });
+  writeJsonIfChanged(paths.governancePublic.workerCompletionStatusJson, workerCompletionStatus);
+  bottlenecks = buildNextBottlenecks({
+    workspaceRoot,
+    memoryEval: evalStatus,
+    readinessArtifacts,
+    continuityArtifacts,
+    continuityDebt,
+    openAIBlogLane,
+    anthropicLane,
+    workerCompletionStatus,
+  });
+  readinessArtifacts.bottlenecks = bottlenecks;
+  workspaceProgressPublic = {
+    ...workspaceProgressPublic,
+    nextRecommendedActions: buildWorkspaceProgressNextRecommendedActions({
+      workspaceRoot,
+      workspaceProgress,
+      autonomousAgenda,
+      continuityDebt,
+      bottlenecks,
+      limit: safeNumber(policy && policy.limits && policy.limits.maxNextActions, 6),
+    }),
+  };
+  goalCompletionStatus = {
+    ...goalCompletionStatus,
+    requiredNextActions: buildGoalCompletionRequiredNextActions({
+      workspaceRoot,
+      workspaceProgressPublic,
+      bottlenecks,
+      whyNotYet: goalCompletionStatus.whyNotYet,
+      limit: 8,
+    }),
+  };
+  openUnknownsRegister = buildOpenUnknownsRegister({
+    workspaceRoot,
+    bottlenecks,
+    readinessArtifacts,
+    robustnessRemediationStatus,
+    selfAuthoredGoalMarket,
+  });
+  workspaceWorldModel = buildWorkspaceWorldModel({
+    workspaceRoot,
+    readinessArtifacts,
+    continuityArtifacts,
+    causalRegressionAlerts,
+    openUnknownsRegister,
+  });
+  evalStatus = evaluateMemoryPublicSuite({
+    workspaceRoot,
+    paths,
+    summary,
+    pack,
+    items,
+    openAIBlogLane,
+    anthropicLane,
+    observationProjection,
+    continuityArtifacts,
+    readinessArtifacts,
+    autonomousAgenda,
+    causalTrace,
+    continuityDebt,
+    goalCompletionStatus,
+    workerCompletionStatus,
+    subjectiveGoalCompletionStatus,
+    compatibilityCompletionStatus,
+    causalRegressionAlerts,
+    learningAdoptionStatus,
+    selfDirectedProbeStatus,
+    novelTaskAcquisition,
+    selfAuthoredGoalStatus,
+    selfAuthoredGoalHistory,
+    selfAuthoredGoalMarket,
+    openUnknownsRegister,
+    workspaceWorldModel,
+    continuousImprovementStatus,
+    noveltyGrowthStatus,
+    securityConstitutionStatus,
+    rollbackReadiness,
+    autonomyBudgetStatus,
+    selfAuthoredCausalEffects,
+    selfAuthoredRemediationTrend,
+    workspaceProgressPublic,
+    promotionHealthPublic,
+    latestPackPublic,
+    requireWrittenPublicArtifacts,
+  });
   publicOverview = {
     ...publicOverview,
     goalStatus: safeString(goalCompletionStatus.goalStatus, 80),
@@ -11422,6 +12199,12 @@ function buildGovernedMemoryPublicArtifacts({ workspaceRoot = workspaceRootDefau
       status: safeString(compatibilityCompletionStatus && compatibilityCompletionStatus.status, 80),
       whyNotYetCount: Array.isArray(compatibilityCompletionStatus && compatibilityCompletionStatus.whyNotYet) ? compatibilityCompletionStatus.whyNotYet.length : 0,
     },
+    workerCompletion: {
+      scope: safeString(workerCompletionStatus && workerCompletionStatus.scope, 80) || "worker_completion",
+      workerGoalStatus: safeString(workerCompletionStatus && workerCompletionStatus.workerGoalStatus, 80),
+      programReadinessStatus: safeString(workerCompletionStatus && workerCompletionStatus.programReadinessStatus, 80),
+      activeLearningDebtOpen: Boolean(workerCompletionStatus && workerCompletionStatus.activeLearningDebtOpen),
+    },
     learningAgendaSummary: sanitizePublicValue(autonomousLearningStatus.summary, workspaceRoot),
     ...summarizeWorkerDecisionHeadline(workspaceRoot),
   };
@@ -11440,6 +12223,7 @@ function buildGovernedMemoryPublicArtifacts({ workspaceRoot = workspaceRootDefau
     causalTrace,
     continuityDebt,
     goalCompletionStatus,
+    workerCompletionStatus,
     compatibilityCompletionStatus,
     causalRegressionAlerts,
     workspaceProgressPublic,
@@ -11455,6 +12239,7 @@ function buildGovernedMemoryPublicArtifacts({ workspaceRoot = workspaceRootDefau
     continuityDebt,
     openAIBlogLane,
     anthropicLane,
+    workerCompletionStatus,
   });
   readinessArtifacts.bottlenecks = bottlenecks;
   autonomousAgenda = buildAutonomousLearningAgenda({
@@ -11476,14 +12261,14 @@ function buildGovernedMemoryPublicArtifacts({ workspaceRoot = workspaceRootDefau
   });
   workspaceProgressPublic = {
     ...workspaceProgressPublic,
-    nextRecommendedActions: uniqueStrings([
-      ...(Array.isArray(workspaceProgressPublic.nextRecommendedActions) ? workspaceProgressPublic.nextRecommendedActions : []),
-      ...(Array.isArray(autonomousAgenda && autonomousAgenda.entries) ? autonomousAgenda.entries : [])
-        .filter((entry) => ["running", "queued"].includes(safeString(entry && entry.status, 40)))
-        .map((entry) => safeString(entry && entry.publicSummary, 220)),
-      ...(Array.isArray(bottlenecks && bottlenecks.items) ? bottlenecks.items : [])
-        .map((entry) => safeString(entry && entry.summary, 220)),
-    ], safeNumber(policy && policy.limits && policy.limits.maxNextActions, 6), 220),
+    nextRecommendedActions: buildWorkspaceProgressNextRecommendedActions({
+      workspaceRoot,
+      workspaceProgress,
+      autonomousAgenda,
+      continuityDebt,
+      bottlenecks,
+      limit: safeNumber(policy && policy.limits && policy.limits.maxNextActions, 6),
+    }),
   };
   goalCompletionStatus = buildGoalCompletionStatus({
     workspaceRoot,
@@ -11491,6 +12276,7 @@ function buildGovernedMemoryPublicArtifacts({ workspaceRoot = workspaceRootDefau
     continuityArtifacts,
     continuityDebt,
     autonomousAgenda,
+    autonomousLearningStatus,
     robustnessRemediationEffects,
     causalTrace,
     openAIBlogLane,
@@ -11722,6 +12508,7 @@ function buildGovernedMemoryPublicArtifacts({ workspaceRoot = workspaceRootDefau
     causalTrace,
     continuityDebt,
     goalCompletionStatus,
+    workerCompletionStatus,
     subjectiveGoalCompletionStatus,
     compatibilityCompletionStatus,
     causalRegressionAlerts,
@@ -11741,6 +12528,7 @@ function buildGovernedMemoryPublicArtifacts({ workspaceRoot = workspaceRootDefau
     continuityDebt,
     openAIBlogLane,
     anthropicLane,
+    workerCompletionStatus,
   });
   autonomousAgenda = buildAutonomousLearningAgenda({
     workspaceRoot,
@@ -11785,6 +12573,7 @@ function buildGovernedMemoryPublicArtifacts({ workspaceRoot = workspaceRootDefau
     continuityArtifacts,
     continuityDebt,
     autonomousAgenda,
+    autonomousLearningStatus,
     robustnessRemediationEffects,
     causalTrace,
     openAIBlogLane,
@@ -11838,6 +12627,15 @@ function buildGovernedMemoryPublicArtifacts({ workspaceRoot = workspaceRootDefau
     ...buildGoalCompletionSubjectiveProjection({ workspaceRoot, paths, subjectiveGoalCompletionStatus }),
     ...buildGoalCompletionCompatibilityProjection({ workspaceRoot, paths, compatibilityCompletionStatus }),
   };
+  workerCompletionStatus = buildWorkerCompletionStatus({
+    workerDecisionSurface: readWorkerDecisionSurfaceArtifact(workspaceRoot),
+    goalCompletionStatus,
+    subjectiveGoalCompletionStatus,
+    compatibilityCompletionStatus,
+    exportSessionId,
+    headlineArtifactPath: repoRelative(workspaceRoot, paths.governancePublic.workerDecisionSurfaceJson),
+  });
+  writeJsonIfChanged(paths.governancePublic.workerCompletionStatusJson, workerCompletionStatus);
   publicOverview = {
     ...publicOverview,
     goalStatus: safeString(goalCompletionStatus.goalStatus, 80),
@@ -11901,6 +12699,7 @@ function buildGovernedMemoryPublicArtifacts({ workspaceRoot = workspaceRootDefau
       memoryEvalStatusJson: repoRelative(workspaceRoot, paths.publicOutput.memoryEvalStatusJson),
       memoryEvalStatusMd: repoRelative(workspaceRoot, paths.publicOutput.memoryEvalStatusMd),
       workerDecisionSurfaceJson: repoRelative(workspaceRoot, path.join(workspaceRoot, "output", "governance_public", "worker_decision_surface.json")),
+      workerCompletionStatusJson: repoRelative(workspaceRoot, paths.governancePublic.workerCompletionStatusJson),
       openAIBlogLaneJson: repoRelative(workspaceRoot, paths.publicOutput.openAIBlogLaneJson),
       anthropicLaneJson: repoRelative(workspaceRoot, paths.publicOutput.anthropicLaneJson),
       agiReadinessJson: repoRelative(workspaceRoot, paths.agiReadiness.latestJson),
@@ -11988,6 +12787,7 @@ function buildGovernedMemoryPublicArtifacts({ workspaceRoot = workspaceRootDefau
     goalCompletionStatus,
     compatibilityCompletionStatus,
     subjectiveGoalCompletionStatus,
+    workerCompletionStatus,
     sovereignGoalCompletionStatus,
     learningAdoptionStatus,
     selfDirectedProbeStatus,
@@ -12021,6 +12821,8 @@ function exportGovernedMemoryPublicArtifacts({ workspaceRoot = workspaceRootDefa
   writeJsonIfChanged(paths.publicOutput.lessonEffectivenessJson, artifacts.lessonEffectivenessPublic);
   writeJsonIfChanged(paths.publicOutput.packCausalTraceJson, artifacts.packCausalTracePublic);
   writeJsonIfChanged(paths.publicOutput.causalEffectivenessSummaryJson, sanitizePublicValue(artifacts.causalEffectivenessSummary, workspaceRoot));
+  ensureDir(paths.governancePublic.root);
+  writeJsonIfChanged(paths.governancePublic.workerCompletionStatusJson, artifacts.workerCompletionStatus);
   ensureDir(paths.agiReadiness.root);
   applyReadinessScoreCalibration({
     workspaceRoot,
@@ -12104,6 +12906,7 @@ function exportGovernedMemoryPublicArtifacts({ workspaceRoot = workspaceRootDefa
     causalTrace: artifacts.causalLearningTracePublic,
     continuityDebt: artifacts.continuityDebtPublic,
     goalCompletionStatus: artifacts.goalCompletionStatus,
+    workerCompletionStatus: artifacts.workerCompletionStatus,
     subjectiveGoalCompletionStatus: artifacts.subjectiveGoalCompletionStatus,
     compatibilityCompletionStatus: artifacts.compatibilityCompletionStatus,
     sovereignGoalCompletionStatus: artifacts.sovereignGoalCompletionStatus,
@@ -12136,6 +12939,7 @@ function exportGovernedMemoryPublicArtifacts({ workspaceRoot = workspaceRootDefa
     continuityDebt: artifacts.continuityDebtPublic,
     openAIBlogLane: artifacts.openAIBlogLane,
     anthropicLane: artifacts.anthropicLane,
+    workerCompletionStatus: artifacts.workerCompletionStatus,
   });
   artifacts.readinessArtifacts.bottlenecks = artifacts.bottlenecks;
   artifacts.readinessArtifacts.readiness.consistencyChecks = buildReadinessConsistencyChecks({
@@ -12180,6 +12984,7 @@ function exportGovernedMemoryPublicArtifacts({ workspaceRoot = workspaceRootDefa
     causalTrace: artifacts.causalLearningTracePublic,
     continuityDebt: artifacts.continuityDebtPublic,
     goalCompletionStatus: artifacts.goalCompletionStatus,
+    workerCompletionStatus: artifacts.workerCompletionStatus,
     subjectiveGoalCompletionStatus: artifacts.subjectiveGoalCompletionStatus,
     compatibilityCompletionStatus: artifacts.compatibilityCompletionStatus,
     sovereignGoalCompletionStatus: artifacts.sovereignGoalCompletionStatus,
@@ -12212,6 +13017,7 @@ function exportGovernedMemoryPublicArtifacts({ workspaceRoot = workspaceRootDefa
     continuityDebt: artifacts.continuityDebtPublic,
     openAIBlogLane: artifacts.openAIBlogLane,
     anthropicLane: artifacts.anthropicLane,
+    workerCompletionStatus: artifacts.workerCompletionStatus,
   });
   artifacts.readinessArtifacts.bottlenecks = artifacts.bottlenecks;
   artifacts.readinessArtifacts.readiness.consistencyChecks = buildReadinessConsistencyChecks({
@@ -12256,6 +13062,7 @@ function exportGovernedMemoryPublicArtifacts({ workspaceRoot = workspaceRootDefa
     causalTrace: artifacts.causalLearningTracePublic,
     continuityDebt: artifacts.continuityDebtPublic,
     goalCompletionStatus: artifacts.goalCompletionStatus,
+    workerCompletionStatus: artifacts.workerCompletionStatus,
     subjectiveGoalCompletionStatus: artifacts.subjectiveGoalCompletionStatus,
     compatibilityCompletionStatus: artifacts.compatibilityCompletionStatus,
     sovereignGoalCompletionStatus: artifacts.sovereignGoalCompletionStatus,
@@ -12288,6 +13095,7 @@ function exportGovernedMemoryPublicArtifacts({ workspaceRoot = workspaceRootDefa
     continuityDebt: artifacts.continuityDebtPublic,
     openAIBlogLane: artifacts.openAIBlogLane,
     anthropicLane: artifacts.anthropicLane,
+    workerCompletionStatus: artifacts.workerCompletionStatus,
   });
   artifacts.readinessArtifacts.bottlenecks = artifacts.bottlenecks;
   artifacts.readinessArtifacts.readiness.consistencyChecks = buildReadinessConsistencyChecks({

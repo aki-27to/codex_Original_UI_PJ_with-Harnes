@@ -1,14 +1,14 @@
 {
   "schema": "agi-readiness-robustness-remediation-effects.v1",
-  "generatedAt": "2026-04-12T02:52:33.611Z",
+  "generatedAt": "2026-04-12T08:44:27.358Z",
   "workspaceId": "5c839dfeef8b555f",
   "entries": [
     {
       "categoryId": "browser_tool_flakiness",
       "remediationStatus": "running",
       "remediationEffect": "pending",
-      "evidenceCount": 48,
-      "score": 0.703125,
+      "evidenceCount": 49,
+      "score": 0.418367,
       "lastImprovementDelta": 0,
       "agendaRef": "<agenda-ref>"
     },
@@ -54,8 +54,8 @@
       "categoryId": "browser_tool_flakiness",
       "remediationStatus": "running",
       "remediationEffect": "pending",
-      "evidenceCount": 48,
-      "score": 0.703125,
+      "evidenceCount": 49,
+      "score": 0.418367,
       "lastImprovementDelta": 0,
       "agendaRef": "<agenda-ref>"
     },

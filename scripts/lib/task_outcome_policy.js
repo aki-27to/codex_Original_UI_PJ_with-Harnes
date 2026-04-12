@@ -7,7 +7,7 @@ const defaultTaskOutcomeContractPath = path.join(__dirname, "..", "config", "tas
 
 const defaultTaskOutcomeContractDefinition = Object.freeze({
   schema: "task-outcome-contract.v3",
-  version: "2026-04-11.r2",
+  version: "2026-04-12.r1",
   proofCarryingRequiredFields: [
     "task_id",
     "actor",
@@ -25,6 +25,24 @@ const defaultTaskOutcomeContractDefinition = Object.freeze({
     required: ["iteration_decision.json", "release_decision.json"],
     derived: ["adoption_readiness_eval.json", "escalation_decision.json", "worker_decision_surface.json"],
   },
+  authoritySeparation: Object.freeze({
+    taskVerdictPrimaryArtifact: "worker_decision_surface.json",
+    programReadinessArtifacts: Object.freeze([
+      "goal_completion_status.json",
+      "subjective_goal_completion_status.json",
+      "compatibility_completion_status.json",
+    ]),
+    programReadinessBlockingDefault: false,
+    blockingActivation: Object.freeze({
+      requiresExplicitUserRequest: true,
+      explicitRequestScopes: Object.freeze(["readiness", "release", "whole_harness_completion"]),
+      ordinaryTaskCompletion: Object.freeze({
+        taskVerdictPrimary: true,
+        programReadinessIsBackgroundTelemetry: true,
+        programReadinessMayBlockTaskCompletion: false,
+      }),
+    }),
+  }),
   statuses: [
     { id: "COMPLETED", class: "success", terminal: true },
     { id: "BLOCKED", class: "blocked", terminal: true },
@@ -114,6 +132,20 @@ function normalizeReasonToken(value) {
   return safeString(value, 120)
     .toLowerCase()
     .replace(/[\s-]+/g, "_");
+}
+
+function promptMentionsExplicitScope(prompt, scope) {
+  const text = safeString(prompt, 16000).toLowerCase();
+  const normalizedScope = normalizeReasonToken(scope);
+  if (!text || !normalizedScope) {
+    return false;
+  }
+  const candidates = [
+    normalizedScope,
+    normalizedScope.replace(/_/g, " "),
+    normalizedScope.replace(/_/g, "-"),
+  ];
+  return candidates.some((candidate) => candidate && text.includes(candidate));
 }
 
 function normalizeTurnState(value) {
@@ -219,6 +251,73 @@ function normalizeReasonMap(input, validStatusIds) {
   return Object.freeze(out);
 }
 
+function normalizeAuthoritySeparation(input) {
+  const source = input && typeof input === "object"
+    ? input
+    : defaultTaskOutcomeContractDefinition.authoritySeparation;
+  const blockingActivation = source.blockingActivation && typeof source.blockingActivation === "object"
+    ? source.blockingActivation
+    : defaultTaskOutcomeContractDefinition.authoritySeparation.blockingActivation;
+  const ordinaryTaskCompletion = blockingActivation.ordinaryTaskCompletion && typeof blockingActivation.ordinaryTaskCompletion === "object"
+    ? blockingActivation.ordinaryTaskCompletion
+    : defaultTaskOutcomeContractDefinition.authoritySeparation.blockingActivation.ordinaryTaskCompletion;
+  return Object.freeze({
+    taskVerdictPrimaryArtifact: safeString(
+      source.taskVerdictPrimaryArtifact,
+      120
+    ) || defaultTaskOutcomeContractDefinition.authoritySeparation.taskVerdictPrimaryArtifact,
+    programReadinessArtifacts: Array.isArray(source.programReadinessArtifacts)
+      ? Object.freeze(source.programReadinessArtifacts.map((entry) => safeString(entry, 120)).filter(Boolean).slice(0, 12))
+      : defaultTaskOutcomeContractDefinition.authoritySeparation.programReadinessArtifacts,
+    programReadinessBlockingDefault: normalizeBoolean(
+      source.programReadinessBlockingDefault,
+      defaultTaskOutcomeContractDefinition.authoritySeparation.programReadinessBlockingDefault
+    ),
+    blockingActivation: Object.freeze({
+      requiresExplicitUserRequest: normalizeBoolean(
+        blockingActivation.requiresExplicitUserRequest,
+        defaultTaskOutcomeContractDefinition.authoritySeparation.blockingActivation.requiresExplicitUserRequest
+      ),
+      explicitRequestScopes: Array.isArray(blockingActivation.explicitRequestScopes)
+        ? Object.freeze(blockingActivation.explicitRequestScopes.map((entry) => normalizeReasonToken(entry)).filter(Boolean).slice(0, 12))
+        : defaultTaskOutcomeContractDefinition.authoritySeparation.blockingActivation.explicitRequestScopes,
+      ordinaryTaskCompletion: Object.freeze({
+        taskVerdictPrimary: normalizeBoolean(
+          ordinaryTaskCompletion.taskVerdictPrimary,
+          defaultTaskOutcomeContractDefinition.authoritySeparation.blockingActivation.ordinaryTaskCompletion.taskVerdictPrimary
+        ),
+        programReadinessIsBackgroundTelemetry: normalizeBoolean(
+          ordinaryTaskCompletion.programReadinessIsBackgroundTelemetry,
+          defaultTaskOutcomeContractDefinition.authoritySeparation.blockingActivation.ordinaryTaskCompletion.programReadinessIsBackgroundTelemetry
+        ),
+        programReadinessMayBlockTaskCompletion: normalizeBoolean(
+          ordinaryTaskCompletion.programReadinessMayBlockTaskCompletion,
+          defaultTaskOutcomeContractDefinition.authoritySeparation.blockingActivation.ordinaryTaskCompletion.programReadinessMayBlockTaskCompletion
+        ),
+      }),
+    }),
+  });
+}
+
+function isProgramReadinessBlockingRequested({ prompt = "", requestedDecisionScopes = [], contract } = {}) {
+  const normalizedContract = normalizeTaskOutcomeContract(contract);
+  const authoritySeparation = normalizedContract.authoritySeparation;
+  const activation = authoritySeparation.blockingActivation;
+  if (authoritySeparation.programReadinessBlockingDefault) {
+    return true;
+  }
+  if (!activation.requiresExplicitUserRequest) {
+    return true;
+  }
+  const normalizedScopes = Array.isArray(requestedDecisionScopes)
+    ? requestedDecisionScopes.map((entry) => normalizeReasonToken(entry)).filter(Boolean)
+    : [];
+  if (normalizedScopes.some((scope) => activation.explicitRequestScopes.includes(scope))) {
+    return true;
+  }
+  return activation.explicitRequestScopes.some((scope) => promptMentionsExplicitScope(prompt, scope));
+}
+
 function normalizeTaskOutcomeContract(input) {
   const payload = input && typeof input === "object" ? input : {};
   const statuses = normalizeStatusEntries(payload.statuses);
@@ -238,6 +337,7 @@ function normalizeTaskOutcomeContract(input) {
         ? payload.decisionArtifacts.derived.map((entry) => safeString(entry, 120)).filter(Boolean).slice(0, 12)
         : defaultTaskOutcomeContractDefinition.decisionArtifacts.derived.slice(),
     }),
+    authoritySeparation: normalizeAuthoritySeparation(payload.authoritySeparation),
     turnStateDefaults: normalizeTurnStateDefaults(payload.turnStateDefaults, validStatusIds),
     turnStateHints: normalizeTurnStateHints(payload.turnStateHints, validStatusIds),
     reasonMap: normalizeReasonMap(payload.reasonMap, validStatusIds),
@@ -300,6 +400,7 @@ function summarizeTaskOutcomeContract(spec) {
     proofCarryingRequiredFields: Array.isArray(contract.proofCarryingRequiredFields) ? contract.proofCarryingRequiredFields.slice(0, 24) : [],
     statuses: contract.statuses.map((entry) => entry.id),
     decisionArtifacts: contract.decisionArtifacts,
+    authoritySeparation: contract.authoritySeparation,
     turnStateDefaults: contract.turnStateDefaults,
     turnStateHints: contract.turnStateHints,
     reasonMapKeys: Object.keys(contract.reasonMap).slice(0, 32),
@@ -365,7 +466,16 @@ function deriveTaskOutcome(input = {}) {
     pushReason("partial_delivery");
   }
 
+  const programReadinessBlockingRequested = isProgramReadinessBlockingRequested({
+    prompt: input.prompt,
+    requestedDecisionScopes: input.requestedDecisionScopes,
+    contract,
+  });
+
   for (const reason of reasonCandidates) {
+    if (reason === "release_conditions_unsatisfied" && !programReadinessBlockingRequested) {
+      continue;
+    }
     if (Object.prototype.hasOwnProperty.call(contract.reasonMap, reason)) {
       return {
         status: contract.reasonMap[reason],
@@ -411,6 +521,7 @@ function deriveTaskOutcome(input = {}) {
 module.exports = {
   defaultTaskOutcomeContractPath,
   deriveTaskOutcome,
+  isProgramReadinessBlockingRequested,
   loadTaskOutcomeContract,
   normalizeTaskOutcomeContract,
   normalizeTaskOutcomeStatus: normalizeStatusId,

@@ -1,26 +1,26 @@
 {
   "schema": "agi-readiness-robustness-remediation-status.v1",
-  "generatedAt": "2026-04-12T02:52:33.610Z",
+  "generatedAt": "2026-04-12T08:44:27.357Z",
   "workspaceId": "5c839dfeef8b555f",
   "categories": [
     {
       "categoryId": "browser_tool_flakiness",
       "remediationStatus": "running",
-      "lastRemediationAt": "2026-04-12T02:52:33.556Z",
+      "lastRemediationAt": "2026-04-12T08:44:27.292Z",
       "lastImprovementDelta": 0,
       "openFailureModes": [
         "retry budget exceeded without safe abort",
         "browser failure misreported as task success",
         "fallback omitted after flaky tool output"
       ],
-      "score": 0.703125,
-      "evidenceCount": 48,
+      "score": 0.418367,
+      "evidenceCount": 49,
       "status": "observed"
     },
     {
       "categoryId": "ambiguous_instruction",
       "remediationStatus": "passed",
-      "lastRemediationAt": "2026-04-12T02:52:33.556Z",
+      "lastRemediationAt": "2026-04-12T08:44:27.291Z",
       "lastImprovementDelta": 0,
       "openFailureModes": [
         "ambiguity not detected",

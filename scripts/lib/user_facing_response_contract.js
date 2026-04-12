@@ -12,7 +12,7 @@ const defaultUserFacingResponseContractPath = path.join(
 
 const defaultUserFacingResponseContractDefinition = Object.freeze({
   schema: "user-facing-response-contract.v1",
-  version: "2026-03-20.r1",
+  version: "2026-04-12.r2",
   closeInPlace: {
     enabled: true,
     exemptTaskOutcomeStatuses: Object.freeze(["NEEDS_INPUT", "BLOCKED"]),
@@ -83,6 +83,33 @@ const defaultUserFacingResponseContractDefinition = Object.freeze({
       "\u76f4\u3057\u307e\u3057\u305f",
       "\u3067\u304d\u307e\u3057\u305f",
     ]),
+  },
+  reportingSeparation: {
+    enabled: true,
+    ordinaryTaskReports: Object.freeze({
+      primarySection: "task_verdict",
+      secondarySection: "program_readiness",
+      programReadinessOptionalWhenIrrelevant: true,
+      leadWithProgramReadiness: false,
+      treatProgramReadinessNotYetAsBackgroundByDefault: true,
+      treatResidualIncompletionAsBackgroundByDefault: true,
+      residualIncompletionPromptSignals: Object.freeze([
+        "why incomplete",
+        "why is this not complete",
+        "why not complete",
+        "what remains",
+        "remaining blocker",
+        "remaining blockers",
+        "why unfinished",
+        "\u306a\u305c\u672a\u5b8c\u4e86",
+        "\u672a\u5b8c\u4e86\u306e\u7406\u7531",
+        "\u4f55\u304c\u6b8b\u3063\u3066\u3044\u308b",
+      ]),
+    }),
+    programReadinessBlockingActivation: Object.freeze({
+      requiresExplicitUserRequest: true,
+      explicitRequestScopes: Object.freeze(["readiness", "release", "whole_harness_completion"]),
+    }),
   },
   internalProcessDisclosure: {
     enabled: true,
@@ -183,6 +210,15 @@ function containsAnyLiteral(text, literals, { startsWith = false } = {}) {
 
 function normalizeUserFacingResponseContract(input) {
   const payload = input && typeof input === "object" ? input : {};
+  const reportingSeparation = payload.reportingSeparation && typeof payload.reportingSeparation === "object"
+    ? payload.reportingSeparation
+    : defaultUserFacingResponseContractDefinition.reportingSeparation;
+  const ordinaryTaskReports = reportingSeparation.ordinaryTaskReports && typeof reportingSeparation.ordinaryTaskReports === "object"
+    ? reportingSeparation.ordinaryTaskReports
+    : defaultUserFacingResponseContractDefinition.reportingSeparation.ordinaryTaskReports;
+  const programReadinessBlockingActivation = reportingSeparation.programReadinessBlockingActivation && typeof reportingSeparation.programReadinessBlockingActivation === "object"
+    ? reportingSeparation.programReadinessBlockingActivation
+    : defaultUserFacingResponseContractDefinition.reportingSeparation.programReadinessBlockingActivation;
   return Object.freeze({
     schema: safeString(payload.schema, 120) || defaultUserFacingResponseContractDefinition.schema,
     version: safeString(payload.version, 120) || defaultUserFacingResponseContractDefinition.version,
@@ -213,6 +249,52 @@ function normalizeUserFacingResponseContract(input) {
         payload.completionClaims && payload.completionClaims.prohibitedLeadPhrases,
         defaultUserFacingResponseContractDefinition.completionClaims.prohibitedLeadPhrases
       ),
+    }),
+    reportingSeparation: Object.freeze({
+      enabled: normalizeBoolean(
+        reportingSeparation.enabled,
+        defaultUserFacingResponseContractDefinition.reportingSeparation.enabled
+      ),
+      ordinaryTaskReports: Object.freeze({
+        primarySection: safeString(
+          ordinaryTaskReports.primarySection,
+          80
+        ).toLowerCase() || defaultUserFacingResponseContractDefinition.reportingSeparation.ordinaryTaskReports.primarySection,
+        secondarySection: safeString(
+          ordinaryTaskReports.secondarySection,
+          80
+        ).toLowerCase() || defaultUserFacingResponseContractDefinition.reportingSeparation.ordinaryTaskReports.secondarySection,
+        programReadinessOptionalWhenIrrelevant: normalizeBoolean(
+          ordinaryTaskReports.programReadinessOptionalWhenIrrelevant,
+          defaultUserFacingResponseContractDefinition.reportingSeparation.ordinaryTaskReports.programReadinessOptionalWhenIrrelevant
+        ),
+        leadWithProgramReadiness: normalizeBoolean(
+          ordinaryTaskReports.leadWithProgramReadiness,
+          defaultUserFacingResponseContractDefinition.reportingSeparation.ordinaryTaskReports.leadWithProgramReadiness
+        ),
+        treatProgramReadinessNotYetAsBackgroundByDefault: normalizeBoolean(
+          ordinaryTaskReports.treatProgramReadinessNotYetAsBackgroundByDefault,
+          defaultUserFacingResponseContractDefinition.reportingSeparation.ordinaryTaskReports.treatProgramReadinessNotYetAsBackgroundByDefault
+        ),
+        treatResidualIncompletionAsBackgroundByDefault: normalizeBoolean(
+          ordinaryTaskReports.treatResidualIncompletionAsBackgroundByDefault,
+          defaultUserFacingResponseContractDefinition.reportingSeparation.ordinaryTaskReports.treatResidualIncompletionAsBackgroundByDefault
+        ),
+        residualIncompletionPromptSignals: normalizeLiteralList(
+          ordinaryTaskReports.residualIncompletionPromptSignals,
+          defaultUserFacingResponseContractDefinition.reportingSeparation.ordinaryTaskReports.residualIncompletionPromptSignals
+        ),
+      }),
+      programReadinessBlockingActivation: Object.freeze({
+        requiresExplicitUserRequest: normalizeBoolean(
+          programReadinessBlockingActivation.requiresExplicitUserRequest,
+          defaultUserFacingResponseContractDefinition.reportingSeparation.programReadinessBlockingActivation.requiresExplicitUserRequest
+        ),
+        explicitRequestScopes: normalizeLiteralList(
+          programReadinessBlockingActivation.explicitRequestScopes,
+          defaultUserFacingResponseContractDefinition.reportingSeparation.programReadinessBlockingActivation.explicitRequestScopes
+        ),
+      }),
     }),
     internalProcessDisclosure: Object.freeze({
       enabled: normalizeBoolean(
@@ -254,6 +336,7 @@ function summarizeUserFacingResponseContract(spec) {
     allowedPromptSignalCount: contract.closeInPlace.allowedPromptSignals.length,
     prohibitedClosingCount: contract.closeInPlace.prohibitedClosingStarts.length,
     completionClaimGateEnabled: contract.completionClaims.requireCompletedTaskOutcome,
+    reportingSeparation: contract.reportingSeparation,
     internalProcessDisclosureEnabled: contract.internalProcessDisclosure.enabled,
     internalProcessPhraseCount: contract.internalProcessDisclosure.prohibitedPhrases.length,
   };

@@ -1,6 +1,6 @@
 {
   "schema": "memory-eval-suite.v1",
-  "version": "2026-04-06.r1",
+  "version": "2026-04-12.r2",
   "checks": [
     {
       "id": "canonical_store_present",
@@ -139,6 +139,18 @@
       "title": "Worker headline and supporting artifacts share the same export session"
     },
     {
+      "id": "worker_completion_status_present",
+      "title": "Worker completion companion artifact is generated"
+    },
+    {
+      "id": "worker_completion_status_consistent",
+      "title": "Worker completion companion stays aligned with the worker headline and background readiness semantics"
+    },
+    {
+      "id": "worker_completion_alignment_not_stale_in_downstream_surfaces",
+      "title": "Resolved worker completion alignment does not remain as a stale blocker in downstream remediation surfaces"
+    },
+    {
       "id": "stable_coverage_surface_present",
       "title": "Stable coverage matrix and trend are generated"
     },
@@ -153,6 +165,10 @@
     {
       "id": "goal_completion_status_consistent",
       "title": "Operational goal completion status matches current readiness, debt, and learning metrics"
+    },
+    {
+      "id": "running_agenda_semantics_explicit",
+      "title": "Goal, subjective, and autonomous learning artifacts expose explicit gate-vs-supporting running, blocked, and insufficient-evidence semantics"
     },
     {
       "id": "goal_completion_scope_is_program_readiness",
@@ -203,12 +219,20 @@
       "title": "Self-directed probe artifact exposes required counts, evidence refs, and thresholds"
     },
     {
+      "id": "self_directed_probe_threshold_basis_explicit",
+      "title": "Self-directed probe artifact exposes explicit snapshot, effective history-aware values, and recomputable fail-closed threshold semantics"
+    },
+    {
       "id": "self_directed_probe_status_present",
       "title": "Self-directed probe status is generated from autonomous remediation outcomes"
     },
     {
       "id": "novel_task_acquisition_surface_present",
       "title": "Novel task acquisition artifact exposes required counts, evidence refs, and thresholds"
+    },
+    {
+      "id": "novel_task_threshold_basis_explicit",
+      "title": "Novel task acquisition artifact exposes explicit snapshot, effective values, and recomputable fail-closed threshold semantics"
     },
     {
       "id": "novel_task_acquisition_present",

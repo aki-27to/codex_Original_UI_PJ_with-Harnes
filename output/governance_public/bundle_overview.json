@@ -1,6 +1,6 @@
 {
   "schema": "governance-public-bundle-overview.v1",
-  "generatedAt": "2026-04-12T02:14:59.862Z",
+  "generatedAt": "2026-04-12T08:44:25.103Z",
   "sourceLatestSignoffSummary": "logs/current/latest_signoff_summary.json",
   "sourceBundleRoot": "logs/bundles/signoff/signoff-2026-03-09T12-31-59-842Z-24dd95",
   "sourceTurnDir": "logs/bundles/signoff/signoff-2026-03-09T12-31-59-842Z-24dd95/raw/turns/2026-03-09/019cd29a-09de-7670-8c38-eade454f7cb2__019cd29a-0ad3-72d2-957c-30870c52eaba",
@@ -24,6 +24,145 @@
     "minimalHitlMode": "close_in_place",
     "adoptionReady": 1
   },
+  "workerCompletion": {
+    "scope": "worker_completion",
+    "exportSessionId": "export_a63636ff0a86",
+    "workerGoalStatus": "WORKER_COMPLETE",
+    "decisionMeaning": "worker_headline_stop_semantics_with_background_program_readiness_context",
+    "programReadinessStatus": "NOT_YET",
+    "activeLearningDebtOpen": true
+  },
+  "harnessIdentity": {
+    "mode": "single_governed_harness",
+    "positioning": "execution-centered governed harness with embedded evaluation and governance",
+    "boundaryRule": "split_trust_boundary_not_repo",
+    "parallelHarnessesForbidden": true
+  },
+  "primaryRoutes": {
+    "execution": "POST /api/exec",
+    "evaluation": "POST /api/eval/run"
+  },
+  "planes": {
+    "execution": {
+      "label": "Execution plane",
+      "primaryRoute": "POST /api/exec",
+      "headlineSurface": "",
+      "promotionRule": "",
+      "responsibilities": [
+        "request interpretation",
+        "planning",
+        "tool use",
+        "child dispatch",
+        "continuity",
+        "artifact capture"
+      ],
+      "optimizationTargets": [
+        "adoption-ready deliverable",
+        "minimal unnecessary HITL",
+        "latency and cost efficiency",
+        "continuity quality"
+      ],
+      "forbiddenProtectedInputs": [
+        "hidden grader assets",
+        "holdout metadata",
+        "protected eval manifests",
+        "grader internals"
+      ],
+      "protectedAssetRoots": [],
+      "surfaceRoots": [],
+      "operatorSurfaces": [],
+      "supportingSurfaces": []
+    },
+    "evaluation": {
+      "label": "Evaluation plane",
+      "primaryRoute": "POST /api/eval/run",
+      "headlineSurface": "",
+      "promotionRule": "",
+      "responsibilities": [
+        "replay",
+        "scoring",
+        "regression detection",
+        "protected grading",
+        "benchmark and readiness checks",
+        "fail-closed validation"
+      ],
+      "optimizationTargets": [
+        "comparability",
+        "reproducibility",
+        "leakage resistance",
+        "regression sensitivity"
+      ],
+      "forbiddenProtectedInputs": [],
+      "protectedAssetRoots": [
+        "protected/holdout",
+        "protected/blackbox"
+      ],
+      "surfaceRoots": [],
+      "operatorSurfaces": [],
+      "supportingSurfaces": []
+    },
+    "monitoring": {
+      "label": "Monitoring plane",
+      "primaryRoute": "",
+      "headlineSurface": "",
+      "promotionRule": "",
+      "responsibilities": [
+        "production and runtime drift detection",
+        "telemetry and operator-visible health",
+        "post-eval observation",
+        "post-release observation"
+      ],
+      "optimizationTargets": [],
+      "forbiddenProtectedInputs": [],
+      "protectedAssetRoots": [],
+      "surfaceRoots": [
+        "logs/current",
+        "logs/archive",
+        "output",
+        "runtime"
+      ],
+      "operatorSurfaces": [
+        "GET /api/runtime",
+        "GET /api/harness/overview",
+        "logs/current/operator_summary.json",
+        "output/governance_public/bundle_overview.json",
+        "output/memory_public/latest_overview.json"
+      ],
+      "supportingSurfaces": []
+    },
+    "governance": {
+      "label": "Governance plane",
+      "primaryRoute": "",
+      "headlineSurface": "output/governance_public/worker_decision_surface.json",
+      "promotionRule": "not_from_exec_self_claim_alone",
+      "responsibilities": [
+        "signoff",
+        "release judgment",
+        "promotion or no-promotion",
+        "adoption or block decision",
+        "policy-aligned stop decision"
+      ],
+      "optimizationTargets": [],
+      "forbiddenProtectedInputs": [],
+      "protectedAssetRoots": [],
+      "surfaceRoots": [],
+      "operatorSurfaces": [],
+      "supportingSurfaces": [
+        "output/agi_readiness/goal_completion_status.json",
+        "output/agi_readiness/subjective_goal_completion_status.json",
+        "output/agi_readiness/compatibility_completion_status.json",
+        "output/governance_public/bundle_overview.json",
+        "output/governance_public/signoff_summary.json"
+      ]
+    }
+  },
+  "currentTruthSurfaces": {
+    "headlineGovernanceSurface": "output/governance_public/worker_decision_surface.json",
+    "programReadinessSurface": "output/agi_readiness/goal_completion_status.json",
+    "subjectiveCompanionSurface": "output/agi_readiness/subjective_goal_completion_status.json",
+    "compatibilitySurface": "output/agi_readiness/compatibility_completion_status.json",
+    "legacyAliasSurface": "output/agi_readiness/sovereign_goal_completion_status.json"
+  },
   "exportedFiles": [
     "latest_signoff_summary.json",
     "signoff_summary.json",
@@ -45,6 +184,7 @@
     "adoption_readiness_eval.json",
     "iteration_decision.json",
     "escalation_decision.json",
-    "worker_decision_surface.json"
+    "worker_decision_surface.json",
+    "worker_completion_status.json"
   ]
 }

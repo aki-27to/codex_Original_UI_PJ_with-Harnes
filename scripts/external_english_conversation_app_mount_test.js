@@ -7,6 +7,7 @@ const path = require("path");
 const workspaceRoot = path.resolve(__dirname, "..");
 const fixtureRoot = path.join(workspaceRoot, "output", "test-external-english-conversation-app");
 const serverModulePath = path.join(workspaceRoot, "server.js");
+const serverImplementationPath = path.join(workspaceRoot, "server_impl.js");
 
 function assert(condition, message) {
   if (!condition) {
@@ -23,6 +24,7 @@ function ensureFixture() {
 
 function clearServerModuleCache() {
   delete require.cache[serverModulePath];
+  delete require.cache[serverImplementationPath];
 }
 
 function run() {

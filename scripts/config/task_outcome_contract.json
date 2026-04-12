@@ -1,6 +1,6 @@
 {
   "schema": "task-outcome-contract.v3",
-  "version": "2026-04-11.r2",
+  "version": "2026-04-12.r1",
   "proofCarryingRequiredFields": [
     "task_id",
     "actor",
@@ -24,6 +24,28 @@
       "escalation_decision.json",
       "worker_decision_surface.json"
     ]
+  },
+  "authoritySeparation": {
+    "taskVerdictPrimaryArtifact": "worker_decision_surface.json",
+    "programReadinessArtifacts": [
+      "goal_completion_status.json",
+      "subjective_goal_completion_status.json",
+      "compatibility_completion_status.json"
+    ],
+    "programReadinessBlockingDefault": false,
+    "blockingActivation": {
+      "requiresExplicitUserRequest": true,
+      "explicitRequestScopes": [
+        "readiness",
+        "release",
+        "whole_harness_completion"
+      ],
+      "ordinaryTaskCompletion": {
+        "taskVerdictPrimary": true,
+        "programReadinessIsBackgroundTelemetry": true,
+        "programReadinessMayBlockTaskCompletion": false
+      }
+    }
   },
   "statuses": [
     {

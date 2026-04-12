@@ -3,7 +3,27 @@
 const path = require("path");
 
 const workspaceRoot = path.resolve(__dirname, "..", "..");
-const serverModulePath = path.join(workspaceRoot, "server.js");
+const serverModulePaths = [
+  path.join(workspaceRoot, "server.js"),
+  path.join(workspaceRoot, "server_impl.js"),
+  path.join(workspaceRoot, "server", "request_handler.js"),
+  path.join(workspaceRoot, "server", "bootstrap.js"),
+  path.join(workspaceRoot, "server", "routes", "runtime_routes.js"),
+  path.join(workspaceRoot, "server", "routes", "batch_routes.js"),
+  path.join(workspaceRoot, "server", "routes", "eval_routes.js"),
+  path.join(workspaceRoot, "server", "routes", "exec_routes.js"),
+];
+const serverModulePath = serverModulePaths[0];
+
+function clearHarnessRequireCache() {
+  for (const modulePath of serverModulePaths) {
+    try {
+      delete require.cache[require.resolve(modulePath)];
+    } catch {
+      delete require.cache[modulePath];
+    }
+  }
+}
 
 function applyEnvOverrides(overrides) {
   const entries = Object.entries(overrides || {});
@@ -29,7 +49,7 @@ function applyEnvOverrides(overrides) {
 
 async function startInProcessHarnessServer(envOverrides = {}) {
   const restoreEnv = applyEnvOverrides(envOverrides);
-  delete require.cache[serverModulePath];
+  clearHarnessRequireCache();
   let serverModule;
   try {
     serverModule = require(serverModulePath);
@@ -55,13 +75,13 @@ async function startInProcessHarnessServer(envOverrides = {}) {
         try {
           await serverModule.stopHarnessServer();
         } finally {
-          delete require.cache[serverModulePath];
+          clearHarnessRequireCache();
           restoreEnv();
         }
       },
     };
   } catch (error) {
-    delete require.cache[serverModulePath];
+    clearHarnessRequireCache();
     restoreEnv();
     throw error;
   }

@@ -1,31 +1,31 @@
 {
   "schema": "governed-memory-public-overview.v1",
-  "generatedAt": "2026-04-12T02:52:33.491Z",
+  "generatedAt": "2026-04-12T08:44:27.221Z",
   "exportSessionId": "export_a63636ff0a86",
   "workspaceId": "5c839dfeef8b555f",
   "canonicalRoot": "logs/archive/raw/runtime_state/memory",
   "publicOutputRoot": "output/memory_public",
   "canonicalEventCount": 12000,
-  "itemCount": 47,
-  "promotedCount": 23,
+  "itemCount": 50,
+  "promotedCount": 20,
   "typeCounts": {
     "constitution_ref": 7,
     "requirement_ref": 1,
     "workspace_progress": 2,
     "episodic_event": 8,
-    "failure_pattern": 3,
+    "failure_pattern": 6,
     "eval_observation": 6,
     "improvement_candidate": 3,
     "semantic_lesson": 8,
     "runtime_hint": 9
   },
   "statusCounts": {
-    "promoted": 23,
+    "promoted": 20,
     "captured": 14,
     "candidate": 1,
+    "blocked": 7,
     "shadow": 4,
-    "proposal_only": 4,
-    "blocked": 1
+    "proposal_only": 4
   },
   "workspaceProgressPath": "output/memory_public/workspace_progress_public.json",
   "latestPackPath": "output/memory_public/latest_pack_public.json",
@@ -45,7 +45,7 @@
   "workerDecisionSurfacePath": "output/governance_public/worker_decision_surface.json",
   "workerDecisionSurface": {
     "schema": "worker-decision-surface.v1",
-    "generatedAt": "2026-04-12T02:14:59.861Z",
+    "generatedAt": "2026-04-12T08:44:25.099Z",
     "scope": "worker_decision",
     "exportSessionId": "export_a63636ff0a86",
     "decisionQuestion": "Can the governed worker stop here without unnecessary human interruption?",
@@ -109,12 +109,87 @@
       }
     }
   },
+  "workerCompletionStatusPath": "output/governance_public/worker_completion_status.json",
+  "workerCompletionStatus": {
+    "schema": "worker-completion-status.v1",
+    "generatedAt": "2026-04-12T08:44:27.953Z",
+    "exportSessionId": "export_a63636ff0a86",
+    "scope": "worker_completion",
+    "workerGoalStatus": "worker complete",
+    "decisionQuestion": "Can the governed autonomous worker stop here and hand back an adoptable artifact without unnecessary human interruption?",
+    "decisionMeaning": "worker_headline_stop_semantics_with_background_program_readiness_context",
+    "headlineArtifactPath": "output/governance_public/worker_decision_surface.json",
+    "headlineWorkerOutcome": "ADOPTABLE_COMPLETE",
+    "taskOutcomeStatus": "completed",
+    "releaseState": "RELEASE_APPROVED_WITH_ASSUMPTIONS",
+    "adoptionReady": true,
+    "latentIntentAligned": true,
+    "literalRequirementAligned": true,
+    "minimalHitlSatisfied": true,
+    "constitutionalCompliance": true,
+    "boundaryCompliance": true,
+    "gateRunningAgendaCount": 1,
+    "gateBlockedAgendaCount": 0,
+    "gateInsufficientEvidenceCount": 0,
+    "supportingCurrentRunningCount": 3,
+    "supportingCurrentBlockedCount": 0,
+    "supportingCurrentInsufficientEvidenceCount": 0,
+    "excludedMetaCompletionRunningCount": 2,
+    "excludedMetaCompletionBlockedCount": 0,
+    "excludedMetaCompletionInsufficientEvidenceCount": 0,
+    "activeLearningDebtDecisionBasis": {
+      "mode": "supporting_non_memory_eval_open_counts_with_gate_subset_explicit",
+      "sourceArtifactPath": "output/agi_readiness/autonomous_learning_status.json",
+      "gateOpenFields": [
+        "gateRunningAgendaCount",
+        "gateBlockedAgendaCount",
+        "gateInsufficientEvidenceCount"
+      ],
+      "supportingOpenFields": [
+        "supportingCurrentRunningCount",
+        "supportingCurrentBlockedCount",
+        "supportingCurrentInsufficientEvidenceCount"
+      ],
+      "backgroundArtifactSessionConsistency": "aligned",
+      "backgroundArtifactInputsTrusted": true
+    },
+    "activeLearningDebtOpen": true,
+    "activeLearningDebtBlocksWorkerStop": false,
+    "backgroundArtifactSessionConsistency": "aligned",
+    "backgroundArtifactSessionIds": [
+      "export_a63636ff0a86"
+    ],
+    "backgroundArtifactInputsTrusted": true,
+    "programReadinessStatus": "not yet",
+    "subjectiveCompanionStatus": "not yet",
+    "compatibilityStatus": "not yet",
+    "programReadinessBlockingWorkerStop": false,
+    "supportingArtifacts": [
+      "output/governance_public/worker_decision_surface.json",
+      "output/agi_readiness/goal_completion_status.json",
+      "output/agi_readiness/subjective_goal_completion_status.json",
+      "output/agi_readiness/compatibility_completion_status.json",
+      "output/agi_readiness/autonomous_learning_status.json",
+      "output/agi_readiness/self_directed_probe_status.json",
+      "output/agi_readiness/novel_task_acquisition.json"
+    ],
+    "failedCriteria": [],
+    "whyNotYet": [],
+    "backgroundProgramReadinessWhyNotYet": [
+      "stable coverage breadth below threshold (0.333333 < 1)",
+      "continuity debt remains open (7 > 0)",
+      "harmful causal trace ratio above threshold (1 > 0.1)",
+      "autonomous learning agenda still has running items (1)",
+      "browser_tool_flakiness below threshold (0.418367 < 0.8)",
+      "operational completion thresholds have not been maintained across 3 consecutive live exports"
+    ]
+  },
   "headlineScope": "worker_decision",
   "workerDecisionHeadline": "ADOPTABLE_COMPLETE",
   "goalCompletionPath": "output/agi_readiness/goal_completion_status.json",
   "goalStatusScope": "program_readiness",
   "goalStatus": "NOT_YET",
-  "goalWhyNotYetCount": 5,
+  "goalWhyNotYetCount": 6,
   "subjectiveGoalStatusPath": "output/agi_readiness/subjective_goal_completion_status.json",
   "subjectiveGoalStatusScope": "subjective_companion",
   "compatibilityCompletionStatusPath": "output/agi_readiness/compatibility_completion_status.json",
@@ -122,26 +197,27 @@
   "goalCompletion": {
     "scope": "program_readiness",
     "status": "NOT_YET",
-    "whyNotYetCount": 5
+    "whyNotYetCount": 6
   },
   "latestPack": {
-    "selectedCount": 11,
-    "highConfidenceCount": 2,
-    "reusedSelectedCount": 11,
+    "selectedCount": 13,
+    "highConfidenceCount": 3,
+    "reusedSelectedCount": 13,
     "explicitTaskFamilyMismatchCount": 0,
-    "activeAgent": "intake",
-    "taskFamily": "smoke-http-exec",
+    "activeAgent": "default",
+    "taskFamily": "web_creative",
     "sectionCounts": {
       "workspace_progress": 1,
       "intent": 1,
       "spec": 4,
-      "experience": 2,
-      "semantic": 3
+      "semantic": 3,
+      "experience": 3,
+      "improvement": 1
     }
   },
   "staleWarningCount": 0,
   "learningAgendaSummary": {
-    "queued": 2,
+    "queued": 4,
     "running": 3,
     "blocked": 0,
     "passed": 1,
@@ -154,23 +230,29 @@
     "insufficientEvidence": 0,
     "blockedCount": 0,
     "insufficientEvidenceCount": 0,
-    "selfDirectedCount": 6,
+    "selfDirectedCount": 8,
     "verifiedPositiveSelfDirectedCount": 2,
-    "novelProbeCount": 5,
+    "novelProbeCount": 7,
     "novelProbePositiveCount": 2
   },
   "subjectiveGoalStatus": "NOT_YET",
-  "subjectiveGoalWhyNotYetCount": 7,
+  "subjectiveGoalWhyNotYetCount": 9,
   "subjectiveCompletion": {
     "scope": "subjective_companion",
     "status": "NOT_YET",
-    "whyNotYetCount": 7
+    "whyNotYetCount": 9
   },
   "compatibilityCompletionStatus": "NOT_YET",
-  "compatibilityWhyNotYetCount": 16,
+  "compatibilityWhyNotYetCount": 19,
   "compatibilityCompletion": {
     "scope": "compatibility_layer",
     "status": "NOT_YET",
-    "whyNotYetCount": 16
+    "whyNotYetCount": 19
+  },
+  "workerCompletion": {
+    "scope": "worker_completion",
+    "workerGoalStatus": "WORKER_COMPLETE",
+    "programReadinessStatus": "NOT_YET",
+    "activeLearningDebtOpen": true
   }
 }

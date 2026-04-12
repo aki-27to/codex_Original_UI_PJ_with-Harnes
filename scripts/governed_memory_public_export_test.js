@@ -105,20 +105,38 @@ function expectedAutonomousLearningCountSemantics() {
   return {
     currentWindow: "current_export_session",
     historicalWindow: "prior_export_sessions_cumulative",
+    countedEntryScope: "non_memory_eval_learning_agenda_entries",
     currentOpenAgendaCounts: [
       "currentQueuedCount",
       "currentRunningCount",
       "currentBlockedCount",
       "currentInsufficientEvidenceCount",
     ],
-    currentVerifiedPositiveCount: "verified_positive_entries_in_current_export_session",
-    historicalVerifiedPositiveCount: "cumulative_verified_positive_entries_from_prior_export_sessions",
+    currentVerifiedPositiveCount: "verified_positive_non_memory_eval_entries_in_current_export_session",
+    historicalVerifiedPositiveCount: "cumulative_verified_positive_non_memory_eval_entries_from_prior_export_sessions",
+    gateDecisionCounts: {
+      scope: "completion_gate_consumed_subset",
+      countedEntryScope: "non_memory_eval_learning_agenda_entries_in_current_export_session",
+      sourceRule: "exclude_meta_completion_entries_via_isMetaCompletionAgendaEntry",
+      openAgendaFields: [
+        "queued",
+        "running",
+        "blocked",
+        "insufficientEvidenceCount",
+      ],
+    },
     summaryRelationships: {
       queued: "equals_currentQueuedCount",
       running: "equals_currentRunningCount",
       blocked: "equals_currentBlockedCount",
       insufficientEvidenceCount: "equals_currentInsufficientEvidenceCount",
       verifiedPositive: "equals_currentVerifiedPositiveCount",
+    },
+    decisionRelationships: {
+      goalRunningAgendaCount: "equals_gateDecisionCounts.running",
+      subjectiveRunningAgendaCount: "equals_gateDecisionCounts.running",
+      subjectiveBlockedAgendaCount: "equals_gateDecisionCounts.blocked",
+      subjectiveInsufficientEvidenceCount: "equals_max(gateDecisionCounts.insufficientEvidenceCount,selfDirectedProbeStatus.summary.insufficientEvidenceCount)",
     },
   };
 }
@@ -415,15 +433,42 @@ function main() {
   assert.strictEqual(latestOverview.compatibilityCompletionScope, "compatibility_layer", "latest overview must scope compatibility completion as compatibility only");
   assert.strictEqual(latestOverview.workerDecisionSurfacePath, "output/governance_public/worker_decision_surface.json", "latest overview must point at the worker decision surface headline");
   assert.strictEqual(latestOverview.workerDecisionSurface.exportSessionId, exportSessionId, "latest overview worker decision surface must carry the shared exportSessionId");
+  assert.strictEqual(latestOverview.workerCompletionStatusPath, "output/governance_public/worker_completion_status.json", "latest overview must point at the worker completion companion");
+  assert.strictEqual(latestOverview.workerCompletionStatus.exportSessionId, exportSessionId, "latest overview worker completion companion must carry the shared exportSessionId");
   assert.strictEqual(latestOverview.goalCompletion.scope, "program_readiness", "latest overview goalCompletion summary must expose program_readiness scope");
   assert.strictEqual(latestOverview.subjectiveCompletion.scope, "subjective_companion", "latest overview subjectiveCompletion summary must expose subjective_companion scope");
   assert.strictEqual(latestOverview.compatibilityCompletion.scope, "compatibility_layer", "latest overview compatibilityCompletion summary must expose compatibility_layer scope");
+  assert.strictEqual(latestOverview.workerCompletion.scope, "worker_completion", "latest overview workerCompletion summary must expose worker_completion scope");
 
   const workerDecisionSurface = JSON.parse(fs.readFileSync(path.join(tempRoot, "output", "governance_public", "worker_decision_surface.json"), "utf8"));
   assert.strictEqual(workerDecisionSurface.scope, "worker_decision", "worker decision surface must expose worker_decision scope");
   assert.strictEqual(workerDecisionSurface.exportSessionId, exportSessionId, "worker decision surface must carry the shared exportSessionId");
   assert.strictEqual(typeof workerDecisionSurface.topLevelSummary, "string", "worker decision surface must expose topLevelSummary");
   assert.strictEqual(typeof workerDecisionSurface.operatorAction, "string", "worker decision surface must expose operatorAction");
+
+  const workerCompletionStatus = JSON.parse(fs.readFileSync(path.join(tempRoot, "output", "governance_public", "worker_completion_status.json"), "utf8"));
+  assert.strictEqual(workerCompletionStatus.scope, "worker_completion", "worker completion companion must expose worker_completion scope");
+  assert.strictEqual(workerCompletionStatus.exportSessionId, exportSessionId, "worker completion companion must carry the shared exportSessionId");
+  assert.strictEqual(workerCompletionStatus.schema, "worker-completion-status.v1", "worker completion companion must expose expected schema");
+  assert.strictEqual(workerCompletionStatus.headlineArtifactPath, "output/governance_public/worker_decision_surface.json", "worker completion companion must point at the worker headline");
+  assert.strictEqual(workerCompletionStatus.headlineWorkerOutcome, workerDecisionSurface.topLevelOutcome, "worker completion companion must mirror the worker headline outcome");
+  assert.strictEqual(workerCompletionStatus.workerGoalStatus, "NOT_YET", "seeded fixture must keep a non-complete worker headline non-complete in the companion");
+  assert.strictEqual(workerCompletionStatus.programReadinessStatus, "NOT_YET", "worker completion companion must preserve background program readiness");
+  assert.strictEqual(workerCompletionStatus.programReadinessBlockingWorkerStop, false, "background program readiness must not override the worker stop decision");
+  assert.strictEqual(workerCompletionStatus.backgroundArtifactSessionConsistency, "aligned", "worker completion companion must trust only aligned background readiness artifacts");
+  assert.strictEqual(workerCompletionStatus.backgroundArtifactInputsTrusted, true, "worker completion companion must mark aligned background readiness artifacts as trusted");
+  assert.strictEqual(workerCompletionStatus.gateRunningAgendaCount, 1, "worker completion companion must expose the gate running count");
+  assert.strictEqual(workerCompletionStatus.gateBlockedAgendaCount, 0, "worker completion companion must expose the gate blocked count");
+  assert.strictEqual(workerCompletionStatus.gateInsufficientEvidenceCount, 0, "worker completion companion must expose the gate insufficient-evidence count");
+  assert.strictEqual(workerCompletionStatus.supportingCurrentRunningCount, 3, "worker completion companion must expose the broader supporting running count");
+  assert.strictEqual(workerCompletionStatus.supportingCurrentBlockedCount, 0, "worker completion companion must expose the broader supporting blocked count");
+  assert.strictEqual(workerCompletionStatus.supportingCurrentInsufficientEvidenceCount, 2, "worker completion companion must expose the broader supporting insufficient-evidence count");
+  assert.strictEqual(workerCompletionStatus.excludedMetaCompletionRunningCount, 2, "worker completion companion must expose the excluded meta-completion running count");
+  assert.strictEqual(workerCompletionStatus.activeLearningDebtOpen, true, "worker completion companion must expose background learning debt");
+  assert.strictEqual(workerCompletionStatus.activeLearningDebtDecisionBasis.mode, "supporting_non_memory_eval_open_counts_with_gate_subset_explicit", "worker completion companion must expose explicit active-learning debt basis");
+  assert(Array.isArray(workerCompletionStatus.failedCriteria) && workerCompletionStatus.failedCriteria.length > 0, "worker completion companion must preserve failing worker criteria when the headline is not complete");
+  assert(Array.isArray(workerCompletionStatus.whyNotYet) && workerCompletionStatus.whyNotYet.length > 0, "worker completion companion must preserve why-not-yet entries when the headline is not complete");
+  assert(Array.isArray(workerCompletionStatus.backgroundProgramReadinessWhyNotYet) && workerCompletionStatus.backgroundProgramReadinessWhyNotYet.length > 0, "worker completion companion must preserve background why-not-yet reasons");
 
   const adoptionReadinessEval = JSON.parse(fs.readFileSync(path.join(tempRoot, "output", "governance_public", "adoption_readiness_eval.json"), "utf8"));
   assert.strictEqual(adoptionReadinessEval.scope, "adoption_readiness", "adoption readiness eval must expose adoption_readiness scope");
@@ -512,6 +557,9 @@ function main() {
     "worker_decision_surface_present",
     "worker_decision_surface_scope_is_primary",
     "worker_decision_surface_export_session_consistent",
+    "worker_completion_status_present",
+    "worker_completion_status_consistent",
+    "worker_completion_alignment_not_stale_in_downstream_surfaces",
     "stable_coverage_surface_present",
     "causal_regression_alerts_present",
     "goal_completion_supporting_artifacts_present",
@@ -658,6 +706,7 @@ function main() {
     assert(bottlenecks.items.some((entry) => String(entry.summary).includes("breadth coverage incomplete across supported families")), "next bottlenecks must reflect coverage failures");
   }
   assert(!bottlenecks.items.some((entry) => entry.source === "memory_eval"), "passing memory eval must not remain in next bottlenecks");
+  assert(!bottlenecks.items.some((entry) => String(entry.summary) === "worker completion companion diverges from the worker headline or its background readiness basis"), "next bottlenecks must not retain a stale worker-companion divergence blocker");
 
   const autonomousLearning = JSON.parse(fs.readFileSync(path.join(readinessRoot, "autonomous_learning_status.json"), "utf8"));
   [
@@ -690,6 +739,32 @@ function main() {
   assert.strictEqual(autonomousLearning.summary.blocked, autonomousLearning.currentBlockedCount, "summary blocked must mirror currentBlockedCount");
   assert.strictEqual(autonomousLearning.summary.insufficientEvidenceCount, autonomousLearning.currentInsufficientEvidenceCount, "summary insufficientEvidenceCount must mirror currentInsufficientEvidenceCount");
   assert.strictEqual(autonomousLearning.summary.verifiedPositive, autonomousLearning.currentVerifiedPositiveCount, "summary verifiedPositive must mirror currentVerifiedPositiveCount");
+  assert(autonomousLearning.gateDecisionCounts && typeof autonomousLearning.gateDecisionCounts === "object", "autonomous learning must expose gateDecisionCounts");
+  assert.strictEqual(autonomousLearning.gateDecisionCounts.scope, "completion_gate_consumed_subset", "autonomous learning gateDecisionCounts must expose completion-gate scope");
+  assert.strictEqual(autonomousLearning.gateDecisionCounts.sourceRule, "exclude_meta_completion_entries_via_isMetaCompletionAgendaEntry", "autonomous learning gateDecisionCounts must expose the exclusion rule");
+  assert(Number.isFinite(Number(autonomousLearning.gateDecisionCounts.running)), "autonomous learning gateDecisionCounts must expose running");
+  assert(Number.isFinite(Number(autonomousLearning.gateDecisionCounts.blocked)), "autonomous learning gateDecisionCounts must expose blocked");
+  assert(Number.isFinite(Number(autonomousLearning.gateDecisionCounts.insufficientEvidenceCount)), "autonomous learning gateDecisionCounts must expose insufficientEvidenceCount");
+  assert.strictEqual(workerCompletionStatus.gateInsufficientEvidenceCount, autonomousLearning.gateDecisionCounts.insufficientEvidenceCount, "worker completion companion gate insufficient-evidence count must stay aligned with autonomous learning gate counts");
+  assert(autonomousLearning.gateDecisionCounts.supportingCurrentCounts && typeof autonomousLearning.gateDecisionCounts.supportingCurrentCounts === "object", "autonomous learning gateDecisionCounts must expose supportingCurrentCounts");
+  assert.strictEqual(autonomousLearning.gateDecisionCounts.supportingCurrentCounts.running, autonomousLearning.currentRunningCount, "autonomous learning gate supporting running count must mirror currentRunningCount");
+  assert.strictEqual(autonomousLearning.gateDecisionCounts.supportingCurrentCounts.blocked, autonomousLearning.currentBlockedCount, "autonomous learning gate supporting blocked count must mirror currentBlockedCount");
+  assert.strictEqual(autonomousLearning.gateDecisionCounts.supportingCurrentCounts.insufficientEvidenceCount, autonomousLearning.currentInsufficientEvidenceCount, "autonomous learning gate supporting insufficient-evidence count must mirror currentInsufficientEvidenceCount");
+  assert.strictEqual(
+    autonomousLearning.gateDecisionCounts.excludedMetaCompletionCounts.running,
+    autonomousLearning.currentRunningCount - autonomousLearning.gateDecisionCounts.running,
+    "autonomous learning excluded running count must explain the gap between supporting and gate counts"
+  );
+  assert.strictEqual(
+    autonomousLearning.gateDecisionCounts.excludedMetaCompletionCounts.blocked,
+    autonomousLearning.currentBlockedCount - autonomousLearning.gateDecisionCounts.blocked,
+    "autonomous learning excluded blocked count must explain the gap between supporting and gate counts"
+  );
+  assert.strictEqual(
+    autonomousLearning.gateDecisionCounts.excludedMetaCompletionCounts.insufficientEvidenceCount,
+    autonomousLearning.currentInsufficientEvidenceCount - autonomousLearning.gateDecisionCounts.insufficientEvidenceCount,
+    "autonomous learning excluded insufficient-evidence count must explain the gap between supporting and gate counts"
+  );
   assert(Number.isFinite(Number(autonomousLearning.summary.verifiedPositive)), "autonomous learning summary must expose verifiedPositive");
   assert(Number.isFinite(Number(autonomousLearning.summary.verifiedNeutral)), "autonomous learning summary must expose verifiedNeutral");
   assert(Number.isFinite(Number(autonomousLearning.summary.verifiedNegative)), "autonomous learning summary must expose verifiedNegative");
@@ -818,6 +893,7 @@ function main() {
   assert.strictEqual(goalCompletion.goalStatus, "NOT_YET", "seeded live-goal fixture must remain NOT_YET");
   assert(Array.isArray(goalCompletion.whyNotYet) && goalCompletion.whyNotYet.length > 0, "goal completion artifact must explain why it is not yet complete");
   assert(Array.isArray(goalCompletion.requiredNextActions) && goalCompletion.requiredNextActions.length > 0, "goal completion artifact must expose required next actions");
+  assert(!goalCompletion.requiredNextActions.includes("worker completion companion diverges from the worker headline or its background readiness basis"), "goal completion required next actions must not retain a stale worker-companion divergence blocker");
   assert(!goalCompletion.requiredNextActions.some((action) => /history-aware counts consistently/i.test(String(action))), "goal completion required next actions must not retain stale history-aware-count noise");
   assert(!goalCompletion.requiredNextActions.some((action) => /completion export durability/i.test(String(action))), "goal completion required next actions must not retain subjective export-durability noise");
   assert(!goalCompletion.requiredNextActions.some((action) => /below subjective threshold/i.test(String(action))), "goal completion required next actions must not surface subjective-threshold phrasing");
@@ -829,6 +905,16 @@ function main() {
   assert(Array.isArray(goalCompletion.supportingArtifacts) && goalCompletion.supportingArtifacts.length > 0, "goal completion artifact must expose supporting artifacts");
   assert(goalCompletion.lineageSummary && typeof goalCompletion.lineageSummary === "object", "goal completion artifact must expose lineageSummary");
   assert(goalCompletion.autonomousLearningSummary && typeof goalCompletion.autonomousLearningSummary === "object", "goal completion artifact must expose autonomousLearningSummary");
+  assert(goalCompletion.runningAgendaDecisionBasis && typeof goalCompletion.runningAgendaDecisionBasis === "object", "goal completion artifact must expose runningAgendaDecisionBasis");
+  assert.strictEqual(goalCompletion.currentValues.runningAgendaCount, autonomousLearning.gateDecisionCounts.running, "goal completion runningAgendaCount must use gateDecisionCounts.running");
+  assert.strictEqual(goalCompletion.runningAgendaDecisionBasis.gateRunningAgendaCount, autonomousLearning.gateDecisionCounts.running, "goal completion running basis must expose gate running count");
+  assert.strictEqual(goalCompletion.runningAgendaDecisionBasis.supportingCurrentRunningCount, autonomousLearning.currentRunningCount, "goal completion running basis must expose supporting current running count");
+  assert.strictEqual(goalCompletion.runningAgendaDecisionBasis.gateBlockedAgendaCount, autonomousLearning.gateDecisionCounts.blocked, "goal completion running basis must expose gate blocked count");
+  assert.strictEqual(goalCompletion.runningAgendaDecisionBasis.supportingCurrentBlockedCount, autonomousLearning.currentBlockedCount, "goal completion running basis must expose supporting current blocked count");
+  assert.strictEqual(goalCompletion.runningAgendaDecisionBasis.gateInsufficientEvidenceCount, autonomousLearning.gateDecisionCounts.insufficientEvidenceCount, "goal completion running basis must expose gate insufficient-evidence count");
+  assert.strictEqual(goalCompletion.runningAgendaDecisionBasis.supportingCurrentInsufficientEvidenceCount, autonomousLearning.currentInsufficientEvidenceCount, "goal completion running basis must expose supporting current insufficient-evidence count");
+  assert.strictEqual(goalCompletion.runningAgendaDecisionBasis.excludedMetaCompletionBlockedCount, autonomousLearning.gateDecisionCounts.excludedMetaCompletionCounts.blocked, "goal completion running basis must expose excluded blocked delta");
+  assert.strictEqual(goalCompletion.runningAgendaDecisionBasis.excludedMetaCompletionInsufficientEvidenceCount, autonomousLearning.gateDecisionCounts.excludedMetaCompletionCounts.insufficientEvidenceCount, "goal completion running basis must expose excluded insufficient-evidence delta");
   assert(goalCompletion.continuityDebtSummary && typeof goalCompletion.continuityDebtSummary === "object", "goal completion artifact must expose continuityDebtSummary");
   assert(goalCompletion.robustnessSummary && typeof goalCompletion.robustnessSummary === "object", "goal completion artifact must expose robustnessSummary");
   assert(goalCompletion.causalSafetySummary && typeof goalCompletion.causalSafetySummary === "object", "goal completion artifact must expose causalSafetySummary");
@@ -849,6 +935,9 @@ function main() {
   assert(Number.isFinite(Number(goalCompletion.compatibilityCriteriaWindowSize)), "goal completion artifact must expose compatibility criteria window size");
   assert.strictEqual("sovereignGoalStatus" in goalCompletion, false, "goal completion artifact must not expose legacy sovereign status fields");
   assert.strictEqual("sovereignGoalWhyNotYetCount" in goalCompletion, false, "goal completion artifact must not expose legacy sovereign why-not-yet count");
+  const openUnknownsRegister = JSON.parse(fs.readFileSync(path.join(readinessRoot, "open_unknowns_register.json"), "utf8"));
+  assert(Array.isArray(openUnknownsRegister.items), "open unknowns register must expose items");
+  assert(!openUnknownsRegister.items.some((entry) => String(entry && entry.summary) === "worker completion companion diverges from the worker headline or its background readiness basis"), "open unknowns register must not retain a stale worker-companion divergence blocker");
 
   const subjectiveGoal = JSON.parse(fs.readFileSync(path.join(readinessRoot, "subjective_goal_completion_status.json"), "utf8"));
   assert.strictEqual(subjectiveGoal.scope, "subjective_companion", "subjective goal artifact must expose subjective_companion scope");
@@ -865,6 +954,14 @@ function main() {
   assert(subjectiveGoal.autonomousLearningSummary && typeof subjectiveGoal.autonomousLearningSummary === "object", "subjective goal artifact must expose autonomous learning summary");
   assert(subjectiveGoal.robustnessSummary && typeof subjectiveGoal.robustnessSummary === "object", "subjective goal artifact must expose robustness summary");
   assert(subjectiveGoal.continuitySummary && typeof subjectiveGoal.continuitySummary === "object", "subjective goal artifact must expose continuity summary");
+  assert(subjectiveGoal.runningAgendaDecisionBasis && typeof subjectiveGoal.runningAgendaDecisionBasis === "object", "subjective goal artifact must expose runningAgendaDecisionBasis");
+  assert.strictEqual(subjectiveGoal.subjectiveCurrentValues.runningAgendaCount, autonomousLearning.gateDecisionCounts.running, "subjective runningAgendaCount must use gateDecisionCounts.running");
+  assert.strictEqual(subjectiveGoal.subjectiveCurrentValues.blockedAgendaCount, autonomousLearning.gateDecisionCounts.blocked, "subjective blockedAgendaCount must use gateDecisionCounts.blocked");
+  assert(subjectiveGoal.subjectiveCurrentValues.insufficientEvidenceCount >= autonomousLearning.gateDecisionCounts.insufficientEvidenceCount, "subjective insufficient-evidence count must not undershoot the gate count");
+  assert.strictEqual(subjectiveGoal.runningAgendaDecisionBasis.supportingCurrentRunningCount, autonomousLearning.currentRunningCount, "subjective running basis must expose supporting current running count");
+  assert.strictEqual(subjectiveGoal.runningAgendaDecisionBasis.supportingCurrentBlockedCount, autonomousLearning.currentBlockedCount, "subjective running basis must expose supporting current blocked count");
+  assert.strictEqual(subjectiveGoal.runningAgendaDecisionBasis.supportingCurrentInsufficientEvidenceCount, autonomousLearning.currentInsufficientEvidenceCount, "subjective running basis must expose supporting current insufficient-evidence count");
+  assert.strictEqual(subjectiveGoal.runningAgendaDecisionBasis.gateInsufficientEvidenceCount, autonomousLearning.gateDecisionCounts.insufficientEvidenceCount, "subjective running basis must expose gate insufficient-evidence count");
   assert(subjectiveGoal.history && Number.isFinite(Number(subjectiveGoal.history.consecutivePassingExports)), "subjective goal artifact must expose history summary");
 
   const compatibilityGoal = JSON.parse(fs.readFileSync(path.join(readinessRoot, "compatibility_completion_status.json"), "utf8"));
@@ -901,7 +998,43 @@ function main() {
   assert(Number.isFinite(Number(selfDirectedProbeStatus.novelPositiveCount)), "self-directed probe artifact must expose novelPositiveCount");
   assert(Array.isArray(selfDirectedProbeStatus.recentProbeFamilies), "self-directed probe artifact must expose recentProbeFamilies");
   assert(Array.isArray(selfDirectedProbeStatus.recentPositiveEvidenceRefs), "self-directed probe artifact must expose recentPositiveEvidenceRefs");
+  assert(selfDirectedProbeStatus.currentSnapshot && typeof selfDirectedProbeStatus.currentSnapshot === "object", "self-directed probe artifact must expose currentSnapshot");
+  assert(selfDirectedProbeStatus.effectiveHistoryAware && typeof selfDirectedProbeStatus.effectiveHistoryAware === "object", "self-directed probe artifact must expose effectiveHistoryAware");
   assert(selfDirectedProbeStatus.requiredThresholds && typeof selfDirectedProbeStatus.requiredThresholds === "object", "self-directed probe artifact must expose requiredThresholds");
+  assert(selfDirectedProbeStatus.meetsThresholds && typeof selfDirectedProbeStatus.meetsThresholds === "object", "self-directed probe artifact must expose meetsThresholds");
+  assert(selfDirectedProbeStatus.thresholdDecisionBasis && typeof selfDirectedProbeStatus.thresholdDecisionBasis === "object", "self-directed probe artifact must expose thresholdDecisionBasis");
+  assert.strictEqual(selfDirectedProbeStatus.positiveProbeCount, selfDirectedProbeStatus.effectiveHistoryAware.positiveProbeCount, "self-directed probe top-level positive count must mirror effectiveHistoryAware");
+  assert.strictEqual(selfDirectedProbeStatus.novelPositiveCount, selfDirectedProbeStatus.effectiveHistoryAware.novelPositiveCount, "self-directed probe top-level novel-positive count must mirror effectiveHistoryAware");
+  assert(selfDirectedProbeStatus.currentSnapshot.positiveProbeCount <= selfDirectedProbeStatus.effectiveHistoryAware.positiveProbeCount, "effective probe count must be at least the current snapshot");
+  assert(selfDirectedProbeStatus.currentSnapshot.novelPositiveCount <= selfDirectedProbeStatus.effectiveHistoryAware.novelPositiveCount, "effective novel-positive count must be at least the current snapshot");
+  assert.strictEqual(selfDirectedProbeStatus.thresholdDecisionBasis.mode, "history_aware_effective_counts", "self-directed probe threshold basis must declare the history-aware mode");
+  assert.strictEqual(selfDirectedProbeStatus.thresholdDecisionBasis.failClosed, true, "self-directed probe threshold basis must be fail-closed");
+  assert.strictEqual(selfDirectedProbeStatus.thresholdDecisionBasis.historySourcePath, "output/agi_readiness/subjective_goal_completion_status.json", "self-directed probe threshold basis must expose the history source");
+  assert.strictEqual(
+    selfDirectedProbeStatus.effectiveHistoryAware.historyLift.positiveProbeCount,
+    selfDirectedProbeStatus.effectiveHistoryAware.positiveProbeCount - selfDirectedProbeStatus.currentSnapshot.positiveProbeCount,
+    "self-directed probe history lift must explain the positive-count uplift"
+  );
+  assert.strictEqual(
+    selfDirectedProbeStatus.effectiveHistoryAware.historyLift.novelPositiveCount,
+    selfDirectedProbeStatus.effectiveHistoryAware.novelPositiveCount - selfDirectedProbeStatus.currentSnapshot.novelPositiveCount,
+    "self-directed probe history lift must explain the novel-positive uplift"
+  );
+  assert.strictEqual(
+    selfDirectedProbeStatus.meetsThresholds.positiveProbeCount,
+    selfDirectedProbeStatus.effectiveHistoryAware.positiveProbeCount >= selfDirectedProbeStatus.requiredThresholds.positiveProbeCount,
+    "self-directed probe threshold evaluation must use the effective positive count"
+  );
+  assert.strictEqual(
+    selfDirectedProbeStatus.meetsThresholds.novelPositiveCount,
+    selfDirectedProbeStatus.effectiveHistoryAware.novelPositiveCount >= selfDirectedProbeStatus.requiredThresholds.novelPositiveCount,
+    "self-directed probe threshold evaluation must use the effective novel-positive count"
+  );
+  assert.strictEqual(
+    selfDirectedProbeStatus.meetsThresholds.insufficientEvidenceCount,
+    selfDirectedProbeStatus.effectiveHistoryAware.insufficientEvidenceCount <= selfDirectedProbeStatus.requiredThresholds.maxInsufficientEvidenceCount,
+    "self-directed probe threshold evaluation must use the effective insufficient-evidence count"
+  );
   assert(selfDirectedProbeStatus.summary && typeof selfDirectedProbeStatus.summary === "object", "self-directed probe artifact must expose summary");
   assert.strictEqual(selfDirectedProbeStatus.exportSessionId, exportSessionId, "self-directed probe artifact must carry the shared exportSessionId");
 
@@ -912,7 +1045,23 @@ function main() {
   assert(Number.isFinite(Number(novelTaskAcquisition.positiveNovelTaskCount)), "novel task acquisition artifact must expose positiveNovelTaskCount");
   assert(Array.isArray(novelTaskAcquisition.recentNovelTasks), "novel task acquisition artifact must expose recentNovelTasks");
   assert(Array.isArray(novelTaskAcquisition.positiveEvidenceRefs), "novel task acquisition artifact must expose positiveEvidenceRefs");
+  assert(novelTaskAcquisition.currentSnapshot && typeof novelTaskAcquisition.currentSnapshot === "object", "novel task acquisition artifact must expose currentSnapshot");
+  assert(novelTaskAcquisition.effectiveHistoryAware && typeof novelTaskAcquisition.effectiveHistoryAware === "object", "novel task acquisition artifact must expose effectiveHistoryAware");
   assert(novelTaskAcquisition.requiredThresholds && typeof novelTaskAcquisition.requiredThresholds === "object", "novel task acquisition artifact must expose requiredThresholds");
+  assert(novelTaskAcquisition.meetsThresholds && typeof novelTaskAcquisition.meetsThresholds === "object", "novel task acquisition artifact must expose meetsThresholds");
+  assert(novelTaskAcquisition.thresholdDecisionBasis && typeof novelTaskAcquisition.thresholdDecisionBasis === "object", "novel task acquisition artifact must expose thresholdDecisionBasis");
+  assert.strictEqual(novelTaskAcquisition.currentSnapshot.positiveNovelTaskCount, novelTaskAcquisition.effectiveHistoryAware.positiveNovelTaskCount, "novel task acquisition effective count must stay explicit when no history uplift is applied");
+  assert.strictEqual(novelTaskAcquisition.positiveNovelTaskCount, novelTaskAcquisition.effectiveHistoryAware.positiveNovelTaskCount, "novel task acquisition top-level positive count must mirror effectiveHistoryAware");
+  assert.strictEqual(novelTaskAcquisition.thresholdDecisionBasis.mode, "current_snapshot_no_history_uplift", "novel task acquisition threshold basis must declare the no-history-uplift mode");
+  assert.strictEqual(novelTaskAcquisition.thresholdDecisionBasis.failClosed, true, "novel task acquisition threshold basis must be fail-closed");
+  assert.strictEqual(novelTaskAcquisition.thresholdDecisionBasis.historySource, "none", "novel task acquisition threshold basis must declare that no history uplift is used");
+  assert.strictEqual(novelTaskAcquisition.effectiveHistoryAware.historyAware, false, "novel task acquisition effective counts must explicitly reject history uplift");
+  assert.strictEqual(novelTaskAcquisition.effectiveHistoryAware.historyLift.positiveNovelTaskCount, 0, "novel task acquisition history lift must stay zero when no history uplift is used");
+  assert.strictEqual(
+    novelTaskAcquisition.meetsThresholds.positiveNovelTaskCount,
+    novelTaskAcquisition.effectiveHistoryAware.positiveNovelTaskCount >= novelTaskAcquisition.requiredThresholds.positiveNovelTaskCount,
+    "novel task acquisition threshold evaluation must use the effective count"
+  );
   assert(Array.isArray(novelTaskAcquisition.items), "novel task acquisition artifact must expose items");
   assert.strictEqual(novelTaskAcquisition.exportSessionId, exportSessionId, "novel task acquisition artifact must carry the shared exportSessionId");
 
@@ -926,6 +1075,7 @@ function main() {
   assert.strictEqual(exportManifest.canonicalReuseVerified, true, "export manifest must record canonical reuse verification");
   assert.strictEqual(exportManifest.exportSessionId, exportSessionId, "export manifest must carry the shared exportSessionId");
   assert.strictEqual(exportManifest.outputs.workerDecisionSurfaceJson, "output/governance_public/worker_decision_surface.json", "export manifest must point at the worker decision headline");
+  assert.strictEqual(exportManifest.outputs.workerCompletionStatusJson, "output/governance_public/worker_completion_status.json", "export manifest must point at the worker completion companion");
   assert.strictEqual(exportManifest.outputs.robustnessBreakdownJson, "output/agi_readiness/robustness_breakdown.json", "export manifest must point at the tracked robustness breakdown artifact");
   assert.strictEqual(fs.existsSync(path.join(tempRoot, readiness.robustnessBreakdownPath)), true, "latest readiness robustness path must resolve to a real file");
   assert.strictEqual(fs.existsSync(path.join(tempRoot, exportManifest.outputs.robustnessBreakdownJson)), true, "export manifest robustness path must resolve to a real file");
@@ -943,6 +1093,7 @@ function main() {
   assert.strictEqual(fs.existsSync(path.join(tempRoot, exportManifest.outputs.robustnessRemediationEffectsJson)), true, "export manifest remediation effects path must resolve to a real file");
   assert.strictEqual(fs.existsSync(path.join(tempRoot, exportManifest.outputs.causalEffectivenessSummaryJson)), true, "export manifest causal effectiveness summary path must resolve to a real file");
   assert.strictEqual(fs.existsSync(path.join(tempRoot, exportManifest.outputs.goalCompletionStatusJson)), true, "export manifest goal completion path must resolve to a real file");
+  assert.strictEqual(fs.existsSync(path.join(tempRoot, exportManifest.outputs.workerCompletionStatusJson)), true, "export manifest worker completion path must resolve to a real file");
   assert.strictEqual(fs.existsSync(path.join(tempRoot, exportManifest.outputs.subjectiveGoalCompletionStatusJson)), true, "export manifest subjective goal completion path must resolve to a real file");
   assert.strictEqual(fs.existsSync(path.join(tempRoot, exportManifest.outputs.compatibilityCompletionStatusJson)), true, "export manifest compatibility completion path must resolve to a real file");
   assert.strictEqual(fs.existsSync(path.join(tempRoot, exportManifest.outputs.compatibilityCompletionStatusMd)), true, "export manifest compatibility completion markdown path must resolve to a real file");
@@ -1011,6 +1162,7 @@ function main() {
     continuity,
     continuityDebt,
     goalCompletion,
+    workerCompletionStatus,
   ].flatMap((entry) => collectLeafValues(entry));
   assert(publicLeafValues.every((entry) => typeof entry.value !== "string" || !isUuidLike(entry.value)), "public artifacts must not expose raw UUID-like titles");
   assert(publicLeafValues.every((entry) => !(typeof entry.value === "string" && /^\d{13}$/.test(entry.value))), "public artifacts must not expose epoch-millisecond timestamps");
@@ -1038,6 +1190,8 @@ function main() {
   const strictArtifactsMismatchedSession = buildGovernedMemoryPublicArtifacts({ workspaceRoot: tempRoot, requireWrittenPublicArtifacts: true });
   const strictSessionCheck = strictArtifactsMismatchedSession.evalStatus.checks.find((entry) => entry.id === "worker_decision_surface_export_session_consistent");
   assert(strictSessionCheck && strictSessionCheck.status === "FAIL", "strict public eval must fail when worker decision surface exportSessionId mismatches the semantic window");
+  const strictWorkerCompletionCheck = strictArtifactsMismatchedSession.evalStatus.checks.find((entry) => entry.id === "worker_completion_status_consistent");
+  assert(strictWorkerCompletionCheck && strictWorkerCompletionCheck.status === "FAIL", "strict public eval must fail when worker completion semantics diverge from the shared export session");
   writeJson(path.join(tempRoot, "output", "governance_public", "worker_decision_surface.json"), {
     schema: "worker-decision-surface.v1",
     scope: "worker_decision",
@@ -1068,6 +1222,7 @@ function main() {
     causalTrace: exported.causalLearningTracePublic,
     continuityDebt: exported.continuityDebtPublic,
     goalCompletionStatus: exported.goalCompletionStatus,
+    workerCompletionStatus: exported.workerCompletionStatus,
     subjectiveGoalCompletionStatus: exported.subjectiveGoalCompletionStatus,
     compatibilityCompletionStatus: exported.compatibilityCompletionStatus,
     sovereignGoalCompletionStatus: exported.sovereignGoalCompletionStatus,

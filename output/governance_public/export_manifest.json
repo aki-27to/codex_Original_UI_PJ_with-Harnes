@@ -1,6 +1,6 @@
 {
   "schema": "governance-public-bundle-manifest.v1",
-  "generatedAt": "2026-04-12T02:14:59.862Z",
+  "generatedAt": "2026-04-12T08:44:25.103Z",
   "sourceLatestSignoffSummary": "logs/current/latest_signoff_summary.json",
   "sourceLatestRunSummary": "logs/bundles/signoff/signoff-2026-03-09T12-31-59-842Z-24dd95/latest_run_summary.json",
   "sourceBundleRoot": "logs/bundles/signoff/signoff-2026-03-09T12-31-59-842Z-24dd95",
@@ -108,6 +108,11 @@
     },
     {
       "file": "worker_decision_surface.json",
+      "source": "derived_from_public_trace",
+      "derived": 1
+    },
+    {
+      "file": "worker_completion_status.json",
       "source": "derived_from_public_trace",
       "derived": 1
     }

@@ -20,6 +20,8 @@
     "test:deployment-posture": "node scripts/deployment_posture_profile_test.js",
     "test:iteration-control": "node scripts/iteration_control_policy_test.js",
     "test:adoption-readiness": "node scripts/adoption_readiness_policy_test.js",
+    "test:completion-readiness-authority": "node scripts/completion_readiness_authority_test.js",
+    "test:user-facing-response-policy": "node scripts/user_facing_response_policy_test.js",
     "test:governance-bundle": "node scripts/governance_bundle_test.js",
     "test:single-harness-multi-plane": "node scripts/single_harness_multi_plane_test.js",
     "test:self-improvement-governance": "node scripts/self_improvement_governance_test.js",
@@ -88,7 +90,7 @@
     "test:housekeeping:output-surface": "node scripts/organize_output_surface_test.js",
     "test:housekeeping:output-git-policy": "node scripts/output_surface_git_policy_test.js",
     "test:windows-launcher-policy": "node scripts/start_codex_ui_launcher_policy_test.js",
-    "test:repo-quality": "npm run test:document-tooling && npm run test:harness-overview && npm run test:authority-registry && npm run test:l0-l1-governance-surface && npm run test:l2-l4-governance-surface && npm run test:deployment-posture && npm run test:iteration-control && npm run test:adoption-readiness && npm run test:governance-bundle && npm run test:single-harness-multi-plane && npm run test:self-improvement-governance && npm run housekeeping:surfaces && npm run test:repo-hygiene:static && npm run test:docs:drift && npm run test:github-governance-surface && npm run test:system-coherence && npm run test:server-request-guards && npm run test:app-server-transport-resilience && npm run test:housekeeping:runtime-surface && npm run test:housekeeping:output-surface && npm run test:housekeeping:output-git-policy && node scripts/current_surface_truth_test.js"
+    "test:repo-quality": "npm run test:document-tooling && npm run test:harness-overview && npm run test:authority-registry && npm run test:l0-l1-governance-surface && npm run test:l2-l4-governance-surface && npm run test:deployment-posture && npm run test:iteration-control && npm run test:adoption-readiness && npm run test:completion-readiness-authority && npm run test:user-facing-response-policy && npm run test:governance-bundle && npm run test:single-harness-multi-plane && npm run test:self-improvement-governance && npm run housekeeping:surfaces && npm run test:repo-hygiene:static && npm run test:docs:drift && npm run test:github-governance-surface && npm run test:system-coherence && npm run test:server-request-guards && npm run test:app-server-transport-resilience && npm run test:housekeeping:runtime-surface && npm run test:housekeeping:output-surface && npm run test:housekeeping:output-git-policy && node scripts/current_surface_truth_test.js"
   },
   "keywords": [
     "codex",

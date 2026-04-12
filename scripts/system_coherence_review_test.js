@@ -3,6 +3,7 @@
 
 const fs = require("fs");
 const path = require("path");
+const { resolveServerImplementationPath } = require("./lib/server_source_path");
 const {
   defaultSystemCoherenceReviewContractPath,
   hasRequiredSystemReviewCommand,
@@ -100,7 +101,8 @@ function testRepoSync() {
   const coherenceDoc = read("docs/SYSTEM_COHERENCE_REVIEW.md");
   const architecture = read("docs/CURRENT_ARCHITECTURE.md");
   const planeDoc = read("docs/SINGLE_HARNESS_MULTI_PLANE.md");
-  const serverText = read("server.js");
+  const { implementationPath: serverPath } = resolveServerImplementationPath(workspaceRoot);
+  const serverText = fs.readFileSync(serverPath, "utf8");
 
   assert(packageJson.scripts && packageJson.scripts["test:system-coherence"] === contract.requiredCommand, "package.json must expose the whole-system coherence review command");
   assert(

@@ -13,12 +13,48 @@ const releaseDecisionStates = Object.freeze([
   "HARNESS_FAILURE",
 ]);
 
+const defaultReleaseDecisionContract = Object.freeze({
+  schema: "release-decision-contract.v1",
+  version: "2026-04-12.r1",
+  artifactName: "ReleaseDecision",
+  decisionScope: "release_readiness_and_whole_harness_completion_only",
+  defaultBlockingAuthority: false,
+  blockingAuthorityActivation: Object.freeze({
+    requiresExplicitUserRequest: true,
+    explicitRequestScopes: Object.freeze(["release", "readiness", "whole_harness_completion"]),
+    ordinaryTaskCompletion: Object.freeze({
+      blockedByReleaseDecisionByDefault: false,
+      releaseDecisionIsSeparateScope: true,
+    }),
+  }),
+  terminalStates: releaseDecisionStates,
+});
+
 function safeString(value, max = 2000) {
   if (typeof value !== "string") {
     return "";
   }
   const trimmed = value.trim();
   return trimmed ? trimmed.slice(0, max) : "";
+}
+
+function normalizeBoolean(value, fallback = false) {
+  if (typeof value === "boolean") {
+    return value;
+  }
+  if (typeof value === "number") {
+    return Number.isFinite(value) ? value !== 0 : fallback;
+  }
+  if (typeof value === "string") {
+    const normalized = value.trim().toLowerCase();
+    if (["1", "true", "yes", "on"].includes(normalized)) {
+      return true;
+    }
+    if (["0", "false", "no", "off"].includes(normalized)) {
+      return false;
+    }
+  }
+  return fallback;
 }
 
 function uniqueStrings(values, max = 24) {
@@ -63,6 +99,50 @@ function loadOptionalJson(filePath) {
 
 function loadConfigJson(name) {
   return readJson(path.join(workspaceRoot, "scripts", "config", name));
+}
+
+function normalizeReleaseDecisionContract(input) {
+  const source = input && typeof input === "object" ? input : {};
+  const blockingAuthorityActivation = source.blockingAuthorityActivation && typeof source.blockingAuthorityActivation === "object"
+    ? source.blockingAuthorityActivation
+    : defaultReleaseDecisionContract.blockingAuthorityActivation;
+  const ordinaryTaskCompletion = blockingAuthorityActivation.ordinaryTaskCompletion
+    && typeof blockingAuthorityActivation.ordinaryTaskCompletion === "object"
+    ? blockingAuthorityActivation.ordinaryTaskCompletion
+    : defaultReleaseDecisionContract.blockingAuthorityActivation.ordinaryTaskCompletion;
+  const terminalStates = Array.isArray(source.terminalStates)
+    ? uniqueStrings(source.terminalStates.map((entry) => safeString(entry, 80).toUpperCase()), 16)
+    : defaultReleaseDecisionContract.terminalStates.slice();
+  return {
+    schema: safeString(source.schema, 120) || defaultReleaseDecisionContract.schema,
+    version: safeString(source.version, 120) || defaultReleaseDecisionContract.version,
+    artifactName: safeString(source.artifactName, 120) || defaultReleaseDecisionContract.artifactName,
+    decisionScope: safeString(source.decisionScope, 160) || defaultReleaseDecisionContract.decisionScope,
+    defaultBlockingAuthority: normalizeBoolean(
+      source.defaultBlockingAuthority,
+      defaultReleaseDecisionContract.defaultBlockingAuthority
+    ),
+    blockingAuthorityActivation: {
+      requiresExplicitUserRequest: normalizeBoolean(
+        blockingAuthorityActivation.requiresExplicitUserRequest,
+        defaultReleaseDecisionContract.blockingAuthorityActivation.requiresExplicitUserRequest
+      ),
+      explicitRequestScopes: Array.isArray(blockingAuthorityActivation.explicitRequestScopes)
+        ? uniqueStrings(blockingAuthorityActivation.explicitRequestScopes.map((entry) => safeString(entry, 80)), 12)
+        : defaultReleaseDecisionContract.blockingAuthorityActivation.explicitRequestScopes.slice(),
+      ordinaryTaskCompletion: {
+        blockedByReleaseDecisionByDefault: normalizeBoolean(
+          ordinaryTaskCompletion.blockedByReleaseDecisionByDefault,
+          defaultReleaseDecisionContract.blockingAuthorityActivation.ordinaryTaskCompletion.blockedByReleaseDecisionByDefault
+        ),
+        releaseDecisionIsSeparateScope: normalizeBoolean(
+          ordinaryTaskCompletion.releaseDecisionIsSeparateScope,
+          defaultReleaseDecisionContract.blockingAuthorityActivation.ordinaryTaskCompletion.releaseDecisionIsSeparateScope
+        ),
+      },
+    },
+    terminalStates: terminalStates.length ? terminalStates : defaultReleaseDecisionContract.terminalStates.slice(),
+  };
 }
 
 function normalizePlanningDepth(value) {
@@ -399,11 +479,18 @@ function buildReleaseDecision({
   missingEvidence,
   clauseCompletionScorecard,
   rationaleNotes,
+  releaseDecisionContract,
 } = {}) {
+  const normalizedReleaseDecisionContract = normalizeReleaseDecisionContract(
+    releaseDecisionContract || loadConfigJson("release_decision_contract.json")
+  );
   const recommended = safeString(reviewBundle && reviewBundle.recommended_release_state, 80);
-  const terminalState = normalizeReleaseState(
+  const normalizedTerminalState = normalizeReleaseState(
     recommended || deriveRecommendedReleaseState({ finalOutcome, missingEvidence, residualRisks, assumptions, clauseCompletionScorecard })
   );
+  const terminalState = normalizedReleaseDecisionContract.terminalStates.includes(normalizedTerminalState)
+    ? normalizedTerminalState
+    : "HARNESS_FAILURE";
   const clauseScorecard = clauseCompletionScorecard && typeof clauseCompletionScorecard === "object"
     ? clauseCompletionScorecard
     : reviewBundle && reviewBundle.clause_completion_scorecard && typeof reviewBundle.clause_completion_scorecard === "object"
@@ -421,6 +508,9 @@ function buildReleaseDecision({
     : [];
   return {
     schema: "ReleaseDecision.v1",
+    contract_scope: normalizedReleaseDecisionContract.decisionScope,
+    default_blocking_authority: normalizedReleaseDecisionContract.defaultBlockingAuthority,
+    blocking_authority_activation: normalizedReleaseDecisionContract.blockingAuthorityActivation,
     terminal_state: terminalState,
     rationale: uniqueStrings([
       ...(Array.isArray(rationaleNotes) ? rationaleNotes : []),

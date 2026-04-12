@@ -3,12 +3,13 @@
 const assert = require("assert");
 const fs = require("fs");
 const path = require("path");
+const { resolveServerImplementationPath } = require("./lib/server_source_path");
 
 const workspaceRoot = path.resolve(__dirname, "..");
 const indexHtmlPath = path.join(workspaceRoot, "web", "01.HarnesUI", "index.html");
 const appJsPath = path.join(workspaceRoot, "web", "01.HarnesUI", "app.js");
 const stylesCssPath = path.join(workspaceRoot, "web", "01.HarnesUI", "styles.css");
-const serverJsPath = path.join(workspaceRoot, "server.js");
+const { implementationPath: serverJsPath } = resolveServerImplementationPath(workspaceRoot);
 const conversationRuntimePath = path.join(workspaceRoot, "scripts", "lib", "conversation_runtime.js");
 
 function read(filePath) {

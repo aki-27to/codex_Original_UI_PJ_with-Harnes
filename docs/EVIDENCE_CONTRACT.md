@@ -46,8 +46,10 @@ Updated: 2026-04-12
   - manual consistency review
   - updated policy document への file reference
   - 必要なら architecture/spec sync
-- `server.js` または `scripts/` 変更
+- `server.js` / `server_impl.js` / `server/` / `server/services/` または `scripts/` 変更
   - `node scripts/app_server_smoke_test.js`
+  - runtime split / route / bootstrap / service-boundary changes under `server/` are treated as server-surface changes and require the same smoke evidence
+  - if reviewer-facing server boundary docs change, run a docs consistency check such as `node scripts/system_coherence_review_test.js`
 - eval harness / replay / workflow policy change
   - `node scripts/eval_replay_api_smoke_test.js`
 - whole-harness consistency に影響し得る core change
@@ -130,6 +132,18 @@ live baseline comparison を要求した場合:
 - neat manifest だけで underlying proof がなければ failure
 - core system change で whole-system coherence review を skip したら `FAILED_VALIDATION`
 - design-sensitive task で visual evidence が欠けたら `FAILED_VALIDATION`
+
+## 6.2 Worker-Centric Completion Semantics Evidence
+
+worker-centric completion semantics are not proven by prose alone.
+
+- `worker_decision_surface.json` remains the headline worker surface.
+- `worker_completion_status.json`, when present, must remain supplemental and must not redefine the headline worker verdict carried by `worker_decision_surface.json`.
+- `goal_completion_status.json` / `subjective_goal_completion_status.json` must expose the gate-consumed running basis in machine-readable form.
+- `autonomous_learning_status.json` must expose both the broader supporting counts and the gate-consumed subset when they differ.
+- `self_directed_probe_status.json` and `novel_task_acquisition.json` must expose snapshot values, effective threshold values, threshold decisions, and the threshold basis that explains which values the gate consumed.
+- `worker_completion_status.json` must expose same-session trust for its background inputs (`backgroundArtifactSessionConsistency`, `backgroundArtifactInputsTrusted`) so stale sidecars fail closed instead of silently influencing worker semantics.
+- If these semantics are only documented in markdown and not exposed in the current-truth artifacts, the evidence is incomplete and the result is not releasable.
 
 ## 6.1 Subjective Quality Rule
 

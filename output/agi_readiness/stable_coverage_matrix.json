@@ -1,35 +1,35 @@
 {
   "schema": "agi-readiness-stable-coverage-matrix.v1",
-  "generatedAt": "2026-04-12T02:52:33.405Z",
+  "generatedAt": "2026-04-12T08:44:27.113Z",
   "workspaceId": "5c839dfeef8b555f",
-  "stableCoverageBreadth": 0.166667,
+  "stableCoverageBreadth": 0.333333,
   "rows": [
     {
       "familyId": "deterministic_code",
       "label": "Deterministic Code",
-      "stableCovered": false,
-      "stabilityStatus": "unstable",
+      "stableCovered": true,
+      "stabilityStatus": "stable",
       "stabilityWindowSize": 3,
       "recentWindowScores": [
-        0.25,
+        1,
         1,
         1
       ],
       "recentWindowOutcomes": [
-        "fail",
+        "pass",
         "pass",
         "pass"
       ],
       "observationCount": 3,
-      "recentSuccessRate": 0.6667,
-      "recentFailureBurden": 1,
+      "recentSuccessRate": 1,
+      "recentFailureBurden": 0,
       "verifierBurden": 10,
       "lastSuccessfulTask": {
         "publicRef": "<task-ref>",
         "source": "continuity",
-        "title": "verifier handoff for Blackbox incident response",
+        "title": "verifier handoff for Coding baseline through planner/executor/verifier",
         "status": "completed",
-        "updatedAt": "2026-04-12T02:15:05.147Z"
+        "updatedAt": "2026-04-12T08:33:37.003Z"
       },
       "lastFailedTask": {
         "publicRef": "<task-ref>",
@@ -38,49 +38,12 @@
         "status": "verifier failed",
         "updatedAt": "2026-04-12T02:15:05.336Z"
       },
-      "coverageRegressed": true,
-      "nextCoverageAction": "reduce failure burden and verifier debt in recent windows"
+      "coverageRegressed": false,
+      "nextCoverageAction": "maintain current evidence quality"
     },
     {
       "familyId": "web_creative",
       "label": "Web Creative",
-      "stableCovered": false,
-      "stabilityStatus": "unstable",
-      "stabilityWindowSize": 3,
-      "recentWindowScores": [
-        1,
-        1,
-        0.25
-      ],
-      "recentWindowOutcomes": [
-        "pass",
-        "pass",
-        "fail"
-      ],
-      "observationCount": 3,
-      "recentSuccessRate": 0.6667,
-      "recentFailureBurden": 1,
-      "verifierBurden": 0,
-      "lastSuccessfulTask": {
-        "publicRef": "turn_cad5dc79d7",
-        "source": "turn",
-        "title": "web ui interactive",
-        "status": "completed",
-        "updatedAt": "2026-04-12T02:50:06.723Z"
-      },
-      "lastFailedTask": {
-        "publicRef": "turn_7167ce41f2",
-        "source": "turn",
-        "title": "web ui interactive",
-        "status": "failed validation",
-        "updatedAt": "2026-04-12T02:47:14.545Z"
-      },
-      "coverageRegressed": true,
-      "nextCoverageAction": "reduce failure burden and verifier debt in recent windows"
-    },
-    {
-      "familyId": "planning",
-      "label": "Planning",
       "stableCovered": false,
       "stabilityStatus": "failing only",
       "stabilityWindowSize": 3,
@@ -97,13 +60,50 @@
       "observationCount": 3,
       "recentSuccessRate": 0,
       "recentFailureBurden": 3,
+      "verifierBurden": 0,
+      "lastSuccessfulTask": {
+        "publicRef": "turn_8c76e4381a",
+        "source": "turn",
+        "title": "web ui interactive",
+        "status": "completed",
+        "updatedAt": "2026-04-12T05:31:31.128Z"
+      },
+      "lastFailedTask": {
+        "publicRef": "turn_b8c148597b",
+        "source": "turn",
+        "title": "web ui interactive",
+        "status": "failed validation",
+        "updatedAt": "2026-04-12T08:43:09.779Z"
+      },
+      "coverageRegressed": true,
+      "nextCoverageAction": "obtain governed passing evidence for this family"
+    },
+    {
+      "familyId": "planning",
+      "label": "Planning",
+      "stableCovered": true,
+      "stabilityStatus": "stable",
+      "stabilityWindowSize": 3,
+      "recentWindowScores": [
+        1,
+        1,
+        1
+      ],
+      "recentWindowOutcomes": [
+        "pass",
+        "pass",
+        "pass"
+      ],
+      "observationCount": 3,
+      "recentSuccessRate": 1,
+      "recentFailureBurden": 0,
       "verifierBurden": 6,
       "lastSuccessfulTask": {
         "publicRef": "<task-ref>",
         "source": "continuity",
-        "title": "Analysis structured output",
+        "title": "Simple planning task falls back to single agent path",
         "status": "completed",
-        "updatedAt": "2026-04-12T02:15:04.056Z"
+        "updatedAt": "2026-04-12T08:33:37.531Z"
       },
       "lastFailedTask": {
         "publicRef": "<task-ref>",
@@ -112,8 +112,8 @@
         "status": "verifier failed",
         "updatedAt": "2026-04-12T02:15:05.899Z"
       },
-      "coverageRegressed": true,
-      "nextCoverageAction": "obtain governed passing evidence for this family"
+      "coverageRegressed": false,
+      "nextCoverageAction": "maintain current evidence quality"
     },
     {
       "familyId": "workflow_execution",
@@ -155,22 +155,22 @@
     {
       "familyId": "evaluation_review",
       "label": "Evaluation / Review",
-      "stableCovered": true,
-      "stabilityStatus": "stable",
+      "stableCovered": false,
+      "stabilityStatus": "failing only",
       "stabilityWindowSize": 3,
       "recentWindowScores": [
-        1,
-        1,
-        1
+        0.25,
+        0.25,
+        0.25
       ],
       "recentWindowOutcomes": [
-        "pass",
-        "pass",
-        "pass"
+        "fail",
+        "fail",
+        "fail"
       ],
       "observationCount": 3,
-      "recentSuccessRate": 1,
-      "recentFailureBurden": 0,
+      "recentSuccessRate": 0,
+      "recentFailureBurden": 3,
       "verifierBurden": 0,
       "lastSuccessfulTask": {
         "publicRef": "<eval-ref>",
@@ -179,29 +179,35 @@
         "status": "observed",
         "updatedAt": "2026-04-05T20:00:19.746Z"
       },
-      "lastFailedTask": null,
-      "coverageRegressed": false,
-      "nextCoverageAction": "maintain current evidence quality"
+      "lastFailedTask": {
+        "publicRef": "turn_cb39e047a7",
+        "source": "turn",
+        "title": "web ui interactive",
+        "status": "failed validation",
+        "updatedAt": "2026-04-12T08:39:41.873Z"
+      },
+      "coverageRegressed": true,
+      "nextCoverageAction": "obtain governed passing evidence for this family"
     },
     {
       "familyId": "tool_use_browser_like",
       "label": "Tool Use / Browser-like",
       "stableCovered": false,
-      "stabilityStatus": "unstable",
+      "stabilityStatus": "failing only",
       "stabilityWindowSize": 3,
       "recentWindowScores": [
-        1,
-        1,
+        0.25,
+        0.25,
         0.25
       ],
       "recentWindowOutcomes": [
-        "pass",
-        "pass",
+        "fail",
+        "fail",
         "fail"
       ],
       "observationCount": 3,
-      "recentSuccessRate": 0.6667,
-      "recentFailureBurden": 1,
+      "recentSuccessRate": 0,
+      "recentFailureBurden": 3,
       "verifierBurden": 0,
       "lastSuccessfulTask": {
         "publicRef": "<task-ref>",
@@ -211,14 +217,14 @@
         "updatedAt": "2026-04-12T02:15:04.933Z"
       },
       "lastFailedTask": {
-        "publicRef": "turn_7167ce41f2",
+        "publicRef": "turn_b8c148597b",
         "source": "turn",
         "title": "web ui interactive",
         "status": "failed validation",
-        "updatedAt": "2026-04-12T02:47:14.545Z"
+        "updatedAt": "2026-04-12T08:43:09.779Z"
       },
       "coverageRegressed": true,
-      "nextCoverageAction": "reduce failure burden and verifier debt in recent windows"
+      "nextCoverageAction": "obtain governed passing evidence for this family"
     }
   ]
 }

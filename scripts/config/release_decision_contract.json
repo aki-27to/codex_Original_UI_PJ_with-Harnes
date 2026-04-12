@@ -1,7 +1,21 @@
 {
   "schema": "release-decision-contract.v1",
-  "version": "2026-03-08.r1",
+  "version": "2026-04-12.r1",
   "artifactName": "ReleaseDecision",
+  "decisionScope": "release_readiness_and_whole_harness_completion_only",
+  "defaultBlockingAuthority": false,
+  "blockingAuthorityActivation": {
+    "requiresExplicitUserRequest": true,
+    "explicitRequestScopes": [
+      "release",
+      "readiness",
+      "whole_harness_completion"
+    ],
+    "ordinaryTaskCompletion": {
+      "blockedByReleaseDecisionByDefault": false,
+      "releaseDecisionIsSeparateScope": true
+    }
+  },
   "requiredFields": [
     "terminal_state",
     "rationale",

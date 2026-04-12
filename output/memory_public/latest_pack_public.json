@@ -1,23 +1,24 @@
 {
   "schema": "governed-memory-latest-pack-public.v1",
-  "generatedAt": "2026-04-12T02:52:33.434Z",
+  "generatedAt": "2026-04-12T08:44:27.146Z",
   "workspaceId": "5c839dfeef8b555f",
-  "packId": "608914dc63bc02fe4f64",
+  "packId": "39edb22dba0001c01153",
   "latestPack": {
-    "generatedAt": "2026-04-12T02:52:32.093Z",
-    "compiledAt": "2026-04-12T02:52:32.093Z",
-    "activeAgent": "intake",
-    "taskFamily": "smoke-http-exec",
-    "selectedCount": 11,
-    "highConfidenceCount": 2,
-    "reusedSelectedCount": 11,
+    "generatedAt": "2026-04-12T08:44:25.722Z",
+    "compiledAt": "2026-04-12T08:44:25.722Z",
+    "activeAgent": "default",
+    "taskFamily": "web_creative",
+    "selectedCount": 13,
+    "highConfidenceCount": 3,
+    "reusedSelectedCount": 13,
     "explicitTaskFamilyMismatchCount": 0,
     "sectionCounts": {
       "workspace_progress": 1,
       "intent": 1,
       "spec": 4,
-      "experience": 2,
-      "semantic": 3
+      "semantic": 3,
+      "experience": 3,
+      "improvement": 1
     },
     "selectedItems": [
       {
@@ -30,7 +31,7 @@
         "authorityTier": 3,
         "scopeWorkspace": "5c839dfeef8b555f",
         "taskFamilies": [
-          "smoke-http-exec"
+          "web_creative"
         ],
         "summary": "Durable workspace-scoped progress state compiled from the latest turn, evidence traceability, and execution history."
       },
@@ -44,7 +45,7 @@
         "authorityTier": 1,
         "scopeWorkspace": "5c839dfeef8b555f",
         "taskFamilies": [
-          "smoke-http-exec"
+          "web_creative"
         ],
         "summary": "Active intent-first requirement state for the current workspace and turn."
       },
@@ -52,8 +53,8 @@
         "publicRef": "mem_52f4ed9143",
         "type": "constitution_ref",
         "status": "promoted",
-        "score": 0.6775,
-        "scoreBand": "selected",
+        "score": 0.6975,
+        "scoreBand": "high",
         "sourceTier": "repo",
         "authorityTier": 0,
         "scopeWorkspace": "5c839dfeef8b555f",
@@ -63,40 +64,10 @@
         "summary": "Requirement Foundation V1 is frozen and treated as a top-level invariant, not a mutable lesson."
       },
       {
-        "publicRef": "mem_46618c22f3",
-        "type": "episodic_event",
-        "status": "captured",
-        "score": 0.6408,
-        "scoreBand": "selected",
-        "sourceTier": "runtime",
-        "authorityTier": 4,
-        "scopeWorkspace": "5c839dfeef8b555f",
-        "taskFamilies": [
-          "smoke-http-exec",
-          "smoke_test"
-        ],
-        "summary": "runtime episode finished as CAPTURED."
-      },
-      {
-        "publicRef": "mem_06ab676347",
-        "type": "episodic_event",
-        "status": "captured",
-        "score": 0.6408,
-        "scoreBand": "selected",
-        "sourceTier": "runtime",
-        "authorityTier": 4,
-        "scopeWorkspace": "5c839dfeef8b555f",
-        "taskFamilies": [
-          "smoke-http-exec",
-          "smoke_test"
-        ],
-        "summary": "runtime episode finished as CAPTURED."
-      },
-      {
         "publicRef": "mem_e65f4ce9a0",
         "type": "constitution_ref",
         "status": "promoted",
-        "score": 0.6309,
+        "score": 0.6301,
         "scoreBand": "selected",
         "sourceTier": "repo",
         "authorityTier": 0,
@@ -108,7 +79,7 @@
         "publicRef": "mem_ad36640985",
         "type": "constitution_ref",
         "status": "promoted",
-        "score": 0.6309,
+        "score": 0.6301,
         "scoreBand": "selected",
         "sourceTier": "repo",
         "authorityTier": 0,
@@ -120,7 +91,7 @@
         "publicRef": "mem_b5d199f8aa",
         "type": "constitution_ref",
         "status": "promoted",
-        "score": 0.6309,
+        "score": 0.6301,
         "scoreBand": "selected",
         "sourceTier": "repo",
         "authorityTier": 0,
@@ -129,46 +100,95 @@
         "summary": "context-memory-policy"
       },
       {
-        "publicRef": "mem_b8952a3890",
-        "type": "failure_pattern",
+        "publicRef": "mem_8c8a302df5",
+        "type": "semantic_lesson",
         "status": "promoted",
-        "score": 0.5767,
+        "score": 0.6242,
         "scoreBand": "selected",
-        "sourceTier": "runtime",
+        "sourceTier": "external_primary",
         "authorityTier": 5,
         "scopeWorkspace": "5c839dfeef8b555f",
         "taskFamilies": [
-          "default"
+          "web_creative"
         ],
-        "summary": "completed default"
+        "summary": "How Perplexity Brought Voice Search to Millions Using the Realtime API | OpenAI Developers"
       },
       {
-        "publicRef": "mem_38e064a6a2",
-        "type": "failure_pattern",
+        "publicRef": "mem_2b55e90fab",
+        "type": "semantic_lesson",
         "status": "promoted",
-        "score": 0.5767,
+        "score": 0.6242,
         "scoreBand": "selected",
-        "sourceTier": "runtime",
+        "sourceTier": "external_primary",
         "authorityTier": 5,
         "scopeWorkspace": "5c839dfeef8b555f",
         "taskFamilies": [
-          "default"
+          "web_creative"
         ],
-        "summary": "parent dispatch guard block"
+        "summary": "Designing delightful frontends with GPT-5.4 | OpenAI Developers"
       },
       {
-        "publicRef": "mem_1ce008bc40",
-        "type": "failure_pattern",
+        "publicRef": "mem_2b5b766ebf",
+        "type": "semantic_lesson",
         "status": "promoted",
-        "score": 0.5767,
+        "score": 0.6242,
         "scoreBand": "selected",
-        "sourceTier": "runtime",
+        "sourceTier": "external_primary",
         "authorityTier": 5,
         "scopeWorkspace": "5c839dfeef8b555f",
         "taskFamilies": [
-          "default"
+          "web_creative"
         ],
-        "summary": "missing required evidence"
+        "summary": "From prompts to products: One year of Responses | OpenAI Developers"
+      },
+      {
+        "publicRef": "mem_02306146e0",
+        "type": "episodic_event",
+        "status": "captured",
+        "score": 0.6008,
+        "scoreBand": "selected",
+        "sourceTier": "runtime",
+        "authorityTier": 4,
+        "scopeWorkspace": "5c839dfeef8b555f",
+        "taskFamilies": [
+          "web_creative",
+          "tool_use_browser_like",
+          "workflow_execution"
+        ],
+        "summary": "runtime episode finished as CAPTURED."
+      },
+      {
+        "publicRef": "mem_8974742c20",
+        "type": "episodic_event",
+        "status": "captured",
+        "score": 0.6008,
+        "scoreBand": "selected",
+        "sourceTier": "runtime",
+        "authorityTier": 4,
+        "scopeWorkspace": "5c839dfeef8b555f",
+        "taskFamilies": [
+          "web_creative",
+          "tool_use_browser_like",
+          "workflow_execution"
+        ],
+        "summary": "runtime episode finished as CAPTURED."
+      },
+      {
+        "publicRef": "mem_0c6a6c8415",
+        "type": "episodic_event",
+        "status": "captured",
+        "score": 0.6008,
+        "scoreBand": "selected",
+        "sourceTier": "runtime",
+        "authorityTier": 4,
+        "scopeWorkspace": "5c839dfeef8b555f",
+        "taskFamilies": [
+          "web_creative",
+          "tool_use_browser_like",
+          "workflow_execution",
+          "evaluation_review"
+        ],
+        "summary": "runtime episode finished as CAPTURED."
       }
     ]
   }

@@ -1,9 +1,12 @@
 const assert = (await import("node:assert/strict")).default;
 const fs = (await import("node:fs")).default;
 const path = (await import("node:path")).default;
+const { createRequire } = await import("node:module");
 const { fileURLToPath } = await import("node:url");
 
 const workspaceRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
+const require = createRequire(import.meta.url);
+const { resolveServerImplementationPath } = require("./lib/server_source_path.js");
 
 function read(relPath) {
   return fs.readFileSync(path.join(workspaceRoot, relPath), "utf8");
@@ -11,7 +14,8 @@ function read(relPath) {
 
 const app = read(path.join("web", "01.HarnesUI", "app.js"));
 const html = read(path.join("web", "01.HarnesUI", "index.html"));
-const server = read("server.js");
+const { implementationPath: serverPath } = resolveServerImplementationPath(workspaceRoot);
+const server = fs.readFileSync(serverPath, "utf8");
 const launcher = read("start_codex_ui.bat");
 
 assert.ok(server.includes('const fastModeDefault=parseBooleanEnv(fastModeDefaultEnvKey,false);'), "server FastMode default should be OFF");

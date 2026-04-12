@@ -1,6 +1,6 @@
 {
   "schema": "governed-memory-public-lane-projection.v1",
-  "generatedAt": "2026-04-12T02:52:33.403Z",
+  "generatedAt": "2026-04-12T08:44:27.112Z",
   "laneKey": "anthropic_secondary",
   "sourceName": "Anthropic Engineering",
   "sourceTier": "external_secondary",
@@ -66,7 +66,7 @@
   "recentAdvisoryEffects": [],
   "recentLessons": [
     {
-      "publicRef": "mem_3c9d327d49",
+      "publicRef": "mem_4acec95483",
       "status": "shadow",
       "summary": "Quantifying infrastructure noise in agentic coding evals",
       "topics": [
@@ -75,7 +75,7 @@
       ]
     },
     {
-      "publicRef": "mem_9d28a24299",
+      "publicRef": "mem_0445d07a6b",
       "status": "shadow",
       "summary": "Scaling Managed Agents: Decoupling the brain from the hands",
       "topics": [
@@ -84,7 +84,7 @@
       ]
     },
     {
-      "publicRef": "mem_04607dfd77",
+      "publicRef": "mem_d1c0e2cd48",
       "status": "shadow",
       "summary": "Harness design for long-running application development",
       "topics": [
@@ -93,7 +93,7 @@
       ]
     },
     {
-      "publicRef": "mem_0cc563c755",
+      "publicRef": "mem_9529f4c95b",
       "status": "shadow",
       "summary": "Designing AI resistant technical evaluations",
       "topics": [

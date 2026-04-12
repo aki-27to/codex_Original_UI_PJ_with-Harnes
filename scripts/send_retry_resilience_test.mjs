@@ -1,16 +1,24 @@
 const assert = await import("node:assert/strict");
 const fs = await import("node:fs/promises");
+const { createRequire } = await import("node:module");
+const path = await import("node:path");
+const { fileURLToPath } = await import("node:url");
 const vm = await import("node:vm");
+const require = createRequire(import.meta.url);
+const { resolveServerImplementationPath } = require("./lib/server_source_path.js");
 
 const appPath = new URL("./../web/01.HarnesUI/app.js", import.meta.url);
 const indexPath = new URL("./../web/01.HarnesUI/index.html", import.meta.url);
-const serverPath = new URL("./../server.js", import.meta.url);
 const launcherPath = new URL("./../start_codex_ui.bat", import.meta.url);
+const workspaceRoot = fileURLToPath(new URL("./..", import.meta.url));
+const { implementationPath: serverPath } = resolveServerImplementationPath(workspaceRoot);
+const bootstrapPath = path.join(workspaceRoot, "server", "bootstrap.js");
 
-const [appSource, indexSource, serverSource, launcherSource] = await Promise.all([
+const [appSource, indexSource, serverSource, bootstrapSource, launcherSource] = await Promise.all([
   fs.readFile(appPath, "utf8"),
   fs.readFile(indexPath, "utf8"),
   fs.readFile(serverPath, "utf8"),
+  fs.readFile(bootstrapPath, "utf8"),
   fs.readFile(launcherPath, "utf8"),
 ]);
 
@@ -26,8 +34,8 @@ assert.match(indexSource, /<input id="fastModeEnabled" type="checkbox">/, "Fast 
 
 assert.match(serverSource, /const fastModeDefault=parseBooleanEnv\(fastModeDefaultEnvKey,false\);/, "server fast-mode default should be off");
 assert.match(serverSource, /activeExecRequests:getActiveExecRequestCount\(\)/, "runtime should expose active exec request counts");
-assert.match(serverSource, /function isBrokenPipeLikeError\(error\)\{/, "server should define a broken-pipe classifier");
-assert.match(serverSource, /logOperation\("server\.broken_pipe_ignored"/, "server should ignore broken-pipe fatal events");
+assert.match(bootstrapSource, /function isBrokenPipeLikeError\(error\)\s*\{/, "server bootstrap should define a broken-pipe classifier");
+assert.match(bootstrapSource, /logOperation\("server\.broken_pipe_ignored"/, "server bootstrap should ignore broken-pipe fatal events");
 
 assert.match(launcherSource, /if "%CODEX_FAST_MODE_DEFAULT%"=="" set "CODEX_FAST_MODE_DEFAULT=0"/, "launcher fast-mode default should be off");
 assert.match(launcherSource, /if "%CODEX_RESTART_EXISTING_HARNESS%"=="" set "CODEX_RESTART_EXISTING_HARNESS=0"/, "launcher should default to reusing an existing harness");

@@ -1,49 +1,50 @@
 {
   "schema": "agi-readiness-robustness-breakdown.v1",
-  "generatedAt": "2026-04-12T02:52:33.225Z",
+  "generatedAt": "2026-04-12T08:44:26.942Z",
   "workspaceId": "5c839dfeef8b555f",
   "categories": [
     {
       "categoryId": "browser_tool_flakiness",
       "label": "Browser/tool flakiness handling",
-      "score": 0.703125,
-      "evidenceCount": 48,
-      "successCount": 29,
-      "failureCount": 19,
+      "score": 0.418367,
+      "evidenceCount": 49,
+      "successCount": 11,
+      "failureCount": 38,
       "status": "observed",
       "recentEvidence": [
         {
-          "publicRef": "turn_cad5dc79d7",
-          "summary": "completed default"
+          "publicRef": "turn_b8c148597b",
+          "summary": "silent requirement rewrite"
         },
         {
-          "publicRef": "turn_c67478260d",
-          "summary": "completed default"
-        },
-        {
-          "publicRef": "turn_7167ce41f2",
-          "summary": "missing required evidence"
-        },
-        {
-          "publicRef": "turn_4bc79e39d8",
+          "publicRef": "turn_168f59ff04",
           "summary": "parent dispatch guard block"
         },
         {
-          "publicRef": "turn_faf31d75b0",
-          "summary": "completed default"
+          "publicRef": "turn_cb39e047a7",
+          "summary": "system coherence review missing"
         },
         {
-          "publicRef": "turn_dad92e01d2",
-          "summary": "completed default"
+          "publicRef": "turn_eb5edcc467",
+          "summary": "system coherence review missing"
+        },
+        {
+          "publicRef": "turn_b4419c34b9",
+          "summary": "system coherence review missing"
+        },
+        {
+          "publicRef": "turn_2d0b326a12",
+          "summary": "system coherence review missing"
         }
       ],
       "sourceFamilies": [
         "web_creative",
         "tool_use_browser_like",
-        "workflow_execution"
+        "workflow_execution",
+        "evaluation_review"
       ],
       "remediationStatus": "running",
-      "lastRemediationAt": "2026-04-12T02:52:33.556Z",
+      "lastRemediationAt": "2026-04-12T08:44:27.292Z",
       "lastImprovementDelta": 0,
       "openFailureModes": [
         "retry budget exceeded without safe abort",
@@ -89,7 +90,7 @@
         "evaluation_review"
       ],
       "remediationStatus": "passed",
-      "lastRemediationAt": "2026-04-12T02:52:33.556Z",
+      "lastRemediationAt": "2026-04-12T08:44:27.291Z",
       "lastImprovementDelta": 0,
       "openFailureModes": [
         "ambiguity not detected",

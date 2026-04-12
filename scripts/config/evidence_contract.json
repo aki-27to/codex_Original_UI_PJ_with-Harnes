@@ -1,6 +1,6 @@
 {
   "schema": "evidence-contract.v2",
-  "version": "2026-04-11.r1",
+  "version": "2026-04-12.r2",
   "sourceDoc": "docs/EVIDENCE_CONTRACT.md",
   "evidenceClasses": {
     "implementation": [
@@ -40,7 +40,8 @@
       "node scripts/app_server_smoke_test.js"
     ],
     "eval_or_workflow_policy_change": [
-      "node scripts/eval_replay_api_smoke_test.js"
+      "node scripts/eval_replay_api_smoke_test.js",
+      "dedicated_automated_tests"
     ],
     "core_system_change": [
       "node scripts/system_coherence_review_test.js"

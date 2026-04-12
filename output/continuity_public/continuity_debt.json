@@ -1,6 +1,6 @@
 {
   "schema": "continuity-debt-projection.v1",
-  "generatedAt": "2026-04-12T02:52:33.401Z",
+  "generatedAt": "2026-04-12T08:44:27.110Z",
   "workspaceId": "5c839dfeef8b555f",
   "items": [
     {
@@ -32,7 +32,7 @@
       "linkedVerifierRef": "logs/archive/raw/runtime_state/continuity/tasks/long-duration-c-<opaque-id>/verifier_state.json",
       "closeoutBlockedReason": "not_yet_integrated",
       "publicSummary": "coordinator must rerun verifier after governed remediation evidence is captured",
-      "replacementEvidenceCount": 281,
+      "replacementEvidenceCount": 301,
       "taskFamily": "planning",
       "updatedAt": "2026-04-12T02:15:05.899Z"
     },
@@ -65,7 +65,7 @@
       "linkedVerifierRef": "logs/archive/raw/runtime_state/continuity/tasks/long-duration-b-<opaque-id>/verifier_state.json",
       "closeoutBlockedReason": "not_yet_integrated",
       "publicSummary": "coordinator must rerun verifier after governed remediation evidence is captured",
-      "replacementEvidenceCount": 281,
+      "replacementEvidenceCount": 301,
       "taskFamily": "planning",
       "updatedAt": "2026-04-12T02:15:05.768Z"
     },
@@ -197,7 +197,7 @@
       "linkedVerifierRef": "logs/archive/raw/runtime_state/continuity/tasks/ow-public-research-market-brief-<opaque-id>/verifier_state.json",
       "closeoutBlockedReason": "not_yet_integrated",
       "publicSummary": "coordinator must rerun verifier after governed remediation evidence is captured",
-      "replacementEvidenceCount": 281,
+      "replacementEvidenceCount": 301,
       "taskFamily": "planning",
       "updatedAt": "2026-04-12T02:15:05.376Z"
     },
@@ -230,7 +230,7 @@
       "linkedVerifierRef": "logs/archive/raw/runtime_state/continuity/tasks/ow-public-coding-release-triage-<opaque-id>/verifier_state.json",
       "closeoutBlockedReason": "not_yet_integrated",
       "publicSummary": "coordinator must rerun verifier after governed remediation evidence is captured",
-      "replacementEvidenceCount": 290,
+      "replacementEvidenceCount": 306,
       "taskFamily": "deterministic_code",
       "updatedAt": "2026-04-12T02:15:05.336Z"
     },
@@ -263,7 +263,7 @@
       "linkedVerifierRef": "logs/archive/raw/runtime_state/continuity/tasks/phase2-long-horizon-<opaque-id>-false-completion/verifier_state.json",
       "closeoutBlockedReason": "auto_closed_superseded",
       "publicSummary": "coordinator debt auto-closed after governed replacement evidence",
-      "replacementEvidenceCount": 290,
+      "replacementEvidenceCount": 306,
       "taskFamily": "deterministic_code",
       "updatedAt": "2026-03-31T22:26:01.160Z"
     },
@@ -296,7 +296,7 @@
       "linkedVerifierRef": "logs/archive/raw/runtime_state/continuity/tasks/phase2-long-horizon-<opaque-id>-false-completion/verifier_state.json",
       "closeoutBlockedReason": "auto_closed_superseded",
       "publicSummary": "coordinator debt auto-closed after governed replacement evidence",
-      "replacementEvidenceCount": 290,
+      "replacementEvidenceCount": 306,
       "taskFamily": "deterministic_code",
       "updatedAt": "2026-03-31T22:25:42.837Z"
     },
@@ -329,7 +329,7 @@
       "linkedVerifierRef": "logs/archive/raw/runtime_state/continuity/tasks/phase4-denied-<opaque-id>/verifier_state.json",
       "closeoutBlockedReason": "auto_closed_superseded",
       "publicSummary": "coordinator debt auto-closed after governed replacement evidence",
-      "replacementEvidenceCount": 290,
+      "replacementEvidenceCount": 306,
       "taskFamily": "deterministic_code",
       "updatedAt": "2026-03-31T22:25:29.976Z"
     },
@@ -362,7 +362,7 @@
       "linkedVerifierRef": "logs/archive/raw/runtime_state/continuity/tasks/phase4-failure-<opaque-id>-verifier-<opaque-id>/verifier_state.json",
       "closeoutBlockedReason": "auto_closed_root_integrated",
       "publicSummary": "verifier debt auto-closed after governed replacement evidence",
-      "replacementEvidenceCount": 290,
+      "replacementEvidenceCount": 306,
       "taskFamily": "deterministic_code",
       "updatedAt": "2026-03-31T22:25:29.818Z"
     },
@@ -395,7 +395,7 @@
       "linkedVerifierRef": "logs/archive/raw/runtime_state/continuity/tasks/phase2-long-horizon-<opaque-id>-false-completion/verifier_state.json",
       "closeoutBlockedReason": "auto_closed_superseded",
       "publicSummary": "coordinator debt auto-closed after governed replacement evidence",
-      "replacementEvidenceCount": 290,
+      "replacementEvidenceCount": 306,
       "taskFamily": "deterministic_code",
       "updatedAt": "2026-03-31T22:25:26.352Z"
     },
@@ -428,7 +428,7 @@
       "linkedVerifierRef": "logs/archive/raw/runtime_state/continuity/tasks/phase2-long-horizon-<opaque-id>-false-completion/verifier_state.json",
       "closeoutBlockedReason": "auto_closed_superseded",
       "publicSummary": "coordinator debt auto-closed after governed replacement evidence",
-      "replacementEvidenceCount": 290,
+      "replacementEvidenceCount": 306,
       "taskFamily": "deterministic_code",
       "updatedAt": "2026-03-31T22:25:08.476Z"
     },
@@ -461,7 +461,7 @@
       "linkedVerifierRef": "logs/archive/raw/runtime_state/continuity/tasks/phase2-long-horizon-<opaque-id>-false-completion/verifier_state.json",
       "closeoutBlockedReason": "auto_closed_superseded",
       "publicSummary": "coordinator debt auto-closed after governed replacement evidence",
-      "replacementEvidenceCount": 290,
+      "replacementEvidenceCount": 306,
       "taskFamily": "deterministic_code",
       "updatedAt": "2026-03-31T22:24:51.741Z"
     },
@@ -494,7 +494,7 @@
       "linkedVerifierRef": "logs/archive/raw/runtime_state/continuity/tasks/phase2-long-horizon-<opaque-id>-false-completion/verifier_state.json",
       "closeoutBlockedReason": "auto_closed_superseded",
       "publicSummary": "coordinator debt auto-closed after governed replacement evidence",
-      "replacementEvidenceCount": 290,
+      "replacementEvidenceCount": 306,
       "taskFamily": "deterministic_code",
       "updatedAt": "2026-03-31T22:24:34.141Z"
     },
@@ -527,7 +527,7 @@
       "linkedVerifierRef": "logs/archive/raw/runtime_state/continuity/tasks/phase4-denied-<opaque-id>/verifier_state.json",
       "closeoutBlockedReason": "auto_closed_superseded",
       "publicSummary": "coordinator debt auto-closed after governed replacement evidence",
-      "replacementEvidenceCount": 290,
+      "replacementEvidenceCount": 306,
       "taskFamily": "deterministic_code",
       "updatedAt": "2026-03-31T22:24:21.797Z"
     },
@@ -560,7 +560,7 @@
       "linkedVerifierRef": "logs/archive/raw/runtime_state/continuity/tasks/phase4-failure-<opaque-id>-verifier-<opaque-id>/verifier_state.json",
       "closeoutBlockedReason": "auto_closed_root_integrated",
       "publicSummary": "verifier debt auto-closed after governed replacement evidence",
-      "replacementEvidenceCount": 290,
+      "replacementEvidenceCount": 306,
       "taskFamily": "deterministic_code",
       "updatedAt": "2026-03-31T22:24:21.682Z"
     },
@@ -593,7 +593,7 @@
       "linkedVerifierRef": "logs/archive/raw/runtime_state/continuity/tasks/phase2-long-horizon-<opaque-id>-false-completion/verifier_state.json",
       "closeoutBlockedReason": "auto_closed_superseded",
       "publicSummary": "coordinator debt auto-closed after governed replacement evidence",
-      "replacementEvidenceCount": 290,
+      "replacementEvidenceCount": 306,
       "taskFamily": "deterministic_code",
       "updatedAt": "2026-03-31T22:24:18.365Z"
     },
@@ -626,7 +626,7 @@
       "linkedVerifierRef": "logs/archive/raw/runtime_state/continuity/tasks/phase2-long-horizon-<opaque-id>-false-completion/verifier_state.json",
       "closeoutBlockedReason": "auto_closed_superseded",
       "publicSummary": "coordinator debt auto-closed after governed replacement evidence",
-      "replacementEvidenceCount": 290,
+      "replacementEvidenceCount": 306,
       "taskFamily": "deterministic_code",
       "updatedAt": "2026-03-31T22:24:01.051Z"
     },
@@ -659,7 +659,7 @@
       "linkedVerifierRef": "logs/archive/raw/runtime_state/continuity/tasks/long-duration-c-<opaque-id>/verifier_state.json",
       "closeoutBlockedReason": "auto_closed_superseded",
       "publicSummary": "coordinator debt auto-closed after governed replacement evidence",
-      "replacementEvidenceCount": 281,
+      "replacementEvidenceCount": 301,
       "taskFamily": "planning",
       "updatedAt": "2026-03-31T22:23:48.966Z"
     },
@@ -692,7 +692,7 @@
       "linkedVerifierRef": "logs/archive/raw/runtime_state/continuity/tasks/long-duration-b-<opaque-id>/verifier_state.json",
       "closeoutBlockedReason": "auto_closed_superseded",
       "publicSummary": "coordinator debt auto-closed after governed replacement evidence",
-      "replacementEvidenceCount": 281,
+      "replacementEvidenceCount": 301,
       "taskFamily": "planning",
       "updatedAt": "2026-03-31T22:23:48.894Z"
     },
@@ -725,7 +725,7 @@
       "linkedVerifierRef": "logs/archive/raw/runtime_state/continuity/tasks/long-duration-c-<opaque-id>/verifier_state.json",
       "closeoutBlockedReason": "auto_closed_superseded",
       "publicSummary": "coordinator debt auto-closed after governed replacement evidence",
-      "replacementEvidenceCount": 281,
+      "replacementEvidenceCount": 301,
       "taskFamily": "planning",
       "updatedAt": "2026-03-31T22:23:48.872Z"
     },
@@ -791,7 +791,7 @@
       "linkedVerifierRef": "logs/archive/raw/runtime_state/continuity/tasks/long-duration-b-<opaque-id>/verifier_state.json",
       "closeoutBlockedReason": "auto_closed_superseded",
       "publicSummary": "coordinator debt auto-closed after governed replacement evidence",
-      "replacementEvidenceCount": 281,
+      "replacementEvidenceCount": 301,
       "taskFamily": "planning",
       "updatedAt": "2026-03-31T22:23:48.801Z"
     },
@@ -923,7 +923,7 @@
       "linkedVerifierRef": "logs/archive/raw/runtime_state/continuity/tasks/ow-public-research-market-brief-<opaque-id>/verifier_state.json",
       "closeoutBlockedReason": "auto_closed_superseded",
       "publicSummary": "coordinator debt auto-closed after governed replacement evidence",
-      "replacementEvidenceCount": 281,
+      "replacementEvidenceCount": 301,
       "taskFamily": "planning",
       "updatedAt": "2026-03-31T22:23:48.688Z"
     },
@@ -989,7 +989,7 @@
       "linkedVerifierRef": "logs/archive/raw/runtime_state/continuity/tasks/ow-public-coding-release-triage-<opaque-id>/verifier_state.json",
       "closeoutBlockedReason": "auto_closed_superseded",
       "publicSummary": "coordinator debt auto-closed after governed replacement evidence",
-      "replacementEvidenceCount": 290,
+      "replacementEvidenceCount": 306,
       "taskFamily": "deterministic_code",
       "updatedAt": "2026-03-31T22:23:48.668Z"
     },
@@ -1055,7 +1055,7 @@
       "linkedVerifierRef": "logs/archive/raw/runtime_state/continuity/tasks/ow-public-research-market-brief-<opaque-id>/verifier_state.json",
       "closeoutBlockedReason": "auto_closed_superseded",
       "publicSummary": "coordinator debt auto-closed after governed replacement evidence",
-      "replacementEvidenceCount": 281,
+      "replacementEvidenceCount": 301,
       "taskFamily": "planning",
       "updatedAt": "2026-03-31T22:23:48.601Z"
     },
@@ -1088,7 +1088,7 @@
       "linkedVerifierRef": "logs/archive/raw/runtime_state/continuity/tasks/ow-public-coding-release-triage-<opaque-id>/verifier_state.json",
       "closeoutBlockedReason": "auto_closed_superseded",
       "publicSummary": "coordinator debt auto-closed after governed replacement evidence",
-      "replacementEvidenceCount": 290,
+      "replacementEvidenceCount": 306,
       "taskFamily": "deterministic_code",
       "updatedAt": "2026-03-31T22:23:48.581Z"
     }

@@ -4,6 +4,7 @@
 const assert = require("assert");
 const fs = require("fs");
 const path = require("path");
+const { resolveServerImplementationPath } = require("./lib/server_source_path");
 const {
   loadAuthorityRegistry,
 } = require("./lib/authority_registry");
@@ -40,6 +41,12 @@ const workspaceRoot = path.resolve(__dirname, "..");
 
 function read(relativePath) {
   return fs.readFileSync(path.join(workspaceRoot, relativePath), "utf8");
+}
+
+const { implementationPath: serverImplementationPath } = resolveServerImplementationPath(workspaceRoot);
+
+function readServerImplementation() {
+  return fs.readFileSync(serverImplementationPath, "utf8");
 }
 
 function readJson(relativePath) {
@@ -197,14 +204,14 @@ async function main() {
   });
 
   await runCheck("server routes preserve execution and evaluation primary paths", async () => {
-    const serverText = read("server.js");
+    const serverText = readServerImplementation();
     assert(serverText.includes('if(req.method==="POST"&&pathname==="/api/exec"){'), "server must expose POST /api/exec");
     assert(serverText.includes('if(req.method==="POST"&&pathname==="/api/eval/run"){'), "server must expose POST /api/eval/run");
     assert(serverText.includes("assertEvalLaneAccess"), "server must enforce configured eval lane access");
   });
 
   await runCheck("execution route block does not reference protected eval assets", async () => {
-    const serverText = read("server.js");
+    const serverText = readServerImplementation();
     const execBlock = routeBlock(serverText, 'if(req.method==="POST"&&pathname==="/api/exec"){');
     for (const forbiddenMarker of [
       "protected/holdout",

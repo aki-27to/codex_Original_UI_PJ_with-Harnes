@@ -53,6 +53,23 @@ node scripts/github_copilot_governance_surface_test.js
 - 古い互換別名: `output/agi_readiness/sovereign_goal_completion_status.json`
   - 互換用に残すだけで、いまの見出し語彙ではない
 
+### Residual completion semantics
+
+- `worker_decision_surface.json` stays headline-only. It is not replaced.
+- `worker_completion_status.json` is a first-class supplemental worker artifact. It binds the worker headline to background readiness debt without promoting program-readiness NOT_YET into the top-level task verdict.
+- `worker_completion_status.json` is trusted only when its background readiness inputs share the same `exportSessionId`; fail-closed evidence is exposed through `backgroundArtifactSessionConsistency` and `backgroundArtifactInputsTrusted`.
+- `goal_completion_status.json` and `subjective_goal_completion_status.json` expose `runningAgendaDecisionBasis`, and their `runningAgendaCount` consumes `autonomous_learning_status.json.gateDecisionCounts.running`, not the broader `currentRunningCount`.
+- `autonomous_learning_status.json` keeps the broader supporting counts (`currentRunningCount`) over non-`memory_eval` agenda entries and also exposes `gateDecisionCounts` plus `excludedMetaCompletionCounts` for the completion-gate subset.
+- `self_directed_probe_status.json` exposes `currentSnapshot`, `effectiveHistoryAware`, `requiredThresholds`, `meetsThresholds`, and `thresholdDecisionBasis`; its threshold consumer reads the history-aware effective counts, not the raw snapshot alone.
+- `novel_task_acquisition.json` exposes the same threshold-basis fields, but its threshold consumer is explicitly `current_snapshot_no_history_uplift`.
+
+### Task verdict vs program readiness
+
+- ordinary task completion keeps the task verdict primary through `worker_decision_surface.json`
+- `worker_completion_status.json` can carry non-blocking background debt, but it must keep `programReadinessBlockingWorkerStop = false` whenever the worker headline remains complete
+- program readiness becomes blocking only for explicit readiness / release / whole-harness completion asks
+- for ordinary task reporting, program readiness stays background telemetry instead of overriding the task verdict
+
 ## 3) 1 つのハーネスの中にある 4 つの面
 
 この repo は 1 つの統治付きハーネスの中に複数の面を持たせています。  
@@ -97,6 +114,17 @@ node scripts/github_copilot_governance_surface_test.js
 - reference architecture default: `portable_local`
 - stronger local ownership posture: `owner_local`
 - reviewed team posture: `reviewed_team`
+
+### Runtime server composition
+
+- external runtime entrypoint: `server.js`
+- implementation root: `server_impl.js`
+- request/bootstrap split: `server/request_handler.js`, `server/bootstrap.js`
+- explicit route families: `server/routes/{runtime,batch,eval,exec}_routes.js`
+- the runtime split is compatibility-first: public routes stay fixed, and unextracted paths continue to fall back through the existing implementation
+- current stage: route-family, bootstrap, and primary `exec` / `eval` service boundaries are extracted, while most remaining runtime/governance logic still lives in `server_impl.js`
+- `exec` / `eval` are now reviewer-visible at both the route-family boundary and the service boundary through `server/routes/{eval,exec}_routes.js` plus `server/services/{eval_service,exec_service}.js`
+- detailed route-to-service mapping and residual decomposition points live in `docs/SERVER_ARCHITECTURE_MAP.md`
 
 `portable_local` は「広く配れる形」を優先する既定姿勢です。  
 `owner_local` はローカル所有者の強い権限を含められますが、共通既定ではありません。  

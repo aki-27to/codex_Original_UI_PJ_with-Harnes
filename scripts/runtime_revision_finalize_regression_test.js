@@ -3,9 +3,10 @@
 
 const fs = require("fs");
 const path = require("path");
+const { resolveServerImplementationPath } = require("./lib/server_source_path");
 
 const workspaceRoot = path.resolve(__dirname, "..");
-const serverPath = path.join(workspaceRoot, "server.js");
+const { implementationPath: serverPath } = resolveServerImplementationPath(workspaceRoot);
 
 function assert(condition, message) {
   if (!condition) {

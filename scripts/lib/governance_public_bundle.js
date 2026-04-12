@@ -16,6 +16,9 @@ const {
   buildWorkerDecisionSurface,
 } = require("./worker_decision_surface");
 const {
+  buildWorkerCompletionStatus,
+} = require("./worker_completion_status");
+const {
   loadHarnessPlaneContract,
   summarizeHarnessPlaneContract,
 } = require("./harness_plane_contract");
@@ -90,6 +93,36 @@ function ensureDir(targetDir) {
 function readJson(filePath) {
   const raw = fs.readFileSync(filePath, "utf8");
   return raw ? JSON.parse(raw) : null;
+}
+
+function readJsonIfExists(filePath) {
+  if (!filePath || !fs.existsSync(filePath)) {
+    return {};
+  }
+  const payload = readJson(filePath);
+  return payload && typeof payload === "object" && !Array.isArray(payload) ? payload : {};
+}
+
+function readJsonIfExistsMatchingExportSession(filePath, expectedExportSessionId) {
+  const payload = readJsonIfExists(filePath);
+  const actualExportSessionId = safeString(payload && payload.exportSessionId, 120);
+  const normalizedPath = filePath ? repoRelative(filePath) : "";
+  if (!actualExportSessionId || !expectedExportSessionId || actualExportSessionId !== expectedExportSessionId) {
+    return {
+      payload: {},
+      actualExportSessionId,
+      path: normalizedPath,
+      trusted: false,
+      status: payload && Object.keys(payload).length > 0 ? "mismatched" : "missing",
+    };
+  }
+  return {
+    payload,
+    actualExportSessionId,
+    path: normalizedPath,
+    trusted: true,
+    status: "aligned",
+  };
 }
 
 function writeJson(filePath, value) {
@@ -319,6 +352,7 @@ function deriveSupplementalGovernanceArtifacts({
   exportedEvidenceRefs,
   adoptionReadinessContract,
   iterationControlContract,
+  backgroundReadinessArtifacts = null,
 }) {
   const acceptanceResults = buildAcceptanceResults(reviewBundle);
   const finalOutcome = {
@@ -417,11 +451,64 @@ function deriveSupplementalGovernanceArtifacts({
     ]),
     evidenceRefs: exportedEvidenceRefs,
   });
+  const goalBackground = backgroundReadinessArtifacts && typeof backgroundReadinessArtifacts === "object"
+    && backgroundReadinessArtifacts.goalCompletionStatus && typeof backgroundReadinessArtifacts.goalCompletionStatus === "object"
+      ? {
+        payload: backgroundReadinessArtifacts.goalCompletionStatus,
+        actualExportSessionId: safeString(backgroundReadinessArtifacts.goalCompletionStatus.exportSessionId, 120),
+        path: "output/agi_readiness/goal_completion_status.json",
+        trusted: safeString(backgroundReadinessArtifacts.goalCompletionStatus.exportSessionId, 120) === exportSessionId,
+        status: safeString(backgroundReadinessArtifacts.goalCompletionStatus.exportSessionId, 120) === exportSessionId ? "aligned" : "mismatched",
+      }
+      : readJsonIfExistsMatchingExportSession(path.join(workspaceRoot, "output", "agi_readiness", "goal_completion_status.json"), exportSessionId);
+  const subjectiveBackground = backgroundReadinessArtifacts && typeof backgroundReadinessArtifacts === "object"
+    && backgroundReadinessArtifacts.subjectiveGoalCompletionStatus && typeof backgroundReadinessArtifacts.subjectiveGoalCompletionStatus === "object"
+      ? {
+        payload: backgroundReadinessArtifacts.subjectiveGoalCompletionStatus,
+        actualExportSessionId: safeString(backgroundReadinessArtifacts.subjectiveGoalCompletionStatus.exportSessionId, 120),
+        path: "output/agi_readiness/subjective_goal_completion_status.json",
+        trusted: safeString(backgroundReadinessArtifacts.subjectiveGoalCompletionStatus.exportSessionId, 120) === exportSessionId,
+        status: safeString(backgroundReadinessArtifacts.subjectiveGoalCompletionStatus.exportSessionId, 120) === exportSessionId ? "aligned" : "mismatched",
+      }
+      : readJsonIfExistsMatchingExportSession(path.join(workspaceRoot, "output", "agi_readiness", "subjective_goal_completion_status.json"), exportSessionId);
+  const compatibilityBackground = backgroundReadinessArtifacts && typeof backgroundReadinessArtifacts === "object"
+    && backgroundReadinessArtifacts.compatibilityCompletionStatus && typeof backgroundReadinessArtifacts.compatibilityCompletionStatus === "object"
+      ? {
+        payload: backgroundReadinessArtifacts.compatibilityCompletionStatus,
+        actualExportSessionId: safeString(backgroundReadinessArtifacts.compatibilityCompletionStatus.exportSessionId, 120),
+        path: "output/agi_readiness/compatibility_completion_status.json",
+        trusted: safeString(backgroundReadinessArtifacts.compatibilityCompletionStatus.exportSessionId, 120) === exportSessionId,
+        status: safeString(backgroundReadinessArtifacts.compatibilityCompletionStatus.exportSessionId, 120) === exportSessionId ? "aligned" : "mismatched",
+      }
+      : readJsonIfExistsMatchingExportSession(path.join(workspaceRoot, "output", "agi_readiness", "compatibility_completion_status.json"), exportSessionId);
+  const backgroundArtifactsTrusted = goalBackground.trusted && subjectiveBackground.trusted && compatibilityBackground.trusted;
+  const workerCompletionStatus = buildWorkerCompletionStatus({
+    workerDecisionSurface,
+    goalCompletionStatus: goalBackground.payload,
+    subjectiveGoalCompletionStatus: subjectiveBackground.payload,
+    compatibilityCompletionStatus: compatibilityBackground.payload,
+    exportSessionId,
+    headlineArtifactPath: "output/governance_public/worker_decision_surface.json",
+    backgroundArtifactSessionConsistency: backgroundArtifactsTrusted ? "aligned" : "missing_or_mismatched",
+    backgroundArtifactSessionIds: [
+      goalBackground.actualExportSessionId,
+      subjectiveBackground.actualExportSessionId,
+      compatibilityBackground.actualExportSessionId,
+    ],
+    backgroundArtifactInputsTrusted: backgroundArtifactsTrusted,
+    supportingArtifacts: [
+      "adoption_readiness_eval.json",
+      "iteration_decision.json",
+      "release_decision.json",
+      "review_bundle.json",
+    ],
+  });
   return {
     adoption_readiness_eval: adoptionReadinessEval,
     iteration_decision: iterationDecision,
     escalation_decision: escalationDecision,
     worker_decision_surface: workerDecisionSurface,
+    worker_completion_status: workerCompletionStatus,
   };
 }
 
@@ -434,6 +521,7 @@ function buildOverview({
   signoffSummary,
   exportedFiles,
   workerDecisionSurface,
+  workerCompletionStatus,
   harnessPlaneSummary,
 }) {
   return {
@@ -477,6 +565,16 @@ function buildOverview({
         adoptionReady: Number(workerDecisionSurface.adoptionReadiness) >= 0.8 ? 1 : 0,
       }
       : {},
+    workerCompletion: workerCompletionStatus && typeof workerCompletionStatus === "object"
+      ? {
+        scope: safeString(workerCompletionStatus.scope, 80) || "worker_completion",
+        exportSessionId: safeString(workerCompletionStatus.exportSessionId, 120),
+        workerGoalStatus: safeString(workerCompletionStatus.workerGoalStatus, 80),
+        decisionMeaning: safeString(workerCompletionStatus.decisionMeaning, 200),
+        programReadinessStatus: safeString(workerCompletionStatus.programReadinessStatus, 80),
+        activeLearningDebtOpen: Boolean(workerCompletionStatus.activeLearningDebtOpen),
+      }
+      : {},
     harnessIdentity: harnessPlaneSummary && harnessPlaneSummary.repoIdentity ? harnessPlaneSummary.repoIdentity : {},
     primaryRoutes: harnessPlaneSummary && harnessPlaneSummary.primaryRoutes ? harnessPlaneSummary.primaryRoutes : {},
     planes: harnessPlaneSummary && harnessPlaneSummary.planes ? harnessPlaneSummary.planes : {},
@@ -498,6 +596,7 @@ function buildOverviewMarkdown(overview, exportManifest) {
     `Assurance depth: \`${safeString(overview.selectedAssuranceDepth, 80)}\``,
     `Final decision: \`${safeString(overview.finalDecision, 80)}\``,
     `Worker outcome: \`${safeString(overview.workerDecision && overview.workerDecision.topLevelOutcome, 80) || "UNKNOWN"}\``,
+    `Worker completion: \`${safeString(overview.workerCompletion && overview.workerCompletion.workerGoalStatus, 80) || "UNKNOWN"}\``,
     `Operator action: \`${safeString(overview.workerDecision && overview.workerDecision.operatorAction, 80) || "UNKNOWN"}\``,
     `Harness identity: \`${safeString(overview.harnessIdentity && overview.harnessIdentity.mode, 80) || "unknown"}\``,
     `Execution route: \`${safeString(overview.primaryRoutes && overview.primaryRoutes.execution, 120) || "unknown"}\``,
@@ -601,6 +700,7 @@ function exportGovernancePublicBundle({
     signoffSummary: exportedObjects["signoff_summary.json"] || latestSignoffSummary,
     exportedFiles: exportedArtifacts.map((entry) => entry.file),
     workerDecisionSurface: exportedObjects["worker_decision_surface.json"] || supplementalArtifacts.worker_decision_surface,
+    workerCompletionStatus: exportedObjects["worker_completion_status.json"] || supplementalArtifacts.worker_completion_status,
     harnessPlaneSummary,
   });
   const exportManifest = {
@@ -626,6 +726,7 @@ function exportGovernancePublicBundle({
 module.exports = {
   defaultLatestSignoffSummaryPath,
   defaultOutputDir,
+  deriveSupplementalGovernanceArtifacts,
   exportGovernancePublicBundle,
   assertExportableSignoffSummary,
   sanitizeValue,

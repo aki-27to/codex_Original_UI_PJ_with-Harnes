@@ -69,6 +69,9 @@ function main() {
   const bundleSurfaceMap = readJson(path.join(bundleRoot, "bundle_surface_map.json"));
   const latestOverview = readJson(path.join(workspaceRoot, "output", "memory_public", "latest_overview.json"));
   const workerDecisionSurface = readJson(path.join(workspaceRoot, "output", "governance_public", "worker_decision_surface.json"));
+  const workerCompletionStatus = readJson(path.join(workspaceRoot, "output", "governance_public", "worker_completion_status.json"));
+  const goalCompletionStatus = readJson(path.join(workspaceRoot, "output", "agi_readiness", "goal_completion_status.json"));
+  const openUnknownsRegister = readJson(path.join(workspaceRoot, "output", "agi_readiness", "open_unknowns_register.json"));
 
   const designConformanceStatus = String(designSummary.overallDesignConformance && designSummary.overallDesignConformance.status || "fail");
   const latestRunStatus = taskOutcomeStatus(latestRunSummary);
@@ -142,7 +145,15 @@ function main() {
   assert.strictEqual(workerDecisionSurface.scope, "worker_decision", "worker decision surface must expose worker_decision scope");
   assertNonEmptyString(workerDecisionSurface.exportSessionId, "worker_decision_surface.exportSessionId");
   assertNonEmptyString(workerDecisionSurface.topLevelOutcome, "worker_decision_surface.topLevelOutcome");
+  assert.strictEqual(workerCompletionStatus.scope, "worker_completion", "worker completion companion must expose worker_completion scope");
+  assert.strictEqual(workerCompletionStatus.exportSessionId, workerDecisionSurface.exportSessionId, "worker completion companion must share exportSessionId with the worker headline");
+  assertNonEmptyString(workerCompletionStatus.workerGoalStatus, "worker_completion_status.workerGoalStatus");
+  assert.strictEqual(workerCompletionStatus.backgroundArtifactSessionConsistency, "aligned", "worker completion companion must trust aligned background readiness artifacts in current truth");
+  assert.strictEqual(Boolean(workerCompletionStatus.backgroundArtifactInputsTrusted), true, "worker completion companion must mark current-truth background artifacts as trusted");
+  assert.ok(!Array.isArray(goalCompletionStatus.requiredNextActions) || !goalCompletionStatus.requiredNextActions.includes("worker completion companion diverges from the worker headline or its background readiness basis"), "goal completion current truth must not retain a stale worker-companion divergence blocker");
+  assert.ok(!Array.isArray(openUnknownsRegister.items) || !openUnknownsRegister.items.some((entry) => String(entry && entry.summary) === "worker completion companion diverges from the worker headline or its background readiness basis"), "open unknowns current truth must not retain a stale worker-companion divergence blocker");
   assert.strictEqual(latestOverview.headlineScope, "worker_decision", "latest overview headline scope must be worker_decision");
+  assert.strictEqual(latestOverview.workerCompletionStatusPath, "output/governance_public/worker_completion_status.json", "latest overview must point at the worker completion companion");
   assert.strictEqual(latestOverview.goalCompletion.scope, "program_readiness", "latest overview goal completion must expose program_readiness scope");
   assert.strictEqual(latestOverview.subjectiveCompletion.scope, "subjective_companion", "latest overview subjective completion must expose subjective_companion scope");
   assert.strictEqual(latestOverview.compatibilityCompletion.scope, "compatibility_layer", "latest overview compatibility completion must expose compatibility_layer scope");

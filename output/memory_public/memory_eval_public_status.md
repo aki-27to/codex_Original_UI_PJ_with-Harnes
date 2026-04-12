@@ -1,7 +1,7 @@
 # Memory Eval Public Status
 
 - Status: PASS
-- Generated At: 2026-04-12T02:52:34.779Z
+- Generated At: 2026-04-12T08:44:28.841Z
 
 ## Checks
 - canonical_store_present: PASS (canonical event log and index are present)
@@ -10,7 +10,7 @@
 - workspace_progress_updated_at_present: PASS (workspace progress projection exposes a durable updatedAt timestamp)
 - legacy_learning_compatibility_preserved: PASS (legacy learning compatibility artifacts remain addressable)
 - bounded_memory_pack_written: PASS (at least one bounded memory pack exists)
-- bounded_memory_pack_reuses_canonical_memory: PASS (11 selected pack item(s) were reused from the canonical store)
+- bounded_memory_pack_reuses_canonical_memory: PASS (13 selected pack item(s) were reused from the canonical store)
 - task_family_isolation_respected: PASS (latest bounded memory pack respects task-family isolation for hard-excluded governed memory types)
 - lane_projection_canonical_state_present: PASS (public lane projections expose canonical memory-derived lesson state for primary and secondary learning lanes)
 - promotion_health_memory_type_populated: PASS (promotion/revocation health entries expose non-empty memoryType values)
@@ -23,7 +23,7 @@
 - lane_projection_real_observations_reflected: PASS (lane projections reflect canonical observation state (awaiting_observations/disabled))
 - breadth_family_evidence_present: PASS (4 target breadth families expose public-safe success/failure evidence)
 - weakest_gate_semantics_explained: PASS (weakest gate semantics expose a non-arbitrary gate-pressure explanation)
-- primary_lane_observation_closure: PASS (primary lane observations are no longer starved (118 observations, status=awaiting_observations))
+- primary_lane_observation_closure: PASS (primary lane observations are no longer starved (130 observations, status=awaiting_observations))
 - continuity_public_real_case_present: PASS (continuity public summary exposes a real handoff/release/horizon case)
 - robustness_breakdown_exported: PASS (robustness breakdown export is present with category-level evidence)
 - autonomous_learning_agenda_present: PASS (autonomous learning agenda is present)
@@ -38,10 +38,14 @@
 - worker_decision_surface_present: PASS (worker decision surface headline artifact is present)
 - worker_decision_surface_scope_is_primary: PASS (worker decision surface is the primary operator headline)
 - worker_decision_surface_export_session_consistent: PASS (shared export session export_a63636ff0a86)
+- worker_completion_status_present: PASS (worker completion companion artifact is present)
+- worker_completion_status_consistent: PASS (worker completion companion stays aligned with worker headline under export session export_a63636ff0a86)
+- worker_completion_alignment_not_stale_in_downstream_surfaces: PASS (downstream remediation surfaces do not retain a stale worker-companion divergence blocker)
 - stable_coverage_surface_present: PASS (stable coverage matrix and trend are present)
 - causal_regression_alerts_present: PASS (causal regression alerts are present)
 - goal_completion_supporting_artifacts_present: PASS (goal completion supporting artifacts are present)
 - goal_completion_status_consistent: PASS (operational goal completion status matches readiness, debt, and learning state)
+- running_agenda_semantics_explicit: PASS (gate-consumed running agenda counts are explicit and consistent with the broader supporting surface)
 - goal_completion_scope_is_program_readiness: PASS (goal completion is scoped to program readiness)
 - goal_completion_not_yet_when_criteria_fail: PASS (goal completion artifact does not over-claim completion when thresholds fail)
 - goal_artifact_subjective_fields_present: PASS (goal completion artifact exposes subjective summary fields)
@@ -54,8 +58,10 @@
 - primary_lane_effective_contribution_reflected: PASS (primary lane effective contribution is reflected across projection, goal, and subjective artifacts)
 - learning_adoption_status_present: PASS (learning adoption status is present)
 - self_directed_probe_surface_present: PASS (self-directed probe surface exposes required counts and thresholds)
+- self_directed_probe_threshold_basis_explicit: PASS (self-directed probe threshold basis is explicit and internally consistent)
 - self_directed_probe_status_present: PASS (self-directed probe status is present)
 - novel_task_acquisition_surface_present: PASS (novel task acquisition surface exposes required counts and thresholds)
+- novel_task_threshold_basis_explicit: PASS (novel-task threshold basis is explicit and internally consistent)
 - novel_task_acquisition_present: PASS (novel task acquisition status is present)
 - subjective_window_threshold_enforced: PASS (subjective completion window size and pass count are enforced consistently)
 - subjective_complete_case_requires_all_strict_thresholds: PASS (subjective completion only appears when all strict thresholds are satisfied)
