@@ -1,6 +1,6 @@
 {
   "schema": "self-improvement-state.v1",
-  "generatedAt": "2026-04-12T08:57:18.532Z",
+  "generatedAt": "2026-04-12T09:00:09.788Z",
   "sourceName": "Anthropic Engineering",
   "sourceTier": "secondary",
   "promotionMode": "machine_guarded_autonomy",
@@ -16,7 +16,7 @@
   "readyHintCandidateCount": 0,
   "autoApplyFrontendQualityNoteCount": 0,
   "observationStatus": "disabled",
-  "observationCount": 325,
+  "observationCount": 321,
   "lastObservedAt": "2026-04-12T08:57:17.563Z",
   "requiredObservationSuccesses": 2,
   "requiredObservationSuccessRate": 0.67,
@@ -46,7 +46,7 @@
     "reinforcement": {
       "successCount": 0,
       "failureCount": 0,
-      "observedCount": 325,
+      "observedCount": 321,
       "successRate": 0,
       "requiredSuccesses": 2,
       "requiredSuccessRate": 0.67,
