@@ -92,10 +92,8 @@ function loadHelpers(promptInput) {
 }
 
 function run() {
-  assert(
-    source.includes('e.promptInput.onkeydown=ev=>{if(ev.key==="Enter"&&!ev.shiftKey){ev.preventDefault();e.sendBtn.click()}};'),
-    "Enter-to-send handler changed unexpectedly"
-  );
+  assert(source.includes("function handlePromptInputKeydownForUi("), "prompt keydown handler should stay centralized");
+  assert(source.includes("e.promptInput.onkeydown=handlePromptInputKeydownForUi;"), "prompt input should reuse the centralized keydown handler");
   const promptInput = createPromptInputMock();
   const context = loadHelpers(promptInput);
   const { measurePromptInputBaseHeight, syncPromptInputHeight } = context.helpers;

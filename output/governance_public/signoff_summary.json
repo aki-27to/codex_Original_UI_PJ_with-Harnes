@@ -1,46 +1,49 @@
 {
-  "generatedAt": "2026-03-09T12:31:59.845Z",
-  "updatedAt": "2026-03-09T14:32:24.493Z",
+  "generatedAt": "2026-04-18T05:27:13.999Z",
+  "updatedAt": "2026-04-18T05:31:45.212Z",
   "executionMode": "split-resumable",
-  "bundleRoot": "logs\\bundles\\signoff\\signoff-2026-03-09T12-31-59-842Z-24dd95",
-  "transportMode": "stdio",
-  "baselineTransportMode": "stdio",
-  "directBaselineTransportMode": "stdio",
+  "bundleRoot": "logs\\bundles\\signoff\\signoff-2026-04-18T05-27-13-996Z-f97810",
+  "transportMode": "mock-fixture",
+  "baselineTransportMode": "mock-fixture",
+  "directBaselineTransportMode": "mock-fixture",
   "paths": {
-    "runtimeSnapshot": "logs\\bundles\\signoff\\signoff-2026-03-09T12-31-59-842Z-24dd95\\runtime_snapshot.json",
-    "coreHarnessWorkflowRun": "logs\\bundles\\signoff\\signoff-2026-03-09T12-31-59-842Z-24dd95\\core_harness_workflow_run.json",
-    "fastTaskTraceSummary": "logs\\bundles\\signoff\\signoff-2026-03-09T12-31-59-842Z-24dd95\\raw\\summaries\\fast_task_trace_summary.json",
-    "discoveryTaskTraceSummary": "logs\\bundles\\signoff\\signoff-2026-03-09T12-31-59-842Z-24dd95\\raw\\summaries\\discovery_task_trace_summary.json",
-    "signoffTaskTraceSummary": "logs\\bundles\\signoff\\signoff-2026-03-09T12-31-59-842Z-24dd95\\raw\\summaries\\signoff_task_trace_summary.json",
+    "runtimeSnapshot": "logs\\bundles\\signoff\\signoff-2026-04-18T05-27-13-996Z-f97810\\runtime_snapshot.json",
+    "coreHarnessWorkflowRun": "logs\\bundles\\signoff\\signoff-2026-04-18T05-27-13-996Z-f97810\\core_harness_workflow_run.json",
+    "fastTaskTraceSummary": "logs\\bundles\\signoff\\signoff-2026-04-18T05-27-13-996Z-f97810\\raw\\summaries\\fast_task_trace_summary.json",
+    "discoveryTaskTraceSummary": "logs\\bundles\\signoff\\signoff-2026-04-18T05-27-13-996Z-f97810\\raw\\summaries\\discovery_task_trace_summary.json",
+    "signoffTaskTraceSummary": "logs\\bundles\\signoff\\signoff-2026-04-18T05-27-13-996Z-f97810\\raw\\summaries\\signoff_task_trace_summary.json",
     "naturalTaskTraceSummary": "natural_task_trace_summary.json",
+    "boundaryTaskTraceSummary": "logs\\bundles\\signoff\\signoff-2026-04-18T05-27-13-996Z-f97810\\boundary_task_trace_summary.json",
     "latestRunSummary": "latest_run_summary.json",
-    "reviewLoadBreakdown": "logs\\bundles\\signoff\\signoff-2026-03-09T12-31-59-842Z-24dd95\\review_load_breakdown.json",
-    "laneLatencySummary": "logs\\bundles\\signoff\\signoff-2026-03-09T12-31-59-842Z-24dd95\\lane_latency_summary.json",
-    "resumeState": "logs\\bundles\\signoff\\signoff-2026-03-09T12-31-59-842Z-24dd95\\signoff_resume_state.json",
-    "measuredBaselineSummary": "logs\\bundles\\signoff\\signoff-2026-03-09T12-31-59-842Z-24dd95\\raw\\measured_baseline\\measured_baseline_summary.json",
-    "baselineFastTaskTraceSummary": "logs\\bundles\\signoff\\signoff-2026-03-09T12-31-59-842Z-24dd95\\raw\\measured_baseline\\baseline_fast_task_trace_summary.json",
-    "baselineDiscoveryTaskTraceSummary": "logs\\bundles\\signoff\\signoff-2026-03-09T12-31-59-842Z-24dd95\\raw\\measured_baseline\\baseline_discovery_task_trace_summary.json",
-    "baselineSignoffTaskTraceSummary": "logs\\bundles\\signoff\\signoff-2026-03-09T12-31-59-842Z-24dd95\\raw\\measured_baseline\\baseline_signoff_task_trace_summary.json",
-    "baselineNaturalTaskTraceSummary": "logs\\bundles\\signoff\\signoff-2026-03-09T12-31-59-842Z-24dd95\\raw\\measured_baseline\\baseline_natural_task_trace_summary.json",
-    "rawDirectBaselineSummary": "logs\\bundles\\signoff\\signoff-2026-03-09T12-31-59-842Z-24dd95\\raw\\raw_direct_baseline\\raw_direct_baseline_summary.json",
-    "rawDirectFastTaskTraceSummary": "logs\\bundles\\signoff\\signoff-2026-03-09T12-31-59-842Z-24dd95\\raw\\raw_direct_baseline\\raw_direct_fast_task_trace_summary.json",
-    "rawDirectDiscoveryTaskTraceSummary": "logs\\bundles\\signoff\\signoff-2026-03-09T12-31-59-842Z-24dd95\\raw\\raw_direct_baseline\\raw_direct_discovery_task_trace_summary.json",
-    "rawDirectSignoffTaskTraceSummary": "logs\\bundles\\signoff\\signoff-2026-03-09T12-31-59-842Z-24dd95\\raw\\raw_direct_baseline\\raw_direct_signoff_task_trace_summary.json",
-    "rawDirectNaturalTaskTraceSummary": "logs\\bundles\\signoff\\signoff-2026-03-09T12-31-59-842Z-24dd95\\raw\\raw_direct_baseline\\raw_direct_natural_task_trace_summary.json",
-    "baselineComparisonReport": "logs\\bundles\\signoff\\signoff-2026-03-09T12-31-59-842Z-24dd95\\raw\\relocated_top_level\\baseline_comparison_report.json",
-    "speedVsAssuranceReport": "logs\\bundles\\signoff\\signoff-2026-03-09T12-31-59-842Z-24dd95\\raw\\relocated_top_level\\speed_vs_assurance_report.md",
-    "harnessExecutionMemory": "logs\\bundles\\signoff\\signoff-2026-03-09T12-31-59-842Z-24dd95\\raw\\harness_execution_memory.json",
-    "evalRuns": "logs\\bundles\\signoff\\signoff-2026-03-09T12-31-59-842Z-24dd95\\raw\\eval_runs.jsonl",
-    "turnsDir": "logs\\bundles\\signoff\\signoff-2026-03-09T12-31-59-842Z-24dd95\\raw\\turns",
-    "measuredBaselineTurnsDir": "logs\\bundles\\signoff\\signoff-2026-03-09T12-31-59-842Z-24dd95\\raw\\measured_baseline\\turns",
-    "rawRoot": "logs\\bundles\\signoff\\signoff-2026-03-09T12-31-59-842Z-24dd95\\raw",
-    "operationLog": "logs\\bundles\\signoff\\signoff-2026-03-09T12-31-59-842Z-24dd95\\raw\\operation_logs\\codex_ops.jsonl",
-    "measuredBaselineRoot": "logs\\bundles\\signoff\\signoff-2026-03-09T12-31-59-842Z-24dd95\\raw\\measured_baseline",
-    "rawDirectBaselineRoot": "logs\\bundles\\signoff\\signoff-2026-03-09T12-31-59-842Z-24dd95\\raw\\raw_direct_baseline",
-    "bundleSurfaceMap": "logs\\bundles\\signoff\\signoff-2026-03-09T12-31-59-842Z-24dd95\\bundle_surface_map.json",
+    "reviewLoadBreakdown": "logs\\bundles\\signoff\\signoff-2026-04-18T05-27-13-996Z-f97810\\review_load_breakdown.json",
+    "laneLatencySummary": "logs\\bundles\\signoff\\signoff-2026-04-18T05-27-13-996Z-f97810\\raw\\relocated_top_level\\lane_latency_summary.json",
+    "resumeState": "logs\\bundles\\signoff\\signoff-2026-04-18T05-27-13-996Z-f97810\\raw\\relocated_top_level\\signoff_resume_state.json",
+    "measuredBaselineSummary": "logs\\bundles\\signoff\\signoff-2026-04-18T05-27-13-996Z-f97810\\raw\\measured_baseline\\measured_baseline_summary.json",
+    "baselineFastTaskTraceSummary": "logs\\bundles\\signoff\\signoff-2026-04-18T05-27-13-996Z-f97810\\raw\\measured_baseline\\baseline_fast_task_trace_summary.json",
+    "baselineDiscoveryTaskTraceSummary": "logs\\bundles\\signoff\\signoff-2026-04-18T05-27-13-996Z-f97810\\raw\\measured_baseline\\baseline_discovery_task_trace_summary.json",
+    "baselineSignoffTaskTraceSummary": "logs\\bundles\\signoff\\signoff-2026-04-18T05-27-13-996Z-f97810\\raw\\measured_baseline\\baseline_signoff_task_trace_summary.json",
+    "baselineNaturalTaskTraceSummary": "logs\\bundles\\signoff\\signoff-2026-04-18T05-27-13-996Z-f97810\\raw\\measured_baseline\\baseline_natural_task_trace_summary.json",
+    "baselineBoundaryTaskTraceSummary": "logs\\bundles\\signoff\\signoff-2026-04-18T05-27-13-996Z-f97810\\raw\\measured_baseline\\baseline_boundary_task_trace_summary.json",
+    "rawDirectBaselineSummary": "logs\\bundles\\signoff\\signoff-2026-04-18T05-27-13-996Z-f97810\\raw\\raw_direct_baseline\\raw_direct_baseline_summary.json",
+    "rawDirectFastTaskTraceSummary": "logs\\bundles\\signoff\\signoff-2026-04-18T05-27-13-996Z-f97810\\raw\\raw_direct_baseline\\raw_direct_fast_task_trace_summary.json",
+    "rawDirectDiscoveryTaskTraceSummary": "logs\\bundles\\signoff\\signoff-2026-04-18T05-27-13-996Z-f97810\\raw\\raw_direct_baseline\\raw_direct_discovery_task_trace_summary.json",
+    "rawDirectSignoffTaskTraceSummary": "logs\\bundles\\signoff\\signoff-2026-04-18T05-27-13-996Z-f97810\\raw\\raw_direct_baseline\\raw_direct_signoff_task_trace_summary.json",
+    "rawDirectNaturalTaskTraceSummary": "logs\\bundles\\signoff\\signoff-2026-04-18T05-27-13-996Z-f97810\\raw\\raw_direct_baseline\\raw_direct_natural_task_trace_summary.json",
+    "rawDirectBoundaryTaskTraceSummary": "logs\\bundles\\signoff\\signoff-2026-04-18T05-27-13-996Z-f97810\\raw\\raw_direct_baseline\\raw_direct_boundary_task_trace_summary.json",
+    "baselineComparisonReport": "logs\\bundles\\signoff\\signoff-2026-04-18T05-27-13-996Z-f97810\\raw\\relocated_top_level\\baseline_comparison_report.json",
+    "speedVsAssuranceReport": "logs\\bundles\\signoff\\signoff-2026-04-18T05-27-13-996Z-f97810\\raw\\relocated_top_level\\speed_vs_assurance_report.md",
+    "harnessExecutionMemory": "logs\\bundles\\signoff\\signoff-2026-04-18T05-27-13-996Z-f97810\\raw\\harness_execution_memory.json",
+    "evalRuns": "logs\\bundles\\signoff\\signoff-2026-04-18T05-27-13-996Z-f97810\\raw\\eval_runs.jsonl",
+    "turnsDir": "logs\\bundles\\signoff\\signoff-2026-04-18T05-27-13-996Z-f97810\\raw\\turns",
+    "measuredBaselineTurnsDir": "logs\\bundles\\signoff\\signoff-2026-04-18T05-27-13-996Z-f97810\\raw\\measured_baseline\\turns",
+    "rawRoot": "logs\\bundles\\signoff\\signoff-2026-04-18T05-27-13-996Z-f97810\\raw",
+    "operationLog": "logs\\bundles\\signoff\\signoff-2026-04-18T05-27-13-996Z-f97810\\raw\\operation_logs\\codex_ops.jsonl",
+    "measuredBaselineRoot": "logs\\bundles\\signoff\\signoff-2026-04-18T05-27-13-996Z-f97810\\raw\\measured_baseline",
+    "rawDirectBaselineRoot": "logs\\bundles\\signoff\\signoff-2026-04-18T05-27-13-996Z-f97810\\raw\\raw_direct_baseline",
+    "bundleSurfaceMap": "logs\\bundles\\signoff\\signoff-2026-04-18T05-27-13-996Z-f97810\\bundle_surface_map.json",
     "signoffSummary": "signoff_summary.json",
-    "conformanceReport": "logs\\bundles\\signoff\\signoff-2026-03-09T12-31-59-842Z-24dd95\\raw\\summaries\\conformance_report.json",
-    "operatorViewSummary": "logs\\bundles\\signoff\\signoff-2026-03-09T12-31-59-842Z-24dd95\\raw\\summaries\\operator_view_summary.json"
+    "conformanceReport": "conformance_report.json",
+    "operatorViewSummary": "operator_view_summary.json"
   },
   "runtime": {
     "executionProfile": "full-runtime",
@@ -249,7 +252,7 @@
     },
     "evidenceArtifacts": {
       "enabled": true,
-      "root": "logs/bundles/signoff/signoff-2026-03-09T12-31-59-842Z-24dd95/raw/turns",
+      "root": "logs/bundles/signoff/signoff-2026-04-18T05-27-13-996Z-f97810/raw/turns",
       "maxBytes": 268435456,
       "maxDays": 14,
       "redaction": {
@@ -259,26 +262,27 @@
     },
     "harnessMemory": {
       "schema": "harness-execution-memory.v1",
-      "storage": "logs/bundles/signoff/signoff-2026-03-09T12-31-59-842Z-24dd95/raw/harness_execution_memory.json",
+      "storage": "logs/bundles/signoff/signoff-2026-04-18T05-27-13-996Z-f97810/raw/harness_execution_memory.json",
       "envKey": "CODEX_HARNESS_MEMORY_PATH",
       "loaded": 1,
       "retentionDays": 30,
       "counts": {
-        "contract": 5,
-        "contractActive": 4,
-        "execution": 6,
-        "audit": 6,
-        "replay": 6,
-        "patterns": 6
+        "contract": 0,
+        "contractActive": 0,
+        "execution": 0,
+        "audit": 0,
+        "replay": 0,
+        "patterns": 0
       },
-      "lastPersistedAt": 1773061439599
+      "lastPersistedAt": 0
     },
     "evalHarness": {
       "suite": {
         "schema": "harness-eval-suite.v1",
         "suiteId": "core-harness-workflow.v5",
-        "description": "Regression suite covering live exec behavior plus deterministic workflow-policy probes for retired worker rejection, parent-dispatch guard enforcement, frozen constitution routing/depth selection, task outcomes, and adversarial review.",
-        "caseCount": 21,
+        "kind": "conformance",
+        "description": "Regression suite covering live exec behavior plus deterministic workflow-policy probes for retired worker rejection, parent-dispatch guard enforcement, request-to-plan traceability, post-lock drift detection, frozen constitution routing/depth selection, task outcomes, and adversarial review.",
+        "caseCount": 23,
         "caseIds": [
           "exact_ack",
           "parent_material_implementation_blocked",
@@ -292,6 +296,8 @@
           "reviewer_tester_required_case",
           "dedicated_test_required_for_new_logic",
           "context_leakage_planning_owned_paths",
+          "post_lock_drift_clean_trace",
+          "post_lock_drift_detects_missing_downstream_refs",
           "parent_dispatch_guard_violation",
           "idempotency_failed_outcome_bridge",
           "needs_input_blocked_policy",
@@ -328,10 +334,91 @@
               "type": "string"
             }
           }
-        }
+        },
+        "evaluation": {}
       },
       "configPath": "scripts/config/eval_suite_default.json",
-      "historyPath": "logs/bundles/signoff/signoff-2026-03-09T12-31-59-842Z-24dd95/raw/eval_runs.jsonl",
+      "lanePolicyPath": "scripts/config/eval_lane_policy.json",
+      "publicLaneId": "public_regression",
+      "protectedPaths": [
+        "protected/holdout",
+        "protected/blackbox"
+      ],
+      "lanes": [
+        {
+          "id": "public_regression",
+          "visibility": "public",
+          "suiteCount": 2,
+          "outputPath": "output\\public_regression_latest.json",
+          "summaryPath": "output\\public_regression_summary.json",
+          "protected": 0,
+          "unlockEnvKey": ""
+        },
+        {
+          "id": "hidden_holdout",
+          "visibility": "protected",
+          "suiteCount": 1,
+          "outputPath": "\\protected\\holdout\\output\\holdout_regression_latest.json",
+          "summaryPath": "output\\holdout_eval_summary.json",
+          "protected": 1,
+          "unlockEnvKey": "CODEX_HOLDOUT_EVAL_UNLOCK"
+        },
+        {
+          "id": "agi_readiness_public",
+          "visibility": "public",
+          "suiteCount": 1,
+          "outputPath": "output\\agi_readiness_public_latest.json",
+          "summaryPath": "output\\agi_readiness_public_summary.json",
+          "protected": 0,
+          "unlockEnvKey": ""
+        },
+        {
+          "id": "agi_readiness_holdout",
+          "visibility": "protected",
+          "suiteCount": 1,
+          "outputPath": "\\protected\\holdout\\output\\agi_readiness_holdout_latest.json",
+          "summaryPath": "output\\agi_readiness_holdout_summary.json",
+          "protected": 1,
+          "unlockEnvKey": "CODEX_HOLDOUT_EVAL_UNLOCK"
+        },
+        {
+          "id": "blackbox_readiness",
+          "visibility": "protected",
+          "suiteCount": 1,
+          "outputPath": "\\protected\\blackbox\\output\\agi_readiness_blackbox_latest.json",
+          "summaryPath": "output\\agi_readiness_blackbox_summary.json",
+          "protected": 1,
+          "unlockEnvKey": "CODEX_BLACKBOX_EVAL_UNLOCK"
+        },
+        {
+          "id": "open_world_public",
+          "visibility": "public",
+          "suiteCount": 1,
+          "outputPath": "output\\open_world_public_latest.json",
+          "summaryPath": "output\\open_world_public_summary.json",
+          "protected": 0,
+          "unlockEnvKey": ""
+        },
+        {
+          "id": "open_world_holdout",
+          "visibility": "protected",
+          "suiteCount": 1,
+          "outputPath": "\\protected\\holdout\\output\\open_world_holdout_latest.json",
+          "summaryPath": "output\\open_world_holdout_summary.json",
+          "protected": 1,
+          "unlockEnvKey": "CODEX_HOLDOUT_EVAL_UNLOCK"
+        },
+        {
+          "id": "open_world_blackbox",
+          "visibility": "protected",
+          "suiteCount": 1,
+          "outputPath": "\\protected\\blackbox\\output\\open_world_blackbox_latest.json",
+          "summaryPath": "output\\open_world_blackbox_summary.json",
+          "protected": 1,
+          "unlockEnvKey": "CODEX_BLACKBOX_EVAL_UNLOCK"
+        }
+      ],
+      "historyPath": "logs/bundles/signoff/signoff-2026-04-18T05-27-13-996Z-f97810/raw/eval_runs.jsonl",
       "historyEnvKey": "CODEX_EVAL_HISTORY_PATH",
       "maxCases": 24,
       "maxVariants": 3,
@@ -340,14 +427,14 @@
     "operationLog": {
       "enabled": true,
       "level": "standard",
-      "path": "logs/bundles/signoff/signoff-2026-03-09T12-31-59-842Z-24dd95/raw/operation_logs/codex_ops_57653_44888.jsonl",
-      "basePath": "logs/bundles/signoff/signoff-2026-03-09T12-31-59-842Z-24dd95/raw/operation_logs/codex_ops_57653_44888.jsonl",
+      "path": "logs/bundles/signoff/signoff-2026-04-18T05-27-13-996Z-f97810/raw/operation_logs/codex_ops_57818_54288.jsonl",
+      "basePath": "logs/bundles/signoff/signoff-2026-04-18T05-27-13-996Z-f97810/raw/operation_logs/codex_ops_57818_54288.jsonl",
       "dailySplit": false,
       "maxBytes": 1048576,
       "keepBytes": 734003,
       "maxEventBytes": 4096,
       "archiveEnabled": true,
-      "archivePath": "logs/bundles/signoff/signoff-2026-03-09T12-31-59-842Z-24dd95/raw/operation_logs/archive",
+      "archivePath": "logs/bundles/signoff/signoff-2026-04-18T05-27-13-996Z-f97810/raw/operation_logs/archive",
       "archiveCompress": true,
       "archiveMaxBytes": 33554432,
       "archiveMaxFiles": 240
@@ -373,11 +460,11 @@
     }
   },
   "coreHarnessWorkflow": {
-    "runId": "eval-1773059519984-7d4d3b16",
+    "runId": "eval-1776490038849-1ae72769",
     "suiteId": "core-harness-workflow.v5",
-    "generatedAt": 1773059535303,
-    "sampleSize": 21,
-    "passedCases": 21,
+    "generatedAt": 1776490087869,
+    "sampleSize": 23,
+    "passedCases": 23,
     "failedCases": 0,
     "passRate": 1,
     "scoreRate": 1,
@@ -402,13 +489,28 @@
       },
       "taskOutcomeStatus": "",
       "taskOutcomeReason": "",
-      "turnId": ""
+      "turnId": "",
+      "candidateId": "signoff",
+      "mode": "standard",
+      "probeResult": {
+        "mode": "requirement_definition_loop",
+        "active": true,
+        "reason": "active",
+        "parent_agent": true,
+        "agent_name": "default",
+        "bypass": false,
+        "confirmed": false,
+        "max_questions": 3,
+        "max_revisions": 2,
+        "min_confidence": 80,
+        "red_skill_token": "$red-requirement-auditor"
+      }
     }
   },
   "fastTask": {
-    "turnId": "019cd295-734d-7003-89c9-dcce6299c2fb",
-    "targetPath": "logs\\archive\\raw\\fixtures\\fast_samples\\sample_fast_target_e1661ad3.md",
-    "artifactManifestPath": "logs\\bundles\\signoff\\signoff-2026-03-09T12-31-59-842Z-24dd95\\raw\\turns\\2026-03-09\\019cd295-71fd-7991-8901-23408960365f__019cd295-734d-7003-89c9-dcce6299c2fb\\manifest.json",
+    "turnId": "mock-turn-4",
+    "targetPath": "logs\\archive\\raw\\fixtures\\fast_samples\\sample_fast_target_ec473cd0.md",
+    "artifactManifestPath": "logs\\bundles\\signoff\\signoff-2026-04-18T05-27-13-996Z-f97810\\raw\\turns\\2026-04-18\\mock-thread-2__mock-turn-4\\manifest.json",
     "assertions": {
       "completed": true,
       "fastModeSelected": true,
@@ -420,8 +522,8 @@
     }
   },
   "discoveryTask": {
-    "turnId": "019cd298-1f03-7341-a558-fcd0222a7a7a",
-    "artifactManifestPath": "logs\\bundles\\signoff\\signoff-2026-03-09T12-31-59-842Z-24dd95\\raw\\turns\\2026-03-09\\019cd298-1e15-7732-b3a3-f8b1b8f4dbbf__019cd298-1f03-7341-a558-fcd0222a7a7a\\manifest.json",
+    "turnId": "mock-turn-5",
+    "artifactManifestPath": "logs\\bundles\\signoff\\signoff-2026-04-18T05-27-13-996Z-f97810\\raw\\turns\\2026-04-18\\mock-thread-3__mock-turn-5\\manifest.json",
     "assertions": {
       "discoveryOutcomeAcceptable": true,
       "discoveryModeSelected": true,
@@ -433,9 +535,9 @@
     }
   },
   "signoffTask": {
-    "turnId": "019cd29a-0ad3-72d2-957c-30870c52eaba",
-    "targetPath": "logs\\bundles\\signoff\\signoff-2026-03-09T12-31-59-842Z-24dd95\\raw\\scripts\\config\\signoff_sample_target.txt",
-    "artifactManifestPath": "logs\\bundles\\signoff\\signoff-2026-03-09T12-31-59-842Z-24dd95\\raw\\turns\\2026-03-09\\019cd29a-09de-7670-8c38-eade454f7cb2__019cd29a-0ad3-72d2-957c-30870c52eaba\\manifest.json",
+    "turnId": "mock-turn-7",
+    "targetPath": "logs\\bundles\\signoff\\signoff-2026-04-18T05-27-13-996Z-f97810\\raw\\scripts\\config\\signoff_sample_target.txt",
+    "artifactManifestPath": "logs\\bundles\\signoff\\signoff-2026-04-18T05-27-13-996Z-f97810\\raw\\turns\\2026-04-18\\mock-thread-4__mock-turn-7\\manifest.json",
     "assertions": {
       "completed": true,
       "signoffAssuranceSelected": true,
@@ -450,15 +552,39 @@
     }
   },
   "naturalTask": {
-    "threadId": "019cd2a1-7a84-7120-8764-5c77b9e6af74",
-    "turnId": "019cd2a3-e0ce-7100-9e47-14ff3a985ac3",
+    "threadId": "mock-thread-5",
+    "turnId": "mock-turn-8",
     "targetPath": "docs\\CURRENT_ARCHITECTURE.md",
-    "artifactManifestPath": "logs\\bundles\\signoff\\signoff-2026-03-09T12-31-59-842Z-24dd95\\raw\\turns\\2026-03-09\\019cd2a1-7a84-7120-8764-5c77b9e6af74__019cd2a3-e0ce-7100-9e47-14ff3a985ac3\\manifest.json",
+    "artifactManifestPath": "logs\\bundles\\signoff\\signoff-2026-04-18T05-27-13-996Z-f97810\\raw\\turns\\2026-04-18\\mock-thread-5__mock-turn-8\\manifest.json",
     "dispatchChildren": [
-      "019cd2a4-7fbb-7932-9a55-a2d2efec351c",
-      "019cd2a6-7e09-7620-adf3-e3d0ee45805f",
       "1",
-      "unknown"
+      "infra_worker",
+      "reviewer"
+    ],
+    "assertions": {
+      "completed": true,
+      "parentDispatchSatisfied": true,
+      "dispatchCountObserved": true,
+      "implementationObserved": true,
+      "reviewerObserved": true,
+      "targetSentencePresent": true,
+      "parentObservedFileChanges": true,
+      "parentObservedChangedFiles": true,
+      "parentObservedTargetPath": true,
+      "bundleLocalTurnArtifact": true,
+      "finalReplyAcknowledged": true
+    }
+  },
+  "boundaryTask": {
+    "threadId": "mock-thread-6",
+    "turnId": "mock-turn-10",
+    "targetPath": "logs\\bundles\\signoff\\signoff-2026-04-18T05-27-13-996Z-f97810\\raw\\docs\\RUNTIME_BOUNDARY_MAP.md",
+    "artifactManifestPath": "logs\\bundles\\signoff\\signoff-2026-04-18T05-27-13-996Z-f97810\\raw\\turns\\2026-04-18\\mock-thread-6__mock-turn-10\\manifest.json",
+    "dispatchChildren": [
+      "1",
+      "infra_worker",
+      "reviewer",
+      "tester"
     ],
     "assertions": {
       "completed": true,
@@ -476,81 +602,58 @@
   },
   "measuredBaseline": {
     "status": "ok",
-    "summaryPath": "logs\\bundles\\signoff\\signoff-2026-03-09T12-31-59-842Z-24dd95\\raw\\measured_baseline\\measured_baseline_summary.json",
-    "profile": "live-raw-codex-like",
+    "summaryPath": "logs\\bundles\\signoff\\signoff-2026-04-18T05-27-13-996Z-f97810\\raw\\measured_baseline\\measured_baseline_summary.json",
+    "profile": "measured-baseline-smoke",
     "samples": {
       "fast": {
-        "turnId": "019cd2a7-aeb8-7a12-85d0-be0f87da46d6",
-        "tracePath": "logs\\bundles\\signoff\\signoff-2026-03-09T12-31-59-842Z-24dd95\\raw\\measured_baseline\\baseline_fast_task_trace_summary.json",
+        "turnId": "mock-turn-1",
+        "tracePath": "logs\\bundles\\signoff\\signoff-2026-04-18T05-27-13-996Z-f97810\\raw\\measured_baseline\\baseline_fast_task_trace_summary.json",
         "taskOutcomeStatus": "FAILED_VALIDATION",
         "taskOutcomeReason": "missing_required_evidence"
       },
       "discovery": {
-        "turnId": "019cd2a8-7dd9-7ec1-b084-fa65a27e5a9c",
-        "tracePath": "logs\\bundles\\signoff\\signoff-2026-03-09T12-31-59-842Z-24dd95\\raw\\measured_baseline\\baseline_discovery_task_trace_summary.json",
+        "turnId": "mock-turn-2",
+        "tracePath": "logs\\bundles\\signoff\\signoff-2026-04-18T05-27-13-996Z-f97810\\raw\\measured_baseline\\baseline_discovery_task_trace_summary.json",
         "taskOutcomeStatus": "NEEDS_INPUT",
         "taskOutcomeReason": "interactive_approval_unavailable"
       },
       "signoff": {
-        "turnId": "019cd2a9-fa08-7b52-9ead-322430837ae6",
-        "tracePath": "logs\\bundles\\signoff\\signoff-2026-03-09T12-31-59-842Z-24dd95\\raw\\measured_baseline\\baseline_signoff_task_trace_summary.json",
+        "turnId": "mock-turn-3",
+        "tracePath": "logs\\bundles\\signoff\\signoff-2026-04-18T05-27-13-996Z-f97810\\raw\\measured_baseline\\baseline_signoff_task_trace_summary.json",
         "taskOutcomeStatus": "FAILED_VALIDATION",
         "taskOutcomeReason": "missing_required_evidence"
       },
       "natural": {
-        "turnId": "019cd2ab-056e-7383-be1f-33aeca5fd03e",
-        "tracePath": "logs\\bundles\\signoff\\signoff-2026-03-09T12-31-59-842Z-24dd95\\raw\\measured_baseline\\baseline_natural_task_trace_summary.json",
+        "turnId": "mock-turn-4",
+        "tracePath": "logs\\bundles\\signoff\\signoff-2026-04-18T05-27-13-996Z-f97810\\raw\\measured_baseline\\baseline_natural_task_trace_summary.json",
+        "taskOutcomeStatus": "FAILED_VALIDATION",
+        "taskOutcomeReason": "missing_required_evidence"
+      },
+      "boundary": {
+        "turnId": "mock-turn-5",
+        "tracePath": "logs\\bundles\\signoff\\signoff-2026-04-18T05-27-13-996Z-f97810\\raw\\measured_baseline\\baseline_boundary_task_trace_summary.json",
         "taskOutcomeStatus": "FAILED_VALIDATION",
         "taskOutcomeReason": "missing_required_evidence"
       }
     }
   },
   "rawDirectBaseline": {
-    "status": "ok",
-    "summaryPath": "logs\\bundles\\signoff\\signoff-2026-03-09T12-31-59-842Z-24dd95\\raw\\raw_direct_baseline\\raw_direct_baseline_summary.json",
+    "status": "unavailable",
+    "summaryPath": "logs\\bundles\\signoff\\signoff-2026-04-18T05-27-13-996Z-f97810\\raw\\raw_direct_baseline\\raw_direct_baseline_summary.json",
     "directness": "app-server-direct",
-    "transportMode": "stdio",
-    "samples": {
-      "fast": {
-        "turnId": "019cd2ac-f61e-7623-81c6-bef3e46907b0",
-        "threadId": "019cd2ac-f4dd-7091-b991-899bfbbe2808",
-        "tracePath": "logs\\bundles\\signoff\\signoff-2026-03-09T12-31-59-842Z-24dd95\\raw\\raw_direct_baseline\\raw_direct_fast_task_trace_summary.json",
-        "taskOutcomeStatus": "COMPLETED",
-        "verificationPassed": 1
-      },
-      "discovery": {
-        "turnId": "019cd2ad-7cf3-7732-ae1d-0fc54812dda8",
-        "threadId": "019cd2ad-7c53-7020-ad36-bf4568743b3b",
-        "tracePath": "logs\\bundles\\signoff\\signoff-2026-03-09T12-31-59-842Z-24dd95\\raw\\raw_direct_baseline\\raw_direct_discovery_task_trace_summary.json",
-        "taskOutcomeStatus": "NEEDS_INPUT",
-        "verificationPassed": 1
-      },
-      "signoff": {
-        "turnId": "019cd2af-f133-7161-9709-e1f2d3487ed2",
-        "threadId": "019cd2af-f084-7bf2-b568-5251fea82e8c",
-        "tracePath": "logs\\bundles\\signoff\\signoff-2026-03-09T12-31-59-842Z-24dd95\\raw\\raw_direct_baseline\\raw_direct_signoff_task_trace_summary.json",
-        "taskOutcomeStatus": "COMPLETED",
-        "verificationPassed": 1
-      },
-      "natural": {
-        "turnId": "019cd2b1-74b7-7a52-b658-2ef97a179bbf",
-        "threadId": "019cd2b1-73dc-7342-8007-17efdb490c22",
-        "tracePath": "logs\\bundles\\signoff\\signoff-2026-03-09T12-31-59-842Z-24dd95\\raw\\raw_direct_baseline\\raw_direct_natural_task_trace_summary.json",
-        "taskOutcomeStatus": "COMPLETED",
-        "verificationPassed": 1
-      }
-    },
+    "transportMode": "mock-fixture",
+    "samples": {},
     "error": "",
-    "reason": ""
+    "reason": "raw direct baseline requires stdio transport"
   },
   "baselineComparison": {
     "status": "ok",
-    "reportPath": "logs\\bundles\\signoff\\signoff-2026-03-09T12-31-59-842Z-24dd95\\raw\\relocated_top_level\\baseline_comparison_report.json",
-    "markdownPath": "logs\\bundles\\signoff\\signoff-2026-03-09T12-31-59-842Z-24dd95\\raw\\relocated_top_level\\speed_vs_assurance_report.md",
-    "archiveReportPath": "logs\\archive\\legacy\\baseline_comparison\\signoff-2026-03-09T12-31-59-842Z-24dd95.json",
-    "archiveMarkdownPath": "logs\\archive\\legacy\\baseline_comparison\\signoff-2026-03-09T12-31-59-842Z-24dd95.md",
+    "reportPath": "logs\\bundles\\signoff\\signoff-2026-04-18T05-27-13-996Z-f97810\\raw\\relocated_top_level\\baseline_comparison_report.json",
+    "markdownPath": "logs\\bundles\\signoff\\signoff-2026-04-18T05-27-13-996Z-f97810\\raw\\relocated_top_level\\speed_vs_assurance_report.md",
+    "archiveReportPath": "logs\\archive\\legacy\\baseline_comparison\\signoff-2026-04-18T05-27-13-996Z-f97810.json",
+    "archiveMarkdownPath": "logs\\archive\\legacy\\baseline_comparison\\signoff-2026-04-18T05-27-13-996Z-f97810.md",
     "truthfulClaimStatus": {
-      "liveTransportParity": "PROVEN",
+      "liveTransportParity": "NOT PROVEN",
       "rawCodexDirectSuperiority": "NOT PROVEN"
     }
   },
@@ -571,7 +674,7 @@
   "allPassed": true,
   "resume": {
     "canResume": 1,
-    "statePath": "logs\\bundles\\signoff\\signoff-2026-03-09T12-31-59-842Z-24dd95\\signoff_resume_state.json",
+    "statePath": "logs\\bundles\\signoff\\signoff-2026-04-18T05-27-13-996Z-f97810\\raw\\relocated_top_level\\signoff_resume_state.json",
     "currentStage": "",
     "nextPendingStage": "",
     "stopAfterStage": ""

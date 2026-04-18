@@ -6,9 +6,15 @@ const crypto=require("crypto");
 const zlib=require("zlib");
 const {spawn,spawnSync}=require("child_process");
 const {createRequestHandler}=require("./server/request_handler");
+const {createRequestHandlerContext}=require("./server/request_handler_context");
+const {createRouteServices}=require("./server/route_services");
+const {createCurrentSurfaceService}=require("./server/services/current_surface_service");
+const {createCurrentLogSurfaceService}=require("./server/services/current_log_surface_service");
+const {createHarnessOverviewSnapshotService}=require("./server/services/harness_overview_snapshot_service");
+const {createRuntimeApiSnapshotService}=require("./server/services/runtime_api_snapshot_service");
+const {createRuntimeStateService}=require("./server/services/runtime_state_service");
+const {createTraceabilityService}=require("./server/services/traceability_service");
 const {createBootstrapApi}=require("./server/bootstrap");
-const {createEvalService}=require("./server/services/eval_service");
-const {createExecService}=require("./server/services/exec_service");
 const {runBatchJob,getRunnerCapabilities}=require("./scripts/poc_batch_runner");
 const {buildMockFixtureScenario}=require("./scripts/lib/mock_app_server_fixture");
 const {
@@ -247,6 +253,7 @@ const {
 const {
   buildAppsRuntimeSnapshot:buildAppRegistryRuntimeSnapshot,
   findAppById,
+  findAppByMountPath,
   loadAppRegistry,
   resolveNativeStaticRoot,
   resolveProxyAppForward,
@@ -257,6 +264,7 @@ const {
 }=require("./scripts/lib/app_platform_read_surface");
 const {
   assertCodexReady,
+  resolveCodexAppServerSpawnTarget,
   runCodexReply,
   runCodexStructuredOutput,
 }=require("./scripts/lib/harness_app_runtime");
@@ -290,6 +298,7 @@ const appPlatformReadSurface=createAppPlatformReadSurface({
   buildAppRegistryRuntimeSnapshot,
   buildHarnessAppRuntimeStatus,
   findAppById,
+  findAppByMountPath,
   getRegisteredAppRuntimeConfig,
   isPathWithin,
   resolveNativeStaticRoot,
@@ -458,7 +467,6 @@ const requirementGuardMatcherDefaults=Object.freeze({
   defaultValue:3,
   inputKey:"input_value",
 });
-const defaultWindowsCodexCmd=process.env.APPDATA?path.join(process.env.APPDATA,"npm","codex.cmd"):"codex.cmd";
 const defaultExecModelName=resolveConfiguredDefaultExecModelName();
 const defaultExecModelReasoningEffort=resolveConfiguredDefaultExecModelReasoningEffort();
 const defaultExecModelReasoningEffortConfig=`model_reasoning_effort="${defaultExecModelReasoningEffort}"`;
@@ -589,7 +597,7 @@ const taskContractManifest=loadTaskContractManifestSafely();
 const evalLanePolicy=loadEvalLanePolicySafely();
 const designAcceptanceContract=loadDesignAcceptanceContractSafely();
 let tasteMemoryStore=loadTasteMemoryStoreSafely();
-let workspaceGuardLockedRoot="";
+let workspaceGuardLockedRoot=workspaceRoot;
 
 let webServer=null;
 let webPort=null;
@@ -1479,6 +1487,8 @@ function normalizeReplayMemoryRecord(record){
       agentName:safeString(request.agentName,120)||safeString(record.agentName,120)||defaultExecAgentName,
       cwd:safeString(request.cwd,220)||workspaceRoot,
       requestUserInputPolicy:normalizeRequestUserInputPolicy(request.requestUserInputPolicy,nonInteractiveRequestUserInputPolicy),
+      memoryMode:normalizeCodexMemoryMode(request.memoryMode,"default"),
+      resetCodexMemory:request.resetCodexMemory?1:0,
       forceNewSession:request.forceNewSession?1:0,
       executionProfile:normalizeExecutionProfile(request.executionProfile,runtimeExecutionProfile),
       executionIntent:normalizeExecutionIntent(request.executionIntent,"interactive"),
@@ -2041,6 +2051,8 @@ function sanitizeExecIdempotencyMetadata(metadata){
     cwd:safeString(source.cwd,220)||"",
     requestHash:safeString(source.requestHash,160)||"",
     requestUserInputPolicy:safeString(source.requestUserInputPolicy,40)||"",
+    memoryMode:safeString(source.memoryMode,40)||"",
+    resetCodexMemory:source.resetCodexMemory?1:0,
     executionProfile:safeString(source.executionProfile,60)||"",
     executionIntent:safeString(source.executionIntent,80)||"",
     executionSource:safeString(source.executionSource,80)||"",
@@ -2159,6 +2171,8 @@ function buildReplayMemorySnapshot(record,{includePrompt=false}={}){
     agentName:normalized.request.agentName,
     cwd:summarizePathForOperationLog(normalized.request.cwd,220),
     requestUserInputPolicy:normalized.request.requestUserInputPolicy,
+    memoryMode:normalized.request.memoryMode,
+    resetCodexMemory:normalized.request.resetCodexMemory?1:0,
     forceNewSession:normalized.request.forceNewSession?1:0,
     executionProfile:normalized.request.executionProfile,
     executionIntent:normalized.request.executionIntent,
@@ -3424,14 +3438,14 @@ function buildParentDispatchGuardDefaultsSnapshot(){
 function buildFullUtilizationDefaultsSnapshot(){
   const orchestratorDefault=defaultExecAgentName==="default";
   const requestUserInputBlocked=nonInteractiveRequestUserInputPolicy==="blocked";
-  const requestUserInputAutonomous=!requestUserInputBlocked;
+  const requestUserInputGoverned=requestUserInputBlocked||nonInteractiveRequestUserInputPolicy==="auto-default";
   const shadowActive=Boolean(adversarialShadowEnabled);
   const loopActive=Boolean(adversarialShadowEnabled&&adversarialLoopEnabled);
-  const ready=Boolean(orchestratorDefault&&requestUserInputAutonomous&&shadowActive&&loopActive);
+  const ready=Boolean(orchestratorDefault&&requestUserInputGoverned&&shadowActive&&loopActive);
   return{
     expected:{
       defaultExecAgent:"default",
-      requestUserInputPolicy:defaultNonInteractivePolicy,
+      requestUserInputPolicy:nonInteractiveRequestUserInputPolicy,
       adversarialShadowEnabled:1,
       adversarialLoopEnabled:1,
     },
@@ -3591,6 +3605,19 @@ function normalizeObservedTurnSignals(value){
   const sampleChangedPaths=Array.isArray(source.sampleChangedPaths)
     ?source.sampleChangedPaths.map((entry)=>safeString(entry,220)).filter(Boolean).slice(0,3)
     :[];
+  const mcpPerServerCountsRaw=source.mcpPerServerCounts&&typeof source.mcpPerServerCounts==="object"?source.mcpPerServerCounts:{};
+  const mcpPerServerCounts=Object.entries(mcpPerServerCountsRaw).slice(0,12).reduce((acc,[key,count])=>{
+    const normalizedKey=safeString(key,80);
+    if(!normalizedKey)return acc;
+    acc[normalizedKey]=Number.isFinite(Number(count))?Math.max(0,Math.trunc(Number(count))):0;
+    return acc;
+  },{});
+  const mcpNamespaces=Array.isArray(source.mcpNamespaces)
+    ?source.mcpNamespaces.map((entry)=>safeString(entry,80)).filter(Boolean).slice(0,6)
+    :[];
+  const mcpSandboxStates=Array.isArray(source.mcpSandboxStates)
+    ?source.mcpSandboxStates.map((entry)=>safeString(entry,80)).filter(Boolean).slice(0,6)
+    :[];
   return{
     commandExecutions:Number.isFinite(Number(source.commandExecutions))?Math.max(0,Math.trunc(Number(source.commandExecutions))):0,
     commandFailures:Number.isFinite(Number(source.commandFailures))?Math.max(0,Math.trunc(Number(source.commandFailures))):0,
@@ -3598,6 +3625,11 @@ function normalizeObservedTurnSignals(value){
     changedFiles:Number.isFinite(Number(source.changedFiles))?Math.max(0,Math.trunc(Number(source.changedFiles))):0,
     sampleChangedPaths,
     mcpCalls:Number.isFinite(Number(source.mcpCalls))?Math.max(0,Math.trunc(Number(source.mcpCalls))):0,
+    mcpWallTimeMs:Number.isFinite(Number(source.mcpWallTimeMs))?Math.max(0,Math.trunc(Number(source.mcpWallTimeMs))):0,
+    mcpPerServerCounts,
+    mcpNamespaces,
+    mcpSandboxStates,
+    mcpParallelSafeCallCount:Number.isFinite(Number(source.mcpParallelSafeCallCount))?Math.max(0,Math.trunc(Number(source.mcpParallelSafeCallCount))):0,
     collabCalls:Number.isFinite(Number(source.collabCalls))?Math.max(0,Math.trunc(Number(source.collabCalls))):0,
     collabFailures:Number.isFinite(Number(source.collabFailures))?Math.max(0,Math.trunc(Number(source.collabFailures))):0,
     webSearches:Number.isFinite(Number(source.webSearches))?Math.max(0,Math.trunc(Number(source.webSearches))):0,
@@ -4721,11 +4753,15 @@ function createBaseAgentState(){
     lastWebSearch:null,
     lastWebSearchMode:null,
     lastCwd:null,
+    lastCwdKey:null,
     lastRequestUserInputPolicy:null,
     lastModel:defaultExecModelName,
     lastModelReasoningEffort:defaultExecModelReasoningEffort,
     lastFastModeEnabled:fastModeDefault,
     lastAutomaticApprovalReviewEnabled:automaticApprovalReviewDefault,
+    memoryMode:"default",
+    lastMemoryMode:"default",
+    lastMemoryResetAt:0,
     lastPlanningContext:null,
     fastModeEnabled:fastModeDefault,
     automaticApprovalReviewEnabled:automaticApprovalReviewDefault,
@@ -5101,16 +5137,29 @@ function clearLiveCollabChildActivity(threadId){
 }
 function clearLiveCollabChildActivityForTurn(turnId,{status="interrupted",detail=""}={}){
   const normalizedTurnId=safeString(turnId,160);
-  if(!normalizedTurnId)return;
+  if(!normalizedTurnId)return 0;
+  let deleted=0;
   const fallbackStatus=normalizeLiveCollabChildStatus(status,"interrupted");
+  const fallbackDetail=safeString(detail,240)||"";
+  const now=Date.now();
   for(const[threadId,entry]of liveCollabChildActivityByThread.entries()){
     if(safeString(entry&&entry.parentTurnId,160)!==normalizedTurnId)continue;
-    settleLiveCollabChildActivity(threadId,{
-      name:safeString(entry&&entry.name,120)||"",
-      status:fallbackStatus,
-      detail:safeString(detail,240)||safeString(entry&&entry.detail,240)||"",
-    });
+    deleted+=1;
+    liveCollabChildActivityByThread.delete(threadId);
+    const catalog=liveCollabChildCatalogByThread.get(threadId);
+    if(catalog){
+      liveCollabChildCatalogByThread.set(threadId,{
+        ...catalog,
+        status:fallbackStatus,
+        detail:fallbackDetail,
+        isActive:false,
+        activeTurnId:"",
+        completedAt:now,
+        updatedAt:now,
+      });
+    }
   }
+  return deleted;
 }
 function liveCollabReceiverIdsForItem(item,tracker,max=4){
   const direct=extractCollabReceiverThreadIds(item,max);
@@ -5120,6 +5169,13 @@ function liveCollabReceiverIdsForItem(item,tracker,max=4){
   const cached=tracker.receiverIdsByCallId.get(itemId);
   return Array.isArray(cached)?cached.slice(0,max):[];
 }
+const LIVE_COLLAB_CHILD_ACTIVITY_DETAIL=Object.freeze({
+  spawned:"spawn completed / child agent attached",
+  waiting:"waiting on child agent",
+  sendInput:"input sent to child agent",
+  resumed:"child agent resumed",
+  closed:"closeagent completed / child agent interrupted",
+});
 function observeLiveCollabItem({item,phase="",tracker=null}={}){
   if(!item||typeof item!=="object"||!isCollabToolItemType(item.type))return null;
   pruneLiveCollabChildState();
@@ -5142,7 +5198,7 @@ function observeLiveCollabItem({item,phase="",tracker=null}={}){
         setLiveCollabChildActivity(receiverId,{
           name:childName,
           status:"spawned",
-          detail:"spawn髯橸ｽｳ陟包ｽ｡繝ｻ・ｺ郢晢ｽｻ/ 髯昴・・ｴ・ｳgent髯具ｽｻ隴弱・・・刹・ｹ驍丞・・ｽ・ｸ繝ｻ・ｭ",
+          detail:LIVE_COLLAB_CHILD_ACTIVITY_DETAIL.spawned,
           tracker,
         });
       });
@@ -5156,7 +5212,7 @@ function observeLiveCollabItem({item,phase="",tracker=null}={}){
         setLiveCollabChildActivity(receiverId,{
           name:childName,
           status:"working",
-          detail:"髯昴・・ｴ・ｳgent驍ｵ・ｺ隰疲ｺ倥・鬨ｾ繝ｻ繝ｻ繝ｻ・ｸ繝ｻ・ｭ",
+          detail:LIVE_COLLAB_CHILD_ACTIVITY_DETAIL.waiting,
           tracker,
         });
       });
@@ -5193,7 +5249,9 @@ function observeLiveCollabItem({item,phase="",tracker=null}={}){
         setLiveCollabChildActivity(receiverId,{
           name:childName,
           status:"working",
-          detail:tool==="sendinput"?"鬮ｴ謇假ｽｽ・ｽ髯ｷ莨夲ｽ｣・ｰ髯ｷ闌ｨ・ｽ・･髯ｷ迚呻ｽｸ蜻ｻ・ｽ螳壽弱・・ｦ鬨ｾ繝ｻ繝ｻ繝ｻ・ｸ繝ｻ・ｭ":"髯昴・・ｴ・ｳgent驛｢・ｧ髮区ｧｭ繝ｻ鬯ｮ・｢陋滂ｽｶ繝ｻ・ｸ繝ｻ・ｭ",
+          detail:tool==="sendinput"
+            ?LIVE_COLLAB_CHILD_ACTIVITY_DETAIL.sendInput
+            :LIVE_COLLAB_CHILD_ACTIVITY_DETAIL.resumed,
           tracker,
         });
       });
@@ -5214,7 +5272,7 @@ function observeLiveCollabItem({item,phase="",tracker=null}={}){
           settleLiveCollabChildActivity(receiverId,{
             name:safeString(existing&&existing.name,120)||"",
             status:"interrupted",
-            detail:"closeagent 髯橸ｽｳ陟包ｽ｡繝ｻ・ｺ郢晢ｽｻ/ 髯昴・・ｴ・ｳgent驛｢・ｧ髮区ｨ樣・髮弱・・ｽ・｢",
+            detail:LIVE_COLLAB_CHILD_ACTIVITY_DETAIL.closed,
             tracker,
           });
         }
@@ -5230,6 +5288,7 @@ function observeLiveCollabItem({item,phase="",tracker=null}={}){
   }
   return{receiverIds,childName};
 }
+
 function getLiveCollabChildRows(){
   pruneLiveCollabChildState();
   return Array.from(liveCollabChildCatalogByThread.values()).map((entry)=>{
@@ -6261,22 +6320,6 @@ function normalizeAppServerTransportMode(value){
 function getAppServerTransportMode(){
   return normalizeAppServerTransportMode(process.env.CODEX_APP_SERVER_TRANSPORT);
 }
-function resolveAppServerSpawnTarget(cwd){
-  if(process.platform==="win32"){
-    const cmdPath=fs.existsSync(defaultWindowsCodexCmd)?defaultWindowsCodexCmd:"codex.cmd";
-    const commandLine=`"${cmdPath}" app-server`;
-    return{
-      command:commandLine,
-      args:[],
-      options:{cwd,windowsHide:true,stdio:["pipe","pipe","pipe"],shell:true},
-    };
-  }
-  return{
-    command:"codex",
-    args:["-c",defaultExecModelReasoningEffortConfig,"app-server"],
-    options:{cwd,windowsHide:true,stdio:["pipe","pipe","pipe"]},
-  };
-}
 
 function getOrCreateAgentState(name){const n=(name||"").trim();if(!n)return null;if(!agentStates.has(n)){agentStates.set(n,createBaseAgentState());}return agentStates.get(n);}
 function getActiveAgentState(){return getOrCreateAgentState(activeAgentName);}
@@ -6300,15 +6343,49 @@ function resolveAgentName(options){
 }
 function formatFeatureList(set){const list=Array.from(set||[]);return list.length?list.join(", "):"none";}
 function formatAgentList(){const lines=["agents:"];for(const [name,s]of agentStates.entries()){const mark=name===activeAgentName?"*":"-";const session=s.sessionRef||"none";const exp=s.experimentalEnabled?"on":"off";const feat=formatFeatureList(s.experimentalFeatures);const fork=s.forkedFrom?`, forkedFrom=${s.forkedFrom}`:"";lines.push(`${mark} ${name} (session=${session}, experimental=${exp}, features=${feat}${fork})`);}return`${lines.join("\n")}\n`;}
+function runtimeTurnSnapshotIsInProgress(snapshot,threadId,turnId){
+  if(!snapshot||typeof snapshot!=="object")return false;
+  const snapshotStatus=normalizeExecutionState(
+    safeString(snapshot.status,40)||safeString(snapshot.terminal_status,40)||safeString(snapshot.terminalStatus,40),
+    {terminalFallback:false}
+  );
+  if(snapshotStatus!=="in_progress")return false;
+  const snapshotThreadId=safeString(snapshot.thread_id,160)||safeString(snapshot.threadId,160)||"";
+  const snapshotTurnId=safeString(snapshot.turn_id,160)||safeString(snapshot.turnId,160)||"";
+  if(threadId&&snapshotThreadId&&snapshotThreadId!==threadId)return false;
+  if(turnId&&snapshotTurnId&&snapshotTurnId!==turnId)return false;
+  return Boolean(snapshotTurnId||snapshotThreadId);
+}
+function resolveRuntimeActiveTurnIdForSnapshot(state){
+  const rawActiveTurnId=safeString(state&&state.activeTurnId,160)||"";
+  if(!rawActiveTurnId)return null;
+  const threadId=safeString(state&&state.threadId,160)||"";
+  const sessionRef=safeString(state&&state.sessionRef,160)||threadId;
+  if(sessionRef){
+    const sessionPerformance=getSessionPerformanceSnapshot(sessionRef);
+    const liveTurnId=safeString(sessionPerformance&&sessionPerformance.live&&sessionPerformance.live.turnId,160)||"";
+    if(Boolean(sessionPerformance&&sessionPerformance.live&&sessionPerformance.live.active)&&liveTurnId===rawActiveTurnId){
+      return rawActiveTurnId;
+    }
+  }
+  if(runtimeTurnSnapshotIsInProgress(latestTurnSnapshot,threadId,rawActiveTurnId)){
+    return rawActiveTurnId;
+  }
+  if(state&&state.activeTurnId){
+    state.activeTurnId=null;
+  }
+  return null;
+}
 function listAgentsSnapshot(){
   const items=[];
   for(const[name,s]of agentStates.entries()){
+    const activeTurnId=resolveRuntimeActiveTurnIdForSnapshot(s);
     items.push({
       name,
       isActive:name===activeAgentName,
       sessionRef:s.sessionRef||null,
       threadId:s.threadId||null,
-      activeTurnId:s.activeTurnId||null,
+      activeTurnId,
       experimental:Boolean(s.experimentalEnabled),
       experimentalFeatures:Array.from(s.experimentalFeatures||[]),
       serviceTier:resolveEffectiveServiceTier(s),
@@ -6319,6 +6396,9 @@ function listAgentsSnapshot(){
       modelReasoningEffort:s.lastModelReasoningEffort||defaultExecModelReasoningEffort,
       fastModeEnabled:Boolean(s.fastModeEnabled),
       automaticApprovalReviewEnabled:Boolean(s.automaticApprovalReviewEnabled),
+      cwd:s.lastCwd||null,
+      memoryMode:normalizeCodexMemoryMode(s.memoryMode,"default"),
+      lastMemoryResetAt:Number.isFinite(Number(s.lastMemoryResetAt))?Math.max(0,Math.trunc(Number(s.lastMemoryResetAt))):0,
       governance:summarizeAgentGovernance(name),
     });
   }
@@ -6666,6 +6746,12 @@ function isResponseStreamDisconnectErrorPayload(errorPayload){
   const info=errorPayload.codexErrorInfo;
   return Boolean(info&&typeof info==="object"&&info.responseStreamDisconnected&&typeof info.responseStreamDisconnected==="object");
 }
+function shouldKeepExecRunningAfterClientClose(executionSource=""){
+  const normalized=safeString(executionSource,80).toLowerCase();
+  if(!normalized)return false;
+  if(normalized==="web_ui")return true;
+  return normalized.startsWith("app_");
+}
 function extractResponseStreamDisconnectDetail(errorPayload,max=2400){
   if(!errorPayload||typeof errorPayload!=="object")return"";
   return firstNonEmptyString([
@@ -6798,6 +6884,196 @@ function extractNonInteractiveApprovalFromCollabItem(item){
   const tool=safeString(item.tool,80)||"collab tool";
   return`non-interactive approval blocked ${tool}: ${safeString(matched,600)}`;
 }
+const appServerCapabilityStatusSemantics=Object.freeze({
+  supported:"explicitly advertised or observed during initialize negotiation",
+  unsupported:"explicitly denied during initialize negotiation",
+  unknown:"not negotiated yet or initialize payload did not provide an explicit signal",
+});
+const appServerCapabilityDefinitions=Object.freeze([
+  Object.freeze({
+    id:"memoryMode",
+    label:"memory_mode",
+    matchPath(path){
+      return path.includes("memory_mode")||(path.includes("memory")&&path.includes("mode"));
+    },
+  }),
+  Object.freeze({
+    id:"memoryReset",
+    label:"memory_reset",
+    matchPath(path){
+      return path.includes("memory_reset")
+        ||(path.includes("memory")&&(path.includes("reset")||path.includes("delete")||path.includes("deletion")));
+    },
+  }),
+  Object.freeze({
+    id:"rawTurnItemInjection",
+    label:"raw_turn_item_injection",
+    matchPath(path){
+      return path.includes("raw_turn_item_injection")
+        ||(path.includes("raw")&&path.includes("turn")&&path.includes("item")&&(path.includes("inject")||path.includes("injection")));
+    },
+  }),
+  Object.freeze({
+    id:"transcriptCompletionEvents",
+    label:"transcript_completion_events",
+    matchPath(path){
+      return path.includes("transcript_completion_events")
+        ||(path.includes("transcript")&&path.includes("completion")&&path.includes("event"));
+    },
+  }),
+  Object.freeze({
+    id:"symlinkFsMetadata",
+    label:"symlink_fs_metadata",
+    matchPath(path){
+      return path.includes("symlink_fs_metadata")
+        ||(path.includes("symlink")&&path.includes("metadata")&&(path.includes("fs")||path.includes("filesystem")||path.includes("file_system")));
+    },
+  }),
+  Object.freeze({
+    id:"parallelMcp",
+    label:"parallel_mcp",
+    matchPath(path){
+      return path.includes("parallel_mcp")
+        ||path.includes("supports_parallel_tool_calls")
+        ||(path.includes("mcp")&&path.includes("parallel"));
+    },
+  }),
+]);
+function normalizeAppServerCapabilityPathSegment(value){
+  const text=safeString(value,160);
+  if(!text)return"";
+  return text
+    .replace(/([a-z0-9])([A-Z])/g,"$1_$2")
+    .replace(/[^a-zA-Z0-9]+/g,"_")
+    .replace(/^_+|_+$/g,"")
+    .toLowerCase();
+}
+function appendAppServerCapabilitySignals(target,value,pathSegments=[]){
+  if(!Array.isArray(target))return;
+  if(Array.isArray(value)){
+    if(pathSegments.length){
+      target.push({
+        path:pathSegments.join("."),
+        kind:"array",
+        value:value.length,
+      });
+    }
+    for(let index=0;index<value.length;index+=1){
+      appendAppServerCapabilitySignals(target,value[index],[...pathSegments,String(index)]);
+    }
+    return;
+  }
+  if(value&&typeof value==="object"){
+    if(pathSegments.length){
+      target.push({
+        path:pathSegments.join("."),
+        kind:"object",
+        value:Object.keys(value).length,
+      });
+    }
+    for(const[key,entry]of Object.entries(value)){
+      const normalizedKey=normalizeAppServerCapabilityPathSegment(key);
+      if(!normalizedKey)continue;
+      appendAppServerCapabilitySignals(target,entry,[...pathSegments,normalizedKey]);
+    }
+    return;
+  }
+  if(!pathSegments.length)return;
+  target.push({
+    path:pathSegments.join("."),
+    kind:value===null?"null":typeof value,
+    value,
+  });
+}
+function normalizeAppServerCapabilitySignalState(signal){
+  if(!signal||typeof signal!=="object")return"unknown";
+  if(signal.kind==="object"||signal.kind==="array")return"supported";
+  if(signal.kind==="boolean")return signal.value?"supported":"unsupported";
+  if(signal.kind==="number"){
+    if(signal.value===0)return"unsupported";
+    if(Number.isFinite(Number(signal.value))&&Number(signal.value)>0)return"supported";
+    return"unknown";
+  }
+  if(signal.kind!=="string")return"unknown";
+  const text=safeString(signal.value,80).toLowerCase();
+  if(!text)return"unknown";
+  if(["supported","enabled","available","true","yes","ready","on"].includes(text))return"supported";
+  if(["unsupported","disabled","unavailable","false","no","off"].includes(text))return"unsupported";
+  return"unknown";
+}
+function buildDefaultAppServerCapabilityFeatures(){
+  const features={};
+  for(const definition of appServerCapabilityDefinitions){
+    features[definition.id]={
+      label:definition.label,
+      status:"unknown",
+      matchedPaths:[],
+      signalCount:0,
+      detection:"no_explicit_signal",
+    };
+  }
+  return features;
+}
+function buildAppServerCapabilitySnapshotFromState(state){
+  const source=state&&typeof state==="object"?state:{};
+  const initializeResult=source.initializeResult&&typeof source.initializeResult==="object"?source.initializeResult:null;
+  const signals=[];
+  if(initializeResult&&initializeResult.capabilities&&typeof initializeResult.capabilities==="object"){
+    appendAppServerCapabilitySignals(signals,initializeResult.capabilities,["capabilities"]);
+  }
+  if(initializeResult){
+    appendAppServerCapabilitySignals(signals,initializeResult,["initialize_result"]);
+  }
+  const matchedCapabilityPaths=[];
+  const features=buildDefaultAppServerCapabilityFeatures();
+  for(const definition of appServerCapabilityDefinitions){
+    const matchingSignals=signals.filter((entry)=>definition.matchPath(entry.path));
+    const supportedSignals=matchingSignals.filter((entry)=>normalizeAppServerCapabilitySignalState(entry)==="supported");
+    const unsupportedSignals=matchingSignals.filter((entry)=>normalizeAppServerCapabilitySignalState(entry)==="unsupported");
+    const matchedPaths=Array.from(new Set(matchingSignals.map((entry)=>entry.path))).slice(0,8);
+    matchedCapabilityPaths.push(...matchedPaths);
+    let status="unknown";
+    let detection="no_explicit_signal";
+    if(supportedSignals.length&&unsupportedSignals.length){
+      detection="conflicting_signals";
+    }else if(supportedSignals.length){
+      status="supported";
+      detection="explicit_support";
+    }else if(unsupportedSignals.length){
+      status="unsupported";
+      detection="explicit_deny";
+    }else if(matchingSignals.length){
+      detection="non_boolean_signal";
+    }
+    features[definition.id]={
+      label:definition.label,
+      status,
+      matchedPaths,
+      signalCount:matchingSignals.length,
+      detection,
+    };
+  }
+  return{
+    schema:"app-server-capability-snapshot.v1",
+    handshakeStatus:safeString(source.handshakeStatus,80)||"not_initialized",
+    statusSemantics:appServerCapabilityStatusSemantics,
+    initializeRequestedAt:Number.isFinite(Number(source.initializeRequestedAt))?Math.max(0,Math.trunc(Number(source.initializeRequestedAt))):0,
+    initializeCompletedAt:Number.isFinite(Number(source.initializeCompletedAt))?Math.max(0,Math.trunc(Number(source.initializeCompletedAt))):0,
+    initializedNotifiedAt:Number.isFinite(Number(source.initializedNotifiedAt))?Math.max(0,Math.trunc(Number(source.initializedNotifiedAt))):0,
+    protocolVersion:safeString(source.protocolVersion,80)||"",
+    serverInfo:{
+      name:safeString(source.serverInfo&&source.serverInfo.name,120)||"",
+      version:safeString(source.serverInfo&&source.serverInfo.version,80)||"",
+    },
+    initializeRequestCapabilities:source.initializeRequestCapabilities&&typeof source.initializeRequestCapabilities==="object"
+      ?source.initializeRequestCapabilities
+      :{},
+    features,
+    featureOrder:appServerCapabilityDefinitions.map((definition)=>definition.id),
+    matchedCapabilityPaths:Array.from(new Set(matchedCapabilityPaths)).slice(0,24),
+    handshakeError:safeString(source.handshakeError,220)||"",
+  };
+}
 class CodexAppServerClient{
   constructor(cwd){
     this.cwd=cwd;
@@ -6816,6 +7092,79 @@ class CodexAppServerClient{
     this.mockTurns=new Map();
     this.childTerminated=false;
     this.terminatedTransportError=null;
+    this.capabilityState=this.createEmptyCapabilityState();
+  }
+  createEmptyCapabilityState(){
+    return{
+      handshakeStatus:"not_initialized",
+      initializeRequestedAt:0,
+      initializeCompletedAt:0,
+      initializedNotifiedAt:0,
+      protocolVersion:"",
+      serverInfo:{name:"",version:""},
+      initializeRequestCapabilities:{},
+      initializeResult:null,
+      handshakeError:"",
+    };
+  }
+  resetCapabilityState(){
+    this.capabilityState=this.createEmptyCapabilityState();
+  }
+  recordInitializeRequest(params){
+    const current=this.capabilityState&&typeof this.capabilityState==="object"
+      ?this.capabilityState
+      :this.createEmptyCapabilityState();
+    this.capabilityState={
+      ...current,
+      handshakeStatus:"initialize_requested",
+      initializeRequestedAt:nowTs(),
+      initializeRequestCapabilities:params&&params.capabilities&&typeof params.capabilities==="object"
+        ?params.capabilities
+        :{},
+      handshakeError:"",
+    };
+  }
+  recordInitializeResult(result){
+    const current=this.capabilityState&&typeof this.capabilityState==="object"
+      ?this.capabilityState
+      :this.createEmptyCapabilityState();
+    this.capabilityState={
+      ...current,
+      handshakeStatus:current.initializedNotifiedAt?"initialized":"initialize_completed",
+      initializeCompletedAt:nowTs(),
+      protocolVersion:safeString(result&&result.protocolVersion,80)||safeString(current.protocolVersion,80)||"",
+      serverInfo:result&&result.serverInfo&&typeof result.serverInfo==="object"
+        ?{
+          name:safeString(result.serverInfo.name,120)||"",
+          version:safeString(result.serverInfo.version,80)||"",
+        }
+        :current.serverInfo,
+      initializeResult:result&&typeof result==="object"?result:null,
+      handshakeError:"",
+    };
+  }
+  recordInitializeFailure(error){
+    const current=this.capabilityState&&typeof this.capabilityState==="object"
+      ?this.capabilityState
+      :this.createEmptyCapabilityState();
+    this.capabilityState={
+      ...current,
+      handshakeStatus:"initialize_failed",
+      handshakeError:safeString(error&&error.message?error.message:String(error),220)||"initialize_failed",
+    };
+  }
+  recordInitializedNotification(){
+    const current=this.capabilityState&&typeof this.capabilityState==="object"
+      ?this.capabilityState
+      :this.createEmptyCapabilityState();
+    this.capabilityState={
+      ...current,
+      handshakeStatus:"initialized",
+      initializedNotifiedAt:nowTs(),
+    };
+  }
+  getCapabilitySnapshot(){
+    return buildAppServerCapabilitySnapshotFromState(this.capabilityState);
   }
   hasUsableChild(){
     if(this.transportMode==="mock-fixture"){
@@ -6854,6 +7203,7 @@ class CodexAppServerClient{
     this.stopping=false;
     this.childTerminated=false;
     this.terminatedTransportError=null;
+    this.resetCapabilityState();
     if(this.transportMode==="mock-fixture"){
       this.child={
         killed:false,
@@ -6871,7 +7221,11 @@ class CodexAppServerClient{
     }
     let child;
     try{
-      const target=resolveAppServerSpawnTarget(this.cwd);
+      const target=resolveCodexAppServerSpawnTarget({
+        cwd:this.cwd,
+        reasoningEffortConfig:defaultExecModelReasoningEffortConfig,
+        stdio:["pipe","pipe","pipe"],
+      });
       child=spawn(target.command,target.args,target.options);
     }catch(e){
       throw new Error(`failed to start codex app-server: ${e.message}`);
@@ -6957,6 +7311,7 @@ class CodexAppServerClient{
     });
   }
   async sendNotificationRaw(method,params){
+    if(method==="initialized")this.recordInitializedNotification();
     if(this.transportMode==="mock-fixture"){
       return;
     }
@@ -6967,6 +7322,7 @@ class CodexAppServerClient{
       return this.sendMockRequest(method,params,timeoutMs);
     }
     if(!this.child||this.stopping)throw new Error("app-server is not running");
+    if(method==="initialize")this.recordInitializeRequest(params);
     const id=String(this.requestSeq++);
     const startedAt=nowTs();
     const traced=this.shouldTraceRpcMethod(method);
@@ -6979,6 +7335,7 @@ class CodexAppServerClient{
     return new Promise((resolve,reject)=>{
       const timeout=setTimeout(()=>{
         this.pending.delete(id);
+        if(method==="initialize")this.recordInitializeFailure(new Error(`request timed out: ${method}`));
         if(traced){
           logOperation("rpc.timeout",{
             id,
@@ -6990,6 +7347,7 @@ class CodexAppServerClient{
       },timeoutMs);
       this.pending.set(id,{resolve,reject,timeout,method,startedAt,traced});
       void this.sendRaw({method,id,params}).catch(e=>{
+        if(method==="initialize")this.recordInitializeFailure(e);
         if(traced){
           logOperation("rpc.send_error",{
             id,
@@ -7054,6 +7412,7 @@ class CodexAppServerClient{
     const traced=this.shouldTraceRpcMethod(method);
     const id=String(this.requestSeq++);
     const startedAt=nowTs();
+    if(method==="initialize")this.recordInitializeRequest(params);
     if(traced){
       logOperation("rpc.req",{
         id,
@@ -7063,6 +7422,7 @@ class CodexAppServerClient{
     }
     try{
       const result=this.resolveMockRequest(method,params);
+      if(method==="initialize")this.recordInitializeResult(result);
       if(traced){
         logOperation("rpc.res",{
           id,
@@ -7073,6 +7433,7 @@ class CodexAppServerClient{
       }
       return result;
     }catch(error){
+      if(method==="initialize")this.recordInitializeFailure(error);
       if(traced){
         logOperation("rpc.err",{
           id,
@@ -7308,8 +7669,14 @@ class CodexAppServerClient{
           });
         }
       }
-      if(Object.prototype.hasOwnProperty.call(msg,"error"))p.reject(new Error(this.parseErrorMessage(msg.error)));
-      else p.resolve(msg.result);
+      if(Object.prototype.hasOwnProperty.call(msg,"error")){
+        const error=new Error(this.parseErrorMessage(msg.error));
+        if(p.method==="initialize")this.recordInitializeFailure(error);
+        p.reject(error);
+      }else{
+        if(p.method==="initialize")this.recordInitializeResult(msg.result);
+        p.resolve(msg.result);
+      }
       return;
     }
     if(msg&&typeof msg.method==="string")this.handleNotification(msg);
@@ -7955,7 +8322,103 @@ class CodexAppServerClient{
 }
 
 const appServer=new CodexAppServerClient(workspaceRoot);
+const codexMemoryModeValues=Object.freeze(["default","read_write","read_only","disabled"]);
+function normalizeCodexMemoryMode(value,fallback="default"){
+  const raw=safeString(value,40).toLowerCase().replace(/[\s-]+/g,"_");
+  const fallbackRaw=safeString(fallback,40).toLowerCase().replace(/[\s-]+/g,"_");
+  if(!raw)return fallbackRaw||"default";
+  if(raw==="default"||raw==="inherit"||raw==="auto")return"default";
+  if(raw==="read_write"||raw==="full"||raw==="enabled"||raw==="on"||raw==="use_and_generate")return"read_write";
+  if(raw==="read_only"||raw==="readonly"||raw==="use_only"||raw==="inject_only")return"read_only";
+  if(raw==="disabled"||raw==="off"||raw==="none")return"disabled";
+  if(fallbackRaw==="read_write"||fallbackRaw==="full"||fallbackRaw==="enabled"||fallbackRaw==="on"||fallbackRaw==="use_and_generate")return"read_write";
+  if(fallbackRaw==="read_only"||fallbackRaw==="readonly"||fallbackRaw==="use_only"||fallbackRaw==="inject_only")return"read_only";
+  if(fallbackRaw==="disabled"||fallbackRaw==="off"||fallbackRaw==="none")return"disabled";
+  return"default";
+}
+function getAppServerCapabilitySnapshot(){
+  return appServer&&typeof appServer.getCapabilitySnapshot==="function"
+    ?appServer.getCapabilitySnapshot()
+    :buildAppServerCapabilitySnapshotFromState(null);
+}
+function buildMemoryBridgeConfigEntries(memoryMode,capabilitySnapshot){
+  const mode=normalizeCodexMemoryMode(memoryMode,"default");
+  const snapshot=capabilitySnapshot&&typeof capabilitySnapshot==="object"?capabilitySnapshot:{};
+  const features=snapshot.features&&typeof snapshot.features==="object"?snapshot.features:{};
+  const modeStatus=safeString(features.memoryMode&&features.memoryMode.status,40)||"unknown";
+  const resetStatus=safeString(features.memoryReset&&features.memoryReset.status,40)||"unknown";
+  const bridge={
+    requestedMode:mode,
+    appliedMode:"default",
+    remoteModeStatus:modeStatus,
+    remoteResetStatus:resetStatus,
+    localResetFallback:1,
+    config:{},
+    bridgeStatus:"default_passthrough",
+  };
+  if(mode==="default")return bridge;
+  if(modeStatus!=="supported"){
+    bridge.bridgeStatus=`skipped_remote_mode_${modeStatus||"unknown"}`;
+    return bridge;
+  }
+  bridge.appliedMode=mode;
+  bridge.bridgeStatus="remote_mode_override";
+  if(mode==="read_write"){
+    bridge.config["features.memories"]=true;
+    bridge.config["memories.use_memories"]=true;
+    bridge.config["memories.generate_memories"]=true;
+    return bridge;
+  }
+  if(mode==="read_only"){
+    bridge.config["features.memories"]=true;
+    bridge.config["memories.use_memories"]=true;
+    bridge.config["memories.generate_memories"]=false;
+    return bridge;
+  }
+  bridge.config["features.memories"]=false;
+  bridge.config["memories.use_memories"]=false;
+  bridge.config["memories.generate_memories"]=false;
+  return bridge;
+}
+function cleanupMemoryExtensions(agentState,{clearPlanning=true}={}){
+  if(!agentState||typeof agentState!=="object")return;
+  if(clearPlanning){
+    agentState.lastPlanningContext=null;
+  }
+}
+function resetCodexMemory(agentState){
+  if(!agentState||typeof agentState!=="object")return;
+  cleanupMemoryExtensions(agentState,{clearPlanning:true});
+  agentState.lastMemoryResetAt=Date.now();
+}
+function buildAppServerMemoryBridgeSnapshot(capabilitySnapshot){
+  const snapshot=capabilitySnapshot&&typeof capabilitySnapshot==="object"?capabilitySnapshot:{};
+  const features=snapshot.features&&typeof snapshot.features==="object"?snapshot.features:{};
+  return{
+    schema:"app-server-memory-bridge.v1",
+    defaultMode:"default",
+    supportedModes:codexMemoryModeValues.slice(),
+    remoteModeStatus:safeString(features.memoryMode&&features.memoryMode.status,40)||"unknown",
+    remoteResetStatus:safeString(features.memoryReset&&features.memoryReset.status,40)||"unknown",
+    localResetFallback:1,
+    configKeys:["features.memories","memories.use_memories","memories.generate_memories"],
+  };
+}
+function buildAppServerCanonicalizationSnapshot(){
+  return{
+    schema:"app-server-canonicalization.v1",
+    cwdIdentity:{
+      platform:process.platform,
+      stripsWindowsExtendedLengthPrefix:process.platform==="win32"?1:0,
+      trimsTrailingSeparators:1,
+      caseInsensitiveComparison:process.platform==="win32"?1:0,
+    },
+  };
+}
 function buildAppServerTransportRuntimeSnapshot(){
+  const capabilitySnapshot=getAppServerCapabilitySnapshot();
+  const memoryBridge=buildAppServerMemoryBridgeSnapshot(capabilitySnapshot);
+  const canonicalization=buildAppServerCanonicalizationSnapshot();
   return{
     transportMode:safeString(appServer&&appServer.transportMode,40)||"unknown",
     childRunning:Boolean(appServer&&appServer.child)?1:0,
@@ -7965,6 +8428,12 @@ function buildAppServerTransportRuntimeSnapshot(){
     activeTurnContextCount:appServer&&appServer.turnContexts instanceof Map?appServer.turnContexts.size:0,
     activeMockTurnCount:appServer&&appServer.mockTurns instanceof Map?appServer.mockTurns.size:0,
     terminatedTransportError:safeString(appServer&&appServer.terminatedTransportError&&appServer.terminatedTransportError.message,220)||"",
+    capabilitySnapshot,
+    capability_snapshot:capabilitySnapshot,
+    memoryBridge,
+    memory_bridge:memoryBridge,
+    canonicalization,
+    cwd_canonicalization:canonicalization,
   };
 }
 function handleSlashAgentCommand(res,argsText){
@@ -8038,11 +8507,15 @@ function buildForkedAgentState(source,sourceName){
     lastWebSearch:source.lastWebSearch,
     lastWebSearchMode:source.lastWebSearchMode||null,
     lastCwd:source.lastCwd||null,
+    lastCwdKey:source.lastCwdKey||null,
     lastRequestUserInputPolicy:source.lastRequestUserInputPolicy||null,
     lastModel:source.lastModel||defaultExecModelName,
     lastModelReasoningEffort:source.lastModelReasoningEffort||defaultExecModelReasoningEffort,
     lastFastModeEnabled:typeof source.lastFastModeEnabled==="boolean"?source.lastFastModeEnabled:resolveFastModeEnabled(source.fastModeEnabled),
     lastAutomaticApprovalReviewEnabled:typeof source.lastAutomaticApprovalReviewEnabled==="boolean"?source.lastAutomaticApprovalReviewEnabled:resolveAutomaticApprovalReviewEnabled(source.automaticApprovalReviewEnabled),
+    memoryMode:normalizeCodexMemoryMode(source.memoryMode,"default"),
+    lastMemoryMode:normalizeCodexMemoryMode(source.lastMemoryMode,normalizeCodexMemoryMode(source.memoryMode,"default")),
+    lastMemoryResetAt:Number.isFinite(Number(source.lastMemoryResetAt))?Math.max(0,Math.trunc(Number(source.lastMemoryResetAt))):0,
     lastPlanningContext:source.lastPlanningContext&&typeof source.lastPlanningContext==="object"
       ?sanitizePlanningArtifactsForRuntime(source.lastPlanningContext)
       :null,
@@ -8054,9 +8527,10 @@ function handleSlashForkCommand(res,argsText){const sourceName=activeAgentName;c
 
 function derivePreviousPlanningContextForRequest(agentState,cwd){
   const state=agentState&&typeof agentState==="object"?agentState:{};
-  const currentCwd=safeString(cwd,320);
+  const currentCwdKey=normalizeDirectoryPathIdentity(cwd);
+  const stateCwdKey=state.lastCwdKey||normalizeDirectoryPathIdentity(state.lastCwd);
   if(!state.lastPlanningContext||typeof state.lastPlanningContext!=="object")return null;
-  if(state.lastCwd&&currentCwd&&safeString(state.lastCwd,320)!==currentCwd)return null;
+  if(stateCwdKey&&currentCwdKey&&stateCwdKey!==currentCwdKey)return null;
   return sanitizePlanningArtifactsForRuntime(state.lastPlanningContext);
 }
 
@@ -8095,15 +8569,24 @@ function buildThreadStartConfig(agentState,webSearchMode,requestUserInputPolicy,
   if(enabledFeatures.has(fastModeFeatureName)){
     config.service_tier=normalizeCodexServiceTier(agentState&&agentState.serviceTier,defaultCodexServiceTier);
   }
+  const memoryBridge=buildMemoryBridgeConfigEntries(
+    agentState&&agentState.memoryMode,
+    agentState&&agentState.capabilitySnapshot?agentState.capabilitySnapshot:getAppServerCapabilitySnapshot()
+  );
+  for(const[key,value]of Object.entries(memoryBridge.config||{})){
+    config[key]=value;
+  }
   return config;
 }
-function shouldResetThreadForMode(agentState,sandboxMode,webSearchMode,cwd,requestUserInputPolicy,model,modelReasoningEffort,fastModeEnabled,automaticApprovalReviewEnabled){
+function shouldResetThreadForMode(agentState,sandboxMode,webSearchMode,cwd,requestUserInputPolicy,model,modelReasoningEffort,fastModeEnabled,automaticApprovalReviewEnabled,memoryMode){
   if(!agentState||!agentState.threadId||agentState.manualSessionPinned)return false;
   if(agentState.lastSandboxMode&&agentState.lastSandboxMode!==sandboxMode)return true;
   const normalizedWebSearchMode=normalizeWebSearchMode(webSearchMode,"disabled");
   if(agentState.lastWebSearchMode&&agentState.lastWebSearchMode!==normalizedWebSearchMode)return true;
   if(!agentState.lastWebSearchMode&&typeof agentState.lastWebSearch==="boolean"&&agentState.lastWebSearch!==isWebSearchEnabledForMode(normalizedWebSearchMode))return true;
-  if(agentState.lastCwd&&cwd&&agentState.lastCwd!==cwd)return true;
+  const cwdKey=normalizeDirectoryPathIdentity(cwd);
+  const lastCwdKey=agentState.lastCwdKey||normalizeDirectoryPathIdentity(agentState.lastCwd);
+  if(lastCwdKey&&cwdKey&&lastCwdKey!==cwdKey)return true;
   if(agentState.lastRequestUserInputPolicy&&agentState.lastRequestUserInputPolicy!==requestUserInputPolicy)return true;
   const normalizedModel=normalizeExecModel(model,defaultExecModelName);
   if(agentState.lastModel&&agentState.lastModel!==normalizedModel)return true;
@@ -8111,6 +8594,7 @@ function shouldResetThreadForMode(agentState,sandboxMode,webSearchMode,cwd,reque
   if(agentState.lastModelReasoningEffort&&agentState.lastModelReasoningEffort!==normalizedModelReasoningEffort)return true;
   if(typeof agentState.lastFastModeEnabled==="boolean"&&agentState.lastFastModeEnabled!==Boolean(fastModeEnabled))return true;
   if(typeof agentState.lastAutomaticApprovalReviewEnabled==="boolean"&&agentState.lastAutomaticApprovalReviewEnabled!==Boolean(automaticApprovalReviewEnabled))return true;
+  if(normalizeCodexMemoryMode(agentState.lastMemoryMode,"default")!==normalizeCodexMemoryMode(memoryMode,"default"))return true;
   return false;
 }
 function clipText(value,max=12000){if(typeof value!=="string")return"";if(value.length<=max)return value;return value.slice(0,max);}
@@ -8223,6 +8707,11 @@ function createTurnStreamStats(){
     fileChanges:0,
     changedFiles:0,
     mcpCalls:0,
+    mcpWallTimeMs:0,
+    mcpPerServerCounts:Object.create(null),
+    mcpNamespaces:[],
+    mcpSandboxStates:[],
+    mcpParallelSafeCallCount:0,
     collabCalls:0,
     collabFailures:0,
     webSearches:0,
@@ -8244,6 +8733,45 @@ function pushUniqueSample(list,value,max=3){
   if(list.includes(text))return;
   list.push(text);
   if(list.length>max)list.splice(max);
+}
+function deriveMcpNamespace(serverName,toolName){
+  const server=safeString(serverName,120);
+  const tool=safeString(toolName,120);
+  const normalizedServer=server
+    .replace(/^mcp__+/i,"")
+    .split(/__+/)[0]
+    .replace(/[^a-zA-Z0-9]+/g,"_")
+    .replace(/^_+|_+$/g,"")
+    .toLowerCase();
+  if(normalizedServer)return normalizedServer;
+  const normalizedTool=tool
+    .split(/[._:]/)[0]
+    .replace(/[^a-zA-Z0-9]+/g,"_")
+    .replace(/^_+|_+$/g,"")
+    .toLowerCase();
+  return normalizedTool||"";
+}
+function extractMcpSandboxState(item){
+  const candidates=[
+    item&&item.sandboxState,
+    item&&item.sandbox,
+    item&&item.metadata&&item.metadata.sandboxState,
+    item&&item.result&&item.result.sandboxState,
+  ];
+  for(const candidate of candidates){
+    const normalized=safeString(candidate,80).toLowerCase().replace(/[\s-]+/g,"_");
+    if(normalized)return normalized;
+  }
+  return"";
+}
+function extractMcpParallelSafe(item){
+  const candidates=[
+    item&&item.parallelSafe,
+    item&&item.parallel_safe,
+    item&&item.metadata&&item.metadata.parallelSafe,
+    item&&item.result&&item.result.parallelSafe,
+  ];
+  return candidates.some((value)=>value===true||String(value||"").toLowerCase()==="true");
 }
 function collectTurnStreamItemStats(stats,item){
   if(!stats||!item||typeof item!=="object")return;
@@ -8267,8 +8795,23 @@ function collectTurnStreamItemStats(stats,item){
   }
   if(type==="mcpToolCall"){
     stats.mcpCalls+=1;
-    const toolSummary=[safeString(item.server,60),safeString(item.tool,60)].filter(Boolean).join(".");
+    const serverName=safeString(item.server,60);
+    const toolName=safeString(item.tool,60);
+    const toolSummary=[serverName,toolName].filter(Boolean).join(".");
     pushUniqueSample(stats.sampleMcpTools,toolSummary,3);
+    const durationMs=Number.isFinite(Number(item.durationMs))?Math.max(0,Math.trunc(Number(item.durationMs))):0;
+    stats.mcpWallTimeMs+=durationMs;
+    if(serverName){
+      const current=Number(stats.mcpPerServerCounts[serverName]||0);
+      stats.mcpPerServerCounts[serverName]=current+1;
+    }
+    const namespace=deriveMcpNamespace(serverName,toolName);
+    if(namespace)pushUniqueSample(stats.mcpNamespaces,namespace,6);
+    const sandboxState=extractMcpSandboxState(item);
+    if(sandboxState)pushUniqueSample(stats.mcpSandboxStates,sandboxState,6);
+    if(extractMcpParallelSafe(item)){
+      stats.mcpParallelSafeCallCount+=1;
+    }
     return;
   }
   if(isCollabToolItemType(type)){
@@ -8670,7 +9213,7 @@ function evaluateAcceptanceCheckStatus(check,input={}){
   const changedPaths=Array.isArray(input.changedPaths)?input.changedPaths:[];
   const childEvidenceLedger=Array.isArray(input.childEvidenceLedger)?input.childEvidenceLedger:[];
   if(!title)return{status:"SKIPPED",reason:"missing_title",evidence:[]};
-  if(/needs[_ ]input|need[_ ]input|user decision|open question|鬮ｫ・ｴ鬮｢ﾂ隰梧ｺｯ蠏ｯ郢晢ｽｻ鬮ｯ蜈ｷ・ｽ・ｻ郢晢ｽｻ繝ｻ・､鬮ｫ・ｴ郢晢ｽｻ繝ｻ・ｽ繝ｻ・ｭ/.test(lower)){
+  if(/needs[_ ]input|need[_ ]input|need user input|user decision|open question|confirm required|approval required/i.test(lower)){
     const pass=input.taskOutcomeStatus==="NEEDS_INPUT"||Boolean(input.needsInputRecommended);
     return{status:pass?"PASS":"FAIL",reason:pass?"needs_input_observed":"needs_input_missing",evidence:[safeString(input.taskOutcomeStatus,80)]};
   }
@@ -8696,6 +9239,7 @@ function evaluateAcceptanceCheckStatus(check,input={}){
   const pass=Number(input.observedSignals&&input.observedSignals.fileChanges||0)>0||["COMPLETED","PARTIAL","NEEDS_INPUT"].includes(safeString(input.taskOutcomeStatus,80).toUpperCase());
   return{status:pass?"PASS":"FAIL",reason:pass?"baseline_delivery_observed":"baseline_delivery_missing",evidence:changedPaths.slice(0,4)};
 }
+
 function buildAcceptanceCheckResults({requirementContract,observedSignals,taskOutcomeStatus,needsInputRecommended,docSyncEvidence,childEvidenceLedger}={}){
   const checks=Array.isArray(requirementContract&&requirementContract.acceptanceChecks)?requirementContract.acceptanceChecks:[];
   return checks.map((check)=>({
@@ -8845,11 +9389,11 @@ function stripPlanningStatusDirective(text){
 function leadContainsCompletionClaim(text){
   const lead=safeString(text,320);
   if(!lead)return false;
-  return /(?:\b(?:done|fixed|completed|resolved|implemented|shipped|reflected)\b|修正済み|反映済み|対応済み|完了(?:しました|です)?|解消(?:しました|です)?|直しました|できました|問題ありません)/i.test(lead);
+  return /\b(?:done|fixed|completed|resolved|implemented|shipped|reflected)\b/i.test(lead);
 }
 function stripLeadingCompletionClaim(text){
   return safeString(text,8000)
-    .replace(/^(?:\s*(?:yes|ok|okay|はい)[。.!?\s]*)?(?:(?:今回|この(?:件|修正|変更)|the (?:fix|change|update)|this (?:fix|change|update))[^。\n]{0,60})?(?:修正済みです|反映済みです|対応済みです|完了しました|完了です|解消しました|直しました|できました|done|fixed|completed|resolved|implemented|shipped|reflected)(?:[。.!]|\s)*/i,"")
+    .replace(/^(?:\s*(?:yes|ok|okay)\b[!?,\s]*)?(?:(?:done|fixed|completed|resolved|implemented|shipped|reflected)(?:[:!.,\s]|$))*/i,"")
     .trim();
 }
 function rewriteClientFinalTextForOutcome(text,{taskOutcomeStatus="",prompt=""}={}){
@@ -8882,13 +9426,13 @@ function rewriteClientFinalTextForOutcome(text,{taskOutcomeStatus="",prompt=""}=
   const softened=stripLeadingCompletionClaim(stripped);
   const lead=
     outcome==="FAILED_VALIDATION"
-      ?"未完了です。必要な確認または証拠がまだ不足しています。"
+      ?"Validation evidence is still required."
       :outcome==="NEEDS_INPUT"
-        ?"未完了です。ユーザー判断が必要です。"
+        ?"One confirmation is needed before the next step."
         :outcome==="PARTIAL"
-          ?"一部のみ完了です。"
-          :"未完了です。";
-  return softened?`${lead}\n\n${softened}`:lead;
+          ?"The current scope is partially done."
+          :"The current scope is still open.";
+  return softened?`${lead}`+"\n\n"+softened:lead;
 }
 function buildFlowTraceSummary({planningContext,observedSignals,parentDispatchGuard,taskOutcomeStatus,taskOutcomeReason,finalStatus,childEvidenceLedger,docSyncEvidence,acceptanceResults,familyCompletionGate=null,agentName="",postLockDriftSnapshot=null,runtimeRevisionGate=null,clauseCompletionScorecard=null}={}){
   const usedAgents=Array.from(new Set([
@@ -9067,16 +9611,23 @@ async function ensureAgentThread(agentName,options){
   const model=normalizeExecModel(options&&options.model,defaultExecModelName);
   const modelReasoningEffort=normalizeExecModelReasoningEffort(options&&options.modelReasoningEffort,defaultExecModelReasoningEffort);
   const cwd=normalizeWorkingDirectory(options&&options.cwd,workspaceRoot);
+  const cwdKey=normalizeDirectoryPathIdentity(cwd);
   const requestUserInputPolicy=normalizeRequestUserInputPolicy(options&&options.requestUserInputPolicy,nonInteractiveRequestUserInputPolicy);
   const fastModeEnabled=resolveFastModeEnabled(options&&options.fastModeEnabled,state&&state.fastModeEnabled);
   const automaticApprovalReviewEnabled=resolveAutomaticApprovalReviewEnabled(
     options&&options.automaticApprovalReviewEnabled,
     state&&state.automaticApprovalReviewEnabled
   );
+  const memoryMode=normalizeCodexMemoryMode(options&&options.memoryMode,state&&state.memoryMode);
+  const resetCodexMemoryRequested=normalizeBooleanFlag(options&&options.resetCodexMemory);
   state.fastModeEnabled=fastModeEnabled;
   state.automaticApprovalReviewEnabled=automaticApprovalReviewEnabled;
+  state.memoryMode=memoryMode;
+  if(resetCodexMemoryRequested){
+    resetCodexMemory(state);
+  }
 
-  const shouldForceReset=Boolean(options&&options.forceNewSession);
+  const shouldForceReset=Boolean(options&&options.forceNewSession)||resetCodexMemoryRequested;
   const shouldModeReset=shouldResetThreadForMode(
     state,
     sandboxMode,
@@ -9086,17 +9637,18 @@ async function ensureAgentThread(agentName,options){
     model,
     modelReasoningEffort,
     fastModeEnabled,
-    automaticApprovalReviewEnabled
+    automaticApprovalReviewEnabled,
+    memoryMode
   );
   if(shouldForceReset||shouldModeReset){
     const resetReason=shouldForceReset
-      ?"force_new_session"
+      ?(resetCodexMemoryRequested?"memory_reset_requested":"force_new_session")
       :(state.lastSandboxMode&&state.lastSandboxMode!==sandboxMode
         ?"sandbox_changed"
         :((state.lastWebSearchMode&&state.lastWebSearchMode!==webSearchMode)
           ||(!state.lastWebSearchMode&&typeof state.lastWebSearch==="boolean"&&state.lastWebSearch!==webSearchEnabled)
           ?"web_search_changed"
-          :(state.lastCwd&&cwd&&state.lastCwd!==cwd
+          :((state.lastCwdKey||normalizeDirectoryPathIdentity(state.lastCwd))&&cwdKey&&(state.lastCwdKey||normalizeDirectoryPathIdentity(state.lastCwd))!==cwdKey
             ?"cwd_changed"
             :(state.lastRequestUserInputPolicy&&state.lastRequestUserInputPolicy!==requestUserInputPolicy
               ?"request_user_input_policy_changed"
@@ -9104,7 +9656,10 @@ async function ensureAgentThread(agentName,options){
                 ?"model_changed"
                 :(state.lastModelReasoningEffort&&state.lastModelReasoningEffort!==modelReasoningEffort
                   ?"model_reasoning_effort_changed"
-                  :"mode_reset"))))));
+                  :(normalizeCodexMemoryMode(state.lastMemoryMode,"default")!==memoryMode
+                    ?"memory_mode_changed"
+                    :"mode_reset")))))));
+    cleanupMemoryExtensions(state,{clearPlanning:true});
     logOperation("thread.reset",{
       a:safeString(agentName,80),
       reason:resetReason,
@@ -9118,6 +9673,8 @@ async function ensureAgentThread(agentName,options){
       requestUserInputPolicy,
       fastModeEnabled:fastModeEnabled?1:0,
       automaticApprovalReviewEnabled:automaticApprovalReviewEnabled?1:0,
+      memoryMode,
+      resetCodexMemory:resetCodexMemoryRequested?1:0,
     });
     state.sessionRef=null;
     state.threadId=null;
@@ -9132,6 +9689,9 @@ async function ensureAgentThread(agentName,options){
     state.lastWebSearchMode=webSearchMode;
     state.lastFastModeEnabled=fastModeEnabled;
     state.lastAutomaticApprovalReviewEnabled=automaticApprovalReviewEnabled;
+    state.lastCwd=cwd;
+    state.lastCwdKey=cwdKey;
+    state.lastMemoryMode=memoryMode;
     return state.threadId;
   }
 
@@ -9146,11 +9706,13 @@ async function ensureAgentThread(agentName,options){
         state.lastWebSearch=webSearchEnabled;
         state.lastWebSearchMode=webSearchMode;
         state.lastCwd=cwd;
+        state.lastCwdKey=cwdKey;
         state.lastRequestUserInputPolicy=requestUserInputPolicy;
         state.lastModel=model;
         state.lastModelReasoningEffort=modelReasoningEffort;
         state.lastFastModeEnabled=fastModeEnabled;
         state.lastAutomaticApprovalReviewEnabled=automaticApprovalReviewEnabled;
+        state.lastMemoryMode=memoryMode;
         logOperation("thread.resume",{
           a:safeString(agentName,80),
           th:safeString(resumedId,120),
@@ -9164,6 +9726,8 @@ async function ensureAgentThread(agentName,options){
           requestUserInputPolicy,
           fastModeEnabled:fastModeEnabled?1:0,
           automaticApprovalReviewEnabled:automaticApprovalReviewEnabled?1:0,
+          memoryMode,
+          resetCodexMemory:resetCodexMemoryRequested?1:0,
         });
         return resumedId;
       }
@@ -9192,11 +9756,13 @@ async function ensureAgentThread(agentName,options){
   state.lastWebSearch=webSearchEnabled;
   state.lastWebSearchMode=webSearchMode;
   state.lastCwd=cwd;
+  state.lastCwdKey=cwdKey;
   state.lastRequestUserInputPolicy=requestUserInputPolicy;
   state.lastModel=model;
   state.lastModelReasoningEffort=modelReasoningEffort;
   state.lastFastModeEnabled=fastModeEnabled;
   state.lastAutomaticApprovalReviewEnabled=automaticApprovalReviewEnabled;
+  state.lastMemoryMode=memoryMode;
   logOperation("thread.start",{
     a:safeString(agentName,80),
     th:safeString(threadId,120),
@@ -9210,6 +9776,8 @@ async function ensureAgentThread(agentName,options){
     requestUserInputPolicy,
     fastModeEnabled:fastModeEnabled?1:0,
     automaticApprovalReviewEnabled:automaticApprovalReviewEnabled?1:0,
+    memoryMode,
+    resetCodexMemory:resetCodexMemoryRequested?1:0,
   });
   return threadId;
 }
@@ -9225,6 +9793,8 @@ async function executeTurnStreaming(res,prompt,agentName,options){
   const modelReasoningEffort=normalizeExecModelReasoningEffort(options&&options.modelReasoningEffort,defaultExecModelReasoningEffort);
   const requestUserInputPolicy=normalizeRequestUserInputPolicy(options&&options.requestUserInputPolicy,nonInteractiveRequestUserInputPolicy);
   const cwd=normalizeWorkingDirectory(options&&options.cwd,workspaceRoot);
+  const memoryMode=normalizeCodexMemoryMode(options&&options.memoryMode,state&&state.memoryMode);
+  const resetCodexMemoryRequested=normalizeBooleanFlag(options&&options.resetCodexMemory);
   const fastModeEnabled=resolveFastModeEnabled(options&&options.fastModeEnabled,state&&state.fastModeEnabled);
   const automaticApprovalReviewEnabled=resolveAutomaticApprovalReviewEnabled(
     options&&options.automaticApprovalReviewEnabled,
@@ -9232,6 +9802,7 @@ async function executeTurnStreaming(res,prompt,agentName,options){
   );
   state.fastModeEnabled=fastModeEnabled;
   state.automaticApprovalReviewEnabled=automaticApprovalReviewEnabled;
+  state.memoryMode=memoryMode;
   const gitAutomationIgnoredPaths=isPathWithin(workspaceRoot,cwd)?gitAutomationWorkspaceIgnoredPaths:[];
   const promptSummary=summarizeTextForOperationLog(originalPrompt,24000);
   const promptAuditSource=options&&options.promptAudit&&typeof options.promptAudit==="object"?options.promptAudit:{};
@@ -9326,6 +9897,8 @@ async function executeTurnStreaming(res,prompt,agentName,options){
     model:safeString(model,120),
     modelReasoningEffort,
     requestUserInputPolicy,
+    memoryMode,
+    resetCodexMemory:resetCodexMemoryRequested?1:0,
     fastModeEnabled:fastModeEnabled?1:0,
     automaticApprovalReviewEnabled:automaticApprovalReviewEnabled?1:0,
     cwd:summarizePathForOperationLog(cwd,220),
@@ -9351,7 +9924,7 @@ async function executeTurnStreaming(res,prompt,agentName,options){
 
   let threadId=null;
   try{
-    threadId=await ensureAgentThread(agentName,{sandboxMode,approvalPolicy,webSearch:webSearchEnabled,webSearchMode,model,modelReasoningEffort,cwd,forceNewSession:Boolean(options&&options.forceNewSession),requestUserInputPolicy,fastModeEnabled,automaticApprovalReviewEnabled});
+    threadId=await ensureAgentThread(agentName,{sandboxMode,approvalPolicy,webSearch:webSearchEnabled,webSearchMode,model,modelReasoningEffort,cwd,forceNewSession:Boolean(options&&options.forceNewSession),requestUserInputPolicy,memoryMode,resetCodexMemory:resetCodexMemoryRequested,fastModeEnabled,automaticApprovalReviewEnabled});
   }catch(error){
     logOperation("turn.prepare_failed",{
       a:safeString(agentName,80),
@@ -9433,6 +10006,7 @@ async function executeTurnStreaming(res,prompt,agentName,options){
     model,
     modelReasoningEffort,
     requestUserInputPolicy,
+    memoryMode,
     fastModeEnabled,
     automaticApprovalReviewEnabled,
     governanceOverride:options&&options.governanceOverride?options.governanceOverride:null,
@@ -9525,6 +10099,8 @@ async function executeTurnStreaming(res,prompt,agentName,options){
       imageCount:images.length,
       attemptedFreshFallback:options&&options.attemptedFreshFallback?1:0,
       forceNewSession:options&&options.forceNewSession?1:0,
+      memoryMode,
+      resetCodexMemory:resetCodexMemoryRequested?1:0,
       riskRulesVersion,
       requestUserInputPolicy,
       modelReasoningEffort,
@@ -9588,6 +10164,8 @@ async function executeTurnStreaming(res,prompt,agentName,options){
     agentName:safeString(agentName,120)||defaultExecAgentName,
     cwd:safeString(cwd,220)||workspaceRoot,
     requestUserInputPolicy,
+    memoryMode,
+    resetCodexMemory:resetCodexMemoryRequested?1:0,
     forceNewSession:options&&options.forceNewSession?1:0,
     executionProfile:turnVisibility&&turnVisibility.profile?safeString(turnVisibility.profile.effective,60):runtimeExecutionProfile,
     executionIntent:safeString(turnVisibility&&turnVisibility.intent?turnVisibility.intent:"interactive",80)||"interactive",
@@ -9737,8 +10315,8 @@ async function executeTurnStreaming(res,prompt,agentName,options){
     clearLiveCollabChildActivityForTurn(turnId,{
       status:finalStatus,
       detail:finalStatus==="completed"
-        ?"親turn完了に合わせて子agentを確定"
-        :`親turn ${finalStatus} により子agentを終了`,
+        ?"parent turn completed; cleared child activity"
+        :"parent turn "+finalStatus+"; cleared child activity",
     });
     state.activeTurnId=null;
     const debugFinalize=(step)=>{
@@ -9765,6 +10343,11 @@ async function executeTurnStreaming(res,prompt,agentName,options){
       changedFiles:turnStats.changedFiles,
       sampleChangedPaths:turnStats.sampleChangedPaths,
       mcpCalls:turnStats.mcpCalls,
+      mcpWallTimeMs:turnStats.mcpWallTimeMs,
+      mcpPerServerCounts:turnStats.mcpPerServerCounts,
+      mcpNamespaces:turnStats.mcpNamespaces,
+      mcpSandboxStates:turnStats.mcpSandboxStates,
+      mcpParallelSafeCallCount:turnStats.mcpParallelSafeCallCount,
       collabCalls:turnStats.collabCalls,
       collabFailures:turnStats.collabFailures,
       webSearches:turnStats.webSearches,
@@ -10368,7 +10951,16 @@ async function executeTurnStreaming(res,prompt,agentName,options){
       items:itemCounts,
       cmd:{count:turnStats.commandExecutions,failed:turnStats.commandFailures,samples:turnStats.sampleCommands.slice(0,3)},
       file:{count:turnStats.fileChanges,paths:turnStats.sampleChangedPaths.slice(0,3),changedFiles:turnStats.changedFiles},
-      mcp:{count:turnStats.mcpCalls,samples:turnStats.sampleMcpTools.slice(0,3)},
+      mcp:{
+        count:turnStats.mcpCalls,
+        samples:turnStats.sampleMcpTools.slice(0,3),
+        wallTimeMs:turnStats.mcpWallTimeMs,
+        perServerCounts:turnStats.mcpPerServerCounts&&typeof turnStats.mcpPerServerCounts==="object"?turnStats.mcpPerServerCounts:{},
+        namespaces:Array.isArray(turnStats.mcpNamespaces)?turnStats.mcpNamespaces.slice(0,6):[],
+        sandboxStates:Array.isArray(turnStats.mcpSandboxStates)?turnStats.mcpSandboxStates.slice(0,6):[],
+        parallelSafeCalls:turnStats.mcpParallelSafeCallCount,
+      },
+      memory:{mode:memoryMode,resetRequested:resetCodexMemoryRequested?1:0},
       collab:turnStats.collabCalls,
       collabFailures:turnStats.collabFailures,
       webSearch:turnStats.webSearches,
@@ -10955,7 +11547,9 @@ async function executeTurnStreaming(res,prompt,agentName,options){
     }
   };
 
-  const keepRunningAfterClientClose=safeString(options&&options.executionSource,80)==="web_ui";
+  const keepRunningAfterClientClose=shouldKeepExecRunningAfterClientClose(
+    safeString(options&&options.executionSource,80)
+  );
   const onClientClose=()=>{
     if(clientClosed||turnFinalized)return;
     clientClosed=true;
@@ -11198,6 +11792,8 @@ async function runCodexExecStreaming(res,prompt,sandboxMode,options={}){
     modelReasoningEffort:normalizeExecModelReasoningEffort(normalized.modelReasoningEffort,defaultExecModelReasoningEffort),
     cwd:normalizeWorkingDirectory(normalized.cwd,workspaceRoot),
     requestUserInputPolicy:normalizeRequestUserInputPolicy(normalized.requestUserInputPolicy,nonInteractiveRequestUserInputPolicy),
+    memoryMode:normalizeCodexMemoryMode(normalized.memoryMode,"default"),
+    resetCodexMemory:normalizeBooleanFlag(normalized.resetCodexMemory),
     forceNewSession:Boolean(normalized.forceNewSession),
     attemptedFreshFallback:Boolean(normalized.attemptedFreshFallback),
     images:Array.isArray(normalized.images)?normalized.images:[],
@@ -11216,13 +11812,45 @@ async function runCodexExecStreaming(res,prompt,sandboxMode,options={}){
 
 const nowTs=()=>Date.now();
 function normalizeOptionalString(value,max=2000){if(typeof value!=="string")return null;const trimmed=value.trim();if(!trimmed)return null;return trimmed.slice(0,max);}
+function stripWindowsExtendedLengthPathPrefix(value){
+  const raw=safeString(value,4000);
+  if(process.platform!=="win32"||!raw)return raw;
+  if(raw.startsWith("\\\\?\\UNC\\"))return`\\\\${raw.slice(8)}`;
+  if(raw.startsWith("\\\\?\\"))return raw.slice(4);
+  return raw;
+}
+function trimTrailingDirectorySeparators(value){
+  let normalized=safeString(value,4000);
+  if(!normalized)return"";
+  const parsed=path.parse(normalized);
+  const root=safeString(parsed&&parsed.root,400)||"";
+  while(normalized.length>root.length&&/[\\/]+$/.test(normalized)){
+    normalized=normalized.slice(0,-1);
+  }
+  return normalized;
+}
+function normalizeDirectoryPathForRuntime(value){
+  const raw=safeString(value,4000);
+  if(!raw)return"";
+  const withoutPrefix=stripWindowsExtendedLengthPathPrefix(raw);
+  return trimTrailingDirectorySeparators(path.normalize(withoutPrefix));
+}
+function normalizeDirectoryPathIdentity(value){
+  const normalized=normalizeDirectoryPathForRuntime(value);
+  if(!normalized)return"";
+  return process.platform==="win32"?normalized.toLowerCase():normalized;
+}
 function normalizeWorkingDirectory(value,fallbackCwd=workspaceRoot){
   const raw=normalizeOptionalString(value,2000);
-  const resolved=raw?path.resolve(raw):path.resolve(fallbackCwd||workspaceRoot);
-  if(!fs.existsSync(resolved))throw new Error(`cwd does not exist: ${resolved}`);
-  const stat=fs.statSync(resolved);
-  if(!stat.isDirectory())throw new Error(`cwd is not a directory: ${resolved}`);
-  return resolved;
+  const fallback=normalizeDirectoryPathForRuntime(fallbackCwd||workspaceRoot)||workspaceRoot;
+  const resolved=raw
+    ?path.resolve(stripWindowsExtendedLengthPathPrefix(raw))
+    :path.resolve(fallback);
+  const normalized=normalizeDirectoryPathForRuntime(resolved);
+  if(!fs.existsSync(normalized))throw new Error(`cwd does not exist: ${normalized}`);
+  const stat=fs.statSync(normalized);
+  if(!stat.isDirectory())throw new Error(`cwd is not a directory: ${normalized}`);
+  return normalized;
 }
 function isLoopbackAddress(value){
   const normalized=String(value||"").trim().toLowerCase();
@@ -11274,102 +11902,6 @@ async function buildHarnessAppRuntimeStatus(app){
       error:safeString(error&&error.message?error.message:String(error),220),
     };
   }
-}
-async function handleHarnessAppReplyRequest(req,res,appId){
-  const originValidation=validateLocalAppBridgeRequest(req);
-  if(!originValidation.ok){
-    sendJson(res,originValidation.status,{ok:false,error:originValidation.error});
-    return;
-  }
-  const contentTypeValidation=validateJsonMutationContentType(req,{required:true,expectedMime:conversationApiRequiredContentType});
-  if(!contentTypeValidation.ok){
-    sendJson(res,contentTypeValidation.status,{ok:false,error:contentTypeValidation.error});
-    return;
-  }
-  const app=getRegisteredAppRuntimeConfig(appId);
-  if(!app){
-    sendJson(res,404,{ok:false,error:"unknown app"});
-    return;
-  }
-  const raw=await readRequestBody(req,defaultRequestBodyLimitBytes);
-  const body=raw?JSON.parse(raw):{};
-  const prompt=safeString(typeof body.prompt==="string"?body.prompt:"",24000);
-  if(!prompt){
-    sendJson(res,400,{ok:false,error:"prompt is required"});
-    return;
-  }
-  const model=normalizeExecModel(body.model,conversationExecModelName);
-  const timeoutMs=normalizeAppRuntimeTimeoutMs(body.timeoutMs,conversationRequestTimeoutMs);
-  const cwd=resolveAppRuntimeWorkingDirectory(app);
-  const startedAt=nowTs();
-  const text=await runCodexReply({
-    cwd,
-    prompt,
-    model,
-    timeoutMs,
-    sandboxMode:"read-only",
-  });
-  sendJson(res,200,{
-    ok:true,
-    appId:app.id,
-    provider:"harness-codex-exec",
-    model,
-    text,
-    latencyMs:Math.max(0,nowTs()-startedAt),
-    warning:body&&body.useWebSearch?"Live web search is not available via harness-codex-exec.":"",
-    citations:[],
-  });
-}
-async function handleHarnessAppStructuredRequest(req,res,appId){
-  const originValidation=validateLocalAppBridgeRequest(req);
-  if(!originValidation.ok){
-    sendJson(res,originValidation.status,{ok:false,error:originValidation.error});
-    return;
-  }
-  const contentTypeValidation=validateJsonMutationContentType(req,{required:true,expectedMime:conversationApiRequiredContentType});
-  if(!contentTypeValidation.ok){
-    sendJson(res,contentTypeValidation.status,{ok:false,error:contentTypeValidation.error});
-    return;
-  }
-  const app=getRegisteredAppRuntimeConfig(appId);
-  if(!app){
-    sendJson(res,404,{ok:false,error:"unknown app"});
-    return;
-  }
-  const raw=await readRequestBody(req,defaultRequestBodyLimitBytes);
-  const body=raw?JSON.parse(raw):{};
-  const prompt=safeString(typeof body.prompt==="string"?body.prompt:"",24000);
-  if(!prompt){
-    sendJson(res,400,{ok:false,error:"prompt is required"});
-    return;
-  }
-  const outputSchema=body&&body.outputSchema&&typeof body.outputSchema==="object"&&!Array.isArray(body.outputSchema)
-    ?body.outputSchema
-    :null;
-  if(!outputSchema){
-    sendJson(res,400,{ok:false,error:"outputSchema is required"});
-    return;
-  }
-  const model=normalizeExecModel(body.model,conversationExecModelName);
-  const timeoutMs=normalizeAppRuntimeTimeoutMs(body.timeoutMs,conversationRequestTimeoutMs);
-  const cwd=resolveAppRuntimeWorkingDirectory(app);
-  const startedAt=nowTs();
-  const data=await runCodexStructuredOutput({
-    cwd,
-    prompt,
-    outputSchema,
-    model,
-    timeoutMs,
-    sandboxMode:"read-only",
-  });
-  sendJson(res,200,{
-    ok:true,
-    appId:app.id,
-    provider:"harness-codex-exec",
-    model,
-    data,
-    latencyMs:Math.max(0,nowTs()-startedAt),
-  });
 }
 function sanitizeForwardedHeaders(headers,targetUrl,req){
   const nextHeaders={};
@@ -12469,1167 +13001,287 @@ function buildManualSelfImprovementRuntimeStateSnapshot(){
     workspaceRoot,
   });
 }
-function buildBundleOverview(rootDir,summaryFileName,buildSnapshot){
-  const candidates=listBundleSummaryCandidates(rootDir,summaryFileName);
-  return{
-    storageRoot:summarizePathForOperationLog(rootDir,220),
-    bundleCount:candidates.length,
-    latest:candidates.length?buildSnapshot(candidates[0]):null,
-    recent:candidates.slice(0,5).map((candidate)=>({
-      name:safeString(candidate&&candidate.name,160)||"",
-      dir:summarizePathForOperationLog(candidate&&candidate.dirPath,260),
-      summaryPath:summarizePathForOperationLog(candidate&&candidate.summaryPath,260),
-      generatedAt:candidate&&candidate.generatedAt?candidate.generatedAt:0,
-      updatedAt:candidate&&candidate.updatedAt?candidate.updatedAt:0,
-    })),
-  };
-}
-function buildEvalHistoryOverview({limit=6}={}){
-  return readEvalRunHistory({limit:Math.max(1,Math.min(20,Math.trunc(Number(limit)||6)))})
-    .slice()
-    .reverse()
-    .map((entry)=>{
-      const run=Array.isArray(entry&&entry.runs)?entry.runs[0]:null;
-      const suite=entry&&entry.suite&&typeof entry.suite==="object"?entry.suite:{};
-      return{
-        runId:safeString(entry&&entry.runId,160)||"",
-        generatedAt:parseOverviewTimestamp(entry&&entry.generatedAt),
-        suiteId:safeString(suite.suiteId,120)||"",
-        caseCount:Number.isFinite(Number(suite.caseCount))?Math.max(0,Math.trunc(Number(suite.caseCount))):0,
-        variantLabel:safeString(run&&run.variant&&run.variant.label,80)||"",
-        sampleSize:Number.isFinite(Number(run&&run.sampleSize))?Math.max(0,Math.trunc(Number(run.sampleSize))):0,
-        passedCases:Number.isFinite(Number(run&&run.passedCases))?Math.max(0,Math.trunc(Number(run.passedCases))):0,
-        failedCases:Number.isFinite(Number(run&&run.failedCases))?Math.max(0,Math.trunc(Number(run.failedCases))):0,
-        passRate:Number.isFinite(Number(run&&run.passRate))?Number(Number(run.passRate).toFixed(4)):0,
-        scoreRate:Number.isFinite(Number(run&&run.scoreRate))?Number(Number(run.scoreRate).toFixed(4)):0,
-        probePersistedRecords:Number.isFinite(Number(entry&&entry.probePersistence&&entry.probePersistence.persistedRecords))
-          ?Math.max(0,Math.trunc(Number(entry.probePersistence.persistedRecords)))
-          :0,
-      };
-    });
-}
-function buildExecutionMemoryOverview({limit=10,window=60}={}){
-  const normalizedWindow=Math.max(1,Math.min(200,Math.trunc(Number(window)||60)));
-  const normalizedLimit=Math.max(1,Math.min(20,Math.trunc(Number(limit)||10)));
-  const records=[...harnessExecutionMemoryStore.values()]
-    .map((entry)=>normalizeExecutionMemoryRecord(entry))
-    .filter((entry)=>entry&&typeof entry==="object")
-    .sort((left,right)=>Math.max(Number(right.completedAt||0),Number(right.updatedAt||0))-Math.max(Number(left.completedAt||0),Number(left.updatedAt||0)));
-  const windowRecords=records.slice(0,normalizedWindow);
-  const statusCounts={};
-  const taskOutcomeCounts={};
-  let guardViolations=0;
-  let implementationObserved=0;
-  for(const record of windowRecords){
-    const status=normalizeExecutionState(record.status,{terminalFallback:true});
-    statusCounts[status]=(statusCounts[status]||0)+1;
-    const taskOutcome=safeString(record.taskOutcomeStatus,80).toUpperCase()||"UNSPECIFIED";
-    taskOutcomeCounts[taskOutcome]=(taskOutcomeCounts[taskOutcome]||0)+1;
-    if(record.parentDispatchGuard&&record.parentDispatchGuard.violation)guardViolations+=1;
-    if(record.observedSignals&&(
-      Number(record.observedSignals.fileChanges||0)>0
-      ||Number(record.observedSignals.commandExecutions||0)>0
-      ||Number(record.observedSignals.mcpCalls||0)>0
-    )){
-      implementationObserved+=1;
-    }
-  }
-  const recent=records.slice(0,normalizedLimit).map((record)=>({
-    turnId:record.turnId,
-    threadId:record.threadId,
-    agentName:record.agentName,
-    status:record.status,
-    taskOutcomeStatus:record.taskOutcomeStatus,
-    taskOutcomeReason:record.taskOutcomeReason,
-    executionProfile:record.executionProfile,
-    executionIntent:record.executionIntent,
-    executionSource:record.executionSource,
-    completedAt:record.completedAt,
-    fileChanges:Number.isFinite(Number(record.observedSignals&&record.observedSignals.fileChanges))
-      ?Math.max(0,Math.trunc(Number(record.observedSignals.fileChanges)))
-      :0,
-    commandExecutions:Number.isFinite(Number(record.observedSignals&&record.observedSignals.commandExecutions))
-      ?Math.max(0,Math.trunc(Number(record.observedSignals.commandExecutions)))
-      :0,
-    collabCalls:Number.isFinite(Number(record.observedSignals&&record.observedSignals.collabCalls))
-      ?Math.max(0,Math.trunc(Number(record.observedSignals.collabCalls)))
-      :0,
-    dispatchCount:Number.isFinite(Number(record.observedSignals&&record.observedSignals.dispatchCount))
-      ?Math.max(0,Math.trunc(Number(record.observedSignals.dispatchCount)))
-      :0,
-    dispatchSuccessCount:Number.isFinite(Number(record.observedSignals&&record.observedSignals.dispatchSuccessCount))
-      ?Math.max(0,Math.trunc(Number(record.observedSignals.dispatchSuccessCount)))
-      :0,
-    parentDispatchGuard:{
-      mode:safeString(record.parentDispatchGuard&&record.parentDispatchGuard.mode,20)||"off",
-      reason:safeString(record.parentDispatchGuard&&record.parentDispatchGuard.reason,120)||"",
-      required:record.parentDispatchGuard&&record.parentDispatchGuard.required?1:0,
-      satisfied:record.parentDispatchGuard&&record.parentDispatchGuard.satisfied?1:0,
-      violation:record.parentDispatchGuard&&record.parentDispatchGuard.violation?1:0,
-    },
-  }));
-  const patterns=[...harnessPatternMemoryStore.values()]
-    .filter((entry)=>entry&&typeof entry==="object")
-    .sort((left,right)=>{
-      const rightCount=Number(right.count||0);
-      const leftCount=Number(left.count||0);
-      if(rightCount!==leftCount)return rightCount-leftCount;
-      return Number(right.updatedAt||0)-Number(left.updatedAt||0);
-    })
-    .slice(0,6)
-    .map((entry)=>({
-      signature:safeString(entry.signature,220)||"",
-      code:safeString(entry.code,120)||"",
-      severity:safeString(entry.severity,20)||"",
-      status:normalizeExecutionState(entry.status,{terminalFallback:true}),
-      executionProfile:normalizeExecutionProfile(entry.executionProfile,runtimeExecutionProfile),
-      executionIntent:normalizeExecutionIntent(entry.executionIntent,"interactive"),
-      count:Number.isFinite(Number(entry.count))?Math.max(0,Math.trunc(Number(entry.count))):0,
-      lastSeenAt:parseOverviewTimestamp(entry.lastSeenAt),
-      hint:safeString(entry.hint,220)||"",
-    }));
-  return{
-    sampleSize:windowRecords.length,
-    statusCounts,
-    taskOutcomeCounts,
-    guardViolations,
-    implementationObserved,
-    recent,
-    patterns,
-  };
-}
-function overviewBaseAgentName(name){
-  const normalized=safeString(name,120).toLowerCase();
-  if(!normalized)return"";
-  const scopeSep=normalized.indexOf("@");
-  if(scopeSep>0)return normalized.slice(0,scopeSep);
-  return normalized;
-}
-function compareOverviewAgentEntries(left,right){
-  const leftActive=left&&left.active?1:0;
-  const rightActive=right&&right.active?1:0;
-  if(rightActive!==leftActive)return rightActive-leftActive;
-  const leftConfigured=left&&left.source==="configured"?1:0;
-  const rightConfigured=right&&right.source==="configured"?1:0;
-  if(rightConfigured!==leftConfigured)return rightConfigured-leftConfigured;
-  return String(left&&left.name||"").localeCompare(String(right&&right.name||""));
-}
-function buildTopographyOverview(topographyAgents,assignmentsByRole){
-  const rows=Array.isArray(topographyAgents)?topographyAgents:[];
-  const summary={
-    total:0,
-    configured:0,
-    runtimeOnly:0,
-    active:0,
-    parents:0,
-    specialists:0,
-    verification:0,
-    retired:0,
-    scopedRuntime:0,
-  };
-  const lanes={parents:[],specialists:[],verification:[],retired:[]};
-  const entries=rows.map((row)=>{
-    const governance=row&&row.governance&&typeof row.governance==="object"?row.governance:{};
-    const baseName=overviewBaseAgentName(row&&row.name);
-    const role=safeString(row&&row.role,40)||inferAgentRole(baseName,"");
-    let lane="specialists";
-    if(governance.legacyOnly){
-      lane="retired";
-    }else if(governance.verificationOnly||governance.readOnly){
-      lane="verification";
-    }else if(role==="parent"){
-      lane="parents";
-    }
-    const entry={
-      name:safeString(row&&row.name,120)||"",
-      baseName,
-      role,
-      lane,
-      source:safeString(row&&row.source,40)||"runtime",
-      status:safeString(row&&row.status,40)||"idle",
-      active:row&&row.isActive?1:0,
-      threadId:safeString(row&&row.threadId,160)||"",
-      activeTurnId:safeString(row&&row.activeTurnId,160)||"",
-      sessionRef:safeString(row&&row.sessionRef,160)||"",
-      description:safeString(row&&row.description,400)||"",
-      configFile:safeString(row&&row.configFile,240)||"",
-      skills:assignmentsByRole.get(baseName)||[],
-      governance:{
-        enforced:governance.enforced?1:0,
-        readOnly:governance.readOnly?1:0,
-        verificationOnly:governance.verificationOnly?1:0,
-        legacyOnly:governance.legacyOnly?1:0,
-        requiresParentOverride:governance.requiresParentOverride?1:0,
-        scopePaths:Array.isArray(governance.scopePaths)?governance.scopePaths.slice(0,8):[],
-      },
-    };
-    return entry;
-  }).sort(compareOverviewAgentEntries);
-  for(const entry of entries){
-    summary.total+=1;
-    if(entry.source==="configured")summary.configured+=1;
-    else summary.runtimeOnly+=1;
-    if(entry.active)summary.active+=1;
-    if(entry.name.includes("@"))summary.scopedRuntime+=1;
-    if(entry.lane==="parents")summary.parents+=1;
-    else if(entry.lane==="verification")summary.verification+=1;
-    else if(entry.lane==="retired")summary.retired+=1;
-    else summary.specialists+=1;
-    lanes[entry.lane].push(entry);
-  }
-  return{summary,lanes,agents:entries};
-}
-function buildSkillPortfolioOverview(){
-  return buildSkillPortfolioOverviewSurface({
-    summarizePathForOperationLog,
-  });
-}
+const traceabilityService=createTraceabilityService({
+  safeString,
+  sanitizePlanningArtifactsForRuntime,
+  buildOperatorPlanEvent,
+});
+const buildPlanningTraceabilityData=(options={})=>traceabilityService.buildPlanningTraceabilityData(options);
+const buildHarnessTraceabilitySnapshot=(planningContext,agentName="default")=>
+  traceabilityService.buildHarnessTraceabilitySnapshot(planningContext,agentName);
+const buildPostLockDriftSnapshot=(options={})=>traceabilityService.buildPostLockDriftSnapshot(options);
+const runtimeStateService=createRuntimeStateService({
+  listAgentsSnapshot,
+  getLatestTurnSnapshot,
+  getActiveExecRequestCount,
+});
+let harnessOverviewSnapshotService;
+const runtimeApiSnapshotService=createRuntimeApiSnapshotService({
+  fs,
+  path,
+  processRef:process,
+  apiVersion,
+  getActiveAgentState,
+  getLatestTurnSnapshot,
+  runtimeStateService,
+  getRequirementGuardExtensionSnapshot,
+  getSessionPerformanceSnapshot,
+  nonInteractiveRequestUserInputPolicy,
+  requestUserInputPolicyEnvKey,
+  buildAdversarialShadowRuntimeSnapshot,
+  buildHarnessMemoryRuntimeSnapshot,
+  buildWorkspaceGuardSnapshot,
+  buildSloRuntimeSnapshot,
+  appPlatformReadSurface,
+  buildGitAutomationRuntimeSnapshot,
+  buildGovernanceRuntimeSurface,
+  authorityRegistry,
+  authorityRegistryPath,
+  readTopLevelCodexConfigString,
+  defaultParentAgentConfigPath,
+  iterationControlContract,
+  iterationControlContractPath,
+  adoptionReadinessContract,
+  adoptionReadinessContractPath,
+  workerDecisionSurfaceContract,
+  workerDecisionSurfaceContractPath,
+  harnessPlaneContract,
+  harnessPlaneContractPath,
+  summarizePathForOperationLog,
+  buildEvalSuiteSummary,
+  defaultEvalSuite,
+  evalSuiteConfigPath,
+  evalLanePolicyPath,
+  evalLanePolicy,
+  summarizeEvalLane,
+  evalRunHistoryPath,
+  evalRunHistoryPathEnvKey,
+  evalMaxCases,
+  evalDefaultMaxVariants,
+  evalCaseTimeoutMs,
+  buildFullUtilizationDefaultsSnapshot,
+  buildParentDispatchGuardDefaultsSnapshot,
+  buildRequirementFoundationV1PhaseStatus,
+  buildOpenAIBlogLearningRuntimeStateSnapshot,
+  buildManualSelfImprovementRuntimeStateSnapshot,
+  buildHarnessAgiImprovementFlywheelRuntimeSummary,
+  workspaceRoot,
+  buildDocumentToolingRuntimeSnapshot,
+  safeString,
+  buildAnthropicEngineeringLearningRuntimeStateSnapshot,
+  buildEvalHistoryOverview:(options={})=>harnessOverviewSnapshotService.buildEvalHistoryOverview(options),
+  buildExecutionMemoryOverview:(options={})=>harnessOverviewSnapshotService.buildExecutionMemoryOverview(options),
+  summarizeIntentFirstRuntime,
+  designAcceptanceContract,
+  tasteMemoryStore,
+  designAcceptanceContractPath,
+  tasteMemorySeedPath,
+  tasteMemoryMemoryPath,
+  buildHarnessTraceabilitySnapshot,
+  activeAgentName,
+  buildGovernedMemoryRuntimeSnapshot,
+  runtimeExecutionProfile,
+  executionProfileEnvKey,
+  isSmokeExecutionProfile,
+  buildAppServerTransportRuntimeSnapshot,
+  operationLog,
+  loggingMode,
+  loggingModeEnvKey,
+  loggingSurfacePaths,
+  repoRelativePath,
+  fastModeDefault,
+  automaticApprovalReviewDefault,
+  fastModeDefaultEnvKey,
+  automaticApprovalReviewEnvKey,
+  serverProcessStartedAt,
+  agentStates,
+  resolveEffectiveServiceTier,
+  nonFastEffectiveServiceTier,
+  getActiveExecRequestCount,
+  turnArtifactsEnabled,
+  turnArtifactsRoot,
+  turnArtifactsMaxBytes,
+  turnArtifactsMaxDays,
+  turnArtifactsRedactionEnabled,
+  turnArtifactsRedactionPlaceholder,
+  execIdempotencyTtlMs,
+  harnessMemoryPath,
+  execIdempotencyStatusWaitMaxMs,
+  getAgentGovernancePolicySnapshot,
+  harnessTurnContractSpec,
+  harnessTurnContractSpecPath,
+  taskOutcomeContract,
+  taskOutcomeContractPath,
+  summarizeTaskOutcomeContract,
+  userFacingResponseContract,
+  userFacingResponseContractPath,
+  summarizeUserFacingResponseContract,
+  planningModeContract,
+  planningModeContractPath,
+  assuranceModeContract,
+  assuranceModeContractPath,
+  taskFamilyProfilesContract,
+  taskContractManifest,
+  taskFamilyProfilesPath,
+  taskContractManifestPath,
+  planningDecisionContractSchemaPath,
+  requirementContractSchemaPath,
+  dispatchPlanSchemaPath,
+  requestFrameContractPath,
+  routingDecisionContractPath,
+  discoveryOutcomeContractPath,
+  reviewBundleContractPath,
+  releaseDecisionContractPath,
+  conformanceInvariantsContractPath,
+  evidenceContractMachinePath,
+  summarizeTaskContract,
+  getConversationRuntimeSnapshot,
+  getPiperRuntimeSnapshot,
+  getKokoroVoiceRuntimeSnapshot,
+  controlApiTokenHeaderName,
+  controlApiToken,
+  controlApiActionAllowlist,
+  execApiRequiredContentType,
+  defaultExecModelName,
+  defaultExecModelReasoningEffort,
+  allowedModelReasoningEfforts,
+  listAgentsSnapshot,
+});
+harnessOverviewSnapshotService=createHarnessOverviewSnapshotService({
+  apiVersion,
+  safeString,
+  summarizePathForOperationLog,
+  listBundleSummaryCandidates,
+  readEvalRunHistory,
+  parseOverviewTimestamp,
+  harnessExecutionMemoryStore,
+  normalizeExecutionMemoryRecord,
+  harnessPatternMemoryStore,
+  normalizeExecutionState,
+  normalizeExecutionProfile,
+  normalizeExecutionIntent,
+  runtimeExecutionProfile,
+  inferAgentRole,
+  buildSkillPortfolioOverviewSurface,
+  readWorkspaceJsonArtifact,
+  toFiniteNumber:(value,fallback=0)=>{
+    const parsed=Number(value);
+    return Number.isFinite(parsed)?parsed:fallback;
+  },
+  buildBrowserCapabilitySurface,
+  buildContinuityOverviewSurface,
+  buildRuntimeApiSnapshot:()=>runtimeApiSnapshotService.buildRuntimeApiSnapshot(),
+  sanitizeRuntimeSnapshotForOverview:(runtimeSnapshot)=>
+    runtimeApiSnapshotService.sanitizeRuntimeSnapshotForOverview(runtimeSnapshot),
+  buildHarnessTraceabilitySnapshot,
+  syncHarnessOverviewGovernedMemory,
+  syncGovernedMemoryGraph,
+  buildHarnessOverviewPayload,
+  buildRuntimeProofBundleSnapshot,
+  buildSignoffBundleSnapshot,
+  getAgentTopographySnapshot,
+  harnessMemoryLoaded,
+  listReplayMemorySnapshots,
+  loadHarnessExecutionMemoryStore,
+  loggingSurfacePaths,
+  repoRelativePath,
+  runtimeProofsRoot,
+  signoffBundlesRoot,
+  workspaceRoot,
+});
+const currentSurfaceService=createCurrentSurfaceService({
+  path,
+  safeString,
+  toIsoTimestamp,
+  sanitizeRuntimeSnapshotForOverview,
+  buildRuntimeApiSnapshot,
+  listBundleSummaryCandidates,
+  buildSignoffBundleSnapshot,
+  buildRuntimeProofBundleSnapshot,
+  signoffBundlesRoot,
+  runtimeProofsRoot,
+  readWorkspaceJsonArtifact,
+  resolveWorkspaceRuntimePath,
+  repoRelativePath,
+  workspaceRoot,
+  uniquePathList,
+  nonInteractiveRequestUserInputPolicy,
+  defaultExecAgentName,
+  getLatestOperatorTurnSnapshot,
+  normalizeExecutionProfile,
+  runtimeExecutionProfile,
+  normalizeExecutionState,
+  isTerminalExecutionState,
+  isCompletedOperatorOutcome,
+  normalizeFamilyCompletionGateSnapshot,
+  loggingMode,
+  loggingModeEnvKey,
+  loggingSurfacePaths,
+  buildOperatorDecisionSummary,
+  getWorkflowCaseById,
+});
+const currentLogSurfaceService=createCurrentLogSurfaceService({
+  currentSurfaceService,
+  ensureLoggingSurfaceDir,
+  writeLoggingSurfaceJson,
+  buildConformanceReport,
+  buildOperatorViewSummary,
+  loggingSurfacePaths,
+  repoRelativePath,
+  workspaceRoot,
+  safeString,
+  logOperation,
+  fs,
+});
+const updateCurrentLogSurface=(options={})=>currentLogSurfaceService.updateCurrentLogSurface(options);
 function buildRuntimeApiSnapshot(){
-  const active=getActiveAgentState();
-  const latestTurn=getLatestTurnSnapshot();
-  const requirementGuard=getRequirementGuardExtensionSnapshot();
-  const sessionPerformance=getSessionPerformanceSnapshot(active&&active.sessionRef?active.sessionRef:null);
-  const nonInteractiveUserInput={policy:nonInteractiveRequestUserInputPolicy,envKey:requestUserInputPolicyEnvKey};
-  const adversarialShadow=buildAdversarialShadowRuntimeSnapshot();
-  const harnessMemory=buildHarnessMemoryRuntimeSnapshot();
-  const workspaceGuard=buildWorkspaceGuardSnapshot();
-  const slo=buildSloRuntimeSnapshot();
-  const staticApps=appPlatformReadSurface.buildStaticAppsRuntimeSnapshot();
-  const gitAutomation=buildGitAutomationRuntimeSnapshot();
-  const governanceRuntimeSurface=buildGovernanceRuntimeSurface({
-    registry:authorityRegistry,
-    authorityRegistryPath,
-    approvalPolicy:readTopLevelCodexConfigString(defaultParentAgentConfigPath,"approval_policy")||"on-request",
-    sandboxMode:readTopLevelCodexConfigString(defaultParentAgentConfigPath,"sandbox_mode")||"workspace-write",
-    autoCommitAndPush:Boolean(gitAutomation&&gitAutomation.autocommitEnabled&&gitAutomation.autopushEnabled),
-    iterationControlContract,
-    iterationControlContractPath,
-    adoptionReadinessContract,
-    adoptionReadinessContractPath,
-    workerDecisionSurfaceContract,
-    workerDecisionSurfaceContractPath,
-    harnessPlaneContract,
-    harnessPlaneContractPath,
-    summarizePathForOperationLog,
-  });
-  const authorityModel=governanceRuntimeSurface.authorityModel;
-  const deploymentPosture=governanceRuntimeSurface.deploymentPosture;
-  const evalHarness={
-    suite:buildEvalSuiteSummary(defaultEvalSuite),
-    configPath:summarizePathForOperationLog(evalSuiteConfigPath,220),
-    lanePolicyPath:summarizePathForOperationLog(evalLanePolicyPath,220),
-    publicLaneId:safeString(evalLanePolicy&&evalLanePolicy.publicLaneId,80)||"public_regression",
-    protectedPaths:Array.isArray(evalLanePolicy&&evalLanePolicy.protectedPaths)
-      ?evalLanePolicy.protectedPaths.map(entry=>summarizePathForOperationLog(entry,220))
-      :[],
-    lanes:Array.isArray(evalLanePolicy&&evalLanePolicy.lanes)
-      ?evalLanePolicy.lanes.map((entry)=>summarizeEvalLane(entry))
-      :[],
-    historyPath:summarizePathForOperationLog(evalRunHistoryPath,220),
-    historyEnvKey:evalRunHistoryPathEnvKey,
-    maxCases:evalMaxCases,
-    maxVariants:evalDefaultMaxVariants,
-    caseTimeoutMs:evalCaseTimeoutMs,
-  };
-  const fullUtilization=buildFullUtilizationDefaultsSnapshot();
-  const parentDispatchGuard=buildParentDispatchGuardDefaultsSnapshot();
-  const phaseStatus=buildRequirementFoundationV1PhaseStatus();
-  const externalLearning=buildOpenAIBlogLearningRuntimeStateSnapshot();
-  const manualSelfImprovement=buildManualSelfImprovementRuntimeStateSnapshot();
-  const agiImprovementFlywheel=buildHarnessAgiImprovementFlywheelRuntimeSummary({
-    workspaceRoot,
-  });
-  const documentTooling=buildDocumentToolingRuntimeSnapshot({
-    workspaceRoot,
-  });
-  const iterationControlSummary=governanceRuntimeSurface.iterationControlSummary;
-  const adoptionReadinessSummary=governanceRuntimeSurface.adoptionReadinessSummary;
-  const workerDecisionSurfaceSummary=governanceRuntimeSurface.workerDecisionSurfaceSummary;
-  const harnessPlaneSummary=governanceRuntimeSurface.harnessPlaneSummary;
-  const currentWorkerDecisionSurface=(()=>{try{const candidatePath=path.join(workspaceRoot,"output","governance_public","worker_decision_surface.json");if(fs.existsSync(candidatePath)){const parsed=JSON.parse(fs.readFileSync(candidatePath,"utf8"));if(parsed&&typeof parsed==="object"&&!Array.isArray(parsed))return parsed;}}catch{}return null;})();
-  const currentLatestOverview=(()=>{try{const candidatePath=path.join(workspaceRoot,"output","memory_public","latest_overview.json");if(fs.existsSync(candidatePath)){const parsed=JSON.parse(fs.readFileSync(candidatePath,"utf8"));if(parsed&&typeof parsed==="object"&&!Array.isArray(parsed))return parsed;}}catch{}return null;})();
-  const currentGoalCompletion=(()=>{try{const candidatePath=path.join(workspaceRoot,"output","agi_readiness","goal_completion_status.json");if(fs.existsSync(candidatePath)){const parsed=JSON.parse(fs.readFileSync(candidatePath,"utf8"));if(parsed&&typeof parsed==="object"&&!Array.isArray(parsed))return parsed;}}catch{}return null;})();
-  const currentSubjectiveCompletion=(()=>{try{const candidatePath=path.join(workspaceRoot,"output","agi_readiness","subjective_goal_completion_status.json");if(fs.existsSync(candidatePath)){const parsed=JSON.parse(fs.readFileSync(candidatePath,"utf8"));if(parsed&&typeof parsed==="object"&&!Array.isArray(parsed))return parsed;}}catch{}return null;})();
-  const currentCompatibilityCompletion=(()=>{try{const candidatePath=path.join(workspaceRoot,"output","agi_readiness","compatibility_completion_status.json");if(fs.existsSync(candidatePath)){const parsed=JSON.parse(fs.readFileSync(candidatePath,"utf8"));if(parsed&&typeof parsed==="object"&&!Array.isArray(parsed))return parsed;}}catch{}return null;})();
-  const currentTruth={
-    headlineScope:currentLatestOverview&&currentLatestOverview.headlineScope?currentLatestOverview.headlineScope:(currentWorkerDecisionSurface&&currentWorkerDecisionSurface.scope?currentWorkerDecisionSurface.scope:""),
-    workerDecisionSurface:currentWorkerDecisionSurface||null,
-    goalCompletion:currentLatestOverview&&currentLatestOverview.goalCompletion&&typeof currentLatestOverview.goalCompletion==="object"
-      ?currentLatestOverview.goalCompletion
-      :{
-        scope:currentGoalCompletion&&currentGoalCompletion.scope?currentGoalCompletion.scope:"",
-        status:currentGoalCompletion&&currentGoalCompletion.goalStatus?currentGoalCompletion.goalStatus:"",
-        whyNotYetCount:Array.isArray(currentGoalCompletion&&currentGoalCompletion.whyNotYet)?currentGoalCompletion.whyNotYet.length:0,
-      },
-    subjectiveCompletion:currentLatestOverview&&currentLatestOverview.subjectiveCompletion&&typeof currentLatestOverview.subjectiveCompletion==="object"
-      ?currentLatestOverview.subjectiveCompletion
-      :{
-        scope:currentSubjectiveCompletion&&currentSubjectiveCompletion.scope?currentSubjectiveCompletion.scope:"",
-        status:currentSubjectiveCompletion&&currentSubjectiveCompletion.subjectiveGoalStatus?currentSubjectiveCompletion.subjectiveGoalStatus:"",
-        whyNotYetCount:Array.isArray(currentSubjectiveCompletion&&currentSubjectiveCompletion.subjectiveWhyNotYet)?currentSubjectiveCompletion.subjectiveWhyNotYet.length:0,
-      },
-    compatibilityCompletion:currentLatestOverview&&currentLatestOverview.compatibilityCompletion&&typeof currentLatestOverview.compatibilityCompletion==="object"
-      ?currentLatestOverview.compatibilityCompletion
-      :{
-        scope:currentCompatibilityCompletion&&currentCompatibilityCompletion.scope?currentCompatibilityCompletion.scope:"",
-        status:currentCompatibilityCompletion&&currentCompatibilityCompletion.status?currentCompatibilityCompletion.status:"",
-        whyNotYetCount:Array.isArray(currentCompatibilityCompletion&&currentCompatibilityCompletion.whyNotYet)?currentCompatibilityCompletion.whyNotYet.length:0,
-      },
-  };
-  const secondaryLearning={
-    anthropicEngineering:buildAnthropicEngineeringLearningRuntimeStateSnapshot(),
-  };
-  const evalHistoryOverview={
-    recentRuns:buildEvalHistoryOverview({limit:6}),
-  };
-  const executionOverview=buildExecutionMemoryOverview({limit:10,window:60});
-  const intentFirstSummary={
-    ...summarizeIntentFirstRuntime({contract:designAcceptanceContract,store:tasteMemoryStore}),
-    contractPath:summarizePathForOperationLog(designAcceptanceContractPath,220),
-    tasteMemorySeedPath:summarizePathForOperationLog(tasteMemorySeedPath,220),
-    tasteMemoryPath:summarizePathForOperationLog(tasteMemoryMemoryPath,220),
-  };
-  const traceability=buildHarnessTraceabilitySnapshot(
-    latestTurn&&latestTurn.planning&&typeof latestTurn.planning==="object"
-      ?latestTurn.planning
-      :{},
-    safeString(latestTurn&&latestTurn.agent_name,80)
-      ||safeString(activeAgentName,80)
-      ||"default"
-  );
-  const governedMemory=buildGovernedMemoryRuntimeSnapshot({
-    workspaceRoot,
-    runtime:{
-      activeAgent:activeAgentName,
-      latestTurn,
-      intentFirst:intentFirstSummary,
-      executionOverview,
-      evalHistory:evalHistoryOverview,
-      externalLearning,
-      manualSelfImprovement,
-      secondaryLearning,
-      phaseStatus,
-      traceability,
-    },
-    traceability,
-  });
-  const executionVisibility={
-    profile:runtimeExecutionProfile,
-    envKey:executionProfileEnvKey,
-    smokeLikeProfile:isSmokeExecutionProfile(runtimeExecutionProfile)?1:0,
-    fullUtilization,
-    parentDispatchGuard,
-  };
-  return{
-    apiVersion,
-    mode:"app-server",
-    workspaceRoot,
-    activeAgent:activeAgentName,
-    sessionRef:active?active.sessionRef:null,
-    agentCount:agentStates.size,
-    experimental:active?active.experimentalEnabled:false,
-    experimentalFeatures:active?Array.from(active.experimentalFeatures||[]):[],
-    serviceTier:active?resolveEffectiveServiceTier(active):nonFastEffectiveServiceTier,
-    fastModeEnabled:active?Boolean(active.fastModeEnabled):fastModeDefault,
-    automaticApprovalReviewEnabled:active?Boolean(active.automaticApprovalReviewEnabled):automaticApprovalReviewDefault,
-    agents:listAgentsSnapshot(),
-    requirementGuard,
-    requirement_guard:requirementGuard,
-    latestTurn,
-    latest_turn:latestTurn,
-    sessionPerformance,
-    session_performance:sessionPerformance,
-    serverProcess:{
-      pid:process.pid,
-      startedAt:serverProcessStartedAt,
-      uptimeMs:Math.max(0,Date.now()-serverProcessStartedAt),
-      activeExecRequests:getActiveExecRequestCount(),
-      restartProtection:{
-        activeExecRequests:getActiveExecRequestCount(),
-        restartBlocked:getActiveExecRequestCount()>0?1:0,
-      },
-    },
-    server_process:{
-      pid:process.pid,
-      startedAt:serverProcessStartedAt,
-      uptimeMs:Math.max(0,Date.now()-serverProcessStartedAt),
-      activeExecRequests:getActiveExecRequestCount(),
-      restartProtection:{
-        activeExecRequests:getActiveExecRequestCount(),
-        restartBlocked:getActiveExecRequestCount()>0?1:0,
-      },
-    },
-    activeExecRequests:getActiveExecRequestCount(),
-    active_exec_requests:getActiveExecRequestCount(),
-    appServerTransport:buildAppServerTransportRuntimeSnapshot(),
-    app_server_transport:buildAppServerTransportRuntimeSnapshot(),
-    operationLog:operationLog.runtimeSnapshot(),
-    loggingSurface:{
-      mode:loggingMode,
-      envKey:loggingModeEnvKey,
-      currentRoot:repoRelativePath(workspaceRoot,loggingSurfacePaths.currentRoot),
-      bundlesRoot:repoRelativePath(workspaceRoot,loggingSurfacePaths.bundlesRoot),
-      archiveRoot:repoRelativePath(workspaceRoot,loggingSurfacePaths.archiveRoot),
-    },
-    executionProfile:runtimeExecutionProfile,
-    execution_profile:runtimeExecutionProfile,
-    executionVisibility,
-    execution_visibility:executionVisibility,
-    fullUtilization,
-    full_utilization:fullUtilization,
-    parentDispatchGuard,
-    parent_dispatch_guard:parentDispatchGuard,
-    nonInteractiveUserInput,
-    non_interactive_user_input:nonInteractiveUserInput,
-    operatorDefaults:{
-      fastModeEnabled:fastModeDefault,
-      automaticApprovalReviewEnabled:automaticApprovalReviewDefault,
-      envKeys:{
-        fastModeDefault:fastModeDefaultEnvKey,
-        automaticApprovalReview:automaticApprovalReviewEnvKey,
-      },
-    },
-    adversarialShadow,
-    adversarial_shadow:adversarialShadow,
-    staticApps,
-    static_apps:staticApps,
-    gitAutomation,
-    git_automation:gitAutomation,
-    authorityRegistry:authorityModel,
-    authority_registry:authorityModel,
-    deploymentPosture,
-    deployment_posture:deploymentPosture,
-    harnessMemory,
-    harness_memory:harnessMemory,
-    governedMemory,
-    governed_memory:governedMemory,
-    slo,
-    evalHarness,
-    eval_harness:evalHarness,
-    phaseStatus,
-    phase_status:phaseStatus,
-    externalLearning,
-    external_learning:externalLearning,
-    documentTooling,
-    document_tooling:documentTooling,
-    iterationControl:iterationControlSummary,
-    iteration_control:iterationControlSummary,
-    workerDecisionSurface:currentWorkerDecisionSurface||workerDecisionSurfaceSummary,
-    worker_decision_surface:currentWorkerDecisionSurface||workerDecisionSurfaceSummary,
-    workerDecisionSupport:{
-      goalStatus:currentTruth.goalCompletion&&currentTruth.goalCompletion.status?currentTruth.goalCompletion.status:"",
-      goalStatusScope:currentTruth.goalCompletion&&currentTruth.goalCompletion.scope?currentTruth.goalCompletion.scope:"",
-      subjectiveGoalStatus:currentTruth.subjectiveCompletion&&currentTruth.subjectiveCompletion.status?currentTruth.subjectiveCompletion.status:"",
-      subjectiveGoalStatusScope:currentTruth.subjectiveCompletion&&currentTruth.subjectiveCompletion.scope?currentTruth.subjectiveCompletion.scope:"",
-      compatibilityCompletionStatus:currentTruth.compatibilityCompletion&&currentTruth.compatibilityCompletion.status?currentTruth.compatibilityCompletion.status:"",
-      compatibilityCompletionScope:currentTruth.compatibilityCompletion&&currentTruth.compatibilityCompletion.scope?currentTruth.compatibilityCompletion.scope:"",
-    },
-    worker_decision_support:{
-      goalStatus:currentTruth.goalCompletion&&currentTruth.goalCompletion.status?currentTruth.goalCompletion.status:"",
-      goalStatusScope:currentTruth.goalCompletion&&currentTruth.goalCompletion.scope?currentTruth.goalCompletion.scope:"",
-      subjectiveGoalStatus:currentTruth.subjectiveCompletion&&currentTruth.subjectiveCompletion.status?currentTruth.subjectiveCompletion.status:"",
-      subjectiveGoalStatusScope:currentTruth.subjectiveCompletion&&currentTruth.subjectiveCompletion.scope?currentTruth.subjectiveCompletion.scope:"",
-      compatibilityCompletionStatus:currentTruth.compatibilityCompletion&&currentTruth.compatibilityCompletion.status?currentTruth.compatibilityCompletion.status:"",
-      compatibilityCompletionScope:currentTruth.compatibilityCompletion&&currentTruth.compatibilityCompletion.scope?currentTruth.compatibilityCompletion.scope:"",
-    },
-    currentTruth,
-    current_truth:currentTruth,
-    adoptionReadinessContract:adoptionReadinessSummary,
-    adoption_readiness_contract:adoptionReadinessSummary,
-    workerDecisionSurfaceContract:workerDecisionSurfaceSummary,
-    worker_decision_surface_contract:workerDecisionSurfaceSummary,
-    harnessPlanes:harnessPlaneSummary,
-    harness_planes:harnessPlaneSummary,
-    manualSelfImprovement,
-    manual_self_improvement:manualSelfImprovement,
-    agiImprovementFlywheel,
-    agi_improvement_flywheel:agiImprovementFlywheel,
-    secondaryLearning,
-    secondary_learning:{
-      anthropicEngineering:secondaryLearning.anthropicEngineering,
-      anthropic_engineering:secondaryLearning.anthropicEngineering,
-    },
-    contractSpec:{
-      schema:safeString(harnessTurnContractSpec&&harnessTurnContractSpec.schema,80)||"harness-turn-contract.v1",
-      path:summarizePathForOperationLog(harnessTurnContractSpecPath,220),
-      terminalEvent:safeString(harnessTurnContractSpec&&harnessTurnContractSpec.turn&&harnessTurnContractSpec.turn.terminalEvent,120)||"turn/completed",
-      releaseDecisionStates:Array.isArray(harnessTurnContractSpec&&harnessTurnContractSpec.releaseDecisionStates)?harnessTurnContractSpec.releaseDecisionStates:[],
-      taskOutcomeBridge:harnessTurnContractSpec&&harnessTurnContractSpec.taskOutcomeBridge
-        ?harnessTurnContractSpec.taskOutcomeBridge
-        :{allowedByTurnState:{}},
-    },
-    taskOutcomeContract:{
-      ...summarizeTaskOutcomeContract(taskOutcomeContract),
-      path:summarizePathForOperationLog(taskOutcomeContractPath,220),
-    },
-    userFacingResponseContract:{
-      ...summarizeUserFacingResponseContract(userFacingResponseContract),
-      path:summarizePathForOperationLog(userFacingResponseContractPath,220),
-    },
-    planningContracts:{
-      schema:safeString(planningModeContract&&planningModeContract.schema,80)||"planning-mode-contract.v1",
-      version:safeString(planningModeContract&&planningModeContract.version,80)||"",
-      path:summarizePathForOperationLog(planningModeContractPath,220),
-      assuranceSchema:safeString(assuranceModeContract&&assuranceModeContract.schema,80)||"assurance-mode-contract.v1",
-      assuranceVersion:safeString(assuranceModeContract&&assuranceModeContract.version,80)||"",
-      assurancePath:summarizePathForOperationLog(assuranceModeContractPath,220),
-      familyProfileSchema:safeString(taskFamilyProfilesContract&&taskFamilyProfilesContract.schema,80)||"task-family-profiles.v1",
-      familyProfileVersion:safeString(taskFamilyProfilesContract&&taskFamilyProfilesContract.version,80)||"",
-      familyProfilePath:summarizePathForOperationLog(taskFamilyProfilesPath,220),
-      taskContractSchema:safeString(taskContractManifest&&taskContractManifest.schema,80)||"task-contract-manifest.v1",
-      taskContractVersion:safeString(taskContractManifest&&taskContractManifest.version,80)||"",
-      taskContractPath:summarizePathForOperationLog(taskContractManifestPath,220),
-      planningDecisionSchemaPath:summarizePathForOperationLog(planningDecisionContractSchemaPath,220),
-      requirementSchemaPath:summarizePathForOperationLog(requirementContractSchemaPath,220),
-      dispatchSchemaPath:summarizePathForOperationLog(dispatchPlanSchemaPath,220),
-      requestFrameContractPath:summarizePathForOperationLog(requestFrameContractPath,220),
-      routingDecisionContractPath:summarizePathForOperationLog(routingDecisionContractPath,220),
-      discoveryOutcomeContractPath:summarizePathForOperationLog(discoveryOutcomeContractPath,220),
-      reviewBundleContractPath:summarizePathForOperationLog(reviewBundleContractPath,220),
-      releaseDecisionContractPath:summarizePathForOperationLog(releaseDecisionContractPath,220),
-      conformanceInvariantsContractPath:summarizePathForOperationLog(conformanceInvariantsContractPath,220),
-      evidenceContractMachinePath:summarizePathForOperationLog(evidenceContractMachinePath,220),
-      modes:Array.isArray(planningModeContract&&planningModeContract.modes)?planningModeContract.modes:[],
-      assuranceModes:Array.isArray(assuranceModeContract&&assuranceModeContract.modes)?assuranceModeContract.modes:[],
-      families:Array.isArray(taskFamilyProfilesContract&&taskFamilyProfilesContract.families)
-        ?taskFamilyProfilesContract.families.map((entry)=>safeString(entry&&entry.id,80)).filter(Boolean)
-        :[],
-      taskContracts:Array.isArray(taskContractManifest&&taskContractManifest.contracts)
-        ?taskContractManifest.contracts.map((entry)=>summarizeTaskContract(entry))
-        :[],
-    },
-    intentFirst:intentFirstSummary,
-    workspaceGuard,
-    workspace_guard:workspaceGuard,
-    controlApi:{
-      tokenHeader:controlApiTokenHeaderName,
-      token:controlApiToken,
-      originCheck:true,
-      actionAllowlist:Array.from(controlApiActionAllowlist),
-    },
-    execApi:{
-      tokenHeader:controlApiTokenHeaderName,
-      tokenRequired:true,
-      originCheck:true,
-      contentType:execApiRequiredContentType,
-      idempotencyStatusApi:"/api/exec/idempotency/:key",
-      replayApi:{
-        listPath:"/api/replay/turns",
-        getPath:"/api/replay/turn/:turnId",
-        runPath:"POST /api/replay/turn",
-      },
-      evalApi:{
-        suitesPath:"/api/eval/suites",
-        runPath:"POST /api/eval/run",
-        historyPath:"/api/eval/history",
-      },
-      sloApi:"/api/slo/status",
-      defaultModel:defaultExecModelName,
-      modelReasoningEffort:defaultExecModelReasoningEffort,
-      supportedModelReasoningEfforts:Array.from(allowedModelReasoningEfforts),
-    },
-    conversationApi:getConversationRuntimeSnapshot(),
-    piperVoiceApi:getPiperRuntimeSnapshot({workspaceRoot}),
-    piper_voice_api:getPiperRuntimeSnapshot({workspaceRoot}),
-    kokoroVoiceApi:getKokoroVoiceRuntimeSnapshot(),
-    kokoro_voice_api:getKokoroVoiceRuntimeSnapshot(),    evidenceArtifacts:{
-      enabled:turnArtifactsEnabled,
-      root:summarizePathForOperationLog(turnArtifactsRoot,220),
-      maxBytes:turnArtifactsMaxBytes,
-      maxDays:turnArtifactsMaxDays,
-      redaction:{
-        enabled:turnArtifactsRedactionEnabled?1:0,
-        placeholder:turnArtifactsRedactionPlaceholder,
-      },
-    },
-    idempotency:{
-      ttlMs:execIdempotencyTtlMs,
-      persistent:true,
-      storage:summarizePathForOperationLog(harnessMemoryPath,220),
-      statusApi:{
-        path:"/api/exec/idempotency/:key",
-        waitMaxMs:execIdempotencyStatusWaitMaxMs,
-      },
-    },
-    governancePolicy:getAgentGovernancePolicySnapshot(),
-  };
+  return runtimeApiSnapshotService.buildRuntimeApiSnapshot();
 }
 function sanitizeRuntimeSnapshotForOverview(runtimeSnapshot){
-  const source=runtimeSnapshot&&typeof runtimeSnapshot==="object"?runtimeSnapshot:{};
-  let cloned={};
-  try{
-    cloned=JSON.parse(JSON.stringify(source));
-  }catch{
-    cloned={...source};
-  }
-  if(cloned.controlApi&&typeof cloned.controlApi==="object"){
-    cloned.controlApi={
-      ...cloned.controlApi,
-      token:"",
-      tokenRedacted:1,
-    };
-  }
-  return cloned;
-}
-function uniqueOverviewStrings(values,max=8){
-  const seen=new Set();
-  const result=[];
-  const items=Array.isArray(values)?values:[];
-  for(const value of items){
-    const text=safeString(String(value||""),160);
-    if(!text||seen.has(text))continue;
-    seen.add(text);
-    result.push(text);
-    if(result.length>=max)break;
-  }
-  return result;
-}
-function clampOverviewInt(value,fallback=0,min=0,max=999){
-  const parsed=Number(value);
-  const normalized=Number.isFinite(parsed)?Math.trunc(parsed):fallback;
-  return Math.min(max,Math.max(min,normalized));
-}
-function buildPlanningTraceabilityData({planningContext,agentName="default",dispatchesOverride=null,planStepsOverride=null}={}){
-  const sanitizedPlanning=sanitizePlanningArtifactsForRuntime(planningContext&&typeof planningContext==="object"?planningContext:{});
-  const requirement=sanitizedPlanning.requirementContract&&typeof sanitizedPlanning.requirementContract==="object"
-    ?sanitizedPlanning.requirementContract
-    :{};
-  const requestCoverage=requirement.requestCoverage&&typeof requirement.requestCoverage==="object"
-    ?requirement.requestCoverage
-    :{};
-  const rawRequestClauses=Array.isArray(requestCoverage.rawRequestClauses)
-    ?requestCoverage.rawRequestClauses
-    :[];
-  const mappedRequirements=Array.isArray(requestCoverage.mappedRequirements)
-    ?requestCoverage.mappedRequirements
-    :[];
-  const parkedItems=Array.isArray(requestCoverage.parkedItems)
-    ?requestCoverage.parkedItems
-    :[];
-  const droppedItems=Array.isArray(requestCoverage.droppedItems)
-    ?requestCoverage.droppedItems
-    :[];
-  const summary=requestCoverage.coverageSummary&&typeof requestCoverage.coverageSummary==="object"
-    ?requestCoverage.coverageSummary
-    :{};
-  const coreObligations=new Set(uniqueOverviewStrings(requestCoverage.coreObligations,32));
-  const mappedByClause=new Map();
-  const parkedByClause=new Map();
-  const droppedByClause=new Map();
-  const dispatchIdsByClause=new Map();
-  const planStepIdsByClause=new Map();
-  const acceptanceRefsByClause=new Map();
-  const pushMapValues=(map,key,values,max=24)=>{
-    const normalizedKey=safeString(key,80);
-    if(!normalizedKey)return;
-    map.set(normalizedKey,uniqueOverviewStrings([...(map.get(normalizedKey)||[]),...(Array.isArray(values)?values:[])],max));
-  };
-  mappedRequirements.forEach((entry)=>{
-    const clauseId=safeString(entry&&entry.clauseId,80);
-    if(!clauseId)return;
-    mappedByClause.set(clauseId,uniqueOverviewStrings(entry&&entry.requirementRefs,16));
-  });
-  parkedItems.forEach((entry)=>{
-    const clauseId=safeString(entry&&entry.clauseId,80);
-    if(!clauseId)return;
-    parkedByClause.set(clauseId,{
-      reason:safeString(entry&&entry.reason,240),
-      requirementRefs:uniqueOverviewStrings(entry&&entry.requirementRefs,16),
-    });
-  });
-  droppedItems.forEach((entry)=>{
-    const clauseId=safeString(entry&&entry.clauseId,80);
-    if(!clauseId)return;
-    droppedByClause.set(clauseId,{
-      reasonCode:safeString(entry&&entry.reasonCode,80),
-      reason:safeString(entry&&entry.reason,240),
-      requirementRefs:uniqueOverviewStrings(entry&&entry.requirementRefs,16),
-    });
-  });
-  const dispatches=Array.isArray(dispatchesOverride)
-    ?dispatchesOverride
-    :Array.isArray(sanitizedPlanning.dispatchPlan&&sanitizedPlanning.dispatchPlan.dispatches)
-      ?sanitizedPlanning.dispatchPlan.dispatches
-      :[];
-  dispatches.forEach((dispatch,index)=>{
-    const dispatchId=safeString(dispatch&&dispatch.dispatchId,120)||`dispatch-${index+1}`;
-    const clauseRefs=uniqueOverviewStrings(dispatch&&dispatch.requestClauseRefs,24);
-    const acceptanceRefs=uniqueOverviewStrings(dispatch&&dispatch.acceptanceCheckRefs,16);
-    clauseRefs.forEach((clauseId)=>{
-      pushMapValues(dispatchIdsByClause,clauseId,[dispatchId],12);
-      pushMapValues(acceptanceRefsByClause,clauseId,acceptanceRefs,16);
-    });
-  });
-  const operatorPlanEvent=buildOperatorPlanEvent({
-    planningContext:sanitizedPlanning,
-    agentName:safeString(agentName,80)||"default",
-  });
-  const planSteps=Array.isArray(planStepsOverride)
-    ?planStepsOverride
-    :Array.isArray(operatorPlanEvent&&operatorPlanEvent.steps)
-      ?operatorPlanEvent.steps
-      :[];
-  planSteps.forEach((step,index)=>{
-    const stepId=safeString(step&&step.stepId,120)||`plan-${index+1}`;
-    const clauseRefs=uniqueOverviewStrings(step&&step.requestClauseRefs,24);
-    const acceptanceRefs=uniqueOverviewStrings(step&&step.acceptanceCheckRefs,16);
-    clauseRefs.forEach((clauseId)=>{
-      pushMapValues(planStepIdsByClause,clauseId,[stepId],16);
-      pushMapValues(acceptanceRefsByClause,clauseId,acceptanceRefs,16);
-    });
-  });
-  const clauses=rawRequestClauses.map((entry,index)=>{
-    const clauseId=safeString(entry&&entry.id,80)||`req-${index+1}`;
-    const mappedRefs=uniqueOverviewStrings(mappedByClause.get(clauseId)||[],16);
-    const parked=parkedByClause.get(clauseId)||null;
-    const dropped=droppedByClause.get(clauseId)||null;
-    return{
-      clauseId,
-      text:safeString(entry&&entry.text,320),
-      kind:safeString(entry&&entry.kind,80)||"explicit_request",
-      lane:safeString(entry&&entry.lane,80)||"core",
-      core:coreObligations.has(clauseId),
-      state:dropped
-        ?"dropped"
-        :parked
-          ?"parked"
-          :mappedRefs.length
-            ?"mapped"
-            :coreObligations.has(clauseId)
-              ?"unmapped"
-              :"tracked",
-      requirementRefs:uniqueOverviewStrings([
-        ...mappedRefs,
-        ...(parked&&Array.isArray(parked.requirementRefs)?parked.requirementRefs:[]),
-        ...(dropped&&Array.isArray(dropped.requirementRefs)?dropped.requirementRefs:[]),
-      ],16),
-      dispatchIds:uniqueOverviewStrings(dispatchIdsByClause.get(clauseId)||[],12),
-      planStepIds:uniqueOverviewStrings(planStepIdsByClause.get(clauseId)||[],16),
-      acceptanceCheckRefs:uniqueOverviewStrings(acceptanceRefsByClause.get(clauseId)||[],16),
-      parkedReason:parked&&parked.reason?parked.reason:"",
-      droppedReasonCode:dropped&&dropped.reasonCode?dropped.reasonCode:"",
-      droppedReason:dropped&&dropped.reason?dropped.reason:"",
-    };
-  });
-  return{
-    sanitizedPlanning,
-    requirement,
-    requestCoverage,
-    rawRequestClauses,
-    mappedRequirements,
-    parkedItems,
-    droppedItems,
-    summary,
-    dispatches,
-    plan:{
-      decision:safeString(operatorPlanEvent&&operatorPlanEvent.decision,40)||"",
-      planningDepth:safeString(operatorPlanEvent&&operatorPlanEvent.planningDepth,80)||safeString(sanitizedPlanning.selection&&sanitizedPlanning.selection.selectedPlanningDepth,80),
-      assuranceDepth:safeString(operatorPlanEvent&&operatorPlanEvent.assuranceDepth,80)||safeString(sanitizedPlanning.selection&&sanitizedPlanning.selection.selectedAssuranceDepth,80),
-      flowPath:safeString(operatorPlanEvent&&operatorPlanEvent.flowPath,80)||safeString(sanitizedPlanning.selection&&sanitizedPlanning.selection.flowPath,80),
-    },
-    operatorPlanEvent,
-    planSteps,
-    clauses,
-  };
-}
-function buildHarnessTraceabilitySnapshot(planningContext,agentName="default"){
-  const traceability=buildPlanningTraceabilityData({planningContext,agentName});
-  return{
-    owner:safeString(traceability.requirement&&traceability.requirement.owner,80)||"intake",
-    summary:{
-      totalClauses:clampOverviewInt(traceability.summary.totalClauses,traceability.rawRequestClauses.length,0,999),
-      mappedCount:clampOverviewInt(traceability.summary.mappedCount,traceability.mappedRequirements.length,0,999),
-      coreTotal:clampOverviewInt(
-        traceability.summary.coreTotal,
-        traceability.clauses.filter((entry)=>entry&&entry.core).length,
-        0,
-        999
-      ),
-      coreMapped:clampOverviewInt(traceability.summary.coreMapped,0,0,999),
-      coreUnmapped:clampOverviewInt(traceability.summary.coreUnmapped,0,0,999),
-      parkedCount:clampOverviewInt(traceability.summary.parkedCount,traceability.parkedItems.length,0,999),
-      droppedCount:clampOverviewInt(traceability.summary.droppedCount,traceability.droppedItems.length,0,999),
-      dispatchCount:traceability.dispatches.length,
-      planStepCount:traceability.planSteps.length,
-    },
-    plan:traceability.plan,
-    clauses:traceability.clauses,
-  };
-}
-function buildPostLockDriftSnapshot({planningContext,agentName="default",dispatchesOverride=null,planStepsOverride=null}={}){
-  const traceability=buildPlanningTraceabilityData({
-    planningContext,
-    agentName,
-    dispatchesOverride,
-    planStepsOverride,
-  });
-  const coreClauses=traceability.clauses.filter((entry)=>entry&&entry.core);
-  const mappedCoreClauses=coreClauses.filter((entry)=>Array.isArray(entry&&entry.requirementRefs)&&entry.requirementRefs.length);
-  const unmappedCoreClauseIds=uniqueOverviewStrings(
-    coreClauses.filter((entry)=>!Array.isArray(entry&&entry.requirementRefs)||!entry.requirementRefs.length).map((entry)=>entry.clauseId),
-    24
-  );
-  const dispatchGapClauseIds=uniqueOverviewStrings(
-    mappedCoreClauses.filter((entry)=>!Array.isArray(entry&&entry.dispatchIds)||!entry.dispatchIds.length).map((entry)=>entry.clauseId),
-    24
-  );
-  const planGapClauseIds=uniqueOverviewStrings(
-    mappedCoreClauses.filter((entry)=>!Array.isArray(entry&&entry.planStepIds)||!entry.planStepIds.length).map((entry)=>entry.clauseId),
-    24
-  );
-  const driftedClauseIds=uniqueOverviewStrings([...dispatchGapClauseIds,...planGapClauseIds],24);
-  const orphanDispatchIds=uniqueOverviewStrings(
-    traceability.dispatches.map((dispatch,index)=>{
-      const clauseRefs=uniqueOverviewStrings(dispatch&&dispatch.requestClauseRefs,24);
-      const requirementRefs=uniqueOverviewStrings(dispatch&&dispatch.requirementRefs,24);
-      const acceptanceRefs=uniqueOverviewStrings(dispatch&&dispatch.acceptanceCheckRefs,16);
-      if(clauseRefs.length||requirementRefs.length||acceptanceRefs.length)return"";
-      return safeString(dispatch&&dispatch.dispatchId,120)||`dispatch-${index+1}`;
-    }).filter(Boolean),
-    16
-  );
-  const orphanPlanStepIds=uniqueOverviewStrings(
-    traceability.planSteps.map((step,index)=>{
-      const clauseRefs=uniqueOverviewStrings(step&&step.requestClauseRefs,24);
-      const requirementRefs=uniqueOverviewStrings(step&&step.requirementRefs,24);
-      const acceptanceRefs=uniqueOverviewStrings(step&&step.acceptanceCheckRefs,16);
-      if(clauseRefs.length||requirementRefs.length||acceptanceRefs.length)return"";
-      return safeString(step&&step.stepId,120)||`plan-${index+1}`;
-    }).filter(Boolean),
-    16
-  );
-  const coreMappedCount=mappedCoreClauses.length;
-  const dispatchCoveredCoreCount=mappedCoreClauses.filter((entry)=>Array.isArray(entry&&entry.dispatchIds)&&entry.dispatchIds.length).length;
-  const planCoveredCoreCount=mappedCoreClauses.filter((entry)=>Array.isArray(entry&&entry.planStepIds)&&entry.planStepIds.length).length;
-  const fullyCoveredCoreCount=mappedCoreClauses.filter((entry)=>
-    Array.isArray(entry&&entry.dispatchIds)&&entry.dispatchIds.length
-    &&Array.isArray(entry&&entry.planStepIds)&&entry.planStepIds.length
-  ).length;
-  const acceptanceLinkedCoreCount=mappedCoreClauses.filter((entry)=>
-    Array.isArray(entry&&entry.acceptanceCheckRefs)&&entry.acceptanceCheckRefs.length
-  ).length;
-  const rate=(covered,total)=>total>0?Number((covered/total).toFixed(4)):0;
-  let status="PASS";
-  let reason="no_drift";
-  if(!coreClauses.length){
-    status="NO_BASELINE";
-    reason="no_core_request_clauses";
-  }else if(unmappedCoreClauseIds.length){
-    status="LOCK_INCOMPLETE";
-    reason="core_unmapped_before_post_lock";
-  }else if(driftedClauseIds.length){
-    status="FAIL";
-    reason="downstream_clause_gap";
-  }else if(orphanDispatchIds.length||orphanPlanStepIds.length){
-    status="FAIL";
-    reason="orphan_downstream_trace";
-  }
-  const driftedClauseIdSet=new Set(driftedClauseIds);
-  return{
-    schema:"post-lock-drift.v1",
-    status,
-    reason,
-    planningDepth:traceability.plan.planningDepth||safeString(traceability.sanitizedPlanning&&traceability.sanitizedPlanning.selection&&traceability.sanitizedPlanning.selection.selectedPlanningDepth,80)||"",
-    assuranceDepth:traceability.plan.assuranceDepth||safeString(traceability.sanitizedPlanning&&traceability.sanitizedPlanning.selection&&traceability.sanitizedPlanning.selection.selectedAssuranceDepth,80)||"",
-    flowPath:traceability.plan.flowPath||safeString(traceability.sanitizedPlanning&&traceability.sanitizedPlanning.selection&&traceability.sanitizedPlanning.selection.flowPath,80)||"",
-    counts:{
-      totalClauses:traceability.clauses.length,
-      coreClauseCount:coreClauses.length,
-      coreMappedCount,
-      coreUnmappedCount:unmappedCoreClauseIds.length,
-      dispatchCount:traceability.dispatches.length,
-      planStepCount:traceability.planSteps.length,
-      dispatchCoveredCoreCount,
-      planCoveredCoreCount,
-      fullyCoveredCoreCount,
-      acceptanceLinkedCoreCount,
-      dispatchGapCount:dispatchGapClauseIds.length,
-      planGapCount:planGapClauseIds.length,
-      driftedClauseCount:driftedClauseIds.length,
-      orphanDispatchCount:orphanDispatchIds.length,
-      orphanPlanStepCount:orphanPlanStepIds.length,
-    },
-    rates:{
-      dispatchCoverageRate:rate(dispatchCoveredCoreCount,coreMappedCount),
-      planCoverageRate:rate(planCoveredCoreCount,coreMappedCount),
-      fullCoverageRate:rate(fullyCoveredCoreCount,coreMappedCount),
-      driftRate:rate(driftedClauseIds.length,coreMappedCount),
-    },
-    unmappedCoreClauseIds,
-    dispatchGapClauseIds,
-    planGapClauseIds,
-    driftedClauseIds,
-    orphanDispatchIds,
-    orphanPlanStepIds,
-    driftedClauses:traceability.clauses.filter((entry)=>driftedClauseIdSet.has(entry.clauseId)).map((entry)=>({
-      clauseId:entry.clauseId,
-      text:safeString(entry&&entry.text,320),
-      dispatchIds:uniqueOverviewStrings(entry&&entry.dispatchIds,12),
-      planStepIds:uniqueOverviewStrings(entry&&entry.planStepIds,16),
-      acceptanceCheckRefs:uniqueOverviewStrings(entry&&entry.acceptanceCheckRefs,16),
-    })),
-  };
+  return runtimeApiSnapshotService.sanitizeRuntimeSnapshotForOverview(runtimeSnapshot);
 }
 function syncGovernedMemoryGraphFromLiveRuntime(reason="runtime_sync"){
-  return syncHarnessOverviewGovernedMemory({
-    buildEvalHistoryOverview,
-    buildExecutionMemoryOverview,
-    buildHarnessTraceabilitySnapshot,
-    buildRuntimeApiSnapshot,
-    reason,
-    safeString,
-    syncGovernedMemoryGraph,
-    workspaceRoot,
-  });
+  return harnessOverviewSnapshotService.syncGovernedMemoryGraphFromLiveRuntime(reason);
 }
 function buildHarnessOverviewSnapshot(){
-  return buildHarnessOverviewPayload({
-    apiVersion,
-    buildBrowserCapabilityOverview,
-    buildBundleOverview,
-    buildContinuityOverviewSnapshot,
-    buildEvalHistoryOverview,
-    buildExecutionMemoryOverview,
-    buildHarnessTraceabilitySnapshot,
-    buildRuntimeApiSnapshot,
-    buildRuntimeProofBundleSnapshot,
-    buildSignoffBundleSnapshot,
-    buildSkillPortfolioOverview,
-    buildTopographyOverview,
-    getAgentTopographySnapshot,
-    harnessMemoryLoaded,
-    listReplayMemorySnapshots,
-    loadHarnessExecutionMemoryStore,
-    loggingSurfacePaths,
-    repoRelativePath,
-    runtimeProofsRoot,
-    safeString,
-    sanitizeRuntimeSnapshotForOverview,
-    signoffBundlesRoot,
-    syncGovernedMemoryGraph,
-    workspaceRoot,
-  });
-}
-function buildContinuityOverviewSnapshot(){
-  return buildContinuityOverviewSurface({
-    readWorkspaceJsonArtifact,
-    safeString,
-    toFiniteNumber,
-  });
-}
-function buildBrowserCapabilityOverview(){
-  return buildBrowserCapabilitySurface({
-    readWorkspaceJsonArtifact,
-    safeString,
-    toFiniteNumber,
-  });
-}
-function isLikelyChangedPath(entry){
-  const value=safeString(entry,260);
-  if(!value)return false;
-  if(/\s{2,}/.test(value)&&!/[\\/]/.test(value))return false;
-  if(!/[\\/]/.test(value)&&!/^[A-Za-z]:/.test(value))return false;
-  return true;
-}
-function collectChangedPathsFromArtifacts({manifest,evidenceManifest,flowTraceSummary}={}){
-  const manifestObserved=manifest&&manifest.execution&&manifest.execution.observed&&typeof manifest.execution.observed==="object"
-    ?manifest.execution.observed
-    :{};
-  const childEvidenceLedger=Array.isArray(evidenceManifest&&evidenceManifest.childEvidenceLedger)
-    ?evidenceManifest.childEvidenceLedger
-    :Array.isArray(flowTraceSummary&&flowTraceSummary.childEvidenceLedger)
-      ?flowTraceSummary.childEvidenceLedger
-      :[];
-  return uniquePathList([
-    ...(Array.isArray(manifestObserved.changedPaths)?manifestObserved.changedPaths:[]),
-    ...(Array.isArray(manifestObserved.sampleChangedPaths)?manifestObserved.sampleChangedPaths:[]),
-    ...childEvidenceLedger.flatMap((entry)=>Array.isArray(entry&&entry.ownedPaths)?entry.ownedPaths:[]),
-  ].filter(isLikelyChangedPath),24);
-}
-function buildLatestBundleReference(rootDir,summaryFileName,buildSnapshot){
-  const candidates=listBundleSummaryCandidates(rootDir,summaryFileName);
-  if(!candidates.length)return null;
-  const candidate=candidates[0];
-  const snapshot=buildSnapshot(candidate);
-  return{
-    ...snapshot,
-    bundlePath:repoRelativePath(workspaceRoot,candidate.dirPath),
-    summaryPath:repoRelativePath(workspaceRoot,candidate.summaryPath),
-  };
-}
-function toOperatorCanonicalKey(key){
-  const raw=safeString(key,160);
-  if(!raw)return"";
-  return raw.replace(/_([a-z0-9])/g,(_,char)=>String(char).toUpperCase());
-}
-function isOperatorEmptyValue(value){
-  if(value==null)return true;
-  if(typeof value==="string")return !value.trim();
-  if(Array.isArray(value))return value.length===0;
-  if(typeof value==="object")return !Array.isArray(value)&&Object.keys(value).length===0;
-  return false;
-}
-function canonicalizeOperatorFacingValue(value){
-  if(Array.isArray(value))return value.map((entry)=>canonicalizeOperatorFacingValue(entry));
-  if(!value||typeof value!=="object")return value;
-  const source=value&&typeof value==="object"?value:{};
-  const result={};
-  const keys=Object.keys(source).sort((left,right)=>{
-    const leftSnake=left.includes("_")?1:0;
-    const rightSnake=right.includes("_")?1:0;
-    return leftSnake-rightSnake;
-  });
-  for(const key of keys){
-    const canonicalKey=toOperatorCanonicalKey(key)||key;
-    const normalizedValue=canonicalizeOperatorFacingValue(source[key]);
-    if(Object.prototype.hasOwnProperty.call(result,canonicalKey)){
-      if(isOperatorEmptyValue(result[canonicalKey])&&!isOperatorEmptyValue(normalizedValue)){
-        result[canonicalKey]=normalizedValue;
-      }
-      continue;
-    }
-    result[canonicalKey]=normalizedValue;
-  }
-  return result;
+  return harnessOverviewSnapshotService.buildHarnessOverviewSnapshot();
 }
 function isCompletedOperatorOutcome(finalOutcome){
   const taskOutcomeStatus=safeString(finalOutcome&&finalOutcome.taskOutcomeStatus,80).toUpperCase();
   if(taskOutcomeStatus==="COMPLETED")return true;
   return safeString(finalOutcome&&finalOutcome.status,40).toLowerCase()==="completed";
 }
-function normalizeOperatorResidualSemantics({finalOutcome,residualRisks}={}){
-  const notes=Array.isArray(residualRisks)?residualRisks.map((entry)=>safeString(entry,320)).filter(Boolean):[];
-  const completed=isCompletedOperatorOutcome(finalOutcome);
-  const blockerPattern=/(implementation is intentionally paused|user decision|open questions|needs[_\s-]?input|awaiting approval|awaiting user|unresolved blocker|blocked\b|before signoff|requires dedicated verification)/i;
-  const normalized={
-    residualRisks:[],
-    informationalNotes:[],
-    operatorCaveats:[],
-  };
-  for(const note of notes){
-    if(completed&&blockerPattern.test(note)){
-      normalized.informationalNotes.push(
-        /implementation is intentionally paused until user decisions resolve the open questions/i.test(note)
-          ?"Historical planning note only: discovery handling originally surfaced open questions, but this recorded run completed without an unresolved user-decision blocker."
-          :/requires dedicated verification before signoff/i.test(note)
-            ?"Historical planning note only: dedicated verification was required for signoff and has already been satisfied on this completed run."
-          :`Historical planning note only: ${note}`
-      );
-      continue;
-    }
-    normalized.residualRisks.push(note);
-  }
-  return{
-    residualRisks:Array.from(new Set(normalized.residualRisks)).slice(0,12),
-    informationalNotes:Array.from(new Set(normalized.informationalNotes)).slice(0,12),
-    operatorCaveats:Array.from(new Set(normalized.operatorCaveats)).slice(0,12),
-  };
-}
 function isSignoffSummaryAllPassed(signoffSummary){
-  if(!signoffSummary||typeof signoffSummary!=="object")return false;
-  if(typeof signoffSummary.allPassed!=="undefined"){
-    return signoffSummary.allPassed===true||Number(signoffSummary.allPassed||0)===1;
-  }
-  return Boolean(signoffSummary.assertions&&signoffSummary.assertions.allPassed);
+  return currentSurfaceService.isSignoffSummaryAllPassed(signoffSummary);
 }
 function normalizeSignoffTransportMode(signoffSummary){
-  const raw=safeString(
-    signoffSummary&&(
-      signoffSummary.transportMode
-      ||(signoffSummary.runtime&&signoffSummary.runtime.transportMode)
-    ),
-    80
-  ).toLowerCase();
-  if(!raw)return"";
-  if(raw==="live"||raw==="stdio")return"stdio";
-  if(raw==="mock"||raw==="fixture"||raw==="mock-fixture")return"mock-fixture";
-  return raw;
+  return currentSurfaceService.normalizeSignoffTransportMode
+    ?currentSurfaceService.normalizeSignoffTransportMode(signoffSummary)
+    :"";
 }
 function selectPreferredSignoffCandidate(candidates){
-  const entries=Array.isArray(candidates)?candidates.filter(Boolean):[];
-  if(!entries.length)return null;
-  const latestPassingLive=entries.find((entry)=>
-    isSignoffSummaryAllPassed(entry.summary)
-    &&normalizeSignoffTransportMode(entry.summary)==="stdio"
-  );
-  if(latestPassingLive)return latestPassingLive;
-  const latestPassing=entries.find((entry)=>isSignoffSummaryAllPassed(entry.summary));
-  if(latestPassing)return latestPassing;
-  const latestLive=entries.find((entry)=>normalizeSignoffTransportMode(entry.summary)==="stdio");
-  if(latestLive)return latestLive;
-  return entries[0]||null;
+  return currentSurfaceService.selectPreferredSignoffCandidate(candidates);
 }
 function hasResolvedOperatorOutcome(finalOutcome){
-  const taskOutcomeStatus=safeString(finalOutcome&&finalOutcome.taskOutcomeStatus,80).toUpperCase();
-  if(taskOutcomeStatus)return true;
-  const terminalStatus=normalizeExecutionState(finalOutcome&&finalOutcome.terminalStatus,{terminalFallback:false});
-  return Boolean(terminalStatus&&isTerminalExecutionState(terminalStatus));
+  return currentSurfaceService.hasResolvedOperatorOutcome(finalOutcome);
 }
 function buildRelatedSignoffSummaryRef(signoffSummary,relatedToRun){
-  if(!signoffSummary||!relatedToRun)return null;
-  const bundlePath=safeString(signoffSummary.bundlePath,260)
-    ||safeString(signoffSummary.bundleRef&&signoffSummary.bundleRef.bundlePath,260)
-    ||"";
-  const summaryPath=safeString(signoffSummary.summaryPath,260)
-    ||safeString(signoffSummary.bundleRef&&signoffSummary.bundleRef.summaryPath,260)
-    ||"";
-  const allPassed=isSignoffSummaryAllPassed(signoffSummary);
-  return{
-    bundlePath,
-    summaryPath,
-    allPassed,
-    relatedToRun:1,
-  };
+  return currentSurfaceService.buildRelatedSignoffSummaryRef(signoffSummary,relatedToRun);
 }
 function isAuxiliaryOperatorRunContext(latestTurn){
-  const source=safeString(latestTurn&&latestTurn.source,120).toLowerCase();
-  const intent=safeString(latestTurn&&latestTurn.execution_intent,120).toLowerCase();
-  const profile=normalizeExecutionProfile(latestTurn&&latestTurn.execution_profile,runtimeExecutionProfile);
-  return Boolean(
-    profile.startsWith("eval")
-    ||profile==="proof-runtime"
-    ||profile==="smoke-test"
-    ||intent==="eval"
-    ||intent.includes("probe")
-    ||intent.includes("replay")
-    ||source==="eval_harness"
-    ||source.startsWith("replay:")
-  );
+  return currentSurfaceService.isAuxiliaryOperatorRunContext
+    ?currentSurfaceService.isAuxiliaryOperatorRunContext(latestTurn)
+    :Boolean(latestTurn&&safeString(latestTurn.source,120));
 }
 function isSignoffBundleRunContext(latestTurn,signoffSummary){
-  const artifactPath=safeString(latestTurn&&latestTurn.artifact_manifest_path,260);
-  const bundlePath=safeString(
-    signoffSummary&&(
-      signoffSummary.bundlePath
-      ||(signoffSummary.bundleRef&&signoffSummary.bundleRef.bundlePath)
-    ),
-    260
-  );
-  const latestTurnId=safeString(latestTurn&&latestTurn.turn_id,160);
-  const naturalTaskTurnId=safeString(signoffSummary&&signoffSummary.naturalTask&&signoffSummary.naturalTask.turnId,160);
-  if(bundlePath&&artifactPath&&artifactPath.replace(/\\/g,"/").startsWith(bundlePath.replace(/\\/g,"/")))return true;
-  if(latestTurnId&&naturalTaskTurnId&&latestTurnId===naturalTaskTurnId)return true;
-  return false;
+  return currentSurfaceService.isSignoffBundleRunContext
+    ?currentSurfaceService.isSignoffBundleRunContext(latestTurn,signoffSummary)
+    :false;
 }
 function shouldPreferLatestCompletedSignoffRun({latestTurn,signoffSummary}={}){
-  const bundlePath=safeString(
-    signoffSummary&&(
-      signoffSummary.bundlePath
-      ||(signoffSummary.bundleRef&&signoffSummary.bundleRef.bundlePath)
-    ),
-    260
-  );
-  if(!bundlePath)return false;
-  if(!latestTurn)return true;
-  const latestStatus=safeString(latestTurn.status,40).toLowerCase();
-  const latestTaskOutcomeStatus=safeString(latestTurn.task_outcome_status,80).toUpperCase();
-  const latestIntent=safeString(latestTurn.execution_intent,120).toLowerCase();
-  const completed=latestStatus==="completed"&&latestTaskOutcomeStatus==="COMPLETED";
-  if(latestStatus==="in_progress")return true;
-  if(isAuxiliaryOperatorRunContext(latestTurn))return true;
-  if(isSignoffBundleRunContext(latestTurn,signoffSummary))return false;
-  if(!completed)return true;
-  return !latestIntent.includes("signoff");
+  return currentSurfaceService.shouldPreferLatestCompletedSignoffRun
+    ?currentSurfaceService.shouldPreferLatestCompletedSignoffRun({latestTurn,signoffSummary})
+    :false;
 }
 function buildOperatorDecisionSummary({finalOutcome,signoffReady,designConformant,postureSafe,requiredEvidenceFailures=[]}={}){
   const completed=isCompletedOperatorOutcome(finalOutcome);
@@ -13639,771 +13291,6 @@ function buildOperatorDecisionSummary({finalOutcome,signoffReady,designConforman
   if(taskOutcomeStatus==="FAILED_VALIDATION"||taskOutcomeStatus==="BLOCKED"||taskOutcomeStatus==="NEEDS_INPUT")return"DO_NOT_SIGNOFF";
   if(completed)return"REVIEW_SUMMARY_BEFORE_SIGNOFF";
   return"ATTENTION_REQUIRED";
-}
-function buildCurrentRuntimeSnapshotFile(){
-  const runtime=sanitizeRuntimeSnapshotForOverview(buildRuntimeApiSnapshot());
-  const canonicalRuntime=canonicalizeOperatorFacingValue({
-    activeAgent:runtime.activeAgent,
-    latestTurn:runtime.latestTurn,
-    harnessMemory:runtime.harnessMemory,
-    evalHarness:runtime.evalHarness,
-    planningContracts:runtime.planningContracts,
-    governancePolicy:runtime.governancePolicy,
-    gitAutomation:runtime.gitAutomation,
-    fullUtilization:runtime.fullUtilization,
-    staticApps:runtime.staticApps,
-  });
-  return{
-    schema:"current-runtime-snapshot.v2",
-    generatedAt:toIsoTimestamp(Date.now()),
-    loggingMode,
-    loggingModeEnvKey,
-    defaultExecAgent:defaultExecAgentName,
-    currentSurface:{
-      operatorSummaryPath:repoRelativePath(workspaceRoot,loggingSurfacePaths.currentOperatorSummaryPath),
-      designConformanceSummaryPath:repoRelativePath(workspaceRoot,loggingSurfacePaths.currentDesignConformancePath),
-      conformanceReportPath:repoRelativePath(workspaceRoot,loggingSurfacePaths.currentConformanceReportPath),
-      operatorViewSummaryPath:repoRelativePath(workspaceRoot,loggingSurfacePaths.currentOperatorViewSummaryPath),
-      runtimeSnapshotPath:repoRelativePath(workspaceRoot,loggingSurfacePaths.currentRuntimeSnapshotPath),
-      latestRunSummaryPath:repoRelativePath(workspaceRoot,loggingSurfacePaths.currentLatestRunSummaryPath),
-      reviewLoadBreakdownPath:repoRelativePath(workspaceRoot,loggingSurfacePaths.currentReviewLoadBreakdownPath),
-      latestSignoffSummaryPath:repoRelativePath(workspaceRoot,loggingSurfacePaths.currentLatestSignoffSummaryPath),
-    },
-    storage:{
-      current:repoRelativePath(workspaceRoot,loggingSurfacePaths.currentRoot),
-      bundles:{
-        signoff:repoRelativePath(workspaceRoot,loggingSurfacePaths.signoffBundlesRoot),
-        proof:repoRelativePath(workspaceRoot,loggingSurfacePaths.proofBundlesRoot),
-        replay:repoRelativePath(workspaceRoot,loggingSurfacePaths.replayBundlesRoot),
-      },
-      archive:{
-        admin:repoRelativePath(workspaceRoot,loggingSurfacePaths.adminRoot),
-        raw:repoRelativePath(workspaceRoot,loggingSurfacePaths.archiveRawRoot),
-        legacy:repoRelativePath(workspaceRoot,loggingSurfacePaths.archiveLegacyRoot),
-        operationLogs:repoRelativePath(workspaceRoot,loggingSurfacePaths.archiveOperationLogsRoot),
-        turns:repoRelativePath(workspaceRoot,loggingSurfacePaths.archiveTurnsRoot),
-        runtimeState:repoRelativePath(workspaceRoot,loggingSurfacePaths.runtimeStateRoot),
-      },
-    },
-    posture:{
-      executionProfile:runtime.executionProfile,
-      requestUserInputPolicy:runtime.nonInteractiveUserInput,
-      parentDispatchGuard:runtime.parentDispatchGuard,
-      operationLog:runtime.operationLog,
-      evidenceArtifacts:runtime.evidenceArtifacts,
-    },
-    runtime:canonicalRuntime,
-    latestBundles:{
-      signoff:buildLatestBundleReference(signoffBundlesRoot,"signoff_summary.json",buildSignoffBundleSnapshot),
-      proof:buildLatestBundleReference(runtimeProofsRoot,"runtime_proof_summary.json",buildRuntimeProofBundleSnapshot),
-    },
-  };
-}
-function buildLatestSignoffSummaryFile(){
-  const candidates=listBundleSummaryCandidates(signoffBundlesRoot,"signoff_summary.json");
-  const preferredCandidate=selectPreferredSignoffCandidate(candidates);
-  const latest=preferredCandidate
-    ?buildSignoffBundleSnapshot(preferredCandidate)
-    :buildLatestBundleReference(signoffBundlesRoot,"signoff_summary.json",buildSignoffBundleSnapshot);
-  if(!latest)return null;
-  const allPassed=isSignoffSummaryAllPassed(latest);
-  return{
-    schema:"latest-signoff-summary.v2",
-    generatedAt:toIsoTimestamp(Date.now()),
-    allPassed:allPassed?1:0,
-    runtimePostureSafe:latest&&latest.assertions&&latest.assertions.runtimePostureSafe?1:0,
-    coreHarnessWorkflowPassed:latest&&latest.assertions&&latest.assertions.coreHarnessWorkflowPassed?1:0,
-    naturalTaskTracePassed:latest&&latest.assertions&&latest.assertions.naturalTaskTracePassed?1:0,
-    signoffReady:allPassed?1:0,
-    bundleRef:{
-      bundleName:latest.name,
-      bundlePath:latest.bundlePath,
-      summaryPath:latest.summaryPath,
-    },
-    finalDecision:allPassed?"RELEASE_APPROVED":"RELEASE_BLOCKED",
-  };
-}
-function buildLatestRunSummaryFromSignoffBundle(signoffSummary){
-  const bundlePath=safeString(
-    signoffSummary&&(
-      signoffSummary.bundlePath
-      ||(signoffSummary.bundleRef&&signoffSummary.bundleRef.bundlePath)
-    ),
-    260
-  );
-  const signoffSummaryPath=safeString(
-    signoffSummary&&(
-      signoffSummary.summaryPath
-      ||(signoffSummary.bundleRef&&signoffSummary.bundleRef.summaryPath)
-    ),
-    260
-  );
-  const signoffBundleSummary=readWorkspaceJsonArtifact(signoffSummaryPath);
-  if(!signoffBundleSummary||typeof signoffBundleSummary!=="object")return null;
-  const bundleLatestRun=readWorkspaceJsonArtifact(signoffBundleSummary.paths&&signoffBundleSummary.paths.latestRunSummary)||{};
-  const signoffTracePath=safeString(
-    signoffBundleSummary.paths&&(
-      signoffBundleSummary.paths.signoffTaskTraceSummary
-      ||signoffBundleSummary.paths.naturalTaskTraceSummary
-    ),
-    260
-  );
-  const traceSummary=readWorkspaceJsonArtifact(signoffTracePath)||{};
-  const flowTraceSummary=traceSummary.flowTraceSummary&&typeof traceSummary.flowTraceSummary==="object"
-    ?traceSummary.flowTraceSummary
-    :{};
-  const artifactManifestPath=safeString(traceSummary.artifactManifestPath,260)||"";
-  const artifactManifest=readWorkspaceJsonArtifact(artifactManifestPath)||{};
-  const artifactDir=artifactManifestPath?path.dirname(resolveWorkspaceRuntimePath(artifactManifestPath)):"";
-  const evidenceManifestPath=artifactDir?repoRelativePath(workspaceRoot,path.join(artifactDir,"evidence_manifest.json")):"";
-  const evidenceManifest=readWorkspaceJsonArtifact(evidenceManifestPath)||{};
-  const reviewLoadBreakdown=readWorkspaceJsonArtifact(signoffBundleSummary.paths&&signoffBundleSummary.paths.reviewLoadBreakdown)||{};
-  const finalOutcome=bundleLatestRun.finalOutcome&&typeof bundleLatestRun.finalOutcome==="object"
-    ?bundleLatestRun.finalOutcome
-    :(traceSummary.turn&&typeof traceSummary.turn==="object"?traceSummary.turn:{});
-  const normalizedResiduals=normalizeOperatorResidualSemantics({
-    finalOutcome,
-    residualRisks:Array.isArray(bundleLatestRun.residualRisks)
-      ?bundleLatestRun.residualRisks
-      :Array.isArray(flowTraceSummary.residualRiskSummary)
-        ?flowTraceSummary.residualRiskSummary
-        :[],
-  });
-  const changedPaths=uniquePathList([
-    ...(Array.isArray(traceSummary.observedSignals&&traceSummary.observedSignals.sampleChangedPaths)?traceSummary.observedSignals.sampleChangedPaths:[]),
-    ...(Array.isArray(flowTraceSummary.childEvidenceLedger)
-      ?flowTraceSummary.childEvidenceLedger.flatMap((entry)=>Array.isArray(entry&&entry.ownedPaths)?entry.ownedPaths:[])
-      :[]),
-  ].filter(isLikelyChangedPath),24);
-  return{
-    schema:"latest-run-summary.v2",
-    generatedAt:toIsoTimestamp(Date.now()),
-    available:true,
-    currentPhase:"Release / Close",
-    taskId:safeString(bundleLatestRun.turnId||traceSummary.turnId||artifactManifest.turn&&artifactManifest.turn.turnId,160)||"",
-    turnId:safeString(bundleLatestRun.turnId||traceSummary.turnId||artifactManifest.turn&&artifactManifest.turn.turnId,160)||"",
-    threadId:safeString(traceSummary.threadId||artifactManifest.turn&&artifactManifest.turn.threadId,160)||"",
-    agentName:safeString(artifactManifest.turn&&artifactManifest.turn.agentName,160)||defaultExecAgentName,
-    executionProfile:safeString(bundleLatestRun.executionProfile,80)||"full-runtime",
-    executionIntent:"signoff_sample",
-    selectedPlanningDepth:safeString(bundleLatestRun.selectedPlanningDepth||flowTraceSummary.selectedPlanningDepth,80)||"",
-    selectedAssuranceDepth:safeString(bundleLatestRun.selectedAssuranceDepth||flowTraceSummary.selectedAssuranceDepth,80)||"",
-    planningMode:safeString(flowTraceSummary.selectedPlanningMode,40)||"",
-    flowPath:safeString(flowTraceSummary.flowPath,80)||"",
-    finalOutcome:{
-      status:safeString(finalOutcome.status,40)||"",
-      terminalStatus:safeString(finalOutcome.terminalStatus||finalOutcome.status,40)||"",
-      taskOutcomeStatus:safeString(finalOutcome.taskOutcomeStatus,80)||"",
-      taskOutcomeReason:safeString(finalOutcome.taskOutcomeReason,120)||"",
-    },
-    dispatchCount:Number(bundleLatestRun.dispatchCount||traceSummary.observedSignals&&traceSummary.observedSignals.dispatchCount||0),
-    dispatchSuccessCount:Number(bundleLatestRun.dispatchSuccessCount||traceSummary.observedSignals&&traceSummary.observedSignals.dispatchSuccessCount||0),
-    implementationObserved:Boolean(
-      Number(traceSummary.observedSignals&&traceSummary.observedSignals.fileChanges||0)>0
-      ||Number(traceSummary.observedSignals&&traceSummary.observedSignals.commandExecutions||0)>0
-      ||Number(traceSummary.observedSignals&&traceSummary.observedSignals.mcpCalls||0)>0
-    ),
-    reviewerObserved:Boolean(bundleLatestRun.reviewerObserved||flowTraceSummary.reviewerExecuted),
-    testerObserved:Boolean(bundleLatestRun.testerObserved||flowTraceSummary.testerExecuted),
-    usedAgents:Array.isArray(bundleLatestRun.usedAgents)&&bundleLatestRun.usedAgents.length
-      ?bundleLatestRun.usedAgents
-      :Array.isArray(flowTraceSummary.usedAgents)?flowTraceSummary.usedAgents:[],
-    usedPolicies:Array.isArray(flowTraceSummary.usedPolicies)?flowTraceSummary.usedPolicies:[],
-    usedContracts:Array.isArray(flowTraceSummary.usedContracts)?flowTraceSummary.usedContracts:[],
-    usedSkills:Array.isArray(flowTraceSummary.usedSkills)?flowTraceSummary.usedSkills:[],
-    changedPaths,
-    evidenceClassesCollected:[
-      "runtime",
-      (flowTraceSummary.reviewerExecuted||flowTraceSummary.testerExecuted)?"verification":"",
-      bundleLatestRun.docSyncSummary&&bundleLatestRun.docSyncSummary.status==="PASS"?"documentation":"",
-      normalizedResiduals.residualRisks.length?"risk":"",
-    ].filter(Boolean),
-    residualRisks:normalizedResiduals.residualRisks,
-    informationalNotes:normalizedResiduals.informationalNotes,
-    assumptions:Array.isArray(evidenceManifest.requirementContract&&evidenceManifest.requirementContract.assumptions)
-      ?evidenceManifest.requirementContract.assumptions.map((entry)=>safeString(entry,240)).filter(Boolean).slice(0,8)
-      :[],
-    operatorCaveats:normalizedResiduals.operatorCaveats,
-    parentDispatchGuardSummary:traceSummary.parentDispatchGuard&&typeof traceSummary.parentDispatchGuard==="object"?traceSummary.parentDispatchGuard:{},
-    requestUserInputSummary:{
-      policy:nonInteractiveRequestUserInputPolicy,
-      blockedByDefault:nonInteractiveRequestUserInputPolicy==="blocked"?1:0,
-    },
-    docSyncSummary:bundleLatestRun.docSyncSummary&&typeof bundleLatestRun.docSyncSummary==="object"
-      ?bundleLatestRun.docSyncSummary
-      :(flowTraceSummary.docSyncEvidence&&typeof flowTraceSummary.docSyncEvidence==="object"?flowTraceSummary.docSyncEvidence:null),
-    releaseState:isSignoffSummaryAllPassed(signoffSummary)?"RELEASE_APPROVED":"RELEASE_BLOCKED",
-    parentMaterialImplementationObserved:0,
-    signoffSummaryRef:buildRelatedSignoffSummaryRef(signoffSummary,true),
-    evidenceRefs:{
-      bundlePath:bundlePath||"",
-      signoffSummaryPath:signoffSummaryPath||"",
-      naturalTaskTraceSummaryPath:safeString(signoffBundleSummary.paths&&signoffBundleSummary.paths.naturalTaskTraceSummary,260)||"",
-      coreHarnessWorkflowRunPath:safeString(signoffBundleSummary.paths&&signoffBundleSummary.paths.coreHarnessWorkflowRun,260)||"",
-    },
-    childEvidenceLedger:Array.isArray(flowTraceSummary.childEvidenceLedger)?flowTraceSummary.childEvidenceLedger:[],
-    reviewLoadBreakdown,
-  };
-}
-function buildLatestRunSummaryFile(){
-  const signoffSummary=buildLatestSignoffSummaryFile();
-  const signoffBundleRunSummary=buildLatestRunSummaryFromSignoffBundle(signoffSummary);
-  if(signoffBundleRunSummary&&isSignoffSummaryAllPassed(signoffSummary))return signoffBundleRunSummary;
-  const latestTurn=getLatestOperatorTurnSnapshot();
-  const latestTurnArtifactPath=safeString(latestTurn&&latestTurn.artifact_manifest_path,260);
-  const latestTurnIntent=safeString(latestTurn&&latestTurn.execution_intent,120).toLowerCase();
-  const latestTurnProfile=normalizeExecutionProfile(latestTurn&&latestTurn.execution_profile,runtimeExecutionProfile);
-  const signoffBundlePath=safeString(
-    signoffSummary&&(
-      signoffSummary.bundlePath
-      ||(signoffSummary.bundleRef&&signoffSummary.bundleRef.bundlePath)
-    ),
-    260
-  );
-  const preferLatestSignoffFallback=Boolean(
-    shouldPreferLatestCompletedSignoffRun({latestTurn,signoffSummary})
-    ||(
-      signoffSummary
-      &&signoffBundlePath
-      &&latestTurn
-      &&latestTurnArtifactPath
-      &&!String(latestTurnArtifactPath).replace(/\\/g,"/").startsWith(String(signoffBundlePath).replace(/\\/g,"/"))
-      &&(latestTurnProfile==="proof-runtime"||latestTurnIntent.includes("probe"))
-    )
-  );
-  if(!latestTurn||preferLatestSignoffFallback){
-    const latestSignoffCandidates=listBundleSummaryCandidates(signoffBundlesRoot,"signoff_summary.json");
-    const latestSignoffCandidate=selectPreferredSignoffCandidate(latestSignoffCandidates);
-    const signoffBundleSummary=latestSignoffCandidate&&latestSignoffCandidate.summary&&typeof latestSignoffCandidate.summary==="object"
-      ?latestSignoffCandidate.summary
-      :{};
-    const signoffTracePath=signoffBundleSummary.paths&&(
-      signoffBundleSummary.paths.naturalTaskTraceSummary
-      ||signoffBundleSummary.paths.signoffTaskTraceSummary
-    );
-    const traceSummary=readWorkspaceJsonArtifact(signoffTracePath);
-    if(traceSummary&&typeof traceSummary==="object"){
-      const flowTraceSummary=traceSummary.flowTraceSummary&&typeof traceSummary.flowTraceSummary==="object"
-        ?traceSummary.flowTraceSummary
-        :{};
-      const signoffNaturalTask=signoffBundleSummary.naturalTask&&typeof signoffBundleSummary.naturalTask==="object"
-        ?signoffBundleSummary.naturalTask
-        :{};
-      const signoffTask=signoffBundleSummary.signoffTask&&typeof signoffBundleSummary.signoffTask==="object"
-        ?signoffBundleSummary.signoffTask
-        :{};
-      const artifactManifestPath=safeString(traceSummary.artifactManifestPath,260)||"";
-      const artifactDir=artifactManifestPath?path.dirname(resolveWorkspaceRuntimePath(artifactManifestPath)):"";
-      const evidenceManifestPath=artifactDir?repoRelativePath(workspaceRoot,path.join(artifactDir,"evidence_manifest.json")):"";
-      const reviewLoadBreakdownPath=artifactDir?repoRelativePath(workspaceRoot,path.join(artifactDir,"review_load_breakdown.json")):"";
-      const stageTimelinePath=artifactDir?repoRelativePath(workspaceRoot,path.join(artifactDir,"stage_timeline.json")):"";
-      const reviewLoadBreakdown=readWorkspaceJsonArtifact(reviewLoadBreakdownPath);
-      const finalOutcome={
-        status:safeString(traceSummary.turn&&traceSummary.turn.status,40)||"",
-        terminalStatus:safeString(traceSummary.turn&&traceSummary.turn.status,40)||"",
-        taskOutcomeStatus:safeString(traceSummary.turn&&traceSummary.turn.taskOutcomeStatus,80)||"",
-        taskOutcomeReason:safeString(traceSummary.turn&&traceSummary.turn.taskOutcomeReason,120)||"",
-      };
-      const normalizedResiduals=normalizeOperatorResidualSemantics({
-        finalOutcome,
-        residualRisks:Array.isArray(flowTraceSummary.residualRiskSummary)?flowTraceSummary.residualRiskSummary:[],
-      });
-      const changedPaths=uniquePathList([
-        ...(Array.isArray(traceSummary.sampleChangedPaths)?traceSummary.sampleChangedPaths:[]),
-        ...(Array.isArray(flowTraceSummary.childEvidenceLedger)
-          ?flowTraceSummary.childEvidenceLedger.flatMap((entry)=>Array.isArray(entry&&entry.ownedPaths)?entry.ownedPaths:[])
-          :[]),
-      ].filter(isLikelyChangedPath),24);
-      return{
-        schema:"latest-run-summary.v2",
-        generatedAt:toIsoTimestamp(Date.now()),
-        available:true,
-        currentPhase:"Release / Close",
-        taskId:safeString(traceSummary.turnId||signoffTask.turnId||signoffNaturalTask.turnId,160)||"",
-        turnId:safeString(traceSummary.turnId||signoffTask.turnId||signoffNaturalTask.turnId,160)||"",
-        threadId:safeString(traceSummary.threadId||signoffTask.threadId||signoffNaturalTask.threadId,160)||"",
-        agentName:safeString(traceSummary.replay&&traceSummary.replay.agentName,160)||defaultExecAgentName,
-        executionProfile:safeString(traceSummary.replay&&traceSummary.replay.executionProfile,80)||"full-runtime",
-        executionIntent:safeString(traceSummary.replay&&traceSummary.replay.executionIntent,120)||"signoff_sample",
-        selectedPlanningDepth:safeString(flowTraceSummary.selectedPlanningDepth,80)||"",
-        selectedAssuranceDepth:safeString(flowTraceSummary.selectedAssuranceDepth,80)||"",
-        planningMode:safeString(flowTraceSummary.selectedPlanningMode,40)||"",
-        flowPath:safeString(flowTraceSummary.flowPath,80)||"",
-        finalOutcome,
-        dispatchCount:Number(traceSummary.observedSignals&&traceSummary.observedSignals.dispatchCount||0),
-        dispatchSuccessCount:Number(traceSummary.observedSignals&&traceSummary.observedSignals.dispatchSuccessCount||0),
-        implementationObserved:Boolean(
-          Number(traceSummary.observedSignals&&traceSummary.observedSignals.fileChanges||0)>0
-          ||Number(traceSummary.observedSignals&&traceSummary.observedSignals.commandExecutions||0)>0
-          ||Number(traceSummary.observedSignals&&traceSummary.observedSignals.mcpCalls||0)>0
-        ),
-        reviewerObserved:Boolean(flowTraceSummary.reviewerExecuted),
-        testerObserved:Boolean(flowTraceSummary.testerExecuted),
-        usedAgents:Array.isArray(flowTraceSummary.usedAgents)?flowTraceSummary.usedAgents:[],
-        usedPolicies:Array.isArray(flowTraceSummary.usedPolicies)?flowTraceSummary.usedPolicies:[],
-        usedContracts:Array.isArray(flowTraceSummary.usedContracts)?flowTraceSummary.usedContracts:[],
-        usedSkills:Array.isArray(flowTraceSummary.usedSkills)?flowTraceSummary.usedSkills:[],
-        changedPaths,
-        evidenceClassesCollected:[
-          "runtime",
-          (flowTraceSummary.reviewerExecuted||flowTraceSummary.testerExecuted)?"verification":"",
-          flowTraceSummary.docSyncEvidence&&flowTraceSummary.docSyncEvidence.status==="PASS"?"documentation":"",
-          normalizedResiduals.residualRisks.length?"risk":"",
-        ].filter(Boolean),
-        residualRisks:normalizedResiduals.residualRisks,
-        informationalNotes:normalizedResiduals.informationalNotes,
-        assumptions:Array.isArray(traceSummary.evidenceManifest&&traceSummary.evidenceManifest.requirementContract&&traceSummary.evidenceManifest.requirementContract.assumptions)
-          ?traceSummary.evidenceManifest.requirementContract.assumptions.map((entry)=>safeString(entry,240)).filter(Boolean).slice(0,8)
-          :[],
-        operatorCaveats:normalizedResiduals.operatorCaveats,
-        parentDispatchGuardSummary:traceSummary.parentDispatchGuard&&typeof traceSummary.parentDispatchGuard==="object"?traceSummary.parentDispatchGuard:{},
-        requestUserInputSummary:{
-          policy:nonInteractiveRequestUserInputPolicy,
-          blockedByDefault:nonInteractiveRequestUserInputPolicy==="blocked"?1:0,
-        },
-        docSyncSummary:flowTraceSummary.docSyncEvidence&&typeof flowTraceSummary.docSyncEvidence==="object"
-          ?flowTraceSummary.docSyncEvidence
-          :null,
-        familyCompletionGate:normalizeFamilyCompletionGateSnapshot(flowTraceSummary&&flowTraceSummary.familyCompletionGate),
-        releaseState:safeString(traceSummary.releaseDecision&&traceSummary.releaseDecision.terminal_state,80)
-          ||safeString(traceSummary.releaseDecisionState,80)
-          ||(isCompletedOperatorOutcome(finalOutcome)?"RELEASE_APPROVED_WITH_ASSUMPTIONS":"HARNESS_FAILURE"),
-        parentMaterialImplementationObserved:0,
-        signoffSummaryRef:buildRelatedSignoffSummaryRef(signoffSummary,true),
-        evidenceRefs:{
-          bundlePath:safeString(signoffSummary&&signoffSummary.bundleRef&&signoffSummary.bundleRef.bundlePath,260)||safeString(signoffSummary&&signoffSummary.bundlePath,260)||"",
-          signoffSummaryPath:safeString(signoffSummary&&signoffSummary.bundleRef&&signoffSummary.bundleRef.summaryPath,260)||safeString(signoffSummary&&signoffSummary.summaryPath,260)||"",
-          naturalTaskTraceSummaryPath:safeString(signoffBundleSummary.paths&&signoffBundleSummary.paths.naturalTaskTraceSummary,260)||"",
-          coreHarnessWorkflowRunPath:safeString(signoffBundleSummary.paths&&signoffBundleSummary.paths.coreHarnessWorkflowRun,260)||"",
-        },
-        childEvidenceLedger:Array.isArray(flowTraceSummary.childEvidenceLedger)?flowTraceSummary.childEvidenceLedger:[],
-        reviewLoadBreakdown,
-      };
-    }
-    return signoffBundleRunSummary||{
-      schema:"latest-run-summary.v2",
-      generatedAt:toIsoTimestamp(Date.now()),
-      available:false,
-      currentPhase:"Intake / Frame",
-      reason:"no_turn_recorded_yet",
-    };
-  }
-  const manifest=readWorkspaceJsonArtifact(latestTurn.artifact_manifest_path);
-  const evidenceManifest=readWorkspaceJsonArtifact(latestTurn.evidence_manifest_path);
-  const flowTraceSummary=readWorkspaceJsonArtifact(latestTurn.flow_trace_summary_path);
-  const reviewLoadBreakdown=readWorkspaceJsonArtifact(latestTurn.review_load_breakdown_path);
-  const changedPaths=collectChangedPathsFromArtifacts({manifest,evidenceManifest,flowTraceSummary});
-  const docSyncSummary=evidenceManifest&&typeof evidenceManifest.docSyncEvidence==="object"
-    ?evidenceManifest.docSyncEvidence
-    :(flowTraceSummary&&typeof flowTraceSummary.docSyncEvidence==="object"?flowTraceSummary.docSyncEvidence:null);
-  const childEvidenceLedger=Array.isArray(flowTraceSummary&&flowTraceSummary.childEvidenceLedger)
-    ?flowTraceSummary.childEvidenceLedger
-    :Array.isArray(evidenceManifest&&evidenceManifest.childEvidenceLedger)
-      ?evidenceManifest.childEvidenceLedger
-      :[];
-  const usedAgents=Array.isArray(flowTraceSummary&&flowTraceSummary.usedAgents)
-    ?flowTraceSummary.usedAgents
-    :uniquePathList(childEvidenceLedger.map((entry)=>safeString(entry&&entry.agent,80)).filter(Boolean),16);
-  const finalOutcome={
-    status:latestTurn.status,
-    terminalStatus:latestTurn.terminal_status,
-    taskOutcomeStatus:latestTurn.task_outcome_status,
-    taskOutcomeReason:latestTurn.task_outcome_reason,
-  };
-  const normalizedResiduals=normalizeOperatorResidualSemantics({
-    finalOutcome,
-    residualRisks:Array.isArray(evidenceManifest&&evidenceManifest.residualRiskSummary)
-      ?evidenceManifest.residualRiskSummary
-      :Array.isArray(flowTraceSummary&&flowTraceSummary.residualRiskSummary)
-        ?flowTraceSummary.residualRiskSummary
-        :[],
-  });
-  const evidenceClassesCollected=[
-    changedPaths.length?"implementation":"",
-    (Array.isArray(childEvidenceLedger)&&childEvidenceLedger.some((entry)=>entry&&(entry.reviewerObserved||entry.testerObserved)))||Number(latestTurn.observed_signals&&latestTurn.observed_signals.commandExecutions||0)>0
-      ?"verification"
-      :"",
-    latestTurn.artifact_manifest_path?"runtime":"",
-    docSyncSummary&&docSyncSummary.status==="PASS"?"documentation":"",
-    normalizedResiduals.residualRisks.length?"risk":"",
-  ].filter(Boolean);
-  const relatedSignoffSummary=signoffBundlePath&&latestTurn.artifact_manifest_path
-    ?String(latestTurn.artifact_manifest_path).replace(/\\/g,"/").startsWith(String(signoffBundlePath).replace(/\\/g,"/"))
-    :Boolean(signoffSummary&&safeString(latestTurn.execution_intent,120).toLowerCase().includes("signoff"));
-  const resolvedOutcome=hasResolvedOperatorOutcome(finalOutcome);
-  const relatedSignoffRef=buildRelatedSignoffSummaryRef(signoffSummary,relatedSignoffSummary&&resolvedOutcome);
-  const latestRunSummaryResult={
-    schema:"latest-run-summary.v2",
-    generatedAt:toIsoTimestamp(Date.now()),
-    available:true,
-    currentPhase:"Release / Close",
-    taskId:latestTurn.turn_id,
-    turnId:latestTurn.turn_id,
-    threadId:latestTurn.thread_id,
-    agentName:latestTurn.agent_name,
-    executionProfile:latestTurn.execution_profile,
-    executionIntent:latestTurn.execution_intent,
-    selectedPlanningDepth:latestTurn.planning_depth,
-    selectedAssuranceDepth:latestTurn.assurance_depth,
-    planningMode:latestTurn.planning_mode,
-    flowPath:latestTurn.flow_path,
-    finalOutcome,
-    dispatchCount:Number(latestTurn.observed_signals&&latestTurn.observed_signals.dispatchCount||0),
-    dispatchSuccessCount:Number(latestTurn.observed_signals&&latestTurn.observed_signals.dispatchSuccessCount||0),
-    implementationObserved:Boolean(
-      Number(latestTurn.observed_signals&&latestTurn.observed_signals.fileChanges||0)>0
-      ||Number(latestTurn.observed_signals&&latestTurn.observed_signals.commandExecutions||0)>0
-      ||Number(latestTurn.observed_signals&&latestTurn.observed_signals.mcpCalls||0)>0
-    ),
-    reviewerObserved:Array.isArray(childEvidenceLedger)&&childEvidenceLedger.some((entry)=>entry&&entry.reviewerObserved),
-    testerObserved:Array.isArray(childEvidenceLedger)&&childEvidenceLedger.some((entry)=>entry&&entry.testerObserved),
-    usedAgents,
-    usedPolicies:Array.isArray(flowTraceSummary&&flowTraceSummary.usedPolicies)?flowTraceSummary.usedPolicies:[],
-    usedContracts:Array.isArray(flowTraceSummary&&flowTraceSummary.usedContracts)?flowTraceSummary.usedContracts:[],
-    usedSkills:Array.isArray(flowTraceSummary&&flowTraceSummary.usedSkills)?flowTraceSummary.usedSkills:[],
-    changedPaths,
-    evidenceClassesCollected,
-    residualRisks:normalizedResiduals.residualRisks,
-    informationalNotes:normalizedResiduals.informationalNotes,
-    assumptions:Array.isArray(evidenceManifest&&evidenceManifest.requirementContract&&evidenceManifest.requirementContract.assumptions)
-      ?evidenceManifest.requirementContract.assumptions.map((entry)=>safeString(entry,240)).filter(Boolean).slice(0,8)
-      :[],
-    operatorCaveats:Array.from(new Set([
-      ...normalizedResiduals.operatorCaveats,
-      signoffSummary&&relatedSignoffSummary===false
-        ?"Latest signoff summary is nearby reference evidence, not a summary of this exact run."
-        :"",
-      isCompletedOperatorOutcome(finalOutcome)&&signoffSummary&&relatedSignoffSummary&&!isSignoffSummaryAllPassed(signoffSummary)
-        ?"The run completed, but the related latest signoff bundle has not passed every assertion yet."
-        :"",
-    ].filter(Boolean))).slice(0,8),
-    parentDispatchGuardSummary:latestTurn.parent_dispatch_guard,
-    requestUserInputSummary:{
-      policy:nonInteractiveRequestUserInputPolicy,
-      blockedByDefault:nonInteractiveRequestUserInputPolicy==="blocked"?1:0,
-    },
-    docSyncSummary,
-    familyCompletionGate:normalizeFamilyCompletionGateSnapshot(
-      latestTurn.family_completion_gate
-      ||(evidenceManifest&&evidenceManifest.familyCompletionGate)
-      ||(flowTraceSummary&&flowTraceSummary.familyCompletionGate)
-    ),
-    releaseState:safeString(latestTurn.release_decision_state,80)||safeString(latestTurn.releaseDecisionState,80)||"",
-    parentMaterialImplementationObserved:latestTurn.parent_material_implementation_observed?1:0,
-    signoffSummaryRef:relatedSignoffRef,
-    evidenceRefs:{
-      bundlePath:relatedSignoffRef?safeString(relatedSignoffRef.bundlePath,260)||"": "",
-      signoffSummaryPath:relatedSignoffRef?safeString(relatedSignoffRef.summaryPath,260)||"": "",
-      naturalTaskTraceSummaryPath:relatedSignoffRef&&signoffSummary&&signoffSummary.bundleRef&&signoffSummary.bundleRef.summaryPath
-        ?path.posix.join(path.posix.dirname(String(signoffSummary.bundleRef.summaryPath).replace(/\\/g,"/")),"natural_task_trace_summary.json")
-        :"",
-    },
-    childEvidenceLedger,
-    reviewLoadBreakdown,
-  };
-  if(signoffBundleRunSummary){
-    if(!safeString(latestRunSummaryResult.threadId,160))latestRunSummaryResult.threadId=safeString(signoffBundleRunSummary.threadId,160)||"";
-    if(!Array.isArray(latestRunSummaryResult.usedPolicies)||!latestRunSummaryResult.usedPolicies.length)latestRunSummaryResult.usedPolicies=Array.isArray(signoffBundleRunSummary.usedPolicies)?signoffBundleRunSummary.usedPolicies:[];
-    if(!Array.isArray(latestRunSummaryResult.usedContracts)||!latestRunSummaryResult.usedContracts.length)latestRunSummaryResult.usedContracts=Array.isArray(signoffBundleRunSummary.usedContracts)?signoffBundleRunSummary.usedContracts:[];
-    if(!Array.isArray(latestRunSummaryResult.usedSkills)||!latestRunSummaryResult.usedSkills.length)latestRunSummaryResult.usedSkills=Array.isArray(signoffBundleRunSummary.usedSkills)?signoffBundleRunSummary.usedSkills:[];
-    if(!Array.isArray(latestRunSummaryResult.changedPaths)||!latestRunSummaryResult.changedPaths.length)latestRunSummaryResult.changedPaths=Array.isArray(signoffBundleRunSummary.changedPaths)?signoffBundleRunSummary.changedPaths:[];
-    if(!latestRunSummaryResult.docSyncSummary||!Object.keys(latestRunSummaryResult.docSyncSummary).length)latestRunSummaryResult.docSyncSummary=signoffBundleRunSummary.docSyncSummary||{};
-    if(!latestRunSummaryResult.evidenceRefs||!safeString(latestRunSummaryResult.evidenceRefs.bundlePath,260)){
-      latestRunSummaryResult.evidenceRefs=signoffBundleRunSummary.evidenceRefs||latestRunSummaryResult.evidenceRefs;
-    }
-  }
-  return latestRunSummaryResult;
-}
-function normalizeCurrentSurfacePath(value){
-  const raw=safeString(value,260)||"";
-  if(!raw)return"";
-  if(raw.startsWith("logs/"))return raw.replace(/\\/g,"/");
-  return repoRelativePath(workspaceRoot,raw)||raw.replace(/\\/g,"/");
-}
-function normalizeCurrentLatestSignoffSummary(latestSignoffSummary){
-  const bundleRef=latestSignoffSummary&&latestSignoffSummary.bundleRef&&typeof latestSignoffSummary.bundleRef==="object"
-    ?latestSignoffSummary.bundleRef
-    :{};
-  const bundlePath=normalizeCurrentSurfacePath(bundleRef.bundlePath||latestSignoffSummary&&latestSignoffSummary.bundlePath||"");
-  const summaryPath=normalizeCurrentSurfacePath(bundleRef.summaryPath||latestSignoffSummary&&latestSignoffSummary.summaryPath||"");
-  const allPassed=Boolean(latestSignoffSummary&&(
-    latestSignoffSummary.allPassed===true
-    ||Number(latestSignoffSummary.allPassed||0)===1
-  ));
-  const runtimePostureSafe=Boolean(latestSignoffSummary&&(
-    latestSignoffSummary.runtimePostureSafe===true
-    ||Number(latestSignoffSummary.runtimePostureSafe||0)===1
-  ));
-  const coreHarnessWorkflowPassed=Boolean(latestSignoffSummary&&(
-    latestSignoffSummary.coreHarnessWorkflowPassed===true
-    ||Number(latestSignoffSummary.coreHarnessWorkflowPassed||0)===1
-  ));
-  const naturalTaskTracePassed=Boolean(latestSignoffSummary&&(
-    latestSignoffSummary.naturalTaskTracePassed===true
-    ||Number(latestSignoffSummary.naturalTaskTracePassed||0)===1
-  ));
-  const signoffReady=Boolean(latestSignoffSummary&&(
-    latestSignoffSummary.signoffReady===true
-    ||Number(latestSignoffSummary.signoffReady||0)===1
-  ))||allPassed;
-  return{
-    schema:"latest-signoff-summary.v3",
-    generatedAt:toIsoTimestamp(Date.now()),
-    allPassed,
-    runtimePostureSafe,
-    coreHarnessWorkflowPassed,
-    naturalTaskTracePassed,
-    signoffReady,
-    bundleRef:{
-      bundleName:safeString(bundleRef.bundleName,160)||safeString(path.basename(bundlePath),160)||"",
-      bundlePath,
-      summaryPath,
-    },
-    finalDecision:safeString(latestSignoffSummary&&latestSignoffSummary.finalDecision,80)||(signoffReady?"RELEASE_APPROVED":"RELEASE_BLOCKED"),
-  };
-}
-function normalizeCurrentDesignConformanceSummary(designConformanceSummary){
-  const keys=[
-    "defaultExecAgentIsDefault",
-    "runtimeRequestUserInputPolicyAutonomyFirst",
-    "requestUserInputPolicyBlocked",
-    "parentDispatchGuardEnforced",
-    "retiredWorkerNotRoutable",
-    "planningDepthSelectorWorking",
-    "assuranceDepthSelectorWorking",
-    "specialistDispatchObservedWhenImplementationOccurred",
-    "reviewerObservedWhenRequired",
-    "testerObservedWhenRequired",
-    "taskOutcomeSemanticsValid",
-    "docSyncEvidencePresentWhenRequired",
-    "signoffCriteriaSatisfied",
-    "overallDesignConformance",
-  ];
-  const normalized={
-    schema:"design-conformance-summary.v3",
-    generatedAt:toIsoTimestamp(Date.now()),
-  };
-  keys.forEach((key)=>{
-    const source=designConformanceSummary&&designConformanceSummary[key]&&typeof designConformanceSummary[key]==="object"
-      ?designConformanceSummary[key]
-      :{};
-    normalized[key]={
-      status:safeString(source.status||source.passFail,20)||"fail",
-      reason:safeString(source.reason,400)||"",
-      evidenceRef:normalizeCurrentSurfacePath(source.evidenceRef||source.evidencePath||""),
-    };
-  });
-  return normalized;
-}
-function normalizeCurrentReviewLoadBreakdown(reviewLoadBreakdown){
-  const source=reviewLoadBreakdown&&typeof reviewLoadBreakdown==="object"?reviewLoadBreakdown:{};
-  return{
-    schema:"review-load-breakdown.v3",
-    generatedAt:toIsoTimestamp(Date.now()),
-    totalStep4DurationMs:Number(source.totalStep4DurationMs||0),
-    evidenceCollectionTimeMs:Number(source.evidenceCollectionTimeMs||0),
-    reviewerTimeMs:Number(source.reviewerTimeMs||0),
-    testerTimeMs:Number(source.testerTimeMs||0),
-    docSyncVerificationTimeMs:Number(source.docSyncVerificationTimeMs||0),
-    retryLoopCount:Number(source.retryLoopCount||0),
-    outcomeConversionTimeMs:Number(source.outcomeConversionTimeMs||0),
-    dominantBottleneck:safeString(source.dominantBottleneck,80)||"none",
-    timingModel:safeString(source.timingModel,120)||"overlapping_estimates_with_wall_clock_total",
-    componentTimesMayOverlap:Boolean(source.componentTimesMayOverlap),
-    dominantBottleneckBasis:safeString(source.dominantBottleneckBasis,160)||"",
-    interpretationGuide:Array.isArray(source.interpretationGuide)
-      ?source.interpretationGuide
-      :[],
-    qualityGate:source.qualityGate&&typeof source.qualityGate==="object"?source.qualityGate:{},
-    acceptanceSummary:source.acceptanceSummary&&typeof source.acceptanceSummary==="object"?source.acceptanceSummary:{},
-    reviewerFindingSummary:Array.isArray(source.reviewerFindingSummary)?source.reviewerFindingSummary:[],
-    testerResultSummary:Array.isArray(source.testerResultSummary)?source.testerResultSummary:[],
-    requiredEvidenceFailures:Array.isArray(source.requiredEvidenceFailures)?source.requiredEvidenceFailures:[],
-    stageDurations:source.stageDurations&&typeof source.stageDurations==="object"?source.stageDurations:{},
-  };
-}
-function normalizeCurrentLatestRunSummary(latestRunSummary,latestSignoffSummary){
-  const source=latestRunSummary&&typeof latestRunSummary==="object"?latestRunSummary:{};
-  const signoffBundleFallback=buildLatestRunSummaryFromSignoffBundle({
-    allPassed:Boolean(latestSignoffSummary&&latestSignoffSummary.allPassed),
-    bundleRef:latestSignoffSummary&&latestSignoffSummary.bundleRef&&typeof latestSignoffSummary.bundleRef==="object"
-      ?latestSignoffSummary.bundleRef
-      :{},
-    bundlePath:latestSignoffSummary&&latestSignoffSummary.bundleRef&&latestSignoffSummary.bundleRef.bundlePath,
-    summaryPath:latestSignoffSummary&&latestSignoffSummary.bundleRef&&latestSignoffSummary.bundleRef.summaryPath,
-  });
-  const fallbackSource=signoffBundleFallback&&typeof signoffBundleFallback==="object"
-    ?signoffBundleFallback
-    :{};
-  const finalOutcome=source.finalOutcome&&typeof source.finalOutcome==="object"?source.finalOutcome:{};
-  const evidenceRefs=source.evidenceRefs&&typeof source.evidenceRefs==="object"?source.evidenceRefs:{};
-  const fallbackEvidenceRefs=fallbackSource.evidenceRefs&&typeof fallbackSource.evidenceRefs==="object"
-    ?fallbackSource.evidenceRefs
-    :{};
-  const selectedUsedPolicies=Array.isArray(source.usedPolicies)&&source.usedPolicies.length
-    ?source.usedPolicies
-    :(Array.isArray(fallbackSource.usedPolicies)?fallbackSource.usedPolicies:[]);
-  const selectedUsedContracts=Array.isArray(source.usedContracts)&&source.usedContracts.length
-    ?source.usedContracts
-    :(Array.isArray(fallbackSource.usedContracts)?fallbackSource.usedContracts:[]);
-  const selectedUsedSkills=Array.isArray(source.usedSkills)&&source.usedSkills.length
-    ?source.usedSkills
-    :(Array.isArray(fallbackSource.usedSkills)?fallbackSource.usedSkills:[]);
-  const selectedChangedPaths=Array.isArray(source.changedPaths)&&source.changedPaths.length
-    ?source.changedPaths
-    :(Array.isArray(fallbackSource.changedPaths)?fallbackSource.changedPaths:[]);
-  const selectedDocSyncSummary=source.docSyncSummary&&typeof source.docSyncSummary==="object"&&Object.keys(source.docSyncSummary).length
-    ?source.docSyncSummary
-    :(fallbackSource.docSyncSummary&&typeof fallbackSource.docSyncSummary==="object"
-      ?fallbackSource.docSyncSummary
-      :{});
-  return{
-    schema:"latest-run-summary.v3",
-    generatedAt:toIsoTimestamp(Date.now()),
-    runId:safeString(source.runId||source.taskId||source.turnId||fallbackSource.runId||fallbackSource.taskId||fallbackSource.turnId,160)||"",
-    threadId:safeString(source.threadId||fallbackSource.threadId,160)||"",
-    turnId:safeString(source.turnId||fallbackSource.turnId||fallbackSource.taskId,160)||"",
-    selectedPlanningDepth:safeString(source.selectedPlanningDepth||fallbackSource.selectedPlanningDepth,80)||"",
-    selectedAssuranceDepth:safeString(source.selectedAssuranceDepth||fallbackSource.selectedAssuranceDepth,80)||"",
-    finalOutcome:Object.keys(finalOutcome).length
-      ?finalOutcome
-      :(fallbackSource.finalOutcome&&typeof fallbackSource.finalOutcome==="object"?fallbackSource.finalOutcome:{}),
-    usedAgents:Array.isArray(source.usedAgents)?source.usedAgents:[],
-    usedPolicies:selectedUsedPolicies,
-    usedContracts:selectedUsedContracts,
-    usedSkills:selectedUsedSkills,
-    dispatchCount:Number(source.dispatchCount||fallbackSource.dispatchCount||0),
-    dispatchSuccessCount:Number(source.dispatchSuccessCount||fallbackSource.dispatchSuccessCount||0),
-    implementationObserved:Boolean(source.implementationObserved||fallbackSource.implementationObserved),
-    reviewerObserved:Boolean(source.reviewerObserved||fallbackSource.reviewerObserved),
-    testerObserved:Boolean(source.testerObserved||fallbackSource.testerObserved),
-    changedPaths:selectedChangedPaths.map((entry)=>normalizeCurrentSurfacePath(entry)).filter(Boolean),
-    docSyncSummary:selectedDocSyncSummary,
-    evidenceRefs:{
-      bundlePath:normalizeCurrentSurfacePath(
-        latestSignoffSummary&&latestSignoffSummary.bundleRef&&latestSignoffSummary.bundleRef.bundlePath
-        ||evidenceRefs.bundlePath
-        ||fallbackEvidenceRefs.bundlePath
-        ||""
-      ),
-      signoffSummaryPath:normalizeCurrentSurfacePath(
-        latestSignoffSummary&&latestSignoffSummary.bundleRef&&latestSignoffSummary.bundleRef.summaryPath
-        ||evidenceRefs.signoffSummaryPath
-        ||fallbackEvidenceRefs.signoffSummaryPath
-        ||""
-      ),
-      naturalTaskTraceSummaryPath:normalizeCurrentSurfacePath(
-        evidenceRefs.naturalTaskTraceSummaryPath
-        ||evidenceRefs.naturalTaskTraceSummary
-        ||fallbackEvidenceRefs.naturalTaskTraceSummaryPath
-        ||""
-      ),
-      coreHarnessWorkflowRunPath:normalizeCurrentSurfacePath(
-        evidenceRefs.coreHarnessWorkflowRunPath
-        ||evidenceRefs.coreHarnessWorkflowRun
-        ||fallbackEvidenceRefs.coreHarnessWorkflowRunPath
-        ||""
-      ),
-    },
-    residualRisks:Array.isArray(source.residualRisks)?source.residualRisks:[],
-    informationalNotes:Array.isArray(source.informationalNotes)?source.informationalNotes:[],
-    assumptions:Array.isArray(source.assumptions)?source.assumptions:[],
-    operatorCaveats:Array.isArray(source.operatorCaveats)?source.operatorCaveats:[],
-    signoffRef:{
-      allPassed:Boolean(latestSignoffSummary&&latestSignoffSummary.allPassed),
-      bundlePath:normalizeCurrentSurfacePath(latestSignoffSummary&&latestSignoffSummary.bundleRef&&latestSignoffSummary.bundleRef.bundlePath||""),
-      summaryPath:normalizeCurrentSurfacePath(latestSignoffSummary&&latestSignoffSummary.bundleRef&&latestSignoffSummary.bundleRef.summaryPath||""),
-    },
-  };
-}
-function normalizeCurrentOperatorSummary({operatorSummary,designConformanceSummary,latestRunSummary,reviewLoadBreakdown,latestSignoffSummary}){
-  const source=operatorSummary&&typeof operatorSummary==="object"?operatorSummary:{};
-  const posture=source.postureSummary&&typeof source.postureSummary==="object"
-    ?source.postureSummary
-    :source.posture&&typeof source.posture==="object"
-      ?source.posture
-      :{};
-  const designConformanceStatus=safeString(designConformanceSummary&&designConformanceSummary.overallDesignConformance&&designConformanceSummary.overallDesignConformance.status,20)||"fail";
-  const latestRunStatus=safeString(
-    latestRunSummary&&latestRunSummary.finalOutcome&&(
-      latestRunSummary.finalOutcome.taskOutcomeStatus
-      ||latestRunSummary.finalOutcome.status
-    ),
-    80
-  )||"UNKNOWN";
-  const signoffReady=Boolean(latestSignoffSummary&&latestSignoffSummary.signoffReady);
-  const signoffStatus=Boolean(latestSignoffSummary&&latestSignoffSummary.allPassed)?"PASS":"FAIL";
-  const hasReviewLoadSummary=
-    Number(reviewLoadBreakdown&&reviewLoadBreakdown.totalStep4DurationMs||0)>0
-    ||Number(reviewLoadBreakdown&&reviewLoadBreakdown.evidenceCollectionTimeMs||0)>0
-    ||Number(reviewLoadBreakdown&&reviewLoadBreakdown.reviewerTimeMs||0)>0
-    ||Number(reviewLoadBreakdown&&reviewLoadBreakdown.testerTimeMs||0)>0
-    ||Number(reviewLoadBreakdown&&reviewLoadBreakdown.docSyncVerificationTimeMs||0)>0
-    ||(Boolean(safeString(reviewLoadBreakdown&&reviewLoadBreakdown.dominantBottleneck,80))
-      &&safeString(reviewLoadBreakdown&&reviewLoadBreakdown.dominantBottleneck,80)!=="none");
-  const reviewLoadStatus=hasReviewLoadSummary?"REVIEW_SUMMARY_AVAILABLE":"MISSING";
-  const recommendedDecision=signoffReady&&designConformanceStatus==="pass"&&latestRunStatus==="COMPLETED"
-    ?"SAFE_TO_SIGNOFF"
-    :latestRunStatus==="UNKNOWN"||reviewLoadStatus==="MISSING"
-      ?"CURRENT_TRUTH_INCOMPLETE"
-      :latestRunStatus==="COMPLETED"
-        ?"REVIEW_BEFORE_SIGNOFF"
-        :"DO_NOT_SIGNOFF";
-  const topLineDecision=recommendedDecision;
-  const whyThisIsSafe=[];
-  if(latestRunStatus==="COMPLETED")whyThisIsSafe.push("Latest run completed.");
-  if(designConformanceStatus==="pass")whyThisIsSafe.push("Design conformance checks are passing.");
-  if(signoffReady)whyThisIsSafe.push("Latest signoff checks passed.");
-  const whyThisMayNeedAttention=[];
-  if(Array.isArray(latestRunSummary&&latestRunSummary.residualRisks)&&latestRunSummary.residualRisks.length){
-    whyThisMayNeedAttention.push(`Residual risks: ${latestRunSummary.residualRisks.join("; ")}`);
-  }
-  if(Array.isArray(latestRunSummary&&latestRunSummary.informationalNotes)&&latestRunSummary.informationalNotes.length){
-    whyThisMayNeedAttention.push(`Informational notes: ${latestRunSummary.informationalNotes.join("; ")}`);
-  }
-  if(reviewLoadBreakdown&&reviewLoadBreakdown.dominantBottleneck&&reviewLoadBreakdown.dominantBottleneck!=="none"){
-    whyThisMayNeedAttention.push(`Dominant Step 4 bottleneck: ${reviewLoadBreakdown.dominantBottleneck}.`);
-  }
-  if(reviewLoadStatus==="MISSING")whyThisMayNeedAttention.push("Current review-load summary is missing.");
-  if(designConformanceStatus!=="pass")whyThisMayNeedAttention.push("Design conformance summary is not fully passing.");
-  if(!signoffReady)whyThisMayNeedAttention.push("Latest signoff bundle is not fully passing.");
-  return{
-    schema:"operator-summary.v3",
-    generatedAt:toIsoTimestamp(Date.now()),
-    topLineDecision,
-    recommendedDecision,
-    designConformanceStatus,
-    latestRunStatus,
-    signoffStatus,
-    reviewLoadStatus,
-    whyThisIsSafe,
-    whyThisMayNeedAttention,
-    openOnlyIfNeeded:[
-      "logs/current/design_conformance_summary.json",
-      "logs/current/latest_run_summary.json",
-      "logs/current/review_load_breakdown.json",
-      "logs/current/latest_signoff_summary.json",
-      ...(latestSignoffSummary&&latestSignoffSummary.bundleRef&&latestSignoffSummary.bundleRef.bundlePath
-        ?[latestSignoffSummary.bundleRef.bundlePath]
-        :[]),
-    ],
-    postureSummary:{
-      loggingMode:safeString(posture.loggingMode,40)||"OPERATOR",
-      requestUserInputPolicy:safeString(posture.requestUserInputPolicy,40)||"blocked",
-      parentDispatchGuardMode:safeString(posture.parentDispatchGuardMode,40)||"enforce",
-      defaultExecAgent:designConformanceStatus==="pass"
-        ?"default"
-        :(safeString(posture.defaultExecAgent,80)||defaultExecAgentName||"unknown"),
-      runtimePostureSafe:Boolean(latestSignoffSummary&&latestSignoffSummary.runtimePostureSafe),
-    },
-    refs:{
-      designConformanceSummary:"logs/current/design_conformance_summary.json",
-      latestRunSummary:"logs/current/latest_run_summary.json",
-      reviewLoadBreakdown:"logs/current/review_load_breakdown.json",
-      latestSignoffSummary:"logs/current/latest_signoff_summary.json",
-      bundlePath:normalizeCurrentSurfacePath(latestSignoffSummary&&latestSignoffSummary.bundleRef&&latestSignoffSummary.bundleRef.bundlePath||""),
-    },
-  };
 }
 function parseWorkflowCasePreview(caseEntry){
   const preview=safeString(caseEntry&&caseEntry.output&&caseEntry.output.preview,4000);
@@ -14421,1412 +13308,88 @@ function getWorkflowCaseById(coreHarnessWorkflowRun,caseId){
   const cases=runs[0]&&Array.isArray(runs[0].cases)?runs[0].cases:[];
   return cases.find((entry)=>safeString(entry&&entry.caseId,120)===caseId)||null;
 }
-function buildCurrentReviewLoadBreakdownFile(latestRunSummary){
-  const source=latestRunSummary&&latestRunSummary.reviewLoadBreakdown&&typeof latestRunSummary.reviewLoadBreakdown==="object"
-    ?latestRunSummary.reviewLoadBreakdown
-    :{};
-  return{
-    schema:"current-review-load-breakdown.v2",
-    generatedAt:toIsoTimestamp(Date.now()),
-    turnId:latestRunSummary&&latestRunSummary.turnId?latestRunSummary.turnId:null,
-    threadId:latestRunSummary&&latestRunSummary.threadId?latestRunSummary.threadId:null,
-    evidenceCollectionTimeMs:Number(source.evidenceCollectionTimeMs||0),
-    testerTimeMs:Number(source.testerTimeMs||0),
-    reviewerTimeMs:Number(source.reviewerTimeMs||0),
-    docSyncVerificationTimeMs:Number(source.docSyncVerificationTimeMs||0),
-    retryLoopCount:Number(source.retryLoopCount||0),
-    outcomeConversionTimeMs:Number(source.outcomeConversionTimeMs||0),
-    totalStep4DurationMs:Number(source.totalStep4DurationMs||0),
-    dominantBottleneck:safeString(source.dominantBottleneck,80)||"none",
-    timingModel:safeString(source.timingModel,80)||"overlapping_estimates_with_wall_clock_total",
-    componentTimesMayOverlap:Boolean(source.componentTimesMayOverlap!==undefined?source.componentTimesMayOverlap:true),
-    dominantBottleneckBasis:safeString(source.dominantBottleneckBasis,160)
-      ||"largest estimated Step 4 component, even when component windows overlap",
-    interpretationGuide:Array.isArray(source.interpretationGuide)
-      ?source.interpretationGuide
-      :[
-        "`totalStep4DurationMs` is the wall-clock Step 4 duration.",
-        "Component times are heuristic slices derived from review/test/doc-sync checkpoints and may overlap.",
-        "`dominantBottleneck` points to the largest estimated component rather than a strict additive share of total time.",
-      ],
-    qualityGate:source.qualityGate&&typeof source.qualityGate==="object"?source.qualityGate:{},
-    acceptanceSummary:source.acceptanceSummary&&typeof source.acceptanceSummary==="object"?source.acceptanceSummary:{},
-    reviewerFindingSummary:Array.isArray(source.reviewerFindingSummary)?source.reviewerFindingSummary:[],
-    testerResultSummary:Array.isArray(source.testerResultSummary)?source.testerResultSummary:[],
-    requiredEvidenceFailures:Array.isArray(source.requiredEvidenceFailures)?source.requiredEvidenceFailures:[],
-    stageDurations:source.stageDurations&&typeof source.stageDurations==="object"?source.stageDurations:{},
-  };
+async function handleLegacyRuntimeRoute(){
+  return false;
 }
-function buildCurrentDesignConformanceSummary({runtimeSnapshot,latestRunSummary,latestSignoffSummary}){
-  const runtime=runtimeSnapshot&&runtimeSnapshot.runtime&&typeof runtimeSnapshot.runtime==="object"?runtimeSnapshot.runtime:{};
-  const latestTurn=runtime.latestTurn&&typeof runtime.latestTurn==="object"?runtime.latestTurn:{};
-  const check=(pass,reason,evidenceRef)=>({
-    status:pass?"pass":"fail",
-    reason,
-    evidenceRef,
-  });
-  const latestRunEvidenceRef=repoRelativePath(workspaceRoot,loggingSurfacePaths.currentLatestRunSummaryPath);
-  const operatorEvidenceRef=repoRelativePath(workspaceRoot,loggingSurfacePaths.currentOperatorSummaryPath);
-  const signoffEvidenceRef=latestSignoffSummary
-    ?repoRelativePath(workspaceRoot,loggingSurfacePaths.currentLatestSignoffSummaryPath)
-    :latestRunEvidenceRef;
-  const signoffCandidates=listBundleSummaryCandidates(signoffBundlesRoot,"signoff_summary.json");
-  const latestSignoffCandidate=selectPreferredSignoffCandidate(signoffCandidates);
-  const signoffBundleSummary=latestSignoffCandidate&&latestSignoffCandidate.summary&&typeof latestSignoffCandidate.summary==="object"
-    ?latestSignoffCandidate.summary
-    :{};
-  const signoffRuntime=signoffBundleSummary.runtime&&typeof signoffBundleSummary.runtime==="object"?signoffBundleSummary.runtime:{};
-  const signoffTask=signoffBundleSummary.signoffTask&&typeof signoffBundleSummary.signoffTask==="object"?signoffBundleSummary.signoffTask:{};
-  const naturalTask=signoffBundleSummary.naturalTask&&typeof signoffBundleSummary.naturalTask==="object"?signoffBundleSummary.naturalTask:{};
-  const signoffTaskAssertions=signoffTask.assertions&&typeof signoffTask.assertions==="object"?signoffTask.assertions:{};
-  const naturalTaskAssertions=naturalTask.assertions&&typeof naturalTask.assertions==="object"?naturalTask.assertions:{};
-  const latestTurnTerminalStatus=safeString(latestTurn.terminalStatus,40)||safeString(latestTurn.terminal_status,40)||"unknown";
-  const latestTurnTaskOutcomeStatus=safeString(latestTurn.taskOutcomeStatus,80)||safeString(latestTurn.task_outcome_status,80)||"unknown";
-  const runtimeRequestUserInputPolicy=safeString(runtimeSnapshot&&runtimeSnapshot.posture&&runtimeSnapshot.posture.requestUserInputPolicy&&runtimeSnapshot.posture.requestUserInputPolicy.policy,40).toLowerCase();
-  const coreHarnessWorkflowRun=readWorkspaceJsonArtifact(signoffBundleSummary.paths&&signoffBundleSummary.paths.coreHarnessWorkflowRun)||{};
-  const requestUserInputBlocked=getWorkflowCaseById(coreHarnessWorkflowRun,"needs_input_blocked_policy");
-  const workerRejected=getWorkflowCaseById(coreHarnessWorkflowRun,"retired_worker_rejected");
-  const workerScopedRejected=getWorkflowCaseById(coreHarnessWorkflowRun,"retired_worker_scoped_rejected");
-  const fastPlanning=getWorkflowCaseById(coreHarnessWorkflowRun,"planning_mode_fast_selected");
-  const discoveryPlanning=getWorkflowCaseById(coreHarnessWorkflowRun,"planning_mode_discovery_selected");
-  const reviewerTesterRequired=getWorkflowCaseById(coreHarnessWorkflowRun,"reviewer_tester_required_case");
-  const dedicatedTestsRequired=getWorkflowCaseById(coreHarnessWorkflowRun,"dedicated_test_required_for_new_logic");
-  const failedValidationBridge=getWorkflowCaseById(coreHarnessWorkflowRun,"turn_task_outcome_bridge_failed_validation");
-  const blockedBridge=getWorkflowCaseById(coreHarnessWorkflowRun,"turn_task_outcome_bridge_blocked");
-  const missingEvidence=getWorkflowCaseById(coreHarnessWorkflowRun,"failed_validation_missing_evidence");
-  const checks={
-    defaultExecAgentIsDefault:check(
-      Boolean(signoffRuntime.fullUtilization&&signoffRuntime.fullUtilization.checks&&signoffRuntime.fullUtilization.checks.defaultExecAgentIsDefault),
-      Boolean(signoffRuntime.fullUtilization&&signoffRuntime.fullUtilization.checks&&signoffRuntime.fullUtilization.checks.defaultExecAgentIsDefault)
-        ?"default exec agent is 'default'"
-        :`default exec agent is '${defaultExecAgentName}'`,
-      signoffEvidenceRef
-    ),
-    runtimeRequestUserInputPolicyAutonomyFirst:check(
-      runtimeRequestUserInputPolicy==="auto-default"||runtimeRequestUserInputPolicy==="auto-empty",
-      runtimeRequestUserInputPolicy==="auto-default"||runtimeRequestUserInputPolicy==="auto-empty"
-        ?`live non-interactive request-user-input policy is '${runtimeRequestUserInputPolicy}'`
-        :`live non-interactive request-user-input policy is '${runtimeRequestUserInputPolicy||"unknown"}'`,
-      operatorEvidenceRef||latestRunEvidenceRef
-    ),
-    requestUserInputPolicyBlocked:check(
-      signoffRuntime&&signoffRuntime.nonInteractiveUserInput&&signoffRuntime.nonInteractiveUserInput.policy==="blocked"&&Boolean(requestUserInputBlocked&&requestUserInputBlocked.passed),
-      signoffRuntime&&signoffRuntime.nonInteractiveUserInput&&signoffRuntime.nonInteractiveUserInput.policy==="blocked"
-        ?"non-interactive request-user-input policy is blocked"
-        :`non-interactive request-user-input policy is '${safeString(runtimeSnapshot&&runtimeSnapshot.posture&&runtimeSnapshot.posture.requestUserInputPolicy&&runtimeSnapshot.posture.requestUserInputPolicy.policy,40)||"unknown"}'`,
-      signoffEvidenceRef
-    ),
-    parentDispatchGuardEnforced:check(
-      signoffRuntime&&signoffRuntime.parentDispatchGuard&&signoffRuntime.parentDispatchGuard.mode==="enforce",
-      signoffRuntime&&signoffRuntime.parentDispatchGuard&&signoffRuntime.parentDispatchGuard.mode==="enforce"
-        ?"parent dispatch guard mode is enforce"
-        :`parent dispatch guard mode is '${safeString(runtimeSnapshot&&runtimeSnapshot.posture&&runtimeSnapshot.posture.parentDispatchGuard&&runtimeSnapshot.posture.parentDispatchGuard.mode,20)||"unknown"}'`,
-      signoffEvidenceRef
-    ),
-    retiredWorkerNotRoutable:check(
-      Boolean(workerRejected&&workerRejected.passed)&&Boolean(workerScopedRejected&&workerScopedRejected.passed),
-      Boolean(workerRejected&&workerRejected.passed)&&Boolean(workerScopedRejected&&workerScopedRejected.passed)
-        ?"worker is retained only as a legacy contract and not routable for active execution"
-        :"worker routability rejection was not fully proven by workflow probes",
-      signoffEvidenceRef
-    ),
-    planningDepthSelectorWorking:check(
-      Boolean(fastPlanning&&fastPlanning.passed)&&Boolean(discoveryPlanning&&discoveryPlanning.passed),
-      Boolean(fastPlanning&&fastPlanning.passed)&&Boolean(discoveryPlanning&&discoveryPlanning.passed)
-        ?"planning depth probes passed for FAST and DISCOVERY"
-        :"planning depth probes are incomplete or failing",
-      signoffEvidenceRef
-    ),
-    assuranceDepthSelectorWorking:check(
-      Boolean(reviewerTesterRequired&&reviewerTesterRequired.passed)
-      &&Boolean(dedicatedTestsRequired&&dedicatedTestsRequired.passed)
-      &&safeString(reviewerTesterRequired&&reviewerTesterRequired.reason,80)!=="json_fields_mismatch"
-      &&safeString(dedicatedTestsRequired&&dedicatedTestsRequired.reason,80)!=="json_fields_mismatch",
-      Boolean(reviewerTesterRequired&&reviewerTesterRequired.passed)&&Boolean(dedicatedTestsRequired&&dedicatedTestsRequired.passed)
-        ?"assurance depth escalated to SIGNOFF_ASSURANCE when required"
-        :"assurance depth probes are incomplete or failing",
-      signoffEvidenceRef
-    ),
-    specialistDispatchObservedWhenImplementationOccurred:check(
-      Boolean(naturalTaskAssertions.implementationObserved)
-        &&Boolean(naturalTaskAssertions.parentDispatchSatisfied)
-        &&Boolean(naturalTaskAssertions.dispatchCountObserved),
-      Boolean(naturalTaskAssertions.implementationObserved)
-        ?"natural task trace shows implementation with delegated specialist dispatch"
-        :"natural task trace does not prove delegated implementation",
-      signoffEvidenceRef
-    ),
-    reviewerObservedWhenRequired:check(
-      Boolean(signoffTaskAssertions.signoffReviewerExecuted),
-      Boolean(signoffTaskAssertions.signoffReviewerExecuted)
-        ?"reviewer observed on signoff-required run"
-        :"reviewer missing on signoff-required run",
-      signoffEvidenceRef
-    ),
-    testerObservedWhenRequired:check(
-      Boolean(signoffTaskAssertions.signoffTesterExecuted),
-      Boolean(signoffTaskAssertions.signoffTesterExecuted)
-        ?"tester observed on signoff-required run"
-        :"tester missing on signoff-required run",
-      signoffEvidenceRef
-    ),
-    taskOutcomeSemanticsValid:check(
-      Boolean(failedValidationBridge&&failedValidationBridge.passed)
-        &&Boolean(blockedBridge&&blockedBridge.passed)
-        &&Boolean(missingEvidence&&missingEvidence.passed),
-      Boolean(failedValidationBridge&&failedValidationBridge.passed)
-        ?`terminal=${latestTurnTerminalStatus} taskOutcome=${latestTurnTaskOutcomeStatus}`
-        :"task outcome bridge probes are incomplete or failing",
-      signoffEvidenceRef
-    ),
-    docSyncEvidencePresentWhenRequired:check(
-      Boolean(signoffTaskAssertions.evidenceBulletPresent)
-        &&Boolean(signoffTaskAssertions.changelogUpdated)
-        &&Boolean(signoffTaskAssertions.reviewBreakdownPresent),
-      Boolean(signoffTaskAssertions.evidenceBulletPresent)
-        ?"doc sync evidence is present when required"
-        :"doc sync evidence is incomplete for the signoff-required run",
-      signoffEvidenceRef
-    ),
-    signoffCriteriaSatisfied:check(
-      Boolean(latestSignoffSummary&&Number(latestSignoffSummary.allPassed||0)===1),
-      latestSignoffSummary&&Number(latestSignoffSummary.allPassed||0)===1
-        ?"latest signoff bundle passed all assertions"
-        :"latest signoff bundle is missing or not fully passing",
-      signoffEvidenceRef
-    ),
-  };
-  const allPass=Object.values(checks).every((entry)=>entry&&entry.status==="pass");
-  return{
-    schema:"design-conformance-summary.v3",
-    generatedAt:toIsoTimestamp(Date.now()),
-    ...checks,
-    overallDesignConformance:{
-      status:allPass?"pass":"fail",
-      reason:allPass?"all tracked design conformance checks passed":"one or more tracked design conformance checks failed",
-      evidenceRef:signoffEvidenceRef||latestRunEvidenceRef,
-    },
-  };
-}
-function buildCurrentOperatorSummaryFile({runtimeSnapshot,latestRunSummary,latestSignoffSummary,reviewLoadBreakdown,designConformanceSummary,conformanceReport,operatorViewSummary}){
-  const finalOutcome=latestRunSummary&&latestRunSummary.finalOutcome&&typeof latestRunSummary.finalOutcome==="object"
-    ?latestRunSummary.finalOutcome
-    :{};
-  const overallConformance=designConformanceSummary&&designConformanceSummary.overallDesignConformance&&typeof designConformanceSummary.overallDesignConformance==="object"
-    ?designConformanceSummary.overallDesignConformance
-    :{};
-  const requiredEvidenceFailures=Array.isArray(reviewLoadBreakdown&&reviewLoadBreakdown.requiredEvidenceFailures)
-    ?reviewLoadBreakdown.requiredEvidenceFailures
-    :[];
-  const residualRisks=Array.isArray(latestRunSummary&&latestRunSummary.residualRisks)?latestRunSummary.residualRisks:[];
-  const informationalNotes=Array.isArray(latestRunSummary&&latestRunSummary.informationalNotes)?latestRunSummary.informationalNotes:[];
-  const operatorCaveats=Array.isArray(latestRunSummary&&latestRunSummary.operatorCaveats)?latestRunSummary.operatorCaveats:[];
-  const runtimePosture=runtimeSnapshot&&runtimeSnapshot.posture&&typeof runtimeSnapshot.posture==="object"
-    ?runtimeSnapshot.posture
-    :{};
-  const postureSafe=Boolean(latestSignoffSummary&&Number(latestSignoffSummary.runtimePostureSafe||0)===1);
-  const designConformant=safeString(overallConformance.status,40)==="pass";
-  const signoffReady=Boolean(latestSignoffSummary&&Number(latestSignoffSummary.signoffReady||0)===1);
-  const latestRunStatus=isCompletedOperatorOutcome(finalOutcome)
-    ?"COMPLETED"
-    :(safeString(finalOutcome.taskOutcomeStatus,80).toUpperCase()||safeString(finalOutcome.status,80).toUpperCase()||"UNKNOWN");
-  const reviewLoadStatus=requiredEvidenceFailures.length
-    ?"ATTENTION_REQUIRED"
-    :safeString(reviewLoadBreakdown&&reviewLoadBreakdown.dominantBottleneck,80)&&safeString(reviewLoadBreakdown&&reviewLoadBreakdown.dominantBottleneck,80)!=="none"
-      ?"REVIEW_SUMMARY_AVAILABLE"
-      :"NO_REVIEW_LOAD_RECORDED";
-  const topLineDecision=signoffReady&&designConformant&&latestRunStatus==="COMPLETED"
-    ?"SAFE_TO_SIGNOFF"
-    :(safeString(conformanceReport&&conformanceReport.releaseDecision&&conformanceReport.releaseDecision.terminal_state,80)
-      ||buildOperatorDecisionSummary({
-        finalOutcome,
-        signoffReady,
-        designConformant,
-        postureSafe,
-        requiredEvidenceFailures,
-      }));
-  const refs={
-    designConformanceSummary:repoRelativePath(workspaceRoot,loggingSurfacePaths.currentDesignConformancePath),
-    latestRunSummary:repoRelativePath(workspaceRoot,loggingSurfacePaths.currentLatestRunSummaryPath),
-    reviewLoadBreakdown:repoRelativePath(workspaceRoot,loggingSurfacePaths.currentReviewLoadBreakdownPath),
-    latestSignoffSummary:repoRelativePath(workspaceRoot,loggingSurfacePaths.currentLatestSignoffSummaryPath),
-    bundlePath:latestSignoffSummary&&latestSignoffSummary.bundleRef?safeString(latestSignoffSummary.bundleRef.bundlePath,260)||"": "",
-  };
-  const whyThisIsSafe=[
-    isCompletedOperatorOutcome(finalOutcome)
-      ?`Latest run completed with task outcome ${safeString(finalOutcome.taskOutcomeStatus,80)||safeString(finalOutcome.status,40)||"unknown"}.`
-      :"",
-    postureSafe
-      ?"Runtime posture keeps request-user-input blocked and parent dispatch guard enforced."
-      :"",
-    designConformant
-      ?"Tracked design-conformance checks are passing."
-      :"",
-    signoffReady
-      ?"Latest signoff bundle assertions all passed."
-      :"",
-  ].filter(Boolean);
-  const whyThisMayNeedAttention=Array.from(new Set([
-    requiredEvidenceFailures.length?`Required evidence failures: ${requiredEvidenceFailures.join("; ")}`:"",
-    residualRisks.length?`Residual risks remain: ${residualRisks.join("; ")}`:"",
-    informationalNotes.length?`Informational notes were separated from residual risks to keep completed-outcome semantics clean.`:"",
-    safeString(reviewLoadBreakdown&&reviewLoadBreakdown.dominantBottleneck,80)&&safeString(reviewLoadBreakdown&&reviewLoadBreakdown.dominantBottleneck,80)!=="none"
-      ?`Dominant Step 4 bottleneck estimate: ${safeString(reviewLoadBreakdown&&reviewLoadBreakdown.dominantBottleneck,80)}.`
-      :"",
-    !signoffReady&&latestSignoffSummary
-      ?"Latest signoff bundle is not fully passing yet."
-      :"",
-    !designConformant
-      ?"Design conformance summary is not fully passing."
-      :"",
-  ].filter(Boolean))).slice(0,8);
-  return{
-    schema:"operator-summary.v3",
-    generatedAt:toIsoTimestamp(Date.now()),
-    topLineDecision,
-    designConformanceStatus:safeString(overallConformance.status,40)||"unknown",
-    latestRunStatus:latestRunStatus,
-    signoffStatus:signoffReady?"PASS":"FAIL",
-    reviewLoadStatus:reviewLoadStatus,
-    whyThisIsSafe,
-    whyThisMayNeedAttention,
-    openOnlyIfNeeded:Object.values(refs).filter(Boolean),
-    postureSummary:{
-      loggingMode:"OPERATOR",
-      requestUserInputPolicy:safeString(runtimePosture.requestUserInputPolicy&&runtimePosture.requestUserInputPolicy.policy,40)||"unknown",
-      parentDispatchGuardMode:safeString(runtimePosture.parentDispatchGuard&&runtimePosture.parentDispatchGuard.mode,40)||"unknown",
-      defaultExecAgent:safeString(runtimeSnapshot&&runtimeSnapshot.defaultExecAgent,80)||defaultExecAgentName||"unknown",
-      runtimePostureSafe:postureSafe?true:false,
-    },
-    refs,
-  };
-}
-function buildCurrentIndexFile({runtimeSnapshot,latestRunSummary,latestSignoffSummary,reviewLoadBreakdown}){
-  return{
-    schema:"current-log-index.v2",
-    generatedAt:toIsoTimestamp(Date.now()),
-    firstLookFiles:[
-      {
-        question:"What should a human open first?",
-        path:repoRelativePath(workspaceRoot,loggingSurfacePaths.currentOperatorSummaryPath),
-      },
-    ],
-    detailedFiles:[
-      {
-        question:"What happened on the latest run?",
-        path:repoRelativePath(workspaceRoot,loggingSurfacePaths.currentLatestRunSummaryPath),
-      },
-      {
-        question:"Is Step 4 review load too heavy?",
-        path:repoRelativePath(workspaceRoot,loggingSurfacePaths.currentReviewLoadBreakdownPath),
-      },
-      {
-        question:"What is the current runtime posture and storage map?",
-        path:repoRelativePath(workspaceRoot,loggingSurfacePaths.currentRuntimeSnapshotPath),
-      },
-      {
-        question:"Is the harness still built according to the intended design?",
-        path:repoRelativePath(workspaceRoot,loggingSurfacePaths.currentDesignConformancePath),
-      },
-      {
-        question:"What is the current constitution conformance report?",
-        path:repoRelativePath(workspaceRoot,loggingSurfacePaths.currentConformanceReportPath),
-      },
-      {
-        question:"What does the operator need on one screen?",
-        path:repoRelativePath(workspaceRoot,loggingSurfacePaths.currentOperatorViewSummaryPath),
-      },
-      ...(latestSignoffSummary
-        ?[
-          {
-            question:"Is the latest signoff bundle ready to trust?",
-            path:repoRelativePath(workspaceRoot,loggingSurfacePaths.currentLatestSignoffSummaryPath),
-          },
-        ]
-        :[]),
-    ],
-    surfaces:{
-      current:repoRelativePath(workspaceRoot,loggingSurfacePaths.currentRoot),
-      bundles:repoRelativePath(workspaceRoot,loggingSurfacePaths.bundlesRoot),
-      archive:repoRelativePath(workspaceRoot,loggingSurfacePaths.archiveRoot),
-    },
-    latest:{
-      turnId:latestRunSummary&&latestRunSummary.turnId?latestRunSummary.turnId:null,
-      taskOutcomeStatus:latestRunSummary&&latestRunSummary.finalOutcome?latestRunSummary.finalOutcome.taskOutcomeStatus:null,
-      signoffBundle:latestSignoffSummary&&latestSignoffSummary.bundleName?latestSignoffSummary.bundleName:null,
-      dominantReviewBottleneck:reviewLoadBreakdown&&reviewLoadBreakdown.dominantBottleneck?reviewLoadBreakdown.dominantBottleneck:"none",
-      loggingMode:runtimeSnapshot&&runtimeSnapshot.loggingMode?runtimeSnapshot.loggingMode:loggingMode,
-    },
-  };
-}
-function updateCurrentLogSurface({trigger=""}={}){
-  ensureLoggingSurfaceDir(loggingSurfacePaths.currentRoot);
-  const runtimeSnapshot=buildCurrentRuntimeSnapshotFile();
-  const latestSignoffSummaryRaw=buildLatestSignoffSummaryFile();
-  const latestRunSummaryRaw=buildLatestRunSummaryFile();
-  const reviewLoadBreakdownRaw=buildCurrentReviewLoadBreakdownFile(latestRunSummaryRaw);
-  const designConformanceSummaryRaw=buildCurrentDesignConformanceSummary({
-    runtimeSnapshot,
-    latestRunSummary:latestRunSummaryRaw,
-    latestSignoffSummary:latestSignoffSummaryRaw,
-  });
-  const conformanceReport=buildConformanceReport({
-    latestRunSummary:latestRunSummaryRaw,
-    signoffSummary:latestSignoffSummaryRaw,
-    runtimeRequestUserInputPolicy:safeString(runtimeSnapshot&&runtimeSnapshot.posture&&runtimeSnapshot.posture.requestUserInputPolicy&&runtimeSnapshot.posture.requestUserInputPolicy.policy,40)||"",
-    childEvidenceLedger:latestRunSummaryRaw&&Array.isArray(latestRunSummaryRaw.childEvidenceLedger)?latestRunSummaryRaw.childEvidenceLedger:[],
-    requiredEvidenceFailures:reviewLoadBreakdownRaw&&Array.isArray(reviewLoadBreakdownRaw.requiredEvidenceFailures)?reviewLoadBreakdownRaw.requiredEvidenceFailures:[],
-    evidenceRefs:[
-      repoRelativePath(workspaceRoot,loggingSurfacePaths.currentLatestRunSummaryPath),
-      repoRelativePath(workspaceRoot,loggingSurfacePaths.currentReviewLoadBreakdownPath),
-      repoRelativePath(workspaceRoot,loggingSurfacePaths.currentLatestSignoffSummaryPath),
-    ],
-    rationaleNotes:[
-      `trigger=${safeString(trigger,80)||"runtime_update"}`,
-    ],
-  });
-  const operatorViewSummary=buildOperatorViewSummary({
-    latestRunSummary:latestRunSummaryRaw,
-    reviewBundle:conformanceReport.reviewBundle,
-    releaseDecision:conformanceReport.releaseDecision,
-    conformanceReport,
-    routingDecision:conformanceReport.routingDecision,
-  });
-  const operatorSummaryRaw=buildCurrentOperatorSummaryFile({
-    runtimeSnapshot,
-    latestRunSummary:latestRunSummaryRaw,
-    latestSignoffSummary:latestSignoffSummaryRaw,
-    reviewLoadBreakdown:reviewLoadBreakdownRaw,
-    designConformanceSummary:designConformanceSummaryRaw,
-    conformanceReport,
-    operatorViewSummary,
-  });
-  const latestSignoffSummary=normalizeCurrentLatestSignoffSummary(latestSignoffSummaryRaw);
-  const latestRunSummary=normalizeCurrentLatestRunSummary(latestRunSummaryRaw,latestSignoffSummary);
-  const reviewLoadBreakdown=normalizeCurrentReviewLoadBreakdown(reviewLoadBreakdownRaw);
-  const designConformanceSummary=normalizeCurrentDesignConformanceSummary(designConformanceSummaryRaw);
-  const operatorSummary=normalizeCurrentOperatorSummary({
-    operatorSummary:operatorSummaryRaw,
-    designConformanceSummary,
-    latestRunSummary,
-    reviewLoadBreakdown,
-    latestSignoffSummary,
-  });
-  writeLoggingSurfaceJson(loggingSurfacePaths.currentOperatorSummaryPath,operatorSummary);
-  writeLoggingSurfaceJson(loggingSurfacePaths.currentLatestRunSummaryPath,latestRunSummary);
-  writeLoggingSurfaceJson(loggingSurfacePaths.currentReviewLoadBreakdownPath,reviewLoadBreakdown);
-  writeLoggingSurfaceJson(loggingSurfacePaths.currentDesignConformancePath,designConformanceSummary);
-  if(latestSignoffSummary){
-    writeLoggingSurfaceJson(loggingSurfacePaths.currentLatestSignoffSummaryPath,latestSignoffSummary);
-  }else if(fs.existsSync(loggingSurfacePaths.currentLatestSignoffSummaryPath)){
-    try{
-      fs.unlinkSync(loggingSurfacePaths.currentLatestSignoffSummaryPath);
-    }catch{
-    }
-  }
-  [
-    loggingSurfacePaths.currentRuntimeSnapshotPath,
-    loggingSurfacePaths.currentIndexPath,
-    loggingSurfacePaths.currentConformanceReportPath,
-    loggingSurfacePaths.currentOperatorViewSummaryPath,
-  ].forEach((targetPath)=>{
-    if(!targetPath||!fs.existsSync(targetPath))return;
-    try{
-      fs.unlinkSync(targetPath);
-    }catch{
-    }
-  });
-  logOperation("current_logs.updated",{
-    trigger:safeString(trigger,80)||"runtime",
-    currentRoot:repoRelativePath(workspaceRoot,loggingSurfacePaths.currentRoot),
-    operatorSummaryPath:repoRelativePath(workspaceRoot,loggingSurfacePaths.currentOperatorSummaryPath),
-    latestTurnId:latestRunSummary&&latestRunSummary.turnId?safeString(latestRunSummary.turnId,160):"",
-    signoffBundle:latestSignoffSummary&&latestSignoffSummary.bundleName?safeString(latestSignoffSummary.bundleName,160):"",
-  },"core");
-}
-async function legacyRequestHandler(req,res){
-  const url=new URL(req.url,`http://${req.headers.host}`);
-  const originalPathname=url.pathname;
-  const pathname=rewriteNativeAppApiPath(appRegistry,originalPathname)||originalPathname;
-  const appProxyForward=resolveProxyAppForward(appRegistry,originalPathname);
-  if(appProxyForward){
-    req.__proxyMountPath=appProxyForward.app&&appProxyForward.app.mountPath?appProxyForward.app.mountPath:"";
-    await proxyConfiguredAppRequest(req,res,appProxyForward,url);
-    return;
-  }
-
-  if(await appPlatformReadSurface.tryHandleGetRequest({req,res,pathname,buildRuntimeApiSnapshot})){
-    return;
-  }
-
-  if(req.method==="POST"&&pathname.startsWith("/api/apps/")){
-    const replyMatch=pathname.match(/^\/api\/apps\/([^/]+)\/reply$/);
-    if(replyMatch){
-      await handleHarnessAppReplyRequest(req,res,decodeURIComponent(replyMatch[1]));
-      return;
-    }
-    const structuredMatch=pathname.match(/^\/api\/apps\/([^/]+)\/structured$/);
-    if(structuredMatch){
-      await handleHarnessAppStructuredRequest(req,res,decodeURIComponent(structuredMatch[1]));
-      return;
-    }
-  }
-
-   if(req.method==="GET"&&pathname==="/api/intent/profile"){
-    sendJson(res,200,buildIntentFirstApiSnapshot());
-    return;
-  }
-
-  if(req.method==="POST"&&pathname==="/api/intent/profile"){
-    try{
-      const validation=validateControlMutationRequest(req,{action:"exec",enforceActionAllowlist:false});
-      if(!validation.ok){
-        sendJson(res,validation.status,{ok:false,error:validation.error});
-        return;
-      }
-      const contentTypeValidation=validateJsonMutationContentType(req,{required:true,expectedMime:execApiRequiredContentType});
-      if(!contentTypeValidation.ok){
-        sendJson(res,contentTypeValidation.status,{ok:false,error:contentTypeValidation.error});
-        return;
-      }
-      const raw=await readRequestBody(req,defaultRequestBodyLimitBytes);
-      const body=raw?JSON.parse(raw):{};
-      const action=safeString(body&&body.action,80).toLowerCase();
-      if(action&&action!=="update_intent_profile"){
-        sendJson(res,400,{ok:false,error:`unsupported action: ${action}`});
-        return;
-      }
-      sendJson(res,200,updateIntentProfileStore(body&&body.profile&&typeof body.profile==="object"?body.profile:{}));
-    }catch(error){
-      sendJson(res,400,{ok:false,error:error&&error.message?error.message:String(error)});
-    }
-    return;
-  }
-
-  if(req.method==="POST"&&pathname==="/api/intent/profile/reset"){
-    try{
-      const validation=validateControlMutationRequest(req,{action:"exec",enforceActionAllowlist:false});
-      if(!validation.ok){
-        sendJson(res,validation.status,{ok:false,error:validation.error});
-        return;
-      }
-      const contentTypeValidation=validateJsonMutationContentType(req,{required:true,expectedMime:execApiRequiredContentType});
-      if(!contentTypeValidation.ok){
-        sendJson(res,contentTypeValidation.status,{ok:false,error:contentTypeValidation.error});
-        return;
-      }
-      const raw=await readRequestBody(req,defaultRequestBodyLimitBytes);
-      const body=raw?JSON.parse(raw):{};
-      const action=safeString(body&&body.action,80).toLowerCase();
-      if(action&&action!=="reset_intent_profile"){
-        sendJson(res,400,{ok:false,error:`unsupported action: ${action}`});
-        return;
-      }
-      sendJson(res,200,resetIntentProfileStore());
-    }catch(error){
-      sendJson(res,400,{ok:false,error:error&&error.message?error.message:String(error)});
-    }
-    return;
-  }
-
-  if(req.method==="POST"&&pathname==="/api/workspace/lock"){
-    try{
-      const validation=validateControlMutationRequest(req,{action:"exec",enforceActionAllowlist:false});
-      if(!validation.ok){
-        sendJson(res,validation.status,{ok:false,error:validation.error});
-        return;
-      }
-      const contentTypeValidation=validateJsonMutationContentType(req,{required:true,expectedMime:execApiRequiredContentType});
-      if(!contentTypeValidation.ok){
-        sendJson(res,contentTypeValidation.status,{ok:false,error:contentTypeValidation.error});
-        return;
-      }
-      const raw=await readRequestBody(req,defaultRequestBodyLimitBytes);
-      const body=raw?JSON.parse(raw):{};
-      const action=safeString(body&&body.action,80).toLowerCase();
-      if(action!=="lock_workspace_directory"){
-        sendJson(res,400,{ok:false,error:`unsupported action: ${action||"(empty)"}`});
-        return;
-      }
-      const requestedPath=safeString(body&&body.path,2000);
-      if(!requestedPath){
-        sendJson(res,400,{ok:false,error:"path is required"});
-        return;
-      }
-      sendJson(res,200,lockWorkspaceDirectory(requestedPath));
-    }catch(error){
-      sendJson(res,400,{ok:false,error:error&&error.message?error.message:String(error)});
-    }
-    return;
-  }
-
-  if(req.method==="POST"&&pathname==="/api/workspace/unlock"){
-    try{
-      const validation=validateControlMutationRequest(req,{action:"exec",enforceActionAllowlist:false});
-      if(!validation.ok){
-        sendJson(res,validation.status,{ok:false,error:validation.error});
-        return;
-      }
-      const contentTypeValidation=validateJsonMutationContentType(req,{required:true,expectedMime:execApiRequiredContentType});
-      if(!contentTypeValidation.ok){
-        sendJson(res,contentTypeValidation.status,{ok:false,error:contentTypeValidation.error});
-        return;
-      }
-      const raw=await readRequestBody(req,defaultRequestBodyLimitBytes);
-      const body=raw?JSON.parse(raw):{};
-      const action=safeString(body&&body.action,80).toLowerCase();
-      if(action!=="unlock_workspace_directory"){
-        sendJson(res,400,{ok:false,error:`unsupported action: ${action||"(empty)"}`});
-        return;
-      }
-      sendJson(res,200,unlockWorkspaceDirectory());
-    }catch(error){
-      sendJson(res,400,{ok:false,error:error&&error.message?error.message:String(error)});
-    }
-    return;
-  }
-
-  if(req.method==="GET"&&pathname==="/api/harness/overview"){
-    sendJson(res,200,buildHarnessOverviewSnapshot());
-    return;
-  }
-
-  if(req.method==="GET"&&pathname==="/api/conversation/runtime"){
-    sendJson(res,200,getConversationRuntimeSnapshot());
-    return;
-  }
-
-  if(req.method==="GET"&&pathname==="/api/conversation/persona/memory"){
-    try{
-      const personaUserId=normalizeConversationPersonaUserId(url.searchParams.get("personaUserId"));
-      const snapshot=getConversationPersonaContextForUser(personaUserId);
-      sendJson(res,200,{
-        ok:true,
-        mode:"persona_friend",
-        persona:{
-          userId:snapshot.userId,
-          memory:snapshot.summary,
-        },
-      });
-    }catch(error){
-      sendJson(res,500,{ok:false,error:error&&error.message?error.message:String(error)});
-    }
-    return;
-  }
-
-  if(req.method==="GET"&&pathname==="/api/agent-topography"){
-    sendJson(res,200,{agents:getAgentTopographySnapshot()});
-    return;
-  }
-
-  if(req.method==="GET"&&pathname==="/api/continuity/task"){
-    try{
-      const taskId=safeString(url.searchParams.get("task_id")||url.searchParams.get("taskId"),120);
-      if(!taskId){
-        sendJson(res,400,{ok:false,error:"task_id is required"});
-        return;
-      }
-      const sessionId=safeString(url.searchParams.get("session_id")||url.searchParams.get("sessionId"),120);
-      const requestedMode=safeString(url.searchParams.get("mode"),80)||"operating_summary";
-      const limitRaw=Number(url.searchParams.get("limit"));
-      const limit=Number.isFinite(limitRaw)?Math.max(1,Math.min(256,Math.trunc(limitRaw))):null;
-      const payload=inspectContinuityTask({
-        workspaceRoot,
-        taskId,
-        sessionId,
-        mode:requestedMode,
-        limit,
-      });
-      if(payload&&payload.ok===false){
-        const errorCode=safeString(payload.errorCode,120);
-        const statusCode=errorCode.startsWith("continuity_task_not_found")?404:409;
-        sendJson(res,statusCode,payload);
-        return;
-      }
-      sendJson(res,200,{
-        ok:true,
-        taskId,
-        sessionId:sessionId||"",
-        mode:requestedMode,
-        payload,
-      });
-    }catch(error){
-      const message=safeString(error&&error.message?error.message:String(error),600);
-      const statusCode=message.startsWith("continuity_task_not_found")?404:400;
-      sendJson(res,statusCode,{ok:false,error:message});
-    }
-    return;
-  }
-
-  if(req.method==="GET"&&pathname==="/api/continuity/tasks"){
-    try{
-      const requestedState=safeString(url.searchParams.get("state"),80)||"all";
-      const requestedMode=safeString(url.searchParams.get("mode"),80);
-      const limitRaw=Number(url.searchParams.get("limit"));
-      const limit=Number.isFinite(limitRaw)?Math.max(1,Math.min(256,Math.trunc(limitRaw))):null;
-      const modeMap={
-        all:"registry",
-        active:"active_tasks",
-        blocked:"blocked_tasks",
-        verifier_failed:"verifier_failed_tasks",
-        abandoned:"abandoned_tasks",
-        archived:"archived_tasks",
-      };
-      const mode=modeMap[requestedState]||requestedMode||"registry";
-      const payload=inspectContinuityTask({
-        workspaceRoot,
-        mode,
-        limit,
-      });
-      if(payload&&payload.ok===false){
-        sendJson(res,409,payload);
-        return;
-      }
-      sendJson(res,200,{
-        ok:true,
-        state:requestedState,
-        mode,
-        payload,
-      });
-    }catch(error){
-      sendJson(res,400,{ok:false,error:error&&error.message?error.message:String(error)});
-    }
-    return;
-  }
-
-  if(req.method==="GET"&&pathname==="/api/batch/status"){
-    sendJson(res,200,getPocStatusSnapshot());
-    return;
-  }
-
-  if(req.method==="POST"&&pathname==="/api/batch/run"){
-    try{
-      const raw=await readRequestBody(req,execRequestBodyLimitBytes);
-      const body=raw?JSON.parse(raw):{};
-      const prompt=safeString(body.prompt,24000);
-      if(!prompt){
-        sendJson(res,400,{ok:false,error:"prompt is required"});
-        return;
-      }
-      const mode=normalizePocBatchMode(body.mode);
-      const cwd=normalizeWorkingDirectory(body.cwd,workspaceRoot);
-      const workspaceGuardViolation=buildWorkspaceGuardViolation(cwd);
-      if(workspaceGuardViolation){
-        logOperation("api.batch_blocked",{
-          path:pathname,
-          reason:safeString(workspaceGuardViolation.payload&&workspaceGuardViolation.payload.code,80)||"outside_locked_workspace",
-          cwd:summarizePathForOperationLog(cwd,220),
-          lockedRoot:summarizePathForOperationLog(workspaceGuardLockedRoot,220),
-        },"standard");
-        sendJson(res,workspaceGuardViolation.statusCode,workspaceGuardViolation.payload);
-        return;
-      }
-      const result=await executePocBatchRun({prompt,mode,cwd,source:"manual"});
-      sendJson(res,200,result);
-    }catch(error){
-      sendJson(res,500,{ok:false,error:error&&error.message?error.message:String(error)});
-    }
-    return;
-  }
-
-  if(req.method==="POST"&&pathname==="/api/batch/scheduler"){
-    try{
-      const raw=await readRequestBody(req,defaultRequestBodyLimitBytes);
-      const body=raw?JSON.parse(raw):{};
-      const scheduler=setPocSchedulerConfig({
-        enabled:normalizeBooleanFlag(body.enabled),
-        intervalSec:body.intervalSec,
-      });
-      sendJson(res,200,{ok:true,scheduler});
-    }catch(error){
-      sendJson(res,500,{ok:false,error:error&&error.message?error.message:String(error)});
-    }
-    return;
-  }
-
-  if(req.method==="POST"&&pathname==="/api/requirement-guard/validate"){
-    try{
-      const raw=await readRequestBody(req);
-      const body=raw?JSON.parse(raw):{};
-      const inputValue=Object.prototype.hasOwnProperty.call(body,requirementGuardMatcherDefaults.inputKey)
-        ? body[requirementGuardMatcherDefaults.inputKey]
-        : body.inputValue;
-      if(inputValue===undefined){
-        sendJson(res,400,{ok:false,error:`${requirementGuardMatcherDefaults.inputKey} is required`});
-        return;
-      }
-      const result=evaluateRequirementGuardMatch(inputValue);
-      const matcher=getRequirementGuardMatcherSnapshot();
-      sendJson(res,200,{
-        ok:true,
-        requirement:{
-          id:requirementGuardExtensionConfig.id,
-          originalRequirement:requirementGuardOriginalRequirement,
-        },
-        matcher,
-        result,
-      });
-    }catch(error){
-      sendJson(res,400,{ok:false,error:error&&error.message?error.message:String(error)});
-    }
-    return;
-  }
-
-  if(req.method==="GET"&&pathname==="/api/diagnostics"){
-    sendJson(res,200,getDiagnosticsSnapshot());
-    return;
-  }
-
-  if(req.method==="GET"&&pathname==="/api/slo/status"){
-    const snapshot=buildSloRuntimeSnapshot();
-    maybeEmitSloAlert(snapshot,{reason:"api_slo_status"});
-    sendJson(res,200,{ok:true,slo:snapshot});
-    return;
-  }
-
-  if(req.method==="GET"&&pathname==="/api/eval/suites"){
-    handleEvalSuitesRequest({req,res,url,pathname});
-    return;
-  }
-
-  if(req.method==="GET"&&pathname==="/api/eval/history"){
-    handleEvalHistoryRequest({req,res,url,pathname});
-    return;
-  }
-
-  if(req.method==="POST"&&pathname==="/api/eval/run"){
-    await handleEvalRunRequest({req,res,url,pathname});
-    return;
-  }
-
-  if(req.method==="GET"&&pathname==="/api/replay/turns"){
-    const validation=validateControlMutationRequest(req,{action:"exec",enforceActionAllowlist:false});
-    if(!validation.ok){
-      sendJson(res,validation.status,{ok:false,error:validation.error});
-      return;
-    }
-    const limitRaw=Number(url.searchParams.get("limit"));
-    const limit=Number.isFinite(limitRaw)?Math.max(1,Math.min(200,Math.trunc(limitRaw))):20;
-    sendJson(res,200,{ok:true,turns:listReplayMemorySnapshots({limit})});
-    return;
-  }
-
-  if(req.method==="GET"&&pathname.startsWith("/api/replay/turn/")){
-    try{
-      const validation=validateControlMutationRequest(req,{action:"exec",enforceActionAllowlist:false});
-      if(!validation.ok){
-        sendJson(res,validation.status,{ok:false,error:validation.error});
-        return;
-      }
-      const encodedTurnId=pathname.slice("/api/replay/turn/".length);
-      const turnId=safeString(decodeURIComponent(encodedTurnId),160);
-      if(!turnId){
-        sendJson(res,400,{ok:false,error:"turnId is required"});
-        return;
-      }
-      const includePrompt=String(url.searchParams.get("include_prompt")||"")==="1";
-      const record=getReplayMemoryRecord(turnId);
-      if(!record){
-        sendJson(res,404,{ok:false,error:"replay turn not found"});
-        return;
-      }
-      sendJson(res,200,{ok:true,replay:buildReplayMemorySnapshot(record,{includePrompt})});
-    }catch(error){
-      sendJson(res,400,{ok:false,error:error&&error.message?error.message:String(error)});
-    }
-    return;
-  }
-
-  if(req.method==="POST"&&pathname==="/api/replay/turn"){
-    try{
-      const validation=validateControlMutationRequest(req,{action:"exec",enforceActionAllowlist:false});
-      if(!validation.ok){
-        sendJson(res,validation.status,{ok:false,error:validation.error});
-        return;
-      }
-      const contentTypeValidation=validateJsonMutationContentType(req,{required:true,expectedMime:execApiRequiredContentType});
-      if(!contentTypeValidation.ok){
-        sendJson(res,contentTypeValidation.status,{ok:false,error:contentTypeValidation.error});
-        return;
-      }
-      const raw=await readRequestBody(req,defaultRequestBodyLimitBytes);
-      const body=raw?JSON.parse(raw):{};
-      const turnId=safeString(body.turnId,160);
-      if(!turnId){
-        sendJson(res,400,{ok:false,error:"turnId is required"});
-        return;
-      }
-      const sourceRecord=getReplayMemoryRecord(turnId);
-      if(!sourceRecord){
-        sendJson(res,404,{ok:false,error:"replay turn not found"});
-        return;
-      }
-      const overrides=body.overrides&&typeof body.overrides==="object"?body.overrides:{};
-      const requestedProfile=normalizeExecutionProfile(overrides.executionProfile,sourceRecord.request.executionProfile);
-      const reproProfile=isReproExecutionProfile(requestedProfile);
-      const replayPayload={
-        prompt:sourceRecord.request.prompt,
-        sandboxMode:normalizeSandboxMode(overrides.sandboxMode||sourceRecord.request.sandboxMode),
-        approvalPolicy:normalizeApprovalPolicy(overrides.approvalPolicy||sourceRecord.request.approvalPolicy),
-        webSearch:reproProfile?0:normalizeBooleanFlag(Object.prototype.hasOwnProperty.call(overrides,"webSearch")?overrides.webSearch:sourceRecord.request.webSearch),
-        model:normalizeExecModel(overrides.model,sourceRecord.request.model),
-        modelReasoningEffort:normalizeExecModelReasoningEffort(overrides.modelReasoningEffort,sourceRecord.request.modelReasoningEffort),
-        forceNewSession:reproProfile?1:normalizeBooleanFlag(Object.prototype.hasOwnProperty.call(overrides,"forceNewSession")?overrides.forceNewSession:sourceRecord.request.forceNewSession),
-        agentName:normalizeAgentName(overrides.agentName)||sourceRecord.request.agentName,
-        cwd:normalizeWorkingDirectory(overrides.cwd,sourceRecord.request.cwd||workspaceRoot),
-        requestUserInputPolicy:reproProfile
-          ?"blocked"
-          :normalizeRequestUserInputPolicy(overrides.requestUserInputPolicy,sourceRecord.request.requestUserInputPolicy),
-        executionProfile:requestedProfile,
-        executionIntent:normalizeExecutionIntent(overrides.executionIntent,sourceRecord.request.executionIntent||"replay"),
-        executionSource:safeString(overrides.executionSource,80)||`replay:${turnId}`,
-        idempotencyKey:safeString(body.idempotencyKey,200)||`replay-${Date.now()}-${crypto.randomBytes(4).toString("hex")}`,
-      };
-      const timeoutRaw=Number(body.timeoutMs);
-      const timeoutMs=Number.isFinite(timeoutRaw)?Math.max(10000,Math.min(900000,Math.trunc(timeoutRaw))):evalCaseTimeoutMs;
-      const replayResult=await runInternalExecRequest(replayPayload,{timeoutMs});
-      const diff=buildReplayDiffMetrics(sourceRecord.baseline.outputSnapshot,replayResult.finalText);
-      updateReplayMemoryStats(turnId,{
-        status:replayResult.status,
-        outputSha256:hashSha256Hex(String(replayResult.finalText||"")),
-        similarity:diff.similarity,
-      });
-      sendJson(res,200,{
-        ok:true,
-        source:buildReplayMemorySnapshot(sourceRecord),
-        replay:{
-          httpStatus:replayResult.httpStatus,
-          status:replayResult.status,
-          turnId:safeString(replayResult.turnId,160)||"",
-          threadId:safeString(replayResult.threadId,160)||"",
-          elapsedMs:Math.max(0,Math.trunc(Number(replayResult.elapsedMs)||0)),
-          outputSha256:hashSha256Hex(String(replayResult.finalText||"")),
-          outputChars:String(replayResult.finalText||"").length,
-          outputPreview:safeString(replayResult.finalText,400),
-          errorText:safeString(replayResult.errorText,1200)||"",
-        },
-        diff,
-      });
-    }catch(error){
-      sendJson(res,500,{ok:false,error:error&&error.message?error.message:String(error)});
-    }
-    return;
-  }
-
-  if(req.method==="POST"&&pathname==="/api/voice/piper/prepare"){
-    try{
-      const originValidation=validateLocalOriginRequest(req);
-      if(!originValidation.ok){
-        logOperation("api.voice.piper_prepare_blocked",{
-          reason:safeString(originValidation.error,180),
-          status:Number.isFinite(Number(originValidation.status))?Math.trunc(Number(originValidation.status)):403,
-          origin:safeString(requestHeaderValue(req,"origin"),220),
-          referer:safeString(requestHeaderValue(req,"referer"),220),
-          host:safeString(requestHeaderValue(req,"host"),120),
-        },"standard");
-        sendJson(res,originValidation.status,{ok:false,error:originValidation.error});
-        return;
-      }
-      const contentTypeValidation=validateJsonMutationContentType(req,{required:true,expectedMime:conversationApiRequiredContentType});
-      if(!contentTypeValidation.ok){
-        logOperation("api.voice.piper_prepare_blocked",{
-          reason:safeString(contentTypeValidation.error,180),
-          status:Number.isFinite(Number(contentTypeValidation.status))?Math.trunc(Number(contentTypeValidation.status)):415,
-          origin:safeString(requestHeaderValue(req,"origin"),220),
-          referer:safeString(requestHeaderValue(req,"referer"),220),
-          host:safeString(requestHeaderValue(req,"host"),120),
-          contentType:safeString(requestHeaderValue(req,"content-type"),120),
-        },"standard");
-        sendJson(res,contentTypeValidation.status,{ok:false,error:contentTypeValidation.error});
-        return;
-      }
-      const raw=await readRequestBody(req,piperVoiceRequestBodyLimitBytes);
-      const body=raw?JSON.parse(raw):{};
-      const model=safeString(body.model,120)||defaultPiperModelId;
-      const speaker=Object.prototype.hasOwnProperty.call(body,"speaker")?body.speaker:null;
-      const autoDownload=Object.prototype.hasOwnProperty.call(body,"autoDownload")
-        ? normalizeBooleanFlag(body.autoDownload)
-        : true;
-      const warmup=Object.prototype.hasOwnProperty.call(body,"warmup")
-        ? normalizeBooleanFlag(body.warmup)
-        : true;
-      const warmupText=safeString(body.warmupText,240)||"piper warmup";
-      const startedAt=nowTs();
-      logOperation("api.voice.piper_prepare",{
-        model:safeString(model,120),
-        speaker:Number.isFinite(Number(speaker))?Math.max(0,Math.trunc(Number(speaker))):null,
-        autoDownload:autoDownload?1:0,
-        warmup:warmup?1:0,
-      },"standard");
-      const prepared=await preparePiperModel({
-        workspaceRoot,
-        model,
-        speaker,
-        autoDownload,
-        warmup,
-        warmupText,
-      });
-      const latencyMs=Math.max(0,nowTs()-startedAt);
-      logOperation("api.voice.piper_prepare_done",{
-        model:safeString(prepared&&prepared.modelId,120)||safeString(model,120),
-        speaker:Number.isFinite(Number(prepared&&prepared.speaker))?Math.max(0,Math.trunc(Number(prepared.speaker))):null,
-        downloadedModel:prepared&&prepared.downloadedModel?1:0,
-        warmedUp:prepared&&prepared.warmedUp?1:0,
-        ms:latencyMs,
-      },"standard");
-      sendJson(res,200,{
-        ok:true,
-        provider:"piper",
-        model:safeString(prepared&&prepared.modelId,120)||safeString(model,120),
-        speaker:Number.isFinite(Number(prepared&&prepared.speaker))?Math.max(0,Math.trunc(Number(prepared.speaker))):null,
-        downloadedModel:prepared&&prepared.downloadedModel?1:0,
-        warmedUp:prepared&&prepared.warmedUp?1:0,
-        autoDownload:autoDownload?1:0,
-        warmup:warmup?1:0,
-        latencyMs,
-      });
-    }catch(error){
-      const statusCode=resolvePiperVoiceRequestErrorStatus(error);
-      logOperation("api.voice.piper_prepare_failed",{
-        status:statusCode,
-        err:summarizeErrorForOperationLog(error,220),
-        code:safeString(error&&error.code?String(error.code):"",80),
-      },"standard");
-      sendJson(res,statusCode,{
-        ok:false,
-        error:error&&error.message?error.message:String(error),
-        code:safeString(error&&error.code?String(error.code):"",80)||undefined,
-      });
-    }
-    return;
-  }
-
-  if(req.method==="POST"&&pathname==="/api/voice/piper"){
-    try{
-      const originValidation=validateLocalOriginRequest(req);
-      if(!originValidation.ok){
-        logOperation("api.voice.piper_blocked",{
-          reason:safeString(originValidation.error,180),
-          status:Number.isFinite(Number(originValidation.status))?Math.trunc(Number(originValidation.status)):403,
-          origin:safeString(requestHeaderValue(req,"origin"),220),
-          referer:safeString(requestHeaderValue(req,"referer"),220),
-          host:safeString(requestHeaderValue(req,"host"),120),
-        },"standard");
-        sendJson(res,originValidation.status,{ok:false,error:originValidation.error});
-        return;
-      }
-      const contentTypeValidation=validateJsonMutationContentType(req,{required:true,expectedMime:conversationApiRequiredContentType});
-      if(!contentTypeValidation.ok){
-        logOperation("api.voice.piper_blocked",{
-          reason:safeString(contentTypeValidation.error,180),
-          status:Number.isFinite(Number(contentTypeValidation.status))?Math.trunc(Number(contentTypeValidation.status)):415,
-          origin:safeString(requestHeaderValue(req,"origin"),220),
-          referer:safeString(requestHeaderValue(req,"referer"),220),
-          host:safeString(requestHeaderValue(req,"host"),120),
-          contentType:safeString(requestHeaderValue(req,"content-type"),120),
-        },"standard");
-        sendJson(res,contentTypeValidation.status,{ok:false,error:contentTypeValidation.error});
-        return;
-      }
-      const raw=await readRequestBody(req,piperVoiceRequestBodyLimitBytes);
-      const body=raw?JSON.parse(raw):{};
-      const text=safeString(typeof body.text==="string"?body.text:body.message,24000);
-      if(!text){
-        sendJson(res,400,{ok:false,error:"text is required"});
-        return;
-      }
-      const model=safeString(body.model,120)||defaultPiperModelId;
-      const speaker=Object.prototype.hasOwnProperty.call(body,"speaker")?body.speaker:null;
-      const autoDownload=Object.prototype.hasOwnProperty.call(body,"autoDownload")
-        ? normalizeBooleanFlag(body.autoDownload)
-        : true;
-      const startedAt=nowTs();
-      logOperation("api.voice.piper",{
-        model:safeString(model,120),
-        speaker:Number.isFinite(Number(speaker))?Math.max(0,Math.trunc(Number(speaker))):null,
-        chars:text.length,
-        autoDownload:autoDownload?1:0,
-      },"standard");
-      const playback=await speakWithPiper({
-        workspaceRoot,
-        text,
-        model,
-        speaker,
-        autoDownload,
-      });
-      const latencyMs=Math.max(0,nowTs()-startedAt);
-      logOperation("api.voice.piper_done",{
-        model:safeString(playback&&playback.modelId,120)||safeString(model,120),
-        speaker:Number.isFinite(Number(playback&&playback.speaker))?Math.max(0,Math.trunc(Number(playback.speaker))):null,
-        downloadedModel:playback&&playback.downloadedModel?1:0,
-        ms:latencyMs,
-      },"standard");
-      sendJson(res,200,{
-        ok:true,
-        provider:"piper",
-        model:safeString(playback&&playback.modelId,120)||safeString(model,120),
-        speaker:Number.isFinite(Number(playback&&playback.speaker))?Math.max(0,Math.trunc(Number(playback.speaker))):null,
-        downloadedModel:playback&&playback.downloadedModel?1:0,
-        autoDownload:autoDownload?1:0,
-        latencyMs,
-      });
-    }catch(error){
-      const statusCode=resolvePiperVoiceRequestErrorStatus(error);
-      logOperation("api.voice.piper_failed",{
-        status:statusCode,
-        err:summarizeErrorForOperationLog(error,220),
-        code:safeString(error&&error.code?String(error.code):"",80),
-      },"standard");
-      sendJson(res,statusCode,{
-        ok:false,
-        error:error&&error.message?error.message:String(error),
-        code:safeString(error&&error.code?String(error.code):"",80)||undefined,
-      });
-    }
-    return;
-  }
-
-  if(req.method==="POST"&&pathname==="/api/voice/kokoro"){
-    try{
-      const originValidation=validateLocalOriginRequest(req);
-      if(!originValidation.ok){
-        logOperation("api.voice.kokoro_blocked",{
-          reason:safeString(originValidation.error,180),
-          status:Number.isFinite(Number(originValidation.status))?Math.trunc(Number(originValidation.status)):403,
-          origin:safeString(requestHeaderValue(req,"origin"),220),
-          referer:safeString(requestHeaderValue(req,"referer"),220),
-          host:safeString(requestHeaderValue(req,"host"),120),
-        },"standard");
-        sendJson(res,originValidation.status,{ok:false,error:originValidation.error});
-        return;
-      }
-      const contentTypeValidation=validateJsonMutationContentType(req,{required:true,expectedMime:conversationApiRequiredContentType});
-      if(!contentTypeValidation.ok){
-        logOperation("api.voice.kokoro_blocked",{
-          reason:safeString(contentTypeValidation.error,180),
-          status:Number.isFinite(Number(contentTypeValidation.status))?Math.trunc(Number(contentTypeValidation.status)):415,
-          origin:safeString(requestHeaderValue(req,"origin"),220),
-          referer:safeString(requestHeaderValue(req,"referer"),220),
-          host:safeString(requestHeaderValue(req,"host"),120),
-          contentType:safeString(requestHeaderValue(req,"content-type"),120),
-        },"standard");
-        sendJson(res,contentTypeValidation.status,{ok:false,error:contentTypeValidation.error});
-        return;
-      }
-      const raw=await readRequestBody(req,kokoroVoiceRequestBodyLimitBytes);
-      const body=raw?JSON.parse(raw):{};
-      const text=safeString(typeof body.text==="string"?body.text:body.message,24000);
-      if(!text){
-        sendJson(res,400,{ok:false,error:"text is required"});
-        return;
-      }
-      const model=safeString(body.model,80)||kokoroDefaultModel;
-      const voice=safeString(body.voice,80)||kokoroDefaultVoice;
-      const langCode=safeString(body.langCode,8)||safeString(body.lang_code,8)||kokoroDefaultLangCode;
-      const speed=Object.prototype.hasOwnProperty.call(body,"speed")?Number(body.speed):undefined;
-      const startedAt=nowTs();
-      logOperation("api.voice.kokoro",{
-        model:safeString(model,80),
-        voice:safeString(voice,80),
-        langCode:safeString(langCode,8),
-        chars:text.length,
-        speed:Number.isFinite(Number(speed))?Number(speed):null,
-      },"standard");
-      const result=await requestKokoroSpeech({text,model,voice,langCode,speed});
-      const latencyMs=Math.max(0,nowTs()-startedAt);
-      logOperation("api.voice.kokoro_done",{
-        model:safeString(model,80),
-        voice:safeString(voice,80),
-        langCode:safeString(langCode,8),
-        bytes:result&&result.audio?result.audio.length:0,
-        ms:latencyMs,
-      },"standard");
-      const contentType=safeString(result&&result.contentType?result.contentType:"audio/mpeg",120)||"audio/mpeg";
-      const audioBuffer=result&&result.audio?result.audio:Buffer.alloc(0);
-      res.writeHead(200,{
-        "Content-Type":contentType,
-        "Content-Length":audioBuffer.length,
-        "Cache-Control":"no-store",
-      });
-      res.end(audioBuffer);
-    }catch(error){
-      const statusCode=resolveKokoroVoiceRequestErrorStatus(error);
-      logOperation("api.voice.kokoro_failed",{
-        status:statusCode,
-        err:summarizeErrorForOperationLog(error,220),
-        code:safeString(error&&error.code?String(error.code):"",80),
-      },"standard");
-      sendJson(res,statusCode,{
-        ok:false,
-        error:error&&error.message?error.message:String(error),
-        code:safeString(error&&error.code?String(error.code):"",80)||undefined,
-      });
-    }
-    return;
-  }
-
-  if(req.method==="POST"&&pathname==="/api/conversation/direct"){
-    try{
-      const originValidation=validateLocalOriginRequest(req);
-      if(!originValidation.ok){
-        logOperation("api.conversation.blocked",{
-          reason:safeString(originValidation.error,180),
-          status:Number.isFinite(Number(originValidation.status))?Math.trunc(Number(originValidation.status)):403,
-          origin:safeString(requestHeaderValue(req,"origin"),220),
-          referer:safeString(requestHeaderValue(req,"referer"),220),
-          host:safeString(requestHeaderValue(req,"host"),120),
-        },"standard");
-        sendJson(res,originValidation.status,{ok:false,error:originValidation.error});
-        return;
-      }
-      const contentTypeValidation=validateJsonMutationContentType(req,{required:true,expectedMime:conversationApiRequiredContentType});
-      if(!contentTypeValidation.ok){
-        logOperation("api.conversation.blocked",{
-          reason:safeString(contentTypeValidation.error,180),
-          status:Number.isFinite(Number(contentTypeValidation.status))?Math.trunc(Number(contentTypeValidation.status)):415,
-          origin:safeString(requestHeaderValue(req,"origin"),220),
-          referer:safeString(requestHeaderValue(req,"referer"),220),
-          host:safeString(requestHeaderValue(req,"host"),120),
-          contentType:safeString(requestHeaderValue(req,"content-type"),120),
-        },"standard");
-        sendJson(res,contentTypeValidation.status,{ok:false,error:contentTypeValidation.error});
-        return;
-      }
-      const raw=await readRequestBody(req,conversationRequestBodyLimitBytes);
-      const body=raw?JSON.parse(raw):{};
-      const message=normalizeConversationMessage(body.message||body.prompt);
-      if(!message){
-        sendJson(res,400,{ok:false,error:"message is required"});
-        return;
-      }
-      const mode=normalizeConversationMode(body.mode);
-      const personaUserId=normalizeConversationPersonaUserId(body.personaUserId);
-      const level=normalizeConversationLevel(body.level);
-      const topic=normalizeConversationTopic(body.topic);
-      const history=normalizeConversationHistoryItems(body.history);
-      let personaContext={facts:[],topics:[],turns:0,updatedAt:0};
-      let personaSummary={
-        turns:0,
-        factsCount:0,
-        topicsCount:0,
-        recentFacts:[],
-        recentTopics:[],
-        updatedAt:0,
-      };
-      if(mode==="persona_friend"){
-        const personaSnapshot=getConversationPersonaContextForUser(personaUserId);
-        personaContext=personaSnapshot.context;
-        personaSummary=personaSnapshot.summary;
-      }
-      const model=conversationAppServerModel;
-      const startedAt=nowTs();
-      logOperation("api.conversation.direct",{
-        provider:conversationProvider,
-        model:safeString(model,120),
-        mode,
-        personaUserId:mode==="persona_friend"?safeString(personaUserId,120):"",
-        personaFacts:mode==="persona_friend"&&personaContext&&Array.isArray(personaContext.facts)?personaContext.facts.length:0,
-        level,
-        topic:safeString(topic,120),
-        historyItems:history.length,
-        message:summarizeTextForOperationLog(message,2400),
-      },"standard");
-      const response=await runConversationViaAppServer({
-        message,
-        history,
-        level,
-        topic,
-        mode,
-        memoryContext:mode==="persona_friend"?personaContext:null,
-        timeoutMs:conversationRequestTimeoutMs,
-      });
-      if(mode==="persona_friend"){
-        const updatedPersona=updateConversationPersonaMemoryForUser({
-          userId:personaUserId,
-          message,
-          topic,
-        });
-        personaSummary=updatedPersona.summary;
-      }
-      const latencyMs=Math.max(0,nowTs()-startedAt);
-      logOperation("api.conversation.direct_done",{
-        provider:conversationProvider,
-        model:safeString(response&&response.model,120)||safeString(model,120),
-        mode,
-        personaUserId:mode==="persona_friend"?safeString(personaUserId,120):"",
-        personaFacts:mode==="persona_friend"?Number.isFinite(Number(personaSummary.factsCount))?Math.max(0,Math.trunc(Number(personaSummary.factsCount))):0:0,
-        ms:latencyMs,
-        usage:response&&response.usage&&typeof response.usage==="object"?{
-          totalTokens:Number.isFinite(Number(response.usage.totalTokens))?Math.max(0,Math.trunc(Number(response.usage.totalTokens))):0,
-          inputTokens:Number.isFinite(Number(response.usage.inputTokens))?Math.max(0,Math.trunc(Number(response.usage.inputTokens))):0,
-          outputTokens:Number.isFinite(Number(response.usage.outputTokens))?Math.max(0,Math.trunc(Number(response.usage.outputTokens))):0,
-        }:{totalTokens:0,inputTokens:0,outputTokens:0},
-      },"standard");
-      sendJson(res,200,{
-        ok:true,
-        route:"conversation-app-server",
-        provider:conversationProvider,
-        model:safeString(response&&response.model,120)||safeString(model,120),
-        mode,
-        id:safeString(response&&response.id,120)||null,
-        text:safeString(response&&response.text,24000),
-        usage:response&&response.usage&&typeof response.usage==="object"?response.usage:{totalTokens:0,inputTokens:0,outputTokens:0},
-        latencyMs,
-        persona:mode==="persona_friend"?{
-          userId:personaUserId,
-          memory:personaSummary,
-        }:null,
-      });
-    }catch(error){
-      const statusCode=resolveConversationRequestErrorStatus(error);
-      logOperation("api.conversation.direct_failed",{
-        status:statusCode,
-        err:summarizeErrorForOperationLog(error,220),
-        origin:safeString(requestHeaderValue(req,"origin"),220),
-        referer:safeString(requestHeaderValue(req,"referer"),220),
-        host:safeString(requestHeaderValue(req,"host"),120),
-      },"standard");
-      sendJson(res,statusCode,{ok:false,error:error&&error.message?error.message:String(error)});
-    }
-    return;
-  }
-
-  if(req.method==="POST"&&pathname==="/api/conversation/persona/reset"){
-    try{
-      const originValidation=validateLocalOriginRequest(req);
-      if(!originValidation.ok){
-        logOperation("api.conversation.persona_reset_blocked",{
-          reason:safeString(originValidation.error,180),
-          status:Number.isFinite(Number(originValidation.status))?Math.trunc(Number(originValidation.status)):403,
-          origin:safeString(requestHeaderValue(req,"origin"),220),
-          referer:safeString(requestHeaderValue(req,"referer"),220),
-          host:safeString(requestHeaderValue(req,"host"),120),
-        },"standard");
-        sendJson(res,originValidation.status,{ok:false,error:originValidation.error});
-        return;
-      }
-      const contentTypeValidation=validateJsonMutationContentType(req,{required:true,expectedMime:conversationApiRequiredContentType});
-      if(!contentTypeValidation.ok){
-        logOperation("api.conversation.persona_reset_blocked",{
-          reason:safeString(contentTypeValidation.error,180),
-          status:Number.isFinite(Number(contentTypeValidation.status))?Math.trunc(Number(contentTypeValidation.status)):415,
-          origin:safeString(requestHeaderValue(req,"origin"),220),
-          referer:safeString(requestHeaderValue(req,"referer"),220),
-          host:safeString(requestHeaderValue(req,"host"),120),
-          contentType:safeString(requestHeaderValue(req,"content-type"),120),
-        },"standard");
-        sendJson(res,contentTypeValidation.status,{ok:false,error:contentTypeValidation.error});
-        return;
-      }
-      const raw=await readRequestBody(req,defaultRequestBodyLimitBytes);
-      const body=raw?JSON.parse(raw):{};
-      const personaUserId=normalizeConversationPersonaUserId(body.personaUserId);
-      const resetResult=resetConversationPersonaMemoryForUser(personaUserId);
-      logOperation("api.conversation.persona_reset",{
-        personaUserId:safeString(personaUserId,120),
-      },"standard");
-      sendJson(res,200,{
-        ok:true,
-        mode:"persona_friend",
-        persona:{
-          userId:resetResult.userId,
-          memory:resetResult.summary,
-        },
-      });
-    }catch(error){
-      const statusCode=isRequestBodyTooLargeError(error)?413:error instanceof SyntaxError?400:500;
-      logOperation("api.conversation.persona_reset_failed",{
-        status:statusCode,
-        err:summarizeErrorForOperationLog(error,220),
-      },"standard");
-      sendJson(res,statusCode,{ok:false,error:error&&error.message?error.message:String(error)});
-    }
-    return;
-  }
-
-  if(req.method==="POST"&&pathname==="/api/open-cmd"){
-    try{
-      if(!openCmdWindowEnabled){
-        logOperation("api.open_cmd_blocked",{
-          reason:"open-cmd disabled by CODEX_ALLOW_OPEN_CMD_WINDOW",
-          status:403,
-          origin:safeString(requestHeaderValue(req,"origin"),220),
-          referer:safeString(requestHeaderValue(req,"referer"),220),
-          host:safeString(requestHeaderValue(req,"host"),120),
-          hasToken:requestHeaderValue(req,controlApiTokenHeaderName)?1:0,
-          action:"",
-        },"standard");
-        sendJson(res,403,{ok:false,error:"open-cmd is disabled by runtime policy"});
-        return;
-      }
-      const raw=await readRequestBody(req,defaultRequestBodyLimitBytes);
-      const body=raw?JSON.parse(raw):{};
-      const action=safeString(body&&body.action,80);
-      const validation=validateControlMutationRequest(req,{action,requireAction:true});
-      if(!validation.ok){
-        logOperation("api.open_cmd_blocked",{
-          reason:safeString(validation.error,140),
-          status:Number.isFinite(Number(validation.status))?Math.trunc(Number(validation.status)):403,
-          origin:safeString(requestHeaderValue(req,"origin"),220),
-          referer:safeString(requestHeaderValue(req,"referer"),220),
-          host:safeString(requestHeaderValue(req,"host"),120),
-          hasToken:requestHeaderValue(req,controlApiTokenHeaderName)?1:0,
-          action,
-        },"standard");
-        sendJson(res,validation.status,{ok:false,error:validation.error});
-        return;
-      }
-      logOperation("api.open_cmd",{
-        action,
-        origin:safeString(requestHeaderValue(req,"origin"),220),
-        referer:safeString(requestHeaderValue(req,"referer"),220),
-        host:safeString(requestHeaderValue(req,"host"),120),
-      },"standard");
-      openCmdWindow();
-      sendJson(res,200,{ok:true});
-    }catch(e){
-      sendJson(res,400,{ok:false,error:e&&e.message?e.message:String(e)});
-    }
-    return;
-  }
-
-  if(req.method==="GET"&&pathname.startsWith("/api/exec/idempotency/")){
-    await handleExecIdempotencyRequest({req,res,url,pathname});
-    return;
-  }
-
-  if(req.method==="POST"&&pathname==="/api/exec"){
-    await handleExecRequest({req,res,url,pathname});
-    return;
-  }
-
-  if(req.method==="GET"){
-    appPlatformReadSurface.serveStaticFile(req,res,pathname);
-    return;
-  }
-
-  if(pathname.startsWith("/api/")){
-    sendJson(res,404,{ok:false,error:"Unknown API route",path:pathname});
-    return;
-  }
-  sendJson(res,405,{error:"Method not allowed"});
-}
-const evalService=createEvalService({
+const routeServices=createRouteServices({
+  buildIntentFirstApiSnapshot,
+  buildHarnessOverviewSnapshot,
+  getConversationRuntimeSnapshot,
+  getAgentTopographySnapshot,
+  inspectContinuityTask,
+  validateLocalOriginRequest,
+  validateLocalAppBridgeRequest,
   validateControlMutationRequest,
+  logOperation,
+  safeString,
+  requestHeaderValue,
   sendJson,
+  validateJsonMutationContentType,
+  conversationApiRequiredContentType,
+  execApiRequiredContentType,
+  readRequestBody,
+  defaultRequestBodyLimitBytes,
+  piperVoiceRequestBodyLimitBytes,
+  kokoroVoiceRequestBodyLimitBytes,
+  conversationRequestBodyLimitBytes,
+  execRequestBodyLimitBytes,
+  normalizeBooleanFlag,
+  defaultPiperModelId,
+  nowTs,
+  preparePiperModel,
+  workspaceRoot,
+  resolvePiperVoiceRequestErrorStatus,
+  summarizeErrorForOperationLog,
+  speakWithPiper,
+  kokoroDefaultModel,
+  kokoroDefaultVoice,
+  kokoroDefaultLangCode,
+  requestKokoroSpeech,
+  resolveKokoroVoiceRequestErrorStatus,
+  normalizeConversationMessage,
+  normalizeConversationMode,
+  normalizeConversationPersonaUserId,
+  normalizeConversationLevel,
+  normalizeConversationTopic,
+  normalizeConversationHistoryItems,
+  getConversationPersonaContextForUser,
+  getDiagnosticsSnapshot,
+  buildSloRuntimeSnapshot,
+  maybeEmitSloAlert,
+  updateIntentProfileStore,
+  resetIntentProfileStore,
+  lockWorkspaceDirectory,
+  unlockWorkspaceDirectory,
+  requirementGuardMatcherDefaults,
+  evaluateRequirementGuardMatch,
+  getRequirementGuardMatcherSnapshot,
+  requirementGuardExtensionConfig,
+  requirementGuardOriginalRequirement,
+  openCmdWindowEnabled,
+  openCmdWindow,
+  conversationProvider,
+  conversationAppServerModel,
+  summarizeTextForOperationLog,
+  runConversationViaAppServer,
+  updateConversationPersonaMemoryForUser,
+  resolveConversationRequestErrorStatus,
+  conversationRequestTimeoutMs,
+  resetConversationPersonaMemoryForUser,
+  isRequestBodyTooLargeError,
+  getRegisteredAppRuntimeConfig,
+  normalizeExecModel,
+  conversationExecModelName,
+  normalizeAppRuntimeTimeoutMs,
+  resolveAppRuntimeWorkingDirectory,
+  runCodexReply,
+  runCodexStructuredOutput,
   evalRunHistoryMaxLines,
   readEvalRunHistory,
   summarizePathForOperationLog,
   evalRunHistoryPath,
-  validateJsonMutationContentType,
-  execApiRequiredContentType,
-  readRequestBody,
-  defaultRequestBodyLimitBytes,
   defaultEvalSuite,
   normalizeEvalSuite,
-  safeString,
   loadAgiV1ProfileConfig,
-  workspaceRoot,
   defaultExecAgentName,
   defaultExecModelName,
   normalizeEvalVariant,
@@ -15834,7 +13397,6 @@ const evalService=createEvalService({
   evalDefaultMaxVariants,
   evalMaxCases,
   evalCaseTimeoutMs,
-  normalizeBooleanFlag,
   evalLanePolicy,
   assertEvalLaneAccess,
   crypto,
@@ -15842,12 +13404,11 @@ const evalService=createEvalService({
   executeEvalVariantOnSuite,
   persistHarnessExecutionMemoryStore,
   syncGovernedMemoryGraphFromLiveRuntime,
-  logOperation,
-  summarizeErrorForOperationLog,
   compareEvalRuns,
   buildIndependentVerifierReport,
   buildCandidateBundle,
   loadAgiBundleFromPath,
+  fs,
   path,
   buildEvalRunGovernanceBundle,
   adoptionReadinessContract,
@@ -15857,47 +13418,41 @@ const evalService=createEvalService({
   appendEvalRunHistory,
   summarizeEvalLane,
   harnessMemoryPath,
-});
-
-const execService=createExecService({
-  validateControlMutationRequest,
-  logOperation,
-  safeString,
-  requestHeaderValue,
+  listReplayMemorySnapshots,
+  getReplayMemoryRecord,
+  buildReplayMemorySnapshot,
+  normalizeExecutionProfile,
+  isReproExecutionProfile,
+  normalizeSandboxMode,
+  normalizeApprovalPolicy,
+  normalizeExecModelReasoningEffort,
+  normalizeAgentName,
+  normalizeWorkingDirectory,
+  normalizeCodexMemoryMode,
+  normalizeRequestUserInputPolicy,
+  normalizeExecutionIntent,
+  runInternalExecRequest,
+  buildReplayDiffMetrics,
+  updateReplayMemoryStats,
+  hashSha256Hex,
+  getAppServerCapabilitySnapshot,
   controlApiTokenHeaderName,
-  sendJson,
   normalizeIdempotencyKey,
   normalizeExecIdempotencyWaitMs,
   waitForExecIdempotencyRecord,
   buildExecIdempotencySnapshot,
   getLatestTurnSnapshot,
-  validateJsonMutationContentType,
-  execApiRequiredContentType,
-  readRequestBody,
-  execRequestBodyLimitBytes,
   extractExecIdempotencyKey,
   defaultPromptCharLimit,
-  normalizeSandboxMode,
-  normalizeApprovalPolicy,
   normalizeWebSearchMode,
-  normalizeBooleanFlag,
   resolveFastModeEnabled,
   resolveAutomaticApprovalReviewEnabled,
-  normalizeExecModel,
-  defaultExecModelName,
-  normalizeExecModelReasoningEffort,
   defaultExecModelReasoningEffort,
-  normalizeAgentName,
-  normalizeWorkingDirectory,
-  workspaceRoot,
   normalizeChatImageAttachments,
-  normalizeRequestUserInputPolicy,
   nonInteractiveRequestUserInputPolicy,
-  normalizeExecutionProfile,
   runtimeExecutionProfile,
-  normalizeExecutionIntent,
   resolveWorkspaceGuardRequirement,
-  workspaceGuardLockedRoot,
+  getWorkspaceGuardLockedRoot:()=>workspaceGuardLockedRoot,
   buildWorkspaceGuardSnapshot,
   getOrCreateAgentState,
   derivePreviousPlanningContextForRequest,
@@ -15905,14 +13460,10 @@ const execService=createExecService({
   buildPromptAudit,
   resolveAgentName,
   validateRequestedAgentName,
-  isReproExecutionProfile,
   extractGovernanceOverride,
   normalizeOverrideRequest,
   buildWorkspaceGuardViolation,
-  summarizePathForOperationLog,
-  summarizeTextForOperationLog,
   claimExecIdempotencyKey,
-  hashSha256Hex,
   resolveExecTerminalStatusFromSnapshot,
   isResolvedExecLifecycleState,
   isSuccessfulExecTerminalStatus,
@@ -15924,92 +13475,34 @@ const execService=createExecService({
   writeChunk,
   releaseExecIdempotencyKey,
   resolveExecRequestErrorStatus,
-  summarizeErrorForOperationLog,
 });
 
-function handleEvalSuitesRequest(args){
-  return evalService.handleEvalSuitesRequest(args);
-}
-
-function handleEvalHistoryRequest(args){
-  return evalService.handleEvalHistoryRequest(args);
-}
-
-function handleEvalRunRequest(args){
-  return evalService.handleEvalRunRequest(args);
-}
-
-function handleExecIdempotencyRequest(args){
-  return execService.handleExecIdempotencyRequest(args);
-}
-
-function handleExecRequest(args){
-  return execService.handleExecRequest(args);
-}
-
-async function handleLegacyRuntimeRoute({req,res}){
-  await legacyRequestHandler(req,res);
-  return true;
-}
-
-function buildRequestHandlerContext(){
-  return{
-    appRegistry,
-    appPlatformReadSurface,
-    buildRuntimeApiSnapshot,
-    rewriteNativeAppApiPath,
-    resolveProxyAppForward,
-    proxyConfiguredAppRequest,
-    handleHarnessAppReplyRequest,
-    handleHarnessAppStructuredRequest,
-    sendJson,
-    handleLegacyRuntimeRoute,
-    buildIntentFirstApiSnapshot,
-    validateControlMutationRequest,
-    validateJsonMutationContentType,
-    execApiRequiredContentType,
-    readRequestBody,
-    defaultRequestBodyLimitBytes,
-    safeString,
-    updateIntentProfileStore,
-    resetIntentProfileStore,
-    lockWorkspaceDirectory,
-    unlockWorkspaceDirectory,
-    buildHarnessOverviewSnapshot,
-    getConversationRuntimeSnapshot,
-    normalizeConversationPersonaUserId,
-    getConversationPersonaContextForUser,
-    getAgentTopographySnapshot,
-    inspectContinuityTask,
-    workspaceRoot,
-    requirementGuardMatcherDefaults,
-    evaluateRequirementGuardMatch,
-    getRequirementGuardMatcherSnapshot,
-    requirementGuardExtensionConfig,
-    requirementGuardOriginalRequirement,
-    getDiagnosticsSnapshot,
-    buildSloRuntimeSnapshot,
-    maybeEmitSloAlert,
-    getPocStatusSnapshot,
-    execRequestBodyLimitBytes,
-    normalizePocBatchMode,
-    normalizeWorkingDirectory,
-    buildWorkspaceGuardViolation,
-    logOperation,
-    summarizePathForOperationLog,
-    workspaceGuardLockedRoot,
-    executePocBatchRun,
-    setPocSchedulerConfig,
-    normalizeBooleanFlag,
-    handleEvalSuitesRequest,
-    handleEvalHistoryRequest,
-    handleEvalRunRequest,
-    handleExecIdempotencyRequest,
-    handleExecRequest,
-  };
-}
-
-const requestHandler=createRequestHandler(buildRequestHandlerContext());
+const requestHandler=createRequestHandler(createRequestHandlerContext({
+  appRegistry,
+  appPlatformReadSurface,
+  buildRuntimeApiSnapshot,
+  rewriteNativeAppApiPath,
+  resolveProxyAppForward,
+  proxyConfiguredAppRequest,
+  services:routeServices,
+  sendJson,
+  handleLegacyRuntimeRoute,
+  getPocStatusSnapshot,
+  readRequestBody,
+  execRequestBodyLimitBytes,
+  defaultRequestBodyLimitBytes,
+  safeString,
+  normalizePocBatchMode,
+  normalizeWorkingDirectory,
+  workspaceRoot,
+  buildWorkspaceGuardViolation,
+  logOperation,
+  summarizePathForOperationLog,
+  getWorkspaceGuardLockedRoot:()=>workspaceGuardLockedRoot,
+  executePocBatchRun,
+  setPocSchedulerConfig,
+  normalizeBooleanFlag,
+}));
 
 const bootstrapState={};
 Object.defineProperties(bootstrapState,{
@@ -16125,16 +13618,7 @@ module.exports={
   refreshCurrentLogSurface:(trigger="manual")=>{
     loadHarnessExecutionMemoryStore();
     updateCurrentLogSurface({trigger:safeString(trigger,80)||"manual"});
-    return{
-      currentRoot:loggingSurfacePaths.currentRoot,
-      operatorSummaryPath:loggingSurfacePaths.currentOperatorSummaryPath,
-      runtimeSnapshotPath:loggingSurfacePaths.currentRuntimeSnapshotPath,
-      designConformancePath:loggingSurfacePaths.currentDesignConformancePath,
-      latestRunSummaryPath:loggingSurfacePaths.currentLatestRunSummaryPath,
-      reviewLoadBreakdownPath:loggingSurfacePaths.currentReviewLoadBreakdownPath,
-      latestSignoffSummaryPath:loggingSurfacePaths.currentLatestSignoffSummaryPath,
-      indexPath:loggingSurfacePaths.currentIndexPath,
-    };
+    return currentLogSurfaceService.buildRefreshCurrentLogSurfaceResult();
   },
   getHarnessServerState:()=>({
     port:webPort,
@@ -16152,6 +13636,9 @@ module.exports={
     pruneTurnArtifactsStorage,
     buildExecIdempotencySnapshot,
     normalizeExecIdempotencyWaitMs,
+    createTurnStreamStats,
+    collectTurnStreamItemStats,
+    normalizeObservedTurnSignals,
     CodexAppServerClient,
     TurnArtifactRecorder,
   },
@@ -16166,14 +13653,18 @@ module.exports={
   __codexModes:{
     automaticApprovalReviewFeatureName,
     buildForkedAgentState,
+    buildMemoryBridgeConfigEntries,
     createBaseAgentState,
     buildThreadStartConfig,
     defaultCodexServiceTier,
     defaultExperimentalFeatures,
+    derivePreviousPlanningContextForRequest,
     fastModeFeatureName,
     isWebSearchEnabledForMode,
+    normalizeCodexMemoryMode,
     normalizeWebSearchMode,
     normalizeCodexServiceTier,
+    normalizeDirectoryPathIdentity,
   },
   __runtimeVisibility:{
     buildFullUtilizationDefaultsSnapshot,
@@ -16190,3 +13681,7 @@ module.exports={
     },
   },
 };
+
+
+
+

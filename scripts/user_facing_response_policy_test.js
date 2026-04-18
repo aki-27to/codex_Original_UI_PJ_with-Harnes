@@ -88,6 +88,17 @@ function run() {
     "explicit readiness requests may still lead with program readiness"
   );
 
+  const ordinaryAnswerSingleParagraph = "program readiness is NOT_YET for the repo overall. The requested task is complete and the task verdict stays primary.";
+  assert.strictEqual(
+    stripLeadingProgramReadinessLead({
+      prompt: "Fix the completion wording regression.",
+      answer: ordinaryAnswerSingleParagraph,
+      taskOutcomeStatus: "COMPLETED",
+    }),
+    "The requested task is complete and the task verdict stays primary.",
+    "ordinary completed task answers must strip same-paragraph program readiness leads"
+  );
+
   const ordinaryResidualLead = [
     "This is still not complete because residual architecture debt remains.",
     "",
@@ -111,6 +122,17 @@ function run() {
     }),
     ordinaryResidualLead,
     "explicit blocker prompts may still lead with residual incompletion"
+  );
+
+  const ordinaryResidualLeadSingleParagraph = "This is still not complete because residual architecture debt remains. The requested task is complete and the task verdict stays primary.";
+  assert.strictEqual(
+    stripLeadingResidualIncompletionLead({
+      prompt: "Fix the completion wording regression.",
+      answer: ordinaryResidualLeadSingleParagraph,
+      taskOutcomeStatus: "COMPLETED",
+    }),
+    "The requested task is complete and the task verdict stays primary.",
+    "ordinary completed task answers must strip same-paragraph residual incompletion leads"
   );
 
   assert(

@@ -23,16 +23,18 @@
         "from": "parent",
         "to": "dispatch-1-backend_worker",
         "owned_paths": [
+          "server.js",
           "scripts/",
-          "server.js"
+          "app/"
         ]
       },
       {
         "from": "parent",
         "to": "dispatch-2-infra_worker",
         "owned_paths": [
-          "docs/",
-          "scripts/config/"
+          "docs/EVIDENCE_CONTRACT.md",
+          "docs/CURRENT_ARCHITECTURE.md",
+          "docs/ARCHITECTURE_CHANGELOG.md"
         ]
       }
     ]
@@ -42,19 +44,21 @@
       "dispatch_id": "dispatch-1-backend_worker",
       "actor": "backend_worker",
       "owned_paths": [
+        "server.js",
         "scripts/",
-        "server.js"
+        "app/"
       ],
-      "task_summary": "Own server-side orchestration, policies, and runtime behavior changes."
+      "task_summary": "サーバー側のオーケストレーション、ポリシー、runtime 振る舞い変更を担当する。"
     },
     {
       "dispatch_id": "dispatch-2-infra_worker",
       "actor": "infra_worker",
       "owned_paths": [
-        "docs/",
-        "scripts/config/"
+        "docs/EVIDENCE_CONTRACT.md",
+        "docs/CURRENT_ARCHITECTURE.md",
+        "docs/ARCHITECTURE_CHANGELOG.md"
       ],
-      "task_summary": "Own contracts, docs sync, runtime observability, and signoff-facing evidence updates."
+      "task_summary": "契約、docs sync、runtime 可観測性、signoff 向け証跡更新を担当する。"
     }
   ],
   "required_evidence_classes": [
@@ -69,6 +73,9 @@
     "stage_timeline",
     "flow_trace_summary",
     "review_load_breakdown",
+    "layout_integrity_review",
+    "worst_state_capture",
+    "copy_fit_review",
     "reviewer_summary",
     "tester_summary",
     "signoff_bundle",
@@ -81,32 +88,32 @@
     "dedicated_tests_required": 1
   },
   "routing_rationale": [
+    "taskFamily=planning_design",
+    "familyAmbiguityHandling=surface_decisions",
     "ambiguity=2",
-    "acceptance_uncertainty=0",
+    "acceptance_uncertainty=1",
     "novelty=2",
     "external_dependency=0",
     "openQuestions=0",
-    "acceptanceClarity=high",
+    "acceptanceClarity=medium",
     "specialistBoundaries=4",
     "approvalBoundaryTouched=no",
     "overDeliveryRisk=medium",
     "userDecisionRequired=no",
-    "assumptionDependence=low",
-    "existingSpecClarity=high",
-    "changeScopeClarity=medium",
-    "blast_radius=2",
-    "irreversibility=0",
-    "release_criticality=2"
+    "clarificationAction=proceed",
+    "clarificationReason=task_family_not_design_sensitive",
+    "benchmarkCandidates=0",
+    "assumptionDependence=low"
   ],
   "planning_score": {
     "ambiguity": 2,
-    "acceptance_uncertainty": 0,
+    "acceptance_uncertainty": 1,
     "novelty": 2,
     "external_dependency": 0,
-    "total": 4,
+    "total": 5,
     "rationale": [
       "ambiguity=2",
-      "acceptance_uncertainty=0",
+      "acceptance_uncertainty=1",
       "novelty=2",
       "external_dependency=0"
     ]

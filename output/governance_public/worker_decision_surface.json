@@ -1,17 +1,17 @@
 {
   "schema": "worker-decision-surface.v1",
-  "generatedAt": "2026-04-12T08:44:25.099Z",
+  "generatedAt": "2026-04-18T06:42:29.260Z",
   "scope": "worker_decision",
-  "exportSessionId": "export_a63636ff0a86",
+  "exportSessionId": "export_69aaf0d22042",
   "decisionQuestion": "Can the governed worker stop here without unnecessary human interruption?",
   "topLevelOutcome": "ADOPTABLE_COMPLETE",
   "topLevelSummary": "The worker can close in place: adoption readiness passed, latent intent stayed aligned, and no extra human interruption is required.",
   "taskOutcomeStatus": "COMPLETED",
   "taskOutcomeReason": "completed_default",
-  "releaseState": "RELEASE_APPROVED_WITH_ASSUMPTIONS",
+  "releaseState": "RELEASE_APPROVED",
   "releaseApproved": 1,
   "adoptionReady": 1,
-  "adoptionReadiness": 0.9683,
+  "adoptionReadiness": 0.9567,
   "adoptionReadinessThreshold": 0.8,
   "latentIntentAlignment": 0.92,
   "literalRequirementAlignment": 1,
@@ -41,16 +41,17 @@
     "evidenceRefCount": 11,
     "supportingArtifactCount": 11,
     "blockerCount": 0,
-    "residualRiskCount": 1,
+    "residualRiskCount": 2,
     "assumptionCount": 2,
-    "taskOutcomeCount": 5
+    "taskOutcomeCount": 4
   },
   "blockers": [],
   "residualRisks": [
+    "Dense, interrupted, critical, and longest-copy states must be visually checked for overflow, clipping, collisions, and copy-fit before signoff.",
     "New logic or protocol-sensitive behavior requires dedicated verification before signoff."
   ],
   "assumptions": [
-    "Any scope outside the explicit goal should stay proposal-only unless the prompt states otherwise.",
+    "明示ゴールの外側は、入力で明示されていない限り提案止まりにする。",
     "Unresolved ambiguity must not be auto-answered by the harness."
   ],
   "intentTrace": {

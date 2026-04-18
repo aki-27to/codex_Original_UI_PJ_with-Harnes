@@ -1,109 +1,858 @@
 {
-  "schema": "requirement-contract.v2",
+  "schema": "requirement-contract.v5",
   "source": "runtime_inferred_pre_dispatch",
-  "promptHash": "b89aceb44c5dbd4fc7f3f635a6c6d67971f8459f9ca957f9f53dcb387ed99ad8",
-  "explicitGoal": "Complete one signoff-assurance maintenance task now.",
+  "owner": "intake",
+  "promptHash": "29a1c0eb376ee1bdd88ec3bf2be1f4b0e360fa2607e10bf468a53fadb79403f9",
+  "explicitGoal": "Implementation is explicitly requested now.Requirements are fixed.Do not switch to proposal-only mode and do not ask follow-up questions.",
   "implicitGoal": "",
+  "lockedGoal": "Implementation is explicitly requested now.Requirements are fixed.Do not switch to proposal-only mode and do not ask follow-up questions.",
+  "taskFamily": "planning_design",
+  "familyProfileId": "planning_design",
   "baselineScope": [
     "Implementation is explicitly requested now. Requirements are fixed. Do not switch to proposal-only mode and do not ask follow-up questions.",
     "Use the default parent orchestration path.",
     "Delegate the implementation edits to infra_worker.",
     "Request independent read-only reviewer and tester checks before finalizing.",
-    "Change logs/bundles/signoff/signoff-2026-03-09T12-31-59-842Z-24dd95/raw/scripts/config/signoff_sample_target.txt, docs/EVIDENCE_CONTRACT.md, docs/CURRENT_ARCHITECTURE.md, and docs/ARCHITECTURE_CHANGELOG.md.",
+    "Change logs/bundles/signoff/signoff-2026-04-18T05-27-13-996Z-f97810/raw/scripts/config/signoff_sample_target.txt, docs/EVIDENCE_CONTRACT.md, docs/CURRENT_ARCHITECTURE.md, and docs/ARCHITECTURE_CHANGELOG.md.",
     "Do not modify any other file and do not revert unrelated edits.",
     "Use apply_patch for file edits.",
     "The implementation specialist must report using this exact header format:",
     "Owned paths:",
     "`<absolute path>`",
-    "In logs/bundles/signoff/signoff-2026-03-09T12-31-59-842Z-24dd95/raw/scripts/config/signoff_sample_target.txt, replace the single line `gate: pending` with `gate: signed`.",
+    "In logs/bundles/signoff/signoff-2026-04-18T05-27-13-996Z-f97810/raw/scripts/config/signoff_sample_target.txt, replace the single line `gate: pending` with `gate: signed`.",
     "In docs/EVIDENCE_CONTRACT.md, add this exact bullet if it is not already present: - `SIGNOFF_ASSURANCE` runs should surface reviewer/tester/doc-sync status in `review_load_breakdown.json` for operator signoff.",
-    "In docs/CURRENT_ARCHITECTURE.md, add this exact architecture bullet if it is not already present: - `SIGNOFF_ASSURANCE` sample runs keep planning depth, assurance depth, reviewer/tester execution, and doc-sync evidence co-located in signoff",
-    "In docs/ARCHITECTURE_CHANGELOG.md, add this exact changelog line if it is not already present: - 2026-03-08: Added signoff assurance sample evidence wiring for planning/assurance trace and doc-sync bundle checks."
+    "In docs/CURRENT_ARCHITECTURE.md, add this exact architecture bullet if it is not already present: - `SIGNOFF_ASSURANCE` sample runs keep reviewer/tester execution and doc-sync evidence co-located in signoff bundles.",
+    "In docs/ARCHITECTURE_CHANGELOG.md, add this exact changelog line if it is not already present: - 2026-03-08: Added signoff assurance sample evidence wiring for planning/assurance trace and doc-sync bundle checks.",
+    "Return with exactly: SIGNOFF_TASK_OK logs/bundles/signoff/signoff-2026-04-18T05-27-13-996Z-f97810/raw/scripts/config/signoff_sample_target.txt.",
+    "No follow-up questions are required."
   ],
   "overDeliveryScope": [],
   "nonGoals": [],
   "assumptions": [
-    "Any scope outside the explicit goal should stay proposal-only unless the prompt states otherwise."
+    "明示ゴールの外側は、入力で明示されていない限り提案止まりにする。"
   ],
   "openQuestions": [],
   "approvalBoundaryItems": [],
   "acceptanceChecks": [
     {
       "id": "ac-1",
-      "title": "The target file contains `gate: signed`.",
-      "source": "prompt_section",
-      "blocking": true
-    },
-    {
-      "id": "ac-2",
-      "title": "The evidence contract bullet is present.",
-      "source": "prompt_section",
-      "blocking": true
-    },
-    {
-      "id": "ac-3",
-      "title": "The architecture bullet is present.",
-      "source": "prompt_section",
-      "blocking": true
-    },
-    {
-      "id": "ac-4",
-      "title": "The changelog line is present.",
-      "source": "prompt_section",
-      "blocking": true
-    },
-    {
-      "id": "ac-5",
-      "title": "Reviewer evidence is present and the reviewer remains read-only.",
-      "source": "prompt_section",
-      "blocking": true
-    },
-    {
-      "id": "ac-6",
-      "title": "Tester evidence is present and includes pass/fail verification.",
-      "source": "prompt_section",
-      "blocking": true
-    },
-    {
-      "id": "ac-7",
-      "title": "No follow-up questions are required.",
-      "source": "prompt_section",
-      "blocking": true
-    },
-    {
-      "id": "ac-8",
-      "title": "Final reply must be exactly: SIGNOFF_TASK_OK logs/bundles/signoff/signoff-2026-03-09T12-31-59-842Z-24dd95/raw/scripts/config/signoff_sample_target.txt",
+      "title": "Requested signoff edits, reviewer/tester evidence, and doc-sync evidence are all present.",
       "source": "prompt_section",
       "blocking": true
     }
   ],
+  "intentLock": {
+    "schema": "intent-lock.v1",
+    "source": "runtime_inferred_pre_dispatch",
+    "userRequest": "Implementation is explicitly requested now.Requirements are fixed.Do not switch to proposal-only mode and do not ask follow-up questions.",
+    "latentIntent": "結論を押しつける前に、選択肢とトレードオフ、実行した場合の影響を整理して、次の判断をしやすくする。",
+    "prohibitedPatterns": [
+      "早すぎる一択の断定。",
+      "実行影響が見えないふわっとした計画。",
+      "重要なトレードオフの見落とし。",
+      "Implementation is explicitly requested now. Requirements are fixed. Do not switch to proposal-only mode and do not ask follow-up questions.",
+      "Do not modify any other file and do not revert unrelated edits."
+    ],
+    "winSignals": [
+      "トレードオフ、リスク、次の一手が分かり、進路を選べる。",
+      "Requested signoff edits, reviewer/tester evidence, and doc-sync evidence are all present."
+    ],
+    "nonTargets": [],
+    "lockStatus": "locked"
+  },
+  "acceptanceLock": {
+    "schema": "acceptance-lock.v1",
+    "source": "runtime_inferred_pre_dispatch",
+    "passConditions": [
+      "Requested signoff edits, reviewer/tester evidence, and doc-sync evidence are all present."
+    ],
+    "failureConditions": [
+      "Failure if unmet: Requested signoff edits, reviewer/tester evidence, and doc-sync evidence are all present.",
+      "Failure if the outcome drifts from the locked goal or approved scope.",
+      "Failure if text overflow, clipping, or collisions remain unresolved.",
+      "Failure if required evidence is missing at closeout."
+    ],
+    "requiredEvidence": [
+      "acceptance check evidence",
+      "review evidence",
+      "technical verification evidence",
+      "replay verification evidence",
+      "Requested signoff edits, reviewer/tester evidence, and doc-sync evidence are all present."
+    ],
+    "lockStatus": "locked"
+  },
+  "userValueFrame": {
+    "valueThesis": "結論を押しつける前に、選択肢とトレードオフ、実行した場合の影響を整理して、次の判断をしやすくする。",
+    "userWants": [
+      "Implementation is explicitly requested now.Requirements are fixed.Do not switch to proposal-only mode and do not ask follow-up questions.",
+      "Implementation is explicitly requested now. Requirements are fixed. Do not switch to proposal-only mode and do not ask follow-up questions.",
+      "Use the default parent orchestration path.",
+      "Delegate the implementation edits to infra_worker.",
+      "Request independent read-only reviewer and tester checks before finalizing.",
+      "Change logs/bundles/signoff/signoff-2026-04-18T05-27-13-996Z-f97810/raw/scripts/config/signoff_sample_target.txt, docs/EVIDENCE_CONTRACT.md, docs/CURRENT_ARCHITECTURE.md, and docs/ARCHITECTURE_CHANGELOG.md.",
+      "Do not modify any other file and do not revert unrelated edits.",
+      "Use apply_patch for file edits."
+    ],
+    "userShouldFeelGet": [
+      "次に何を決めるべきかが、前より曖昧でなくなる。",
+      "おすすめだけでなく、差分や影響まで理解できる。"
+    ],
+    "mustAvoid": [
+      "早すぎる一択の断定。",
+      "実行影響が見えないふわっとした計画。",
+      "重要なトレードオフの見落とし。",
+      "Implementation is explicitly requested now. Requirements are fixed. Do not switch to proposal-only mode and do not ask follow-up questions.",
+      "Do not modify any other file and do not revert unrelated edits."
+    ],
+    "hardConstraints": [
+      "Implementation is explicitly requested now. Requirements are fixed. Do not switch to proposal-only mode and do not ask follow-up questions.",
+      "Request independent read-only reviewer and tester checks before finalizing.",
+      "Do not modify any other file and do not revert unrelated edits.",
+      "The implementation specialist must report using this exact header format:",
+      "In docs/CURRENT_ARCHITECTURE.md, add this exact architecture bullet if it is not already present: - `SIGNOFF_ASSURANCE` sample runs keep reviewer/tester execution and doc-sync evidence co-located in signoff bundles.",
+      "Return with exactly: SIGNOFF_TASK_OK logs/bundles/signoff/signoff-2026-04-18T05-27-13-996Z-f97810/raw/scripts/config/signoff_sample_target.txt.",
+      "No follow-up questions are required."
+    ],
+    "qualityAxes": [
+      "decision_support",
+      "tradeoff_clarity",
+      "option_quality",
+      "execution_readiness",
+      "risk_visibility"
+    ],
+    "benchmarkCandidates": [],
+    "completedMeans": [
+      "トレードオフ、リスク、次の一手が分かり、進路を選べる。",
+      "Requested signoff edits, reviewer/tester evidence, and doc-sync evidence are all present."
+    ]
+  },
+  "intentInterpretation": {
+    "presentation": "goal",
+    "questionLike": false,
+    "direction": "",
+    "hypothesis": ""
+  },
+  "intentHypotheses": [
+    {
+      "id": "hypothesis_1",
+      "goal": "Implementation is explicitly requested now.Requirements are fixed.Do not switch to proposal-only mode and do not ask follow-up questions.",
+      "confidence": 100,
+      "evidence": [
+        "locked_goal",
+        "validated_contract"
+      ],
+      "locked": true
+    }
+  ],
+  "challengeReport": {
+    "summary": "Assumption still carries execution risk: 明示ゴールの外側は、入力で明示されていない限り提案止まりにする。",
+    "proceedRisk": "medium",
+    "findings": [
+      {
+        "id": "hidden_assumption_1",
+        "type": "hidden_assumption",
+        "severity": "medium",
+        "detail": "Assumption still carries execution risk: 明示ゴールの外側は、入力で明示されていない限り提案止まりにする。",
+        "requirementRef": "assumptions"
+      },
+      {
+        "id": "scope_gap_2",
+        "type": "scope_gap",
+        "severity": "medium",
+        "detail": "Non-goals are not explicit yet, so scope drift risk remains.",
+        "requirementRef": "nonGoals"
+      }
+    ]
+  },
+  "questionPlan": {
+    "summary": "",
+    "blocking": [],
+    "defaultable": [],
+    "taste": [],
+    "askNext": []
+  },
+  "delightPlan": {
+    "summary": "",
+    "candidates": []
+  },
+  "requestCoverage": {
+    "rawRequestClauses": [
+      {
+        "id": "req-1",
+        "text": "Implementation is explicitly requested now.Requirements are fixed.Do not switch to proposal-only mode and do not ask follow-up questions.",
+        "kind": "constraint",
+        "lane": "core"
+      },
+      {
+        "id": "req-2",
+        "text": "Use the default parent orchestration path.",
+        "kind": "explicit_request",
+        "lane": "core"
+      },
+      {
+        "id": "req-3",
+        "text": "Delegate the implementation edits to infra_worker.",
+        "kind": "explicit_request",
+        "lane": "core"
+      },
+      {
+        "id": "req-4",
+        "text": "Request independent read-only reviewer and tester checks before finalizing.",
+        "kind": "constraint",
+        "lane": "core"
+      },
+      {
+        "id": "req-5",
+        "text": "Change logs/bundles/signoff/signoff-2026-04-18T05-27-13-996Z-f97810/raw/scripts/config/signoff_sample_target.txt, docs/EVIDENCE_CONTRACT.md, docs/CURRENT_ARCHITECTURE.md, and docs/ARCHITECTURE_CHANGELOG.md.",
+        "kind": "explicit_request",
+        "lane": "core"
+      },
+      {
+        "id": "req-6",
+        "text": "Do not modify any other file and do not revert unrelated edits.",
+        "kind": "constraint",
+        "lane": "core"
+      },
+      {
+        "id": "req-7",
+        "text": "Use apply_patch for file edits.",
+        "kind": "explicit_request",
+        "lane": "core"
+      },
+      {
+        "id": "req-8",
+        "text": "The implementation specialist must report using this exact header format:",
+        "kind": "constraint",
+        "lane": "core"
+      },
+      {
+        "id": "req-9",
+        "text": "Owned paths:",
+        "kind": "explicit_request",
+        "lane": "core"
+      },
+      {
+        "id": "req-10",
+        "text": "`<absolute path>`",
+        "kind": "explicit_request",
+        "lane": "core"
+      },
+      {
+        "id": "req-11",
+        "text": "In logs/bundles/signoff/signoff-2026-04-18T05-27-13-996Z-f97810/raw/scripts/config/signoff_sample_target.txt, replace the single line `gate: pending` with `gate: signed`.",
+        "kind": "explicit_request",
+        "lane": "core"
+      },
+      {
+        "id": "req-12",
+        "text": "In docs/EVIDENCE_CONTRACT.md, add this exact bullet if it is not already present: - `SIGNOFF_ASSURANCE` runs should surface reviewer/tester/doc-sync status in `review_load_breakdown.json` for operator signoff.",
+        "kind": "explicit_request",
+        "lane": "core"
+      },
+      {
+        "id": "req-13",
+        "text": "In docs/CURRENT_ARCHITECTURE.md, add this exact architecture bullet if it is not already present: - `SIGNOFF_ASSURANCE` sample runs keep reviewer/tester execution and doc-sync evidence co-located in signoff bundles.",
+        "kind": "constraint",
+        "lane": "core"
+      },
+      {
+        "id": "req-14",
+        "text": "In docs/ARCHITECTURE_CHANGELOG.md, add this exact changelog line if it is not already present: - 2026-03-08: Added signoff assurance sample evidence wiring for planning/assurance trace and doc-sync bundle checks.",
+        "kind": "explicit_request",
+        "lane": "core"
+      },
+      {
+        "id": "req-15",
+        "text": "Return with exactly: SIGNOFF_TASK_OK logs/bundles/signoff/signoff-2026-04-18T05-27-13-996Z-f97810/raw/scripts/config/signoff_sample_target.txt.",
+        "kind": "constraint",
+        "lane": "core"
+      },
+      {
+        "id": "req-16",
+        "text": "No follow-up questions are required.",
+        "kind": "constraint",
+        "lane": "core"
+      },
+      {
+        "id": "req-17",
+        "text": "Requested signoff edits, reviewer/tester evidence, and doc-sync evidence are all present.",
+        "kind": "verification_method",
+        "lane": "core"
+      }
+    ],
+    "coreObligations": [
+      "req-1",
+      "req-2",
+      "req-3",
+      "req-4",
+      "req-5",
+      "req-6",
+      "req-7",
+      "req-8",
+      "req-9",
+      "req-10",
+      "req-11",
+      "req-12",
+      "req-13",
+      "req-14",
+      "req-15",
+      "req-16",
+      "req-17"
+    ],
+    "mappedRequirements": [
+      {
+        "clauseId": "req-1",
+        "requirementRefs": [
+          "explicitGoal",
+          "intentHypotheses",
+          "baselineScope",
+          "userValueFrame.userWants",
+          "userValueFrame.hardConstraints",
+          "userValueFrame.mustAvoid"
+        ]
+      },
+      {
+        "clauseId": "req-2",
+        "requirementRefs": [
+          "baselineScope",
+          "userValueFrame.userWants"
+        ]
+      },
+      {
+        "clauseId": "req-3",
+        "requirementRefs": [
+          "baselineScope",
+          "userValueFrame.userWants"
+        ]
+      },
+      {
+        "clauseId": "req-4",
+        "requirementRefs": [
+          "baselineScope",
+          "userValueFrame.userWants",
+          "userValueFrame.hardConstraints"
+        ]
+      },
+      {
+        "clauseId": "req-5",
+        "requirementRefs": [
+          "baselineScope",
+          "userValueFrame.userWants"
+        ]
+      },
+      {
+        "clauseId": "req-6",
+        "requirementRefs": [
+          "baselineScope",
+          "userValueFrame.userWants",
+          "userValueFrame.hardConstraints",
+          "userValueFrame.mustAvoid"
+        ]
+      },
+      {
+        "clauseId": "req-7",
+        "requirementRefs": [
+          "baselineScope",
+          "userValueFrame.userWants"
+        ]
+      },
+      {
+        "clauseId": "req-8",
+        "requirementRefs": [
+          "baselineScope",
+          "userValueFrame.hardConstraints"
+        ]
+      },
+      {
+        "clauseId": "req-9",
+        "requirementRefs": [
+          "baselineScope"
+        ]
+      },
+      {
+        "clauseId": "req-10",
+        "requirementRefs": [
+          "baselineScope"
+        ]
+      },
+      {
+        "clauseId": "req-11",
+        "requirementRefs": [
+          "baselineScope"
+        ]
+      },
+      {
+        "clauseId": "req-12",
+        "requirementRefs": [
+          "baselineScope"
+        ]
+      },
+      {
+        "clauseId": "req-13",
+        "requirementRefs": [
+          "baselineScope",
+          "userValueFrame.hardConstraints"
+        ]
+      },
+      {
+        "clauseId": "req-14",
+        "requirementRefs": [
+          "baselineScope"
+        ]
+      },
+      {
+        "clauseId": "req-15",
+        "requirementRefs": [
+          "baselineScope",
+          "userValueFrame.hardConstraints"
+        ]
+      },
+      {
+        "clauseId": "req-16",
+        "requirementRefs": [
+          "baselineScope",
+          "userValueFrame.hardConstraints"
+        ]
+      },
+      {
+        "clauseId": "req-17",
+        "requirementRefs": [
+          "acceptanceChecks",
+          "userValueFrame.completedMeans"
+        ]
+      }
+    ],
+    "parkedItems": [],
+    "droppedItems": [],
+    "coverageSummary": {
+      "totalClauses": 17,
+      "mappedCount": 17,
+      "coreTotal": 17,
+      "coreMapped": 17,
+      "coreUnmapped": 0,
+      "parkedCount": 0,
+      "droppedCount": 0
+    }
+  },
+  "displayContract": {
+    "headline": "Implementation is explicitly requested now.Requirements are fixed.Do not switch to proposal-only mode and do not ask follow-up questions.",
+    "goal": "Implementation is explicitly requested now.Requirements are fixed.Do not switch to proposal-only mode and do not ask follow-up questions.",
+    "goalMode": "locked",
+    "goalLabel": "locked_goal",
+    "nextAction": "Plan around Requested signoff edits, reviewer/tester evidence, and doc-sync evidence are all present.",
+    "holdReason": "",
+    "targetOutcome": "トレードオフ、リスク、次の一手が分かり、進路を選べる。",
+    "boundaries": [
+      "早すぎる一択の断定。",
+      "実行影響が見えないふわっとした計画。",
+      "Implementation is explicitly requested now. Requirements are fixed. Do not switch to proposal-only mode and do not ask follow-up questions.",
+      "Request independent read-only reviewer and tester checks before finalizing.",
+      "重要なトレードオフの見落とし。",
+      "Do not modify any other file and do not revert unrelated edits."
+    ],
+    "askNext": [],
+    "delightTitles": []
+  },
+  "status": "LOCKED",
+  "statusReason": "Requirement contract is validated enough to proceed into planning and specialist dispatch.",
+  "provenance": {
+    "explicitGoal": {
+      "source": "user_explicit",
+      "reason": "prompt_line"
+    },
+    "implicitGoal": {
+      "source": "policy_default",
+      "reason": "missing"
+    },
+    "nonGoals": [],
+    "userValueFrame": {
+      "valueThesis": {
+        "source": "policy_default",
+        "reason": "task_family_default"
+      },
+      "userWants": [
+        {
+          "value": "Implementation is explicitly requested now.Requirements are fixed.Do not switch to proposal-only mode and do not ask follow-up questions.",
+          "source": "user_explicit",
+          "reason": "explicit_goal"
+        },
+        {
+          "value": "Implementation is explicitly requested now. Requirements are fixed. Do not switch to proposal-only mode and do not ask follow-up questions.",
+          "source": "user_explicit",
+          "reason": "explicit_goal"
+        },
+        {
+          "value": "Use the default parent orchestration path.",
+          "source": "user_explicit",
+          "reason": "baseline_scope"
+        },
+        {
+          "value": "Delegate the implementation edits to infra_worker.",
+          "source": "user_implied",
+          "reason": "baseline_scope"
+        },
+        {
+          "value": "Request independent read-only reviewer and tester checks before finalizing.",
+          "source": "user_implied",
+          "reason": "baseline_scope"
+        },
+        {
+          "value": "Change logs/bundles/signoff/signoff-2026-04-18T05-27-13-996Z-f97810/raw/scripts/config/signoff_sample_target.txt, docs/EVIDENCE_CONTRACT.md, docs/CURRENT_ARCHITECTURE.md, and docs/ARCHITECTURE_CHANGELOG.md.",
+          "source": "user_implied",
+          "reason": "baseline_scope"
+        },
+        {
+          "value": "Do not modify any other file and do not revert unrelated edits.",
+          "source": "user_implied",
+          "reason": "baseline_scope"
+        },
+        {
+          "value": "Use apply_patch for file edits.",
+          "source": "user_implied",
+          "reason": "baseline_scope"
+        }
+      ],
+      "userShouldFeelGet": [
+        {
+          "value": "次に何を決めるべきかが、前より曖昧でなくなる。",
+          "source": "policy_default",
+          "reason": "family_default_signal"
+        },
+        {
+          "value": "おすすめだけでなく、差分や影響まで理解できる。",
+          "source": "policy_default",
+          "reason": "family_default_signal"
+        }
+      ],
+      "mustAvoid": [
+        {
+          "value": "早すぎる一択の断定。",
+          "source": "policy_default",
+          "reason": "family_default_guardrail"
+        },
+        {
+          "value": "実行影響が見えないふわっとした計画。",
+          "source": "policy_default",
+          "reason": "family_default_guardrail"
+        },
+        {
+          "value": "重要なトレードオフの見落とし。",
+          "source": "policy_default",
+          "reason": "family_default_guardrail"
+        },
+        {
+          "value": "Implementation is explicitly requested now. Requirements are fixed. Do not switch to proposal-only mode and do not ask follow-up questions.",
+          "source": "user_explicit",
+          "reason": "avoidance_directive"
+        },
+        {
+          "value": "Do not modify any other file and do not revert unrelated edits.",
+          "source": "user_explicit",
+          "reason": "avoidance_directive"
+        }
+      ],
+      "hardConstraints": [
+        {
+          "value": "Implementation is explicitly requested now. Requirements are fixed. Do not switch to proposal-only mode and do not ask follow-up questions.",
+          "source": "user_explicit",
+          "reason": "constraint_directive"
+        },
+        {
+          "value": "Request independent read-only reviewer and tester checks before finalizing.",
+          "source": "user_explicit",
+          "reason": "constraint_directive"
+        },
+        {
+          "value": "Do not modify any other file and do not revert unrelated edits.",
+          "source": "user_explicit",
+          "reason": "constraint_directive"
+        },
+        {
+          "value": "The implementation specialist must report using this exact header format:",
+          "source": "user_explicit",
+          "reason": "constraint_directive"
+        },
+        {
+          "value": "In docs/CURRENT_ARCHITECTURE.md, add this exact architecture bullet if it is not already present: - `SIGNOFF_ASSURANCE` sample runs keep reviewer/tester execution and doc-sync evidence co-located in signoff bundles.",
+          "source": "user_explicit",
+          "reason": "constraint_directive"
+        },
+        {
+          "value": "Return with exactly: SIGNOFF_TASK_OK logs/bundles/signoff/signoff-2026-04-18T05-27-13-996Z-f97810/raw/scripts/config/signoff_sample_target.txt.",
+          "source": "user_explicit",
+          "reason": "constraint_directive"
+        },
+        {
+          "value": "No follow-up questions are required.",
+          "source": "user_explicit",
+          "reason": "constraint_directive"
+        }
+      ],
+      "qualityAxes": [
+        {
+          "value": "decision_support",
+          "source": "policy_default",
+          "reason": "family_default_quality_axis"
+        },
+        {
+          "value": "tradeoff_clarity",
+          "source": "policy_default",
+          "reason": "family_default_quality_axis"
+        },
+        {
+          "value": "option_quality",
+          "source": "policy_default",
+          "reason": "family_default_quality_axis"
+        },
+        {
+          "value": "execution_readiness",
+          "source": "policy_default",
+          "reason": "family_default_quality_axis"
+        },
+        {
+          "value": "risk_visibility",
+          "source": "policy_default",
+          "reason": "family_default_quality_axis"
+        }
+      ],
+      "benchmarkCandidates": [],
+      "completedMeans": [
+        {
+          "value": "トレードオフ、リスク、次の一手が分かり、進路を選べる。",
+          "source": "policy_default",
+          "reason": "family_default_completion"
+        },
+        {
+          "value": "Requested signoff edits, reviewer/tester evidence, and doc-sync evidence are all present.",
+          "source": "user_explicit",
+          "reason": "acceptance_completion"
+        }
+      ]
+    },
+    "intentInterpretation": {
+      "presentation": {
+        "source": "policy_default",
+        "reason": "default_goal_presentation"
+      },
+      "questionLike": {
+        "source": "policy_default",
+        "reason": "not_question"
+      },
+      "direction": {
+        "source": "policy_default",
+        "reason": "no_direction_interpretation"
+      },
+      "hypothesis": {
+        "source": "policy_default",
+        "reason": "no_hypothesis_interpretation"
+      }
+    }
+  },
+  "validation": {
+    "schema": "requirement-validation.v1",
+    "source": "runtime_inferred_pre_dispatch",
+    "verdict": "PASS",
+    "canProceed": true,
+    "summary": {
+      "passCount": 12,
+      "warnCount": 0,
+      "blockCount": 0,
+      "total": 12
+    },
+    "checks": [
+      {
+        "id": "goal_present",
+        "title": "Primary goal is locked",
+        "status": "PASS",
+        "detail": "A concrete goal anchor exists for planning.",
+        "fieldRefs": [
+          "lockedGoal",
+          "explicitGoal",
+          "intentHypotheses"
+        ]
+      },
+      {
+        "id": "intent_lock_defined",
+        "title": "Intent lock separates user value from downstream checks",
+        "status": "PASS",
+        "detail": "Intent lock captures the request, latent intent, and non-target boundaries separately from acceptance.",
+        "fieldRefs": [
+          "intentLock",
+          "lockedGoal",
+          "explicitGoal",
+          "intentHypotheses",
+          "nonGoals",
+          "userValueFrame.completedMeans"
+        ]
+      },
+      {
+        "id": "acceptance_defined",
+        "title": "Acceptance checks are concrete",
+        "status": "PASS",
+        "detail": "Acceptance checks locked: 1.",
+        "fieldRefs": [
+          "acceptanceChecks",
+          "baselineScope"
+        ]
+      },
+      {
+        "id": "acceptance_lock_defined",
+        "title": "Acceptance lock makes pass, fail, and evidence rules explicit",
+        "status": "PASS",
+        "detail": "Acceptance lock explicitly records pass conditions, failure conditions, and required evidence.",
+        "fieldRefs": [
+          "acceptanceLock",
+          "acceptanceChecks"
+        ]
+      },
+      {
+        "id": "blocking_questions_clear",
+        "title": "Blocking open questions are cleared",
+        "status": "PASS",
+        "detail": "No blocking open questions remain in the requirement contract.",
+        "fieldRefs": [
+          "openQuestions"
+        ]
+      },
+      {
+        "id": "approval_boundary_clear",
+        "title": "Approval boundaries are recorded and triaged",
+        "status": "PASS",
+        "detail": "No approval-boundary metadata remains.",
+        "fieldRefs": [
+          "approvalBoundaryItems"
+        ]
+      },
+      {
+        "id": "contract_consistency",
+        "title": "Goal and guardrails do not contradict each other",
+        "status": "PASS",
+        "detail": "No direct contradiction was detected between goal, non-goals, and must-avoid guardrails.",
+        "fieldRefs": [
+          "lockedGoal",
+          "explicitGoal",
+          "intentHypotheses",
+          "nonGoals",
+          "userValueFrame.mustAvoid"
+        ]
+      },
+      {
+        "id": "provenance_coverage",
+        "title": "Critical requirement fields record where they came from",
+        "status": "PASS",
+        "detail": "Goal, value frame, and intent interpretation carry provenance tags.",
+        "fieldRefs": [
+          "provenance"
+        ]
+      },
+      {
+        "id": "request_coverage_core_mapped",
+        "title": "Core request obligations are mapped into the contract",
+        "status": "PASS",
+        "detail": "Core request obligations mapped: 17/17.",
+        "fieldRefs": [
+          "requestCoverage.coreObligations",
+          "requestCoverage.mappedRequirements",
+          "requestCoverage.coverageSummary"
+        ]
+      },
+      {
+        "id": "request_coverage_parked_reasoned",
+        "title": "Parked request items explain why they are parked",
+        "status": "PASS",
+        "detail": "Every parked request item records why it is deferred.",
+        "fieldRefs": [
+          "requestCoverage.parkedItems"
+        ]
+      },
+      {
+        "id": "request_coverage_dropped_reasoned",
+        "title": "Dropped request items explain the exclusion",
+        "status": "PASS",
+        "detail": "Every dropped request item records a machine-readable reasonCode and explanation.",
+        "fieldRefs": [
+          "requestCoverage.droppedItems"
+        ]
+      },
+      {
+        "id": "revision_safety",
+        "title": "Revision history is legible",
+        "status": "PASS",
+        "detail": "No material requirement revision was detected from the previous turn.",
+        "fieldRefs": [
+          "revisionLedger"
+        ]
+      }
+    ]
+  },
+  "revisionLedger": {
+    "revisionNumber": 1,
+    "revised": false,
+    "revisionKind": "initial",
+    "changedFields": [],
+    "previousPromptHash": "",
+    "previousStatus": "DRAFT",
+    "requiresReapproval": false,
+    "summary": "Initial requirement contract for this thread.",
+    "approvedProposalId": "",
+    "approvedProposalOriginatingAgent": ""
+  },
+  "activeRevisionProposal": {
+    "proposalId": "",
+    "changedFields": [],
+    "reason": "",
+    "evidence": [],
+    "requiresReapproval": false,
+    "originatingAgent": "default",
+    "status": "",
+    "summary": "",
+    "previousPromptHash": "",
+    "currentPromptHash": "",
+    "createdFromRevisionNumber": 0,
+    "reviewedBy": "",
+    "reviewedAt": ""
+  },
+  "revisionGate": {
+    "status": "clear",
+    "reason": "",
+    "authoritativeOwner": "intake",
+    "currentAgent": "default",
+    "blockingProposalId": "",
+    "returnToIntake": false,
+    "changedFields": []
+  },
   "selectedPlanningMode": "NORMAL",
   "selectedPlanningDepth": "STANDARD_PLANNING",
   "selectedAssuranceDepth": "SIGNOFF_ASSURANCE",
   "planningModeReasons": [
+    "taskFamily=planning_design",
+    "familyAmbiguityHandling=surface_decisions",
     "ambiguity=2",
-    "acceptance_uncertainty=0",
+    "acceptance_uncertainty=1",
     "novelty=2",
     "external_dependency=0",
     "openQuestions=0",
-    "acceptanceClarity=high",
+    "acceptanceClarity=medium",
     "specialistBoundaries=4",
     "approvalBoundaryTouched=no",
     "overDeliveryRisk=medium",
     "userDecisionRequired=no",
-    "assumptionDependence=low",
-    "existingSpecClarity=high",
-    "changeScopeClarity=medium"
+    "clarificationAction=proceed",
+    "clarificationReason=task_family_not_design_sensitive",
+    "benchmarkCandidates=0",
+    "assumptionDependence=low"
   ],
   "assuranceDepthReasons": [
     "blast_radius=2",
     "irreversibility=0",
     "release_criticality=2",
     "evidence_burden=2",
-    "changeKinds=runtime|governance",
+    "changeKinds=runtime",
     "reviewerSuggested=yes",
     "testerSuggested=yes",
     "signoffImportance=high",
+    "benchmarkAnchored=no",
+    "strictBenchmarkRecreation=no",
     "irreversibleRisk=no",
     "newLogicRisk=no",
     "regressionRisk=high"

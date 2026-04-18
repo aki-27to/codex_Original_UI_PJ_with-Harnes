@@ -1,8 +1,8 @@
 {
   "schema": "bundle-latest-run-summary.v1",
-  "generatedAt": "2026-03-09T12:45:14.382Z",
-  "bundleRoot": "logs/bundles/signoff/signoff-2026-03-09T12-31-59-842Z-24dd95",
-  "turnId": "019cd29a-0ad3-72d2-957c-30870c52eaba",
+  "generatedAt": "2026-04-18T05:29:13.070Z",
+  "bundleRoot": "logs/bundles/signoff/signoff-2026-04-18T05-27-13-996Z-f97810",
+  "turnId": "mock-turn-7",
   "executionProfile": "full-runtime",
   "selectedPlanningDepth": "STANDARD_PLANNING",
   "selectedAssuranceDepth": "SIGNOFF_ASSURANCE",
@@ -13,11 +13,10 @@
     "taskOutcomeReason": "completed_default"
   },
   "usedAgents": [
-    "019cd29a-f8a4-7da3-a69a-c2736093d787",
-    "019cd29d-26f3-71d0-90e2-4ca0a908b341",
-    "019cd29d-3bd2-7ff3-bc7b-08d80dafabcc",
     "default",
-    "unknown"
+    "mock-thread-4-infra",
+    "mock-thread-4-reviewer",
+    "mock-thread-4-tester"
   ],
   "dispatchCount": 3,
   "dispatchSuccessCount": 3,
@@ -36,8 +35,8 @@
     "missing": []
   },
   "evidenceRefs": {
-    "signoffTaskTraceSummary": "logs/bundles/signoff/signoff-2026-03-09T12-31-59-842Z-24dd95/raw/summaries/signoff_task_trace_summary.json",
-    "reviewLoadBreakdown": "logs/bundles/signoff/signoff-2026-03-09T12-31-59-842Z-24dd95/review_load_breakdown.json",
-    "artifactManifestPath": "logs/bundles/signoff/signoff-2026-03-09T12-31-59-842Z-24dd95/raw/turns/2026-03-09/019cd29a-09de-7670-8c38-eade454f7cb2__019cd29a-0ad3-72d2-957c-30870c52eaba/manifest.json"
+    "signoffTaskTraceSummary": "logs/bundles/signoff/signoff-2026-04-18T05-27-13-996Z-f97810/raw/summaries/signoff_task_trace_summary.json",
+    "reviewLoadBreakdown": "logs/bundles/signoff/signoff-2026-04-18T05-27-13-996Z-f97810/review_load_breakdown.json",
+    "artifactManifestPath": "logs/bundles/signoff/signoff-2026-04-18T05-27-13-996Z-f97810/raw/turns/2026-04-18/mock-thread-4__mock-turn-7/manifest.json"
   }
 }

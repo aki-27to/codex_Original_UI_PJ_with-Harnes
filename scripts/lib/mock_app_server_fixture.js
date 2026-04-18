@@ -118,6 +118,23 @@ function insertBulletUnderHeader(filePath, header, bulletLine) {
   writeUtf8(filePath, next);
 }
 
+function insertBulletUnderAnyHeader(filePath, headers, bulletLine) {
+  const candidates = Array.isArray(headers) ? headers : [];
+  let lastError = null;
+  for (const header of candidates) {
+    try {
+      insertBulletUnderHeader(filePath, header, bulletLine);
+      return;
+    } catch (error) {
+      lastError = error;
+    }
+  }
+  if (lastError) {
+    throw lastError;
+  }
+  throw new Error(`header not found in ${filePath}`);
+}
+
 function appendChangelogLine(filePath, line) {
   appendUniqueLine(filePath, line);
 }
@@ -177,10 +194,48 @@ function buildAgentMessageItem(itemId, text) {
   };
 }
 
+function buildCommandExecutionItem(itemId, {
+  command = "node scripts/system_coherence_review_test.js",
+  stdout = "PASS system_coherence_review_test",
+  stderr = "",
+  exitCode = 0,
+  durationMs = 120,
+  status = "completed",
+} = {}) {
+  return {
+    id: itemId,
+    type: "commandExecution",
+    status,
+    command,
+    stdout,
+    stderr,
+    exitCode,
+    durationMs,
+  };
+}
+
 function matchFirst(promptText, regex) {
   const matched = String(promptText || "").match(regex);
   return matched && matched[1] ? matched[1].trim() : "";
 }
+
+function matchLineValue(promptText, prefix) {
+  const text = String(promptText || "");
+  const marker = String(prefix || "");
+  if (!marker) {
+    return "";
+  }
+  const line = text
+    .split(/\r?\n/)
+    .map((entry) => safeString(entry, 4000))
+    .find((entry) => entry.startsWith(marker));
+  return line ? line.slice(marker.length).trim() : "";
+}
+
+const architectureEvidenceHeaders = [
+  "## 6) Evidence and Persistence",
+  "## 6) 現在の構成",
+];
 
 function buildFastScenario({ workspaceRoot, cwd, promptText, threadId, turnId }) {
   const targetRelativeRaw = matchFirst(promptText, /Change only ([^\r\n]+)/i);
@@ -239,7 +294,7 @@ function buildNaturalScenario({ workspaceRoot, promptText, threadId, turnId }) {
   const targetRelativePath = "docs/CURRENT_ARCHITECTURE.md";
   const targetPath = path.join(workspaceRoot, "docs", "CURRENT_ARCHITECTURE.md");
   const bulletLine = matchFirst(promptText, /Insert this exact bullet if it is not already present: ([^\n]+)/i);
-  insertBulletUnderHeader(targetPath, "## 6) Evidence and Persistence", bulletLine);
+  insertBulletUnderAnyHeader(targetPath, architectureEvidenceHeaders, bulletLine);
   const finalText = `NATURAL_TASK_OK ${targetRelativePath}`;
   return {
     plan: buildPlan("STANDARD planning with STANDARD assurance for repo docs maintenance.", [
@@ -256,6 +311,7 @@ function buildNaturalScenario({ workspaceRoot, promptText, threadId, turnId }) {
         ownedPaths: [targetRelativePath],
         notes: ["Applied requested documentation bullet."],
       }),
+      buildCommandExecutionItem(`${turnId}-coherence`),
       buildCollabItem({
         itemId: `${turnId}-reviewer`,
         child: "reviewer",
@@ -263,6 +319,52 @@ function buildNaturalScenario({ workspaceRoot, promptText, threadId, turnId }) {
         receiverThreadId: `${threadId}-reviewer`,
         ownedPaths: [],
         notes: ["No findings."],
+      }),
+      buildAgentMessageItem(`${turnId}-final`, finalText),
+    ],
+    finalText,
+    turnStatus: "completed",
+  };
+}
+
+function buildBoundaryScenario({ workspaceRoot, cwd, promptText, threadId, turnId }) {
+  const targetRelativeRaw = matchFirst(promptText, /Change only ([^\r\n]+)/i);
+  const targetRelativePath = typeof targetRelativeRaw === "string" ? targetRelativeRaw.replace(/\.\s*$/, "").trim() : "";
+  const targetPath = resolveWorkspacePath(workspaceRoot, cwd, targetRelativePath);
+  const bulletLine = matchFirst(promptText, /Insert this exact bullet if it is not already present: ([^\n]+)/i);
+  insertBulletUnderHeader(targetPath, "## Runtime Truth", bulletLine);
+  const finalText = `BOUNDARY_TASK_OK ${targetRelativePath}`;
+  return {
+    plan: buildPlan("STANDARD planning with STANDARD assurance for state-boundary docs maintenance.", [
+      "Dispatch state documentation edit to infra_worker.",
+      "Run read-only reviewer and tester checks.",
+      "Finalize with evidence bundle.",
+    ]),
+    items: [
+      buildCollabItem({
+        itemId: `${turnId}-infra`,
+        child: "infra_worker",
+        prompt: `Update ${targetRelativePath}`,
+        receiverThreadId: `${threadId}-infra`,
+        ownedPaths: [repoRelative(workspaceRoot, targetPath)],
+        notes: ["Applied requested runtime-boundary documentation bullet."],
+      }),
+      buildCommandExecutionItem(`${turnId}-coherence`),
+      buildCollabItem({
+        itemId: `${turnId}-reviewer`,
+        child: "reviewer",
+        prompt: `Review ${targetRelativePath}`,
+        receiverThreadId: `${threadId}-reviewer`,
+        ownedPaths: [],
+        notes: ["No findings."],
+      }),
+      buildCollabItem({
+        itemId: `${turnId}-tester`,
+        child: "tester",
+        prompt: `Verify ${targetRelativePath}`,
+        receiverThreadId: `${threadId}-tester`,
+        ownedPaths: [],
+        notes: ["PASS: requested state-boundary evidence is present."],
       }),
       buildAgentMessageItem(`${turnId}-final`, finalText),
     ],
@@ -282,7 +384,7 @@ function buildSignoffScenario({ workspaceRoot, cwd, promptText, threadId, turnId
   const changelogLine = matchFirst(promptText, /add this exact changelog line if it is not already present: ([^\n]+)/i);
   replaceExactLine(targetPath, "gate: pending", "gate: signed");
   appendUniqueLine(evidencePath, evidenceBullet);
-  insertBulletUnderHeader(architecturePath, "## 6) Evidence and Persistence", architectureBullet);
+  insertBulletUnderAnyHeader(architecturePath, architectureEvidenceHeaders, architectureBullet);
   appendChangelogLine(changelogPath, changelogLine);
   const finalText = `SIGNOFF_TASK_OK ${targetRelativePath}`;
   return {
@@ -305,6 +407,7 @@ function buildSignoffScenario({ workspaceRoot, cwd, promptText, threadId, turnId
         ],
         notes: ["Applied requested signoff assurance updates."],
       }),
+      buildCommandExecutionItem(`${turnId}-coherence`),
       buildCollabItem({
         itemId: `${turnId}-reviewer`,
         child: "reviewer",
@@ -367,28 +470,57 @@ function buildNaturalBaselineScenario({ workspaceRoot, cwd, promptText, turnId }
   const targetRelativePath = typeof targetRelativeRaw === "string" ? targetRelativeRaw.replace(/\.\s*$/, "").trim() : "";
   const targetPath = resolveWorkspacePath(workspaceRoot, cwd, targetRelativePath);
   const bulletLine = matchFirst(promptText, /Insert this exact bullet if it is not already present: ([^\n]+)/i);
-  insertBulletUnderHeader(targetPath, "## 6) Evidence and Persistence", bulletLine);
+  insertBulletUnderAnyHeader(targetPath, architectureEvidenceHeaders, bulletLine);
   const finalText = `NATURAL_TASK_OK ${targetRelativePath}`;
   return {
     plan: buildPlan("Measured baseline profile: direct docs maintenance without reviewer fan-out.", [
       "Apply the requested documentation bullet directly.",
       "Return without governed review artifacts.",
     ]),
-    items: [buildAgentMessageItem(`${turnId}-final`, finalText)],
+    items: [
+      buildCommandExecutionItem(`${turnId}-coherence`),
+      buildAgentMessageItem(`${turnId}-final`, finalText),
+    ],
+    finalText,
+    turnStatus: "completed",
+  };
+}
+
+function buildBoundaryBaselineScenario({ workspaceRoot, cwd, promptText, turnId }) {
+  const targetRelativeRaw = matchFirst(promptText, /Change only ([^\r\n]+)/i);
+  const targetRelativePath = typeof targetRelativeRaw === "string" ? targetRelativeRaw.replace(/\.\s*$/, "").trim() : "";
+  const targetPath = resolveWorkspacePath(workspaceRoot, cwd, targetRelativePath);
+  const bulletLine = matchFirst(promptText, /Insert this exact bullet if it is not already present: ([^\n]+)/i);
+  insertBulletUnderHeader(targetPath, "## Runtime Truth", bulletLine);
+  const finalText = `BOUNDARY_TASK_OK ${targetRelativePath}`;
+  return {
+    plan: buildPlan("Measured baseline profile: direct runtime-boundary docs maintenance without reviewer fan-out.", [
+      "Apply the requested runtime-boundary documentation bullet directly.",
+      "Return without governed review artifacts.",
+    ]),
+    items: [
+      buildCommandExecutionItem(`${turnId}-coherence`),
+      buildAgentMessageItem(`${turnId}-final`, finalText),
+    ],
     finalText,
     turnStatus: "completed",
   };
 }
 
 function buildSignoffBaselineScenario({ workspaceRoot, cwd, promptText, turnId }) {
-  const changeTargets = matchFirst(promptText, /Change ([^\n]+)/i)
-    .split(",")
+  const explicitTargetRelativePath = matchLineValue(promptText, "- Signoff baseline target: ");
+  const changeTargetsRaw =
+    matchLineValue(promptText, "- Signoff baseline support targets: ") ||
+    matchFirst(promptText, /Change ([^\n]+)/i);
+  const changeTargets = changeTargetsRaw
+    .split(/[,\|]/)
     .map((entry) => safeString(entry, 400))
     .filter(Boolean);
-  const targetRelativePath = changeTargets[0] || "";
-  const evidenceRelativePath = changeTargets[1] || "";
-  const architectureRelativePath = changeTargets[2] || "";
-  const changelogRelativePath = changeTargets[3] || "";
+  const supportTargets = explicitTargetRelativePath ? changeTargets : changeTargets.slice(1);
+  const targetRelativePath = explicitTargetRelativePath || changeTargets[0] || "";
+  const evidenceRelativePath = supportTargets[0] || "";
+  const architectureRelativePath = supportTargets[1] || "";
+  const changelogRelativePath = supportTargets[2] || "";
   const targetPath = resolveWorkspacePath(workspaceRoot, cwd, targetRelativePath);
   const evidencePath = resolveWorkspacePath(workspaceRoot, cwd, evidenceRelativePath);
   const architecturePath = resolveWorkspacePath(workspaceRoot, cwd, architectureRelativePath);
@@ -398,7 +530,7 @@ function buildSignoffBaselineScenario({ workspaceRoot, cwd, promptText, turnId }
   const changelogLine = matchFirst(promptText, /add this exact changelog line if it is not already present: ([^\n]+)/i);
   replaceExactLine(targetPath, "gate: pending", "gate: signed");
   appendUniqueLine(evidencePath, evidenceBullet);
-  insertBulletUnderHeader(architecturePath, "## 6) Evidence and Persistence", architectureBullet);
+  insertBulletUnderAnyHeader(architecturePath, architectureEvidenceHeaders, architectureBullet);
   appendChangelogLine(changelogPath, changelogLine);
   const finalText = `SIGNOFF_TASK_OK ${targetRelativePath}`;
   return {
@@ -406,7 +538,10 @@ function buildSignoffBaselineScenario({ workspaceRoot, cwd, promptText, turnId }
       "Apply the requested file updates directly.",
       "Return without child reviewer/tester evidence.",
     ]),
-    items: [buildAgentMessageItem(`${turnId}-final`, finalText)],
+    items: [
+      buildCommandExecutionItem(`${turnId}-coherence`),
+      buildAgentMessageItem(`${turnId}-final`, finalText),
+    ],
     finalText,
     turnStatus: "completed",
   };
@@ -426,7 +561,7 @@ function buildLiveDispatchScenario({ workspaceRoot, cwd, promptText, threadId, t
     "- 2026-03-08: Runtime proof sample now records fixture-backed dispatch evidence plus doc-sync coverage for sandboxed proof generation.";
   appendUniqueLine(targetPath, childMarker);
   appendUniqueLine(targetPath, parentMarker);
-  insertBulletUnderHeader(architecturePath, "## 6) Evidence and Persistence", architectureBullet);
+  insertBulletUnderAnyHeader(architecturePath, architectureEvidenceHeaders, architectureBullet);
   appendChangelogLine(changelogPath, changelogLine);
   const finalText = `DISPATCH_OK ${liveTarget}`;
   return {
@@ -448,6 +583,7 @@ function buildLiveDispatchScenario({ workspaceRoot, cwd, promptText, threadId, t
         ],
         notes: ["Applied requested child proof marker and doc-sync updates."],
       }),
+      buildCommandExecutionItem(`${turnId}-coherence`),
       buildCollabItem({
         itemId: `${turnId}-reviewer`,
         child: "reviewer",
@@ -505,6 +641,9 @@ function buildMockFixtureScenario({ workspaceRoot, cwd, input, threadId, turnId 
   if (baselineProfile && lower.includes("[fixture_scenario] natural_sample")) {
     return buildNaturalBaselineScenario({ workspaceRoot, cwd, promptText, turnId });
   }
+  if (baselineProfile && lower.includes("[fixture_scenario] boundary_sample")) {
+    return buildBoundaryBaselineScenario({ workspaceRoot, cwd, promptText, turnId });
+  }
   if (baselineProfile && lower.includes("[fixture_scenario] signoff_sample")) {
     return buildSignoffBaselineScenario({ workspaceRoot, cwd, promptText, turnId });
   }
@@ -516,6 +655,9 @@ function buildMockFixtureScenario({ workspaceRoot, cwd, input, threadId, turnId 
   }
   if (lower.includes("[fixture_scenario] natural_sample")) {
     return buildNaturalScenario({ workspaceRoot, promptText, threadId, turnId });
+  }
+  if (lower.includes("[fixture_scenario] boundary_sample")) {
+    return buildBoundaryScenario({ workspaceRoot, cwd, promptText, threadId, turnId });
   }
   if (lower.includes("[fixture_scenario] signoff_sample")) {
     return buildSignoffScenario({ workspaceRoot, cwd, promptText, threadId, turnId });

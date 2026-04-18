@@ -84,6 +84,7 @@ function main() {
   assertRegex(indexHtml, /id="composerModeChip"/, "composer must expose the mode chip");
   assertRegex(indexHtml, /id="composerModelChip"/, "composer must expose the model chip");
   assertRegex(indexHtml, /id="composerWorkspaceChip"/, "composer must expose the workspace chip");
+  assertRegex(indexHtml, /id="composerVerificationChip"/, "composer must expose the verification chip");
   assertRegex(indexHtml, /id="composerAttachmentChip"/, "composer must expose the attachment chip");
   assert.ok(!/id="openaiVoiceStrip"/.test(indexHtml), "composer must not expose the removed voice strip");
   assert.ok(!/id="openaiVoicePhase"/.test(indexHtml), "composer must not expose the removed voice phase field");
@@ -106,6 +107,7 @@ function main() {
   assertRegex(stylesCss, /\.mission-draft-card[\s\S]*?display:\s*grid;/, "console must style the mission brief card");
   assertRegex(stylesCss, /\.harness-status-card[\s\S]*?display:\s*grid;/, "console must style the compact harness status card");
   assertRegex(stylesCss, /\.composer-runtime-strip[\s\S]*?display:\s*flex;/, "console must style the composer runtime strip");
+  assertRegex(stylesCss, /\.composer-runtime-chip\.locked[\s\S]*?color:/, "composer runtime strip must style the locked verification state");
   assert.ok(!/\.composer-voice-phase-row/.test(stylesCss), "voice phase-row styles must be removed from the main console");
   assert.ok(!/\.composer-voice-panels/.test(stylesCss), "voice panel styles must be removed from the main console");
   assert.ok(!/\.composer-voice-strip/.test(stylesCss), "voice strip styles must be removed from the main console");
@@ -165,6 +167,8 @@ function main() {
   assertRegex(appJs, /function\s+deriveMissionDraftForUi\s*\(/, "mission draft derivation helper must exist");
   assertRegex(appJs, /function\s+renderMissionDraftPanel\s*\(/, "mission draft renderer must exist");
   assertRegex(appJs, /function\s+renderComposerRuntimeStrip\s*\(/, "composer runtime renderer must exist");
+  assertRegex(appJs, /function\s+intentFirstVerificationLockForUi\s*\(/, "composer runtime must expose the intent-first verification lock helper");
+  assertRegex(appJs, /Verify:\s*locked/, "composer runtime must surface the locked verification copy");
   assert.ok(!/deriveRealtimeVoicePhaseForUi/.test(appJs), "voice phase logic must be removed from the main console");
   assert.ok(!/openaiVoice(?:Strip|LangSelect|Select|StartBtn|StopBtn|Status|Transcript|Reply)/.test(appJs), "main console JS must not keep removed voice control bindings");
   assert.ok(!/SpeechRecognition|webkitSpeechRecognition/.test(appJs), "main console JS must not keep browser mic bindings");
@@ -213,6 +217,9 @@ function main() {
   assertRegex(appJs, /if\(requirementBlockedPlanState\)\{\s*e\.harnessPlanCurrentDetail\.textContent=requirementBlockedPlanState\.currentDetailText;/, "execution plan detail must stop at the requirement gate instead of showing downstream plan progress");
   assertRegex(appJs, /stageEl\.textContent=currentPhase\?currentPhase\.label:/, "current phase summary should avoid repeating the state label inline");
   assertRegex(appJs, /workEl\.textContent=requirementGateWorkSummaryForUi\(requirementSnapshot\);/, "current work summary must avoid repeating the blocked-reason text verbatim");
+  assert.ok(!/workEl\.textContent="入力を待っています"/.test(appJs), "primary status rail must not describe the idle state as waiting for input");
+  assert.ok(!/phase\.stage==="入力待ち"/.test(appJs), "primary live status must not keep the legacy input-wait headline fallback");
+  assert.ok(!/追加の入力が必要です。内容を補足して送信すると、このチャットを続行できます。/.test(appJs), "primary conversation summary must not frame resendable states as blocked input waits");
 
   assert.ok(!/\/api\/voice\/openai\/realtime\/client-secret/.test(serverJs), "server must not expose the removed OpenAI realtime voice helper route");
   assert.ok(!/openaiRealtimeVoiceApi|openai_realtime_voice_api/.test(serverJs), "server runtime surface must not expose removed OpenAI realtime voice metadata");

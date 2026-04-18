@@ -15,6 +15,7 @@ Current role:
 Current apps:
 - `01.english-conversation-app`
 - `02.talkApp`
+- `03.ai-debate-chat`
 
 Each app contains one `app.manifest.json`.
 

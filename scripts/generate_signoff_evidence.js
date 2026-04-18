@@ -511,6 +511,7 @@ function buildBundlePaths(bundleRootOverride = "") {
     discoveryTaskTraceSummaryPath: path.join(rawSummaryRoot, "discovery_task_trace_summary.json"),
     signoffTaskTraceSummaryPath: path.join(rawSummaryRoot, "signoff_task_trace_summary.json"),
     naturalTaskTraceSummaryPath: path.join(bundleRoot, "natural_task_trace_summary.json"),
+    boundaryTaskTraceSummaryPath: path.join(bundleRoot, "boundary_task_trace_summary.json"),
     latestRunSummaryPath: path.join(bundleRoot, "latest_run_summary.json"),
     reviewLoadBreakdownPath: path.join(bundleRoot, "review_load_breakdown.json"),
     laneLatencySummaryPath: path.join(rawRoot, "relocated_top_level", "lane_latency_summary.json"),
@@ -522,11 +523,13 @@ function buildBundlePaths(bundleRootOverride = "") {
     baselineDiscoveryTaskTraceSummaryPath: path.join(measuredBaselineRoot, "baseline_discovery_task_trace_summary.json"),
     baselineSignoffTaskTraceSummaryPath: path.join(measuredBaselineRoot, "baseline_signoff_task_trace_summary.json"),
     baselineNaturalTaskTraceSummaryPath: path.join(measuredBaselineRoot, "baseline_natural_task_trace_summary.json"),
+    baselineBoundaryTaskTraceSummaryPath: path.join(measuredBaselineRoot, "baseline_boundary_task_trace_summary.json"),
     rawDirectBaselineSummaryPath: path.join(rawDirectBaselineRoot, "raw_direct_baseline_summary.json"),
     rawDirectFastTaskTraceSummaryPath: path.join(rawDirectBaselineRoot, "raw_direct_fast_task_trace_summary.json"),
     rawDirectDiscoveryTaskTraceSummaryPath: path.join(rawDirectBaselineRoot, "raw_direct_discovery_task_trace_summary.json"),
     rawDirectSignoffTaskTraceSummaryPath: path.join(rawDirectBaselineRoot, "raw_direct_signoff_task_trace_summary.json"),
     rawDirectNaturalTaskTraceSummaryPath: path.join(rawDirectBaselineRoot, "raw_direct_natural_task_trace_summary.json"),
+    rawDirectBoundaryTaskTraceSummaryPath: path.join(rawDirectBaselineRoot, "raw_direct_boundary_task_trace_summary.json"),
     baselineComparisonReportPath: path.join(bundleRoot, "baseline_comparison_report.json"),
     speedVsAssuranceReportPath: path.join(bundleRoot, "speed_vs_assurance_report.md"),
     harnessMemoryPath: path.join(rawRoot, "harness_execution_memory.json"),
@@ -552,6 +555,7 @@ function buildBundleSurfaceMap(paths) {
     repoRelative(paths.runtimeSnapshotPath),
     repoRelative(paths.coreHarnessWorkflowRunPath),
     repoRelative(paths.naturalTaskTraceSummaryPath),
+    repoRelative(paths.boundaryTaskTraceSummaryPath),
     repoRelative(paths.latestRunSummaryPath),
     repoRelative(paths.reviewLoadBreakdownPath),
     repoRelative(paths.conformanceReportPath),
@@ -704,11 +708,52 @@ function buildNaturalBaselinePrompt(targetRelativePath, targetSentence, transpor
     `- Change only ${targetRelativePath}.`,
     "- Under `## 6) Evidence and Persistence`, add exactly one brief bullet.",
     `- Insert this exact bullet if it is not already present: ${targetSentence}`,
-    "# Acceptance Criteria",
-    "- Exactly one documentation file changes.",
-    "- No follow-up questions are required.",
-    `- Final reply must be exactly: NATURAL_TASK_OK ${targetRelativePath}`,
     "# Execution",
+    `- Return with exactly: NATURAL_TASK_OK ${targetRelativePath}.`,
+    "- No follow-up questions are required.",
+    "# Acceptance Criteria",
+    "- Requested documentation maintenance is complete.",
+    "- Apply the change directly without reviewer fan-out.",
+    ],
+  });
+}
+
+function buildCurrentLatestSignoffSummary(paths, summary) {
+  return {
+    schema: "latest-signoff-summary.v3",
+    generatedAt: new Date().toISOString(),
+    allPassed: Boolean(summary && summary.allPassed),
+    runtimePostureSafe: Boolean(summary && summary.assertions && summary.assertions.runtimePostureSafe),
+    coreHarnessWorkflowPassed: Boolean(summary && summary.assertions && summary.assertions.coreHarnessWorkflowPassed),
+    naturalTaskTracePassed: Boolean(summary && summary.assertions && summary.assertions.naturalTaskTracePassed),
+    signoffReady: Boolean(summary && summary.signoffTask && summary.signoffTask.assertions && summary.signoffTask.assertions.completed),
+    bundleRef: {
+      bundleName: path.basename(paths.bundleRoot),
+      bundlePath: repoRelative(paths.bundleRoot),
+      summaryPath: repoRelative(paths.summaryPath),
+    },
+    finalDecision: summary && summary.allPassed ? "RELEASE_APPROVED" : "RELEASE_BLOCKED",
+  };
+}
+
+function buildBoundaryBaselinePrompt(targetRelativePath, targetSentence, transportMode = "mock-fixture") {
+  return buildScenarioPrompt({
+    transportMode,
+    scenarioName: "BOUNDARY_SAMPLE",
+    baselineProfile: "measured",
+    lines: [
+    "#requirement-locked",
+    "# Goal",
+    "Perform one state documentation maintenance task.",
+    "# Implementation Requirements",
+    `- Change only ${targetRelativePath}.`,
+    "- Under `## Runtime Truth`, add exactly one brief bullet.",
+    `- Insert this exact bullet if it is not already present: ${targetSentence}`,
+    "# Execution",
+    `- Return with exactly: BOUNDARY_TASK_OK ${targetRelativePath}.`,
+    "- No follow-up questions are required.",
+    "# Acceptance Criteria",
+    "- Requested runtime-boundary maintenance is complete.",
     "- Apply the change directly without reviewer fan-out.",
     ],
   });
@@ -718,7 +763,7 @@ function buildSignoffBaselinePrompt(targetRelativePath, evidenceRelativePath, ar
   const evidenceBullet =
     "- `SIGNOFF_ASSURANCE` runs should surface reviewer/tester/doc-sync status in `review_load_breakdown.json` for operator signoff.";
   const architectureBullet =
-    "- `SIGNOFF_ASSURANCE` sample runs keep planning depth, assurance depth, reviewer/tester execution, and doc-sync evidence co-located in signoff bundles.";
+    "- `SIGNOFF_ASSURANCE` sample runs keep reviewer/tester execution and doc-sync evidence co-located in signoff bundles.";
   const changelogLine =
     "- 2026-03-08: Added signoff assurance sample evidence wiring for planning/assurance trace and doc-sync bundle checks.";
   return buildScenarioPrompt({
@@ -727,18 +772,22 @@ function buildSignoffBaselinePrompt(targetRelativePath, evidenceRelativePath, ar
     baselineProfile: "measured",
     lines: [
     "#requirement-locked",
-    "Implementation is explicitly requested now. This is a signoff-like maintenance task under the measured baseline profile.",
-    "#scope-core",
-    `- Change ${targetRelativePath}, ${evidenceRelativePath}, ${architectureRelativePath}, ${changelogRelativePath}`,
-    "# Acceptance Criteria",
-    "- Primary target file is updated.",
-    "- Supporting docs are updated.",
+    "# Goal",
+    "Perform one measured-baseline evidence maintenance task.",
+    "# Implementation Requirements",
+    "Implementation is explicitly requested now. Requirements are fixed. Do not switch to proposal-only mode and do not ask follow-up questions.",
+    `- Signoff baseline target: ${targetRelativePath}`,
+    `- Signoff baseline support targets: ${evidenceRelativePath} | ${architectureRelativePath} | ${changelogRelativePath}`,
+    `- Change only ${targetRelativePath}.`,
     `- In ${targetRelativePath}, replace the single line \`gate: pending\` with \`gate: signed\`.`,
     `- In ${evidenceRelativePath}, add this exact bullet if it is not already present: ${evidenceBullet}`,
     `- In ${architectureRelativePath}, add this exact architecture bullet if it is not already present: ${architectureBullet}`,
     `- In ${changelogRelativePath}, add this exact changelog line if it is not already present: ${changelogLine}`,
-    `- Final reply must be exactly: SIGNOFF_TASK_OK ${targetRelativePath}`,
     "# Execution",
+    `- Return with exactly: SIGNOFF_TASK_OK ${targetRelativePath}.`,
+    "- No follow-up questions are required.",
+    "# Acceptance Criteria",
+    "- Requested signoff maintenance is complete.",
     "- Apply the changes directly without delegation, reviewer, or tester steps.",
     ],
   });
@@ -765,9 +814,11 @@ function ensureMeasuredBaselineFixtureFiles(paths) {
   const evidencePath = path.join(docsRoot, "EVIDENCE_CONTRACT.md");
   const architecturePath = path.join(docsRoot, "CURRENT_ARCHITECTURE_SIGNOFF.md");
   const changelogPath = path.join(docsRoot, "ARCHITECTURE_CHANGELOG.md");
+  const boundaryTargetPath = path.join(docsRoot, "RUNTIME_BOUNDARY_MAP.md");
   fs.writeFileSync(evidencePath, fs.readFileSync(path.join(workspaceRoot, "docs", "EVIDENCE_CONTRACT.md"), "utf8"), "utf8");
   fs.writeFileSync(architecturePath, fs.readFileSync(sourceArchitecturePath, "utf8"), "utf8");
   fs.writeFileSync(changelogPath, fs.readFileSync(path.join(workspaceRoot, "docs", "ARCHITECTURE_CHANGELOG.md"), "utf8"), "utf8");
+  fs.writeFileSync(boundaryTargetPath, "# Runtime Boundary Map\n\n## Runtime Truth\n- historical note only\n", "utf8");
 
   return {
     fastTargetPath,
@@ -776,6 +827,7 @@ function ensureMeasuredBaselineFixtureFiles(paths) {
     evidencePath,
     architecturePath,
     changelogPath,
+    boundaryTargetPath,
   };
 }
 
@@ -916,12 +968,41 @@ function buildNaturalTaskPrompt(transportMode = "mock-fixture") {
     "- The implementation specialist must report using this exact header format:",
     "Owned paths:",
     "- `<absolute path>`",
-    "# Acceptance Criteria",
-    "- Exactly one documentation file changes.",
-    "- Reviewer evidence is present.",
+    "# Execution",
+    `- Return with exactly: NATURAL_TASK_OK ${targetRelative}.`,
     "- No follow-up questions are required.",
-    "- Reviewer must remain read-only and report findings first or state 'No findings'.",
-    `- Final reply must be exactly: NATURAL_TASK_OK ${targetRelative}`,
+    "# Acceptance Criteria",
+    "- Requested documentation change and read-only reviewer evidence are present.",
+    ],
+  });
+}
+
+function buildBoundaryTaskPrompt(targetRelativePath, targetSentence, transportMode = "mock-fixture") {
+  return buildScenarioPrompt({
+    transportMode,
+    scenarioName: "BOUNDARY_SAMPLE",
+    lines: [
+    "#requirement-locked",
+    "# Goal",
+    "Perform one state documentation maintenance task.",
+    "# Implementation Requirements",
+    "Implementation is explicitly requested now. Requirements are fixed, so proceed directly to implementation.",
+    "- Use the default parent orchestration path.",
+    "- Delegate the implementation edit to infra_worker, then request independent read-only reviewer and tester checks.",
+    `- Change only ${targetRelativePath}.`,
+    "- Use apply_patch for the file edit.",
+    "- Under `## Runtime Truth`, add exactly one brief bullet.",
+    `- Insert this exact bullet if it is not already present: ${targetSentence}`,
+    "- Do not duplicate the sentence if it already exists.",
+    "- Ignore unrelated edits by others and do not revert them.",
+    "- The implementation specialist must report using this exact header format:",
+    "Owned paths:",
+    "- `<absolute path>`",
+    "# Execution",
+    `- Return with exactly: BOUNDARY_TASK_OK ${targetRelativePath}.`,
+    "- No follow-up questions are required.",
+    "# Acceptance Criteria",
+    "- Requested state-boundary change plus reviewer and tester evidence are present.",
     ],
   });
 }
@@ -933,7 +1014,7 @@ function buildSignoffTaskPrompt(targetRelativePath, transportMode = "mock-fixtur
   const evidenceBullet =
     "- `SIGNOFF_ASSURANCE` runs should surface reviewer/tester/doc-sync status in `review_load_breakdown.json` for operator signoff.";
   const architectureBullet =
-    "- `SIGNOFF_ASSURANCE` sample runs keep planning depth, assurance depth, reviewer/tester execution, and doc-sync evidence co-located in signoff bundles.";
+    "- `SIGNOFF_ASSURANCE` sample runs keep reviewer/tester execution and doc-sync evidence co-located in signoff bundles.";
   const changelogLine =
     "- 2026-03-08: Added signoff assurance sample evidence wiring for planning/assurance trace and doc-sync bundle checks.";
   return buildScenarioPrompt({
@@ -957,15 +1038,11 @@ function buildSignoffTaskPrompt(targetRelativePath, transportMode = "mock-fixtur
     `- In ${evidenceTarget}, add this exact bullet if it is not already present: ${evidenceBullet}`,
     `- In ${architectureTarget}, add this exact architecture bullet if it is not already present: ${architectureBullet}`,
     `- In ${changelogTarget}, add this exact changelog line if it is not already present: ${changelogLine}`,
-    "# Acceptance Criteria",
-    "- The target file contains `gate: signed`.",
-    "- The evidence contract bullet is present.",
-    "- The architecture bullet is present.",
-    "- The changelog line is present.",
-    "- Reviewer evidence is present and the reviewer remains read-only.",
-    "- Tester evidence is present and includes pass/fail verification.",
+    "# Execution",
+    `- Return with exactly: SIGNOFF_TASK_OK ${targetRelativePath}.`,
     "- No follow-up questions are required.",
-    `- Final reply must be exactly: SIGNOFF_TASK_OK ${targetRelativePath}`,
+    "# Acceptance Criteria",
+    "- Requested signoff edits, reviewer/tester evidence, and doc-sync evidence are all present.",
     ],
   });
 }
@@ -1070,6 +1147,7 @@ async function runMeasuredBaseline(paths, transportMode) {
       prompt,
       tracePath,
       executionIntent,
+      cwd = workspaceRoot,
       expectNeedsInput = false,
       allowValidationFailure = false,
       assertTarget = null,
@@ -1082,7 +1160,7 @@ async function runMeasuredBaseline(paths, transportMode) {
           agentName: "default",
           sandboxMode: "workspace-write",
           approvalPolicy: "never",
-          cwd: workspaceRoot,
+          cwd,
           requestUserInputPolicy: "blocked",
           executionProfile: baselineProfile,
           executionIntent,
@@ -1180,10 +1258,10 @@ async function runMeasuredBaseline(paths, transportMode) {
       allowValidationFailure: false,
     });
 
-    const signoffTargetRelative = repoRelative(fixtures.signoffTargetPath);
-    const evidenceRelativePath = repoRelative(fixtures.evidencePath);
-    const architectureRelativePath = repoRelative(fixtures.architecturePath);
-    const changelogRelativePath = repoRelative(fixtures.changelogPath);
+    const signoffTargetRelative = path.relative(paths.measuredBaselineRoot, fixtures.signoffTargetPath).replace(/\\/g, "/");
+    const evidenceRelativePath = path.relative(paths.measuredBaselineRoot, fixtures.evidencePath).replace(/\\/g, "/");
+    const architectureRelativePath = path.relative(paths.measuredBaselineRoot, fixtures.architecturePath).replace(/\\/g, "/");
+    const changelogRelativePath = path.relative(paths.measuredBaselineRoot, fixtures.changelogPath).replace(/\\/g, "/");
     await runSample({
       key: "signoff",
       prompt: buildSignoffBaselinePrompt(
@@ -1195,6 +1273,7 @@ async function runMeasuredBaseline(paths, transportMode) {
       ),
       tracePath: paths.baselineSignoffTaskTraceSummaryPath,
       executionIntent: "baseline_signoff_sample",
+      cwd: paths.measuredBaselineRoot,
       allowValidationFailure: true,
       assertTarget: () =>
         fs.readFileSync(fixtures.signoffTargetPath, "utf8").includes("gate: signed") &&
@@ -1214,6 +1293,20 @@ async function runMeasuredBaseline(paths, transportMode) {
       assertTarget: () => fs.readFileSync(fixtures.naturalTargetPath, "utf8").includes(naturalTargetSentence),
     });
 
+    const boundaryTargetRelative = repoRelative(fixtures.boundaryTargetPath);
+    const boundaryPromptTargetRelative = path.relative(paths.measuredBaselineRoot, fixtures.boundaryTargetPath).replace(/\\/g, "/");
+    const boundaryTargetSentence =
+      "- `turnRuntime` remains the authoritative source for pending and active-turn projection; request cache is projection-only.";
+    await runSample({
+      key: "boundary",
+      prompt: buildBoundaryBaselinePrompt(boundaryPromptTargetRelative, boundaryTargetSentence, normalizedTransportMode),
+      tracePath: paths.baselineBoundaryTaskTraceSummaryPath,
+      executionIntent: "baseline_boundary_sample",
+      cwd: paths.measuredBaselineRoot,
+      allowValidationFailure: true,
+      assertTarget: () => fs.readFileSync(fixtures.boundaryTargetPath, "utf8").includes(boundaryTargetSentence),
+    });
+
     writeJson(paths.measuredBaselineSummaryPath, summary);
     return summary;
   } catch (error) {
@@ -1231,6 +1324,7 @@ const resumableStageOrder = Object.freeze([
   "discovery",
   "signoff",
   "natural",
+  "boundary",
   "measured_baseline",
   "raw_direct_baseline",
   "comparison",
@@ -1243,6 +1337,7 @@ const resumableStageLabels = Object.freeze({
   discovery: "discovery_lane",
   signoff: "signoff_lane",
   natural: "natural_lane",
+  boundary: "boundary_lane",
   measured_baseline: "measured_baseline",
   raw_direct_baseline: "raw_direct_baseline",
   comparison: "baseline_comparison",
@@ -1501,6 +1596,7 @@ function buildLaneLatencySummary(paths, resumeState) {
     discovery: paths.discoveryTaskTraceSummaryPath,
     signoff: paths.signoffTaskTraceSummaryPath,
     natural: paths.naturalTaskTraceSummaryPath,
+    boundary: paths.boundaryTaskTraceSummaryPath,
     measured_baseline: null,
     raw_direct_baseline: null,
   };
@@ -1509,12 +1605,14 @@ function buildLaneLatencySummary(paths, resumeState) {
     discovery: loadOptionalJson(paths.baselineDiscoveryTaskTraceSummaryPath),
     signoff: loadOptionalJson(paths.baselineSignoffTaskTraceSummaryPath),
     natural: loadOptionalJson(paths.baselineNaturalTaskTraceSummaryPath),
+    boundary: loadOptionalJson(paths.baselineBoundaryTaskTraceSummaryPath),
   };
   const rawDirectTraceMap = {
     fast: loadOptionalJson(paths.rawDirectFastTaskTraceSummaryPath),
     discovery: loadOptionalJson(paths.rawDirectDiscoveryTaskTraceSummaryPath),
     signoff: loadOptionalJson(paths.rawDirectSignoffTaskTraceSummaryPath),
     natural: loadOptionalJson(paths.rawDirectNaturalTaskTraceSummaryPath),
+    boundary: loadOptionalJson(paths.rawDirectBoundaryTaskTraceSummaryPath),
   };
   const stages = resumableStageOrder.map((stageKey) => {
     const result = state.stageResults && state.stageResults[stageKey] ? state.stageResults[stageKey] : null;
@@ -1585,6 +1683,7 @@ function buildSummaryPaths(paths) {
     discoveryTaskTraceSummary: paths.discoveryTaskTraceSummaryPath,
     signoffTaskTraceSummary: paths.signoffTaskTraceSummaryPath,
     naturalTaskTraceSummary: paths.naturalTaskTraceSummaryPath,
+    boundaryTaskTraceSummary: paths.boundaryTaskTraceSummaryPath,
     latestRunSummary: paths.latestRunSummaryPath,
     reviewLoadBreakdown: paths.reviewLoadBreakdownPath,
     laneLatencySummary: paths.laneLatencySummaryPath,
@@ -1594,11 +1693,13 @@ function buildSummaryPaths(paths) {
     baselineDiscoveryTaskTraceSummary: paths.baselineDiscoveryTaskTraceSummaryPath,
     baselineSignoffTaskTraceSummary: paths.baselineSignoffTaskTraceSummaryPath,
     baselineNaturalTaskTraceSummary: paths.baselineNaturalTaskTraceSummaryPath,
+    baselineBoundaryTaskTraceSummary: paths.baselineBoundaryTaskTraceSummaryPath,
     rawDirectBaselineSummary: paths.rawDirectBaselineSummaryPath,
     rawDirectFastTaskTraceSummary: paths.rawDirectFastTaskTraceSummaryPath,
     rawDirectDiscoveryTaskTraceSummary: paths.rawDirectDiscoveryTaskTraceSummaryPath,
     rawDirectSignoffTaskTraceSummary: paths.rawDirectSignoffTaskTraceSummaryPath,
     rawDirectNaturalTaskTraceSummary: paths.rawDirectNaturalTaskTraceSummaryPath,
+    rawDirectBoundaryTaskTraceSummary: paths.rawDirectBoundaryTaskTraceSummaryPath,
     baselineComparisonReport: paths.baselineComparisonReportPath,
     speedVsAssuranceReport: paths.speedVsAssuranceReportPath,
     harnessExecutionMemory: paths.harnessMemoryPath,
@@ -1632,6 +1733,7 @@ function buildInitialSummary(paths, modes) {
     discoveryTask: null,
     signoffTask: null,
     naturalTask: null,
+    boundaryTask: null,
     measuredBaseline: null,
     rawDirectBaseline: null,
     baselineComparison: null,
@@ -1972,6 +2074,7 @@ async function runRawDirectBaseline(paths, transportMode, CodexAppServerClient) 
     key,
     prompt,
     tracePath,
+    cwd = workspaceRoot,
     expectNeedsInput = false,
     assertTarget = null,
     assertTargetLabel = "",
@@ -1980,7 +2083,7 @@ async function runRawDirectBaseline(paths, transportMode, CodexAppServerClient) 
       const response = await runRawDirectAppServerTurn({
         client: directClient,
         prompt,
-        cwd: workspaceRoot,
+        cwd,
         timeoutMs: 240000,
       });
       const explicitVerificationPassed = typeof assertTarget === "function" ? Boolean(assertTarget()) : true;
@@ -2048,6 +2151,16 @@ async function runRawDirectBaseline(paths, transportMode, CodexAppServerClient) 
       tracePath: paths.rawDirectNaturalTaskTraceSummaryPath,
       assertTarget: () => fs.readFileSync(fixtures.naturalTargetPath, "utf8").includes(naturalTargetSentence),
       assertTargetLabel: "natural_doc_note_present",
+    });
+    const boundaryTargetSentence =
+      "- `turnRuntime` remains the authoritative source for pending and active-turn projection; request cache is projection-only.";
+    await runSample({
+      key: "boundary",
+      prompt: buildBoundaryBaselinePrompt(path.relative(paths.rawDirectBaselineRoot, fixtures.boundaryTargetPath).replace(/\\/g, "/"), boundaryTargetSentence, normalizedTransportMode),
+      tracePath: paths.rawDirectBoundaryTaskTraceSummaryPath,
+      cwd: paths.rawDirectBaselineRoot,
+      assertTarget: () => fs.readFileSync(fixtures.boundaryTargetPath, "utf8").includes(boundaryTargetSentence),
+      assertTargetLabel: "boundary_runtime_truth_present",
     });
     summary.status = Object.values(summary.samples).some((entry) => entry && entry.turnId) ? "ok" : "failed";
     writeJson(paths.rawDirectBaselineSummaryPath, summary);
@@ -2732,6 +2845,173 @@ async function run() {
       }
     }
 
+    const boundaryStageStartedAt = isStageCompleted(resumeState, "boundary") ? 0 : beginStage(paths, resumeState, "boundary");
+    if (!isStageCompleted(resumeState, "boundary")) {
+      const boundaryTaskTargetPath = path.join(paths.rawRoot, "docs", "RUNTIME_BOUNDARY_MAP.md");
+      const boundaryTaskTargetSection = "## Runtime Truth";
+      const boundaryTaskTargetRelative = repoRelative(boundaryTaskTargetPath);
+      const boundaryTaskPromptTargetRelative = path.relative(paths.rawRoot, boundaryTaskTargetPath).replace(/\\/g, "/");
+      const boundaryTaskTargetSentence =
+        "- `turnRuntime` remains the authoritative source for pending and active-turn projection; request cache is projection-only.";
+      fs.mkdirSync(path.dirname(boundaryTaskTargetPath), { recursive: true });
+      fs.writeFileSync(boundaryTaskTargetPath, "# Runtime Boundary Map\n\n## Runtime Truth\n- historical note only\n", "utf8");
+      const boundaryTaskPrompt = buildBoundaryTaskPrompt(boundaryTaskPromptTargetRelative, boundaryTaskTargetSentence, transportMode);
+      const boundaryTaskResponse = await runExecViaHttp({
+        port,
+        headers: authHeaders,
+        body: {
+          prompt: boundaryTaskPrompt,
+          agentName: "default",
+          sandboxMode: "workspace-write",
+          approvalPolicy: "never",
+          cwd: paths.rawRoot,
+          requestUserInputPolicy: "blocked",
+          executionProfile: "full-runtime",
+          executionIntent: "boundary_sample",
+          executionSource: "signoff_evidence_script",
+          forceNewSession: true,
+          idempotencyKey: `signoff-boundary-${Date.now()}`,
+        },
+        timeoutMs: 420000,
+      });
+      const boundaryTaskThreadId =
+        (boundaryTaskResponse.turnStarted && typeof boundaryTaskResponse.turnStarted.threadId === "string" && boundaryTaskResponse.turnStarted.threadId) ||
+        (boundaryTaskResponse.turnCompleted && typeof boundaryTaskResponse.turnCompleted.threadId === "string" && boundaryTaskResponse.turnCompleted.threadId) ||
+        "";
+      assert(boundaryTaskThreadId, "boundary task thread id missing");
+      const boundaryMemoryMatch = await waitForMemoryRecord(
+        paths.harnessMemoryPath,
+        (entry) =>
+          entry &&
+          entry.threadId === boundaryTaskThreadId &&
+          entry.executionIntent === "boundary_sample" &&
+          entry.executionSource === "signoff_evidence_script" &&
+          entry.status === "completed" &&
+          entry.taskOutcomeStatus === "COMPLETED" &&
+          (Number(getObservedSignals(entry).dispatchSuccessCount || 0) > 0 ||
+            Number(getObservedSignals(entry).fileChanges || 0) > 0 ||
+            Number(getParentDispatchGuard(entry).required || 0) > 0),
+        45000
+      );
+      const boundaryMemoryRecord = selectNaturalTaskMemoryRecord(boundaryMemoryMatch.executionMemory, {
+        threadId: boundaryTaskThreadId,
+        executionIntent: "boundary_sample",
+        executionSource: "signoff_evidence_script",
+      });
+      assert(boundaryMemoryRecord && typeof boundaryMemoryRecord.turnId === "string" && boundaryMemoryRecord.turnId, "boundary task memory record missing");
+      const boundaryArtifactRecord = findTurnArtifactManifest(paths.turnsDir, boundaryMemoryRecord.turnId);
+      assert(boundaryArtifactRecord, "boundary task turn artifact manifest missing");
+      const boundaryArtifactEvents = loadTurnArtifactEvents(boundaryArtifactRecord);
+      const boundaryArtifactStreamSummary = summarizeStreamEvents(extractStreamEventsFromArtifactEvents(boundaryArtifactEvents));
+      const boundaryArtifactFinalText = extractFinalAssistantTextFromArtifactEvents(boundaryArtifactEvents);
+      const boundaryFlowTrace = loadArtifactSiblingJson(boundaryArtifactRecord, "flow_trace_summary.json");
+      const boundaryStageTimeline = loadArtifactSiblingJson(boundaryArtifactRecord, "stage_timeline.json");
+      const boundaryEvidenceManifest = loadArtifactSiblingJson(boundaryArtifactRecord, "evidence_manifest.json");
+      const boundaryReplayResponse = await requestJson({
+        port,
+        path: `/api/replay/turn/${encodeURIComponent(boundaryMemoryRecord.turnId)}`,
+        method: "GET",
+        headers: authHeaders,
+        timeoutMs: 15000,
+      });
+      assert(boundaryReplayResponse.statusCode === 200 && boundaryReplayResponse.json && boundaryReplayResponse.json.ok === true, "boundary task replay lookup failed");
+      const boundaryTargetText = fs.readFileSync(boundaryTaskTargetPath, "utf8");
+      const boundaryResponseStreamSummary = summarizeStreamEvents(boundaryTaskResponse.events);
+      const boundaryObservedSignals = getObservedSignals(boundaryMemoryRecord);
+      const boundaryObservedSampleChangedPaths = Array.isArray(boundaryObservedSignals.sampleChangedPaths) ? boundaryObservedSignals.sampleChangedPaths : [];
+      const boundaryObservedDispatchChildren = Array.isArray(boundaryObservedSignals.dispatchChildren) ? boundaryObservedSignals.dispatchChildren : [];
+      const boundaryReplayDispatchChildren =
+        boundaryReplayResponse.json &&
+        boundaryReplayResponse.json.replay &&
+        boundaryReplayResponse.json.replay.observed_signals &&
+        Array.isArray(boundaryReplayResponse.json.replay.observed_signals.dispatchChildren)
+          ? boundaryReplayResponse.json.replay.observed_signals.dispatchChildren
+          : [];
+      const boundaryDispatchChildren = uniqueStrings([
+        ...boundaryObservedDispatchChildren,
+        ...boundaryArtifactStreamSummary.dispatchReceivers,
+        ...boundaryResponseStreamSummary.dispatchReceivers,
+        ...boundaryReplayDispatchChildren,
+      ]);
+      const boundaryReplayObservedSignals =
+        boundaryReplayResponse.json &&
+        boundaryReplayResponse.json.replay &&
+        boundaryReplayResponse.json.replay.observed_signals &&
+        typeof boundaryReplayResponse.json.replay.observed_signals === "object"
+          ? boundaryReplayResponse.json.replay.observed_signals
+          : {};
+      const boundaryAllSampleChangedPaths = uniqueStrings([
+        ...boundaryObservedSampleChangedPaths,
+        ...(Array.isArray(boundaryReplayObservedSignals.sampleChangedPaths) ? boundaryReplayObservedSignals.sampleChangedPaths : []),
+      ]);
+      const boundaryImplementationObserved = Boolean(boundaryArtifactStreamSummary.implementationObserved || boundaryResponseStreamSummary.implementationObserved);
+      const boundaryReviewerObserved = Boolean(boundaryArtifactStreamSummary.reviewerObserved || boundaryResponseStreamSummary.reviewerObserved);
+      const boundaryFinalAssistantText = boundaryArtifactFinalText || boundaryTaskResponse.finalText || "";
+      const boundaryAssertions = {
+        completed: Boolean(boundaryMemoryRecord && boundaryMemoryRecord.status === "completed" && boundaryMemoryRecord.taskOutcomeStatus === "COMPLETED"),
+        parentDispatchSatisfied: Boolean(boundaryMemoryRecord && boundaryMemoryRecord.parentDispatchGuard && Number(boundaryMemoryRecord.parentDispatchGuard.satisfied) === 1),
+        dispatchCountObserved: Number(boundaryObservedSignals.dispatchSuccessCount || 0) >= 2 || boundaryDispatchChildren.length >= 2,
+        implementationObserved: boundaryImplementationObserved,
+        reviewerObserved: boundaryReviewerObserved,
+        targetSentencePresent: boundaryTargetText.includes(boundaryTaskTargetSentence),
+        parentObservedFileChanges: Number(boundaryObservedSignals.fileChanges || 0) >= 1,
+        parentObservedChangedFiles: Number(boundaryObservedSignals.changedFiles || 0) >= 1,
+        parentObservedTargetPath:
+          boundaryAllSampleChangedPaths.includes(boundaryTaskTargetRelative) ||
+          boundaryAllSampleChangedPaths.includes(boundaryTaskTargetPath.replace(/\\/g, "/")),
+        bundleLocalTurnArtifact: path.resolve(boundaryArtifactRecord.path).startsWith(path.resolve(paths.turnsDir)),
+        finalReplyAcknowledged: typeof boundaryFinalAssistantText === "string" && boundaryFinalAssistantText.trim() === `BOUNDARY_TASK_OK ${boundaryTaskPromptTargetRelative}`,
+      };
+      assert(allAssertionsPass(boundaryAssertions), `boundary task assertion failed: ${JSON.stringify(boundaryAssertions)}`);
+      const boundaryTaskTraceSummary = {
+        generatedAt: new Date().toISOString(),
+        transportMode,
+        selectionMethod: "persisted_execution_memory_best_completed_turn",
+        turnId: boundaryMemoryRecord.turnId,
+        threadId: boundaryTaskThreadId,
+        targetPath: boundaryTaskTargetPath,
+        targetRelativePath: boundaryTaskTargetRelative,
+        promptTargetRelativePath: boundaryTaskPromptTargetRelative,
+        targetSection: boundaryTaskTargetSection,
+        targetSentence: boundaryTaskTargetSentence,
+        responseFinalText: boundaryTaskResponse.finalText,
+        finalText: boundaryFinalAssistantText,
+        turn: {
+          status: boundaryMemoryRecord.status,
+          taskOutcomeStatus: boundaryMemoryRecord.taskOutcomeStatus,
+          taskOutcomeReason: boundaryMemoryRecord.taskOutcomeReason,
+        },
+        parentDispatchGuard: boundaryMemoryRecord.parentDispatchGuard || null,
+        observedSignals: boundaryObservedSignals,
+        sampleChangedPaths: boundaryAllSampleChangedPaths,
+        dispatchChildren: boundaryDispatchChildren,
+        responseStream: boundaryResponseStreamSummary,
+        artifactStream: boundaryArtifactStreamSummary,
+        replay: boundaryReplayResponse.json.replay || null,
+        artifactManifestPath: boundaryArtifactRecord.path,
+        artifactDir: path.dirname(boundaryArtifactRecord.path),
+        flowTraceSummary: boundaryFlowTrace,
+        stageTimeline: boundaryStageTimeline,
+        evidenceManifest: boundaryEvidenceManifest,
+        assertions: boundaryAssertions,
+      };
+      writeJson(paths.boundaryTaskTraceSummaryPath, boundaryTaskTraceSummary);
+      summary.boundaryTask = {
+        threadId: boundaryTaskThreadId,
+        turnId: boundaryMemoryRecord.turnId,
+        targetPath: boundaryTaskTargetPath,
+        artifactManifestPath: boundaryArtifactRecord.path,
+        dispatchChildren: boundaryDispatchChildren,
+        assertions: boundaryAssertions,
+      };
+      if (completeStageAndMaybePause("boundary", boundaryStageStartedAt, {
+        refs: [repoRelative(paths.boundaryTaskTraceSummaryPath)],
+        metadata: { turnId: boundaryMemoryRecord.turnId, threadId: boundaryTaskThreadId },
+      })) {
+        return;
+      }
+    }
+
     await waitForFile(paths.harnessMemoryPath, 30000);
     const finalMemory = readJson(paths.harnessMemoryPath);
     const evalHistory = readJsonLines(paths.evalRunsPath);
@@ -2751,6 +3031,7 @@ async function run() {
           repoRelative(paths.baselineDiscoveryTaskTraceSummaryPath),
           repoRelative(paths.baselineSignoffTaskTraceSummaryPath),
           repoRelative(paths.baselineNaturalTaskTraceSummaryPath),
+          repoRelative(paths.baselineBoundaryTaskTraceSummaryPath),
         ],
         metadata: { profile: summary.measuredBaseline.profile },
       })) {
@@ -2784,6 +3065,7 @@ async function run() {
           repoRelative(paths.rawDirectDiscoveryTaskTraceSummaryPath),
           repoRelative(paths.rawDirectSignoffTaskTraceSummaryPath),
           repoRelative(paths.rawDirectNaturalTaskTraceSummaryPath),
+          repoRelative(paths.rawDirectBoundaryTaskTraceSummaryPath),
         ],
         metadata: { status: summary.rawDirectBaseline.status },
       })) {
@@ -2831,15 +3113,8 @@ async function run() {
       const signoffEvidenceManifest = signoffTrace.evidenceManifest || {};
       const signoffReviewBreakdown = signoffTrace.reviewLoadBreakdown || {};
       const latestRunSummaryBundle = loadOptionalJson(paths.latestRunSummaryPath) || {};
-      summary.assertions = {
-        runtimePostureSafe: allAssertionsPass(runtimeAssertions),
-        coreHarnessWorkflowPassed: failedCases.length === 0,
-        requirementRbjParentActivePassed: Boolean(rbjCase && rbjCase.passed === true),
-        fastTaskTracePassed: allAssertionsPass(fastTrace.assertions || {}),
-        discoveryTaskTracePassed: allAssertionsPass(discoveryTrace.assertions || {}),
-        signoffTaskTracePassed: allAssertionsPass(signoffTrace.assertions || {}),
-        naturalTaskTracePassed: allAssertionsPass(naturalTrace.assertions || {}),
-        bundleContainsRequiredFiles: [
+      const hasRequiredBundleFiles = () =>
+        [
           paths.summaryPath,
           paths.runtimeSnapshotPath,
           paths.coreHarnessWorkflowRunPath,
@@ -2851,7 +3126,16 @@ async function run() {
           paths.bundleSurfaceMapPath,
           paths.resumeStatePath,
           paths.laneLatencySummaryPath,
-        ].every((filePath) => fs.existsSync(filePath)),
+        ].every((filePath) => fs.existsSync(filePath));
+      summary.assertions = {
+        runtimePostureSafe: allAssertionsPass(runtimeAssertions),
+        coreHarnessWorkflowPassed: failedCases.length === 0,
+        requirementRbjParentActivePassed: Boolean(rbjCase && rbjCase.passed === true),
+        fastTaskTracePassed: allAssertionsPass(fastTrace.assertions || {}),
+        discoveryTaskTracePassed: allAssertionsPass(discoveryTrace.assertions || {}),
+        signoffTaskTracePassed: allAssertionsPass(signoffTrace.assertions || {}),
+        naturalTaskTracePassed: allAssertionsPass(naturalTrace.assertions || {}),
+        bundleContainsRequiredFiles: hasRequiredBundleFiles(),
         bundleContainsTurnsDir: fs.existsSync(paths.turnsDir),
         bundleContainsMeasuredBaselineTurnsDir: fs.existsSync(paths.measuredBaselineTurnsDir),
         evalHistoryPersisted: evalHistory.length >= 1,
@@ -2938,6 +3222,8 @@ async function run() {
       });
       writeJson(paths.conformanceReportPath, conformanceReport);
       writeJson(paths.operatorViewSummaryPath, operatorViewSummary);
+      summary.assertions.bundleContainsRequiredFiles = hasRequiredBundleFiles();
+      summary.allPassed = allAssertionsPass(summary.assertions);
       assert(summary.allPassed, `summary assertion failed: ${JSON.stringify(summary.assertions)}`);
       completeStageAndMaybePause("conformance", conformanceStageStartedAt, {
         refs: [repoRelative(paths.conformanceReportPath), repoRelative(paths.operatorViewSummaryPath)],
@@ -2967,6 +3253,12 @@ async function run() {
     }
     persistArtifacts();
     persistSummary();
+    if (summary.allPassed && loggingSurfacePaths.currentLatestSignoffSummaryPath) {
+      writeJson(
+        loggingSurfacePaths.currentLatestSignoffSummaryPath,
+        buildCurrentLatestSignoffSummary(paths, summary)
+      );
+    }
     console.log(
       JSON.stringify(
         {

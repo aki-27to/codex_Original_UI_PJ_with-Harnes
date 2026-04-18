@@ -1,9 +1,9 @@
 {
-  "generatedAt": "2026-03-09T12:51:59.190Z",
-  "transportMode": "stdio",
+  "generatedAt": "2026-04-18T05:29:46.006Z",
+  "transportMode": "mock-fixture",
   "selectionMethod": "persisted_execution_memory_best_completed_turn",
-  "turnId": "019cd2a3-e0ce-7100-9e47-14ff3a985ac3",
-  "threadId": "019cd2a1-7a84-7120-8764-5c77b9e6af74",
+  "turnId": "mock-turn-8",
+  "threadId": "mock-thread-5",
   "targetPath": "docs\\CURRENT_ARCHITECTURE.md",
   "targetRelativePath": "docs/CURRENT_ARCHITECTURE.md",
   "targetSection": "## 6) Evidence and Persistence",
@@ -23,56 +23,57 @@
     "violation": 0
   },
   "observedSignals": {
-    "commandExecutions": 5,
+    "commandExecutions": 1,
     "commandFailures": 0,
     "fileChanges": 1,
-    "changedFiles": 1,
+    "changedFiles": 2,
     "sampleChangedPaths": [
-      "docs/CURRENT_ARCHITECTURE.md"
+      "docs/CURRENT_ARCHITECTURE.md",
+      "Applied requested documentation bullet."
     ],
     "mcpCalls": 0,
-    "collabCalls": 9,
+    "mcpWallTimeMs": 0,
+    "mcpPerServerCounts": {},
+    "mcpNamespaces": [],
+    "mcpSandboxStates": [],
+    "mcpParallelSafeCallCount": 0,
+    "collabCalls": 2,
     "collabFailures": 0,
     "webSearches": 0,
     "dispatchCount": 2,
     "dispatchSuccessCount": 2,
     "dispatchFailureCount": 0,
     "dispatchChildren": [
-      "unknown",
-      "019cd2a4-7fbb-7932-9a55-a2d2efec351c",
-      "019cd2a6-7e09-7620-adf3-e3d0ee45805f"
+      "infra_worker",
+      "reviewer"
     ],
     "itemCounts": {
-      "userMessage": 1,
-      "reasoning": 12,
-      "agentMessage": 7,
-      "commandExecution": 5,
-      "collabAgentToolCall": 9
+      "collabToolCall": 2,
+      "commandExecution": 1,
+      "agentMessage": 1
     }
   },
   "sampleChangedPaths": [
+    "Applied requested documentation bullet.",
     "docs/CURRENT_ARCHITECTURE.md"
   ],
   "dispatchChildren": [
-    "019cd2a4-7fbb-7932-9a55-a2d2efec351c",
-    "019cd2a6-7e09-7620-adf3-e3d0ee45805f",
     "1",
-    "unknown"
+    "infra_worker",
+    "reviewer"
   ],
   "responseStream": {
     "counts": {
       "turn": 4,
-      "item": 65,
-      "delta": 940,
-      "plan": 9,
-      "tokenUsage": 31,
-      "activity": 4,
+      "plan": 4,
+      "item": 8,
+      "delta": 2,
+      "activity": 3,
       "final": 1,
       "status": 1
     },
     "activityLabels": [
       "adversarial_retry",
-      "evidence_missing",
       "git_automation"
     ],
     "dispatchReceivers": [
@@ -80,68 +81,36 @@
     ],
     "itemSummaries": [
       {
-        "label": "userMessage",
-        "detail": "item completed (userMessage)"
-      },
-      {
-        "label": "reasoning",
-        "detail": "reasoning item completed"
-      },
-      {
-        "label": "assistant message",
-        "detail": "assistant: Goal lock: update only [docs/CURRENT_ARCHITECTURE.md](docs\\CURRENT_ARCHITECTURE.md) by adding the specified bullet under `## 6) Evidence and Persistence` if it is missing; non-goals are any other file edits or wording changes. Assumptions: the section exists, the bullet is not already duplicated, and reviewer evidence can be collected read-only; "
+        "label": "collab agent tool",
+        "detail": "spawnAgent / completed / receivers=1 / child=infra_worker / thread=mock-thread-5-infra / Update docs/CURRENT_ARCHITECTURE.md / Owned paths:\n- docs/CURRENT_ARCHITECTURE.md\nApplied requested documentation bullet."
       },
       {
         "label": "command execution",
-        "detail": "\"powershell.exe\" -Command 'rg -n \"''^## 6'\"\\\\) Evidence and Persistence|natural_task_trace_summary\\\\.json|\"'^## \" docs/CURRENT_ARCHITECTURE.md' / completed exit=0 282ms"
+        "detail": "node scripts/system_coherence_review_test.js / completed exit=0 120ms"
+      },
+      {
+        "label": "collab agent tool",
+        "detail": "spawnAgent / completed / receivers=1 / child=reviewer / thread=mock-thread-5-reviewer / Review docs/CURRENT_ARCHITECTURE.md / No findings."
+      },
+      {
+        "label": "assistant message",
+        "detail": "assistant: NATURAL_TASK_OK docs/CURRENT_ARCHITECTURE.md"
+      },
+      {
+        "label": "collab agent tool",
+        "detail": "spawnAgent / completed / receivers=1 / child=infra_worker / thread=mock-thread-5-infra / Update docs/CURRENT_ARCHITECTURE.md / Owned paths:\n- docs/CURRENT_ARCHITECTURE.md\nApplied requested documentation bullet."
       },
       {
         "label": "command execution",
-        "detail": "\"powershell.exe\" -Command 'git status --short' / completed exit=0 282ms"
-      },
-      {
-        "label": "reasoning",
-        "detail": "reasoning item completed"
-      },
-      {
-        "label": "assistant message",
-        "detail": "assistant: The target bullet is already present in the requested section, so I’m checking the surrounding context before dispatching. If it is already correctly placed, the implementation specialist’s job becomes a no-duplication confirmation rather than forcing an extra doc change that would violate the content constraint."
-      },
-      {
-        "label": "command execution",
-        "detail": "\"powershell.exe\" -Command 'Get-Content docs/CURRENT_ARCHITECTURE.md | Select-Object -Skip 171 -First 35' / completed exit=0 287ms"
-      },
-      {
-        "label": "reasoning",
-        "detail": "reasoning item completed"
-      },
-      {
-        "label": "assistant message",
-        "detail": "assistant: I’ve confirmed the exact sentence already exists in the requested section. I’m still dispatching the implementation owner now so the change path stays within the required specialist boundary, with instructions to avoid duplication and to use `apply_patch` only if insertion is actually needed."
+        "detail": "node scripts/system_coherence_review_test.js / completed exit=0 120ms"
       },
       {
         "label": "collab agent tool",
-        "detail": "spawnAgent / completed / receivers=1 / child=019cd2a2-8b07-7ac1-9e8c-e20ffd4fb385 / Implement the requested docs maintenance with sole ownership of docs\\CURRENT_ARCHITECTURE.md.\n\nTask:\n- Check under `## 6) Evidence and Persistence` whether this exact b"
-      },
-      {
-        "label": "reasoning",
-        "detail": "reasoning item completed"
-      },
-      {
-        "label": "collab agent tool",
-        "detail": "wait / completed / receivers=1 / Owned paths:\n- `docs\\CURRENT_ARCHITECTURE.md`\n\nFound the file already compliant. The exact bullet is already present under `## 6) Evidence and Persistence`, so I made no edit and did not duplicate the sentence."
-      },
-      {
-        "label": "reasoning",
-        "detail": "reasoning item completed"
+        "detail": "spawnAgent / completed / receivers=1 / child=reviewer / thread=mock-thread-5-reviewer / Review docs/CURRENT_ARCHITECTURE.md / No findings."
       },
       {
         "label": "assistant message",
-        "detail": "assistant: The implementation owner confirmed the file is already compliant and made no duplicate edit. I’m collecting the required independent reviewer evidence now, read-only, focused on whether the requested state and constraints are satisfied."
-      },
-      {
-        "label": "collab agent tool",
-        "detail": "spawnAgent / completed / receivers=1 / child=019cd2a3-222e-77a1-88be-42b5ce0eb229 / Perform an independent read-only review of this documentation maintenance request.\n\nScope:\n- Review only whether docs\\CURRENT_ARCHITECTURE.md already satisfies the requ"
+        "detail": "assistant: NATURAL_TASK_OK docs/CURRENT_ARCHITECTURE.md"
       }
     ],
     "implementationObserved": true,
@@ -150,15 +119,13 @@
   "artifactStream": {
     "counts": {
       "turn": 2,
-      "item": 34,
-      "delta": 444,
-      "plan": 4,
-      "tokenUsage": 16,
-      "activity": 1,
-      "final": 1,
-      "status": 1
+      "plan": 2,
+      "item": 4,
+      "delta": 1,
+      "activity": 2
     },
     "activityLabels": [
+      "adversarial_retry",
       "git_automation"
     ],
     "dispatchReceivers": [
@@ -166,76 +133,28 @@
     ],
     "itemSummaries": [
       {
-        "label": "userMessage",
-        "detail": "item completed (userMessage)"
-      },
-      {
-        "label": "reasoning",
-        "detail": "reasoning item completed"
-      },
-      {
-        "label": "assistant message",
-        "detail": "assistant: Goal lock: verify and, only if needed, update [docs/CURRENT_ARCHITECTURE.md](docs\\CURRENT_ARCHITECTURE.md) so `## 6) Evidence and Persistence` contains the exact requested bullet once; non-goals are any edits outside that file or any duplicate wording. Assumptions: the section exists, unrelated worktree changes remain untouched, and the reviewer "
-      },
-      {
-        "label": "reasoning",
-        "detail": "reasoning item completed"
+        "label": "collab agent tool",
+        "detail": "spawnAgent / completed / receivers=1 / child=infra_worker / thread=mock-thread-5-infra / Update docs/CURRENT_ARCHITECTURE.md / Owned paths:\n- docs/CURRENT_ARCHITECTURE.md\nApplied requested documentation bullet."
       },
       {
         "label": "command execution",
-        "detail": "\"powershell.exe\" -Command 'rg -n \"''^## 6'\"\\\\) Evidence and Persistence|natural_task_trace_summary\\\\.json|\"'^## \" docs/CURRENT_ARCHITECTURE.md' / completed exit=0 239ms"
+        "detail": "node scripts/system_coherence_review_test.js / completed exit=0 120ms"
       },
       {
-        "label": "command execution",
-        "detail": "\"powershell.exe\" -Command 'git status --short docs/CURRENT_ARCHITECTURE.md' / completed exit=0 274ms"
-      },
-      {
-        "label": "reasoning",
-        "detail": "reasoning item completed"
+        "label": "collab agent tool",
+        "detail": "spawnAgent / completed / receivers=1 / child=reviewer / thread=mock-thread-5-reviewer / Review docs/CURRENT_ARCHITECTURE.md / No findings."
       },
       {
         "label": "assistant message",
-        "detail": "assistant: The exact bullet is present already, and the target file is already dirty in the worktree. I’m capturing a little more context, then I’ll delegate the implementation owner with explicit instructions to avoid duplication and only use `apply_patch` if the bullet is actually missing."
-      },
-      {
-        "label": "command execution",
-        "detail": "\"powershell.exe\" -Command 'Get-Content docs/CURRENT_ARCHITECTURE.md | Select-Object -Skip 171 -First 35' / completed exit=0 274ms"
-      },
-      {
-        "label": "reasoning",
-        "detail": "reasoning item completed"
-      },
-      {
-        "label": "collab agent tool",
-        "detail": "spawnAgent / completed / receivers=1 / child=019cd2a4-7fbb-7932-9a55-a2d2efec351c / You own exactly one path for this task:\n\nOwned paths:\n- `docs\\CURRENT_ARCHITECTURE.md`\n\nTask:\n- Inspect `## 6) Evidence and Persistence` in that file.\n- Ensure this exa"
-      },
-      {
-        "label": "reasoning",
-        "detail": "reasoning item completed"
-      },
-      {
-        "label": "collab agent tool",
-        "detail": "wait / completed / receivers=1 / NATURAL_TASK_OK docs/CURRENT_ARCHITECTURE.md"
-      },
-      {
-        "label": "reasoning",
-        "detail": "reasoning item completed"
-      },
-      {
-        "label": "assistant message",
-        "detail": "assistant: The implementation worker completed without the required ownership header, so I’m correcting that evidence gap before I proceed. I already have the file-state check locally; now I need the implementation specialist to restate its result in the mandated format so the trace is complete."
-      },
-      {
-        "label": "collab agent tool",
-        "detail": "resumeAgent / completed / receivers=1 / NATURAL_TASK_OK docs/CURRENT_ARCHITECTURE.md"
+        "detail": "assistant: NATURAL_TASK_OK docs/CURRENT_ARCHITECTURE.md"
       }
     ],
     "implementationObserved": true,
     "reviewerObserved": true
   },
   "replay": {
-    "turnId": "019cd2a3-e0ce-7100-9e47-14ff3a985ac3",
-    "threadId": "019cd2a1-7a84-7120-8764-5c77b9e6af74",
+    "turnId": "mock-turn-8",
+    "threadId": "mock-thread-5",
     "agentName": "default",
     "status": "completed",
     "taskOutcomeStatus": "COMPLETED",
@@ -244,8 +163,8 @@
     "executionIntent": "docs_maintenance",
     "executionSource": "signoff_evidence_script",
     "request": {
-      "promptSha256": "e07342f8fc1a698cb91ecd66d740779d383414d07cc2c09ff2121606fbe444c6",
-      "promptChars": 4578,
+      "promptSha256": "c18ac44b3be938f291a470937e9d98aa11d6c209246ac827a89c76a667d19662",
+      "promptChars": 7856,
       "sandboxMode": "workspace-write",
       "approvalPolicy": "never",
       "webSearch": 0,
@@ -254,18 +173,20 @@
       "agentName": "default",
       "cwd": "",
       "requestUserInputPolicy": "blocked",
-      "forceNewSession": 0,
+      "memoryMode": "default",
+      "resetCodexMemory": 0,
+      "forceNewSession": 1,
       "executionProfile": "full-runtime",
       "executionIntent": "docs_maintenance",
       "executionSource": "signoff_evidence_script",
-      "recipeHash": "79d54745f62e3dfdaa0f207ad72783e22fd8cc9c7be089b01a0af099e8d822c6"
+      "recipeHash": "49914dabc5f58625c27700d6b0158efd55829c1b8658a6e86faba83ab871c9e1"
     },
     "baseline": {
       "outputSha256": "5ba09cd01e4afcb3213456138ed139e4bd482e3c3d6e74c234d327dffb3215f8",
       "outputLength": 44,
       "outputSnapshot": "NATURAL_TASK_OK docs/CURRENT_ARCHITECTURE.md",
-      "artifactManifestPath": "logs/bundles/signoff/signoff-2026-03-09T12-31-59-842Z-24dd95/raw/turns/2026-03-09/019cd2a1-7a84-7120-8764-5c77b9e6af74__019cd2a3-e0ce-7100-9e47-14ff3a985ac3/manifest.js",
-      "artifactManifestSha256": "f57191f3415dd8110fbe1000c1c99000e24bf5ee6f2e33298ff51c040ef9d442"
+      "artifactManifestPath": "logs/bundles/signoff/signoff-2026-04-18T05-27-13-996Z-f97810/raw/turns/2026-04-18/mock-thread-5__mock-turn-8/manifest.json",
+      "artifactManifestSha256": "d6ccf56199559dd176f6048a2dc7cc569db104e57e44e60ba4756cbe5b4b1b2e"
     },
     "replayStats": {
       "replayCount": 0,
@@ -274,32 +195,35 @@
       "lastReplayOutputSha256": "",
       "lastReplayDiffRate": 0
     },
-    "startedAt": 1773060481230,
-    "completedAt": 1773060718800,
-    "updatedAt": 1773060719174
+    "startedAt": 1776490153089,
+    "completedAt": 1776490155678,
+    "updatedAt": 1776490165300
   },
-  "artifactManifestPath": "logs\\bundles\\signoff\\signoff-2026-03-09T12-31-59-842Z-24dd95\\raw\\turns\\2026-03-09\\019cd2a1-7a84-7120-8764-5c77b9e6af74__019cd2a3-e0ce-7100-9e47-14ff3a985ac3\\manifest.json",
-  "artifactDir": "logs\\bundles\\signoff\\signoff-2026-03-09T12-31-59-842Z-24dd95\\raw\\turns\\2026-03-09\\019cd2a1-7a84-7120-8764-5c77b9e6af74__019cd2a3-e0ce-7100-9e47-14ff3a985ac3",
+  "artifactManifestPath": "logs\\bundles\\signoff\\signoff-2026-04-18T05-27-13-996Z-f97810\\raw\\turns\\2026-04-18\\mock-thread-5__mock-turn-8\\manifest.json",
+  "artifactDir": "logs\\bundles\\signoff\\signoff-2026-04-18T05-27-13-996Z-f97810\\raw\\turns\\2026-04-18\\mock-thread-5__mock-turn-8",
   "flowTraceSummary": {
     "schema": "flow-trace-summary.v1",
-    "generatedAt": "2026-03-09T12:51:58.854Z",
+    "generatedAt": "2026-04-18T05:29:18.026Z",
     "selectedPlanningMode": "NORMAL",
     "selectedPlanningDepth": "STANDARD_PLANNING",
     "selectedAssuranceDepth": "LIGHT_ASSURANCE",
     "planningModeReasons": [
+      "taskFamily=deterministic_code",
+      "familyAmbiguityHandling=bounded_assumption",
       "ambiguity=1",
-      "acceptance_uncertainty=0",
+      "acceptance_uncertainty=1",
       "novelty=2",
       "external_dependency=0",
       "openQuestions=0",
-      "acceptanceClarity=high",
+      "acceptanceClarity=medium",
       "specialistBoundaries=2",
       "approvalBoundaryTouched=no",
       "overDeliveryRisk=low",
       "userDecisionRequired=no",
-      "assumptionDependence=low",
-      "existingSpecClarity=high",
-      "changeScopeClarity=medium"
+      "clarificationAction=proceed",
+      "clarificationReason=task_family_not_design_sensitive",
+      "benchmarkCandidates=0",
+      "assumptionDependence=low"
     ],
     "assuranceDepthReasons": [
       "blast_radius=0",
@@ -310,6 +234,8 @@
       "reviewerSuggested=yes",
       "testerSuggested=no",
       "signoffImportance=normal",
+      "benchmarkAnchored=no",
+      "strictBenchmarkRecreation=no",
       "irreversibleRisk=no",
       "newLogicRisk=no",
       "regressionRisk=high"
@@ -318,9 +244,8 @@
     "executionFlow": "STANDARD_PLANNING+LIGHT_ASSURANCE",
     "usedAgents": [
       "default",
-      "019cd2a4-7fbb-7932-9a55-a2d2efec351c",
-      "019cd2a6-7e09-7620-adf3-e3d0ee45805f",
-      "unknown"
+      "mock-thread-5-infra",
+      "mock-thread-5-reviewer"
     ],
     "dispatchCount": 2,
     "dispatchSuccessCount": 2,
@@ -348,9 +273,9 @@
       "parentDispatchReason": ""
     },
     "acceptanceSummary": {
-      "passCount": 5,
+      "passCount": 1,
       "failCount": 0,
-      "total": 5
+      "total": 1
     },
     "evidenceSources": [
       "events.ndjson",
@@ -363,49 +288,37 @@
     ],
     "childEvidenceLedger": [
       {
-        "agent": "019cd2a4-7fbb-7932-9a55-a2d2efec351c",
-        "dispatchCount": 1,
+        "agent": "mock-thread-5-infra",
+        "dispatchCount": 2,
         "completedCount": 1,
-        "failedCount": 0,
-        "ownedPaths": [],
-        "skills": [],
-        "evidenceNotes": [],
-        "reviewerObserved": 0,
-        "testerObserved": 0,
-        "firstSeenAt": 1773060527130,
-        "lastSeenAt": 1773060527130
-      },
-      {
-        "agent": "019cd2a6-7e09-7620-adf3-e3d0ee45805f",
-        "dispatchCount": 1,
-        "completedCount": 1,
-        "failedCount": 0,
-        "ownedPaths": [],
-        "skills": [],
-        "evidenceNotes": [],
-        "reviewerObserved": 0,
-        "testerObserved": 0,
-        "firstSeenAt": 1773060657762,
-        "lastSeenAt": 1773060657762
-      },
-      {
-        "agent": "unknown",
-        "dispatchCount": 16,
-        "completedCount": 7,
         "failedCount": 0,
         "ownedPaths": [
-          "docs/CURRENT_ARCHITECTURE.md"
+          "docs/CURRENT_ARCHITECTURE.md",
+          "Applied requested documentation bullet."
         ],
         "skills": [],
         "evidenceNotes": [
-          "NATURAL_TASK_OK docs/CURRENT_ARCHITECTURE.md",
-          "Owned paths:\n- `docs\\CURRENT_ARCHITECTURE.md`\n\nFound the file already compliant. The exact bullet is already present under `## 6) Evidence and Persistence`, so I did not edit the file.",
-          "No findings\n\nThe exact bullet is present under `## 6) Evidence and Persistence` in [docs/CURRENT_ARCHITECTURE.md](docs\\CURRENT_ARCHITECTURE.md#L199), and I observed it exactly once with no duplication."
+          "Owned paths:\n- docs/CURRENT_ARCHITECTURE.md\nApplied requested documentation bullet."
+        ],
+        "reviewerObserved": 0,
+        "testerObserved": 0,
+        "firstSeenAt": 1776490155670,
+        "lastSeenAt": 1776490155671
+      },
+      {
+        "agent": "mock-thread-5-reviewer",
+        "dispatchCount": 2,
+        "completedCount": 1,
+        "failedCount": 0,
+        "ownedPaths": [],
+        "skills": [],
+        "evidenceNotes": [
+          "No findings."
         ],
         "reviewerObserved": 1,
         "testerObserved": 0,
-        "firstSeenAt": 1773060521746,
-        "lastSeenAt": 1773060717219
+        "firstSeenAt": 1776490155674,
+        "lastSeenAt": 1776490155674
       }
     ],
     "docSyncEvidence": {
@@ -419,11 +332,598 @@
       "harnessMapUpdated": 0,
       "missing": []
     },
+    "familyCompletionGate": {
+      "applies": false,
+      "taskFamily": "deterministic_code",
+      "familyProfileId": "deterministic_code",
+      "completionContract": "task_outcome_default",
+      "status": "not_applicable",
+      "summary": "Family completion gate not applicable.",
+      "missingHard": [],
+      "executionSource": "signoff_evidence_script",
+      "workspaceLockRequired": false,
+      "workspaceLockedObserved": true
+    },
+    "runtimeRevisionGate": {
+      "status": "CLEAR",
+      "reason": "no_revision_gate",
+      "proposal": {
+        "proposalId": "",
+        "changedFields": [],
+        "reason": "",
+        "evidence": [],
+        "requiresReapproval": false,
+        "originatingAgent": "default",
+        "status": "",
+        "summary": "",
+        "previousPromptHash": "",
+        "currentPromptHash": "",
+        "createdFromRevisionNumber": 0,
+        "reviewedBy": "",
+        "reviewedAt": ""
+      },
+      "enforceFinalStatus": "",
+      "taskOutcomeStatus": "",
+      "taskOutcomeReason": ""
+    },
+    "postLockDrift": {
+      "schema": "post-lock-drift.v1",
+      "status": "PASS",
+      "reason": "no_drift",
+      "planningDepth": "STANDARD_PLANNING",
+      "assuranceDepth": "LIGHT_ASSURANCE",
+      "flowPath": "NORMAL_PATH",
+      "counts": {
+        "totalClauses": 16,
+        "coreClauseCount": 15,
+        "coreMappedCount": 15,
+        "coreUnmappedCount": 0,
+        "dispatchCount": 1,
+        "planStepCount": 3,
+        "dispatchCoveredCoreCount": 15,
+        "planCoveredCoreCount": 15,
+        "fullyCoveredCoreCount": 15,
+        "acceptanceLinkedCoreCount": 15,
+        "dispatchGapCount": 0,
+        "planGapCount": 0,
+        "driftedClauseCount": 0,
+        "orphanDispatchCount": 0,
+        "orphanPlanStepCount": 0
+      },
+      "rates": {
+        "dispatchCoverageRate": 1,
+        "planCoverageRate": 1,
+        "fullCoverageRate": 1,
+        "driftRate": 0
+      },
+      "unmappedCoreClauseIds": [],
+      "dispatchGapClauseIds": [],
+      "planGapClauseIds": [],
+      "driftedClauseIds": [],
+      "orphanDispatchIds": [],
+      "orphanPlanStepIds": [],
+      "driftedClauses": []
+    },
+    "clauseCompletionScorecard": {
+      "schema": "clause-completion-scorecard.v1",
+      "status": "PASS",
+      "reason": "all_core_clauses_satisfied",
+      "summary": {
+        "coreTotal": 15,
+        "satisfiedCount": 15,
+        "unsatisfiedCount": 0,
+        "waivedCount": 0
+      },
+      "clauses": [
+        {
+          "clauseId": "req-1",
+          "text": "Implementation is explicitly requested now.Requirements are fixed, so proceed directly to implementation.",
+          "status": "satisfied",
+          "requirementRefs": [
+            "explicitGoal",
+            "intentHypotheses",
+            "baselineScope",
+            "userValueFrame.userWants"
+          ],
+          "dispatchIds": [
+            "dispatch-1-infra_worker"
+          ],
+          "planStepIds": [
+            "execution",
+            "quality",
+            "report"
+          ],
+          "acceptanceRefs": [
+            "ac-1"
+          ],
+          "evidenceRefs": [
+            "dispatch:dispatch-1-infra_worker",
+            "plan:execution",
+            "plan:quality",
+            "plan:report",
+            "mock-thread-5-reviewer",
+            "docs/CURRENT_ARCHITECTURE.md",
+            "review:mock-thread-5-reviewer",
+            "flow_trace_summary.json"
+          ],
+          "reasons": [],
+          "finalStatus": "completed",
+          "taskOutcomeStatus": "COMPLETED"
+        },
+        {
+          "clauseId": "req-2",
+          "text": "Use the default parent orchestration path.",
+          "status": "satisfied",
+          "requirementRefs": [
+            "baselineScope",
+            "userValueFrame.userWants"
+          ],
+          "dispatchIds": [
+            "dispatch-1-infra_worker"
+          ],
+          "planStepIds": [
+            "execution",
+            "quality",
+            "report"
+          ],
+          "acceptanceRefs": [
+            "ac-1"
+          ],
+          "evidenceRefs": [
+            "dispatch:dispatch-1-infra_worker",
+            "plan:execution",
+            "plan:quality",
+            "plan:report",
+            "mock-thread-5-reviewer",
+            "docs/CURRENT_ARCHITECTURE.md",
+            "review:mock-thread-5-reviewer",
+            "flow_trace_summary.json"
+          ],
+          "reasons": [],
+          "finalStatus": "completed",
+          "taskOutcomeStatus": "COMPLETED"
+        },
+        {
+          "clauseId": "req-3",
+          "text": "Delegate the implementation edit to infra_worker, then request an independent read-only reviewer check.",
+          "status": "satisfied",
+          "requirementRefs": [
+            "baselineScope",
+            "userValueFrame.userWants",
+            "userValueFrame.hardConstraints"
+          ],
+          "dispatchIds": [
+            "dispatch-1-infra_worker"
+          ],
+          "planStepIds": [
+            "execution",
+            "quality",
+            "report"
+          ],
+          "acceptanceRefs": [
+            "ac-1"
+          ],
+          "evidenceRefs": [
+            "dispatch:dispatch-1-infra_worker",
+            "plan:execution",
+            "plan:quality",
+            "plan:report",
+            "mock-thread-5-reviewer",
+            "docs/CURRENT_ARCHITECTURE.md",
+            "review:mock-thread-5-reviewer",
+            "flow_trace_summary.json"
+          ],
+          "reasons": [],
+          "finalStatus": "completed",
+          "taskOutcomeStatus": "COMPLETED"
+        },
+        {
+          "clauseId": "req-4",
+          "text": "Change only docs/CURRENT_ARCHITECTURE.md.",
+          "status": "satisfied",
+          "requirementRefs": [
+            "baselineScope",
+            "userValueFrame.userWants",
+            "userValueFrame.hardConstraints"
+          ],
+          "dispatchIds": [
+            "dispatch-1-infra_worker"
+          ],
+          "planStepIds": [
+            "execution",
+            "quality",
+            "report"
+          ],
+          "acceptanceRefs": [
+            "ac-1"
+          ],
+          "evidenceRefs": [
+            "dispatch:dispatch-1-infra_worker",
+            "plan:execution",
+            "plan:quality",
+            "plan:report",
+            "mock-thread-5-reviewer",
+            "docs/CURRENT_ARCHITECTURE.md",
+            "review:mock-thread-5-reviewer",
+            "flow_trace_summary.json"
+          ],
+          "reasons": [],
+          "finalStatus": "completed",
+          "taskOutcomeStatus": "COMPLETED"
+        },
+        {
+          "clauseId": "req-5",
+          "text": "Use apply_patch for the file edit.",
+          "status": "satisfied",
+          "requirementRefs": [
+            "baselineScope",
+            "userValueFrame.userWants"
+          ],
+          "dispatchIds": [
+            "dispatch-1-infra_worker"
+          ],
+          "planStepIds": [
+            "execution",
+            "quality",
+            "report"
+          ],
+          "acceptanceRefs": [
+            "ac-1"
+          ],
+          "evidenceRefs": [
+            "dispatch:dispatch-1-infra_worker",
+            "plan:execution",
+            "plan:quality",
+            "plan:report",
+            "mock-thread-5-reviewer",
+            "docs/CURRENT_ARCHITECTURE.md",
+            "review:mock-thread-5-reviewer",
+            "flow_trace_summary.json"
+          ],
+          "reasons": [],
+          "finalStatus": "completed",
+          "taskOutcomeStatus": "COMPLETED"
+        },
+        {
+          "clauseId": "req-6",
+          "text": "Under `## 6) Evidence and Persistence`, add exactly one brief bullet documenting the new child-ownership aggregation behavior.",
+          "status": "satisfied",
+          "requirementRefs": [
+            "baselineScope",
+            "userValueFrame.userWants",
+            "userValueFrame.hardConstraints"
+          ],
+          "dispatchIds": [
+            "dispatch-1-infra_worker"
+          ],
+          "planStepIds": [
+            "execution",
+            "quality",
+            "report"
+          ],
+          "acceptanceRefs": [
+            "ac-1"
+          ],
+          "evidenceRefs": [
+            "dispatch:dispatch-1-infra_worker",
+            "plan:execution",
+            "plan:quality",
+            "plan:report",
+            "mock-thread-5-reviewer",
+            "docs/CURRENT_ARCHITECTURE.md",
+            "review:mock-thread-5-reviewer",
+            "flow_trace_summary.json"
+          ],
+          "reasons": [],
+          "finalStatus": "completed",
+          "taskOutcomeStatus": "COMPLETED"
+        },
+        {
+          "clauseId": "req-7",
+          "text": "Insert this exact bullet if it is not already present: - `natural_task_trace_summary.json` records the selected implementation-bearing turn id and thread id, so trace bundles stay anchored to the delegated turn even when later completions s",
+          "status": "satisfied",
+          "requirementRefs": [
+            "baselineScope",
+            "userValueFrame.userWants"
+          ],
+          "dispatchIds": [
+            "dispatch-1-infra_worker"
+          ],
+          "planStepIds": [
+            "execution",
+            "quality",
+            "report"
+          ],
+          "acceptanceRefs": [
+            "ac-1"
+          ],
+          "evidenceRefs": [
+            "dispatch:dispatch-1-infra_worker",
+            "plan:execution",
+            "plan:quality",
+            "plan:report",
+            "mock-thread-5-reviewer",
+            "docs/CURRENT_ARCHITECTURE.md",
+            "review:mock-thread-5-reviewer",
+            "flow_trace_summary.json"
+          ],
+          "reasons": [],
+          "finalStatus": "completed",
+          "taskOutcomeStatus": "COMPLETED"
+        },
+        {
+          "clauseId": "req-8",
+          "text": "Do not duplicate the sentence if it already exists.",
+          "status": "satisfied",
+          "requirementRefs": [
+            "baselineScope",
+            "userValueFrame.hardConstraints",
+            "userValueFrame.mustAvoid"
+          ],
+          "dispatchIds": [
+            "dispatch-1-infra_worker"
+          ],
+          "planStepIds": [
+            "execution",
+            "quality",
+            "report"
+          ],
+          "acceptanceRefs": [
+            "ac-1"
+          ],
+          "evidenceRefs": [
+            "dispatch:dispatch-1-infra_worker",
+            "plan:execution",
+            "plan:quality",
+            "plan:report",
+            "mock-thread-5-reviewer",
+            "docs/CURRENT_ARCHITECTURE.md",
+            "review:mock-thread-5-reviewer",
+            "flow_trace_summary.json"
+          ],
+          "reasons": [],
+          "finalStatus": "completed",
+          "taskOutcomeStatus": "COMPLETED"
+        },
+        {
+          "clauseId": "req-9",
+          "text": "Ignore unrelated edits by others and do not revert them.",
+          "status": "satisfied",
+          "requirementRefs": [
+            "baselineScope",
+            "userValueFrame.hardConstraints",
+            "userValueFrame.mustAvoid"
+          ],
+          "dispatchIds": [
+            "dispatch-1-infra_worker"
+          ],
+          "planStepIds": [
+            "execution",
+            "quality",
+            "report"
+          ],
+          "acceptanceRefs": [
+            "ac-1"
+          ],
+          "evidenceRefs": [
+            "dispatch:dispatch-1-infra_worker",
+            "plan:execution",
+            "plan:quality",
+            "plan:report",
+            "mock-thread-5-reviewer",
+            "docs/CURRENT_ARCHITECTURE.md",
+            "review:mock-thread-5-reviewer",
+            "flow_trace_summary.json"
+          ],
+          "reasons": [],
+          "finalStatus": "completed",
+          "taskOutcomeStatus": "COMPLETED"
+        },
+        {
+          "clauseId": "req-10",
+          "text": "The implementation specialist must report using this exact header format:",
+          "status": "satisfied",
+          "requirementRefs": [
+            "baselineScope",
+            "userValueFrame.hardConstraints"
+          ],
+          "dispatchIds": [
+            "dispatch-1-infra_worker"
+          ],
+          "planStepIds": [
+            "execution",
+            "quality",
+            "report"
+          ],
+          "acceptanceRefs": [
+            "ac-1"
+          ],
+          "evidenceRefs": [
+            "dispatch:dispatch-1-infra_worker",
+            "plan:execution",
+            "plan:quality",
+            "plan:report",
+            "mock-thread-5-reviewer",
+            "docs/CURRENT_ARCHITECTURE.md",
+            "review:mock-thread-5-reviewer",
+            "flow_trace_summary.json"
+          ],
+          "reasons": [],
+          "finalStatus": "completed",
+          "taskOutcomeStatus": "COMPLETED"
+        },
+        {
+          "clauseId": "req-11",
+          "text": "Owned paths:",
+          "status": "satisfied",
+          "requirementRefs": [
+            "baselineScope"
+          ],
+          "dispatchIds": [
+            "dispatch-1-infra_worker"
+          ],
+          "planStepIds": [
+            "execution",
+            "quality",
+            "report"
+          ],
+          "acceptanceRefs": [
+            "ac-1"
+          ],
+          "evidenceRefs": [
+            "dispatch:dispatch-1-infra_worker",
+            "plan:execution",
+            "plan:quality",
+            "plan:report",
+            "mock-thread-5-reviewer",
+            "docs/CURRENT_ARCHITECTURE.md",
+            "review:mock-thread-5-reviewer",
+            "flow_trace_summary.json"
+          ],
+          "reasons": [],
+          "finalStatus": "completed",
+          "taskOutcomeStatus": "COMPLETED"
+        },
+        {
+          "clauseId": "req-12",
+          "text": "`<absolute path>`",
+          "status": "satisfied",
+          "requirementRefs": [
+            "baselineScope"
+          ],
+          "dispatchIds": [
+            "dispatch-1-infra_worker"
+          ],
+          "planStepIds": [
+            "execution",
+            "quality",
+            "report"
+          ],
+          "acceptanceRefs": [
+            "ac-1"
+          ],
+          "evidenceRefs": [
+            "dispatch:dispatch-1-infra_worker",
+            "plan:execution",
+            "plan:quality",
+            "plan:report",
+            "mock-thread-5-reviewer",
+            "docs/CURRENT_ARCHITECTURE.md",
+            "review:mock-thread-5-reviewer",
+            "flow_trace_summary.json"
+          ],
+          "reasons": [],
+          "finalStatus": "completed",
+          "taskOutcomeStatus": "COMPLETED"
+        },
+        {
+          "clauseId": "req-13",
+          "text": "Return with exactly: NATURAL_TASK_OK docs/CURRENT_ARCHITECTURE.md.",
+          "status": "satisfied",
+          "requirementRefs": [
+            "baselineScope",
+            "userValueFrame.hardConstraints"
+          ],
+          "dispatchIds": [
+            "dispatch-1-infra_worker"
+          ],
+          "planStepIds": [
+            "execution",
+            "quality",
+            "report"
+          ],
+          "acceptanceRefs": [
+            "ac-1"
+          ],
+          "evidenceRefs": [
+            "dispatch:dispatch-1-infra_worker",
+            "plan:execution",
+            "plan:quality",
+            "plan:report",
+            "mock-thread-5-reviewer",
+            "docs/CURRENT_ARCHITECTURE.md",
+            "review:mock-thread-5-reviewer",
+            "flow_trace_summary.json"
+          ],
+          "reasons": [],
+          "finalStatus": "completed",
+          "taskOutcomeStatus": "COMPLETED"
+        },
+        {
+          "clauseId": "req-14",
+          "text": "No follow-up questions are required.",
+          "status": "satisfied",
+          "requirementRefs": [
+            "baselineScope",
+            "userValueFrame.hardConstraints"
+          ],
+          "dispatchIds": [
+            "dispatch-1-infra_worker"
+          ],
+          "planStepIds": [
+            "execution",
+            "quality",
+            "report"
+          ],
+          "acceptanceRefs": [
+            "ac-1"
+          ],
+          "evidenceRefs": [
+            "dispatch:dispatch-1-infra_worker",
+            "plan:execution",
+            "plan:quality",
+            "plan:report",
+            "mock-thread-5-reviewer",
+            "docs/CURRENT_ARCHITECTURE.md",
+            "review:mock-thread-5-reviewer",
+            "flow_trace_summary.json"
+          ],
+          "reasons": [],
+          "finalStatus": "completed",
+          "taskOutcomeStatus": "COMPLETED"
+        },
+        {
+          "clauseId": "req-15",
+          "text": "Requested documentation change and read-only reviewer evidence are present.",
+          "status": "satisfied",
+          "requirementRefs": [
+            "baselineScope",
+            "acceptanceChecks",
+            "userValueFrame.hardConstraints",
+            "userValueFrame.completedMeans"
+          ],
+          "dispatchIds": [
+            "dispatch-1-infra_worker"
+          ],
+          "planStepIds": [
+            "execution",
+            "quality",
+            "report"
+          ],
+          "acceptanceRefs": [
+            "ac-1"
+          ],
+          "evidenceRefs": [
+            "dispatch:dispatch-1-infra_worker",
+            "plan:execution",
+            "plan:quality",
+            "plan:report",
+            "mock-thread-5-reviewer",
+            "docs/CURRENT_ARCHITECTURE.md",
+            "review:mock-thread-5-reviewer",
+            "flow_trace_summary.json"
+          ],
+          "reasons": [],
+          "finalStatus": "completed",
+          "taskOutcomeStatus": "COMPLETED"
+        }
+      ]
+    },
     "residualRiskSummary": []
   },
   "stageTimeline": {
     "schema": "stage-timeline.v1",
-    "generatedAt": "2026-03-09T12:51:58.854Z",
+    "generatedAt": "2026-04-18T05:29:18.026Z",
     "selectedPlanningMode": "NORMAL",
     "selectedPlanningDepth": "STANDARD_PLANNING",
     "selectedAssuranceDepth": "LIGHT_ASSURANCE",
@@ -434,52 +934,52 @@
       {
         "name": "Step 1 - Requirement Structuring",
         "status": "OBSERVED",
-        "startedAt": 1773060481230,
-        "endedAt": 1773060500309,
-        "durationMs": 19079
+        "startedAt": 1776490153089,
+        "endedAt": 1776490155667,
+        "durationMs": 2578
       },
       {
         "name": "Step 2 - Dispatch Planning",
         "status": "OBSERVED",
-        "startedAt": 1773060500309,
-        "endedAt": 1773060505612,
-        "durationMs": 5303
+        "startedAt": 1776490155667,
+        "endedAt": 1776490155670,
+        "durationMs": 3
       },
       {
         "name": "Step 3 - Specialist Execution",
         "status": "OBSERVED",
-        "startedAt": 1773060505612,
-        "endedAt": 1773060505612,
+        "startedAt": 1776490155670,
+        "endedAt": 1776490155670,
         "durationMs": 0
       },
       {
         "name": "Step 4 - Quality Gate",
         "status": "OBSERVED",
-        "startedAt": 1773060494513,
-        "endedAt": 1773060494513,
-        "durationMs": 0
+        "startedAt": 1776490155670,
+        "endedAt": 1776490155676,
+        "durationMs": 6
       },
       {
         "name": "Step 5 - Final Outcome",
         "status": "OBSERVED",
-        "startedAt": 1773060494513,
-        "endedAt": 1773060718800,
-        "durationMs": 224287
+        "startedAt": 1776490155676,
+        "endedAt": 1776490155678,
+        "durationMs": 2
       }
     ],
     "checkpoints": {
-      "firstPlanAt": 1773060500309,
-      "firstDispatchAt": 1773060521746,
-      "firstWorkAt": 1773060505612,
-      "step4StartedAt": 1773060494513,
-      "step5StartedAt": 1773060494513,
-      "firstReviewAt": 1773060701750,
+      "firstPlanAt": 1776490155667,
+      "firstDispatchAt": 1776490155670,
+      "firstWorkAt": 1776490155672,
+      "step4StartedAt": 1776490155670,
+      "step5StartedAt": 1776490155676,
+      "firstReviewAt": 1776490155674,
       "firstTesterAt": 0,
-      "firstDocSyncAt": 1773060672115,
+      "firstDocSyncAt": 1776490155670,
       "retryAt": 0,
       "retryLoopCount": 0,
-      "finalMessageAt": 1773060494513,
-      "completedAt": 1773060718800
+      "finalMessageAt": 1776490155676,
+      "completedAt": 1776490155678
     },
     "qualityGate": {
       "reviewerObserved": 1,
@@ -489,7 +989,7 @@
   },
   "evidenceManifest": {
     "schema": "turn-evidence-manifest.v1",
-    "generatedAt": "2026-03-09T12:51:58.854Z",
+    "generatedAt": "2026-04-18T05:29:18.026Z",
     "selectedPlanningMode": "NORMAL",
     "selectedPlanningDepth": "STANDARD_PLANNING",
     "selectedAssuranceDepth": "LIGHT_ASSURANCE",
@@ -498,24 +998,26 @@
     "planningDecisionContract": {
       "schema": "planning-decision-contract.v1",
       "source": "runtime_inferred_pre_dispatch",
-      "promptHash": "f2ac6d379d5db64aeb7b92815156313b19f72e6ad2883a53c30ae005c947b902",
+      "promptHash": "af16afc59cd4ae11c3cb677fd2b91a6386cb97681a124140207f24f0cc19700e",
       "selectedPlanningMode": "NORMAL",
       "selectedPlanningDepth": "STANDARD_PLANNING",
       "selectedAssuranceDepth": "LIGHT_ASSURANCE",
+      "taskFamily": "deterministic_code",
+      "familyProfileId": "deterministic_code",
       "flowPath": "NORMAL_PATH",
       "adaptiveFlowId": "STANDARD_PLANNING__LIGHT_ASSURANCE",
       "needsInputRecommended": 0,
       "proposalOnlyRecommended": 0,
-      "planningScore": 3,
+      "planningScore": 4,
       "planningScoreBreakdown": {
         "ambiguity": 1,
-        "acceptance_uncertainty": 0,
+        "acceptance_uncertainty": 1,
         "novelty": 2,
         "external_dependency": 0,
-        "total": 3,
+        "total": 4,
         "rationale": [
           "ambiguity=1",
-          "acceptance_uncertainty=0",
+          "acceptance_uncertainty=1",
           "novelty=2",
           "external_dependency=0"
         ]
@@ -535,19 +1037,22 @@
         ]
       },
       "planningReasons": [
+        "taskFamily=deterministic_code",
+        "familyAmbiguityHandling=bounded_assumption",
         "ambiguity=1",
-        "acceptance_uncertainty=0",
+        "acceptance_uncertainty=1",
         "novelty=2",
         "external_dependency=0",
         "openQuestions=0",
-        "acceptanceClarity=high",
+        "acceptanceClarity=medium",
         "specialistBoundaries=2",
         "approvalBoundaryTouched=no",
         "overDeliveryRisk=low",
         "userDecisionRequired=no",
-        "assumptionDependence=low",
-        "existingSpecClarity=high",
-        "changeScopeClarity=medium"
+        "clarificationAction=proceed",
+        "clarificationReason=task_family_not_design_sensitive",
+        "benchmarkCandidates=0",
+        "assumptionDependence=low"
       ],
       "assuranceReasons": [
         "blast_radius=0",
@@ -558,14 +1063,16 @@
         "reviewerSuggested=yes",
         "testerSuggested=no",
         "signoffImportance=normal",
+        "benchmarkAnchored=no",
+        "strictBenchmarkRecreation=no",
         "irreversibleRisk=no",
         "newLogicRisk=no",
         "regressionRisk=high"
       ],
       "planningSignals": {
         "openQuestionsCount": 0,
-        "acceptanceCheckCount": 5,
-        "acceptanceClarity": "high",
+        "acceptanceCheckCount": 1,
+        "acceptanceClarity": "medium",
         "specialistBoundaryCount": 2,
         "specialistOwners": [
           "infra_worker",
@@ -575,6 +1082,12 @@
         "approvalBoundaryCount": 0,
         "overDeliveryRisk": "low",
         "userDecisionRequired": 0,
+        "explicitUserDecisionRequired": 0,
+        "clarificationAction": "proceed",
+        "clarificationReason": "task_family_not_design_sensitive",
+        "clarificationQuestion": "",
+        "clarificationSummary": "",
+        "clarificationMissingAnchors": [],
         "assumptionDependence": "low",
         "existingSpecClarity": "high",
         "changeScopeClarity": "medium",
@@ -590,17 +1103,23 @@
         "reviewerSuggested": 1,
         "testerSuggested": 0,
         "signoffImportant": 0,
+        "benchmarkAnchored": 0,
+        "strictBenchmarkRecreation": 0,
         "newLogicRisk": 0,
         "regressionRiskScore": 2,
         "riskScore": 0
       }
     },
     "requirementContract": {
-      "schema": "requirement-contract.v2",
+      "schema": "requirement-contract.v5",
       "source": "runtime_inferred_pre_dispatch",
-      "promptHash": "f2ac6d379d5db64aeb7b92815156313b19f72e6ad2883a53c30ae005c947b902",
-      "explicitGoal": "Perform one small real repo documentation maintenance task.",
+      "owner": "intake",
+      "promptHash": "af16afc59cd4ae11c3cb677fd2b91a6386cb97681a124140207f24f0cc19700e",
+      "explicitGoal": "Implementation is explicitly requested now.Requirements are fixed, so proceed directly to implementation.",
       "implicitGoal": "",
+      "lockedGoal": "Implementation is explicitly requested now.Requirements are fixed, so proceed directly to implementation.",
+      "taskFamily": "deterministic_code",
+      "familyProfileId": "deterministic_code",
       "baselineScope": [
         "Implementation is explicitly requested now. Requirements are fixed, so proceed directly to implementation.",
         "Use the default parent orchestration path.",
@@ -613,64 +1132,833 @@
         "Ignore unrelated edits by others and do not revert them.",
         "The implementation specialist must report using this exact header format:",
         "Owned paths:",
-        "`<absolute path>`"
+        "`<absolute path>`",
+        "Return with exactly: NATURAL_TASK_OK docs/CURRENT_ARCHITECTURE.md.",
+        "No follow-up questions are required.",
+        "Requested documentation change and read-only reviewer evidence are present."
       ],
       "overDeliveryScope": [],
       "nonGoals": [],
       "assumptions": [
-        "Any scope outside the explicit goal should stay proposal-only unless the prompt states otherwise."
+        "明示ゴールの外側は、入力で明示されていない限り提案止まりにする。"
       ],
       "openQuestions": [],
       "approvalBoundaryItems": [],
       "acceptanceChecks": [
         {
           "id": "ac-1",
-          "title": "Exactly one documentation file changes.",
-          "source": "prompt_section",
-          "blocking": true
-        },
-        {
-          "id": "ac-2",
-          "title": "Reviewer evidence is present.",
-          "source": "prompt_section",
-          "blocking": true
-        },
-        {
-          "id": "ac-3",
-          "title": "No follow-up questions are required.",
-          "source": "prompt_section",
-          "blocking": true
-        },
-        {
-          "id": "ac-4",
-          "title": "Reviewer must remain read-only and report findings first or state 'No findings'.",
-          "source": "prompt_section",
-          "blocking": true
-        },
-        {
-          "id": "ac-5",
-          "title": "Final reply must be exactly: NATURAL_TASK_OK docs/CURRENT_ARCHITECTURE.md",
+          "title": "Requested documentation change and read-only reviewer evidence are present.",
           "source": "prompt_section",
           "blocking": true
         }
       ],
+      "intentLock": {
+        "schema": "intent-lock.v1",
+        "source": "runtime_inferred_pre_dispatch",
+        "userRequest": "Implementation is explicitly requested now.Requirements are fixed, so proceed directly to implementation.",
+        "latentIntent": "依頼された変更を正しく、局所的に、あとからの手戻り圧を増やさない形で届ける。",
+        "prohibitedPatterns": [
+          "推測でのスコープ拡大。",
+          "必要のない大きな書き換え。",
+          "具体的な検証なしの完了宣言。",
+          "Do not duplicate the sentence if it already exists.",
+          "Ignore unrelated edits by others and do not revert them."
+        ],
+        "winSignals": [
+          "依頼された変更が機能し、範囲も適切で、明らかな回帰圧を増やさない。",
+          "Requested documentation change and read-only reviewer evidence are present."
+        ],
+        "nonTargets": [],
+        "lockStatus": "locked"
+      },
+      "acceptanceLock": {
+        "schema": "acceptance-lock.v1",
+        "source": "runtime_inferred_pre_dispatch",
+        "passConditions": [
+          "Requested documentation change and read-only reviewer evidence are present."
+        ],
+        "failureConditions": [
+          "Failure if unmet: Requested documentation change and read-only reviewer evidence are present.",
+          "Failure if the outcome drifts from the locked goal or approved scope.",
+          "Failure if text overflow, clipping, or collisions remain unresolved.",
+          "Failure if required evidence is missing at closeout."
+        ],
+        "requiredEvidence": [
+          "acceptance check evidence",
+          "review evidence",
+          "technical verification evidence",
+          "replay verification evidence",
+          "Requested documentation change and read-only reviewer evidence are present."
+        ],
+        "lockStatus": "locked"
+      },
+      "userValueFrame": {
+        "valueThesis": "依頼された変更を正しく、局所的に、あとからの手戻り圧を増やさない形で届ける。",
+        "userWants": [
+          "Implementation is explicitly requested now.Requirements are fixed, so proceed directly to implementation.",
+          "Implementation is explicitly requested now. Requirements are fixed, so proceed directly to implementation.",
+          "Use the default parent orchestration path.",
+          "Delegate the implementation edit to infra_worker, then request an independent read-only reviewer check.",
+          "Change only docs/CURRENT_ARCHITECTURE.md.",
+          "Use apply_patch for the file edit.",
+          "Under `## 6) Evidence and Persistence`, add exactly one brief bullet documenting the new child-ownership aggregation behavior.",
+          "Insert this exact bullet if it is not already present: - `natural_task_trace_summary.json` records the selected implementation-bearing turn id and thread id, so trace bundles stay anchored to the delegated turn even when later completions s"
+        ],
+        "userShouldFeelGet": [
+          "余計な巻き込みなしで、求めた振る舞いが手に入る。",
+          "変更範囲が適切で、技術的にも妥当だと判断できる。"
+        ],
+        "mustAvoid": [
+          "推測でのスコープ拡大。",
+          "必要のない大きな書き換え。",
+          "具体的な検証なしの完了宣言。",
+          "Do not duplicate the sentence if it already exists.",
+          "Ignore unrelated edits by others and do not revert them."
+        ],
+        "hardConstraints": [
+          "Delegate the implementation edit to infra_worker, then request an independent read-only reviewer check.",
+          "Change only docs/CURRENT_ARCHITECTURE.md.",
+          "Under `## 6) Evidence and Persistence`, add exactly one brief bullet documenting the new child-ownership aggregation behavior.",
+          "Do not duplicate the sentence if it already exists.",
+          "Ignore unrelated edits by others and do not revert them.",
+          "The implementation specialist must report using this exact header format:",
+          "Return with exactly: NATURAL_TASK_OK docs/CURRENT_ARCHITECTURE.md.",
+          "No follow-up questions are required.",
+          "Requested documentation change and read-only reviewer evidence are present."
+        ],
+        "qualityAxes": [
+          "correctness",
+          "bounded_scope",
+          "regression_resistance",
+          "maintainability",
+          "actionability",
+          "locality"
+        ],
+        "benchmarkCandidates": [],
+        "completedMeans": [
+          "依頼された変更が機能し、範囲も適切で、明らかな回帰圧を増やさない。",
+          "Requested documentation change and read-only reviewer evidence are present."
+        ]
+      },
+      "intentInterpretation": {
+        "presentation": "goal",
+        "questionLike": false,
+        "direction": "",
+        "hypothesis": ""
+      },
+      "intentHypotheses": [
+        {
+          "id": "hypothesis_1",
+          "goal": "Implementation is explicitly requested now.Requirements are fixed, so proceed directly to implementation.",
+          "confidence": 100,
+          "evidence": [
+            "locked_goal",
+            "validated_contract"
+          ],
+          "locked": true
+        }
+      ],
+      "challengeReport": {
+        "summary": "Assumption still carries execution risk: 明示ゴールの外側は、入力で明示されていない限り提案止まりにする。",
+        "proceedRisk": "medium",
+        "findings": [
+          {
+            "id": "hidden_assumption_1",
+            "type": "hidden_assumption",
+            "severity": "medium",
+            "detail": "Assumption still carries execution risk: 明示ゴールの外側は、入力で明示されていない限り提案止まりにする。",
+            "requirementRef": "assumptions"
+          },
+          {
+            "id": "scope_gap_2",
+            "type": "scope_gap",
+            "severity": "medium",
+            "detail": "Non-goals are not explicit yet, so scope drift risk remains.",
+            "requirementRef": "nonGoals"
+          }
+        ]
+      },
+      "questionPlan": {
+        "summary": "",
+        "blocking": [],
+        "defaultable": [],
+        "taste": [],
+        "askNext": []
+      },
+      "delightPlan": {
+        "summary": "",
+        "candidates": []
+      },
+      "requestCoverage": {
+        "rawRequestClauses": [
+          {
+            "id": "req-1",
+            "text": "Implementation is explicitly requested now.Requirements are fixed, so proceed directly to implementation.",
+            "kind": "explicit_request",
+            "lane": "core"
+          },
+          {
+            "id": "req-2",
+            "text": "Use the default parent orchestration path.",
+            "kind": "explicit_request",
+            "lane": "core"
+          },
+          {
+            "id": "req-3",
+            "text": "Delegate the implementation edit to infra_worker, then request an independent read-only reviewer check.",
+            "kind": "constraint",
+            "lane": "core"
+          },
+          {
+            "id": "req-4",
+            "text": "Change only docs/CURRENT_ARCHITECTURE.md.",
+            "kind": "constraint",
+            "lane": "core"
+          },
+          {
+            "id": "req-5",
+            "text": "Use apply_patch for the file edit.",
+            "kind": "explicit_request",
+            "lane": "core"
+          },
+          {
+            "id": "req-6",
+            "text": "Under `## 6) Evidence and Persistence`, add exactly one brief bullet documenting the new child-ownership aggregation behavior.",
+            "kind": "constraint",
+            "lane": "core"
+          },
+          {
+            "id": "req-7",
+            "text": "Insert this exact bullet if it is not already present: - `natural_task_trace_summary.json` records the selected implementation-bearing turn id and thread id, so trace bundles stay anchored to the delegated turn even when later completions s",
+            "kind": "explicit_request",
+            "lane": "core"
+          },
+          {
+            "id": "req-8",
+            "text": "Do not duplicate the sentence if it already exists.",
+            "kind": "constraint",
+            "lane": "core"
+          },
+          {
+            "id": "req-9",
+            "text": "Ignore unrelated edits by others and do not revert them.",
+            "kind": "constraint",
+            "lane": "core"
+          },
+          {
+            "id": "req-10",
+            "text": "The implementation specialist must report using this exact header format:",
+            "kind": "constraint",
+            "lane": "core"
+          },
+          {
+            "id": "req-11",
+            "text": "Owned paths:",
+            "kind": "explicit_request",
+            "lane": "core"
+          },
+          {
+            "id": "req-12",
+            "text": "`<absolute path>`",
+            "kind": "explicit_request",
+            "lane": "core"
+          },
+          {
+            "id": "req-13",
+            "text": "Return with exactly: NATURAL_TASK_OK docs/CURRENT_ARCHITECTURE.md.",
+            "kind": "constraint",
+            "lane": "core"
+          },
+          {
+            "id": "req-14",
+            "text": "No follow-up questions are required.",
+            "kind": "constraint",
+            "lane": "core"
+          },
+          {
+            "id": "req-15",
+            "text": "Requested documentation change and read-only reviewer evidence are present.",
+            "kind": "constraint",
+            "lane": "core"
+          },
+          {
+            "id": "req-16",
+            "text": "locality",
+            "kind": "taste_value",
+            "lane": "taste"
+          }
+        ],
+        "coreObligations": [
+          "req-1",
+          "req-2",
+          "req-3",
+          "req-4",
+          "req-5",
+          "req-6",
+          "req-7",
+          "req-8",
+          "req-9",
+          "req-10",
+          "req-11",
+          "req-12",
+          "req-13",
+          "req-14",
+          "req-15"
+        ],
+        "mappedRequirements": [
+          {
+            "clauseId": "req-1",
+            "requirementRefs": [
+              "explicitGoal",
+              "intentHypotheses",
+              "baselineScope",
+              "userValueFrame.userWants"
+            ]
+          },
+          {
+            "clauseId": "req-2",
+            "requirementRefs": [
+              "baselineScope",
+              "userValueFrame.userWants"
+            ]
+          },
+          {
+            "clauseId": "req-3",
+            "requirementRefs": [
+              "baselineScope",
+              "userValueFrame.userWants",
+              "userValueFrame.hardConstraints"
+            ]
+          },
+          {
+            "clauseId": "req-4",
+            "requirementRefs": [
+              "baselineScope",
+              "userValueFrame.userWants",
+              "userValueFrame.hardConstraints"
+            ]
+          },
+          {
+            "clauseId": "req-5",
+            "requirementRefs": [
+              "baselineScope",
+              "userValueFrame.userWants"
+            ]
+          },
+          {
+            "clauseId": "req-6",
+            "requirementRefs": [
+              "baselineScope",
+              "userValueFrame.userWants",
+              "userValueFrame.hardConstraints"
+            ]
+          },
+          {
+            "clauseId": "req-7",
+            "requirementRefs": [
+              "baselineScope",
+              "userValueFrame.userWants"
+            ]
+          },
+          {
+            "clauseId": "req-8",
+            "requirementRefs": [
+              "baselineScope",
+              "userValueFrame.hardConstraints",
+              "userValueFrame.mustAvoid"
+            ]
+          },
+          {
+            "clauseId": "req-9",
+            "requirementRefs": [
+              "baselineScope",
+              "userValueFrame.hardConstraints",
+              "userValueFrame.mustAvoid"
+            ]
+          },
+          {
+            "clauseId": "req-10",
+            "requirementRefs": [
+              "baselineScope",
+              "userValueFrame.hardConstraints"
+            ]
+          },
+          {
+            "clauseId": "req-11",
+            "requirementRefs": [
+              "baselineScope"
+            ]
+          },
+          {
+            "clauseId": "req-12",
+            "requirementRefs": [
+              "baselineScope"
+            ]
+          },
+          {
+            "clauseId": "req-13",
+            "requirementRefs": [
+              "baselineScope",
+              "userValueFrame.hardConstraints"
+            ]
+          },
+          {
+            "clauseId": "req-14",
+            "requirementRefs": [
+              "baselineScope",
+              "userValueFrame.hardConstraints"
+            ]
+          },
+          {
+            "clauseId": "req-15",
+            "requirementRefs": [
+              "baselineScope",
+              "acceptanceChecks",
+              "userValueFrame.hardConstraints",
+              "userValueFrame.completedMeans"
+            ]
+          },
+          {
+            "clauseId": "req-16",
+            "requirementRefs": [
+              "userValueFrame.qualityAxes"
+            ]
+          }
+        ],
+        "parkedItems": [],
+        "droppedItems": [],
+        "coverageSummary": {
+          "totalClauses": 16,
+          "mappedCount": 16,
+          "coreTotal": 15,
+          "coreMapped": 15,
+          "coreUnmapped": 0,
+          "parkedCount": 0,
+          "droppedCount": 0
+        }
+      },
+      "displayContract": {
+        "headline": "Implementation is explicitly requested now.Requirements are fixed, so proceed directly to implementation.",
+        "goal": "Implementation is explicitly requested now.Requirements are fixed, so proceed directly to implementation.",
+        "goalMode": "locked",
+        "goalLabel": "locked_goal",
+        "nextAction": "Plan around Requested documentation change and read-only reviewer evidence are present.",
+        "holdReason": "",
+        "targetOutcome": "依頼された変更が機能し、範囲も適切で、明らかな回帰圧を増やさない。",
+        "boundaries": [
+          "推測でのスコープ拡大。",
+          "必要のない大きな書き換え。",
+          "Delegate the implementation edit to infra_worker, then request an independent read-only reviewer check.",
+          "Change only docs/CURRENT_ARCHITECTURE.md.",
+          "具体的な検証なしの完了宣言。",
+          "Do not duplicate the sentence if it already exists."
+        ],
+        "askNext": [],
+        "delightTitles": []
+      },
+      "status": "LOCKED",
+      "statusReason": "Requirement contract is validated enough to proceed into planning and specialist dispatch.",
+      "provenance": {
+        "explicitGoal": {
+          "source": "user_explicit",
+          "reason": "prompt_line"
+        },
+        "implicitGoal": {
+          "source": "policy_default",
+          "reason": "missing"
+        },
+        "nonGoals": [],
+        "userValueFrame": {
+          "valueThesis": {
+            "source": "policy_default",
+            "reason": "task_family_default"
+          },
+          "userWants": [
+            {
+              "value": "Implementation is explicitly requested now.Requirements are fixed, so proceed directly to implementation.",
+              "source": "user_explicit",
+              "reason": "explicit_goal"
+            },
+            {
+              "value": "Implementation is explicitly requested now. Requirements are fixed, so proceed directly to implementation.",
+              "source": "user_explicit",
+              "reason": "explicit_goal"
+            },
+            {
+              "value": "Use the default parent orchestration path.",
+              "source": "user_explicit",
+              "reason": "baseline_scope"
+            },
+            {
+              "value": "Delegate the implementation edit to infra_worker, then request an independent read-only reviewer check.",
+              "source": "user_implied",
+              "reason": "baseline_scope"
+            },
+            {
+              "value": "Change only docs/CURRENT_ARCHITECTURE.md.",
+              "source": "user_implied",
+              "reason": "baseline_scope"
+            },
+            {
+              "value": "Use apply_patch for the file edit.",
+              "source": "user_implied",
+              "reason": "baseline_scope"
+            },
+            {
+              "value": "Under `## 6) Evidence and Persistence`, add exactly one brief bullet documenting the new child-ownership aggregation behavior.",
+              "source": "user_implied",
+              "reason": "baseline_scope"
+            },
+            {
+              "value": "Insert this exact bullet if it is not already present: - `natural_task_trace_summary.json` records the selected implementation-bearing turn id and thread id, so trace bundles stay anchored to the delegated turn even when later completions s",
+              "source": "user_implied",
+              "reason": "baseline_scope"
+            }
+          ],
+          "userShouldFeelGet": [
+            {
+              "value": "余計な巻き込みなしで、求めた振る舞いが手に入る。",
+              "source": "policy_default",
+              "reason": "family_default_signal"
+            },
+            {
+              "value": "変更範囲が適切で、技術的にも妥当だと判断できる。",
+              "source": "policy_default",
+              "reason": "family_default_signal"
+            }
+          ],
+          "mustAvoid": [
+            {
+              "value": "推測でのスコープ拡大。",
+              "source": "policy_default",
+              "reason": "family_default_guardrail"
+            },
+            {
+              "value": "必要のない大きな書き換え。",
+              "source": "policy_default",
+              "reason": "family_default_guardrail"
+            },
+            {
+              "value": "具体的な検証なしの完了宣言。",
+              "source": "policy_default",
+              "reason": "family_default_guardrail"
+            },
+            {
+              "value": "Do not duplicate the sentence if it already exists.",
+              "source": "user_explicit",
+              "reason": "avoidance_directive"
+            },
+            {
+              "value": "Ignore unrelated edits by others and do not revert them.",
+              "source": "user_explicit",
+              "reason": "avoidance_directive"
+            }
+          ],
+          "hardConstraints": [
+            {
+              "value": "Delegate the implementation edit to infra_worker, then request an independent read-only reviewer check.",
+              "source": "user_explicit",
+              "reason": "constraint_directive"
+            },
+            {
+              "value": "Change only docs/CURRENT_ARCHITECTURE.md.",
+              "source": "user_explicit",
+              "reason": "constraint_directive"
+            },
+            {
+              "value": "Under `## 6) Evidence and Persistence`, add exactly one brief bullet documenting the new child-ownership aggregation behavior.",
+              "source": "user_explicit",
+              "reason": "constraint_directive"
+            },
+            {
+              "value": "Do not duplicate the sentence if it already exists.",
+              "source": "user_explicit",
+              "reason": "constraint_directive"
+            },
+            {
+              "value": "Ignore unrelated edits by others and do not revert them.",
+              "source": "user_explicit",
+              "reason": "constraint_directive"
+            },
+            {
+              "value": "The implementation specialist must report using this exact header format:",
+              "source": "user_explicit",
+              "reason": "constraint_directive"
+            },
+            {
+              "value": "Return with exactly: NATURAL_TASK_OK docs/CURRENT_ARCHITECTURE.md.",
+              "source": "user_explicit",
+              "reason": "constraint_directive"
+            },
+            {
+              "value": "No follow-up questions are required.",
+              "source": "user_explicit",
+              "reason": "constraint_directive"
+            },
+            {
+              "value": "Requested documentation change and read-only reviewer evidence are present.",
+              "source": "user_explicit",
+              "reason": "acceptance_constraint"
+            }
+          ],
+          "qualityAxes": [
+            {
+              "value": "correctness",
+              "source": "policy_default",
+              "reason": "family_default_quality_axis"
+            },
+            {
+              "value": "bounded_scope",
+              "source": "policy_default",
+              "reason": "family_default_quality_axis"
+            },
+            {
+              "value": "regression_resistance",
+              "source": "policy_default",
+              "reason": "family_default_quality_axis"
+            },
+            {
+              "value": "maintainability",
+              "source": "policy_default",
+              "reason": "family_default_quality_axis"
+            },
+            {
+              "value": "actionability",
+              "source": "policy_default",
+              "reason": "family_default_quality_axis"
+            },
+            {
+              "value": "locality",
+              "source": "user_implied",
+              "reason": "prompt_quality_signal"
+            }
+          ],
+          "benchmarkCandidates": [],
+          "completedMeans": [
+            {
+              "value": "依頼された変更が機能し、範囲も適切で、明らかな回帰圧を増やさない。",
+              "source": "policy_default",
+              "reason": "family_default_completion"
+            },
+            {
+              "value": "Requested documentation change and read-only reviewer evidence are present.",
+              "source": "user_explicit",
+              "reason": "acceptance_completion"
+            }
+          ]
+        },
+        "intentInterpretation": {
+          "presentation": {
+            "source": "policy_default",
+            "reason": "default_goal_presentation"
+          },
+          "questionLike": {
+            "source": "policy_default",
+            "reason": "not_question"
+          },
+          "direction": {
+            "source": "policy_default",
+            "reason": "no_direction_interpretation"
+          },
+          "hypothesis": {
+            "source": "policy_default",
+            "reason": "no_hypothesis_interpretation"
+          }
+        }
+      },
+      "validation": {
+        "schema": "requirement-validation.v1",
+        "source": "runtime_inferred_pre_dispatch",
+        "verdict": "PASS",
+        "canProceed": true,
+        "summary": {
+          "passCount": 12,
+          "warnCount": 0,
+          "blockCount": 0,
+          "total": 12
+        },
+        "checks": [
+          {
+            "id": "goal_present",
+            "title": "Primary goal is locked",
+            "status": "PASS",
+            "detail": "A concrete goal anchor exists for planning.",
+            "fieldRefs": [
+              "lockedGoal",
+              "explicitGoal",
+              "intentHypotheses"
+            ]
+          },
+          {
+            "id": "intent_lock_defined",
+            "title": "Intent lock separates user value from downstream checks",
+            "status": "PASS",
+            "detail": "Intent lock captures the request, latent intent, and non-target boundaries separately from acceptance.",
+            "fieldRefs": [
+              "intentLock",
+              "lockedGoal",
+              "explicitGoal",
+              "intentHypotheses",
+              "nonGoals",
+              "userValueFrame.completedMeans"
+            ]
+          },
+          {
+            "id": "acceptance_defined",
+            "title": "Acceptance checks are concrete",
+            "status": "PASS",
+            "detail": "Acceptance checks locked: 1.",
+            "fieldRefs": [
+              "acceptanceChecks",
+              "baselineScope"
+            ]
+          },
+          {
+            "id": "acceptance_lock_defined",
+            "title": "Acceptance lock makes pass, fail, and evidence rules explicit",
+            "status": "PASS",
+            "detail": "Acceptance lock explicitly records pass conditions, failure conditions, and required evidence.",
+            "fieldRefs": [
+              "acceptanceLock",
+              "acceptanceChecks"
+            ]
+          },
+          {
+            "id": "blocking_questions_clear",
+            "title": "Blocking open questions are cleared",
+            "status": "PASS",
+            "detail": "No blocking open questions remain in the requirement contract.",
+            "fieldRefs": [
+              "openQuestions"
+            ]
+          },
+          {
+            "id": "approval_boundary_clear",
+            "title": "Approval boundaries are recorded and triaged",
+            "status": "PASS",
+            "detail": "No approval-boundary metadata remains.",
+            "fieldRefs": [
+              "approvalBoundaryItems"
+            ]
+          },
+          {
+            "id": "contract_consistency",
+            "title": "Goal and guardrails do not contradict each other",
+            "status": "PASS",
+            "detail": "No direct contradiction was detected between goal, non-goals, and must-avoid guardrails.",
+            "fieldRefs": [
+              "lockedGoal",
+              "explicitGoal",
+              "intentHypotheses",
+              "nonGoals",
+              "userValueFrame.mustAvoid"
+            ]
+          },
+          {
+            "id": "provenance_coverage",
+            "title": "Critical requirement fields record where they came from",
+            "status": "PASS",
+            "detail": "Goal, value frame, and intent interpretation carry provenance tags.",
+            "fieldRefs": [
+              "provenance"
+            ]
+          },
+          {
+            "id": "request_coverage_core_mapped",
+            "title": "Core request obligations are mapped into the contract",
+            "status": "PASS",
+            "detail": "Core request obligations mapped: 15/15.",
+            "fieldRefs": [
+              "requestCoverage.coreObligations",
+              "requestCoverage.mappedRequirements",
+              "requestCoverage.coverageSummary"
+            ]
+          },
+          {
+            "id": "request_coverage_parked_reasoned",
+            "title": "Parked request items explain why they are parked",
+            "status": "PASS",
+            "detail": "Every parked request item records why it is deferred.",
+            "fieldRefs": [
+              "requestCoverage.parkedItems"
+            ]
+          },
+          {
+            "id": "request_coverage_dropped_reasoned",
+            "title": "Dropped request items explain the exclusion",
+            "status": "PASS",
+            "detail": "Every dropped request item records a machine-readable reasonCode and explanation.",
+            "fieldRefs": [
+              "requestCoverage.droppedItems"
+            ]
+          },
+          {
+            "id": "revision_safety",
+            "title": "Revision history is legible",
+            "status": "PASS",
+            "detail": "No material requirement revision was detected from the previous turn.",
+            "fieldRefs": [
+              "revisionLedger"
+            ]
+          }
+        ]
+      },
+      "revisionLedger": {
+        "revisionNumber": 1,
+        "revised": false,
+        "revisionKind": "initial",
+        "changedFields": [],
+        "previousPromptHash": "",
+        "previousStatus": "DRAFT",
+        "requiresReapproval": false,
+        "summary": "Initial requirement contract for this thread.",
+        "approvedProposalId": "",
+        "approvedProposalOriginatingAgent": ""
+      },
+      "activeRevisionProposal": {
+        "proposalId": "",
+        "changedFields": [],
+        "reason": "",
+        "evidence": [],
+        "requiresReapproval": false,
+        "originatingAgent": "default",
+        "status": "",
+        "summary": "",
+        "previousPromptHash": "",
+        "currentPromptHash": "",
+        "createdFromRevisionNumber": 0,
+        "reviewedBy": "",
+        "reviewedAt": ""
+      },
+      "revisionGate": {
+        "status": "clear",
+        "reason": "",
+        "authoritativeOwner": "intake",
+        "currentAgent": "default",
+        "blockingProposalId": "",
+        "returnToIntake": false,
+        "changedFields": []
+      },
       "selectedPlanningMode": "NORMAL",
       "selectedPlanningDepth": "STANDARD_PLANNING",
       "selectedAssuranceDepth": "LIGHT_ASSURANCE",
       "planningModeReasons": [
+        "taskFamily=deterministic_code",
+        "familyAmbiguityHandling=bounded_assumption",
         "ambiguity=1",
-        "acceptance_uncertainty=0",
+        "acceptance_uncertainty=1",
         "novelty=2",
         "external_dependency=0",
         "openQuestions=0",
-        "acceptanceClarity=high",
+        "acceptanceClarity=medium",
         "specialistBoundaries=2",
         "approvalBoundaryTouched=no",
         "overDeliveryRisk=low",
         "userDecisionRequired=no",
-        "assumptionDependence=low",
-        "existingSpecClarity=high",
-        "changeScopeClarity=medium"
+        "clarificationAction=proceed",
+        "clarificationReason=task_family_not_design_sensitive",
+        "benchmarkCandidates=0",
+        "assumptionDependence=low"
       ],
       "assuranceDepthReasons": [
         "blast_radius=0",
@@ -681,18 +1969,159 @@
         "reviewerSuggested=yes",
         "testerSuggested=no",
         "signoffImportance=normal",
+        "benchmarkAnchored=no",
+        "strictBenchmarkRecreation=no",
         "irreversibleRisk=no",
         "newLogicRisk=no",
         "regressionRisk=high"
       ]
     },
+    "requirementValidation": {
+      "schema": "requirement-validation.v1",
+      "source": "runtime_inferred_pre_dispatch",
+      "verdict": "PASS",
+      "canProceed": true,
+      "summary": {
+        "passCount": 12,
+        "warnCount": 0,
+        "blockCount": 0,
+        "total": 12
+      },
+      "checks": [
+        {
+          "id": "goal_present",
+          "title": "Primary goal is locked",
+          "status": "PASS",
+          "detail": "A concrete goal anchor exists for planning.",
+          "fieldRefs": [
+            "lockedGoal",
+            "explicitGoal",
+            "intentHypotheses"
+          ]
+        },
+        {
+          "id": "intent_lock_defined",
+          "title": "Intent lock separates user value from downstream checks",
+          "status": "PASS",
+          "detail": "Intent lock captures the request, latent intent, and non-target boundaries separately from acceptance.",
+          "fieldRefs": [
+            "intentLock",
+            "lockedGoal",
+            "explicitGoal",
+            "intentHypotheses",
+            "nonGoals",
+            "userValueFrame.completedMeans"
+          ]
+        },
+        {
+          "id": "acceptance_defined",
+          "title": "Acceptance checks are concrete",
+          "status": "PASS",
+          "detail": "Acceptance checks locked: 1.",
+          "fieldRefs": [
+            "acceptanceChecks",
+            "baselineScope"
+          ]
+        },
+        {
+          "id": "acceptance_lock_defined",
+          "title": "Acceptance lock makes pass, fail, and evidence rules explicit",
+          "status": "PASS",
+          "detail": "Acceptance lock explicitly records pass conditions, failure conditions, and required evidence.",
+          "fieldRefs": [
+            "acceptanceLock",
+            "acceptanceChecks"
+          ]
+        },
+        {
+          "id": "blocking_questions_clear",
+          "title": "Blocking open questions are cleared",
+          "status": "PASS",
+          "detail": "No blocking open questions remain in the requirement contract.",
+          "fieldRefs": [
+            "openQuestions"
+          ]
+        },
+        {
+          "id": "approval_boundary_clear",
+          "title": "Approval boundaries are recorded and triaged",
+          "status": "PASS",
+          "detail": "No approval-boundary metadata remains.",
+          "fieldRefs": [
+            "approvalBoundaryItems"
+          ]
+        },
+        {
+          "id": "contract_consistency",
+          "title": "Goal and guardrails do not contradict each other",
+          "status": "PASS",
+          "detail": "No direct contradiction was detected between goal, non-goals, and must-avoid guardrails.",
+          "fieldRefs": [
+            "lockedGoal",
+            "explicitGoal",
+            "intentHypotheses",
+            "nonGoals",
+            "userValueFrame.mustAvoid"
+          ]
+        },
+        {
+          "id": "provenance_coverage",
+          "title": "Critical requirement fields record where they came from",
+          "status": "PASS",
+          "detail": "Goal, value frame, and intent interpretation carry provenance tags.",
+          "fieldRefs": [
+            "provenance"
+          ]
+        },
+        {
+          "id": "request_coverage_core_mapped",
+          "title": "Core request obligations are mapped into the contract",
+          "status": "PASS",
+          "detail": "Core request obligations mapped: 15/15.",
+          "fieldRefs": [
+            "requestCoverage.coreObligations",
+            "requestCoverage.mappedRequirements",
+            "requestCoverage.coverageSummary"
+          ]
+        },
+        {
+          "id": "request_coverage_parked_reasoned",
+          "title": "Parked request items explain why they are parked",
+          "status": "PASS",
+          "detail": "Every parked request item records why it is deferred.",
+          "fieldRefs": [
+            "requestCoverage.parkedItems"
+          ]
+        },
+        {
+          "id": "request_coverage_dropped_reasoned",
+          "title": "Dropped request items explain the exclusion",
+          "status": "PASS",
+          "detail": "Every dropped request item records a machine-readable reasonCode and explanation.",
+          "fieldRefs": [
+            "requestCoverage.droppedItems"
+          ]
+        },
+        {
+          "id": "revision_safety",
+          "title": "Revision history is legible",
+          "status": "PASS",
+          "detail": "No material requirement revision was detected from the previous turn.",
+          "fieldRefs": [
+            "revisionLedger"
+          ]
+        }
+      ]
+    },
     "dispatchPlan": {
       "schema": "dispatch-plan.v2",
       "source": "runtime_inferred_pre_dispatch",
-      "promptHash": "f2ac6d379d5db64aeb7b92815156313b19f72e6ad2883a53c30ae005c947b902",
+      "promptHash": "af16afc59cd4ae11c3cb677fd2b91a6386cb97681a124140207f24f0cc19700e",
       "planningMode": "NORMAL",
       "planningDepth": "STANDARD_PLANNING",
       "assuranceDepth": "LIGHT_ASSURANCE",
+      "taskFamily": "deterministic_code",
+      "familyProfileId": "deterministic_code",
       "flowPath": "NORMAL_PATH",
       "executionFlow": "STANDARD_PLANNING+LIGHT_ASSURANCE",
       "proposalOnly": 0,
@@ -705,16 +2134,43 @@
           "dispatchId": "dispatch-1-infra_worker",
           "ownerAgent": "infra_worker",
           "ownedPaths": [
-            "docs/",
-            "scripts/config/"
+            "docs/CURRENT_ARCHITECTURE.md"
           ],
-          "taskSummary": "Own contracts, docs sync, runtime observability, and signoff-facing evidence updates.",
+          "taskSummary": "契約、docs sync、runtime 可観測性、signoff 向け証跡更新を担当する。",
+          "requestClauseRefs": [
+            "req-1",
+            "req-2",
+            "req-3",
+            "req-4",
+            "req-5",
+            "req-6",
+            "req-7",
+            "req-8",
+            "req-9",
+            "req-10",
+            "req-11",
+            "req-12",
+            "req-13",
+            "req-14",
+            "req-15",
+            "req-16"
+          ],
+          "requirementRefs": [
+            "explicitGoal",
+            "intentHypotheses",
+            "baselineScope",
+            "userValueFrame.userWants",
+            "userValueFrame.hardConstraints",
+            "userValueFrame.mustAvoid",
+            "acceptanceChecks",
+            "userValueFrame.completedMeans",
+            "userValueFrame.qualityAxes"
+          ],
+          "acceptanceCheckRefs": [
+            "ac-1"
+          ],
           "acceptanceChecks": [
-            "ac-1",
-            "ac-2",
-            "ac-3",
-            "ac-4",
-            "ac-5"
+            "ac-1"
           ],
           "toolsMcpRequirements": [
             "apply_patch",
@@ -749,60 +2205,595 @@
     "acceptanceChecks": [
       {
         "id": "ac-1",
-        "title": "Exactly one documentation file changes.",
-        "blocking": 1,
-        "status": "PASS",
-        "reason": "doc_sync_observed",
-        "evidence": [
-          "docs/CURRENT_ARCHITECTURE.md"
-        ]
-      },
-      {
-        "id": "ac-2",
-        "title": "Reviewer evidence is present.",
+        "title": "Requested documentation change and read-only reviewer evidence are present.",
         "blocking": 1,
         "status": "PASS",
         "reason": "review_observed",
         "evidence": [
-          "unknown"
-        ]
-      },
-      {
-        "id": "ac-3",
-        "title": "No follow-up questions are required.",
-        "blocking": 1,
-        "status": "PASS",
-        "reason": "baseline_delivery_observed",
-        "evidence": [
-          "docs/CURRENT_ARCHITECTURE.md"
-        ]
-      },
-      {
-        "id": "ac-4",
-        "title": "Reviewer must remain read-only and report findings first or state 'No findings'.",
-        "blocking": 1,
-        "status": "PASS",
-        "reason": "review_observed",
-        "evidence": [
-          "unknown"
-        ]
-      },
-      {
-        "id": "ac-5",
-        "title": "Final reply must be exactly: NATURAL_TASK_OK docs/CURRENT_ARCHITECTURE.md",
-        "blocking": 1,
-        "status": "PASS",
-        "reason": "doc_sync_observed",
-        "evidence": [
-          "docs/CURRENT_ARCHITECTURE.md"
+          "mock-thread-5-reviewer"
         ]
       }
     ],
     "acceptanceSummary": {
-      "passCount": 5,
+      "passCount": 1,
       "failCount": 0,
       "skippedCount": 0,
-      "total": 5
+      "total": 1
+    },
+    "runtimeRevisionGate": {
+      "status": "CLEAR",
+      "reason": "no_revision_gate",
+      "proposal": {
+        "proposalId": "",
+        "changedFields": [],
+        "reason": "",
+        "evidence": [],
+        "requiresReapproval": false,
+        "originatingAgent": "default",
+        "status": "",
+        "summary": "",
+        "previousPromptHash": "",
+        "currentPromptHash": "",
+        "createdFromRevisionNumber": 0,
+        "reviewedBy": "",
+        "reviewedAt": ""
+      },
+      "enforceFinalStatus": "",
+      "taskOutcomeStatus": "",
+      "taskOutcomeReason": ""
+    },
+    "clauseCompletionScorecard": {
+      "schema": "clause-completion-scorecard.v1",
+      "status": "PASS",
+      "reason": "all_core_clauses_satisfied",
+      "summary": {
+        "coreTotal": 15,
+        "satisfiedCount": 15,
+        "unsatisfiedCount": 0,
+        "waivedCount": 0
+      },
+      "clauses": [
+        {
+          "clauseId": "req-1",
+          "text": "Implementation is explicitly requested now.Requirements are fixed, so proceed directly to implementation.",
+          "status": "satisfied",
+          "requirementRefs": [
+            "explicitGoal",
+            "intentHypotheses",
+            "baselineScope",
+            "userValueFrame.userWants"
+          ],
+          "dispatchIds": [
+            "dispatch-1-infra_worker"
+          ],
+          "planStepIds": [
+            "execution",
+            "quality",
+            "report"
+          ],
+          "acceptanceRefs": [
+            "ac-1"
+          ],
+          "evidenceRefs": [
+            "dispatch:dispatch-1-infra_worker",
+            "plan:execution",
+            "plan:quality",
+            "plan:report",
+            "mock-thread-5-reviewer",
+            "docs/CURRENT_ARCHITECTURE.md",
+            "review:mock-thread-5-reviewer",
+            "flow_trace_summary.json"
+          ],
+          "reasons": [],
+          "finalStatus": "completed",
+          "taskOutcomeStatus": "COMPLETED"
+        },
+        {
+          "clauseId": "req-2",
+          "text": "Use the default parent orchestration path.",
+          "status": "satisfied",
+          "requirementRefs": [
+            "baselineScope",
+            "userValueFrame.userWants"
+          ],
+          "dispatchIds": [
+            "dispatch-1-infra_worker"
+          ],
+          "planStepIds": [
+            "execution",
+            "quality",
+            "report"
+          ],
+          "acceptanceRefs": [
+            "ac-1"
+          ],
+          "evidenceRefs": [
+            "dispatch:dispatch-1-infra_worker",
+            "plan:execution",
+            "plan:quality",
+            "plan:report",
+            "mock-thread-5-reviewer",
+            "docs/CURRENT_ARCHITECTURE.md",
+            "review:mock-thread-5-reviewer",
+            "flow_trace_summary.json"
+          ],
+          "reasons": [],
+          "finalStatus": "completed",
+          "taskOutcomeStatus": "COMPLETED"
+        },
+        {
+          "clauseId": "req-3",
+          "text": "Delegate the implementation edit to infra_worker, then request an independent read-only reviewer check.",
+          "status": "satisfied",
+          "requirementRefs": [
+            "baselineScope",
+            "userValueFrame.userWants",
+            "userValueFrame.hardConstraints"
+          ],
+          "dispatchIds": [
+            "dispatch-1-infra_worker"
+          ],
+          "planStepIds": [
+            "execution",
+            "quality",
+            "report"
+          ],
+          "acceptanceRefs": [
+            "ac-1"
+          ],
+          "evidenceRefs": [
+            "dispatch:dispatch-1-infra_worker",
+            "plan:execution",
+            "plan:quality",
+            "plan:report",
+            "mock-thread-5-reviewer",
+            "docs/CURRENT_ARCHITECTURE.md",
+            "review:mock-thread-5-reviewer",
+            "flow_trace_summary.json"
+          ],
+          "reasons": [],
+          "finalStatus": "completed",
+          "taskOutcomeStatus": "COMPLETED"
+        },
+        {
+          "clauseId": "req-4",
+          "text": "Change only docs/CURRENT_ARCHITECTURE.md.",
+          "status": "satisfied",
+          "requirementRefs": [
+            "baselineScope",
+            "userValueFrame.userWants",
+            "userValueFrame.hardConstraints"
+          ],
+          "dispatchIds": [
+            "dispatch-1-infra_worker"
+          ],
+          "planStepIds": [
+            "execution",
+            "quality",
+            "report"
+          ],
+          "acceptanceRefs": [
+            "ac-1"
+          ],
+          "evidenceRefs": [
+            "dispatch:dispatch-1-infra_worker",
+            "plan:execution",
+            "plan:quality",
+            "plan:report",
+            "mock-thread-5-reviewer",
+            "docs/CURRENT_ARCHITECTURE.md",
+            "review:mock-thread-5-reviewer",
+            "flow_trace_summary.json"
+          ],
+          "reasons": [],
+          "finalStatus": "completed",
+          "taskOutcomeStatus": "COMPLETED"
+        },
+        {
+          "clauseId": "req-5",
+          "text": "Use apply_patch for the file edit.",
+          "status": "satisfied",
+          "requirementRefs": [
+            "baselineScope",
+            "userValueFrame.userWants"
+          ],
+          "dispatchIds": [
+            "dispatch-1-infra_worker"
+          ],
+          "planStepIds": [
+            "execution",
+            "quality",
+            "report"
+          ],
+          "acceptanceRefs": [
+            "ac-1"
+          ],
+          "evidenceRefs": [
+            "dispatch:dispatch-1-infra_worker",
+            "plan:execution",
+            "plan:quality",
+            "plan:report",
+            "mock-thread-5-reviewer",
+            "docs/CURRENT_ARCHITECTURE.md",
+            "review:mock-thread-5-reviewer",
+            "flow_trace_summary.json"
+          ],
+          "reasons": [],
+          "finalStatus": "completed",
+          "taskOutcomeStatus": "COMPLETED"
+        },
+        {
+          "clauseId": "req-6",
+          "text": "Under `## 6) Evidence and Persistence`, add exactly one brief bullet documenting the new child-ownership aggregation behavior.",
+          "status": "satisfied",
+          "requirementRefs": [
+            "baselineScope",
+            "userValueFrame.userWants",
+            "userValueFrame.hardConstraints"
+          ],
+          "dispatchIds": [
+            "dispatch-1-infra_worker"
+          ],
+          "planStepIds": [
+            "execution",
+            "quality",
+            "report"
+          ],
+          "acceptanceRefs": [
+            "ac-1"
+          ],
+          "evidenceRefs": [
+            "dispatch:dispatch-1-infra_worker",
+            "plan:execution",
+            "plan:quality",
+            "plan:report",
+            "mock-thread-5-reviewer",
+            "docs/CURRENT_ARCHITECTURE.md",
+            "review:mock-thread-5-reviewer",
+            "flow_trace_summary.json"
+          ],
+          "reasons": [],
+          "finalStatus": "completed",
+          "taskOutcomeStatus": "COMPLETED"
+        },
+        {
+          "clauseId": "req-7",
+          "text": "Insert this exact bullet if it is not already present: - `natural_task_trace_summary.json` records the selected implementation-bearing turn id and thread id, so trace bundles stay anchored to the delegated turn even when later completions s",
+          "status": "satisfied",
+          "requirementRefs": [
+            "baselineScope",
+            "userValueFrame.userWants"
+          ],
+          "dispatchIds": [
+            "dispatch-1-infra_worker"
+          ],
+          "planStepIds": [
+            "execution",
+            "quality",
+            "report"
+          ],
+          "acceptanceRefs": [
+            "ac-1"
+          ],
+          "evidenceRefs": [
+            "dispatch:dispatch-1-infra_worker",
+            "plan:execution",
+            "plan:quality",
+            "plan:report",
+            "mock-thread-5-reviewer",
+            "docs/CURRENT_ARCHITECTURE.md",
+            "review:mock-thread-5-reviewer",
+            "flow_trace_summary.json"
+          ],
+          "reasons": [],
+          "finalStatus": "completed",
+          "taskOutcomeStatus": "COMPLETED"
+        },
+        {
+          "clauseId": "req-8",
+          "text": "Do not duplicate the sentence if it already exists.",
+          "status": "satisfied",
+          "requirementRefs": [
+            "baselineScope",
+            "userValueFrame.hardConstraints",
+            "userValueFrame.mustAvoid"
+          ],
+          "dispatchIds": [
+            "dispatch-1-infra_worker"
+          ],
+          "planStepIds": [
+            "execution",
+            "quality",
+            "report"
+          ],
+          "acceptanceRefs": [
+            "ac-1"
+          ],
+          "evidenceRefs": [
+            "dispatch:dispatch-1-infra_worker",
+            "plan:execution",
+            "plan:quality",
+            "plan:report",
+            "mock-thread-5-reviewer",
+            "docs/CURRENT_ARCHITECTURE.md",
+            "review:mock-thread-5-reviewer",
+            "flow_trace_summary.json"
+          ],
+          "reasons": [],
+          "finalStatus": "completed",
+          "taskOutcomeStatus": "COMPLETED"
+        },
+        {
+          "clauseId": "req-9",
+          "text": "Ignore unrelated edits by others and do not revert them.",
+          "status": "satisfied",
+          "requirementRefs": [
+            "baselineScope",
+            "userValueFrame.hardConstraints",
+            "userValueFrame.mustAvoid"
+          ],
+          "dispatchIds": [
+            "dispatch-1-infra_worker"
+          ],
+          "planStepIds": [
+            "execution",
+            "quality",
+            "report"
+          ],
+          "acceptanceRefs": [
+            "ac-1"
+          ],
+          "evidenceRefs": [
+            "dispatch:dispatch-1-infra_worker",
+            "plan:execution",
+            "plan:quality",
+            "plan:report",
+            "mock-thread-5-reviewer",
+            "docs/CURRENT_ARCHITECTURE.md",
+            "review:mock-thread-5-reviewer",
+            "flow_trace_summary.json"
+          ],
+          "reasons": [],
+          "finalStatus": "completed",
+          "taskOutcomeStatus": "COMPLETED"
+        },
+        {
+          "clauseId": "req-10",
+          "text": "The implementation specialist must report using this exact header format:",
+          "status": "satisfied",
+          "requirementRefs": [
+            "baselineScope",
+            "userValueFrame.hardConstraints"
+          ],
+          "dispatchIds": [
+            "dispatch-1-infra_worker"
+          ],
+          "planStepIds": [
+            "execution",
+            "quality",
+            "report"
+          ],
+          "acceptanceRefs": [
+            "ac-1"
+          ],
+          "evidenceRefs": [
+            "dispatch:dispatch-1-infra_worker",
+            "plan:execution",
+            "plan:quality",
+            "plan:report",
+            "mock-thread-5-reviewer",
+            "docs/CURRENT_ARCHITECTURE.md",
+            "review:mock-thread-5-reviewer",
+            "flow_trace_summary.json"
+          ],
+          "reasons": [],
+          "finalStatus": "completed",
+          "taskOutcomeStatus": "COMPLETED"
+        },
+        {
+          "clauseId": "req-11",
+          "text": "Owned paths:",
+          "status": "satisfied",
+          "requirementRefs": [
+            "baselineScope"
+          ],
+          "dispatchIds": [
+            "dispatch-1-infra_worker"
+          ],
+          "planStepIds": [
+            "execution",
+            "quality",
+            "report"
+          ],
+          "acceptanceRefs": [
+            "ac-1"
+          ],
+          "evidenceRefs": [
+            "dispatch:dispatch-1-infra_worker",
+            "plan:execution",
+            "plan:quality",
+            "plan:report",
+            "mock-thread-5-reviewer",
+            "docs/CURRENT_ARCHITECTURE.md",
+            "review:mock-thread-5-reviewer",
+            "flow_trace_summary.json"
+          ],
+          "reasons": [],
+          "finalStatus": "completed",
+          "taskOutcomeStatus": "COMPLETED"
+        },
+        {
+          "clauseId": "req-12",
+          "text": "`<absolute path>`",
+          "status": "satisfied",
+          "requirementRefs": [
+            "baselineScope"
+          ],
+          "dispatchIds": [
+            "dispatch-1-infra_worker"
+          ],
+          "planStepIds": [
+            "execution",
+            "quality",
+            "report"
+          ],
+          "acceptanceRefs": [
+            "ac-1"
+          ],
+          "evidenceRefs": [
+            "dispatch:dispatch-1-infra_worker",
+            "plan:execution",
+            "plan:quality",
+            "plan:report",
+            "mock-thread-5-reviewer",
+            "docs/CURRENT_ARCHITECTURE.md",
+            "review:mock-thread-5-reviewer",
+            "flow_trace_summary.json"
+          ],
+          "reasons": [],
+          "finalStatus": "completed",
+          "taskOutcomeStatus": "COMPLETED"
+        },
+        {
+          "clauseId": "req-13",
+          "text": "Return with exactly: NATURAL_TASK_OK docs/CURRENT_ARCHITECTURE.md.",
+          "status": "satisfied",
+          "requirementRefs": [
+            "baselineScope",
+            "userValueFrame.hardConstraints"
+          ],
+          "dispatchIds": [
+            "dispatch-1-infra_worker"
+          ],
+          "planStepIds": [
+            "execution",
+            "quality",
+            "report"
+          ],
+          "acceptanceRefs": [
+            "ac-1"
+          ],
+          "evidenceRefs": [
+            "dispatch:dispatch-1-infra_worker",
+            "plan:execution",
+            "plan:quality",
+            "plan:report",
+            "mock-thread-5-reviewer",
+            "docs/CURRENT_ARCHITECTURE.md",
+            "review:mock-thread-5-reviewer",
+            "flow_trace_summary.json"
+          ],
+          "reasons": [],
+          "finalStatus": "completed",
+          "taskOutcomeStatus": "COMPLETED"
+        },
+        {
+          "clauseId": "req-14",
+          "text": "No follow-up questions are required.",
+          "status": "satisfied",
+          "requirementRefs": [
+            "baselineScope",
+            "userValueFrame.hardConstraints"
+          ],
+          "dispatchIds": [
+            "dispatch-1-infra_worker"
+          ],
+          "planStepIds": [
+            "execution",
+            "quality",
+            "report"
+          ],
+          "acceptanceRefs": [
+            "ac-1"
+          ],
+          "evidenceRefs": [
+            "dispatch:dispatch-1-infra_worker",
+            "plan:execution",
+            "plan:quality",
+            "plan:report",
+            "mock-thread-5-reviewer",
+            "docs/CURRENT_ARCHITECTURE.md",
+            "review:mock-thread-5-reviewer",
+            "flow_trace_summary.json"
+          ],
+          "reasons": [],
+          "finalStatus": "completed",
+          "taskOutcomeStatus": "COMPLETED"
+        },
+        {
+          "clauseId": "req-15",
+          "text": "Requested documentation change and read-only reviewer evidence are present.",
+          "status": "satisfied",
+          "requirementRefs": [
+            "baselineScope",
+            "acceptanceChecks",
+            "userValueFrame.hardConstraints",
+            "userValueFrame.completedMeans"
+          ],
+          "dispatchIds": [
+            "dispatch-1-infra_worker"
+          ],
+          "planStepIds": [
+            "execution",
+            "quality",
+            "report"
+          ],
+          "acceptanceRefs": [
+            "ac-1"
+          ],
+          "evidenceRefs": [
+            "dispatch:dispatch-1-infra_worker",
+            "plan:execution",
+            "plan:quality",
+            "plan:report",
+            "mock-thread-5-reviewer",
+            "docs/CURRENT_ARCHITECTURE.md",
+            "review:mock-thread-5-reviewer",
+            "flow_trace_summary.json"
+          ],
+          "reasons": [],
+          "finalStatus": "completed",
+          "taskOutcomeStatus": "COMPLETED"
+        }
+      ]
+    },
+    "postLockDrift": {
+      "schema": "post-lock-drift.v1",
+      "status": "PASS",
+      "reason": "no_drift",
+      "planningDepth": "STANDARD_PLANNING",
+      "assuranceDepth": "LIGHT_ASSURANCE",
+      "flowPath": "NORMAL_PATH",
+      "counts": {
+        "totalClauses": 16,
+        "coreClauseCount": 15,
+        "coreMappedCount": 15,
+        "coreUnmappedCount": 0,
+        "dispatchCount": 1,
+        "planStepCount": 3,
+        "dispatchCoveredCoreCount": 15,
+        "planCoveredCoreCount": 15,
+        "fullyCoveredCoreCount": 15,
+        "acceptanceLinkedCoreCount": 15,
+        "dispatchGapCount": 0,
+        "planGapCount": 0,
+        "driftedClauseCount": 0,
+        "orphanDispatchCount": 0,
+        "orphanPlanStepCount": 0
+      },
+      "rates": {
+        "dispatchCoverageRate": 1,
+        "planCoverageRate": 1,
+        "fullCoverageRate": 1,
+        "driftRate": 0
+      },
+      "unmappedCoreClauseIds": [],
+      "dispatchGapClauseIds": [],
+      "planGapClauseIds": [],
+      "driftedClauseIds": [],
+      "orphanDispatchIds": [],
+      "orphanPlanStepIds": [],
+      "driftedClauses": []
     },
     "docSyncEvidence": {
       "required": 1,
@@ -815,56 +2806,72 @@
       "harnessMapUpdated": 0,
       "missing": []
     },
+    "systemCoherenceReview": {
+      "required": true,
+      "commandObserved": true,
+      "docSyncPass": true,
+      "status": "PASS",
+      "reviewPlanes": [
+        "execution_path",
+        "governance_rules",
+        "machine_contracts",
+        "server_runtime",
+        "evaluation_memory",
+        "artifact_surface"
+      ],
+      "requiredCommand": "node scripts/system_coherence_review_test.js",
+      "missing": []
+    },
     "childEvidenceLedger": [
       {
-        "agent": "019cd2a4-7fbb-7932-9a55-a2d2efec351c",
-        "dispatchCount": 1,
+        "agent": "mock-thread-5-infra",
+        "dispatchCount": 2,
         "completedCount": 1,
-        "failedCount": 0,
-        "ownedPaths": [],
-        "skills": [],
-        "evidenceNotes": [],
-        "reviewerObserved": 0,
-        "testerObserved": 0,
-        "firstSeenAt": 1773060527130,
-        "lastSeenAt": 1773060527130
-      },
-      {
-        "agent": "019cd2a6-7e09-7620-adf3-e3d0ee45805f",
-        "dispatchCount": 1,
-        "completedCount": 1,
-        "failedCount": 0,
-        "ownedPaths": [],
-        "skills": [],
-        "evidenceNotes": [],
-        "reviewerObserved": 0,
-        "testerObserved": 0,
-        "firstSeenAt": 1773060657762,
-        "lastSeenAt": 1773060657762
-      },
-      {
-        "agent": "unknown",
-        "dispatchCount": 16,
-        "completedCount": 7,
         "failedCount": 0,
         "ownedPaths": [
-          "docs/CURRENT_ARCHITECTURE.md"
+          "docs/CURRENT_ARCHITECTURE.md",
+          "Applied requested documentation bullet."
         ],
         "skills": [],
         "evidenceNotes": [
-          "NATURAL_TASK_OK docs/CURRENT_ARCHITECTURE.md",
-          "Owned paths:\n- `docs\\CURRENT_ARCHITECTURE.md`\n\nFound the file already compliant. The exact bullet is already present under `## 6) Evidence and Persistence`, so I did not edit the file.",
-          "No findings\n\nThe exact bullet is present under `## 6) Evidence and Persistence` in [docs/CURRENT_ARCHITECTURE.md](docs\\CURRENT_ARCHITECTURE.md#L199), and I observed it exactly once with no duplication."
+          "Owned paths:\n- docs/CURRENT_ARCHITECTURE.md\nApplied requested documentation bullet."
+        ],
+        "reviewerObserved": 0,
+        "testerObserved": 0,
+        "firstSeenAt": 1776490155670,
+        "lastSeenAt": 1776490155671
+      },
+      {
+        "agent": "mock-thread-5-reviewer",
+        "dispatchCount": 2,
+        "completedCount": 1,
+        "failedCount": 0,
+        "ownedPaths": [],
+        "skills": [],
+        "evidenceNotes": [
+          "No findings."
         ],
         "reviewerObserved": 1,
         "testerObserved": 0,
-        "firstSeenAt": 1773060521746,
-        "lastSeenAt": 1773060717219
+        "firstSeenAt": 1776490155674,
+        "lastSeenAt": 1776490155674
       }
     ],
+    "familyCompletionGate": {
+      "applies": false,
+      "taskFamily": "deterministic_code",
+      "familyProfileId": "deterministic_code",
+      "completionContract": "task_outcome_default",
+      "status": "not_applicable",
+      "summary": "Family completion gate not applicable.",
+      "missingHard": [],
+      "executionSource": "signoff_evidence_script",
+      "workspaceLockRequired": false,
+      "workspaceLockedObserved": true
+    },
     "reviewLoadBreakdown": {
       "schema": "review-load-breakdown.v1",
-      "generatedAt": "2026-03-09T12:51:58.854Z",
+      "generatedAt": "2026-04-18T05:29:18.026Z",
       "selectedPlanningDepth": "STANDARD_PLANNING",
       "selectedAssuranceDepth": "LIGHT_ASSURANCE",
       "flowPath": "NORMAL_PATH",
@@ -887,30 +2894,28 @@
         "testerObserved": 0,
         "docSyncStatus": "PASS"
       },
-      "evidenceCollectionTimeMs": 0,
+      "evidenceCollectionTimeMs": 6,
       "testerTimeMs": 0,
-      "reviewerTimeMs": 17050,
-      "docSyncVerificationTimeMs": 46685,
+      "reviewerTimeMs": 2,
+      "docSyncVerificationTimeMs": 6,
       "retryLoopCount": 0,
-      "outcomeConversionTimeMs": 224287,
-      "totalStep4DurationMs": 0,
-      "dominantBottleneck": "outcome_conversion",
+      "outcomeConversionTimeMs": 2,
+      "totalStep4DurationMs": 6,
+      "dominantBottleneck": "evidence_collection",
       "stageDurations": {
-        "Step 1 - Requirement Structuring": 19079,
-        "Step 2 - Dispatch Planning": 5303,
+        "Step 1 - Requirement Structuring": 2578,
+        "Step 2 - Dispatch Planning": 3,
         "Step 3 - Specialist Execution": 0,
-        "Step 4 - Quality Gate": 0,
-        "Step 5 - Final Outcome": 224287
+        "Step 4 - Quality Gate": 6,
+        "Step 5 - Final Outcome": 2
       },
       "acceptanceSummary": {
-        "passCount": 5,
+        "passCount": 1,
         "failCount": 0,
-        "total": 5
+        "total": 1
       },
       "reviewerFindingSummary": [
-        "unknown: NATURAL_TASK_OK docs/CURRENT_ARCHITECTURE.md",
-        "unknown: Owned paths:\n- `docs\\CURRENT_ARCHITECTURE.md`\n\nFound the file already compliant. The exact bullet is already present under `## 6) Evidence and Persistence`, so I did not edit the file.",
-        "unknown: No findings\n\nThe exact bullet is present under `## 6) Evidence and Persistence` in [docs/CURRENT_ARCHITECTURE.md](docs\\CURRENT_ARCHITECTURE.md#L199), and I observed it exactly once with no"
+        "mock-thread-5-reviewer: No findings."
       ],
       "testerResultSummary": [],
       "requiredEvidenceFailures": []
@@ -921,10 +2926,16 @@
       "events.ndjson",
       "items.ndjson",
       "manifest.json",
+      "requirement_validation.json",
       "evidence_manifest.json",
       "stage_timeline.json",
       "flow_trace_summary.json",
-      "review_load_breakdown.json"
+      "review_load_breakdown.json",
+      "review_bundle.json",
+      "adoption_readiness_eval.json",
+      "iteration_decision.json",
+      "escalation_decision.json",
+      "release_decision.json"
     ],
     "finalOutcome": {
       "status": "completed",

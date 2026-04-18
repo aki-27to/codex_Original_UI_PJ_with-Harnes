@@ -1,9 +1,12 @@
 {
   "schema": "design-acceptance-contract.v1",
-  "version": "2026-03-13.r1",
+  "version": "2026-04-15.r1",
   "mode": "intent-first",
   "benchmarkComparisonRequired": true,
   "visualReviewRequired": true,
+  "layoutIntegrityRequired": true,
+  "worstStateReviewRequired": true,
+  "copyFitRequired": true,
   "independentReviewRequired": true,
   "docSyncRequired": true,
   "technicalVerificationRequired": true,
@@ -46,11 +49,26 @@
     "template-like blue gradient dashboard language",
     "abstract copy with no concrete proof or realness"
   ],
+  "layoutFailureModes": [
+    "text overflow or clipping outside intended panel bounds",
+    "label collisions or overlapping UI elements",
+    "copy that cannot fit its allocated region without a defined truncation or wrap policy",
+    "dense header or footer strips that become unreadable under stress states"
+  ],
+  "requiredWorstStates": [
+    "highest-density content state",
+    "interrupt, pause, or error overlay state",
+    "critical or danger status state",
+    "longest expected localized copy state"
+  ],
   "requiredArtifacts": [
     "locked intent summary",
     "benchmark decomposition",
     "desktop screenshot review",
     "mobile screenshot review",
+    "worst-state screenshot review",
+    "layout integrity review",
+    "copy-fit review",
     "independent reviewer verdict",
     "technical verification evidence",
     "documentation sync"
@@ -60,6 +78,8 @@
     "realness and credibility",
     "typographic hierarchy",
     "information density",
+    "layout integrity under stress",
+    "copy fit and collision resistance",
     "benchmark superiority"
   ]
 }

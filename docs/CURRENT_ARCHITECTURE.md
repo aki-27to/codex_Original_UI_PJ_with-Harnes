@@ -1,8 +1,8 @@
 # 現在の技術構成
 
-Updated: 2026-04-12
+Updated: 2026-04-18
 
-Authority role: `active design spec`  
+Authority role: `active design spec`
 Authority registry: `authority-registry.v1`
 
 <!-- machine-readable compatibility markers:
@@ -18,8 +18,23 @@ node scripts/github_copilot_governance_surface_test.js
 
 ## 1) この文書の位置づけ
 
-この文書は Codex App Server 連携ハーネスの **active design spec** です。  
+この文書は Codex App Server 連携ハーネスの **active design spec** です。
 入口の説明は `README.md`、docs の入口は `docs/README.md`、最上位の固定ルールは `docs/HARNESS_CONSTITUTION.md` が担います。
+
+### First-pass reviewer shortcut
+
+reviewer が最初の 90 秒で確認する標準順序は次です。
+
+- `output/governance_public/reviewer_start_here.json`
+  - `task_verdict` と `program_readiness` の読み分けを最初に固定する
+- `output/governance_public/worker_decision_surface.json`
+  - その時点の対象範囲に対して運用者がどう判断すべきかを見る
+- `output/governance_public/worker_completion_status.json`
+  - headline を維持したまま背景 debt と readiness 補助面を見る
+- `logs/current/latest_signoff_summary.json`
+  - 現在 pointer の signoff bundle を開く
+
+reviewer 向けの外部比較 refresh は `npm run reviewer:baseline-comparison` を正本とし、`reviewer_start_here.{json,md}` はそのコマンドを current aggregate と並べて表示する。
 
 関連文書:
 
@@ -69,10 +84,18 @@ node scripts/github_copilot_governance_surface_test.js
 - `worker_completion_status.json` can carry non-blocking background debt, but it must keep `programReadinessBlockingWorkerStop = false` whenever the worker headline remains complete
 - program readiness becomes blocking only for explicit readiness / release / whole-harness completion asks
 - for ordinary task reporting, program readiness stays background telemetry instead of overriding the task verdict
+- reviewer-facing read order is fixed to `reviewer_start_here.json` -> `worker_decision_surface.json` -> `worker_completion_status.json` -> `bundle_overview.md`
+
+### Server-boundary proof surface
+
+- `ac-1`: reviewer refresh and packet reopen stay package-visible through `npm run reviewer:baseline-comparison` and `npm run reviewer:server-boundary-proof`
+- `ac-2`: tester verification stays package-visible through `npm run test:server-boundary-proof`, which covers the extracted server-boundary split tests plus the reviewer/export proof surfaces
+- reviewer evidence artifacts are `output/server_boundary_refactor_reviewer_evidence.md` and `output/playwright/reviewer-overview-2026-04-13.png`
+- tester evidence artifacts are `output/server_boundary_refactor_tester_evidence.md` and `output/submission_artifacts.json`
 
 ## 3) 1 つのハーネスの中にある 4 つの面
 
-この repo は 1 つの統治付きハーネスの中に複数の面を持たせています。  
+この repo は 1 つの統治付きハーネスの中に複数の面を持たせています。
 分かれているのは repo ではなく、**信頼境界と責務**です。
 
 ### 実行面
@@ -119,18 +142,30 @@ node scripts/github_copilot_governance_surface_test.js
 
 - external runtime entrypoint: `server.js`
 - implementation root: `server_impl.js`
-- request/bootstrap split: `server/request_handler.js`, `server/bootstrap.js`
-- explicit route families: `server/routes/{runtime,batch,eval,exec}_routes.js`
+- request/bootstrap split: `server/request_handler.js`, `server/route_services.js`, `server/request_handler_context.js`, `server/bootstrap.js`
+- explicit route families: `server/routes/{runtime,batch,app,conversation,voice,replay,eval,exec}_routes.js`
 - the runtime split is compatibility-first: public routes stay fixed, and unextracted paths continue to fall back through the existing implementation
-- current stage: route-family, bootstrap, and primary `exec` / `eval` service boundaries are extracted, while most remaining runtime/governance logic still lives in `server_impl.js`
-- `exec` / `eval` are now reviewer-visible at both the route-family boundary and the service boundary through `server/routes/{eval,exec}_routes.js` plus `server/services/{eval_service,exec_service}.js`
+- current stage: route-family, route-service composition, request-handler context, bootstrap, and primary `apps` / `conversation` / `voice` / `replay` / `exec` / `eval` service boundaries are extracted, while most remaining runtime/governance logic still lives in `server_impl.js`
+- `apps` / `conversation` / `voice` / `replay` / `exec` / `eval` are now reviewer-visible at the route-family boundary, the route-service composition boundary, and the direct grouped service boundary through `server/routes/{app,replay,conversation,voice,eval,exec}_routes.js`, `server/route_services.js`, `server/request_handler_context.js`, and `server/services/{harness_app_service,replay_service,conversation_service,eval_service,exec_service}.js`
+- reviewer-facing harness overview assembly is now extracted into `server/services/harness_overview_snapshot_service.js`, so `server_impl.js` no longer owns the eval-history / execution-memory / topography helper cluster inline
+- `scripts/run_repo_quality_gate.js` is the canonical repo-quality stage runner and now executes package scripts through direct process invocation on Windows instead of a `shell: true` path
 - detailed route-to-service mapping and residual decomposition points live in `docs/SERVER_ARCHITECTURE_MAP.md`
 
-`portable_local` は「広く配れる形」を優先する既定姿勢です。  
-`owner_local` はローカル所有者の強い権限を含められますが、共通既定ではありません。  
+### App-server capability-gated behavior
+
+- `server_impl.js` exposes capability snapshot, memory bridge snapshot, and cwd canonicalization snapshot together in the runtime transport surface. The runtime now reports `capabilitySnapshot`, `memoryBridge`, and `canonicalization` on the app-server transport object.
+- Thread/session reuse no longer compares raw cwd strings. `normalizeDirectoryPathIdentity(...)` strips Windows extended-length prefixes, absorbs case drift on Windows, and trims trailing separators before planning carryover and reset decisions.
+- `POST /api/exec` accepts `memoryMode` and `resetCodexMemory`, preserves them through idempotency/replay memory, and applies capability-gated memory config when a new app-server thread starts. Remote memory reset remains fallback-safe: unsupported app-server capability falls back to local planning-context cleanup instead of inventing a new route.
+- MCP telemetry now records richer aggregates on each turn: `mcpWallTimeMs`, `mcpPerServerCounts`, `mcpNamespaces`, `mcpSandboxStates`, and `mcpParallelSafeCallCount`. These fields flow into the logging surface and the harness overview recent-execution snapshot.
+- `POST /api/replay/turn` remains the primary replay route, but replay mode is now capability-aware. When turn artifacts exist and `rawTurnItemInjection` is reported as `supported`, replay can return `artifact_snapshot`; otherwise it falls back to `live_rerun`.
+
+`portable_local` は「広く配れる形」を優先する既定姿勢です。
+`owner_local` はローカル所有者の強い権限を含められますが、共通既定ではありません。
 `reviewed_team` はチーム運用を前提に、証拠とレビューを強めた姿勢です。
 
 ## 6) 現在の構成
+- `natural_task_trace_summary.json` records the selected implementation-bearing turn id and thread id, so trace bundles stay anchored to the delegated turn even when later completions share the thread.
+- `SIGNOFF_ASSURANCE` sample runs keep reviewer/tester execution and doc-sync evidence co-located in signoff bundles.
 
 この repo は、1 つのハーネスの中に次を収めています。
 
@@ -140,8 +175,13 @@ node scripts/github_copilot_governance_surface_test.js
 - 記憶と継続の面
 - 公開証拠の面
 
-ただし、これらは別製品ではありません。  
+ただし、これらは別製品ではありません。
 **固定された権限境界の内側で役割を分けているだけ**です。
+
+現在の補助 surface:
+
+- `natural_task_trace_summary.json` records the selected implementation-bearing turn id and thread id, so trace bundles stay anchored to the delegated turn even when later completions share the thread
+- `SIGNOFF_ASSURANCE` sample runs keep planning depth, assurance depth, reviewer/tester execution, and doc-sync evidence co-located in signoff bundles
 
 ## 7) 機械可読 contract
 
@@ -153,6 +193,7 @@ node scripts/github_copilot_governance_surface_test.js
 - `scripts/config/design_acceptance_contract.json`
 - `scripts/config/iteration_control_contract.json`
 - `scripts/config/adoption_readiness_evaluator_contract.json`
+- `scripts/config/self_steering_runtime_contract.json`
 - `scripts/config/worker_decision_surface_contract.json`
 - `scripts/config/deployment_posture_profiles.json`
 
@@ -178,7 +219,7 @@ node scripts/github_copilot_governance_surface_test.js
 
 ## 9) 現在の学習面
 
-この repo は OpenAI developer lane と Anthropic engineering lane を持ちます。  
+この repo は OpenAI developer lane と Anthropic engineering lane を持ちます。
 ただし、実行時の取り込みまで開いている主レーンは OpenAI 側です。Anthropic 側は補助レーンとして、持ち運びやすい原則の抽出と提案生成に寄せています。
 
 現在の学習面で見る主なもの:
@@ -191,11 +232,59 @@ node scripts/github_copilot_governance_surface_test.js
 
 ## 10) この repo をどう呼ぶか
 
-この repo は、対応先の多さや派手さを前面に出す実行環境ではありません。  
+この repo は、対応先の多さや派手さを前面に出す実行環境ではありません。
 正確には、**固定された権限境界の内側で、AI に仕事を進めさせ、その結果を採択可能かどうかまで判断する統治付き高自律ワーカー基盤**です。
+
 ## Autonomous Learning Verified-Positive Contract
 
 - `currentVerifiedPositiveCount`: current `exportSessionId` window 内で `remediationEffect = "verified_positive"` になった件数。同じ window の `passed` terminal entry を含む。
 - `historicalVerifiedPositiveCount`: prior `exportSessionId` windows から carry された verified-positive 累積。current window 分は含めない。
 - `summary.verifiedPositive`: total ではなく `currentVerifiedPositiveCount` と strict equality。
 - `countSemantics`: JSON artifact に同梱される machine-readable contract。strict public eval が summary/count equality と合わせて fail-closed で検証する。
+
+## 11) Correction-Driven Learning Path
+
+The harness now treats correction handling as a first-class runtime path instead of a prose-only afterthought.
+
+- `Intent Lock` and `Acceptance Lock` remain separate concerns
+- a user correction should first create a correction event, then pass through `Learning Triage`
+- `Learning Triage` does not patch `skill` directly
+- the runtime now separates `patch_target_decision`, `improvement_lifecycle_decision`, and `skill_promotion_audit`
+- the routing principle is `smallest_scope_that_prevents_recurrence`
+- `skill` remains a post-patch destination reached only after replay verification, reusable-workflow evidence, repeated success, and promotion audit
+
+Current implementation surfaces:
+
+- contract: `scripts/config/correction_learning_contract.json`
+- runtime policy: `scripts/lib/correction_learning_policy.js`
+- operator UI lifecycle: `web/01.HarnesUI/app.js`
+- live status surface: the inline header pill appends the active Codex CLI version from `/api/diagnostics` whenever the diagnostics probe reports a usable `codex --version`
+- local exec ownership guard: the same HarnesUI pending projection now treats a live request controller in `s.req` as authoritative for send blocking, so transient `/api/runtime` idle snapshots cannot reopen resend while the active tab is still receiving stream output
+- blocked requirement copy/tone: the same right-rail workflow now phrases requirement waits in shorter user-facing copy (`確認したい点があります…`, `回答待ちです。`) and uses an amber waiting tone for blocked workflow cards and status values instead of sharing the hard-failure red
+- current work summary: the `今していること` field prefers the user-facing 5-step workflow detail copy, so it no longer surfaces raw `step x / y` plan text or internal quality-gate jargon
+- user-facing top-level workflow: the primary HarnesUI card compresses progress to `依頼理解 -> 要件確定 -> 実行 -> 検証 -> 完了`, while the full 15-step operator lifecycle stays inside the detail fold
+- completed-reply override: the same right-rail workflow suppresses stale `前回状態 / 要件未確定` carryover whenever the active chat already has a terminal `completed` result
+- lifecycle copy-fit / wrap policy: `web/01.HarnesUI/styles.css`
+- policy narrative: `docs/SELF_IMPROVEMENT_POLICY.md`
+
+## 12) Self-Steering Runtime Control Surface
+
+As of 2026-04-18, the harness contract surface explicitly separates `reporting` from the intended runtime primary control surface. The new machine-readable contract is `scripts/config/self_steering_runtime_contract.json`.
+
+- controller-heavy self-steering is now defined through `candidate_directions`, `chosen_direction`, `rejected_directions`, `kill_conditions`, `current_gap`, and `self_correction_applied`
+- latent intent is now contractually evaluated through `candidate_intent_hypotheses`, `chosen_intent_model`, `benchmark_strengths_to_surpass`, and `artifact_comparison_evidence`
+- recurrence prevention is now modeled as `next_turn_recurrence_patch` plus `recurrence_patch_decision`, and it is required before any skill-promotion path can pass
+- the contract layer is fail-closed when the self-steering primary control surface, artifact-grounded latent-intent evidence, or next-turn recurrence patch is missing
+- this pass proves contract and lifecycle consistency at the config/docs layer; runtime emission and consumption of these artifacts still require separate runtime evidence
+
+### Acceptance checks
+
+- `ac-1`: self-steering state is contractually defined as the runtime primary control surface, not a reporting-only summary
+- `ac-2`: latent intent is contractually defined as artifact-grounded comparison required, not proxy-score-only
+- `ac-3`: recurrence patch is contractually required before skill promotion, and the repo exposes a package-visible verification command for that requirement
+
+### Package-visible verification command
+
+- dedicated verifier: `npm run verify:self-steering-contracts`
+- scope: checks the new runtime contract keys plus required-field metadata, the additive latent-intent grounding fields and evaluator input list in `scripts/config/adoption_readiness_evaluator_contract.json`, the additive recurrence-patch-before-promotion fields and lifecycle-step consistency in `scripts/config/correction_learning_contract.json`, and the presence of `ac-1`, `ac-2`, and `ac-3` in this architecture spec
+- proof boundary: static contract and docs consistency only; runtime artifact emission and evaluator consumption require separate runtime evidence

@@ -81,6 +81,13 @@ async function run() {
     assert(runtime.intentFirst && runtime.intentFirst.contract, "runtime should expose intentFirst.contract");
     assert(runtime.intentFirst.tasteMemory && runtime.intentFirst.tasteMemory.activeProfile, "runtime should expose active taste profile");
     assert(Array.isArray(runtime.intentFirst.requiredGates) && runtime.intentFirst.requiredGates.length >= 4, "runtime should expose required gates");
+    assert(runtime.intentFirst.verificationLock && runtime.intentFirst.verificationLock.enabled === true, "runtime should expose verification lock");
+    assert.strictEqual(runtime.intentFirst.verificationLock.mode, "fail_closed", "verification lock should be fail-closed");
+    assert.strictEqual(runtime.intentFirst.verificationLock.scope, "all_design_sensitive_requests", "verification lock should expose global design-sensitive scope");
+    assert(Array.isArray(runtime.intentFirst.contract && runtime.intentFirst.contract.keywords), "runtime should expose intent-first keywords");
+    assert(runtime.intentFirst.correctionLearning && runtime.intentFirst.correctionLearning.contract, "runtime should expose correction learning contract");
+    assert.strictEqual(runtime.intentFirst.correctionLearning.summary.correctionEventRequired, true, "runtime correction learning must require correction events");
+    assert(Array.isArray(runtime.intentFirst.correctionLearning.contract.policyPatchTargets) && runtime.intentFirst.correctionLearning.contract.policyPatchTargets.length >= 3, "runtime should expose correction policy patch targets");
 
     const authHeaders = {
       [runtime.controlApi.tokenHeader]: runtime.controlApi.token,
@@ -116,6 +123,17 @@ async function run() {
 
     const blockedExec = await requestJson({
       port,
+      path: "/api/workspace/unlock",
+      method: "POST",
+      headers: authHeaders,
+      body: {
+        action: "unlock_workspace_directory",
+      },
+    });
+    assert(blockedExec.statusCode === 200 && blockedExec.json && blockedExec.json.ok === true, `workspace unlock before blocked exec should succeed (${blockedExec.raw})`);
+
+    const blockedExecAfterUnlock = await requestJson({
+      port,
       path: "/api/exec",
       method: "POST",
       headers: authHeaders,
@@ -131,8 +149,8 @@ async function run() {
       },
       timeoutMs: 20000,
     });
-    assert(blockedExec.statusCode === 409 && blockedExec.json, `design-sensitive exec without workspace lock should be blocked (${blockedExec.raw})`);
-    assert.strictEqual(blockedExec.json.code, "workspace_lock_required", "design-sensitive exec should use workspace_lock_required code");
+    assert(blockedExecAfterUnlock.statusCode === 409 && blockedExecAfterUnlock.json, `design-sensitive exec without workspace lock should be blocked (${blockedExecAfterUnlock.raw})`);
+    assert.strictEqual(blockedExecAfterUnlock.json.code, "workspace_lock_required", "design-sensitive exec should use workspace_lock_required code");
 
     const resetRes = await requestJson({
       port,

@@ -3,7 +3,7 @@
 Authority role: `proof contract truth`  
 Authority registry: `authority-registry.v1`
 
-Updated: 2026-04-12
+Updated: 2026-04-13
 
 ## 1) 目的
 
@@ -104,6 +104,17 @@ live baseline comparison を要求した場合:
 - `raw_direct_discovery_task_trace_summary.json`
 - `raw_direct_signoff_task_trace_summary.json`
 - `raw_direct_natural_task_trace_summary.json`
+- refresh command: `npm run reviewer:baseline-comparison`
+- reviewer proof command: `npm run reviewer:server-boundary-proof`
+- tester proof command: `npm run test:server-boundary-proof`
+- reviewer-facing summary: `output/governance_public/reviewer_start_here.json`
+- reviewer evidence packet: `output/server_boundary_refactor_reviewer_evidence.md`
+- tester evidence packet: `output/server_boundary_refactor_tester_evidence.md`
+- screenshot evidence: `output/playwright/reviewer-overview-2026-04-13.png`
+
+server-boundary proof acceptance checks:
+- `ac-1`: reviewer can refresh the baseline comparison and reopen the reviewer packet from explicit package-visible commands without discovering hidden helper paths
+- `ac-2`: tester can run one dedicated verification command that covers the extracted server-boundary split tests plus the reviewer/export proof surfaces
 
 ## 4) Reporting Contract
 
@@ -148,3 +159,4 @@ worker-centric completion semantics are not proven by prose alone.
 ## 6.1 Subjective Quality Rule
 
 subjective quality work では「良く見える」は evidence になりません。最低でも screenshot comparison、reviewer verdict、benchmark reasoning が必要です。
+- `SIGNOFF_ASSURANCE` runs should surface reviewer/tester/doc-sync status in `review_load_breakdown.json` for operator signoff.

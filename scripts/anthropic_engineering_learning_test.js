@@ -293,8 +293,22 @@ async function run() {
   assert.strictEqual(String(first.selfImprovement.state.observationStatus || ""), "disabled", "secondary lane should expose disabled observation status when stabilization is off");
   assert.strictEqual(Number(first.selfImprovement.state.rawAutoApplyChangeCount) || 0, 0, "secondary lane fixture should not expose auto-apply candidates without the long-running frontend article");
   assert.strictEqual(Number(first.selfImprovement.state.policyDisabledCandidateCount) || 0, 0, "secondary lane fixture should not mark disabled candidates when no frontend-note candidate exists");
-  assert.strictEqual(Number(first.selfImprovement.state.proposalOnlyCount) || 0, 3, "secondary lane should keep the portable fixture proposals as proposal-only items");
+  assert.strictEqual(Number(first.selfImprovement.state.proposalOnlyCount) || 0, 1, "secondary lane should keep only the eval guidance in proposal-only review");
+  assert.strictEqual(Number(first.selfImprovement.state.blockedCount) || 0, 2, "secondary lane should surface the frozen planner targets as blocked backlog items");
   assert(first.selfImprovement.state.nextPriority && typeof first.selfImprovement.state.nextPriority === "object", "secondary lane should expose the next priority backlog item");
+  const stableSecondaryState = fs.readFileSync(path.join(workspaceRoot, "output", "anthropic_engineering_self_improvement_state.json"), "utf8");
+  const stableSecondaryGate = fs.readFileSync(path.join(workspaceRoot, "output", "anthropic_engineering_self_improvement_gate.json"), "utf8");
+  const stableSecondaryProposal = fs.readFileSync(path.join(workspaceRoot, "output", "anthropic_engineering_learning_proposals", "demystifying-evals-for-ai-agents.json"), "utf8");
+
+  const second = await runAnthropicEngineeringLearningCycle({
+    policy,
+    fetchText,
+    now: new Date("2026-03-25T06:00:00.000Z"),
+  });
+  assert.strictEqual(second.report.summary.newArticlesThisRun, 0, "secondary lane should not rediscover already read articles");
+  assert.strictEqual(fs.readFileSync(path.join(workspaceRoot, "output", "anthropic_engineering_self_improvement_state.json"), "utf8"), stableSecondaryState, "secondary self-improvement state should stay stable across timestamp-only reruns");
+  assert.strictEqual(fs.readFileSync(path.join(workspaceRoot, "output", "anthropic_engineering_self_improvement_gate.json"), "utf8"), stableSecondaryGate, "secondary self-improvement gate should stay stable across timestamp-only reruns");
+  assert.strictEqual(fs.readFileSync(path.join(workspaceRoot, "output", "anthropic_engineering_learning_proposals", "demystifying-evals-for-ai-agents.json"), "utf8"), stableSecondaryProposal, "secondary proposals should not churn timestamps without semantic changes");
 
   const runtime = buildAnthropicEngineeringRuntimeSnapshot(policy, {
     enabled: true,

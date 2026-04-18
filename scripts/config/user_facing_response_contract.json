@@ -106,6 +106,25 @@
       ]
     }
   },
+  "reviewerPacketReporting": {
+    "readThisFirstArtifact": "output/governance_public/reviewer_start_here.json",
+    "decisionFaces": [
+      "task_verdict",
+      "program_readiness"
+    ],
+    "evidenceExpectations": {
+      "includeArtifactRefsWhenEvidenceIsRequested": true,
+      "preferLinkLikeRepoPaths": true,
+      "screenshotEvidenceRequiredForVisualClaims": true,
+      "reviewerEvidenceRequiredForCompletionClaims": true,
+      "testerEvidenceRequiredForVerificationClaims": true
+    },
+    "recencyAndDating": {
+      "requireAbsoluteDateForRecencySensitiveClaims": true,
+      "preferredDateFormat": "YYYY-MM-DD",
+      "bundleFreshnessSource": "logs/current/latest_signoff_summary.json"
+    }
+  },
   "internalProcessDisclosure": {
     "enabled": true,
     "prohibitedPhrases": [

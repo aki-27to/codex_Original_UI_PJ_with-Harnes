@@ -4,7 +4,6 @@
 const assert = require("assert");
 const fs = require("fs");
 const path = require("path");
-const { resolveServerImplementationPath } = require("./lib/server_source_path");
 const {
   loadAuthorityRegistry,
 } = require("./lib/authority_registry");
@@ -43,22 +42,8 @@ function read(relativePath) {
   return fs.readFileSync(path.join(workspaceRoot, relativePath), "utf8");
 }
 
-const { implementationPath: serverImplementationPath } = resolveServerImplementationPath(workspaceRoot);
-
-function readServerImplementation() {
-  return fs.readFileSync(serverImplementationPath, "utf8");
-}
-
 function readJson(relativePath) {
   return JSON.parse(read(relativePath));
-}
-
-function routeBlock(source, routeNeedle, blockLength = 16000) {
-  const index = source.indexOf(routeNeedle);
-  if (index < 0) {
-    throw new Error(`missing route block: ${routeNeedle}`);
-  }
-  return source.slice(index, index + blockLength);
 }
 
 function makeProbeSuite(suiteId) {
@@ -204,15 +189,22 @@ async function main() {
   });
 
   await runCheck("server routes preserve execution and evaluation primary paths", async () => {
-    const serverText = readServerImplementation();
-    assert(serverText.includes('if(req.method==="POST"&&pathname==="/api/exec"){'), "server must expose POST /api/exec");
-    assert(serverText.includes('if(req.method==="POST"&&pathname==="/api/eval/run"){'), "server must expose POST /api/eval/run");
-    assert(serverText.includes("assertEvalLaneAccess"), "server must enforce configured eval lane access");
+    const requestHandlerText = read("server/request_handler.js");
+    const overviewRoutesText = read("server/routes/overview_routes.js");
+    const execRoutesText = read("server/routes/exec_routes.js");
+    const evalRoutesText = read("server/routes/eval_routes.js");
+    const evalServiceText = read("server/services/eval_service.js");
+    assert(requestHandlerText.includes("createOverviewRoutes"), "request handler must register overview routes");
+    assert(requestHandlerText.includes("createExecRoutes"), "request handler must register exec routes");
+    assert(requestHandlerText.includes("createEvalRoutes"), "request handler must register eval routes");
+    assert(overviewRoutesText.includes('pathname === "/api/harness/overview"'), "overview routes must expose GET /api/harness/overview");
+    assert(execRoutesText.includes('pathname === "/api/exec"'), "exec routes must expose POST /api/exec");
+    assert(evalRoutesText.includes('pathname === "/api/eval/run"'), "eval routes must expose POST /api/eval/run");
+    assert(evalServiceText.includes("assertEvalLaneAccess"), "eval service must enforce configured eval lane access");
   });
 
   await runCheck("execution route block does not reference protected eval assets", async () => {
-    const serverText = readServerImplementation();
-    const execBlock = routeBlock(serverText, 'if(req.method==="POST"&&pathname==="/api/exec"){');
+    const execBlock = read("server/routes/exec_routes.js");
     for (const forbiddenMarker of [
       "protected/holdout",
       "protected/blackbox",

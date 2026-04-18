@@ -11,7 +11,12 @@ function main() {
   const launcher = fs.readFileSync(launcherPath, "utf8");
 
   assert(/^@echo off\r?\nsetlocal\r?\nif "%CODEX_PAUSE_ON_EXIT%"=="" set "CODEX_PAUSE_ON_EXIT=1"/.test(launcher), "launcher must default CODEX_PAUSE_ON_EXIT before early-exit checks");
+  assert(/if "%CODEX_REQUIRE_ADMIN%"=="" set "CODEX_REQUIRE_ADMIN=0"/.test(launcher), "launcher must default admin elevation off");
+  assert(/set "CODEX_LAUNCH_FILE=%~f0"/.test(launcher), "launcher must always expose its own path for reuse/stale-runtime probes");
+  assert(/set "CODEX_LAUNCH_DIR=%~dp0"/.test(launcher), "launcher must always expose its working directory for reuse/stale-runtime probes");
+  assert(/if \/I "%CODEX_REQUIRE_ADMIN%"=="1" \(/.test(launcher), "launcher must gate self-elevation behind an explicit opt-in");
   assert(/set "LAUNCHER_AUTO_OPEN_BROWSER=%CODEX_AUTO_OPEN_BROWSER%"/.test(launcher), "launcher must snapshot browser auto-open ownership before starting server.js");
+  assert(/if "%CODEX_AUTO_OPEN_BROWSER%"=="" set "CODEX_AUTO_OPEN_BROWSER=0"/.test(launcher), "launcher must default browser auto-open off");
   assert(/if "%CODEX_RESTART_EXISTING_HARNESS%"=="" set "CODEX_RESTART_EXISTING_HARNESS=0"/.test(launcher), "launcher must default restart-existing-harness behavior off");
   assert(/if "%CODEX_AUTO_RESTART_STALE_HARNESS%"=="" set "CODEX_AUTO_RESTART_STALE_HARNESS=1"/.test(launcher), "launcher must default stale-harness auto-restart on");
   assert(/if "%CODEX_FORCE_ACTIVE_RESTART%"=="" set "CODEX_FORCE_ACTIVE_RESTART=0"/.test(launcher), "launcher must default forced active restart off");
@@ -36,6 +41,8 @@ function main() {
   assert(/echo \[launcher\] existing harness reused; no restart was performed\./.test(launcher), "launcher must report when it reuses the existing harness");
   assert(/set "CODEX_AUTO_OPEN_BROWSER=0"/.test(launcher), "launcher must disable server-side browser auto-open before entering the server loop");
   assert(/:launcher_server_run[\s\S]*node "%~dp0server\.js"/.test(launcher), "launcher must run server.js from a dedicated restart loop label");
+  assert(/existing harness is already serving on port .*reusing after startup conflict/.test(launcher), "launcher must retry reuse when server startup collides with an already-running harness");
+  assert(/CODEX_SERVER_RESTART_STOP_REASON=reused_existing_harness_after_conflict/.test(launcher), "launcher must record when a late reuse resolves a startup conflict");
   assert(/CODEX_SERVER_RESTART_ATTEMPT\+=1/.test(launcher), "launcher must increment the restart attempt counter");
   assert(/CODEX_SERVER_RESTART_ATTEMPT% GTR %CODEX_SERVER_RESTART_MAX_RETRIES%/.test(launcher), "launcher must stop once the restart budget is exhausted");
   assert(/CODEX_SERVER_UPTIME_SECONDS/.test(launcher), "launcher must measure server uptime for stability resets");
@@ -43,7 +50,7 @@ function main() {
   assert(/Start-Sleep -Milliseconds \(\[Math\]::Max\(250,\[int\]\$env:CODEX_SERVER_RESTART_DELAY_MS\)\)/.test(launcher), "launcher must wait before restarting after an unexpected exit");
   assert(/goto launcher_server_run/.test(launcher), "launcher must loop back into the server run label after a crash");
   assert(/if not "%LAUNCHER_AUTO_OPEN_BROWSER%"=="0" \(/.test(launcher), "launcher must use the launcher-owned browser auto-open gate");
-  assert(/if "%CODEX_PAUSE_ON_EXIT%"=="1" pause/.test(launcher), "launcher must honor CODEX_PAUSE_ON_EXIT on early dependency and elevation failures");
+  assert(/if "%CODEX_PAUSE_ON_EXIT%"=="1" pause/.test(launcher), "launcher must honor CODEX_PAUSE_ON_EXIT on early dependency failures and opt-in elevation failures");
 
   process.stdout.write("PASS start_codex_ui_launcher_policy_test\n");
 }

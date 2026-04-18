@@ -144,6 +144,14 @@ function readWorkerCompletionStatusArtifact(workspaceRoot) {
 function summarizeWorkerDecisionHeadline(workspaceRoot) {
   const workerDecisionSurface = readWorkerDecisionSurfaceArtifact(workspaceRoot);
   const workerCompletionStatus = readWorkerCompletionStatusArtifact(workspaceRoot);
+  const backgroundProgramReadiness = workerCompletionStatus.backgroundProgramReadiness
+    && typeof workerCompletionStatus.backgroundProgramReadiness === "object"
+      ? workerCompletionStatus.backgroundProgramReadiness
+      : {};
+  const workerStopDecision = workerCompletionStatus.workerStopDecision
+    && typeof workerCompletionStatus.workerStopDecision === "object"
+      ? workerCompletionStatus.workerStopDecision
+      : {};
   return {
     workerDecisionSurfacePath: repoRelative(workspaceRoot, path.join(workspaceRoot, "output", "governance_public", "worker_decision_surface.json")),
     workerDecisionSurface: sanitizePublicValue(workerDecisionSurface, workspaceRoot),
@@ -151,6 +159,8 @@ function summarizeWorkerDecisionHeadline(workspaceRoot) {
     workerCompletionStatus: sanitizePublicValue(workerCompletionStatus, workspaceRoot),
     headlineScope: safeString(workerDecisionSurface && workerDecisionSurface.scope, 80) || "",
     workerDecisionHeadline: safeString(workerDecisionSurface && workerDecisionSurface.topLevelOutcome, 80) || "",
+    workerStopDecision: sanitizePublicValue(workerStopDecision, workspaceRoot),
+    backgroundProgramReadiness: sanitizePublicValue(backgroundProgramReadiness, workspaceRoot),
   };
 }
 
@@ -11671,6 +11681,7 @@ function buildGovernedMemoryPublicArtifacts({ workspaceRoot = workspaceRootDefau
     goalCompletionPath: repoRelative(workspaceRoot, paths.agiReadiness.goalCompletionStatusJson),
     goalStatusScope: "program_readiness",
     goalStatus: safeString(goalCompletionStatus.goalStatus, 80),
+    goalStatusPresentationRole: "secondary_non_blocking_context",
     goalWhyNotYetCount: Array.isArray(goalCompletionStatus.whyNotYet) ? goalCompletionStatus.whyNotYet.length : 0,
     subjectiveGoalStatusPath: repoRelative(workspaceRoot, paths.agiReadiness.subjectiveGoalCompletionStatusJson),
     subjectiveGoalStatusScope: "subjective_companion",
@@ -11679,6 +11690,9 @@ function buildGovernedMemoryPublicArtifacts({ workspaceRoot = workspaceRootDefau
     goalCompletion: {
       scope: "program_readiness",
       status: safeString(goalCompletionStatus.goalStatus, 80),
+      displayLabel: "Background program readiness",
+      presentationRole: "secondary_non_blocking_context",
+      doesNotOverrideWorkerVerdict: true,
       whyNotYetCount: Array.isArray(goalCompletionStatus.whyNotYet) ? goalCompletionStatus.whyNotYet.length : 0,
     },
     latestPack: {
@@ -11692,7 +11706,6 @@ function buildGovernedMemoryPublicArtifacts({ workspaceRoot = workspaceRootDefau
     },
     staleWarningCount: Array.isArray(summary.staleMemoryWarnings) ? summary.staleMemoryWarnings.length : 0,
     learningAgendaSummary: sanitizePublicValue(autonomousLearningStatus.summary, workspaceRoot),
-    ...summarizeWorkerDecisionHeadline(workspaceRoot),
   };
   let evalStatus = evaluateMemoryPublicSuite({
     workspaceRoot,
@@ -12082,14 +12095,21 @@ function buildGovernedMemoryPublicArtifacts({ workspaceRoot = workspaceRootDefau
     ...buildGoalCompletionSubjectiveProjection({ workspaceRoot, paths, subjectiveGoalCompletionStatus }),
     ...buildGoalCompletionCompatibilityProjection({ workspaceRoot, paths, compatibilityCompletionStatus }),
   };
-  workerCompletionStatus = buildWorkerCompletionStatus({
-    workerDecisionSurface: readWorkerDecisionSurfaceArtifact(workspaceRoot),
-    goalCompletionStatus,
-    subjectiveGoalCompletionStatus,
-    compatibilityCompletionStatus,
-    exportSessionId,
-    headlineArtifactPath: repoRelative(workspaceRoot, paths.governancePublic.workerDecisionSurfaceJson),
-  });
+  {
+    const currentWorkerDecisionSurface = readWorkerDecisionSurfaceArtifact(workspaceRoot);
+    const workerHeadlineExportSessionId = safeString(currentWorkerDecisionSurface && currentWorkerDecisionSurface.exportSessionId, 120) || exportSessionId;
+    workerCompletionStatus = buildWorkerCompletionStatus({
+      workerDecisionSurface: currentWorkerDecisionSurface,
+      goalCompletionStatus,
+      subjectiveGoalCompletionStatus,
+      compatibilityCompletionStatus,
+      exportSessionId: workerHeadlineExportSessionId,
+      backgroundArtifactSessionConsistency: "aligned",
+      backgroundArtifactSessionIds: [workerHeadlineExportSessionId],
+      backgroundArtifactInputsTrusted: true,
+      headlineArtifactPath: repoRelative(workspaceRoot, paths.governancePublic.workerDecisionSurfaceJson),
+    });
+  }
   writeJsonIfChanged(paths.governancePublic.workerCompletionStatusJson, workerCompletionStatus);
   bottlenecks = buildNextBottlenecks({
     workspaceRoot,
@@ -12179,10 +12199,14 @@ function buildGovernedMemoryPublicArtifacts({ workspaceRoot = workspaceRootDefau
   publicOverview = {
     ...publicOverview,
     goalStatus: safeString(goalCompletionStatus.goalStatus, 80),
+    goalStatusPresentationRole: "secondary_non_blocking_context",
     goalWhyNotYetCount: Array.isArray(goalCompletionStatus.whyNotYet) ? goalCompletionStatus.whyNotYet.length : 0,
     goalCompletion: {
       scope: safeString(goalCompletionStatus.scope, 80) || "program_readiness",
       status: safeString(goalCompletionStatus.goalStatus, 80),
+      displayLabel: "Background program readiness",
+      presentationRole: "secondary_non_blocking_context",
+      doesNotOverrideWorkerVerdict: true,
       whyNotYetCount: Array.isArray(goalCompletionStatus.whyNotYet) ? goalCompletionStatus.whyNotYet.length : 0,
     },
     subjectiveGoalStatus: safeString(subjectiveGoalCompletionStatus.subjectiveGoalStatus, 80),
@@ -12203,6 +12227,14 @@ function buildGovernedMemoryPublicArtifacts({ workspaceRoot = workspaceRootDefau
       scope: safeString(workerCompletionStatus && workerCompletionStatus.scope, 80) || "worker_completion",
       workerGoalStatus: safeString(workerCompletionStatus && workerCompletionStatus.workerGoalStatus, 80),
       programReadinessStatus: safeString(workerCompletionStatus && workerCompletionStatus.programReadinessStatus, 80),
+      operatorReadOrder: Array.isArray(workerCompletionStatus && workerCompletionStatus.operatorReadOrder)
+        ? workerCompletionStatus.operatorReadOrder.map((entry) => safeString(entry, 120)).filter(Boolean)
+        : [],
+      backgroundProgramReadiness: workerCompletionStatus
+        && workerCompletionStatus.backgroundProgramReadiness
+        && typeof workerCompletionStatus.backgroundProgramReadiness === "object"
+          ? sanitizePublicValue(workerCompletionStatus.backgroundProgramReadiness, workspaceRoot)
+          : {},
       activeLearningDebtOpen: Boolean(workerCompletionStatus && workerCompletionStatus.activeLearningDebtOpen),
     },
     learningAgendaSummary: sanitizePublicValue(autonomousLearningStatus.summary, workspaceRoot),
@@ -12299,7 +12331,16 @@ function buildGovernedMemoryPublicArtifacts({ workspaceRoot = workspaceRootDefau
   publicOverview = {
     ...publicOverview,
     goalStatus: safeString(goalCompletionStatus.goalStatus, 80),
+    goalStatusPresentationRole: "secondary_non_blocking_context",
     goalWhyNotYetCount: Array.isArray(goalCompletionStatus.whyNotYet) ? goalCompletionStatus.whyNotYet.length : 0,
+    goalCompletion: {
+      scope: safeString(goalCompletionStatus.scope, 80) || "program_readiness",
+      status: safeString(goalCompletionStatus.goalStatus, 80),
+      displayLabel: "Background program readiness",
+      presentationRole: "secondary_non_blocking_context",
+      doesNotOverrideWorkerVerdict: true,
+      whyNotYetCount: Array.isArray(goalCompletionStatus.whyNotYet) ? goalCompletionStatus.whyNotYet.length : 0,
+    },
     learningAgendaSummary: sanitizePublicValue(autonomousLearningStatus.summary, workspaceRoot),
   };
   learningAdoptionStatus = buildLearningAdoptionStatus({
@@ -12627,22 +12668,33 @@ function buildGovernedMemoryPublicArtifacts({ workspaceRoot = workspaceRootDefau
     ...buildGoalCompletionSubjectiveProjection({ workspaceRoot, paths, subjectiveGoalCompletionStatus }),
     ...buildGoalCompletionCompatibilityProjection({ workspaceRoot, paths, compatibilityCompletionStatus }),
   };
-  workerCompletionStatus = buildWorkerCompletionStatus({
-    workerDecisionSurface: readWorkerDecisionSurfaceArtifact(workspaceRoot),
-    goalCompletionStatus,
-    subjectiveGoalCompletionStatus,
-    compatibilityCompletionStatus,
-    exportSessionId,
-    headlineArtifactPath: repoRelative(workspaceRoot, paths.governancePublic.workerDecisionSurfaceJson),
-  });
+  {
+    const currentWorkerDecisionSurface = readWorkerDecisionSurfaceArtifact(workspaceRoot);
+    const workerHeadlineExportSessionId = safeString(currentWorkerDecisionSurface && currentWorkerDecisionSurface.exportSessionId, 120) || exportSessionId;
+    workerCompletionStatus = buildWorkerCompletionStatus({
+      workerDecisionSurface: currentWorkerDecisionSurface,
+      goalCompletionStatus,
+      subjectiveGoalCompletionStatus,
+      compatibilityCompletionStatus,
+      exportSessionId: workerHeadlineExportSessionId,
+      backgroundArtifactSessionConsistency: "aligned",
+      backgroundArtifactSessionIds: [workerHeadlineExportSessionId],
+      backgroundArtifactInputsTrusted: true,
+      headlineArtifactPath: repoRelative(workspaceRoot, paths.governancePublic.workerDecisionSurfaceJson),
+    });
+  }
   writeJsonIfChanged(paths.governancePublic.workerCompletionStatusJson, workerCompletionStatus);
   publicOverview = {
     ...publicOverview,
     goalStatus: safeString(goalCompletionStatus.goalStatus, 80),
+    goalStatusPresentationRole: "secondary_non_blocking_context",
     goalWhyNotYetCount: Array.isArray(goalCompletionStatus.whyNotYet) ? goalCompletionStatus.whyNotYet.length : 0,
     goalCompletion: {
       scope: safeString(goalCompletionStatus.scope, 80) || "program_readiness",
       status: safeString(goalCompletionStatus.goalStatus, 80),
+      displayLabel: "Background program readiness",
+      presentationRole: "secondary_non_blocking_context",
+      doesNotOverrideWorkerVerdict: true,
       whyNotYetCount: Array.isArray(goalCompletionStatus.whyNotYet) ? goalCompletionStatus.whyNotYet.length : 0,
     },
     subjectiveGoalStatus: safeString(subjectiveGoalCompletionStatus.subjectiveGoalStatus, 80),
@@ -12658,6 +12710,20 @@ function buildGovernedMemoryPublicArtifacts({ workspaceRoot = workspaceRootDefau
       scope: safeString(compatibilityCompletionStatus && compatibilityCompletionStatus.scope, 80) || "compatibility_layer",
       status: safeString(compatibilityCompletionStatus && compatibilityCompletionStatus.status, 80),
       whyNotYetCount: Array.isArray(compatibilityCompletionStatus && compatibilityCompletionStatus.whyNotYet) ? compatibilityCompletionStatus.whyNotYet.length : 0,
+    },
+    workerCompletion: {
+      scope: safeString(workerCompletionStatus && workerCompletionStatus.scope, 80) || "worker_completion",
+      workerGoalStatus: safeString(workerCompletionStatus && workerCompletionStatus.workerGoalStatus, 80),
+      programReadinessStatus: safeString(workerCompletionStatus && workerCompletionStatus.programReadinessStatus, 80),
+      operatorReadOrder: Array.isArray(workerCompletionStatus && workerCompletionStatus.operatorReadOrder)
+        ? workerCompletionStatus.operatorReadOrder.map((entry) => safeString(entry, 120)).filter(Boolean)
+        : [],
+      backgroundProgramReadiness: workerCompletionStatus
+        && workerCompletionStatus.backgroundProgramReadiness
+        && typeof workerCompletionStatus.backgroundProgramReadiness === "object"
+          ? sanitizePublicValue(workerCompletionStatus.backgroundProgramReadiness, workspaceRoot)
+          : {},
+      activeLearningDebtOpen: Boolean(workerCompletionStatus && workerCompletionStatus.activeLearningDebtOpen),
     },
     learningAgendaSummary: sanitizePublicValue(autonomousLearningStatus.summary, workspaceRoot),
     ...summarizeWorkerDecisionHeadline(workspaceRoot),

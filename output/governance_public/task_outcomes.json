@@ -2,124 +2,80 @@
   "schema": "TaskOutcomeList.v1",
   "task_outcomes": [
     {
-      "task_id": "019cd29a-f8a4-7da3-a69a-c2736093d787-1",
-      "actor": "019cd29a-f8a4-7da3-a69a-c2736093d787",
-      "status": "COMPLETED",
-      "claimed_work": [],
-      "changed_artifacts": [],
-      "evidence_refs": [
-        "evidence_manifest.json",
-        "flow_trace_summary.json",
-        "review_load_breakdown.json"
-      ],
-      "unresolved_items": [],
-      "acceptance_coverage": [
-        "ac-1",
-        "ac-2",
-        "ac-3",
-        "ac-4",
-        "ac-5",
-        "ac-6",
-        "ac-7",
-        "ac-8"
-      ],
-      "handoff_readiness": "ready_for_review"
-    },
-    {
-      "task_id": "019cd29d-26f3-71d0-90e2-4ca0a908b341-2",
-      "actor": "019cd29d-26f3-71d0-90e2-4ca0a908b341",
-      "status": "COMPLETED",
-      "claimed_work": [],
-      "changed_artifacts": [],
-      "evidence_refs": [
-        "evidence_manifest.json",
-        "flow_trace_summary.json",
-        "review_load_breakdown.json"
-      ],
-      "unresolved_items": [],
-      "acceptance_coverage": [
-        "ac-1",
-        "ac-2",
-        "ac-3",
-        "ac-4",
-        "ac-5",
-        "ac-6",
-        "ac-7",
-        "ac-8"
-      ],
-      "handoff_readiness": "ready_for_review"
-    },
-    {
-      "task_id": "019cd29d-3bd2-7ff3-bc7b-08d80dafabcc-3",
-      "actor": "019cd29d-3bd2-7ff3-bc7b-08d80dafabcc",
-      "status": "COMPLETED",
-      "claimed_work": [],
-      "changed_artifacts": [],
-      "evidence_refs": [
-        "evidence_manifest.json",
-        "flow_trace_summary.json",
-        "review_load_breakdown.json"
-      ],
-      "unresolved_items": [],
-      "acceptance_coverage": [
-        "ac-1",
-        "ac-2",
-        "ac-3",
-        "ac-4",
-        "ac-5",
-        "ac-6",
-        "ac-7",
-        "ac-8"
-      ],
-      "handoff_readiness": "ready_for_review"
-    },
-    {
-      "task_id": "unknown-4",
-      "actor": "unknown",
+      "task_id": "mock-thread-4-infra-1",
+      "actor": "mock-thread-4-infra",
       "status": "COMPLETED",
       "claimed_work": [
-        "SIGNOFF_TASK_OK logs/bundles/signoff/signoff-2026-03-09T12-31-59-842Z-24dd95/raw/scripts/config/signoff_sample_target.txt",
-        "Owned paths:\n- logs\\bundles\\signoff\\signoff-2026-03-09T12-31-59-842Z-24dd95\\raw\\scripts\\config\\signoff_sample_target.txt\n- docs\\EVIDENCE_CONTRACT.md\n- docs\\CURRENT_",
-        "Findings: none\nRead-only: yes\nAcceptance: the scoped acceptance criteria appear satisfied in the current file state.",
-        "- `Read-only: yes`\n- `gate signed: PASS`\n- `evidence contract bullet present: PASS`\n- `architecture bullet present: PASS`\n- `changelog line present: PASS`\n- `overall: PASS`"
+        "Owned paths:\n- logs/bundles/signoff/signoff-2026-04-18T05-27-13-996Z-f97810/raw/scripts/config/signoff_sample_target.txt\n- docs/EVIDENCE_CONTRACT.md\n- docs/CURRENT_ARCHITECTURE.md\n- docs/ARCHITECTURE_CHANGELOG.md\nApplied requested signoff assurance updates."
       ],
       "changed_artifacts": [
-        "logs/bundles/signoff/signoff-2026-03-09T12-31-59-842Z-24dd95/raw/scripts/config/signoff_sample_target.txt",
+        "logs/bundles/signoff/signoff-2026-04-18T05-27-13-996Z-f97810/raw/scripts/config/signoff_sample_target.txt",
         "docs/EVIDENCE_CONTRACT.md",
         "docs/CURRENT_ARCHITECTURE.md",
-        "docs/ARCHITECTURE_CHANGELOG.md"
+        "docs/ARCHITECTURE_CHANGELOG.md",
+        "Applied requested signoff assurance updates."
       ],
       "evidence_refs": [
-        "SIGNOFF_TASK_OK logs/bundles/signoff/signoff-2026-03-09T12-31-59-842Z-24dd95/raw/scripts/config/signoff_sample_target.txt",
-        "Owned paths:\n- logs\\bundles\\signoff\\signoff-2026-03-09T12-31-59-842Z-24dd95\\raw\\scripts\\config\\signoff_sample_target.txt\n- docs\\EVIDENCE_CONTRACT.md\n- docs\\CURRENT_",
-        "Findings: none\nRead-only: yes\nAcceptance: the scoped acceptance criteria appear satisfied in the current file state.",
-        "- `Read-only: yes`\n- `gate signed: PASS`\n- `evidence contract bullet present: PASS`\n- `architecture bullet present: PASS`\n- `changelog line present: PASS`\n- `overall: PASS`",
+        "Owned paths:\n- logs/bundles/signoff/signoff-2026-04-18T05-27-13-996Z-f97810/raw/scripts/config/signoff_sample_target.txt\n- docs/EVIDENCE_CONTRACT.md\n- docs/CURRENT_ARCHITECTURE.md\n- docs/ARCHITECTURE_CHANGELOG.md\nApplied requested signoff assurance updates.",
         "evidence_manifest.json",
         "flow_trace_summary.json",
         "review_load_breakdown.json"
       ],
       "unresolved_items": [],
       "acceptance_coverage": [
-        "ac-1",
-        "ac-2",
-        "ac-3",
-        "ac-4",
-        "ac-5",
-        "ac-6",
-        "ac-7",
-        "ac-8"
+        "ac-1"
       ],
       "handoff_readiness": "ready_for_review"
     },
     {
-      "task_id": "019cd29a-0ad3-72d2-957c-30870c52eaba",
+      "task_id": "mock-thread-4-reviewer-2",
+      "actor": "mock-thread-4-reviewer",
+      "status": "COMPLETED",
+      "claimed_work": [
+        "No findings."
+      ],
+      "changed_artifacts": [],
+      "evidence_refs": [
+        "No findings.",
+        "evidence_manifest.json",
+        "flow_trace_summary.json",
+        "review_load_breakdown.json"
+      ],
+      "unresolved_items": [],
+      "acceptance_coverage": [
+        "ac-1"
+      ],
+      "handoff_readiness": "ready_for_review"
+    },
+    {
+      "task_id": "mock-thread-4-tester-3",
+      "actor": "mock-thread-4-tester",
+      "status": "COMPLETED",
+      "claimed_work": [
+        "PASS: reviewer/tester/doc-sync evidence present."
+      ],
+      "changed_artifacts": [],
+      "evidence_refs": [
+        "PASS: reviewer/tester/doc-sync evidence present.",
+        "evidence_manifest.json",
+        "flow_trace_summary.json",
+        "review_load_breakdown.json"
+      ],
+      "unresolved_items": [],
+      "acceptance_coverage": [
+        "ac-1"
+      ],
+      "handoff_readiness": "ready_for_review"
+    },
+    {
+      "task_id": "mock-turn-7",
       "actor": "default",
       "status": "COMPLETED",
       "claimed_work": [
         "Aggregate child outcomes into review and release decision artifacts."
       ],
       "changed_artifacts": [
-        "logs/bundles/signoff/signoff-2026-03-09T12-31-59-842Z-24dd95/raw/scripts/config/signoff_sample_target.txt",
+        "logs/bundles/signoff/signoff-2026-04-18T05-27-13-996Z-f97810/raw/scripts/config/signoff_sample_target.txt",
         "docs/EVIDENCE_CONTRACT.md",
         "docs/CURRENT_ARCHITECTURE.md"
       ],
@@ -130,14 +86,7 @@
       ],
       "unresolved_items": [],
       "acceptance_coverage": [
-        "ac-1",
-        "ac-2",
-        "ac-3",
-        "ac-4",
-        "ac-5",
-        "ac-6",
-        "ac-7",
-        "ac-8"
+        "ac-1"
       ],
       "handoff_readiness": "ready_for_release_decision"
     }

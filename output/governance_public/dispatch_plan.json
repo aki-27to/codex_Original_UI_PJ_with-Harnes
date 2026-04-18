@@ -1,10 +1,12 @@
 {
   "schema": "dispatch-plan.v2",
   "source": "runtime_inferred_pre_dispatch",
-  "promptHash": "b89aceb44c5dbd4fc7f3f635a6c6d67971f8459f9ca957f9f53dcb387ed99ad8",
+  "promptHash": "29a1c0eb376ee1bdd88ec3bf2be1f4b0e360fa2607e10bf468a53fadb79403f9",
   "planningMode": "NORMAL",
   "planningDepth": "STANDARD_PLANNING",
   "assuranceDepth": "SIGNOFF_ASSURANCE",
+  "taskFamily": "planning_design",
+  "familyProfileId": "planning_design",
   "flowPath": "NORMAL_PATH",
   "executionFlow": "STANDARD_PLANNING+SIGNOFF_ASSURANCE",
   "proposalOnly": 0,
@@ -17,19 +19,45 @@
       "dispatchId": "dispatch-1-backend_worker",
       "ownerAgent": "backend_worker",
       "ownedPaths": [
+        "server.js",
         "scripts/",
-        "server.js"
+        "app/"
       ],
-      "taskSummary": "Own server-side orchestration, policies, and runtime behavior changes.",
+      "taskSummary": "サーバー側のオーケストレーション、ポリシー、runtime 振る舞い変更を担当する。",
+      "requestClauseRefs": [
+        "req-1",
+        "req-2",
+        "req-3",
+        "req-4",
+        "req-5",
+        "req-6",
+        "req-7",
+        "req-8",
+        "req-9",
+        "req-10",
+        "req-11",
+        "req-12",
+        "req-13",
+        "req-14",
+        "req-15",
+        "req-16",
+        "req-17"
+      ],
+      "requirementRefs": [
+        "explicitGoal",
+        "intentHypotheses",
+        "baselineScope",
+        "userValueFrame.userWants",
+        "userValueFrame.hardConstraints",
+        "userValueFrame.mustAvoid",
+        "acceptanceChecks",
+        "userValueFrame.completedMeans"
+      ],
+      "acceptanceCheckRefs": [
+        "ac-1"
+      ],
       "acceptanceChecks": [
-        "ac-1",
-        "ac-2",
-        "ac-3",
-        "ac-4",
-        "ac-5",
-        "ac-6",
-        "ac-7",
-        "ac-8"
+        "ac-1"
       ],
       "toolsMcpRequirements": [
         "apply_patch",
@@ -44,6 +72,9 @@
         "file_change",
         "verification_command",
         "artifact_manifest",
+        "layout_integrity_review",
+        "worst_state_capture",
+        "copy_fit_review",
         "signoff_trace",
         "dedicated_test_run"
       ]
@@ -52,19 +83,45 @@
       "dispatchId": "dispatch-2-infra_worker",
       "ownerAgent": "infra_worker",
       "ownedPaths": [
-        "docs/",
-        "scripts/config/"
+        "docs/EVIDENCE_CONTRACT.md",
+        "docs/CURRENT_ARCHITECTURE.md",
+        "docs/ARCHITECTURE_CHANGELOG.md"
       ],
-      "taskSummary": "Own contracts, docs sync, runtime observability, and signoff-facing evidence updates.",
+      "taskSummary": "契約、docs sync、runtime 可観測性、signoff 向け証跡更新を担当する。",
+      "requestClauseRefs": [
+        "req-1",
+        "req-2",
+        "req-3",
+        "req-4",
+        "req-5",
+        "req-6",
+        "req-7",
+        "req-8",
+        "req-9",
+        "req-10",
+        "req-11",
+        "req-12",
+        "req-13",
+        "req-14",
+        "req-15",
+        "req-16",
+        "req-17"
+      ],
+      "requirementRefs": [
+        "explicitGoal",
+        "intentHypotheses",
+        "baselineScope",
+        "userValueFrame.userWants",
+        "userValueFrame.hardConstraints",
+        "userValueFrame.mustAvoid",
+        "acceptanceChecks",
+        "userValueFrame.completedMeans"
+      ],
+      "acceptanceCheckRefs": [
+        "ac-1"
+      ],
       "acceptanceChecks": [
-        "ac-1",
-        "ac-2",
-        "ac-3",
-        "ac-4",
-        "ac-5",
-        "ac-6",
-        "ac-7",
-        "ac-8"
+        "ac-1"
       ],
       "toolsMcpRequirements": [
         "apply_patch",
@@ -79,6 +136,9 @@
         "contract_update",
         "doc_sync",
         "artifact_manifest",
+        "layout_integrity_review",
+        "worst_state_capture",
+        "copy_fit_review",
         "signoff_bundle"
       ]
     }
@@ -93,12 +153,16 @@
     "stage_timeline",
     "flow_trace_summary",
     "review_load_breakdown",
+    "layout_integrity_review",
+    "worst_state_capture",
+    "copy_fit_review",
     "reviewer_summary",
     "tester_summary",
     "signoff_bundle",
     "dedicated_test_run"
   ],
   "residualRisks": [
+    "Dense, interrupted, critical, and longest-copy states must be visually checked for overflow, clipping, collisions, and copy-fit before signoff.",
     "New logic or protocol-sensitive behavior requires dedicated verification before signoff."
   ]
 }

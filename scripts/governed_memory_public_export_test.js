@@ -436,9 +436,12 @@ function main() {
   assert.strictEqual(latestOverview.workerCompletionStatusPath, "output/governance_public/worker_completion_status.json", "latest overview must point at the worker completion companion");
   assert.strictEqual(latestOverview.workerCompletionStatus.exportSessionId, exportSessionId, "latest overview worker completion companion must carry the shared exportSessionId");
   assert.strictEqual(latestOverview.goalCompletion.scope, "program_readiness", "latest overview goalCompletion summary must expose program_readiness scope");
+  assert.strictEqual(latestOverview.goalCompletion.displayLabel, "Background program readiness", "latest overview goalCompletion summary must label program readiness as background context");
+  assert.strictEqual(latestOverview.goalCompletion.presentationRole, "secondary_non_blocking_context", "latest overview goalCompletion summary must classify program readiness as secondary context");
   assert.strictEqual(latestOverview.subjectiveCompletion.scope, "subjective_companion", "latest overview subjectiveCompletion summary must expose subjective_companion scope");
   assert.strictEqual(latestOverview.compatibilityCompletion.scope, "compatibility_layer", "latest overview compatibilityCompletion summary must expose compatibility_layer scope");
   assert.strictEqual(latestOverview.workerCompletion.scope, "worker_completion", "latest overview workerCompletion summary must expose worker_completion scope");
+  assert.strictEqual(latestOverview.workerCompletion.backgroundProgramReadiness.presentationRole, "secondary_non_blocking_context", "latest overview workerCompletion summary must expose background-program presentation metadata");
 
   const workerDecisionSurface = JSON.parse(fs.readFileSync(path.join(tempRoot, "output", "governance_public", "worker_decision_surface.json"), "utf8"));
   assert.strictEqual(workerDecisionSurface.scope, "worker_decision", "worker decision surface must expose worker_decision scope");
@@ -455,6 +458,10 @@ function main() {
   assert.strictEqual(workerCompletionStatus.workerGoalStatus, "NOT_YET", "seeded fixture must keep a non-complete worker headline non-complete in the companion");
   assert.strictEqual(workerCompletionStatus.programReadinessStatus, "NOT_YET", "worker completion companion must preserve background program readiness");
   assert.strictEqual(workerCompletionStatus.programReadinessBlockingWorkerStop, false, "background program readiness must not override the worker stop decision");
+  assert.strictEqual(workerCompletionStatus.workerStopDecision.presentationRole, "primary_task_verdict", "worker completion companion must mark the worker verdict as primary");
+  assert.strictEqual(workerCompletionStatus.backgroundProgramReadiness.displayLabel, "Background program readiness", "worker completion companion must expose a background-program label");
+  assert.strictEqual(workerCompletionStatus.backgroundProgramReadiness.presentationRole, "secondary_non_blocking_context", "worker completion companion must classify program readiness as secondary context");
+  assert.strictEqual(workerCompletionStatus.backgroundProgramReadiness.doesNotOverrideWorkerVerdict, true, "worker completion companion must mark background program readiness as non-overriding");
   assert.strictEqual(workerCompletionStatus.backgroundArtifactSessionConsistency, "aligned", "worker completion companion must trust only aligned background readiness artifacts");
   assert.strictEqual(workerCompletionStatus.backgroundArtifactInputsTrusted, true, "worker completion companion must mark aligned background readiness artifacts as trusted");
   assert.strictEqual(workerCompletionStatus.gateRunningAgendaCount, 1, "worker completion companion must expose the gate running count");

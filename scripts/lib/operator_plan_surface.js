@@ -91,7 +91,7 @@ function normalizeDispatches(dispatchPlan) {
       ownerAgent: formatOwnerLabel(item.ownerAgent),
       taskSummary: safeString(item.taskSummary, 240),
       ownedPaths: uniqueStrings(item.ownedPaths, 8),
-      requestClauseRefs: uniqueStrings(item.requestClauseRefs, 16),
+      requestClauseRefs: uniqueStrings(item.requestClauseRefs, 24),
       requirementRefs: uniqueStrings(item.requirementRefs, 16),
       acceptanceCheckRefs: uniqueStrings(item.acceptanceCheckRefs, 16),
       acceptanceChecks: uniqueStrings(item.acceptanceChecks, 8),
@@ -115,10 +115,19 @@ function buildTraceRefs({ dispatches = [], requirementContract } = {}) {
     : {};
   const mappedRequirementRefs = toArray(requestCoverage.mappedRequirements).flatMap((entry) => uniqueStrings(entry && entry.requirementRefs, 8));
   const requestClauseRefs = uniqueStrings(toArray(dispatches).flatMap((dispatch) => toArray(dispatch && dispatch.requestClauseRefs)), 24);
+  const mappedClauseRefs = uniqueStrings(
+    toArray(requestCoverage.mappedRequirements).map((entry) => safeString(entry && entry.clauseId, 160)),
+    24
+  );
   const requirementRefs = uniqueStrings(toArray(dispatches).flatMap((dispatch) => toArray(dispatch && dispatch.requirementRefs)), 24);
   const acceptanceCheckRefs = uniqueStrings(toArray(dispatches).flatMap((dispatch) => toArray(dispatch && dispatch.acceptanceCheckRefs)), 16);
   return {
-    requestClauseRefs: requestClauseRefs.length ? requestClauseRefs : uniqueStrings(requestCoverage.coreObligations, 24),
+    requestClauseRefs: requestClauseRefs.length
+      ? requestClauseRefs
+      : uniqueStrings([
+        ...toArray(requestCoverage.coreObligations),
+        ...mappedClauseRefs,
+      ], 24),
     requirementRefs: requirementRefs.length ? requirementRefs : uniqueStrings(mappedRequirementRefs, 24),
     acceptanceCheckRefs: acceptanceCheckRefs.length ? acceptanceCheckRefs : uniqueStrings(normalizeAcceptanceIds(requirement), 16),
   };

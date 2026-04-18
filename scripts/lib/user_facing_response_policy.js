@@ -140,6 +140,23 @@ function splitLines(text) {
     .filter(Boolean);
 }
 
+function stripLeadingSentenceWhen(text, predicate) {
+  const original = safeTrimmedString(text, 16000);
+  if (!original || typeof predicate !== "function") {
+    return original;
+  }
+  const match = original.match(/^(.+?[.!?\u3002\uff01\uff1f])(\s+|$)([\s\S]*)$/);
+  if (!match) {
+    return original;
+  }
+  const leadSentence = safeTrimmedString(match[1], 1600);
+  if (!leadSentence || !predicate(leadSentence)) {
+    return original;
+  }
+  const remainder = safeTrimmedString(match[3], 16000);
+  return remainder || original;
+}
+
 function containsInternalProcessDisclosure(text, responseContract = defaultUserFacingResponseContract) {
   const contract = resolveResponseContract(responseContract);
   if (!contract.internalProcessDisclosure.enabled) {
@@ -333,7 +350,7 @@ function stripLeadingProgramReadinessLead({
     return lines.slice(1).join("\n").trim();
   }
 
-  return original;
+  return stripLeadingSentenceWhen(original, looksLikeProgramReadinessLead);
 }
 
 function stripLeadingResidualIncompletionLead({
@@ -370,7 +387,7 @@ function stripLeadingResidualIncompletionLead({
     return lines.slice(1).join("\n").trim();
   }
 
-  return original;
+  return stripLeadingSentenceWhen(original, looksLikeResidualIncompletionLead);
 }
 
 function leadContainsCompletionClaim(text, responseContract = defaultUserFacingResponseContract) {

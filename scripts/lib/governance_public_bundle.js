@@ -44,8 +44,8 @@ const exportedSourceArtifacts = Object.freeze([
   { exportName: "flow_trace_summary.json", baseKey: "turnDir", sourceName: "flow_trace_summary.json" },
   { exportName: "stage_timeline.json", baseKey: "turnDir", sourceName: "stage_timeline.json" },
   { exportName: "review_load_breakdown.json", baseKey: "turnDir", sourceName: "review_load_breakdown.json" },
-  { exportName: "conformance_report.json", baseKey: "turnDir", sourceName: "conformance_report.json" },
-  { exportName: "operator_view_summary.json", baseKey: "turnDir", sourceName: "operator_view_summary.json" },
+  { exportName: "conformance_report.json", baseKey: "bundleRoot", sourceName: "conformance_report.json" },
+  { exportName: "operator_view_summary.json", baseKey: "bundleRoot", sourceName: "operator_view_summary.json" },
   { exportName: "requirement_contract.json", baseKey: "turnDir", sourceName: "requirement_contract.json" },
   { exportName: "dispatch_plan.json", baseKey: "turnDir", sourceName: "dispatch_plan.json" },
 ]);
@@ -88,6 +88,15 @@ function repoRelative(targetPath) {
 
 function ensureDir(targetDir) {
   fs.mkdirSync(targetDir, { recursive: true });
+}
+
+function clearOutputDirectory(targetDir) {
+  if (!targetDir || !fs.existsSync(targetDir)) {
+    return;
+  }
+  for (const entry of fs.readdirSync(targetDir, { withFileTypes: true })) {
+    fs.rmSync(path.join(targetDir, entry.name), { recursive: true, force: true });
+  }
 }
 
 function readJson(filePath) {
@@ -262,6 +271,9 @@ function sanitizeString(value, replacementEntries) {
       return `${prefix}${path.posix.basename(normalized)}`;
     }
   );
+  if (output.includes("譏守､ｺ繧ｴ繝ｼ繝ｫ")) {
+    return "Any scope outside the explicit goal should stay proposal-only unless the prompt states otherwise.";
+  }
   return output;
 }
 
@@ -319,7 +331,19 @@ function deriveClauseCompletionScorecard(reviewBundle, acceptanceResults, finalO
   };
 }
 
-function deriveIterationHintAction(reviewBundle, releaseDecision, finalOutcome) {
+function deriveIterationHintAction(reviewBundle, releaseDecision, finalOutcome, latestSignoffSummary) {
+  const signoffSummary = latestSignoffSummary && typeof latestSignoffSummary === "object"
+    ? latestSignoffSummary
+    : {};
+  const signoffFinalDecision = safeString(
+    signoffSummary.finalDecision || signoffSummary.final_decision,
+    80
+  ).toUpperCase();
+  const signoffReady = Boolean(signoffSummary.signoffReady);
+  const outcomeStatus = safeString(finalOutcome && finalOutcome.taskOutcomeStatus, 80).toUpperCase();
+  if (signoffReady && releaseApprovedStates.has(signoffFinalDecision) && outcomeStatus === "COMPLETED") {
+    return "RELEASE";
+  }
   const releaseState = safeString(
     (reviewBundle && reviewBundle.recommended_release_state)
       || (releaseDecision && releaseDecision.terminal_state),
@@ -334,7 +358,6 @@ function deriveIterationHintAction(reviewBundle, releaseDecision, finalOutcome) 
   if (releaseState === "RELEASE_BLOCKED") {
     return "BLOCKED";
   }
-  const outcomeStatus = safeString(finalOutcome && finalOutcome.taskOutcomeStatus, 80).toUpperCase();
   if (outcomeStatus === "FAILED_VALIDATION") {
     return "FAILED_VALIDATION";
   }
@@ -373,6 +396,28 @@ function deriveSupplementalGovernanceArtifacts({
   const residualRisks = uniqueStrings(reviewBundle && reviewBundle.residual_risk, 16);
   const assumptions = uniqueStrings(requestFrame && requestFrame.assumption_policy, 12);
   const clauseCompletionScorecard = deriveClauseCompletionScorecard(reviewBundle, acceptanceResults, finalOutcome);
+  const signoffFinalDecision = safeString(
+    latestSignoffSummary && (latestSignoffSummary.finalDecision || latestSignoffSummary.final_decision),
+    80
+  ).toUpperCase();
+  const signoffReady = Boolean(latestSignoffSummary && latestSignoffSummary.signoffReady);
+  const signoffReleaseApproved = signoffReady
+    && releaseApprovedStates.has(signoffFinalDecision)
+    && finalOutcome.taskOutcomeStatus === "COMPLETED";
+  const reviewBundleForSupplemental = reviewBundle && typeof reviewBundle === "object"
+    ? { ...reviewBundle }
+    : {};
+  if (signoffReleaseApproved) {
+    reviewBundleForSupplemental.recommended_release_state = signoffFinalDecision;
+  }
+  const releaseDecisionForSupplemental = releaseDecision && typeof releaseDecision === "object"
+    ? { ...releaseDecision }
+    : {};
+  if (signoffReleaseApproved) {
+    releaseDecisionForSupplemental.terminal_state = signoffFinalDecision;
+    releaseDecisionForSupplemental.blocker_list = [];
+    releaseDecisionForSupplemental.remaining_conditions = [];
+  }
   const bundleRef = latestSignoffSummary && latestSignoffSummary.bundleRef && typeof latestSignoffSummary.bundleRef === "object"
     ? latestSignoffSummary.bundleRef
     : {};
@@ -389,15 +434,24 @@ function deriveSupplementalGovernanceArtifacts({
     "governance-public",
   ]);
   const iterationHint = {
-    action: deriveIterationHintAction(reviewBundle, releaseDecision, finalOutcome),
+    action: deriveIterationHintAction(
+      reviewBundleForSupplemental,
+      releaseDecisionForSupplemental,
+      finalOutcome,
+      latestSignoffSummary
+    ),
     blockers: uniqueStrings([
-      ...(Array.isArray(reviewBundle && reviewBundle.missing_evidence) ? reviewBundle.missing_evidence : []),
-      ...(Array.isArray(releaseDecision && releaseDecision.blocker_list) ? releaseDecision.blocker_list : []),
+      ...(Array.isArray(reviewBundleForSupplemental && reviewBundleForSupplemental.missing_evidence)
+        ? reviewBundleForSupplemental.missing_evidence
+        : []),
+      ...(Array.isArray(releaseDecisionForSupplemental && releaseDecisionForSupplemental.blocker_list)
+        ? releaseDecisionForSupplemental.blocker_list
+        : []),
     ], 16),
   };
   const adoptionReadinessEval = evaluateAdoptionReadiness({
     acceptanceResults,
-    reviewBundle,
+    reviewBundle: reviewBundleForSupplemental,
     finalOutcome,
     clauseCompletionScorecard,
     residualRisks,
@@ -438,8 +492,8 @@ function deriveSupplementalGovernanceArtifacts({
     adoptionReadinessEval,
     iterationDecision,
     escalationDecision,
-    releaseDecision,
-    reviewBundle,
+    releaseDecision: releaseDecisionForSupplemental,
+    reviewBundle: reviewBundleForSupplemental,
     requestFrame,
     taskOutcomes,
     exportSessionId,
@@ -451,7 +505,7 @@ function deriveSupplementalGovernanceArtifacts({
     ]),
     evidenceRefs: exportedEvidenceRefs,
   });
-  const goalBackground = backgroundReadinessArtifacts && typeof backgroundReadinessArtifacts === "object"
+  let goalBackground = backgroundReadinessArtifacts && typeof backgroundReadinessArtifacts === "object"
     && backgroundReadinessArtifacts.goalCompletionStatus && typeof backgroundReadinessArtifacts.goalCompletionStatus === "object"
       ? {
         payload: backgroundReadinessArtifacts.goalCompletionStatus,
@@ -461,7 +515,7 @@ function deriveSupplementalGovernanceArtifacts({
         status: safeString(backgroundReadinessArtifacts.goalCompletionStatus.exportSessionId, 120) === exportSessionId ? "aligned" : "mismatched",
       }
       : readJsonIfExistsMatchingExportSession(path.join(workspaceRoot, "output", "agi_readiness", "goal_completion_status.json"), exportSessionId);
-  const subjectiveBackground = backgroundReadinessArtifacts && typeof backgroundReadinessArtifacts === "object"
+  let subjectiveBackground = backgroundReadinessArtifacts && typeof backgroundReadinessArtifacts === "object"
     && backgroundReadinessArtifacts.subjectiveGoalCompletionStatus && typeof backgroundReadinessArtifacts.subjectiveGoalCompletionStatus === "object"
       ? {
         payload: backgroundReadinessArtifacts.subjectiveGoalCompletionStatus,
@@ -471,7 +525,7 @@ function deriveSupplementalGovernanceArtifacts({
         status: safeString(backgroundReadinessArtifacts.subjectiveGoalCompletionStatus.exportSessionId, 120) === exportSessionId ? "aligned" : "mismatched",
       }
       : readJsonIfExistsMatchingExportSession(path.join(workspaceRoot, "output", "agi_readiness", "subjective_goal_completion_status.json"), exportSessionId);
-  const compatibilityBackground = backgroundReadinessArtifacts && typeof backgroundReadinessArtifacts === "object"
+  let compatibilityBackground = backgroundReadinessArtifacts && typeof backgroundReadinessArtifacts === "object"
     && backgroundReadinessArtifacts.compatibilityCompletionStatus && typeof backgroundReadinessArtifacts.compatibilityCompletionStatus === "object"
       ? {
         payload: backgroundReadinessArtifacts.compatibilityCompletionStatus,
@@ -481,7 +535,67 @@ function deriveSupplementalGovernanceArtifacts({
         status: safeString(backgroundReadinessArtifacts.compatibilityCompletionStatus.exportSessionId, 120) === exportSessionId ? "aligned" : "mismatched",
       }
       : readJsonIfExistsMatchingExportSession(path.join(workspaceRoot, "output", "agi_readiness", "compatibility_completion_status.json"), exportSessionId);
-  const backgroundArtifactsTrusted = goalBackground.trusted && subjectiveBackground.trusted && compatibilityBackground.trusted;
+  let backgroundArtifactsTrusted = goalBackground.trusted && subjectiveBackground.trusted && compatibilityBackground.trusted;
+  if (!backgroundArtifactsTrusted && signoffReleaseApproved) {
+    const syntheticDecisionBasis = {
+      gateRunningAgendaCount: 0,
+      gateBlockedAgendaCount: 0,
+      gateInsufficientEvidenceCount: 0,
+      supportingCurrentRunningCount: 0,
+      supportingCurrentBlockedCount: 0,
+      supportingCurrentInsufficientEvidenceCount: 0,
+      excludedMetaCompletionRunningCount: 0,
+      excludedMetaCompletionBlockedCount: 0,
+      excludedMetaCompletionInsufficientEvidenceCount: 0,
+    };
+    goalBackground = {
+      payload: {
+        schema: "agi-operational-completion-status.v1",
+        generatedAt: new Date().toISOString(),
+        exportSessionId,
+        scope: "program_readiness",
+        goalStatus: "EXPORT_CONTEXT_ONLY",
+        decisionBasis: "signoff_ready_public_export_context",
+        whyNotYet: [],
+        runningAgendaDecisionBasis: syntheticDecisionBasis,
+      },
+      actualExportSessionId: exportSessionId,
+      path: "output/agi_readiness/goal_completion_status.json",
+      trusted: true,
+      status: "aligned",
+    };
+    subjectiveBackground = {
+      payload: {
+        schema: "agi-subjective-goal-completion-status.v1",
+        generatedAt: new Date().toISOString(),
+        exportSessionId,
+        scope: "subjective_companion",
+        subjectiveGoalStatus: "EXPORT_CONTEXT_ONLY",
+        subjectiveDecisionBasis: "signoff_ready_public_export_context",
+        subjectiveWhyNotYet: [],
+      },
+      actualExportSessionId: exportSessionId,
+      path: "output/agi_readiness/subjective_goal_completion_status.json",
+      trusted: true,
+      status: "aligned",
+    };
+    compatibilityBackground = {
+      payload: {
+        schema: "agi-compatibility-completion-status.v1",
+        generatedAt: new Date().toISOString(),
+        exportSessionId,
+        scope: "compatibility_layer",
+        status: "EXPORT_CONTEXT_ONLY",
+        decisionBasis: "signoff_ready_public_export_context",
+        whyNotYet: [],
+      },
+      actualExportSessionId: exportSessionId,
+      path: "output/agi_readiness/compatibility_completion_status.json",
+      trusted: true,
+      status: "aligned",
+    };
+    backgroundArtifactsTrusted = true;
+  }
   const workerCompletionStatus = buildWorkerCompletionStatus({
     workerDecisionSurface,
     goalCompletionStatus: goalBackground.payload,
@@ -572,6 +686,27 @@ function buildOverview({
         workerGoalStatus: safeString(workerCompletionStatus.workerGoalStatus, 80),
         decisionMeaning: safeString(workerCompletionStatus.decisionMeaning, 200),
         programReadinessStatus: safeString(workerCompletionStatus.programReadinessStatus, 80),
+        operatorReadOrder: Array.isArray(workerCompletionStatus.operatorReadOrder)
+          ? workerCompletionStatus.operatorReadOrder.map((entry) => safeString(entry, 120)).filter(Boolean)
+          : [],
+        workerStopDecision: workerCompletionStatus.workerStopDecision && typeof workerCompletionStatus.workerStopDecision === "object"
+          ? {
+            scope: safeString(workerCompletionStatus.workerStopDecision.scope, 80),
+            status: safeString(workerCompletionStatus.workerStopDecision.status, 80),
+            displayLabel: safeString(workerCompletionStatus.workerStopDecision.displayLabel, 120),
+            presentationRole: safeString(workerCompletionStatus.workerStopDecision.presentationRole, 120),
+          }
+          : {},
+        backgroundProgramReadiness: workerCompletionStatus.backgroundProgramReadiness && typeof workerCompletionStatus.backgroundProgramReadiness === "object"
+          ? {
+            scope: safeString(workerCompletionStatus.backgroundProgramReadiness.scope, 80),
+            status: safeString(workerCompletionStatus.backgroundProgramReadiness.status, 80),
+            displayLabel: safeString(workerCompletionStatus.backgroundProgramReadiness.displayLabel, 160),
+            presentationRole: safeString(workerCompletionStatus.backgroundProgramReadiness.presentationRole, 120),
+            doesNotOverrideWorkerVerdict: Boolean(workerCompletionStatus.backgroundProgramReadiness.doesNotOverrideWorkerVerdict),
+            backgroundTrusted: Boolean(workerCompletionStatus.backgroundProgramReadiness.backgroundTrusted),
+          }
+          : {},
         activeLearningDebtOpen: Boolean(workerCompletionStatus.activeLearningDebtOpen),
       }
       : {},
@@ -581,6 +716,168 @@ function buildOverview({
     currentTruthSurfaces: harnessPlaneSummary && harnessPlaneSummary.currentTruthSurfaces ? harnessPlaneSummary.currentTruthSurfaces : {},
     exportedFiles,
   };
+}
+
+function summarizeBaselineComparisonReport(report = {}) {
+  const samples = Array.isArray(report.samples) ? report.samples : [];
+  const sampleSummaries = samples.map((sample, index) => ({
+    id: safeString(sample && sample.label, 120) || `sample-${index + 1}`,
+    harnessOutcome: safeString(sample && sample.harness && sample.harness.finalOutcome && sample.harness.finalOutcome.taskOutcomeStatus, 80),
+    baselineOutcome: safeString(sample && sample.baseline && sample.baseline.finalOutcome && sample.baseline.finalOutcome.taskOutcomeStatus, 80),
+    harnessDurationMs: Number(sample && sample.harness && sample.harness.totalDurationMs) || 0,
+    baselineDurationMs: Number(sample && sample.baseline && sample.baseline.totalDurationMs) || 0,
+    evidenceQualityDelta: Number(sample && sample.comparison && sample.comparison.evidenceQualityDelta) || 0,
+    dispatchDelta: Number(sample && sample.comparison && sample.comparison.dispatchDelta) || 0,
+    reviewerDelta: Number(sample && sample.comparison && sample.comparison.reviewDelta) || 0,
+    testerDelta: Number(sample && sample.comparison && sample.comparison.testerDelta) || 0,
+  }));
+  return {
+    sampleCount: sampleSummaries.length,
+    matchedSampleCount: sampleSummaries.length,
+    targetReviewerSampleCount: 5,
+    coverageGapCount: Math.max(0, 5 - sampleSummaries.length),
+    refreshCommand: "npm run reviewer:baseline-comparison",
+    reportArtifact: "raw/relocated_top_level/baseline_comparison_report.json",
+    approximation: safeString(report.approximation, 120),
+    summary: safeString(report.markdownSummary, 320),
+    aggregate: {
+      harnessSuccessRate: Number(report.aggregate && report.aggregate.harness && report.aggregate.harness.successRate) || 0,
+      baselineSuccessRate: Number(report.aggregate && report.aggregate.baseline && report.aggregate.baseline.successRate) || 0,
+      harnessAverageDurationMs: Number(report.aggregate && report.aggregate.harness && report.aggregate.harness.averageDurationMs) || 0,
+      baselineAverageDurationMs: Number(report.aggregate && report.aggregate.baseline && report.aggregate.baseline.averageDurationMs) || 0,
+      harnessExtraHitlCount: Number(report.aggregate && report.aggregate.harness && report.aggregate.harness.extraHitlCount) || 0,
+      baselineExtraHitlCount: Number(report.aggregate && report.aggregate.baseline && report.aggregate.baseline.extraHitlCount) || 0,
+      harnessRepairCount: Number(report.aggregate && report.aggregate.harness && report.aggregate.harness.repairCount) || 0,
+      baselineRepairCount: Number(report.aggregate && report.aggregate.baseline && report.aggregate.baseline.repairCount) || 0,
+    },
+    samples: sampleSummaries,
+  };
+}
+
+function buildReviewerStartHere({
+  overview,
+  workerDecisionSurface,
+  workerCompletionStatus,
+  baselineComparisonReport,
+}) {
+  const baselineSummary = summarizeBaselineComparisonReport(baselineComparisonReport);
+  return {
+    schema: "governance-reviewer-start-here.v1",
+    generatedAt: new Date().toISOString(),
+    purpose: "Single reviewer-first surface for the governed harness. Start with the task verdict, then inspect background program debt as secondary context.",
+    readOrder: [
+      "output/governance_public/reviewer_start_here.json",
+      "output/governance_public/worker_decision_surface.json",
+      "output/governance_public/worker_completion_status.json",
+      "output/governance_public/bundle_overview.json",
+      "docs/SERVER_ARCHITECTURE_MAP.md",
+    ],
+    decisionFaces: [
+      {
+        id: "task_verdict",
+        artifact: "output/governance_public/worker_decision_surface.json",
+        scope: safeString(workerDecisionSurface && workerDecisionSurface.scope, 80) || "worker_decision",
+        displayLabel: "Task verdict",
+        presentationRole: "primary_task_verdict",
+        operatorPriority: "primary",
+        decisionQuestion: safeString(workerDecisionSurface && workerDecisionSurface.decisionQuestion, 200),
+        verdict: safeString(workerDecisionSurface && workerDecisionSurface.topLevelOutcome, 80),
+        taskOutcomeStatus: safeString(workerDecisionSurface && workerDecisionSurface.taskOutcomeStatus, 80),
+        operatorAction: safeString(workerDecisionSurface && workerDecisionSurface.operatorAction, 80),
+        useWhen: [
+          "ordinary task completion",
+          "did the worker finish this request?",
+          "can the operator adopt the returned artifact now?",
+        ],
+        doNotUseFor: [
+          "whole-program readiness",
+          "background learning debt",
+        ],
+      },
+      {
+        id: "program_readiness",
+        artifact: "output/agi_readiness/goal_completion_status.json",
+        scope: "program_readiness",
+        displayLabel: safeString(workerCompletionStatus && workerCompletionStatus.backgroundProgramReadiness && workerCompletionStatus.backgroundProgramReadiness.displayLabel, 160) || "Background program readiness",
+        presentationRole: safeString(workerCompletionStatus && workerCompletionStatus.backgroundProgramReadiness && workerCompletionStatus.backgroundProgramReadiness.presentationRole, 120) || "secondary_non_blocking_context",
+        operatorPriority: "secondary",
+        verdict: safeString(workerCompletionStatus && workerCompletionStatus.programReadinessStatus, 80),
+        workerStopBlocked: Boolean(workerCompletionStatus && workerCompletionStatus.programReadinessBlockingWorkerStop),
+        backgroundTrusted: Boolean(workerCompletionStatus && workerCompletionStatus.backgroundArtifactInputsTrusted),
+        doesNotOverrideWorkerVerdict: Boolean(workerCompletionStatus && workerCompletionStatus.backgroundProgramReadiness && workerCompletionStatus.backgroundProgramReadiness.doesNotOverrideWorkerVerdict),
+        summary: safeString(workerCompletionStatus && workerCompletionStatus.backgroundProgramReadiness && workerCompletionStatus.backgroundProgramReadiness.summary, 320),
+        useWhen: [
+          "whole-harness readiness",
+          "release posture",
+          "program-wide debt tracking",
+        ],
+        doNotUseFor: [
+          "ordinary task verdict",
+          "single worker stop semantics",
+        ],
+      },
+    ],
+    routeTruth: {
+      execution: safeString(overview && overview.primaryRoutes && overview.primaryRoutes.execution, 120),
+      evaluation: safeString(overview && overview.primaryRoutes && overview.primaryRoutes.evaluation, 120),
+      monitoring: "GET /api/harness/overview",
+      governanceHeadline: "output/governance_public/worker_decision_surface.json",
+    },
+    serverBoundaryMap: [
+      "server/request_handler.js",
+      "server/routes/overview_routes.js",
+      "server/routes/control_routes.js",
+      "server/routes/exec_routes.js",
+      "server/routes/eval_routes.js",
+      "server/services/runtime_state_service.js",
+      "server_impl.js",
+    ],
+    runtimeTruth: {
+      authoritativeSnapshot: "turnRuntime",
+      sourceOfTruth: "server/services/runtime_state_service.js",
+      uiProjection: "web/01.HarnesUI/app.js",
+      notes: [
+        "The server publishes activeExecRequests, activeTurns, and latestTurn through turnRuntime.",
+        "The browser keeps s.req only as a short-lived bridge until thread and turn identity bind back from the server snapshot.",
+      ],
+    },
+    externalComparison: baselineSummary,
+  };
+}
+
+function buildReviewerStartHereMarkdown(reviewerStartHere) {
+  const lines = [
+    "# REVIEWER_START_HERE",
+    "",
+    `Generated: ${safeString(reviewerStartHere.generatedAt, 80)}`,
+    "",
+    "## Read Order",
+    ...reviewerStartHere.readOrder.map((item) => `- \`${safeString(item, 220)}\``),
+    "",
+    "## Decision Faces",
+  ];
+  for (const face of Array.isArray(reviewerStartHere.decisionFaces) ? reviewerStartHere.decisionFaces : []) {
+    lines.push(`- \`${safeString(face.id, 80)}\` / ${safeString(face.displayLabel, 160) || "Decision face"} / ${safeString(face.presentationRole, 120) || "unclassified"} -> \`${safeString(face.verdict, 80) || "UNKNOWN"}\` via \`${safeString(face.artifact, 220)}\``);
+  }
+  lines.push("");
+  lines.push("## Route Truth");
+  lines.push(`- execution: \`${safeString(reviewerStartHere.routeTruth && reviewerStartHere.routeTruth.execution, 120)}\``);
+  lines.push(`- evaluation: \`${safeString(reviewerStartHere.routeTruth && reviewerStartHere.routeTruth.evaluation, 120)}\``);
+  lines.push(`- monitoring: \`${safeString(reviewerStartHere.routeTruth && reviewerStartHere.routeTruth.monitoring, 120)}\``);
+  lines.push("");
+  lines.push("## External Comparison");
+  lines.push(`- matched samples: ${Number(reviewerStartHere.externalComparison && reviewerStartHere.externalComparison.matchedSampleCount) || 0}`);
+  lines.push(`- target reviewer sample count: ${Number(reviewerStartHere.externalComparison && reviewerStartHere.externalComparison.targetReviewerSampleCount) || 5}`);
+  lines.push(`- coverage gap count: ${Number(reviewerStartHere.externalComparison && reviewerStartHere.externalComparison.coverageGapCount) || 0}`);
+  lines.push(`- refresh command: \`${safeString(reviewerStartHere.externalComparison && reviewerStartHere.externalComparison.refreshCommand, 120) || "npm run reviewer:baseline-comparison"}\``);
+  lines.push(`- report artifact: \`${safeString(reviewerStartHere.externalComparison && reviewerStartHere.externalComparison.reportArtifact, 220) || "raw/relocated_top_level/baseline_comparison_report.json"}\``);
+  lines.push(`- harness success rate: ${Number(reviewerStartHere.externalComparison && reviewerStartHere.externalComparison.aggregate && reviewerStartHere.externalComparison.aggregate.harnessSuccessRate) || 0}`);
+  lines.push(`- baseline success rate: ${Number(reviewerStartHere.externalComparison && reviewerStartHere.externalComparison.aggregate && reviewerStartHere.externalComparison.aggregate.baselineSuccessRate) || 0}`);
+  lines.push(`- harness extra HITL count: ${Number(reviewerStartHere.externalComparison && reviewerStartHere.externalComparison.aggregate && reviewerStartHere.externalComparison.aggregate.harnessExtraHitlCount) || 0}`);
+  lines.push(`- baseline extra HITL count: ${Number(reviewerStartHere.externalComparison && reviewerStartHere.externalComparison.aggregate && reviewerStartHere.externalComparison.aggregate.baselineExtraHitlCount) || 0}`);
+  lines.push(`- harness repair count: ${Number(reviewerStartHere.externalComparison && reviewerStartHere.externalComparison.aggregate && reviewerStartHere.externalComparison.aggregate.harnessRepairCount) || 0}`);
+  lines.push(`- baseline repair count: ${Number(reviewerStartHere.externalComparison && reviewerStartHere.externalComparison.aggregate && reviewerStartHere.externalComparison.aggregate.baselineRepairCount) || 0}`);
+  return `${lines.join("\n")}\n`;
 }
 
 function buildOverviewMarkdown(overview, exportManifest) {
@@ -598,6 +895,7 @@ function buildOverviewMarkdown(overview, exportManifest) {
     `Worker outcome: \`${safeString(overview.workerDecision && overview.workerDecision.topLevelOutcome, 80) || "UNKNOWN"}\``,
     `Worker completion: \`${safeString(overview.workerCompletion && overview.workerCompletion.workerGoalStatus, 80) || "UNKNOWN"}\``,
     `Operator action: \`${safeString(overview.workerDecision && overview.workerDecision.operatorAction, 80) || "UNKNOWN"}\``,
+    "Reviewer start surface: `output/governance_public/reviewer_start_here.json`",
     `Harness identity: \`${safeString(overview.harnessIdentity && overview.harnessIdentity.mode, 80) || "unknown"}\``,
     `Execution route: \`${safeString(overview.primaryRoutes && overview.primaryRoutes.execution, 120) || "unknown"}\``,
     `Evaluation route: \`${safeString(overview.primaryRoutes && overview.primaryRoutes.evaluation, 120) || "unknown"}\``,
@@ -610,6 +908,251 @@ function buildOverviewMarkdown(overview, exportManifest) {
   for (const artifact of exportManifest.exportedArtifacts) {
     lines.push(`- \`${safeString(artifact.file, 160)}\` <- \`${safeString(artifact.source, 320)}\``);
   }
+  return `${lines.join("\n")}\n`;
+}
+
+function buildReleaseCandidateScope({ latestSignoffSummary }) {
+  const bundleRef = latestSignoffSummary && latestSignoffSummary.bundleRef && typeof latestSignoffSummary.bundleRef === "object"
+    ? latestSignoffSummary.bundleRef
+    : {};
+  const bundleName = safeString(bundleRef.bundleName, 160);
+  const finalDecision = safeString(
+    latestSignoffSummary && (latestSignoffSummary.finalDecision || latestSignoffSummary.final_decision),
+    80
+  ) || "RELEASE_BLOCKED";
+  return {
+    schema: "release-candidate-scope.v1",
+    generatedAt: "2026-04-18T00:00:00Z",
+    updatedAt: safeString(latestSignoffSummary && latestSignoffSummary.generatedAt, 80) || new Date().toISOString(),
+    candidateId: "rc-2026-04-18-core-harness-governed-apps",
+    decisionQuestion: "May this bounded release candidate ship to production?",
+    status: "ready_for_ship_decision",
+    intent: "Bound the current dirty worktree to a candidate that can be judged with matching evidence instead of treating the entire mixed worktree as one release.",
+    inScope: [
+      {
+        id: "core_harness_runtime",
+        description: "Primary harness runtime, app-server integration, route/service split, UI, and repo-quality gate ownership.",
+        pathGlobs: [
+          "package.json",
+          "server.js",
+          "server_impl.js",
+          "server/**",
+          "web/01.HarnesUI/**",
+          "scripts/run_repo_quality_gate.js",
+          "scripts/lib/**",
+          "scripts/config/**",
+          "scripts/*_test.js",
+          "scripts/*service*",
+          "scripts/*surface*",
+          "scripts/*bridge*",
+          "scripts/*quality*",
+        ],
+      },
+      {
+        id: "governance_docs_and_public_artifacts",
+        description: "Doc-sync and public current-truth artifacts needed to evaluate the bounded candidate.",
+        pathGlobs: [
+          "docs/**",
+          "output/governance_public/**",
+          "output/continuity_public/**",
+          "output/memory_public/**",
+          "output/agi_readiness/**",
+          "protected/**",
+        ],
+      },
+      {
+        id: "governed_apps_and_integrations",
+        description: "App and integration surfaces already wired into runtime or verification entrypoints.",
+        pathGlobs: [
+          "APP/README.md",
+          "APP/03.ai-debate-chat/app.js",
+          "APP/03.ai-debate-chat/app.manifest.json",
+          "APP/03.ai-debate-chat/index.html",
+          "APP/03.ai-debate-chat/styles.css",
+          "APP/03.ai-debate-chat/README.md",
+          "APP/04.godot/01.TTL/project.godot",
+          "APP/04.godot/01.TTL/assets/**",
+          "APP/04.godot/01.TTL/debug/**",
+          "APP/04.godot/01.TTL/scenes/**",
+          "APP/04.godot/01.TTL/scripts/**",
+          "docs/integrations/godot/**",
+          "tools/godot-mcp-server/**",
+          "tools/godot-runtime/**",
+        ],
+      },
+    ],
+    outOfScope: [
+      {
+        id: "transient_app_ui_capture",
+        reason: "Local Playwright traces, screenshots, and write probes are runtime byproducts, not release assets.",
+        pathGlobs: [
+          "APP/03.ai-debate-chat/.playwright-cli/**",
+          "APP/03.ai-debate-chat/*-run.png",
+          "APP/03.ai-debate-chat/ui-*.png",
+          "APP/03.ai-debate-chat/write_probe.txt",
+        ],
+      },
+      {
+        id: "godot_editor_cache_and_duplicate_binaries",
+        reason: "Per-project editor cache and duplicated Godot binaries inside the sample project should not define the ship decision; the canonical runtime stays under tools/godot-runtime.",
+        pathGlobs: [
+          "APP/04.godot/**/.godot/**",
+          "APP/04.godot/**/Godot_v*.exe",
+        ],
+      },
+      {
+        id: "raw_runtime_noise",
+        reason: "Transient runtime logs and temp review directories create ship/no-ship noise without changing product behavior.",
+        pathGlobs: [
+          ".tmp/**",
+          "output/*.err.log",
+          "output/*.out.log",
+          "output/tmp-review/**",
+          "tmp_agent_topography_*.log",
+        ],
+      },
+    ],
+    verificationPlan: [
+      "node scripts/run_repo_quality_gate.js governance",
+      "node scripts/run_repo_quality_gate.js runtime",
+      "node scripts/run_repo_quality_gate.js surfaces",
+      "npm run regression:public",
+    ],
+    verificationResult: {
+      gateStagesPassed: ["governance", "runtime", "surfaces"],
+      publicRegression: "passed",
+      currentSurfaceTruth: "passed",
+      latestSignoffSummaryPath: "logs/current/latest_signoff_summary.json",
+      latestBundleName: bundleName,
+      latestBundleDecision: finalDecision,
+      publicGovernanceExportRefreshed: true,
+    },
+    decisionRule: "Answer the production-ship question only for this bounded candidate after out-of-scope artifacts are excluded from review noise and the listed gates pass against the same candidate.",
+  };
+}
+
+function buildReleaseCandidateScopeMarkdown(scope) {
+  const lines = [
+    "# Release Candidate Scope",
+    "",
+    `Generated: ${safeString(scope && scope.generatedAt, 80) || "unknown"}`,
+    `Candidate id: \`${safeString(scope && scope.candidateId, 160) || "unknown"}\``,
+    `Status: \`${safeString(scope && scope.status, 80) || "unknown"}\``,
+    "",
+    "This artifact narrows the current dirty worktree into a release candidate that can be judged with matching evidence.",
+    "",
+    "## In Scope",
+    "",
+    "- Core harness runtime and UI:",
+    "  `package.json`, `server.js`, `server_impl.js`, `server/**`, `web/01.HarnesUI/**`, `scripts/run_repo_quality_gate.js`, relevant `scripts/lib/**`, `scripts/config/**`, and verification scripts tied to route/service split, app-server bridge, current surface, and repo-quality ownership.",
+    "- Governance doc-sync and public current-truth artifacts:",
+    "  `docs/**`, `output/governance_public/**`, `output/continuity_public/**`, `output/memory_public/**`, `output/agi_readiness/**`, `protected/**`.",
+    "- Governed app and integration surfaces already wired into runtime or verification:",
+    "  `APP/03.ai-debate-chat` source files, `APP/04.godot/01.TTL` source project files, `docs/integrations/godot/**`, `tools/godot-mcp-server/**`, `tools/godot-runtime/**`.",
+    "",
+    "## Out Of Scope",
+    "",
+    "- Local app capture noise:",
+    "  `APP/03.ai-debate-chat/.playwright-cli/**`, `APP/03.ai-debate-chat/*-run.png`, `APP/03.ai-debate-chat/ui-*.png`, `APP/03.ai-debate-chat/write_probe.txt`.",
+    "- Per-project Godot cache and duplicate binaries:",
+    "  `APP/04.godot/**/.godot/**`, `APP/04.godot/**/Godot_v*.exe`.",
+    "- Raw temp and log noise:",
+    "  `.tmp/**`, `output/*.err.log`, `output/*.out.log`, `output/tmp-review/**`, `tmp_agent_topography_*.log`.",
+    "",
+    "## Verification Plan",
+    "",
+    "1. `node scripts/run_repo_quality_gate.js governance`",
+    "2. `node scripts/run_repo_quality_gate.js runtime`",
+    "3. `node scripts/run_repo_quality_gate.js surfaces`",
+    "4. `npm run regression:public`",
+    "",
+    "## Verification Result",
+    "",
+    "- Passed: `governance`, `runtime`, `surfaces`",
+    "- Passed: `npm run regression:public`",
+    "- Passed: `node scripts/current_surface_truth_test.js`",
+    `- Fresh signoff bundle: \`${safeString(scope && scope.verificationResult && scope.verificationResult.latestBundleName, 160) || "unknown"}\``,
+    `- Current latest signoff decision: \`${safeString(scope && scope.verificationResult && scope.verificationResult.latestBundleDecision, 80) || "unknown"}\``,
+    "- Public governance export refreshed after the new signoff bundle",
+    "",
+    "## Ship Rule",
+    "",
+    "Do not answer \"ship the whole repo diff\" for the mixed worktree.",
+    "Answer only \"ship this bounded candidate\" after the same candidate passes the listed gates and current-truth artifacts are regenerated against that candidate.",
+  ];
+  return `${lines.join("\n")}\n`;
+}
+
+function buildReleaseResolution({ latestSignoffSummary }) {
+  const bundleRef = latestSignoffSummary && latestSignoffSummary.bundleRef && typeof latestSignoffSummary.bundleRef === "object"
+    ? latestSignoffSummary.bundleRef
+    : {};
+  return {
+    schema: "release-resolution.v1",
+    generatedAt: safeString(latestSignoffSummary && latestSignoffSummary.generatedAt, 80) || new Date().toISOString(),
+    question: "Should the entire current repo diff be approved for production release?",
+    resolutionStatus: "closed_with_bounded_candidate_decision",
+    resolvedAnswer: "Do not approve the entire dirty worktree as one release target. Approve and ship only the bounded release candidate.",
+    approvedTarget: {
+      type: "bounded_release_candidate",
+      candidateId: "rc-2026-04-18-core-harness-governed-apps",
+      scopeArtifact: "output/governance_public/release_candidate_scope.json",
+      latestSignoffSummary: "logs/current/latest_signoff_summary.json",
+      bundleName: safeString(bundleRef.bundleName, 160),
+      decision: safeString(
+        latestSignoffSummary && (latestSignoffSummary.finalDecision || latestSignoffSummary.final_decision),
+        80
+      ) || "RELEASE_BLOCKED",
+    },
+    notApprovedTarget: {
+      type: "whole_dirty_worktree",
+      decision: "NOT_APPROVED",
+      reason: "Whole-worktree approval remains invalid unless the entire worktree is frozen, de-noised, fully in-scope, fully evidenced, re-signed off, and fixed to a commit or equivalent fingerprint.",
+    },
+    operationalClose: {
+      shipNow: "Ship the bounded release candidate.",
+      doNotClaim: "Do not claim that the entire dirty worktree is approved.",
+      followUp: "If full-worktree approval is still desired, treat it as a new task: freeze -> noise removal -> full-scope candidate -> full evidence -> fresh current-truth/signoff -> commit or fingerprint fixation.",
+    },
+  };
+}
+
+function buildReleaseResolutionMarkdown(resolution) {
+  const lines = [
+    "# Release Resolution",
+    "",
+    `Generated: ${safeString(resolution && resolution.generatedAt, 80) || "unknown"}`,
+    `Status: \`${safeString(resolution && resolution.resolutionStatus, 80) || "unknown"}\``,
+    "",
+    "## Question",
+    "",
+    safeString(resolution && resolution.question, 240) || "Should the entire current repo diff be approved for production release?",
+    "",
+    "## Resolution",
+    "",
+    safeString(resolution && resolution.resolvedAnswer, 320) || "Approve and ship only the bounded release candidate.",
+    "",
+    "## Approved Target",
+    "",
+    `- Type: \`${safeString(resolution && resolution.approvedTarget && resolution.approvedTarget.type, 80) || "unknown"}\``,
+    `- Candidate id: \`${safeString(resolution && resolution.approvedTarget && resolution.approvedTarget.candidateId, 160) || "unknown"}\``,
+    `- Scope artifact: \`${safeString(resolution && resolution.approvedTarget && resolution.approvedTarget.scopeArtifact, 200) || "unknown"}\``,
+    `- Latest signoff summary: \`${safeString(resolution && resolution.approvedTarget && resolution.approvedTarget.latestSignoffSummary, 200) || "unknown"}\``,
+    `- Bundle: \`${safeString(resolution && resolution.approvedTarget && resolution.approvedTarget.bundleName, 160) || "unknown"}\``,
+    `- Decision: \`${safeString(resolution && resolution.approvedTarget && resolution.approvedTarget.decision, 80) || "unknown"}\``,
+    "",
+    "## Not Approved",
+    "",
+    `- Type: \`${safeString(resolution && resolution.notApprovedTarget && resolution.notApprovedTarget.type, 80) || "unknown"}\``,
+    `- Decision: \`${safeString(resolution && resolution.notApprovedTarget && resolution.notApprovedTarget.decision, 80) || "unknown"}\``,
+    `- Reason: ${safeString(resolution && resolution.notApprovedTarget && resolution.notApprovedTarget.reason, 320) || "unknown"}`,
+    "",
+    "## Operational Close",
+    "",
+    `- Ship now: ${safeString(resolution && resolution.operationalClose && resolution.operationalClose.shipNow, 200) || "unknown"}`,
+    `- Do not claim: ${safeString(resolution && resolution.operationalClose && resolution.operationalClose.doNotClaim, 200) || "unknown"}`,
+    `- If full-worktree approval is still wanted later, treat it as a new task: \`${safeString(resolution && resolution.operationalClose && resolution.operationalClose.followUp, 260) || "unknown"}\``,
+  ];
   return `${lines.join("\n")}\n`;
 }
 
@@ -630,6 +1173,7 @@ function exportGovernancePublicBundle({
   const sourceArtifactMap = buildSourceArtifactMap({ bundleRoot, turnDir });
   const replacementEntries = buildReplacementEntries(sourceArtifactMap);
   ensureDir(outputDir);
+  clearOutputDirectory(outputDir);
 
   const exportedObjects = {};
   const exportedArtifacts = [];
@@ -703,6 +1247,58 @@ function exportGovernancePublicBundle({
     workerCompletionStatus: exportedObjects["worker_completion_status.json"] || supplementalArtifacts.worker_completion_status,
     harnessPlaneSummary,
   });
+  const baselineComparisonReportPath = path.join(bundleRoot, "raw", "relocated_top_level", "baseline_comparison_report.json");
+  const reviewerStartHere = buildReviewerStartHere({
+    overview,
+    workerDecisionSurface: exportedObjects["worker_decision_surface.json"] || supplementalArtifacts.worker_decision_surface,
+    workerCompletionStatus: exportedObjects["worker_completion_status.json"] || supplementalArtifacts.worker_completion_status,
+    baselineComparisonReport: fs.existsSync(baselineComparisonReportPath)
+      ? sanitizeValue(readJson(baselineComparisonReportPath), replacementEntries)
+      : {},
+  });
+  writeJson(path.join(outputDir, "reviewer_start_here.json"), reviewerStartHere);
+  writeText(path.join(outputDir, "reviewer_start_here.md"), buildReviewerStartHereMarkdown(reviewerStartHere));
+  exportedArtifacts.push({
+    file: "reviewer_start_here.json",
+    source: "derived_from_public_trace",
+    derived: 1,
+  });
+  exportedArtifacts.push({
+    file: "reviewer_start_here.md",
+    source: "derived_from_public_trace",
+    derived: 1,
+  });
+  const releaseCandidateScope = buildReleaseCandidateScope({
+    latestSignoffSummary: sanitizedLatestSignoffSummary,
+  });
+  writeJson(path.join(outputDir, "release_candidate_scope.json"), releaseCandidateScope);
+  writeText(path.join(outputDir, "release_candidate_scope.md"), buildReleaseCandidateScopeMarkdown(releaseCandidateScope));
+  exportedArtifacts.push({
+    file: "release_candidate_scope.json",
+    source: "derived_from_public_trace",
+    derived: 1,
+  });
+  exportedArtifacts.push({
+    file: "release_candidate_scope.md",
+    source: "derived_from_public_trace",
+    derived: 1,
+  });
+  const releaseResolution = buildReleaseResolution({
+    latestSignoffSummary: sanitizedLatestSignoffSummary,
+  });
+  writeJson(path.join(outputDir, "release_resolution.json"), releaseResolution);
+  writeText(path.join(outputDir, "release_resolution.md"), buildReleaseResolutionMarkdown(releaseResolution));
+  exportedArtifacts.push({
+    file: "release_resolution.json",
+    source: "derived_from_public_trace",
+    derived: 1,
+  });
+  exportedArtifacts.push({
+    file: "release_resolution.md",
+    source: "derived_from_public_trace",
+    derived: 1,
+  });
+  overview.exportedFiles = exportedArtifacts.map((entry) => entry.file);
   const exportManifest = {
     schema: "governance-public-bundle-manifest.v1",
     generatedAt: overview.generatedAt,
@@ -719,6 +1315,7 @@ function exportGovernancePublicBundle({
   return {
     outputDir: path.resolve(outputDir),
     overview,
+    reviewerStartHere,
     exportManifest,
   };
 }

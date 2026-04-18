@@ -414,6 +414,61 @@ async function runIntegration() {
       };
     });
 
+    const completedBlockedUiSnapshot = await page.evaluate(() => {
+      const cCompleted = active();
+      cCompleted.h = createHarnessState();
+      cCompleted.h.turnSnapshot = {
+        planning: {
+          requirementContract: {
+            explicitGoal: "Keep the right panel readable after completion",
+            implicitGoal: "",
+            openQuestions: ["What acceptance checks define success?"],
+            acceptanceChecks: [],
+            baselineScope: [],
+            overDeliveryScope: [],
+            nonGoals: ["Do not widen the panel."],
+            assumptions: [],
+            status: "BLOCKED",
+            statusReason: "Open questions remain: 1.",
+            validation: {
+              verdict: "BLOCK",
+              summary: { passCount: 1, warnCount: 0, blockCount: 1, total: 2 },
+              checks: [{ status: "BLOCK", detail: "Acceptance checks are missing or too weak for reliable completion judgment." }],
+            },
+            userValueFrame: {
+              valueThesis: "The panel should reflect the latest visible answer, not a stale requirement hold.",
+              userWants: [],
+              mustAvoid: [],
+              hardConstraints: [],
+              qualityAxes: ["bounded_scope"],
+              completedMeans: [],
+            },
+            displayContract: {
+              headline: "Keep the right panel readable after completion",
+              goal: "Keep the right panel readable after completion",
+              goalMode: "locked",
+              nextAction: "Clarify: What acceptance checks define success?",
+              holdReason: "Acceptance checks are missing or too weak for reliable completion judgment.",
+              boundaries: [],
+              askNext: [{ question: "What acceptance checks define success?", category: "blocking", reason: "missing_acceptance" }],
+            },
+          },
+        },
+      };
+      hset(cCompleted, "completed");
+      hpush(cCompleted, "dispatch", "completed-blocked-case", "running");
+      hpush(cCompleted, "turn/start", "completed-blocked-case", "running");
+      hpush(cCompleted, "turn/completed", "completed", "info");
+      renderHarness();
+      return {
+        workflowCurrent: document.querySelector("#harnessWorkflowCurrent")?.textContent || "",
+        workflowDetail: document.querySelector("#harnessWorkflowDetail")?.textContent || "",
+        currentWork: document.querySelector("#harnessJourneyWork")?.textContent || "",
+        complianceBadge: document.querySelector("#harnessComplianceBadge")?.textContent || "",
+        complianceDetail: document.querySelector("#harnessComplianceDetail")?.textContent || "",
+      };
+    });
+
     const requirementUiSnapshot = await page.evaluate(() => {
       const cReq = active();
       cReq.h = createHarnessState();
@@ -739,6 +794,29 @@ async function runIntegration() {
     assert(
       blockedRequirementUiSnapshot.executionSummary.includes("要件整理が保留のため"),
       "execution summary should explain that downstream work is gated by the blocked requirement contract"
+    );
+
+    assert.strictEqual(
+      completedBlockedUiSnapshot.workflowCurrent,
+      "5. 完了",
+      "completed replies should land on the user-facing completion step even if the stored requirement snapshot was previously blocked"
+    );
+    assert(
+      completedBlockedUiSnapshot.workflowDetail.includes("完了") || completedBlockedUiSnapshot.workflowDetail.includes("返却"),
+      "completed replies should describe the compact workflow as finished"
+    );
+    assert(
+      completedBlockedUiSnapshot.currentWork.includes("完了") || completedBlockedUiSnapshot.currentWork.includes("返却"),
+      "current work should prefer the completed reply summary over a stale requirement blocker"
+    );
+    assert.strictEqual(
+      completedBlockedUiSnapshot.complianceBadge,
+      "完了",
+      "the stop-reason badge should show completed once the answer was returned"
+    );
+    assert(
+      completedBlockedUiSnapshot.complianceDetail.includes("返却済み"),
+      "the stop-reason detail should explain that the latest answer was already returned"
     );
 
     assert(

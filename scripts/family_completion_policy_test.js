@@ -107,7 +107,13 @@ function testDesignAcceptancePass() {
     cwd: "C:\\repo",
     workspaceRoot: "C:\\repo",
     docSyncComplete: true,
-    visualEvidence: { desktopReview: true, mobileReview: true },
+    visualEvidence: {
+      desktopReview: true,
+      mobileReview: true,
+      layoutIntegrityReview: true,
+      worstStateReview: true,
+      copyFitReview: true,
+    },
     dispatchChildren: ["frontend_worker", "reviewer"],
     sampleMcpTools: ["playwright"],
     sampleCommands: ["npm run build", "node scripts/app_server_smoke_test.js"],
@@ -116,6 +122,73 @@ function testDesignAcceptancePass() {
     tasteMemoryStore: normalizeUserTasteMemoryStore({}),
   });
   assert.strictEqual(verdict.status, "pass", "complete evidence should satisfy design acceptance");
+}
+
+function testDesignAcceptanceRequiresWorstStateProof() {
+  const verdict = evaluateFamilyCompletion({
+    planningContext: {
+      selection: {
+        taskFamily: "web_creative",
+        familyProfileId: "web_creative",
+        familyProfile: {
+          completionContract: "design_acceptance",
+        },
+      },
+    },
+    prompt: "Create a better recruitment website design and improve the UI quality.",
+    executionSource: "web_ui",
+    cwd: "C:\\repo",
+    workspaceRoot: "C:\\repo",
+    docSyncComplete: true,
+    visualEvidence: { desktopReview: true, mobileReview: true },
+    dispatchChildren: ["frontend_worker", "reviewer"],
+    sampleMcpTools: ["playwright"],
+    sampleCommands: ["npm run build"],
+    commandExecutions: 1,
+    designAcceptanceContract: loadDesignAcceptanceContract(),
+    tasteMemoryStore: normalizeUserTasteMemoryStore({}),
+  });
+  assert.strictEqual(verdict.status, "failed_validation", "missing worst-state proof should fail design acceptance");
+  assert.ok(
+    verdict.missingHard.some((entry) => entry && entry.reason === "intent_worst_state_review_missing"),
+    "worst-state proof should be enforced by the family gate"
+  );
+}
+
+function testDesignAcceptanceRequiresCopyFitProof() {
+  const verdict = evaluateFamilyCompletion({
+    planningContext: {
+      selection: {
+        taskFamily: "web_creative",
+        familyProfileId: "web_creative",
+        familyProfile: {
+          completionContract: "design_acceptance",
+        },
+      },
+    },
+    prompt: "Create a better recruitment website design and improve the UI quality.",
+    executionSource: "web_ui",
+    cwd: "C:\\repo",
+    workspaceRoot: "C:\\repo",
+    docSyncComplete: true,
+    visualEvidence: {
+      desktopReview: true,
+      mobileReview: true,
+      layoutIntegrityReview: true,
+      worstStateReview: true,
+    },
+    dispatchChildren: ["frontend_worker", "reviewer"],
+    sampleMcpTools: ["playwright"],
+    sampleCommands: ["npm run build"],
+    commandExecutions: 1,
+    designAcceptanceContract: loadDesignAcceptanceContract(),
+    tasteMemoryStore: normalizeUserTasteMemoryStore({}),
+  });
+  assert.strictEqual(verdict.status, "failed_validation", "missing copy-fit proof should fail design acceptance");
+  assert.ok(
+    verdict.missingHard.some((entry) => entry && entry.reason === "intent_copy_fit_review_missing"),
+    "copy-fit proof should be enforced by the family gate"
+  );
 }
 
 function testDefaultContractIsSkipped() {
@@ -141,6 +214,8 @@ function run() {
     ["infer workspace lock", testInferWorkspaceLocked],
     ["design acceptance failure", testDesignAcceptanceFailure],
     ["design acceptance pass", testDesignAcceptancePass],
+    ["design acceptance requires worst-state proof", testDesignAcceptanceRequiresWorstStateProof],
+    ["design acceptance requires copy-fit proof", testDesignAcceptanceRequiresCopyFitProof],
     ["default completion skipped", testDefaultContractIsSkipped],
   ];
   let passed = 0;

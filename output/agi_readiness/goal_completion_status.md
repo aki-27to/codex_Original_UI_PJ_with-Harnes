@@ -7,7 +7,7 @@
 - compatibilityCompletionStatus: NOT_YET
 - compatibilityCriteriaMet: false
 - compatibilityCriteriaWindow: 0/14
-- generatedAt: 2026-04-12T08:44:27.925Z
+- generatedAt: 2026-04-18T06:42:33.676Z
 - completionVersion: 2026-04-11.r1
 - decisionBasis: live_truth_strict_operational_criteria
 
@@ -15,18 +15,18 @@
 - stableCoverageBreadth: 0.333333
 - supportedCoverageBreadth: 1
 - failedFamilies: 
-- R_robust: 1
-- H_horizon: 1
-- rawFinalScore: 0.9995
-- catastrophicRiskCvar: 0.001
-- openDebtCount: 7
+- R_robust: 0.81
+- H_horizon: 0.93487
+- rawFinalScore: 0.860278
+- catastrophicRiskCvar: 0.04
+- openDebtCount: 0
 - blockedSubtasks: 0
 - integrationPendingCount: 0
 - ambiguousInstructionStatus: observed
-- ambiguousInstructionEvidenceCount: 12
-- ambiguousInstructionScore: 1
+- ambiguousInstructionEvidenceCount: 13
+- ambiguousInstructionScore: 0.942308
 - missingContextScore: 1
-- browserToolFlakinessScore: 0.418367
+- browserToolFlakinessScore: 0.28
 - adversarialConflictingScore: 1
 - degradedToolOutputsScore: 1
 - verifiedPositiveRemediations: 4
@@ -36,12 +36,12 @@
 - runningAgendaCount: 1
 - harmfulCausalRatio: 1
 - likelyContributoryCount: 0
-- harmfulTraceCount: 4
+- harmfulTraceCount: 1
 - distinctLineageWindowCount: 4
 - distinctLineageNonWorsening: true
-- primaryLaneObservationCount: 130
-- primaryLaneCausalUsageCount: 10
-- primaryLaneSelectedInLatestPackCount: 10
+- primaryLaneObservationCount: 211
+- primaryLaneCausalUsageCount: 17
+- primaryLaneSelectedInLatestPackCount: 8
 - primaryLaneEffectiveContributionCount: 0
 - secondaryAdvisoryUsageCount: 4
 - secondaryAdvisoryEffectsCount: 0
@@ -66,25 +66,32 @@
 
 ## Why Not Yet
 - stable coverage breadth below threshold (0.333333 < 1)
-- continuity debt remains open (7 > 0)
+- raw final score below threshold (0.860278 < 0.9)
+- R_robust below threshold (0.81 < 0.93)
+- H_horizon below threshold (0.93487 < 0.97)
+- catastrophic risk cvar above threshold (0.04 > 0.03)
 - harmful causal trace ratio above threshold (1 > 0.1)
 - autonomous learning agenda still has running items (1)
-- browser_tool_flakiness below threshold (0.418367 < 0.8)
+- browser_tool_flakiness below threshold (0.28 < 0.8)
 - operational completion thresholds have not been maintained across 3 consecutive live exports
 
 ## Required Next Actions
-- stabilize supported family coverage across recent windows
-- running agenda counts differ across artifacts without an explicit gate vs supporting basis
-- continuity carries 7 closeout debt item(s) with severity high
-- close outstanding continuity debt items
-- revoke or supersede harmful lessons/hints
 - improve browser/tool degraded-mode handling and retry policy
-- maintain all completion thresholds across consecutive live exports
+- weakest family is R robust
+- mismatched export sessions: export 69aaf0d22042, export b19f32facb8f
+- mismatched export sessions: export_69aaf0d22042, export_b19f32facb8f
+- run robustness remediation agenda and verify positive effect
+- stabilize supported family coverage across recent windows
+- raise aggregate readiness score through verified remediation
+- reduce continuity debt and improve long-horizon closeout quality
 
 ## Failed Criteria
 - stableCoverageBreadth: stable coverage breadth 0.333333 >= 1
-- openDebtCount: open debt count 7 <= 0
+- rawFinalScore: raw final score 0.860278 >= 0.9
+- R_robust: R_robust 0.81 >= 0.93
+- H_horizon: H_horizon 0.93487 >= 0.97
+- catastrophicRisk: catastrophic risk cvar 0.04 <= 0.03
 - harmfulCausalRatio: harmful causal ratio 1 <= 0.1
 - runningAgendaCount: running agenda count 1 <= 0
-- browserToolFlakiness: browser_tool_flakiness 0.418367 >= 0.8
+- browserToolFlakiness: browser_tool_flakiness 0.28 >= 0.8
 - consecutiveSuccessfulExports: consecutive successful exports 0 >= 3

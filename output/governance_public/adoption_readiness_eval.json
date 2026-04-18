@@ -1,12 +1,12 @@
 {
   "schema": "adoption-readiness-eval.v1",
-  "generatedAt": "2026-04-12T08:44:25.098Z",
+  "generatedAt": "2026-04-18T06:42:29.259Z",
   "completedStateObserved": 1,
   "dimensions": [
     {
       "id": "literal_requirement_alignment",
       "score": 1,
-      "reason": "8/8 acceptance checks passed",
+      "reason": "1/1 acceptance checks passed",
       "evidenceRefs": [
         "request_frame.json",
         "routing_decision.json",
@@ -22,17 +22,18 @@
       ],
       "blockers": [],
       "assumptions": [
-        "Any scope outside the explicit goal should stay proposal-only unless the prompt states otherwise.",
+        "明示ゴールの外側は、入力で明示されていない限り提案止まりにする。",
         "Unresolved ambiguity must not be auto-answered by the harness."
       ],
       "residualRisks": [
+        "Dense, interrupted, critical, and longest-copy states must be visually checked for overflow, clipping, collisions, and copy-fit before signoff.",
         "New logic or protocol-sensitive behavior requires dedicated verification before signoff."
       ]
     },
     {
       "id": "latent_intent_alignment",
       "score": 0.92,
-      "reason": "clause score PASS with release hint RELEASE_APPROVED_WITH_ASSUMPTIONS",
+      "reason": "clause score PASS with release hint RELEASE_APPROVED",
       "evidenceRefs": [
         "request_frame.json",
         "routing_decision.json",
@@ -48,10 +49,11 @@
       ],
       "blockers": [],
       "assumptions": [
-        "Any scope outside the explicit goal should stay proposal-only unless the prompt states otherwise.",
+        "明示ゴールの外側は、入力で明示されていない限り提案止まりにする。",
         "Unresolved ambiguity must not be auto-answered by the harness."
       ],
       "residualRisks": [
+        "Dense, interrupted, critical, and longest-copy states must be visually checked for overflow, clipping, collisions, and copy-fit before signoff.",
         "New logic or protocol-sensitive behavior requires dedicated verification before signoff."
       ]
     },
@@ -74,10 +76,11 @@
       ],
       "blockers": [],
       "assumptions": [
-        "Any scope outside the explicit goal should stay proposal-only unless the prompt states otherwise.",
+        "明示ゴールの外側は、入力で明示されていない限り提案止まりにする。",
         "Unresolved ambiguity must not be auto-answered by the harness."
       ],
       "residualRisks": [
+        "Dense, interrupted, critical, and longest-copy states must be visually checked for overflow, clipping, collisions, and copy-fit before signoff.",
         "New logic or protocol-sensitive behavior requires dedicated verification before signoff."
       ]
     },
@@ -100,10 +103,11 @@
       ],
       "blockers": [],
       "assumptions": [
-        "Any scope outside the explicit goal should stay proposal-only unless the prompt states otherwise.",
+        "明示ゴールの外側は、入力で明示されていない限り提案止まりにする。",
         "Unresolved ambiguity must not be auto-answered by the harness."
       ],
       "residualRisks": [
+        "Dense, interrupted, critical, and longest-copy states must be visually checked for overflow, clipping, collisions, and copy-fit before signoff.",
         "New logic or protocol-sensitive behavior requires dedicated verification before signoff."
       ]
     },
@@ -126,17 +130,18 @@
       ],
       "blockers": [],
       "assumptions": [
-        "Any scope outside the explicit goal should stay proposal-only unless the prompt states otherwise.",
+        "明示ゴールの外側は、入力で明示されていない限り提案止まりにする。",
         "Unresolved ambiguity must not be auto-answered by the harness."
       ],
       "residualRisks": [
+        "Dense, interrupted, critical, and longest-copy states must be visually checked for overflow, clipping, collisions, and copy-fit before signoff.",
         "New logic or protocol-sensitive behavior requires dedicated verification before signoff."
       ]
     },
     {
       "id": "residual_risk",
-      "score": 0.8333,
-      "reason": "1 residual risk item(s) remain",
+      "score": 0.6667,
+      "reason": "2 residual risk item(s) remain",
       "evidenceRefs": [
         "request_frame.json",
         "routing_decision.json",
@@ -152,10 +157,11 @@
       ],
       "blockers": [],
       "assumptions": [
-        "Any scope outside the explicit goal should stay proposal-only unless the prompt states otherwise.",
+        "明示ゴールの外側は、入力で明示されていない限り提案止まりにする。",
         "Unresolved ambiguity must not be auto-answered by the harness."
       ],
       "residualRisks": [
+        "Dense, interrupted, critical, and longest-copy states must be visually checked for overflow, clipping, collisions, and copy-fit before signoff.",
         "New logic or protocol-sensitive behavior requires dedicated verification before signoff."
       ]
     },
@@ -178,16 +184,17 @@
       ],
       "blockers": [],
       "assumptions": [
-        "Any scope outside the explicit goal should stay proposal-only unless the prompt states otherwise.",
+        "明示ゴールの外側は、入力で明示されていない限り提案止まりにする。",
         "Unresolved ambiguity must not be auto-answered by the harness."
       ],
       "residualRisks": [
+        "Dense, interrupted, critical, and longest-copy states must be visually checked for overflow, clipping, collisions, and copy-fit before signoff.",
         "New logic or protocol-sensitive behavior requires dedicated verification before signoff."
       ]
     },
     {
       "id": "adoption_readiness",
-      "score": 0.9683,
+      "score": 0.9567,
       "reason": "ready for governed release judgment",
       "evidenceRefs": [
         "request_frame.json",
@@ -204,10 +211,11 @@
       ],
       "blockers": [],
       "assumptions": [
-        "Any scope outside the explicit goal should stay proposal-only unless the prompt states otherwise.",
+        "明示ゴールの外側は、入力で明示されていない限り提案止まりにする。",
         "Unresolved ambiguity must not be auto-answered by the harness."
       ],
       "residualRisks": [
+        "Dense, interrupted, critical, and longest-copy states must be visually checked for overflow, clipping, collisions, and copy-fit before signoff.",
         "New logic or protocol-sensitive behavior requires dedicated verification before signoff."
       ]
     }
@@ -218,9 +226,9 @@
     "task_contract_integrity": 1,
     "boundary_compliance": 1,
     "artifact_quality": 1,
-    "residual_risk": 0.8333,
+    "residual_risk": 0.6667,
     "iteration_value_remaining": 0.08,
-    "adoption_readiness": 0.9683
+    "adoption_readiness": 0.9567
   },
   "gateResults": [
     {
@@ -267,10 +275,11 @@
   },
   "blockers": [],
   "assumptions": [
-    "Any scope outside the explicit goal should stay proposal-only unless the prompt states otherwise.",
+    "明示ゴールの外側は、入力で明示されていない限り提案止まりにする。",
     "Unresolved ambiguity must not be auto-answered by the harness."
   ],
   "residualRisks": [
+    "Dense, interrupted, critical, and longest-copy states must be visually checked for overflow, clipping, collisions, and copy-fit before signoff.",
     "New logic or protocol-sensitive behavior requires dedicated verification before signoff."
   ],
   "evidenceRefs": [
@@ -286,6 +295,6 @@
     "escalation_decision.json",
     "release_decision.json"
   ],
-  "exportSessionId": "export_a63636ff0a86",
+  "exportSessionId": "export_69aaf0d22042",
   "scope": "adoption_readiness"
 }

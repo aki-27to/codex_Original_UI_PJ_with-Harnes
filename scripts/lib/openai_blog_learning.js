@@ -46,6 +46,17 @@ function readJsonIfExists(filePath) {
   }
 }
 
+function readTextIfExists(filePath) {
+  try {
+    if (!fs.existsSync(filePath)) {
+      return "";
+    }
+    return fs.readFileSync(filePath, "utf8");
+  } catch {
+    return "";
+  }
+}
+
 function writeJson(filePath, value) {
   ensureDir(path.dirname(filePath));
   fs.writeFileSync(filePath, `${JSON.stringify(value, null, 2)}\n`, "utf8");
@@ -54,6 +65,58 @@ function writeJson(filePath, value) {
 function writeText(filePath, value) {
   ensureDir(path.dirname(filePath));
   fs.writeFileSync(filePath, value, "utf8");
+}
+
+const stableArtifactVolatileKeys = new Set(["generatedAt", "createdAt", "lastObservedAt"]);
+
+function stripVolatileArtifactFields(value, volatileKeys = stableArtifactVolatileKeys) {
+  if (Array.isArray(value)) {
+    return value.map((entry) => stripVolatileArtifactFields(entry, volatileKeys));
+  }
+  if (!value || typeof value !== "object") {
+    return value;
+  }
+  const next = {};
+  Object.keys(value).forEach((key) => {
+    if (volatileKeys.has(key)) {
+      return;
+    }
+    next[key] = stripVolatileArtifactFields(value[key], volatileKeys);
+  });
+  return next;
+}
+
+function writeJsonIfMeaningfullyChanged(filePath, value, { volatileKeys = stableArtifactVolatileKeys } = {}) {
+  const current = readJsonIfExists(filePath);
+  const normalizedCurrent = current ? stripVolatileArtifactFields(current, volatileKeys) : null;
+  const normalizedNext = stripVolatileArtifactFields(value, volatileKeys);
+  if (current && JSON.stringify(normalizedCurrent) === JSON.stringify(normalizedNext)) {
+    return false;
+  }
+  writeJson(filePath, value);
+  return true;
+}
+
+function stripStableArtifactTextNoise(value, { ignoreGeneratedAtLine = false } = {}) {
+  const text = String(value == null ? "" : value);
+  if (!ignoreGeneratedAtLine) {
+    return text;
+  }
+  return text.replace(/^- generatedAt: .*$/m, "- generatedAt: <stable>");
+}
+
+function writeTextIfMeaningfullyChanged(filePath, value, options = {}) {
+  const nextText = String(value == null ? "" : value);
+  const currentText = readTextIfExists(filePath);
+  if (currentText) {
+    const normalizedCurrent = stripStableArtifactTextNoise(currentText, options);
+    const normalizedNext = stripStableArtifactTextNoise(nextText, options);
+    if (normalizedCurrent === normalizedNext) {
+      return false;
+    }
+  }
+  writeText(filePath, nextText);
+  return true;
 }
 
 function repoRelative(workspaceRoot, targetPath) {
@@ -1977,7 +2040,7 @@ function recordOpenAIBlogLearningObservation({
   articleIds.forEach((articleId) => updateReinforcementStatMap(memory.articleStats, articleId, outcome, observationTurnId, nowIso));
   matchedHintIds.forEach((hintId) => updateReinforcementStatMap(memory.hintStats, hintId, outcome, observationTurnId, nowIso));
   matchedTopics.forEach((topic) => updateReinforcementStatMap(memory.topicStats, topic, outcome, observationTurnId, nowIso));
-  writeJson(normalizedPolicy.paths.stabilizationMemoryPath, memory);
+  writeJsonIfMeaningfullyChanged(normalizedPolicy.paths.stabilizationMemoryPath, memory);
   const ledger = readJsonIfExists(normalizedPolicy.paths.ledgerPath);
   const digest = readJsonIfExists(normalizedPolicy.paths.digestPath);
   const selfImprovement = ledger && digest
@@ -2988,7 +3051,9 @@ function refreshSelfImprovementArtifacts({ policy, ledger = null, digest = null,
   const writtenProposalPaths = new Set();
   proposals.forEach((proposal) => {
     const proposalPath = path.join(normalizedPolicy.paths.selfImprovementProposalDir, `${safeString(proposal && proposal.articleId, 120)}.json`);
-    writeJson(proposalPath, proposal);
+    writeJsonIfMeaningfullyChanged(proposalPath, proposal, {
+      volatileKeys: new Set(["createdAt"]),
+    });
     writtenProposalPaths.add(path.normalize(proposalPath));
   });
   if (fs.existsSync(normalizedPolicy.paths.selfImprovementProposalDir)) {
@@ -3029,17 +3094,18 @@ function refreshSelfImprovementArtifacts({ policy, ledger = null, digest = null,
     previousState,
     nowIso,
   });
-  writeJson(normalizedPolicy.paths.selfImprovementGatePath, gate);
-  writeJson(normalizedPolicy.paths.selfImprovementStatePath, state);
+  writeJsonIfMeaningfullyChanged(normalizedPolicy.paths.selfImprovementGatePath, gate);
+  writeJsonIfMeaningfullyChanged(normalizedPolicy.paths.selfImprovementStatePath, state);
   if (stabilizationEnabled) {
-    writeJson(normalizedPolicy.paths.stabilizationMemoryPath, reinforcementMemory);
-    writeText(
+    writeJsonIfMeaningfullyChanged(normalizedPolicy.paths.stabilizationMemoryPath, reinforcementMemory);
+    writeTextIfMeaningfullyChanged(
       normalizedPolicy.paths.stabilizationPlaybookPath,
       buildFrontendQualityPlaybook({
         policy: normalizedPolicy,
         selfImprovementState: state,
         reinforcementMemory,
-      })
+      }),
+      { ignoreGeneratedAtLine: true }
     );
   }
   return {
@@ -3342,7 +3408,9 @@ async function runOpenAIBlogLearningCycle({
       status: proposal.actions.find((entry) => entry.status !== "auto_doc_sync")?.status || proposal.actions[0]?.status || "proposal_only",
     });
     const proposalPath = path.join(normalizedPolicy.paths.proposalDir, `${article.articleId}.json`);
-    writeJson(proposalPath, proposal);
+    writeJsonIfMeaningfullyChanged(proposalPath, proposal, {
+      volatileKeys: new Set(["createdAt"]),
+    });
     writtenProposalPaths.add(path.normalize(proposalPath));
     nextArticles.push(article);
   }

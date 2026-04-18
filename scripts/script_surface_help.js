@@ -16,7 +16,16 @@ const sections = [
   },
   {
     title: "Quality gates",
-    scripts: ["test:repo-quality", "regression:public", "gate:pr", "eval:holdout"],
+    scripts: [
+      "test:repo-quality",
+      "test:repo-quality:governance",
+      "test:repo-quality:runtime",
+      "test:repo-quality:surfaces",
+      "reviewer:baseline-comparison",
+      "regression:public",
+      "gate:pr",
+      "eval:holdout",
+    ],
   },
   {
     title: "Housekeeping",

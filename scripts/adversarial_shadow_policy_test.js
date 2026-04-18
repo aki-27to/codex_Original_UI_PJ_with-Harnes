@@ -60,6 +60,53 @@ function testHealthyAnswerPasses() {
   assert(review.decision === "pass", "dated and sourced answer should pass");
 }
 
+function testProbeAliasesRespectCompletedTerminalState() {
+  const review = buildAdversarialShadowReview({
+    prompt: "State only the verified blocked state.",
+    assistantResponse: "I have not executed the action. Approval is still required.",
+    turnStatus: "completed",
+    taskOutcomeStatus: "NEEDS_INPUT",
+  });
+  const hasTerminalFinding = review.red.findings.some((finding) => finding.id === "terminal_status_not_completed");
+  assert(!hasTerminalFinding, "turnStatus=completed should not be downgraded to terminal_status_not_completed");
+  assert(review.status === "completed", "turnStatus alias should normalize to completed");
+  assert(review.signals.answerChars > 0, "assistantResponse alias should populate answer text");
+}
+
+function testTerminalStatusSnakeCaseAlias() {
+  const review = buildAdversarialShadowReview({
+    prompt: "Summarize the latest state with source.",
+    answer: "As of 2026-04-13, the run is complete. Source: https://example.com/evidence",
+    terminal_status: "completed",
+    taskOutcomeStatus: "COMPLETED",
+  });
+  const hasTerminalFinding = review.red.findings.some((finding) => finding.id === "terminal_status_not_completed");
+  assert(!hasTerminalFinding, "terminal_status alias should normalize to completed");
+  assert(review.status === "completed", "snake_case terminal status should normalize to completed");
+}
+
+function testTerminalStatusTurnCompletedAlias() {
+  const review = buildAdversarialShadowReview({
+    prompt: "Summarize the latest state with source.",
+    answer: "As of 2026-04-15, the run is complete. Source: https://example.com/evidence",
+    terminal_status: "turn/completed",
+    taskOutcomeStatus: "COMPLETED",
+  });
+  const hasTerminalFinding = review.red.findings.some((finding) => finding.id === "terminal_status_not_completed");
+  assert(!hasTerminalFinding, "turn/completed alias should normalize to completed");
+  assert(review.status === "completed", "turn/completed alias should normalize to completed");
+}
+
+function testJapaneseDateSignalPassesRecencyCheck() {
+  const review = buildAdversarialShadowReview({
+    prompt: "最新の状態を根拠つきで教えて",
+    answer: "2026-04-15時点で live debug capture は更新済みです。Source: https://example.com/evidence",
+    status: "completed",
+  });
+  const hasFinding = review.red.findings.some((finding) => finding.id === "recency_without_date_signal");
+  assert(!hasFinding, "Japanese dated recency answer should not be flagged");
+}
+
 function testExactReplyContractMismatch() {
   const review = buildAdversarialShadowReview({
     prompt: "Reply with exactly: ACK",
@@ -135,6 +182,10 @@ function run() {
     ["citation finding", testCitationRequiredButMissing],
     ["dangerous command finding", testDangerousCommandForcesLowScore],
     ["healthy answer pass", testHealthyAnswerPasses],
+    ["probe aliases honor completed terminal state", testProbeAliasesRespectCompletedTerminalState],
+    ["snake_case terminal status alias", testTerminalStatusSnakeCaseAlias],
+    ["turn/completed terminal status alias", testTerminalStatusTurnCompletedAlias],
+    ["Japanese date signal passes recency check", testJapaneseDateSignalPassesRecencyCheck],
     ["exact reply mismatch", testExactReplyContractMismatch],
     ["final reply contract suppresses citation finding", testFinalReplyContractSuppressesCitationStyleFindings],
     ["strict json mismatch", testStrictJsonContractMismatch],

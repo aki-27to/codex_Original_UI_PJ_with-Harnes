@@ -105,6 +105,7 @@ function buildFixedBundleSurfaceLists(bundleRoot) {
     rel(["runtime_snapshot.json"]),
     rel(["core_harness_workflow_run.json"]),
     rel(["natural_task_trace_summary.json"]),
+    rel(["boundary_task_trace_summary.json"]),
     rel(["latest_run_summary.json"]),
     rel(["review_load_breakdown.json"]),
     rel(["conformance_report.json"]),
@@ -272,6 +273,7 @@ function metricFromTrace(traceSummary) {
       traceSummary && traceSummary.assertions && typeof traceSummary.assertions === "object"
         ? traceSummary.assertions
         : {};
+    const success = Boolean(assertions.explicitVerificationPassed || assertions.discoveryBoundaryDetected);
     return {
       planningDepth: null,
       assuranceDepth: null,
@@ -296,6 +298,9 @@ function metricFromTrace(traceSummary) {
         itemSummaries.length > 0,
         Boolean(assertions.explicitVerificationPassed),
       ].filter(Boolean).length + discoveryEvidenceScore,
+      success,
+      extraHitlCount: safeString(traceSummary && traceSummary.turn && traceSummary.turn.taskOutcomeStatus, 40) === "NEEDS_INPUT" ? 1 : 0,
+      repairCount: 0,
     };
   }
   const flow = traceSummary && traceSummary.flowTraceSummary && typeof traceSummary.flowTraceSummary === "object"
@@ -351,6 +356,11 @@ function metricFromTrace(traceSummary) {
         ? traceSummary.runtime.transportMode
         : ""
   );
+  const finalTaskOutcomeStatus = safeString(finalOutcome && finalOutcome.taskOutcomeStatus, 40).toUpperCase();
+  const success =
+    acceptanceSummary && Number(acceptanceSummary.failCount || 0) === 0 &&
+    (finalTaskOutcomeStatus === "COMPLETED" || finalTaskOutcomeStatus === "NEEDS_INPUT");
+  const repairCount = timeline && timeline.checkpoints ? toCount(timeline.checkpoints.retryLoopCount) : 0;
   return {
     planningDepth: safeString(flow && flow.selectedPlanningDepth, 60) || null,
     assuranceDepth: safeString(flow && flow.selectedAssuranceDepth, 60) || null,
@@ -373,6 +383,9 @@ function metricFromTrace(traceSummary) {
         : 0,
     transportMode: transportMode || null,
     evidenceQualityScore,
+    success,
+    extraHitlCount: finalTaskOutcomeStatus === "NEEDS_INPUT" ? 1 : 0,
+    repairCount,
   };
 }
 
@@ -437,18 +450,26 @@ function loadHarnessTraces(bundleRoot, signoffSummary) {
     "natural_task_trace_summary.json",
     "raw/summaries/natural_task_trace_summary.json",
   ]);
+  const boundary = loadArtifact(bundleRoot, [
+    summaryPaths.boundaryTaskTraceSummary,
+    "boundary_task_trace_summary.json",
+    "raw/relocated_top_level/boundary_task_trace_summary.json",
+    "raw/summaries/boundary_task_trace_summary.json",
+  ]);
   return {
     traces: {
       fast: fast.value,
       discovery: discovery.value,
       signoff: signoff.value,
       natural: natural.value,
+      boundary: boundary.value,
     },
     tracePaths: {
       fast: fast.path,
       discovery: discovery.path,
       signoff: signoff.path,
       natural: natural.path,
+      boundary: boundary.path,
     },
   };
 }
@@ -482,7 +503,12 @@ function loadMeasuredBaseline(bundleRoot, signoffSummary) {
     "baseline_natural_task_trace_summary.json",
     "raw/measured_baseline/baseline_natural_task_trace_summary.json",
   ]);
-  const available = [summary.value, fast.value, discovery.value, signoff.value, natural.value].some(Boolean);
+  const boundary = loadArtifact(bundleRoot, [
+    summaryPaths.baselineBoundaryTaskTraceSummary,
+    "baseline_boundary_task_trace_summary.json",
+    "raw/measured_baseline/baseline_boundary_task_trace_summary.json",
+  ]);
+  const available = [summary.value, fast.value, discovery.value, signoff.value, natural.value, boundary.value].some(Boolean);
   return available
     ? {
         summary: summary.value,
@@ -492,12 +518,14 @@ function loadMeasuredBaseline(bundleRoot, signoffSummary) {
           discovery: discovery.value,
           signoff: signoff.value,
           natural: natural.value,
+          boundary: boundary.value,
         },
         tracePaths: {
           fast: fast.path,
           discovery: discovery.path,
           signoff: signoff.path,
           natural: natural.path,
+          boundary: boundary.path,
         },
       }
     : null;
@@ -532,7 +560,12 @@ function loadRawDirectBaseline(bundleRoot, signoffSummary) {
     "raw_direct_natural_task_trace_summary.json",
     "raw/raw_direct_baseline/raw_direct_natural_task_trace_summary.json",
   ]);
-  const available = [summary.value, fast.value, discovery.value, signoff.value, natural.value].some(Boolean);
+  const boundary = loadArtifact(bundleRoot, [
+    summaryPaths.rawDirectBoundaryTaskTraceSummary,
+    "raw_direct_boundary_task_trace_summary.json",
+    "raw/raw_direct_baseline/raw_direct_boundary_task_trace_summary.json",
+  ]);
+  const available = [summary.value, fast.value, discovery.value, signoff.value, natural.value, boundary.value].some(Boolean);
   return available
     ? {
         summary: summary.value,
@@ -542,12 +575,14 @@ function loadRawDirectBaseline(bundleRoot, signoffSummary) {
           discovery: discovery.value,
           signoff: signoff.value,
           natural: natural.value,
+          boundary: boundary.value,
         },
         tracePaths: {
           fast: fast.path,
           discovery: discovery.path,
           signoff: signoff.path,
           natural: natural.path,
+          boundary: boundary.path,
         },
       }
     : null;
@@ -569,6 +604,8 @@ function buildStructuredBaselineEntry(label, harnessTrace, baselineTrace, baseli
       dispatchDelta: harness.dispatchCount - baseline.dispatchCount,
       reviewDelta: harness.reviewerExecuted - baseline.reviewerExecuted,
       testerDelta: harness.testerExecuted - baseline.testerExecuted,
+      extraHitlDelta: (harness.extraHitlCount || 0) - (baseline.extraHitlCount || 0),
+      repairDelta: (harness.repairCount || 0) - (baseline.repairCount || 0),
       evidenceQualityDelta: evidenceDelta,
       speedComment:
         durationDeltaMs <= 0
@@ -604,6 +641,39 @@ function buildApproximationEntry(label, traceSummary, baselineKind) {
   };
 }
 
+function buildAggregateComparison(samples = []) {
+  const entries = Array.isArray(samples) ? samples : [];
+  const sampleCount = entries.length;
+  const summarizeSide = (key) => {
+    const metrics = entries.map((entry) => entry && entry[key] ? entry[key] : {}).filter(Boolean);
+    const successCount = metrics.filter((metric) => metric.success === true).length;
+    const totalDurationMs = metrics.reduce((sum, metric) => sum + (Number(metric.totalDurationMs) || 0), 0);
+    const extraHitlCount = metrics.reduce((sum, metric) => sum + (Number(metric.extraHitlCount) || 0), 0);
+    const repairCount = metrics.reduce((sum, metric) => sum + (Number(metric.repairCount) || 0), 0);
+    return {
+      sampleCount,
+      successCount,
+      successRate: sampleCount > 0 ? Number((successCount / sampleCount).toFixed(3)) : 0,
+      totalDurationMs,
+      averageDurationMs: sampleCount > 0 ? Math.round(totalDurationMs / sampleCount) : 0,
+      extraHitlCount,
+      repairCount,
+    };
+  };
+  const harness = summarizeSide("harness");
+  const baseline = summarizeSide("baseline");
+  return {
+    harness,
+    baseline,
+    delta: {
+      successRate: Number((harness.successRate - baseline.successRate).toFixed(3)),
+      averageDurationMs: harness.averageDurationMs - baseline.averageDurationMs,
+      extraHitlCount: harness.extraHitlCount - baseline.extraHitlCount,
+      repairCount: harness.repairCount - baseline.repairCount,
+    },
+  };
+}
+
 function buildMarkdown(report) {
   const lines = [
     "# Speed Vs Assurance",
@@ -619,6 +689,16 @@ function buildMarkdown(report) {
       || report.approximation === "raw-codex-direct-baseline"
       ? report.markdownSummary
       : "This report uses a vanilla-like baseline profile, not a real raw Codex run.",
+    "",
+    "## Aggregate",
+    `- Harness success rate: ${Number(report.aggregate && report.aggregate.harness && report.aggregate.harness.successRate) || 0}`,
+    `- Baseline success rate: ${Number(report.aggregate && report.aggregate.baseline && report.aggregate.baseline.successRate) || 0}`,
+    `- Harness average duration ms: ${Number(report.aggregate && report.aggregate.harness && report.aggregate.harness.averageDurationMs) || 0}`,
+    `- Baseline average duration ms: ${Number(report.aggregate && report.aggregate.baseline && report.aggregate.baseline.averageDurationMs) || 0}`,
+    `- Harness extra HITL count: ${Number(report.aggregate && report.aggregate.harness && report.aggregate.harness.extraHitlCount) || 0}`,
+    `- Baseline extra HITL count: ${Number(report.aggregate && report.aggregate.baseline && report.aggregate.baseline.extraHitlCount) || 0}`,
+    `- Harness repair count: ${Number(report.aggregate && report.aggregate.harness && report.aggregate.harness.repairCount) || 0}`,
+    `- Baseline repair count: ${Number(report.aggregate && report.aggregate.baseline && report.aggregate.baseline.repairCount) || 0}`,
     "",
   ];
   for (const entry of report.samples) {
@@ -669,10 +749,10 @@ function generateBaselineComparison(bundleRootInput = "") {
   const rawDirectTraceCount = rawDirectBaseline ? Object.values(rawDirectBaseline.traces || {}).filter(Boolean).length : 0;
   const usingRawDirectBaseline =
     Boolean(rawDirectBaseline && rawDirectBaseline.summary && safeString(rawDirectBaseline.summary.status, 40) === "ok")
-    && rawDirectTraceCount === 4;
+    && rawDirectTraceCount === 5;
   const usingMeasuredBaseline =
     Boolean(measuredBaseline && measuredBaseline.summary)
-    && measuredBaselineTraceCount === 4;
+    && measuredBaselineTraceCount === 5;
   const baselineClassification = usingRawDirectBaseline
     ? classifyRawDirectBaseline(rawDirectBaseline && rawDirectBaseline.summary)
     : classifyMeasuredBaseline(measuredBaseline && measuredBaseline.summary);
@@ -683,6 +763,7 @@ function generateBaselineComparison(bundleRootInput = "") {
         buildStructuredBaselineEntry("DISCOVERY sample", harnessTraces.discovery, rawDirectBaseline.traces.discovery, rawDirectBaseline.summary, baselineClassification),
         buildStructuredBaselineEntry("SIGNOFF sample", harnessTraces.signoff, rawDirectBaseline.traces.signoff, rawDirectBaseline.summary, baselineClassification),
         buildStructuredBaselineEntry("Natural sample", harnessTraces.natural, rawDirectBaseline.traces.natural, rawDirectBaseline.summary, baselineClassification),
+        buildStructuredBaselineEntry("Boundary sample", harnessTraces.boundary, rawDirectBaseline.traces.boundary, rawDirectBaseline.summary, baselineClassification),
       ]
     : usingMeasuredBaseline
       ? [
@@ -690,13 +771,16 @@ function generateBaselineComparison(bundleRootInput = "") {
           buildStructuredBaselineEntry("DISCOVERY sample", harnessTraces.discovery, measuredBaseline.traces.discovery, measuredBaseline.summary, baselineClassification),
           buildStructuredBaselineEntry("SIGNOFF sample", harnessTraces.signoff, measuredBaseline.traces.signoff, measuredBaseline.summary, baselineClassification),
           buildStructuredBaselineEntry("Natural sample", harnessTraces.natural, measuredBaseline.traces.natural, measuredBaseline.summary, baselineClassification),
+          buildStructuredBaselineEntry("Boundary sample", harnessTraces.boundary, measuredBaseline.traces.boundary, measuredBaseline.summary, baselineClassification),
         ]
       : [
           buildApproximationEntry("FAST sample", harnessTraces.fast, "fast"),
           buildApproximationEntry("DISCOVERY sample", harnessTraces.discovery, "discovery"),
           buildApproximationEntry("SIGNOFF sample", harnessTraces.signoff, "signoff"),
           buildApproximationEntry("Natural sample", harnessTraces.natural, "normal"),
+          buildApproximationEntry("Boundary sample", harnessTraces.boundary, "normal"),
         ];
+  const aggregateComparison = buildAggregateComparison(samples);
 
   const report = {
     schema: "baseline-comparison-report.v2",
@@ -714,6 +798,7 @@ function generateBaselineComparison(bundleRootInput = "") {
     rawDirectBaselineSummaryPath: rawDirectBaseline && rawDirectBaseline.summaryPath ? rawDirectBaseline.summaryPath : "",
     samples,
     aggregate: {
+      ...aggregateComparison,
       signoffAllPassed: Boolean(signoffSummary && signoffSummary.allPassed),
       sampleCountWithTiming: Object.values(harnessTraces)
         .map(metricFromTrace)
@@ -751,7 +836,7 @@ function generateBaselineComparison(bundleRootInput = "") {
   if (!harnessTraces.signoff) report.gaps.push("SIGNOFF sample trace is missing.");
   if (!(signoffSummary && typeof signoffSummary === "object")) report.gaps.push("signoff_summary.json is missing.");
   if (rawDirectBaseline && !usingRawDirectBaseline) {
-    report.gaps.push("Raw Codex direct baseline was attempted but did not produce a full four-sample direct comparison set.");
+    report.gaps.push("Raw Codex direct baseline was attempted but did not produce a full five-sample direct comparison set.");
   }
   if (measuredBaseline && !usingMeasuredBaseline) {
     report.gaps.push("Measured baseline traces are incomplete; falling back to vanilla-like approximation.");

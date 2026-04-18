@@ -1,0 +1,94 @@
+{
+  "schema": "self-steering-runtime-contract.v1",
+  "version": "2026-04-18.r2",
+  "purpose": "fail-closed runtime control contract for controller-heavy self-steering, artifact-grounded latent-intent adjudication, and recurrence prevention before skill promotion",
+  "runtimePrimaryControlSurface": {
+    "candidate_directions": {
+      "type": "array",
+      "required": true,
+      "minItems": 1,
+      "description": "Competing execution directions considered before committing to a runtime plan."
+    },
+    "chosen_direction": {
+      "type": "object",
+      "required": true,
+      "description": "The direction that becomes the runtime primary control surface for the current turn."
+    },
+    "rejected_directions": {
+      "type": "array",
+      "required": true,
+      "description": "Discarded directions with explicit rejection reasons."
+    },
+    "kill_conditions": {
+      "type": "array",
+      "required": true,
+      "description": "Conditions that force direction invalidation or stop further retries."
+    },
+    "current_gap": {
+      "type": "object",
+      "required": true,
+      "description": "Current delta between the chosen direction and adoption-ready output."
+    },
+    "self_correction_applied": {
+      "type": "array",
+      "required": true,
+      "description": "Corrections already applied before asking the user for more input."
+    }
+  },
+  "latentIntentAdjudication": {
+    "candidate_intent_hypotheses": {
+      "type": "array",
+      "required": true,
+      "minItems": 1,
+      "description": "Competing latent-intent hypotheses tied to adoption outcomes."
+    },
+    "chosen_intent_model": {
+      "type": "object",
+      "required": true,
+      "description": "Selected latent-intent model that steers planning and evaluation."
+    },
+    "benchmark_strengths_to_surpass": {
+      "type": "array",
+      "required": true,
+      "minItems": 1,
+      "description": "Named strengths from the relevant benchmark or reference surface that the artifact must intentionally beat."
+    },
+    "artifact_comparison_evidence": {
+      "type": "array",
+      "minItems": 1,
+      "required": true,
+      "description": "Artifact-grounded comparison evidence demonstrating why the chosen intent model is adoptable."
+    },
+    "comparisonRequired": true,
+    "proxySignalsMaySupplementButNotReplaceArtifactEvidence": true
+  },
+  "recurrencePrevention": {
+    "next_turn_recurrence_patch": {
+      "type": "object",
+      "required": true,
+      "description": "Immediate next-turn prevention patch generated from the current miss or correction."
+    },
+    "recurrence_patch_decision": {
+      "type": "object",
+      "required": true,
+      "description": "Decision record explaining why the recurrence patch is the smallest scope that prevents recurrence."
+    },
+    "requiredBeforeSkillPromotion": true,
+    "skillPromotionBlockedWithoutRecurrencePatch": true
+  },
+  "failClosed": {
+    "missingRuntimePrimaryControlSurface": "fail_closed",
+    "missingArtifactGroundedLatentIntentEvidence": "fail_closed",
+    "missingNextTurnRecurrencePatch": "fail_closed",
+    "notes": [
+      "reporting artifacts do not substitute for runtime primary control state",
+      "latent intent cannot pass on proxy score alone",
+      "immediate recurrence prevention must exist before any skill promotion decision can pass"
+    ]
+  },
+  "acceptanceChecks": {
+    "ac-1": "self-steering state is contractually defined as the runtime primary control surface, not a reporting-only summary",
+    "ac-2": "latent intent requires artifact-grounded comparison evidence rather than proxy score alone",
+    "ac-3": "next-turn recurrence patch is required before skill promotion and must be package-visible in verification"
+  }
+}

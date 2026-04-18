@@ -82,9 +82,10 @@ function loadHelpers() {
       extractFunction("traceTone"),
       extractFunction("monitorRowEventAtForUi"),
       extractFunction("executionTraceBucketForUi"),
+      extractFunction("executionTraceStatusTextForUi"),
       extractFunction("executionTraceActivityForUi"),
       extractFunction("synthesizeTraceRowsForUi"),
-      "this.helpers = { monitorTone, executionTraceBucketForUi, synthesizeTraceRowsForUi };",
+      "this.helpers = { monitorTone, traceTone, executionTraceBucketForUi, executionTraceStatusTextForUi, synthesizeTraceRowsForUi };",
     ].join("\n\n"),
     context
   );
@@ -92,11 +93,12 @@ function loadHelpers() {
 }
 
 function run() {
-  const { monitorTone, executionTraceBucketForUi, synthesizeTraceRowsForUi } = loadHelpers();
+  const { monitorTone, traceTone, executionTraceBucketForUi, executionTraceStatusTextForUi, synthesizeTraceRowsForUi } = loadHelpers();
 
   assert.strictEqual(monitorTone("completed"), "completed", "completed status must keep the completed tone");
-  assert.strictEqual(monitorTone("needs_input"), "failed", "needs_input should surface as a blocking tone");
+  assert.strictEqual(monitorTone("needs_input"), "completed", "needs_input should surface as a completed-style resend-ready tone");
   assert.strictEqual(monitorTone("spawned"), "running", "spawned child agents should stay in the running tone");
+  assert.strictEqual(traceTone("needs_input"), "completed", "needs_input trace rows should stay in the resend-ready lane");
 
   assert.strictEqual(
     executionTraceBucketForUi({
@@ -115,6 +117,25 @@ function run() {
     }),
     "failed",
     "failed topography rows must land in the failed execution-trace lane"
+  );
+  assert.strictEqual(
+    executionTraceBucketForUi({
+      row: { status: "needs_input", tone: "completed", activeTurnId: "" },
+      pendingCount: 0,
+      lastTrace: null,
+    }),
+    "completed",
+    "needs_input topography rows should land in the resend-ready completed lane"
+  );
+  assert.strictEqual(
+    executionTraceStatusTextForUi({
+      bucket: "completed",
+      row: { status: "needs_input" },
+      pendingCount: 0,
+      lastTrace: null,
+    }),
+    "再送可能",
+    "needs_input rows should render resend-ready status text"
   );
 
   const synthesized = synthesizeTraceRowsForUi(
@@ -142,6 +163,23 @@ function run() {
   assert.strictEqual(synthesized[0].agent, "reviewer", "newest synthesized trace row should stay sorted first");
   assert.strictEqual(synthesized[0].type, "completed", "completed child outcome should synthesize a completed trace row");
   assert.strictEqual(synthesized[1].type, "failed", "failed child outcome should synthesize a failed trace row");
+
+  const resendReady = synthesizeTraceRowsForUi(
+    [],
+    [
+      {
+        name: "operator",
+        status: "needs_input",
+        tone: "completed",
+        updatedAt: 123500,
+        description: "Waiting for a quick confirmation.",
+      },
+    ],
+    new Map(),
+    "chat-1"
+  );
+  assert.strictEqual(resendReady.length, 1, "needs_input topography rows should still synthesize a trace row");
+  assert.strictEqual(resendReady[0].type, "needs_input", "needs_input topography rows should preserve the needs_input event type");
 
   console.log("[harnesui-execution-trace-state-test] PASS");
   console.log("PASS");

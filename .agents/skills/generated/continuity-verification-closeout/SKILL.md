@@ -1,6 +1,6 @@
 ---
 name: continuity-verification-closeout
-description: Use after a successful long-horizon execution to combine changed surface, verification state, and next-session brief.
+description: Consolidate changed surface, verification state, and next-session brief after a successful long-horizon execution. Use when closeout must preserve verifier state and continuity evidence.
 ---
 
 # Continuity Verification Closeout

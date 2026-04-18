@@ -15,6 +15,12 @@ const {
   sanitizeRequirementRevisionGate,
   sanitizeRequirementRevisionProposal,
 } = require("./requirement_revision_policy");
+const {
+  buildAcceptanceLock,
+  buildIntentLock,
+  normalizeAcceptanceLock,
+  normalizeIntentLock,
+} = require("./correction_learning_policy");
 
 const planningModePolicyVersion = "adaptive-execution-policy.v2";
 const allowedPlanningModes = Object.freeze(["FAST", "NORMAL", "DISCOVERY"]);
@@ -1449,6 +1455,8 @@ function sanitizePlanningArtifactsForRuntime_legacy(input) {
       openQuestions: uniqueStrings(requirement.openQuestions, 12),
       approvalBoundaryItems: uniqueStrings(requirement.approvalBoundaryItems, 12),
       acceptanceChecks: sanitizeAcceptanceChecks(requirement.acceptanceChecks),
+      intentLock: normalizeIntentLock(requirement.intentLock, requirement),
+      acceptanceLock: normalizeAcceptanceLock(requirement.acceptanceLock, requirement),
       userValueFrame: sanitizeUserValueFrame(requirement.userValueFrame),
       intentInterpretation: sanitizeRequirementIntentInterpretation(requirement.intentInterpretation),
       selectedPlanningMode: normalizedPlanningMode,
@@ -2208,6 +2216,11 @@ function classifyRequirementQuestionCategory(question, { taskFamily = "", approv
   return "defaultable";
 }
 
+function isDesignSensitivePlanningFamily(taskFamily) {
+  const normalized = safeString(taskFamily, 80).toLowerCase();
+  return normalized === "web_creative" || normalized === "planning_design";
+}
+
 function buildAutonomousAcceptanceChecks({
   prompt = "",
   explicitGoal = "",
@@ -2270,12 +2283,27 @@ function buildAutonomousAcceptanceChecks({
       true
     );
   }
-  if (safeString(taskFamily, 80).toLowerCase() === "web_creative") {
+  if (isDesignSensitivePlanningFamily(taskFamily)) {
     addCheck(
       benchmarkCandidates.length > 0
         ? "The result should satisfy the anchored visual direction while staying responsive."
         : "The result should satisfy the intended visual direction and remain responsive.",
       benchmarkCandidates.length > 0 ? "inferred_benchmark_direction" : "inferred_visual_direction",
+      true
+    );
+    addCheck(
+      "No text may overflow, clip, collide, or escape its intended panel bounds in the final UI.",
+      "inferred_layout_integrity",
+      true
+    );
+    addCheck(
+      "Worst-state screenshots must prove dense, interrupted, critical, and longest-copy states remain readable before completion.",
+      "inferred_worst_state_visual_review",
+      true
+    );
+    addCheck(
+      "Copy must fit its allocated region with an explicit wrap, truncation, or text-fit policy before signoff.",
+      "inferred_copy_fit_review",
       true
     );
   } else if (boundedScope.length > 0 || goalAnchor) {
@@ -2285,7 +2313,7 @@ function buildAutonomousAcceptanceChecks({
       true
     );
   }
-  return checks.slice(0, 4);
+  return checks.slice(0, 6);
 }
 
 function partitionRequirementQuestions({
@@ -3362,6 +3390,8 @@ function buildRequirementValidation({ requirementContract, selection } = {}) {
   const goalAnchor = getRequirementGoalAnchor(requirement);
   const goalAnchorFieldRefs = getRequirementGoalAnchorFieldRefs(requirement);
   const acceptanceChecks = sanitizeAcceptanceChecks(requirement.acceptanceChecks);
+  const intentLock = normalizeIntentLock(requirement.intentLock, requirement);
+  const acceptanceLock = normalizeAcceptanceLock(requirement.acceptanceLock, requirement);
   const baselineScope = uniqueStrings(requirement.baselineScope, 24);
   const nonGoals = uniqueStrings(requirement.nonGoals, 16);
   const openQuestions = uniqueStrings(requirement.openQuestions, 12);
@@ -3415,6 +3445,15 @@ function buildRequirementValidation({ requirementContract, selection } = {}) {
       : "No goal anchor was locked from the requirement contract or its hypotheses.",
     goalAnchorFieldRefs
   );
+  pushCheck(
+    "intent_lock_defined",
+    "Intent lock separates user value from downstream checks",
+    intentLock.userRequest && (intentLock.latentIntent || intentLock.winSignals.length || intentLock.nonTargets.length) ? "PASS" : "BLOCK",
+    intentLock.userRequest && (intentLock.latentIntent || intentLock.winSignals.length || intentLock.nonTargets.length)
+      ? "Intent lock captures the request, latent intent, and non-target boundaries separately from acceptance."
+      : "Intent lock is incomplete; request, latent intent, or non-target boundaries are missing.",
+    ["intentLock", ...goalAnchorFieldRefs, "nonGoals", "userValueFrame.completedMeans"]
+  );
   const acceptanceStatus = acceptanceChecks.length > 0
     ? "PASS"
     : (safeString(currentSelection.taskFamily || requirement.taskFamily, 80) === "deterministic_code" && baselineScope.length === 0 ? "BLOCK" : "WARN");
@@ -3426,6 +3465,15 @@ function buildRequirementValidation({ requirementContract, selection } = {}) {
       ? `Acceptance checks locked: ${acceptanceChecks.length}.`
       : "Acceptance checks are missing or too weak for reliable completion judgment.",
     ["acceptanceChecks", "baselineScope"]
+  );
+  pushCheck(
+    "acceptance_lock_defined",
+    "Acceptance lock makes pass, fail, and evidence rules explicit",
+    acceptanceLock.passConditions.length && acceptanceLock.failureConditions.length && acceptanceLock.requiredEvidence.length ? "PASS" : acceptanceChecks.length ? "WARN" : "BLOCK",
+    acceptanceLock.passConditions.length && acceptanceLock.failureConditions.length && acceptanceLock.requiredEvidence.length
+      ? "Acceptance lock explicitly records pass conditions, failure conditions, and required evidence."
+      : "Acceptance lock is incomplete; pass conditions, failure conditions, or required evidence are still implicit.",
+    ["acceptanceLock", "acceptanceChecks"]
   );
   pushCheck(
     "blocking_questions_clear",
@@ -4895,6 +4943,20 @@ function buildRequirementContract({ prompt = "", options = {}, selection, contra
     baselineScope: normalizedSelection.extracted.baselineScope,
     userValueFrame,
   });
+  const intentLock = buildIntentLock({
+    requirementContract: {
+      explicitGoal,
+      implicitGoal,
+      lockedGoal: "",
+      nonGoals: inferredNonGoals,
+      userValueFrame,
+    },
+  });
+  const acceptanceLock = buildAcceptanceLock({
+    requirementContract: {
+      acceptanceChecks: normalizedSelection.extracted.acceptanceChecks,
+    },
+  });
   const goalProvenance = buildRequirementGoalProvenance({
     prompt: analysisPrompt,
     sections,
@@ -4944,6 +5006,8 @@ function buildRequirementContract({ prompt = "", options = {}, selection, contra
     openQuestions: normalizedSelection.extracted.openQuestions,
     approvalBoundaryItems: normalizedSelection.extracted.approvalBoundaryItems,
     acceptanceChecks: normalizedSelection.extracted.acceptanceChecks,
+    intentLock,
+    acceptanceLock,
     userValueFrame,
     intentInterpretation,
     provenance,
@@ -5302,16 +5366,17 @@ function defaultToolsForRole(role) {
   }
 }
 
-function defaultEvidenceForRole(role, assuranceDepth, dedicatedTestsRequired) {
+function defaultEvidenceForRole(role, assuranceDepth, dedicatedTestsRequired, taskFamily = "") {
+  const designSensitive = isDesignSensitivePlanningFamily(taskFamily);
   switch (role) {
     case "backend_worker":
-      return uniqueStrings(["file_change", "verification_command", "artifact_manifest", assuranceDepth === "SIGNOFF_ASSURANCE" ? "signoff_trace" : "", dedicatedTestsRequired ? "dedicated_test_run" : ""], 8);
+      return uniqueStrings(["file_change", "verification_command", "artifact_manifest", designSensitive ? "layout_integrity_review" : "", designSensitive ? "worst_state_capture" : "", designSensitive ? "copy_fit_review" : "", assuranceDepth === "SIGNOFF_ASSURANCE" ? "signoff_trace" : "", dedicatedTestsRequired ? "dedicated_test_run" : ""], 8);
     case "frontend_worker":
-      return uniqueStrings(["file_change", "ui_verification", "artifact_manifest"], 8);
+      return uniqueStrings(["file_change", "ui_verification", "layout_integrity_review", "worst_state_capture", "copy_fit_review", "artifact_manifest"], 8);
     case "infra_worker":
-      return uniqueStrings(["contract_update", "doc_sync", "artifact_manifest", assuranceDepth === "SIGNOFF_ASSURANCE" ? "signoff_bundle" : ""], 8);
+      return uniqueStrings(["contract_update", "doc_sync", "artifact_manifest", designSensitive ? "layout_integrity_review" : "", designSensitive ? "worst_state_capture" : "", designSensitive ? "copy_fit_review" : "", assuranceDepth === "SIGNOFF_ASSURANCE" ? "signoff_bundle" : ""], 8);
     case "tester":
-      return uniqueStrings(["test_run", "eval_or_smoke_output", dedicatedTestsRequired ? "dedicated_test_run" : ""], 8);
+      return uniqueStrings(["test_run", "eval_or_smoke_output", designSensitive ? "layout_integrity_review" : "", designSensitive ? "worst_state_capture" : "", designSensitive ? "copy_fit_review" : "", dedicatedTestsRequired ? "dedicated_test_run" : ""], 8);
     case "reviewer":
       return ["findings_first_review"];
     case "explorer":
@@ -5341,7 +5406,10 @@ function buildDispatchTraceReferenceLedger(requirementContract) {
     (Array.isArray(requestCoverage.mappedRequirements) ? requestCoverage.mappedRequirements : []).map((entry) => safeString(entry && entry.clauseId, 80)),
     24
   );
-  const requestClauseRefs = coreClauseRefs.length ? coreClauseRefs : mappedClauseRefs;
+  const requestClauseRefs = uniqueStrings([
+    ...coreClauseRefs,
+    ...mappedClauseRefs,
+  ], 24);
   return {
     requestClauseRefs,
     requirementRefs: uniqueStrings(
@@ -5416,7 +5484,7 @@ function buildDispatchPlan({ prompt = "", options = {}, selection, requirementCo
         escalationPoint: normalizedSelection.selectedPlanningDepth === "FAST_PLANNING"
           ? "Escalate if owned paths expand beyond the selected specialist boundary."
           : "Escalate if owned paths or acceptance checks drift from the requirement contract.",
-        expectedEvidence: defaultEvidenceForRole(role, assuranceDepth, dedicatedTestsRequired),
+        expectedEvidence: defaultEvidenceForRole(role, assuranceDepth, dedicatedTestsRequired, normalizedSelection.taskFamily),
       });
     }
   }
@@ -5427,6 +5495,9 @@ function buildDispatchPlan({ prompt = "", options = {}, selection, requirementCo
     else residualRisks.push("Implementation is intentionally paused until user decisions resolve the open questions.");
   }
   else if (normalizedSelection.signals.assumptionDependence !== "low") residualRisks.push("Some implementation details still depend on inferred assumptions from the prompt.");
+  if (isDesignSensitivePlanningFamily(normalizedSelection.taskFamily)) {
+    residualRisks.push("Dense, interrupted, critical, and longest-copy states must be visually checked for overflow, clipping, collisions, and copy-fit before signoff.");
+  }
   if (dedicatedTestsRequired) residualRisks.push("New logic or protocol-sensitive behavior requires dedicated verification before signoff.");
   return {
     schema: "dispatch-plan.v2",
@@ -5446,7 +5517,21 @@ function buildDispatchPlan({ prompt = "", options = {}, selection, requirementCo
     dedicatedTestsRequired: dedicatedTestsRequired ? 1 : 0,
     dispatches,
     sharedEscalationPoints: uniqueStrings(dispatches.map((entry) => entry.escalationPoint).filter(Boolean), 6),
-    expectedEvidence: uniqueStrings(["requirement_contract", "dispatch_plan", "evidence_manifest", "stage_timeline", "flow_trace_summary", "review_load_breakdown", reviewerRequired ? "reviewer_summary" : "", testerRequired ? "tester_summary" : "", signoffRequired ? "signoff_bundle" : "", dedicatedTestsRequired ? "dedicated_test_run" : ""], 16),
+    expectedEvidence: uniqueStrings([
+      "requirement_contract",
+      "dispatch_plan",
+      "evidence_manifest",
+      "stage_timeline",
+      "flow_trace_summary",
+      "review_load_breakdown",
+      isDesignSensitivePlanningFamily(normalizedSelection.taskFamily) ? "layout_integrity_review" : "",
+      isDesignSensitivePlanningFamily(normalizedSelection.taskFamily) ? "worst_state_capture" : "",
+      isDesignSensitivePlanningFamily(normalizedSelection.taskFamily) ? "copy_fit_review" : "",
+      reviewerRequired ? "reviewer_summary" : "",
+      testerRequired ? "tester_summary" : "",
+      signoffRequired ? "signoff_bundle" : "",
+      dedicatedTestsRequired ? "dedicated_test_run" : "",
+    ], 16),
     residualRisks,
   };
 }
@@ -5661,6 +5746,8 @@ function sanitizePlanningArtifactsForRuntime(input) {
       openQuestions: uniqueStrings(requirement.openQuestions, 12),
       approvalBoundaryItems: uniqueStrings(requirement.approvalBoundaryItems, 12),
       acceptanceChecks: sanitizeAcceptanceChecks(requirement.acceptanceChecks),
+      intentLock: normalizeIntentLock(requirement.intentLock, requirement),
+      acceptanceLock: normalizeAcceptanceLock(requirement.acceptanceLock, requirement),
       userValueFrame: sanitizeUserValueFrame(requirement.userValueFrame),
       intentInterpretation: sanitizeRequirementIntentInterpretation(requirement.intentInterpretation),
       intentHypotheses: sanitizeRequirementIntentHypotheses(requirement.intentHypotheses, requirement),

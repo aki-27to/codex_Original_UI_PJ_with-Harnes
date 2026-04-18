@@ -7,7 +7,9 @@ const path = require("path");
 const vm = require("vm");
 
 const appPath = path.join(__dirname, "..", "web", "01.HarnesUI", "app.js");
+const indexHtmlPath = path.join(__dirname, "..", "web", "01.HarnesUI", "index.html");
 const source = fs.readFileSync(appPath, "utf8");
+const indexHtml = fs.readFileSync(indexHtmlPath, "utf8");
 
 function extractConst(name) {
   const pattern = new RegExp(`const\\s+${name}\\s*=\\s*([^;]+);`);
@@ -109,11 +111,13 @@ function loadHelpers() {
   };
   const bootstrap = [
     extractConst("COMPOSER_STICKY_MIN_VIEWPORT_HEIGHT"),
+    extractConst("APP_BUNDLE_VERSION"),
     extractConst("UI_RELOAD_CACHE_PARAM"),
     extractFunction("shouldUseStickyComposerForUi"),
     extractFunction("buildUiReloadUrlForUi"),
+    extractFunction("extractUiBundleVersionFromSourceForUi"),
     extractFunction("syncComposerViewportSpacingForUi"),
-    "this.helpers={shouldUseStickyComposerForUi,buildUiReloadUrlForUi,syncComposerViewportSpacingForUi};",
+    "this.helpers={APP_BUNDLE_VERSION,shouldUseStickyComposerForUi,buildUiReloadUrlForUi,extractUiBundleVersionFromSourceForUi,syncComposerViewportSpacingForUi};",
   ].join("\n\n");
   vm.runInNewContext(bootstrap, context);
   return { context, bodyClassList, rootStyle, helpers: context.helpers };
@@ -121,7 +125,7 @@ function loadHelpers() {
 
 function run() {
   const { context, bodyClassList, rootStyle, helpers } = loadHelpers();
-  const { shouldUseStickyComposerForUi, buildUiReloadUrlForUi, syncComposerViewportSpacingForUi } = helpers;
+  const { APP_BUNDLE_VERSION, shouldUseStickyComposerForUi, buildUiReloadUrlForUi, extractUiBundleVersionFromSourceForUi, syncComposerViewportSpacingForUi } = helpers;
 
   assert.strictEqual(shouldUseStickyComposerForUi(920), false, "tall viewport should keep the composer in the normal page flow");
   assert.strictEqual(shouldUseStickyComposerForUi(758), false, "desktop-height viewport should keep the composer in the normal page flow");
@@ -133,6 +137,19 @@ function run() {
     reloadUrl,
     "http://127.0.0.1:57525/01.HarnesUI/index.html?chat=1&ui_reload=12345#composer",
     "UI reload URL should preserve query/hash while cache-busting the shell"
+  );
+  assert(
+    !indexHtml.includes("20260412-carryover-v5"),
+    "index.html must not keep a stale hard-coded UI asset version seed"
+  );
+  assert(
+    indexHtml.includes('const versionSeed = cacheBust || String(Date.now());'),
+    "index.html should derive the UI asset version from the cache-bust param or current time"
+  );
+  assert.strictEqual(
+    extractUiBundleVersionFromSourceForUi(`const APP_BUNDLE_VERSION="${APP_BUNDLE_VERSION}";`),
+    APP_BUNDLE_VERSION,
+    "bundle version extractor should read the current app bundle marker"
   );
 
   const stickyHeight = syncComposerViewportSpacingForUi();

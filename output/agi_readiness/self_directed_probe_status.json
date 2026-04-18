@@ -1,33 +1,34 @@
 {
   "schema": "agi-readiness-self-directed-probe-status.v1",
-  "generatedAt": "2026-04-12T08:44:27.871Z",
-  "exportSessionId": "export_a63636ff0a86",
+  "generatedAt": "2026-04-18T06:42:33.572Z",
+  "exportSessionId": "export_69aaf0d22042",
   "scope": "self_directed_probe_supporting",
   "workspaceId": "5c839dfeef8b555f",
   "probeCount": 8,
   "positiveProbeCount": 2,
   "negativeProbeCount": 0,
-  "novelProbeCount": 7,
+  "novelProbeCount": 6,
   "novelPositiveCount": 2,
   "recentProbeFamilies": [
     "default",
     "tool_use_browser_like",
     "planning",
-    "G_breadth"
+    "R_robust"
   ],
   "recentPositiveEvidenceRefs": [
-    "agenda_bdbb268944"
+    "agenda_bdbb268944",
+    "agenda_fb66637284"
   ],
   "currentSnapshot": {
     "probeCount": 8,
-    "positiveProbeCount": 1,
+    "positiveProbeCount": 2,
     "negativeProbeCount": 0,
     "blockedCount": 0,
     "insufficientEvidenceCount": 0,
-    "novelProbeCount": 7,
-    "novelPositiveCount": 1,
-    "verifiedPositiveSelfDirectedCount": 1,
-    "novelProbePositiveCount": 1
+    "novelProbeCount": 6,
+    "novelPositiveCount": 2,
+    "verifiedPositiveSelfDirectedCount": 2,
+    "novelProbePositiveCount": 2
   },
   "effectiveHistoryAware": {
     "probeCount": 8,
@@ -35,7 +36,7 @@
     "negativeProbeCount": 0,
     "blockedCount": 0,
     "insufficientEvidenceCount": 0,
-    "novelProbeCount": 7,
+    "novelProbeCount": 6,
     "novelPositiveCount": 2,
     "verifiedPositiveSelfDirectedCount": 2,
     "novelProbePositiveCount": 2,
@@ -45,8 +46,8 @@
       "historicalCriteriaMetWindowSeen": true
     },
     "historyLift": {
-      "positiveProbeCount": 1,
-      "novelPositiveCount": 1
+      "positiveProbeCount": 0,
+      "novelPositiveCount": 0
     }
   },
   "requiredThresholds": {
@@ -77,11 +78,37 @@
     "verifiedPositiveSelfDirectedCount": 2,
     "blockedCount": 0,
     "insufficientEvidenceCount": 0,
-    "novelProbeCount": 7,
+    "novelProbeCount": 6,
     "novelPositiveCount": 2,
     "novelProbePositiveCount": 2
   },
   "entries": [
+    {
+      "agendaId": "agenda_cf8c740180",
+      "bottleneckId": "gap_bd058ba2b5",
+      "bottleneckClass": "capability bottleneck",
+      "targetFamily": "tool_use_browser_like",
+      "targetCategory": "browser_tool_flakiness",
+      "remediationHypothesis": "bounded retry and truthful degraded fallback increase success evidence without false completion",
+      "proposedTaskFamily": "tool_use_browser_like",
+      "proposedEvalProbe": "browser_tool_flakiness_recovery",
+      "expectedEvidenceClass": "capability_delta",
+      "safetyPosture": "auto_eligible_low_risk",
+      "successCriterion": "bounded retry and truthful degraded fallback increase success evidence without false completion",
+      "priority": 95,
+      "status": "running",
+      "result": "improving",
+      "remediationEffect": "pending",
+      "blockedReason": "",
+      "cooldownHours": 12,
+      "retryBudget": 3,
+      "attemptCount": 0,
+      "revertCondition": "regression or harmful lesson detected",
+      "stopCondition": "no improvement after retry budget exhausted",
+      "lastUpdatedAt": "2026-04-18T06:42:33.491Z",
+      "source": "agi_readiness",
+      "publicSummary": "robustness is currently limited by browser tool flakiness"
+    },
     {
       "agendaId": "agenda_c02f8a099a",
       "bottleneckId": "gap_d9b5e7b2b2",
@@ -104,35 +131,35 @@
       "attemptCount": 0,
       "revertCondition": "regression or harmful lesson detected",
       "stopCondition": "no improvement after retry budget exhausted",
-      "lastUpdatedAt": "2026-04-12T08:44:27.841Z",
+      "lastUpdatedAt": "2026-04-18T06:42:33.494Z",
       "source": "autonomous_learning",
       "publicSummary": "browser tool flakiness below subjective threshold"
     },
     {
-      "agendaId": "agenda_25c00c1e38",
-      "bottleneckId": "gap_630489c595",
+      "agendaId": "agenda_55afc074e4",
+      "bottleneckId": "gap_a0d025fbd2",
       "bottleneckClass": "capability bottleneck",
-      "targetFamily": "G_breadth",
+      "targetFamily": "R_robust",
       "targetCategory": "",
       "remediationHypothesis": "target capability score improves with observation-backed evidence",
-      "proposedTaskFamily": "G_breadth",
-      "proposedEvalProbe": "probe:f9553adc",
+      "proposedTaskFamily": "R_robust",
+      "proposedEvalProbe": "probe:17809844",
       "expectedEvidenceClass": "capability_delta",
       "safetyPosture": "proposal_only_until_evidence",
       "successCriterion": "target capability score improves with observation-backed evidence",
       "priority": 90,
-      "status": "running",
-      "result": "measurement_required",
-      "remediationEffect": "pending",
+      "status": "passed",
+      "result": "improved",
+      "remediationEffect": "verified_positive",
       "blockedReason": "",
       "cooldownHours": 12,
       "retryBudget": 3,
       "attemptCount": 0,
       "revertCondition": "regression or harmful lesson detected",
       "stopCondition": "no improvement after retry budget exhausted",
-      "lastUpdatedAt": "2026-04-12T08:44:27.837Z",
+      "lastUpdatedAt": "2026-04-18T06:42:33.490Z",
       "source": "agi_readiness",
-      "publicSummary": "weakest family is G breadth"
+      "publicSummary": "weakest family is R robust"
     },
     {
       "agendaId": "agenda_3bf070be3c",
@@ -156,7 +183,7 @@
       "attemptCount": 0,
       "revertCondition": "regression or harmful lesson detected",
       "stopCondition": "no improvement after retry budget exhausted",
-      "lastUpdatedAt": "2026-04-12T08:44:27.842Z",
+      "lastUpdatedAt": "2026-04-18T06:42:33.495Z",
       "source": "autonomous_learning",
       "publicSummary": "web creative stable coverage below subjective threshold"
     },
@@ -182,7 +209,7 @@
       "attemptCount": 0,
       "revertCondition": "regression or harmful lesson detected",
       "stopCondition": "no improvement after retry budget exhausted",
-      "lastUpdatedAt": "2026-04-12T08:44:27.842Z",
+      "lastUpdatedAt": "2026-04-18T06:42:33.497Z",
       "source": "autonomous_learning",
       "publicSummary": "workflow execution stable coverage below subjective threshold"
     },
@@ -208,7 +235,7 @@
       "attemptCount": 0,
       "revertCondition": "regression or harmful lesson detected",
       "stopCondition": "no improvement after retry budget exhausted",
-      "lastUpdatedAt": "2026-04-12T08:44:27.843Z",
+      "lastUpdatedAt": "2026-04-18T06:42:33.498Z",
       "source": "autonomous_learning",
       "publicSummary": "primary lane latest pack adoption below subjective threshold"
     },
@@ -234,35 +261,9 @@
       "attemptCount": 0,
       "revertCondition": "regression or harmful lesson detected",
       "stopCondition": "no improvement after retry budget exhausted",
-      "lastUpdatedAt": "2026-04-12T08:44:27.844Z",
+      "lastUpdatedAt": "2026-04-18T06:42:33.500Z",
       "source": "subjective_goal",
       "publicSummary": "operational completion export durability below subjective threshold"
-    },
-    {
-      "agendaId": "agenda_7f6b4b8ec3",
-      "bottleneckId": "gap_e75e77947f",
-      "bottleneckClass": "scope/coverage bottleneck",
-      "targetFamily": "default",
-      "targetCategory": "",
-      "remediationHypothesis": "supported family gains passing or failing evidence instead of no evidence",
-      "proposedTaskFamily": "deterministic_code",
-      "proposedEvalProbe": "probe:4582349d",
-      "expectedEvidenceClass": "coverage_evidence",
-      "safetyPosture": "proposal_only_until_evidence",
-      "successCriterion": "supported family gains passing or failing evidence instead of no evidence",
-      "priority": 88,
-      "status": "queued",
-      "result": "waiting_for_runtime_budget",
-      "remediationEffect": "pending",
-      "blockedReason": "",
-      "cooldownHours": 12,
-      "retryBudget": 3,
-      "attemptCount": 0,
-      "revertCondition": "coverage claim becomes unsupported",
-      "stopCondition": "family remains unsupported or blocked",
-      "lastUpdatedAt": "2026-04-12T08:44:27.839Z",
-      "source": "continuity",
-      "publicSummary": "continuity carries 7 closeout debt item(s) with severity high"
     },
     {
       "agendaId": "agenda_378e2ad556",
@@ -286,7 +287,7 @@
       "attemptCount": 0,
       "revertCondition": "regression or harmful lesson detected",
       "stopCondition": "no improvement after retry budget exhausted",
-      "lastUpdatedAt": "2026-04-12T08:44:27.840Z",
+      "lastUpdatedAt": "2026-04-18T06:42:33.493Z",
       "source": "autonomous_learning",
       "publicSummary": "ambiguous instruction evidence below subjective threshold"
     }

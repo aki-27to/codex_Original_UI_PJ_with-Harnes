@@ -87,6 +87,13 @@ function buildContext() {
       workspacePath: { value: "C:\\repo\\initial" },
       promptInput: { value: "" },
       uiVisibility: { checked: true },
+      chatList: {
+        innerHTML: "",
+        children: [],
+        appendChild(node) {
+          this.children.push(node);
+        },
+      },
     },
     localStorage: {
       getItem(key) {
@@ -126,6 +133,31 @@ function buildContext() {
     clearedNotices: 0,
     workspaceSyncTargets: [],
     DEFAULT_AGENT_NAME: "default",
+    document: {
+      createElement(tagName) {
+        return {
+          tagName,
+          children: [],
+          attrs: {},
+          className: "",
+          textContent: "",
+          title: "",
+          type: "",
+          append(...nodes) {
+            this.children.push(...nodes);
+          },
+          appendChild(node) {
+            this.children.push(node);
+          },
+          setAttribute(name, value) {
+            this.attrs[name] = String(value);
+          },
+        };
+      },
+    },
+    compactInlineTextForUi(text) {
+      return String(text || "").replace(/\s+/g, " ").trim();
+    },
     toArr(value) {
       return Array.isArray(value) ? value : [];
     },
@@ -296,6 +328,14 @@ function buildContext() {
   context.createHarnessState = () => ({ status: "idle" });
   context.createPerformanceState = () => ({ totalTokens: 0 });
   context.normalizeScopedChatAgentNameForUi = (agentName) => (typeof agentName === "string" && agentName.trim() ? agentName.trim() : "default");
+  context.normalizeSavedHarnessState = (value) => value || { status: "idle" };
+  context.sanitizeDraftPromptForUi = (value) => (typeof value === "string" ? value.trim() : "");
+  context.deriveNextChatCounter = (restored) => Array.isArray(restored) ? restored.length + 1 : 1;
+  context.deriveNextMessageCounter = () => 1;
+  context.ensureUniqueMessageIdsInChatsForUi = (_restored, next) => next;
+  context.pendingCountForChat = () => 0;
+  context.operatorFacingAgentLabelForUi = () => "Codex";
+  context.latestConversationPreviewForUi = () => "preview";
   context.syncWorkspaceGuardForChat = async (chatRecord) => {
     context.workspaceSyncTargets.push(chatRecord && chatRecord.id ? chatRecord.id : "");
     return true;
@@ -307,13 +347,22 @@ function buildContext() {
     extractFunction("freshChatSettingsDefaultsForUi"),
     extractFunction("normalizeChatSettingsForUi"),
     extractFunction("serializeChatSettingsForStorage"),
+    extractFunction("isGenericChatTitleForUi"),
+    extractFunction("isAutoChatTitleMetaLineForUi"),
+    extractFunction("deriveAutoChatTitleFromMessageForUi"),
+    extractFunction("deriveAutoChatTitleForUi"),
+    extractFunction("refreshAutoChatTitleForUi"),
     extractFunction("ensureChatScopedStateForUi"),
     extractFunction("syncActiveChatScopedStateFromUi"),
     extractFunction("applyChatScopedStateToUi"),
     extractFunction("mkChat"),
+    extractFunction("normalizeSavedMessage"),
+    extractFunction("normalizeSavedChat"),
+    extractFunction("renderChatList"),
     extractFunction("setActiveChatForUi"),
+    extractFunction("loadChatState"),
     extractFunction("saveChatStateNow"),
-    "this.helpers={normalizeChatSettingsForUi,serializeChatSettingsForStorage,ensureChatScopedStateForUi,syncActiveChatScopedStateFromUi,applyChatScopedStateToUi,mkChat,setActiveChatForUi,saveChatStateNow};",
+    "this.helpers={normalizeChatSettingsForUi,serializeChatSettingsForStorage,isGenericChatTitleForUi,isAutoChatTitleMetaLineForUi,deriveAutoChatTitleFromMessageForUi,deriveAutoChatTitleForUi,refreshAutoChatTitleForUi,ensureChatScopedStateForUi,syncActiveChatScopedStateFromUi,applyChatScopedStateToUi,mkChat,normalizeSavedChat,renderChatList,setActiveChatForUi,loadChatState,saveChatStateNow};",
   ].join("\n\n");
 
   vm.runInNewContext(bootstrap, context);
@@ -468,9 +517,149 @@ function testSavedChatPayloadIncludesScopedSettings() {
   assert.strictEqual(parsed.chats[1].settings.executionProfile, "guardian", "chat 2 profile should persist");
 }
 
+function testGenericChatTitlesAutoRenameFromFirstUserPrompt() {
+  const { normalizeSavedChat, refreshAutoChatTitleForUi, deriveAutoChatTitleFromMessageForUi } = buildContext();
+  const restored = normalizeSavedChat(
+    {
+      id: "chat-restore-1",
+      title: "Chat30",
+      agent: "default",
+      messages: [
+        { id: "m-1", role: "system", title: "System", time: "10:00:00", content: "Ready." },
+        {
+          id: "m-2",
+          role: "user",
+          title: "You",
+          time: "10:01:00",
+          content: "開いているチャットを色で強調して、仮タイトルも直してほしい",
+        },
+      ],
+      h: { status: "idle" },
+    },
+    0
+  );
+  assert.strictEqual(
+    restored.title,
+    "開いているチャットを色で強調して、仮タイトルも直してほしい",
+    "restored generic titles should be replaced with the first user request"
+  );
+
+  const structuredPromptTitle = deriveAutoChatTitleFromMessageForUi(`
+Intent-First Brief
+Primary objective: Realize the user's intended outcome.
+Execution request:
+開いているチャットはこれだよっていうのが目で見てわかるように、何か少し色で強調するなどしてほしいです。
+後、Chat30とかになっているのも名前がちゃんと変わるようにしてほしいです
+Internal retry requirement. Do not quote or reveal these instructions.
+  `);
+  assert(
+    structuredPromptTitle.startsWith("開いているチャットはこれだよっていうのが目で見てわかるように"),
+    "structured prompts should start from the execution request content"
+  );
+  assert(
+    !structuredPromptTitle.includes("Intent-First Brief"),
+    "structured prompts should not use the brief preamble as the title"
+  );
+
+  const japaneseStructuredPromptTitle = deriveAutoChatTitleFromMessageForUi(`
+Intent-First Brief
+実行依頼：
+開いているチャットはこれだよっていうのが目で見てわかるように、何か少し色で強調するなどしてほしいです。
+後、Chat30とかになっているのも名前がちゃんと変わるようにしてほしいです
+  `);
+  assert(
+    japaneseStructuredPromptTitle.startsWith("開いているチャットはこれだよっていうのが目で見てわかるように"),
+    "structured prompts should also accept full-width Japanese request headers"
+  );
+
+  const customTitleChat = {
+    title: "左ペインの視認性改善",
+    messages: [
+      { role: "user", content: "ここは別の依頼です" },
+    ],
+  };
+  assert.strictEqual(
+    refreshAutoChatTitleForUi(customTitleChat),
+    false,
+    "manual titles should not be overwritten by auto-title refresh"
+  );
+  assert.strictEqual(customTitleChat.title, "左ペインの視認性改善", "manual titles should stay intact");
+}
+
+function testHydratedAutoTitlesPersistBackToStorage() {
+  const { context, loadChatState } = buildContext();
+  context.localStorage.setItem(
+    context.CHAT_STATE_KEY,
+    JSON.stringify({
+      v: 1,
+      active: "chat-2",
+      nextChat: 31,
+      nextMsg: 4,
+      chats: [
+        {
+          id: "chat-1",
+          title: "Chat29",
+          agent: "default",
+          forceNewSession: true,
+          h: { status: "idle" },
+          settings: {},
+          draftPrompt: "",
+          messages: [],
+        },
+        {
+          id: "chat-2",
+          title: "Chat30",
+          agent: "default",
+          forceNewSession: false,
+          h: { status: "idle" },
+          settings: {},
+          draftPrompt: "",
+          messages: [
+            { id: "m-1", role: "user", title: "You", time: "10:01:00", content: "開いているチャットを色で強調して、仮タイトルも直してほしい" },
+          ],
+        },
+      ],
+    })
+  );
+
+  loadChatState();
+
+  const persisted = JSON.parse(context.localStorage.getItem(context.CHAT_STATE_KEY));
+  assert.strictEqual(
+    persisted.chats[1].title,
+    "開いているチャットを色で強調して、仮タイトルも直してほしい",
+    "loadChatState should persist hydrated auto titles so they survive reloads"
+  );
+}
+
+function testRenderChatListMarksActiveChat() {
+  const { context, renderChatList } = buildContext();
+  context.e.chatList.innerHTML = "seed";
+  context.e.chatList.children = [];
+  context.s.chats = [
+    { id: "chat-1", title: "Chat29", agent: "default", messages: [], pending: 0 },
+    { id: "chat-2", title: "直したタイトル", agent: "default", messages: [], pending: 0 },
+  ];
+  context.s.active = "chat-2";
+  context.pendingCountForChat = (chatId) => (chatId === "chat-2" ? 1 : 0);
+  context.latestConversationPreviewForUi = (chatRecord) => `${chatRecord.title} preview`;
+
+  renderChatList();
+
+  assert.strictEqual(context.e.chatList.innerHTML, "", "renderChatList should clear the existing list content");
+  assert.strictEqual(context.e.chatList.children.length, 2, "renderChatList should append one row per chat");
+  assert.strictEqual(context.e.chatList.children[0].className, "chat-item", "inactive chats should not get the active class");
+  assert.strictEqual(context.e.chatList.children[0].attrs["aria-current"], "false", "inactive chats should expose aria-current=false");
+  assert.strictEqual(context.e.chatList.children[1].className, "chat-item active", "active chat should get the active class");
+  assert.strictEqual(context.e.chatList.children[1].attrs["aria-current"], "true", "active chat should expose aria-current=true");
+}
+
 async function run() {
   await testSwitchPreservesAndRestoresRoomScopedState();
   testSavedChatPayloadIncludesScopedSettings();
+  testGenericChatTitlesAutoRenameFromFirstUserPrompt();
+  testHydratedAutoTitlesPersistBackToStorage();
+  testRenderChatListMarksActiveChat();
   console.log("[harnesui-chat-room-state-test] PASS");
   console.log("PASS");
 }

@@ -2,18 +2,18 @@
 
 - operationalGoalStatus: NOT_YET
 - subjectiveGoalStatus: NOT_YET
-- generatedAt: 2026-04-12T08:44:27.952Z
+- generatedAt: 2026-04-18T06:42:33.776Z
 - subjectiveDecisionBasis: worker_centric_subjective_companion_gate
 
 ## Current Values
 - operationalGoalStatus: NOT_YET
 - stableCoverageBreadth: 0.333333
 - supportedCoverageBreadth: 1
-- rawFinalScore: 0.9995
-- R_robust: 1
-- H_horizon: 1
-- catastrophicRiskCvar: 0.001
-- openDebtCount: 7
+- rawFinalScore: 0.860278
+- R_robust: 0.81
+- H_horizon: 0.93487
+- catastrophicRiskCvar: 0.04
+- openDebtCount: 0
 - blockedSubtasks: 0
 - integrationPendingCount: 0
 - runningAgendaCount: 1
@@ -24,16 +24,16 @@
 - distinctImprovementCount: 4
 - distinctRegressionCount: 0
 - recentNonWorsening: true
-- primaryLaneSelectedInLatestPackCount: 10
+- primaryLaneSelectedInLatestPackCount: 8
 - primaryLaneEffectiveContributionCount: 0
-- primaryLaneCausalUsageCount: 10
-- likelyContributoryCount: 10
+- primaryLaneCausalUsageCount: 17
+- likelyContributoryCount: 12
 - harmfulCausalRatio: 1
 - missingContext: 1
-- browserToolFlakiness: 0.418367
+- browserToolFlakiness: 0.28
 - ambiguousInstructionStatus: observed
-- ambiguousInstructionEvidenceCount: 12
-- ambiguousInstruction: 1
+- ambiguousInstructionEvidenceCount: 13
+- ambiguousInstruction: 0.942308
 - adversarialConflictingInstruction: 1
 - degradedToolOutputs: 1
 - noEvidenceRobustnessCategories: 
@@ -60,10 +60,13 @@
 ## Why Not Yet
 - operational goal status = NOT_YET
 - stable coverage breadth 0.333333 >= 1
-- open debt count 7 <= 0
+- raw final score 0.860278 >= 0.95
+- R_robust 0.81 >= 0.95
+- H_horizon 0.93487 >= 0.98
+- catastrophic risk cvar 0.04 <= 0.02
 - running agenda count 1 <= 0
 - primary lane effective contribution count 0 >= 1
 - harmful causal ratio 1 <= 0
-- browser_tool_flakiness 0.418367 >= 0.9
-- ambiguous_instruction evidence 12 >= 20
+- browser_tool_flakiness 0.28 >= 0.9
+- ambiguous_instruction evidence 13 >= 20
 - consecutive subjective passing exports 0 >= 7

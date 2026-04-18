@@ -32,6 +32,16 @@ function safeTrimmedString(value, max = 12000) {
   return trimmed.slice(0, max);
 }
 
+function firstNonEmptyString(values, max = 12000) {
+  for (const value of Array.isArray(values) ? values : []) {
+    const normalized = safeTrimmedString(value, max);
+    if (normalized) {
+      return normalized;
+    }
+  }
+  return "";
+}
+
 function toBoundedInt(value, fallback, min, max) {
   const parsed = Number(value);
   if (!Number.isFinite(parsed)) {
@@ -65,10 +75,28 @@ function hasRecencyIntent(text) {
 function hasDateSignal(text) {
   return includesAny(text, [
     /\b(?:19|20)\d{2}[\/\-\.](?:0?[1-9]|1[0-2])[\/\-\.](?:0?[1-9]|[12]\d|3[01])\b/,
+    /\b(?:19|20)\d{2}[\/\-\.](?:0?[1-9]|1[0-2])[\/\-\.](?:0?[1-9]|[12]\d|3[01])\s*(?:as of|updated|current|today)\b/i,
     /\b(?:jan|feb|mar|apr|may|jun|jul|aug|sep|sept|oct|nov|dec)[a-z]*\s+\d{1,2},?\s+(?:19|20)\d{2}\b/i,
     /\b(as of|updated)\b/i,
     /(?:19|20)\d{2}\u5e74(?:0?[1-9]|1[0-2])\u6708(?:0?[1-9]|[12]\d|3[01])\u65e5/,
+    /(?:19|20)\d{2}[\/\-\.](?:0?[1-9]|1[0-2])[\/\-\.](?:0?[1-9]|[12]\d|3[01])\s*(?:\u6642\u70b9|\u73fe\u5728)/,
+    /(?:19|20)\d{2}\u5e74(?:0?[1-9]|1[0-2])\u6708(?:0?[1-9]|[12]\d|3[01])\u65e5\s*(?:\u6642\u70b9|\u73fe\u5728)/,
   ]);
+}
+
+function normalizeShadowTerminalStatus(value) {
+  const raw = safeTrimmedString(value, 80).toLowerCase();
+  if (!raw) {
+    return "unknown";
+  }
+  if (["completed", "complete"].includes(raw)) {
+    return "completed";
+  }
+  const condensed = raw.replace(/[\s/_-]+/g, "");
+  if (["turncompleted", "responsecompleted", "taskcompleted"].includes(condensed)) {
+    return "completed";
+  }
+  return raw;
 }
 
 function hasCitationIntent(text) {
@@ -179,9 +207,22 @@ function buildAdversarialShadowReview(input = {}) {
   const maxPromptChars = toBoundedInt(source.maxPromptChars, 8000, 200, 48000);
   const maxAnswerChars = toBoundedInt(source.maxAnswerChars, 16000, 200, 64000);
   const minScore = toBoundedInt(source.minScore, 72, 0, 100);
-  const prompt = safeTrimmedString(source.prompt, maxPromptChars);
-  const answer = safeTrimmedString(source.answer, maxAnswerChars);
-  const status = safeTrimmedString(source.status, 40).toLowerCase() || "unknown";
+  const prompt = firstNonEmptyString([
+    source.prompt,
+    source.userPrompt,
+  ], maxPromptChars);
+  const answer = firstNonEmptyString([
+    source.answer,
+    source.assistantResponse,
+    source.response,
+    source.finalAnswer,
+  ], maxAnswerChars);
+  const status = normalizeShadowTerminalStatus(firstNonEmptyString([
+    source.status,
+    source.turnStatus,
+    source.terminalStatus,
+    source.terminal_status,
+  ], 40));
   const taskOutcomeStatus = safeTrimmedString(source.taskOutcomeStatus, 40).toUpperCase();
   const responseContract = resolveResponseContract(source.responseContract);
   const findings = [];

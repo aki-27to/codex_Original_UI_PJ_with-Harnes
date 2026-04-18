@@ -86,7 +86,8 @@ async function run() {
 
   try {
     const runtime = await waitRuntime(port);
-    assert(runtime.workspaceGuard && runtime.workspaceGuard.locked === false, "runtime should report unlocked workspaceGuard by default");
+    assert(runtime.workspaceGuard && runtime.workspaceGuard.locked === true, "runtime should report locked workspaceGuard by default");
+    assert(runtime.workspaceGuard.lockedRoot === workspaceRoot, "default workspace lock should target workspaceRoot");
     assert(runtime.controlApi && runtime.controlApi.tokenHeader && runtime.controlApi.token, "runtime should expose control API auth");
 
     const authHeaders = {
@@ -94,6 +95,18 @@ async function run() {
       Origin: `http://127.0.0.1:${port}`,
       Referer: `http://127.0.0.1:${port}/`,
     };
+
+    const unlockDefaultRes = await requestJson({
+      port,
+      path: "/api/workspace/unlock",
+      method: "POST",
+      headers: authHeaders,
+      body: {
+        action: "unlock_workspace_directory",
+      },
+    });
+    assert(unlockDefaultRes.statusCode === 200 && unlockDefaultRes.json && unlockDefaultRes.json.ok === true, `default workspace unlock should succeed (${unlockDefaultRes.raw})`);
+    assert(unlockDefaultRes.json.workspaceGuard && unlockDefaultRes.json.workspaceGuard.locked === false, "default workspace unlock should clear lock state");
 
     const lockRes = await requestJson({
       port,
@@ -115,6 +128,26 @@ async function run() {
     assert(runtimeLocked.statusCode === 200 && runtimeLocked.json && runtimeLocked.json.workspaceGuard, "runtime should expose workspaceGuard after lock");
     assert(runtimeLocked.json.workspaceGuard.locked === true, "workspaceGuard should report locked after lock call");
     assert(runtimeLocked.json.workspaceGuard.lockedRoot === lockedRoot, "runtime workspaceGuard should report lockedRoot");
+
+    const execOutsideLockedRoot = await requestJson({
+      port,
+      path: "/api/exec",
+      method: "POST",
+      headers: authHeaders,
+      body: {
+        prompt: "Create a recruitment site design that beats the benchmark.",
+        agentName: "default",
+        sandboxMode: "workspace-write",
+        approvalPolicy: "never",
+        cwd: workspaceRoot,
+        executionProfile: "smoke-test",
+        executionIntent: "smoke-http-exec",
+        executionSource: "web_ui",
+      },
+      timeoutMs: 20000,
+    });
+    assert(execOutsideLockedRoot.statusCode === 403 && execOutsideLockedRoot.json, `exec outside locked root should fail with 403 after lock (${execOutsideLockedRoot.raw})`);
+    assert.strictEqual(execOutsideLockedRoot.json.code, "outside_locked_workspace", "exec should observe the current lock before rejecting outside cwd");
 
     const batchInside = await requestJson({
       port,

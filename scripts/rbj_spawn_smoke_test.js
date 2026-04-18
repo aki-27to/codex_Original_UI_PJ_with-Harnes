@@ -1,33 +1,17 @@
 #!/usr/bin/env node
 "use strict";
 
-const fs = require("fs");
 const path = require("path");
 const { spawn } = require("child_process");
+const { resolveCodexAppServerSpawnTarget } = require("./lib/harness_app_runtime");
 
 const workspaceRoot = path.resolve(__dirname, "..");
-const defaultWindowsCodexCmd = process.env.APPDATA
-  ? path.join(process.env.APPDATA, "npm", "codex.cmd")
-  : "codex.cmd";
-
-function resolveSpawnTarget(cwd) {
-  if (process.platform === "win32") {
-    const cmdPath = fs.existsSync(defaultWindowsCodexCmd) ? defaultWindowsCodexCmd : "codex.cmd";
-    return {
-      command: `"${cmdPath}" app-server`,
-      args: [],
-      options: { cwd, windowsHide: true, stdio: ["pipe", "pipe", "pipe"], shell: true },
-    };
-  }
-  return {
-    command: "codex",
-    args: ["app-server"],
-    options: { cwd, windowsHide: true, stdio: ["pipe", "pipe", "pipe"] },
-  };
-}
 
 async function run() {
-  const target = resolveSpawnTarget(workspaceRoot);
+  const target = resolveCodexAppServerSpawnTarget({
+    cwd: workspaceRoot,
+    stdio: ["pipe", "pipe", "pipe"],
+  });
   const child = spawn(target.command, target.args, target.options);
   let settled = false;
   await new Promise((resolve, reject) => {
@@ -59,4 +43,3 @@ run().catch((error) => {
   console.error(`FAIL rbj_spawn_smoke_test: ${error && error.message ? error.message : String(error)}`);
   process.exit(1);
 });
-

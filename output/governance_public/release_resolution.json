@@ -1,0 +1,25 @@
+{
+  "schema": "release-resolution.v1",
+  "generatedAt": "2026-04-18T06:42:29.179Z",
+  "question": "Should the entire current repo diff be approved for production release?",
+  "resolutionStatus": "closed_with_bounded_candidate_decision",
+  "resolvedAnswer": "Do not approve the entire dirty worktree as one release target. Approve and ship only the bounded release candidate.",
+  "approvedTarget": {
+    "type": "bounded_release_candidate",
+    "candidateId": "rc-2026-04-18-core-harness-governed-apps",
+    "scopeArtifact": "output/governance_public/release_candidate_scope.json",
+    "latestSignoffSummary": "logs/current/latest_signoff_summary.json",
+    "bundleName": "signoff-2026-04-18T05-27-13-996Z-f97810",
+    "decision": "RELEASE_APPROVED"
+  },
+  "notApprovedTarget": {
+    "type": "whole_dirty_worktree",
+    "decision": "NOT_APPROVED",
+    "reason": "Whole-worktree approval remains invalid unless the entire worktree is frozen, de-noised, fully in-scope, fully evidenced, re-signed off, and fixed to a commit or equivalent fingerprint."
+  },
+  "operationalClose": {
+    "shipNow": "Ship the bounded release candidate.",
+    "doNotClaim": "Do not claim that the entire dirty worktree is approved.",
+    "followUp": "If full-worktree approval is still desired, treat it as a new task: freeze -> noise removal -> full-scope candidate -> full evidence -> fresh current-truth/signoff -> commit or fingerprint fixation."
+  }
+}

@@ -1,37 +1,55 @@
 # DESIGN_ACCEPTANCE_CONTRACT
 
-Updated: 2026-04-12
+Updated: 2026-04-15
 
-## 1) 目的
+## 1) Purpose
 
-design-sensitive work の completion gate を固定します。build/test/200 は十分条件ではなく、visual intent と benchmark superiority を別に判定します。
+Design-sensitive work is not complete just because the build passes or the page renders. The harness must treat visual adoption quality as a hard gate, with explicit proof for benchmark fit, layout integrity, and worst-state readability.
 
 ## 2) Hard Requirements
 
-以下が欠けたら `COMPLETED` にしてはいけません。
+All of the following are required before a design-sensitive task can be marked `COMPLETED`:
 
-- active taste memory または同等の intent contract
-- benchmark / reference target の明示
+- active taste memory or an equivalent locked intent contract
+- benchmark or reference target
 - desktop screenshot review
 - mobile screenshot review
-- independent reviewer / tester verdict
+- worst-state screenshot review
+- layout integrity review
+- copy-fit review
+- independent reviewer verdict
+- technical verification evidence
+- documentation sync
 
-## 3) Failure Rule
+## 3) Layout Integrity Rule
 
-次のいずれかが欠けるなら `FAILED_VALIDATION` です。
+The following are blocking failures, not polish items:
 
-- visual evidence
-- benchmark reasoning
-- independent review
-- benchmark superiority を問うタスクで PASS/FAIL を明示していない
+- text overflow or clipping outside intended panel bounds
+- label collisions or overlapping UI elements
+- copy that cannot fit its allocated region without a defined wrap or truncation policy
+- dense header or footer regions that become unreadable under stress states
 
-## 4) Default Taste Signals for This Harness
+If any of the above remain, the task state is `FAILED_VALIDATION`.
 
-既定では次を好みます。
+## 4) Worst-State Rule
+
+Visual proof must include the stressful states that usually reveal broken layouts. At minimum, the harness should require evidence for:
+
+- highest-density content state
+- interrupt, pause, or error overlay state
+- critical or danger status state
+- longest expected localized copy state
+
+If these states are not captured and reviewed, the task is not complete.
+
+## 5) Default Taste Signals For This Harness
+
+The harness defaults remain:
 
 - intent first
-- benchmark-aware
+- benchmark aware
 - no empty polish
 - no false-complete visual claim
 
-詳細は current taste memory と task-specific contract を優先します。
+The current taste memory and task-specific contract may add stricter direction, but they must not weaken the layout-integrity or worst-state gates.

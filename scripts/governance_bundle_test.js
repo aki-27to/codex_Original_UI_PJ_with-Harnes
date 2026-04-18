@@ -174,6 +174,12 @@ function main() {
     "escalation_decision.json",
     "worker_decision_surface.json",
     "worker_completion_status.json",
+    "reviewer_start_here.json",
+    "reviewer_start_here.md",
+    "release_candidate_scope.json",
+    "release_candidate_scope.md",
+    "release_resolution.json",
+    "release_resolution.md",
     "release_decision.json",
     "bundle_overview.json",
     "bundle_overview.md",
@@ -190,10 +196,25 @@ function main() {
     exportedManifest.exportedArtifacts.some((entry) => entry.file === "worker_completion_status.json" && entry.derived === 1),
     "public governance export must record derived worker_completion_status.json"
   );
+  assert(
+    exportedManifest.exportedArtifacts.some((entry) => entry.file === "reviewer_start_here.json" && entry.derived === 1),
+    "public governance export must record derived reviewer_start_here.json"
+  );
+  assert(
+    exportedManifest.exportedArtifacts.some((entry) => entry.file === "release_candidate_scope.json" && entry.derived === 1),
+    "public governance export must record derived release_candidate_scope.json"
+  );
+  assert(
+    exportedManifest.exportedArtifacts.some((entry) => entry.file === "release_resolution.json" && entry.derived === 1),
+    "public governance export must record derived release_resolution.json"
+  );
   const adoptionReadiness = JSON.parse(fs.readFileSync(path.join(exportOutputDir, "adoption_readiness_eval.json"), "utf8"));
   const iterationDecision = JSON.parse(fs.readFileSync(path.join(exportOutputDir, "iteration_decision.json"), "utf8"));
   const workerDecisionSurface = JSON.parse(fs.readFileSync(path.join(exportOutputDir, "worker_decision_surface.json"), "utf8"));
   const workerCompletionStatus = JSON.parse(fs.readFileSync(path.join(exportOutputDir, "worker_completion_status.json"), "utf8"));
+  const reviewerStartHere = JSON.parse(fs.readFileSync(path.join(exportOutputDir, "reviewer_start_here.json"), "utf8"));
+  const releaseCandidateScope = JSON.parse(fs.readFileSync(path.join(exportOutputDir, "release_candidate_scope.json"), "utf8"));
+  const releaseResolution = JSON.parse(fs.readFileSync(path.join(exportOutputDir, "release_resolution.json"), "utf8"));
   assert.strictEqual(adoptionReadiness.schema, "adoption-readiness-eval.v1", "public export must emit adoption readiness eval");
   assert.strictEqual(adoptionReadiness.scope, "adoption_readiness", "public export must scope adoption readiness eval");
   assert.ok(String(iterationDecision.action || "").length > 0, "public export must emit iteration decision action");
@@ -211,8 +232,35 @@ function main() {
   assert.strictEqual(workerCompletionStatus.headlineArtifactPath, "output/governance_public/worker_decision_surface.json", "worker completion companion must point at the worker headline");
   assert.strictEqual(workerCompletionStatus.headlineWorkerOutcome, workerDecisionSurface.topLevelOutcome, "worker completion companion must mirror the worker headline outcome");
   assert.strictEqual(workerCompletionStatus.decisionMeaning, "worker_headline_stop_semantics_with_background_program_readiness_context", "worker completion companion must expose its decision meaning");
+  assert.strictEqual(workerCompletionStatus.workerStopDecision.presentationRole, "primary_task_verdict", "worker completion companion must mark the worker stop verdict as primary");
+  assert.strictEqual(workerCompletionStatus.backgroundProgramReadiness.presentationRole, "secondary_non_blocking_context", "worker completion companion must classify program readiness as secondary context");
+  assert.strictEqual(workerCompletionStatus.backgroundProgramReadiness.doesNotOverrideWorkerVerdict, true, "worker completion companion must mark background readiness as non-overriding");
   assert.strictEqual(workerCompletionStatus.backgroundArtifactSessionConsistency, "aligned", "worker completion companion must only trust aligned readiness sidecars");
   assert.strictEqual(workerCompletionStatus.backgroundArtifactInputsTrusted, true, "worker completion companion must mark aligned readiness sidecars as trusted");
+  assert.strictEqual(reviewerStartHere.schema, "governance-reviewer-start-here.v1", "public export must emit reviewer-start-here surface");
+  assert.strictEqual(Array.isArray(reviewerStartHere.decisionFaces), true, "reviewer-start-here must expose decision faces");
+  assert.strictEqual(reviewerStartHere.decisionFaces.length, 2, "reviewer-start-here must compress top-level verdicts into two faces");
+  assert.strictEqual(reviewerStartHere.decisionFaces[0].id, "task_verdict", "reviewer-start-here must lead with task verdict");
+  assert.strictEqual(reviewerStartHere.decisionFaces[1].id, "program_readiness", "reviewer-start-here must expose program readiness as the second face");
+  assert.strictEqual(reviewerStartHere.decisionFaces[0].presentationRole, "primary_task_verdict", "reviewer-start-here must classify the task face as primary");
+  assert.strictEqual(reviewerStartHere.decisionFaces[1].presentationRole, "secondary_non_blocking_context", "reviewer-start-here must classify the program face as secondary context");
+  assert.strictEqual(reviewerStartHere.decisionFaces[1].doesNotOverrideWorkerVerdict, true, "reviewer-start-here must state that background program readiness does not override the task verdict");
+  assert.strictEqual(reviewerStartHere.routeTruth.execution, "POST /api/exec", "reviewer-start-here must expose execution route truth");
+  assert.strictEqual(reviewerStartHere.routeTruth.evaluation, "POST /api/eval/run", "reviewer-start-here must expose evaluation route truth");
+  assert.strictEqual(reviewerStartHere.externalComparison.refreshCommand, "npm run reviewer:baseline-comparison", "reviewer-start-here must expose the explicit baseline comparison refresh command");
+  assert.strictEqual(reviewerStartHere.externalComparison.reportArtifact, "raw/relocated_top_level/baseline_comparison_report.json", "reviewer-start-here must expose the canonical baseline comparison artifact location");
+  assert.strictEqual(typeof reviewerStartHere.externalComparison.aggregate.harnessSuccessRate, "number", "reviewer-start-here must expose harness success rate aggregate");
+  assert.strictEqual(typeof reviewerStartHere.externalComparison.aggregate.baselineExtraHitlCount, "number", "reviewer-start-here must expose baseline HITL aggregate");
+  assert.strictEqual(releaseCandidateScope.schema, "release-candidate-scope.v1", "public export must emit release candidate scope");
+  assert.strictEqual(releaseCandidateScope.status, "ready_for_ship_decision", "release candidate scope must mark ship-decision readiness");
+  assert.strictEqual(
+    releaseCandidateScope.verificationResult.latestBundleName,
+    JSON.parse(fs.readFileSync(path.join(exportOutputDir, "latest_signoff_summary.json"), "utf8")).bundleRef.bundleName,
+    "release candidate scope must track the selected signoff bundle"
+  );
+  assert.strictEqual(releaseResolution.schema, "release-resolution.v1", "public export must emit release resolution");
+  assert.strictEqual(releaseResolution.approvedTarget.candidateId, "rc-2026-04-18-core-harness-governed-apps", "release resolution must point at the bounded candidate");
+  assert.strictEqual(releaseResolution.notApprovedTarget.decision, "NOT_APPROVED", "release resolution must keep whole-worktree approval closed");
   assert.strictEqual(publicExport.overview.workerDecision.scope, "worker_decision", "public overview must expose worker decision scope");
   assert.strictEqual(publicExport.overview.workerCompletion.scope, "worker_completion", "public overview must expose worker completion scope");
   assert.strictEqual(publicExport.overview.harnessIdentity.mode, "single_governed_harness", "public overview must expose single harness identity");
@@ -232,6 +280,8 @@ function main() {
     "RELEASE_APPROVED",
     "public governance export must surface the signoff final decision"
   );
+  assert.strictEqual(publicExport.reviewerStartHere.schema, "governance-reviewer-start-here.v1", "public export return value must expose reviewer-start-here");
+  assert.strictEqual(publicExport.exportManifest.exportedArtifacts.some((entry) => entry.file === "release_resolution.md"), true, "public export return value must include release resolution markdown");
   const mismatchedSupplemental = deriveSupplementalGovernanceArtifacts({
     requestFrame: { assumption_policy: [] },
     reviewBundle: {

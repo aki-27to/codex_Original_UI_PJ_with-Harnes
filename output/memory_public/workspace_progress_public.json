@@ -1,8 +1,8 @@
 {
   "schema": "governed-memory-workspace-progress-public.v1",
-  "generatedAt": "2026-04-12T08:44:27.145Z",
+  "generatedAt": "2026-04-18T06:42:32.625Z",
   "workspaceId": "5c839dfeef8b555f",
-  "updatedAt": "2026-04-12T08:44:25.709Z",
+  "updatedAt": "2026-04-18T06:42:30.404Z",
   "currentObjective": "verifier failure should force replan and recovery",
   "currentMilestones": [
     "completed: Simple planning task falls back to single agent path",
@@ -18,33 +18,32 @@
     "simulated child verifier failure"
   ],
   "knownRisks": [
-    "silent requirement rewrite",
+    "return to intake required",
     "completed default"
   ],
   "recentTouchedPaths": [
-    "logs/bundles/signoff/signoff-2026-03-09T12-31-59-842Z-24dd95/raw/scripts/config/signoff_sample_target.txt",
+    "logs/bundles/signoff/signoff-2026-04-18T05-27-13-996Z-f97810/raw/scripts/config/signoff_sample_target.txt",
     "docs/EVIDENCE_CONTRACT.md",
     "docs/CURRENT_ARCHITECTURE.md",
     "docs/ARCHITECTURE_CHANGELOG.md"
   ],
   "nextRecommendedActions": [
+    "robustness is currently limited by browser tool flakiness",
     "browser tool flakiness below subjective threshold",
-    "weakest family is G breadth",
-    "web creative stable coverage below subjective threshold",
+    "weakest family is R robust",
     "capture governed recovery evidence",
-    "running agenda counts differ across artifacts without an explicit gate vs supporting basis",
-    "continuity carries 7 closeout debt item(s) with severity high"
+    "mismatched export sessions: export 69aaf0d22042, export b19f32facb8f"
   ],
   "lastSuccessfulValidation": [
     {
       "reference": "turn_4773037f53",
       "taskOutcomeStatus": "unknown_status",
-      "completedAt": "2026-04-12T08:33:37.443Z"
+      "completedAt": "2026-04-18T05:26:27.225Z"
     },
     {
       "reference": "turn_4773037f53",
       "taskOutcomeStatus": "unknown_status",
-      "completedAt": "2026-04-12T08:33:37.481Z"
+      "completedAt": "2026-04-18T05:26:27.263Z"
     }
   ],
   "lastFailedValidation": [
@@ -52,13 +51,13 @@
       "reference": "turn_4773037f53",
       "taskOutcomeStatus": "unknown_status",
       "reason": "verifier failed",
-      "completedAt": "2026-04-12T02:15:05.962Z"
+      "completedAt": "2026-04-16T12:15:49.958Z"
     },
     {
       "reference": "turn_4773037f53",
       "taskOutcomeStatus": "unknown_status",
       "reason": "verifier failed",
-      "completedAt": "2026-04-12T02:15:05.834Z"
+      "completedAt": "2026-04-16T12:15:49.717Z"
     }
   ]
 }

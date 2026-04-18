@@ -49,7 +49,7 @@ function createBootstrapApi(ctx) {
           port,
           path: "/api/runtime",
           method: "GET",
-          timeout: 1200,
+          timeout: 5000,
         },
         (res) => {
           let data = "";

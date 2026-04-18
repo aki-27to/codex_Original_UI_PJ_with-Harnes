@@ -1,11 +1,11 @@
 {
   "schema": "agi-readiness-live-summary.v1",
-  "generatedAt": "2026-04-12T08:44:26.943Z",
+  "generatedAt": "2026-04-18T06:42:32.311Z",
   "workspaceId": "5c839dfeef8b555f",
-  "latestRunId": "eval-1775415298684-6e4ae77c",
+  "latestRunId": "eval-1776010435054-c9b5d194",
   "profile": "agi_v1",
   "laneId": "public_regression",
-  "suiteId": "subjective-s9.agi_v1_suite",
+  "suiteId": "challenger.agi_v1_suite",
   "metrics": {
     "G_breadth": {
       "familyName": "G_breadth",
@@ -18,13 +18,13 @@
         "matrix": [
           {
             "domainFamily": "coding",
-            "domainScore": 1,
+            "domainScore": 0.92,
             "covered": 1,
             "weight": 1
           },
           {
             "domainFamily": "planning",
-            "domainScore": 1,
+            "domainScore": 0.88,
             "covered": 1,
             "weight": 1
           }
@@ -32,11 +32,11 @@
         "observations": [
           {
             "family_name": "G_breadth",
-            "submetric_name": "e10_breadth_coding",
+            "submetric_name": "challenger_breadth_coding",
             "mode": "standard",
-            "value": 1,
-            "ci_low": 1,
-            "ci_high": 1,
+            "value": 0.92,
+            "ci_low": 0.92,
+            "ci_high": 0.92,
             "threshold": null,
             "pass_fail": null,
             "relevant": true,
@@ -49,10 +49,10 @@
             "evidence": [],
             "notes": "",
             "reason": "",
-            "case_id": "e10-metric-1",
-            "title": "e10-case-1",
+            "case_id": "challenger-metric-1",
+            "title": "challenger-case-1",
             "variant_label": "candidate-standard",
-            "candidate_id": "candidate-subjective-s10",
+            "candidate_id": "candidate-main",
             "domain_family": "coding",
             "normalization_basis": "",
             "horizon_units": null,
@@ -62,11 +62,11 @@
           },
           {
             "family_name": "G_breadth",
-            "submetric_name": "e10_breadth_planning",
+            "submetric_name": "challenger_breadth_planning",
             "mode": "standard",
-            "value": 1,
-            "ci_low": 1,
-            "ci_high": 1,
+            "value": 0.88,
+            "ci_low": 0.88,
+            "ci_high": 0.88,
             "threshold": null,
             "pass_fail": null,
             "relevant": true,
@@ -79,10 +79,10 @@
             "evidence": [],
             "notes": "",
             "reason": "",
-            "case_id": "e10-metric-2",
-            "title": "e10-case-2",
+            "case_id": "challenger-metric-2",
+            "title": "challenger-case-2",
             "variant_label": "candidate-standard",
-            "candidate_id": "candidate-subjective-s10",
+            "candidate_id": "candidate-main",
             "domain_family": "planning",
             "normalization_basis": "",
             "horizon_units": null,
@@ -95,12 +95,12 @@
     },
     "G_depth": {
       "familyName": "G_depth",
-      "value": 1,
+      "value": 0.87,
       "threshold": null,
       "supportStatus": "supported",
       "passFail": true,
       "details": {
-        "value": 1,
+        "value": 0.87,
         "details": {
           "strategy": "mean"
         }
@@ -108,12 +108,12 @@
     },
     "A_adapt": {
       "familyName": "A_adapt",
-      "value": 1,
+      "value": 0.83,
       "threshold": null,
       "supportStatus": "supported",
       "passFail": true,
       "details": {
-        "value": 1,
+        "value": 0.83,
         "details": {
           "strategy": "mean"
         }
@@ -121,12 +121,12 @@
     },
     "R_robust": {
       "familyName": "R_robust",
-      "value": 1,
+      "value": 0.81,
       "threshold": null,
       "supportStatus": "supported",
       "passFail": true,
       "details": {
-        "value": 1,
+        "value": 0.81,
         "details": {
           "strategy": "min"
         }
@@ -134,12 +134,12 @@
     },
     "H_horizon": {
       "familyName": "H_horizon",
-      "value": 1,
+      "value": 0.93487,
       "threshold": null,
       "supportStatus": "supported",
       "passFail": true,
       "details": {
-        "value": 1,
+        "value": 0.93487,
         "details": {
           "strategy": "mean"
         }
@@ -147,12 +147,12 @@
     },
     "P_context": {
       "familyName": "P_context",
-      "value": 1,
+      "value": 0.86,
       "threshold": null,
       "supportStatus": "supported",
       "passFail": true,
       "details": {
-        "value": 1,
+        "value": 0.86,
         "details": {
           "strategy": "mean"
         }
@@ -200,11 +200,11 @@
     }
   },
   "catastrophicRisk": {
-    "cvar": 0.001,
+    "cvar": 0.04,
     "supportStatus": "supported"
   },
-  "rawFinalScore": 0.9995,
-  "displayFinalScore": 0.8395,
+  "rawFinalScore": 0.860278,
+  "displayFinalScore": 0.820278,
   "breadthSemantics": {
     "mode": "repo_coverage_breadth",
     "headlineField": "supportedCoverageBreadth",
@@ -219,26 +219,26 @@
   "failedFamilies": [],
   "headlineMetrics": {
     "G_breadth": 1,
-    "G_depth": 1,
-    "A_adapt": 1,
-    "R_robust": 1,
-    "H_horizon": 1,
-    "P_context": 1
+    "G_depth": 0.87,
+    "A_adapt": 0.83,
+    "R_robust": 0.81,
+    "H_horizon": 0.93487,
+    "P_context": 0.86
   },
   "headlineBreadth": 1,
-  "promotionComparisonMode": "distinct_comparison",
-  "distinctComparison": true,
-  "promotionInterpretation": "distinct_incumbent_comparison",
-  "promotionEvidenceStrength": "distinct_incumbent_challenger_decision",
+  "promotionComparisonMode": "self_snapshot",
+  "distinctComparison": false,
+  "promotionInterpretation": "not_a_distinct_incumbent_comparison",
+  "promotionEvidenceStrength": "self_snapshot_only",
   "incumbentVsChallenger": {
-    "incumbentIdentifier": "candidate-subjective-s9",
-    "challengerIdentifier": "candidate-subjective-s10",
-    "promote": false,
-    "comparisonMode": "distinct_comparison",
-    "distinctComparison": true
+    "incumbentIdentifier": "candidate-main",
+    "challengerIdentifier": "candidate-main",
+    "promote": null,
+    "comparisonMode": "self_snapshot",
+    "distinctComparison": false
   },
   "blockedReasons": [],
-  "weakestCapabilityFamily": "G_breadth",
+  "weakestCapabilityFamily": "R_robust",
   "weakestGateFamily": "",
   "gatePressure": {
     "weakestGateFamily": "",
@@ -259,39 +259,31 @@
   ],
   "domainCoveragePath": "output/agi_readiness/domain_coverage_matrix.json",
   "robustnessBreakdownPath": "output/agi_readiness/robustness_breakdown.json",
-  "recentImprovement": 0,
-  "recentRegression": 0,
-  "incumbentVersion": "lineage_ee3f00c380",
-  "challengerVersion": "lineage_23ca52516c",
+  "recentImprovement": 0.133862,
+  "recentRegression": -0.04,
+  "incumbentVersion": "lineage_120809f777",
+  "challengerVersion": "lineage_cedcd609d1",
   "distinctImprovementObserved": true,
-  "improvementEvidenceClass": "distinct_hold",
+  "improvementEvidenceClass": "distinct_observed_improvement",
   "scoreViews": {
     "schema": "agi-readiness-score-views.v1",
-    "generatedAt": "2026-04-12T08:44:28.841Z",
+    "generatedAt": "2026-04-18T06:42:34.884Z",
     "workspaceId": "5c839dfeef8b555f",
-    "rawFinalScore": 0.9995,
-    "internalGovernedScore": 0.9995,
-    "externallyAuditableScore": 0.8395,
+    "rawFinalScore": 0.860278,
+    "internalGovernedScore": 0.860278,
+    "externallyAuditableScore": 0.820278,
     "displayScoreSource": "externallyAuditableScore",
     "operationallyComplete": false,
     "evidenceDebtPresent": false,
     "debtSignals": {
       "blockedAgendaCount": 0,
       "insufficientEvidenceCount": 0,
-      "openDebtCount": 7,
+      "openDebtCount": 0,
       "blockedReasonCount": 0,
       "goalStatus": "NOT_YET"
     },
-    "totalPenalty": 0.16,
+    "totalPenalty": 0.04,
     "penalties": [
-      {
-        "id": "openDebtCount",
-        "count": 7,
-        "perCount": 0.04,
-        "cap": 0.12,
-        "applied": 0.12,
-        "reason": "continuity debt remains open"
-      },
       {
         "id": "goalNotOperationallyComplete",
         "count": 1,
@@ -303,8 +295,8 @@
     ],
     "capsApplied": []
   },
-  "internalGovernedScore": 0.9995,
-  "externallyAuditableScore": 0.8395,
+  "internalGovernedScore": 0.860278,
+  "externallyAuditableScore": 0.820278,
   "consistencyChecks": [
     {
       "id": "readiness_breadth_semantics_consistent",

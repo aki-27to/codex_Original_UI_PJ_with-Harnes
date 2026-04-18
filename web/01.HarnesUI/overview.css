@@ -120,6 +120,112 @@
   display: none;
 }
 
+.overview-reviewer-section {
+  gap: 0;
+}
+
+.overview-reviewer-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.2fr) minmax(320px, 0.8fr);
+  gap: 12px;
+}
+
+.overview-reviewer-lead,
+.overview-reviewer-order,
+.overview-reviewer-face,
+.overview-reviewer-note {
+  border: 1px solid rgba(40, 68, 112, 0.82);
+  border-radius: 16px;
+  background: linear-gradient(180deg, rgba(13, 23, 42, 0.94), rgba(9, 17, 32, 0.94));
+  box-shadow: 0 16px 32px rgba(3, 8, 18, 0.18);
+}
+
+.overview-reviewer-lead,
+.overview-reviewer-order,
+.overview-reviewer-face,
+.overview-reviewer-note {
+  padding: 16px;
+}
+
+.overview-reviewer-lead {
+  display: grid;
+  gap: 10px;
+}
+
+.overview-reviewer-lead h3,
+.overview-reviewer-order h4,
+.overview-reviewer-face h4,
+.overview-reviewer-note h4 {
+  margin: 0;
+}
+
+.overview-reviewer-summary {
+  margin: 0;
+  color: #b9cae6;
+  font-size: 13px;
+  line-height: 1.65;
+}
+
+.overview-reviewer-order {
+  display: grid;
+  gap: 10px;
+  align-content: start;
+}
+
+.overview-reviewer-order-list {
+  margin: 0;
+  padding-left: 18px;
+  display: grid;
+  gap: 8px;
+  color: #d8e4fa;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.overview-reviewer-order-list code {
+  color: #eef5ff;
+}
+
+.overview-reviewer-faces,
+.overview-reviewer-spine {
+  display: grid;
+  gap: 12px;
+}
+
+.overview-reviewer-faces {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.overview-reviewer-face,
+.overview-reviewer-note {
+  display: grid;
+  gap: 10px;
+  align-content: start;
+}
+
+.overview-reviewer-face-head,
+.overview-reviewer-note-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: start;
+  gap: 12px;
+}
+
+.overview-reviewer-face.tone-pass,
+.overview-reviewer-note.tone-pass {
+  border-color: rgba(47, 191, 113, 0.45);
+}
+
+.overview-reviewer-face.tone-warn,
+.overview-reviewer-note.tone-warn {
+  border-color: rgba(244, 174, 43, 0.45);
+}
+
+.overview-reviewer-face.tone-fail,
+.overview-reviewer-note.tone-fail {
+  border-color: rgba(232, 93, 117, 0.5);
+}
+
 .overview-metrics {
   display: grid;
   grid-template-columns: repeat(6, minmax(0, 1fr));
@@ -535,6 +641,11 @@
     grid-template-columns: 1fr;
   }
 
+  .overview-reviewer-grid,
+  .overview-reviewer-faces {
+    grid-template-columns: 1fr;
+  }
+
   .overview-hero-pills {
     justify-content: flex-start;
   }
@@ -577,6 +688,13 @@
 
   .overview-hero {
     padding: 18px;
+  }
+
+  .overview-reviewer-lead,
+  .overview-reviewer-order,
+  .overview-reviewer-face,
+  .overview-reviewer-note {
+    padding: 14px;
   }
 
   .overview-hero h2 {

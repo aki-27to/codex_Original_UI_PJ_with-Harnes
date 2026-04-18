@@ -1,0 +1,158 @@
+{
+  "schema": "governance-reviewer-start-here.v1",
+  "generatedAt": "2026-04-18T06:42:29.265Z",
+  "purpose": "Single reviewer-first surface for the governed harness. Start with the task verdict, then inspect background program debt as secondary context.",
+  "readOrder": [
+    "output/governance_public/reviewer_start_here.json",
+    "output/governance_public/worker_decision_surface.json",
+    "output/governance_public/worker_completion_status.json",
+    "output/governance_public/bundle_overview.json",
+    "docs/SERVER_ARCHITECTURE_MAP.md"
+  ],
+  "decisionFaces": [
+    {
+      "id": "task_verdict",
+      "artifact": "output/governance_public/worker_decision_surface.json",
+      "scope": "worker_decision",
+      "displayLabel": "Task verdict",
+      "presentationRole": "primary_task_verdict",
+      "operatorPriority": "primary",
+      "decisionQuestion": "Can the governed worker stop here without unnecessary human interruption?",
+      "verdict": "ADOPTABLE_COMPLETE",
+      "taskOutcomeStatus": "COMPLETED",
+      "operatorAction": "ADOPT",
+      "useWhen": [
+        "ordinary task completion",
+        "did the worker finish this request?",
+        "can the operator adopt the returned artifact now?"
+      ],
+      "doNotUseFor": [
+        "whole-program readiness",
+        "background learning debt"
+      ]
+    },
+    {
+      "id": "program_readiness",
+      "artifact": "output/agi_readiness/goal_completion_status.json",
+      "scope": "program_readiness",
+      "displayLabel": "Background program readiness",
+      "presentationRole": "secondary_non_blocking_context",
+      "operatorPriority": "secondary",
+      "verdict": "NOT_YET",
+      "workerStopBlocked": false,
+      "backgroundTrusted": true,
+      "doesNotOverrideWorkerVerdict": true,
+      "summary": "Background program-readiness debt is still open. It remains secondary context and does not overturn the worker stop verdict.",
+      "useWhen": [
+        "whole-harness readiness",
+        "release posture",
+        "program-wide debt tracking"
+      ],
+      "doNotUseFor": [
+        "ordinary task verdict",
+        "single worker stop semantics"
+      ]
+    }
+  ],
+  "routeTruth": {
+    "execution": "POST /api/exec",
+    "evaluation": "POST /api/eval/run",
+    "monitoring": "GET /api/harness/overview",
+    "governanceHeadline": "output/governance_public/worker_decision_surface.json"
+  },
+  "serverBoundaryMap": [
+    "server/request_handler.js",
+    "server/routes/overview_routes.js",
+    "server/routes/control_routes.js",
+    "server/routes/exec_routes.js",
+    "server/routes/eval_routes.js",
+    "server/services/runtime_state_service.js",
+    "server_impl.js"
+  ],
+  "runtimeTruth": {
+    "authoritativeSnapshot": "turnRuntime",
+    "sourceOfTruth": "server/services/runtime_state_service.js",
+    "uiProjection": "web/01.HarnesUI/app.js",
+    "notes": [
+      "The server publishes activeExecRequests, activeTurns, and latestTurn through turnRuntime.",
+      "The browser keeps s.req only as a short-lived bridge until thread and turn identity bind back from the server snapshot."
+    ]
+  },
+  "externalComparison": {
+    "sampleCount": 5,
+    "matchedSampleCount": 5,
+    "targetReviewerSampleCount": 5,
+    "coverageGapCount": 0,
+    "refreshCommand": "npm run reviewer:baseline-comparison",
+    "reportArtifact": "raw/relocated_top_level/baseline_comparison_report.json",
+    "approximation": "measured-baseline-profile",
+    "summary": "This report compares governed harness runs against a measured in-repo baseline profile with governance-light settings.",
+    "aggregate": {
+      "harnessSuccessRate": 1,
+      "baselineSuccessRate": 0.2,
+      "harnessAverageDurationMs": 2586,
+      "baselineAverageDurationMs": 2557,
+      "harnessExtraHitlCount": 1,
+      "baselineExtraHitlCount": 1,
+      "harnessRepairCount": 0,
+      "baselineRepairCount": 0
+    },
+    "samples": [
+      {
+        "id": "FAST sample",
+        "harnessOutcome": "COMPLETED",
+        "baselineOutcome": "FAILED_VALIDATION",
+        "harnessDurationMs": 2529,
+        "baselineDurationMs": 2624,
+        "evidenceQualityDelta": 2,
+        "dispatchDelta": 1,
+        "reviewerDelta": 0,
+        "testerDelta": 0
+      },
+      {
+        "id": "DISCOVERY sample",
+        "harnessOutcome": "NEEDS_INPUT",
+        "baselineOutcome": "NEEDS_INPUT",
+        "harnessDurationMs": 2630,
+        "baselineDurationMs": 2546,
+        "evidenceQualityDelta": 6,
+        "dispatchDelta": 0,
+        "reviewerDelta": 0,
+        "testerDelta": 0
+      },
+      {
+        "id": "SIGNOFF sample",
+        "harnessOutcome": "COMPLETED",
+        "baselineOutcome": "FAILED_VALIDATION",
+        "harnessDurationMs": 2559,
+        "baselineDurationMs": 2542,
+        "evidenceQualityDelta": 4,
+        "dispatchDelta": 3,
+        "reviewerDelta": 1,
+        "testerDelta": 1
+      },
+      {
+        "id": "Natural sample",
+        "harnessOutcome": "COMPLETED",
+        "baselineOutcome": "FAILED_VALIDATION",
+        "harnessDurationMs": 2589,
+        "baselineDurationMs": 2471,
+        "evidenceQualityDelta": 4,
+        "dispatchDelta": 2,
+        "reviewerDelta": 1,
+        "testerDelta": 0
+      },
+      {
+        "id": "Boundary sample",
+        "harnessOutcome": "COMPLETED",
+        "baselineOutcome": "FAILED_VALIDATION",
+        "harnessDurationMs": 2624,
+        "baselineDurationMs": 2604,
+        "evidenceQualityDelta": 4,
+        "dispatchDelta": 3,
+        "reviewerDelta": 1,
+        "testerDelta": 1
+      }
+    ]
+  }
+}

@@ -6,15 +6,13 @@ const http = require("http");
 const net = require("net");
 const path = require("path");
 const { spawn } = require("child_process");
+const { resolveCodexAppServerSpawnTarget } = require("./lib/harness_app_runtime");
 const { startInProcessHarnessServer } = require("./lib/in_process_harness_server");
 const { getLoggingSurfacePaths } = require("./lib/logging_surface");
 const { normalizeRequestUserInputPolicy, resolveNonInteractiveUserInput } = require("./lib/request_user_input_policy");
 
 const workspaceRoot = path.resolve(__dirname, "..");
 const loggingSurfacePaths = getLoggingSurfacePaths(workspaceRoot);
-const defaultWindowsCodexCmd = process.env.APPDATA
-  ? path.join(process.env.APPDATA, "npm", "codex.cmd")
-  : "codex.cmd";
 const smokeRequestUserInputPolicy = normalizeRequestUserInputPolicy(
   process.env.CODEX_SMOKE_REQUEST_USER_INPUT_POLICY,
   "auto-empty"
@@ -109,25 +107,6 @@ function createDeferred(name, timeoutMs) {
   };
 }
 
-function resolveAppServerSpawnTarget(cwd) {
-  if (process.platform === "win32") {
-    const cmdPath = fs.existsSync(defaultWindowsCodexCmd)
-      ? defaultWindowsCodexCmd
-      : "codex.cmd";
-    const commandLine = `"${cmdPath}" app-server`;
-    return {
-      command: commandLine,
-      args: [],
-      options: { cwd, windowsHide: true, stdio: ["pipe", "pipe", "pipe"], shell: true },
-    };
-  }
-  return {
-    command: "codex",
-    args: ["app-server"],
-    options: { cwd, windowsHide: true, stdio: ["pipe", "pipe", "pipe"] },
-  };
-}
-
 class CodexAppServerClient {
   constructor(cwd) {
     this.cwd = cwd;
@@ -142,7 +121,10 @@ class CodexAppServerClient {
 
   async start() {
     let child;
-    const spawnTarget = resolveAppServerSpawnTarget(this.cwd);
+    const spawnTarget = resolveCodexAppServerSpawnTarget({
+      cwd: this.cwd,
+      stdio: ["pipe", "pipe", "pipe"],
+    });
     try {
       child = spawn(spawnTarget.command, spawnTarget.args, spawnTarget.options);
     } catch (error) {
@@ -1251,6 +1233,20 @@ async function run() {
     ) {
       throw new Error("runtime intentFirst did not expose workspaceLock recommendation");
     }
+    if (
+      !runtimeReady.intentFirst.verificationLock ||
+      typeof runtimeReady.intentFirst.verificationLock !== "object" ||
+      runtimeReady.intentFirst.verificationLock.enabled !== true ||
+      runtimeReady.intentFirst.verificationLock.mode !== "fail_closed"
+    ) {
+      throw new Error("runtime intentFirst did not expose verificationLock fail-closed guidance");
+    }
+    if (runtimeReady.intentFirst.verificationLock.scope !== "all_design_sensitive_requests") {
+      throw new Error("runtime intentFirst did not expose verificationLock scope");
+    }
+    if (!runtimeReady.intentFirst.contract || !Array.isArray(runtimeReady.intentFirst.contract.keywords) || !runtimeReady.intentFirst.contract.keywords.length) {
+      throw new Error("runtime intentFirst did not expose contract keywords");
+    }
     const governancePolicy =
       runtimeReady && runtimeReady.governancePolicy && typeof runtimeReady.governancePolicy === "object"
         ? runtimeReady.governancePolicy
@@ -1294,7 +1290,7 @@ async function run() {
         .map((entry) => (entry && typeof entry.id === "string" ? entry.id : ""))
         .filter(Boolean)
     );
-    for (const requiredAppId of ["english-conversation-app", "talkapp"]) {
+    for (const requiredAppId of ["english-conversation-app", "talkapp", "ai-debate-chat"]) {
       if (!runtimeAppIds.has(requiredAppId)) {
         throw new Error(`runtime staticApps.apps missing ${requiredAppId}`);
       }
@@ -1318,6 +1314,12 @@ async function run() {
     if (!englishCatalogEntry || englishCatalogEntry.mountPath !== "/apps/english-conversation-app") {
       throw new Error("GET /api/apps did not expose the English app mount");
     }
+    const debateCatalogEntry = appsCatalog.json.apps.find(
+      (entry) => entry && entry.id === "ai-debate-chat"
+    );
+    if (!debateCatalogEntry || debateCatalogEntry.mountPath !== "/apps/ai-debate-chat") {
+      throw new Error("GET /api/apps did not expose the AI debate chat mount");
+    }
     const englishMountIndex = await requestHttpJson({
       method: "GET",
       path: "/apps/english-conversation-app/index.html",
@@ -1340,6 +1342,29 @@ async function run() {
       englishMountApiRuntime.json.mode !== "app-server"
     ) {
       throw new Error("GET /apps/english-conversation-app/api/runtime did not rewrite into the harness runtime");
+    }
+    const debateMountIndex = await requestHttpJson({
+      method: "GET",
+      path: "/apps/ai-debate-chat/index.html",
+      timeoutMs: 15000,
+      port: harnessPort,
+    });
+    if (debateMountIndex.statusCode !== 200 || !/AI Debate Chat|<!doctype html>|<html/i.test(debateMountIndex.raw)) {
+      throw new Error("GET /apps/ai-debate-chat/index.html did not serve the AI debate chat app");
+    }
+    const debateMountApiRuntime = await requestHttpJson({
+      method: "GET",
+      path: "/apps/ai-debate-chat/api/runtime",
+      timeoutMs: 15000,
+      port: harnessPort,
+      headers: localOriginHeaders,
+    });
+    if (
+      debateMountApiRuntime.statusCode !== 200 ||
+      !debateMountApiRuntime.json ||
+      debateMountApiRuntime.json.mode !== "app-server"
+    ) {
+      throw new Error("GET /apps/ai-debate-chat/api/runtime did not rewrite into the harness runtime");
     }
 
     console.log("[smoke] 10/25 check /api/agent-topography excludes retired worker from configured agents");

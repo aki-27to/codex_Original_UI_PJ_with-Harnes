@@ -1,17 +1,22 @@
 {
   "schema": "agi-readiness-next-bottlenecks.v1",
-  "generatedAt": "2026-04-12T08:44:28.841Z",
+  "generatedAt": "2026-04-18T06:42:34.883Z",
   "workspaceId": "5c839dfeef8b555f",
   "items": [
     {
+      "classification": "evidence bottleneck",
+      "summary": "mismatched export sessions: export_69aaf0d22042, export_b19f32facb8f",
+      "source": "memory_eval"
+    },
+    {
       "classification": "capability bottleneck",
-      "summary": "weakest family is G_breadth",
+      "summary": "weakest family is R_robust",
       "source": "agi_readiness"
     },
     {
-      "classification": "scope/coverage bottleneck",
-      "summary": "continuity carries 7 closeout debt item(s) with severity high",
-      "source": "continuity"
+      "classification": "capability bottleneck",
+      "summary": "robustness is currently limited by browser_tool_flakiness",
+      "source": "agi_readiness"
     }
   ]
 }

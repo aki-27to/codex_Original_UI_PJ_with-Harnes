@@ -1,40 +1,40 @@
 {
   "schema": "agi-readiness-robustness-breakdown.v1",
-  "generatedAt": "2026-04-12T08:44:26.942Z",
+  "generatedAt": "2026-04-18T06:42:32.308Z",
   "workspaceId": "5c839dfeef8b555f",
   "categories": [
     {
       "categoryId": "browser_tool_flakiness",
       "label": "Browser/tool flakiness handling",
-      "score": 0.418367,
-      "evidenceCount": 49,
-      "successCount": 11,
-      "failureCount": 38,
+      "score": 0.28,
+      "evidenceCount": 50,
+      "successCount": 2,
+      "failureCount": 48,
       "status": "observed",
       "recentEvidence": [
         {
-          "publicRef": "turn_b8c148597b",
-          "summary": "silent requirement rewrite"
+          "publicRef": "turn_c42b6ac6bf",
+          "summary": "return to intake required"
         },
         {
-          "publicRef": "turn_168f59ff04",
+          "publicRef": "turn_a92c99a4a0",
           "summary": "parent dispatch guard block"
         },
         {
-          "publicRef": "turn_cb39e047a7",
-          "summary": "system coherence review missing"
+          "publicRef": "turn_372f284c26",
+          "summary": "intent visual review missing"
         },
         {
-          "publicRef": "turn_eb5edcc467",
-          "summary": "system coherence review missing"
+          "publicRef": "turn_f62d3241c4",
+          "summary": "intent visual review missing"
         },
         {
-          "publicRef": "turn_b4419c34b9",
-          "summary": "system coherence review missing"
+          "publicRef": "turn_548e57d79b",
+          "summary": "parent dispatch guard block"
         },
         {
-          "publicRef": "turn_2d0b326a12",
-          "summary": "system coherence review missing"
+          "publicRef": "turn_c323c34873",
+          "summary": "intent visual review missing"
         }
       ],
       "sourceFamilies": [
@@ -44,7 +44,7 @@
         "evaluation_review"
       ],
       "remediationStatus": "running",
-      "lastRemediationAt": "2026-04-12T08:44:27.292Z",
+      "lastRemediationAt": "2026-04-18T06:42:32.807Z",
       "lastImprovementDelta": 0,
       "openFailureModes": [
         "retry budget exceeded without safe abort",
@@ -55,12 +55,16 @@
     {
       "categoryId": "ambiguous_instruction",
       "label": "Ambiguous instruction handling",
-      "score": 1,
-      "evidenceCount": 12,
+      "score": 0.942308,
+      "evidenceCount": 13,
       "successCount": 12,
-      "failureCount": 0,
+      "failureCount": 1,
       "status": "observed",
       "recentEvidence": [
+        {
+          "publicRef": "turn_72d07f222d",
+          "summary": "clarification required before implementation"
+        },
         {
           "publicRef": "eval_fea0d0742f",
           "summary": "subjective-live-ambiguous-batch-1775414363628-12"
@@ -80,17 +84,15 @@
         {
           "publicRef": "eval_a928baac8a",
           "summary": "subjective-live-ambiguous-batch-1775414356395-8"
-        },
-        {
-          "publicRef": "eval_3d4b032e71",
-          "summary": "subjective-live-ambiguous-batch-1775414354618-7"
         }
       ],
       "sourceFamilies": [
+        "web_creative",
+        "tool_use_browser_like",
         "evaluation_review"
       ],
       "remediationStatus": "passed",
-      "lastRemediationAt": "2026-04-12T08:44:27.291Z",
+      "lastRemediationAt": "2026-04-18T06:42:32.809Z",
       "lastImprovementDelta": 0,
       "openFailureModes": [
         "ambiguity not detected",

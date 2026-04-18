@@ -1,8 +1,88 @@
 {
   "schema": "agi-readiness-promotion-trend.v1",
-  "generatedAt": "2026-04-12T08:44:26.943Z",
+  "generatedAt": "2026-04-18T06:42:32.311Z",
   "workspaceId": "5c839dfeef8b555f",
   "entries": [
+    {
+      "runId": "eval-1776010435054-c9b5d194",
+      "generatedAt": "2026-04-12T16:13:58.033Z",
+      "candidateId": "candidate-main",
+      "rawFinalScore": 0.860278,
+      "displayFinalScore": 0.860278,
+      "catastrophicRisk": 0.04,
+      "headlineBreadth": 1,
+      "robustScore": 0.81,
+      "horizonScore": 0.93487,
+      "promote": null,
+      "comparisonMode": "self_snapshot",
+      "distinctComparison": false,
+      "promotionInterpretation": "not_a_distinct_incumbent_comparison",
+      "promotionEvidenceStrength": "self_snapshot_only",
+      "incumbentIdentifier": "candidate-main",
+      "challengerIdentifier": "candidate-main",
+      "blockedReasons": []
+    },
+    {
+      "runId": "eval-1776010432515-fbbb5f61",
+      "generatedAt": "2026-04-12T16:13:55.049Z",
+      "candidateId": "candidate-main",
+      "rawFinalScore": 0.726416,
+      "displayFinalScore": 0.726416,
+      "catastrophicRisk": 0.08,
+      "headlineBreadth": 1,
+      "robustScore": 0.69,
+      "horizonScore": 0.810714,
+      "promote": true,
+      "comparisonMode": "cold_start",
+      "distinctComparison": false,
+      "promotionInterpretation": "cold_start_threshold_evaluation",
+      "promotionEvidenceStrength": "cold_start_threshold_gated",
+      "incumbentIdentifier": "",
+      "challengerIdentifier": "candidate-main",
+      "blockedReasons": [
+        "cold_start_gates_and_thresholds_passed"
+      ]
+    },
+    {
+      "runId": "eval-1776009597863-124cabac",
+      "generatedAt": "2026-04-12T16:00:00.595Z",
+      "candidateId": "candidate-main",
+      "rawFinalScore": 0.860278,
+      "displayFinalScore": 0.860278,
+      "catastrophicRisk": 0.04,
+      "headlineBreadth": 1,
+      "robustScore": 0.81,
+      "horizonScore": 0.93487,
+      "promote": null,
+      "comparisonMode": "self_snapshot",
+      "distinctComparison": false,
+      "promotionInterpretation": "not_a_distinct_incumbent_comparison",
+      "promotionEvidenceStrength": "self_snapshot_only",
+      "incumbentIdentifier": "candidate-main",
+      "challengerIdentifier": "candidate-main",
+      "blockedReasons": []
+    },
+    {
+      "runId": "eval-1776009594687-8b440fe5",
+      "generatedAt": "2026-04-12T15:59:57.849Z",
+      "candidateId": "candidate-main",
+      "rawFinalScore": 0.726416,
+      "displayFinalScore": 0.726416,
+      "catastrophicRisk": 0.08,
+      "headlineBreadth": 1,
+      "robustScore": 0.69,
+      "horizonScore": 0.810714,
+      "promote": true,
+      "comparisonMode": "cold_start",
+      "distinctComparison": false,
+      "promotionInterpretation": "cold_start_threshold_evaluation",
+      "promotionEvidenceStrength": "cold_start_threshold_gated",
+      "incumbentIdentifier": "",
+      "challengerIdentifier": "candidate-main",
+      "blockedReasons": [
+        "cold_start_gates_and_thresholds_passed"
+      ]
+    },
     {
       "runId": "eval-1775415298684-6e4ae77c",
       "generatedAt": "2026-04-05T18:55:07.393Z",
@@ -175,25 +255,6 @@
       "blockedReasons": [
         "challenger_strictly_beats_incumbent_under_fail_closed_rule"
       ]
-    },
-    {
-      "runId": "eval-1775396385974-ca3d5100",
-      "generatedAt": "2026-04-05T13:39:49.968Z",
-      "candidateId": "candidate-subjective-s1",
-      "rawFinalScore": 0.97906,
-      "displayFinalScore": 0.97906,
-      "catastrophicRisk": 0.018,
-      "headlineBreadth": 1,
-      "robustScore": 0.996,
-      "horizonScore": 1,
-      "promote": false,
-      "comparisonMode": "distinct_comparison",
-      "distinctComparison": true,
-      "promotionInterpretation": "distinct_incumbent_comparison",
-      "promotionEvidenceStrength": "distinct_incumbent_challenger_decision",
-      "incumbentIdentifier": "candidate-e10",
-      "challengerIdentifier": "candidate-subjective-s1",
-      "blockedReasons": []
     }
   ]
 }

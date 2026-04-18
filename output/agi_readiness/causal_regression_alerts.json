@@ -1,68 +1,23 @@
 {
   "schema": "agi-readiness-causal-regression-alerts.v1",
-  "generatedAt": "2026-04-12T08:44:27.115Z",
+  "generatedAt": "2026-04-18T06:42:32.583Z",
   "workspaceId": "5c839dfeef8b555f",
   "harmfulCausalRatio": 1,
   "alerts": [
     {
-      "publicRef": "mem_9ec59c963c",
+      "publicRef": "mem_3bb030120d",
       "memoryType": "improvement_candidate",
       "usageMode": "remediation_hint",
       "taskRefs": [
-        "turn_17e53db613",
-        "turn_a6d9cc876c",
-        "turn_8e347cbfc6",
-        "turn_87e0d451ef",
-        "turn_9277428331",
-        "turn_a42ba99ffe"
+        "turn_12e260ac02",
+        "turn_cbfc8db38c",
+        "turn_c01089a338",
+        "turn_985413b356",
+        "turn_451848344b",
+        "turn_6868d4b0a7"
       ],
       "summary": "Designing delightful frontends with GPT-5.4 | OpenAI Developers",
-      "lastObservedAt": "2026-04-12T08:44:25.845Z"
-    },
-    {
-      "publicRef": "mem_8c8a302df5",
-      "memoryType": "semantic_lesson",
-      "usageMode": "explicit_prompt_pack",
-      "taskRefs": [
-        "turn_17e53db613",
-        "turn_a6d9cc876c",
-        "turn_8e347cbfc6",
-        "turn_87e0d451ef",
-        "turn_9277428331",
-        "turn_a42ba99ffe"
-      ],
-      "summary": "How Perplexity Brought Voice Search to Millions Using the Realtime API | OpenAI Developers",
-      "lastObservedAt": "2026-04-12T08:44:25.845Z"
-    },
-    {
-      "publicRef": "mem_2b55e90fab",
-      "memoryType": "semantic_lesson",
-      "usageMode": "explicit_prompt_pack",
-      "taskRefs": [
-        "turn_17e53db613",
-        "turn_a6d9cc876c",
-        "turn_8e347cbfc6",
-        "turn_87e0d451ef",
-        "turn_9277428331",
-        "turn_a42ba99ffe"
-      ],
-      "summary": "Designing delightful frontends with GPT-5.4 | OpenAI Developers",
-      "lastObservedAt": "2026-04-12T08:44:25.845Z"
-    },
-    {
-      "publicRef": "mem_2b5b766ebf",
-      "memoryType": "semantic_lesson",
-      "usageMode": "explicit_prompt_pack",
-      "taskRefs": [
-        "turn_17e53db613",
-        "turn_a6d9cc876c",
-        "turn_8e347cbfc6",
-        "turn_87e0d451ef",
-        "turn_9277428331",
-        "turn_a42ba99ffe"
-      ],
-      "summary": "From prompts to products: One year of Responses | OpenAI Developers",
-      "lastObservedAt": "2026-04-12T08:44:25.845Z"
+      "lastObservedAt": "2026-04-18T06:42:30.582Z"
     }
   ]
 }

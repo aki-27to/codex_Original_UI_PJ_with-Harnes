@@ -1,33 +1,38 @@
 {
   "schema": "flow-trace-summary.v1",
-  "generatedAt": "2026-03-09T12:45:14.080Z",
+  "generatedAt": "2026-04-18T05:29:01.580Z",
   "selectedPlanningMode": "NORMAL",
   "selectedPlanningDepth": "STANDARD_PLANNING",
   "selectedAssuranceDepth": "SIGNOFF_ASSURANCE",
   "planningModeReasons": [
+    "taskFamily=planning_design",
+    "familyAmbiguityHandling=surface_decisions",
     "ambiguity=2",
-    "acceptance_uncertainty=0",
+    "acceptance_uncertainty=1",
     "novelty=2",
     "external_dependency=0",
     "openQuestions=0",
-    "acceptanceClarity=high",
+    "acceptanceClarity=medium",
     "specialistBoundaries=4",
     "approvalBoundaryTouched=no",
     "overDeliveryRisk=medium",
     "userDecisionRequired=no",
-    "assumptionDependence=low",
-    "existingSpecClarity=high",
-    "changeScopeClarity=medium"
+    "clarificationAction=proceed",
+    "clarificationReason=task_family_not_design_sensitive",
+    "benchmarkCandidates=0",
+    "assumptionDependence=low"
   ],
   "assuranceDepthReasons": [
     "blast_radius=2",
     "irreversibility=0",
     "release_criticality=2",
     "evidence_burden=2",
-    "changeKinds=runtime|governance",
+    "changeKinds=runtime",
     "reviewerSuggested=yes",
     "testerSuggested=yes",
     "signoffImportance=high",
+    "benchmarkAnchored=no",
+    "strictBenchmarkRecreation=no",
     "irreversibleRisk=no",
     "newLogicRisk=no",
     "regressionRisk=high"
@@ -36,10 +41,9 @@
   "executionFlow": "STANDARD_PLANNING+SIGNOFF_ASSURANCE",
   "usedAgents": [
     "default",
-    "019cd29a-f8a4-7da3-a69a-c2736093d787",
-    "019cd29d-26f3-71d0-90e2-4ca0a908b341",
-    "019cd29d-3bd2-7ff3-bc7b-08d80dafabcc",
-    "unknown"
+    "mock-thread-4-infra",
+    "mock-thread-4-reviewer",
+    "mock-thread-4-tester"
   ],
   "dispatchCount": 3,
   "dispatchSuccessCount": 3,
@@ -67,9 +71,9 @@
     "parentDispatchReason": ""
   },
   "acceptanceSummary": {
-    "passCount": 8,
+    "passCount": 1,
     "failCount": 0,
-    "total": 8
+    "total": 1
   },
   "evidenceSources": [
     "events.ndjson",
@@ -82,66 +86,55 @@
   ],
   "childEvidenceLedger": [
     {
-      "agent": "019cd29a-f8a4-7da3-a69a-c2736093d787",
-      "dispatchCount": 1,
+      "agent": "mock-thread-4-infra",
+      "dispatchCount": 2,
       "completedCount": 1,
-      "failedCount": 0,
-      "ownedPaths": [],
-      "skills": [],
-      "evidenceNotes": [],
-      "reviewerObserved": 0,
-      "testerObserved": 0,
-      "firstSeenAt": 1773059902691,
-      "lastSeenAt": 1773059902691
-    },
-    {
-      "agent": "019cd29d-26f3-71d0-90e2-4ca0a908b341",
-      "dispatchCount": 1,
-      "completedCount": 1,
-      "failedCount": 0,
-      "ownedPaths": [],
-      "skills": [],
-      "evidenceNotes": [],
-      "reviewerObserved": 0,
-      "testerObserved": 0,
-      "firstSeenAt": 1773060045656,
-      "lastSeenAt": 1773060045656
-    },
-    {
-      "agent": "019cd29d-3bd2-7ff3-bc7b-08d80dafabcc",
-      "dispatchCount": 1,
-      "completedCount": 1,
-      "failedCount": 0,
-      "ownedPaths": [],
-      "skills": [],
-      "evidenceNotes": [],
-      "reviewerObserved": 0,
-      "testerObserved": 0,
-      "firstSeenAt": 1773060051050,
-      "lastSeenAt": 1773060051050
-    },
-    {
-      "agent": "unknown",
-      "dispatchCount": 25,
-      "completedCount": 11,
       "failedCount": 0,
       "ownedPaths": [
-        "logs/bundles/signoff/signoff-2026-03-09T12-31-59-842Z-24dd95/raw/scripts/config/signoff_sample_target.txt",
+        "logs/bundles/signoff/signoff-2026-04-18T05-27-13-996Z-f97810/raw/scripts/config/signoff_sample_target.txt",
         "docs/EVIDENCE_CONTRACT.md",
         "docs/CURRENT_ARCHITECTURE.md",
-        "docs/ARCHITECTURE_CHANGELOG.md"
+        "docs/ARCHITECTURE_CHANGELOG.md",
+        "Applied requested signoff assurance updates."
       ],
       "skills": [],
       "evidenceNotes": [
-        "SIGNOFF_TASK_OK logs/bundles/signoff/signoff-2026-03-09T12-31-59-842Z-24dd95/raw/scripts/config/signoff_sample_target.txt",
-        "Owned paths:\n- logs\\bundles\\signoff\\signoff-2026-03-09T12-31-59-842Z-24dd95\\raw\\scripts\\config\\signoff_sample_target.txt\n- docs\\EVIDENCE_CONTRACT.md\n- docs\\CURRENT_",
-        "Findings: none\nRead-only: yes\nAcceptance: the scoped acceptance criteria appear satisfied in the current file state.",
-        "- `Read-only: yes`\n- `gate signed: PASS`\n- `evidence contract bullet present: PASS`\n- `architecture bullet present: PASS`\n- `changelog line present: PASS`\n- `overall: PASS`"
+        "Owned paths:\n- logs/bundles/signoff/signoff-2026-04-18T05-27-13-996Z-f97810/raw/scripts/config/signoff_sample_target.txt\n- docs/EVIDENCE_CONTRACT.md\n- docs/CURRENT_ARCHITECTURE.md\n- docs/ARCHITECTURE_CHANGELOG.md\nApplied requested signoff assurance updates."
+      ],
+      "reviewerObserved": 0,
+      "testerObserved": 0,
+      "firstSeenAt": 1776490139260,
+      "lastSeenAt": 1776490139261
+    },
+    {
+      "agent": "mock-thread-4-reviewer",
+      "dispatchCount": 2,
+      "completedCount": 1,
+      "failedCount": 0,
+      "ownedPaths": [],
+      "skills": [],
+      "evidenceNotes": [
+        "No findings."
+      ],
+      "reviewerObserved": 1,
+      "testerObserved": 0,
+      "firstSeenAt": 1776490139269,
+      "lastSeenAt": 1776490139270
+    },
+    {
+      "agent": "mock-thread-4-tester",
+      "dispatchCount": 2,
+      "completedCount": 1,
+      "failedCount": 0,
+      "ownedPaths": [],
+      "skills": [],
+      "evidenceNotes": [
+        "PASS: reviewer/tester/doc-sync evidence present."
       ],
       "reviewerObserved": 1,
       "testerObserved": 1,
-      "firstSeenAt": 1773059896612,
-      "lastSeenAt": 1773060299256
+      "firstSeenAt": 1776490139271,
+      "lastSeenAt": 1776490139272
     }
   ],
   "docSyncEvidence": {
@@ -156,7 +149,758 @@
     "harnessMapUpdated": 0,
     "missing": []
   },
+  "familyCompletionGate": {
+    "applies": false,
+    "taskFamily": "planning_design",
+    "familyProfileId": "planning_design",
+    "completionContract": "task_outcome_default",
+    "status": "not_applicable",
+    "summary": "Family completion gate not applicable.",
+    "missingHard": [],
+    "executionSource": "signoff_evidence_script",
+    "workspaceLockRequired": false,
+    "workspaceLockedObserved": true
+  },
+  "runtimeRevisionGate": {
+    "status": "CLEAR",
+    "reason": "no_revision_gate",
+    "proposal": {
+      "proposalId": "",
+      "changedFields": [],
+      "reason": "",
+      "evidence": [],
+      "requiresReapproval": false,
+      "originatingAgent": "default",
+      "status": "",
+      "summary": "",
+      "previousPromptHash": "",
+      "currentPromptHash": "",
+      "createdFromRevisionNumber": 0,
+      "reviewedBy": "",
+      "reviewedAt": ""
+    },
+    "enforceFinalStatus": "",
+    "taskOutcomeStatus": "",
+    "taskOutcomeReason": ""
+  },
+  "postLockDrift": {
+    "schema": "post-lock-drift.v1",
+    "status": "PASS",
+    "reason": "no_drift",
+    "planningDepth": "STANDARD_PLANNING",
+    "assuranceDepth": "SIGNOFF_ASSURANCE",
+    "flowPath": "NORMAL_PATH",
+    "counts": {
+      "totalClauses": 17,
+      "coreClauseCount": 17,
+      "coreMappedCount": 17,
+      "coreUnmappedCount": 0,
+      "dispatchCount": 2,
+      "planStepCount": 3,
+      "dispatchCoveredCoreCount": 17,
+      "planCoveredCoreCount": 17,
+      "fullyCoveredCoreCount": 17,
+      "acceptanceLinkedCoreCount": 17,
+      "dispatchGapCount": 0,
+      "planGapCount": 0,
+      "driftedClauseCount": 0,
+      "orphanDispatchCount": 0,
+      "orphanPlanStepCount": 0
+    },
+    "rates": {
+      "dispatchCoverageRate": 1,
+      "planCoverageRate": 1,
+      "fullCoverageRate": 1,
+      "driftRate": 0
+    },
+    "unmappedCoreClauseIds": [],
+    "dispatchGapClauseIds": [],
+    "planGapClauseIds": [],
+    "driftedClauseIds": [],
+    "orphanDispatchIds": [],
+    "orphanPlanStepIds": [],
+    "driftedClauses": []
+  },
+  "clauseCompletionScorecard": {
+    "schema": "clause-completion-scorecard.v1",
+    "status": "PASS",
+    "reason": "all_core_clauses_satisfied",
+    "summary": {
+      "coreTotal": 17,
+      "satisfiedCount": 17,
+      "unsatisfiedCount": 0,
+      "waivedCount": 0
+    },
+    "clauses": [
+      {
+        "clauseId": "req-1",
+        "text": "Implementation is explicitly requested now.Requirements are fixed.Do not switch to proposal-only mode and do not ask follow-up questions.",
+        "status": "satisfied",
+        "requirementRefs": [
+          "explicitGoal",
+          "intentHypotheses",
+          "baselineScope",
+          "userValueFrame.userWants",
+          "userValueFrame.hardConstraints",
+          "userValueFrame.mustAvoid"
+        ],
+        "dispatchIds": [
+          "dispatch-1-backend_worker",
+          "dispatch-2-infra_worker"
+        ],
+        "planStepIds": [
+          "execution",
+          "quality",
+          "report"
+        ],
+        "acceptanceRefs": [
+          "ac-1"
+        ],
+        "evidenceRefs": [
+          "dispatch:dispatch-1-backend_worker",
+          "dispatch:dispatch-2-infra_worker",
+          "plan:execution",
+          "plan:quality",
+          "plan:report",
+          "mock-thread-4-reviewer",
+          "mock-thread-4-tester",
+          "docs/CURRENT_ARCHITECTURE.md",
+          "docs/ARCHITECTURE_CHANGELOG.md",
+          "review:mock-thread-4-reviewer",
+          "review:mock-thread-4-tester",
+          "test:mock-thread-4-tester",
+          "flow_trace_summary.json"
+        ],
+        "reasons": [],
+        "finalStatus": "completed",
+        "taskOutcomeStatus": "COMPLETED"
+      },
+      {
+        "clauseId": "req-2",
+        "text": "Use the default parent orchestration path.",
+        "status": "satisfied",
+        "requirementRefs": [
+          "baselineScope",
+          "userValueFrame.userWants"
+        ],
+        "dispatchIds": [
+          "dispatch-1-backend_worker",
+          "dispatch-2-infra_worker"
+        ],
+        "planStepIds": [
+          "execution",
+          "quality",
+          "report"
+        ],
+        "acceptanceRefs": [
+          "ac-1"
+        ],
+        "evidenceRefs": [
+          "dispatch:dispatch-1-backend_worker",
+          "dispatch:dispatch-2-infra_worker",
+          "plan:execution",
+          "plan:quality",
+          "plan:report",
+          "mock-thread-4-reviewer",
+          "mock-thread-4-tester",
+          "docs/CURRENT_ARCHITECTURE.md",
+          "docs/ARCHITECTURE_CHANGELOG.md",
+          "review:mock-thread-4-reviewer",
+          "review:mock-thread-4-tester",
+          "test:mock-thread-4-tester",
+          "flow_trace_summary.json"
+        ],
+        "reasons": [],
+        "finalStatus": "completed",
+        "taskOutcomeStatus": "COMPLETED"
+      },
+      {
+        "clauseId": "req-3",
+        "text": "Delegate the implementation edits to infra_worker.",
+        "status": "satisfied",
+        "requirementRefs": [
+          "baselineScope",
+          "userValueFrame.userWants"
+        ],
+        "dispatchIds": [
+          "dispatch-1-backend_worker",
+          "dispatch-2-infra_worker"
+        ],
+        "planStepIds": [
+          "execution",
+          "quality",
+          "report"
+        ],
+        "acceptanceRefs": [
+          "ac-1"
+        ],
+        "evidenceRefs": [
+          "dispatch:dispatch-1-backend_worker",
+          "dispatch:dispatch-2-infra_worker",
+          "plan:execution",
+          "plan:quality",
+          "plan:report",
+          "mock-thread-4-reviewer",
+          "mock-thread-4-tester",
+          "docs/CURRENT_ARCHITECTURE.md",
+          "docs/ARCHITECTURE_CHANGELOG.md",
+          "review:mock-thread-4-reviewer",
+          "review:mock-thread-4-tester",
+          "test:mock-thread-4-tester",
+          "flow_trace_summary.json"
+        ],
+        "reasons": [],
+        "finalStatus": "completed",
+        "taskOutcomeStatus": "COMPLETED"
+      },
+      {
+        "clauseId": "req-4",
+        "text": "Request independent read-only reviewer and tester checks before finalizing.",
+        "status": "satisfied",
+        "requirementRefs": [
+          "baselineScope",
+          "userValueFrame.userWants",
+          "userValueFrame.hardConstraints"
+        ],
+        "dispatchIds": [
+          "dispatch-1-backend_worker",
+          "dispatch-2-infra_worker"
+        ],
+        "planStepIds": [
+          "execution",
+          "quality",
+          "report"
+        ],
+        "acceptanceRefs": [
+          "ac-1"
+        ],
+        "evidenceRefs": [
+          "dispatch:dispatch-1-backend_worker",
+          "dispatch:dispatch-2-infra_worker",
+          "plan:execution",
+          "plan:quality",
+          "plan:report",
+          "mock-thread-4-reviewer",
+          "mock-thread-4-tester",
+          "docs/CURRENT_ARCHITECTURE.md",
+          "docs/ARCHITECTURE_CHANGELOG.md",
+          "review:mock-thread-4-reviewer",
+          "review:mock-thread-4-tester",
+          "test:mock-thread-4-tester",
+          "flow_trace_summary.json"
+        ],
+        "reasons": [],
+        "finalStatus": "completed",
+        "taskOutcomeStatus": "COMPLETED"
+      },
+      {
+        "clauseId": "req-5",
+        "text": "Change logs/bundles/signoff/signoff-2026-04-18T05-27-13-996Z-f97810/raw/scripts/config/signoff_sample_target.txt, docs/EVIDENCE_CONTRACT.md, docs/CURRENT_ARCHITECTURE.md, and docs/ARCHITECTURE_CHANGELOG.md.",
+        "status": "satisfied",
+        "requirementRefs": [
+          "baselineScope",
+          "userValueFrame.userWants"
+        ],
+        "dispatchIds": [
+          "dispatch-1-backend_worker",
+          "dispatch-2-infra_worker"
+        ],
+        "planStepIds": [
+          "execution",
+          "quality",
+          "report"
+        ],
+        "acceptanceRefs": [
+          "ac-1"
+        ],
+        "evidenceRefs": [
+          "dispatch:dispatch-1-backend_worker",
+          "dispatch:dispatch-2-infra_worker",
+          "plan:execution",
+          "plan:quality",
+          "plan:report",
+          "mock-thread-4-reviewer",
+          "mock-thread-4-tester",
+          "docs/CURRENT_ARCHITECTURE.md",
+          "docs/ARCHITECTURE_CHANGELOG.md",
+          "review:mock-thread-4-reviewer",
+          "review:mock-thread-4-tester",
+          "test:mock-thread-4-tester",
+          "flow_trace_summary.json"
+        ],
+        "reasons": [],
+        "finalStatus": "completed",
+        "taskOutcomeStatus": "COMPLETED"
+      },
+      {
+        "clauseId": "req-6",
+        "text": "Do not modify any other file and do not revert unrelated edits.",
+        "status": "satisfied",
+        "requirementRefs": [
+          "baselineScope",
+          "userValueFrame.userWants",
+          "userValueFrame.hardConstraints",
+          "userValueFrame.mustAvoid"
+        ],
+        "dispatchIds": [
+          "dispatch-1-backend_worker",
+          "dispatch-2-infra_worker"
+        ],
+        "planStepIds": [
+          "execution",
+          "quality",
+          "report"
+        ],
+        "acceptanceRefs": [
+          "ac-1"
+        ],
+        "evidenceRefs": [
+          "dispatch:dispatch-1-backend_worker",
+          "dispatch:dispatch-2-infra_worker",
+          "plan:execution",
+          "plan:quality",
+          "plan:report",
+          "mock-thread-4-reviewer",
+          "mock-thread-4-tester",
+          "docs/CURRENT_ARCHITECTURE.md",
+          "docs/ARCHITECTURE_CHANGELOG.md",
+          "review:mock-thread-4-reviewer",
+          "review:mock-thread-4-tester",
+          "test:mock-thread-4-tester",
+          "flow_trace_summary.json"
+        ],
+        "reasons": [],
+        "finalStatus": "completed",
+        "taskOutcomeStatus": "COMPLETED"
+      },
+      {
+        "clauseId": "req-7",
+        "text": "Use apply_patch for file edits.",
+        "status": "satisfied",
+        "requirementRefs": [
+          "baselineScope",
+          "userValueFrame.userWants"
+        ],
+        "dispatchIds": [
+          "dispatch-1-backend_worker",
+          "dispatch-2-infra_worker"
+        ],
+        "planStepIds": [
+          "execution",
+          "quality",
+          "report"
+        ],
+        "acceptanceRefs": [
+          "ac-1"
+        ],
+        "evidenceRefs": [
+          "dispatch:dispatch-1-backend_worker",
+          "dispatch:dispatch-2-infra_worker",
+          "plan:execution",
+          "plan:quality",
+          "plan:report",
+          "mock-thread-4-reviewer",
+          "mock-thread-4-tester",
+          "docs/CURRENT_ARCHITECTURE.md",
+          "docs/ARCHITECTURE_CHANGELOG.md",
+          "review:mock-thread-4-reviewer",
+          "review:mock-thread-4-tester",
+          "test:mock-thread-4-tester",
+          "flow_trace_summary.json"
+        ],
+        "reasons": [],
+        "finalStatus": "completed",
+        "taskOutcomeStatus": "COMPLETED"
+      },
+      {
+        "clauseId": "req-8",
+        "text": "The implementation specialist must report using this exact header format:",
+        "status": "satisfied",
+        "requirementRefs": [
+          "baselineScope",
+          "userValueFrame.hardConstraints"
+        ],
+        "dispatchIds": [
+          "dispatch-1-backend_worker",
+          "dispatch-2-infra_worker"
+        ],
+        "planStepIds": [
+          "execution",
+          "quality",
+          "report"
+        ],
+        "acceptanceRefs": [
+          "ac-1"
+        ],
+        "evidenceRefs": [
+          "dispatch:dispatch-1-backend_worker",
+          "dispatch:dispatch-2-infra_worker",
+          "plan:execution",
+          "plan:quality",
+          "plan:report",
+          "mock-thread-4-reviewer",
+          "mock-thread-4-tester",
+          "docs/CURRENT_ARCHITECTURE.md",
+          "docs/ARCHITECTURE_CHANGELOG.md",
+          "review:mock-thread-4-reviewer",
+          "review:mock-thread-4-tester",
+          "test:mock-thread-4-tester",
+          "flow_trace_summary.json"
+        ],
+        "reasons": [],
+        "finalStatus": "completed",
+        "taskOutcomeStatus": "COMPLETED"
+      },
+      {
+        "clauseId": "req-9",
+        "text": "Owned paths:",
+        "status": "satisfied",
+        "requirementRefs": [
+          "baselineScope"
+        ],
+        "dispatchIds": [
+          "dispatch-1-backend_worker",
+          "dispatch-2-infra_worker"
+        ],
+        "planStepIds": [
+          "execution",
+          "quality",
+          "report"
+        ],
+        "acceptanceRefs": [
+          "ac-1"
+        ],
+        "evidenceRefs": [
+          "dispatch:dispatch-1-backend_worker",
+          "dispatch:dispatch-2-infra_worker",
+          "plan:execution",
+          "plan:quality",
+          "plan:report",
+          "mock-thread-4-reviewer",
+          "mock-thread-4-tester",
+          "docs/CURRENT_ARCHITECTURE.md",
+          "docs/ARCHITECTURE_CHANGELOG.md",
+          "review:mock-thread-4-reviewer",
+          "review:mock-thread-4-tester",
+          "test:mock-thread-4-tester",
+          "flow_trace_summary.json"
+        ],
+        "reasons": [],
+        "finalStatus": "completed",
+        "taskOutcomeStatus": "COMPLETED"
+      },
+      {
+        "clauseId": "req-10",
+        "text": "`<absolute path>`",
+        "status": "satisfied",
+        "requirementRefs": [
+          "baselineScope"
+        ],
+        "dispatchIds": [
+          "dispatch-1-backend_worker",
+          "dispatch-2-infra_worker"
+        ],
+        "planStepIds": [
+          "execution",
+          "quality",
+          "report"
+        ],
+        "acceptanceRefs": [
+          "ac-1"
+        ],
+        "evidenceRefs": [
+          "dispatch:dispatch-1-backend_worker",
+          "dispatch:dispatch-2-infra_worker",
+          "plan:execution",
+          "plan:quality",
+          "plan:report",
+          "mock-thread-4-reviewer",
+          "mock-thread-4-tester",
+          "docs/CURRENT_ARCHITECTURE.md",
+          "docs/ARCHITECTURE_CHANGELOG.md",
+          "review:mock-thread-4-reviewer",
+          "review:mock-thread-4-tester",
+          "test:mock-thread-4-tester",
+          "flow_trace_summary.json"
+        ],
+        "reasons": [],
+        "finalStatus": "completed",
+        "taskOutcomeStatus": "COMPLETED"
+      },
+      {
+        "clauseId": "req-11",
+        "text": "In logs/bundles/signoff/signoff-2026-04-18T05-27-13-996Z-f97810/raw/scripts/config/signoff_sample_target.txt, replace the single line `gate: pending` with `gate: signed`.",
+        "status": "satisfied",
+        "requirementRefs": [
+          "baselineScope"
+        ],
+        "dispatchIds": [
+          "dispatch-1-backend_worker",
+          "dispatch-2-infra_worker"
+        ],
+        "planStepIds": [
+          "execution",
+          "quality",
+          "report"
+        ],
+        "acceptanceRefs": [
+          "ac-1"
+        ],
+        "evidenceRefs": [
+          "dispatch:dispatch-1-backend_worker",
+          "dispatch:dispatch-2-infra_worker",
+          "plan:execution",
+          "plan:quality",
+          "plan:report",
+          "mock-thread-4-reviewer",
+          "mock-thread-4-tester",
+          "docs/CURRENT_ARCHITECTURE.md",
+          "docs/ARCHITECTURE_CHANGELOG.md",
+          "review:mock-thread-4-reviewer",
+          "review:mock-thread-4-tester",
+          "test:mock-thread-4-tester",
+          "flow_trace_summary.json"
+        ],
+        "reasons": [],
+        "finalStatus": "completed",
+        "taskOutcomeStatus": "COMPLETED"
+      },
+      {
+        "clauseId": "req-12",
+        "text": "In docs/EVIDENCE_CONTRACT.md, add this exact bullet if it is not already present: - `SIGNOFF_ASSURANCE` runs should surface reviewer/tester/doc-sync status in `review_load_breakdown.json` for operator signoff.",
+        "status": "satisfied",
+        "requirementRefs": [
+          "baselineScope"
+        ],
+        "dispatchIds": [
+          "dispatch-1-backend_worker",
+          "dispatch-2-infra_worker"
+        ],
+        "planStepIds": [
+          "execution",
+          "quality",
+          "report"
+        ],
+        "acceptanceRefs": [
+          "ac-1"
+        ],
+        "evidenceRefs": [
+          "dispatch:dispatch-1-backend_worker",
+          "dispatch:dispatch-2-infra_worker",
+          "plan:execution",
+          "plan:quality",
+          "plan:report",
+          "mock-thread-4-reviewer",
+          "mock-thread-4-tester",
+          "docs/CURRENT_ARCHITECTURE.md",
+          "docs/ARCHITECTURE_CHANGELOG.md",
+          "review:mock-thread-4-reviewer",
+          "review:mock-thread-4-tester",
+          "test:mock-thread-4-tester",
+          "flow_trace_summary.json"
+        ],
+        "reasons": [],
+        "finalStatus": "completed",
+        "taskOutcomeStatus": "COMPLETED"
+      },
+      {
+        "clauseId": "req-13",
+        "text": "In docs/CURRENT_ARCHITECTURE.md, add this exact architecture bullet if it is not already present: - `SIGNOFF_ASSURANCE` sample runs keep reviewer/tester execution and doc-sync evidence co-located in signoff bundles.",
+        "status": "satisfied",
+        "requirementRefs": [
+          "baselineScope",
+          "userValueFrame.hardConstraints"
+        ],
+        "dispatchIds": [
+          "dispatch-1-backend_worker",
+          "dispatch-2-infra_worker"
+        ],
+        "planStepIds": [
+          "execution",
+          "quality",
+          "report"
+        ],
+        "acceptanceRefs": [
+          "ac-1"
+        ],
+        "evidenceRefs": [
+          "dispatch:dispatch-1-backend_worker",
+          "dispatch:dispatch-2-infra_worker",
+          "plan:execution",
+          "plan:quality",
+          "plan:report",
+          "mock-thread-4-reviewer",
+          "mock-thread-4-tester",
+          "docs/CURRENT_ARCHITECTURE.md",
+          "docs/ARCHITECTURE_CHANGELOG.md",
+          "review:mock-thread-4-reviewer",
+          "review:mock-thread-4-tester",
+          "test:mock-thread-4-tester",
+          "flow_trace_summary.json"
+        ],
+        "reasons": [],
+        "finalStatus": "completed",
+        "taskOutcomeStatus": "COMPLETED"
+      },
+      {
+        "clauseId": "req-14",
+        "text": "In docs/ARCHITECTURE_CHANGELOG.md, add this exact changelog line if it is not already present: - 2026-03-08: Added signoff assurance sample evidence wiring for planning/assurance trace and doc-sync bundle checks.",
+        "status": "satisfied",
+        "requirementRefs": [
+          "baselineScope"
+        ],
+        "dispatchIds": [
+          "dispatch-1-backend_worker",
+          "dispatch-2-infra_worker"
+        ],
+        "planStepIds": [
+          "execution",
+          "quality",
+          "report"
+        ],
+        "acceptanceRefs": [
+          "ac-1"
+        ],
+        "evidenceRefs": [
+          "dispatch:dispatch-1-backend_worker",
+          "dispatch:dispatch-2-infra_worker",
+          "plan:execution",
+          "plan:quality",
+          "plan:report",
+          "mock-thread-4-reviewer",
+          "mock-thread-4-tester",
+          "docs/CURRENT_ARCHITECTURE.md",
+          "docs/ARCHITECTURE_CHANGELOG.md",
+          "review:mock-thread-4-reviewer",
+          "review:mock-thread-4-tester",
+          "test:mock-thread-4-tester",
+          "flow_trace_summary.json"
+        ],
+        "reasons": [],
+        "finalStatus": "completed",
+        "taskOutcomeStatus": "COMPLETED"
+      },
+      {
+        "clauseId": "req-15",
+        "text": "Return with exactly: SIGNOFF_TASK_OK logs/bundles/signoff/signoff-2026-04-18T05-27-13-996Z-f97810/raw/scripts/config/signoff_sample_target.txt.",
+        "status": "satisfied",
+        "requirementRefs": [
+          "baselineScope",
+          "userValueFrame.hardConstraints"
+        ],
+        "dispatchIds": [
+          "dispatch-1-backend_worker",
+          "dispatch-2-infra_worker"
+        ],
+        "planStepIds": [
+          "execution",
+          "quality",
+          "report"
+        ],
+        "acceptanceRefs": [
+          "ac-1"
+        ],
+        "evidenceRefs": [
+          "dispatch:dispatch-1-backend_worker",
+          "dispatch:dispatch-2-infra_worker",
+          "plan:execution",
+          "plan:quality",
+          "plan:report",
+          "mock-thread-4-reviewer",
+          "mock-thread-4-tester",
+          "docs/CURRENT_ARCHITECTURE.md",
+          "docs/ARCHITECTURE_CHANGELOG.md",
+          "review:mock-thread-4-reviewer",
+          "review:mock-thread-4-tester",
+          "test:mock-thread-4-tester",
+          "flow_trace_summary.json"
+        ],
+        "reasons": [],
+        "finalStatus": "completed",
+        "taskOutcomeStatus": "COMPLETED"
+      },
+      {
+        "clauseId": "req-16",
+        "text": "No follow-up questions are required.",
+        "status": "satisfied",
+        "requirementRefs": [
+          "baselineScope",
+          "userValueFrame.hardConstraints"
+        ],
+        "dispatchIds": [
+          "dispatch-1-backend_worker",
+          "dispatch-2-infra_worker"
+        ],
+        "planStepIds": [
+          "execution",
+          "quality",
+          "report"
+        ],
+        "acceptanceRefs": [
+          "ac-1"
+        ],
+        "evidenceRefs": [
+          "dispatch:dispatch-1-backend_worker",
+          "dispatch:dispatch-2-infra_worker",
+          "plan:execution",
+          "plan:quality",
+          "plan:report",
+          "mock-thread-4-reviewer",
+          "mock-thread-4-tester",
+          "docs/CURRENT_ARCHITECTURE.md",
+          "docs/ARCHITECTURE_CHANGELOG.md",
+          "review:mock-thread-4-reviewer",
+          "review:mock-thread-4-tester",
+          "test:mock-thread-4-tester",
+          "flow_trace_summary.json"
+        ],
+        "reasons": [],
+        "finalStatus": "completed",
+        "taskOutcomeStatus": "COMPLETED"
+      },
+      {
+        "clauseId": "req-17",
+        "text": "Requested signoff edits, reviewer/tester evidence, and doc-sync evidence are all present.",
+        "status": "satisfied",
+        "requirementRefs": [
+          "acceptanceChecks",
+          "userValueFrame.completedMeans"
+        ],
+        "dispatchIds": [
+          "dispatch-1-backend_worker",
+          "dispatch-2-infra_worker"
+        ],
+        "planStepIds": [
+          "execution",
+          "quality",
+          "report"
+        ],
+        "acceptanceRefs": [
+          "ac-1"
+        ],
+        "evidenceRefs": [
+          "dispatch:dispatch-1-backend_worker",
+          "dispatch:dispatch-2-infra_worker",
+          "plan:execution",
+          "plan:quality",
+          "plan:report",
+          "mock-thread-4-reviewer",
+          "mock-thread-4-tester",
+          "docs/CURRENT_ARCHITECTURE.md",
+          "docs/ARCHITECTURE_CHANGELOG.md",
+          "review:mock-thread-4-reviewer",
+          "review:mock-thread-4-tester",
+          "test:mock-thread-4-tester",
+          "flow_trace_summary.json"
+        ],
+        "reasons": [],
+        "finalStatus": "completed",
+        "taskOutcomeStatus": "COMPLETED"
+      }
+    ]
+  },
   "residualRiskSummary": [
+    "Dense, interrupted, critical, and longest-copy states must be visually checked for overflow, clipping, collisions, and copy-fit before signoff.",
     "New logic or protocol-sensitive behavior requires dedicated verification before signoff."
   ]
 }

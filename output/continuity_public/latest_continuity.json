@@ -1,6 +1,6 @@
 {
   "schema": "continuity-public-summary.v1",
-  "generatedAt": "2026-04-12T08:44:27.357Z",
+  "generatedAt": "2026-04-18T06:42:32.901Z",
   "workspaceId": "5c839dfeef8b555f",
   "activeAgentTree": {
     "schema": "bounded-agent-graph.v1",
@@ -68,23 +68,12 @@
     "orphanChildTaskIds": [],
     "generatedAt": "2026-03-31T22:25:29.949Z"
   },
-  "handoffCount": 401,
+  "handoffCount": 449,
   "blockedSubtasks": 0,
   "verifierFailedSubtasks": 0,
   "integrationPendingCount": 0,
   "finalReleaseState": "integrated",
   "roleMemoryPackSections": {
-    "intake": {
-      "spec": 4,
-      "intent": 1,
-      "workspace_progress": 1,
-      "experience": 0,
-      "semantic": 3,
-      "procedure": 0,
-      "evaluation": 0,
-      "preference": 0,
-      "improvement": 0
-    },
     "default": {
       "spec": 4,
       "intent": 1,
@@ -93,7 +82,7 @@
       "semantic": 3,
       "procedure": 0,
       "evaluation": 0,
-      "preference": 0,
+      "preference": 1,
       "improvement": 1
     },
     "coordinator": {
@@ -130,17 +119,15 @@
       "logs/archive/raw/runtime_state/continuity/tasks/phase4-failure-<opaque-id>/agent_graph.json"
     ]
   },
-  "blockedReasonClasses": [
-    "verifier_failed"
-  ],
+  "blockedReasonClasses": [],
   "pendingIntegrationReasons": [],
-  "remediationLinkedTaskCount": 9,
-  "autoClosedBlockedCount": 24,
-  "openDebtCount": 7,
-  "debtSeverity": "high",
+  "remediationLinkedTaskCount": 15,
+  "autoClosedBlockedCount": 42,
+  "openDebtCount": 0,
+  "debtSeverity": "none",
   "selfAuthoredTaskFlow": {
     "selfAuthoredGoalCountWindow": 19,
-    "positiveClosureCountWindow": 1,
+    "positiveClosureCountWindow": 2,
     "latestRoleMix": [
       "default",
       "frontend_worker",

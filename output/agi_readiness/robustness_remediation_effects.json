@@ -1,14 +1,14 @@
 {
   "schema": "agi-readiness-robustness-remediation-effects.v1",
-  "generatedAt": "2026-04-12T08:44:27.358Z",
+  "generatedAt": "2026-04-18T06:42:32.903Z",
   "workspaceId": "5c839dfeef8b555f",
   "entries": [
     {
       "categoryId": "browser_tool_flakiness",
       "remediationStatus": "running",
       "remediationEffect": "pending",
-      "evidenceCount": 49,
-      "score": 0.418367,
+      "evidenceCount": 50,
+      "score": 0.28,
       "lastImprovementDelta": 0,
       "agendaRef": "<agenda-ref>"
     },
@@ -16,8 +16,8 @@
       "categoryId": "ambiguous_instruction",
       "remediationStatus": "passed",
       "remediationEffect": "verified_positive",
-      "evidenceCount": 12,
-      "score": 1,
+      "evidenceCount": 13,
+      "score": 0.942308,
       "lastImprovementDelta": 0,
       "agendaRef": "<agenda-ref>"
     },
@@ -54,8 +54,8 @@
       "categoryId": "browser_tool_flakiness",
       "remediationStatus": "running",
       "remediationEffect": "pending",
-      "evidenceCount": 49,
-      "score": 0.418367,
+      "evidenceCount": 50,
+      "score": 0.28,
       "lastImprovementDelta": 0,
       "agendaRef": "<agenda-ref>"
     },
@@ -63,8 +63,8 @@
       "categoryId": "ambiguous_instruction",
       "remediationStatus": "passed",
       "remediationEffect": "verified_positive",
-      "evidenceCount": 12,
-      "score": 1,
+      "evidenceCount": 13,
+      "score": 0.942308,
       "lastImprovementDelta": 0,
       "agendaRef": "<agenda-ref>"
     },

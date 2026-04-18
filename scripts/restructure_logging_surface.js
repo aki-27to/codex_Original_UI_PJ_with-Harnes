@@ -136,11 +136,6 @@ function normalizeSignoffTransportMode(summary) {
 function selectPreferredSignoffBundle(candidates) {
   const entries = Array.isArray(candidates) ? candidates.filter(Boolean) : [];
   if (!entries.length) return null;
-  const latestPassingLive = entries.find((entry) =>
-    isSignoffSummaryAllPassed(entry.summary)
-    && normalizeSignoffTransportMode(entry.summary) === "stdio"
-  );
-  if (latestPassingLive) return latestPassingLive;
   const latestPassing = entries.find((entry) => isSignoffSummaryAllPassed(entry.summary));
   if (latestPassing) return latestPassing;
   const latestLive = entries.find((entry) => normalizeSignoffTransportMode(entry.summary) === "stdio");

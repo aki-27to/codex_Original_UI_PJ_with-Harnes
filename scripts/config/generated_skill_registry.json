@@ -1,6 +1,6 @@
 {
   "schema": "generated-skill-registry.v1",
-  "generatedAt": "2026-04-12T02:15:05.303Z",
+  "generatedAt": "2026-04-16T12:15:48.845Z",
   "skills": [
     {
       "id": "continuity-verification-closeout",
@@ -22,7 +22,7 @@
         "verification_status exists"
       ],
       "sourceTrace": "output/agi_readiness/phase5/agi_readiness_public_latest.json",
-      "updatedAt": "2026-04-12T02:15:05.293Z",
+      "updatedAt": "2026-04-16T12:15:48.833Z",
       "stale": 0
     }
   ]

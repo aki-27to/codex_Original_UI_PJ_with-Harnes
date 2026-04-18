@@ -1,0 +1,193 @@
+<!doctype html>
+<html lang="ja">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>AI Debate Arena</title>
+    <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='10' fill='%23050a14'/%3E%3Crect x='8' y='8' width='48' height='48' rx='6' fill='none' stroke='%23ffb048' stroke-width='3'/%3E%3Ctext x='50%25' y='55%25' dominant-baseline='middle' text-anchor='middle' font-family='Arial Black, sans-serif' font-size='24' fill='%23eaf3ff'%3EAB%3C/text%3E%3C/svg%3E">
+    <link rel="stylesheet" href="./styles.css">
+  </head>
+  <body>
+    <div class="page-shell">
+      <div class="ambient-veil" aria-hidden="true"></div>
+
+      <header class="hero-shell">
+        <section class="hero-copy">
+          <p class="eyebrow">APP 03 / Debate Arena</p>
+          <div class="title-stack">
+            <p class="score-strip">LOCAL MATCH / SIX TURNS / LIVE LOG</p>
+            <h1>AI Debate Arena</h1>
+          </div>
+          <p class="lede">
+            議題をひとつ入力すると、構想派と懐疑派が同じ論点を真正面からぶつけ合います。
+            6ターン固定、チャット中心、反論込み。読んだ瞬間に試合の熱量が伝わる対戦画面です。
+          </p>
+
+          <div class="proof-row" aria-label="Debate proof points">
+            <div class="proof-chip">One topic / two positions</div>
+            <div class="proof-chip">Standard route: <span>/api/exec</span></div>
+            <div class="proof-chip">Direct rebuttal every turn</div>
+          </div>
+
+          <div class="signal-strip">
+            <div class="signal-card">
+              <span class="metric-label">Harness</span>
+              <strong id="runtimeStatus">接続確認中</strong>
+            </div>
+            <div class="signal-card">
+              <span class="metric-label">Route</span>
+              <strong>/apps/ai-debate-chat/api/exec</strong>
+            </div>
+            <div class="signal-card">
+              <span class="metric-label">Mode</span>
+              <strong>Two-side live debate</strong>
+            </div>
+          </div>
+        </section>
+
+        <section class="launch-panel">
+          <div class="panel-intro">
+            <p class="section-kicker">Start Match</p>
+            <h2>まず議題を置く。そこから即座に対戦開始。</h2>
+            <p class="panel-copy">
+              入力導線を主役にしたまま、開始後はそのまま中央の対戦盤面へ視線が流れる構成です。
+              初回操作に迷わせず、空状態でも強い画面密度を保ちます。
+            </p>
+          </div>
+
+          <form id="composer" class="composer" novalidate>
+            <label class="composer-label" for="topicInput">Debate Topic</label>
+            <textarea
+              id="topicInput"
+              name="topic"
+              rows="4"
+              maxlength="400"
+              placeholder="例: AIエージェントは社内の設計レビューを人間の一次レビューなしで進めるべきか"
+            ></textarea>
+
+            <div class="composer-actions">
+              <p class="composer-note">
+                6ターン固定で、肯定側と懐疑側が互いの主張を受けて反論します。抽象論ではなく、実務・体験・コストに寄せた返答を狙います。
+              </p>
+              <div class="composer-buttons">
+                <button id="restartBtn" type="button" class="secondary">盤面を初期化</button>
+                <button id="stopBtn" type="button" class="secondary">途中で止める</button>
+                <button id="submitBtn" type="submit" class="primary">討論を開始</button>
+              </div>
+            </div>
+          </form>
+        </section>
+      </header>
+
+      <main class="arena-layout">
+        <aside class="intel-rail">
+          <section class="intel-panel topic-panel">
+            <p class="section-kicker">Debate Brief</p>
+            <h2 id="topicHeadline">まだ議題はセットされていません</h2>
+            <p id="topicDeck" class="section-copy">
+              上の入力欄で論点を決めると、ここに現在のテーマと対戦の焦点が表示されます。
+              開幕前でも、何が始まる画面なのかを一目で理解できる密度を保ちます。
+            </p>
+          </section>
+
+          <section class="intel-panel cast-panel">
+            <p class="section-kicker">Cast</p>
+            <div class="cast-sheet">
+              <article class="cast-row cast-a">
+                <div class="cast-mark">A</div>
+                <div>
+                  <h3>構想派</h3>
+                  <p>導入価値、速度、設計思想を押し切る側。前へ進める理由を具体化します。</p>
+                </div>
+              </article>
+              <article class="cast-row cast-b">
+                <div class="cast-mark">B</div>
+                <div>
+                  <h3>懐疑派</h3>
+                  <p>運用コスト、失敗条件、現場の摩擦を突く側。安易な理想化を止めます。</p>
+                </div>
+              </article>
+            </div>
+          </section>
+
+          <section class="intel-panel phase-panel">
+            <p class="section-kicker">Turn Queue</p>
+            <ol id="phaseList" class="phase-list">
+              <li data-phase="opening-a">A / 開幕主張</li>
+              <li data-phase="opening-b">B / 開幕主張</li>
+              <li data-phase="rebuttal-a">A / 反論</li>
+              <li data-phase="rebuttal-b">B / 反論</li>
+              <li data-phase="closing-a">A / 締め</li>
+              <li data-phase="closing-b">B / 締め</li>
+            </ol>
+          </section>
+
+          <section class="intel-panel memo-panel">
+            <p class="section-kicker">Operator Memo</p>
+            <div id="eventLog" class="event-log" aria-live="polite">
+              <p class="event-item">待機中。上の入力欄に論題を入れると、ここへ進行ログが積み上がります。</p>
+            </div>
+          </section>
+        </aside>
+
+        <section class="main-stage">
+          <div class="stage-header">
+            <div>
+              <p class="section-kicker">Debate Feed</p>
+              <h2>対戦ログ</h2>
+              <p class="stage-copy">
+                主役は常に中央のログです。A/B の立場、ターン、現在状態が一目で掴めるよう、盤面の階層を強く取っています。
+              </p>
+            </div>
+
+            <div class="scoreboard">
+              <div class="score-cell">
+                <span class="metric-label">Turn</span>
+                <strong id="turnCounter">0 / 6</strong>
+              </div>
+              <div class="score-cell">
+                <span class="metric-label">State</span>
+                <strong id="debateState">Ready</strong>
+              </div>
+              <div class="score-cell">
+                <span class="metric-label">Route</span>
+                <strong>POST /api/exec</strong>
+              </div>
+            </div>
+          </div>
+
+          <div class="chat-well">
+            <div class="well-grid" aria-hidden="true"></div>
+            <div id="chatLog" class="chat-log" aria-live="polite">
+              <article class="log-empty">
+                <p class="section-kicker">No transcript yet</p>
+                <h3>議題を入れた瞬間、この中央盤面が試合ログに切り替わります。</h3>
+                <p>
+                  入力前でも完成済みのダッシュボードには見せません。対戦が始まる気配、役割差、進行順、ログの受け皿まで最初から画面に埋め込みます。
+                </p>
+              </article>
+            </div>
+          </div>
+        </section>
+      </main>
+
+      <template id="messageTemplate">
+        <article class="message">
+          <div class="message-rail">
+            <span class="message-role"></span>
+            <span class="message-phase"></span>
+          </div>
+          <div class="message-body-wrap">
+            <div class="message-meta">
+              <strong class="message-name"></strong>
+              <span class="message-time"></span>
+            </div>
+            <p class="message-body"></p>
+          </div>
+        </article>
+      </template>
+    </div>
+
+    <script src="./app.js"></script>
+  </body>
+</html>

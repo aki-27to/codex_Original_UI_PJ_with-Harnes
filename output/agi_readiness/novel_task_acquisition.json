@@ -1,13 +1,26 @@
 {
   "schema": "agi-readiness-novel-task-acquisition.v1",
-  "generatedAt": "2026-04-12T08:44:27.872Z",
-  "exportSessionId": "export_a63636ff0a86",
+  "generatedAt": "2026-04-18T06:42:33.573Z",
+  "exportSessionId": "export_69aaf0d22042",
   "scope": "novel_task_acquisition_supporting",
   "workspaceId": "5c839dfeef8b555f",
-  "novelFamilyCount": 2,
-  "novelTaskCount": 2,
-  "positiveNovelTaskCount": 1,
+  "novelFamilyCount": 3,
+  "novelTaskCount": 3,
+  "positiveNovelTaskCount": 2,
   "recentNovelTasks": [
+    {
+      "targetCategory": "self_directed_probe",
+      "targetFamily": "R_robust",
+      "beforeScore": null,
+      "currentScore": null,
+      "evidenceCount": 1,
+      "status": "observed",
+      "remediationRef": "<agenda-ref>",
+      "positiveEvidence": true,
+      "positiveEvidenceRefs": [
+        "<agenda-ref>"
+      ]
+    },
     {
       "targetCategory": "ambiguous_instruction",
       "targetFamily": "planning",
@@ -25,8 +38,8 @@
       "targetCategory": "browser_tool_flakiness",
       "targetFamily": "tool_use_browser_like",
       "beforeScore": null,
-      "currentScore": 0.418367,
-      "evidenceCount": 49,
+      "currentScore": 0.28,
+      "evidenceCount": 50,
       "status": "observed",
       "remediationRef": "<agenda-ref>",
       "positiveEvidence": false,
@@ -36,18 +49,19 @@
     }
   ],
   "positiveEvidenceRefs": [
+    "agenda_fb66637284",
     "agenda_bdbb268944",
-    "agenda_49ed0e35fb"
+    "agenda_1e4555a4ba"
   ],
   "currentSnapshot": {
-    "novelFamilyCount": 2,
-    "novelTaskCount": 2,
-    "positiveNovelTaskCount": 1
+    "novelFamilyCount": 3,
+    "novelTaskCount": 3,
+    "positiveNovelTaskCount": 2
   },
   "effectiveHistoryAware": {
-    "novelFamilyCount": 2,
-    "novelTaskCount": 2,
-    "positiveNovelTaskCount": 1,
+    "novelFamilyCount": 3,
+    "novelTaskCount": 3,
+    "positiveNovelTaskCount": 2,
     "historyLift": {
       "positiveNovelTaskCount": 0
     },
@@ -69,13 +83,26 @@
     "historySource": "none"
   },
   "summary": {
-    "itemCount": 2,
-    "positiveCount": 1,
-    "novelFamilyCount": 2,
-    "novelTaskCount": 2,
-    "positiveNovelTaskCount": 1
+    "itemCount": 3,
+    "positiveCount": 2,
+    "novelFamilyCount": 3,
+    "novelTaskCount": 3,
+    "positiveNovelTaskCount": 2
   },
   "items": [
+    {
+      "targetCategory": "self_directed_probe",
+      "targetFamily": "R_robust",
+      "beforeScore": null,
+      "currentScore": null,
+      "evidenceCount": 1,
+      "status": "observed",
+      "remediationRef": "<agenda-ref>",
+      "positiveEvidence": true,
+      "positiveEvidenceRefs": [
+        "<agenda-ref>"
+      ]
+    },
     {
       "targetCategory": "ambiguous_instruction",
       "targetFamily": "planning",
@@ -93,8 +120,8 @@
       "targetCategory": "browser_tool_flakiness",
       "targetFamily": "tool_use_browser_like",
       "beforeScore": null,
-      "currentScore": 0.418367,
-      "evidenceCount": 49,
+      "currentScore": 0.28,
+      "evidenceCount": 50,
       "status": "observed",
       "remediationRef": "<agenda-ref>",
       "positiveEvidence": false,

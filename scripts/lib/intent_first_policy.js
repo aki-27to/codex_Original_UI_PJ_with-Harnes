@@ -2,6 +2,12 @@
 
 const fs = require("fs");
 const path = require("path");
+const {
+  buildCorrectionLearningDirective,
+  buildCorrectionLearningRuntimeSummary,
+  defaultCorrectionLearningContractPath,
+  loadCorrectionLearningContract,
+} = require("./correction_learning_policy");
 
 const workspaceRoot = path.resolve(__dirname, "..", "..");
 const defaultDesignAcceptanceContractPath = path.join(workspaceRoot, "scripts", "config", "design_acceptance_contract.json");
@@ -9,10 +15,13 @@ const defaultTasteMemorySeedPath = path.join(workspaceRoot, "scripts", "config",
 
 const defaultDesignAcceptanceContract = Object.freeze({
   schema: "design-acceptance-contract.v1",
-  version: "2026-03-13.r1",
+  version: "2026-04-15.r1",
   mode: "intent-first",
   benchmarkComparisonRequired: true,
   visualReviewRequired: true,
+  layoutIntegrityRequired: true,
+  worstStateReviewRequired: true,
+  copyFitRequired: true,
   independentReviewRequired: true,
   docSyncRequired: true,
   technicalVerificationRequired: true,
@@ -55,11 +64,26 @@ const defaultDesignAcceptanceContract = Object.freeze({
     "template-like blue gradient dashboard language",
     "abstract copy with no concrete proof or realness",
   ],
+  layoutFailureModes: [
+    "text overflow or clipping outside intended panel bounds",
+    "label collisions or overlapping UI elements",
+    "copy that cannot fit its allocated region without a defined truncation or wrap policy",
+    "dense header or footer strips that become unreadable under stress states",
+  ],
+  requiredWorstStates: [
+    "highest-density content state",
+    "interrupt, pause, or error overlay state",
+    "critical or danger status state",
+    "longest expected localized copy state",
+  ],
   requiredArtifacts: [
     "locked intent summary",
     "benchmark decomposition",
     "desktop screenshot review",
     "mobile screenshot review",
+    "worst-state screenshot review",
+    "layout integrity review",
+    "copy-fit review",
     "independent reviewer verdict",
     "technical verification evidence",
     "documentation sync",
@@ -69,6 +93,8 @@ const defaultDesignAcceptanceContract = Object.freeze({
     "realness and credibility",
     "typographic hierarchy",
     "information density",
+    "layout integrity under stress",
+    "copy fit and collision resistance",
     "benchmark superiority",
   ],
 });
@@ -205,6 +231,9 @@ function normalizeDesignAcceptanceContract(source) {
     mode: compactText(input.mode, 40).toLowerCase() || defaultDesignAcceptanceContract.mode,
     benchmarkComparisonRequired: input.benchmarkComparisonRequired !== false,
     visualReviewRequired: input.visualReviewRequired !== false,
+    layoutIntegrityRequired: input.layoutIntegrityRequired !== false,
+    worstStateReviewRequired: input.worstStateReviewRequired !== false,
+    copyFitRequired: input.copyFitRequired !== false,
     independentReviewRequired: input.independentReviewRequired !== false,
     docSyncRequired: input.docSyncRequired !== false,
     technicalVerificationRequired: input.technicalVerificationRequired !== false,
@@ -219,6 +248,8 @@ function normalizeDesignAcceptanceContract(source) {
     },
     keywords: normalizeTextList(input.keywords || defaultDesignAcceptanceContract.keywords, { maxItems: 24, maxChars: 40 }),
     prohibitedPatterns: normalizeTextList(input.prohibitedPatterns || defaultDesignAcceptanceContract.prohibitedPatterns, { maxItems: 12, maxChars: 180 }),
+    layoutFailureModes: normalizeTextList(input.layoutFailureModes || defaultDesignAcceptanceContract.layoutFailureModes, { maxItems: 8, maxChars: 180 }),
+    requiredWorstStates: normalizeTextList(input.requiredWorstStates || defaultDesignAcceptanceContract.requiredWorstStates, { maxItems: 8, maxChars: 180 }),
     requiredArtifacts: normalizeTextList(input.requiredArtifacts || defaultDesignAcceptanceContract.requiredArtifacts, { maxItems: 12, maxChars: 180 }),
     evaluationAxes: normalizeTextList(input.evaluationAxes || defaultDesignAcceptanceContract.evaluationAxes, { maxItems: 10, maxChars: 120 }),
   };
@@ -387,6 +418,7 @@ function requiresWorkspaceLockForSource({ contract, executionSource = "" } = {})
 function buildIntentDirectivePrefix({ contract, activeProfile, designSensitive = true } = {}) {
   const normalizedContract = normalizeDesignAcceptanceContract(contract || defaultDesignAcceptanceContract);
   const profile = normalizeTasteProfile(activeProfile || defaultTasteProfile, defaultTasteProfile);
+  const correctionLearning = loadCorrectionLearningContract();
   const lines = [
     normalizedContract.promptEnvelope.title || "Intent-First Brief",
     `Primary objective: ${profile.autonomy.primaryObjective}`,
@@ -407,6 +439,12 @@ function buildIntentDirectivePrefix({ contract, activeProfile, designSensitive =
   if (designSensitive && profile.benchmarkUrls.length) {
     lines.push(`Benchmark refs: ${profile.benchmarkUrls.join(" | ")}`);
   }
+  if (designSensitive && (normalizedContract.layoutIntegrityRequired || normalizedContract.worstStateReviewRequired || normalizedContract.copyFitRequired)) {
+    lines.push("Layout gates: No overflow, no overlap, no clipped copy, and prove worst-state screens before claiming completion.");
+  }
+  lines.push("Intent lock: Fix the original request, latent intent, prohibited patterns, win direction, and non-goals before planning.");
+  lines.push("Acceptance lock: Fix pass conditions, failure conditions, and required evidence before implementation.");
+  lines.push(buildCorrectionLearningDirective({ contract: correctionLearning }));
   if (designSensitive && normalizedContract.promptEnvelope.completionRule) {
     lines.push(`Completion rule: ${normalizedContract.promptEnvelope.completionRule}`);
   }
@@ -437,6 +475,64 @@ function hasVisualReviewEvidence(sampleMcpTools, sampleCommands, visualEvidence)
   const sawDesktopHint = commands.some((entry) => entry.includes("desktop") || /resize\s+(?:8\d{2}|9\d{2}|1\d{3,4})\s+\d+/i.test(entry));
   const sawMobileHint = commands.some((entry) => entry.includes("mobile") || entry.includes("iphone") || entry.includes("android") || /resize\s+(?:3\d{2}|4[0-8]\d)\s+\d+/i.test(entry));
   return sawVisualTool && sawDesktopHint && sawMobileHint;
+}
+
+function hasLayoutIntegrityEvidence(sampleCommands, visualEvidence) {
+  const evidence = visualEvidence && typeof visualEvidence === "object" ? visualEvidence : {};
+  if (Boolean(evidence.layoutIntegrityReview) || Boolean(evidence.copyFitReview) || Boolean(evidence.collisionReview)) {
+    return true;
+  }
+  const commands = Array.isArray(sampleCommands) ? sampleCommands.map((entry) => String(entry || "").toLowerCase()) : [];
+  return commands.some((entry) =>
+    entry.includes("overflow")
+      || entry.includes("overlap")
+      || entry.includes("clipping")
+      || entry.includes("collision")
+      || entry.includes("copy fit")
+      || entry.includes("visual guard")
+      || entry.includes("layout integrity")
+  );
+}
+
+function hasWorstStateReviewEvidence(sampleCommands, visualEvidence) {
+  const evidence = visualEvidence && typeof visualEvidence === "object" ? visualEvidence : {};
+  if (
+    Boolean(evidence.worstStateReview)
+    || Boolean(evidence.longCopyReview)
+    || Boolean(evidence.criticalStateReview)
+    || Boolean(evidence.interruptStateReview)
+  ) {
+    return true;
+  }
+  const commands = Array.isArray(sampleCommands) ? sampleCommands.map((entry) => String(entry || "").toLowerCase()) : [];
+  return commands.some((entry) =>
+    entry.includes("worst-state")
+      || entry.includes("worst state")
+      || entry.includes("pressure")
+      || entry.includes("pause")
+      || entry.includes("game over")
+      || entry.includes("critical")
+      || entry.includes("danger")
+      || entry.includes("top out")
+      || entry.includes("longest copy")
+  );
+}
+
+function hasCopyFitEvidence(sampleCommands, visualEvidence) {
+  const evidence = visualEvidence && typeof visualEvidence === "object" ? visualEvidence : {};
+  if (Boolean(evidence.copyFitReview) || Boolean(evidence.textFitReview) || Boolean(evidence.truncationPolicyReview)) {
+    return true;
+  }
+  const commands = Array.isArray(sampleCommands) ? sampleCommands.map((entry) => String(entry || "").toLowerCase()) : [];
+  return commands.some((entry) =>
+    entry.includes("copy fit")
+      || entry.includes("text fit")
+      || entry.includes("truncate")
+      || entry.includes("truncation")
+      || entry.includes("ellipsis")
+      || entry.includes("wrap")
+      || entry.includes("text measure")
+  );
 }
 
 function hasTechnicalEvidence(sampleCommands, commandExecutions) {
@@ -492,6 +588,15 @@ function evaluateIntentFirstGates({
   if (normalizedContract.visualReviewRequired && !hasVisualReviewEvidence(sampleMcpTools, sampleCommands, visualEvidence)) {
     missingHard.push({ id: "visual_review", label: "screenshot review", reason: "intent_visual_review_missing" });
   }
+  if (normalizedContract.layoutIntegrityRequired && !hasLayoutIntegrityEvidence(sampleCommands, visualEvidence)) {
+    missingHard.push({ id: "layout_integrity", label: "layout integrity review", reason: "intent_layout_integrity_review_missing" });
+  }
+  if (normalizedContract.worstStateReviewRequired && !hasWorstStateReviewEvidence(sampleCommands, visualEvidence)) {
+    missingHard.push({ id: "worst_state_review", label: "worst-state review", reason: "intent_worst_state_review_missing" });
+  }
+  if (normalizedContract.copyFitRequired && !hasCopyFitEvidence(sampleCommands, visualEvidence)) {
+    missingHard.push({ id: "copy_fit_review", label: "copy-fit review", reason: "intent_copy_fit_review_missing" });
+  }
   if (normalizedContract.independentReviewRequired && !children.has("reviewer")) {
     missingHard.push({ id: "independent_review", label: "independent reviewer", reason: "intent_reviewer_missing" });
   }
@@ -523,12 +628,25 @@ function summarizeIntentFirstRuntime({ contract, store } = {}) {
   const normalizedContract = normalizeDesignAcceptanceContract(contract || defaultDesignAcceptanceContract);
   const normalizedStore = normalizeUserTasteMemoryStore(store || defaultTasteMemoryStore);
   const profile = activeTasteProfile(normalizedStore);
+  const correctionLearning = loadCorrectionLearningContract();
+  const verificationRequired = normalizedContract.technicalVerificationRequired !== false;
   return {
     mode: normalizedContract.mode,
     workspaceLock: {
       ...normalizedContract.workspaceLock,
       autoLockRecommended: Array.isArray(normalizedContract.workspaceLock.requiredForSources)
         && normalizedContract.workspaceLock.requiredForSources.includes("web_ui"),
+    },
+    verificationLock: {
+      enabled: verificationRequired,
+      mode: verificationRequired ? "fail_closed" : "advisory",
+      label: verificationRequired ? "locked_until_technical_verification" : "verification_optional",
+      detail: verificationRequired
+        ? "Do not claim completion until technical verification evidence exists."
+        : "Technical verification is optional for this contract.",
+      requiredForSources: [],
+      scope: verificationRequired ? "all_design_sensitive_requests" : "advisory_only",
+      completionClaimBlockedWithoutEvidence: verificationRequired,
     },
     creativeSignals: {
       promptKeywords: normalizedContract.keywords.slice(),
@@ -538,6 +656,9 @@ function summarizeIntentFirstRuntime({ contract, store } = {}) {
       { id: "taste_memory", label: "Taste memory" },
       { id: "benchmark", label: "Benchmark" },
       { id: "visual_review", label: "Visual review" },
+      { id: "layout_integrity", label: "Layout integrity review" },
+      { id: "worst_state_review", label: "Worst-state review" },
+      { id: "copy_fit_review", label: "Copy-fit review" },
       { id: "independent_review", label: "Independent review" },
       { id: "technical_verification", label: "Technical verification" },
       { id: "documentation_sync", label: "Documentation sync" },
@@ -547,13 +668,23 @@ function summarizeIntentFirstRuntime({ contract, store } = {}) {
       version: normalizedContract.version,
       benchmarkComparisonRequired: normalizedContract.benchmarkComparisonRequired,
       visualReviewRequired: normalizedContract.visualReviewRequired,
+      layoutIntegrityRequired: normalizedContract.layoutIntegrityRequired,
+      worstStateReviewRequired: normalizedContract.worstStateReviewRequired,
+      copyFitRequired: normalizedContract.copyFitRequired,
       independentReviewRequired: normalizedContract.independentReviewRequired,
       docSyncRequired: normalizedContract.docSyncRequired,
       technicalVerificationRequired: normalizedContract.technicalVerificationRequired,
+      keywords: normalizedContract.keywords.slice(),
       workspaceLock: normalizedContract.workspaceLock,
       prohibitedPatterns: normalizedContract.prohibitedPatterns.slice(),
+      layoutFailureModes: normalizedContract.layoutFailureModes.slice(),
+      requiredWorstStates: normalizedContract.requiredWorstStates.slice(),
       requiredArtifacts: normalizedContract.requiredArtifacts.slice(),
       evaluationAxes: normalizedContract.evaluationAxes.slice(),
+    },
+    correctionLearning: {
+      ...buildCorrectionLearningRuntimeSummary({ contract: correctionLearning }),
+      contractPath: defaultCorrectionLearningContractPath,
     },
     tasteMemory: {
       activeProfileId: normalizedStore.activeProfileId,
@@ -576,6 +707,7 @@ function summarizeIntentFirstRuntime({ contract, store } = {}) {
 
 module.exports = {
   defaultDesignAcceptanceContractPath,
+  defaultCorrectionLearningContractPath,
   defaultTasteMemorySeedPath,
   buildIntentFirstPrompt,
   buildIntentDirectivePrefix,

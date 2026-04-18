@@ -1,10 +1,10 @@
 {
   "schema": "governance-public-bundle-overview.v1",
-  "generatedAt": "2026-04-12T08:44:25.103Z",
+  "generatedAt": "2026-04-18T06:42:29.263Z",
   "sourceLatestSignoffSummary": "logs/current/latest_signoff_summary.json",
-  "sourceBundleRoot": "logs/bundles/signoff/signoff-2026-03-09T12-31-59-842Z-24dd95",
-  "sourceTurnDir": "logs/bundles/signoff/signoff-2026-03-09T12-31-59-842Z-24dd95/raw/turns/2026-03-09/019cd29a-09de-7670-8c38-eade454f7cb2__019cd29a-0ad3-72d2-957c-30870c52eaba",
-  "selectedTurnId": "019cd29a-0ad3-72d2-957c-30870c52eaba",
+  "sourceBundleRoot": "logs/bundles/signoff/signoff-2026-04-18T05-27-13-996Z-f97810",
+  "sourceTurnDir": "logs/bundles/signoff/signoff-2026-04-18T05-27-13-996Z-f97810/raw/turns/2026-04-18/mock-thread-4__mock-turn-7",
+  "selectedTurnId": "mock-turn-7",
   "selectedPlanningDepth": "STANDARD_PLANNING",
   "selectedAssuranceDepth": "SIGNOFF_ASSURANCE",
   "finalOutcome": {
@@ -17,7 +17,7 @@
   "signoffReady": true,
   "workerDecision": {
     "scope": "worker_decision",
-    "exportSessionId": "export_a63636ff0a86",
+    "exportSessionId": "export_69aaf0d22042",
     "topLevelOutcome": "ADOPTABLE_COMPLETE",
     "topLevelSummary": "The worker can close in place: adoption readiness passed, latent intent stayed aligned, and no extra human interruption is required.",
     "operatorAction": "ADOPT",
@@ -26,10 +26,28 @@
   },
   "workerCompletion": {
     "scope": "worker_completion",
-    "exportSessionId": "export_a63636ff0a86",
+    "exportSessionId": "export_69aaf0d22042",
     "workerGoalStatus": "WORKER_COMPLETE",
     "decisionMeaning": "worker_headline_stop_semantics_with_background_program_readiness_context",
     "programReadinessStatus": "NOT_YET",
+    "operatorReadOrder": [
+      "worker_stop_primary",
+      "background_program_readiness_secondary"
+    ],
+    "workerStopDecision": {
+      "scope": "worker_stop",
+      "status": "WORKER_COMPLETE",
+      "displayLabel": "Worker stop verdict",
+      "presentationRole": "primary_task_verdict"
+    },
+    "backgroundProgramReadiness": {
+      "scope": "program_readiness",
+      "status": "NOT_YET",
+      "displayLabel": "Background program readiness",
+      "presentationRole": "secondary_non_blocking_context",
+      "doesNotOverrideWorkerVerdict": true,
+      "backgroundTrusted": true
+    },
     "activeLearningDebtOpen": true
   },
   "harnessIdentity": {
@@ -185,6 +203,12 @@
     "iteration_decision.json",
     "escalation_decision.json",
     "worker_decision_surface.json",
-    "worker_completion_status.json"
+    "worker_completion_status.json",
+    "reviewer_start_here.json",
+    "reviewer_start_here.md",
+    "release_candidate_scope.json",
+    "release_candidate_scope.md",
+    "release_resolution.json",
+    "release_resolution.md"
   ]
 }

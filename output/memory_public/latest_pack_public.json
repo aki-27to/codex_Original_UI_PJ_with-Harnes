@@ -1,11 +1,11 @@
 {
   "schema": "governed-memory-latest-pack-public.v1",
-  "generatedAt": "2026-04-12T08:44:27.146Z",
+  "generatedAt": "2026-04-18T06:42:32.626Z",
   "workspaceId": "5c839dfeef8b555f",
-  "packId": "39edb22dba0001c01153",
+  "packId": "c4619355f979c9a9cf69",
   "latestPack": {
-    "generatedAt": "2026-04-12T08:44:25.722Z",
-    "compiledAt": "2026-04-12T08:44:25.722Z",
+    "generatedAt": "2026-04-18T06:42:30.420Z",
+    "compiledAt": "2026-04-18T06:42:30.420Z",
     "activeAgent": "default",
     "taskFamily": "web_creative",
     "selectedCount": 13,
@@ -16,9 +16,9 @@
       "workspace_progress": 1,
       "intent": 1,
       "spec": 4,
-      "semantic": 3,
       "experience": 3,
-      "improvement": 1
+      "improvement": 1,
+      "semantic": 3
     },
     "selectedItems": [
       {
@@ -67,7 +67,7 @@
         "publicRef": "mem_e65f4ce9a0",
         "type": "constitution_ref",
         "status": "promoted",
-        "score": 0.6301,
+        "score": 0.6104,
         "scoreBand": "selected",
         "sourceTier": "repo",
         "authorityTier": 0,
@@ -79,7 +79,7 @@
         "publicRef": "mem_ad36640985",
         "type": "constitution_ref",
         "status": "promoted",
-        "score": 0.6301,
+        "score": 0.6104,
         "scoreBand": "selected",
         "sourceTier": "repo",
         "authorityTier": 0,
@@ -91,7 +91,7 @@
         "publicRef": "mem_b5d199f8aa",
         "type": "constitution_ref",
         "status": "promoted",
-        "score": 0.6301,
+        "score": 0.6104,
         "scoreBand": "selected",
         "sourceTier": "repo",
         "authorityTier": 0,
@@ -100,49 +100,7 @@
         "summary": "context-memory-policy"
       },
       {
-        "publicRef": "mem_8c8a302df5",
-        "type": "semantic_lesson",
-        "status": "promoted",
-        "score": 0.6242,
-        "scoreBand": "selected",
-        "sourceTier": "external_primary",
-        "authorityTier": 5,
-        "scopeWorkspace": "5c839dfeef8b555f",
-        "taskFamilies": [
-          "web_creative"
-        ],
-        "summary": "How Perplexity Brought Voice Search to Millions Using the Realtime API | OpenAI Developers"
-      },
-      {
-        "publicRef": "mem_2b55e90fab",
-        "type": "semantic_lesson",
-        "status": "promoted",
-        "score": 0.6242,
-        "scoreBand": "selected",
-        "sourceTier": "external_primary",
-        "authorityTier": 5,
-        "scopeWorkspace": "5c839dfeef8b555f",
-        "taskFamilies": [
-          "web_creative"
-        ],
-        "summary": "Designing delightful frontends with GPT-5.4 | OpenAI Developers"
-      },
-      {
-        "publicRef": "mem_2b5b766ebf",
-        "type": "semantic_lesson",
-        "status": "promoted",
-        "score": 0.6242,
-        "scoreBand": "selected",
-        "sourceTier": "external_primary",
-        "authorityTier": 5,
-        "scopeWorkspace": "5c839dfeef8b555f",
-        "taskFamilies": [
-          "web_creative"
-        ],
-        "summary": "From prompts to products: One year of Responses | OpenAI Developers"
-      },
-      {
-        "publicRef": "mem_02306146e0",
+        "publicRef": "mem_052206464c",
         "type": "episodic_event",
         "status": "captured",
         "score": 0.6008,
@@ -158,7 +116,7 @@
         "summary": "runtime episode finished as CAPTURED."
       },
       {
-        "publicRef": "mem_8974742c20",
+        "publicRef": "mem_f760919e3b",
         "type": "episodic_event",
         "status": "captured",
         "score": 0.6008,
@@ -174,7 +132,7 @@
         "summary": "runtime episode finished as CAPTURED."
       },
       {
-        "publicRef": "mem_0c6a6c8415",
+        "publicRef": "mem_dabbdbf3f9",
         "type": "episodic_event",
         "status": "captured",
         "score": 0.6008,
@@ -189,6 +147,48 @@
           "evaluation_review"
         ],
         "summary": "runtime episode finished as CAPTURED."
+      },
+      {
+        "publicRef": "mem_3bb030120d",
+        "type": "improvement_candidate",
+        "status": "candidate",
+        "score": 0.6,
+        "scoreBand": "selected",
+        "sourceTier": "external_primary",
+        "authorityTier": 6,
+        "scopeWorkspace": "5c839dfeef8b555f",
+        "taskFamilies": [
+          "web_creative"
+        ],
+        "summary": "Designing delightful frontends with GPT-5.4 | OpenAI Developers"
+      },
+      {
+        "publicRef": "mem_38e064a6a2",
+        "type": "failure_pattern",
+        "status": "promoted",
+        "score": 0.5967,
+        "scoreBand": "selected",
+        "sourceTier": "runtime",
+        "authorityTier": 5,
+        "scopeWorkspace": "5c839dfeef8b555f",
+        "taskFamilies": [
+          "default"
+        ],
+        "summary": "parent dispatch guard block"
+      },
+      {
+        "publicRef": "mem_1748eef46d",
+        "type": "failure_pattern",
+        "status": "promoted",
+        "score": 0.5967,
+        "scoreBand": "selected",
+        "sourceTier": "runtime",
+        "authorityTier": 5,
+        "scopeWorkspace": "5c839dfeef8b555f",
+        "taskFamilies": [
+          "default"
+        ],
+        "summary": "return to intake required"
       }
     ]
   }

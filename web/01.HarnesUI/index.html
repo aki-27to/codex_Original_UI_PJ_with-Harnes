@@ -10,7 +10,7 @@
     (function(){
       const params = new URLSearchParams(window.location.search || "");
       const cacheBust = params.get("ui_reload");
-      const versionSeed = cacheBust || "20260412-carryover-v5";
+      const versionSeed = cacheBust || String(Date.now());
       const version = encodeURIComponent(versionSeed);
       const stylesheet = document.getElementById("appStylesheet");
       if(stylesheet)stylesheet.href = `./styles.css?ui_reload=${version}`;
@@ -246,6 +246,7 @@
                 <span id="composerModeChip" class="composer-runtime-chip">Mode</span>
                 <span id="composerModelChip" class="composer-runtime-chip">Model</span>
                 <span id="composerWorkspaceChip" class="composer-runtime-chip">Workspace</span>
+                <span id="composerVerificationChip" class="composer-runtime-chip">Verification</span>
                 <span id="composerAttachmentChip" class="composer-runtime-chip">Attachments</span>
               </div>
 
@@ -333,30 +334,26 @@
                 </div>
                 <div class="harness-status-row">
                   <span class="harness-status-label">現在地</span>
-                  <strong id="harnessLifecycleCurrent" class="harness-status-value idle">1. 依頼理解</strong>
+                  <strong id="harnessWorkflowCurrent" class="harness-status-value idle">1. 依頼理解</strong>
                 </div>
                 <div class="harness-status-row harness-status-row-flow">
                   <div class="harness-status-row-head">
                     <span class="harness-status-label">仕事の流れ</span>
                   </div>
-                  <ol id="harnessLifecycleList" class="harness-lifecycle-list">
-                    <li class="harness-lifecycle-step todo">
-                      <span class="harness-lifecycle-step-index">1</span>
-                      <span class="harness-lifecycle-step-label">依頼理解</span>
+                  <ol id="harnessWorkflowList" class="harness-workflow-list">
+                    <li class="harness-workflow-step todo">
+                      <span class="harness-workflow-step-index">1</span>
+                      <span class="harness-workflow-step-label">依頼理解</span>
                     </li>
                   </ol>
-                  <p id="harnessLifecycleDetail" class="harness-lifecycle-detail">依頼を受けると、ここに今どの段を見ているかを表示します。</p>
-                </div>
-                <div class="harness-status-row">
-                  <span class="harness-status-label">内部フェーズ</span>
-                  <strong id="harnessJourneyStage" class="harness-status-value idle">未開始</strong>
+                  <p id="harnessWorkflowDetail" class="harness-workflow-detail">依頼を受けると、ここに今どこまで進んだかを短く表示します。</p>
                 </div>
                 <div class="harness-status-row harness-status-row-blocked">
                   <div class="harness-status-row-head">
                     <span class="harness-status-label">止まっている理由</span>
                     <strong id="harnessComplianceBadge" class="harness-status-value idle">なし</strong>
                   </div>
-                  <p id="harnessComplianceDetail" class="harness-compliance-detail">止まっていません。いまは入力待ちです。</p>
+                  <p id="harnessComplianceDetail" class="harness-compliance-detail">止まっていません。Codex 返却後はそのまま再送できます。</p>
                 </div>
               </article>
 
@@ -400,8 +397,30 @@
                     </article>
                   </div>
                 </section>
+                <section class="harness-lifecycle-panel">
+                  <div class="harness-lifecycle-head">
+                    <div>
+                      <h4>内部フロー</h4>
+                      <p>ハーネス内部でどこまで進んだかを詳細に追えます。</p>
+                    </div>
+                    <strong id="harnessInternalLifecycleCurrent" class="harness-status-value idle">1. 依頼理解</strong>
+                  </div>
+                  <ol id="harnessInternalLifecycleList" class="harness-lifecycle-list">
+                    <li class="harness-lifecycle-step todo">
+                      <span class="harness-lifecycle-step-index">1</span>
+                      <span class="harness-lifecycle-step-label">依頼理解</span>
+                    </li>
+                  </ol>
+                  <p id="harnessInternalLifecycleDetail" class="harness-lifecycle-detail">内部ライフサイクルの詳細はここに表示されます。</p>
+                </section>
                 <section class="harness-phase-panel">
-                  <h4>フェーズ詳細</h4>
+                  <div class="harness-phase-head">
+                    <div>
+                      <h4>フェーズ詳細</h4>
+                      <p>5 段より細かい実行フェーズを監査用に表示します。</p>
+                    </div>
+                    <strong id="harnessJourneyStage" class="harness-status-value idle">未開始</strong>
+                  </div>
                   <div id="harnessJourneyList" class="harness-journey-list">
                     <article class="harness-journey-step todo">
                       <h4>1. Requirements</h4>

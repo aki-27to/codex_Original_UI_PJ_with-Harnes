@@ -1,6 +1,6 @@
 {
   "schema": "adoption-readiness-evaluator-contract.v1",
-  "version": "2026-04-11.r2",
+  "version": "2026-04-18.r1",
   "dimensions": [
     "literal_requirement_alignment",
     "latent_intent_alignment",
@@ -33,6 +33,10 @@
     "user_request_original",
     "task_contract_locked",
     "replanned_goal",
+    "candidate_intent_hypotheses",
+    "chosen_intent_model",
+    "benchmark_strengths_to_surpass",
+    "artifact_comparison_evidence",
     "final_artifact_summary",
     "evaluator_findings"
   ],
@@ -65,5 +69,21 @@
   "releaseJudgmentSeparation": {
     "completedDoesNotImplyReleaseApproved": true,
     "adoptionReadinessMustBeEvaluatedBeforeRelease": true
+  },
+  "latentIntentArtifactGrounding": {
+    "required": true,
+    "comparisonMode": "artifact_grounded",
+    "requiredInputs": [
+      "candidate_intent_hypotheses",
+      "chosen_intent_model",
+      "benchmark_strengths_to_surpass",
+      "artifact_comparison_evidence"
+    ],
+    "proxySignalsMaySupplementButNotReplaceArtifactEvidence": true,
+    "failClosedWhenArtifactEvidenceMissing": true,
+    "notes": [
+      "latent intent alignment must be justified through artifact comparison evidence",
+      "proxy score alone cannot satisfy the latent intent gate"
+    ]
   }
 }

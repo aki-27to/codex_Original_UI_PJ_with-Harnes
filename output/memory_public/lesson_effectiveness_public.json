@@ -1,18 +1,18 @@
 {
   "schema": "governed-memory-lesson-effectiveness-public.v1",
-  "generatedAt": "2026-04-12T08:44:27.146Z",
+  "generatedAt": "2026-04-18T06:42:32.626Z",
   "workspaceId": "5c839dfeef8b555f",
   "entries": [
     {
-      "memoryId": "mem_9ec59c963c",
-      "publicRef": "mem_9ec59c963c",
+      "memoryId": "mem_3bb030120d",
+      "publicRef": "mem_3bb030120d",
       "memoryType": "improvement_candidate",
       "sourceTier": "external_primary",
       "promotionState": "candidate",
-      "positiveCount": 1,
+      "positiveCount": 2,
       "neutralCount": 0,
-      "harmfulCount": 12,
-      "lastUsedAt": "2026-04-12T08:44:25.845Z",
+      "harmfulCount": 11,
+      "lastUsedAt": "2026-04-18T06:42:30.582Z",
       "lastEffect": "harmful_to_outcome",
       "appliesToFamily": [
         "web_creative"
@@ -27,85 +27,106 @@
       "rolledBackAfterHarm": false,
       "harmRollbackEvidenceRefs": [],
       "summary": "Designing delightful frontends with GPT-5.4 | OpenAI Developers",
-      "lastObservedAt": "2026-04-12T08:44:25.845Z"
+      "lastObservedAt": "2026-04-18T06:42:30.582Z"
     },
     {
-      "memoryId": "mem_8c8a302df5",
-      "publicRef": "mem_8c8a302df5",
+      "memoryId": "mem_8abf4799a3",
+      "publicRef": "mem_8abf4799a3",
       "memoryType": "semantic_lesson",
       "sourceTier": "external_primary",
-      "promotionState": "promoted",
-      "positiveCount": 1,
+      "promotionState": "blocked",
+      "positiveCount": 2,
       "neutralCount": 0,
-      "harmfulCount": 12,
-      "lastUsedAt": "2026-04-12T08:44:25.845Z",
-      "lastEffect": "harmful_to_outcome",
+      "harmfulCount": 16,
+      "lastUsedAt": "2026-04-18T06:42:30.582Z",
+      "lastEffect": "rolled_back_after_harm",
       "appliesToFamily": [
         "web_creative"
       ],
-      "selectedInLatestPack": true,
-      "adoptedInLatestPack": true,
-      "usageStage": "harmful_to_outcome",
+      "selectedInLatestPack": false,
+      "adoptedInLatestPack": false,
+      "usageStage": "rolled_back_after_harm",
       "likelyContributory": false,
-      "harmfulToOutcome": true,
+      "harmfulToOutcome": false,
       "effectiveContribution": false,
       "effectiveContributionEvidenceRefs": [],
-      "rolledBackAfterHarm": false,
-      "harmRollbackEvidenceRefs": [],
+      "rolledBackAfterHarm": true,
+      "harmRollbackEvidenceRefs": [
+        "turn_c42b6ac6bf",
+        "turn_a92c99a4a0",
+        "turn_548e57d79b",
+        "turn_f62d3241c4",
+        "turn_372f284c26",
+        "turn_2183f67330"
+      ],
       "summary": "How Perplexity Brought Voice Search to Millions Using the Realtime API | OpenAI Developers",
-      "lastObservedAt": "2026-04-12T08:44:25.845Z"
+      "lastObservedAt": "2026-04-18T06:42:30.582Z"
     },
     {
-      "memoryId": "mem_2b55e90fab",
-      "publicRef": "mem_2b55e90fab",
+      "memoryId": "mem_ae96d18abe",
+      "publicRef": "mem_ae96d18abe",
       "memoryType": "semantic_lesson",
       "sourceTier": "external_primary",
-      "promotionState": "promoted",
-      "positiveCount": 1,
+      "promotionState": "blocked",
+      "positiveCount": 2,
       "neutralCount": 0,
-      "harmfulCount": 12,
-      "lastUsedAt": "2026-04-12T08:44:25.845Z",
-      "lastEffect": "harmful_to_outcome",
+      "harmfulCount": 16,
+      "lastUsedAt": "2026-04-18T06:42:30.582Z",
+      "lastEffect": "rolled_back_after_harm",
       "appliesToFamily": [
         "web_creative"
       ],
-      "selectedInLatestPack": true,
-      "adoptedInLatestPack": true,
-      "usageStage": "harmful_to_outcome",
+      "selectedInLatestPack": false,
+      "adoptedInLatestPack": false,
+      "usageStage": "rolled_back_after_harm",
       "likelyContributory": false,
-      "harmfulToOutcome": true,
+      "harmfulToOutcome": false,
       "effectiveContribution": false,
       "effectiveContributionEvidenceRefs": [],
-      "rolledBackAfterHarm": false,
-      "harmRollbackEvidenceRefs": [],
+      "rolledBackAfterHarm": true,
+      "harmRollbackEvidenceRefs": [
+        "turn_c42b6ac6bf",
+        "turn_a92c99a4a0",
+        "turn_548e57d79b",
+        "turn_f62d3241c4",
+        "turn_372f284c26",
+        "turn_2183f67330"
+      ],
       "summary": "Designing delightful frontends with GPT-5.4 | OpenAI Developers",
-      "lastObservedAt": "2026-04-12T08:44:25.845Z"
+      "lastObservedAt": "2026-04-18T06:42:30.582Z"
     },
     {
-      "memoryId": "mem_2b5b766ebf",
-      "publicRef": "mem_2b5b766ebf",
+      "memoryId": "mem_ae61b7aa92",
+      "publicRef": "mem_ae61b7aa92",
       "memoryType": "semantic_lesson",
       "sourceTier": "external_primary",
-      "promotionState": "promoted",
-      "positiveCount": 1,
+      "promotionState": "blocked",
+      "positiveCount": 2,
       "neutralCount": 0,
-      "harmfulCount": 12,
-      "lastUsedAt": "2026-04-12T08:44:25.845Z",
-      "lastEffect": "harmful_to_outcome",
+      "harmfulCount": 16,
+      "lastUsedAt": "2026-04-18T06:42:30.582Z",
+      "lastEffect": "rolled_back_after_harm",
       "appliesToFamily": [
         "web_creative"
       ],
-      "selectedInLatestPack": true,
-      "adoptedInLatestPack": true,
-      "usageStage": "harmful_to_outcome",
+      "selectedInLatestPack": false,
+      "adoptedInLatestPack": false,
+      "usageStage": "rolled_back_after_harm",
       "likelyContributory": false,
-      "harmfulToOutcome": true,
+      "harmfulToOutcome": false,
       "effectiveContribution": false,
       "effectiveContributionEvidenceRefs": [],
-      "rolledBackAfterHarm": false,
-      "harmRollbackEvidenceRefs": [],
+      "rolledBackAfterHarm": true,
+      "harmRollbackEvidenceRefs": [
+        "turn_c42b6ac6bf",
+        "turn_a92c99a4a0",
+        "turn_548e57d79b",
+        "turn_f62d3241c4",
+        "turn_372f284c26",
+        "turn_2183f67330"
+      ],
       "summary": "From prompts to products: One year of Responses | OpenAI Developers",
-      "lastObservedAt": "2026-04-12T08:44:25.845Z"
+      "lastObservedAt": "2026-04-18T06:42:30.582Z"
     },
     {
       "memoryId": "mem_46f23704e6",
@@ -113,10 +134,10 @@
       "memoryType": "runtime_hint",
       "sourceTier": "external_primary",
       "promotionState": "blocked",
-      "positiveCount": 1,
+      "positiveCount": 2,
       "neutralCount": 0,
-      "harmfulCount": 12,
-      "lastUsedAt": "2026-04-12T08:21:05.667Z",
+      "harmfulCount": 20,
+      "lastUsedAt": "2026-04-18T06:42:30.582Z",
       "lastEffect": "rolled_back_after_harm",
       "appliesToFamily": [
         "web_creative"
@@ -130,15 +151,15 @@
       "effectiveContributionEvidenceRefs": [],
       "rolledBackAfterHarm": true,
       "harmRollbackEvidenceRefs": [
-        "turn_31a014eb18",
-        "turn_caa4d9ab3a",
-        "turn_e8c23d17d6",
-        "turn_d66ecef7e7",
-        "turn_17e53db613",
-        "turn_a6d9cc876c"
+        "turn_c42b6ac6bf",
+        "turn_a92c99a4a0",
+        "turn_548e57d79b",
+        "turn_f62d3241c4",
+        "turn_372f284c26",
+        "turn_985413b356"
       ],
       "summary": "How Perplexity Brought Voice Search to Millions Using the Realtime API | OpenAI Developers",
-      "lastObservedAt": "2026-04-12T08:21:05.667Z"
+      "lastObservedAt": "2026-04-18T06:42:30.582Z"
     },
     {
       "memoryId": "mem_5e926a0571",
@@ -146,10 +167,10 @@
       "memoryType": "runtime_hint",
       "sourceTier": "external_primary",
       "promotionState": "blocked",
-      "positiveCount": 1,
+      "positiveCount": 2,
       "neutralCount": 0,
-      "harmfulCount": 12,
-      "lastUsedAt": "2026-04-12T08:21:05.667Z",
+      "harmfulCount": 20,
+      "lastUsedAt": "2026-04-18T06:42:30.582Z",
       "lastEffect": "rolled_back_after_harm",
       "appliesToFamily": [
         "web_creative"
@@ -163,26 +184,26 @@
       "effectiveContributionEvidenceRefs": [],
       "rolledBackAfterHarm": true,
       "harmRollbackEvidenceRefs": [
-        "turn_31a014eb18",
-        "turn_caa4d9ab3a",
-        "turn_e8c23d17d6",
-        "turn_d66ecef7e7",
-        "turn_17e53db613",
-        "turn_a6d9cc876c"
+        "turn_c42b6ac6bf",
+        "turn_a92c99a4a0",
+        "turn_548e57d79b",
+        "turn_f62d3241c4",
+        "turn_372f284c26",
+        "turn_985413b356"
       ],
       "summary": "Designing delightful frontends with GPT-5.4 | OpenAI Developers",
-      "lastObservedAt": "2026-04-12T08:21:05.667Z"
+      "lastObservedAt": "2026-04-18T06:42:30.582Z"
     },
     {
-      "memoryId": "mem_106d75d257",
-      "publicRef": "mem_106d75d257",
+      "memoryId": "mem_b439f61eb1",
+      "publicRef": "mem_b439f61eb1",
       "memoryType": "runtime_hint",
       "sourceTier": "external_primary",
       "promotionState": "blocked",
-      "positiveCount": 1,
+      "positiveCount": 2,
       "neutralCount": 0,
-      "harmfulCount": 12,
-      "lastUsedAt": "2026-04-12T08:21:05.667Z",
+      "harmfulCount": 20,
+      "lastUsedAt": "2026-04-18T06:42:30.582Z",
       "lastEffect": "rolled_back_after_harm",
       "appliesToFamily": [
         "web_creative"
@@ -196,48 +217,15 @@
       "effectiveContributionEvidenceRefs": [],
       "rolledBackAfterHarm": true,
       "harmRollbackEvidenceRefs": [
-        "turn_31a014eb18",
-        "turn_caa4d9ab3a",
-        "turn_e8c23d17d6",
-        "turn_d66ecef7e7",
-        "turn_17e53db613",
-        "turn_a6d9cc876c"
+        "turn_c42b6ac6bf",
+        "turn_a92c99a4a0",
+        "turn_548e57d79b",
+        "turn_f62d3241c4",
+        "turn_372f284c26",
+        "turn_985413b356"
       ],
-      "summary": "Run long horizon tasks with Codex | OpenAI Developers",
-      "lastObservedAt": "2026-04-12T08:21:05.667Z"
-    },
-    {
-      "memoryId": "mem_02467967e6",
-      "publicRef": "mem_02467967e6",
-      "memoryType": "semantic_lesson",
-      "sourceTier": "external_primary",
-      "promotionState": "blocked",
-      "positiveCount": 1,
-      "neutralCount": 0,
-      "harmfulCount": 12,
-      "lastUsedAt": "2026-04-12T08:18:31.817Z",
-      "lastEffect": "rolled_back_after_harm",
-      "appliesToFamily": [
-        "web_creative"
-      ],
-      "selectedInLatestPack": false,
-      "adoptedInLatestPack": false,
-      "usageStage": "rolled_back_after_harm",
-      "likelyContributory": false,
-      "harmfulToOutcome": false,
-      "effectiveContribution": false,
-      "effectiveContributionEvidenceRefs": [],
-      "rolledBackAfterHarm": true,
-      "harmRollbackEvidenceRefs": [
-        "turn_31a014eb18",
-        "turn_caa4d9ab3a",
-        "turn_e8c23d17d6",
-        "turn_d66ecef7e7",
-        "turn_17e53db613",
-        "turn_a6d9cc876c"
-      ],
-      "summary": "Using skills to accelerate OSS maintenance | OpenAI Developers",
-      "lastObservedAt": "2026-04-12T08:18:31.817Z"
+      "summary": "From prompts to products: One year of Responses | OpenAI Developers",
+      "lastObservedAt": "2026-04-18T06:42:30.582Z"
     },
     {
       "memoryId": "mem_8896adaa48",
@@ -245,10 +233,10 @@
       "memoryType": "runtime_hint",
       "sourceTier": "external_primary",
       "promotionState": "blocked",
-      "positiveCount": 1,
+      "positiveCount": 2,
       "neutralCount": 0,
-      "harmfulCount": 12,
-      "lastUsedAt": "2026-04-12T08:18:31.817Z",
+      "harmfulCount": 20,
+      "lastUsedAt": "2026-04-18T06:42:30.582Z",
       "lastEffect": "rolled_back_after_harm",
       "appliesToFamily": [
         "web_creative"
@@ -262,15 +250,15 @@
       "effectiveContributionEvidenceRefs": [],
       "rolledBackAfterHarm": true,
       "harmRollbackEvidenceRefs": [
-        "turn_31a014eb18",
-        "turn_caa4d9ab3a",
-        "turn_e8c23d17d6",
-        "turn_d66ecef7e7",
-        "turn_17e53db613",
-        "turn_a6d9cc876c"
+        "turn_c42b6ac6bf",
+        "turn_a92c99a4a0",
+        "turn_548e57d79b",
+        "turn_f62d3241c4",
+        "turn_372f284c26",
+        "turn_985413b356"
       ],
       "summary": "Using skills to accelerate OSS maintenance | OpenAI Developers",
-      "lastObservedAt": "2026-04-12T08:18:31.817Z"
+      "lastObservedAt": "2026-04-18T06:42:30.582Z"
     },
     {
       "memoryId": "mem_847a1aba42",
@@ -278,10 +266,10 @@
       "memoryType": "runtime_hint",
       "sourceTier": "external_primary",
       "promotionState": "blocked",
-      "positiveCount": 1,
+      "positiveCount": 2,
       "neutralCount": 0,
-      "harmfulCount": 12,
-      "lastUsedAt": "2026-04-12T08:18:31.817Z",
+      "harmfulCount": 20,
+      "lastUsedAt": "2026-04-18T06:42:30.582Z",
       "lastEffect": "rolled_back_after_harm",
       "appliesToFamily": [
         "web_creative"
@@ -295,15 +283,81 @@
       "effectiveContributionEvidenceRefs": [],
       "rolledBackAfterHarm": true,
       "harmRollbackEvidenceRefs": [
-        "turn_31a014eb18",
-        "turn_caa4d9ab3a",
-        "turn_e8c23d17d6",
-        "turn_d66ecef7e7",
-        "turn_17e53db613",
-        "turn_a6d9cc876c"
+        "turn_c42b6ac6bf",
+        "turn_a92c99a4a0",
+        "turn_548e57d79b",
+        "turn_f62d3241c4",
+        "turn_372f284c26",
+        "turn_985413b356"
       ],
       "summary": "Building frontend UIs with Codex and Figma | OpenAI Developers",
-      "lastObservedAt": "2026-04-12T08:18:31.817Z"
+      "lastObservedAt": "2026-04-18T06:42:30.582Z"
+    },
+    {
+      "memoryId": "mem_106d75d257",
+      "publicRef": "mem_106d75d257",
+      "memoryType": "runtime_hint",
+      "sourceTier": "external_primary",
+      "promotionState": "blocked",
+      "positiveCount": 2,
+      "neutralCount": 0,
+      "harmfulCount": 20,
+      "lastUsedAt": "2026-04-18T06:42:30.582Z",
+      "lastEffect": "rolled_back_after_harm",
+      "appliesToFamily": [
+        "web_creative"
+      ],
+      "selectedInLatestPack": false,
+      "adoptedInLatestPack": false,
+      "usageStage": "rolled_back_after_harm",
+      "likelyContributory": false,
+      "harmfulToOutcome": false,
+      "effectiveContribution": false,
+      "effectiveContributionEvidenceRefs": [],
+      "rolledBackAfterHarm": true,
+      "harmRollbackEvidenceRefs": [
+        "turn_c42b6ac6bf",
+        "turn_a92c99a4a0",
+        "turn_548e57d79b",
+        "turn_f62d3241c4",
+        "turn_372f284c26",
+        "turn_985413b356"
+      ],
+      "summary": "Run long horizon tasks with Codex | OpenAI Developers",
+      "lastObservedAt": "2026-04-18T06:42:30.582Z"
+    },
+    {
+      "memoryId": "mem_d731ba2fd1",
+      "publicRef": "mem_d731ba2fd1",
+      "memoryType": "semantic_lesson",
+      "sourceTier": "external_primary",
+      "promotionState": "blocked",
+      "positiveCount": 0,
+      "neutralCount": 0,
+      "harmfulCount": 12,
+      "lastUsedAt": "2026-04-18T05:32:13.132Z",
+      "lastEffect": "rolled_back_after_harm",
+      "appliesToFamily": [
+        "web_creative"
+      ],
+      "selectedInLatestPack": false,
+      "adoptedInLatestPack": false,
+      "usageStage": "rolled_back_after_harm",
+      "likelyContributory": false,
+      "harmfulToOutcome": false,
+      "effectiveContribution": false,
+      "effectiveContributionEvidenceRefs": [],
+      "rolledBackAfterHarm": true,
+      "harmRollbackEvidenceRefs": [
+        "turn_fa2275c120",
+        "turn_dc4115d81c",
+        "turn_456e817326",
+        "turn_ca564ffa59",
+        "turn_2183f67330",
+        "turn_83f995043f"
+      ],
+      "summary": "Using skills to accelerate OSS maintenance | OpenAI Developers",
+      "lastObservedAt": "2026-04-18T05:32:13.132Z"
     },
     {
       "memoryId": "mem_e65f4ce9a0",
@@ -327,30 +381,6 @@
       "rolledBackAfterHarm": false,
       "harmRollbackEvidenceRefs": [],
       "summary": "tier0-agents",
-      "lastObservedAt": ""
-    },
-    {
-      "memoryId": "mem_ad36640985",
-      "publicRef": "mem_ad36640985",
-      "memoryType": "constitution_ref",
-      "sourceTier": "repo",
-      "promotionState": "promoted",
-      "positiveCount": 0,
-      "neutralCount": 0,
-      "harmfulCount": 0,
-      "lastUsedAt": "",
-      "lastEffect": "selected_only",
-      "appliesToFamily": [],
-      "selectedInLatestPack": true,
-      "adoptedInLatestPack": true,
-      "usageStage": "selected_only",
-      "likelyContributory": false,
-      "harmfulToOutcome": false,
-      "effectiveContribution": false,
-      "effectiveContributionEvidenceRefs": [],
-      "rolledBackAfterHarm": false,
-      "harmRollbackEvidenceRefs": [],
-      "summary": "current-architecture",
       "lastObservedAt": ""
     }
   ]

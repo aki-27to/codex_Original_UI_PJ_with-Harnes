@@ -1,9 +1,25 @@
 {
   "schema": "ReleaseDecision.v1",
-  "terminal_state": "RELEASE_APPROVED_WITH_ASSUMPTIONS",
+  "contract_scope": "release_readiness_and_whole_harness_completion_only",
+  "default_blocking_authority": false,
+  "blocking_authority_activation": {
+    "requiresExplicitUserRequest": true,
+    "explicitRequestScopes": [
+      "release",
+      "readiness",
+      "whole_harness_completion"
+    ],
+    "ordinaryTaskCompletion": {
+      "blockedByReleaseDecisionByDefault": false,
+      "releaseDecisionIsSeparateScope": true
+    }
+  },
+  "terminal_state": "RELEASE_BLOCKED",
   "rationale": [
     "turn_status=completed",
     "task_outcome_status=COMPLETED",
+    "adoption_readiness=0.8847",
+    "iteration_action=RETRY",
     "completed_default",
     "review_severity=medium"
   ],
@@ -12,12 +28,13 @@
     "flow_trace_summary.json",
     "review_load_breakdown.json"
   ],
-  "blocker_list": [],
-  "waived_risks": [
+  "blocker_list": [
+    "Dense, interrupted, critical, and longest-copy states must be visually checked for overflow, clipping, collisions, and copy-fit before signoff.",
     "New logic or protocol-sensitive behavior requires dedicated verification before signoff."
   ],
+  "waived_risks": [],
   "remaining_conditions": [],
   "replay_bundle_refs": [
-    "019cd29a-09de-7670-8c38-eade454f7cb2"
+    "mock-thread-4"
   ]
 }

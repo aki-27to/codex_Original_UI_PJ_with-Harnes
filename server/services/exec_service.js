@@ -34,12 +34,13 @@ function createExecService(deps) {
     workspaceRoot,
     normalizeChatImageAttachments,
     normalizeRequestUserInputPolicy,
+    normalizeCodexMemoryMode,
     nonInteractiveRequestUserInputPolicy,
     normalizeExecutionProfile,
     runtimeExecutionProfile,
     normalizeExecutionIntent,
     resolveWorkspaceGuardRequirement,
-    workspaceGuardLockedRoot,
+    getWorkspaceGuardLockedRoot,
     buildWorkspaceGuardSnapshot,
     getOrCreateAgentState,
     derivePreviousPlanningContextForRequest,
@@ -68,6 +69,10 @@ function createExecService(deps) {
     resolveExecRequestErrorStatus,
     summarizeErrorForOperationLog,
   } = deps;
+
+  function readWorkspaceGuardLockedRoot() {
+    return typeof getWorkspaceGuardLockedRoot === "function" ? getWorkspaceGuardLockedRoot() : "";
+  }
 
   async function handleExecIdempotencyRequest({ req, res, url, pathname }) {
     try {
@@ -188,6 +193,7 @@ function createExecService(deps) {
       const cwd = normalizeWorkingDirectory(body.cwd, workspaceRoot);
       const images = normalizeChatImageAttachments(body.images, body.image);
       const requestUserInputPolicy = normalizeRequestUserInputPolicy(body.requestUserInputPolicy, nonInteractiveRequestUserInputPolicy);
+      const resetCodexMemory = normalizeBooleanFlag(body.resetCodexMemory);
       const requestExecutionProfile = normalizeExecutionProfile(body.executionProfile, runtimeExecutionProfile);
       const requestExecutionIntent = normalizeExecutionIntent(body.executionIntent, "interactive");
       const requestExecutionSource = safeString(body.executionSource, 80) || "api_exec";
@@ -195,6 +201,7 @@ function createExecService(deps) {
         prompt,
         executionSource: requestExecutionSource,
       });
+      const workspaceGuardLockedRoot = readWorkspaceGuardLockedRoot();
       if (workspaceGuardRequirement.workspaceLockRequired && !workspaceGuardLockedRoot) {
         logOperation(
           "api.exec_blocked",
@@ -220,7 +227,12 @@ function createExecService(deps) {
       const reproProfileRequested = isReproExecutionProfile(requestExecutionProfile);
       const governanceOverride = extractGovernanceOverride(body, { normalizeOverrideRequest });
       const requestedAgentState = getOrCreateAgentState(agentName);
-      const previousPlanningContext = derivePreviousPlanningContextForRequest(requestedAgentState, cwd);
+      const previousPlanningContext = forceNewSession
+        ? null
+        : derivePreviousPlanningContextForRequest(requestedAgentState, cwd);
+      const memoryMode = typeof normalizeCodexMemoryMode === "function"
+        ? normalizeCodexMemoryMode(body.memoryMode, requestedAgentState && requestedAgentState.memoryMode)
+        : "default";
       const extensionApplied = applyRequirementGuardExecExtension({
         prompt,
         sandboxMode,
@@ -236,6 +248,8 @@ function createExecService(deps) {
           cwd,
           images,
           requestUserInputPolicy,
+          memoryMode,
+          resetCodexMemory,
           governanceOverride,
           forceNewSession,
           previousPlanningContext,
@@ -282,6 +296,10 @@ function createExecService(deps) {
       const resolvedExecModelReasoningEffort = normalizeExecModelReasoningEffort(execOptions && execOptions.modelReasoningEffort, modelReasoningEffort);
       execOptions.agentName = resolvedExecAgent;
       execOptions.requestUserInputPolicy = resolvedRequestUserInputPolicy;
+      execOptions.memoryMode = typeof normalizeCodexMemoryMode === "function"
+        ? normalizeCodexMemoryMode(execOptions && execOptions.memoryMode, memoryMode)
+        : memoryMode;
+      execOptions.resetCodexMemory = normalizeBooleanFlag(execOptions && execOptions.resetCodexMemory) || resetCodexMemory;
       execOptions.model = resolvedExecModel;
       execOptions.modelReasoningEffort = resolvedExecModelReasoningEffort;
       execOptions.promptAudit = execPromptAudit;
@@ -293,6 +311,7 @@ function createExecService(deps) {
       const resolvedExecCwd = execOptions && execOptions.cwd ? execOptions.cwd : cwd;
       const workspaceGuardViolation = buildWorkspaceGuardViolation(resolvedExecCwd);
       if (workspaceGuardViolation) {
+        const workspaceGuardLockedRoot = readWorkspaceGuardLockedRoot();
         logOperation(
           "api.exec_blocked",
           {
@@ -332,6 +351,8 @@ function createExecService(deps) {
           limit: execPromptAudit.limit,
         },
         requestUserInputPolicy: resolvedRequestUserInputPolicy,
+        memoryMode: safeString(execOptions && execOptions.memoryMode, 40) || "default",
+        resetCodexMemory: execOptions && execOptions.resetCodexMemory ? 1 : 0,
         executionProfile: requestExecutionProfile,
         reproProfile: reproProfileRequested ? 1 : 0,
         executionIntent: requestExecutionIntent,
@@ -374,6 +395,8 @@ function createExecService(deps) {
         modelReasoningEffort: resolvedExecModelReasoningEffort,
         cwd: summarizePathForOperationLog(resolvedExecCwd, 220),
         requestUserInputPolicy: resolvedRequestUserInputPolicy,
+        memoryMode: safeString(execOptions && execOptions.memoryMode, 40) || "default",
+        resetCodexMemory: execOptions && execOptions.resetCodexMemory ? 1 : 0,
         executionProfile: requestExecutionProfile,
         executionIntent: requestExecutionIntent,
         executionSource: requestExecutionSource,
@@ -396,6 +419,8 @@ function createExecService(deps) {
             agentName: resolvedExecAgent,
             cwd: resolvedExecCwd,
             requestUserInputPolicy: resolvedRequestUserInputPolicy,
+            memoryMode: safeString(execOptions && execOptions.memoryMode, 40) || "default",
+            resetCodexMemory: execOptions && execOptions.resetCodexMemory ? 1 : 0,
             executionProfile: requestExecutionProfile,
             executionIntent: requestExecutionIntent,
             executionSource: requestExecutionSource,

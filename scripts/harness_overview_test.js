@@ -8,6 +8,7 @@ const path = require("path");
 const vm = require("vm");
 const { startInProcessHarnessServer } = require("./lib/in_process_harness_server");
 const { buildHarnessOverviewPayload } = require("./lib/harness_overview_surface");
+const { spawnNodeScript } = require("./lib/process_invocation");
 const { resolveServerImplementationPath } = require("./lib/server_source_path");
 
 const workspaceRoot = path.resolve(__dirname, "..");
@@ -15,6 +16,8 @@ const { implementationPath: serverJsPath } = resolveServerImplementationPath(wor
 const overviewHtmlPath = path.join(workspaceRoot, "web", "01.HarnesUI", "overview.html");
 const overviewJsPath = path.join(workspaceRoot, "web", "01.HarnesUI", "overview.js");
 const indexHtmlPath = path.join(workspaceRoot, "web", "01.HarnesUI", "index.html");
+const requestHandlerPath = path.join(workspaceRoot, "server", "request_handler.js");
+const overviewRoutesPath = path.join(workspaceRoot, "server", "routes", "overview_routes.js");
 
 function readFile(filePath) {
   return fs.readFileSync(filePath, "utf8");
@@ -38,26 +41,6 @@ function runCheck(name, fn) {
 
 function sleep(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms));
-}
-
-function spawnNodeScript(scriptPath, { cwd, env, stdio = ["ignore", "pipe", "pipe"] } = {}) {
-  const options = {
-    cwd,
-    env,
-    stdio,
-    windowsHide: true,
-  };
-  if (process.platform !== "win32") {
-    return spawn(process.execPath, [scriptPath], options);
-  }
-  try {
-    return spawn(process.execPath, [scriptPath], options);
-  } catch (error) {
-    if (!/EPERM/i.test(String(error && error.message ? error.message : error))) {
-      throw error;
-    }
-  }
-  return spawn(`"${process.execPath}" ${scriptPath}`, [], { ...options, shell: true });
 }
 
 function flushMicrotasks() {
@@ -1745,6 +1728,63 @@ async function runClientRefreshRaceCheck() {
   return `requestId=${hooks.state.requestId}`;
 }
 
+async function runReviewerReadoutCompletionSeparationCheck() {
+  const payload = createOverviewPayload({
+    runtime: {
+      workerDecisionSurface: {
+        topLevelOutcome: "ADOPTABLE_COMPLETE",
+        taskOutcomeStatus: "COMPLETED",
+        topLevelSummary: "The task outcome is complete and adoptable.",
+        operatorAction: "ADOPT",
+        releaseState: "RELEASE_APPROVED",
+        releaseApproved: true,
+        decisionQuestion: "Can the governed worker stop here without unnecessary human interruption?",
+        adoptionReadiness: 0.98,
+        adoptionReadinessThreshold: 0.8,
+        evidenceSummary: {
+          residualRiskCount: 0,
+        },
+      },
+      workerDecisionSupport: {
+        goalStatus: "NOT_YET",
+        goalStatusScope: "program_readiness",
+        subjectiveGoalStatus: "NOT_YET",
+        compatibilityCompletionStatus: "NOT_YET",
+        compatibilityCompletionScope: "compatibility_layer",
+        programReadinessBlockingWorkerStop: false,
+        backgroundProgramReadiness: {
+          scope: "program_readiness",
+          status: "NOT_YET",
+          displayLabel: "Background program readiness",
+          presentationRole: "secondary_non_blocking_context",
+          doesNotOverrideWorkerVerdict: true,
+          whyNotYetCount: 4,
+          summary: "Background program-readiness debt is still open. It stays visible as secondary context and does not overturn the task verdict.",
+        },
+      },
+      currentTruth: {
+        goalCompletion: {
+          scope: "program_readiness",
+          status: "NOT_YET",
+          displayLabel: "Background program readiness",
+          presentationRole: "secondary_non_blocking_context",
+          doesNotOverrideWorkerVerdict: true,
+          whyNotYetCount: 4,
+        },
+      },
+    },
+  });
+  const { elements } = await createOverviewVmHarness(payload);
+  const reviewerHtml = String(elements.reviewerReadout && elements.reviewerReadout.innerHTML || "");
+  assertContains(reviewerHtml, "background debt open", "reviewer readout must render background debt as debt open instead of raw NOT_YET in the top tags");
+  assertContains(reviewerHtml, "Background program readiness debt", "reviewer readout must render a debt-oriented background title instead of a raw NOT_YET title");
+  assertContains(reviewerHtml, "Recorded Status", "reviewer readout must preserve the raw program status as a fact row");
+  assertContains(reviewerHtml, "The raw program_readiness artifact value is preserved here without promoting it to the task headline.", "reviewer readout must explain why raw status is not the task headline");
+  assert.strictEqual(reviewerHtml.includes("background NOT_YET"), false, "reviewer readout must not leak raw NOT_YET into the top tag");
+  assert.strictEqual(reviewerHtml.includes("Background program readiness: NOT_YET"), false, "reviewer readout must not use raw NOT_YET as the background title");
+  return "task verdict remains primary while background debt stays secondary";
+}
+
 function pickPort() {
   return 58700 + Math.floor(Math.random() * 500);
 }
@@ -1828,6 +1868,21 @@ async function runIntegrationCheck() {
 
   try {
     await waitForServerReady(port);
+    const runtimeRes = await httpRequest(port, "/api/runtime");
+    assert.strictEqual(runtimeRes.statusCode, 200, "GET /api/runtime must return 200");
+    const runtimeJson = JSON.parse(runtimeRes.raw);
+    assert(runtimeJson && typeof runtimeJson === "object", "runtime payload must be an object");
+    assert(runtimeJson.appServerTransport && typeof runtimeJson.appServerTransport === "object", "runtime must expose appServerTransport");
+    assert(runtimeJson.appServerTransport.capabilitySnapshot && typeof runtimeJson.appServerTransport.capabilitySnapshot === "object", "runtime must expose app-server capability snapshot");
+    assert.strictEqual(String(runtimeJson.appServerTransport.capabilitySnapshot.schema || ""), "app-server-capability-snapshot.v1", "runtime app-server capability schema mismatch");
+    assert.strictEqual(String(runtimeJson.appServerTransport.capabilitySnapshot.handshakeStatus || ""), "not_initialized", "mock-fixture runtime should keep handshakeStatus not_initialized before live negotiation");
+    assert.strictEqual(String(runtimeJson.appServerTransport.capabilitySnapshot.features && runtimeJson.appServerTransport.capabilitySnapshot.features.memoryMode && runtimeJson.appServerTransport.capabilitySnapshot.features.memoryMode.status || ""), "unknown", "runtime memoryMode capability should default to unknown");
+    assert.strictEqual(String(runtimeJson.appServerTransport.capabilitySnapshot.features && runtimeJson.appServerTransport.capabilitySnapshot.features.parallelMcp && runtimeJson.appServerTransport.capabilitySnapshot.features.parallelMcp.status || ""), "unknown", "runtime parallelMcp capability should default to unknown");
+    assert.strictEqual(
+      String(runtimeJson.appServerTransport.capabilitySnapshot.statusSemantics && runtimeJson.appServerTransport.capabilitySnapshot.statusSemantics.supported || ""),
+      "explicitly advertised or observed during initialize negotiation",
+      "runtime capability semantics for supported mismatch"
+    );
     const overviewRes = await httpRequest(port, "/api/harness/overview");
     assert.strictEqual(overviewRes.statusCode, 200, "GET /api/harness/overview must return 200");
     const overviewJson = JSON.parse(overviewRes.raw);
@@ -1853,6 +1908,16 @@ async function runIntegrationCheck() {
     assert.strictEqual(String(overviewJson.runtime.harnessPlanes.schema || ""), "single-harness-multi-plane-contract.v1", "overview runtime harnessPlanes schema mismatch");
     assert.strictEqual(String(overviewJson.runtime.harnessPlanes.primaryRoutes && overviewJson.runtime.harnessPlanes.primaryRoutes.execution || ""), "POST /api/exec", "overview runtime harnessPlanes execution route mismatch");
     assert.strictEqual(String(overviewJson.runtime.harnessPlanes.primaryRoutes && overviewJson.runtime.harnessPlanes.primaryRoutes.evaluation || ""), "POST /api/eval/run", "overview runtime harnessPlanes evaluation route mismatch");
+    assert(overviewJson.runtime.appServerTransport && typeof overviewJson.runtime.appServerTransport === "object", "overview runtime must expose appServerTransport");
+    assert(overviewJson.runtime.appServerTransport.capabilitySnapshot && typeof overviewJson.runtime.appServerTransport.capabilitySnapshot === "object", "overview runtime must expose app-server capability snapshot");
+    assert.strictEqual(String(overviewJson.runtime.appServerTransport.capabilitySnapshot.schema || ""), "app-server-capability-snapshot.v1", "overview runtime app-server capability schema mismatch");
+    assert.strictEqual(String(overviewJson.runtime.appServerTransport.capabilitySnapshot.handshakeStatus || ""), "not_initialized", "overview runtime app-server handshakeStatus mismatch");
+    assert.strictEqual(String(overviewJson.runtime.appServerTransport.capabilitySnapshot.features && overviewJson.runtime.appServerTransport.capabilitySnapshot.features.memoryReset && overviewJson.runtime.appServerTransport.capabilitySnapshot.features.memoryReset.status || ""), "unknown", "overview runtime memoryReset capability should default to unknown");
+    assert.deepStrictEqual(
+      overviewJson.runtime.appServerTransport.capabilitySnapshot.statusSemantics,
+      runtimeJson.appServerTransport.capabilitySnapshot.statusSemantics,
+      "overview runtime capability semantics should match /api/runtime"
+    );
     assert(overviewJson.runtime.governedMemory && typeof overviewJson.runtime.governedMemory === "object", "overview runtime must expose governedMemory");
     assert(overviewJson.runtime.manualSelfImprovement && typeof overviewJson.runtime.manualSelfImprovement === "object", "overview runtime must expose manualSelfImprovement");
     assert(typeof overviewJson.runtime.manualSelfImprovement.status === "string", "overview runtime manualSelfImprovement must expose status");
@@ -2029,8 +2094,11 @@ async function main() {
   );
   checks.push(
     runCheck("server exposes overview route and builder", () => {
+      const requestHandlerSource = readFile(requestHandlerPath);
+      const overviewRoutesSource = readFile(overviewRoutesPath);
       assertRegex(serverJs, /function buildHarnessOverviewSnapshot\(\)/, "buildHarnessOverviewSnapshot() missing");
-      assertRegex(serverJs, /pathname===\"\/api\/harness\/overview\"/, "GET /api/harness/overview route missing");
+      assertRegex(requestHandlerSource, /createOverviewRoutes/, "request handler must register overview routes");
+      assertRegex(overviewRoutesSource, /pathname === \"\/api\/harness\/overview\"/, "GET /api/harness/overview route missing");
     })
   );
   checks.push(
@@ -2109,6 +2177,16 @@ async function main() {
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
     console.error(`FAIL overview stale refresh guard :: ${message}`);
+    checks.push({ ok: false, error: message });
+  }
+
+  try {
+    const detail = await runReviewerReadoutCompletionSeparationCheck();
+    console.log(`PASS overview reviewer readout completion separation :: ${detail}`);
+    checks.push({ ok: true });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    console.error(`FAIL overview reviewer readout completion separation :: ${message}`);
     checks.push({ ok: false, error: message });
   }
 

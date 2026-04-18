@@ -3,97 +3,27 @@
   "acceptance_coverage_matrix": [
     {
       "criterion_id": "ac-1",
-      "title": "The target file contains `gate: signed`.",
+      "title": "Requested signoff edits, reviewer/tester evidence, and doc-sync evidence are all present.",
       "status": "PASS",
       "evidence": [
-        "logs/bundles/signoff/signoff-2026-03-09T12-31-59-842Z-24dd95/raw/scripts/config/signoff_sample_target.txt",
-        "docs/EVIDENCE_CONTRACT.md",
-        "docs/CURRENT_ARCHITECTURE.md"
-      ]
-    },
-    {
-      "criterion_id": "ac-2",
-      "title": "The evidence contract bullet is present.",
-      "status": "PASS",
-      "evidence": [
-        "evidence_manifest.json",
-        "stage_timeline.json",
-        "flow_trace_summary.json"
-      ]
-    },
-    {
-      "criterion_id": "ac-3",
-      "title": "The architecture bullet is present.",
-      "status": "PASS",
-      "evidence": [
-        "docs/CURRENT_ARCHITECTURE.md",
-        "docs/ARCHITECTURE_CHANGELOG.md"
-      ]
-    },
-    {
-      "criterion_id": "ac-4",
-      "title": "The changelog line is present.",
-      "status": "PASS",
-      "evidence": [
-        "docs/CURRENT_ARCHITECTURE.md",
-        "docs/ARCHITECTURE_CHANGELOG.md"
-      ]
-    },
-    {
-      "criterion_id": "ac-5",
-      "title": "Reviewer evidence is present and the reviewer remains read-only.",
-      "status": "PASS",
-      "evidence": [
-        "unknown"
-      ]
-    },
-    {
-      "criterion_id": "ac-6",
-      "title": "Tester evidence is present and includes pass/fail verification.",
-      "status": "PASS",
-      "evidence": [
-        "10"
-      ]
-    },
-    {
-      "criterion_id": "ac-7",
-      "title": "No follow-up questions are required.",
-      "status": "PASS",
-      "evidence": [
-        "logs/bundles/signoff/signoff-2026-03-09T12-31-59-842Z-24dd95/raw/scripts/config/signoff_sample_target.txt",
-        "docs/EVIDENCE_CONTRACT.md",
-        "docs/CURRENT_ARCHITECTURE.md"
-      ]
-    },
-    {
-      "criterion_id": "ac-8",
-      "title": "Final reply must be exactly: SIGNOFF_TASK_OK logs/bundles/signoff/signoff-2026-03-09T12-31-59-842Z-24dd95/raw/scripts/config/signoff_sample_target.txt",
-      "status": "PASS",
-      "evidence": [
-        "10"
+        "mock-thread-4-reviewer",
+        "mock-thread-4-tester"
       ]
     }
   ],
   "reviewer_findings": [
     {
-      "actor": "unknown",
-      "note": "SIGNOFF_TASK_OK logs/bundles/signoff/signoff-2026-03-09T12-31-59-842Z-24dd95/raw/scripts/config/signoff_sample_target.txt"
+      "actor": "mock-thread-4-reviewer",
+      "note": "No findings."
     },
     {
-      "actor": "unknown",
-      "note": "Owned paths:\n- logs\\bundles\\signoff\\signoff-2026-03-09T12-31-59-842Z-24dd95\\raw\\scripts\\config\\signoff_sample_target.txt\n- docs\\EVIDENCE_CONTRACT.md\n- docs\\CURRENT_"
-    },
-    {
-      "actor": "unknown",
-      "note": "Findings: none\nRead-only: yes\nAcceptance: the scoped acceptance criteria appear satisfied in the current file state."
-    },
-    {
-      "actor": "unknown",
-      "note": "- `Read-only: yes`\n- `gate signed: PASS`\n- `evidence contract bullet present: PASS`\n- `architecture bullet present: PASS`\n- `changelog line present: PASS`\n- `overall: PASS`"
+      "actor": "mock-thread-4-tester",
+      "note": "PASS: reviewer/tester/doc-sync evidence present."
     }
   ],
   "severity": "medium",
   "residual_risk": [
+    "Dense, interrupted, critical, and longest-copy states must be visually checked for overflow, clipping, collisions, and copy-fit before signoff.",
     "New logic or protocol-sensitive behavior requires dedicated verification before signoff."
   ],
   "missing_evidence": [],
@@ -101,35 +31,953 @@
     {
       "criterion_id": "ac-1",
       "status": "PASS"
-    },
-    {
-      "criterion_id": "ac-2",
-      "status": "PASS"
-    },
-    {
-      "criterion_id": "ac-3",
-      "status": "PASS"
-    },
-    {
-      "criterion_id": "ac-4",
-      "status": "PASS"
-    },
-    {
-      "criterion_id": "ac-5",
-      "status": "PASS"
-    },
-    {
-      "criterion_id": "ac-6",
-      "status": "PASS"
-    },
-    {
-      "criterion_id": "ac-7",
-      "status": "PASS"
-    },
-    {
-      "criterion_id": "ac-8",
-      "status": "PASS"
     }
   ],
-  "recommended_release_state": "RELEASE_APPROVED_WITH_ASSUMPTIONS"
+  "clause_completion_scorecard": {
+    "schema": "clause-completion-scorecard.v1",
+    "status": "PASS",
+    "reason": "all_core_clauses_satisfied",
+    "summary": {
+      "coreTotal": 17,
+      "satisfiedCount": 17,
+      "unsatisfiedCount": 0,
+      "waivedCount": 0
+    },
+    "clauses": [
+      {
+        "clauseId": "req-1",
+        "text": "Implementation is explicitly requested now.Requirements are fixed.Do not switch to proposal-only mode and do not ask follow-up questions.",
+        "status": "satisfied",
+        "requirementRefs": [
+          "explicitGoal",
+          "intentHypotheses",
+          "baselineScope",
+          "userValueFrame.userWants",
+          "userValueFrame.hardConstraints",
+          "userValueFrame.mustAvoid"
+        ],
+        "dispatchIds": [
+          "dispatch-1-backend_worker",
+          "dispatch-2-infra_worker"
+        ],
+        "planStepIds": [
+          "execution",
+          "quality",
+          "report"
+        ],
+        "acceptanceRefs": [
+          "ac-1"
+        ],
+        "evidenceRefs": [
+          "dispatch:dispatch-1-backend_worker",
+          "dispatch:dispatch-2-infra_worker",
+          "plan:execution",
+          "plan:quality",
+          "plan:report",
+          "mock-thread-4-reviewer",
+          "mock-thread-4-tester",
+          "docs/CURRENT_ARCHITECTURE.md",
+          "docs/ARCHITECTURE_CHANGELOG.md",
+          "review:mock-thread-4-reviewer",
+          "review:mock-thread-4-tester",
+          "test:mock-thread-4-tester",
+          "flow_trace_summary.json"
+        ],
+        "reasons": [],
+        "finalStatus": "completed",
+        "taskOutcomeStatus": "COMPLETED"
+      },
+      {
+        "clauseId": "req-2",
+        "text": "Use the default parent orchestration path.",
+        "status": "satisfied",
+        "requirementRefs": [
+          "baselineScope",
+          "userValueFrame.userWants"
+        ],
+        "dispatchIds": [
+          "dispatch-1-backend_worker",
+          "dispatch-2-infra_worker"
+        ],
+        "planStepIds": [
+          "execution",
+          "quality",
+          "report"
+        ],
+        "acceptanceRefs": [
+          "ac-1"
+        ],
+        "evidenceRefs": [
+          "dispatch:dispatch-1-backend_worker",
+          "dispatch:dispatch-2-infra_worker",
+          "plan:execution",
+          "plan:quality",
+          "plan:report",
+          "mock-thread-4-reviewer",
+          "mock-thread-4-tester",
+          "docs/CURRENT_ARCHITECTURE.md",
+          "docs/ARCHITECTURE_CHANGELOG.md",
+          "review:mock-thread-4-reviewer",
+          "review:mock-thread-4-tester",
+          "test:mock-thread-4-tester",
+          "flow_trace_summary.json"
+        ],
+        "reasons": [],
+        "finalStatus": "completed",
+        "taskOutcomeStatus": "COMPLETED"
+      },
+      {
+        "clauseId": "req-3",
+        "text": "Delegate the implementation edits to infra_worker.",
+        "status": "satisfied",
+        "requirementRefs": [
+          "baselineScope",
+          "userValueFrame.userWants"
+        ],
+        "dispatchIds": [
+          "dispatch-1-backend_worker",
+          "dispatch-2-infra_worker"
+        ],
+        "planStepIds": [
+          "execution",
+          "quality",
+          "report"
+        ],
+        "acceptanceRefs": [
+          "ac-1"
+        ],
+        "evidenceRefs": [
+          "dispatch:dispatch-1-backend_worker",
+          "dispatch:dispatch-2-infra_worker",
+          "plan:execution",
+          "plan:quality",
+          "plan:report",
+          "mock-thread-4-reviewer",
+          "mock-thread-4-tester",
+          "docs/CURRENT_ARCHITECTURE.md",
+          "docs/ARCHITECTURE_CHANGELOG.md",
+          "review:mock-thread-4-reviewer",
+          "review:mock-thread-4-tester",
+          "test:mock-thread-4-tester",
+          "flow_trace_summary.json"
+        ],
+        "reasons": [],
+        "finalStatus": "completed",
+        "taskOutcomeStatus": "COMPLETED"
+      },
+      {
+        "clauseId": "req-4",
+        "text": "Request independent read-only reviewer and tester checks before finalizing.",
+        "status": "satisfied",
+        "requirementRefs": [
+          "baselineScope",
+          "userValueFrame.userWants",
+          "userValueFrame.hardConstraints"
+        ],
+        "dispatchIds": [
+          "dispatch-1-backend_worker",
+          "dispatch-2-infra_worker"
+        ],
+        "planStepIds": [
+          "execution",
+          "quality",
+          "report"
+        ],
+        "acceptanceRefs": [
+          "ac-1"
+        ],
+        "evidenceRefs": [
+          "dispatch:dispatch-1-backend_worker",
+          "dispatch:dispatch-2-infra_worker",
+          "plan:execution",
+          "plan:quality",
+          "plan:report",
+          "mock-thread-4-reviewer",
+          "mock-thread-4-tester",
+          "docs/CURRENT_ARCHITECTURE.md",
+          "docs/ARCHITECTURE_CHANGELOG.md",
+          "review:mock-thread-4-reviewer",
+          "review:mock-thread-4-tester",
+          "test:mock-thread-4-tester",
+          "flow_trace_summary.json"
+        ],
+        "reasons": [],
+        "finalStatus": "completed",
+        "taskOutcomeStatus": "COMPLETED"
+      },
+      {
+        "clauseId": "req-5",
+        "text": "Change logs/bundles/signoff/signoff-2026-04-18T05-27-13-996Z-f97810/raw/scripts/config/signoff_sample_target.txt, docs/EVIDENCE_CONTRACT.md, docs/CURRENT_ARCHITECTURE.md, and docs/ARCHITECTURE_CHANGELOG.md.",
+        "status": "satisfied",
+        "requirementRefs": [
+          "baselineScope",
+          "userValueFrame.userWants"
+        ],
+        "dispatchIds": [
+          "dispatch-1-backend_worker",
+          "dispatch-2-infra_worker"
+        ],
+        "planStepIds": [
+          "execution",
+          "quality",
+          "report"
+        ],
+        "acceptanceRefs": [
+          "ac-1"
+        ],
+        "evidenceRefs": [
+          "dispatch:dispatch-1-backend_worker",
+          "dispatch:dispatch-2-infra_worker",
+          "plan:execution",
+          "plan:quality",
+          "plan:report",
+          "mock-thread-4-reviewer",
+          "mock-thread-4-tester",
+          "docs/CURRENT_ARCHITECTURE.md",
+          "docs/ARCHITECTURE_CHANGELOG.md",
+          "review:mock-thread-4-reviewer",
+          "review:mock-thread-4-tester",
+          "test:mock-thread-4-tester",
+          "flow_trace_summary.json"
+        ],
+        "reasons": [],
+        "finalStatus": "completed",
+        "taskOutcomeStatus": "COMPLETED"
+      },
+      {
+        "clauseId": "req-6",
+        "text": "Do not modify any other file and do not revert unrelated edits.",
+        "status": "satisfied",
+        "requirementRefs": [
+          "baselineScope",
+          "userValueFrame.userWants",
+          "userValueFrame.hardConstraints",
+          "userValueFrame.mustAvoid"
+        ],
+        "dispatchIds": [
+          "dispatch-1-backend_worker",
+          "dispatch-2-infra_worker"
+        ],
+        "planStepIds": [
+          "execution",
+          "quality",
+          "report"
+        ],
+        "acceptanceRefs": [
+          "ac-1"
+        ],
+        "evidenceRefs": [
+          "dispatch:dispatch-1-backend_worker",
+          "dispatch:dispatch-2-infra_worker",
+          "plan:execution",
+          "plan:quality",
+          "plan:report",
+          "mock-thread-4-reviewer",
+          "mock-thread-4-tester",
+          "docs/CURRENT_ARCHITECTURE.md",
+          "docs/ARCHITECTURE_CHANGELOG.md",
+          "review:mock-thread-4-reviewer",
+          "review:mock-thread-4-tester",
+          "test:mock-thread-4-tester",
+          "flow_trace_summary.json"
+        ],
+        "reasons": [],
+        "finalStatus": "completed",
+        "taskOutcomeStatus": "COMPLETED"
+      },
+      {
+        "clauseId": "req-7",
+        "text": "Use apply_patch for file edits.",
+        "status": "satisfied",
+        "requirementRefs": [
+          "baselineScope",
+          "userValueFrame.userWants"
+        ],
+        "dispatchIds": [
+          "dispatch-1-backend_worker",
+          "dispatch-2-infra_worker"
+        ],
+        "planStepIds": [
+          "execution",
+          "quality",
+          "report"
+        ],
+        "acceptanceRefs": [
+          "ac-1"
+        ],
+        "evidenceRefs": [
+          "dispatch:dispatch-1-backend_worker",
+          "dispatch:dispatch-2-infra_worker",
+          "plan:execution",
+          "plan:quality",
+          "plan:report",
+          "mock-thread-4-reviewer",
+          "mock-thread-4-tester",
+          "docs/CURRENT_ARCHITECTURE.md",
+          "docs/ARCHITECTURE_CHANGELOG.md",
+          "review:mock-thread-4-reviewer",
+          "review:mock-thread-4-tester",
+          "test:mock-thread-4-tester",
+          "flow_trace_summary.json"
+        ],
+        "reasons": [],
+        "finalStatus": "completed",
+        "taskOutcomeStatus": "COMPLETED"
+      },
+      {
+        "clauseId": "req-8",
+        "text": "The implementation specialist must report using this exact header format:",
+        "status": "satisfied",
+        "requirementRefs": [
+          "baselineScope",
+          "userValueFrame.hardConstraints"
+        ],
+        "dispatchIds": [
+          "dispatch-1-backend_worker",
+          "dispatch-2-infra_worker"
+        ],
+        "planStepIds": [
+          "execution",
+          "quality",
+          "report"
+        ],
+        "acceptanceRefs": [
+          "ac-1"
+        ],
+        "evidenceRefs": [
+          "dispatch:dispatch-1-backend_worker",
+          "dispatch:dispatch-2-infra_worker",
+          "plan:execution",
+          "plan:quality",
+          "plan:report",
+          "mock-thread-4-reviewer",
+          "mock-thread-4-tester",
+          "docs/CURRENT_ARCHITECTURE.md",
+          "docs/ARCHITECTURE_CHANGELOG.md",
+          "review:mock-thread-4-reviewer",
+          "review:mock-thread-4-tester",
+          "test:mock-thread-4-tester",
+          "flow_trace_summary.json"
+        ],
+        "reasons": [],
+        "finalStatus": "completed",
+        "taskOutcomeStatus": "COMPLETED"
+      },
+      {
+        "clauseId": "req-9",
+        "text": "Owned paths:",
+        "status": "satisfied",
+        "requirementRefs": [
+          "baselineScope"
+        ],
+        "dispatchIds": [
+          "dispatch-1-backend_worker",
+          "dispatch-2-infra_worker"
+        ],
+        "planStepIds": [
+          "execution",
+          "quality",
+          "report"
+        ],
+        "acceptanceRefs": [
+          "ac-1"
+        ],
+        "evidenceRefs": [
+          "dispatch:dispatch-1-backend_worker",
+          "dispatch:dispatch-2-infra_worker",
+          "plan:execution",
+          "plan:quality",
+          "plan:report",
+          "mock-thread-4-reviewer",
+          "mock-thread-4-tester",
+          "docs/CURRENT_ARCHITECTURE.md",
+          "docs/ARCHITECTURE_CHANGELOG.md",
+          "review:mock-thread-4-reviewer",
+          "review:mock-thread-4-tester",
+          "test:mock-thread-4-tester",
+          "flow_trace_summary.json"
+        ],
+        "reasons": [],
+        "finalStatus": "completed",
+        "taskOutcomeStatus": "COMPLETED"
+      },
+      {
+        "clauseId": "req-10",
+        "text": "`<absolute path>`",
+        "status": "satisfied",
+        "requirementRefs": [
+          "baselineScope"
+        ],
+        "dispatchIds": [
+          "dispatch-1-backend_worker",
+          "dispatch-2-infra_worker"
+        ],
+        "planStepIds": [
+          "execution",
+          "quality",
+          "report"
+        ],
+        "acceptanceRefs": [
+          "ac-1"
+        ],
+        "evidenceRefs": [
+          "dispatch:dispatch-1-backend_worker",
+          "dispatch:dispatch-2-infra_worker",
+          "plan:execution",
+          "plan:quality",
+          "plan:report",
+          "mock-thread-4-reviewer",
+          "mock-thread-4-tester",
+          "docs/CURRENT_ARCHITECTURE.md",
+          "docs/ARCHITECTURE_CHANGELOG.md",
+          "review:mock-thread-4-reviewer",
+          "review:mock-thread-4-tester",
+          "test:mock-thread-4-tester",
+          "flow_trace_summary.json"
+        ],
+        "reasons": [],
+        "finalStatus": "completed",
+        "taskOutcomeStatus": "COMPLETED"
+      },
+      {
+        "clauseId": "req-11",
+        "text": "In logs/bundles/signoff/signoff-2026-04-18T05-27-13-996Z-f97810/raw/scripts/config/signoff_sample_target.txt, replace the single line `gate: pending` with `gate: signed`.",
+        "status": "satisfied",
+        "requirementRefs": [
+          "baselineScope"
+        ],
+        "dispatchIds": [
+          "dispatch-1-backend_worker",
+          "dispatch-2-infra_worker"
+        ],
+        "planStepIds": [
+          "execution",
+          "quality",
+          "report"
+        ],
+        "acceptanceRefs": [
+          "ac-1"
+        ],
+        "evidenceRefs": [
+          "dispatch:dispatch-1-backend_worker",
+          "dispatch:dispatch-2-infra_worker",
+          "plan:execution",
+          "plan:quality",
+          "plan:report",
+          "mock-thread-4-reviewer",
+          "mock-thread-4-tester",
+          "docs/CURRENT_ARCHITECTURE.md",
+          "docs/ARCHITECTURE_CHANGELOG.md",
+          "review:mock-thread-4-reviewer",
+          "review:mock-thread-4-tester",
+          "test:mock-thread-4-tester",
+          "flow_trace_summary.json"
+        ],
+        "reasons": [],
+        "finalStatus": "completed",
+        "taskOutcomeStatus": "COMPLETED"
+      },
+      {
+        "clauseId": "req-12",
+        "text": "In docs/EVIDENCE_CONTRACT.md, add this exact bullet if it is not already present: - `SIGNOFF_ASSURANCE` runs should surface reviewer/tester/doc-sync status in `review_load_breakdown.json` for operator signoff.",
+        "status": "satisfied",
+        "requirementRefs": [
+          "baselineScope"
+        ],
+        "dispatchIds": [
+          "dispatch-1-backend_worker",
+          "dispatch-2-infra_worker"
+        ],
+        "planStepIds": [
+          "execution",
+          "quality",
+          "report"
+        ],
+        "acceptanceRefs": [
+          "ac-1"
+        ],
+        "evidenceRefs": [
+          "dispatch:dispatch-1-backend_worker",
+          "dispatch:dispatch-2-infra_worker",
+          "plan:execution",
+          "plan:quality",
+          "plan:report",
+          "mock-thread-4-reviewer",
+          "mock-thread-4-tester",
+          "docs/CURRENT_ARCHITECTURE.md",
+          "docs/ARCHITECTURE_CHANGELOG.md",
+          "review:mock-thread-4-reviewer",
+          "review:mock-thread-4-tester",
+          "test:mock-thread-4-tester",
+          "flow_trace_summary.json"
+        ],
+        "reasons": [],
+        "finalStatus": "completed",
+        "taskOutcomeStatus": "COMPLETED"
+      },
+      {
+        "clauseId": "req-13",
+        "text": "In docs/CURRENT_ARCHITECTURE.md, add this exact architecture bullet if it is not already present: - `SIGNOFF_ASSURANCE` sample runs keep reviewer/tester execution and doc-sync evidence co-located in signoff bundles.",
+        "status": "satisfied",
+        "requirementRefs": [
+          "baselineScope",
+          "userValueFrame.hardConstraints"
+        ],
+        "dispatchIds": [
+          "dispatch-1-backend_worker",
+          "dispatch-2-infra_worker"
+        ],
+        "planStepIds": [
+          "execution",
+          "quality",
+          "report"
+        ],
+        "acceptanceRefs": [
+          "ac-1"
+        ],
+        "evidenceRefs": [
+          "dispatch:dispatch-1-backend_worker",
+          "dispatch:dispatch-2-infra_worker",
+          "plan:execution",
+          "plan:quality",
+          "plan:report",
+          "mock-thread-4-reviewer",
+          "mock-thread-4-tester",
+          "docs/CURRENT_ARCHITECTURE.md",
+          "docs/ARCHITECTURE_CHANGELOG.md",
+          "review:mock-thread-4-reviewer",
+          "review:mock-thread-4-tester",
+          "test:mock-thread-4-tester",
+          "flow_trace_summary.json"
+        ],
+        "reasons": [],
+        "finalStatus": "completed",
+        "taskOutcomeStatus": "COMPLETED"
+      },
+      {
+        "clauseId": "req-14",
+        "text": "In docs/ARCHITECTURE_CHANGELOG.md, add this exact changelog line if it is not already present: - 2026-03-08: Added signoff assurance sample evidence wiring for planning/assurance trace and doc-sync bundle checks.",
+        "status": "satisfied",
+        "requirementRefs": [
+          "baselineScope"
+        ],
+        "dispatchIds": [
+          "dispatch-1-backend_worker",
+          "dispatch-2-infra_worker"
+        ],
+        "planStepIds": [
+          "execution",
+          "quality",
+          "report"
+        ],
+        "acceptanceRefs": [
+          "ac-1"
+        ],
+        "evidenceRefs": [
+          "dispatch:dispatch-1-backend_worker",
+          "dispatch:dispatch-2-infra_worker",
+          "plan:execution",
+          "plan:quality",
+          "plan:report",
+          "mock-thread-4-reviewer",
+          "mock-thread-4-tester",
+          "docs/CURRENT_ARCHITECTURE.md",
+          "docs/ARCHITECTURE_CHANGELOG.md",
+          "review:mock-thread-4-reviewer",
+          "review:mock-thread-4-tester",
+          "test:mock-thread-4-tester",
+          "flow_trace_summary.json"
+        ],
+        "reasons": [],
+        "finalStatus": "completed",
+        "taskOutcomeStatus": "COMPLETED"
+      },
+      {
+        "clauseId": "req-15",
+        "text": "Return with exactly: SIGNOFF_TASK_OK logs/bundles/signoff/signoff-2026-04-18T05-27-13-996Z-f97810/raw/scripts/config/signoff_sample_target.txt.",
+        "status": "satisfied",
+        "requirementRefs": [
+          "baselineScope",
+          "userValueFrame.hardConstraints"
+        ],
+        "dispatchIds": [
+          "dispatch-1-backend_worker",
+          "dispatch-2-infra_worker"
+        ],
+        "planStepIds": [
+          "execution",
+          "quality",
+          "report"
+        ],
+        "acceptanceRefs": [
+          "ac-1"
+        ],
+        "evidenceRefs": [
+          "dispatch:dispatch-1-backend_worker",
+          "dispatch:dispatch-2-infra_worker",
+          "plan:execution",
+          "plan:quality",
+          "plan:report",
+          "mock-thread-4-reviewer",
+          "mock-thread-4-tester",
+          "docs/CURRENT_ARCHITECTURE.md",
+          "docs/ARCHITECTURE_CHANGELOG.md",
+          "review:mock-thread-4-reviewer",
+          "review:mock-thread-4-tester",
+          "test:mock-thread-4-tester",
+          "flow_trace_summary.json"
+        ],
+        "reasons": [],
+        "finalStatus": "completed",
+        "taskOutcomeStatus": "COMPLETED"
+      },
+      {
+        "clauseId": "req-16",
+        "text": "No follow-up questions are required.",
+        "status": "satisfied",
+        "requirementRefs": [
+          "baselineScope",
+          "userValueFrame.hardConstraints"
+        ],
+        "dispatchIds": [
+          "dispatch-1-backend_worker",
+          "dispatch-2-infra_worker"
+        ],
+        "planStepIds": [
+          "execution",
+          "quality",
+          "report"
+        ],
+        "acceptanceRefs": [
+          "ac-1"
+        ],
+        "evidenceRefs": [
+          "dispatch:dispatch-1-backend_worker",
+          "dispatch:dispatch-2-infra_worker",
+          "plan:execution",
+          "plan:quality",
+          "plan:report",
+          "mock-thread-4-reviewer",
+          "mock-thread-4-tester",
+          "docs/CURRENT_ARCHITECTURE.md",
+          "docs/ARCHITECTURE_CHANGELOG.md",
+          "review:mock-thread-4-reviewer",
+          "review:mock-thread-4-tester",
+          "test:mock-thread-4-tester",
+          "flow_trace_summary.json"
+        ],
+        "reasons": [],
+        "finalStatus": "completed",
+        "taskOutcomeStatus": "COMPLETED"
+      },
+      {
+        "clauseId": "req-17",
+        "text": "Requested signoff edits, reviewer/tester evidence, and doc-sync evidence are all present.",
+        "status": "satisfied",
+        "requirementRefs": [
+          "acceptanceChecks",
+          "userValueFrame.completedMeans"
+        ],
+        "dispatchIds": [
+          "dispatch-1-backend_worker",
+          "dispatch-2-infra_worker"
+        ],
+        "planStepIds": [
+          "execution",
+          "quality",
+          "report"
+        ],
+        "acceptanceRefs": [
+          "ac-1"
+        ],
+        "evidenceRefs": [
+          "dispatch:dispatch-1-backend_worker",
+          "dispatch:dispatch-2-infra_worker",
+          "plan:execution",
+          "plan:quality",
+          "plan:report",
+          "mock-thread-4-reviewer",
+          "mock-thread-4-tester",
+          "docs/CURRENT_ARCHITECTURE.md",
+          "docs/ARCHITECTURE_CHANGELOG.md",
+          "review:mock-thread-4-reviewer",
+          "review:mock-thread-4-tester",
+          "test:mock-thread-4-tester",
+          "flow_trace_summary.json"
+        ],
+        "reasons": [],
+        "finalStatus": "completed",
+        "taskOutcomeStatus": "COMPLETED"
+      }
+    ]
+  },
+  "recommended_release_state": "RELEASE_BLOCKED",
+  "adoption_readiness": {
+    "schema": "adoption-readiness-eval.v1",
+    "generatedAt": "2026-04-18T05:29:01.580Z",
+    "completedStateObserved": 1,
+    "dimensions": [
+      {
+        "id": "literal_requirement_alignment",
+        "score": 1,
+        "reason": "1/1 acceptance checks passed",
+        "evidenceRefs": [
+          "evidence_manifest.json",
+          "flow_trace_summary.json",
+          "review_load_breakdown.json",
+          "review_bundle.json"
+        ],
+        "blockers": [],
+        "assumptions": [
+          "明示ゴールの外側は、入力で明示されていない限り提案止まりにする。"
+        ],
+        "residualRisks": [
+          "Dense, interrupted, critical, and longest-copy states must be visually checked for overflow, clipping, collisions, and copy-fit before signoff.",
+          "New logic or protocol-sensitive behavior requires dedicated verification before signoff."
+        ]
+      },
+      {
+        "id": "latent_intent_alignment",
+        "score": 0.92,
+        "reason": "clause score PASS with release hint RELEASE_APPROVED_WITH_ASSUMPTIONS",
+        "evidenceRefs": [
+          "evidence_manifest.json",
+          "flow_trace_summary.json",
+          "review_load_breakdown.json",
+          "review_bundle.json"
+        ],
+        "blockers": [],
+        "assumptions": [
+          "明示ゴールの外側は、入力で明示されていない限り提案止まりにする。"
+        ],
+        "residualRisks": [
+          "Dense, interrupted, critical, and longest-copy states must be visually checked for overflow, clipping, collisions, and copy-fit before signoff.",
+          "New logic or protocol-sensitive behavior requires dedicated verification before signoff."
+        ]
+      },
+      {
+        "id": "task_contract_integrity",
+        "score": 1,
+        "reason": "locked task contract remains intact",
+        "evidenceRefs": [
+          "evidence_manifest.json",
+          "flow_trace_summary.json",
+          "review_load_breakdown.json",
+          "review_bundle.json"
+        ],
+        "blockers": [],
+        "assumptions": [
+          "明示ゴールの外側は、入力で明示されていない限り提案止まりにする。"
+        ],
+        "residualRisks": [
+          "Dense, interrupted, critical, and longest-copy states must be visually checked for overflow, clipping, collisions, and copy-fit before signoff.",
+          "New logic or protocol-sensitive behavior requires dedicated verification before signoff."
+        ]
+      },
+      {
+        "id": "boundary_compliance",
+        "score": 1,
+        "reason": "boundary checks remain within governed thresholds",
+        "evidenceRefs": [
+          "evidence_manifest.json",
+          "flow_trace_summary.json",
+          "review_load_breakdown.json",
+          "review_bundle.json"
+        ],
+        "blockers": [],
+        "assumptions": [
+          "明示ゴールの外側は、入力で明示されていない限り提案止まりにする。"
+        ],
+        "residualRisks": [
+          "Dense, interrupted, critical, and longest-copy states must be visually checked for overflow, clipping, collisions, and copy-fit before signoff.",
+          "New logic or protocol-sensitive behavior requires dedicated verification before signoff."
+        ]
+      },
+      {
+        "id": "artifact_quality",
+        "score": 0.4,
+        "reason": "4 evidence refs captured",
+        "evidenceRefs": [
+          "evidence_manifest.json",
+          "flow_trace_summary.json",
+          "review_load_breakdown.json",
+          "review_bundle.json"
+        ],
+        "blockers": [],
+        "assumptions": [
+          "明示ゴールの外側は、入力で明示されていない限り提案止まりにする。"
+        ],
+        "residualRisks": [
+          "Dense, interrupted, critical, and longest-copy states must be visually checked for overflow, clipping, collisions, and copy-fit before signoff.",
+          "New logic or protocol-sensitive behavior requires dedicated verification before signoff."
+        ]
+      },
+      {
+        "id": "residual_risk",
+        "score": 0.6667,
+        "reason": "2 residual risk item(s) remain",
+        "evidenceRefs": [
+          "evidence_manifest.json",
+          "flow_trace_summary.json",
+          "review_load_breakdown.json",
+          "review_bundle.json"
+        ],
+        "blockers": [],
+        "assumptions": [
+          "明示ゴールの外側は、入力で明示されていない限り提案止まりにする。"
+        ],
+        "residualRisks": [
+          "Dense, interrupted, critical, and longest-copy states must be visually checked for overflow, clipping, collisions, and copy-fit before signoff.",
+          "New logic or protocol-sensitive behavior requires dedicated verification before signoff."
+        ]
+      },
+      {
+        "id": "iteration_value_remaining",
+        "score": 0.92,
+        "reason": "iteration action RELEASE",
+        "evidenceRefs": [
+          "evidence_manifest.json",
+          "flow_trace_summary.json",
+          "review_load_breakdown.json",
+          "review_bundle.json"
+        ],
+        "blockers": [],
+        "assumptions": [
+          "明示ゴールの外側は、入力で明示されていない限り提案止まりにする。"
+        ],
+        "residualRisks": [
+          "Dense, interrupted, critical, and longest-copy states must be visually checked for overflow, clipping, collisions, and copy-fit before signoff.",
+          "New logic or protocol-sensitive behavior requires dedicated verification before signoff."
+        ]
+      },
+      {
+        "id": "adoption_readiness",
+        "score": 0.8847,
+        "reason": "ready for governed release judgment",
+        "evidenceRefs": [
+          "evidence_manifest.json",
+          "flow_trace_summary.json",
+          "review_load_breakdown.json",
+          "review_bundle.json"
+        ],
+        "blockers": [],
+        "assumptions": [
+          "明示ゴールの外側は、入力で明示されていない限り提案止まりにする。"
+        ],
+        "residualRisks": [
+          "Dense, interrupted, critical, and longest-copy states must be visually checked for overflow, clipping, collisions, and copy-fit before signoff.",
+          "New logic or protocol-sensitive behavior requires dedicated verification before signoff."
+        ]
+      }
+    ],
+    "scores": {
+      "literal_requirement_alignment": 1,
+      "latent_intent_alignment": 0.92,
+      "task_contract_integrity": 1,
+      "boundary_compliance": 1,
+      "artifact_quality": 0.4,
+      "residual_risk": 0.6667,
+      "iteration_value_remaining": 0.08,
+      "adoption_readiness": 0.8847
+    },
+    "gateResults": [
+      {
+        "id": "literal_requirement_alignment",
+        "min": 0.84,
+        "score": 1,
+        "pass": 1,
+        "failureClass": "validation_failure"
+      },
+      {
+        "id": "latent_intent_alignment",
+        "min": 0.78,
+        "score": 0.92,
+        "pass": 1,
+        "failureClass": "retry_required"
+      },
+      {
+        "id": "task_contract_integrity",
+        "min": 0.92,
+        "score": 1,
+        "pass": 1,
+        "failureClass": "validation_failure"
+      },
+      {
+        "id": "boundary_compliance",
+        "min": 0.99,
+        "score": 1,
+        "pass": 1,
+        "failureClass": "fail_closed"
+      }
+    ],
+    "criticalFailures": [],
+    "releaseEligibility": {
+      "eligible": 1,
+      "blockedBy": [],
+      "proceduralClosureOnly": 0
+    },
+    "goalComparison": {
+      "originalRequestAligned": 1,
+      "latentIntentAligned": 1,
+      "replannedGoalConsistent": 1,
+      "proceduralClosureOnly": 0,
+      "explicitSignals": {}
+    },
+    "blockers": [],
+    "assumptions": [
+      "明示ゴールの外側は、入力で明示されていない限り提案止まりにする。"
+    ],
+    "residualRisks": [
+      "Dense, interrupted, critical, and longest-copy states must be visually checked for overflow, clipping, collisions, and copy-fit before signoff.",
+      "New logic or protocol-sensitive behavior requires dedicated verification before signoff."
+    ],
+    "evidenceRefs": [
+      "evidence_manifest.json",
+      "flow_trace_summary.json",
+      "review_load_breakdown.json",
+      "review_bundle.json"
+    ]
+  },
+  "iteration_decision": {
+    "schema": "iteration-decision.v1",
+    "generatedAt": "2026-04-18T05:29:01.580Z",
+    "action": "RETRY",
+    "reason": "artifact_quality_below_threshold",
+    "blockers": [],
+    "assumptions": [
+      "明示ゴールの外側は、入力で明示されていない限り提案止まりにする。"
+    ],
+    "residualRisks": [
+      "Dense, interrupted, critical, and longest-copy states must be visually checked for overflow, clipping, collisions, and copy-fit before signoff.",
+      "New logic or protocol-sensitive behavior requires dedicated verification before signoff."
+    ],
+    "qualityThresholds": {
+      "literal_requirement_alignment": 0.84,
+      "latent_intent_alignment": 0.78,
+      "task_contract_integrity": 0.92,
+      "boundary_compliance": 0.99,
+      "artifact_quality": 0.8,
+      "residual_risk": 0.68,
+      "adoption_readiness": 0.8,
+      "iteration_value_remaining_max": 0.24
+    },
+    "budgets": {
+      "elapsedMs": 4864,
+      "stepCount": 19,
+      "tokenCount": 0,
+      "wallClockExceeded": false,
+      "stepBudgetExceeded": false,
+      "tokenBudgetExceeded": false
+    },
+    "valueRemainingScore": 0.08,
+    "gateSignals": {
+      "literal_requirement_alignment": 1,
+      "latent_intent_alignment": 0.92,
+      "task_contract_integrity": 1,
+      "boundary_compliance": 1,
+      "artifact_quality": 0.4
+    },
+    "improvementDelta": 0,
+    "failClosed": 0
+  }
 }

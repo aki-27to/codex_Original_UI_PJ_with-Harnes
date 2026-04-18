@@ -262,6 +262,50 @@
         "additionalProperties": false
       }
     },
+    "intentLock": {
+      "type": "object",
+      "required": [
+        "schema",
+        "source",
+        "userRequest",
+        "latentIntent",
+        "prohibitedPatterns",
+        "winSignals",
+        "nonTargets",
+        "lockStatus"
+      ],
+      "properties": {
+        "schema": { "const": "intent-lock.v1" },
+        "source": { "type": "string" },
+        "userRequest": { "type": "string" },
+        "latentIntent": { "type": "string" },
+        "prohibitedPatterns": { "type": "array", "items": { "type": "string" } },
+        "winSignals": { "type": "array", "items": { "type": "string" } },
+        "nonTargets": { "type": "array", "items": { "type": "string" } },
+        "lockStatus": { "type": "string", "enum": ["draft", "locked"] }
+      },
+      "additionalProperties": false
+    },
+    "acceptanceLock": {
+      "type": "object",
+      "required": [
+        "schema",
+        "source",
+        "passConditions",
+        "failureConditions",
+        "requiredEvidence",
+        "lockStatus"
+      ],
+      "properties": {
+        "schema": { "const": "acceptance-lock.v1" },
+        "source": { "type": "string" },
+        "passConditions": { "type": "array", "items": { "type": "string" } },
+        "failureConditions": { "type": "array", "items": { "type": "string" } },
+        "requiredEvidence": { "type": "array", "items": { "type": "string" } },
+        "lockStatus": { "type": "string", "enum": ["draft", "locked"] }
+      },
+      "additionalProperties": false
+    },
     "userValueFrame": {
       "type": "object",
       "required": [

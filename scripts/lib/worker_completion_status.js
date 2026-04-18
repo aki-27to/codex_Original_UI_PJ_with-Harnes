@@ -91,11 +91,17 @@ function buildWorkerCompletionStatus(input = {}) {
     safeString(rawSubjectiveGoalCompletionStatus.exportSessionId, 120),
     safeString(rawCompatibilityCompletionStatus.exportSessionId, 120),
   ];
-  const backgroundArtifactSessionIds = uniqueStrings([
-    ...(Array.isArray(input.backgroundArtifactSessionIds) ? input.backgroundArtifactSessionIds : []),
-    ...rawBackgroundArtifactSessionIds,
-  ], 8);
   const explicitBackgroundConsistency = safeString(input.backgroundArtifactSessionConsistency, 80);
+  const explicitBackgroundArtifactSessionIds = uniqueStrings(
+    Array.isArray(input.backgroundArtifactSessionIds) ? input.backgroundArtifactSessionIds : [],
+    8
+  );
+  const backgroundArtifactSessionIds = explicitBackgroundConsistency === "aligned" && explicitBackgroundArtifactSessionIds.length > 0
+    ? explicitBackgroundArtifactSessionIds
+    : uniqueStrings([
+      ...explicitBackgroundArtifactSessionIds,
+      ...rawBackgroundArtifactSessionIds,
+    ], 8);
   const completeBackgroundSessionSetPresent = Boolean(
     targetExportSessionId
     && rawBackgroundArtifactSessionIds.length === 3
@@ -210,6 +216,19 @@ function buildWorkerCompletionStatus(input = {}) {
   const whyNotYet = workerGoalStatus === "WORKER_COMPLETE"
     ? []
     : failedCriteria.map((entry) => safeString(entry.detail, 220));
+  const programReadinessStatus = safeString(goalCompletionStatus.goalStatus, 80) || "UNKNOWN";
+  const subjectiveCompanionStatus = safeString(subjectiveGoalCompletionStatus.subjectiveGoalStatus, 80) || "UNKNOWN";
+  const compatibilityStatus = safeString(compatibilityCompletionStatus.status, 80) || "UNKNOWN";
+  const backgroundProgramReadinessWhyNotYet = backgroundArtifactInputsTrusted
+    ? uniqueStrings(goalCompletionStatus.whyNotYet, 12)
+    : [
+      "background program-readiness artifacts were omitted because their export session was missing or mismatched",
+    ];
+  const backgroundProgramReadinessSummary = !backgroundArtifactInputsTrusted
+    ? "Background program-readiness context is unavailable for this export session because its sidecar artifacts were missing or mismatched."
+    : programReadinessStatus === "NOT_YET"
+      ? "Background program-readiness debt is still open. It remains secondary context and does not overturn the worker stop verdict."
+      : "Background program readiness is aligned with the worker stop verdict and remains secondary context.";
 
   return {
     schema: "worker-completion-status.v1",
@@ -219,8 +238,20 @@ function buildWorkerCompletionStatus(input = {}) {
     workerGoalStatus,
     decisionQuestion: "Can the governed autonomous worker stop here and hand back an adoptable artifact without unnecessary human interruption?",
     decisionMeaning: "worker_headline_stop_semantics_with_background_program_readiness_context",
+    operatorReadOrder: [
+      "worker_stop_primary",
+      "background_program_readiness_secondary",
+    ],
     headlineArtifactPath: safeString(input.headlineArtifactPath, 220) || "output/governance_public/worker_decision_surface.json",
     headlineWorkerOutcome,
+    workerStopDecision: {
+      scope: "worker_stop",
+      status: workerGoalStatus,
+      headlineOutcome: headlineWorkerOutcome || "UNKNOWN",
+      displayLabel: "Worker stop verdict",
+      presentationRole: "primary_task_verdict",
+      operatorPriority: "primary",
+    },
     taskOutcomeStatus,
     releaseState,
     adoptionReady,
@@ -259,10 +290,26 @@ function buildWorkerCompletionStatus(input = {}) {
     backgroundArtifactSessionConsistency,
     backgroundArtifactSessionIds,
     backgroundArtifactInputsTrusted,
-    programReadinessStatus: safeString(goalCompletionStatus.goalStatus, 80) || "UNKNOWN",
-    subjectiveCompanionStatus: safeString(subjectiveGoalCompletionStatus.subjectiveGoalStatus, 80) || "UNKNOWN",
-    compatibilityStatus: safeString(compatibilityCompletionStatus.status, 80) || "UNKNOWN",
+    programReadinessStatus,
+    subjectiveCompanionStatus,
+    compatibilityStatus,
     programReadinessBlockingWorkerStop: false,
+    backgroundProgramReadiness: {
+      scope: "program_readiness",
+      status: programReadinessStatus,
+      displayLabel: "Background program readiness",
+      presentationRole: "secondary_non_blocking_context",
+      operatorPriority: "secondary",
+      doesNotOverrideWorkerVerdict: true,
+      workerStopBlocked: false,
+      backgroundTrusted: backgroundArtifactInputsTrusted,
+      whyNotYetCount: backgroundProgramReadinessWhyNotYet.length,
+      summary: backgroundProgramReadinessSummary,
+      companionStatuses: {
+        subjective: subjectiveCompanionStatus,
+        compatibility: compatibilityStatus,
+      },
+    },
     supportingArtifacts: uniqueStrings([
       safeString(input.headlineArtifactPath, 220) || "output/governance_public/worker_decision_surface.json",
       "output/agi_readiness/goal_completion_status.json",
@@ -275,11 +322,7 @@ function buildWorkerCompletionStatus(input = {}) {
     ], 16),
     failedCriteria,
     whyNotYet,
-    backgroundProgramReadinessWhyNotYet: backgroundArtifactInputsTrusted
-      ? uniqueStrings(goalCompletionStatus.whyNotYet, 12)
-      : [
-        "background program-readiness artifacts were omitted because their export session was missing or mismatched"
-      ],
+    backgroundProgramReadinessWhyNotYet,
   };
 }
 

@@ -1,0 +1,113 @@
+{
+  "schema": "release-candidate-scope.v1",
+  "generatedAt": "2026-04-18T00:00:00Z",
+  "updatedAt": "2026-04-18T06:42:29.179Z",
+  "candidateId": "rc-2026-04-18-core-harness-governed-apps",
+  "decisionQuestion": "May this bounded release candidate ship to production?",
+  "status": "ready_for_ship_decision",
+  "intent": "Bound the current dirty worktree to a candidate that can be judged with matching evidence instead of treating the entire mixed worktree as one release.",
+  "inScope": [
+    {
+      "id": "core_harness_runtime",
+      "description": "Primary harness runtime, app-server integration, route/service split, UI, and repo-quality gate ownership.",
+      "pathGlobs": [
+        "package.json",
+        "server.js",
+        "server_impl.js",
+        "server/**",
+        "web/01.HarnesUI/**",
+        "scripts/run_repo_quality_gate.js",
+        "scripts/lib/**",
+        "scripts/config/**",
+        "scripts/*_test.js",
+        "scripts/*service*",
+        "scripts/*surface*",
+        "scripts/*bridge*",
+        "scripts/*quality*"
+      ]
+    },
+    {
+      "id": "governance_docs_and_public_artifacts",
+      "description": "Doc-sync and public current-truth artifacts needed to evaluate the bounded candidate.",
+      "pathGlobs": [
+        "docs/**",
+        "output/governance_public/**",
+        "output/continuity_public/**",
+        "output/memory_public/**",
+        "output/agi_readiness/**",
+        "protected/**"
+      ]
+    },
+    {
+      "id": "governed_apps_and_integrations",
+      "description": "App and integration surfaces already wired into runtime or verification entrypoints.",
+      "pathGlobs": [
+        "APP/README.md",
+        "APP/03.ai-debate-chat/app.js",
+        "APP/03.ai-debate-chat/app.manifest.json",
+        "APP/03.ai-debate-chat/index.html",
+        "APP/03.ai-debate-chat/styles.css",
+        "APP/03.ai-debate-chat/README.md",
+        "APP/04.godot/01.TTL/project.godot",
+        "APP/04.godot/01.TTL/assets/**",
+        "APP/04.godot/01.TTL/debug/**",
+        "APP/04.godot/01.TTL/scenes/**",
+        "APP/04.godot/01.TTL/scripts/**",
+        "docs/integrations/godot/**",
+        "tools/godot-mcp-server/**",
+        "tools/godot-runtime/**"
+      ]
+    }
+  ],
+  "outOfScope": [
+    {
+      "id": "transient_app_ui_capture",
+      "reason": "Local Playwright traces, screenshots, and write probes are runtime byproducts, not release assets.",
+      "pathGlobs": [
+        "APP/03.ai-debate-chat/.playwright-cli/**",
+        "APP/03.ai-debate-chat/*-run.png",
+        "APP/03.ai-debate-chat/ui-*.png",
+        "APP/03.ai-debate-chat/write_probe.txt"
+      ]
+    },
+    {
+      "id": "godot_editor_cache_and_duplicate_binaries",
+      "reason": "Per-project editor cache and duplicated Godot binaries inside the sample project should not define the ship decision; the canonical runtime stays under tools/godot-runtime.",
+      "pathGlobs": [
+        "APP/04.godot/**/.godot/**",
+        "APP/04.godot/**/Godot_v*.exe"
+      ]
+    },
+    {
+      "id": "raw_runtime_noise",
+      "reason": "Transient runtime logs and temp review directories create ship/no-ship noise without changing product behavior.",
+      "pathGlobs": [
+        ".tmp/**",
+        "output/*.err.log",
+        "output/*.out.log",
+        "output/tmp-review/**",
+        "tmp_agent_topography_*.log"
+      ]
+    }
+  ],
+  "verificationPlan": [
+    "node scripts/run_repo_quality_gate.js governance",
+    "node scripts/run_repo_quality_gate.js runtime",
+    "node scripts/run_repo_quality_gate.js surfaces",
+    "npm run regression:public"
+  ],
+  "verificationResult": {
+    "gateStagesPassed": [
+      "governance",
+      "runtime",
+      "surfaces"
+    ],
+    "publicRegression": "passed",
+    "currentSurfaceTruth": "passed",
+    "latestSignoffSummaryPath": "logs/current/latest_signoff_summary.json",
+    "latestBundleName": "signoff-2026-04-18T05-27-13-996Z-f97810",
+    "latestBundleDecision": "RELEASE_APPROVED",
+    "publicGovernanceExportRefreshed": true
+  },
+  "decisionRule": "Answer the production-ship question only for this bounded candidate after out-of-scope artifacts are excluded from review noise and the listed gates pass against the same candidate."
+}

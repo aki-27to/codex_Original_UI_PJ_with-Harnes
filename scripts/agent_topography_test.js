@@ -21,6 +21,7 @@ function resolveHarnessAppJsPath() {
   return found;
 }
 const appJsPath = resolveHarnessAppJsPath();
+const overviewRoutesPath = path.join(workspaceRoot, "server", "routes", "overview_routes.js");
 const {
   wrapperPath: serverEntryPath,
   implementationPath: serverJsPath,
@@ -59,7 +60,9 @@ function isEnvironmentRestrictionError(message) {
     text.includes("operation not permitted") ||
     text.includes("permission denied") ||
     text.includes("not supported in workers") ||
-    text.includes("err_worker_unsupported_operation")
+    text.includes("err_worker_unsupported_operation") ||
+    text.includes("server did not become ready on port") ||
+    text.includes("timeout waiting for /api/runtime")
   );
 }
 
@@ -148,6 +151,7 @@ async function runIntegrationCheck() {
   const port = pickTestPort();
   let childError = null;
   let childExit = null;
+  let childStderr = "";
   const child = spawn(process.execPath, [serverEntryPath], {
     cwd: workspaceRoot,
     env: {
@@ -155,6 +159,12 @@ async function runIntegrationCheck() {
       CODEX_UI_PORT: String(port),
       CODEX_AUTO_OPEN_BROWSER: "0",
       CODEX_PAUSE_ON_EXIT: "0",
+      CODEX_EXECUTION_PROFILE: "smoke-test",
+      CODEX_DEFAULT_EXEC_AGENT: "intake",
+      CODEX_REQUEST_USER_INPUT_POLICY: "blocked",
+      CODEX_ADVERSARIAL_SHADOW_ENABLED: "0",
+      CODEX_ADVERSARIAL_LOOP_ENABLED: "0",
+      CODEX_APP_SERVER_TRANSPORT: "mock-fixture",
     },
     stdio: ["ignore", "ignore", "pipe"],
     windowsHide: true,
@@ -165,6 +175,11 @@ async function runIntegrationCheck() {
   child.on("exit", (code) => {
     childExit = code;
   });
+  if (child.stderr) {
+    child.stderr.on("data", (chunk) => {
+      childStderr = `${childStderr}${chunk.toString("utf8")}`.slice(-4000);
+    });
+  }
 
   try {
     await waitForServerReady(port, 20000);
@@ -186,7 +201,8 @@ async function runIntegrationCheck() {
       : childExit !== null
         ? `child exit code: ${childExit}`
         : "";
-    throw new Error(childDetail ? `${detail} | ${childDetail}` : detail);
+    const stderrDetail = childStderr.trim() ? `child stderr tail: ${childStderr.trim()}` : "";
+    throw new Error([detail, childDetail, stderrDetail].filter(Boolean).join(" | "));
   } finally {
     await stopServer(child);
   }
@@ -195,6 +211,7 @@ async function runIntegrationCheck() {
 async function main() {
   const appJsSource = readFile(appJsPath);
   const serverJsSource = readFile(serverJsPath);
+  const overviewRoutesSource = readFile(overviewRoutesPath);
   const checks = [];
 
   checks.push(
@@ -346,6 +363,11 @@ async function main() {
         /spawned|working|running/i.test(String(spawnedRow.status || "")),
         `spawned backend_worker should look active, got status=${spawnedRow.status || "(empty)"}`
       );
+      assert.strictEqual(
+        String(spawnedRow.description || ""),
+        "spawn completed / child agent attached",
+        `spawned backend_worker should expose readable spawn detail, got description=${spawnedRow.description || "(empty)"}`
+      );
 
       topographyApi.observeLiveCollabItem({
         phase: "started",
@@ -358,6 +380,14 @@ async function main() {
           receiverThreadIds: ["child-thread-1"],
         },
       });
+      const waitingRows = topographyApi.getAgentTopographySnapshot();
+      const waitingBackendRow = waitingRows.find((row) => row && row.name === "backend_worker");
+      assert(waitingBackendRow, "backend_worker row should remain visible while wait is in progress");
+      assert.strictEqual(
+        String(waitingBackendRow.description || ""),
+        "waiting on child agent",
+        `backend_worker should expose readable wait detail, got description=${waitingBackendRow.description || "(empty)"}`
+      );
       topographyApi.observeLiveCollabItem({
         phase: "completed",
         tracker,
@@ -459,6 +489,102 @@ async function main() {
     })
   );
 
+  checks.push(
+    runCheck("live collab child rows keep readable send/resume/close details", () => {
+      const topographyApi = serverModule && serverModule.__topography;
+      assert(topographyApi && typeof topographyApi.createLiveCollabTurnTracker === "function", "__topography helpers unavailable");
+      topographyApi.clearLiveCollabChildState();
+      const tracker = topographyApi.createLiveCollabTurnTracker({
+        parentAgentName: "default",
+        parentThreadId: "thread-parent-3",
+        parentTurnId: "turn-parent-3",
+        planningContext: {
+          dispatchPlan: {
+            dispatches: [{ ownerAgent: "worker" }],
+          },
+        },
+      });
+
+      topographyApi.observeLiveCollabItem({
+        phase: "completed",
+        tracker,
+        item: {
+          type: "collabAgentToolCall",
+          id: "spawn-worker-1",
+          tool: "spawnAgent",
+          status: "completed",
+          receiverThreadIds: ["worker-thread-1"],
+        },
+      });
+      topographyApi.observeLiveCollabItem({
+        phase: "started",
+        tracker,
+        item: {
+          type: "collabAgentToolCall",
+          id: "send-worker-1",
+          tool: "sendInput",
+          status: "inProgress",
+          receiverThreadIds: ["worker-thread-1"],
+        },
+      });
+      let rows = topographyApi.getAgentTopographySnapshot();
+      let workerRow = rows.find((row) => row && row.name === "worker");
+      assert(workerRow, "worker row should exist after sendInput");
+      assert.strictEqual(
+        String(workerRow.description || ""),
+        "input sent to child agent",
+        `worker row should expose readable sendInput detail, got description=${workerRow.description || "(empty)"}`
+      );
+
+      topographyApi.observeLiveCollabItem({
+        phase: "started",
+        tracker,
+        item: {
+          type: "collabAgentToolCall",
+          id: "resume-worker-1",
+          tool: "resumeAgent",
+          status: "inProgress",
+          receiverThreadIds: ["worker-thread-1"],
+        },
+      });
+      rows = topographyApi.getAgentTopographySnapshot();
+      workerRow = rows.find((row) => row && row.name === "worker");
+      assert(workerRow, "worker row should remain visible after resumeAgent");
+      assert.strictEqual(
+        String(workerRow.description || ""),
+        "child agent resumed",
+        `worker row should expose readable resume detail, got description=${workerRow.description || "(empty)"}`
+      );
+
+      topographyApi.observeLiveCollabItem({
+        phase: "completed",
+        tracker,
+        item: {
+          type: "collabAgentToolCall",
+          id: "close-worker-1",
+          tool: "closeAgent",
+          status: "completed",
+          receiverThreadIds: ["worker-thread-1"],
+        },
+      });
+      rows = topographyApi.getAgentTopographySnapshot();
+      workerRow = rows.find((row) => row && row.name === "worker");
+      assert(workerRow, "worker row should remain visible after closeAgent");
+      assert.strictEqual(
+        String(workerRow.description || ""),
+        "closeagent completed / child agent interrupted",
+        `worker row should expose readable close detail, got description=${workerRow.description || "(empty)"}`
+      );
+      assert.strictEqual(
+        String(workerRow.status || "").toLowerCase(),
+        "interrupted",
+        `worker row should expose interrupted status after closeAgent, got status=${workerRow.status || "(empty)"}`
+      );
+
+      topographyApi.clearLiveCollabChildState();
+    })
+  );
+
   const integrationResult = await (async () => {
     try {
       const detail = await runIntegrationCheck();
@@ -468,11 +594,11 @@ async function main() {
       const message = error instanceof Error ? error.message : String(error);
       if (isEnvironmentRestrictionError(message)) {
         const routeRegex =
-          /if\(req\.method==="GET"&&pathname==="\/api\/agent-topography"\)\{\s*sendJson\(res,200,\{agents:getAgentTopographySnapshot\(\)\}\);\s*return;\s*\}/;
+          /match:\s*\(pathname\)\s*=>\s*pathname\s*===\s*"\/api\/agent-topography"[\s\S]*?handleAgentTopographyRequest/;
         assertRegex(
-          serverJsSource,
+          overviewRoutesSource,
           routeRegex,
-          "server.js does not expose /api/agent-topography with {agents: getAgentTopographySnapshot()}"
+          "overview_routes.js does not expose /api/agent-topography through handleAgentTopographyRequest"
         );
         console.log(
           `PASS integration server endpoint check :: skipped runtime boot due restricted environment (${message}); server route wiring verified`

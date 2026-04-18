@@ -68,7 +68,12 @@ function loadHelpers() {
   vm.runInNewContext(
     [
       "function pendingCountForChat(chatId){ return __pendingByChat.get(chatId) || 0; }",
+      "function localPendingCountForChat(chatId){ return __pendingByChat.get(chatId) || 0; }",
+      extractFunction("runtimeTurnRuntimeSnapshotForUi"),
       extractFunction("latestRuntimeTurn"),
+      extractFunction("storedTurnSnapshotForUi"),
+      extractFunction("storedChatTurnIdForUi"),
+      extractFunction("storedChatThreadIdForUi"),
       extractFunction("runtimeTurnStatusForUi"),
       extractFunction("runtimeTurnThreadIdForUi"),
       extractFunction("runtimeTurnIdForUi"),

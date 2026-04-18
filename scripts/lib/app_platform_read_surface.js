@@ -74,6 +74,7 @@ function createAppPlatformReadSurface(options={}){
     bundledEnglishConversationAppRoot,
     defaultIntegratedEnglishConversationAppRoot,
     findAppById,
+    findAppByMountPath,
     getRegisteredAppRuntimeConfig,
     isPathWithin,
     legacyExternalEnglishConversationAppRoot,
@@ -185,6 +186,17 @@ function createAppPlatformReadSurface(options={}){
     };
   }
 
+  function getRegisteredNativeStaticAppSource(app){
+    if(!app||app.integrationMode!=="native-static")return null;
+    const resolved=resolveNativeStaticRoot(app,workspaceRoot);
+    if(!resolved||!resolved.root)return null;
+    return{
+      root:resolved.root,
+      source:resolved.source||"configured",
+      mountPath:app.mountPath,
+    };
+  }
+
   function buildStaticRequestTarget(pathname){
     const decoded=decodeURIComponent(pathname||"/");
     if(decoded==="/"||decoded===""){
@@ -213,6 +225,21 @@ function createAppPlatformReadSurface(options={}){
         absolutePath,
         allowed:isPathWithin(englishSource.root,absolutePath),
         source:englishSource.source,
+      };
+    }
+    const registeredApp=findAppByMountPath?findAppByMountPath(appRegistry,decoded):null;
+    const registeredSource=getRegisteredNativeStaticAppSource(registeredApp);
+    if(registeredApp&&registeredSource&&registeredApp.mountPath){
+      const matchedPrefix=registeredApp.mountPath;
+      const relativePath=decoded===matchedPrefix
+        ?"index.html"
+        :normalizeStaticRequestRelativePath(decoded.slice(`${matchedPrefix}/`.length));
+      const absolutePath=path.resolve(registeredSource.root,relativePath);
+      return{
+        root:registeredSource.root,
+        absolutePath,
+        allowed:isPathWithin(registeredSource.root,absolutePath),
+        source:registeredSource.source,
       };
     }
     const relativePath=normalizeStaticRequestRelativePath(decoded);

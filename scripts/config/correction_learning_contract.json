@@ -1,0 +1,116 @@
+{
+  "schema": "correction-learning-contract.v1",
+  "version": "2026-04-18.r2",
+  "correctionTriggers": [
+    "not_adoptable",
+    "still_missing",
+    "looks_generic",
+    "quality_drop",
+    "intent_mismatch",
+    "wrong",
+    "overflow",
+    "overlap",
+    "collision",
+    "drift"
+  ],
+  "intentLock": {
+    "requiredFields": ["userRequest", "latentIntent", "winSignals", "nonTargets"]
+  },
+  "acceptanceLock": {
+    "requiredFields": ["passConditions", "failureConditions", "requiredEvidence"]
+  },
+  "correctionEvent": {
+    "requiredFields": [
+      "observed_miss",
+      "expected_outcome",
+      "artifact_or_surface",
+      "user_dissatisfaction_reason",
+      "candidate_failed_phase",
+      "learning_scope_candidate"
+    ],
+    "allowedFailedPhases": [
+      "intent_lock",
+      "acceptance_lock",
+      "autonomous_plan",
+      "execution",
+      "preventive_gates",
+      "evidence",
+      "review_gate",
+      "completion_condition",
+      "unknown"
+    ],
+    "allowedLearningScopes": [
+      "conversation_only",
+      "project",
+      "harness"
+    ]
+  },
+  "policyPatch": {
+    "completionArtifactKinds": [
+      "machine_readable_contract",
+      "planning_rule",
+      "review_gate",
+      "completion_condition",
+      "regression_test"
+    ],
+    "minArtifactCount": 1,
+    "replayVerificationRequired": true,
+    "requireAdjacentReplayCoverage": true
+  },
+  "learningTriage": {
+    "requiredDecisions": [
+      "patch_target_decision",
+      "recurrence_patch_decision",
+      "improvement_lifecycle_decision"
+    ],
+    "requiredSteps": [
+      "learning_triage",
+      "patch_target_decision",
+      "recurrence_patch_decision",
+      "next_turn_recurrence_patch",
+      "improvement_lifecycle_decision",
+      "replay_verification",
+      "skill_promotion_audit"
+    ],
+    "patchScopes": [
+      "conversation_only",
+      "project",
+      "harness"
+    ],
+    "lifecycleDecisions": [
+      "proposal_only",
+      "shadow_candidate",
+      "gated_candidate",
+      "auto_apply_candidate",
+      "blocked"
+    ],
+    "decisionPrinciple": "smallest_scope_that_prevents_recurrence",
+    "smallestScopeFirst": true,
+    "directSkillPatchDisallowed": true,
+    "skillCandidateRoute": "post_patch_replay_promotion_audit",
+    "selfImprovementPolicyRef": "scripts/config/self_improvement_promotion_policy.json",
+    "skillPortfolioPolicyRef": "scripts/config/skill_portfolio_policy.json",
+    "notes": [
+      "skill is not a direct correction patch target",
+      "skill promotion is evaluated after reusable workflow evidence and repeated success"
+    ],
+    "skillPromotion": {
+      "eligibleOnlyAfterReplay": true,
+      "requiresReusableWorkflow": true,
+      "promotionRule": "scenario_to_role"
+    }
+  },
+  "recurrencePatchPolicy": {
+    "requiredBeforeSkillPromotion": true,
+    "requiredFields": [
+      "next_turn_recurrence_patch",
+      "recurrence_patch_decision"
+    ],
+    "decisionPrinciple": "prevent_recurrence_before_promoting_reuse",
+    "failClosedWhenRecurrencePatchMissing": true,
+    "notes": [
+      "skill promotion cannot pass until the next-turn recurrence patch exists",
+      "the recurrence patch must land at the smallest scope that prevents the miss from repeating"
+    ]
+  }
+}

@@ -68,5 +68,25 @@
     "iteration_decision.json",
     "release_decision.json",
     "adoption_readiness_eval.json"
-  ]
+  ],
+  "reviewerProofSurface": {
+    "serverBoundaryWork": {
+      "acceptanceChecks": {
+        "ac-1": "Reviewer can refresh the baseline comparison and reopen the reviewer packet from explicit package-visible commands without discovering hidden helper paths.",
+        "ac-2": "Tester can run one dedicated verification command that covers the extracted server-boundary split tests plus the reviewer/export proof surfaces."
+      },
+      "reviewerRefreshCommand": "npm run reviewer:baseline-comparison",
+      "reviewerProofCommand": "npm run reviewer:server-boundary-proof",
+      "testerProofCommand": "npm run test:server-boundary-proof",
+      "reviewerArtifacts": [
+        "output/governance_public/reviewer_start_here.json",
+        "output/server_boundary_refactor_reviewer_evidence.md",
+        "output/playwright/reviewer-overview-2026-04-13.png"
+      ],
+      "testerArtifacts": [
+        "output/server_boundary_refactor_tester_evidence.md",
+        "output/submission_artifacts.json"
+      ]
+    }
+  }
 }

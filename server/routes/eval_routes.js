@@ -6,21 +6,21 @@ function createEvalRoutes(ctx) {
       method: "GET",
       match: (pathname) => pathname === "/api/eval/suites",
       async handle(args) {
-        return ctx.handleEvalSuitesRequest(args);
+        return ctx.services.eval.handleEvalSuitesRequest(args);
       },
     },
     {
       method: "GET",
       match: (pathname) => pathname === "/api/eval/history",
       async handle(args) {
-        return ctx.handleEvalHistoryRequest(args);
+        return ctx.services.eval.handleEvalHistoryRequest(args);
       },
     },
     {
       method: "POST",
       match: (pathname) => pathname === "/api/eval/run",
       async handle(args) {
-        return ctx.handleEvalRunRequest(args);
+        return ctx.services.eval.handleEvalRunRequest(args);
       },
     },
   ];

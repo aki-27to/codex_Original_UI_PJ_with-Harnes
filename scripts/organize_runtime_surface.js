@@ -12,8 +12,7 @@ const defaultDirectoryMoves = [
   [".pw-browsers", "runtime/pw-browsers"],
   [".playwright-cli", "runtime/playwright-cli"],
   [".resume_home", "runtime/resume-home"],
-  ["tmp_runtime_revision_verify", "runtime/tmp/runtime_revision_verify"],
-  ["提出用", "runtime/archive/legacy-submission-payload"]
+  ["tmp_runtime_revision_verify", "runtime/tmp/runtime_revision_verify"]
 ];
 
 const defaultRootTransientFileRoutes = [

@@ -1,4 +1,9 @@
 const OVERVIEW_REFRESH_MS = 20000;
+const REVIEWER_START_ARTIFACT = "output/governance_public/reviewer_start_here.json";
+const WORKER_DECISION_ARTIFACT = "output/governance_public/worker_decision_surface.json";
+const PROGRAM_READINESS_ARTIFACT = "output/agi_readiness/goal_completion_status.json";
+const REVIEWER_BASELINE_COMMAND = "npm run reviewer:baseline-comparison";
+const REVIEWER_BASELINE_REPORT = "raw/relocated_top_level/baseline_comparison_report.json";
 
 const state = {
   payload: null,
@@ -13,6 +18,7 @@ const elements = {
   heroText: by("overviewHeroText"),
   heroPills: by("overviewHeroPills"),
   errorBanner: by("overviewErrorBanner"),
+  reviewerReadout: by("reviewerReadout"),
   metrics: by("overviewMetrics"),
   jobScenarioGrid: by("jobScenarioGrid"),
   capabilitySurfaceSummary: by("capabilitySurfaceSummary"),
@@ -344,6 +350,36 @@ function metricCardHtml(card) {
   `;
 }
 
+function reviewerFaceHtml(config) {
+  return `
+    <article class="overview-reviewer-face tone-${escapeHtml(safeText(config && config.tone, "neutral"))}">
+      <div class="overview-reviewer-face-head">
+        <p class="overview-kicker">${escapeHtml(safeText(config && config.kicker, "Decision Face"))}</p>
+        ${toArr(config && config.tags).length ? `<div class="overview-inline-tags">${toArr(config.tags).map((tag) => tagHtml(tag.label, tag.tone)).join("")}</div>` : ""}
+      </div>
+      <h4>${escapeHtml(safeText(config && config.title, "Untitled"))}</h4>
+      ${safeText(config && config.summary) ? `<p class="overview-reviewer-summary">${escapeHtml(safeText(config.summary))}</p>` : ""}
+      ${factRowsHtml(config && config.facts)}
+    </article>
+  `;
+}
+
+function reviewerNoteHtml(config) {
+  return `
+    <article class="overview-reviewer-note tone-${escapeHtml(safeText(config && config.tone, "neutral"))}">
+      <div class="overview-reviewer-note-head">
+        <div>
+          <p class="overview-kicker">${escapeHtml(safeText(config && config.eyebrow, "Proof"))}</p>
+          <h4>${escapeHtml(safeText(config && config.title, "Untitled"))}</h4>
+        </div>
+      </div>
+      ${safeText(config && config.body) ? `<p class="overview-reviewer-summary">${escapeHtml(safeText(config.body))}</p>` : ""}
+      ${factRowsHtml(config && config.facts)}
+      ${toArr(config && config.actions).length ? `<div class="overview-action-row">${toArr(config.actions).join("")}</div>` : ""}
+    </article>
+  `;
+}
+
 function agentCardHtml(agent) {
   const tags = [
     { label: agent.status || "idle", tone: toneForTaskOutcome(agent.status) },
@@ -427,6 +463,191 @@ function renderHero(payload) {
     ];
     elements.heroPills.innerHTML = pills.join("");
   }
+}
+
+function renderReviewerReadout(payload) {
+  if (!elements.reviewerReadout) {
+    return;
+  }
+  const runtime = payload && payload.runtime ? payload.runtime : {};
+  const evidence = payload && payload.evidence ? payload.evidence : {};
+  const currentTruth = runtime.currentTruth && typeof runtime.currentTruth === "object"
+    ? runtime.currentTruth
+    : runtime.current_truth && typeof runtime.current_truth === "object"
+      ? runtime.current_truth
+      : {};
+  const workerDecision = runtime.workerDecisionSurface && typeof runtime.workerDecisionSurface === "object"
+    ? runtime.workerDecisionSurface
+    : runtime.worker_decision_surface && typeof runtime.worker_decision_surface === "object"
+      ? runtime.worker_decision_surface
+      : currentTruth.workerDecisionSurface && typeof currentTruth.workerDecisionSurface === "object"
+        ? currentTruth.workerDecisionSurface
+        : {};
+  const workerSupport = runtime.workerDecisionSupport && typeof runtime.workerDecisionSupport === "object"
+    ? runtime.workerDecisionSupport
+    : runtime.worker_decision_support && typeof runtime.worker_decision_support === "object"
+      ? runtime.worker_decision_support
+      : {};
+  const goalCompletion = currentTruth.goalCompletion && typeof currentTruth.goalCompletion === "object"
+    ? currentTruth.goalCompletion
+    : {};
+  const backgroundProgramReadiness = workerSupport.backgroundProgramReadiness && typeof workerSupport.backgroundProgramReadiness === "object"
+    ? workerSupport.backgroundProgramReadiness
+    : {};
+  const signoff = evidence.signoff && evidence.signoff.latest ? evidence.signoff.latest : null;
+  const runtimeProof = evidence.runtimeProof && evidence.runtimeProof.latest ? evidence.runtimeProof.latest : null;
+  const latestRun = payload && payload.eval && Array.isArray(payload.eval.recentRuns) ? payload.eval.recentRuns[0] : null;
+  const taskOutcome = safeText(workerDecision.taskOutcomeStatus || workerDecision.topLevelOutcome, "UNREPORTED");
+  const taskTone = toneForTaskOutcome(taskOutcome);
+  const programStatus = safeText(backgroundProgramReadiness.status || goalCompletion.status || workerSupport.goalStatus, "UNREPORTED");
+  const programScope = safeText(backgroundProgramReadiness.scope || goalCompletion.scope || workerSupport.goalStatusScope, "program_readiness");
+  const programLabel = safeText(backgroundProgramReadiness.displayLabel || goalCompletion.displayLabel, "Background program readiness");
+  const programWhyNotYetCount = num(backgroundProgramReadiness.whyNotYetCount, num(goalCompletion.whyNotYetCount, 0));
+  const programDoesNotOverrideWorkerVerdict = Object.prototype.hasOwnProperty.call(backgroundProgramReadiness, "doesNotOverrideWorkerVerdict")
+    ? Boolean(backgroundProgramReadiness.doesNotOverrideWorkerVerdict)
+    : !Boolean(workerSupport.programReadinessBlockingWorkerStop);
+  const programSummary = safeText(
+    backgroundProgramReadiness.summary,
+    lower(programStatus) === "not_yet"
+      ? "Background program-readiness debt is still open. It stays visible as secondary context and does not overturn the task verdict."
+      : "Background program readiness is aligned with the worker verdict and remains secondary context."
+  );
+  const programDisplayStatus = lower(programStatus) === "not_yet" && programDoesNotOverrideWorkerVerdict
+    ? "debt open"
+    : lower(programStatus) === "operationally_complete" && programDoesNotOverrideWorkerVerdict
+      ? "clear"
+      : programStatus;
+  const programTitle = lower(programStatus) === "not_yet" && programDoesNotOverrideWorkerVerdict
+    ? `${programLabel} debt`
+    : lower(programStatus) === "operationally_complete" && programDoesNotOverrideWorkerVerdict
+      ? `${programLabel}`
+      : `${programLabel}: ${programStatus}`;
+  const programTone = lower(programStatus) === "not_yet"
+    ? (programDoesNotOverrideWorkerVerdict ? "info" : "warn")
+    : toneForTaskOutcome(programStatus);
+  const comparisonReportPath = safeText(
+    signoff && signoff.paths && signoff.paths.baselineComparisonReport,
+    REVIEWER_BASELINE_REPORT
+  );
+  const comparisonStatus = safeText(
+    signoff && signoff.baselineComparison && signoff.baselineComparison.status,
+    "refreshable"
+  );
+  const reviewerOrder = [
+    REVIEWER_START_ARTIFACT,
+    WORKER_DECISION_ARTIFACT,
+    PROGRAM_READINESS_ARTIFACT,
+    safeText(signoff && signoff.summaryPath, "output/governance_public/signoff_summary.json"),
+    "docs/SERVER_ARCHITECTURE_MAP.md",
+  ];
+  const leadCopy = [
+    "Start with the worker stop verdict.",
+    "Read background program readiness only as secondary context; it does not negate the task verdict.",
+    "Then confirm fresh proof and the comparison entrypoint before opening the long-form sections below.",
+    "This keeps the first screen anchored on reviewer adoption logic instead of mixing task completion with whole-harness debt.",
+  ].join(" ");
+  elements.reviewerReadout.innerHTML = `
+    <article class="overview-reviewer-lead">
+      <p class="overview-kicker">Reviewer First</p>
+      <h3>One task verdict, one background debt track, and the exact restart point for measured comparison.</h3>
+      <p class="overview-reviewer-summary">${escapeHtml(leadCopy)}</p>
+      <div class="overview-inline-tags">
+        ${tagHtml(`task ${taskOutcome}`, taskTone)}
+        ${tagHtml(`background ${programDisplayStatus}`, programTone)}
+        ${tagHtml(`signoff ${signoff && signoff.assertions && signoff.assertions.allPassed ? "PASS" : "PENDING"}`, signoff && signoff.assertions && signoff.assertions.allPassed ? "pass" : "warn")}
+        ${tagHtml(`runtime proof ${runtimeProof ? "present" : "missing"}`, runtimeProof ? "info" : "warn")}
+      </div>
+    </article>
+    <article class="overview-reviewer-order">
+      <p class="overview-kicker">Read Order</p>
+      <h4>Open these in sequence</h4>
+      <ol class="overview-reviewer-order-list">
+        ${reviewerOrder.map((entry) => `<li><code>${escapeHtml(entry)}</code></li>`).join("")}
+      </ol>
+    </article>
+    <div class="overview-reviewer-faces">
+      ${reviewerFaceHtml({
+        kicker: "Decision Face",
+        title: `Task verdict: ${safeText(workerDecision.topLevelOutcome, taskOutcome)}`,
+        tone: taskTone,
+        summary: safeText(
+          workerDecision.topLevelSummary,
+          "The governed worker stop question is answered here, without mixing in whole-program debt."
+        ),
+        tags: [
+          { label: safeText(workerDecision.operatorAction, "ADOPT"), tone: taskTone },
+          { label: safeText(workerDecision.releaseState, "release_state"), tone: workerDecision.releaseApproved ? "pass" : "warn" },
+        ],
+        facts: [
+          { label: "Question", value: safeText(workerDecision.decisionQuestion, "Can the governed worker stop here without unnecessary human interruption?"), detail: WORKER_DECISION_ARTIFACT },
+          { label: "Task Outcome", value: taskOutcome, detail: safeText(workerDecision.taskOutcomeReason, "-") },
+          { label: "Adoption", value: formatPercent(num(workerDecision.adoptionReadiness, 0)), detail: `threshold ${formatPercent(num(workerDecision.adoptionReadinessThreshold, 0))} / residual ${formatInteger(num(workerDecision.evidenceSummary && workerDecision.evidenceSummary.residualRiskCount, 0))}` },
+        ],
+      })}
+      ${reviewerFaceHtml({
+        kicker: "Background Context",
+        title: programTitle,
+        tone: programTone,
+        summary: programSummary,
+        tags: [
+          { label: "secondary context", tone: "info" },
+          { label: `${formatInteger(programWhyNotYetCount)} open blockers`, tone: programWhyNotYetCount > 0 ? "info" : "pass" },
+        ],
+        facts: [
+          { label: "Scope", value: programScope, detail: PROGRAM_READINESS_ARTIFACT },
+          { label: "Recorded Status", value: programStatus, detail: "The raw program_readiness artifact value is preserved here without promoting it to the task headline." },
+          { label: "Why Not Yet", value: formatInteger(programWhyNotYetCount), detail: safeText(workerSupport.subjectiveGoalStatus, "") ? `subjective ${safeText(workerSupport.subjectiveGoalStatus, "-")}` : "" },
+          { label: "Overrides Task Verdict", value: programDoesNotOverrideWorkerVerdict ? "No" : "Yes", detail: "Background program debt must not be read as a task-level failure unless this flips to Yes." },
+          { label: "Compatibility", value: safeText(workerSupport.compatibilityCompletionStatus, "unreported"), detail: safeText(workerSupport.compatibilityCompletionScope, "-") },
+        ],
+      })}
+    </div>
+    <div class="overview-reviewer-spine">
+      ${reviewerNoteHtml({
+        eyebrow: "Comparison",
+        title: "Measured baseline entry stays visible",
+        tone: comparisonStatus === "ok" ? "info" : "warn",
+        body: "The comparison surface should be restartable without hunting through logs or helper docs.",
+        facts: [
+          { label: "Refresh", value: REVIEWER_BASELINE_COMMAND, detail: REVIEWER_START_ARTIFACT },
+          { label: "Report", value: comparisonReportPath, detail: `status ${comparisonStatus}` },
+          { label: "Latest Eval", value: latestRun ? `${formatInteger(num(latestRun.passedCases, 0))}/${formatInteger(num(latestRun.sampleSize, 0))}` : "unreported", detail: latestRun ? `${safeText(latestRun.suiteId, "suite")} / score ${formatPercent(num(latestRun.scoreRate, 0))}` : "No recent eval run." },
+        ],
+        actions: [
+          actionLinkHtml({ label: "Evidence section", href: "#evidenceSection" }),
+        ],
+      })}
+      ${reviewerNoteHtml({
+        eyebrow: "Fresh Proof",
+        title: "Newest signoff and runtime proof sit beside the verdict split",
+        tone: signoff && signoff.assertions && signoff.assertions.allPassed ? "pass" : "warn",
+        body: "A reviewer should not scroll deep into the page just to confirm proof freshness and runtime backing.",
+        facts: [
+          { label: "Signoff", value: signoff ? formatDateTime(signoff.generatedAt) : "missing", detail: signoff ? safeText(signoff.summaryPath, "") : "No signoff bundle found." },
+          { label: "Runtime Proof", value: runtimeProof ? formatDateTime(runtimeProof.generatedAt) : "missing", detail: runtimeProof ? `${formatInteger(num(runtimeProof.liveExec && runtimeProof.liveExec.dispatchSuccessCount, 0))} dispatch success` : "No runtime proof bundle found." },
+          { label: "Natural Trace", value: signoff ? (signoff.naturalTask && signoff.naturalTask.reviewerObserved ? "reviewer observed" : "reviewer missing") : "unreported", detail: signoff ? `dispatch ${signoff.naturalTask && signoff.naturalTask.dispatchCountObserved ? "observed" : "missing"}` : "" },
+        ],
+        actions: [
+          actionLinkHtml({ label: "Open proof panels", href: "#evidenceSection" }),
+        ],
+      })}
+      ${reviewerNoteHtml({
+        eyebrow: "Route Truth",
+        title: "Execution, evaluation, and monitoring routes stay explicit",
+        tone: "neutral",
+        body: "This prevents the polished-UI failure mode where the real operating routes stay implicit.",
+        facts: [
+          { label: "Execution", value: safeText(payload && payload.apis && payload.apis.exec, "POST /api/exec"), detail: "primary runtime route" },
+          { label: "Evaluation", value: safeText(payload && payload.apis && payload.apis.eval, "POST /api/eval/run"), detail: "release judgment route" },
+          { label: "Monitoring", value: safeText(payload && payload.apis && payload.apis.overview, "GET /api/harness/overview"), detail: WORKER_DECISION_ARTIFACT },
+        ],
+        actions: [
+          actionLinkHtml({ label: "Runtime section", href: "#runtimeSection" }),
+          actionLinkHtml({ label: "Contracts section", href: "#contractsSection" }),
+        ],
+      })}
+    </div>
+  `;
 }
 
 function renderMetrics(payload) {
@@ -1652,6 +1873,7 @@ function renderRawSnapshot(payload) {
 
 function renderOverview(payload) {
   renderHero(payload);
+  renderReviewerReadout(payload);
   renderMetrics(payload);
   renderCapabilities(payload);
   renderRuntime(payload);

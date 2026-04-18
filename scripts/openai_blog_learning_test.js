@@ -224,15 +224,20 @@ async function run() {
   assert.strictEqual(Number(first.selfImprovement.state.appliedFrontendQualityNoteCount) || 0, 0, "frontend quality notes should not auto-apply before reinforcement");
   assert.strictEqual(String(first.selfImprovement.state.observationStatus || ""), "starved", "initial frontend-note lane should expose observation starvation");
   assert.strictEqual(Number(first.selfImprovement.state.observationCount) || 0, 0, "initial state should start with zero recorded observations");
-  assert.strictEqual(Number(first.selfImprovement.state.readyHintCandidateCount) || 0, 2, "two runtime hint candidates should be ready on the fixture");
+  assert.strictEqual(Number(first.selfImprovement.state.readyHintCandidateCount) || 0, 1, "fixture should expose one ready runtime hint candidate while the second remains shadow-only");
   assert.strictEqual(Number(first.selfImprovement.state.awaitingObservationCount) || 0, 1, "frontend notes should wait for observations before promotion");
-  assert.strictEqual(Number(first.selfImprovement.state.rawAutoApplyChangeCount) || 0, 3, "raw auto-apply change count should include the waiting frontend note");
+  assert.strictEqual(Number(first.selfImprovement.state.rawAutoApplyChangeCount) || 0, 2, "raw auto-apply change count should cover the ready runtime hint and the waiting frontend note");
   assert(first.selfImprovement.state.nextPriority && typeof first.selfImprovement.state.nextPriority === "object", "self improvement state should expose the next priority candidate");
   assert(first.selfImprovement.state.nextPriority.reinforcement && typeof first.selfImprovement.state.nextPriority.reinforcement === "object", "next priority should expose reinforcement progress");
   assert.strictEqual(Number(first.selfImprovement.state.nextPriority.reinforcement.requiredSuccesses) || 0, 2, "next priority should expose the required observation wins");
   assert.strictEqual(Number(first.selfImprovement.state.nextPriority.reinforcement.remainingSuccesses) || 0, 2, "next priority should expose the remaining required wins");
   assert.strictEqual(Number(first.selfImprovement.state.priorityBacklog[0].reinforcement.observedCount) || 0, 0, "priority backlog should preserve reinforcement progress details");
   assert((Number(first.selfImprovement.gate.results[0].limits.maxPromptBlockChars) || 0) > 0, "gate results should surface prompt block budgets");
+  const stableSelfImprovementState = fs.readFileSync(path.join(workspaceRoot, "output", "openai_blog_self_improvement_state.json"), "utf8");
+  const stableSelfImprovementGate = fs.readFileSync(path.join(workspaceRoot, "output", "openai_blog_self_improvement_gate.json"), "utf8");
+  const stableFrontendProposal = fs.readFileSync(path.join(workspaceRoot, "output", "openai_blog_self_improvement_proposals", "designing-delightful-frontends-with-gpt-5-4.json"), "utf8");
+  const stablePlaybook = fs.readFileSync(path.join(workspaceRoot, "docs", "FRONTEND_QUALITY_PLAYBOOK.md"), "utf8");
+  const stableReinforcementMemory = fs.readFileSync(path.join(workspaceRoot, "output", "openai_blog_reinforcement_memory.json"), "utf8");
   const figmaInsights = extractArticleInsights(sampleFigmaArticleHtmlWithVideoNoise(), 4);
   assert(figmaInsights.guidance.every((entry) => !/video tag/i.test(entry)), "guidance extraction should drop embedded video-tag boilerplate");
   assert(figmaInsights.guidance.some((entry) => /selection urls|design system components/i.test(entry)), "guidance extraction should keep the cleaner Figma-specific instructions");
@@ -245,6 +250,11 @@ async function run() {
     now: new Date("2026-03-23T06:00:00.000Z"),
   });
   assert.strictEqual(second.report.summary.newArticlesThisRun, 0, "second cycle should not rediscover already read articles");
+  assert.strictEqual(fs.readFileSync(path.join(workspaceRoot, "output", "openai_blog_self_improvement_state.json"), "utf8"), stableSelfImprovementState, "self-improvement state should not drift on timestamp-only reruns");
+  assert.strictEqual(fs.readFileSync(path.join(workspaceRoot, "output", "openai_blog_self_improvement_gate.json"), "utf8"), stableSelfImprovementGate, "self-improvement gate should not drift on timestamp-only reruns");
+  assert.strictEqual(fs.readFileSync(path.join(workspaceRoot, "output", "openai_blog_self_improvement_proposals", "designing-delightful-frontends-with-gpt-5-4.json"), "utf8"), stableFrontendProposal, "self-improvement proposals should not churn timestamps without semantic changes");
+  assert.strictEqual(fs.readFileSync(path.join(workspaceRoot, "docs", "FRONTEND_QUALITY_PLAYBOOK.md"), "utf8"), stablePlaybook, "frontend quality playbook should stay stable when only generatedAt would change");
+  assert.strictEqual(fs.readFileSync(path.join(workspaceRoot, "output", "openai_blog_reinforcement_memory.json"), "utf8"), stableReinforcementMemory, "reinforcement memory should stay stable without new observations");
 
   const runtime = buildRuntimeSnapshotFromArtifacts(policy, {
     enabled: true,

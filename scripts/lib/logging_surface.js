@@ -469,11 +469,25 @@ function loadArtifactDetail(pathValue) {
 
 function normalizeObservedSignals(source) {
   const observed = source && typeof source === "object" ? source : {};
+  const perServerRaw = observed.mcpPerServerCounts && typeof observed.mcpPerServerCounts === "object"
+    ? observed.mcpPerServerCounts
+    : {};
+  const mcpPerServerCounts = Object.entries(perServerRaw).slice(0, 12).reduce((acc, [key, count]) => {
+    const normalizedKey = safeString(key, 80);
+    if (!normalizedKey) return acc;
+    acc[normalizedKey] = Math.max(0, Math.trunc(Number(count || 0)));
+    return acc;
+  }, {});
   return {
     commandExecutions: Math.max(0, Math.trunc(Number(observed.commandExecutions || 0))),
     fileChanges: Math.max(0, Math.trunc(Number(observed.fileChanges || 0))),
     changedFiles: Math.max(0, Math.trunc(Number(observed.changedFiles || 0))),
     mcpCalls: Math.max(0, Math.trunc(Number(observed.mcpCalls || 0))),
+    mcpWallTimeMs: Math.max(0, Math.trunc(Number(observed.mcpWallTimeMs || 0))),
+    mcpPerServerCounts,
+    mcpNamespaces: Array.isArray(observed.mcpNamespaces) ? observed.mcpNamespaces.filter(Boolean).slice(0, 6) : [],
+    mcpSandboxStates: Array.isArray(observed.mcpSandboxStates) ? observed.mcpSandboxStates.filter(Boolean).slice(0, 6) : [],
+    mcpParallelSafeCallCount: Math.max(0, Math.trunc(Number(observed.mcpParallelSafeCallCount || 0))),
     collabCalls: Math.max(0, Math.trunc(Number(observed.collabCalls || 0))),
     dispatchCount: Math.max(0, Math.trunc(Number(observed.dispatchCount || 0))),
     dispatchSuccessCount: Math.max(0, Math.trunc(Number(observed.dispatchSuccessCount || 0))),

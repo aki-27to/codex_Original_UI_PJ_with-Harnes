@@ -97,6 +97,97 @@ function run() {
   assert(Array.isArray(qualityStep.acceptanceCheckRefs) && qualityStep.acceptanceCheckRefs.length >= 1, "quality step should carry acceptanceCheckRefs");
   assert(Array.isArray(reportStep.requestClauseRefs) && reportStep.requestClauseRefs.length >= 1, "report step should retain request trace refs");
 
+  const mappedFallbackEvent = buildOperatorPlanEvent({
+    planningContext: {
+      selection: {
+        selectedMode: "NORMAL",
+        selectedPlanningDepth: "STANDARD_PLANNING",
+        selectedAssuranceDepth: "STANDARD_ASSURANCE",
+        flowPath: "NORMAL_PATH",
+      },
+      dispatchPlan: {
+        proposalOnly: 0,
+        dispatches: [
+          {
+            dispatchId: "dispatch-backend",
+            ownerAgent: "backend_worker",
+            taskSummary: "Update runtime evidence output.",
+            requestClauseRefs: [],
+            requirementRefs: [],
+            acceptanceCheckRefs: ["ac-1"],
+          },
+        ],
+      },
+      requirementContract: {
+        lockedGoal: "Keep reviewer-facing signoff evidence aligned with the locked contract.",
+        acceptanceChecks: [{ id: "ac-1", title: "Reviewer and tester evidence remain visible." }],
+        requestCoverage: {
+          coreObligations: ["req-1"],
+          mappedRequirements: [
+            { clauseId: "req-1", requirementRefs: ["lockedGoal"] },
+            { clauseId: "req-2", requirementRefs: ["acceptanceChecks"] },
+          ],
+        },
+      },
+    },
+    agentName: "default",
+  });
+  assert(mappedFallbackEvent, "mapped fallback event should exist");
+  assert.deepStrictEqual(
+    mappedFallbackEvent.steps[0].requestClauseRefs,
+    ["req-1", "req-2"],
+    "operator plan fallback should retain mapped request clauses beyond the core obligations"
+  );
+
+  const longTraceEvent = buildOperatorPlanEvent({
+    planningContext: {
+      selection: {
+        selectedMode: "NORMAL",
+        selectedPlanningDepth: "STANDARD_PLANNING",
+        selectedAssuranceDepth: "SIGNOFF_ASSURANCE",
+        flowPath: "NORMAL_PATH",
+      },
+      dispatchPlan: {
+        proposalOnly: 0,
+        reviewerRequired: 1,
+        testerRequired: 1,
+        signoffRequired: 1,
+        dispatches: [
+          {
+            dispatchId: "dispatch-backend-long",
+            ownerAgent: "backend_worker",
+            taskSummary: "Keep the full request trace visible through report.",
+            requestClauseRefs: Array.from({ length: 17 }, (_, index) => `req-${index + 1}`),
+            requirementRefs: ["lockedGoal", "acceptanceChecks"],
+            acceptanceCheckRefs: ["ac-1"],
+          },
+        ],
+      },
+      requirementContract: {
+        lockedGoal: "Keep long trace coverage intact.",
+        acceptanceChecks: [{ id: "ac-1", title: "All trace refs remain visible." }],
+        requestCoverage: {
+          coreObligations: Array.from({ length: 17 }, (_, index) => `req-${index + 1}`),
+          mappedRequirements: Array.from({ length: 17 }, (_, index) => ({
+            clauseId: `req-${index + 1}`,
+            requirementRefs: ["lockedGoal"],
+          })),
+        },
+      },
+    },
+    agentName: "default",
+  });
+  assert(longTraceEvent, "long trace event should exist");
+  assert.strictEqual(
+    longTraceEvent.steps[0].requestClauseRefs.length,
+    17,
+    "operator plan steps should keep the full request clause ledger instead of truncating at 16"
+  );
+  assert(
+    longTraceEvent.steps[0].requestClauseRefs.includes("req-17"),
+    "operator plan steps should keep the seventeenth request clause ref"
+  );
+
   const clarificationPrompt = [
     "# Goal",
     "UI とユーザーの好みにちゃんと沿うように改善して。",

@@ -47,6 +47,30 @@
       }
     }
   },
+  "reviewerFacingSurface": {
+    "readThisFirstArtifact": "reviewer_start_here.json",
+    "decisionFaces": [
+      "task_verdict",
+      "program_readiness"
+    ],
+    "supplementalArtifact": "worker_completion_status.json",
+    "fixedReadOrder": [
+      "reviewer_start_here.json",
+      "worker_decision_surface.json",
+      "worker_completion_status.json",
+      "bundle_overview.json"
+    ],
+    "backgroundTelemetryMustNotOverrideTaskVerdict": true,
+    "preferredVocabulary": {
+      "primary": "task_verdict",
+      "secondary": "program_readiness",
+      "avoidAsHeadline": [
+        "goal_completion",
+        "subjective_goal_completion",
+        "compatibility_completion"
+      ]
+    }
+  },
   "statuses": [
     {
       "id": "COMPLETED",
@@ -117,6 +141,10 @@
     "literal_alignment_below_threshold": "FAILED_VALIDATION",
     "task_contract_integrity_below_threshold": "FAILED_VALIDATION",
     "procedural_closure_without_adoption": "FAILED_VALIDATION",
+    "correction_event_missing": "FAILED_VALIDATION",
+    "phase_attribution_missing": "FAILED_VALIDATION",
+    "policy_patch_incomplete": "FAILED_VALIDATION",
+    "replay_verification_missing": "FAILED_VALIDATION",
     "latent_intent_alignment_below_threshold": "PARTIAL",
     "artifact_quality_below_threshold": "PARTIAL",
     "budget_exhausted_while_value_remaining": "BLOCKED",

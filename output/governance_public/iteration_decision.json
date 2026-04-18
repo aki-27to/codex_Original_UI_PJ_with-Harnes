@@ -1,14 +1,15 @@
 {
   "schema": "iteration-decision.v1",
-  "generatedAt": "2026-04-12T08:44:25.099Z",
+  "generatedAt": "2026-04-18T06:42:29.259Z",
   "action": "RELEASE",
   "reason": "release_conditions_satisfied",
   "blockers": [],
   "assumptions": [
-    "Any scope outside the explicit goal should stay proposal-only unless the prompt states otherwise.",
+    "明示ゴールの外側は、入力で明示されていない限り提案止まりにする。",
     "Unresolved ambiguity must not be auto-answered by the harness."
   ],
   "residualRisks": [
+    "Dense, interrupted, critical, and longest-copy states must be visually checked for overflow, clipping, collisions, and copy-fit before signoff.",
     "New logic or protocol-sensitive behavior requires dedicated verification before signoff."
   ],
   "qualityThresholds": {
@@ -23,7 +24,7 @@
   },
   "budgets": {
     "elapsedMs": 0,
-    "stepCount": 5,
+    "stepCount": 4,
     "tokenCount": 0,
     "wallClockExceeded": false,
     "stepBudgetExceeded": false,
@@ -39,6 +40,6 @@
   },
   "improvementDelta": 0,
   "failClosed": 0,
-  "exportSessionId": "export_a63636ff0a86",
+  "exportSessionId": "export_69aaf0d22042",
   "scope": "iteration_control"
 }

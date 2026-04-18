@@ -1,10 +1,10 @@
 {
   "schema": "continuity-debt-trend.v1",
-  "generatedAt": "2026-04-12T08:44:27.115Z",
+  "generatedAt": "2026-04-18T06:42:32.583Z",
   "workspaceId": "5c839dfeef8b555f",
   "entries": [
     {
-      "generatedAt": "2026-04-12T01:19:39.505Z",
+      "generatedAt": "2026-04-18T04:23:50.333Z",
       "openDebtCount": 0,
       "debtSeverity": "none",
       "blockedSubtasks": 0,
@@ -12,89 +12,89 @@
       "finalReleaseState": "integrated"
     },
     {
-      "generatedAt": "2026-04-12T02:15:13.463Z",
-      "openDebtCount": 7,
-      "debtSeverity": "high",
+      "generatedAt": "2026-04-18T04:34:26.414Z",
+      "openDebtCount": 0,
+      "debtSeverity": "none",
       "blockedSubtasks": 0,
       "integrationPendingCount": 0,
       "finalReleaseState": "integrated"
     },
     {
-      "generatedAt": "2026-04-12T02:52:33.406Z",
-      "openDebtCount": 7,
-      "debtSeverity": "high",
+      "generatedAt": "2026-04-18T04:37:18.569Z",
+      "openDebtCount": 0,
+      "debtSeverity": "none",
       "blockedSubtasks": 0,
       "integrationPendingCount": 0,
       "finalReleaseState": "integrated"
     },
     {
-      "generatedAt": "2026-04-12T06:12:35.541Z",
-      "openDebtCount": 7,
-      "debtSeverity": "high",
+      "generatedAt": "2026-04-18T04:52:32.637Z",
+      "openDebtCount": 0,
+      "debtSeverity": "none",
       "blockedSubtasks": 0,
       "integrationPendingCount": 0,
       "finalReleaseState": "integrated"
     },
     {
-      "generatedAt": "2026-04-12T06:30:10.155Z",
-      "openDebtCount": 7,
-      "debtSeverity": "high",
+      "generatedAt": "2026-04-18T04:52:48.927Z",
+      "openDebtCount": 0,
+      "debtSeverity": "none",
       "blockedSubtasks": 0,
       "integrationPendingCount": 0,
       "finalReleaseState": "integrated"
     },
     {
-      "generatedAt": "2026-04-12T06:34:43.763Z",
-      "openDebtCount": 7,
-      "debtSeverity": "high",
+      "generatedAt": "2026-04-18T05:25:59.846Z",
+      "openDebtCount": 0,
+      "debtSeverity": "none",
       "blockedSubtasks": 0,
       "integrationPendingCount": 0,
       "finalReleaseState": "integrated"
     },
     {
-      "generatedAt": "2026-04-12T06:41:37.772Z",
-      "openDebtCount": 7,
-      "debtSeverity": "high",
+      "generatedAt": "2026-04-18T05:32:14.727Z",
+      "openDebtCount": 0,
+      "debtSeverity": "none",
       "blockedSubtasks": 0,
       "integrationPendingCount": 0,
       "finalReleaseState": "integrated"
     },
     {
-      "generatedAt": "2026-04-12T08:07:12.862Z",
-      "openDebtCount": 7,
-      "debtSeverity": "high",
+      "generatedAt": "2026-04-18T06:04:45.218Z",
+      "openDebtCount": 0,
+      "debtSeverity": "none",
       "blockedSubtasks": 0,
       "integrationPendingCount": 0,
       "finalReleaseState": "integrated"
     },
     {
-      "generatedAt": "2026-04-12T08:18:33.616Z",
-      "openDebtCount": 7,
-      "debtSeverity": "high",
+      "generatedAt": "2026-04-18T06:24:50.072Z",
+      "openDebtCount": 0,
+      "debtSeverity": "none",
       "blockedSubtasks": 0,
       "integrationPendingCount": 0,
       "finalReleaseState": "integrated"
     },
     {
-      "generatedAt": "2026-04-12T08:21:07.468Z",
-      "openDebtCount": 7,
-      "debtSeverity": "high",
+      "generatedAt": "2026-04-18T06:31:25.303Z",
+      "openDebtCount": 0,
+      "debtSeverity": "none",
       "blockedSubtasks": 0,
       "integrationPendingCount": 0,
       "finalReleaseState": "integrated"
     },
     {
-      "generatedAt": "2026-04-12T08:26:48.438Z",
-      "openDebtCount": 7,
-      "debtSeverity": "high",
+      "generatedAt": "2026-04-18T06:39:31.347Z",
+      "openDebtCount": 0,
+      "debtSeverity": "none",
       "blockedSubtasks": 0,
       "integrationPendingCount": 0,
       "finalReleaseState": "integrated"
     },
     {
-      "generatedAt": "2026-04-12T08:44:27.115Z",
-      "openDebtCount": 7,
-      "debtSeverity": "high",
+      "generatedAt": "2026-04-18T06:42:32.583Z",
+      "openDebtCount": 0,
+      "debtSeverity": "none",
       "blockedSubtasks": 0,
       "integrationPendingCount": 0,
       "finalReleaseState": "integrated"

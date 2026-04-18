@@ -1,6 +1,6 @@
 {
   "schema": "stage-timeline.v1",
-  "generatedAt": "2026-03-09T12:45:14.079Z",
+  "generatedAt": "2026-04-18T05:29:01.580Z",
   "selectedPlanningMode": "NORMAL",
   "selectedPlanningDepth": "STANDARD_PLANNING",
   "selectedAssuranceDepth": "SIGNOFF_ASSURANCE",
@@ -11,52 +11,52 @@
     {
       "name": "Step 1 - Requirement Structuring",
       "status": "OBSERVED",
-      "startedAt": 1773059836627,
-      "endedAt": 1773059858132,
-      "durationMs": 21505
+      "startedAt": 1776490136716,
+      "endedAt": 1776490139258,
+      "durationMs": 2542
     },
     {
       "name": "Step 2 - Dispatch Planning",
       "status": "OBSERVED",
-      "startedAt": 1773059858132,
-      "endedAt": 1773059872552,
-      "durationMs": 14420
+      "startedAt": 1776490139258,
+      "endedAt": 1776490139260,
+      "durationMs": 2
     },
     {
       "name": "Step 3 - Specialist Execution",
       "status": "OBSERVED",
-      "startedAt": 1773059872552,
-      "endedAt": 1773059872552,
+      "startedAt": 1776490139260,
+      "endedAt": 1776490139260,
       "durationMs": 0
     },
     {
       "name": "Step 4 - Quality Gate",
       "status": "OBSERVED",
-      "startedAt": 1773059856032,
-      "endedAt": 1773059856032,
-      "durationMs": 0
+      "startedAt": 1776490139260,
+      "endedAt": 1776490139273,
+      "durationMs": 13
     },
     {
       "name": "Step 5 - Final Outcome",
       "status": "OBSERVED",
-      "startedAt": 1773059856032,
-      "endedAt": 1773060314024,
-      "durationMs": 457992
+      "startedAt": 1776490139273,
+      "endedAt": 1776490139275,
+      "durationMs": 2
     }
   ],
   "checkpoints": {
-    "firstPlanAt": 1773059858132,
-    "firstDispatchAt": 1773059896612,
-    "firstWorkAt": 1773059872552,
-    "step4StartedAt": 1773059856032,
-    "step5StartedAt": 1773059856032,
-    "firstReviewAt": 1773060257614,
-    "firstTesterAt": 1773060299256,
-    "firstDocSyncAt": 1773060179658,
+    "firstPlanAt": 1776490139258,
+    "firstDispatchAt": 1776490139260,
+    "firstWorkAt": 1776490139263,
+    "step4StartedAt": 1776490139260,
+    "step5StartedAt": 1776490139273,
+    "firstReviewAt": 1776490139269,
+    "firstTesterAt": 1776490139271,
+    "firstDocSyncAt": 1776490139260,
     "retryAt": 0,
     "retryLoopCount": 0,
-    "finalMessageAt": 1773059856032,
-    "completedAt": 1773060314024
+    "finalMessageAt": 1776490139273,
+    "completedAt": 1776490139275
   },
   "qualityGate": {
     "reviewerObserved": 1,

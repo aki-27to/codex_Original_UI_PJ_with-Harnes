@@ -1,0 +1,19 @@
+{
+  "schema": "harness-app-manifest.v1",
+  "id": "ai-debate-chat",
+  "order": 3,
+  "title": "AI Debate Chat",
+  "description": "Structured two-AI debate room where a user submits one topic and watches two distinct agents argue it out in a chat-like timeline.",
+  "mountPath": "/apps/ai-debate-chat",
+  "integrationMode": "native-static",
+  "workingDirectory": "APP/03.ai-debate-chat",
+  "nativeApiPrefix": "/api",
+  "static": {
+    "envKey": "CODEX_AI_DEBATE_CHAT_ROOT",
+    "indexFile": "index.html",
+    "candidateRelativeRoots": [
+      "APP/03.ai-debate-chat",
+      "APP/03.ai-debate-chat/dist"
+    ]
+  }
+}

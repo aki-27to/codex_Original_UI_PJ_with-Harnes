@@ -7,6 +7,7 @@ const os = require("os");
 const path = require("path");
 const {
   buildPlanningArtifacts,
+  buildDispatchPlan,
   loadPlanningModeContract,
   sanitizePlanningArtifactsForRuntime,
 } = require("./lib/planning_mode_policy");
@@ -35,6 +36,27 @@ function run() {
   );
   assert.strictEqual(fastArtifacts.requirementContract.status, "LOCKED", "bounded FAST task should lock the requirement contract");
   assert.strictEqual(fastArtifacts.requirementContract.validation.verdict, "PASS", "bounded FAST task should pass requirement validation");
+  assert.ok(
+    fastArtifacts.requirementContract.intentLock
+      && fastArtifacts.requirementContract.intentLock.lockStatus === "locked"
+      && fastArtifacts.requirementContract.intentLock.userRequest.length > 0,
+    "requirement contracts should separate a locked intent lock surface"
+  );
+  assert.ok(
+    fastArtifacts.requirementContract.acceptanceLock
+      && fastArtifacts.requirementContract.acceptanceLock.lockStatus === "locked"
+      && fastArtifacts.requirementContract.acceptanceLock.passConditions.length >= 1
+      && fastArtifacts.requirementContract.acceptanceLock.failureConditions.length >= 1,
+    "requirement contracts should separate a locked acceptance lock surface"
+  );
+  assert.ok(
+    fastArtifacts.requirementContract.validation.checks.some((entry) => entry.id === "intent_lock_defined" && entry.status === "PASS"),
+    "validation should require a machine-readable intent lock"
+  );
+  assert.ok(
+    fastArtifacts.requirementContract.validation.checks.some((entry) => entry.id === "acceptance_lock_defined" && entry.status === "PASS"),
+    "validation should require a machine-readable acceptance lock"
+  );
   assert.ok(
     typeof fastArtifacts.requirementContract.lockedGoal === "string" && fastArtifacts.requirementContract.lockedGoal.length > 0,
     "FAST task should promote the validated goal into lockedGoal"
@@ -85,6 +107,37 @@ function run() {
     Array.isArray(fastArtifacts.dispatchPlan.dispatches[0].acceptanceCheckRefs),
     "dispatch plans should always expose acceptanceCheckRefs"
   );
+  const mappedOnlyTraceDispatchPlan = buildDispatchPlan({
+    prompt: fastPrompt,
+    options: { agentName: "default" },
+    selection: fastArtifacts.selection,
+    requirementContract: {
+      ...fastArtifacts.requirementContract,
+      requestCoverage: {
+        ...fastArtifacts.requirementContract.requestCoverage,
+        rawRequestClauses: [
+          { id: "req-core", text: "Refresh the architecture wording.", kind: "explicit_request", lane: "core" },
+          { id: "req-acceptance", text: "Keep the acceptance evidence visible.", kind: "acceptance", lane: "core" },
+        ],
+        coreObligations: ["req-core"],
+        mappedRequirements: [
+          { clauseId: "req-core", requirementRefs: ["lockedGoal"] },
+          { clauseId: "req-acceptance", requirementRefs: ["acceptanceChecks"] },
+        ],
+      },
+      acceptanceChecks: [{ id: "ac-1", title: "Keep the docs wording precise." }],
+    },
+    contract,
+  });
+  assert.deepStrictEqual(
+    mappedOnlyTraceDispatchPlan.dispatches[0].requestClauseRefs,
+    ["req-core", "req-acceptance"],
+    "dispatch trace refs should preserve mapped clauses that extend beyond core obligations"
+  );
+  assert.ok(
+    mappedOnlyTraceDispatchPlan.dispatches[0].requirementRefs.includes("acceptanceChecks"),
+    "dispatch trace refs should retain requirement refs for mapped-only clauses"
+  );
   const lockedOnlySanitized = sanitizePlanningArtifactsForRuntime({
     ...fastArtifacts,
     requirementContract: {
@@ -106,6 +159,15 @@ function run() {
     lockedOnlySanitized.requirementContract.status,
     "LOCKED",
     "runtime sanitization should treat lockedGoal or intent hypotheses as core requirement data"
+  );
+  assert.strictEqual(
+    lockedOnlySanitized.requirementContract.intentLock.lockStatus,
+    "locked",
+    "runtime sanitization should preserve intent lock semantics"
+  );
+  assert.ok(
+    lockedOnlySanitized.requirementContract.acceptanceLock.passConditions.length >= 1,
+    "runtime sanitization should preserve acceptance lock semantics"
   );
   const unmappedCoverageSanitized = sanitizePlanningArtifactsForRuntime({
     ...fastArtifacts,
@@ -325,6 +387,45 @@ function run() {
   assert.strictEqual(forcedFastArtifacts.selection.selectedPlanningDepth, "FAST_PLANNING", "fast mode should force FAST_PLANNING");
   assert.strictEqual(forcedFastArtifacts.selection.selectedAssuranceDepth, "SIGNOFF_ASSURANCE", "fast mode should not weaken required assurance depth");
   assert.strictEqual(forcedFastArtifacts.selection.runtime.fastModeEnabled, 1, "runtime planning context should persist fast mode");
+
+  const boundaryDocsPrompt = [
+    "#requirement-locked",
+    "# Goal",
+    "Perform one state documentation maintenance task.",
+    "# Implementation Requirements",
+    "Implementation is explicitly requested now. Requirements are fixed, so proceed directly to implementation.",
+    "- Use the default parent orchestration path.",
+    "- Delegate the implementation edit to infra_worker, then request independent read-only reviewer and tester checks.",
+    "- Change only docs/RUNTIME_BOUNDARY_MAP.md.",
+    "- Use apply_patch for the file edit.",
+    "- Under `## Runtime Truth`, add exactly one brief bullet.",
+    "- Insert this exact bullet if it is not already present: - `turnRuntime` remains the authoritative source for pending and active-turn projection; request cache is projection-only.",
+    "- Do not duplicate the sentence if it already exists.",
+    "- Ignore unrelated edits by others and do not revert them.",
+    "# Execution",
+    "- Return with exactly: BOUNDARY_TASK_OK docs/RUNTIME_BOUNDARY_MAP.md.",
+    "- No follow-up questions are required.",
+    "# Acceptance Criteria",
+    "- Requested state-boundary change plus reviewer and tester evidence are present.",
+  ].join("\n");
+  const boundaryDocsArtifacts = buildPlanningArtifacts({
+    prompt: boundaryDocsPrompt,
+    options: { agentName: "default" },
+    contract,
+  });
+  assert.strictEqual(
+    boundaryDocsArtifacts.selection.selectedAssuranceDepth,
+    "STANDARD_ASSURANCE",
+    "state-boundary documentation maintenance should stay below SIGNOFF_ASSURANCE"
+  );
+  assert.deepStrictEqual(
+    boundaryDocsArtifacts.dispatchPlan.dispatches.map((entry) => entry.ownerAgent),
+    ["infra_worker"],
+    "state-boundary documentation maintenance should keep implementation ownership on infra_worker only"
+  );
+  assert.strictEqual(boundaryDocsArtifacts.dispatchPlan.reviewerRequired, 1, "state-boundary documentation maintenance should still request reviewer evidence");
+  assert.strictEqual(boundaryDocsArtifacts.dispatchPlan.testerRequired, 1, "state-boundary documentation maintenance should still request tester evidence");
+  assert.strictEqual(boundaryDocsArtifacts.dispatchPlan.signoffRequired, 0, "state-boundary documentation maintenance should avoid signoff-only evidence burden");
 
   const weakAcceptancePrompt = [
     "# Goal",
@@ -712,6 +813,87 @@ function run() {
   );
   assert.strictEqual(webCreativeArtifacts.requirementContract.status, "BLOCKED", "clarification-first web request should keep the requirement contract blocked");
   assert.strictEqual(webCreativeArtifacts.requirementContract.validation.verdict, "BLOCK", "clarification-first web request should surface blocking requirement validation");
+
+  const anchoredWebCreativePrompt = [
+    "# Goal",
+    "Refresh the operator UI to feel closer to https://www.suruga-k.jp/ while keeping the current information model.",
+    "# Implementation Requirements",
+    "- Update only web/01.HarnesUI/app.js and web/01.HarnesUI/styles.css.",
+    "- Keep the current routes and data bindings.",
+    "# Constraints",
+    "- Keep the layout responsive on desktop and mobile.",
+  ].join("\n");
+  const anchoredWebCreativeArtifacts = buildPlanningArtifacts({
+    prompt: anchoredWebCreativePrompt,
+    options: { agentName: "default", executionSource: "web_ui" },
+    contract,
+  });
+  assert.strictEqual(anchoredWebCreativeArtifacts.selection.taskFamily, "web_creative", "anchored UI refresh should stay in web_creative");
+  assert.notStrictEqual(anchoredWebCreativeArtifacts.selection.selectedMode, "DISCOVERY", "anchored UI refresh should not remain in discovery");
+  assert.ok(
+    anchoredWebCreativeArtifacts.requirementContract.acceptanceChecks.some((entry) => entry && entry.title.includes("No text may overflow")),
+    "anchored UI refresh should auto-infer a no-overflow acceptance check"
+  );
+  assert.ok(
+    anchoredWebCreativeArtifacts.requirementContract.acceptanceChecks.some((entry) => entry && entry.title.includes("Worst-state screenshots")),
+    "anchored UI refresh should auto-infer a worst-state screenshot acceptance check"
+  );
+  assert.ok(
+    anchoredWebCreativeArtifacts.requirementContract.acceptanceChecks.some((entry) => entry && entry.title.includes("Copy must fit")),
+    "anchored UI refresh should auto-infer a copy-fit acceptance check"
+  );
+  assert.ok(
+    anchoredWebCreativeArtifacts.dispatchPlan.expectedEvidence.includes("layout_integrity_review"),
+    "anchored UI refresh should require layout-integrity evidence in the dispatch plan"
+  );
+  assert.ok(
+    anchoredWebCreativeArtifacts.dispatchPlan.expectedEvidence.includes("worst_state_capture"),
+    "anchored UI refresh should require worst-state capture evidence in the dispatch plan"
+  );
+  assert.ok(
+    anchoredWebCreativeArtifacts.dispatchPlan.expectedEvidence.includes("copy_fit_review"),
+    "anchored UI refresh should require copy-fit evidence in the dispatch plan"
+  );
+  const anchoredFrontendDispatch = anchoredWebCreativeArtifacts.dispatchPlan.dispatches.find((entry) => entry.ownerAgent === "frontend_worker");
+  assert.ok(anchoredFrontendDispatch, "anchored UI refresh should route work to frontend_worker");
+  assert.ok(
+    anchoredFrontendDispatch.expectedEvidence.includes("layout_integrity_review"),
+    "frontend dispatch should carry layout-integrity evidence requirements"
+  );
+  assert.ok(
+    anchoredFrontendDispatch.expectedEvidence.includes("worst_state_capture"),
+    "frontend dispatch should carry worst-state capture requirements"
+  );
+  assert.ok(
+    anchoredFrontendDispatch.expectedEvidence.includes("copy_fit_review"),
+    "frontend dispatch should carry copy-fit evidence requirements"
+  );
+
+  const planningDesignPrompt = [
+    "# Goal",
+    "Plan a redesign brief for the operator dashboard so labels and overlays never spill out of their regions.",
+    "# Implementation Requirements",
+    "- Keep the brief benchmarked against https://www.suruga-k.jp/.",
+    "- Stay within the current information architecture.",
+  ].join("\n");
+  const planningDesignArtifacts = buildPlanningArtifacts({
+    prompt: planningDesignPrompt,
+    options: { agentName: "default" },
+    contract,
+  });
+  assert.strictEqual(planningDesignArtifacts.selection.taskFamily, "planning_design", "design brief planning should stay in planning_design");
+  assert.ok(
+    planningDesignArtifacts.requirementContract.acceptanceChecks.some((entry) => entry && entry.title.includes("No text may overflow")),
+    "planning_design should inherit the no-overflow acceptance check"
+  );
+  assert.ok(
+    planningDesignArtifacts.requirementContract.acceptanceChecks.some((entry) => entry && entry.title.includes("Copy must fit")),
+    "planning_design should inherit the copy-fit acceptance check"
+  );
+  assert.ok(
+    planningDesignArtifacts.requirementContract.acceptanceChecks.some((entry) => entry && entry.title.includes("Worst-state screenshots")),
+    "planning_design should inherit the worst-state screenshot acceptance check"
+  );
 
   const questionPrompt = "ワークスペースっていうのはなに？？ここに何も記載しなかった場合はどうなるの？";
   const questionArtifacts = buildPlanningArtifacts({

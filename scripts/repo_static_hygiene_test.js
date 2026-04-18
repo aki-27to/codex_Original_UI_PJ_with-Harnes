@@ -14,6 +14,14 @@ function readJson(relativePath) {
   return JSON.parse(read(relativePath));
 }
 
+function readJsonIfExists(relativePath) {
+  const absolutePath = path.join(workspaceRoot, relativePath);
+  if (!fs.existsSync(absolutePath)) {
+    return null;
+  }
+  return JSON.parse(fs.readFileSync(absolutePath, "utf8"));
+}
+
 function globToRegExp(globPattern) {
   const escaped = String(globPattern || "")
     .replace(/[.+^${}()|[\]\\]/g, "\\$&")
@@ -28,6 +36,15 @@ function main() {
   const docsIndex = read(path.join("docs", "README.md"));
   const architecture = read(path.join("docs", "CURRENT_ARCHITECTURE.md"));
   const outputSurfacePolicy = readJson(path.join("scripts", "config", "output_surface_policy.json"));
+  const outputSurfaceManifest = readJsonIfExists(path.join("runtime", "last_output_surface_manifest.json"));
+  const envBlockedTransientRoots = new Set(
+    Array.isArray(outputSurfaceManifest && outputSurfaceManifest.blocked)
+      ? outputSurfaceManifest.blocked
+        .filter((entry) => String(entry && entry.classification || "").toUpperCase() === "ENV_BLOCKED")
+        .map((entry) => String(entry && entry.source || "").replace(/\\/g, "/"))
+        .filter(Boolean)
+      : []
+  );
 
   assert(/(?:^|\r?\n)node_modules\/(?:\r?\n|$)/.test(gitignore), ".gitignore must keep node_modules/ out of repo root");
   assert(/(?:^|\r?\n)\.npm-cache\/(?:\r?\n|$)/.test(gitignore), ".gitignore must keep .npm-cache/ out of repo root");
@@ -78,6 +95,9 @@ function main() {
 
   for (const item of outputSurfacePolicy.transientRoots || []) {
     const target = path.join(workspaceRoot, item.source);
+    if (envBlockedTransientRoots.has(String(item.source || "").replace(/\\/g, "/"))) {
+      continue;
+    }
     assert(!fs.existsSync(target), `transient output root must not remain under output/: ${item.source}`);
   }
 

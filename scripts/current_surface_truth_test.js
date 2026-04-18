@@ -4,6 +4,12 @@
 const assert = require("assert");
 const fs = require("fs");
 const path = require("path");
+const {
+  exportGovernancePublicBundle,
+} = require("./lib/governance_public_bundle");
+const {
+  exportGovernedMemoryPublicArtifacts,
+} = require("./lib/governed_memory_graph");
 
 const workspaceRoot = path.resolve(__dirname, "..");
 const originalRequestUserInputPolicy = process.env.CODEX_REQUEST_USER_INPUT_POLICY;
@@ -42,6 +48,8 @@ function assertNonEmptyString(value, label) {
 
 function main() {
   server.refreshCurrentLogSurface("current_surface_truth_test");
+  exportGovernancePublicBundle();
+  exportGovernedMemoryPublicArtifacts({ workspaceRoot });
 
   const currentRoot = path.join(workspaceRoot, "logs", "current");
   const allowedFiles = [
@@ -181,6 +189,7 @@ function main() {
     `${latestSignoffSummary.bundleRef.bundlePath}/runtime_snapshot.json`,
     `${latestSignoffSummary.bundleRef.bundlePath}/core_harness_workflow_run.json`,
     `${latestSignoffSummary.bundleRef.bundlePath}/natural_task_trace_summary.json`,
+    `${latestSignoffSummary.bundleRef.bundlePath}/boundary_task_trace_summary.json`,
     `${latestSignoffSummary.bundleRef.bundlePath}/latest_run_summary.json`,
     `${latestSignoffSummary.bundleRef.bundlePath}/review_load_breakdown.json`,
     `${latestSignoffSummary.bundleRef.bundlePath}/conformance_report.json`,

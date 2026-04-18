@@ -32,14 +32,32 @@ function uniqueDestination(targetPath) {
   return path.join(parsed.dir, `${parsed.name}-${stamp}${parsed.ext}`);
 }
 
-function moveExistingPath(root, sourceRelativePath, targetRelativePath, moves) {
+function isEnvBlockedMoveError(error) {
+  const code = String(error && error.code || "").toUpperCase();
+  return code === "EPERM" || code === "EBUSY" || code === "EACCES";
+}
+
+function moveExistingPath(root, sourceRelativePath, targetRelativePath, moves, blocked = []) {
   const sourcePath = resolveWorkspacePath(root, sourceRelativePath);
   if (!fs.existsSync(sourcePath)) {
     return null;
   }
   const targetPath = uniqueDestination(resolveWorkspacePath(root, targetRelativePath));
   ensureDir(path.dirname(targetPath));
-  fs.renameSync(sourcePath, targetPath);
+  try {
+    fs.renameSync(sourcePath, targetPath);
+  } catch (error) {
+    if (!isEnvBlockedMoveError(error)) {
+      throw error;
+    }
+    blocked.push({
+      source: normalizeRelativePath(sourceRelativePath),
+      target: normalizeRelativePath(path.relative(root, targetPath)),
+      code: String(error.code || "UNKNOWN"),
+      classification: "ENV_BLOCKED",
+    });
+    return null;
+  }
   moves.push({
     source: normalizeRelativePath(sourceRelativePath),
     destination: normalizeRelativePath(path.relative(root, targetPath))
@@ -169,13 +187,14 @@ function organizeOutputSurface(options = {}) {
   validatePolicy(policy);
 
   const moves = [];
+  const blocked = [];
   const pruned = [];
   const intentionalOutputRoots = Array.isArray(policy.intentionalOutputRoots)
     ? policy.intentionalOutputRoots.map(normalizeRelativePath)
     : [];
 
   for (const item of policy.transientRoots) {
-    moveExistingPath(root, item.source, item.target, moves);
+    moveExistingPath(root, item.source, item.target, moves, blocked);
     pruneRootByRetention(resolveWorkspacePath(root, item.target), item.retention, pruned);
   }
 
@@ -192,7 +211,7 @@ function organizeOutputSurface(options = {}) {
       if (!matcher.test(fileName)) {
         continue;
       }
-      moveExistingPath(root, `output/${fileName}`, `${item.targetDir}/${fileName}`, moves);
+      moveExistingPath(root, `output/${fileName}`, `${item.targetDir}/${fileName}`, moves, blocked);
     }
     pruneRootByRetention(resolveWorkspacePath(root, item.targetDir), item.retention, pruned);
   }
@@ -202,8 +221,10 @@ function organizeOutputSurface(options = {}) {
     policyPath: normalizeRelativePath(path.relative(root, policyPath)),
     intentionalOutputRoots,
     movedCount: moves.length,
+    blockedCount: blocked.length,
     prunedCount: pruned.length,
     moves,
+    blocked,
     pruned
   };
   ensureDir(path.dirname(manifestPath));

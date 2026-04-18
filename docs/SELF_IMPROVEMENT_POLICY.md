@@ -59,3 +59,20 @@ per-case `maxPromptBlockChars` など prompt growth も non-regression に含め
 ## 7) Runtime Integration
 
 OpenAI / Anthropic learning lane や manual capture lane は、すべて同じ promotion policy の下に置きます。manual lane は retrieval の素材にはなっても、governed lane が再分類しない限り runtime behavior を直接変えてはいけません。
+
+## 8) Correction-to-Skill Routing
+
+correction loop と skill promotion loop は同じものではありません。correction event の直後は、まず `Learning Triage` を通して `patch target` と `improvement lifecycle` を決めます。
+
+- patch target:
+  - `conversation_only`
+  - `project`
+  - `harness`
+- improvement lifecycle:
+  - `proposal_only`
+  - `shadow_candidate`
+  - `gated_candidate`
+  - `auto_apply_candidate`
+  - `blocked`
+
+原則は `smallest scope that prevents recurrence` です。最初から何でも skill にしてはいけません。skill は correction の直接行き先ではなく、patch と replay verification の後に、再利用可能な workflow であり、反復成功と audit evidence が揃ったものだけが promotion candidate になります。

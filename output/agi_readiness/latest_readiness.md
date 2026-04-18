@@ -1,28 +1,27 @@
 # AGI Readiness
 
-- Run: eval-1775415298684-6e4ae77c
-- Raw final score: 0.9995
-- Internal governed score: 0.9995
-- Externally auditable score: 0.8395
-- Display final score: 0.8395
+- Run: eval-1776010435054-c9b5d194
+- Raw final score: 0.860278
+- Internal governed score: 0.860278
+- Externally auditable score: 0.820278
+- Display final score: 0.820278
 - Display score source: externallyAuditableScore
-- Catastrophic risk (CVaR): 0.001
-- Promotion comparison mode: distinct_comparison
-- Promote: false
+- Catastrophic risk (CVaR): 0.04
+- Promotion comparison mode: self_snapshot
+- Promote: n/a
 - Repo-wide coverage breadth: 1
 - Evaluated breadth: 1
-- Weakest capability family: G_breadth
+- Weakest capability family: R_robust
 - Weakest hard gate: -
 
 ## Score Calibration
-- Total penalty: 0.16
-- openDebtCount: applied=0.12 reason=continuity debt remains open
+- Total penalty: 0.04
 - goalNotOperationallyComplete: applied=0.04 reason=operational completion is not yet closed
 
 ## Domain Coverage
-- deterministic_code: score=1.000 floor=0.70 status=pass
+- deterministic_code: score=0.920 floor=0.70 status=pass
 - web_creative: score=0.780 floor=0.70 status=pass
-- planning: score=1.000 floor=0.70 status=pass
+- planning: score=0.880 floor=0.70 status=pass
 - workflow_execution: score=0.780 floor=0.70 status=pass
 - evaluation_review: score=0.780 floor=0.70 status=pass
 - tool_use_browser_like: score=0.780 floor=0.70 status=pass
@@ -30,5 +29,6 @@
 ## Blocked Reasons
 
 ## Next Bottlenecks
-- capability bottleneck: weakest family is G_breadth
-- scope/coverage bottleneck: continuity carries 7 closeout debt item(s) with severity high
+- evidence bottleneck: mismatched export sessions: export_69aaf0d22042, export_b19f32facb8f
+- capability bottleneck: weakest family is R_robust
+- capability bottleneck: robustness is currently limited by browser_tool_flakiness

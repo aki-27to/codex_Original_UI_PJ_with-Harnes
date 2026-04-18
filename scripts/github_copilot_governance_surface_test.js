@@ -6,6 +6,10 @@ const path = require("path");
 
 const workspaceRoot = path.resolve(__dirname, "..");
 const packageJson = require(path.join(workspaceRoot, "package.json"));
+const repoQualityRunnerSource = fs.readFileSync(
+  path.join(workspaceRoot, "scripts", "run_repo_quality_gate.js"),
+  "utf8"
+);
 
 function assert(condition, message) {
   if (!condition) {
@@ -143,8 +147,20 @@ function run() {
     "package.json must expose test:github-governance-surface"
   );
   assert(
-    packageJson.scripts["test:repo-quality"].includes("npm run test:github-governance-surface"),
-    "test:repo-quality must include test:github-governance-surface"
+    Object.prototype.hasOwnProperty.call(packageJson.scripts, "test:repo-quality:governance"),
+    "package.json must expose test:repo-quality:governance"
+  );
+  assert(
+    packageJson.scripts["test:repo-quality"].includes("node scripts/run_repo_quality_gate.js"),
+    "test:repo-quality must use the staged repo-quality runner"
+  );
+  assert(
+    packageJson.scripts["test:repo-quality:governance"].includes("node scripts/run_repo_quality_gate.js governance"),
+    "test:repo-quality:governance must route through the stage runner"
+  );
+  assert(
+    repoQualityRunnerSource.includes('"test:github-governance-surface"'),
+    "repo-quality governance stage must include test:github-governance-surface"
   );
 
   process.stdout.write("PASS github_copilot_governance_surface_test\n");

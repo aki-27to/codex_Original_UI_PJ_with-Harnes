@@ -87,6 +87,8 @@ Authority registry: `authority-registry.v1`
 - `WEEKLY_REPORT_COMPANION.md`
 - `DOCUMENT_TOOLING_GUIDE.md`
 - `integrations/copilot-studio/weekly-report-agent-design.md`
+- `integrations/godot/godot_mcp_outer_ocean_design.md`
+- `integrations/godot/godot_mcp_implementation_status.md`
 - `samples/agi_v1/agi_v1_report.md`
 
 正本ではありませんが、運用や周辺機能を理解するのに役立つ資料です。

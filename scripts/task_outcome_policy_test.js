@@ -88,6 +88,19 @@ function testFailedValidationFromGoalSubstitution() {
   assert(verdict.status === "FAILED_VALIDATION", "goal substitution must map to FAILED_VALIDATION even after procedural completion");
 }
 
+function testFailedValidationFromCorrectionLearningReasons() {
+  const patchVerdict = deriveTaskOutcome({
+    turnStatus: "failed",
+    reason: "policy_patch_incomplete",
+  });
+  assert(patchVerdict.status === "FAILED_VALIDATION", "policy patch incompletion should map to FAILED_VALIDATION");
+  const replayVerdict = deriveTaskOutcome({
+    turnStatus: "failed",
+    reason: "replay_verification_missing",
+  });
+  assert(replayVerdict.status === "FAILED_VALIDATION", "missing replay verification should map to FAILED_VALIDATION");
+}
+
 function testPartialFromLatentIntentThreshold() {
   const verdict = deriveTaskOutcome({
     turnStatus: "completed",
@@ -157,6 +170,7 @@ function run() {
     ["failed validation from whole-system coherence review", testFailedValidationFromSystemCoherenceReview],
     ["failed validation from intent wildcard", testFailedValidationFromIntentWildcard],
     ["failed validation from goal substitution", testFailedValidationFromGoalSubstitution],
+    ["failed validation from correction-learning reasons", testFailedValidationFromCorrectionLearningReasons],
     ["partial from latent intent threshold", testPartialFromLatentIntentThreshold],
     ["failed default blocked", testFailedDefaultBlocked],
     ["partial outcome derivation", testPartialDelivery],

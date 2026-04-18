@@ -1,13 +1,13 @@
 {
   "schema": "agi-readiness-lane-report.v1",
-  "generatedAt": "2026-04-12T02:15:04.930Z",
+  "generatedAt": "2026-04-16T12:15:48.276Z",
   "laneId": "agi_readiness_holdout",
   "suiteId": "agi_readiness_holdout_suite",
   "visibility": "protected",
   "results": [
     {
       "caseId": "holdout-coding",
-      "taskId": "holdout-coding-1775960104575",
+      "taskId": "holdout-coding-1776341747725",
       "familyId": "coding",
       "difficultyTier": "advanced",
       "modalityTags": [
@@ -30,7 +30,7 @@
     },
     {
       "caseId": "holdout-business-ops",
-      "taskId": "holdout-business-ops-1775960104845",
+      "taskId": "holdout-business-ops-1776341748140",
       "familyId": "business_ops",
       "difficultyTier": "advanced",
       "modalityTags": [
@@ -53,7 +53,7 @@
     },
     {
       "caseId": "holdout-multimodal-docs",
-      "taskId": "holdout-multimodal-docs-1775960104887",
+      "taskId": "holdout-multimodal-docs-1776341748207",
       "familyId": "multimodal_docs",
       "difficultyTier": "advanced",
       "modalityTags": [
@@ -77,7 +77,7 @@
   ],
   "summary": {
     "schema": "eval-results-summary.v1",
-    "generatedAt": "2026-04-12T02:15:04.930Z",
+    "generatedAt": "2026-04-16T12:15:48.276Z",
     "caseCount": 3,
     "passRate": 1,
     "verifierReliabilityRate": 1,

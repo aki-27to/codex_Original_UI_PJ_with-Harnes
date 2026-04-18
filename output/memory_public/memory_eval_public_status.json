@@ -1,10 +1,12 @@
 {
   "schema": "memory-eval-public-status.v1",
-  "generatedAt": "2026-04-12T08:44:28.841Z",
+  "generatedAt": "2026-04-18T06:42:34.883Z",
   "suiteSchema": "memory-eval-suite.v1",
   "suiteVersion": "2026-04-12.r2",
-  "status": "PASS",
-  "failedCheckIds": [],
+  "status": "FAIL",
+  "failedCheckIds": [
+    "worker_decision_surface_export_session_consistent"
+  ],
   "checks": [
     {
       "id": "canonical_store_present",
@@ -106,7 +108,7 @@
       "id": "lane_projection_real_observations_reflected",
       "title": "Learning lane projections reflect canonical runtime observations",
       "status": "PASS",
-      "detail": "lane projections reflect canonical observation state (awaiting_observations/disabled)"
+      "detail": "lane projections reflect canonical observation state (observed/disabled)"
     },
     {
       "id": "breadth_family_evidence_present",
@@ -124,7 +126,7 @@
       "id": "primary_lane_observation_closure",
       "title": "Primary learning lane no longer reports unexplained observation starvation",
       "status": "PASS",
-      "detail": "primary lane observations are no longer starved (130 observations, status=awaiting_observations)"
+      "detail": "primary lane observations are no longer starved (211 observations, status=observed)"
     },
     {
       "id": "continuity_public_real_case_present",
@@ -172,7 +174,7 @@
       "id": "distinct_lineage_present",
       "title": "Distinct improvement lineage contains at least three comparisons",
       "status": "PASS",
-      "detail": "distinct lineage has 9 entries"
+      "detail": "distinct lineage has 11 entries"
     },
     {
       "id": "distinct_lineage_has_non_promoted_case",
@@ -207,8 +209,8 @@
     {
       "id": "worker_decision_surface_export_session_consistent",
       "title": "Worker headline and supporting artifacts share the same export session",
-      "status": "PASS",
-      "detail": "shared export session export_a63636ff0a86"
+      "status": "FAIL",
+      "detail": "mismatched export sessions: export_69aaf0d22042, export_b19f32facb8f"
     },
     {
       "id": "worker_completion_status_present",
@@ -220,7 +222,7 @@
       "id": "worker_completion_status_consistent",
       "title": "Worker completion companion stays aligned with the worker headline and background readiness semantics",
       "status": "PASS",
-      "detail": "worker completion companion stays aligned with worker headline under export session export_a63636ff0a86"
+      "detail": "worker completion companion stays aligned with worker headline under export session export_69aaf0d22042"
     },
     {
       "id": "worker_completion_alignment_not_stale_in_downstream_surfaces",

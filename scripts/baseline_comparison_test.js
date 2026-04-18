@@ -202,11 +202,14 @@ function run() {
     const discoveryTracePath = path.join(rawSummaryRoot, "discovery_task_trace_summary.json");
     const signoffTracePath = path.join(rawSummaryRoot, "signoff_task_trace_summary.json");
     const naturalTracePath = path.join(tempRoot, "natural_task_trace_summary.json");
+    const declaredBoundaryTracePath = path.join(tempRoot, "boundary_task_trace_summary.json");
+    const boundaryTracePath = path.join(tempRoot, "raw", "relocated_top_level", "boundary_task_trace_summary.json");
     const rawDirectSummaryPath = path.join(rawDirectRoot, "raw_direct_baseline_summary.json");
     const rawDirectFastPath = path.join(rawDirectRoot, "raw_direct_fast_task_trace_summary.json");
     const rawDirectDiscoveryPath = path.join(rawDirectRoot, "raw_direct_discovery_task_trace_summary.json");
     const rawDirectSignoffPath = path.join(rawDirectRoot, "raw_direct_signoff_task_trace_summary.json");
     const rawDirectNaturalPath = path.join(rawDirectRoot, "raw_direct_natural_task_trace_summary.json");
+    const rawDirectBoundaryPath = path.join(rawDirectRoot, "raw_direct_boundary_task_trace_summary.json");
 
     writeJson(signoffSummaryPath, {
       allPassed: true,
@@ -216,11 +219,13 @@ function run() {
         discoveryTaskTraceSummary: discoveryTracePath,
         signoffTaskTraceSummary: signoffTracePath,
         naturalTaskTraceSummary: naturalTracePath,
+        boundaryTaskTraceSummary: declaredBoundaryTracePath,
         rawDirectBaselineSummary: rawDirectSummaryPath,
         rawDirectFastTaskTraceSummary: rawDirectFastPath,
         rawDirectDiscoveryTaskTraceSummary: rawDirectDiscoveryPath,
         rawDirectSignoffTaskTraceSummary: rawDirectSignoffPath,
         rawDirectNaturalTaskTraceSummary: rawDirectNaturalPath,
+        rawDirectBoundaryTaskTraceSummary: rawDirectBoundaryPath,
       },
     });
     writeJson(bundleSurfaceMapPath, {
@@ -239,6 +244,10 @@ function run() {
     }));
     writeJson(naturalTracePath, buildDeliveryTrace({
       durationMs: 22,
+      reviewerExecuted: 1,
+    }));
+    writeJson(boundaryTracePath, buildDeliveryTrace({
+      durationMs: 20,
       reviewerExecuted: 1,
     }));
     writeJson(rawDirectSummaryPath, {
@@ -275,20 +284,34 @@ function run() {
       assertions: { explicitVerificationPassed: 1 },
       turn: { taskOutcomeStatus: "COMPLETED" },
     });
+    writeJson(rawDirectBoundaryPath, {
+      ...buildRawDirectTrace(),
+      meaningfulOpenQuestions: [],
+      discoverySignals: {},
+      wallClockMs: 10,
+      finalText: "BOUNDARY_TASK_OK sample",
+      assertions: { explicitVerificationPassed: 1 },
+      turn: { taskOutcomeStatus: "COMPLETED" },
+    });
 
     const result = generateBaselineComparison(tempRoot);
-    assert.strictEqual(result.report.approximation, "raw-codex-direct-baseline", "raw direct baseline should take precedence when all four direct traces exist");
+    assert.strictEqual(result.report.approximation, "raw-codex-direct-baseline", "raw direct baseline should take precedence when all five direct traces exist");
     assert.strictEqual(result.report.aggregate.rawDirectBaselineAvailable, 1, "raw direct availability should be reported");
     assert.strictEqual(result.report.truthfulClaimStatus.liveTransportParity, "PROVEN", "all-stdio full signoff bundles should mark live parity proven");
-    assert.strictEqual(result.report.rawDirectBaseline.traceCount, 4, "all raw direct traces should be counted");
+    assert.strictEqual(result.report.rawDirectBaseline.traceCount, 5, "all raw direct traces should be counted");
     assert.strictEqual(result.report.measuredBaselineSummaryPath, "", "missing measured baseline summary should stay empty");
     assert.strictEqual(result.report.rawDirectBaselineSummaryPath, rawDirectSummaryPath, "report should point at the actual raw direct baseline summary path");
+    assert.strictEqual(result.report.harnessTracePaths.boundary, boundaryTracePath, "comparison should recover the relocated boundary trace when the declared top-level path is absent");
+    assert.strictEqual(result.report.aggregate.harness.sampleCount, 5, "aggregate harness metrics should count all five samples");
+    assert.strictEqual(result.report.aggregate.harness.extraHitlCount, 1, "aggregate harness metrics should count discovery HITL");
+    assert.strictEqual(result.report.aggregate.baseline.extraHitlCount, 1, "aggregate baseline metrics should count discovery HITL");
     const bundleSurfaceMap = JSON.parse(fs.readFileSync(bundleSurfaceMapPath, "utf8"));
     assert.deepStrictEqual(bundleSurfaceMap.topLevelSummaries, [
       repoRelativeForTest(path.join(tempRoot, "signoff_summary.json")),
       repoRelativeForTest(path.join(tempRoot, "runtime_snapshot.json")),
       repoRelativeForTest(path.join(tempRoot, "core_harness_workflow_run.json")),
       repoRelativeForTest(path.join(tempRoot, "natural_task_trace_summary.json")),
+      repoRelativeForTest(path.join(tempRoot, "boundary_task_trace_summary.json")),
       repoRelativeForTest(path.join(tempRoot, "latest_run_summary.json")),
       repoRelativeForTest(path.join(tempRoot, "review_load_breakdown.json")),
       repoRelativeForTest(path.join(tempRoot, "conformance_report.json")),

@@ -24,16 +24,18 @@
         "from": "parent",
         "to": "dispatch-1-backend_worker",
         "owned_paths": [
+          "server.js",
           "scripts/",
-          "server.js"
+          "app/"
         ]
       },
       {
         "from": "parent",
         "to": "dispatch-2-infra_worker",
         "owned_paths": [
-          "docs/",
-          "scripts/config/"
+          "docs/EVIDENCE_CONTRACT.md",
+          "docs/CURRENT_ARCHITECTURE.md",
+          "docs/ARCHITECTURE_CHANGELOG.md"
         ]
       }
     ]
@@ -41,10 +43,14 @@
   "current_blockers": [],
   "evidence_completeness": {
     "missing_evidence_count": 0,
-    "acceptance_criteria_total": 8,
-    "acceptance_criteria_passed": 8
+    "acceptance_criteria_total": 1,
+    "acceptance_criteria_passed": 1,
+    "core_clause_total": 0,
+    "core_clause_satisfied": 0,
+    "core_clause_unsatisfied": 0
   },
   "residual_risk": [
+    "Dense, interrupted, critical, and longest-copy states must be visually checked for overflow, clipping, collisions, and copy-fit before signoff.",
     "New logic or protocol-sensitive behavior requires dedicated verification before signoff."
   ],
   "release_state": "RELEASE_APPROVED_WITH_ASSUMPTIONS",

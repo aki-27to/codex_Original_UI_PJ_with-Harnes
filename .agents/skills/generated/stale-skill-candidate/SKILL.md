@@ -1,6 +1,6 @@
 ---
 name: stale-skill-candidate
-description: Archive-only generated skill used to test prune flow.
+description: Archive-only generated skill for testing stale-skill prune flows. Use only when exercising synthetic stale-skill archive or pruning behavior.
 ---
 
 # Stale Skill Candidate

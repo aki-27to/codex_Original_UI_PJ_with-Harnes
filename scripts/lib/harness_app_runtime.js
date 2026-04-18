@@ -5,6 +5,7 @@ const os=require("os");
 const path=require("path");
 const crypto=require("crypto");
 const {spawn}=require("child_process");
+const {buildCmdInvocation}=require("./process_invocation");
 
 const replySchema=Object.freeze({
   type:"object",
@@ -53,6 +54,42 @@ function resolveCodexInvocation(){
     command:"codex",
     argsPrefix:[],
   };
+}
+
+function buildSpawnTargetFromInvocation(invocation,args,cwd,stdio=["pipe","pipe","pipe"]){
+  const normalizedArgs=Array.isArray(args)?args.map((entry)=>String(entry)):[];
+  if(
+    process.platform==="win32"
+    && invocation
+    && invocation.command==="codex"
+    && (!Array.isArray(invocation.argsPrefix)||!invocation.argsPrefix.length)
+  ){
+    const cmdInvocation=buildCmdInvocation("codex.cmd",normalizedArgs);
+    return{
+      command:cmdInvocation.command,
+      args:cmdInvocation.args,
+      options:{cwd,stdio,windowsHide:true},
+    };
+  }
+  return{
+    command:invocation.command,
+    args:[...(Array.isArray(invocation.argsPrefix)?invocation.argsPrefix:[]),...normalizedArgs],
+    options:{cwd,stdio,windowsHide:true},
+  };
+}
+
+function resolveCodexAppServerSpawnTarget({
+  cwd,
+  stdio=["pipe","pipe","pipe"],
+  reasoningEffortConfig="",
+}={}){
+  const invocation=resolveCodexInvocation();
+  const args=[];
+  if(reasoningEffortConfig&&process.platform!=="win32"){
+    args.push("-c",safeString(reasoningEffortConfig,160));
+  }
+  args.push("app-server");
+  return buildSpawnTargetFromInvocation(invocation,args,cwd,stdio);
 }
 
 async function assertCodexReady(cwd){
@@ -202,6 +239,8 @@ async function runCodexReply({
 module.exports={
   assertCodexReady,
   replySchema,
+  resolveCodexAppServerSpawnTarget,
+  resolveCodexInvocation,
   runCodexReply,
   runCodexStructuredOutput,
 };

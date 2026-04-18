@@ -1,13 +1,13 @@
 {
   "schema": "governed-memory-public-overview.v1",
-  "generatedAt": "2026-04-12T08:44:27.221Z",
-  "exportSessionId": "export_a63636ff0a86",
+  "generatedAt": "2026-04-18T06:42:32.710Z",
+  "exportSessionId": "export_69aaf0d22042",
   "workspaceId": "5c839dfeef8b555f",
   "canonicalRoot": "logs/archive/raw/runtime_state/memory",
   "publicOutputRoot": "output/memory_public",
   "canonicalEventCount": 12000,
   "itemCount": 50,
-  "promotedCount": 20,
+  "promotedCount": 16,
   "typeCounts": {
     "constitution_ref": 7,
     "requirement_ref": 1,
@@ -20,10 +20,10 @@
     "runtime_hint": 9
   },
   "statusCounts": {
-    "promoted": 20,
+    "promoted": 16,
     "captured": 14,
     "candidate": 1,
-    "blocked": 7,
+    "blocked": 11,
     "shadow": 4,
     "proposal_only": 4
   },
@@ -45,18 +45,18 @@
   "workerDecisionSurfacePath": "output/governance_public/worker_decision_surface.json",
   "workerDecisionSurface": {
     "schema": "worker-decision-surface.v1",
-    "generatedAt": "2026-04-12T08:44:25.099Z",
+    "generatedAt": "2026-04-18T06:42:29.260Z",
     "scope": "worker_decision",
-    "exportSessionId": "export_a63636ff0a86",
+    "exportSessionId": "export_69aaf0d22042",
     "decisionQuestion": "Can the governed worker stop here without unnecessary human interruption?",
     "topLevelOutcome": "ADOPTABLE_COMPLETE",
     "topLevelSummary": "The worker can close in place: adoption readiness passed, latent intent stayed aligned, and no extra human interruption is required.",
     "taskOutcomeStatus": "completed",
     "taskOutcomeReason": "completed_default",
-    "releaseState": "RELEASE_APPROVED_WITH_ASSUMPTIONS",
+    "releaseState": "RELEASE_APPROVED",
     "releaseApproved": 1,
     "adoptionReady": 1,
-    "adoptionReadiness": 0.9683,
+    "adoptionReadiness": 0.9567,
     "adoptionReadinessThreshold": 0.8,
     "latentIntentAlignment": 0.92,
     "literalRequirementAlignment": 1,
@@ -86,16 +86,17 @@
       "evidenceRefCount": 11,
       "supportingArtifactCount": 11,
       "blockerCount": 0,
-      "residualRiskCount": 1,
+      "residualRiskCount": 2,
       "assumptionCount": 2,
-      "taskOutcomeCount": 5
+      "taskOutcomeCount": 4
     },
     "blockers": [],
     "residualRisks": [
+      "Dense, interrupted, critical, and longest-copy states must be visually checked for overflow, clipping, collisions, and copy-fit before signoff.",
       "New logic or protocol-sensitive behavior requires dedicated verification before signoff."
     ],
     "assumptions": [
-      "Any scope outside the explicit goal should stay proposal-only unless the prompt states otherwise.",
+      "明示ゴールの外側は、入力で明示されていない限り提案止まりにする。",
       "Unresolved ambiguity must not be auto-answered by the harness."
     ],
     "intentTrace": {
@@ -112,16 +113,28 @@
   "workerCompletionStatusPath": "output/governance_public/worker_completion_status.json",
   "workerCompletionStatus": {
     "schema": "worker-completion-status.v1",
-    "generatedAt": "2026-04-12T08:44:27.953Z",
-    "exportSessionId": "export_a63636ff0a86",
+    "generatedAt": "2026-04-18T06:42:33.778Z",
+    "exportSessionId": "export_69aaf0d22042",
     "scope": "worker_completion",
     "workerGoalStatus": "worker complete",
     "decisionQuestion": "Can the governed autonomous worker stop here and hand back an adoptable artifact without unnecessary human interruption?",
     "decisionMeaning": "worker_headline_stop_semantics_with_background_program_readiness_context",
+    "operatorReadOrder": [
+      "worker_stop_primary",
+      "background_program_readiness_secondary"
+    ],
     "headlineArtifactPath": "output/governance_public/worker_decision_surface.json",
     "headlineWorkerOutcome": "ADOPTABLE_COMPLETE",
+    "workerStopDecision": {
+      "scope": "worker_stop",
+      "status": "worker complete",
+      "headlineOutcome": "ADOPTABLE_COMPLETE",
+      "displayLabel": "Worker stop verdict",
+      "presentationRole": "primary_task_verdict",
+      "operatorPriority": "primary"
+    },
     "taskOutcomeStatus": "completed",
-    "releaseState": "RELEASE_APPROVED_WITH_ASSUMPTIONS",
+    "releaseState": "RELEASE_APPROVED",
     "adoptionReady": true,
     "latentIntentAligned": true,
     "literalRequirementAligned": true,
@@ -157,13 +170,29 @@
     "activeLearningDebtBlocksWorkerStop": false,
     "backgroundArtifactSessionConsistency": "aligned",
     "backgroundArtifactSessionIds": [
-      "export_a63636ff0a86"
+      "export_69aaf0d22042"
     ],
     "backgroundArtifactInputsTrusted": true,
     "programReadinessStatus": "not yet",
     "subjectiveCompanionStatus": "not yet",
     "compatibilityStatus": "not yet",
     "programReadinessBlockingWorkerStop": false,
+    "backgroundProgramReadiness": {
+      "scope": "program_readiness",
+      "status": "not yet",
+      "displayLabel": "Background program readiness",
+      "presentationRole": "secondary_non_blocking_context",
+      "operatorPriority": "secondary",
+      "doesNotOverrideWorkerVerdict": true,
+      "workerStopBlocked": false,
+      "backgroundTrusted": true,
+      "whyNotYetCount": 9,
+      "summary": "Background program-readiness debt is still open. It remains secondary context and does not overturn the worker stop verdict.",
+      "companionStatuses": {
+        "subjective": "NOT_YET",
+        "compatibility": "NOT_YET"
+      }
+    },
     "supportingArtifacts": [
       "output/governance_public/worker_decision_surface.json",
       "output/agi_readiness/goal_completion_status.json",
@@ -177,19 +206,47 @@
     "whyNotYet": [],
     "backgroundProgramReadinessWhyNotYet": [
       "stable coverage breadth below threshold (0.333333 < 1)",
-      "continuity debt remains open (7 > 0)",
+      "raw final score below threshold (0.860278 < 0.9)",
+      "R_robust below threshold (0.81 < 0.93)",
+      "H_horizon below threshold (0.93487 < 0.97)",
+      "catastrophic risk cvar above threshold (0.04 > 0.03)",
       "harmful causal trace ratio above threshold (1 > 0.1)",
       "autonomous learning agenda still has running items (1)",
-      "browser_tool_flakiness below threshold (0.418367 < 0.8)",
+      "browser_tool_flakiness below threshold (0.28 < 0.8)",
       "operational completion thresholds have not been maintained across 3 consecutive live exports"
     ]
   },
   "headlineScope": "worker_decision",
   "workerDecisionHeadline": "ADOPTABLE_COMPLETE",
+  "workerStopDecision": {
+    "scope": "worker_stop",
+    "status": "worker complete",
+    "headlineOutcome": "ADOPTABLE_COMPLETE",
+    "displayLabel": "Worker stop verdict",
+    "presentationRole": "primary_task_verdict",
+    "operatorPriority": "primary"
+  },
+  "backgroundProgramReadiness": {
+    "scope": "program_readiness",
+    "status": "not yet",
+    "displayLabel": "Background program readiness",
+    "presentationRole": "secondary_non_blocking_context",
+    "operatorPriority": "secondary",
+    "doesNotOverrideWorkerVerdict": true,
+    "workerStopBlocked": false,
+    "backgroundTrusted": true,
+    "whyNotYetCount": 9,
+    "summary": "Background program-readiness debt is still open. It remains secondary context and does not overturn the worker stop verdict.",
+    "companionStatuses": {
+      "subjective": "NOT_YET",
+      "compatibility": "NOT_YET"
+    }
+  },
   "goalCompletionPath": "output/agi_readiness/goal_completion_status.json",
   "goalStatusScope": "program_readiness",
   "goalStatus": "NOT_YET",
-  "goalWhyNotYetCount": 6,
+  "goalStatusPresentationRole": "secondary_non_blocking_context",
+  "goalWhyNotYetCount": 9,
   "subjectiveGoalStatusPath": "output/agi_readiness/subjective_goal_completion_status.json",
   "subjectiveGoalStatusScope": "subjective_companion",
   "compatibilityCompletionStatusPath": "output/agi_readiness/compatibility_completion_status.json",
@@ -197,7 +254,10 @@
   "goalCompletion": {
     "scope": "program_readiness",
     "status": "NOT_YET",
-    "whyNotYetCount": 6
+    "displayLabel": "Background program readiness",
+    "presentationRole": "secondary_non_blocking_context",
+    "doesNotOverrideWorkerVerdict": true,
+    "whyNotYetCount": 9
   },
   "latestPack": {
     "selectedCount": 13,
@@ -210,20 +270,20 @@
       "workspace_progress": 1,
       "intent": 1,
       "spec": 4,
-      "semantic": 3,
       "experience": 3,
-      "improvement": 1
+      "improvement": 1,
+      "semantic": 3
     }
   },
   "staleWarningCount": 0,
   "learningAgendaSummary": {
-    "queued": 4,
+    "queued": 3,
     "running": 3,
     "blocked": 0,
-    "passed": 1,
+    "passed": 2,
     "failed": 0,
     "revoked": 0,
-    "verifiedPositive": 1,
+    "verifiedPositive": 2,
     "verifiedNeutral": 0,
     "verifiedNegative": 0,
     "verifiedHarmful": 0,
@@ -236,23 +296,43 @@
     "novelProbePositiveCount": 2
   },
   "subjectiveGoalStatus": "NOT_YET",
-  "subjectiveGoalWhyNotYetCount": 9,
+  "subjectiveGoalWhyNotYetCount": 12,
   "subjectiveCompletion": {
     "scope": "subjective_companion",
     "status": "NOT_YET",
-    "whyNotYetCount": 9
+    "whyNotYetCount": 12
   },
   "compatibilityCompletionStatus": "NOT_YET",
-  "compatibilityWhyNotYetCount": 19,
+  "compatibilityWhyNotYetCount": 21,
   "compatibilityCompletion": {
     "scope": "compatibility_layer",
     "status": "NOT_YET",
-    "whyNotYetCount": 19
+    "whyNotYetCount": 21
   },
   "workerCompletion": {
     "scope": "worker_completion",
     "workerGoalStatus": "WORKER_COMPLETE",
     "programReadinessStatus": "NOT_YET",
+    "operatorReadOrder": [
+      "worker_stop_primary",
+      "background_program_readiness_secondary"
+    ],
+    "backgroundProgramReadiness": {
+      "scope": "program_readiness",
+      "status": "not yet",
+      "displayLabel": "Background program readiness",
+      "presentationRole": "secondary_non_blocking_context",
+      "operatorPriority": "secondary",
+      "doesNotOverrideWorkerVerdict": true,
+      "workerStopBlocked": false,
+      "backgroundTrusted": true,
+      "whyNotYetCount": 9,
+      "summary": "Background program-readiness debt is still open. It remains secondary context and does not overturn the worker stop verdict.",
+      "companionStatuses": {
+        "subjective": "NOT_YET",
+        "compatibility": "NOT_YET"
+      }
+    },
     "activeLearningDebtOpen": true
   }
 }

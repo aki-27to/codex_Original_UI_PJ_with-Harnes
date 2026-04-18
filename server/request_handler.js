@@ -1,14 +1,24 @@
 "use strict";
 
 const { createBatchRoutes } = require("./routes/batch_routes");
-const { createRuntimeRoutes } = require("./routes/runtime_routes");
+const { createControlRoutes } = require("./routes/control_routes");
+const { createAppRoutes } = require("./routes/app_routes");
+const { createConversationRoutes } = require("./routes/conversation_routes");
+const { createReplayRoutes } = require("./routes/replay_routes");
+const { createOverviewRoutes } = require("./routes/overview_routes");
+const { createVoiceRoutes } = require("./routes/voice_routes");
 const { createEvalRoutes } = require("./routes/eval_routes");
 const { createExecRoutes } = require("./routes/exec_routes");
 
 function createRequestHandler(ctx) {
   const routes = [
-    ...createRuntimeRoutes(ctx),
+    ...createOverviewRoutes(ctx),
     ...createBatchRoutes(ctx),
+    ...createControlRoutes(ctx),
+    ...createAppRoutes(ctx),
+    ...createConversationRoutes(ctx),
+    ...createVoiceRoutes(ctx),
+    ...createReplayRoutes(ctx),
     ...createEvalRoutes(ctx),
     ...createExecRoutes(ctx),
   ];
@@ -36,19 +46,6 @@ function createRequestHandler(ctx) {
       return;
     }
 
-    if (req.method === "POST" && pathname.startsWith("/api/apps/")) {
-      const replyMatch = pathname.match(/^\/api\/apps\/([^/]+)\/reply$/);
-      if (replyMatch) {
-        await ctx.handleHarnessAppReplyRequest(req, res, decodeURIComponent(replyMatch[1]));
-        return;
-      }
-      const structuredMatch = pathname.match(/^\/api\/apps\/([^/]+)\/structured$/);
-      if (structuredMatch) {
-        await ctx.handleHarnessAppStructuredRequest(req, res, decodeURIComponent(structuredMatch[1]));
-        return;
-      }
-    }
-
     for (const route of routes) {
       if (route.method === req.method && route.match(pathname)) {
         await route.handle({ req, res, url, pathname, originalPathname });
@@ -56,7 +53,8 @@ function createRequestHandler(ctx) {
       }
     }
 
-    if (await ctx.handleLegacyRuntimeRoute({ req, res, url, pathname, originalPathname })) {
+    if (typeof ctx.handleLegacyRuntimeRoute === "function"
+      && await ctx.handleLegacyRuntimeRoute({ req, res, url, pathname, originalPathname })) {
       return;
     }
 

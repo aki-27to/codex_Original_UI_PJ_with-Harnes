@@ -5,11 +5,11 @@
 - Public output root: output/memory_public
 - Canonical events: 12000
 - Items: 50
-- Promoted: 20
+- Promoted: 16
 - Latest pack: 13 items for default (3 high-confidence)
 - Latest pack reused items: 13
 - Latest pack task-family mismatches: 0
-- Memory eval: PASS
+- Memory eval: FAIL
 - Recent promotions: 5
 - Recent revocations: 5
 - Stale warnings: 0
@@ -36,19 +36,18 @@
 - blocker: operator chose to abandon the task
 - blocker: pending child integration: phase4 denied-<opaque id>-executor-<opaque id>
 - blocker: simulated child verifier failure
+- next: robustness is currently limited by browser tool flakiness
 - next: browser tool flakiness below subjective threshold
-- next: weakest family is G breadth
-- next: web creative stable coverage below subjective threshold
+- next: weakest family is R robust
 - next: capture governed recovery evidence
-- next: running agenda counts differ across artifacts without an explicit gate vs supporting basis
-- next: continuity carries 7 closeout debt item(s) with severity high
+- next: mismatched export sessions: export 69aaf0d22042, export b19f32facb8f
 
 ## Capability Loop
-- queued: 4
+- queued: 3
 - running: 3
-- passed: 1
+- passed: 2
 - blocked: 0
 
 ## Lane Health
-- openai_primary: governed=active / promoted=3 / canonical-selected=10 / compatibility=PASS
+- openai_primary: governed=captured_only / promoted=0 / canonical-selected=8 / compatibility=PASS
 - anthropic_secondary: governed=shadow_only / promoted=0 / canonical-selected=0 / compatibility=PASS
