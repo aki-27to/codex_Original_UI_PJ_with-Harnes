@@ -1,7 +1,7 @@
 {
   "schema": "anthropic-engineering-learning-proposal.v1",
   "proposalId": "anthropic-engineering-infrastructure-noise",
-  "createdAt": "2026-04-17T15:58:02.816Z",
+  "createdAt": "2026-04-18T15:58:17.628Z",
   "articleId": "infrastructure-noise",
   "title": "Quantifying infrastructure noise in agentic coding evals",
   "sourceUrl": "https://www.anthropic.com/engineering/infrastructure-noise",

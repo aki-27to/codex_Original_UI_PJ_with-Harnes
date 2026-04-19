@@ -155,6 +155,34 @@ function run() {
   assert.strictEqual(stateById(authorityWorkflow).lock, "active", "authority checks should remain inside the compressed requirement step");
   assert.strictEqual(authorityWorkflow.currentLabel, "2. 要件確定", "pre-plan authority checks should stay inside the user-facing requirement step");
 
+  const planningInLockLifecycle = deriveUserVisibleLifecycleForUi({
+    requirementSnapshot: {
+      hasRequirement: true,
+      headline: "Status rail tone cleanup",
+      acceptanceChecks: [{ title: "The active step should match what users think is happening." }],
+      displayBoundaries: ["Do not widen the rail."],
+    },
+    requirementGateBlocked: false,
+    flowItems: [{ id: "planning", state: "active", detail: "sequencing the work" }],
+    status: "running",
+  });
+  const planningInLockWorkflow = deriveUserFacingWorkflowForUi({
+    requirementSnapshot: {
+      hasRequirement: true,
+      headline: "Status rail tone cleanup",
+      acceptanceChecks: [{ title: "The active step should match what users think is happening." }],
+      displayBoundaries: ["Do not widen the rail."],
+    },
+    requirementGateBlocked: false,
+    flowItems: [{ id: "planning", state: "active", detail: "sequencing the work" }],
+    status: "running",
+    internalLifecycle: planningInLockLifecycle,
+  });
+  assert.strictEqual(stateById(planningInLockWorkflow).lock, "active", "visible planning should stay inside the user-facing requirement step");
+  assert.strictEqual(stateById(planningInLockWorkflow).execute, "todo", "execution should stay quiet until actual implementation starts");
+  assert.match(planningInLockWorkflow.currentLabel, /^2\./, "planning work should keep the current label inside step 2");
+  assert.match(planningInLockWorkflow.currentDetail, /段取り|順/, "step 2 copy should explain that execution sequencing is being fixed");
+
   const outOfOrder = deriveUserVisibleLifecycleForUi({
     requirementSnapshot: {
       hasRequirement: true,

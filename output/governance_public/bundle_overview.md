@@ -1,6 +1,6 @@
 # GOVERNANCE_PUBLIC_BUNDLE
 
-Generated: 2026-04-18T06:42:29.263Z
+Generated: 2026-04-18T06:45:48.307Z
 Source signoff summary: `logs/current/latest_signoff_summary.json`
 Source bundle: `logs/bundles/signoff/signoff-2026-04-18T05-27-13-996Z-f97810`
 Source turn: `logs/bundles/signoff/signoff-2026-04-18T05-27-13-996Z-f97810/raw/turns/2026-04-18/mock-thread-4__mock-turn-7`

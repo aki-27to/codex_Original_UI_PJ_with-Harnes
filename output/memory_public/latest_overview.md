@@ -5,7 +5,7 @@
 - Public output root: output/memory_public
 - Canonical events: 12000
 - Items: 50
-- Promoted: 16
+- Promoted: 17
 - Latest pack: 13 items for default (3 high-confidence)
 - Latest pack reused items: 13
 - Latest pack task-family mismatches: 0
@@ -49,5 +49,5 @@
 - blocked: 0
 
 ## Lane Health
-- openai_primary: governed=captured_only / promoted=0 / canonical-selected=8 / compatibility=PASS
+- openai_primary: governed=active / promoted=1 / canonical-selected=8 / compatibility=PASS
 - anthropic_secondary: governed=shadow_only / promoted=0 / canonical-selected=0 / compatibility=PASS

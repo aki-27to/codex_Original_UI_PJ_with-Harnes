@@ -7,7 +7,7 @@
 - compatibilityCompletionStatus: NOT_YET
 - compatibilityCriteriaMet: false
 - compatibilityCriteriaWindow: 0/14
-- generatedAt: 2026-04-18T06:42:33.676Z
+- generatedAt: 2026-04-18T06:45:51.624Z
 - completionVersion: 2026-04-11.r1
 - decisionBasis: live_truth_strict_operational_criteria
 
@@ -36,11 +36,11 @@
 - runningAgendaCount: 1
 - harmfulCausalRatio: 1
 - likelyContributoryCount: 0
-- harmfulTraceCount: 1
+- harmfulTraceCount: 2
 - distinctLineageWindowCount: 4
 - distinctLineageNonWorsening: true
-- primaryLaneObservationCount: 211
-- primaryLaneCausalUsageCount: 17
+- primaryLaneObservationCount: 152
+- primaryLaneCausalUsageCount: 12
 - primaryLaneSelectedInLatestPackCount: 8
 - primaryLaneEffectiveContributionCount: 0
 - secondaryAdvisoryUsageCount: 4

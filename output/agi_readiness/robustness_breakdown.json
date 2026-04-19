@@ -1,6 +1,6 @@
 {
   "schema": "agi-readiness-robustness-breakdown.v1",
-  "generatedAt": "2026-04-18T06:42:32.308Z",
+  "generatedAt": "2026-04-18T06:45:51.150Z",
   "workspaceId": "5c839dfeef8b555f",
   "categories": [
     {
@@ -44,7 +44,7 @@
         "evaluation_review"
       ],
       "remediationStatus": "running",
-      "lastRemediationAt": "2026-04-18T06:42:32.807Z",
+      "lastRemediationAt": "2026-04-18T06:45:51.395Z",
       "lastImprovementDelta": 0,
       "openFailureModes": [
         "retry budget exceeded without safe abort",
@@ -92,7 +92,7 @@
         "evaluation_review"
       ],
       "remediationStatus": "passed",
-      "lastRemediationAt": "2026-04-18T06:42:32.809Z",
+      "lastRemediationAt": "2026-04-18T06:45:51.397Z",
       "lastImprovementDelta": 0,
       "openFailureModes": [
         "ambiguity not detected",

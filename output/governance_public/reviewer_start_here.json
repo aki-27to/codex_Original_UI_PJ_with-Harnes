@@ -1,6 +1,6 @@
 {
   "schema": "governance-reviewer-start-here.v1",
-  "generatedAt": "2026-04-18T06:42:29.265Z",
+  "generatedAt": "2026-04-18T06:45:48.308Z",
   "purpose": "Single reviewer-first surface for the governed harness. Start with the task verdict, then inspect background program debt as secondary context.",
   "readOrder": [
     "output/governance_public/reviewer_start_here.json",

@@ -1,13 +1,13 @@
 {
   "schema": "governed-memory-public-overview.v1",
-  "generatedAt": "2026-04-18T06:42:32.710Z",
+  "generatedAt": "2026-04-18T06:45:51.365Z",
   "exportSessionId": "export_69aaf0d22042",
   "workspaceId": "5c839dfeef8b555f",
   "canonicalRoot": "logs/archive/raw/runtime_state/memory",
   "publicOutputRoot": "output/memory_public",
   "canonicalEventCount": 12000,
   "itemCount": 50,
-  "promotedCount": 16,
+  "promotedCount": 17,
   "typeCounts": {
     "constitution_ref": 7,
     "requirement_ref": 1,
@@ -20,10 +20,10 @@
     "runtime_hint": 9
   },
   "statusCounts": {
-    "promoted": 16,
+    "promoted": 17,
     "captured": 14,
     "candidate": 1,
-    "blocked": 11,
+    "blocked": 10,
     "shadow": 4,
     "proposal_only": 4
   },
@@ -45,7 +45,7 @@
   "workerDecisionSurfacePath": "output/governance_public/worker_decision_surface.json",
   "workerDecisionSurface": {
     "schema": "worker-decision-surface.v1",
-    "generatedAt": "2026-04-18T06:42:29.260Z",
+    "generatedAt": "2026-04-18T06:45:48.303Z",
     "scope": "worker_decision",
     "exportSessionId": "export_69aaf0d22042",
     "decisionQuestion": "Can the governed worker stop here without unnecessary human interruption?",
@@ -113,7 +113,7 @@
   "workerCompletionStatusPath": "output/governance_public/worker_completion_status.json",
   "workerCompletionStatus": {
     "schema": "worker-completion-status.v1",
-    "generatedAt": "2026-04-18T06:42:33.778Z",
+    "generatedAt": "2026-04-18T06:45:51.627Z",
     "exportSessionId": "export_69aaf0d22042",
     "scope": "worker_completion",
     "workerGoalStatus": "worker complete",
@@ -270,9 +270,9 @@
       "workspace_progress": 1,
       "intent": 1,
       "spec": 4,
+      "semantic": 3,
       "experience": 3,
-      "improvement": 1,
-      "semantic": 3
+      "improvement": 1
     }
   },
   "staleWarningCount": 0,

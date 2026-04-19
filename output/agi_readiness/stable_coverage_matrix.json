@@ -1,6 +1,6 @@
 {
   "schema": "agi-readiness-stable-coverage-matrix.v1",
-  "generatedAt": "2026-04-18T06:42:32.581Z",
+  "generatedAt": "2026-04-18T06:45:51.346Z",
   "workspaceId": "5c839dfeef8b555f",
   "stableCoverageBreadth": 0.333333,
   "rows": [
@@ -29,7 +29,7 @@
         "source": "continuity",
         "title": "verifier handoff for Coding baseline through planner/executor/verifier",
         "status": "completed",
-        "updatedAt": "2026-04-18T05:26:26.766Z"
+        "updatedAt": "2026-04-18T06:43:07.047Z"
       },
       "lastFailedTask": {
         "publicRef": "<task-ref>",
@@ -103,7 +103,7 @@
         "source": "continuity",
         "title": "Simple planning task falls back to single agent path",
         "status": "completed",
-        "updatedAt": "2026-04-18T05:26:27.309Z"
+        "updatedAt": "2026-04-18T06:43:07.618Z"
       },
       "lastFailedTask": {
         "publicRef": "<task-ref>",

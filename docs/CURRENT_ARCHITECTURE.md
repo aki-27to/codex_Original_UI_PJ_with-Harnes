@@ -264,6 +264,7 @@ Current implementation surfaces:
 - current work summary: the `今していること` field prefers the user-facing 5-step workflow detail copy, so it no longer surfaces raw `step x / y` plan text or internal quality-gate jargon
 - user-facing top-level workflow: the primary HarnesUI card compresses progress to `依頼理解 -> 要件確定 -> 実行 -> 検証 -> 完了`, while the full 15-step operator lifecycle stays inside the detail fold
 - completed-reply override: the same right-rail workflow suppresses stale `前回状態 / 要件未確定` carryover whenever the active chat already has a terminal `completed` result
+- user-facing workflow semantics: visible planning/段取り work now lives inside the compressed `要件確定` step, while `実行` is reserved for actual file changes, investigation, generation, or draft-answer work; if execution starts before planning is in place, the compressed flow still surfaces that as an execution-order failure instead of showing a healthy run
 - lifecycle copy-fit / wrap policy: `web/01.HarnesUI/styles.css`
 - policy narrative: `docs/SELF_IMPROVEMENT_POLICY.md`
 

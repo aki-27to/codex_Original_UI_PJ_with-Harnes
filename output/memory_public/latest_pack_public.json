@@ -1,11 +1,11 @@
 {
   "schema": "governed-memory-latest-pack-public.v1",
-  "generatedAt": "2026-04-18T06:42:32.626Z",
+  "generatedAt": "2026-04-18T06:45:51.352Z",
   "workspaceId": "5c839dfeef8b555f",
-  "packId": "c4619355f979c9a9cf69",
+  "packId": "26f298404936cabee399",
   "latestPack": {
-    "generatedAt": "2026-04-18T06:42:30.420Z",
-    "compiledAt": "2026-04-18T06:42:30.420Z",
+    "generatedAt": "2026-04-18T06:45:49.477Z",
+    "compiledAt": "2026-04-18T06:45:49.477Z",
     "activeAgent": "default",
     "taskFamily": "web_creative",
     "selectedCount": 13,
@@ -16,9 +16,9 @@
       "workspace_progress": 1,
       "intent": 1,
       "spec": 4,
+      "semantic": 3,
       "experience": 3,
-      "improvement": 1,
-      "semantic": 3
+      "improvement": 1
     },
     "selectedItems": [
       {
@@ -62,6 +62,20 @@
           "all"
         ],
         "summary": "Requirement Foundation V1 is frozen and treated as a top-level invariant, not a mutable lesson."
+      },
+      {
+        "publicRef": "mem_d731ba2fd1",
+        "type": "semantic_lesson",
+        "status": "promoted",
+        "score": 0.6242,
+        "scoreBand": "selected",
+        "sourceTier": "external_primary",
+        "authorityTier": 5,
+        "scopeWorkspace": "5c839dfeef8b555f",
+        "taskFamilies": [
+          "web_creative"
+        ],
+        "summary": "Using skills to accelerate OSS maintenance | OpenAI Developers"
       },
       {
         "publicRef": "mem_e65f4ce9a0",
@@ -149,7 +163,7 @@
         "summary": "runtime episode finished as CAPTURED."
       },
       {
-        "publicRef": "mem_3bb030120d",
+        "publicRef": "mem_5b877e2516",
         "type": "improvement_candidate",
         "status": "candidate",
         "score": 0.6,
@@ -175,20 +189,6 @@
           "default"
         ],
         "summary": "parent dispatch guard block"
-      },
-      {
-        "publicRef": "mem_1748eef46d",
-        "type": "failure_pattern",
-        "status": "promoted",
-        "score": 0.5967,
-        "scoreBand": "selected",
-        "sourceTier": "runtime",
-        "authorityTier": 5,
-        "scopeWorkspace": "5c839dfeef8b555f",
-        "taskFamilies": [
-          "default"
-        ],
-        "summary": "return to intake required"
       }
     ]
   }

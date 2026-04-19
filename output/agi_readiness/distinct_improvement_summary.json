@@ -1,6 +1,6 @@
 {
   "schema": "agi-readiness-distinct-improvement-summary.v1",
-  "generatedAt": "2026-04-18T06:42:32.622Z",
+  "generatedAt": "2026-04-18T06:45:51.349Z",
   "workspaceId": "5c839dfeef8b555f",
   "distinctWindowSize": 2,
   "distinctComparisonCount": 2,

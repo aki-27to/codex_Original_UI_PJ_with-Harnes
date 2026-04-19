@@ -1,6 +1,6 @@
 {
   "schema": "agi-readiness-domain-coverage-matrix.v1",
-  "generatedAt": "2026-04-18T06:42:32.176Z",
+  "generatedAt": "2026-04-18T06:45:51.019Z",
   "workspaceId": "5c839dfeef8b555f",
   "rows": [
     {
@@ -8,11 +8,11 @@
       "label": "Deterministic Code",
       "evidenceStatus": "passing_evidence",
       "lastSuccessfulTask": {
-        "publicRef": "task_18e49902ee",
+        "publicRef": "task_77e179044b",
         "source": "continuity",
         "title": "verifier handoff for Coding baseline through planner/executor/verifier",
         "status": "completed",
-        "updatedAt": "2026-04-18T05:26:26.766Z"
+        "updatedAt": "2026-04-18T06:43:07.047Z"
       },
       "lastFailedTask": {
         "publicRef": "task_2accc78055",
@@ -23,22 +23,22 @@
       },
       "activeLessons": [
         {
-          "memoryId": "lesson:anthropic:54bf5af3c4c6",
+          "memoryId": "lesson:anthropic:d74b7843c1f5",
           "status": "shadow",
           "summary": "Quantifying infrastructure noise in agentic coding evals"
         },
         {
-          "memoryId": "lesson:anthropic:dbcec9c94817",
+          "memoryId": "lesson:anthropic:c4b2eaca9c23",
           "status": "shadow",
           "summary": "Scaling Managed Agents: Decoupling the brain from the hands"
         },
         {
-          "memoryId": "lesson:anthropic:59e16cc6f097",
+          "memoryId": "lesson:anthropic:b4484f7a5c9b",
           "status": "shadow",
           "summary": "Harness design for long-running application development"
         },
         {
-          "memoryId": "lesson:anthropic:2bdf45dfca24",
+          "memoryId": "lesson:anthropic:7659708a1a9d",
           "status": "shadow",
           "summary": "Designing AI resistant technical evaluations"
         }
@@ -53,7 +53,7 @@
       "observationCount": 3,
       "recentSuccessRate": 1,
       "recentFailureBurden": 0,
-      "lastPassRecency": "2026-04-18T05:26:26.766Z",
+      "lastPassRecency": "2026-04-18T06:43:07.047Z",
       "verifierBurden": 10,
       "stabilityStatus": "stable",
       "stableCovered": true,
@@ -94,22 +94,27 @@
       },
       "activeLessons": [
         {
-          "memoryId": "lesson:anthropic:54bf5af3c4c6",
+          "memoryId": "lesson:openai:7dd586ae426c",
+          "status": "promoted",
+          "summary": "Using skills to accelerate OSS maintenance | OpenAI Developers"
+        },
+        {
+          "memoryId": "lesson:anthropic:d74b7843c1f5",
           "status": "shadow",
           "summary": "Quantifying infrastructure noise in agentic coding evals"
         },
         {
-          "memoryId": "lesson:anthropic:dbcec9c94817",
+          "memoryId": "lesson:anthropic:c4b2eaca9c23",
           "status": "shadow",
           "summary": "Scaling Managed Agents: Decoupling the brain from the hands"
         },
         {
-          "memoryId": "lesson:anthropic:59e16cc6f097",
+          "memoryId": "lesson:anthropic:b4484f7a5c9b",
           "status": "shadow",
           "summary": "Harness design for long-running application development"
         },
         {
-          "memoryId": "lesson:anthropic:2bdf45dfca24",
+          "memoryId": "lesson:anthropic:7659708a1a9d",
           "status": "shadow",
           "summary": "Designing AI resistant technical evaluations"
         }
@@ -144,11 +149,11 @@
       "label": "Planning",
       "evidenceStatus": "passing_evidence",
       "lastSuccessfulTask": {
-        "publicRef": "task_165186450e",
+        "publicRef": "task_26f7a10251",
         "source": "continuity",
         "title": "Simple planning task falls back to single agent path",
         "status": "completed",
-        "updatedAt": "2026-04-18T05:26:27.309Z"
+        "updatedAt": "2026-04-18T06:43:07.618Z"
       },
       "lastFailedTask": {
         "publicRef": "task_ac9d60b262",
@@ -159,22 +164,22 @@
       },
       "activeLessons": [
         {
-          "memoryId": "lesson:anthropic:54bf5af3c4c6",
+          "memoryId": "lesson:anthropic:d74b7843c1f5",
           "status": "shadow",
           "summary": "Quantifying infrastructure noise in agentic coding evals"
         },
         {
-          "memoryId": "lesson:anthropic:dbcec9c94817",
+          "memoryId": "lesson:anthropic:c4b2eaca9c23",
           "status": "shadow",
           "summary": "Scaling Managed Agents: Decoupling the brain from the hands"
         },
         {
-          "memoryId": "lesson:anthropic:59e16cc6f097",
+          "memoryId": "lesson:anthropic:b4484f7a5c9b",
           "status": "shadow",
           "summary": "Harness design for long-running application development"
         },
         {
-          "memoryId": "lesson:anthropic:2bdf45dfca24",
+          "memoryId": "lesson:anthropic:7659708a1a9d",
           "status": "shadow",
           "summary": "Designing AI resistant technical evaluations"
         }
@@ -183,7 +188,7 @@
       "observationCount": 3,
       "recentSuccessRate": 1,
       "recentFailureBurden": 0,
-      "lastPassRecency": "2026-04-18T05:26:27.309Z",
+      "lastPassRecency": "2026-04-18T06:43:07.618Z",
       "verifierBurden": 10,
       "stabilityStatus": "stable",
       "stableCovered": true,
@@ -224,22 +229,22 @@
       },
       "activeLessons": [
         {
-          "memoryId": "lesson:anthropic:54bf5af3c4c6",
+          "memoryId": "lesson:anthropic:d74b7843c1f5",
           "status": "shadow",
           "summary": "Quantifying infrastructure noise in agentic coding evals"
         },
         {
-          "memoryId": "lesson:anthropic:dbcec9c94817",
+          "memoryId": "lesson:anthropic:c4b2eaca9c23",
           "status": "shadow",
           "summary": "Scaling Managed Agents: Decoupling the brain from the hands"
         },
         {
-          "memoryId": "lesson:anthropic:59e16cc6f097",
+          "memoryId": "lesson:anthropic:b4484f7a5c9b",
           "status": "shadow",
           "summary": "Harness design for long-running application development"
         },
         {
-          "memoryId": "lesson:anthropic:2bdf45dfca24",
+          "memoryId": "lesson:anthropic:7659708a1a9d",
           "status": "shadow",
           "summary": "Designing AI resistant technical evaluations"
         }
@@ -295,22 +300,22 @@
       },
       "activeLessons": [
         {
-          "memoryId": "lesson:anthropic:54bf5af3c4c6",
+          "memoryId": "lesson:anthropic:d74b7843c1f5",
           "status": "shadow",
           "summary": "Quantifying infrastructure noise in agentic coding evals"
         },
         {
-          "memoryId": "lesson:anthropic:dbcec9c94817",
+          "memoryId": "lesson:anthropic:c4b2eaca9c23",
           "status": "shadow",
           "summary": "Scaling Managed Agents: Decoupling the brain from the hands"
         },
         {
-          "memoryId": "lesson:anthropic:59e16cc6f097",
+          "memoryId": "lesson:anthropic:b4484f7a5c9b",
           "status": "shadow",
           "summary": "Harness design for long-running application development"
         },
         {
-          "memoryId": "lesson:anthropic:2bdf45dfca24",
+          "memoryId": "lesson:anthropic:7659708a1a9d",
           "status": "shadow",
           "summary": "Designing AI resistant technical evaluations"
         }
@@ -360,22 +365,22 @@
       },
       "activeLessons": [
         {
-          "memoryId": "lesson:anthropic:54bf5af3c4c6",
+          "memoryId": "lesson:anthropic:d74b7843c1f5",
           "status": "shadow",
           "summary": "Quantifying infrastructure noise in agentic coding evals"
         },
         {
-          "memoryId": "lesson:anthropic:dbcec9c94817",
+          "memoryId": "lesson:anthropic:c4b2eaca9c23",
           "status": "shadow",
           "summary": "Scaling Managed Agents: Decoupling the brain from the hands"
         },
         {
-          "memoryId": "lesson:anthropic:59e16cc6f097",
+          "memoryId": "lesson:anthropic:b4484f7a5c9b",
           "status": "shadow",
           "summary": "Harness design for long-running application development"
         },
         {
-          "memoryId": "lesson:anthropic:2bdf45dfca24",
+          "memoryId": "lesson:anthropic:7659708a1a9d",
           "status": "shadow",
           "summary": "Designing AI resistant technical evaluations"
         }

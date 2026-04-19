@@ -1,6 +1,6 @@
 {
   "schema": "self-improvement-state.v1",
-  "generatedAt": "2026-04-18T06:43:06.695Z",
+  "generatedAt": "2026-04-18T10:13:46.031Z",
   "sourceName": "OpenAI Developers Blog",
   "sourceTier": "primary",
   "promotionMode": "machine_guarded_autonomy",
@@ -23,8 +23,8 @@
   "readyHintCandidateCount": 0,
   "autoApplyFrontendQualityNoteCount": 0,
   "observationStatus": "idle",
-  "observationCount": 54,
-  "lastObservedAt": "2026-04-18T06:42:30.582Z",
+  "observationCount": 30,
+  "lastObservedAt": "2026-04-18T06:45:49.624Z",
   "requiredObservationSuccesses": 2,
   "requiredObservationSuccessRate": 0.67,
   "awaitingObservationCount": 0,
@@ -244,23 +244,22 @@
     "blastRadius": "low",
     "priorityScore": 53,
     "reinforcement": {
-      "successCount": 1,
-      "failureCount": 8,
-      "observedCount": 9,
-      "successRate": 0.1111,
+      "successCount": 0,
+      "failureCount": 5,
+      "observedCount": 5,
+      "successRate": 0,
       "requiredSuccesses": 2,
       "requiredSuccessRate": 0.67,
-      "remainingSuccesses": 1,
-      "lastObservedAt": "2026-04-18T06:42:30.582Z",
+      "remainingSuccesses": 2,
+      "lastObservedAt": "2026-04-18T06:45:49.624Z",
       "lastOutcome": "",
       "status": "building_evidence",
       "sampleTurnIds": [
+        "019d9f08-fd86-7e80-98cf-02483a41def0",
+        "019d9f0a-4846-7532-b834-ac320cbb11e1",
+        "019d9f0b-51d5-7d10-b2e3-402bb88c2881",
         "019d9f50-3f26-7550-9eb8-b1a00f0f1f68",
-        "019d9f4d-81cd-7f50-9e54-1b0e30842a08",
-        "019d9f44-8e3e-7a41-8ef0-590c33d542a1",
-        "019d9f45-ed90-7421-8c1e-9d5899d210b5",
-        "019d9f47-5dbd-7202-a1af-954bcded057e",
-        "019d9f2c-8ad9-7200-8756-c1ac00453990"
+        "019d9f4d-81cd-7f50-9e54-1b0e30842a08"
       ]
     }
   },
@@ -277,23 +276,22 @@
       "blastRadius": "low",
       "priorityScore": 53,
       "reinforcement": {
-        "successCount": 1,
-        "failureCount": 8,
-        "observedCount": 9,
-        "successRate": 0.1111,
+        "successCount": 0,
+        "failureCount": 5,
+        "observedCount": 5,
+        "successRate": 0,
         "requiredSuccesses": 2,
         "requiredSuccessRate": 0.67,
-        "remainingSuccesses": 1,
-        "lastObservedAt": "2026-04-18T06:42:30.582Z",
+        "remainingSuccesses": 2,
+        "lastObservedAt": "2026-04-18T06:45:49.624Z",
         "lastOutcome": "",
         "status": "building_evidence",
         "sampleTurnIds": [
+          "019d9f08-fd86-7e80-98cf-02483a41def0",
+          "019d9f0a-4846-7532-b834-ac320cbb11e1",
+          "019d9f0b-51d5-7d10-b2e3-402bb88c2881",
           "019d9f50-3f26-7550-9eb8-b1a00f0f1f68",
-          "019d9f4d-81cd-7f50-9e54-1b0e30842a08",
-          "019d9f44-8e3e-7a41-8ef0-590c33d542a1",
-          "019d9f45-ed90-7421-8c1e-9d5899d210b5",
-          "019d9f47-5dbd-7202-a1af-954bcded057e",
-          "019d9f2c-8ad9-7200-8756-c1ac00453990"
+          "019d9f4d-81cd-7f50-9e54-1b0e30842a08"
         ]
       }
     },
@@ -309,23 +307,22 @@
       "blastRadius": "low",
       "priorityScore": 28,
       "reinforcement": {
-        "successCount": 1,
-        "failureCount": 8,
-        "observedCount": 9,
-        "successRate": 0.1111,
+        "successCount": 0,
+        "failureCount": 5,
+        "observedCount": 5,
+        "successRate": 0,
         "requiredSuccesses": 2,
         "requiredSuccessRate": 0.67,
-        "remainingSuccesses": 1,
-        "lastObservedAt": "2026-04-18T06:42:30.582Z",
+        "remainingSuccesses": 2,
+        "lastObservedAt": "2026-04-18T06:45:49.624Z",
         "lastOutcome": "",
         "status": "building_evidence",
         "sampleTurnIds": [
+          "019d9f08-fd86-7e80-98cf-02483a41def0",
+          "019d9f0a-4846-7532-b834-ac320cbb11e1",
+          "019d9f0b-51d5-7d10-b2e3-402bb88c2881",
           "019d9f50-3f26-7550-9eb8-b1a00f0f1f68",
-          "019d9f4d-81cd-7f50-9e54-1b0e30842a08",
-          "019d9f44-8e3e-7a41-8ef0-590c33d542a1",
-          "019d9f45-ed90-7421-8c1e-9d5899d210b5",
-          "019d9f47-5dbd-7202-a1af-954bcded057e",
-          "019d9f2c-8ad9-7200-8756-c1ac00453990"
+          "019d9f4d-81cd-7f50-9e54-1b0e30842a08"
         ]
       }
     },
@@ -341,23 +338,22 @@
       "blastRadius": "low",
       "priorityScore": 28,
       "reinforcement": {
-        "successCount": 1,
-        "failureCount": 8,
-        "observedCount": 9,
-        "successRate": 0.1111,
+        "successCount": 0,
+        "failureCount": 5,
+        "observedCount": 5,
+        "successRate": 0,
         "requiredSuccesses": 2,
         "requiredSuccessRate": 0.67,
-        "remainingSuccesses": 1,
-        "lastObservedAt": "2026-04-18T06:42:30.582Z",
+        "remainingSuccesses": 2,
+        "lastObservedAt": "2026-04-18T06:45:49.624Z",
         "lastOutcome": "",
         "status": "building_evidence",
         "sampleTurnIds": [
+          "019d9f08-fd86-7e80-98cf-02483a41def0",
+          "019d9f0a-4846-7532-b834-ac320cbb11e1",
+          "019d9f0b-51d5-7d10-b2e3-402bb88c2881",
           "019d9f50-3f26-7550-9eb8-b1a00f0f1f68",
-          "019d9f4d-81cd-7f50-9e54-1b0e30842a08",
-          "019d9f44-8e3e-7a41-8ef0-590c33d542a1",
-          "019d9f45-ed90-7421-8c1e-9d5899d210b5",
-          "019d9f47-5dbd-7202-a1af-954bcded057e",
-          "019d9f2c-8ad9-7200-8756-c1ac00453990"
+          "019d9f4d-81cd-7f50-9e54-1b0e30842a08"
         ]
       }
     },
@@ -373,23 +369,22 @@
       "blastRadius": "low",
       "priorityScore": 28,
       "reinforcement": {
-        "successCount": 1,
-        "failureCount": 8,
-        "observedCount": 9,
-        "successRate": 0.1111,
+        "successCount": 0,
+        "failureCount": 5,
+        "observedCount": 5,
+        "successRate": 0,
         "requiredSuccesses": 2,
         "requiredSuccessRate": 0.67,
-        "remainingSuccesses": 1,
-        "lastObservedAt": "2026-04-18T06:42:30.582Z",
+        "remainingSuccesses": 2,
+        "lastObservedAt": "2026-04-18T06:45:49.624Z",
         "lastOutcome": "",
         "status": "building_evidence",
         "sampleTurnIds": [
+          "019d9f08-fd86-7e80-98cf-02483a41def0",
+          "019d9f0a-4846-7532-b834-ac320cbb11e1",
+          "019d9f0b-51d5-7d10-b2e3-402bb88c2881",
           "019d9f50-3f26-7550-9eb8-b1a00f0f1f68",
-          "019d9f4d-81cd-7f50-9e54-1b0e30842a08",
-          "019d9f44-8e3e-7a41-8ef0-590c33d542a1",
-          "019d9f45-ed90-7421-8c1e-9d5899d210b5",
-          "019d9f47-5dbd-7202-a1af-954bcded057e",
-          "019d9f2c-8ad9-7200-8756-c1ac00453990"
+          "019d9f4d-81cd-7f50-9e54-1b0e30842a08"
         ]
       }
     },
@@ -405,23 +400,22 @@
       "blastRadius": "low",
       "priorityScore": 28,
       "reinforcement": {
-        "successCount": 1,
-        "failureCount": 8,
-        "observedCount": 9,
-        "successRate": 0.1111,
+        "successCount": 0,
+        "failureCount": 5,
+        "observedCount": 5,
+        "successRate": 0,
         "requiredSuccesses": 2,
         "requiredSuccessRate": 0.67,
-        "remainingSuccesses": 1,
-        "lastObservedAt": "2026-04-18T06:42:30.582Z",
+        "remainingSuccesses": 2,
+        "lastObservedAt": "2026-04-18T06:45:49.624Z",
         "lastOutcome": "",
         "status": "building_evidence",
         "sampleTurnIds": [
+          "019d9f08-fd86-7e80-98cf-02483a41def0",
+          "019d9f0a-4846-7532-b834-ac320cbb11e1",
+          "019d9f0b-51d5-7d10-b2e3-402bb88c2881",
           "019d9f50-3f26-7550-9eb8-b1a00f0f1f68",
-          "019d9f4d-81cd-7f50-9e54-1b0e30842a08",
-          "019d9f44-8e3e-7a41-8ef0-590c33d542a1",
-          "019d9f45-ed90-7421-8c1e-9d5899d210b5",
-          "019d9f47-5dbd-7202-a1af-954bcded057e",
-          "019d9f2c-8ad9-7200-8756-c1ac00453990"
+          "019d9f4d-81cd-7f50-9e54-1b0e30842a08"
         ]
       }
     },
@@ -437,23 +431,22 @@
       "blastRadius": "low",
       "priorityScore": 28,
       "reinforcement": {
-        "successCount": 1,
-        "failureCount": 8,
-        "observedCount": 9,
-        "successRate": 0.1111,
+        "successCount": 0,
+        "failureCount": 5,
+        "observedCount": 5,
+        "successRate": 0,
         "requiredSuccesses": 2,
         "requiredSuccessRate": 0.67,
-        "remainingSuccesses": 1,
-        "lastObservedAt": "2026-04-18T06:42:30.582Z",
+        "remainingSuccesses": 2,
+        "lastObservedAt": "2026-04-18T06:45:49.624Z",
         "lastOutcome": "",
         "status": "building_evidence",
         "sampleTurnIds": [
+          "019d9f08-fd86-7e80-98cf-02483a41def0",
+          "019d9f0a-4846-7532-b834-ac320cbb11e1",
+          "019d9f0b-51d5-7d10-b2e3-402bb88c2881",
           "019d9f50-3f26-7550-9eb8-b1a00f0f1f68",
-          "019d9f4d-81cd-7f50-9e54-1b0e30842a08",
-          "019d9f44-8e3e-7a41-8ef0-590c33d542a1",
-          "019d9f45-ed90-7421-8c1e-9d5899d210b5",
-          "019d9f47-5dbd-7202-a1af-954bcded057e",
-          "019d9f2c-8ad9-7200-8756-c1ac00453990"
+          "019d9f4d-81cd-7f50-9e54-1b0e30842a08"
         ]
       }
     }

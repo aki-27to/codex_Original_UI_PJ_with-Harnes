@@ -1,6 +1,6 @@
 {
   "schema": "agi-operational-completion-status.v1",
-  "generatedAt": "2026-04-18T06:42:33.676Z",
+  "generatedAt": "2026-04-18T06:45:51.624Z",
   "exportSessionId": "export_69aaf0d22042",
   "scope": "program_readiness",
   "workspaceId": "5c839dfeef8b555f",
@@ -161,11 +161,11 @@
     "runningAgendaCount": 1,
     "harmfulCausalRatio": 1,
     "likelyContributoryCount": 0,
-    "harmfulTraceCount": 1,
+    "harmfulTraceCount": 2,
     "distinctLineageWindowCount": 4,
     "distinctLineageNonWorsening": true,
-    "primaryLaneObservationCount": 211,
-    "primaryLaneCausalUsageCount": 17,
+    "primaryLaneObservationCount": 152,
+    "primaryLaneCausalUsageCount": 12,
     "primaryLaneSelectedInLatestPackCount": 8,
     "primaryLaneEffectiveContributionCount": 0,
     "secondaryAdvisoryUsageCount": 4,
@@ -196,11 +196,11 @@
     "runningAgendaCount": 1,
     "harmfulCausalRatio": 1,
     "likelyContributoryCount": 0,
-    "harmfulTraceCount": 1,
+    "harmfulTraceCount": 2,
     "distinctLineageWindowCount": 4,
     "distinctLineageNonWorsening": true,
-    "primaryLaneObservationCount": 211,
-    "primaryLaneCausalUsageCount": 17,
+    "primaryLaneObservationCount": 152,
+    "primaryLaneCausalUsageCount": 12,
     "primaryLaneSelectedInLatestPackCount": 8,
     "primaryLaneEffectiveContributionCount": 0,
     "secondaryAdvisoryUsageCount": 4,
@@ -289,20 +289,20 @@
   },
   "causalSafetySummary": {
     "likelyContributoryCount": 0,
-    "harmfulTraceCount": 1,
+    "harmfulTraceCount": 2,
     "harmfulCausalRatio": 1,
-    "regressionAlertCount": 1,
+    "regressionAlertCount": 2,
     "summary": {
       "harmfulCausalRatio": 1,
       "likelyContributoryCount": 0,
-      "harmfulCount": 1,
-      "rolledBackHarmCount": 10,
+      "harmfulCount": 2,
+      "rolledBackHarmCount": 9,
       "neutralCount": 0,
       "selfAuthoredEffectiveContributionCount": 2,
       "selfAuthoredHarmfulCount": 0
     }
   },
-  "lastPositiveClosureAt": "2026-04-18T06:42:33.493Z",
+  "lastPositiveClosureAt": "2026-04-18T06:45:51.610Z",
   "requiredNextActions": [
     "improve browser/tool degraded-mode handling and retry policy",
     "weakest family is R robust",
@@ -321,18 +321,6 @@
     "consecutiveRequired": 3,
     "consecutivePassingExports": 0,
     "entries": [
-      {
-        "exportSessionId": "export_7277162985",
-        "generatedAt": "2026-04-06T14:51:42.576Z",
-        "goalStatus": "PENDING_WINDOW",
-        "baseStatus": "criteria_met",
-        "rawFinalScore": 0.9995,
-        "R_robust": 1,
-        "H_horizon": 1,
-        "stableCoverageBreadth": 1,
-        "openDebtCount": 0,
-        "harmfulCausalRatio": 0
-      },
       {
         "exportSessionId": "export_20f20436cd",
         "generatedAt": "2026-04-06T14:56:05.598Z",
@@ -467,7 +455,7 @@
       },
       {
         "exportSessionId": "export_69aaf0d22042",
-        "generatedAt": "2026-04-18T06:42:33.676Z",
+        "generatedAt": "2026-04-18T06:45:51.623Z",
         "goalStatus": "NOT_YET",
         "baseStatus": "criteria_failed",
         "rawFinalScore": 0.860278,
@@ -618,7 +606,7 @@
     },
     {
       "id": "rolledBackAfterHarmCount",
-      "detail": "rolled back after harm count 10 <= 0"
+      "detail": "rolled back after harm count 9 <= 0"
     },
     {
       "id": "verifiedPositiveRemediations",
@@ -654,7 +642,7 @@
     "ambiguous instruction evidence count 14 >= 40",
     "primary lane effective contribution count 0 >= 3",
     "harmful causal ratio 1 <= 0",
-    "rolled back after harm count 10 <= 0",
+    "rolled back after harm count 9 <= 0",
     "verified positive remediations 4 >= 8",
     "verified positive self-directed remediations 2 >= 4",
     "consecutive passing exports 0 >= 14",

@@ -2,6 +2,7 @@
 
 Updated: 2026-04-18
 
+- 2026-04-18: Refined the HarnesUI 5-step user-facing workflow so visible planning now stays inside `要件確定` and `実行` lights up only when actual implementation/investigation has started. `web/01.HarnesUI/app.js` now folds the internal planning step into the compressed requirement stage, updates the step copy so step 2 explains sequencing/段取り work, and keeps execution-order failures readable by surfacing the broken run on step 3 rather than pretending execution is healthy. `scripts/harnesui_lifecycle_mapping_test.js` now locks the new `planning in step 2 / actual work in step 3` semantics.
 - 2026-04-18: Tightened the HarnesUI right-rail requirement-wait UX so blocked requirement states now read in shorter user-facing Japanese (`確認したい点があります…`, `回答待ちです。`) instead of repeating internal requirement-lock jargon. The workflow blocked tone was also separated from hard failure red into an amber waiting tone so `確認待ち` reads as a pause for user input, not a fault.
 
 - 2026-04-18: Hardened HarnesUI send gating so a live local exec controller now outranks transient `/api/runtime` idle snapshots. `web/01.HarnesUI/app.js` now keeps the active chat pending while the current tab still owns an open stream controller, prevents the orphan-cleanup path from reclaiming those rows early, and only falls through to `needs_input` / resend-ready once the local stream has actually settled. Added regression coverage in `scripts/harnesui_pending_state_test.js` for both idle-runtime and stale-hold carryover cases.

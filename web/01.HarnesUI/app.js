@@ -2991,8 +2991,8 @@ function deriveUserFacingWorkflowForUi({
   const internalStep=(id)=>internalStepById.get(id)||null;
   const groupedSteps={
     understand:[internalStep("request")],
-    lock:[internalStep("intent"),internalStep("acceptance"),internalStep("authority")],
-    execute:[internalStep("planning"),internalStep("execution")],
+    lock:[internalStep("intent"),internalStep("acceptance"),internalStep("authority"),internalStep("planning")],
+    execute:[internalStep("execution")],
     verify:[internalStep("evidence"),internalStep("correction"),internalStep("attribution"),internalStep("learning"),internalStep("patchTarget"),internalStep("lifecycle"),internalStep("patch"),internalStep("replay")],
     complete:[internalStep("decision")],
   };
@@ -3001,6 +3001,7 @@ function deriveUserFacingWorkflowForUi({
   const executionPhase=flowById.get("execution")||null;
   const qualityPhase=flowById.get("quality")||null;
   const reportPhase=flowById.get("report")||null;
+  const internalPlanningState=lowerText(internalStep("planning")&&internalStep("planning").state||"");
   const normalizedStatus=lowerText(status);
   const currentPendingCount=Math.max(0,Number(currentPending)||0);
   const evidenceState=evidence&&typeof evidence==="object"?evidence:{tasksDone:0,tests:0,reviews:0,logs:0};
@@ -3029,6 +3030,10 @@ function deriveUserFacingWorkflowForUi({
   workflow[2].state=workflowGroupStateForUi(groupedSteps.execute);
   workflow[3].state=workflowGroupStateForUi(groupedSteps.verify);
   workflow[4].state=workflowGroupStateForUi(groupedSteps.complete);
+  if(workflow[1].state==="failed"&&internalPlanningState==="failed"&&workflow[2].state==="active"){
+    workflow[1].state="done";
+    workflow[2].state="failed";
+  }
 
   if(workflow[0].state==="done"){
     workflow[0].detail=requirementSnapshot&&requirementSnapshot.headline
@@ -3044,12 +3049,18 @@ function deriveUserFacingWorkflowForUi({
     workflow[1].detail=question
       ?"確認したい点があります。回答が分かれば実行に進めます。"
       :"内容を確認しています。整理が済み次第、実行に進みます。";
+  }else if(workflow[1].state==="failed"){
+    workflow[1].detail=(planningPhase&&typeof planningPhase.detail==="string"&&planningPhase.detail)
+      ?planningPhase.detail
+      :"実行に入る前の段取りか守る線に問題があります。";
   }else if(workflow[1].state==="done"){
     workflow[1].detail=acceptanceCount>0
-      ?`目的と成功ラインは固まっています。確認事項は ${acceptanceCount} 件そろっています。`
-      :"目的と成功ラインは固まっています。";
+      ?`目的と成功ラインは固まっています。確認事項は ${acceptanceCount} 件そろっており、実行前の段取りまで見えています。`
+      :"目的と成功ラインは固まっており、実行前の段取りまで見えています。";
   }else if(workflow[1].state==="active"){
-    workflow[1].detail="実行前の内容確認を進めています。";
+    workflow[1].detail=(planningState==="active"||planningState==="done"||internalPlanningState==="active")
+      ?"何をどの順で進めるかを固めています。まとまり次第、実行に移ります。"
+      :"実行前の方向と守る線を確認しています。";
   }else{
     workflow[1].detail=requirementGateBlocked
       ?"依頼内容を確認して、進め方をそろえます。"
@@ -3059,17 +3070,15 @@ function deriveUserFacingWorkflowForUi({
   if(workflow[2].state==="failed"){
     workflow[2].detail=(planningPhase&&planningPhase.detail)||(executionPhase&&executionPhase.detail)||"実行の段取りか進め方に問題があります。";
   }else if(workflow[2].state==="done"){
-    workflow[2].detail="必要な変更と調査は完了しています。";
+    workflow[2].detail="必要な変更・調査・下書き作成は完了しています。";
   }else if(workflow[2].state==="active"){
     workflow[2].detail=(currentPendingCount>0||executionState==="active"||executionState==="done")
       ?"今は変更・調査・生成を進めています。"
-      :(["active","done","failed"].includes(planningState)
-        ?"今は実行の段取りを組んでいます。"
-        :"要件が固まり次第、実行に入ります。");
+      :"段取りが整い次第、実行に入ります。";
   }else{
     workflow[2].detail=requirementGateBlocked
       ?"要件が固まるまで、実行には入りません。"
-      :"要件が固まり次第、実行に入ります。";
+      :"段取りが整い次第、実行に入ります。";
   }
 
   if(workflow[3].state==="failed"){

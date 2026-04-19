@@ -2,7 +2,7 @@
 
 - operationalGoalStatus: NOT_YET
 - subjectiveGoalStatus: NOT_YET
-- generatedAt: 2026-04-18T06:42:33.776Z
+- generatedAt: 2026-04-18T06:45:51.626Z
 - subjectiveDecisionBasis: worker_centric_subjective_companion_gate
 
 ## Current Values
@@ -26,8 +26,8 @@
 - recentNonWorsening: true
 - primaryLaneSelectedInLatestPackCount: 8
 - primaryLaneEffectiveContributionCount: 0
-- primaryLaneCausalUsageCount: 17
-- likelyContributoryCount: 12
+- primaryLaneCausalUsageCount: 12
+- likelyContributoryCount: 9
 - harmfulCausalRatio: 1
 - missingContext: 1
 - browserToolFlakiness: 0.28

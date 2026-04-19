@@ -1,6 +1,6 @@
 {
   "schema": "worker-decision-surface.v1",
-  "generatedAt": "2026-04-18T06:42:29.260Z",
+  "generatedAt": "2026-04-18T06:45:48.303Z",
   "scope": "worker_decision",
   "exportSessionId": "export_69aaf0d22042",
   "decisionQuestion": "Can the governed worker stop here without unnecessary human interruption?",

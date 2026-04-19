@@ -1,7 +1,7 @@
 {
   "schema": "release-candidate-scope.v1",
   "generatedAt": "2026-04-18T00:00:00Z",
-  "updatedAt": "2026-04-18T06:42:29.179Z",
+  "updatedAt": "2026-04-18T06:45:48.229Z",
   "candidateId": "rc-2026-04-18-core-harness-governed-apps",
   "decisionQuestion": "May this bounded release candidate ship to production?",
   "status": "ready_for_ship_decision",

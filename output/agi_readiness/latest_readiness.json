@@ -1,6 +1,6 @@
 {
   "schema": "agi-readiness-live-summary.v1",
-  "generatedAt": "2026-04-18T06:42:32.311Z",
+  "generatedAt": "2026-04-18T06:45:51.153Z",
   "workspaceId": "5c839dfeef8b555f",
   "latestRunId": "eval-1776010435054-c9b5d194",
   "profile": "agi_v1",
@@ -267,7 +267,7 @@
   "improvementEvidenceClass": "distinct_observed_improvement",
   "scoreViews": {
     "schema": "agi-readiness-score-views.v1",
-    "generatedAt": "2026-04-18T06:42:34.884Z",
+    "generatedAt": "2026-04-18T06:45:52.595Z",
     "workspaceId": "5c839dfeef8b555f",
     "rawFinalScore": 0.860278,
     "internalGovernedScore": 0.860278,

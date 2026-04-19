@@ -1,16 +1,8 @@
 {
   "schema": "continuity-debt-trend.v1",
-  "generatedAt": "2026-04-18T06:42:32.583Z",
+  "generatedAt": "2026-04-18T06:45:51.348Z",
   "workspaceId": "5c839dfeef8b555f",
   "entries": [
-    {
-      "generatedAt": "2026-04-18T04:23:50.333Z",
-      "openDebtCount": 0,
-      "debtSeverity": "none",
-      "blockedSubtasks": 0,
-      "integrationPendingCount": 0,
-      "finalReleaseState": "integrated"
-    },
     {
       "generatedAt": "2026-04-18T04:34:26.414Z",
       "openDebtCount": 0,
@@ -93,6 +85,14 @@
     },
     {
       "generatedAt": "2026-04-18T06:42:32.583Z",
+      "openDebtCount": 0,
+      "debtSeverity": "none",
+      "blockedSubtasks": 0,
+      "integrationPendingCount": 0,
+      "finalReleaseState": "integrated"
+    },
+    {
+      "generatedAt": "2026-04-18T06:45:51.348Z",
       "openDebtCount": 0,
       "debtSeverity": "none",
       "blockedSubtasks": 0,

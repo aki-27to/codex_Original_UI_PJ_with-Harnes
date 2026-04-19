@@ -1,6 +1,6 @@
 {
   "schema": "memory-eval-public-status.v1",
-  "generatedAt": "2026-04-18T06:42:34.883Z",
+  "generatedAt": "2026-04-18T06:45:52.593Z",
   "suiteSchema": "memory-eval-suite.v1",
   "suiteVersion": "2026-04-12.r2",
   "status": "FAIL",
@@ -126,7 +126,7 @@
       "id": "primary_lane_observation_closure",
       "title": "Primary learning lane no longer reports unexplained observation starvation",
       "status": "PASS",
-      "detail": "primary lane observations are no longer starved (211 observations, status=observed)"
+      "detail": "primary lane observations are no longer starved (152 observations, status=observed)"
     },
     {
       "id": "continuity_public_real_case_present",

@@ -1,7 +1,7 @@
 # Memory Eval Public Status
 
 - Status: FAIL
-- Generated At: 2026-04-18T06:42:34.883Z
+- Generated At: 2026-04-18T06:45:52.593Z
 
 ## Checks
 - canonical_store_present: PASS (canonical event log and index are present)
@@ -23,7 +23,7 @@
 - lane_projection_real_observations_reflected: PASS (lane projections reflect canonical observation state (observed/disabled))
 - breadth_family_evidence_present: PASS (4 target breadth families expose public-safe success/failure evidence)
 - weakest_gate_semantics_explained: PASS (weakest gate semantics expose a non-arbitrary gate-pressure explanation)
-- primary_lane_observation_closure: PASS (primary lane observations are no longer starved (211 observations, status=observed))
+- primary_lane_observation_closure: PASS (primary lane observations are no longer starved (152 observations, status=observed))
 - continuity_public_real_case_present: PASS (continuity public summary exposes a real handoff/release/horizon case)
 - robustness_breakdown_exported: PASS (robustness breakdown export is present with category-level evidence)
 - autonomous_learning_agenda_present: PASS (autonomous learning agenda is present)

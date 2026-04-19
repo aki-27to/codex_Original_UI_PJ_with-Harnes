@@ -1,6 +1,6 @@
 {
   "schema": "continuity-public-summary.v1",
-  "generatedAt": "2026-04-18T06:42:32.901Z",
+  "generatedAt": "2026-04-18T06:45:51.490Z",
   "workspaceId": "5c839dfeef8b555f",
   "activeAgentTree": {
     "schema": "bounded-agent-graph.v1",
@@ -68,7 +68,7 @@
     "orphanChildTaskIds": [],
     "generatedAt": "2026-03-31T22:25:29.949Z"
   },
-  "handoffCount": 449,
+  "handoffCount": 455,
   "blockedSubtasks": 0,
   "verifierFailedSubtasks": 0,
   "integrationPendingCount": 0,

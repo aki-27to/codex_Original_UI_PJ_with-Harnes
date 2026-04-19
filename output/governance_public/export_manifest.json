@@ -1,6 +1,6 @@
 {
   "schema": "governance-public-bundle-manifest.v1",
-  "generatedAt": "2026-04-18T06:42:29.263Z",
+  "generatedAt": "2026-04-18T06:45:48.307Z",
   "sourceLatestSignoffSummary": "logs/current/latest_signoff_summary.json",
   "sourceLatestRunSummary": "logs/bundles/signoff/signoff-2026-04-18T05-27-13-996Z-f97810/latest_run_summary.json",
   "sourceBundleRoot": "logs/bundles/signoff/signoff-2026-04-18T05-27-13-996Z-f97810",

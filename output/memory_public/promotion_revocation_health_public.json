@@ -1,6 +1,6 @@
 {
   "schema": "governed-memory-promotion-health-public.v1",
-  "generatedAt": "2026-04-18T06:42:32.626Z",
+  "generatedAt": "2026-04-18T06:45:51.353Z",
   "workspaceId": "5c839dfeef8b555f",
   "staleWarningCount": 0,
   "recentPromotions": [
@@ -8,63 +8,63 @@
       "publicRef": "mem_52f4ed9143",
       "memoryType": "constitution_ref",
       "status": "promoted",
-      "recordedAt": "2026-04-18T06:42:30.528Z"
+      "recordedAt": "2026-04-18T06:45:49.581Z"
     },
     {
       "publicRef": "mem_9c7f4cba43",
       "memoryType": "requirement_ref",
       "status": "promoted",
-      "recordedAt": "2026-04-18T06:42:30.528Z"
+      "recordedAt": "2026-04-18T06:45:49.581Z"
     },
     {
       "publicRef": "mem_dd9c0f3a28",
       "memoryType": "workspace_progress",
       "status": "promoted",
-      "recordedAt": "2026-04-18T06:42:30.528Z"
+      "recordedAt": "2026-04-18T06:45:49.581Z"
     },
     {
       "publicRef": "mem_38e064a6a2",
       "memoryType": "failure_pattern",
       "status": "promoted",
-      "recordedAt": "2026-04-18T06:42:30.528Z"
+      "recordedAt": "2026-04-18T06:45:49.581Z"
     },
     {
       "publicRef": "mem_1748eef46d",
       "memoryType": "failure_pattern",
       "status": "promoted",
-      "recordedAt": "2026-04-18T06:42:30.528Z"
+      "recordedAt": "2026-04-18T06:45:49.581Z"
     }
   ],
   "recentRevocations": [
     {
+      "publicRef": "mem_8abf4799a3",
+      "memoryType": "semantic_lesson",
+      "status": "blocked",
+      "recordedAt": "2026-04-18T06:45:49.581Z"
+    },
+    {
       "publicRef": "mem_ae96d18abe",
       "memoryType": "semantic_lesson",
       "status": "blocked",
-      "recordedAt": "2026-04-18T06:42:30.529Z"
+      "recordedAt": "2026-04-18T06:45:49.581Z"
     },
     {
       "publicRef": "mem_ae61b7aa92",
       "memoryType": "semantic_lesson",
       "status": "blocked",
-      "recordedAt": "2026-04-18T06:42:30.529Z"
-    },
-    {
-      "publicRef": "mem_d731ba2fd1",
-      "memoryType": "semantic_lesson",
-      "status": "blocked",
-      "recordedAt": "2026-04-18T06:42:30.529Z"
+      "recordedAt": "2026-04-18T06:45:49.581Z"
     },
     {
       "publicRef": "mem_ee901c1e19",
       "memoryType": "improvement_candidate",
       "status": "blocked",
-      "recordedAt": "2026-04-18T06:42:30.529Z"
+      "recordedAt": "2026-04-18T06:45:49.581Z"
     },
     {
-      "publicRef": "mem_8abf4799a3",
-      "memoryType": "semantic_lesson",
+      "publicRef": "mem_5e56ce1275",
+      "memoryType": "improvement_candidate",
       "status": "blocked",
-      "recordedAt": "2026-04-18T06:42:30.528Z"
+      "recordedAt": "2026-04-18T06:43:05.316Z"
     }
   ]
 }

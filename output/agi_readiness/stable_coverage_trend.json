@@ -1,21 +1,8 @@
 {
   "schema": "agi-readiness-stable-coverage-trend.v1",
-  "generatedAt": "2026-04-18T06:42:32.581Z",
+  "generatedAt": "2026-04-18T06:45:51.346Z",
   "workspaceId": "5c839dfeef8b555f",
   "entries": [
-    {
-      "generatedAt": "2026-04-18T04:23:50.331Z",
-      "stableCoverageBreadth": 0,
-      "stableCoveredFamilies": [],
-      "unstableFamilies": [
-        "deterministic_code",
-        "web_creative",
-        "planning",
-        "workflow_execution",
-        "evaluation_review",
-        "tool_use_browser_like"
-      ]
-    },
     {
       "generatedAt": "2026-04-18T04:34:26.412Z",
       "stableCoverageBreadth": 0,
@@ -153,6 +140,20 @@
     },
     {
       "generatedAt": "2026-04-18T06:42:32.581Z",
+      "stableCoverageBreadth": 0.333333,
+      "stableCoveredFamilies": [
+        "deterministic_code",
+        "planning"
+      ],
+      "unstableFamilies": [
+        "web_creative",
+        "workflow_execution",
+        "evaluation_review",
+        "tool_use_browser_like"
+      ]
+    },
+    {
+      "generatedAt": "2026-04-18T06:45:51.346Z",
       "stableCoverageBreadth": 0.333333,
       "stableCoveredFamilies": [
         "deterministic_code",

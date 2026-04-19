@@ -1,15 +1,15 @@
 {
   "schema": "learning-reinforcement-memory.v1",
-  "generatedAt": "2026-04-18T06:43:06.667Z",
-  "lastObservedAt": "2026-04-18T06:42:30.582Z",
-  "observationCount": 54,
+  "generatedAt": "2026-04-18T08:45:48.205Z",
+  "lastObservedAt": "2026-04-18T06:45:49.624Z",
+  "observationCount": 30,
   "recentObservations": [
     {
       "memoryId": "hint:openai:realtime-perplexity-computer-runtime-retrieval",
       "memoryType": "runtime_hint",
       "articleId": "realtime-perplexity-computer",
       "outcome": "failure",
-      "observedAt": "2026-04-18T06:42:30.582Z",
+      "observedAt": "2026-04-18T06:45:49.624Z",
       "sourceTier": "external_primary"
     },
     {
@@ -17,7 +17,7 @@
       "memoryType": "runtime_hint",
       "articleId": "designing-delightful-frontends-with-gpt-5-4",
       "outcome": "failure",
-      "observedAt": "2026-04-18T06:42:30.582Z",
+      "observedAt": "2026-04-18T06:45:49.624Z",
       "sourceTier": "external_primary"
     },
     {
@@ -25,7 +25,7 @@
       "memoryType": "runtime_hint",
       "articleId": "one-year-of-responses",
       "outcome": "failure",
-      "observedAt": "2026-04-18T06:42:30.582Z",
+      "observedAt": "2026-04-18T06:45:49.624Z",
       "sourceTier": "external_primary"
     },
     {
@@ -33,7 +33,7 @@
       "memoryType": "runtime_hint",
       "articleId": "skills-agents-sdk",
       "outcome": "failure",
-      "observedAt": "2026-04-18T06:42:30.582Z",
+      "observedAt": "2026-04-18T06:45:49.624Z",
       "sourceTier": "external_primary"
     },
     {
@@ -41,7 +41,7 @@
       "memoryType": "runtime_hint",
       "articleId": "building-frontend-uis-with-codex-and-figma",
       "outcome": "failure",
-      "observedAt": "2026-04-18T06:42:30.582Z",
+      "observedAt": "2026-04-18T06:45:49.624Z",
       "sourceTier": "external_primary"
     },
     {
@@ -49,243 +49,231 @@
       "memoryType": "runtime_hint",
       "articleId": "run-long-horizon-tasks-with-codex",
       "outcome": "failure",
-      "observedAt": "2026-04-18T06:42:30.582Z",
+      "observedAt": "2026-04-18T06:45:49.624Z",
       "sourceTier": "external_primary"
     }
   ],
   "articleStats": {
     "realtime-perplexity-computer": {
-      "successCount": 1,
-      "failureCount": 8,
-      "observedCount": 9,
-      "successRate": 0.1111,
-      "lastObservedAt": "2026-04-18T06:42:30.582Z",
+      "successCount": 0,
+      "failureCount": 5,
+      "observedCount": 5,
+      "successRate": 0,
+      "lastObservedAt": "2026-04-18T06:45:49.624Z",
       "sampleTurnIds": [
+        "019d9f08-fd86-7e80-98cf-02483a41def0",
+        "019d9f0a-4846-7532-b834-ac320cbb11e1",
+        "019d9f0b-51d5-7d10-b2e3-402bb88c2881",
         "019d9f50-3f26-7550-9eb8-b1a00f0f1f68",
-        "019d9f4d-81cd-7f50-9e54-1b0e30842a08",
-        "019d9f44-8e3e-7a41-8ef0-590c33d542a1",
-        "019d9f45-ed90-7421-8c1e-9d5899d210b5",
-        "019d9f47-5dbd-7202-a1af-954bcded057e",
-        "019d9f2c-8ad9-7200-8756-c1ac00453990"
+        "019d9f4d-81cd-7f50-9e54-1b0e30842a08"
       ]
     },
     "designing-delightful-frontends-with-gpt-5-4": {
-      "successCount": 1,
-      "failureCount": 8,
-      "observedCount": 9,
-      "successRate": 0.1111,
-      "lastObservedAt": "2026-04-18T06:42:30.582Z",
+      "successCount": 0,
+      "failureCount": 5,
+      "observedCount": 5,
+      "successRate": 0,
+      "lastObservedAt": "2026-04-18T06:45:49.624Z",
       "sampleTurnIds": [
+        "019d9f08-fd86-7e80-98cf-02483a41def0",
+        "019d9f0a-4846-7532-b834-ac320cbb11e1",
+        "019d9f0b-51d5-7d10-b2e3-402bb88c2881",
         "019d9f50-3f26-7550-9eb8-b1a00f0f1f68",
-        "019d9f4d-81cd-7f50-9e54-1b0e30842a08",
-        "019d9f44-8e3e-7a41-8ef0-590c33d542a1",
-        "019d9f45-ed90-7421-8c1e-9d5899d210b5",
-        "019d9f47-5dbd-7202-a1af-954bcded057e",
-        "019d9f2c-8ad9-7200-8756-c1ac00453990"
+        "019d9f4d-81cd-7f50-9e54-1b0e30842a08"
       ]
     },
     "one-year-of-responses": {
-      "successCount": 1,
-      "failureCount": 8,
-      "observedCount": 9,
-      "successRate": 0.1111,
-      "lastObservedAt": "2026-04-18T06:42:30.582Z",
+      "successCount": 0,
+      "failureCount": 5,
+      "observedCount": 5,
+      "successRate": 0,
+      "lastObservedAt": "2026-04-18T06:45:49.624Z",
       "sampleTurnIds": [
+        "019d9f08-fd86-7e80-98cf-02483a41def0",
+        "019d9f0a-4846-7532-b834-ac320cbb11e1",
+        "019d9f0b-51d5-7d10-b2e3-402bb88c2881",
         "019d9f50-3f26-7550-9eb8-b1a00f0f1f68",
-        "019d9f4d-81cd-7f50-9e54-1b0e30842a08",
-        "019d9f44-8e3e-7a41-8ef0-590c33d542a1",
-        "019d9f45-ed90-7421-8c1e-9d5899d210b5",
-        "019d9f47-5dbd-7202-a1af-954bcded057e",
-        "019d9f2c-8ad9-7200-8756-c1ac00453990"
+        "019d9f4d-81cd-7f50-9e54-1b0e30842a08"
       ]
     },
     "skills-agents-sdk": {
-      "successCount": 1,
-      "failureCount": 8,
-      "observedCount": 9,
-      "successRate": 0.1111,
-      "lastObservedAt": "2026-04-18T06:42:30.582Z",
+      "successCount": 0,
+      "failureCount": 5,
+      "observedCount": 5,
+      "successRate": 0,
+      "lastObservedAt": "2026-04-18T06:45:49.624Z",
       "sampleTurnIds": [
+        "019d9f08-fd86-7e80-98cf-02483a41def0",
+        "019d9f0a-4846-7532-b834-ac320cbb11e1",
+        "019d9f0b-51d5-7d10-b2e3-402bb88c2881",
         "019d9f50-3f26-7550-9eb8-b1a00f0f1f68",
-        "019d9f4d-81cd-7f50-9e54-1b0e30842a08",
-        "019d9f44-8e3e-7a41-8ef0-590c33d542a1",
-        "019d9f45-ed90-7421-8c1e-9d5899d210b5",
-        "019d9f47-5dbd-7202-a1af-954bcded057e",
-        "019d9f2c-8ad9-7200-8756-c1ac00453990"
+        "019d9f4d-81cd-7f50-9e54-1b0e30842a08"
       ]
     },
     "building-frontend-uis-with-codex-and-figma": {
-      "successCount": 1,
-      "failureCount": 8,
-      "observedCount": 9,
-      "successRate": 0.1111,
-      "lastObservedAt": "2026-04-18T06:42:30.582Z",
+      "successCount": 0,
+      "failureCount": 5,
+      "observedCount": 5,
+      "successRate": 0,
+      "lastObservedAt": "2026-04-18T06:45:49.624Z",
       "sampleTurnIds": [
+        "019d9f08-fd86-7e80-98cf-02483a41def0",
+        "019d9f0a-4846-7532-b834-ac320cbb11e1",
+        "019d9f0b-51d5-7d10-b2e3-402bb88c2881",
         "019d9f50-3f26-7550-9eb8-b1a00f0f1f68",
-        "019d9f4d-81cd-7f50-9e54-1b0e30842a08",
-        "019d9f44-8e3e-7a41-8ef0-590c33d542a1",
-        "019d9f45-ed90-7421-8c1e-9d5899d210b5",
-        "019d9f47-5dbd-7202-a1af-954bcded057e",
-        "019d9f2c-8ad9-7200-8756-c1ac00453990"
+        "019d9f4d-81cd-7f50-9e54-1b0e30842a08"
       ]
     },
     "run-long-horizon-tasks-with-codex": {
-      "successCount": 1,
-      "failureCount": 8,
-      "observedCount": 9,
-      "successRate": 0.1111,
-      "lastObservedAt": "2026-04-18T06:42:30.582Z",
+      "successCount": 0,
+      "failureCount": 5,
+      "observedCount": 5,
+      "successRate": 0,
+      "lastObservedAt": "2026-04-18T06:45:49.624Z",
       "sampleTurnIds": [
+        "019d9f08-fd86-7e80-98cf-02483a41def0",
+        "019d9f0a-4846-7532-b834-ac320cbb11e1",
+        "019d9f0b-51d5-7d10-b2e3-402bb88c2881",
         "019d9f50-3f26-7550-9eb8-b1a00f0f1f68",
-        "019d9f4d-81cd-7f50-9e54-1b0e30842a08",
-        "019d9f44-8e3e-7a41-8ef0-590c33d542a1",
-        "019d9f45-ed90-7421-8c1e-9d5899d210b5",
-        "019d9f47-5dbd-7202-a1af-954bcded057e",
-        "019d9f2c-8ad9-7200-8756-c1ac00453990"
+        "019d9f4d-81cd-7f50-9e54-1b0e30842a08"
       ]
     }
   },
   "hintStats": {
     "realtime-perplexity-computer-runtime-retrieval": {
-      "successCount": 1,
-      "failureCount": 8,
-      "observedCount": 9,
-      "successRate": 0.1111,
-      "lastObservedAt": "2026-04-18T06:42:30.582Z",
+      "successCount": 0,
+      "failureCount": 5,
+      "observedCount": 5,
+      "successRate": 0,
+      "lastObservedAt": "2026-04-18T06:45:49.624Z",
       "sampleTurnIds": [
+        "019d9f08-fd86-7e80-98cf-02483a41def0",
+        "019d9f0a-4846-7532-b834-ac320cbb11e1",
+        "019d9f0b-51d5-7d10-b2e3-402bb88c2881",
         "019d9f50-3f26-7550-9eb8-b1a00f0f1f68",
-        "019d9f4d-81cd-7f50-9e54-1b0e30842a08",
-        "019d9f44-8e3e-7a41-8ef0-590c33d542a1",
-        "019d9f45-ed90-7421-8c1e-9d5899d210b5",
-        "019d9f47-5dbd-7202-a1af-954bcded057e",
-        "019d9f2c-8ad9-7200-8756-c1ac00453990"
+        "019d9f4d-81cd-7f50-9e54-1b0e30842a08"
       ]
     },
     "designing-delightful-frontends-with-gpt-5-4-runtime-retrieval": {
-      "successCount": 1,
-      "failureCount": 8,
-      "observedCount": 9,
-      "successRate": 0.1111,
-      "lastObservedAt": "2026-04-18T06:42:30.582Z",
+      "successCount": 0,
+      "failureCount": 5,
+      "observedCount": 5,
+      "successRate": 0,
+      "lastObservedAt": "2026-04-18T06:45:49.624Z",
       "sampleTurnIds": [
+        "019d9f08-fd86-7e80-98cf-02483a41def0",
+        "019d9f0a-4846-7532-b834-ac320cbb11e1",
+        "019d9f0b-51d5-7d10-b2e3-402bb88c2881",
         "019d9f50-3f26-7550-9eb8-b1a00f0f1f68",
-        "019d9f4d-81cd-7f50-9e54-1b0e30842a08",
-        "019d9f44-8e3e-7a41-8ef0-590c33d542a1",
-        "019d9f45-ed90-7421-8c1e-9d5899d210b5",
-        "019d9f47-5dbd-7202-a1af-954bcded057e",
-        "019d9f2c-8ad9-7200-8756-c1ac00453990"
+        "019d9f4d-81cd-7f50-9e54-1b0e30842a08"
       ]
     },
     "one-year-of-responses-runtime-retrieval": {
-      "successCount": 1,
-      "failureCount": 8,
-      "observedCount": 9,
-      "successRate": 0.1111,
-      "lastObservedAt": "2026-04-18T06:42:30.582Z",
+      "successCount": 0,
+      "failureCount": 5,
+      "observedCount": 5,
+      "successRate": 0,
+      "lastObservedAt": "2026-04-18T06:45:49.624Z",
       "sampleTurnIds": [
+        "019d9f08-fd86-7e80-98cf-02483a41def0",
+        "019d9f0a-4846-7532-b834-ac320cbb11e1",
+        "019d9f0b-51d5-7d10-b2e3-402bb88c2881",
         "019d9f50-3f26-7550-9eb8-b1a00f0f1f68",
-        "019d9f4d-81cd-7f50-9e54-1b0e30842a08",
-        "019d9f44-8e3e-7a41-8ef0-590c33d542a1",
-        "019d9f45-ed90-7421-8c1e-9d5899d210b5",
-        "019d9f47-5dbd-7202-a1af-954bcded057e",
-        "019d9f2c-8ad9-7200-8756-c1ac00453990"
+        "019d9f4d-81cd-7f50-9e54-1b0e30842a08"
       ]
     },
     "skills-agents-sdk-runtime-retrieval": {
-      "successCount": 1,
-      "failureCount": 8,
-      "observedCount": 9,
-      "successRate": 0.1111,
-      "lastObservedAt": "2026-04-18T06:42:30.582Z",
+      "successCount": 0,
+      "failureCount": 5,
+      "observedCount": 5,
+      "successRate": 0,
+      "lastObservedAt": "2026-04-18T06:45:49.624Z",
       "sampleTurnIds": [
+        "019d9f08-fd86-7e80-98cf-02483a41def0",
+        "019d9f0a-4846-7532-b834-ac320cbb11e1",
+        "019d9f0b-51d5-7d10-b2e3-402bb88c2881",
         "019d9f50-3f26-7550-9eb8-b1a00f0f1f68",
-        "019d9f4d-81cd-7f50-9e54-1b0e30842a08",
-        "019d9f44-8e3e-7a41-8ef0-590c33d542a1",
-        "019d9f45-ed90-7421-8c1e-9d5899d210b5",
-        "019d9f47-5dbd-7202-a1af-954bcded057e",
-        "019d9f2c-8ad9-7200-8756-c1ac00453990"
+        "019d9f4d-81cd-7f50-9e54-1b0e30842a08"
       ]
     },
     "building-frontend-uis-with-codex-and-figma-runtime-retrieval": {
-      "successCount": 1,
-      "failureCount": 8,
-      "observedCount": 9,
-      "successRate": 0.1111,
-      "lastObservedAt": "2026-04-18T06:42:30.582Z",
+      "successCount": 0,
+      "failureCount": 5,
+      "observedCount": 5,
+      "successRate": 0,
+      "lastObservedAt": "2026-04-18T06:45:49.624Z",
       "sampleTurnIds": [
+        "019d9f08-fd86-7e80-98cf-02483a41def0",
+        "019d9f0a-4846-7532-b834-ac320cbb11e1",
+        "019d9f0b-51d5-7d10-b2e3-402bb88c2881",
         "019d9f50-3f26-7550-9eb8-b1a00f0f1f68",
-        "019d9f4d-81cd-7f50-9e54-1b0e30842a08",
-        "019d9f44-8e3e-7a41-8ef0-590c33d542a1",
-        "019d9f45-ed90-7421-8c1e-9d5899d210b5",
-        "019d9f47-5dbd-7202-a1af-954bcded057e",
-        "019d9f2c-8ad9-7200-8756-c1ac00453990"
+        "019d9f4d-81cd-7f50-9e54-1b0e30842a08"
       ]
     },
     "run-long-horizon-tasks-with-codex-runtime-retrieval": {
-      "successCount": 1,
-      "failureCount": 8,
-      "observedCount": 9,
-      "successRate": 0.1111,
-      "lastObservedAt": "2026-04-18T06:42:30.582Z",
+      "successCount": 0,
+      "failureCount": 5,
+      "observedCount": 5,
+      "successRate": 0,
+      "lastObservedAt": "2026-04-18T06:45:49.624Z",
       "sampleTurnIds": [
+        "019d9f08-fd86-7e80-98cf-02483a41def0",
+        "019d9f0a-4846-7532-b834-ac320cbb11e1",
+        "019d9f0b-51d5-7d10-b2e3-402bb88c2881",
         "019d9f50-3f26-7550-9eb8-b1a00f0f1f68",
-        "019d9f4d-81cd-7f50-9e54-1b0e30842a08",
-        "019d9f44-8e3e-7a41-8ef0-590c33d542a1",
-        "019d9f45-ed90-7421-8c1e-9d5899d210b5",
-        "019d9f47-5dbd-7202-a1af-954bcded057e",
-        "019d9f2c-8ad9-7200-8756-c1ac00453990"
+        "019d9f4d-81cd-7f50-9e54-1b0e30842a08"
       ]
     }
   },
   "topicStats": {
     "agents": {
-      "successCount": 5,
-      "failureCount": 40,
-      "observedCount": 45,
-      "successRate": 0.1111,
-      "lastObservedAt": "2026-04-18T06:42:30.582Z"
+      "successCount": 0,
+      "failureCount": 25,
+      "observedCount": 25,
+      "successRate": 0,
+      "lastObservedAt": "2026-04-18T06:45:49.624Z"
     },
     "context": {
-      "successCount": 6,
-      "failureCount": 48,
-      "observedCount": 54,
-      "successRate": 0.1111,
-      "lastObservedAt": "2026-04-18T06:42:30.582Z"
+      "successCount": 0,
+      "failureCount": 30,
+      "observedCount": 30,
+      "successRate": 0,
+      "lastObservedAt": "2026-04-18T06:45:49.624Z"
     },
     "evals": {
-      "successCount": 2,
-      "failureCount": 16,
-      "observedCount": 18,
-      "successRate": 0.1111,
-      "lastObservedAt": "2026-04-18T06:42:30.582Z"
+      "successCount": 0,
+      "failureCount": 10,
+      "observedCount": 10,
+      "successRate": 0,
+      "lastObservedAt": "2026-04-18T06:45:49.624Z"
     },
     "frontend": {
-      "successCount": 3,
-      "failureCount": 24,
-      "observedCount": 27,
-      "successRate": 0.1111,
-      "lastObservedAt": "2026-04-18T06:42:30.582Z"
+      "successCount": 0,
+      "failureCount": 15,
+      "observedCount": 15,
+      "successRate": 0,
+      "lastObservedAt": "2026-04-18T06:45:49.624Z"
     },
     "safety": {
-      "successCount": 1,
-      "failureCount": 8,
-      "observedCount": 9,
-      "successRate": 0.1111,
-      "lastObservedAt": "2026-04-18T06:42:30.582Z"
+      "successCount": 0,
+      "failureCount": 5,
+      "observedCount": 5,
+      "successRate": 0,
+      "lastObservedAt": "2026-04-18T06:45:49.624Z"
     },
     "automation": {
-      "successCount": 3,
-      "failureCount": 24,
-      "observedCount": 27,
-      "successRate": 0.1111,
-      "lastObservedAt": "2026-04-18T06:42:30.582Z"
+      "successCount": 0,
+      "failureCount": 15,
+      "observedCount": 15,
+      "successRate": 0,
+      "lastObservedAt": "2026-04-18T06:45:49.624Z"
     },
     "codex": {
-      "successCount": 4,
-      "failureCount": 32,
-      "observedCount": 36,
-      "successRate": 0.1111,
-      "lastObservedAt": "2026-04-18T06:42:30.582Z"
+      "successCount": 0,
+      "failureCount": 20,
+      "observedCount": 20,
+      "successRate": 0,
+      "lastObservedAt": "2026-04-18T06:45:49.624Z"
     }
   }
 }

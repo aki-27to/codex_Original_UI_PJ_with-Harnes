@@ -1,6 +1,6 @@
 {
   "schema": "governed-autonomous-learning-status-public.v1",
-  "generatedAt": "2026-04-18T06:42:34.622Z",
+  "generatedAt": "2026-04-18T06:45:52.309Z",
   "exportSessionId": "export_69aaf0d22042",
   "scope": "autonomous_learning_supporting",
   "workspaceId": "5c839dfeef8b555f",
@@ -113,7 +113,7 @@
       "attemptCount": 0,
       "revertCondition": "regression or harmful lesson detected",
       "stopCondition": "no improvement after retry budget exhausted",
-      "lastUpdatedAt": "2026-04-18T06:42:34.614Z",
+      "lastUpdatedAt": "2026-04-18T06:45:52.300Z",
       "source": "agi_readiness",
       "publicSummary": "robustness is currently limited by browser tool flakiness"
     },
@@ -139,7 +139,7 @@
       "attemptCount": 0,
       "revertCondition": "regression or harmful lesson detected",
       "stopCondition": "no improvement after retry budget exhausted",
-      "lastUpdatedAt": "2026-04-18T06:42:34.616Z",
+      "lastUpdatedAt": "2026-04-18T06:45:52.303Z",
       "source": "autonomous_learning",
       "publicSummary": "browser tool flakiness below subjective threshold"
     },
@@ -165,7 +165,7 @@
       "attemptCount": 0,
       "revertCondition": "regression or harmful lesson detected",
       "stopCondition": "no improvement after retry budget exhausted",
-      "lastUpdatedAt": "2026-04-18T06:42:34.612Z",
+      "lastUpdatedAt": "2026-04-18T06:45:52.299Z",
       "source": "agi_readiness",
       "publicSummary": "weakest family is R robust"
     },
@@ -191,7 +191,7 @@
       "attemptCount": 0,
       "revertCondition": "regression or harmful lesson detected",
       "stopCondition": "no improvement after retry budget exhausted",
-      "lastUpdatedAt": "2026-04-18T06:42:34.618Z",
+      "lastUpdatedAt": "2026-04-18T06:45:52.305Z",
       "source": "autonomous_learning",
       "publicSummary": "web creative stable coverage below subjective threshold"
     },
@@ -217,7 +217,7 @@
       "attemptCount": 0,
       "revertCondition": "regression or harmful lesson detected",
       "stopCondition": "no improvement after retry budget exhausted",
-      "lastUpdatedAt": "2026-04-18T06:42:34.619Z",
+      "lastUpdatedAt": "2026-04-18T06:45:52.306Z",
       "source": "autonomous_learning",
       "publicSummary": "workflow execution stable coverage below subjective threshold"
     },
@@ -243,7 +243,7 @@
       "attemptCount": 0,
       "revertCondition": "regression or harmful lesson detected",
       "stopCondition": "no improvement after retry budget exhausted",
-      "lastUpdatedAt": "2026-04-18T06:42:34.621Z",
+      "lastUpdatedAt": "2026-04-18T06:45:52.307Z",
       "source": "autonomous_learning",
       "publicSummary": "primary lane latest pack adoption below subjective threshold"
     },
@@ -269,7 +269,7 @@
       "attemptCount": 0,
       "revertCondition": "regression or harmful lesson detected",
       "stopCondition": "no improvement after retry budget exhausted",
-      "lastUpdatedAt": "2026-04-18T06:42:34.622Z",
+      "lastUpdatedAt": "2026-04-18T06:45:52.309Z",
       "source": "subjective_goal",
       "publicSummary": "operational completion export durability below subjective threshold"
     },
@@ -295,7 +295,7 @@
       "attemptCount": 0,
       "revertCondition": "regression or harmful lesson detected",
       "stopCondition": "no improvement after retry budget exhausted",
-      "lastUpdatedAt": "2026-04-18T06:42:34.615Z",
+      "lastUpdatedAt": "2026-04-18T06:45:52.302Z",
       "source": "autonomous_learning",
       "publicSummary": "ambiguous instruction evidence below subjective threshold"
     }
