@@ -1,9 +1,9 @@
 {
   "schema": "governed-memory-workspace-progress-public.v1",
-  "generatedAt": "2026-04-18T06:45:51.352Z",
-  "workspaceId": "5c839dfeef8b555f",
-  "updatedAt": "2026-04-18T06:45:49.460Z",
-  "currentObjective": "verifier failure should force replan and recovery",
+  "generatedAt": "2026-04-22T00:42:00.820Z",
+  "workspaceId": "3650d504ad404c53",
+  "updatedAt": "2026-04-22T00:17:34.362Z",
+  "currentObjective": "Summarize bounded research findings with citations and verification.",
   "currentMilestones": [
     "completed: Simple planning task falls back to single agent path",
     "completed: verifier handoff for Research baseline through planner/researcher/verifier",
@@ -12,38 +12,28 @@
     "latest turn status: completed",
     "family gate: not applicable"
   ],
-  "knownBlockers": [
-    "operator chose to abandon the task",
-    "pending child integration: phase4 denied-<opaque id>-executor-<opaque id>",
-    "simulated child verifier failure"
-  ],
+  "knownBlockers": [],
   "knownRisks": [
-    "return to intake required",
     "completed default"
   ],
   "recentTouchedPaths": [
-    "logs/bundles/signoff/signoff-2026-04-18T05-27-13-996Z-f97810/raw/scripts/config/signoff_sample_target.txt",
+    "logs/bundles/signoff/signoff-2026-04-21T15-08-45-517Z-bbfbe8/raw/scripts/config/signoff_sample_target.txt",
     "docs/EVIDENCE_CONTRACT.md",
     "docs/CURRENT_ARCHITECTURE.md",
-    "docs/ARCHITECTURE_CHANGELOG.md"
+    "docs/ARCHITECTURE_CHANGELOG.md",
+    "public/codex_live_dispatch_proof.html"
   ],
-  "nextRecommendedActions": [
-    "robustness is currently limited by browser tool flakiness",
-    "browser tool flakiness below subjective threshold",
-    "weakest family is R robust",
-    "capture governed recovery evidence",
-    "mismatched export sessions: export 69aaf0d22042, export b19f32facb8f"
-  ],
+  "nextRecommendedActions": [],
   "lastSuccessfulValidation": [
     {
       "reference": "turn_4773037f53",
       "taskOutcomeStatus": "unknown_status",
-      "completedAt": "2026-04-18T06:43:07.521Z"
+      "completedAt": "2026-04-21T23:50:30.942Z"
     },
     {
       "reference": "turn_4773037f53",
       "taskOutcomeStatus": "unknown_status",
-      "completedAt": "2026-04-18T06:43:07.561Z"
+      "completedAt": "2026-04-21T23:50:30.956Z"
     }
   ],
   "lastFailedValidation": [
@@ -51,13 +41,13 @@
       "reference": "turn_4773037f53",
       "taskOutcomeStatus": "unknown_status",
       "reason": "verifier failed",
-      "completedAt": "2026-04-16T12:15:49.958Z"
+      "completedAt": "2026-04-21T23:48:00.756Z"
     },
     {
       "reference": "turn_4773037f53",
       "taskOutcomeStatus": "unknown_status",
       "reason": "verifier failed",
-      "completedAt": "2026-04-16T12:15:49.717Z"
+      "completedAt": "2026-04-21T23:42:18.761Z"
     }
   ]
 }

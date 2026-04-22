@@ -1,11 +1,11 @@
 {
   "schema": "governed-memory-latest-pack-public.v1",
-  "generatedAt": "2026-04-18T06:45:51.352Z",
-  "workspaceId": "5c839dfeef8b555f",
-  "packId": "26f298404936cabee399",
+  "generatedAt": "2026-04-22T00:42:00.820Z",
+  "workspaceId": "3650d504ad404c53",
+  "packId": "6947185e80ae77ad1f1d",
   "latestPack": {
-    "generatedAt": "2026-04-18T06:45:49.477Z",
-    "compiledAt": "2026-04-18T06:45:49.477Z",
+    "generatedAt": "2026-04-22T00:42:00.345Z",
+    "compiledAt": "2026-04-22T00:42:00.345Z",
     "activeAgent": "default",
     "taskFamily": "web_creative",
     "selectedCount": 13,
@@ -16,20 +16,20 @@
       "workspace_progress": 1,
       "intent": 1,
       "spec": 4,
-      "semantic": 3,
       "experience": 3,
+      "semantic": 3,
       "improvement": 1
     },
     "selectedItems": [
       {
-        "publicRef": "mem_dd9c0f3a28",
+        "publicRef": "mem_8eea5b9e77",
         "type": "workspace_progress",
         "status": "promoted",
-        "score": 0.8725,
+        "score": 0.8724,
         "scoreBand": "high",
         "sourceTier": "runtime",
         "authorityTier": 3,
-        "scopeWorkspace": "5c839dfeef8b555f",
+        "scopeWorkspace": "3650d504ad404c53",
         "taskFamilies": [
           "web_creative"
         ],
@@ -43,7 +43,7 @@
         "scoreBand": "high",
         "sourceTier": "runtime",
         "authorityTier": 1,
-        "scopeWorkspace": "5c839dfeef8b555f",
+        "scopeWorkspace": "3650d504ad404c53",
         "taskFamilies": [
           "web_creative"
         ],
@@ -53,39 +53,25 @@
         "publicRef": "mem_52f4ed9143",
         "type": "constitution_ref",
         "status": "promoted",
-        "score": 0.6975,
+        "score": 0.6974,
         "scoreBand": "high",
         "sourceTier": "repo",
         "authorityTier": 0,
-        "scopeWorkspace": "5c839dfeef8b555f",
+        "scopeWorkspace": "3650d504ad404c53",
         "taskFamilies": [
           "all"
         ],
         "summary": "Requirement Foundation V1 is frozen and treated as a top-level invariant, not a mutable lesson."
       },
       {
-        "publicRef": "mem_d731ba2fd1",
-        "type": "semantic_lesson",
-        "status": "promoted",
-        "score": 0.6242,
-        "scoreBand": "selected",
-        "sourceTier": "external_primary",
-        "authorityTier": 5,
-        "scopeWorkspace": "5c839dfeef8b555f",
-        "taskFamilies": [
-          "web_creative"
-        ],
-        "summary": "Using skills to accelerate OSS maintenance | OpenAI Developers"
-      },
-      {
         "publicRef": "mem_e65f4ce9a0",
         "type": "constitution_ref",
         "status": "promoted",
-        "score": 0.6104,
+        "score": 0.6562,
         "scoreBand": "selected",
         "sourceTier": "repo",
         "authorityTier": 0,
-        "scopeWorkspace": "5c839dfeef8b555f",
+        "scopeWorkspace": "3650d504ad404c53",
         "taskFamilies": [],
         "summary": "tier0-agents"
       },
@@ -93,11 +79,11 @@
         "publicRef": "mem_ad36640985",
         "type": "constitution_ref",
         "status": "promoted",
-        "score": 0.6104,
+        "score": 0.6562,
         "scoreBand": "selected",
         "sourceTier": "repo",
         "authorityTier": 0,
-        "scopeWorkspace": "5c839dfeef8b555f",
+        "scopeWorkspace": "3650d504ad404c53",
         "taskFamilies": [],
         "summary": "current-architecture"
       },
@@ -105,23 +91,23 @@
         "publicRef": "mem_b5d199f8aa",
         "type": "constitution_ref",
         "status": "promoted",
-        "score": 0.6104,
+        "score": 0.6562,
         "scoreBand": "selected",
         "sourceTier": "repo",
         "authorityTier": 0,
-        "scopeWorkspace": "5c839dfeef8b555f",
+        "scopeWorkspace": "3650d504ad404c53",
         "taskFamilies": [],
         "summary": "context-memory-policy"
       },
       {
-        "publicRef": "mem_052206464c",
+        "publicRef": "mem_d71925c79c",
         "type": "episodic_event",
         "status": "captured",
-        "score": 0.6008,
+        "score": 0.6408,
         "scoreBand": "selected",
         "sourceTier": "runtime",
         "authorityTier": 4,
-        "scopeWorkspace": "5c839dfeef8b555f",
+        "scopeWorkspace": "3650d504ad404c53",
         "taskFamilies": [
           "web_creative",
           "tool_use_browser_like",
@@ -130,14 +116,14 @@
         "summary": "runtime episode finished as CAPTURED."
       },
       {
-        "publicRef": "mem_f760919e3b",
+        "publicRef": "mem_3d067288b8",
         "type": "episodic_event",
         "status": "captured",
-        "score": 0.6008,
+        "score": 0.6408,
         "scoreBand": "selected",
         "sourceTier": "runtime",
         "authorityTier": 4,
-        "scopeWorkspace": "5c839dfeef8b555f",
+        "scopeWorkspace": "3650d504ad404c53",
         "taskFamilies": [
           "web_creative",
           "tool_use_browser_like",
@@ -146,49 +132,62 @@
         "summary": "runtime episode finished as CAPTURED."
       },
       {
-        "publicRef": "mem_dabbdbf3f9",
+        "publicRef": "mem_90be385b37",
         "type": "episodic_event",
         "status": "captured",
-        "score": 0.6008,
+        "score": 0.6408,
         "scoreBand": "selected",
         "sourceTier": "runtime",
         "authorityTier": 4,
-        "scopeWorkspace": "5c839dfeef8b555f",
+        "scopeWorkspace": "3650d504ad404c53",
         "taskFamilies": [
           "web_creative",
           "tool_use_browser_like",
-          "workflow_execution",
-          "evaluation_review"
+          "workflow_execution"
         ],
         "summary": "runtime episode finished as CAPTURED."
       },
       {
-        "publicRef": "mem_5b877e2516",
-        "type": "improvement_candidate",
-        "status": "candidate",
-        "score": 0.6,
+        "publicRef": "mem_46f23704e6",
+        "type": "runtime_hint",
+        "status": "promoted",
+        "score": 0.6403,
         "scoreBand": "selected",
         "sourceTier": "external_primary",
-        "authorityTier": 6,
-        "scopeWorkspace": "5c839dfeef8b555f",
+        "authorityTier": 5,
+        "scopeWorkspace": "3650d504ad404c53",
+        "taskFamilies": [
+          "web_creative"
+        ],
+        "summary": "How Perplexity Brought Voice Search to Millions Using the Realtime API | OpenAI Developers"
+      },
+      {
+        "publicRef": "mem_5e926a0571",
+        "type": "runtime_hint",
+        "status": "promoted",
+        "score": 0.6403,
+        "scoreBand": "selected",
+        "sourceTier": "external_primary",
+        "authorityTier": 5,
+        "scopeWorkspace": "3650d504ad404c53",
         "taskFamilies": [
           "web_creative"
         ],
         "summary": "Designing delightful frontends with GPT-5.4 | OpenAI Developers"
       },
       {
-        "publicRef": "mem_38e064a6a2",
-        "type": "failure_pattern",
+        "publicRef": "mem_b439f61eb1",
+        "type": "runtime_hint",
         "status": "promoted",
-        "score": 0.5967,
+        "score": 0.6403,
         "scoreBand": "selected",
-        "sourceTier": "runtime",
+        "sourceTier": "external_primary",
         "authorityTier": 5,
-        "scopeWorkspace": "5c839dfeef8b555f",
+        "scopeWorkspace": "3650d504ad404c53",
         "taskFamilies": [
-          "default"
+          "web_creative"
         ],
-        "summary": "parent dispatch guard block"
+        "summary": "From prompts to products: One year of Responses | OpenAI Developers"
       }
     ]
   }

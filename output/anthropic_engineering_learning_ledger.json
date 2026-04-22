@@ -1,8 +1,8 @@
 {
   "schema": "anthropic-engineering-learning-ledger.v1",
-  "generatedAt": "2026-04-19T12:06:29.207Z",
-  "lastRunAt": "2026-04-19T12:06:29.207Z",
-  "lastSuccessAt": "2026-04-19T12:06:29.207Z",
+  "generatedAt": "2026-04-21T15:09:04.225Z",
+  "lastRunAt": "2026-04-21T15:09:04.225Z",
+  "lastSuccessAt": "2026-04-21T15:09:04.225Z",
   "lastStatus": "PASS",
   "lastReason": "",
   "summary": {
@@ -24,8 +24,8 @@
       "topicLabel": "",
       "discoveredAt": "2026-03-25T10:58:32.280Z",
       "firstReadAt": "2026-03-25T10:58:32.280Z",
-      "lastReadAt": "2026-04-19T12:06:29.207Z",
-      "contentHash": "8f4a87a79a73308ace93d270ef1ab8bee43e07291a0ba94cc3172657dd981b92",
+      "lastReadAt": "2026-04-21T15:09:04.225Z",
+      "contentHash": "2c3c16b09003a91e43e2db9560b25c433978e984de6b95765e5b7c3a8704016a",
       "summary": "Infrastructure configuration can swing agentic coding benchmarks by several percentage points—sometimes more than the leaderboard gap between top models.",
       "guidance": [
         "Agentic coding evals are different: models are given a full environment where they write programs, run tests, install dependencies, and iterate over multiple turns.",
@@ -63,8 +63,8 @@
       "topicLabel": "",
       "discoveredAt": "2026-04-09T11:31:10.069Z",
       "firstReadAt": "2026-04-09T11:31:10.069Z",
-      "lastReadAt": "2026-04-19T12:06:29.207Z",
-      "contentHash": "0b1e1f6f9e39f3623da2af4fe43356b15df632191948312872065da9baf647ff",
+      "lastReadAt": "2026-04-21T15:09:04.225Z",
+      "contentHash": "2a326680a48e66a178f94bc557d0abe39208a9567e1f0a6e1bcaca885d5b5672",
       "summary": "Harnesses encode assumptions that go stale as models improve. Managed Agents—our hosted service for long-horizon agent work—is built around interfaces that stay stable as harnesses change.",
       "guidance": [
         "Building Managed Agents meant solving an old problem in computing: how to design a system for “ programs as yet unthought of .” Decades ago, operating systems solved this problem by virtualizing hardware into abstractions— process, file —general enough for programs that didn't exist yet.",
@@ -97,8 +97,8 @@
       "topicLabel": "",
       "discoveredAt": "2026-03-25T10:58:32.280Z",
       "firstReadAt": "2026-03-25T10:58:32.280Z",
-      "lastReadAt": "2026-04-19T12:06:29.207Z",
-      "contentHash": "b9fccfb79a6a1aff832766c160affea924ee10dd6609f5ee58c658df52597f35",
+      "lastReadAt": "2026-04-21T15:09:04.225Z",
+      "contentHash": "b3a88d011429c2f705f82954756c7785ccc6ce3c5d06841c5323b3a841797b62",
       "summary": "Harness design is key to performance at the frontier of agentic coding. Here's how we pushed Claude further in frontend design and long-running autonomous software engineering.",
       "guidance": [
         "We've previously shown that harness design has a substantial impact on the effectiveness of long running agentic coding.",
@@ -138,8 +138,8 @@
       "topicLabel": "",
       "discoveredAt": "2026-03-25T10:58:32.280Z",
       "firstReadAt": "2026-03-25T10:58:32.280Z",
-      "lastReadAt": "2026-04-19T12:06:29.207Z",
-      "contentHash": "5a5e5cc125b348d3340bb1ee488df64ac6f72d6f27a73d3fc047f3195ab5f3e2",
+      "lastReadAt": "2026-04-21T15:09:04.225Z",
+      "contentHash": "a076263ee21690e78d8c61293a8f67dbd6b7259365e1d02aadacb85934e2c2c7",
       "summary": "What we learned from three iterations of a performance engineering take-home that Claude keeps beating.",
       "guidance": [
         "Evaluating technical candidates becomes harder as AI capabilities improve.",
@@ -179,8 +179,8 @@
       "topicLabel": "",
       "discoveredAt": "2026-03-25T10:58:32.280Z",
       "firstReadAt": "2026-03-25T10:58:32.280Z",
-      "lastReadAt": "2026-04-19T12:06:29.207Z",
-      "contentHash": "5cb7256a1114a11292bf445e33236b99ace2f3e5bc08c0f171ac9d0b83be8137",
+      "lastReadAt": "2026-04-21T15:09:04.225Z",
+      "contentHash": "fcc3502abcdd8d95843dd667d16ea8d0219c45a7f01617a252f4effc8b48219c",
       "summary": "The capabilities that make agents useful also make them difficult to evaluate. The strategies that work across deployments combine techniques to match the complexity of the systems they measure.",
       "guidance": [
         "As we described in Building effective agents , agents operate over many turns: calling tools, modifying state, and adapting based on intermediate results.",

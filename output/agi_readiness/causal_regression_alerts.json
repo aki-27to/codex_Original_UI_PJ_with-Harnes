@@ -1,38 +1,7 @@
 {
   "schema": "agi-readiness-causal-regression-alerts.v1",
-  "generatedAt": "2026-04-18T06:45:51.349Z",
-  "workspaceId": "5c839dfeef8b555f",
-  "harmfulCausalRatio": 1,
-  "alerts": [
-    {
-      "publicRef": "mem_5b877e2516",
-      "memoryType": "improvement_candidate",
-      "usageMode": "remediation_hint",
-      "taskRefs": [
-        "turn_12e260ac02",
-        "turn_cbfc8db38c",
-        "turn_c01089a338",
-        "turn_985413b356",
-        "turn_451848344b",
-        "turn_6868d4b0a7"
-      ],
-      "summary": "Designing delightful frontends with GPT-5.4 | OpenAI Developers",
-      "lastObservedAt": "2026-04-18T06:45:49.624Z"
-    },
-    {
-      "publicRef": "mem_d731ba2fd1",
-      "memoryType": "semantic_lesson",
-      "usageMode": "explicit_prompt_pack",
-      "taskRefs": [
-        "turn_12e260ac02",
-        "turn_cbfc8db38c",
-        "turn_c01089a338",
-        "turn_985413b356",
-        "turn_451848344b",
-        "turn_6868d4b0a7"
-      ],
-      "summary": "Using skills to accelerate OSS maintenance | OpenAI Developers",
-      "lastObservedAt": "2026-04-18T06:45:49.624Z"
-    }
-  ]
+  "generatedAt": "2026-04-22T00:42:00.791Z",
+  "workspaceId": "3650d504ad404c53",
+  "harmfulCausalRatio": 0,
+  "alerts": []
 }

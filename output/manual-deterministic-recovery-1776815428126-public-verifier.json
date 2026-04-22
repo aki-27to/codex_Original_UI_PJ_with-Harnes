@@ -1,0 +1,35 @@
+{
+  "schema": "independent-verifier-report.v1",
+  "generatedAt": "2026-04-21T23:50:30.668Z",
+  "source": "public_regression_runner",
+  "laneId": "public_regression",
+  "suiteId": "public_regression.merged.v1",
+  "verdict": "PASS",
+  "reason": "all_verifier_checks_passed",
+  "policy": {
+    "requireAllCasesPass": true,
+    "minPassRate": 1,
+    "minScoreRate": 1,
+    "blockedTaskOutcomeStatuses": [
+      "FAILED_VALIDATION",
+      "NEEDS_INPUT",
+      "PARTIAL",
+      "BLOCKED"
+    ],
+    "allowedExecutorStatuses": [
+      "completed"
+    ]
+  },
+  "variantSummaries": [
+    {
+      "variant": "public-gate",
+      "passRate": 1,
+      "scoreRate": 1,
+      "sampleSize": 12,
+      "failedCases": 0,
+      "avgLatencyMs": 146.08
+    }
+  ],
+  "failureCount": 0,
+  "failures": []
+}

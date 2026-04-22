@@ -1,17 +1,12 @@
 # Autonomous Learning Status
 
-- queued: 3
-- running: 3
-- passed: 2
+- queued: 0
+- running: 0
+- passed: 1
 - blocked: 0
-- current verified positive count: 2 (current export session)
-- historical verified positive count: 11 (prior export sessions cumulative)
-- summary.verifiedPositive mirrors currentVerifiedPositiveCount: 2
+- current verified positive count: 1 (current export session)
+- historical verified positive count: 42 (prior export sessions cumulative)
+- summary.verifiedPositive mirrors currentVerifiedPositiveCount: 1
 
 ## Top agenda
-- browser_tool_flakiness: running / robustness is currently limited by browser tool flakiness
-- browser_tool_flakiness: running / browser tool flakiness below subjective threshold
-- R_robust: passed / weakest family is R robust
-- default: running / web creative stable coverage below subjective threshold
-- default: queued / workflow execution stable coverage below subjective threshold
-- default: queued / primary lane latest pack adoption below subjective threshold
+- ambiguous_instruction: passed / ambiguous instruction evidence below subjective threshold

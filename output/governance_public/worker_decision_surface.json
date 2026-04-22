@@ -1,8 +1,8 @@
 {
   "schema": "worker-decision-surface.v1",
-  "generatedAt": "2026-04-18T06:45:48.303Z",
+  "generatedAt": "2026-04-22T00:42:00.285Z",
   "scope": "worker_decision",
-  "exportSessionId": "export_69aaf0d22042",
+  "exportSessionId": "export_4b89b907ce1f",
   "decisionQuestion": "Can the governed worker stop here without unnecessary human interruption?",
   "topLevelOutcome": "ADOPTABLE_COMPLETE",
   "topLevelSummary": "The worker can close in place: adoption readiness passed, latent intent stayed aligned, and no extra human interruption is required.",

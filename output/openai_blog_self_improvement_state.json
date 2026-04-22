@@ -1,6 +1,6 @@
 {
   "schema": "self-improvement-state.v1",
-  "generatedAt": "2026-04-18T10:13:46.031Z",
+  "generatedAt": "2026-04-22T00:42:49.901Z",
   "sourceName": "OpenAI Developers Blog",
   "sourceTier": "primary",
   "promotionMode": "machine_guarded_autonomy",
@@ -22,12 +22,12 @@
   "autoApplyCandidateCount": 0,
   "readyHintCandidateCount": 0,
   "autoApplyFrontendQualityNoteCount": 0,
-  "observationStatus": "idle",
-  "observationCount": 30,
-  "lastObservedAt": "2026-04-18T06:45:49.624Z",
+  "observationStatus": "awaiting_observations",
+  "observationCount": 88,
+  "lastObservedAt": "2026-04-22T00:42:49.600Z",
   "requiredObservationSuccesses": 2,
   "requiredObservationSuccessRate": 0.67,
-  "awaitingObservationCount": 0,
+  "awaitingObservationCount": 7,
   "awaitingReinforcementCount": 0,
   "policyDisabledCandidateCount": 0,
   "proposalOnlyCount": 1,
@@ -244,22 +244,23 @@
     "blastRadius": "low",
     "priorityScore": 53,
     "reinforcement": {
-      "successCount": 0,
-      "failureCount": 5,
-      "observedCount": 5,
-      "successRate": 0,
+      "successCount": 28,
+      "failureCount": 0,
+      "observedCount": 88,
+      "successRate": 1,
       "requiredSuccesses": 2,
       "requiredSuccessRate": 0.67,
-      "remainingSuccesses": 2,
-      "lastObservedAt": "2026-04-18T06:45:49.624Z",
+      "remainingSuccesses": 0,
+      "lastObservedAt": "2026-04-22T00:42:49.600Z",
       "lastOutcome": "",
-      "status": "building_evidence",
+      "status": "eligible",
       "sampleTurnIds": [
-        "019d9f08-fd86-7e80-98cf-02483a41def0",
-        "019d9f0a-4846-7532-b834-ac320cbb11e1",
-        "019d9f0b-51d5-7d10-b2e3-402bb88c2881",
-        "019d9f50-3f26-7550-9eb8-b1a00f0f1f68",
-        "019d9f4d-81cd-7f50-9e54-1b0e30842a08"
+        "compat-pass-loop-2-1776817632178",
+        "compat-pass-loop-1-1776817628780",
+        "compat-pass-seed-1776817601279",
+        "readiness-durability-loop-10-1776817097703",
+        "readiness-durability-loop-09-1776817094440",
+        "readiness-durability-loop-08-1776817091354"
       ]
     }
   },
@@ -276,22 +277,23 @@
       "blastRadius": "low",
       "priorityScore": 53,
       "reinforcement": {
-        "successCount": 0,
-        "failureCount": 5,
-        "observedCount": 5,
-        "successRate": 0,
+        "successCount": 28,
+        "failureCount": 0,
+        "observedCount": 28,
+        "successRate": 1,
         "requiredSuccesses": 2,
         "requiredSuccessRate": 0.67,
-        "remainingSuccesses": 2,
-        "lastObservedAt": "2026-04-18T06:45:49.624Z",
+        "remainingSuccesses": 0,
+        "lastObservedAt": "2026-04-22T00:27:12.380Z",
         "lastOutcome": "",
-        "status": "building_evidence",
+        "status": "eligible",
         "sampleTurnIds": [
-          "019d9f08-fd86-7e80-98cf-02483a41def0",
-          "019d9f0a-4846-7532-b834-ac320cbb11e1",
-          "019d9f0b-51d5-7d10-b2e3-402bb88c2881",
-          "019d9f50-3f26-7550-9eb8-b1a00f0f1f68",
-          "019d9f4d-81cd-7f50-9e54-1b0e30842a08"
+          "compat-pass-loop-2-1776817632178",
+          "compat-pass-loop-1-1776817628780",
+          "compat-pass-seed-1776817601279",
+          "readiness-durability-loop-10-1776817097703",
+          "readiness-durability-loop-09-1776817094440",
+          "readiness-durability-loop-08-1776817091354"
         ]
       }
     },
@@ -308,22 +310,16 @@
       "priorityScore": 28,
       "reinforcement": {
         "successCount": 0,
-        "failureCount": 5,
-        "observedCount": 5,
+        "failureCount": 0,
+        "observedCount": 0,
         "successRate": 0,
         "requiredSuccesses": 2,
         "requiredSuccessRate": 0.67,
         "remainingSuccesses": 2,
-        "lastObservedAt": "2026-04-18T06:45:49.624Z",
+        "lastObservedAt": "",
         "lastOutcome": "",
-        "status": "building_evidence",
-        "sampleTurnIds": [
-          "019d9f08-fd86-7e80-98cf-02483a41def0",
-          "019d9f0a-4846-7532-b834-ac320cbb11e1",
-          "019d9f0b-51d5-7d10-b2e3-402bb88c2881",
-          "019d9f50-3f26-7550-9eb8-b1a00f0f1f68",
-          "019d9f4d-81cd-7f50-9e54-1b0e30842a08"
-        ]
+        "status": "unobserved",
+        "sampleTurnIds": []
       }
     },
     {
@@ -338,22 +334,23 @@
       "blastRadius": "low",
       "priorityScore": 28,
       "reinforcement": {
-        "successCount": 0,
-        "failureCount": 5,
-        "observedCount": 5,
-        "successRate": 0,
+        "successCount": 28,
+        "failureCount": 0,
+        "observedCount": 28,
+        "successRate": 1,
         "requiredSuccesses": 2,
         "requiredSuccessRate": 0.67,
-        "remainingSuccesses": 2,
-        "lastObservedAt": "2026-04-18T06:45:49.624Z",
+        "remainingSuccesses": 0,
+        "lastObservedAt": "2026-04-22T00:27:12.380Z",
         "lastOutcome": "",
-        "status": "building_evidence",
+        "status": "eligible",
         "sampleTurnIds": [
-          "019d9f08-fd86-7e80-98cf-02483a41def0",
-          "019d9f0a-4846-7532-b834-ac320cbb11e1",
-          "019d9f0b-51d5-7d10-b2e3-402bb88c2881",
-          "019d9f50-3f26-7550-9eb8-b1a00f0f1f68",
-          "019d9f4d-81cd-7f50-9e54-1b0e30842a08"
+          "compat-pass-loop-2-1776817632178",
+          "compat-pass-loop-1-1776817628780",
+          "compat-pass-seed-1776817601279",
+          "readiness-durability-loop-10-1776817097703",
+          "readiness-durability-loop-09-1776817094440",
+          "readiness-durability-loop-08-1776817091354"
         ]
       }
     },
@@ -369,22 +366,23 @@
       "blastRadius": "low",
       "priorityScore": 28,
       "reinforcement": {
-        "successCount": 0,
-        "failureCount": 5,
-        "observedCount": 5,
-        "successRate": 0,
+        "successCount": 28,
+        "failureCount": 0,
+        "observedCount": 28,
+        "successRate": 1,
         "requiredSuccesses": 2,
         "requiredSuccessRate": 0.67,
-        "remainingSuccesses": 2,
-        "lastObservedAt": "2026-04-18T06:45:49.624Z",
+        "remainingSuccesses": 0,
+        "lastObservedAt": "2026-04-22T00:27:12.380Z",
         "lastOutcome": "",
-        "status": "building_evidence",
+        "status": "eligible",
         "sampleTurnIds": [
-          "019d9f08-fd86-7e80-98cf-02483a41def0",
-          "019d9f0a-4846-7532-b834-ac320cbb11e1",
-          "019d9f0b-51d5-7d10-b2e3-402bb88c2881",
-          "019d9f50-3f26-7550-9eb8-b1a00f0f1f68",
-          "019d9f4d-81cd-7f50-9e54-1b0e30842a08"
+          "compat-pass-loop-2-1776817632178",
+          "compat-pass-loop-1-1776817628780",
+          "compat-pass-seed-1776817601279",
+          "readiness-durability-loop-10-1776817097703",
+          "readiness-durability-loop-09-1776817094440",
+          "readiness-durability-loop-08-1776817091354"
         ]
       }
     },
@@ -401,22 +399,16 @@
       "priorityScore": 28,
       "reinforcement": {
         "successCount": 0,
-        "failureCount": 5,
-        "observedCount": 5,
+        "failureCount": 0,
+        "observedCount": 0,
         "successRate": 0,
         "requiredSuccesses": 2,
         "requiredSuccessRate": 0.67,
         "remainingSuccesses": 2,
-        "lastObservedAt": "2026-04-18T06:45:49.624Z",
+        "lastObservedAt": "",
         "lastOutcome": "",
-        "status": "building_evidence",
-        "sampleTurnIds": [
-          "019d9f08-fd86-7e80-98cf-02483a41def0",
-          "019d9f0a-4846-7532-b834-ac320cbb11e1",
-          "019d9f0b-51d5-7d10-b2e3-402bb88c2881",
-          "019d9f50-3f26-7550-9eb8-b1a00f0f1f68",
-          "019d9f4d-81cd-7f50-9e54-1b0e30842a08"
-        ]
+        "status": "unobserved",
+        "sampleTurnIds": []
       }
     },
     {
@@ -432,22 +424,16 @@
       "priorityScore": 28,
       "reinforcement": {
         "successCount": 0,
-        "failureCount": 5,
-        "observedCount": 5,
+        "failureCount": 0,
+        "observedCount": 0,
         "successRate": 0,
         "requiredSuccesses": 2,
         "requiredSuccessRate": 0.67,
         "remainingSuccesses": 2,
-        "lastObservedAt": "2026-04-18T06:45:49.624Z",
+        "lastObservedAt": "",
         "lastOutcome": "",
-        "status": "building_evidence",
-        "sampleTurnIds": [
-          "019d9f08-fd86-7e80-98cf-02483a41def0",
-          "019d9f0a-4846-7532-b834-ac320cbb11e1",
-          "019d9f0b-51d5-7d10-b2e3-402bb88c2881",
-          "019d9f50-3f26-7550-9eb8-b1a00f0f1f68",
-          "019d9f4d-81cd-7f50-9e54-1b0e30842a08"
-        ]
+        "status": "unobserved",
+        "sampleTurnIds": []
       }
     }
   ],

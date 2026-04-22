@@ -1,6 +1,6 @@
 {
   "schema": "conformance-report.v1",
-  "generatedAt": "2026-04-18T05:31:45.190Z",
+  "generatedAt": "2026-04-21T15:09:11.703Z",
   "requestFrame": {
     "schema": "RequestFrame.v1",
     "user_goal": "Implementation is explicitly requested now.Requirements are fixed.Do not switch to proposal-only mode and do not ask follow-up questions.",
@@ -9,17 +9,17 @@
       "Use the default parent orchestration path.",
       "Delegate the implementation edits to infra_worker.",
       "Request independent read-only reviewer and tester checks before finalizing.",
-      "Change logs/bundles/signoff/signoff-2026-04-18T05-27-13-996Z-f97810/raw/scripts/config/signoff_sample_target.txt, docs/EVIDENCE_CONTRACT.md, docs/CURRENT_ARCHITECTURE.md, and docs/ARCHITECTURE_CHANGELOG.md.",
+      "Change logs/bundles/signoff/signoff-2026-04-21T15-08-45-517Z-bbfbe8/raw/scripts/config/signoff_sample_target.txt, docs/EVIDENCE_CONTRACT.md, docs/CURRENT_ARCHITECTURE.md, and docs/ARCHITECTURE_CHANGELOG.md.",
       "Do not modify any other file and do not revert unrelated edits.",
       "Use apply_patch for file edits.",
       "The implementation specialist must report using this exact header format:",
       "Owned paths:",
       "`<absolute path>`",
-      "In logs/bundles/signoff/signoff-2026-04-18T05-27-13-996Z-f97810/raw/scripts/config/signoff_sample_target.txt, replace the single line `gate: pending` with `gate: signed`.",
+      "In logs/bundles/signoff/signoff-2026-04-21T15-08-45-517Z-bbfbe8/raw/scripts/config/signoff_sample_target.txt, replace the single line `gate: pending` with `gate: signed`.",
       "In docs/EVIDENCE_CONTRACT.md, add this exact bullet if it is not already present: - `SIGNOFF_ASSURANCE` runs should surface reviewer/tester/doc-sync status in `review_load_breakdown.json` for operator signoff.",
       "In docs/CURRENT_ARCHITECTURE.md, add this exact architecture bullet if it is not already present: - `SIGNOFF_ASSURANCE` sample runs keep reviewer/tester execution and doc-sync evidence co-located in signoff bundles.",
       "In docs/ARCHITECTURE_CHANGELOG.md, add this exact changelog line if it is not already present: - 2026-03-08: Added signoff assurance sample evidence wiring for planning/assurance trace and doc-sync bundle checks.",
-      "Return with exactly: SIGNOFF_TASK_OK logs/bundles/signoff/signoff-2026-04-18T05-27-13-996Z-f97810/raw/scripts/config/signoff_sample_target.txt.",
+      "Return with exactly: SIGNOFF_TASK_OK logs/bundles/signoff/signoff-2026-04-21T15-08-45-517Z-bbfbe8/raw/scripts/config/signoff_sample_target.txt.",
       "No follow-up questions are required."
     ],
     "constraints": [],
@@ -177,22 +177,22 @@
         "actor": "mock-thread-4-infra",
         "status": "COMPLETED",
         "claimed_work": [
-          "Owned paths:\n- logs/bundles/signoff/signoff-2026-04-18T05-27-13-996Z-f97810/raw/scripts/config/signoff_sample_target.txt\n- docs/EVIDENCE_CONTRACT.md\n- docs/CURRENT_ARCHITECTURE.md\n- docs/ARCHITECTURE_CHANGELOG.md\nApplied requested signoff assurance updates."
+          "Owned paths:\n- logs/bundles/signoff/signoff-2026-04-21T15-08-45-517Z-bbfbe8/raw/scripts/config/signoff_sample_target.txt\n- docs/EVIDENCE_CONTRACT.md\n- docs/CURRENT_ARCHITECTURE.md\n- docs/ARCHITECTURE_CHANGELOG.md\nApplied requested signoff assurance updates."
         ],
         "changed_artifacts": [
-          "logs/bundles/signoff/signoff-2026-04-18T05-27-13-996Z-f97810/raw/scripts/config/signoff_sample_target.txt",
+          "logs/bundles/signoff/signoff-2026-04-21T15-08-45-517Z-bbfbe8/raw/scripts/config/signoff_sample_target.txt",
           "docs/EVIDENCE_CONTRACT.md",
           "docs/CURRENT_ARCHITECTURE.md",
           "docs/ARCHITECTURE_CHANGELOG.md",
           "Applied requested signoff assurance updates."
         ],
         "evidence_refs": [
-          "Owned paths:\n- logs/bundles/signoff/signoff-2026-04-18T05-27-13-996Z-f97810/raw/scripts/config/signoff_sample_target.txt\n- docs/EVIDENCE_CONTRACT.md\n- docs/CURRENT_ARCHITECTURE.md\n- docs/ARCHITECTURE_CHANGELOG.md\nApplied requested signoff assurance updates.",
+          "Owned paths:\n- logs/bundles/signoff/signoff-2026-04-21T15-08-45-517Z-bbfbe8/raw/scripts/config/signoff_sample_target.txt\n- docs/EVIDENCE_CONTRACT.md\n- docs/CURRENT_ARCHITECTURE.md\n- docs/ARCHITECTURE_CHANGELOG.md\nApplied requested signoff assurance updates.",
           "signoff_summary.json",
           "latest_run_summary.json",
-          "logs/bundles/signoff/signoff-2026-04-18T05-27-13-996Z-f97810/review_load_breakdown.json",
+          "logs/bundles/signoff/signoff-2026-04-21T15-08-45-517Z-bbfbe8/review_load_breakdown.json",
           "natural_task_trace_summary.json",
-          "logs/bundles/signoff/signoff-2026-04-18T05-27-13-996Z-f97810/raw/relocated_top_level/lane_latency_summary.json"
+          "logs/bundles/signoff/signoff-2026-04-21T15-08-45-517Z-bbfbe8/raw/relocated_top_level/lane_latency_summary.json"
         ],
         "unresolved_items": [],
         "acceptance_coverage": [
@@ -212,9 +212,9 @@
           "No findings.",
           "signoff_summary.json",
           "latest_run_summary.json",
-          "logs/bundles/signoff/signoff-2026-04-18T05-27-13-996Z-f97810/review_load_breakdown.json",
+          "logs/bundles/signoff/signoff-2026-04-21T15-08-45-517Z-bbfbe8/review_load_breakdown.json",
           "natural_task_trace_summary.json",
-          "logs/bundles/signoff/signoff-2026-04-18T05-27-13-996Z-f97810/raw/relocated_top_level/lane_latency_summary.json"
+          "logs/bundles/signoff/signoff-2026-04-21T15-08-45-517Z-bbfbe8/raw/relocated_top_level/lane_latency_summary.json"
         ],
         "unresolved_items": [],
         "acceptance_coverage": [
@@ -234,9 +234,9 @@
           "PASS: reviewer/tester/doc-sync evidence present.",
           "signoff_summary.json",
           "latest_run_summary.json",
-          "logs/bundles/signoff/signoff-2026-04-18T05-27-13-996Z-f97810/review_load_breakdown.json",
+          "logs/bundles/signoff/signoff-2026-04-21T15-08-45-517Z-bbfbe8/review_load_breakdown.json",
           "natural_task_trace_summary.json",
-          "logs/bundles/signoff/signoff-2026-04-18T05-27-13-996Z-f97810/raw/relocated_top_level/lane_latency_summary.json"
+          "logs/bundles/signoff/signoff-2026-04-21T15-08-45-517Z-bbfbe8/raw/relocated_top_level/lane_latency_summary.json"
         ],
         "unresolved_items": [],
         "acceptance_coverage": [
@@ -255,9 +255,9 @@
         "evidence_refs": [
           "signoff_summary.json",
           "latest_run_summary.json",
-          "logs/bundles/signoff/signoff-2026-04-18T05-27-13-996Z-f97810/review_load_breakdown.json",
+          "logs/bundles/signoff/signoff-2026-04-21T15-08-45-517Z-bbfbe8/review_load_breakdown.json",
           "natural_task_trace_summary.json",
-          "logs/bundles/signoff/signoff-2026-04-18T05-27-13-996Z-f97810/raw/relocated_top_level/lane_latency_summary.json"
+          "logs/bundles/signoff/signoff-2026-04-21T15-08-45-517Z-bbfbe8/raw/relocated_top_level/lane_latency_summary.json"
         ],
         "unresolved_items": [],
         "acceptance_coverage": [
@@ -343,9 +343,9 @@
     "signoff_refs": [
       "signoff_summary.json",
       "latest_run_summary.json",
-      "logs/bundles/signoff/signoff-2026-04-18T05-27-13-996Z-f97810/review_load_breakdown.json",
+      "logs/bundles/signoff/signoff-2026-04-21T15-08-45-517Z-bbfbe8/review_load_breakdown.json",
       "natural_task_trace_summary.json",
-      "logs/bundles/signoff/signoff-2026-04-18T05-27-13-996Z-f97810/raw/relocated_top_level/lane_latency_summary.json"
+      "logs/bundles/signoff/signoff-2026-04-21T15-08-45-517Z-bbfbe8/raw/relocated_top_level/lane_latency_summary.json"
     ],
     "blocker_list": [],
     "waived_risks": [
@@ -354,7 +354,7 @@
     ],
     "remaining_conditions": [],
     "replay_bundle_refs": [
-      "logs/bundles/signoff/signoff-2026-04-18T05-27-13-996Z-f97810/raw"
+      "logs/bundles/signoff/signoff-2026-04-21T15-08-45-517Z-bbfbe8/raw"
     ]
   },
   "discoveryOutcome": {

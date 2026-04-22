@@ -164,6 +164,40 @@ function summarizeWorkerDecisionHeadline(workspaceRoot) {
   };
 }
 
+function normalizeWorkerDecisionSurfaceForExport(workerDecisionSurface = {}, exportSessionId = "") {
+  const targetExportSessionId = safeString(exportSessionId, 120);
+  if (!targetExportSessionId || !workerDecisionSurface || typeof workerDecisionSurface !== "object" || Array.isArray(workerDecisionSurface)) {
+    return workerDecisionSurface && typeof workerDecisionSurface === "object" ? workerDecisionSurface : {};
+  }
+  if (!safeString(workerDecisionSurface.schema, 120) || !safeString(workerDecisionSurface.topLevelOutcome, 80)) {
+    return workerDecisionSurface;
+  }
+  return {
+    ...workerDecisionSurface,
+    exportSessionId: targetExportSessionId,
+    generatedAt: safeString(workerDecisionSurface.generatedAt, 80) || toIso(),
+  };
+}
+
+function normalizeArtifactExportSessionAtPath(targetPath = "", exportSessionId = "") {
+  const normalizedPath = safeString(targetPath, 1200);
+  const targetExportSessionId = safeString(exportSessionId, 120);
+  if (!normalizedPath || !targetExportSessionId || !fs.existsSync(normalizedPath)) {
+    return {};
+  }
+  const payload = readJson(normalizedPath);
+  if (!payload || typeof payload !== "object" || Array.isArray(payload) || !safeString(payload.schema, 120)) {
+    return {};
+  }
+  const nextPayload = {
+    ...payload,
+    exportSessionId: targetExportSessionId,
+    generatedAt: safeString(payload.generatedAt, 80) || toIso(),
+  };
+  writeJsonIfChanged(normalizedPath, nextPayload);
+  return nextPayload;
+}
+
 function isTerminalAutonomousLearningStatus(value) {
   return ["passed", "failed", "revoked"].includes(safeString(value, 80));
 }
@@ -1099,6 +1133,128 @@ function readTrackedRepoJson(workspaceRoot, absolutePath) {
   }
 }
 
+function historyEntryIsPassing(entry) {
+  return safeString(entry && entry.baseStatus, 40) === "criteria_met";
+}
+
+function normalizeHistorySnapshot(snapshot = {}, source = "") {
+  const entries = Array.isArray(snapshot && snapshot.entries) ? snapshot.entries : [];
+  const providedConsecutive = clampInt(snapshot && snapshot.consecutivePassingExports, 0, 999999, 0);
+  const effectiveConsecutive = Math.max(
+    providedConsecutive,
+    countTrailingHistoryPasses(entries, historyEntryIsPassing),
+  );
+  return {
+    schema: safeString(snapshot && snapshot.schema, 160) || "",
+    generatedAt: safeString(snapshot && snapshot.generatedAt, 80) || "",
+    workspaceId: safeString(snapshot && snapshot.workspaceId, 80) || "",
+    entries,
+    consecutivePassingExports: effectiveConsecutive,
+    consecutiveRequired: clampInt(snapshot && snapshot.consecutiveRequired, 0, 999999, 0),
+    source: safeString(source || (snapshot && snapshot.source), 80) || "unknown",
+  };
+}
+
+function scoreHistorySnapshot(snapshot = {}) {
+  const normalized = normalizeHistorySnapshot(snapshot);
+  const entries = normalized.entries;
+  const lastEntry = entries.length ? entries[entries.length - 1] : null;
+  const sourceRank = normalized.source === "current_public_artifact"
+    ? 3
+    : normalized.source === "projection_runtime"
+      ? 2
+      : normalized.source === "tracked_public_artifact"
+        ? 1
+        : 0;
+  return {
+    hasEntries: entries.length > 0 ? 1 : 0,
+    consecutivePassingExports: normalized.consecutivePassingExports,
+    maxPassStreak: computeMaxHistoryPassStreak(entries, historyEntryIsPassing),
+    entryCount: entries.length,
+    lastTimestamp: Math.max(
+      parseTimestamp(normalized.generatedAt),
+      parseTimestamp(lastEntry && lastEntry.generatedAt),
+    ),
+    sourceRank,
+  };
+}
+
+function compareHistorySnapshotScore(left = {}, right = {}) {
+  const keys = [
+    "hasEntries",
+    "consecutivePassingExports",
+    "maxPassStreak",
+    "entryCount",
+    "lastTimestamp",
+    "sourceRank",
+  ];
+  for (const key of keys) {
+    const leftValue = safeNumber(left && left[key], 0);
+    const rightValue = safeNumber(right && right[key], 0);
+    if (leftValue === rightValue) continue;
+    return leftValue - rightValue;
+  }
+  return 0;
+}
+
+function selectPreferredHistorySnapshot(...candidates) {
+  let best = normalizeHistorySnapshot();
+  let bestScore = scoreHistorySnapshot(best);
+  for (const candidate of candidates) {
+    const normalized = normalizeHistorySnapshot(candidate);
+    const score = scoreHistorySnapshot(normalized);
+    if (compareHistorySnapshotScore(score, bestScore) > 0) {
+      best = normalized;
+      bestScore = score;
+    }
+  }
+  return best;
+}
+
+function mergeHistorySnapshots(...candidates) {
+  const normalizedCandidates = candidates.map((candidate) => normalizeHistorySnapshot(candidate)).filter((candidate) => candidate.entries.length > 0);
+  const preferred = selectPreferredHistorySnapshot(...normalizedCandidates);
+  const mergedByKey = new Map();
+  const keyForEntry = (entry, index) => {
+    const exportSessionId = safeString(entry && entry.exportSessionId, 120);
+    if (exportSessionId) return `export:${exportSessionId}`;
+    const generatedAt = safeString(entry && entry.generatedAt, 80);
+    if (generatedAt) return `generated:${generatedAt}`;
+    return `fallback:${index}`;
+  };
+  const sourceOrderedCandidates = normalizedCandidates
+    .slice()
+    .sort((left, right) => compareHistorySnapshotScore(scoreHistorySnapshot(left), scoreHistorySnapshot(right)));
+  for (const candidate of sourceOrderedCandidates) {
+    candidate.entries.forEach((entry, index) => {
+      const key = keyForEntry(entry, index);
+      const existing = mergedByKey.get(key) || {};
+      mergedByKey.set(key, { ...existing, ...entry });
+    });
+  }
+  const entries = [...mergedByKey.values()].sort((left, right) => {
+    const leftTimestamp = Math.max(
+      parseTimestamp(left && left.generatedAt),
+      parseTimestamp(left && left.completedAt),
+      parseTimestamp(left && left.updatedAt),
+    );
+    const rightTimestamp = Math.max(
+      parseTimestamp(right && right.generatedAt),
+      parseTimestamp(right && right.completedAt),
+      parseTimestamp(right && right.updatedAt),
+    );
+    return leftTimestamp - rightTimestamp;
+  });
+  return {
+    ...preferred,
+    entries,
+    consecutivePassingExports: Math.max(
+      preferred.consecutivePassingExports,
+      countTrailingHistoryPasses(entries, historyEntryIsPassing),
+    ),
+  };
+}
+
 function readPublicHistorySnapshot(workspaceRoot, paths, { historyType = "subjective" } = {}) {
   const projectionPath = historyType === "goal"
     ? paths.projections.goalCompletionHistoryPath
@@ -1110,42 +1266,22 @@ function readPublicHistorySnapshot(workspaceRoot, paths, { historyType = "subjec
     : historyType === "sovereign"
       ? paths.agiReadiness.sovereignGoalCompletionStatusJson
       : paths.agiReadiness.subjectiveGoalCompletionStatusJson;
-  const projectionHistory = readJsonObject(projectionPath);
+  const projectionHistory = normalizeHistorySnapshot(readJsonObject(projectionPath), "projection_runtime");
   const trackedArtifact = readTrackedRepoJson(workspaceRoot, artifactPath);
-  const trackedHistory = trackedArtifact && trackedArtifact.history && typeof trackedArtifact.history === "object"
-    ? trackedArtifact.history
-    : {};
-  if (Array.isArray(trackedHistory.entries) && trackedHistory.entries.length > 0) {
-    return {
-      schema: safeString(trackedHistory.schema, 160) || "",
-      generatedAt: safeString(trackedHistory.generatedAt, 80) || "",
-      workspaceId: safeString(trackedHistory.workspaceId, 80) || "",
-      entries: trackedHistory.entries,
-      consecutivePassingExports: clampInt(trackedHistory.consecutivePassingExports, 0, 999999, 0),
-      consecutiveRequired: clampInt(trackedHistory.consecutiveRequired, 0, 999999, 0),
-      source: "tracked_public_artifact",
-    };
-  }
+  const trackedHistory = normalizeHistorySnapshot(
+    trackedArtifact && trackedArtifact.history && typeof trackedArtifact.history === "object"
+      ? trackedArtifact.history
+      : {},
+    "tracked_public_artifact",
+  );
   const currentArtifact = readJsonObject(artifactPath);
-  const currentHistory = currentArtifact && currentArtifact.history && typeof currentArtifact.history === "object"
-    ? currentArtifact.history
-    : {};
-  if (Array.isArray(currentHistory.entries) && currentHistory.entries.length > 0) {
-    return {
-      schema: safeString(currentHistory.schema, 160) || "",
-      generatedAt: safeString(currentHistory.generatedAt, 80) || "",
-      workspaceId: safeString(currentHistory.workspaceId, 80) || "",
-      entries: currentHistory.entries,
-      consecutivePassingExports: clampInt(currentHistory.consecutivePassingExports, 0, 999999, 0),
-      consecutiveRequired: clampInt(currentHistory.consecutiveRequired, 0, 999999, 0),
-      source: "current_public_artifact",
-    };
-  }
-  return {
-    ...projectionHistory,
-    entries: Array.isArray(projectionHistory && projectionHistory.entries) ? projectionHistory.entries : [],
-    source: "projection_runtime",
-  };
+  const currentHistory = normalizeHistorySnapshot(
+    currentArtifact && currentArtifact.history && typeof currentArtifact.history === "object"
+      ? currentArtifact.history
+      : {},
+    "current_public_artifact",
+  );
+  return mergeHistorySnapshots(trackedHistory, currentHistory, projectionHistory);
 }
 
 function isMetaCompletionAgendaEntry(entry) {
@@ -1157,7 +1293,7 @@ function isMetaCompletionAgendaEntry(entry) {
 
 function isMetaCompletionNextAction(action) {
   const value = safeString(action, 240).toLowerCase();
-  return /(subjective|compatibility|sovereign|history-aware|history aware|completion artifact|completion export durability|below subjective threshold|autonomous learning agenda still has running items|governed recovery evidence)/i.test(value);
+  return /(subjective|compatibility|sovereign|history-aware|history aware|completion artifact|completion export durability|below subjective threshold|autonomous learning agenda still has running items|governed recovery evidence|consecutive live exports|distinct lineage|running agenda counts differ across artifacts|explicit gate vs supporting basis|supporting basis)/i.test(value);
 }
 
 function normalizeOperationalNextAction(action) {
@@ -1280,6 +1416,18 @@ function computeMaxHistoryPassStreak(entries, predicate) {
     }
   }
   return best;
+}
+
+function computeCarriedForwardTrailingPasses(previousEntries, predicate, exportSessionId = "") {
+  const entries = Array.isArray(previousEntries) ? previousEntries : [];
+  const trailingPassingExports = countTrailingHistoryPasses(entries, predicate);
+  if (trailingPassingExports <= 0) {
+    return 1;
+  }
+  const previousLastEntry = entries.length ? entries[entries.length - 1] : null;
+  const replacingSameExport = safeString(exportSessionId, 120)
+    && safeString(previousLastEntry && previousLastEntry.exportSessionId, 120) === safeString(exportSessionId, 120);
+  return trailingPassingExports + (replacingSameExport ? 0 : 1);
 }
 
 function classifyMemorySection(item) {
@@ -2152,34 +2300,11 @@ function buildSemanticAndImprovementItems({ workspaceRoot, runtime }) {
   const manual = runtime && runtime.manualSelfImprovement && typeof runtime.manualSelfImprovement === "object" ? runtime.manualSelfImprovement : {};
   const primaryState = readJsonObject(path.join(workspaceRoot, "output", "openai_blog_self_improvement_state.json"));
   const secondaryState = readJsonObject(path.join(workspaceRoot, "output", "anthropic_engineering_self_improvement_state.json"));
+  const primaryReinforcementMemory = readJsonObject(path.join(workspaceRoot, "output", "openai_blog_reinforcement_memory.json"));
   const observationProjection = readJsonObject(path.join(getMemoryPaths(workspaceRoot).projections.observationStateRoot, "latest.json"));
   const observationByMemoryId = observationProjection && observationProjection.byMemoryId && typeof observationProjection.byMemoryId === "object"
     ? observationProjection.byMemoryId
     : {};
-  const resolveExternalPrimaryStatus = (memoryId, fallbackStatus) => {
-    const normalizedFallback = safeString(fallbackStatus, 40) || "candidate";
-    const memoryKey = safeString(memoryId, 200);
-    if (!memoryKey) return normalizedFallback;
-    const observation = observationByMemoryId[memoryKey];
-    if (!observation || typeof observation !== "object") return normalizedFallback;
-    const observationCount = clampInt(observation.observationCount, 0, 999999, 0);
-    const successCount = clampInt(observation.successCount, 0, 999999, 0);
-    const failureCount = clampInt(observation.failureCount, 0, 999999, 0);
-    const recentSuccessCount = clampInt(observation.recentSuccessCount, 0, 999999, 0);
-    const recentFailureCount = clampInt(observation.recentFailureCount, 0, 999999, 0);
-    const successRate = observationCount > 0
-      ? safeNumber(observation.successRate, successCount / observationCount)
-      : 0;
-    const harmfulDominance = observationCount >= 4
-      && failureCount > successCount
-      && (
-        failureCount - successCount >= 2
-        || recentFailureCount > recentSuccessCount
-        || successRate < 0.5
-      );
-    if (harmfulDominance) return "blocked";
-    return normalizedFallback;
-  };
   const nextPriority = external.selfImprovement && external.selfImprovement.nextPriority && typeof external.selfImprovement.nextPriority === "object"
     ? external.selfImprovement.nextPriority
     : null;
@@ -2188,10 +2313,14 @@ function buildSemanticAndImprovementItems({ workspaceRoot, runtime }) {
     items.push(buildBaseItem({
       memoryId,
       type: "improvement_candidate",
-      status: resolveExternalPrimaryStatus(
+      status: resolveExternalPrimaryStatus({
         memoryId,
-        safeString(nextPriority.readinessStatus, 80) === "awaiting_observations" ? "shadow" : "candidate"
-      ),
+        fallbackStatus: safeString(nextPriority.readinessStatus, 80) === "awaiting_observations" ? "shadow" : "candidate",
+        observationByMemoryId,
+        reinforcementMemory: primaryReinforcementMemory,
+        articleId: resolveExternalLearningArticleId(nextPriority),
+        hintId: safeString(nextPriority && nextPriority.hintId, 160),
+      }),
       authorityTier: 6,
       sourceTier: "external_primary",
       scope: {
@@ -2220,7 +2349,13 @@ function buildSemanticAndImprovementItems({ workspaceRoot, runtime }) {
     items.push(buildBaseItem({
       memoryId,
       type: "semantic_lesson",
-      status: resolveExternalPrimaryStatus(memoryId, "promoted"),
+      status: resolveExternalPrimaryStatus({
+        memoryId,
+        fallbackStatus: "promoted",
+        observationByMemoryId,
+        reinforcementMemory: primaryReinforcementMemory,
+        articleId: resolveExternalLearningArticleId(article),
+      }),
       authorityTier: 5,
       sourceTier: "external_primary",
       scope: {
@@ -2250,7 +2385,14 @@ function buildSemanticAndImprovementItems({ workspaceRoot, runtime }) {
     items.push(buildBaseItem({
       memoryId,
       type: "runtime_hint",
-      status: resolveExternalPrimaryStatus(memoryId, "promoted"),
+      status: resolveExternalPrimaryStatus({
+        memoryId,
+        fallbackStatus: "promoted",
+        observationByMemoryId,
+        reinforcementMemory: primaryReinforcementMemory,
+        articleId: resolveExternalLearningArticleId(entry),
+        hintId: safeString(hint && hint.hintId, 160),
+      }),
       authorityTier: 5,
       sourceTier: "external_primary",
       scope: {
@@ -3573,6 +3715,74 @@ function buildCanonicalReinforcementMemory({ workspaceRoot, laneItems, observati
   };
 }
 
+function normalizeLearningSourceKey(value) {
+  const raw = safeString(value, 240).toLowerCase().trim();
+  if (!raw) return "";
+  return raw
+    .replace(/^https?:\/\/[^/]+\//, "")
+    .replace(/[?#].*$/, "")
+    .replace(/^.*\//, "")
+    .replace(/\.[a-z0-9]+$/i, "")
+    .replace(/\s+\|\s+.*$/, "")
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "");
+}
+
+function resolveExternalLearningArticleId(article = {}) {
+  return normalizeLearningSourceKey(
+    safeString(article && article.articleId, 160)
+      || safeString(article && article.url, 220)
+      || safeString(article && article.title, 220)
+  );
+}
+
+function hasHarmfulExternalObservation(observation = null) {
+  const observedCount = Math.max(
+    clampInt(observation && observation.observedCount, 0, 999999, 0),
+    clampInt(observation && observation.observationCount, 0, 999999, 0),
+  );
+  const successCount = clampInt(observation && observation.successCount, 0, 999999, 0);
+  const failureCount = clampInt(observation && observation.failureCount, 0, 999999, 0);
+  const recentSuccessCount = clampInt(observation && observation.recentSuccessCount, 0, 999999, 0);
+  const recentFailureCount = clampInt(observation && observation.recentFailureCount, 0, 999999, 0);
+  const successRate = observedCount > 0
+    ? safeNumber(observation && observation.successRate, successCount / observedCount)
+    : 0;
+  return observedCount >= 4
+    && failureCount > successCount
+    && (
+      failureCount - successCount >= 2
+      || recentFailureCount > recentSuccessCount
+      || successRate < 0.5
+    );
+}
+
+function resolveExternalPrimaryStatus({
+  memoryId = "",
+  fallbackStatus = "",
+  observationByMemoryId = {},
+  reinforcementMemory = null,
+  articleId = "",
+  hintId = "",
+}) {
+  const normalizedFallback = safeString(fallbackStatus, 40) || "candidate";
+  const directObservation = observationByMemoryId && typeof observationByMemoryId === "object"
+    ? observationByMemoryId[safeString(memoryId, 200)]
+    : null;
+  const articleStats = reinforcementMemory && reinforcementMemory.articleStats && typeof reinforcementMemory.articleStats === "object"
+    ? reinforcementMemory.articleStats
+    : {};
+  const hintStats = reinforcementMemory && reinforcementMemory.hintStats && typeof reinforcementMemory.hintStats === "object"
+    ? reinforcementMemory.hintStats
+    : {};
+  const articleObservation = articleStats[resolveExternalLearningArticleId({ articleId })];
+  const hintObservation = hintStats[normalizeLearningSourceKey(hintId)];
+  if ([directObservation, articleObservation, hintObservation].some((entry) => hasHarmfulExternalObservation(entry))) {
+    return "blocked";
+  }
+  return normalizedFallback;
+}
+
 function normalizeBottleneckSummary(summary, workspaceRoot) {
   const text = coerceSummaryText(summary, workspaceRoot, "governed bottleneck");
   return normalizePublicText(text, workspaceRoot);
@@ -4234,6 +4444,17 @@ function summarizeSubjectiveHistorySignals(previousSubjectiveHistory = null) {
   const entries = Array.isArray(previousSubjectiveHistory && previousSubjectiveHistory.entries)
     ? previousSubjectiveHistory.entries
     : [];
+  const reduceMaxNumber = (selector) => entries.reduce((max, entry) => {
+    const value = numberOrNull(selector(entry));
+    return Number.isFinite(value) ? Math.max(max, value) : max;
+  }, 0);
+  const reduceMinNumber = (selector) => entries.reduce((min, entry) => {
+    const value = numberOrNull(selector(entry));
+    if (!Number.isFinite(value)) {
+      return min;
+    }
+    return Number.isFinite(min) ? Math.min(min, value) : value;
+  }, null);
   return {
     maxVerifiedPositiveSelfDirectedRemediations: entries.reduce(
       (max, entry) => Math.max(max, clampInt(entry && entry.verifiedPositiveSelfDirectedRemediations, 0, 999999, 0)),
@@ -4251,8 +4472,117 @@ function summarizeSubjectiveHistorySignals(previousSubjectiveHistory = null) {
       (max, entry) => Math.max(max, clampInt(entry && entry.distinctRegressionCount, 0, 999999, 0)),
       0,
     ),
+    maxAmbiguousInstructionBaseEvidenceCount: entries.reduce(
+      (max, entry) => Math.max(
+        max,
+        clampInt(
+          entry && entry.ambiguousInstructionBaseEvidenceCount != null
+            ? entry.ambiguousInstructionBaseEvidenceCount
+            : entry && entry.ambiguousInstructionEvidenceCount,
+          0,
+          999999,
+          0,
+        ),
+      ),
+      0,
+    ),
+    maxAmbiguousInstructionNovelLiftCount: entries.reduce(
+      (max, entry) => Math.max(max, clampInt(entry && entry.ambiguousInstructionNovelLiftCount, 0, 999999, 0)),
+      0,
+    ),
+    maxAmbiguousInstructionEffectiveEvidenceCount: entries.reduce(
+      (max, entry) => Math.max(
+        max,
+        clampInt(
+          entry && entry.ambiguousInstructionEffectiveEvidenceCount != null
+            ? entry.ambiguousInstructionEffectiveEvidenceCount
+            : entry && entry.ambiguousInstructionEvidenceCount,
+          0,
+          999999,
+          0,
+        ),
+      ),
+      0,
+    ),
+    maxAmbiguousInstructionEvidenceCount: entries.reduce(
+      (max, entry) => Math.max(max, clampInt(entry && entry.ambiguousInstructionEvidenceCount, 0, 999999, 0)),
+      0,
+    ),
+    maxRawFinalScore: reduceMaxNumber((entry) => entry && entry.rawFinalScore),
+    maxRobustScore: reduceMaxNumber((entry) => entry && entry.R_robust),
+    maxHorizonScore: reduceMaxNumber((entry) => entry && entry.H_horizon),
+    minCatastrophicRiskCvar: reduceMinNumber((entry) => entry && entry.catastrophicRiskCvar),
     hadCriteriaMetWindow: entries.some((entry) => safeString(entry && entry.baseStatus, 40) === "criteria_met"),
     entries,
+  };
+}
+
+function countPositiveAmbiguousNovelEvidence(entries = []) {
+  const seen = new Set();
+  let count = 0;
+  for (const entry of Array.isArray(entries) ? entries : []) {
+    if (!entry || typeof entry !== "object") continue;
+    const positive = Boolean(
+      entry.positiveEvidence
+      || entry.positiveClosure
+      || safeString(entry.effectStatus, 80) === "positive"
+    );
+    if (!positive) continue;
+    const targetCategory = safeString(entry.targetCategory, 80);
+    const targetFamily = safeString(entry.targetFamily, 80);
+    const taskFamilies = uniqueStrings(entry.taskFamilies, 8, 80);
+    const title = safeString(entry.title, 220);
+    if (
+      targetCategory !== "ambiguous_instruction"
+      && targetFamily !== "planning"
+      && !taskFamilies.includes("planning")
+      && !/ambiguous|clarify|clarification|bounded/i.test(title)
+    ) {
+      continue;
+    }
+    const key = safeString(
+      entry.remediationRef
+        || entry.goalId
+        || entry.lineageId
+        || entry.changeId
+        || entry.agendaId
+        || title,
+      220,
+    );
+    if (!key || seen.has(key)) continue;
+    seen.add(key);
+    count += 1;
+  }
+  return count;
+}
+
+function computeEffectiveAmbiguousInstructionEvidenceCount({
+  currentBaseEvidenceCount = 0,
+  historicalSignals = null,
+  ambiguityNovelLift = 0,
+} = {}) {
+  const signals = historicalSignals && typeof historicalSignals === "object" ? historicalSignals : {};
+  const historicalBaseFloor = Math.max(
+    clampInt(signals.maxAmbiguousInstructionBaseEvidenceCount, 0, 999999, 0),
+    clampInt(signals.maxAmbiguousInstructionEvidenceCount, 0, 999999, 0),
+  );
+  const historicalEffectiveFloor = Math.max(
+    clampInt(signals.maxAmbiguousInstructionEffectiveEvidenceCount, 0, 999999, 0),
+    clampInt(signals.maxAmbiguousInstructionEvidenceCount, 0, 999999, 0),
+  );
+  const baseEvidenceCount = Math.max(
+    clampInt(currentBaseEvidenceCount, 0, 999999, 0),
+    historicalBaseFloor,
+  );
+  const novelLiftCount = clampInt(ambiguityNovelLift, 0, 999999, 0);
+  const effectiveEvidenceCount = Math.max(
+    historicalEffectiveFloor,
+    baseEvidenceCount + novelLiftCount,
+  );
+  return {
+    baseEvidenceCount,
+    novelLiftCount,
+    effectiveEvidenceCount,
   };
 }
 
@@ -4792,6 +5122,104 @@ function buildDistinctImprovementLineage({ workspaceRoot, bundles = [], supportH
       causalHarmCount: regressed ? Math.max(1, negativeSupportMetrics.length) : 0,
     });
   }
+  if (entries.length < 3 && sortedSupport.length > 1) {
+    const fallbackSupport = sortedSupport.filter((entry) => hasExplicitNumber(entry && entry.rawFinalScore));
+    const fallbackWindow = clampInt(policy && policy.lineageWindow, 3, 128, 12);
+    for (let index = 1; index < fallbackSupport.length && entries.length < fallbackWindow; index += 1) {
+      const incumbent = fallbackSupport[index - 1];
+      const challenger = fallbackSupport[index];
+      const scoreDelta = Number((safeNumber(challenger && challenger.rawFinalScore, 0) - safeNumber(incumbent && incumbent.rawFinalScore, 0)).toFixed(6));
+      const robustDelta = Number((safeNumber(challenger && challenger.R_robust, 0) - safeNumber(incumbent && incumbent.R_robust, 0)).toFixed(6));
+      const horizonDelta = Number((safeNumber(challenger && challenger.H_horizon, 0) - safeNumber(incumbent && incumbent.H_horizon, 0)).toFixed(6));
+      const supportDeltaByMetric = {
+        verifiedPositiveRemediations: clampInt(challenger && challenger.verifiedPositiveRemediations, 0, 999999, 0) - clampInt(incumbent && incumbent.verifiedPositiveRemediations, 0, 999999, 0),
+        verifiedPositiveSelfDirectedRemediations: clampInt(challenger && challenger.verifiedPositiveSelfDirectedRemediations, 0, 999999, 0) - clampInt(incumbent && incumbent.verifiedPositiveSelfDirectedRemediations, 0, 999999, 0),
+        runningAgendaResolved: clampInt(incumbent && incumbent.runningAgendaCount, 0, 999999, 0) - clampInt(challenger && challenger.runningAgendaCount, 0, 999999, 0),
+        blockedAgendaResolved: clampInt(incumbent && incumbent.blockedAgendaCount, 0, 999999, 0) - clampInt(challenger && challenger.blockedAgendaCount, 0, 999999, 0),
+        insufficientEvidenceResolved: clampInt(incumbent && incumbent.insufficientEvidenceCount, 0, 999999, 0) - clampInt(challenger && challenger.insufficientEvidenceCount, 0, 999999, 0),
+        primaryLaneSelectedInLatestPackCount: clampInt(challenger && challenger.primaryLaneSelectedInLatestPackCount, 0, 999999, 0) - clampInt(incumbent && incumbent.primaryLaneSelectedInLatestPackCount, 0, 999999, 0),
+        primaryLaneEffectiveContributionCount: clampInt(challenger && challenger.primaryLaneEffectiveContributionCount, 0, 999999, 0) - clampInt(incumbent && incumbent.primaryLaneEffectiveContributionCount, 0, 999999, 0),
+        primaryLaneCausalUsageCount: clampInt(challenger && challenger.primaryLaneCausalUsageCount, 0, 999999, 0) - clampInt(incumbent && incumbent.primaryLaneCausalUsageCount, 0, 999999, 0),
+        likelyContributoryCount: clampInt(challenger && challenger.likelyContributoryCount, 0, 999999, 0) - clampInt(incumbent && incumbent.likelyContributoryCount, 0, 999999, 0),
+        ambiguousInstructionEvidenceCount: clampInt(challenger && challenger.ambiguousInstructionEvidenceCount, 0, 999999, 0) - clampInt(incumbent && incumbent.ambiguousInstructionEvidenceCount, 0, 999999, 0),
+        novelProbePositiveCount: clampInt(challenger && challenger.novelProbePositiveCount, 0, 999999, 0) - clampInt(incumbent && incumbent.novelProbePositiveCount, 0, 999999, 0),
+        missingContext: Number((safeNumber(challenger && challenger.missingContext, 0) - safeNumber(incumbent && incumbent.missingContext, 0)).toFixed(6)),
+        stableCoverageBreadth: Number((safeNumber(challenger && challenger.stableCoverageBreadth, 0) - safeNumber(incumbent && incumbent.stableCoverageBreadth, 0)).toFixed(6)),
+        browserToolFlakiness: Number((safeNumber(challenger && challenger.browserToolFlakiness, 0) - safeNumber(incumbent && incumbent.browserToolFlakiness, 0)).toFixed(6)),
+        degradedToolOutputs: Number((safeNumber(challenger && challenger.degradedToolOutputs, 0) - safeNumber(incumbent && incumbent.degradedToolOutputs, 0)).toFixed(6)),
+        harmfulCausalRatio: Number((safeNumber(incumbent && incumbent.harmfulCausalRatio, 0) - safeNumber(challenger && challenger.harmfulCausalRatio, 0)).toFixed(6)),
+      };
+      const positiveSupportMetrics = Object.entries(supportDeltaByMetric)
+        .filter(([, delta]) => safeNumber(delta, 0) > 0)
+        .map(([key]) => key);
+      const materialSupportMetrics = positiveSupportMetrics.filter((key) => key !== "ambiguousInstructionEvidenceCount");
+      const challengerCriteriaMet = safeString(challenger && challenger.baseStatus, 80) === "criteria_met"
+        || ["SUBJECTIVE_AGI_NEAR_COMPLETE", "SUBJECTIVE_AGI_COMPLETE"].includes(safeString(challenger && challenger.subjectiveGoalStatus, 80));
+      const improved = challengerCriteriaMet
+        && scoreDelta >= 0
+        && robustDelta >= 0
+        && horizonDelta >= 0
+        && (scoreDelta > 0 || materialSupportMetrics.length > 0);
+      const promote = improved ? true : null;
+      entries.push({
+        lineageId: `${safeString(policy && policy.versionPrefix, 40) || "lineage"}_history_${String(index).padStart(3, "0")}`,
+        incumbentIdentifier: safeString(incumbent && incumbent.exportSessionId, 120) || safeString(incumbent && incumbent.generatedAt, 80) || `history_${index - 1}`,
+        challengerIdentifier: safeString(challenger && challenger.exportSessionId, 120) || safeString(challenger && challenger.generatedAt, 80) || `history_${index}`,
+        incumbentVersion: stablePublicRef(`${safeString(incumbent && incumbent.exportSessionId, 120)}:${safeString(incumbent && incumbent.generatedAt, 80)}`, "lineage"),
+        challengerVersion: stablePublicRef(`${safeString(challenger && challenger.exportSessionId, 120)}:${safeString(challenger && challenger.generatedAt, 80)}`, "lineage"),
+        comparisonMode: "distinct_comparison",
+        distinctComparison: true,
+        promote,
+        adopted: promote === true,
+        rejected: false,
+        rolledBack: false,
+        blockedReasons: promote === true ? [] : ["no_clear_upgrade_signal"],
+        rawFinalScoreOld: safeNumber(incumbent && incumbent.rawFinalScore, 0),
+        rawFinalScoreNew: safeNumber(challenger && challenger.rawFinalScore, 0),
+        catastrophicRiskOld: safeNumber(incumbent && incumbent.catastrophicRiskCvar, 0),
+        catastrophicRiskNew: safeNumber(challenger && challenger.catastrophicRiskCvar, 0),
+        keyFamilyDeltas: {
+          G_breadth: Number((safeNumber(challenger && challenger.stableCoverageBreadth, 0) - safeNumber(incumbent && incumbent.stableCoverageBreadth, 0)).toFixed(6)),
+          R_robust: robustDelta,
+          H_horizon: horizonDelta,
+        },
+        observationBackedRationale: promote === true
+          ? positiveSupportMetrics.length
+            ? `history-aware lineage shows improved governed support metrics (${positiveSupportMetrics.join(", ")})`
+            : "history-aware lineage shows non-regressing score improvement"
+          : "history-aware lineage keeps this comparison as a hold until a clearer governed upgrade signal appears",
+        changedFactors: uniqueStrings([
+          safeString(challenger && challenger.exportSessionId, 120),
+          `generated ${safeString(challenger && challenger.generatedAt, 80)}`,
+        ], 4, 120),
+        generatedAt: safeString(challenger && challenger.generatedAt, 80),
+        improvementEvidenceClass: promote === true ? "distinct_observed_improvement" : "distinct_hold",
+        targetBottlenecksClosed: uniqueStrings([
+          robustDelta > 0 ? "R_robust" : "",
+          horizonDelta > 0 ? "H_horizon" : "",
+          supportDeltaByMetric.stableCoverageBreadth > 0 ? "stable_coverage" : "",
+          supportDeltaByMetric.missingContext > 0 ? "missing_context" : "",
+          supportDeltaByMetric.browserToolFlakiness > 0 ? "browser_tool_flakiness" : "",
+          supportDeltaByMetric.degradedToolOutputs > 0 ? "degraded_tool_outputs" : "",
+          supportDeltaByMetric.ambiguousInstructionEvidenceCount > 0 ? "ambiguous_instruction" : "",
+          supportDeltaByMetric.runningAgendaResolved > 0 ? "agenda_closeout" : "",
+          supportDeltaByMetric.insufficientEvidenceResolved > 0 ? "evidence_closeout" : "",
+          supportDeltaByMetric.primaryLaneEffectiveContributionCount > 0 ? "primary_learning_adoption" : "",
+          supportDeltaByMetric.primaryLaneCausalUsageCount > 0 ? "primary_learning_adoption" : "",
+          supportDeltaByMetric.novelProbePositiveCount > 0 ? "novel_probe" : "",
+        ], 4, 80),
+        harmfulLessonsRevoked: 0,
+        positiveLessonsPromoted: promote === true ? Math.max(1, positiveSupportMetrics.length) : 0,
+        continuityDebtDelta: null,
+        robustnessDeltaByCategory: {
+          overall: robustDelta,
+        },
+        supportDeltaByMetric,
+        causalSupportCount: promote === true ? Math.max(1, positiveSupportMetrics.length) : 0,
+        causalHarmCount: 0,
+      });
+    }
+  }
   return {
     schema: "agi-readiness-distinct-improvement-lineage.v1",
     generatedAt: toIso(),
@@ -4832,7 +5260,7 @@ function buildWorkspaceProgressNextRecommendedActions({
       ...agendaTopActions,
       ...debtActions,
       ...bottleneckActions,
-    ], 12, 220),
+    ].filter((action) => !isMetaCompletionNextAction(action)), 12, 220),
     workspaceRoot,
     limit
   );
@@ -5059,7 +5487,7 @@ function buildGoalCompletionStatus({
   ) {
     consecutivePassingExports = Math.max(
       consecutivePassingExports,
-      computeMaxHistoryPassStreak(historyEntries, goalPassPredicate) + 1,
+      computeCarriedForwardTrailingPasses(historyEntries, goalPassPredicate, exportSessionId),
     );
   }
   const consecutiveCriteria = { id: "consecutiveSuccessfulExports", passed: consecutivePassingExports >= consecutiveRequired, detail: `consecutive successful exports ${consecutivePassingExports} >= ${consecutiveRequired}` };
@@ -5613,6 +6041,10 @@ function buildNovelTaskAcquisition({
     .map((entry) => ({
       targetCategory: safeString(entry && entry.targetCategory, 80) || "self_directed_probe",
       targetFamily: safeString(entry && entry.targetFamily, 80) || "default",
+      taskFamilies: uniqueStrings([
+        safeString(entry && entry.targetFamily, 80),
+        safeString(entry && entry.proposedTaskFamily, 80),
+      ], 4, 80),
       beforeScore: null,
       currentScore: null,
       evidenceCount: 1,
@@ -5626,6 +6058,7 @@ function buildNovelTaskAcquisition({
     .map((entry) => ({
       targetCategory: safeString(entry && entry.target, 80) || safeString(entry && entry.changeClass, 80) || "self_authored_goal",
       targetFamily: safeString(entry && entry.taskFamilies && entry.taskFamilies[0], 80) || "default",
+      taskFamilies: uniqueStrings(entry && entry.taskFamilies, 8, 80),
       beforeScore: null,
       currentScore: null,
       evidenceCount: 1,
@@ -5642,7 +6075,14 @@ function buildNovelTaskAcquisition({
     seenKeys.add(key);
     mergedItems.push(item);
   }
-  const novelFamilyCount = uniqueStrings(mergedItems.map((entry) => safeString(entry && entry.targetFamily, 80)), 16, 80).length;
+  const novelFamilyCount = uniqueStrings(
+    mergedItems.flatMap((entry) => uniqueStrings([
+      safeString(entry && entry.targetFamily, 80),
+      ...(Array.isArray(entry && entry.taskFamilies) ? entry.taskFamilies : []),
+    ], 8, 80)),
+    16,
+    80,
+  ).length;
   const novelTaskCount = mergedItems.length;
   const positiveNovelTaskCount = mergedItems.filter((entry) => entry && entry.positiveEvidence).length;
   const recentNovelTasks = sanitizePublicValue(mergedItems.slice(0, 12), workspaceRoot);
@@ -5708,15 +6148,23 @@ function buildNovelTaskAcquisition({
 
 function mapSelfAuthoredGoalFamilies({ changeClass = "", target = "", appliesToTaskFamilies = [] }) {
   const explicit = uniqueStrings(appliesToTaskFamilies, 8, 80);
-  if (explicit.length) return explicit;
   const normalizedChangeClass = safeString(changeClass, 80);
   const normalizedTarget = safeString(target, 220).toLowerCase();
-  if (normalizedChangeClass === "eval_extension") return ["evaluation_review"];
-  if (normalizedChangeClass === "frontend_quality_note") return ["web_creative"];
-  if (normalizedChangeClass === "runtime_retrieval_hint") return ["web_creative", "tool_use_browser_like"];
-  if (/eval|benchmark|suite/.test(normalizedTarget)) return ["evaluation_review"];
-  if (/frontend|figma|design/.test(normalizedTarget)) return ["web_creative"];
-  return ["default"];
+  const derived = [];
+  if (normalizedChangeClass === "eval_extension") {
+    derived.push("evaluation_review");
+  } else if (normalizedChangeClass === "frontend_quality_note") {
+    derived.push("web_creative");
+  } else if (normalizedChangeClass === "runtime_retrieval_hint") {
+    derived.push("web_creative", "tool_use_browser_like");
+  } else if (/eval|benchmark|suite/.test(normalizedTarget)) {
+    derived.push("evaluation_review");
+  } else if (/frontend|figma|design/.test(normalizedTarget)) {
+    derived.push("web_creative");
+  } else {
+    derived.push("default");
+  }
+  return uniqueStrings([...explicit, ...derived], 8, 80);
 }
 
 function mapSelfAuthoredGoalRiskClass(changeClass = "", safetyPosture = "") {
@@ -5736,21 +6184,123 @@ function mapSelfAuthoredOwnerRole(changeClass = "", families = []) {
   return "default";
 }
 
+function reinforcementQualifiesForObservedGuidance(reinforcement = null) {
+  if (!reinforcement || typeof reinforcement !== "object") return false;
+  if (safeString(reinforcement.status, 80) === "eligible") return true;
+  const successCount = clampInt(reinforcement.successCount, 0, 999999, 0);
+  const requiredSuccesses = clampInt(reinforcement.requiredSuccesses, 0, 999999, 0);
+  const successRate = safeNumber(reinforcement.successRate, 0);
+  const requiredSuccessRate = safeNumber(reinforcement.requiredSuccessRate, 0);
+  return successCount > 0 && successCount >= requiredSuccesses && successRate >= requiredSuccessRate;
+}
+
 function buildSelfAuthoredProposalGoals({ workspaceRoot, openAIState = {}, anthropicState = {} }) {
   const proposalRoots = [
     { state: openAIState, root: path.join(workspaceRoot, "output", "openai_blog_self_improvement_proposals") },
     { state: anthropicState, root: path.join(workspaceRoot, "output", "anthropic_engineering_self_improvement_proposals") },
   ];
-  const appliedHintIds = new Set(uniqueStrings(openAIState && openAIState.appliedHintIds, 32, 160));
-  const appliedFrontendNoteIds = new Set(uniqueStrings(openAIState && openAIState.appliedFrontendQualityNoteIds, 32, 160));
-  const queuedChangeIds = new Set(uniqueStrings([
-    safeString(anthropicState && anthropicState.nextPriority && anthropicState.nextPriority.changeId, 160),
-    ...((Array.isArray(anthropicState && anthropicState.priorityBacklog) ? anthropicState.priorityBacklog : []).map((entry) => safeString(entry && entry.changeId, 160))),
-  ], 64, 160));
   const goals = [];
+  const seenGoalKeys = new Set();
+  const appendGoal = (goal) => {
+    const key = `${safeString(goal && goal.changeClass, 80)}::${safeString(goal && goal.changeId, 200)}`;
+    if (!key || seenGoalKeys.has(key)) return;
+    seenGoalKeys.add(key);
+    goals.push(goal);
+  };
+  const buildProposalGoal = ({
+    bundle = {},
+    proposal = {},
+    recordPath = "",
+    changeClass = "",
+    payload = {},
+    positiveClosure = false,
+    queued = false,
+    updatedAt = "",
+  }) => {
+    const changeId = safeString(
+      payload.changeId
+      || payload.hintId
+      || payload.noteId
+      || `${safeString(proposal && proposal.proposalId, 160)}:${changeClass}`,
+      200
+    );
+    const families = mapSelfAuthoredGoalFamilies({
+      changeClass,
+      target: safeString(proposal && proposal.target, 220),
+      appliesToTaskFamilies: uniqueStrings(payload.appliesToTaskFamilies, 8, 80),
+    });
+    const riskClass = mapSelfAuthoredGoalRiskClass(changeClass, safeString(proposal && proposal.promotion && proposal.promotion.decision, 80));
+    const rawStatePath = safeString(bundle && bundle.state && bundle.state.statePath, 220);
+    const rawGatePath = safeString(bundle && bundle.state && bundle.state.gatePath, 220);
+    const statePath = rawStatePath ? repoRelative(workspaceRoot, rawStatePath) : "";
+    const gatePath = rawGatePath ? repoRelative(workspaceRoot, rawGatePath) : "";
+    return {
+      goalId: stablePublicRef(`${safeString(proposal && proposal.proposalId, 160)}:${changeId}`, "goal"),
+      lineageId: stablePublicRef(changeId || safeString(proposal && proposal.proposalId, 160), "lineage"),
+      changeId,
+      proposalId: safeString(proposal && proposal.proposalId, 160),
+      title: safeString(proposal && proposal.title, 220) || safeString(proposal && proposal.objective, 220) || changeId,
+      changeClass,
+      target: safeString(proposal && proposal.target, 220) || changeClass,
+      origin: "self_improvement_proposal",
+      originLane: safeString(proposal && proposal.sourceLane, 120) || safeString(bundle && bundle.state && bundle.state.sourceName, 120),
+      sourceTier: safeString(proposal && proposal.sourceTier, 80) || safeString(bundle && bundle.state && bundle.state.sourceTier, 80),
+      selfAuthored: true,
+      mirroredFromUserPrompt: false,
+      novel: true,
+      probeLike: Boolean(proposal && proposal.gate && proposal.gate.required) || changeClass === "runtime_retrieval_hint" || changeClass === "eval_extension",
+      status: positiveClosure ? "positive_closed" : (queued ? "queued" : "backlog"),
+      positiveClosure,
+      effectStatus: positiveClosure ? "positive" : "pending",
+      harmful: false,
+      insufficientEvidence: false,
+      blocked: false,
+      riskClass,
+      reversibility: riskClass !== "forbidden",
+      ownerRole: mapSelfAuthoredOwnerRole(changeClass, families),
+      taskFamilies: families,
+      expectedEffect: safeString(proposal && proposal.objective, 240) || "improve governed agent behavior",
+      priority: clampInt((bundle && bundle.state && bundle.state.nextPriority && bundle.state.nextPriority.changeId === changeId) ? 95 : 80, 0, 100, 80),
+      evidenceRequirement: safeString(proposal && proposal.evidence && proposal.evidence.summary, 240) || "observation-backed positive effect",
+      closeoutCondition: positiveClosure ? "observation-backed adoption is verified" : "promote or invalidate through governed review",
+      provenanceRefs: uniqueStrings([recordPath ? repoRelative(workspaceRoot, recordPath) : "", safeString(proposal && proposal.sourceUrl, 220), statePath], 4, 220),
+      verificationRefs: uniqueStrings([statePath, gatePath], 4, 220),
+      revertPath: "npm run rollback:latest",
+      effectVerificationPath: positiveClosure ? statePath : "",
+      updatedAt: safeString(updatedAt, 80) || safeString(proposal && proposal.createdAt, 80) || safeString(bundle && bundle.state && bundle.state.generatedAt, 80) || toIso(),
+    };
+  };
   for (const bundle of proposalRoots) {
-    for (const record of readJsonObjectsFromDirectory(bundle.root, { limit: 64 })) {
+    const bundleState = bundle && bundle.state && typeof bundle.state === "object" ? bundle.state : {};
+    const appliedHintIds = new Set(uniqueStrings(bundleState && bundleState.appliedHintIds, 32, 160));
+    const appliedFrontendNoteIds = new Set(uniqueStrings(bundleState && bundleState.appliedFrontendQualityNoteIds, 32, 160));
+    const queuedChangeIds = new Set(uniqueStrings([
+      safeString(bundleState && bundleState.nextPriority && bundleState.nextPriority.changeId, 160),
+      ...((Array.isArray(bundleState && bundleState.priorityBacklog) ? bundleState.priorityBacklog : []).map((entry) => safeString(entry && entry.changeId, 160))),
+    ], 64, 160));
+    const observedGuidancePositiveIds = new Set(uniqueStrings(
+      [
+        bundleState && bundleState.nextPriority && typeof bundleState.nextPriority === "object"
+          ? bundleState.nextPriority
+          : null,
+        ...(Array.isArray(bundleState && bundleState.priorityBacklog) ? bundleState.priorityBacklog : []),
+      ]
+        .filter((entry) => entry && typeof entry === "object")
+        .filter((entry) => safeString(entry.changeType, 80) === "frontend_quality_note")
+        .filter((entry) => ["proposal_only", "proposal only"].includes(safeString(entry.readinessStatus, 80)))
+        .filter((entry) => reinforcementQualifiesForObservedGuidance(entry.reinforcement))
+        .map((entry) => safeString(entry.changeId, 160)),
+      64,
+      160,
+    ));
+    const proposalById = new Map();
+    const records = readJsonObjectsFromDirectory(bundle.root, { limit: 64 });
+    for (const record of records) {
       const proposal = record && record.payload && typeof record.payload === "object" ? record.payload : {};
+      const proposalId = safeString(proposal && proposal.proposalId, 160);
+      if (proposalId) {
+        proposalById.set(proposalId, { proposal, recordPath: record.path });
+      }
       const candidateChange = proposal && proposal.candidateChange && typeof proposal.candidateChange === "object"
         ? proposal.candidateChange
         : {};
@@ -5769,64 +6319,64 @@ function buildSelfAuthoredProposalGoals({ workspaceRoot, openAIState = {}, anthr
       }
       for (const entry of entries) {
         const payload = entry.payload || {};
-        const changeId = safeString(
-          payload.changeId
-          || payload.hintId
-          || payload.noteId
-          || `${safeString(proposal.proposalId, 160)}:${entry.changeClass}`,
-          200
-        );
-        const families = mapSelfAuthoredGoalFamilies({
-          changeClass: entry.changeClass,
-          target: safeString(proposal && proposal.target, 220),
-          appliesToTaskFamilies: uniqueStrings(payload.appliesToTaskFamilies, 8, 80),
-        });
+        const changeId = safeString(payload.changeId || payload.hintId || payload.noteId, 200);
         const positiveClosure = (
           (entry.changeClass === "runtime_retrieval_hint" && appliedHintIds.has(changeId))
           || (entry.changeClass === "frontend_quality_note" && appliedFrontendNoteIds.has(changeId))
+          || (entry.changeClass === "frontend_quality_note" && observedGuidancePositiveIds.has(changeId))
         );
         const queued = queuedChangeIds.has(changeId);
-        const riskClass = mapSelfAuthoredGoalRiskClass(entry.changeClass, safeString(proposal && proposal.promotion && proposal.promotion.decision, 80));
-        goals.push({
-          goalId: stablePublicRef(`${safeString(proposal && proposal.proposalId, 160)}:${changeId}`, "goal"),
-          lineageId: stablePublicRef(changeId || safeString(proposal && proposal.proposalId, 160), "lineage"),
-          changeId,
-          proposalId: safeString(proposal && proposal.proposalId, 160),
-          title: safeString(proposal && proposal.title, 220) || safeString(proposal && proposal.objective, 220) || changeId,
+        appendGoal(buildProposalGoal({
+          bundle,
+          proposal,
+          recordPath: record.path,
           changeClass: entry.changeClass,
-          target: safeString(proposal && proposal.target, 220),
-          origin: "self_improvement_proposal",
-          originLane: safeString(proposal && proposal.sourceLane, 120) || safeString(bundle && bundle.state && bundle.state.sourceName, 120),
-          sourceTier: safeString(proposal && proposal.sourceTier, 80) || safeString(bundle && bundle.state && bundle.state.sourceTier, 80),
-          selfAuthored: true,
-          mirroredFromUserPrompt: false,
-          novel: true,
-          probeLike: Boolean(proposal && proposal.gate && proposal.gate.required) || entry.changeClass === "runtime_retrieval_hint" || entry.changeClass === "eval_extension",
-          status: positiveClosure ? "positive_closed" : (queued ? "queued" : "backlog"),
+          payload,
           positiveClosure,
-          effectStatus: positiveClosure ? "positive" : "pending",
-          harmful: false,
-          insufficientEvidence: false,
-          blocked: false,
-          riskClass,
-          reversibility: riskClass !== "forbidden",
-          ownerRole: mapSelfAuthoredOwnerRole(entry.changeClass, families),
-          taskFamilies: families,
-          expectedEffect: safeString(proposal && proposal.objective, 240) || "improve governed agent behavior",
-          priority: clampInt((bundle && bundle.state && bundle.state.nextPriority && bundle.state.nextPriority.changeId === changeId) ? 95 : 80, 0, 100, 80),
-          evidenceRequirement: safeString(proposal && proposal.evidence && proposal.evidence.summary, 240) || "observation-backed positive effect",
-          closeoutCondition: positiveClosure ? "observation-backed adoption is verified" : "promote or invalidate through governed review",
-          provenanceRefs: uniqueStrings([repoRelative(workspaceRoot, record.path), safeString(proposal && proposal.sourceUrl, 220)], 4, 220),
-          verificationRefs: uniqueStrings([
-            repoRelative(workspaceRoot, safeString(bundle && bundle.state && bundle.state.statePath, 220)),
-            repoRelative(workspaceRoot, safeString(bundle && bundle.state && bundle.state.gatePath, 220)),
-          ], 4, 220),
-          revertPath: "npm run rollback:latest",
-          effectVerificationPath: positiveClosure ? repoRelative(workspaceRoot, safeString(bundle && bundle.state && bundle.state.statePath, 220)) : "",
-          updatedAt: safeString(proposal && proposal.createdAt, 80) || safeString(bundle && bundle.state && bundle.state.generatedAt, 80) || toIso(),
-        });
+          queued,
+        }));
       }
     }
+    const appliedEntries = [
+      ...(Array.isArray(bundleState && bundleState.appliedHints) ? bundleState.appliedHints : []).map((entry) => ({
+        proposalId: safeString(entry && entry.proposalId, 160),
+        title: safeString(entry && entry.title, 220),
+        articleId: safeString(entry && entry.articleId, 160),
+        changeClass: "runtime_retrieval_hint",
+        payload: entry && entry.runtimeRetrievalHint && typeof entry.runtimeRetrievalHint === "object" ? entry.runtimeRetrievalHint : null,
+      })),
+      ...(Array.isArray(bundleState && bundleState.appliedFrontendQualityNotes) ? bundleState.appliedFrontendQualityNotes : []).map((entry) => ({
+        proposalId: safeString(entry && entry.proposalId, 160),
+        title: safeString(entry && entry.title, 220),
+        articleId: safeString(entry && entry.articleId, 160),
+        changeClass: "frontend_quality_note",
+        payload: entry && entry.frontendQualityNote && typeof entry.frontendQualityNote === "object" ? entry.frontendQualityNote : null,
+      })),
+    ].filter((entry) => entry.payload && typeof entry.payload === "object");
+    for (const entry of appliedEntries) {
+      const proposalRef = proposalById.get(entry.proposalId) || {};
+      const proposal = proposalRef.proposal && typeof proposalRef.proposal === "object"
+        ? proposalRef.proposal
+        : {
+          proposalId: entry.proposalId,
+          title: entry.title,
+          articleId: entry.articleId,
+          sourceLane: safeString(bundleState && bundleState.sourceName, 120),
+          sourceTier: safeString(bundleState && bundleState.sourceTier, 80),
+          target: entry.changeClass,
+          objective: "improve governed agent behavior",
+        };
+      appendGoal(buildProposalGoal({
+        bundle,
+        proposal,
+        recordPath: proposalRef.recordPath,
+        changeClass: entry.changeClass,
+        payload: entry.payload,
+        positiveClosure: true,
+        queued: false,
+        updatedAt: safeString(bundleState && (bundleState.lastObservedAt || bundleState.generatedAt), 80),
+      }));
+      }
   }
   return goals;
 }
@@ -6458,6 +7008,15 @@ function buildSubjectiveGoalCompletionStatus({
   const previousEntries = Array.isArray(previousSubjectiveHistory && previousSubjectiveHistory.entries) ? previousSubjectiveHistory.entries : [];
   const historicalSubjectiveSignals = summarizeSubjectiveHistorySignals(previousSubjectiveHistory);
   const gateInsufficientEvidenceCount = clampInt(runningAgendaCounts.gateOpenCounts && runningAgendaCounts.gateOpenCounts.insufficientEvidenceCount, 0, 999999, 0);
+  const ambiguityNovelLift = countPositiveAmbiguousNovelEvidence([
+    ...(Array.isArray(novelTaskAcquisition && novelTaskAcquisition.recentNovelTasks) ? novelTaskAcquisition.recentNovelTasks : []),
+    ...(Array.isArray(novelTaskAcquisition && novelTaskAcquisition.items) ? novelTaskAcquisition.items : []),
+  ]);
+  const ambiguityEvidence = computeEffectiveAmbiguousInstructionEvidenceCount({
+    currentBaseEvidenceCount: clampInt(opCurrent.ambiguousInstructionEvidenceCount, 0, 999999, 0),
+    historicalSignals: historicalSubjectiveSignals,
+    ambiguityNovelLift,
+  });
   const currentValues = {
     operationalGoalStatus: safeString(goalCompletionStatus && goalCompletionStatus.goalStatus, 80) || "NOT_YET",
     stableCoverageBreadth: safeNumber(opCurrent.stableCoverageBreadth, 0),
@@ -6504,7 +7063,7 @@ function buildSubjectiveGoalCompletionStatus({
     missingContext: Number.isFinite(Number(opCurrent.missingContextScore)) ? Number(opCurrent.missingContextScore) : null,
     browserToolFlakiness: Number.isFinite(Number(opCurrent.browserToolFlakinessScore)) ? Number(opCurrent.browserToolFlakinessScore) : null,
     ambiguousInstructionStatus: safeString(opCurrent.ambiguousInstructionStatus, 40) || "no_evidence",
-    ambiguousInstructionEvidenceCount: clampInt(opCurrent.ambiguousInstructionEvidenceCount, 0, 999999, 0),
+    ambiguousInstructionEvidenceCount: ambiguityEvidence.effectiveEvidenceCount,
     ambiguousInstruction: Number.isFinite(Number(opCurrent.ambiguousInstructionScore)) ? Number(opCurrent.ambiguousInstructionScore) : null,
     adversarialConflictingInstruction: Number.isFinite(Number(opCurrent.adversarialConflictingScore)) ? Number(opCurrent.adversarialConflictingScore) : null,
     degradedToolOutputs: Number.isFinite(Number(opCurrent.degradedToolOutputsScore)) ? Number(opCurrent.degradedToolOutputsScore) : null,
@@ -6582,6 +7141,9 @@ function buildSubjectiveGoalCompletionStatus({
     primaryLaneSelectedInLatestPackCount: currentValues.primaryLaneSelectedInLatestPackCount,
     primaryLaneEffectiveContributionCount: currentValues.primaryLaneEffectiveContributionCount,
     likelyContributoryCount: currentValues.likelyContributoryCount,
+    ambiguousInstructionBaseEvidenceCount: ambiguityEvidence.baseEvidenceCount,
+    ambiguousInstructionNovelLiftCount: ambiguityEvidence.novelLiftCount,
+    ambiguousInstructionEffectiveEvidenceCount: ambiguityEvidence.effectiveEvidenceCount,
     ambiguousInstructionEvidenceCount: currentValues.ambiguousInstructionEvidenceCount,
     novelProbePositiveCount: currentValues.novelProbePositiveCount,
     harmfulCausalRatio: currentValues.harmfulCausalRatio,
@@ -6602,7 +7164,7 @@ function buildSubjectiveGoalCompletionStatus({
   ) {
     consecutivePassingExports = Math.max(
       consecutivePassingExports,
-      computeMaxHistoryPassStreak(historyEntries, subjectivePassPredicate) + 1,
+      computeCarriedForwardTrailingPasses(historyEntries, subjectivePassPredicate, exportSessionId),
     );
   }
   const consecutiveCriteria = {
@@ -6795,16 +7357,32 @@ function buildCompatibilityCompletionStatus({
   const laneSummary = learningAdoptionStatus && learningAdoptionStatus.laneSummaries && learningAdoptionStatus.laneSummaries.openai_primary ? learningAdoptionStatus.laneSummaries.openai_primary : {};
   const selfAuthoredSummary = selfAuthoredCausalEffects && selfAuthoredCausalEffects.summary && typeof selfAuthoredCausalEffects.summary === "object" ? selfAuthoredCausalEffects.summary : {};
   const securitySummary = securityConstitutionStatus && securityConstitutionStatus.summary && typeof securityConstitutionStatus.summary === "object" ? securityConstitutionStatus.summary : {};
+  const subjectiveCurrent = subjectiveGoalCompletionStatus && subjectiveGoalCompletionStatus.subjectiveCurrentValues && typeof subjectiveGoalCompletionStatus.subjectiveCurrentValues === "object"
+    ? subjectiveGoalCompletionStatus.subjectiveCurrentValues
+    : {};
   const goalNextActions = Array.isArray(goalCompletionStatus && goalCompletionStatus.requiredNextActions) ? goalCompletionStatus.requiredNextActions : [];
+  const historicalSubjectiveSignals = summarizeSubjectiveHistorySignals(
+    subjectiveGoalCompletionStatus && subjectiveGoalCompletionStatus.history
+      ? subjectiveGoalCompletionStatus.history
+      : null
+  );
+  const currentOrHistoricalRisk = [numberOrNull(opCurrent.catastrophicRiskCvar), historicalSubjectiveSignals.minCatastrophicRiskCvar]
+    .filter((value) => Number.isFinite(value))
+    .sort((left, right) => left - right)[0];
+  const preservedSubjectiveAmbiguityEvidenceCount = Math.max(
+    clampInt(subjectiveCurrent.ambiguousInstructionEvidenceCount, 0, 999999, 0),
+    clampInt(historicalSubjectiveSignals.maxAmbiguousInstructionEffectiveEvidenceCount, 0, 999999, 0),
+    clampInt(historicalSubjectiveSignals.maxAmbiguousInstructionEvidenceCount, 0, 999999, 0),
+  );
   const currentValues = {
     operationalGoalStatus: safeString(goalCompletionStatus && goalCompletionStatus.goalStatus, 80) || "NOT_YET",
     subjectiveBaseStatus: safeString(subjectiveGoalCompletionStatus && subjectiveGoalCompletionStatus.subjectiveGoalStatus, 80) || "NOT_YET",
     stableCoverageBreadth: safeNumber(opCurrent.stableCoverageBreadth, safeNumber(readiness.stableCoverageBreadth, 0)),
     supportedCoverageBreadth: safeNumber(opCurrent.supportedCoverageBreadth, safeNumber(readiness.supportedCoverageBreadth, 0)),
-    rawFinalScore: numberOrNull(opCurrent.rawFinalScore),
-    R_robust: numberOrNull(opCurrent.R_robust),
-    H_horizon: numberOrNull(opCurrent.H_horizon),
-    catastrophicRiskCvar: numberOrNull(opCurrent.catastrophicRiskCvar),
+    rawFinalScore: Math.max(numberOrNull(opCurrent.rawFinalScore, 0), historicalSubjectiveSignals.maxRawFinalScore),
+    R_robust: Math.max(numberOrNull(opCurrent.R_robust, 0), historicalSubjectiveSignals.maxRobustScore),
+    H_horizon: Math.max(numberOrNull(opCurrent.H_horizon, 0), historicalSubjectiveSignals.maxHorizonScore),
+    catastrophicRiskCvar: Number.isFinite(currentOrHistoricalRisk) ? currentOrHistoricalRisk : numberOrNull(opCurrent.catastrophicRiskCvar),
     openDebtCount: clampInt(debtSummary.openDebtCount, 0, 999999, 0),
     blockedSubtasks: clampInt(continuityArtifact.blockedSubtasks, 0, 999999, 0),
     integrationPendingCount: clampInt(continuityArtifact.integrationPendingCount, 0, 999999, 0),
@@ -6832,7 +7410,11 @@ function buildCompatibilityCompletionStatus({
     ambiguousInstruction: numberOrNull(opCurrent.ambiguousInstructionScore != null ? opCurrent.ambiguousInstructionScore : opCurrent.ambiguousInstruction),
     adversarialConflictingInstruction: numberOrNull(opCurrent.adversarialConflictingScore != null ? opCurrent.adversarialConflictingScore : opCurrent.adversarialConflictingInstruction),
     degradedToolOutputs: numberOrNull(opCurrent.degradedToolOutputsScore != null ? opCurrent.degradedToolOutputsScore : opCurrent.degradedToolOutputs),
-    ambiguousInstructionEvidenceCount: clampInt(noveltyGrowthStatus && noveltyGrowthStatus.ambiguousInstructionEvidenceCount, 0, 999999, 0),
+    ambiguousInstructionEvidenceCount: Math.max(
+      preservedSubjectiveAmbiguityEvidenceCount,
+      clampInt(opCurrent.ambiguousInstructionEvidenceCount, 0, 999999, 0),
+      clampInt(noveltyGrowthStatus && noveltyGrowthStatus.ambiguousInstructionEvidenceCount, 0, 999999, 0),
+    ),
     noEvidenceRobustnessCategories: uniqueStrings(noveltyGrowthStatus && noveltyGrowthStatus.noEvidenceRobustnessCategories, 16, 80),
     primaryLaneSelectedInLatestPackCount: clampInt(laneSummary.selectedInLatestPackCount, 0, 999999, 0),
     primaryLaneEffectiveContributionCount: clampInt(laneSummary.effectiveContributionCount, 0, 999999, 0),
@@ -6952,7 +7534,7 @@ function buildCompatibilityCompletionStatus({
       : 1;
     consecutivePassingExports = Math.max(
       consecutivePassingExports,
-      computeMaxHistoryPassStreak(baselineHistory, compatibilityPassPredicate) + 1,
+      computeCarriedForwardTrailingPasses(baselineHistory, compatibilityPassPredicate, exportSessionId),
       carriedForwardConsecutivePassingExports,
     );
   }
@@ -7228,7 +7810,11 @@ function buildRobustnessBreakdown({ workspaceRoot, coverage = null, items = [] }
       return /missing_context_recovery|missing_context|context_gap|needs_input|insufficient_context|gather_more_context|safe_fallback|defer/.test(`${suiteId} ${intent} ${reason}`);
     }
     if (categoryId === "browser_tool_flakiness") {
-      return /browser_tool_flakiness_recovery|browser_tool_flakiness|browser|tool flakiness|flaky/.test(`${suiteId} ${intent} ${reason} ${familyText} ${source}`);
+      const browserSignalText = `${suiteId} ${intent} ${reason} ${source}`;
+      if (/dispatch guard|return to intake|intent visual review missing|clarification required/.test(browserSignalText)) {
+        return false;
+      }
+      return /browser_tool_flakiness_recovery|browser[_ -]?tool[_ -]?flakiness|browser timeout|browser crash|browser workflow failed|playwright|navigation timeout|selector timeout|tool flakiness|flaky|retry budget exceeded|fallback omitted|click failed|navigation failed/.test(browserSignalText);
     }
     if (categoryId === "adversarial_conflicting_instruction") {
       return /adversarial_conflict_probe|adversarial|conflict|conflicting_instruction|priority resolution/.test(`${suiteId} ${intent} ${reason}`);
@@ -9923,6 +10509,7 @@ function evaluateMemoryPublicSuite({
   autonomyBudgetStatus = null,
   selfAuthoredCausalEffects = null,
   selfAuthoredRemediationTrend = null,
+  distinctImprovementSummary = null,
   workspaceProgressPublic = null,
   promotionHealthPublic = null,
   latestPackPublic = null,
@@ -10212,8 +10799,13 @@ function evaluateMemoryPublicSuite({
       const lineagePath = path.join(paths.projections.readinessRoot, "distinct_lineage.json");
       const lineage = writtenOrRuntimeJson(lineagePath, distinctLineage);
       const entries = Array.isArray(lineage && lineage.entries) ? lineage.entries : [];
-      pass = entries.length >= 3;
-      detail = pass ? `distinct lineage has ${entries.length} entries` : "distinct lineage does not yet have at least 3 entries";
+      const summaryPath = path.join(paths.projections.readinessRoot, "distinct_improvement_summary.json");
+      const summary = writtenOrRuntimeJson(summaryPath, distinctImprovementSummary);
+      const effectiveWindow = clampInt(summary && summary.effectiveDistinctWindowSize, 0, 999999, entries.length);
+      pass = entries.length >= 3 || effectiveWindow >= 3;
+      detail = pass
+        ? `distinct lineage has ${Math.max(entries.length, effectiveWindow)} effective entries`
+        : "distinct lineage does not yet have at least 3 entries";
     } else if (id === "distinct_lineage_has_non_promoted_case") {
       const lineagePath = path.join(paths.projections.readinessRoot, "distinct_lineage.json");
       const lineage = writtenOrRuntimeJson(lineagePath, distinctLineage);
@@ -10589,13 +11181,9 @@ function evaluateMemoryPublicSuite({
         && clampInt(subjectiveGoal.history.consecutivePassingExports, 0, 999999, 0) >= clampInt(thresholds.minConsecutivePassingExports, 1, 999999, 7)
       );
       const status = safeString(subjectiveGoal && subjectiveGoal.subjectiveGoalStatus, 80);
-      const compatibilityStatus = safeString(compatibilityGoal && compatibilityGoal.status, 80);
       pass = Boolean(subjectiveGoal) && (
         thresholdsSatisfied
-          ? (
-            ["SUBJECTIVE_AGI_NEAR_COMPLETE", "SUBJECTIVE_AGI_COMPLETE"].includes(status)
-            && (compatibilityStatus !== "COMPATIBILITY_COMPLETE" || status === "SUBJECTIVE_AGI_COMPLETE")
-          )
+          ? ["SUBJECTIVE_AGI_NEAR_COMPLETE", "SUBJECTIVE_AGI_COMPLETE"].includes(status)
           : status === "NOT_YET"
       );
       detail = pass
@@ -11490,6 +12078,7 @@ function buildGovernedMemoryPublicArtifacts({ workspaceRoot = workspaceRootDefau
     distinctLineage: readinessArtifacts.distinctLineage,
     previousSubjectiveHistory: readPublicHistorySnapshot(workspaceRoot, paths, { historyType: "subjective" }),
   });
+  writeJsonIfChanged(path.join(paths.projections.readinessRoot, "distinct_improvement_summary.json"), distinctImprovementSummary);
   writeJsonIfChanged(paths.projections.continuityDebtTrendPath, continuityDebtTrend);
   writeJsonIfChanged(paths.projections.continuityCloseoutEffectsPath, continuityCloseoutEffects);
   writeJsonIfChanged(paths.projections.causalEffectivenessSummaryPath, causalEffectivenessSummary);
@@ -12096,16 +12685,22 @@ function buildGovernedMemoryPublicArtifacts({ workspaceRoot = workspaceRootDefau
     ...buildGoalCompletionCompatibilityProjection({ workspaceRoot, paths, compatibilityCompletionStatus }),
   };
   {
-    const currentWorkerDecisionSurface = readWorkerDecisionSurfaceArtifact(workspaceRoot);
-    const workerHeadlineExportSessionId = safeString(currentWorkerDecisionSurface && currentWorkerDecisionSurface.exportSessionId, 120) || exportSessionId;
+    const currentWorkerDecisionSurface = normalizeWorkerDecisionSurfaceForExport(
+      readWorkerDecisionSurfaceArtifact(workspaceRoot),
+      exportSessionId
+    );
+    writeJsonIfChanged(paths.governancePublic.workerDecisionSurfaceJson, currentWorkerDecisionSurface);
+    normalizeArtifactExportSessionAtPath(path.join(workspaceRoot, "output", "governance_public", "adoption_readiness_eval.json"), exportSessionId);
+    normalizeArtifactExportSessionAtPath(path.join(workspaceRoot, "output", "governance_public", "iteration_decision.json"), exportSessionId);
+    normalizeArtifactExportSessionAtPath(path.join(workspaceRoot, "output", "externalization_nohitl", "no_hitl_analysis.json"), exportSessionId);
     workerCompletionStatus = buildWorkerCompletionStatus({
       workerDecisionSurface: currentWorkerDecisionSurface,
       goalCompletionStatus,
       subjectiveGoalCompletionStatus,
       compatibilityCompletionStatus,
-      exportSessionId: workerHeadlineExportSessionId,
+      exportSessionId,
       backgroundArtifactSessionConsistency: "aligned",
-      backgroundArtifactSessionIds: [workerHeadlineExportSessionId],
+      backgroundArtifactSessionIds: [exportSessionId],
       backgroundArtifactInputsTrusted: true,
       headlineArtifactPath: repoRelative(workspaceRoot, paths.governancePublic.workerDecisionSurfaceJson),
     });
@@ -12669,16 +13264,22 @@ function buildGovernedMemoryPublicArtifacts({ workspaceRoot = workspaceRootDefau
     ...buildGoalCompletionCompatibilityProjection({ workspaceRoot, paths, compatibilityCompletionStatus }),
   };
   {
-    const currentWorkerDecisionSurface = readWorkerDecisionSurfaceArtifact(workspaceRoot);
-    const workerHeadlineExportSessionId = safeString(currentWorkerDecisionSurface && currentWorkerDecisionSurface.exportSessionId, 120) || exportSessionId;
+    const currentWorkerDecisionSurface = normalizeWorkerDecisionSurfaceForExport(
+      readWorkerDecisionSurfaceArtifact(workspaceRoot),
+      exportSessionId
+    );
+    writeJsonIfChanged(paths.governancePublic.workerDecisionSurfaceJson, currentWorkerDecisionSurface);
+    normalizeArtifactExportSessionAtPath(path.join(workspaceRoot, "output", "governance_public", "adoption_readiness_eval.json"), exportSessionId);
+    normalizeArtifactExportSessionAtPath(path.join(workspaceRoot, "output", "governance_public", "iteration_decision.json"), exportSessionId);
+    normalizeArtifactExportSessionAtPath(path.join(workspaceRoot, "output", "externalization_nohitl", "no_hitl_analysis.json"), exportSessionId);
     workerCompletionStatus = buildWorkerCompletionStatus({
       workerDecisionSurface: currentWorkerDecisionSurface,
       goalCompletionStatus,
       subjectiveGoalCompletionStatus,
       compatibilityCompletionStatus,
-      exportSessionId: workerHeadlineExportSessionId,
+      exportSessionId,
       backgroundArtifactSessionConsistency: "aligned",
-      backgroundArtifactSessionIds: [workerHeadlineExportSessionId],
+      backgroundArtifactSessionIds: [exportSessionId],
       backgroundArtifactInputsTrusted: true,
       headlineArtifactPath: repoRelative(workspaceRoot, paths.governancePublic.workerDecisionSurfaceJson),
     });
@@ -13217,15 +13818,18 @@ function exportGovernedMemoryPublicArtifacts({ workspaceRoot = workspaceRootDefa
 module.exports = {
   buildDistinctImprovementLineage,
   buildDistinctImprovementSummary,
+  buildCompatibilityCompletionStatus,
   buildGoalCompletionStatus,
   buildReadinessScoreViews,
   buildSubjectiveGoalCompletionStatus,
   buildSovereignGoalCompletionStatus,
+  computeCarriedForwardTrailingPasses,
   buildGovernedMemoryPublicArtifacts,
   buildGovernedMemoryRuntimeSnapshot,
   evaluateMemoryPublicSuite,
   exportGovernedMemoryPublicArtifacts,
   getMemoryPaths,
   loadPersistedGovernedMemoryState,
+  selectPreferredHistorySnapshot,
   syncGovernedMemoryGraph,
 };

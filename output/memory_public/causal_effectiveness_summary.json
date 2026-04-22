@@ -1,32 +1,32 @@
 {
   "schema": "governed-causal-effectiveness-summary-public.v1",
-  "generatedAt": "2026-04-18T06:45:51.349Z",
-  "workspaceId": "5c839dfeef8b555f",
-  "harmfulCausalRatio": 1,
-  "likelyContributoryCount": 0,
-  "harmfulCount": 2,
-  "rolledBackHarmCount": 9,
+  "generatedAt": "2026-04-22T00:42:00.791Z",
+  "workspaceId": "3650d504ad404c53",
+  "harmfulCausalRatio": 0,
+  "likelyContributoryCount": 4,
+  "harmfulCount": 0,
+  "rolledBackHarmCount": 0,
   "neutralCount": 0,
   "summary": {
-    "harmfulCausalRatio": 1,
-    "likelyContributoryCount": 0,
-    "harmfulCount": 2,
-    "rolledBackHarmCount": 9,
+    "harmfulCausalRatio": 0,
+    "likelyContributoryCount": 4,
+    "harmfulCount": 0,
+    "rolledBackHarmCount": 0,
     "neutralCount": 0,
-    "selfAuthoredEffectiveContributionCount": 2,
+    "selfAuthoredEffectiveContributionCount": 8,
     "selfAuthoredHarmfulCount": 0
   },
   "primaryLane": {
-    "observationCount": 152,
-    "causalUsageCount": 12
+    "observationCount": 88,
+    "causalUsageCount": 9
   },
   "secondaryLane": {
     "advisoryReferenceCount": 4
   },
   "selfAuthored": {
-    "selfAuthoredSelectedCount": 11,
-    "selfAuthoredBehaviorallyReferencedCount": 2,
-    "selfAuthoredEffectiveContributionCount": 2,
+    "selfAuthoredSelectedCount": 10,
+    "selfAuthoredBehaviorallyReferencedCount": 8,
+    "selfAuthoredEffectiveContributionCount": 8,
     "selfAuthoredHarmfulCount": 0,
     "rolledBackAfterSelfAuthoredHarmCount": 0,
     "harmfulCausalRatio": 0

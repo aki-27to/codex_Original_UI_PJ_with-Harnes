@@ -1,7 +1,7 @@
 # OPENAI_BLOG_LEARNING_REPORT
 
 - status: PASS
-- generatedAt: 2026-04-19T12:06:19.579Z
+- generatedAt: 2026-04-21T15:09:10.192Z
 - trackedArticles: 6
 - newArticlesThisRun: 0
 - pendingProposals: 6
@@ -37,9 +37,9 @@
 - appliedDecision: retained_previous_pass
 - appliedHintCount: 6
 - appliedFrontendQualityNoteCount: 0
-- observationStatus: idle
-- observationCount: 30
-- lastObservedAt: 2026-04-18T06:45:49.624Z
+- observationStatus: unobserved
+- observationCount: 0
+- lastObservedAt: -
 - rawAutoApplyChangeCount: 0
 - readyAutoApplyChangeCount: 0
 - awaitingObservationCount: 0
@@ -49,4 +49,4 @@
 - blockedCount: 5
 - nextPriority: Designing delightful frontends with GPT-5.4 | OpenAI Developers / proposal_only
 - nextPriorityAction: Keep this frontend quality note as proposal-only guidance.
-- nextPriorityProgress: success 0/2 / observed 5 / rate 0
+- nextPriorityProgress: success 0/2 / observed 0 / rate 0

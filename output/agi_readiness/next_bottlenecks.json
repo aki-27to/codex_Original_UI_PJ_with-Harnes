@@ -1,22 +1,6 @@
 {
   "schema": "agi-readiness-next-bottlenecks.v1",
-  "generatedAt": "2026-04-18T06:45:52.594Z",
-  "workspaceId": "5c839dfeef8b555f",
-  "items": [
-    {
-      "classification": "evidence bottleneck",
-      "summary": "mismatched export sessions: export_69aaf0d22042, export_b19f32facb8f",
-      "source": "memory_eval"
-    },
-    {
-      "classification": "capability bottleneck",
-      "summary": "weakest family is R_robust",
-      "source": "agi_readiness"
-    },
-    {
-      "classification": "capability bottleneck",
-      "summary": "robustness is currently limited by browser_tool_flakiness",
-      "source": "agi_readiness"
-    }
-  ]
+  "generatedAt": "2026-04-22T00:42:01.794Z",
+  "workspaceId": "3650d504ad404c53",
+  "items": []
 }

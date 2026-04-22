@@ -1,6 +1,6 @@
 {
   "schema": "turn-evidence-manifest.v1",
-  "generatedAt": "2026-04-18T05:29:01.580Z",
+  "generatedAt": "2026-04-21T15:08:56.665Z",
   "selectedPlanningMode": "NORMAL",
   "selectedPlanningDepth": "STANDARD_PLANNING",
   "selectedAssuranceDepth": "SIGNOFF_ASSURANCE",
@@ -9,7 +9,7 @@
   "planningDecisionContract": {
     "schema": "planning-decision-contract.v1",
     "source": "runtime_inferred_pre_dispatch",
-    "promptHash": "29a1c0eb376ee1bdd88ec3bf2be1f4b0e360fa2607e10bf468a53fadb79403f9",
+    "promptHash": "4b5c7486e7648059870258c1ea0af93b6cc1c785409b58daada28c8c6aba0b83",
     "selectedPlanningMode": "NORMAL",
     "selectedPlanningDepth": "STANDARD_PLANNING",
     "selectedAssuranceDepth": "SIGNOFF_ASSURANCE",
@@ -127,7 +127,7 @@
     "schema": "requirement-contract.v5",
     "source": "runtime_inferred_pre_dispatch",
     "owner": "intake",
-    "promptHash": "29a1c0eb376ee1bdd88ec3bf2be1f4b0e360fa2607e10bf468a53fadb79403f9",
+    "promptHash": "4b5c7486e7648059870258c1ea0af93b6cc1c785409b58daada28c8c6aba0b83",
     "explicitGoal": "Implementation is explicitly requested now.Requirements are fixed.Do not switch to proposal-only mode and do not ask follow-up questions.",
     "implicitGoal": "",
     "lockedGoal": "Implementation is explicitly requested now.Requirements are fixed.Do not switch to proposal-only mode and do not ask follow-up questions.",
@@ -138,17 +138,17 @@
       "Use the default parent orchestration path.",
       "Delegate the implementation edits to infra_worker.",
       "Request independent read-only reviewer and tester checks before finalizing.",
-      "Change logs/bundles/signoff/signoff-2026-04-18T05-27-13-996Z-f97810/raw/scripts/config/signoff_sample_target.txt, docs/EVIDENCE_CONTRACT.md, docs/CURRENT_ARCHITECTURE.md, and docs/ARCHITECTURE_CHANGELOG.md.",
+      "Change logs/bundles/signoff/signoff-2026-04-21T15-08-45-517Z-bbfbe8/raw/scripts/config/signoff_sample_target.txt, docs/EVIDENCE_CONTRACT.md, docs/CURRENT_ARCHITECTURE.md, and docs/ARCHITECTURE_CHANGELOG.md.",
       "Do not modify any other file and do not revert unrelated edits.",
       "Use apply_patch for file edits.",
       "The implementation specialist must report using this exact header format:",
       "Owned paths:",
       "`<absolute path>`",
-      "In logs/bundles/signoff/signoff-2026-04-18T05-27-13-996Z-f97810/raw/scripts/config/signoff_sample_target.txt, replace the single line `gate: pending` with `gate: signed`.",
+      "In logs/bundles/signoff/signoff-2026-04-21T15-08-45-517Z-bbfbe8/raw/scripts/config/signoff_sample_target.txt, replace the single line `gate: pending` with `gate: signed`.",
       "In docs/EVIDENCE_CONTRACT.md, add this exact bullet if it is not already present: - `SIGNOFF_ASSURANCE` runs should surface reviewer/tester/doc-sync status in `review_load_breakdown.json` for operator signoff.",
       "In docs/CURRENT_ARCHITECTURE.md, add this exact architecture bullet if it is not already present: - `SIGNOFF_ASSURANCE` sample runs keep reviewer/tester execution and doc-sync evidence co-located in signoff bundles.",
       "In docs/ARCHITECTURE_CHANGELOG.md, add this exact changelog line if it is not already present: - 2026-03-08: Added signoff assurance sample evidence wiring for planning/assurance trace and doc-sync bundle checks.",
-      "Return with exactly: SIGNOFF_TASK_OK logs/bundles/signoff/signoff-2026-04-18T05-27-13-996Z-f97810/raw/scripts/config/signoff_sample_target.txt.",
+      "Return with exactly: SIGNOFF_TASK_OK logs/bundles/signoff/signoff-2026-04-21T15-08-45-517Z-bbfbe8/raw/scripts/config/signoff_sample_target.txt.",
       "No follow-up questions are required."
     ],
     "overDeliveryScope": [],
@@ -214,7 +214,7 @@
         "Use the default parent orchestration path.",
         "Delegate the implementation edits to infra_worker.",
         "Request independent read-only reviewer and tester checks before finalizing.",
-        "Change logs/bundles/signoff/signoff-2026-04-18T05-27-13-996Z-f97810/raw/scripts/config/signoff_sample_target.txt, docs/EVIDENCE_CONTRACT.md, docs/CURRENT_ARCHITECTURE.md, and docs/ARCHITECTURE_CHANGELOG.md.",
+        "Change logs/bundles/signoff/signoff-2026-04-21T15-08-45-517Z-bbfbe8/raw/scripts/config/signoff_sample_target.txt, docs/EVIDENCE_CONTRACT.md, docs/CURRENT_ARCHITECTURE.md, and docs/ARCHITECTURE_CHANGELOG.md.",
         "Do not modify any other file and do not revert unrelated edits.",
         "Use apply_patch for file edits."
       ],
@@ -235,7 +235,7 @@
         "Do not modify any other file and do not revert unrelated edits.",
         "The implementation specialist must report using this exact header format:",
         "In docs/CURRENT_ARCHITECTURE.md, add this exact architecture bullet if it is not already present: - `SIGNOFF_ASSURANCE` sample runs keep reviewer/tester execution and doc-sync evidence co-located in signoff bundles.",
-        "Return with exactly: SIGNOFF_TASK_OK logs/bundles/signoff/signoff-2026-04-18T05-27-13-996Z-f97810/raw/scripts/config/signoff_sample_target.txt.",
+        "Return with exactly: SIGNOFF_TASK_OK logs/bundles/signoff/signoff-2026-04-21T15-08-45-517Z-bbfbe8/raw/scripts/config/signoff_sample_target.txt.",
         "No follow-up questions are required."
       ],
       "qualityAxes": [
@@ -328,7 +328,7 @@
         },
         {
           "id": "req-5",
-          "text": "Change logs/bundles/signoff/signoff-2026-04-18T05-27-13-996Z-f97810/raw/scripts/config/signoff_sample_target.txt, docs/EVIDENCE_CONTRACT.md, docs/CURRENT_ARCHITECTURE.md, and docs/ARCHITECTURE_CHANGELOG.md.",
+          "text": "Change logs/bundles/signoff/signoff-2026-04-21T15-08-45-517Z-bbfbe8/raw/scripts/config/signoff_sample_target.txt, docs/EVIDENCE_CONTRACT.md, docs/CURRENT_ARCHITECTURE.md, and docs/ARCHITECTURE_CHANGELOG.md.",
           "kind": "explicit_request",
           "lane": "core"
         },
@@ -364,7 +364,7 @@
         },
         {
           "id": "req-11",
-          "text": "In logs/bundles/signoff/signoff-2026-04-18T05-27-13-996Z-f97810/raw/scripts/config/signoff_sample_target.txt, replace the single line `gate: pending` with `gate: signed`.",
+          "text": "In logs/bundles/signoff/signoff-2026-04-21T15-08-45-517Z-bbfbe8/raw/scripts/config/signoff_sample_target.txt, replace the single line `gate: pending` with `gate: signed`.",
           "kind": "explicit_request",
           "lane": "core"
         },
@@ -388,7 +388,7 @@
         },
         {
           "id": "req-15",
-          "text": "Return with exactly: SIGNOFF_TASK_OK logs/bundles/signoff/signoff-2026-04-18T05-27-13-996Z-f97810/raw/scripts/config/signoff_sample_target.txt.",
+          "text": "Return with exactly: SIGNOFF_TASK_OK logs/bundles/signoff/signoff-2026-04-21T15-08-45-517Z-bbfbe8/raw/scripts/config/signoff_sample_target.txt.",
           "kind": "constraint",
           "lane": "core"
         },
@@ -622,7 +622,7 @@
             "reason": "baseline_scope"
           },
           {
-            "value": "Change logs/bundles/signoff/signoff-2026-04-18T05-27-13-996Z-f97810/raw/scripts/config/signoff_sample_target.txt, docs/EVIDENCE_CONTRACT.md, docs/CURRENT_ARCHITECTURE.md, and docs/ARCHITECTURE_CHANGELOG.md.",
+            "value": "Change logs/bundles/signoff/signoff-2026-04-21T15-08-45-517Z-bbfbe8/raw/scripts/config/signoff_sample_target.txt, docs/EVIDENCE_CONTRACT.md, docs/CURRENT_ARCHITECTURE.md, and docs/ARCHITECTURE_CHANGELOG.md.",
             "source": "user_implied",
             "reason": "baseline_scope"
           },
@@ -703,7 +703,7 @@
             "reason": "constraint_directive"
           },
           {
-            "value": "Return with exactly: SIGNOFF_TASK_OK logs/bundles/signoff/signoff-2026-04-18T05-27-13-996Z-f97810/raw/scripts/config/signoff_sample_target.txt.",
+            "value": "Return with exactly: SIGNOFF_TASK_OK logs/bundles/signoff/signoff-2026-04-21T15-08-45-517Z-bbfbe8/raw/scripts/config/signoff_sample_target.txt.",
             "source": "user_explicit",
             "reason": "constraint_directive"
           },
@@ -1123,7 +1123,7 @@
   "dispatchPlan": {
     "schema": "dispatch-plan.v2",
     "source": "runtime_inferred_pre_dispatch",
-    "promptHash": "29a1c0eb376ee1bdd88ec3bf2be1f4b0e360fa2607e10bf468a53fadb79403f9",
+    "promptHash": "4b5c7486e7648059870258c1ea0af93b6cc1c785409b58daada28c8c6aba0b83",
     "planningMode": "NORMAL",
     "planningDepth": "STANDARD_PLANNING",
     "assuranceDepth": "SIGNOFF_ASSURANCE",
@@ -1503,7 +1503,7 @@
       },
       {
         "clauseId": "req-5",
-        "text": "Change logs/bundles/signoff/signoff-2026-04-18T05-27-13-996Z-f97810/raw/scripts/config/signoff_sample_target.txt, docs/EVIDENCE_CONTRACT.md, docs/CURRENT_ARCHITECTURE.md, and docs/ARCHITECTURE_CHANGELOG.md.",
+        "text": "Change logs/bundles/signoff/signoff-2026-04-21T15-08-45-517Z-bbfbe8/raw/scripts/config/signoff_sample_target.txt, docs/EVIDENCE_CONTRACT.md, docs/CURRENT_ARCHITECTURE.md, and docs/ARCHITECTURE_CHANGELOG.md.",
         "status": "satisfied",
         "requirementRefs": [
           "baselineScope",
@@ -1737,7 +1737,7 @@
       },
       {
         "clauseId": "req-11",
-        "text": "In logs/bundles/signoff/signoff-2026-04-18T05-27-13-996Z-f97810/raw/scripts/config/signoff_sample_target.txt, replace the single line `gate: pending` with `gate: signed`.",
+        "text": "In logs/bundles/signoff/signoff-2026-04-21T15-08-45-517Z-bbfbe8/raw/scripts/config/signoff_sample_target.txt, replace the single line `gate: pending` with `gate: signed`.",
         "status": "satisfied",
         "requirementRefs": [
           "baselineScope"
@@ -1890,7 +1890,7 @@
       },
       {
         "clauseId": "req-15",
-        "text": "Return with exactly: SIGNOFF_TASK_OK logs/bundles/signoff/signoff-2026-04-18T05-27-13-996Z-f97810/raw/scripts/config/signoff_sample_target.txt.",
+        "text": "Return with exactly: SIGNOFF_TASK_OK logs/bundles/signoff/signoff-2026-04-21T15-08-45-517Z-bbfbe8/raw/scripts/config/signoff_sample_target.txt.",
         "status": "satisfied",
         "requirementRefs": [
           "baselineScope",
@@ -2080,7 +2080,7 @@
       "completedCount": 1,
       "failedCount": 0,
       "ownedPaths": [
-        "logs/bundles/signoff/signoff-2026-04-18T05-27-13-996Z-f97810/raw/scripts/config/signoff_sample_target.txt",
+        "logs/bundles/signoff/signoff-2026-04-21T15-08-45-517Z-bbfbe8/raw/scripts/config/signoff_sample_target.txt",
         "docs/EVIDENCE_CONTRACT.md",
         "docs/CURRENT_ARCHITECTURE.md",
         "docs/ARCHITECTURE_CHANGELOG.md",
@@ -2088,12 +2088,12 @@
       ],
       "skills": [],
       "evidenceNotes": [
-        "Owned paths:\n- logs/bundles/signoff/signoff-2026-04-18T05-27-13-996Z-f97810/raw/scripts/config/signoff_sample_target.txt\n- docs/EVIDENCE_CONTRACT.md\n- docs/CURRENT_ARCHITECTURE.md\n- docs/ARCHITECTURE_CHANGELOG.md\nApplied requested signoff assurance updates."
+        "Owned paths:\n- logs/bundles/signoff/signoff-2026-04-21T15-08-45-517Z-bbfbe8/raw/scripts/config/signoff_sample_target.txt\n- docs/EVIDENCE_CONTRACT.md\n- docs/CURRENT_ARCHITECTURE.md\n- docs/ARCHITECTURE_CHANGELOG.md\nApplied requested signoff assurance updates."
       ],
       "reviewerObserved": 0,
       "testerObserved": 0,
-      "firstSeenAt": 1776490139260,
-      "lastSeenAt": 1776490139261
+      "firstSeenAt": 1776784136491,
+      "lastSeenAt": 1776784136492
     },
     {
       "agent": "mock-thread-4-reviewer",
@@ -2107,8 +2107,8 @@
       ],
       "reviewerObserved": 1,
       "testerObserved": 0,
-      "firstSeenAt": 1776490139269,
-      "lastSeenAt": 1776490139270
+      "firstSeenAt": 1776784136506,
+      "lastSeenAt": 1776784136507
     },
     {
       "agent": "mock-thread-4-tester",
@@ -2122,8 +2122,8 @@
       ],
       "reviewerObserved": 1,
       "testerObserved": 1,
-      "firstSeenAt": 1776490139271,
-      "lastSeenAt": 1776490139272
+      "firstSeenAt": 1776784136508,
+      "lastSeenAt": 1776784136509
     }
   ],
   "familyCompletionGate": {
@@ -2140,7 +2140,7 @@
   },
   "reviewLoadBreakdown": {
     "schema": "review-load-breakdown.v1",
-    "generatedAt": "2026-04-18T05:29:01.580Z",
+    "generatedAt": "2026-04-21T15:08:56.665Z",
     "selectedPlanningDepth": "STANDARD_PLANNING",
     "selectedAssuranceDepth": "SIGNOFF_ASSURANCE",
     "flowPath": "NORMAL_PATH",
@@ -2163,19 +2163,19 @@
       "testerObserved": 1,
       "docSyncStatus": "PASS"
     },
-    "evidenceCollectionTimeMs": 13,
+    "evidenceCollectionTimeMs": 19,
     "testerTimeMs": 2,
     "reviewerTimeMs": 2,
-    "docSyncVerificationTimeMs": 13,
+    "docSyncVerificationTimeMs": 19,
     "retryLoopCount": 0,
     "outcomeConversionTimeMs": 2,
-    "totalStep4DurationMs": 13,
+    "totalStep4DurationMs": 19,
     "dominantBottleneck": "evidence_collection",
     "stageDurations": {
-      "Step 1 - Requirement Structuring": 2542,
+      "Step 1 - Requirement Structuring": 381,
       "Step 2 - Dispatch Planning": 2,
       "Step 3 - Specialist Execution": 0,
-      "Step 4 - Quality Gate": 13,
+      "Step 4 - Quality Gate": 19,
       "Step 5 - Final Outcome": 2
     },
     "acceptanceSummary": {

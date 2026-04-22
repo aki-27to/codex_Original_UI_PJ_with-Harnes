@@ -1,23 +1,14 @@
 {
   "schema": "agi-readiness-robustness-remediation-effects.v1",
-  "generatedAt": "2026-04-18T06:45:51.492Z",
-  "workspaceId": "5c839dfeef8b555f",
+  "generatedAt": "2026-04-22T00:42:00.949Z",
+  "workspaceId": "3650d504ad404c53",
   "entries": [
-    {
-      "categoryId": "browser_tool_flakiness",
-      "remediationStatus": "running",
-      "remediationEffect": "pending",
-      "evidenceCount": 50,
-      "score": 0.28,
-      "lastImprovementDelta": 0,
-      "agendaRef": "<agenda-ref>"
-    },
     {
       "categoryId": "ambiguous_instruction",
       "remediationStatus": "passed",
       "remediationEffect": "verified_positive",
-      "evidenceCount": 13,
-      "score": 0.942308,
+      "evidenceCount": 10,
+      "score": 1,
       "lastImprovementDelta": 0,
       "agendaRef": "<agenda-ref>"
     },
@@ -25,7 +16,7 @@
       "categoryId": "adversarial_conflicting_instruction",
       "remediationStatus": "passed",
       "remediationEffect": "verified_positive",
-      "evidenceCount": 1,
+      "evidenceCount": 2,
       "score": 1,
       "lastImprovementDelta": 0,
       "agendaRef": "<agenda-ref>"
@@ -34,7 +25,7 @@
       "categoryId": "missing_context",
       "remediationStatus": "passed",
       "remediationEffect": "verified_positive",
-      "evidenceCount": 1,
+      "evidenceCount": 2,
       "score": 1,
       "lastImprovementDelta": 0,
       "agendaRef": "<agenda-ref>"
@@ -43,7 +34,16 @@
       "categoryId": "degraded_tool_outputs",
       "remediationStatus": "passed",
       "remediationEffect": "verified_positive",
-      "evidenceCount": 1,
+      "evidenceCount": 2,
+      "score": 1,
+      "lastImprovementDelta": 0,
+      "agendaRef": "<agenda-ref>"
+    },
+    {
+      "categoryId": "browser_tool_flakiness",
+      "remediationStatus": "passed",
+      "remediationEffect": "verified_positive",
+      "evidenceCount": 4,
       "score": 1,
       "lastImprovementDelta": 0,
       "agendaRef": "<agenda-ref>"
@@ -51,20 +51,11 @@
   ],
   "categories": [
     {
-      "categoryId": "browser_tool_flakiness",
-      "remediationStatus": "running",
-      "remediationEffect": "pending",
-      "evidenceCount": 50,
-      "score": 0.28,
-      "lastImprovementDelta": 0,
-      "agendaRef": "<agenda-ref>"
-    },
-    {
       "categoryId": "ambiguous_instruction",
       "remediationStatus": "passed",
       "remediationEffect": "verified_positive",
-      "evidenceCount": 13,
-      "score": 0.942308,
+      "evidenceCount": 10,
+      "score": 1,
       "lastImprovementDelta": 0,
       "agendaRef": "<agenda-ref>"
     },
@@ -72,7 +63,7 @@
       "categoryId": "adversarial_conflicting_instruction",
       "remediationStatus": "passed",
       "remediationEffect": "verified_positive",
-      "evidenceCount": 1,
+      "evidenceCount": 2,
       "score": 1,
       "lastImprovementDelta": 0,
       "agendaRef": "<agenda-ref>"
@@ -81,7 +72,7 @@
       "categoryId": "missing_context",
       "remediationStatus": "passed",
       "remediationEffect": "verified_positive",
-      "evidenceCount": 1,
+      "evidenceCount": 2,
       "score": 1,
       "lastImprovementDelta": 0,
       "agendaRef": "<agenda-ref>"
@@ -90,7 +81,16 @@
       "categoryId": "degraded_tool_outputs",
       "remediationStatus": "passed",
       "remediationEffect": "verified_positive",
-      "evidenceCount": 1,
+      "evidenceCount": 2,
+      "score": 1,
+      "lastImprovementDelta": 0,
+      "agendaRef": "<agenda-ref>"
+    },
+    {
+      "categoryId": "browser_tool_flakiness",
+      "remediationStatus": "passed",
+      "remediationEffect": "verified_positive",
+      "evidenceCount": 4,
       "score": 1,
       "lastImprovementDelta": 0,
       "agendaRef": "<agenda-ref>"

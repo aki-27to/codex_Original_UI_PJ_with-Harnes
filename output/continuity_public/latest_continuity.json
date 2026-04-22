@@ -1,74 +1,74 @@
 {
   "schema": "continuity-public-summary.v1",
-  "generatedAt": "2026-04-18T06:45:51.490Z",
-  "workspaceId": "5c839dfeef8b555f",
+  "generatedAt": "2026-04-22T00:42:00.948Z",
+  "workspaceId": "3650d504ad404c53",
   "activeAgentTree": {
     "schema": "bounded-agent-graph.v1",
-    "taskId": "task_486b48ffcf",
-    "rootTaskId": "task_486b48ffcf",
+    "taskId": "task_8b3bc5caed",
+    "rootTaskId": "task_8b3bc5caed",
     "orchestrationMode": "bounded_multi_agent",
-    "updatedAt": "2026-03-31T22:25:29.747Z",
+    "updatedAt": "2026-04-21T23:50:30.827Z",
     "nodes": [
       {
-        "taskId": "task_486b48ffcf",
+        "taskId": "task_8b3bc5caed",
         "role": "coordinator",
         "parentTaskId": "task_b5588bd249",
         "lifecycleState": "planned",
         "status": "active",
         "integrationStatus": "not applicable",
-        "updatedAt": "2026-03-31T22:25:29.747Z"
+        "updatedAt": "2026-04-21T23:50:30.827Z"
       },
       {
-        "taskId": "task_729744b6c7",
-        "parentTaskId": "task_486b48ffcf",
-        "role": "executor",
+        "taskId": "task_4297351e32",
+        "parentTaskId": "task_8b3bc5caed",
+        "role": "planner",
         "lifecycleState": "completed",
         "orchestrationMode": "bounded_multi_agent",
-        "updatedAt": "2026-03-31T22:25:29.804Z"
+        "updatedAt": "2026-04-21T23:50:30.868Z"
       },
       {
-        "taskId": "task_d5596c2261",
-        "parentTaskId": "task_486b48ffcf",
-        "role": "verifier",
-        "lifecycleState": "blocked",
+        "taskId": "task_02955b432b",
+        "parentTaskId": "task_8b3bc5caed",
+        "role": "researcher",
+        "lifecycleState": "completed",
         "orchestrationMode": "bounded_multi_agent",
-        "updatedAt": "2026-03-31T22:25:29.865Z"
+        "updatedAt": "2026-04-21T23:50:30.910Z"
       },
       {
-        "taskId": "task_b1ddcf33c2",
-        "parentTaskId": "task_486b48ffcf",
+        "taskId": "task_82c6335c5e",
+        "parentTaskId": "task_8b3bc5caed",
         "role": "verifier",
         "lifecycleState": "completed",
         "orchestrationMode": "bounded_multi_agent",
-        "updatedAt": "2026-03-31T22:25:29.949Z"
+        "updatedAt": "2026-04-21T23:50:30.952Z"
       }
     ],
     "edges": [
       {
-        "parentTaskId": "task_486b48ffcf",
-        "childTaskId": "task_729744b6c7",
+        "parentTaskId": "task_8b3bc5caed",
+        "childTaskId": "task_4297351e32",
         "relationship": "handoff",
-        "at": "2026-03-31T22:25:29.767Z"
+        "at": "2026-04-21T23:50:30.843Z"
       },
       {
-        "parentTaskId": "task_486b48ffcf",
-        "childTaskId": "task_d5596c2261",
+        "parentTaskId": "task_8b3bc5caed",
+        "childTaskId": "task_02955b432b",
         "relationship": "handoff",
-        "at": "2026-03-31T22:25:29.826Z"
+        "at": "2026-04-21T23:50:30.885Z"
       },
       {
-        "parentTaskId": "task_486b48ffcf",
-        "childTaskId": "task_b1ddcf33c2",
+        "parentTaskId": "task_8b3bc5caed",
+        "childTaskId": "task_82c6335c5e",
         "relationship": "handoff",
-        "at": "2026-03-31T22:25:29.910Z"
+        "at": "2026-04-21T23:50:30.927Z"
       }
     ],
     "activeChildTaskIds": [],
     "pendingChildTaskIds": [],
     "orphanChildTaskIds": [],
-    "generatedAt": "2026-03-31T22:25:29.949Z"
+    "generatedAt": "2026-04-21T23:50:30.952Z"
   },
-  "handoffCount": 455,
+  "handoffCount": 24,
   "blockedSubtasks": 0,
   "verifierFailedSubtasks": 0,
   "integrationPendingCount": 0,
@@ -82,7 +82,7 @@
       "semantic": 3,
       "procedure": 0,
       "evaluation": 0,
-      "preference": 1,
+      "preference": 0,
       "improvement": 1
     },
     "coordinator": {
@@ -90,7 +90,13 @@
       "workspace_progress": 1,
       "spec": 1
     },
-    "executor": {
+    "planner": {
+      "intent": 1,
+      "workspace_progress": 1,
+      "spec": 1
+    },
+    "researcher": {
+      "experience": 1,
       "spec": 1
     },
     "verifier": {
@@ -99,35 +105,35 @@
     }
   },
   "horizon": {
-    "activeTaskId": "task_486b48ffcf",
-    "activeTaskFamily": "deterministic_code",
-    "objective": "verifier failure should force replan and recovery",
+    "activeTaskId": "task_8b3bc5caed",
+    "activeTaskFamily": "planning",
+    "objective": "Summarize bounded research findings with citations and verification.",
     "horizonUnit": "steps",
     "completedSteps": 4,
     "subgoalCount": 4,
-    "verifierCheckpointCount": 4,
+    "verifierCheckpointCount": 2,
     "replanCount": 0,
-    "resumeCount": 2,
+    "resumeCount": 0,
     "completionLengthBucket": "medium",
     "closureOutcome": "completed",
     "evidenceRefs": [
-      "logs/archive/raw/runtime_state/continuity/tasks/phase4-failure-<opaque-id>/closeout_summary.json",
-      "logs/archive/raw/runtime_state/continuity/tasks/phase4-failure-<opaque-id>/verifier_state.json",
-      "logs/archive/raw/runtime_state/continuity/tasks/phase4-failure-<opaque-id>/integration_summary.json",
-      "logs/archive/raw/runtime_state/continuity/tasks/phase4-failure-<opaque-id>/task_state.json",
-      "logs/archive/raw/runtime_state/continuity/tasks/phase4-failure-<opaque-id>/plan_state.json",
-      "logs/archive/raw/runtime_state/continuity/tasks/phase4-failure-<opaque-id>/agent_graph.json"
+      "logs/archive/raw/runtime_state/continuity/tasks/research_multi_agent-<opaque-id>/closeout_summary.json",
+      "logs/archive/raw/runtime_state/continuity/tasks/research_multi_agent-<opaque-id>/verifier_state.json",
+      "logs/archive/raw/runtime_state/continuity/tasks/research_multi_agent-<opaque-id>/integration_summary.json",
+      "logs/archive/raw/runtime_state/continuity/tasks/research_multi_agent-<opaque-id>/task_state.json",
+      "logs/archive/raw/runtime_state/continuity/tasks/research_multi_agent-<opaque-id>/plan_state.json",
+      "logs/archive/raw/runtime_state/continuity/tasks/research_multi_agent-<opaque-id>/agent_graph.json"
     ]
   },
   "blockedReasonClasses": [],
   "pendingIntegrationReasons": [],
-  "remediationLinkedTaskCount": 15,
-  "autoClosedBlockedCount": 42,
+  "remediationLinkedTaskCount": 0,
+  "autoClosedBlockedCount": 0,
   "openDebtCount": 0,
   "debtSeverity": "none",
   "selfAuthoredTaskFlow": {
-    "selfAuthoredGoalCountWindow": 19,
-    "positiveClosureCountWindow": 2,
+    "selfAuthoredGoalCountWindow": 18,
+    "positiveClosureCountWindow": 8,
     "latestRoleMix": [
       "default",
       "frontend_worker",

@@ -496,6 +496,9 @@ function main() {
   assert(workspaceProgress.updatedAt.length > 0, "workspace progress public artifact updatedAt must not be empty");
   assert.notStrictEqual(workspaceProgress.updatedAt, workspaceProgress.generatedAt, "workspace progress updatedAt must be distinct from generatedAt");
   assert(Array.isArray(workspaceProgress.nextRecommendedActions) && workspaceProgress.nextRecommendedActions.length > 0, "workspace progress must expose next recommended actions");
+  assert(!workspaceProgress.nextRecommendedActions.some((action) => /below subjective threshold/i.test(String(action))), "workspace progress must not retain subjective-threshold-only next actions");
+  assert(!workspaceProgress.nextRecommendedActions.some((action) => /distinct lineage only shows promoted cases/i.test(String(action))), "workspace progress must not retain meta lineage-only next actions");
+  assert(!workspaceProgress.nextRecommendedActions.some((action) => /explicit gate vs supporting basis/i.test(String(action))), "workspace progress must not retain stale running-agenda semantics next actions");
   const validationEntries = [
     ...(Array.isArray(workspaceProgress.lastSuccessfulValidation) ? workspaceProgress.lastSuccessfulValidation : []),
     ...(Array.isArray(workspaceProgress.lastFailedValidation) ? workspaceProgress.lastFailedValidation : []),
@@ -1196,9 +1199,11 @@ function main() {
   });
   const strictArtifactsMismatchedSession = buildGovernedMemoryPublicArtifacts({ workspaceRoot: tempRoot, requireWrittenPublicArtifacts: true });
   const strictSessionCheck = strictArtifactsMismatchedSession.evalStatus.checks.find((entry) => entry.id === "worker_decision_surface_export_session_consistent");
-  assert(strictSessionCheck && strictSessionCheck.status === "FAIL", "strict public eval must fail when worker decision surface exportSessionId mismatches the semantic window");
+  assert(strictSessionCheck && strictSessionCheck.status === "PASS", "strict public eval should normalize the worker decision surface exportSessionId to the current semantic window");
   const strictWorkerCompletionCheck = strictArtifactsMismatchedSession.evalStatus.checks.find((entry) => entry.id === "worker_completion_status_consistent");
-  assert(strictWorkerCompletionCheck && strictWorkerCompletionCheck.status === "FAIL", "strict public eval must fail when worker completion semantics diverge from the shared export session");
+  assert(strictWorkerCompletionCheck && strictWorkerCompletionCheck.status === "FAIL", "strict public eval should still fail when the normalized worker headline remains semantically inconsistent with background readiness");
+  const normalizedWorkerDecisionSurface = JSON.parse(fs.readFileSync(path.join(tempRoot, "output", "governance_public", "worker_decision_surface.json"), "utf8"));
+  assert(normalizedWorkerDecisionSurface && normalizedWorkerDecisionSurface.exportSessionId === exportSessionId, "worker decision surface should be rewritten to the current export session");
   writeJson(path.join(tempRoot, "output", "governance_public", "worker_decision_surface.json"), {
     schema: "worker-decision-surface.v1",
     scope: "worker_decision",
@@ -1317,7 +1322,13 @@ function main() {
     },
     openAIBlogLane: { canonicalCounts: { observationCount: 4, causalUsageCount: 3 } },
     anthropicLane: { advisory: { advisoryReferenceCount: 2 } },
-    workspaceProgressPublic: { nextRecommendedActions: ["Keep verifying improvements."] },
+    workspaceProgressPublic: {
+      nextRecommendedActions: [
+        "ambiguous instruction evidence below subjective threshold",
+        "distinct lineage only shows promoted cases",
+        "running agenda counts differ across artifacts without an explicit gate vs supporting basis",
+      ],
+    },
     bottlenecks: { items: [] },
     previousGoalHistory: {
       entries: [
@@ -1334,6 +1345,7 @@ function main() {
   });
   assert.strictEqual(syntheticGoal.goalStatus, "OPERATIONALLY_COMPLETE", "synthetic fully-satisfied criteria must yield OPERATIONALLY_COMPLETE");
   assert(Array.isArray(syntheticGoal.whyNotYet) && syntheticGoal.whyNotYet.length === 0, "synthetic operational completion case must have no unmet criteria");
+  assert.deepStrictEqual(syntheticGoal.requiredNextActions, [], "operational completion must drop meta-completion next actions from requiredNextActions");
 
   const syntheticSubjective = buildSubjectiveGoalCompletionStatus(createStrictSubjectiveArgs(tempRoot, {
     goalCompletionStatus: syntheticGoal,

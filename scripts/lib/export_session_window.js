@@ -17,7 +17,7 @@ function readJsonIfExists(filePath) {
     if (!filePath || !fs.existsSync(filePath)) {
       return null;
     }
-    const raw = fs.readFileSync(filePath, "utf8");
+    const raw = fs.readFileSync(filePath, "utf8").replace(/^\uFEFF/, "");
     return raw ? JSON.parse(raw) : null;
   } catch {
     return null;

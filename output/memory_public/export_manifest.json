@@ -1,8 +1,8 @@
 {
   "schema": "governed-memory-public-export-manifest.v1",
-  "generatedAt": "2026-04-18T06:45:51.629Z",
-  "exportSessionId": "export_69aaf0d22042",
-  "workspaceId": "5c839dfeef8b555f",
+  "generatedAt": "2026-04-22T00:42:01.409Z",
+  "exportSessionId": "export_4b89b907ce1f",
+  "workspaceId": "3650d504ad404c53",
   "sourceMode": "redacted_live_export",
   "canonicalReuseVerified": true,
   "regenerateCommands": {

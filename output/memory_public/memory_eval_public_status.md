@@ -1,7 +1,7 @@
 # Memory Eval Public Status
 
-- Status: FAIL
-- Generated At: 2026-04-18T06:45:52.593Z
+- Status: PASS
+- Generated At: 2026-04-22T00:42:01.794Z
 
 ## Checks
 - canonical_store_present: PASS (canonical event log and index are present)
@@ -20,10 +20,10 @@
 - readiness_breadth_semantics_consistent: PASS (readiness headline exposes evaluated breadth separately from repo-wide supported coverage breadth)
 - promotion_surface_not_self_comparison_misreported: PASS (promotion surface distinguishes self-snapshot from distinct incumbent comparison)
 - coverage_failures_reflected_in_bottlenecks: PASS (coverage failures are reflected in readiness blocked reasons and next bottlenecks)
-- lane_projection_real_observations_reflected: PASS (lane projections reflect canonical observation state (observed/disabled))
+- lane_projection_real_observations_reflected: PASS (lane projections reflect canonical observation state (awaiting_observations/disabled))
 - breadth_family_evidence_present: PASS (4 target breadth families expose public-safe success/failure evidence)
 - weakest_gate_semantics_explained: PASS (weakest gate semantics expose a non-arbitrary gate-pressure explanation)
-- primary_lane_observation_closure: PASS (primary lane observations are no longer starved (152 observations, status=observed))
+- primary_lane_observation_closure: PASS (primary lane observations are no longer starved (88 observations, status=awaiting_observations))
 - continuity_public_real_case_present: PASS (continuity public summary exposes a real handoff/release/horizon case)
 - robustness_breakdown_exported: PASS (robustness breakdown export is present with category-level evidence)
 - autonomous_learning_agenda_present: PASS (autonomous learning agenda is present)
@@ -31,15 +31,15 @@
 - causal_learning_trace_present: PASS (causal learning trace is present)
 - primary_lane_causal_usage_present: PASS (primary lane causal usage is present when observations exist)
 - secondary_lane_advisory_trace_present: PASS (secondary advisory lane exposes advisory trace when considered)
-- distinct_lineage_present: PASS (distinct lineage has 11 entries)
+- distinct_lineage_present: PASS (distinct lineage has 11 effective entries)
 - distinct_lineage_has_non_promoted_case: PASS (distinct lineage includes blocked/hold or rejected comparisons)
 - continuity_debt_surface_present: PASS (continuity debt surface is present)
 - goal_completion_artifact_present: PASS (operational goal completion artifact is present)
 - worker_decision_surface_present: PASS (worker decision surface headline artifact is present)
 - worker_decision_surface_scope_is_primary: PASS (worker decision surface is the primary operator headline)
-- worker_decision_surface_export_session_consistent: FAIL (mismatched export sessions: export_69aaf0d22042, export_b19f32facb8f)
+- worker_decision_surface_export_session_consistent: PASS (shared export session export_4b89b907ce1f)
 - worker_completion_status_present: PASS (worker completion companion artifact is present)
-- worker_completion_status_consistent: PASS (worker completion companion stays aligned with worker headline under export session export_69aaf0d22042)
+- worker_completion_status_consistent: PASS (worker completion companion stays aligned with worker headline under export session export_4b89b907ce1f)
 - worker_completion_alignment_not_stale_in_downstream_surfaces: PASS (downstream remediation surfaces do not retain a stale worker-companion divergence blocker)
 - stable_coverage_surface_present: PASS (stable coverage matrix and trend are present)
 - causal_regression_alerts_present: PASS (causal regression alerts are present)

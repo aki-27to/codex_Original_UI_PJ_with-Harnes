@@ -1,170 +1,163 @@
 {
   "schema": "agi-readiness-stable-coverage-trend.v1",
-  "generatedAt": "2026-04-18T06:45:51.346Z",
-  "workspaceId": "5c839dfeef8b555f",
+  "generatedAt": "2026-04-22T00:42:00.790Z",
+  "workspaceId": "3650d504ad404c53",
   "entries": [
     {
-      "generatedAt": "2026-04-18T04:34:26.412Z",
-      "stableCoverageBreadth": 0,
-      "stableCoveredFamilies": [],
-      "unstableFamilies": [
+      "generatedAt": "2026-04-22T00:37:09.847Z",
+      "stableCoverageBreadth": 1,
+      "stableCoveredFamilies": [
         "deterministic_code",
         "web_creative",
         "planning",
         "workflow_execution",
         "evaluation_review",
         "tool_use_browser_like"
-      ]
+      ],
+      "unstableFamilies": []
     },
     {
-      "generatedAt": "2026-04-18T04:37:18.567Z",
-      "stableCoverageBreadth": 0,
-      "stableCoveredFamilies": [],
-      "unstableFamilies": [
+      "generatedAt": "2026-04-22T00:37:11.596Z",
+      "stableCoverageBreadth": 1,
+      "stableCoveredFamilies": [
         "deterministic_code",
         "web_creative",
         "planning",
         "workflow_execution",
         "evaluation_review",
         "tool_use_browser_like"
-      ]
+      ],
+      "unstableFamilies": []
     },
     {
-      "generatedAt": "2026-04-18T04:52:32.634Z",
-      "stableCoverageBreadth": 0,
-      "stableCoveredFamilies": [],
-      "unstableFamilies": [
+      "generatedAt": "2026-04-22T00:37:13.209Z",
+      "stableCoverageBreadth": 1,
+      "stableCoveredFamilies": [
         "deterministic_code",
         "web_creative",
         "planning",
         "workflow_execution",
         "evaluation_review",
         "tool_use_browser_like"
-      ]
+      ],
+      "unstableFamilies": []
     },
     {
-      "generatedAt": "2026-04-18T04:52:48.925Z",
-      "stableCoverageBreadth": 0,
-      "stableCoveredFamilies": [],
-      "unstableFamilies": [
+      "generatedAt": "2026-04-22T00:37:25.518Z",
+      "stableCoverageBreadth": 1,
+      "stableCoveredFamilies": [
         "deterministic_code",
         "web_creative",
         "planning",
         "workflow_execution",
         "evaluation_review",
         "tool_use_browser_like"
-      ]
+      ],
+      "unstableFamilies": []
     },
     {
-      "generatedAt": "2026-04-18T05:25:59.845Z",
-      "stableCoverageBreadth": 0,
-      "stableCoveredFamilies": [],
-      "unstableFamilies": [
+      "generatedAt": "2026-04-22T00:37:27.238Z",
+      "stableCoverageBreadth": 1,
+      "stableCoveredFamilies": [
         "deterministic_code",
         "web_creative",
         "planning",
         "workflow_execution",
         "evaluation_review",
         "tool_use_browser_like"
-      ]
+      ],
+      "unstableFamilies": []
     },
     {
-      "generatedAt": "2026-04-18T05:32:14.725Z",
-      "stableCoverageBreadth": 0.333333,
+      "generatedAt": "2026-04-22T00:37:28.997Z",
+      "stableCoverageBreadth": 1,
       "stableCoveredFamilies": [
         "deterministic_code",
-        "planning"
-      ],
-      "unstableFamilies": [
         "web_creative",
+        "planning",
         "workflow_execution",
         "evaluation_review",
         "tool_use_browser_like"
-      ]
+      ],
+      "unstableFamilies": []
     },
     {
-      "generatedAt": "2026-04-18T06:04:45.216Z",
-      "stableCoverageBreadth": 0.333333,
+      "generatedAt": "2026-04-22T00:38:24.957Z",
+      "stableCoverageBreadth": 1,
       "stableCoveredFamilies": [
         "deterministic_code",
-        "planning"
-      ],
-      "unstableFamilies": [
         "web_creative",
+        "planning",
         "workflow_execution",
         "evaluation_review",
         "tool_use_browser_like"
-      ]
+      ],
+      "unstableFamilies": []
     },
     {
-      "generatedAt": "2026-04-18T06:24:50.070Z",
-      "stableCoverageBreadth": 0.333333,
+      "generatedAt": "2026-04-22T00:38:26.683Z",
+      "stableCoverageBreadth": 1,
       "stableCoveredFamilies": [
         "deterministic_code",
-        "planning"
-      ],
-      "unstableFamilies": [
         "web_creative",
+        "planning",
         "workflow_execution",
         "evaluation_review",
         "tool_use_browser_like"
-      ]
+      ],
+      "unstableFamilies": []
     },
     {
-      "generatedAt": "2026-04-18T06:31:25.302Z",
-      "stableCoverageBreadth": 0.333333,
+      "generatedAt": "2026-04-22T00:38:28.305Z",
+      "stableCoverageBreadth": 1,
       "stableCoveredFamilies": [
         "deterministic_code",
-        "planning"
-      ],
-      "unstableFamilies": [
         "web_creative",
+        "planning",
         "workflow_execution",
         "evaluation_review",
         "tool_use_browser_like"
-      ]
+      ],
+      "unstableFamilies": []
     },
     {
-      "generatedAt": "2026-04-18T06:39:31.344Z",
-      "stableCoverageBreadth": 0.333333,
+      "generatedAt": "2026-04-22T00:41:57.465Z",
+      "stableCoverageBreadth": 1,
       "stableCoveredFamilies": [
         "deterministic_code",
-        "planning"
-      ],
-      "unstableFamilies": [
         "web_creative",
+        "planning",
         "workflow_execution",
         "evaluation_review",
         "tool_use_browser_like"
-      ]
+      ],
+      "unstableFamilies": []
     },
     {
-      "generatedAt": "2026-04-18T06:42:32.581Z",
-      "stableCoverageBreadth": 0.333333,
+      "generatedAt": "2026-04-22T00:41:59.180Z",
+      "stableCoverageBreadth": 1,
       "stableCoveredFamilies": [
         "deterministic_code",
-        "planning"
-      ],
-      "unstableFamilies": [
         "web_creative",
+        "planning",
         "workflow_execution",
         "evaluation_review",
         "tool_use_browser_like"
-      ]
+      ],
+      "unstableFamilies": []
     },
     {
-      "generatedAt": "2026-04-18T06:45:51.346Z",
-      "stableCoverageBreadth": 0.333333,
+      "generatedAt": "2026-04-22T00:42:00.790Z",
+      "stableCoverageBreadth": 1,
       "stableCoveredFamilies": [
         "deterministic_code",
-        "planning"
-      ],
-      "unstableFamilies": [
         "web_creative",
+        "planning",
         "workflow_execution",
         "evaluation_review",
         "tool_use_browser_like"
-      ]
+      ],
+      "unstableFamilies": []
     }
   ]
 }
