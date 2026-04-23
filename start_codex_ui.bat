@@ -1,10 +1,17 @@
 @echo off
 setlocal
 if "%CODEX_PAUSE_ON_EXIT%"=="" set "CODEX_PAUSE_ON_EXIT=1"
+if "%CODEX_REQUIRE_ADMIN%"=="" set "CODEX_REQUIRE_ADMIN=0"
 
 set "CODEX_LAUNCH_FILE=%~f0"
 set "CODEX_LAUNCH_DIR=%~dp0"
 set "CODEX_LAUNCH_ARGS=%*"
+if /I "%CODEX_REQUIRE_ADMIN%"=="1" (
+  goto launcher_require_admin
+)
+goto launcher_admin_checked
+
+:launcher_require_admin
 powershell -NoProfile -ExecutionPolicy Bypass -Command ^
   "$principal = New-Object Security.Principal.WindowsPrincipal([Security.Principal.WindowsIdentity]::GetCurrent()); if($principal.IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)){ exit 0 }; try { $startArgs = @{ FilePath = $env:CODEX_LAUNCH_FILE; WorkingDirectory = $env:CODEX_LAUNCH_DIR; Verb = 'RunAs' }; if($env:CODEX_LAUNCH_ARGS){ $startArgs.ArgumentList = $env:CODEX_LAUNCH_ARGS }; Start-Process @startArgs | Out-Null; exit 100 } catch { exit 1 }"
 set "ELEVATE_EXIT=%errorlevel%"
@@ -15,6 +22,7 @@ if not "%ELEVATE_EXIT%"=="0" (
   exit /b %ELEVATE_EXIT%
 )
 
+:launcher_admin_checked
 cd /d "%~dp0"
 set "npm_config_userconfig=%~dp0.npmrc"
 set "CODEX_RUNTIME_ROOT=%~dp0runtime"
@@ -41,7 +49,7 @@ if "%CODEX_UI_PORT%"=="" set "CODEX_UI_PORT=57525"
 set "CODEX_UI_PORT=%CODEX_UI_PORT%"
 echo(%CODEX_UI_PORT%| findstr /r "^[0-9][0-9]*$" >nul || set "CODEX_UI_PORT=57525"
 if "%CODEX_UI_PORT%"=="" set "CODEX_UI_PORT=57525"
-if "%CODEX_AUTO_OPEN_BROWSER%"=="" set "CODEX_AUTO_OPEN_BROWSER=1"
+if "%CODEX_AUTO_OPEN_BROWSER%"=="" set "CODEX_AUTO_OPEN_BROWSER=0"
 set "LAUNCHER_AUTO_OPEN_BROWSER=%CODEX_AUTO_OPEN_BROWSER%"
 if "%CODEX_AUTO_OPEN_PATH%"=="" set "CODEX_AUTO_OPEN_PATH=/01.HarnesUI/index.html"
 if "%CODEX_RESTART_EXISTING_HARNESS%"=="" set "CODEX_RESTART_EXISTING_HARNESS=0"
@@ -130,6 +138,16 @@ set "CODEX_SERVER_UPTIME_SECONDS=0"
 for /f %%I in ('powershell -NoProfile -ExecutionPolicy Bypass -Command "[DateTimeOffset]::UtcNow.ToUnixTimeSeconds()"') do set "CODEX_SERVER_LAST_START_TS=%%I"
 node "%~dp0server.js"
 set "EXIT_CODE=%errorlevel%"
+if not "%EXIT_CODE%"=="0" (
+  set "HARNESS_STARTUP_CONFLICT_REUSED=0"
+  for /f %%I in ('powershell -NoProfile -ExecutionPolicy Bypass -Command "$port=[int]$env:CODEX_UI_PORT; try { $response=Invoke-WebRequest -UseBasicParsing -Uri ('http://127.0.0.1:'+$port+'/api/runtime') -TimeoutSec 2; if($response.StatusCode -eq 200){ 1 } else { 0 } } catch { 0 }"') do set "HARNESS_STARTUP_CONFLICT_REUSED=%%I"
+  if "%HARNESS_STARTUP_CONFLICT_REUSED%"=="1" (
+    echo [launcher] existing harness is already serving on port %CODEX_UI_PORT%; reusing after startup conflict.
+    set "CODEX_SERVER_RESTART_STOP_REASON=reused_existing_harness_after_conflict"
+    set "EXIT_CODE=0"
+    goto server_done
+  )
+)
 for /f %%I in ('powershell -NoProfile -ExecutionPolicy Bypass -Command "$start=[int64]$env:CODEX_SERVER_LAST_START_TS; $now=[DateTimeOffset]::UtcNow.ToUnixTimeSeconds(); [Math]::Max(0,($now-$start))"') do set "CODEX_SERVER_UPTIME_SECONDS=%%I"
 for /f %%I in ('powershell -NoProfile -ExecutionPolicy Bypass -Command "$uptime=[int64]$env:CODEX_SERVER_UPTIME_SECONDS; $stable=[int64]$env:CODEX_SERVER_STABLE_WINDOW_SECONDS; if($uptime -ge $stable){ 1 } else { 0 }"') do set "CODEX_SERVER_WAS_STABLE=%%I"
 if "%EXIT_CODE%"=="0" (

@@ -3,6 +3,7 @@
 
 const assert = require("assert");
 const fs = require("fs");
+const net = require("net");
 const path = require("path");
 const {
   loadAuthorityRegistry,
@@ -81,8 +82,30 @@ function makeVariant(label, profile) {
   };
 }
 
+function findAvailablePort() {
+  return new Promise((resolve, reject) => {
+    const server = net.createServer();
+    server.once("error", reject);
+    server.listen(0, "127.0.0.1", () => {
+      const address = server.address();
+      const port = address && typeof address === "object" ? Number(address.port) : 0;
+      server.close((error) => {
+        if (error) {
+          reject(error);
+          return;
+        }
+        if (!Number.isInteger(port) || port <= 0) {
+          reject(new Error("failed to allocate an available localhost port"));
+          return;
+        }
+        resolve(port);
+      });
+    });
+  });
+}
+
 async function withHarness(check) {
-  const port = 58000 + Math.floor(Math.random() * 1000);
+  const port = await findAvailablePort();
   const harness = await startHarnessForPhase1({
     workspaceRoot,
     proofRoot: path.join(workspaceRoot, "logs", "archive", "raw", "phase1_runs", `single-harness-${Date.now()}`),

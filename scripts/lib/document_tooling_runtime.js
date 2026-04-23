@@ -269,10 +269,20 @@ function getWrapperCommandPath(definition, workspaceRoot = "") {
   return path.join(paths.binDir, definition.id);
 }
 
+function getWrapperCommandCandidates(definition, workspaceRoot = "") {
+  const paths = getDocumentToolingPaths(workspaceRoot);
+  const nativeWrapper = getWrapperCommandPath(definition, workspaceRoot);
+  const windowsWrapper = path.join(paths.binDir, `${definition.id}.cmd`);
+  const unixWrapper = path.join(paths.binDir, definition.id);
+  return [nativeWrapper, windowsWrapper, unixWrapper]
+    .filter(Boolean)
+    .filter((candidate, index, list) => list.indexOf(candidate) === index);
+}
+
 function buildCommandCandidates(definition, workspaceRoot = "") {
   const candidates = [];
   if (workspaceRoot) {
-    candidates.push(getWrapperCommandPath(definition, workspaceRoot));
+    candidates.push(...getWrapperCommandCandidates(definition, workspaceRoot));
     candidates.push(getVenvCommandPath(definition, workspaceRoot));
   }
   if (Array.isArray(definition.commandCandidates)) {
