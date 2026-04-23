@@ -129,12 +129,13 @@ async function run() {
       name: "OpenAI Developers Blog",
       indexUrl: "https://developers.openai.com/blog",
       allowedHosts: ["developers.openai.com"],
+      pinnedArticleUrls: ["https://developers.openai.com/blog/run-long-horizon-tasks-with-codex"],
     },
     cadence: {
       intervalMinutes: 1440,
       startupDelayMs: 1000,
       requestTimeoutMs: 5000,
-      maxArticlesPerRun: 4,
+      maxArticlesPerRun: 1,
       maxGuidanceItemsPerArticle: 4,
     },
     governance: {
@@ -204,7 +205,7 @@ async function run() {
     now: new Date("2026-03-23T00:00:00.000Z"),
   });
   assert.strictEqual(first.report.status, "PASS", "first cycle should pass");
-  assert.strictEqual(first.report.summary.trackedArticles, 2, "two articles should be tracked");
+  assert.strictEqual(first.report.summary.trackedArticles, 2, "latest article plus pinned article should be tracked");
   assert.strictEqual(first.report.summary.newArticlesThisRun, 2, "both articles should be new on first run");
   assert(first.digest.topics.frontend && first.digest.topics.frontend.length >= 1, "frontend topic should be indexed");
   assert(first.digest.topics.codex && first.digest.topics.codex.length >= 1, "codex topic should be indexed");
@@ -216,6 +217,7 @@ async function run() {
   assert(fs.existsSync(path.join(workspaceRoot, "docs", "FRONTEND_QUALITY_PLAYBOOK.md")), "frontend quality playbook should be written");
   const longHorizonArticle = first.ledger.articles.find((entry) => entry.articleId === "run-long-horizon-tasks-with-codex");
   assert(longHorizonArticle, "run-long-horizon article should be present in the ledger");
+  assert.strictEqual(longHorizonArticle.indexDateLabel, "pinned", "pinned article should be retained outside the latest-card budget");
   assert.notStrictEqual(longHorizonArticle.summary, "OpenAI Developer Blog", "summary should not keep the boilerplate page description");
   assert(/specs, checkpoints, and verification|spec file and clear acceptance criteria/i.test(longHorizonArticle.summary), "summary should retain article-specific long-horizon guidance");
   assert(first.selfImprovement && first.selfImprovement.state, "self improvement state should be returned");

@@ -672,6 +672,53 @@ function parseIndexCards(indexHtml, sourceUrl) {
   return deduped;
 }
 
+function articleCardFromPinnedUrl(rawUrl) {
+  const url = normalizeUrl(rawUrl);
+  if (!url) {
+    return null;
+  }
+  let articleId = "";
+  try {
+    const parsed = new URL(url);
+    articleId = safeString(parsed.pathname.split("/").filter(Boolean).pop(), 120);
+  } catch {
+    articleId = "";
+  }
+  if (!articleId) {
+    return null;
+  }
+  return {
+    articleId,
+    url,
+    title: "",
+    description: "",
+    indexDateLabel: "pinned",
+    topicLabel: "",
+  };
+}
+
+function mergePinnedArticleCards(indexCards, pinnedArticleUrls) {
+  const cards = [];
+  const seen = new Set();
+  for (const card of Array.isArray(indexCards) ? indexCards : []) {
+    const url = normalizeUrl(card && card.url);
+    if (!url || seen.has(url)) {
+      continue;
+    }
+    seen.add(url);
+    cards.push({ ...card, url });
+  }
+  for (const pinnedUrl of Array.isArray(pinnedArticleUrls) ? pinnedArticleUrls : []) {
+    const pinnedCard = articleCardFromPinnedUrl(pinnedUrl);
+    if (!pinnedCard || seen.has(pinnedCard.url)) {
+      continue;
+    }
+    seen.add(pinnedCard.url);
+    cards.push(pinnedCard);
+  }
+  return cards;
+}
+
 function classifyTopics({ title = "", description = "", topicLabel = "", headings = [], listItems = [], paragraphs = [] } = {}) {
   const tags = new Set();
   const seed = [title, description, topicLabel, headings.join(" "), listItems.join(" "), paragraphs.slice(0, 6).join(" ")].join(" ").toLowerCase();
@@ -1454,6 +1501,9 @@ function normalizeOpenAIBlogLearningPolicy(policy, { policyPath = defaultOpenAIB
       allowedHosts: Array.isArray(source && source.source && source.source.allowedHosts)
         ? source.source.allowedHosts.map((entry) => safeString(entry, 120)).filter(Boolean)
         : ["developers.openai.com"],
+      pinnedArticleUrls: Array.isArray(source && source.source && source.source.pinnedArticleUrls)
+        ? source.source.pinnedArticleUrls.map((entry) => normalizeUrl(entry)).filter(Boolean)
+        : [],
     },
     cadence: {
       intervalMinutes: Math.max(15, Math.min(1440, Math.trunc(Number(source && source.cadence && source.cadence.intervalMinutes) || 1440))),
@@ -3310,7 +3360,10 @@ async function runOpenAIBlogLearningCycle({
     allowedHosts: normalizedPolicy.source.allowedHosts,
     userAgent: normalizedPolicy.source.userAgent,
   });
-  const cards = parseIndexCards(indexHtml, normalizedPolicy.source.indexUrl).slice(0, normalizedPolicy.cadence.maxArticlesPerRun);
+  const cards = mergePinnedArticleCards(
+    parseIndexCards(indexHtml, normalizedPolicy.source.indexUrl).slice(0, normalizedPolicy.cadence.maxArticlesPerRun),
+    normalizedPolicy.source.pinnedArticleUrls
+  );
   const nextArticles = [];
   const proposalSummaries = [];
   const writtenProposalPaths = new Set();

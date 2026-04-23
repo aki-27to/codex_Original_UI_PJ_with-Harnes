@@ -1,0 +1,85 @@
+name: anthropic-engineering-learning
+
+on:
+  workflow_dispatch:
+  schedule:
+    # Daily at 03:27 JST.
+    - cron: "27 18 * * *"
+
+permissions:
+  contents: write
+
+concurrency:
+  group: anthropic-engineering-learning
+  cancel-in-progress: false
+
+jobs:
+  learn:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run Anthropic Engineering learning cycle
+        run: npm run learn:anthropic-engineering
+
+      - name: Run external learning regression
+        run: node scripts/openai_blog_learning_test.js
+
+      - name: Run repo quality gates
+        run: npm run test:repo-quality
+
+      - name: Run public regression gate
+        run: npm run regression:public
+
+      - name: Commit learning updates
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+          git add \
+            docs/ANTHROPIC_ENGINEERING_LEARNINGS.md \
+            output/anthropic_engineering_learning_digest.json \
+            output/anthropic_engineering_learning_ledger.json \
+            output/anthropic_engineering_learning_report.md \
+            output/anthropic_engineering_learning_proposals \
+            output/anthropic_engineering_self_improvement_gate.json \
+            output/anthropic_engineering_self_improvement_state.json \
+            output/anthropic_engineering_self_improvement_proposals
+
+          if git diff --cached --quiet; then
+            echo "No Anthropic Engineering learning updates."
+            exit 0
+          fi
+
+          git commit -m "Update Anthropic Engineering learning artifacts"
+          git push
+
+      - name: Upload learning artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: anthropic-engineering-learning-artifacts
+          if-no-files-found: warn
+          path: |
+            docs/ANTHROPIC_ENGINEERING_LEARNINGS.md
+            output/anthropic_engineering_learning_digest.json
+            output/anthropic_engineering_learning_ledger.json
+            output/anthropic_engineering_learning_report.md
+            output/anthropic_engineering_learning_proposals/*.json
+            output/anthropic_engineering_self_improvement_gate.json
+            output/anthropic_engineering_self_improvement_state.json
+            output/anthropic_engineering_self_improvement_proposals/*.json

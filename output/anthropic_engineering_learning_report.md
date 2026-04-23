@@ -1,11 +1,11 @@
 # ANTHROPIC_ENGINEERING_LEARNING_REPORT
 
 - status: PASS
-- generatedAt: 2026-04-21T15:09:04.225Z
-- trackedArticles: 5
-- newArticlesThisRun: 0
-- pendingProposals: 5
-- promotedDocUpdates: 5
+- generatedAt: 2026-04-23T14:29:13.040Z
+- trackedArticles: 7
+- newArticlesThisRun: 2
+- pendingProposals: 7
+- promotedDocUpdates: 7
 - ledgerPath: output/anthropic_engineering_learning_ledger.json
 - digestPath: output/anthropic_engineering_learning_digest.json
 - reportPath: output/anthropic_engineering_learning_report.md
@@ -20,6 +20,7 @@
 - Harness design for long-running application development | high | https://www.anthropic.com/engineering/harness-design-long-running-apps
 - Designing AI resistant technical evaluations | high | https://www.anthropic.com/engineering/AI-resistant-technical-evaluations
 - Demystifying evals for AI agents | high | https://www.anthropic.com/engineering/demystifying-evals-for-ai-agents
+- Building Effective AI Agents | high | https://www.anthropic.com/engineering/building-effective-agents
 
 ## Pending Proposals
 
@@ -28,6 +29,8 @@
 - Harness design for long-running application development -> docs/CONTEXT_MEMORY_POLICY.md (proposal_only)
 - Designing AI resistant technical evaluations -> docs/CONTEXT_MEMORY_POLICY.md (proposal_only)
 - Demystifying evals for AI agents -> docs/CONTEXT_MEMORY_POLICY.md (proposal_only)
+- Building Effective AI Agents -> docs/CONTEXT_MEMORY_POLICY.md (proposal_only)
+- Code execution with MCP: building more efficient AI agents -> docs/CONTEXT_MEMORY_POLICY.md (proposal_only)
 
 ## Self Improvement
 
@@ -44,7 +47,7 @@
 - awaitingReinforcementCount: 0
 - policyDisabledCandidateCount: 0
 - proposalOnlyCount: 2
-- blockedCount: 3
+- blockedCount: 5
 - nextPriority: Designing AI resistant technical evaluations / proposal_only
 - nextPriorityAction: Keep this frontend quality note as proposal-only guidance.
 - nextPriorityProgress: success 0/2 / observed 0 / rate 0

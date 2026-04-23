@@ -8,6 +8,10 @@
     "allowedHosts": [
       "www.anthropic.com",
       "anthropic.com"
+    ],
+    "pinnedArticleUrls": [
+      "https://www.anthropic.com/engineering/building-effective-agents",
+      "https://www.anthropic.com/engineering/code-execution-with-mcp"
     ]
   },
   "cadence": {

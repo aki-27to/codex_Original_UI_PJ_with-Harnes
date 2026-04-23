@@ -1,0 +1,82 @@
+{
+  "schema": "self-improvement-proposal.v1",
+  "proposalId": "anthropic-engineering-code-execution-with-mcp-self-improvement",
+  "createdAt": "2026-04-23T14:29:13.040Z",
+  "sourceLane": "Anthropic Engineering",
+  "sourceTier": "secondary",
+  "articleId": "code-execution-with-mcp",
+  "title": "Code execution with MCP: building more efficient AI agents",
+  "sourceUrl": "https://www.anthropic.com/engineering/code-execution-with-mcp",
+  "relevance": "high",
+  "portability": "portable",
+  "changeClass": "planner_strategy",
+  "target": "scripts/lib/planning_mode_policy.js",
+  "objective": "Propose governed planning strategy improvements based on Code execution with MCP: building more efficient AI agents.",
+  "evidence": {
+    "summary": "Direct tool calls consume context for each definition and result. Agents scale better by writing code to call tools instead. Here's how it works with MCP.",
+    "guidance": [
+      "In this blog we'll explore how code execution can enable agents to interact with MCP servers more efficiently, handling more tools while using fewer tokens.",
+      "Connecting agents to tools and data traditionally requires a custom integration for each pairing, creating fragmentation and duplicated effort that makes it difficult to scale truly connected systems.",
+      "The Model Context Protocol (MCP) is an open standard for connecting AI agents to external systems.",
+      "Tool definitions overload the context window;",
+      "Since launching MCP in November 2024, adoption has been rapid: the community has built thousands of MCP servers , SDKs are available for all major programming languages, and the industry has adopted MCP as the de-facto standard for connecti",
+      "Today developers routinely build agents with access to hundreds or thousands of tools across dozens of MCP servers. However, as the number of connected tools grows, loading all tool definitions upfront and passing intermediate results throu"
+    ],
+    "topicTags": [
+      "agents",
+      "context",
+      "frontend"
+    ],
+    "articleProposalId": "anthropic-engineering-code-execution-with-mcp"
+  },
+  "candidateChange": {
+    "frontendQualityNote": {
+      "noteId": "code-execution-with-mcp-frontend-quality",
+      "appliesToAgents": [
+        "default",
+        "frontend_worker"
+      ],
+      "appliesToTaskFamilies": [
+        "web_creative"
+      ],
+      "topics": [
+        "agents",
+        "context",
+        "frontend"
+      ],
+      "lexicalTriggers": [
+        "context",
+        "planner",
+        "generator",
+        "evaluator"
+      ],
+      "preferredArticleIds": [
+        "code-execution-with-mcp"
+      ],
+      "qualityAxes": [
+        "frontend_quality"
+      ],
+      "guidance": [
+        "In this blog we'll explore how code execution can enable agents to interact with MCP servers more efficiently, handling more tools while using fewer tokens.",
+        "Connecting agents to tools and data traditionally requires a custom integration for each pairing, creating fragmentation and duplicated effort that makes it difficult to scale truly connected systems.",
+        "The Model Context Protocol (MCP) is an open standard for connecting AI agents to external systems."
+      ]
+    }
+  },
+  "promotion": {
+    "decision": "blocked",
+    "rationale": "boundary_blocked",
+    "riskFlags": [
+      "constitutional_or_frozen_boundary"
+    ]
+  },
+  "gate": {
+    "required": false,
+    "status": "not_applicable",
+    "caseIds": [
+      "web_creative_benchmark",
+      "frontend_context_iteration",
+      "backend_non_targeted"
+    ]
+  }
+}
