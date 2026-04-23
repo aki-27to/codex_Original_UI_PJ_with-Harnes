@@ -1,6 +1,6 @@
 {
   "schema": "self-improvement-state.v1",
-  "generatedAt": "2026-04-23T14:30:46.309Z",
+  "generatedAt": "2026-04-23T19:48:27.855Z",
   "sourceName": "Anthropic Engineering",
   "sourceTier": "secondary",
   "promotionMode": "machine_guarded_autonomy",
@@ -24,7 +24,7 @@
   "awaitingReinforcementCount": 0,
   "policyDisabledCandidateCount": 0,
   "proposalOnlyCount": 2,
-  "blockedCount": 5,
+  "blockedCount": 4,
   "failedCaseIds": [],
   "promotionPolicyPath": "scripts/config/self_improvement_promotion_policy.json",
   "statePath": "output/anthropic_engineering_self_improvement_state.json",
@@ -147,31 +147,6 @@
       }
     },
     {
-      "changeId": "demystifying-evals-for-ai-agents-frontend-quality",
-      "proposalId": "anthropic-engineering-demystifying-evals-for-ai-agents-self-improvement",
-      "articleId": "demystifying-evals-for-ai-agents",
-      "title": "Demystifying evals for AI agents",
-      "changeType": "frontend_quality_note",
-      "readinessStatus": "blocked",
-      "gatingReason": "blocked_target",
-      "nextAction": "Leave this target outside self-improvement auto-promotion.",
-      "blastRadius": "low",
-      "priorityScore": 22,
-      "reinforcement": {
-        "successCount": 0,
-        "failureCount": 0,
-        "observedCount": 0,
-        "successRate": 0,
-        "requiredSuccesses": 2,
-        "requiredSuccessRate": 0.67,
-        "remainingSuccesses": 2,
-        "lastObservedAt": "",
-        "lastOutcome": "",
-        "status": "unobserved",
-        "sampleTurnIds": []
-      }
-    },
-    {
       "changeId": "harness-design-long-running-apps-frontend-quality",
       "proposalId": "anthropic-engineering-harness-design-long-running-apps-self-improvement",
       "articleId": "harness-design-long-running-apps",
@@ -254,14 +229,6 @@
       "changeClass": "skill_surface_policy",
       "target": "docs/AGENT_SKILL_MATRIX.md",
       "decision": "shadow_candidate"
-    },
-    {
-      "proposalId": "anthropic-engineering-demystifying-evals-for-ai-agents-self-improvement",
-      "articleId": "demystifying-evals-for-ai-agents",
-      "title": "Demystifying evals for AI agents",
-      "changeClass": "planner_strategy",
-      "target": "scripts/lib/planning_mode_policy.js",
-      "decision": "blocked"
     },
     {
       "proposalId": "anthropic-engineering-building-effective-agents-self-improvement",

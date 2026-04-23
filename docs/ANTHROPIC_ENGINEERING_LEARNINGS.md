@@ -1,6 +1,6 @@
 # ANTHROPIC_ENGINEERING_LEARNINGS
 
-Updated: 2026-04-23T14:29:13.040Z
+Updated: 2026-04-23T19:47:58.230Z
 
 This file is auto-synced from the Anthropic Engineering secondary learning lane.
 Only portable agent-engineering principles are retained here; Claude-specific mechanics do not become runtime policy.
@@ -50,19 +50,6 @@ Only portable agent-engineering principles are retained here; Claude-specific me
   - Two insights shaped the harness I built for frontend design.
   - Design quality: Does the design feel like a coherent whole rather than a collection of parts? Strong work here means the colors, typography, layout, imagery, and other details combine to create a distinct mood and identity.
   - For more complex tasks, the agent still tends to go off the rails over time.
-
-### Demystifying evals for AI agents
-
-- Source: https://www.anthropic.com/engineering/demystifying-evals-for-ai-agents
-- Relevance: high
-- Portability: portable
-- Blog card date: Jan 09, 2026
-- Summary: The capabilities that make agents useful also make them difficult to evaluate. The strategies that work across deployments combine techniques to match the complexity of the systems they measure.
-- Guidance:
-  - As we described in Building effective agents , agents operate over many turns: calling tools, modifying state, and adapting based on intermediate results.
-  - Through our internal work and with customers at the frontier of agent development, we’ve learned how to design more rigorous and useful evals for agents.
-  - Good evaluations help teams ship AI agents more confidently.
-  - These same capabilities that make AI agents useful—autonomy, intelligence, and flexibility—also make them harder to evaluate.
 
 ### Building Effective AI Agents
 
@@ -131,19 +118,6 @@ Only portable agent-engineering principles are retained here; Claude-specific me
   - Design quality: Does the design feel like a coherent whole rather than a collection of parts? Strong work here means the colors, typography, layout, imagery, and other details combine to create a distinct mood and identity.
   - For more complex tasks, the agent still tends to go off the rails over time.
 
-### Demystifying evals for AI agents
-
-- Source: https://www.anthropic.com/engineering/demystifying-evals-for-ai-agents
-- Relevance: high
-- Portability: portable
-- Blog card date: Jan 09, 2026
-- Summary: The capabilities that make agents useful also make them difficult to evaluate. The strategies that work across deployments combine techniques to match the complexity of the systems they measure.
-- Guidance:
-  - As we described in Building effective agents , agents operate over many turns: calling tools, modifying state, and adapting based on intermediate results.
-  - Through our internal work and with customers at the frontier of agent development, we’ve learned how to design more rigorous and useful evals for agents.
-  - Good evaluations help teams ship AI agents more confidently.
-  - These same capabilities that make AI agents useful—autonomy, intelligence, and flexibility—also make them harder to evaluate.
-
 ### Building Effective AI Agents
 
 - Source: https://www.anthropic.com/engineering/building-effective-agents
@@ -210,19 +184,6 @@ Only portable agent-engineering principles are retained here; Claude-specific me
   - Each time, I’ve learned something new about what makes evaluations robust to AI assistance and what doesn't.
   - A take-home that distinguishes well between human skill levels today may be trivially solved by models tomorrow—rendering it useless for evaluation.
 
-### Demystifying evals for AI agents
-
-- Source: https://www.anthropic.com/engineering/demystifying-evals-for-ai-agents
-- Relevance: high
-- Portability: portable
-- Blog card date: Jan 09, 2026
-- Summary: The capabilities that make agents useful also make them difficult to evaluate. The strategies that work across deployments combine techniques to match the complexity of the systems they measure.
-- Guidance:
-  - As we described in Building effective agents , agents operate over many turns: calling tools, modifying state, and adapting based on intermediate results.
-  - Through our internal work and with customers at the frontier of agent development, we’ve learned how to design more rigorous and useful evals for agents.
-  - Good evaluations help teams ship AI agents more confidently.
-  - These same capabilities that make AI agents useful—autonomy, intelligence, and flexibility—also make them harder to evaluate.
-
 ### Building Effective AI Agents
 
 - Source: https://www.anthropic.com/engineering/building-effective-agents
@@ -274,19 +235,6 @@ Only portable agent-engineering principles are retained here; Claude-specific me
   - I've now iterated through three versions of our take-home in an attempt to ensure it still carries signal. Each time, I’ve learned something new about what makes evaluations robust to AI assistance and what doesn't.
   - Each time, I’ve learned something new about what makes evaluations robust to AI assistance and what doesn't.
   - A take-home that distinguishes well between human skill levels today may be trivially solved by models tomorrow—rendering it useless for evaluation.
-
-### Demystifying evals for AI agents
-
-- Source: https://www.anthropic.com/engineering/demystifying-evals-for-ai-agents
-- Relevance: high
-- Portability: portable
-- Blog card date: Jan 09, 2026
-- Summary: The capabilities that make agents useful also make them difficult to evaluate. The strategies that work across deployments combine techniques to match the complexity of the systems they measure.
-- Guidance:
-  - As we described in Building effective agents , agents operate over many turns: calling tools, modifying state, and adapting based on intermediate results.
-  - Through our internal work and with customers at the frontier of agent development, we’ve learned how to design more rigorous and useful evals for agents.
-  - Good evaluations help teams ship AI agents more confidently.
-  - These same capabilities that make AI agents useful—autonomy, intelligence, and flexibility—also make them harder to evaluate.
 
 ### Building Effective AI Agents
 

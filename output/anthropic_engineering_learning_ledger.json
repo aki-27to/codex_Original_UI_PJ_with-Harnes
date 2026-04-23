@@ -1,16 +1,16 @@
 {
   "schema": "anthropic-engineering-learning-ledger.v1",
-  "generatedAt": "2026-04-23T14:29:13.040Z",
-  "lastRunAt": "2026-04-23T14:29:13.040Z",
-  "lastSuccessAt": "2026-04-23T14:29:13.040Z",
+  "generatedAt": "2026-04-23T19:47:58.230Z",
+  "lastRunAt": "2026-04-23T19:47:58.230Z",
+  "lastSuccessAt": "2026-04-23T19:47:58.230Z",
   "lastStatus": "PASS",
   "lastReason": "",
   "summary": {
-    "trackedArticles": 7,
-    "newArticlesThisRun": 2,
-    "pendingProposals": 7,
+    "trackedArticles": 6,
+    "newArticlesThisRun": 0,
+    "pendingProposals": 6,
     "blockedTargets": 0,
-    "promotedDocUpdates": 7
+    "promotedDocUpdates": 6
   },
   "articles": [
     {
@@ -24,8 +24,8 @@
       "topicLabel": "",
       "discoveredAt": "2026-03-25T10:58:32.280Z",
       "firstReadAt": "2026-03-25T10:58:32.280Z",
-      "lastReadAt": "2026-04-23T14:29:13.040Z",
-      "contentHash": "2a44ba1adbb066e44c14f3812fb30352cd1d2faa532045014bcdcaf72244e89f",
+      "lastReadAt": "2026-04-23T19:47:58.230Z",
+      "contentHash": "5afc8c09aa19ae883e17e31b078ca54ebcc350d5c7f71a8df0db5b2eec65a1cd",
       "summary": "Infrastructure configuration can swing agentic coding benchmarks by several percentage points—sometimes more than the leaderboard gap between top models.",
       "guidance": [
         "Agentic coding evals are different: models are given a full environment where they write programs, run tests, install dependencies, and iterate over multiple turns.",
@@ -63,8 +63,8 @@
       "topicLabel": "",
       "discoveredAt": "2026-04-09T11:31:10.069Z",
       "firstReadAt": "2026-04-09T11:31:10.069Z",
-      "lastReadAt": "2026-04-23T14:29:13.040Z",
-      "contentHash": "102193aba211ce8671b9d750ae2a52c9ec7a85ec95710bfcf091a5d187d3fd26",
+      "lastReadAt": "2026-04-23T19:47:58.230Z",
+      "contentHash": "7088ad5df891a5f557ce435590ac569e48cdda9055a8df55b0f9fb67acee690c",
       "summary": "Harnesses encode assumptions that go stale as models improve. Managed Agents—our hosted service for long-horizon agent work—is built around interfaces that stay stable as harnesses change.",
       "guidance": [
         "Building Managed Agents meant solving an old problem in computing: how to design a system for “ programs as yet unthought of .” Decades ago, operating systems solved this problem by virtualizing hardware into abstractions— process, file —general enough for programs that didn't exist yet.",
@@ -97,8 +97,8 @@
       "topicLabel": "",
       "discoveredAt": "2026-03-25T10:58:32.280Z",
       "firstReadAt": "2026-03-25T10:58:32.280Z",
-      "lastReadAt": "2026-04-23T14:29:13.040Z",
-      "contentHash": "6a6375b7dc37bbf98027c18053c19f14e4e7d9a6aca1a2ca5aa9f0214897a9d3",
+      "lastReadAt": "2026-04-23T19:47:58.230Z",
+      "contentHash": "8dcd4f57a320bf0d4423febe1fdc3b9d6299a2561148b7ef1c568d0bcdcd58bf",
       "summary": "Harness design is key to performance at the frontier of agentic coding. Here's how we pushed Claude further in frontend design and long-running autonomous software engineering.",
       "guidance": [
         "We've previously shown that harness design has a substantial impact on the effectiveness of long running agentic coding.",
@@ -138,8 +138,8 @@
       "topicLabel": "",
       "discoveredAt": "2026-03-25T10:58:32.280Z",
       "firstReadAt": "2026-03-25T10:58:32.280Z",
-      "lastReadAt": "2026-04-23T14:29:13.040Z",
-      "contentHash": "755d6ece8c34366448ae327a3c78f0fcdafa63cc75ff10b4aa17e7cb00c5cef9",
+      "lastReadAt": "2026-04-23T19:47:58.230Z",
+      "contentHash": "ca09e24bb0a55ba9ad6d31a8356db08a2c7781fd58282b4e7e47950e58b1e9e7",
       "summary": "What we learned from three iterations of a performance engineering take-home that Claude keeps beating.",
       "guidance": [
         "Evaluating technical candidates becomes harder as AI capabilities improve.",
@@ -170,47 +170,6 @@
     },
     {
       "schema": "anthropic-engineering-learning-article.v1",
-      "articleId": "demystifying-evals-for-ai-agents",
-      "url": "https://www.anthropic.com/engineering/demystifying-evals-for-ai-agents",
-      "canonicalUrl": "https://www.anthropic.com/engineering/demystifying-evals-for-ai-agents",
-      "title": "Demystifying evals for AI agents",
-      "description": "The capabilities that make agents useful also make them difficult to evaluate. The strategies that work across deployments combine techniques to match the complexity of the systems they measure.",
-      "indexDateLabel": "Jan 09, 2026",
-      "topicLabel": "",
-      "discoveredAt": "2026-03-25T10:58:32.280Z",
-      "firstReadAt": "2026-03-25T10:58:32.280Z",
-      "lastReadAt": "2026-04-23T14:29:13.040Z",
-      "contentHash": "2bcbea7fc88a1c25142181e4bff1b80dd516b50b57877a891aec057a2c510724",
-      "summary": "The capabilities that make agents useful also make them difficult to evaluate. The strategies that work across deployments combine techniques to match the complexity of the systems they measure.",
-      "guidance": [
-        "As we described in Building effective agents , agents operate over many turns: calling tools, modifying state, and adapting based on intermediate results.",
-        "Through our internal work and with customers at the frontier of agent development, we’ve learned how to design more rigorous and useful evals for agents.",
-        "Good evaluations help teams ship AI agents more confidently.",
-        "These same capabilities that make AI agents useful—autonomy, intelligence, and flexibility—also make them harder to evaluate.",
-        "An evaluation (“eval”) is a test for an AI system: give an AI an input, then apply grading logic to its output to measure success. In this post, we focus on automated evals that can be run during development without real users.",
-        "In this post, we focus on automated evals that can be run during development without real users."
-      ],
-      "headings": [
-        "Introduction",
-        "The structure of an evaluation"
-      ],
-      "topicTags": [
-        "agents",
-        "context",
-        "evals",
-        "frontend"
-      ],
-      "relevance": "high",
-      "portability": "portable",
-      "promotedToDocs": [
-        "docs/ANTHROPIC_ENGINEERING_LEARNINGS.md"
-      ],
-      "proposalIds": [
-        "anthropic-engineering-demystifying-evals-for-ai-agents"
-      ]
-    },
-    {
-      "schema": "anthropic-engineering-learning-article.v1",
       "articleId": "building-effective-agents",
       "url": "https://www.anthropic.com/engineering/building-effective-agents",
       "canonicalUrl": "https://www.anthropic.com/engineering/building-effective-agents",
@@ -220,8 +179,8 @@
       "topicLabel": "",
       "discoveredAt": "2026-04-23T14:29:13.040Z",
       "firstReadAt": "2026-04-23T14:29:13.040Z",
-      "lastReadAt": "2026-04-23T14:29:13.040Z",
-      "contentHash": "553911bf9d7166118ef9e93a991f667e31c56b48a89ca2559f4021f9b319444b",
+      "lastReadAt": "2026-04-23T19:47:58.230Z",
+      "contentHash": "5c6780a9d18a54a447c37c10e865f0fa7c4e1821e76d770080157a26bbd4bb55",
       "summary": "We've worked with dozens of teams building LLM agents across industries. Consistently, the most successful implementations use simple, composable patterns rather than complex frameworks.",
       "guidance": [
         "In this post, we share what we’ve learned from working with our customers and building agents ourselves, and give practical advice for developers on building effective agents.",
@@ -265,8 +224,8 @@
       "topicLabel": "",
       "discoveredAt": "2026-04-23T14:29:13.040Z",
       "firstReadAt": "2026-04-23T14:29:13.040Z",
-      "lastReadAt": "2026-04-23T14:29:13.040Z",
-      "contentHash": "74bd04562655a246536cd5ba264a9c1b35072f783eef9134c85a7d37e3fc2c4e",
+      "lastReadAt": "2026-04-23T19:47:58.230Z",
+      "contentHash": "d396cc02a8860c8d018b329e6c5add228c478533f694cf603d206b0c7c11ea93",
       "summary": "Direct tool calls consume context for each definition and result. Agents scale better by writing code to call tools instead. Here's how it works with MCP.",
       "guidance": [
         "In this blog we'll explore how code execution can enable agents to interact with MCP servers more efficiently, handling more tools while using fewer tokens.",
