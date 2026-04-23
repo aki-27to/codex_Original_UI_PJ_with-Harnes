@@ -53,7 +53,7 @@ async function waitRuntime(port, maxMs = 45000) {
   const startedAt = Date.now();
   while (Date.now() - startedAt < maxMs) {
     try {
-      const res = await requestJson({ port, path: "/api/runtime", timeoutMs: 4000 });
+      const res = await requestJson({ port, path: "/api/runtime", timeoutMs: 15000 });
       if (res.statusCode === 200 && res.json && res.json.mode === "app-server") {
         return res.json;
       }
@@ -91,7 +91,13 @@ async function startHarnessForPhase1({
     CODEX_TURN_ARTIFACTS_DIR: path.join(outputRoot, "turns"),
     ...envOverrides,
   });
-  const runtime = await waitRuntime(port);
+  let runtime;
+  try {
+    runtime = await waitRuntime(port);
+  } catch (error) {
+    await handle.stop();
+    throw error;
+  }
   const authHeaders = {
     [runtime.controlApi.tokenHeader]: runtime.controlApi.token,
     Origin: `http://127.0.0.1:${port}`,

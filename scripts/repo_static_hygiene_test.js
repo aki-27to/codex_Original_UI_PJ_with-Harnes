@@ -74,7 +74,9 @@ function main() {
     assert(!architecture.includes(marker), `CURRENT_ARCHITECTURE.md must not inline cross-project companion detail: ${marker}`);
   }
 
-  for (const dirName of [".npm-cache", ".playwright-cli", "node_modules"]) {
+  // CI runs `npm ci` before this gate, so node_modules/ may legitimately exist.
+  // Source hygiene for dependencies is enforced through .gitignore above.
+  for (const dirName of [".npm-cache", ".playwright-cli"]) {
     const target = path.join(workspaceRoot, dirName);
     assert(!fs.existsSync(target), `repo root should stay source-first; remove ${dirName} from the workspace root`);
   }

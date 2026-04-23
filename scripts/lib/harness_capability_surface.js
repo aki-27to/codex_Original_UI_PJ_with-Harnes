@@ -10,9 +10,29 @@ function createRuntimeArtifactReaders(options={}){
     readLoggingSurfaceJson,
   }=options;
 
+  function rebaseWorkspaceArtifactPath(rawPath){
+    const raw=safeString(rawPath,400);
+    if(!raw)return"";
+    const normalizedRaw=raw.replace(/\\/g,"/");
+    const normalizedWorkspace=String(workspaceRoot||"").replace(/\\/g,"/");
+    if(normalizedWorkspace&&(normalizedRaw===normalizedWorkspace||normalizedRaw.startsWith(`${normalizedWorkspace}/`))){
+      return path.normalize(raw);
+    }
+    const workspaceName=path.basename(workspaceRoot||"");
+    const marker=workspaceName?`/${workspaceName}/`:"";
+    const markerIndex=marker?normalizedRaw.toLowerCase().indexOf(marker.toLowerCase()):-1;
+    if(markerIndex>=0){
+      const suffix=normalizedRaw.slice(markerIndex+marker.length);
+      return path.normalize(path.join(workspaceRoot,suffix));
+    }
+    return "";
+  }
+
   function resolveWorkspaceRuntimePath(targetPath){
     const raw=safeString(targetPath,400);
     if(!raw)return"";
+    const rebased=rebaseWorkspaceArtifactPath(raw);
+    if(rebased)return rebased;
     if(path.isAbsolute(raw))return path.normalize(raw);
     return path.normalize(path.join(workspaceRoot,raw));
   }
