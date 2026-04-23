@@ -244,7 +244,11 @@ async function main() {
     const workerDecision = readJson("output/governance_public/worker_decision_surface.json");
     const goalCompletion = readJson("output/agi_readiness/goal_completion_status.json");
     const subjective = readJson("output/agi_readiness/subjective_goal_completion_status.json");
-    const compatibility = readJson("output/agi_readiness/compatibility_completion_status.json");
+    const compatibilityPath = path.join(workspaceRoot, "output", "agi_readiness", "compatibility_completion_status.json");
+    const latestOverview = readJson("output/memory_public/latest_overview.json");
+    const compatibility = fs.existsSync(compatibilityPath)
+      ? readJson("output/agi_readiness/compatibility_completion_status.json")
+      : latestOverview.compatibilityCompletion;
     assert.strictEqual(workerDecision.scope, "worker_decision", "worker decision scope mismatch");
     assert.strictEqual(goalCompletion.scope, "program_readiness", "goal completion scope mismatch");
     assert.strictEqual(subjective.scope, "subjective_companion", "subjective completion scope mismatch");

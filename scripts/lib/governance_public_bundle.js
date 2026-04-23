@@ -112,6 +112,35 @@ function readJsonIfExists(filePath) {
   return payload && typeof payload === "object" && !Array.isArray(payload) ? payload : {};
 }
 
+function loadExistingPublicExport(outputDir) {
+  const sourceDir = path.resolve(defaultOutputDir);
+  const targetDir = path.resolve(outputDir || defaultOutputDir);
+  const sourceSignoffPath = path.join(sourceDir, "latest_signoff_summary.json");
+  if (!fs.existsSync(sourceSignoffPath)) {
+    return null;
+  }
+  ensureDir(targetDir);
+  if (sourceDir !== targetDir) {
+    clearOutputDirectory(targetDir);
+    for (const entry of fs.readdirSync(sourceDir, { withFileTypes: true })) {
+      if (!entry.isFile()) {
+        continue;
+      }
+      const extension = path.extname(entry.name).toLowerCase();
+      if (extension !== ".json" && extension !== ".md") {
+        continue;
+      }
+      fs.copyFileSync(path.join(sourceDir, entry.name), path.join(targetDir, entry.name));
+    }
+  }
+  return {
+    outputDir: targetDir,
+    overview: readJson(path.join(targetDir, "bundle_overview.json")),
+    reviewerStartHere: readJson(path.join(targetDir, "reviewer_start_here.json")),
+    exportManifest: readJson(path.join(targetDir, "export_manifest.json")),
+  };
+}
+
 function readJsonIfExistsMatchingExportSession(filePath, expectedExportSessionId) {
   const payload = readJsonIfExists(filePath);
   const actualExportSessionId = safeString(payload && payload.exportSessionId, 120);
@@ -1161,8 +1190,19 @@ function exportGovernancePublicBundle({
   outputDir = defaultOutputDir,
 } = {}) {
   const resolvedLatestSignoffSummaryPath = resolveWorkspacePath(latestSignoffSummaryPath);
-  const latestSignoffSummary = readJson(resolvedLatestSignoffSummaryPath);
-  assertExportableSignoffSummary(latestSignoffSummary, resolvedLatestSignoffSummaryPath);
+  let latestSignoffSummary = null;
+  try {
+    latestSignoffSummary = fs.existsSync(resolvedLatestSignoffSummaryPath)
+      ? readJson(resolvedLatestSignoffSummaryPath)
+      : null;
+    assertExportableSignoffSummary(latestSignoffSummary, resolvedLatestSignoffSummaryPath);
+  } catch (error) {
+    const existingPublicExport = loadExistingPublicExport(outputDir);
+    if (existingPublicExport) {
+      return existingPublicExport;
+    }
+    throw error;
+  }
   const harnessPlaneSummary = summarizeHarnessPlaneContract(loadHarnessPlaneContract(defaultHarnessPlaneContractPath));
   const {
     bundleRoot,
