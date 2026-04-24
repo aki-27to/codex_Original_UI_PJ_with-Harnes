@@ -1,6 +1,6 @@
 {
   "schema": "self-improvement-state.v1",
-  "generatedAt": "2026-04-23T19:48:27.855Z",
+  "generatedAt": "2026-04-24T19:26:29.498Z",
   "sourceName": "Anthropic Engineering",
   "sourceTier": "secondary",
   "promotionMode": "machine_guarded_autonomy",
@@ -199,14 +199,6 @@
   ],
   "proposalSummaries": [
     {
-      "proposalId": "anthropic-engineering-infrastructure-noise-self-improvement",
-      "articleId": "infrastructure-noise",
-      "title": "Quantifying infrastructure noise in agentic coding evals",
-      "changeClass": "eval_extension",
-      "target": "scripts/config/eval_suite_default.json",
-      "decision": "proposal_only"
-    },
-    {
       "proposalId": "anthropic-engineering-managed-agents-self-improvement",
       "articleId": "managed-agents",
       "title": "Scaling Managed Agents: Decoupling the brain from the hands",
@@ -221,6 +213,14 @@
       "changeClass": "planner_strategy",
       "target": "scripts/lib/planning_mode_policy.js",
       "decision": "blocked"
+    },
+    {
+      "proposalId": "anthropic-engineering-infrastructure-noise-self-improvement",
+      "articleId": "infrastructure-noise",
+      "title": "Quantifying infrastructure noise in agentic coding evals",
+      "changeClass": "eval_extension",
+      "target": "scripts/config/eval_suite_default.json",
+      "decision": "proposal_only"
     },
     {
       "proposalId": "anthropic-engineering-AI-resistant-technical-evaluations-self-improvement",

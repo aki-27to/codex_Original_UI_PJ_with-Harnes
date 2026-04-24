@@ -1,6 +1,6 @@
 # ANTHROPIC_ENGINEERING_LEARNINGS
 
-Updated: 2026-04-23T19:47:58.230Z
+Updated: 2026-04-24T19:26:02.148Z
 
 This file is auto-synced from the Anthropic Engineering secondary learning lane.
 Only portable agent-engineering principles are retained here; Claude-specific mechanics do not become runtime policy.
@@ -15,23 +15,12 @@ Only portable agent-engineering principles are retained here; Claude-specific me
 
 ## Topic: agents
 
-### Quantifying infrastructure noise in agentic coding evals
-
-- Source: https://www.anthropic.com/engineering/infrastructure-noise
-- Relevance: high
-- Portability: portable
-- Summary: Infrastructure configuration can swing agentic coding benchmarks by several percentage points—sometimes more than the leaderboard gap between top models.
-- Guidance:
-  - Agentic coding evals are different: models are given a full environment where they write programs, run tests, install dependencies, and iterate over multiple turns.
-  - Agentic coding benchmarks like SWE-bench and Terminal-Bench are commonly used to compare the software engineering capabilities of frontier models—with top spots on leaderboards often separated by just a few percentage points.
-  - Eval developers have begun accounting for this.
-  - Terminal-Bench 2.0, for instance, specifies recommended CPU and RAM on a per-task basis in their latest 2.0 release.
-
 ### Scaling Managed Agents: Decoupling the brain from the hands
 
 - Source: https://www.anthropic.com/engineering/managed-agents
 - Relevance: high
 - Portability: mixed
+- Blog card date: Apr 08, 2026
 - Summary: Harnesses encode assumptions that go stale as models improve. Managed Agents—our hosted service for long-horizon agent work—is built around interfaces that stay stable as harnesses change.
 - Guidance:
   - Building Managed Agents meant solving an old problem in computing: how to design a system for “ programs as yet unthought of .” Decades ago, operating systems solved this problem by virtualizing hardware into abstractions— process, file —general enough for programs that didn't exist yet.
@@ -50,6 +39,19 @@ Only portable agent-engineering principles are retained here; Claude-specific me
   - Two insights shaped the harness I built for frontend design.
   - Design quality: Does the design feel like a coherent whole rather than a collection of parts? Strong work here means the colors, typography, layout, imagery, and other details combine to create a distinct mood and identity.
   - For more complex tasks, the agent still tends to go off the rails over time.
+
+### Quantifying infrastructure noise in agentic coding evals
+
+- Source: https://www.anthropic.com/engineering/infrastructure-noise
+- Relevance: high
+- Portability: portable
+- Blog card date: Feb 05, 2026
+- Summary: Infrastructure configuration can swing agentic coding benchmarks by several percentage points—sometimes more than the leaderboard gap between top models.
+- Guidance:
+  - Agentic coding evals are different: models are given a full environment where they write programs, run tests, install dependencies, and iterate over multiple turns.
+  - Agentic coding benchmarks like SWE-bench and Terminal-Bench are commonly used to compare the software engineering capabilities of frontier models—with top spots on leaderboards often separated by just a few percentage points.
+  - Eval developers have begun accounting for this.
+  - Terminal-Bench 2.0, for instance, specifies recommended CPU and RAM on a per-task basis in their latest 2.0 release.
 
 ### Building Effective AI Agents
 
@@ -99,6 +101,7 @@ Only portable agent-engineering principles are retained here; Claude-specific me
 - Source: https://www.anthropic.com/engineering/managed-agents
 - Relevance: high
 - Portability: mixed
+- Blog card date: Apr 08, 2026
 - Summary: Harnesses encode assumptions that go stale as models improve. Managed Agents—our hosted service for long-horizon agent work—is built around interfaces that stay stable as harnesses change.
 - Guidance:
   - Building Managed Agents meant solving an old problem in computing: how to design a system for “ programs as yet unthought of .” Decades ago, operating systems solved this problem by virtualizing hardware into abstractions— process, file —general enough for programs that didn't exist yet.
@@ -146,18 +149,6 @@ Only portable agent-engineering principles are retained here; Claude-specific me
 
 ## Topic: evals
 
-### Quantifying infrastructure noise in agentic coding evals
-
-- Source: https://www.anthropic.com/engineering/infrastructure-noise
-- Relevance: high
-- Portability: portable
-- Summary: Infrastructure configuration can swing agentic coding benchmarks by several percentage points—sometimes more than the leaderboard gap between top models.
-- Guidance:
-  - Agentic coding evals are different: models are given a full environment where they write programs, run tests, install dependencies, and iterate over multiple turns.
-  - Agentic coding benchmarks like SWE-bench and Terminal-Bench are commonly used to compare the software engineering capabilities of frontier models—with top spots on leaderboards often separated by just a few percentage points.
-  - Eval developers have begun accounting for this.
-  - Terminal-Bench 2.0, for instance, specifies recommended CPU and RAM on a per-task basis in their latest 2.0 release.
-
 ### Harness design for long-running application development
 
 - Source: https://www.anthropic.com/engineering/harness-design-long-running-apps
@@ -170,6 +161,19 @@ Only portable agent-engineering principles are retained here; Claude-specific me
   - Two insights shaped the harness I built for frontend design.
   - Design quality: Does the design feel like a coherent whole rather than a collection of parts? Strong work here means the colors, typography, layout, imagery, and other details combine to create a distinct mood and identity.
   - For more complex tasks, the agent still tends to go off the rails over time.
+
+### Quantifying infrastructure noise in agentic coding evals
+
+- Source: https://www.anthropic.com/engineering/infrastructure-noise
+- Relevance: high
+- Portability: portable
+- Blog card date: Feb 05, 2026
+- Summary: Infrastructure configuration can swing agentic coding benchmarks by several percentage points—sometimes more than the leaderboard gap between top models.
+- Guidance:
+  - Agentic coding evals are different: models are given a full environment where they write programs, run tests, install dependencies, and iterate over multiple turns.
+  - Agentic coding benchmarks like SWE-bench and Terminal-Bench are commonly used to compare the software engineering capabilities of frontier models—with top spots on leaderboards often separated by just a few percentage points.
+  - Eval developers have begun accounting for this.
+  - Terminal-Bench 2.0, for instance, specifies recommended CPU and RAM on a per-task basis in their latest 2.0 release.
 
 ### Designing AI resistant technical evaluations
 
@@ -204,6 +208,7 @@ Only portable agent-engineering principles are retained here; Claude-specific me
 - Source: https://www.anthropic.com/engineering/managed-agents
 - Relevance: high
 - Portability: mixed
+- Blog card date: Apr 08, 2026
 - Summary: Harnesses encode assumptions that go stale as models improve. Managed Agents—our hosted service for long-horizon agent work—is built around interfaces that stay stable as harnesses change.
 - Guidance:
   - Building Managed Agents meant solving an old problem in computing: how to design a system for “ programs as yet unthought of .” Decades ago, operating systems solved this problem by virtualizing hardware into abstractions— process, file —general enough for programs that didn't exist yet.

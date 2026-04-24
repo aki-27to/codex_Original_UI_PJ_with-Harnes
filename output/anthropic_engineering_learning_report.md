@@ -1,7 +1,7 @@
 # ANTHROPIC_ENGINEERING_LEARNING_REPORT
 
 - status: PASS
-- generatedAt: 2026-04-23T19:47:58.230Z
+- generatedAt: 2026-04-24T19:26:02.148Z
 - trackedArticles: 6
 - newArticlesThisRun: 0
 - pendingProposals: 6
@@ -15,18 +15,18 @@
 
 ## Recent Articles
 
-- Quantifying infrastructure noise in agentic coding evals | high | https://www.anthropic.com/engineering/infrastructure-noise
 - Scaling Managed Agents: Decoupling the brain from the hands | high | https://www.anthropic.com/engineering/managed-agents
 - Harness design for long-running application development | high | https://www.anthropic.com/engineering/harness-design-long-running-apps
+- Quantifying infrastructure noise in agentic coding evals | high | https://www.anthropic.com/engineering/infrastructure-noise
 - Designing AI resistant technical evaluations | high | https://www.anthropic.com/engineering/AI-resistant-technical-evaluations
 - Building Effective AI Agents | high | https://www.anthropic.com/engineering/building-effective-agents
 - Code execution with MCP: building more efficient AI agents | high | https://www.anthropic.com/engineering/code-execution-with-mcp
 
 ## Pending Proposals
 
-- Quantifying infrastructure noise in agentic coding evals -> scripts/config/eval_suite_default.json (proposal_only)
 - Scaling Managed Agents: Decoupling the brain from the hands -> docs/CONTEXT_MEMORY_POLICY.md (proposal_only)
 - Harness design for long-running application development -> docs/CONTEXT_MEMORY_POLICY.md (proposal_only)
+- Quantifying infrastructure noise in agentic coding evals -> scripts/config/eval_suite_default.json (proposal_only)
 - Designing AI resistant technical evaluations -> docs/CONTEXT_MEMORY_POLICY.md (proposal_only)
 - Building Effective AI Agents -> docs/CONTEXT_MEMORY_POLICY.md (proposal_only)
 - Code execution with MCP: building more efficient AI agents -> docs/CONTEXT_MEMORY_POLICY.md (proposal_only)

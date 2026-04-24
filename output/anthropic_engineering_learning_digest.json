@@ -1,6 +1,6 @@
 {
   "schema": "anthropic-engineering-learning-digest.v1",
-  "generatedAt": "2026-04-23T19:47:58.230Z",
+  "generatedAt": "2026-04-24T19:26:02.148Z",
   "source": {
     "name": "Anthropic Engineering",
     "indexUrl": "https://www.anthropic.com/engineering"
@@ -15,26 +15,11 @@
   "topics": {
     "agents": [
       {
-        "articleId": "infrastructure-noise",
-        "title": "Quantifying infrastructure noise in agentic coding evals",
-        "url": "https://www.anthropic.com/engineering/infrastructure-noise",
-        "relevance": "high",
-        "indexDateLabel": "",
-        "summary": "Infrastructure configuration can swing agentic coding benchmarks by several percentage points—sometimes more than the leaderboard gap between top models.",
-        "guidance": [
-          "Agentic coding evals are different: models are given a full environment where they write programs, run tests, install dependencies, and iterate over multiple turns.",
-          "Agentic coding benchmarks like SWE-bench and Terminal-Bench are commonly used to compare the software engineering capabilities of frontier models—with top spots on leaderboards often separated by just a few percentage points.",
-          "Eval developers have begun accounting for this.",
-          "Terminal-Bench 2.0, for instance, specifies recommended CPU and RAM on a per-task basis in their latest 2.0 release."
-        ],
-        "portability": "portable"
-      },
-      {
         "articleId": "managed-agents",
         "title": "Scaling Managed Agents: Decoupling the brain from the hands",
         "url": "https://www.anthropic.com/engineering/managed-agents",
         "relevance": "high",
-        "indexDateLabel": "",
+        "indexDateLabel": "Apr 08, 2026",
         "summary": "Harnesses encode assumptions that go stale as models improve. Managed Agents—our hosted service for long-horizon agent work—is built around interfaces that stay stable as harnesses change.",
         "guidance": [
           "Building Managed Agents meant solving an old problem in computing: how to design a system for “ programs as yet unthought of .” Decades ago, operating systems solved this problem by virtualizing hardware into abstractions— process, file —general enough for programs that didn't exist yet.",
@@ -55,6 +40,21 @@
           "Two insights shaped the harness I built for frontend design.",
           "Design quality: Does the design feel like a coherent whole rather than a collection of parts? Strong work here means the colors, typography, layout, imagery, and other details combine to create a distinct mood and identity.",
           "For more complex tasks, the agent still tends to go off the rails over time."
+        ],
+        "portability": "portable"
+      },
+      {
+        "articleId": "infrastructure-noise",
+        "title": "Quantifying infrastructure noise in agentic coding evals",
+        "url": "https://www.anthropic.com/engineering/infrastructure-noise",
+        "relevance": "high",
+        "indexDateLabel": "Feb 05, 2026",
+        "summary": "Infrastructure configuration can swing agentic coding benchmarks by several percentage points—sometimes more than the leaderboard gap between top models.",
+        "guidance": [
+          "Agentic coding evals are different: models are given a full environment where they write programs, run tests, install dependencies, and iterate over multiple turns.",
+          "Agentic coding benchmarks like SWE-bench and Terminal-Bench are commonly used to compare the software engineering capabilities of frontier models—with top spots on leaderboards often separated by just a few percentage points.",
+          "Eval developers have begun accounting for this.",
+          "Terminal-Bench 2.0, for instance, specifies recommended CPU and RAM on a per-task basis in their latest 2.0 release."
         ],
         "portability": "portable"
       },
@@ -89,75 +89,13 @@
         "portability": "portable"
       }
     ],
-    "evals": [
-      {
-        "articleId": "infrastructure-noise",
-        "title": "Quantifying infrastructure noise in agentic coding evals",
-        "url": "https://www.anthropic.com/engineering/infrastructure-noise",
-        "relevance": "high",
-        "indexDateLabel": "",
-        "summary": "Infrastructure configuration can swing agentic coding benchmarks by several percentage points—sometimes more than the leaderboard gap between top models.",
-        "guidance": [
-          "Agentic coding evals are different: models are given a full environment where they write programs, run tests, install dependencies, and iterate over multiple turns.",
-          "Agentic coding benchmarks like SWE-bench and Terminal-Bench are commonly used to compare the software engineering capabilities of frontier models—with top spots on leaderboards often separated by just a few percentage points.",
-          "Eval developers have begun accounting for this.",
-          "Terminal-Bench 2.0, for instance, specifies recommended CPU and RAM on a per-task basis in their latest 2.0 release."
-        ],
-        "portability": "portable"
-      },
-      {
-        "articleId": "harness-design-long-running-apps",
-        "title": "Harness design for long-running application development",
-        "url": "https://www.anthropic.com/engineering/harness-design-long-running-apps",
-        "relevance": "high",
-        "indexDateLabel": "Mar 24, 2026",
-        "summary": "Harness design is key to performance at the frontier of agentic coding. Here's how we pushed Claude further in frontend design and long-running autonomous software engineering.",
-        "guidance": [
-          "We've previously shown that harness design has a substantial impact on the effectiveness of long running agentic coding.",
-          "Two insights shaped the harness I built for frontend design.",
-          "Design quality: Does the design feel like a coherent whole rather than a collection of parts? Strong work here means the colors, typography, layout, imagery, and other details combine to create a distinct mood and identity.",
-          "For more complex tasks, the agent still tends to go off the rails over time."
-        ],
-        "portability": "portable"
-      },
-      {
-        "articleId": "AI-resistant-technical-evaluations",
-        "title": "Designing AI resistant technical evaluations",
-        "url": "https://www.anthropic.com/engineering/AI-resistant-technical-evaluations",
-        "relevance": "high",
-        "indexDateLabel": "Jan 21, 2026",
-        "summary": "What we learned from three iterations of a performance engineering take-home that Claude keeps beating.",
-        "guidance": [
-          "Evaluating technical candidates becomes harder as AI capabilities improve.",
-          "I've now iterated through three versions of our take-home in an attempt to ensure it still carries signal. Each time, I’ve learned something new about what makes evaluations robust to AI assistance and what doesn't.",
-          "Each time, I’ve learned something new about what makes evaluations robust to AI assistance and what doesn't.",
-          "A take-home that distinguishes well between human skill levels today may be trivially solved by models tomorrow—rendering it useless for evaluation."
-        ],
-        "portability": "mixed"
-      },
-      {
-        "articleId": "building-effective-agents",
-        "title": "Building Effective AI Agents",
-        "url": "https://www.anthropic.com/engineering/building-effective-agents",
-        "relevance": "high",
-        "indexDateLabel": "pinned",
-        "summary": "We've worked with dozens of teams building LLM agents across industries. Consistently, the most successful implementations use simple, composable patterns rather than complex frameworks.",
-        "guidance": [
-          "In this post, we share what we’ve learned from working with our customers and building agents ourselves, and give practical advice for developers on building effective agents.",
-          "Agents , on the other hand, are systems where LLMs dynamically direct their own processes and tool usage, maintaining control over how they accomplish tasks.",
-          "Strands Agents SDK by AWS ;",
-          "Over the past year, we've worked with dozens of teams building large language model (LLM) agents across industries."
-        ],
-        "portability": "portable"
-      }
-    ],
     "context": [
       {
         "articleId": "managed-agents",
         "title": "Scaling Managed Agents: Decoupling the brain from the hands",
         "url": "https://www.anthropic.com/engineering/managed-agents",
         "relevance": "high",
-        "indexDateLabel": "",
+        "indexDateLabel": "Apr 08, 2026",
         "summary": "Harnesses encode assumptions that go stale as models improve. Managed Agents—our hosted service for long-horizon agent work—is built around interfaces that stay stable as harnesses change.",
         "guidance": [
           "Building Managed Agents meant solving an old problem in computing: how to design a system for “ programs as yet unthought of .” Decades ago, operating systems solved this problem by virtualizing hardware into abstractions— process, file —general enough for programs that didn't exist yet.",
@@ -218,7 +156,7 @@
         "title": "Scaling Managed Agents: Decoupling the brain from the hands",
         "url": "https://www.anthropic.com/engineering/managed-agents",
         "relevance": "high",
-        "indexDateLabel": "",
+        "indexDateLabel": "Apr 08, 2026",
         "summary": "Harnesses encode assumptions that go stale as models improve. Managed Agents—our hosted service for long-horizon agent work—is built around interfaces that stay stable as harnesses change.",
         "guidance": [
           "Building Managed Agents meant solving an old problem in computing: how to design a system for “ programs as yet unthought of .” Decades ago, operating systems solved this problem by virtualizing hardware into abstractions— process, file —general enough for programs that didn't exist yet.",
@@ -288,6 +226,68 @@
         "portability": "portable"
       }
     ],
+    "evals": [
+      {
+        "articleId": "harness-design-long-running-apps",
+        "title": "Harness design for long-running application development",
+        "url": "https://www.anthropic.com/engineering/harness-design-long-running-apps",
+        "relevance": "high",
+        "indexDateLabel": "Mar 24, 2026",
+        "summary": "Harness design is key to performance at the frontier of agentic coding. Here's how we pushed Claude further in frontend design and long-running autonomous software engineering.",
+        "guidance": [
+          "We've previously shown that harness design has a substantial impact on the effectiveness of long running agentic coding.",
+          "Two insights shaped the harness I built for frontend design.",
+          "Design quality: Does the design feel like a coherent whole rather than a collection of parts? Strong work here means the colors, typography, layout, imagery, and other details combine to create a distinct mood and identity.",
+          "For more complex tasks, the agent still tends to go off the rails over time."
+        ],
+        "portability": "portable"
+      },
+      {
+        "articleId": "infrastructure-noise",
+        "title": "Quantifying infrastructure noise in agentic coding evals",
+        "url": "https://www.anthropic.com/engineering/infrastructure-noise",
+        "relevance": "high",
+        "indexDateLabel": "Feb 05, 2026",
+        "summary": "Infrastructure configuration can swing agentic coding benchmarks by several percentage points—sometimes more than the leaderboard gap between top models.",
+        "guidance": [
+          "Agentic coding evals are different: models are given a full environment where they write programs, run tests, install dependencies, and iterate over multiple turns.",
+          "Agentic coding benchmarks like SWE-bench and Terminal-Bench are commonly used to compare the software engineering capabilities of frontier models—with top spots on leaderboards often separated by just a few percentage points.",
+          "Eval developers have begun accounting for this.",
+          "Terminal-Bench 2.0, for instance, specifies recommended CPU and RAM on a per-task basis in their latest 2.0 release."
+        ],
+        "portability": "portable"
+      },
+      {
+        "articleId": "AI-resistant-technical-evaluations",
+        "title": "Designing AI resistant technical evaluations",
+        "url": "https://www.anthropic.com/engineering/AI-resistant-technical-evaluations",
+        "relevance": "high",
+        "indexDateLabel": "Jan 21, 2026",
+        "summary": "What we learned from three iterations of a performance engineering take-home that Claude keeps beating.",
+        "guidance": [
+          "Evaluating technical candidates becomes harder as AI capabilities improve.",
+          "I've now iterated through three versions of our take-home in an attempt to ensure it still carries signal. Each time, I’ve learned something new about what makes evaluations robust to AI assistance and what doesn't.",
+          "Each time, I’ve learned something new about what makes evaluations robust to AI assistance and what doesn't.",
+          "A take-home that distinguishes well between human skill levels today may be trivially solved by models tomorrow—rendering it useless for evaluation."
+        ],
+        "portability": "mixed"
+      },
+      {
+        "articleId": "building-effective-agents",
+        "title": "Building Effective AI Agents",
+        "url": "https://www.anthropic.com/engineering/building-effective-agents",
+        "relevance": "high",
+        "indexDateLabel": "pinned",
+        "summary": "We've worked with dozens of teams building LLM agents across industries. Consistently, the most successful implementations use simple, composable patterns rather than complex frameworks.",
+        "guidance": [
+          "In this post, we share what we’ve learned from working with our customers and building agents ourselves, and give practical advice for developers on building effective agents.",
+          "Agents , on the other hand, are systems where LLMs dynamically direct their own processes and tool usage, maintaining control over how they accomplish tasks.",
+          "Strands Agents SDK by AWS ;",
+          "Over the past year, we've worked with dozens of teams building large language model (LLM) agents across industries."
+        ],
+        "portability": "portable"
+      }
+    ],
     "skills": [
       {
         "articleId": "harness-design-long-running-apps",
@@ -340,18 +340,6 @@
   },
   "latestArticles": [
     {
-      "articleId": "infrastructure-noise",
-      "title": "Quantifying infrastructure noise in agentic coding evals",
-      "url": "https://www.anthropic.com/engineering/infrastructure-noise",
-      "relevance": "high",
-      "topicTags": [
-        "agents",
-        "evals"
-      ],
-      "summary": "Infrastructure configuration can swing agentic coding benchmarks by several percentage points—sometimes more than the leaderboard gap between top models.",
-      "indexDateLabel": ""
-    },
-    {
       "articleId": "managed-agents",
       "title": "Scaling Managed Agents: Decoupling the brain from the hands",
       "url": "https://www.anthropic.com/engineering/managed-agents",
@@ -362,7 +350,7 @@
         "frontend"
       ],
       "summary": "Harnesses encode assumptions that go stale as models improve. Managed Agents—our hosted service for long-horizon agent work—is built around interfaces that stay stable as harnesses change.",
-      "indexDateLabel": ""
+      "indexDateLabel": "Apr 08, 2026"
     },
     {
       "articleId": "harness-design-long-running-apps",
@@ -378,6 +366,18 @@
       ],
       "summary": "Harness design is key to performance at the frontier of agentic coding. Here's how we pushed Claude further in frontend design and long-running autonomous software engineering.",
       "indexDateLabel": "Mar 24, 2026"
+    },
+    {
+      "articleId": "infrastructure-noise",
+      "title": "Quantifying infrastructure noise in agentic coding evals",
+      "url": "https://www.anthropic.com/engineering/infrastructure-noise",
+      "relevance": "high",
+      "topicTags": [
+        "agents",
+        "evals"
+      ],
+      "summary": "Infrastructure configuration can swing agentic coding benchmarks by several percentage points—sometimes more than the leaderboard gap between top models.",
+      "indexDateLabel": "Feb 05, 2026"
     },
     {
       "articleId": "AI-resistant-technical-evaluations",
@@ -423,13 +423,6 @@
   ],
   "pendingProposals": [
     {
-      "proposalId": "anthropic-engineering-infrastructure-noise",
-      "articleId": "infrastructure-noise",
-      "title": "Quantifying infrastructure noise in agentic coding evals",
-      "target": "scripts/config/eval_suite_default.json",
-      "status": "proposal_only"
-    },
-    {
       "proposalId": "anthropic-engineering-managed-agents",
       "articleId": "managed-agents",
       "title": "Scaling Managed Agents: Decoupling the brain from the hands",
@@ -441,6 +434,13 @@
       "articleId": "harness-design-long-running-apps",
       "title": "Harness design for long-running application development",
       "target": "docs/CONTEXT_MEMORY_POLICY.md",
+      "status": "proposal_only"
+    },
+    {
+      "proposalId": "anthropic-engineering-infrastructure-noise",
+      "articleId": "infrastructure-noise",
+      "title": "Quantifying infrastructure noise in agentic coding evals",
+      "target": "scripts/config/eval_suite_default.json",
       "status": "proposal_only"
     },
     {
