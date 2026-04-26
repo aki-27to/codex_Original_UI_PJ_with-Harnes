@@ -1,0 +1,15 @@
+{
+  "name": "playwright-mcp-server",
+  "version": "0.1.0",
+  "private": true,
+  "type": "commonjs",
+  "description": "Local-first MCP server for Playwright browser automation, diagnostics, viewport evidence, and smoke checks.",
+  "bin": {
+    "playwright-mcp-server": "./src/server.js"
+  },
+  "scripts": {
+    "start": "node ./src/server.js",
+    "smoke": "node ./tests/smoke_test.js",
+    "smoke:config": "node ./tests/config_startup_test.js"
+  }
+}
