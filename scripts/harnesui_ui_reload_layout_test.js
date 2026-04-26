@@ -11,7 +11,7 @@ const indexHtmlPath = path.join(__dirname, "..", "web", "01.HarnesUI", "index.ht
 const stylesPath = path.join(__dirname, "..", "web", "01.HarnesUI", "styles.css");
 const source = fs.readFileSync(appPath, "utf8");
 const indexHtml = fs.readFileSync(indexHtmlPath, "utf8");
-const stylesSource = fs.readFileSync(stylesPath, "utf8");
+const stylesSource = fs.readFileSync(stylesPath, "utf8").replace(/\r\n/g, "\n");
 
 function extractConst(name) {
   const pattern = new RegExp(`const\\s+${name}\\s*=\\s*([^;]+);`);
