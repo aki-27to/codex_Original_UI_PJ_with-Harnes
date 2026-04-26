@@ -19,6 +19,8 @@ function main() {
   const baselineArtifact = String(scripts["artifact:baseline-comparison"] || "");
   const reviewerBaselineComparison = String(scripts["reviewer:baseline-comparison"] || "");
   const currentSurfaceTruth = String(scripts["current-surface-truth"] || "");
+  const repoLocalSkills = String(scripts["test:repo-local-skills"] || "");
+  const harnessArtifactMcp = String(scripts["test:harness-artifact-mcp"] || "");
   assert(
     repoQuality.includes("node scripts/run_repo_quality_gate.js"),
     "repo-quality must route through the stage runner"
@@ -50,6 +52,14 @@ function main() {
   assert(
     currentSurfaceTruth.includes("node scripts/current_surface_truth_test.js"),
     "current-surface-truth must stay available as an explicit script entrypoint"
+  );
+  assert(
+    repoLocalSkills.includes("node scripts/repo_local_skill_catalog_test.js"),
+    "test:repo-local-skills must validate repo-local skill catalog metadata and paths"
+  );
+  assert(
+    harnessArtifactMcp.includes("node tools/harness-artifact-mcp-server/tests/smoke_test.js"),
+    "test:harness-artifact-mcp must validate the read-only harness artifact MCP"
   );
   assert(runnerSource.includes('id: "governance"'), "repo-quality runner must define the governance stage");
   assert(runnerSource.includes('id: "runtime"'), "repo-quality runner must define the runtime stage");
@@ -90,6 +100,10 @@ function main() {
     "governance stage must include the github governance surface test"
   );
   assert(
+    runnerSource.includes('"test:repo-local-skills"'),
+    "governance stage must include repo-local skill catalog checks"
+  );
+  assert(
     runnerSource.includes('"test:docs:drift"'),
     "governance stage must include docs drift checks"
   );
@@ -102,12 +116,20 @@ function main() {
     "runtime stage must include the replay/app split test"
   );
   assert(
+    runnerSource.includes('"test:playwright-mcp"'),
+    "runtime stage must include Playwright MCP smoke checks"
+  );
+  assert(
     runnerSource.includes('"housekeeping:surfaces"'),
     "surfaces stage must refresh surfaces before checking them"
   );
   assert(
     runnerSource.includes('"current-surface-truth"'),
     "surfaces stage must keep current_surface_truth_test in the repo-quality gate"
+  );
+  assert(
+    runnerSource.includes('"test:harness-artifact-mcp"'),
+    "surfaces stage must include Harness Artifact MCP smoke checks"
   );
 
   console.log("PASS repo_quality_gate_structure_test");

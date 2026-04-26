@@ -42,7 +42,11 @@ function main() {
   assert.ok(!/value="power"/.test(indexHtml), "settings panel must remove the legacy power preset");
   assertRegex(indexHtml, /<span>Fast mode<\/span>/, "settings panel must keep the Fast mode checkbox label");
   assertRegex(indexHtml, /<span>Guardian approvals<\/span>/, "settings panel must expose the guardian approvals checkbox label");
+  assertRegex(indexHtml, /value="gpt-5\.5" selected/, "settings panel must expose gpt-5.5 as the default preset");
+  assertRegex(indexHtml, /value="gpt-5\.4"/, "settings panel must still expose the gpt-5.4 preset");
   assertRegex(indexHtml, /value="gpt-5\.4-mini"/, "settings panel must expose the gpt-5.4-mini preset");
+  assertRegex(indexHtml, /value="gpt-5\.3-codex-spark"/, "settings panel must expose the gpt-5.3-codex-spark preset");
+  assertRegex(indexHtml, /value="gpt-5\.2"/, "settings panel must expose the gpt-5.2 preset");
   assertRegex(indexHtml, /<select id="webSearchMode">/, "settings panel must expose the web search mode selector");
   assertRegex(indexHtml, /value="cached"/, "settings panel must expose cached web search");
   assertRegex(indexHtml, /value="live"/, "settings panel must expose live web search");
@@ -207,7 +211,10 @@ function main() {
   assertRegex(appJs, /function\s+saveSettings\s*\(\)\s*\{[\s\S]*?settingsState\.hasStoredFastMode=true;[\s\S]*?settingsState\.hasStoredAutomaticApprovalReview=true;[\s\S]*?settingsState\.hasStoredExecutionProfile=true;[\s\S]*?settingsState\.hasStoredWebSearchMode=true;[\s\S]*?\}/, "saving settings must pin permission-mode toggles and search mode in memory");
   assertRegex(appJs, /const\s+PROFILES=Object\.freeze\(\{[\s\S]*?auto:\{approvalPolicy:"on-request",sandboxMode:"workspace-write",webSearchMode:"cached",automaticApprovalReviewEnabled:false\}[\s\S]*?"read-only":\{approvalPolicy:"on-request",sandboxMode:"read-only",webSearchMode:"cached",automaticApprovalReviewEnabled:false\}[\s\S]*?guardian:\{approvalPolicy:"on-request",sandboxMode:"workspace-write",webSearchMode:"cached",automaticApprovalReviewEnabled:true\}[\s\S]*?"full-access":\{approvalPolicy:"never",sandboxMode:"danger-full-access",webSearchMode:"live",automaticApprovalReviewEnabled:false\}[\s\S]*?\}\);/, "app JS must map presets to the latest Codex permission combinations");
   assertRegex(appJs, /const\s+DEFAULT_PROFILE_ID="full-access";/, "app JS should default fresh permission-mode state to Full Access");
-  assertRegex(appJs, /const\s+EXEC_MODEL_PRESET_OPTIONS=\["gpt-5\.4","gpt-5\.4-mini","gpt-5\.3-codex"\];/, "app JS must expose the current Codex model presets");
+  assertRegex(appJs, /const\s+DEFAULT_EXEC_MODEL="gpt-5\.5";/, "app JS must default the HarnesUI model to gpt-5.5");
+  assertRegex(appJs, /const\s+EXEC_MODEL_PRESET_OPTIONS=\["gpt-5\.5","gpt-5\.4","gpt-5\.4-mini","gpt-5\.3-codex","gpt-5\.3-codex-spark","gpt-5\.2"\];/, "app JS must expose the latest Codex model presets");
+  assertRegex(appJs, /const\s+EXEC_MODEL_DEFAULT_VERSION="2026-04-25-gpt-5\.5";/, "app JS must stamp the latest model default version for stored settings migration");
+  assertRegex(appJs, /function\s+shouldPromoteStoredExecModelDefaultForUi\s*\(/, "app JS must promote stale stored gpt-5.4 defaults to the latest model");
   assertRegex(appJs, /Permission mode applied:/, "preset apply messaging must use the latest terminology");
   assert.ok(!/buildTopographyTaskSignalsForUi/.test(appJs), "agent kanban must not foreground planned-task signals");
   assert.ok(!/agent-topography-signal|agent-topography-item\.engaged/.test(stylesCss), "agent kanban styles must not imply planned-task highlighting");

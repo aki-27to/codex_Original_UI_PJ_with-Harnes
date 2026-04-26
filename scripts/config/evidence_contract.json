@@ -51,7 +51,11 @@
       "GET /api/runtime = 200"
     ],
     "skill_assignment_or_package_change": [
-      "node scripts/skill_portfolio_audit.js"
+      "node scripts/skill_portfolio_audit.js",
+      "node scripts/repo_local_skill_catalog_test.js"
+    ],
+    "read_only_harness_artifact_mcp_change": [
+      "node tools/harness-artifact-mcp-server/tests/smoke_test.js"
     ],
     "new_logic_over_delivery": [
       "dedicated_automated_tests"

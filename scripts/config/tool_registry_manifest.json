@@ -40,12 +40,22 @@
     },
     {
       "id": "playwright",
-      "capability": "browser interaction",
+      "capability": "browser interaction, MCP-backed UI evidence, diagnostics, viewport matrix, and local smoke automation",
       "riskTier": "medium",
-      "wrapperTests": ["phase4_multi_agent", "phase5_public_eval"],
-      "reliabilityScore": 0.89,
+      "wrapperTests": ["phase4_multi_agent", "phase5_public_eval", "playwright_mcp_smoke"],
+      "reliabilityScore": 0.91,
       "status": "active",
       "fallbackMode": "skip_browser_path"
+    },
+    {
+      "id": "harness_artifacts",
+      "capability": "read-only MCP observation of allowlisted harness evidence artifacts with redaction and bounded reads",
+      "riskTier": "low",
+      "accessMode": "read-only",
+      "wrapperTests": ["harness_artifact_mcp_smoke"],
+      "reliabilityScore": 0.93,
+      "status": "active",
+      "fallbackMode": "repo_file_inspection"
     }
   ]
 }

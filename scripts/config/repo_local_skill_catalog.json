@@ -1,6 +1,6 @@
 {
   "schema": "repo-local-skill-catalog.v1",
-  "version": "2026-03-30.r1",
+  "version": "2026-04-25.r1",
   "skillsRoot": ".agents/skills",
   "skills": [
     {
@@ -19,6 +19,20 @@
       "expectedArtifacts": [
         "verification_status",
         "changed_surface"
+      ],
+      "evidenceSurfaces": [
+        "git status",
+        "verification commands",
+        "changed_surface"
+      ],
+      "workerDecisionConnection": [
+        "missing verification prevents COMPLETED"
+      ],
+      "promotionCriteria": [
+        "repeatedly prevents false completion on changed code"
+      ],
+      "rollbackCriteria": [
+        "causes overbroad verification or hides failed checks"
       ]
     },
     {
@@ -39,6 +53,20 @@
         "open_issues",
         "verification_status",
         "durable_learnings"
+      ],
+      "evidenceSurfaces": [
+        "handoff bundle",
+        "verification_status",
+        "open_issues"
+      ],
+      "workerDecisionConnection": [
+        "missing handoff evidence prevents durable closeout"
+      ],
+      "promotionCriteria": [
+        "repeatedly preserves resume-ready state without transcript dependence"
+      ],
+      "rollbackCriteria": [
+        "bloats handoff or promotes unverified one-off learnings"
       ]
     },
     {
@@ -57,6 +85,288 @@
         "sprint_contract",
         "verification_status",
         "next_session_brief"
+      ],
+      "evidenceSurfaces": [
+        "acceptance criteria",
+        "verification_status",
+        "task_state.status"
+      ],
+      "workerDecisionConnection": [
+        "false completion maps to FAILED_VALIDATION"
+      ],
+      "promotionCriteria": [
+        "repeatedly blocks premature COMPLETED claims"
+      ],
+      "rollbackCriteria": [
+        "adds process closure without improving adoption evidence"
+      ]
+    },
+    {
+      "id": "worker-decision-review",
+      "path": ".agents/skills/worker-decision-review/SKILL.md",
+      "description": "Use when worker decision surfaces and adoption readiness must be reviewed before stopping.",
+      "useWhen": [
+        "worker decision needs review",
+        "adoption readiness must be checked",
+        "operator action must be ADOPT, REVISE, or BLOCK"
+      ],
+      "avoidWhen": [
+        "no decision artifact exists and no task outcome is being claimed"
+      ],
+      "expectedArtifacts": [
+        "worker_decision_surface",
+        "adoption_readiness_eval",
+        "decision_risk_summary"
+      ],
+      "evidenceSurfaces": [
+        "output/governance_public/worker_decision_surface.json",
+        "adoption_readiness_eval.json",
+        "output/agi_readiness/goal_completion_status.json"
+      ],
+      "workerDecisionConnection": [
+        "operatorAction",
+        "adoptionReadiness",
+        "taskOutcomeStatus"
+      ],
+      "promotionCriteria": [
+        "improves stop/continue decisions without increasing HITL"
+      ],
+      "rollbackCriteria": [
+        "overrides evaluator output or treats review closure as adoption"
+      ]
+    },
+    {
+      "id": "artifact-improvement-learning",
+      "path": ".agents/skills/artifact-improvement-learning/SKILL.md",
+      "description": "Use when artifact improvements must become governed reusable learning rather than one-off notes.",
+      "useWhen": [
+        "docs, UI, code, tests, or instructions improved",
+        "reusable pattern or anti-pattern must be captured",
+        "promotion or rollback condition must be defined"
+      ],
+      "avoidWhen": [
+        "change is a one-off fix with no reusable behavior"
+      ],
+      "expectedArtifacts": [
+        "learning_event",
+        "reusable_pattern",
+        "anti_pattern",
+        "promotion_condition",
+        "rollback_condition"
+      ],
+      "evidenceSurfaces": [
+        "learning ledger",
+        "reviewer evidence",
+        "eval feedback"
+      ],
+      "workerDecisionConnection": [
+        "learning changes require evidence before adoption claims"
+      ],
+      "promotionCriteria": [
+        "reused successfully with evidence and no guard failures"
+      ],
+      "rollbackCriteria": [
+        "harmful, neutral, stale, or unsupported by task evidence"
+      ]
+    },
+    {
+      "id": "repo-truth-audit",
+      "path": ".agents/skills/repo-truth-audit/SKILL.md",
+      "description": "Use when README, architecture docs, current logs, output artifacts, and decision surfaces may disagree.",
+      "useWhen": [
+        "repo truth needs audit",
+        "docs/code/output mismatch is suspected",
+        "completion claim may be stale"
+      ],
+      "avoidWhen": [
+        "single-file local edit has no public artifact or doc impact"
+      ],
+      "expectedArtifacts": [
+        "mismatch_report",
+        "stale_artifact_assessment",
+        "decision_impact"
+      ],
+      "evidenceSurfaces": [
+        "README.md",
+        "docs/CURRENT_ARCHITECTURE.md",
+        "output/governance_public",
+        "output/agi_readiness",
+        "logs/current"
+      ],
+      "workerDecisionConnection": [
+        "repo truth mismatch can force FAILED_VALIDATION"
+      ],
+      "promotionCriteria": [
+        "catches stale or contradictory public surfaces before release"
+      ],
+      "rollbackCriteria": [
+        "creates broad audits without actionable mismatch evidence"
+      ]
+    },
+    {
+      "id": "not-yet-root-cause-debugger",
+      "path": ".agents/skills/not-yet-root-cause-debugger/SKILL.md",
+      "description": "Use when goal or learning status remains NOT_YET after implementation appears complete.",
+      "useWhen": [
+        "goal_completion_status is NOT_YET",
+        "learning adoption status blocks completion",
+        "metric does not move after code changes"
+      ],
+      "avoidWhen": [
+        "status is already current and passing"
+      ],
+      "expectedArtifacts": [
+        "root_cause_classification",
+        "stale_export_check",
+        "next_verification_step"
+      ],
+      "evidenceSurfaces": [
+        "output/agi_readiness/goal_completion_status.json",
+        "output/agi_readiness/learning_adoption_status.json",
+        "referenced readiness artifacts"
+      ],
+      "workerDecisionConnection": [
+        "NOT_YET can prevent ADOPTABLE_COMPLETE"
+      ],
+      "promotionCriteria": [
+        "reduces repeated metric/debug dead ends"
+      ],
+      "rollbackCriteria": [
+        "guesses root cause without checking artifact generation path"
+      ]
+    },
+    {
+      "id": "web-creative-brief-and-eval",
+      "path": ".agents/skills/web-creative-brief-and-eval/SKILL.md",
+      "description": "Use for design-sensitive web/UI work requiring brief, visual evidence, reference comparison, and adoption decision.",
+      "useWhen": [
+        "web or UI design quality matters",
+        "creative brief or benchmark must be locked",
+        "visual evidence is required"
+      ],
+      "avoidWhen": [
+        "pure backend or non-visual change"
+      ],
+      "expectedArtifacts": [
+        "design_brief",
+        "reference_comparison",
+        "visual_evidence",
+        "adoption_decision"
+      ],
+      "evidenceSurfaces": [
+        "screenshots",
+        "browser diagnostics",
+        "reviewer verdict",
+        "DESIGN_ACCEPTANCE_CONTRACT"
+      ],
+      "workerDecisionConnection": [
+        "design-sensitive completion requires visual evidence"
+      ],
+      "promotionCriteria": [
+        "improves subjective UI adoption with proof"
+      ],
+      "rollbackCriteria": [
+        "turns design work into generic dashboard or lacks comparison evidence"
+      ]
+    },
+    {
+      "id": "browser-flakiness-recovery",
+      "path": ".agents/skills/browser-flakiness-recovery/SKILL.md",
+      "description": "Use when browser, Playwright, DevTools, or MCP UI evidence fails and Codex must retry, fall back, or truthfully defer.",
+      "useWhen": [
+        "browser verification is flaky",
+        "Playwright or MCP startup fails",
+        "visual evidence cannot be collected"
+      ],
+      "avoidWhen": [
+        "browser evidence passed and is stable"
+      ],
+      "expectedArtifacts": [
+        "failure_classification",
+        "fallback_evidence",
+        "blocked_or_skipped_reason"
+      ],
+      "evidenceSurfaces": [
+        "Playwright MCP diagnostics",
+        "command output",
+        "fallback HTTP or source inspection"
+      ],
+      "workerDecisionConnection": [
+        "missing browser evidence blocks visual completion claims"
+      ],
+      "promotionCriteria": [
+        "reduces false browser failures and false visual completion"
+      ],
+      "rollbackCriteria": [
+        "hides missing visual proof behind fallback claims"
+      ]
+    },
+    {
+      "id": "safe-refactor-with-proof",
+      "path": ".agents/skills/safe-refactor-with-proof/SKILL.md",
+      "description": "Use for multi-file refactors requiring minimal diff, docs/code/output sync, tests, and rollback notes.",
+      "useWhen": [
+        "multiple files or surfaces change",
+        "refactor must remain minimal and reversible",
+        "docs/code/output sync is required"
+      ],
+      "avoidWhen": [
+        "single isolated edit with no shared behavior impact"
+      ],
+      "expectedArtifacts": [
+        "baseline_status",
+        "changed_surface",
+        "verification_commands",
+        "rollback_notes"
+      ],
+      "evidenceSurfaces": [
+        "git status",
+        "git diff --stat",
+        "targeted tests",
+        "broader regression checks"
+      ],
+      "workerDecisionConnection": [
+        "unverified refactor maps to FAILED_VALIDATION"
+      ],
+      "promotionCriteria": [
+        "prevents unrelated edits and unsafe refactor closure"
+      ],
+      "rollbackCriteria": [
+        "encourages broad cleanup or reverts user changes"
+      ]
+    },
+    {
+      "id": "skill-promotion-governance",
+      "path": ".agents/skills/skill-promotion-governance/SKILL.md",
+      "description": "Use when adding, cataloging, auditing, promoting, or rolling back repo-local skills.",
+      "useWhen": [
+        "skill package changes",
+        "skill candidate promotion is proposed",
+        "skill effectiveness or harm must be classified"
+      ],
+      "avoidWhen": [
+        "no skill surface is touched"
+      ],
+      "expectedArtifacts": [
+        "skill_lifecycle_state",
+        "promotion_evidence",
+        "rollback_criteria",
+        "portfolio_audit"
+      ],
+      "evidenceSurfaces": [
+        "scripts/config/repo_local_skill_catalog.json",
+        "scripts/config/skill_portfolio_policy.json",
+        "logs/skill_outcomes.jsonl",
+        "node scripts/skill_portfolio_audit.js"
+      ],
+      "workerDecisionConnection": [
+        "skill promotion must not bypass evidence gates"
+      ],
+      "promotionCriteria": [
+        "reproducibility evidence, adoption feedback, and evaluation lesson link are present"
+      ],
+      "rollbackCriteria": [
+        "guard failure, regression, harmful outcome, or stale behavior"
       ]
     }
   ]

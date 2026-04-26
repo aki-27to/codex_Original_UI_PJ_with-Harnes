@@ -157,6 +157,7 @@ reviewer 向けの外部比較 refresh は `npm run reviewer:baseline-comparison
 - Thread/session reuse no longer compares raw cwd strings. `normalizeDirectoryPathIdentity(...)` strips Windows extended-length prefixes, absorbs case drift on Windows, and trims trailing separators before planning carryover and reset decisions.
 - `POST /api/exec` accepts `memoryMode` and `resetCodexMemory`, preserves them through idempotency/replay memory, and applies capability-gated memory config when a new app-server thread starts. Remote memory reset remains fallback-safe: unsupported app-server capability falls back to local planning-context cleanup instead of inventing a new route.
 - MCP telemetry now records richer aggregates on each turn: `mcpWallTimeMs`, `mcpPerServerCounts`, `mcpNamespaces`, `mcpSandboxStates`, and `mcpParallelSafeCallCount`. These fields flow into the logging surface and the harness overview recent-execution snapshot.
+- `harness_artifacts` is a repo-local read-only MCP observation surface for allowlisted governance, readiness, and current-log artifacts. It must not calculate worker decisions, update scores, mutate files, run shell commands, or call external networks.
 - `POST /api/replay/turn` remains the primary replay route, but replay mode is now capability-aware. When turn artifacts exist and `rawTurnItemInjection` is reported as `supported`, replay can return `artifact_snapshot`; otherwise it falls back to `live_rerun`.
 
 `portable_local` は「広く配れる形」を優先する既定姿勢です。

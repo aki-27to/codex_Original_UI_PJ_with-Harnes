@@ -25,6 +25,7 @@ const stages = Object.freeze([
       "test:governance-bundle",
       "test:single-harness-multi-plane",
       "test:self-improvement-governance",
+      "test:repo-local-skills",
       "test:docs:drift",
       "test:github-governance-surface",
       "test:system-coherence",
@@ -51,6 +52,7 @@ const stages = Object.freeze([
       "test:harnesui-pending-state",
       "test:runtime-active-turn-cleanup",
       "test:runtime-state-service",
+      "test:playwright-mcp",
     ],
   },
   {
@@ -62,6 +64,7 @@ const stages = Object.freeze([
       "test:housekeeping:runtime-surface",
       "test:housekeeping:output-surface",
       "test:housekeeping:output-git-policy",
+      "test:harness-artifact-mcp",
       "current-surface-truth",
       {
         id: "godot-tetris-visual-guard",

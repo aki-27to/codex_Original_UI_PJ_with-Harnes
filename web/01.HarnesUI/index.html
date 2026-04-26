@@ -127,9 +127,12 @@
               <label>
                 Model
                 <select id="modelName">
-                  <option value="gpt-5.4" selected>gpt-5.4</option>
+                  <option value="gpt-5.5" selected>gpt-5.5</option>
+                  <option value="gpt-5.4">gpt-5.4</option>
                   <option value="gpt-5.4-mini">gpt-5.4-mini</option>
                   <option value="gpt-5.3-codex">gpt-5.3-codex</option>
+                  <option value="gpt-5.3-codex-spark">gpt-5.3-codex-spark</option>
+                  <option value="gpt-5.2">gpt-5.2</option>
                 </select>
               </label>
 
@@ -251,7 +254,8 @@
               </div>
 
               <p class="composer-tip">会話の文脈を保ったまま追加依頼できます。補助情報は右側に圧縮表示されます。</p>
-              <textarea id="promptInput" rows="3" placeholder=""></textarea>
+              <p class="composer-prompt-label">依頼本文</p>
+              <textarea id="promptInput" rows="4" placeholder="目的: 何を良くしたいか&#10;対象: ファイル・画面・範囲&#10;制約: 維持したいもの / 避けたい変更&#10;完了条件: どこまで確認できれば終わりか"></textarea>
 
               <div class="composer-tools">
                 <input id="imageInput" type="file" accept=".png,.jpg,.jpeg,.webp,.gif,image/png,image/jpeg,image/webp,image/gif" multiple hidden>
@@ -276,10 +280,35 @@
         <aside class="status-shell">
           <section class="operator-shell">
             <div class="operator-head">
-              <div>
+              <div class="operator-head-copy">
                 <h3>進行サマリー</h3>
-                <p>会話を邪魔しない範囲で、理解・進行・停止理由だけを見せます。</p>
+                <p>接続、runtime、workspace、いまの進行をこの段で先に読み取れます。</p>
               </div>
+              <p id="operatorSnapshotMeta" class="operator-snapshot-meta">接続待ち</p>
+              <article id="operatorSnapshotCard" class="operator-snapshot-card" aria-live="polite">
+                <div class="operator-snapshot-grid">
+                  <article class="operator-snapshot-item">
+                    <span class="operator-snapshot-label">接続</span>
+                    <strong id="operatorConnectionValue" class="operator-snapshot-value">未接続</strong>
+                    <p id="operatorConnectionDetail" class="operator-snapshot-detail">runtime を読む前です。</p>
+                  </article>
+                  <article class="operator-snapshot-item">
+                    <span class="operator-snapshot-label">runtime</span>
+                    <strong id="operatorRuntimeValue" class="operator-snapshot-value">待機中</strong>
+                    <p id="operatorRuntimeDetail" class="operator-snapshot-detail">まだ要求はありません。</p>
+                  </article>
+                  <article class="operator-snapshot-item">
+                    <span class="operator-snapshot-label">workspace</span>
+                    <strong id="operatorWorkspaceValue" class="operator-snapshot-value">未指定</strong>
+                    <p id="operatorWorkspaceDetail" class="operator-snapshot-detail">選ぶとここから lock できます。</p>
+                  </article>
+                  <article class="operator-snapshot-item">
+                    <span class="operator-snapshot-label">この部屋</span>
+                    <strong id="operatorChatValue" class="operator-snapshot-value">Chat 1</strong>
+                    <p id="operatorChatDetail" class="operator-snapshot-detail">待機中です。</p>
+                  </article>
+                </div>
+              </article>
             </div>
 
             <section class="focus-panel" aria-live="polite">
@@ -324,169 +353,177 @@
               </div>
             </section>
 
-            <section class="harness-panel" aria-live="polite">
-              <p class="operator-label">今の状態</p>
+            <details id="operatorDetailFold" class="operator-detail-fold">
+              <summary>
+                <span>進行詳細</span>
+                <span id="operatorDetailSummary" class="operator-detail-summary">待機中は折りたたみます。</span>
+              </summary>
+              <div class="operator-detail-body">
+                <section class="harness-panel" aria-live="polite">
+                  <p class="operator-label">今の状態</p>
 
-              <article class="harness-status-card">
-                <div class="harness-status-row">
-                  <span class="harness-status-label">今していること</span>
-                  <strong id="harnessJourneyWork" class="harness-status-value idle">待機中</strong>
-                </div>
-                <div class="harness-status-row">
-                  <span class="harness-status-label">現在地</span>
-                  <strong id="harnessWorkflowCurrent" class="harness-status-value idle">1. 依頼理解</strong>
-                </div>
-                <div class="harness-status-row harness-status-row-flow">
-                  <div class="harness-status-row-head">
-                    <span class="harness-status-label">仕事の流れ</span>
-                  </div>
-                  <ol id="harnessWorkflowList" class="harness-workflow-list">
-                    <li class="harness-workflow-step todo">
-                      <span class="harness-workflow-step-index">1</span>
-                      <span class="harness-workflow-step-label">依頼理解</span>
-                    </li>
-                  </ol>
-                  <p id="harnessWorkflowDetail" class="harness-workflow-detail">依頼を受けると、ここに今どこまで進んだかを短く表示します。</p>
-                </div>
-                <div class="harness-status-row harness-status-row-blocked">
-                  <div class="harness-status-row-head">
-                    <span class="harness-status-label">止まっている理由</span>
-                    <strong id="harnessComplianceBadge" class="harness-status-value idle">なし</strong>
-                  </div>
-                  <p id="harnessComplianceDetail" class="harness-compliance-detail">止まっていません。Codex 返却後はそのまま再送できます。</p>
-                </div>
-              </article>
-
-              <section class="harness-plan-panel" aria-live="polite">
-                <div class="harness-plan-head">
-                  <div>
-                    <h4>現在 / 次</h4>
-                  </div>
-                  <span id="harnessPlanMeta" class="harness-plan-meta">計画待ち</span>
-                </div>
-                <div class="harness-plan-grid harness-plan-primary">
-                  <article id="harnessPlanCurrentCard" class="harness-plan-current idle">
-                    <span class="harness-plan-current-label">今のステップ</span>
-                    <strong id="harnessPlanCurrentStep" class="harness-plan-current-step">計画待ち</strong>
-                    <p id="harnessPlanCurrentPurpose" class="harness-plan-current-purpose">支える依頼: plan/update 待ち</p>
-                    <p id="harnessPlanCurrentDetail" class="harness-plan-current-detail">このチャットではまだ明示プランが出ていません。</p>
+                  <article class="harness-status-card">
+                    <div class="harness-status-row">
+                      <span class="harness-status-label">今していること</span>
+                      <strong id="harnessJourneyWork" class="harness-status-value idle">待機中</strong>
+                    </div>
+                    <div class="harness-status-row">
+                      <span class="harness-status-label">現在地</span>
+                      <strong id="harnessWorkflowCurrent" class="harness-status-value idle">1. 依頼理解</strong>
+                    </div>
+                    <div class="harness-status-row harness-status-row-flow">
+                      <div class="harness-status-row-head">
+                        <span class="harness-status-label">仕事の流れ</span>
+                      </div>
+                      <ol id="harnessWorkflowList" class="harness-workflow-list">
+                        <li class="harness-workflow-step todo">
+                          <span class="harness-workflow-step-index">1</span>
+                          <span class="harness-workflow-step-label">依頼理解</span>
+                        </li>
+                      </ol>
+                      <p id="harnessWorkflowDetail" class="harness-workflow-detail">依頼を受けると、ここに今どこまで進んだかを短く表示します。</p>
+                    </div>
+                    <div class="harness-status-row harness-status-row-blocked">
+                      <div class="harness-status-row-head">
+                        <span class="harness-status-label">止まっている理由</span>
+                        <strong id="harnessComplianceBadge" class="harness-status-value idle">なし</strong>
+                      </div>
+                      <p id="harnessComplianceDetail" class="harness-compliance-detail">止まっていません。Codex 返却後はそのまま再送できます。</p>
+                    </div>
                   </article>
-                  <article id="harnessPlanNextCard" class="harness-plan-current idle">
-                    <span class="harness-plan-current-label">次のステップ</span>
-                    <strong id="harnessPlanNextStep" class="harness-plan-current-step">次 step はありません</strong>
-                    <p id="harnessPlanNextPurpose" class="harness-plan-current-purpose">現在見えている次 step はありません。</p>
-                    <p id="harnessPlanNextDetail" class="harness-plan-current-detail">Waiting for plan/update.</p>
-                  </article>
-                </div>
-              </section>
 
-              <details class="harness-fold" data-advanced="true">
-                <summary>詳細</summary>
-                <section class="harness-requirement-panel" aria-live="polite">
-                  <div class="harness-requirement-head">
-                    <div>
-                      <h4>Requirement lock detail</h4>
+                  <section class="harness-plan-panel" aria-live="polite">
+                    <div class="harness-plan-head">
+                      <div>
+                        <h4>現在 / 次</h4>
+                      </div>
+                      <span id="harnessPlanMeta" class="harness-plan-meta">計画待ち</span>
                     </div>
-                    <span id="harnessRequirementMeta" class="harness-plan-meta">整理前</span>
-                  </div>
-                  <p id="harnessRequirementHeadline" class="harness-requirement-headline">この欄には、AI がいま何を目標に見ているかを短く表示します。</p>
-                  <div id="harnessRequirementSections" class="harness-requirement-sections">
-                    <article class="harness-requirement-group empty">
-                      <h5>AIの方針</h5>
-                      <p>まだ要件の解釈はありません。</p>
-                    </article>
-                  </div>
+                    <div class="harness-plan-grid harness-plan-primary">
+                      <article id="harnessPlanCurrentCard" class="harness-plan-current idle">
+                        <span class="harness-plan-current-label">今のステップ</span>
+                        <strong id="harnessPlanCurrentStep" class="harness-plan-current-step">計画待ち</strong>
+                        <p id="harnessPlanCurrentPurpose" class="harness-plan-current-purpose">支える依頼: plan/update 待ち</p>
+                        <p id="harnessPlanCurrentDetail" class="harness-plan-current-detail">このチャットではまだ明示プランが出ていません。</p>
+                      </article>
+                      <article id="harnessPlanNextCard" class="harness-plan-current idle">
+                        <span class="harness-plan-current-label">次のステップ</span>
+                        <strong id="harnessPlanNextStep" class="harness-plan-current-step">次 step はありません</strong>
+                        <p id="harnessPlanNextPurpose" class="harness-plan-current-purpose">現在見えている次 step はありません。</p>
+                        <p id="harnessPlanNextDetail" class="harness-plan-current-detail">Waiting for plan/update.</p>
+                      </article>
+                    </div>
+                  </section>
+
+                  <details class="harness-fold" data-advanced="true">
+                    <summary>詳細</summary>
+                    <section class="harness-requirement-panel" aria-live="polite">
+                      <div class="harness-requirement-head">
+                        <div>
+                          <h4>Requirement lock detail</h4>
+                        </div>
+                        <span id="harnessRequirementMeta" class="harness-plan-meta">整理前</span>
+                      </div>
+                      <p id="harnessRequirementHeadline" class="harness-requirement-headline">この欄には、AI がいま何を目標に見ているかを短く表示します。</p>
+                      <div id="harnessRequirementSections" class="harness-requirement-sections">
+                        <article class="harness-requirement-group empty">
+                          <h5>AIの方針</h5>
+                          <p>まだ要件の解釈はありません。</p>
+                        </article>
+                      </div>
+                    </section>
+                    <section class="harness-lifecycle-panel">
+                      <div class="harness-lifecycle-head">
+                        <div>
+                          <h4>内部フロー</h4>
+                          <p>ハーネス内部でどこまで進んだかを詳細に追えます。</p>
+                        </div>
+                        <strong id="harnessInternalLifecycleCurrent" class="harness-status-value idle">1. 依頼理解</strong>
+                      </div>
+                      <ol id="harnessInternalLifecycleList" class="harness-lifecycle-list">
+                        <li class="harness-lifecycle-step todo">
+                          <span class="harness-lifecycle-step-index">1</span>
+                          <span class="harness-lifecycle-step-label">依頼理解</span>
+                        </li>
+                      </ol>
+                      <p id="harnessInternalLifecycleDetail" class="harness-lifecycle-detail">内部ライフサイクルの詳細はここに表示されます。</p>
+                    </section>
+                    <section class="harness-phase-panel">
+                      <div class="harness-phase-head">
+                        <div>
+                          <h4>フェーズ詳細</h4>
+                          <p>5 段より細かい実行フェーズを監査用に表示します。</p>
+                        </div>
+                        <strong id="harnessJourneyStage" class="harness-status-value idle">未開始</strong>
+                      </div>
+                      <div id="harnessJourneyList" class="harness-journey-list">
+                        <article class="harness-journey-step todo">
+                          <h4>1. Requirements</h4>
+                          <p class="harness-journey-state">待機中</p>
+                          <p class="harness-journey-summary">待機中</p>
+                        </article>
+                      </div>
+                      <ul id="harnessHighlights" class="harness-highlights">
+                        <li class="harness-empty">ハイライトはここに表示されます。</li>
+                      </ul>
+                    </section>
+
+                    <section class="harness-plan-details-panel">
+                      <h4>Plan detail</h4>
+                      <p id="harnessPlanExplanation" class="harness-plan-explanation">このチャットでは plan 説明をここに表示します。</p>
+                      <ol id="harnessPlanList" class="harness-plan-list">
+                        <li class="harness-empty">plan ステップはここに表示されます。</li>
+                      </ol>
+                    </section>
+
+                    <details class="harness-tools-details" data-advanced="true">
+                      <summary>Check mode</summary>
+                      <label class="harness-check-mode" for="harnessCheckMode">
+                        Check mode
+                        <select id="harnessCheckMode">
+                          <option value="adaptive">Adaptive</option>
+                          <option value="strict">Strict</option>
+                          <option value="relaxed">Relaxed</option>
+                        </select>
+                      </label>
+                      <p id="harnessCheckModeHint" class="harness-check-hint">軽い依頼では小さな plan 推定を許しますが、表示は明示 plan を優先します。</p>
+                    </details>
+                  </details>
                 </section>
-                <section class="harness-lifecycle-panel">
-                  <div class="harness-lifecycle-head">
-                    <div>
-                      <h4>内部フロー</h4>
-                      <p>ハーネス内部でどこまで進んだかを詳細に追えます。</p>
-                    </div>
-                    <strong id="harnessInternalLifecycleCurrent" class="harness-status-value idle">1. 依頼理解</strong>
+
+                <section class="agent-flow-panel" aria-live="polite">
+                  <p class="operator-label">実行トレース</p>
+                  <div class="agent-trace-subhead">
+                    <h4>直近の動き</h4>
+                    <p>このチャットの直近 32 件だけを軽く追います。</p>
                   </div>
-                  <ol id="harnessInternalLifecycleList" class="harness-lifecycle-list">
-                    <li class="harness-lifecycle-step todo">
-                      <span class="harness-lifecycle-step-index">1</span>
-                      <span class="harness-lifecycle-step-label">依頼理解</span>
-                    </li>
+                  <ol id="agentTraceList" class="agent-trace-list">
+                    <li class="agent-trace-empty">まだトレースイベントはありません。</li>
                   </ol>
-                  <p id="harnessInternalLifecycleDetail" class="harness-lifecycle-detail">内部ライフサイクルの詳細はここに表示されます。</p>
-                </section>
-                <section class="harness-phase-panel">
-                  <div class="harness-phase-head">
-                    <div>
-                      <h4>フェーズ詳細</h4>
-                      <p>5 段より細かい実行フェーズを監査用に表示します。</p>
+                  <details class="agent-flow-details" data-advanced="true">
+                    <summary>トレース詳細</summary>
+                    <div id="agentFlowLane" class="agent-flow-lane">
+                      <article class="agent-flow-empty">まだエージェント状況はありません。</article>
                     </div>
-                    <strong id="harnessJourneyStage" class="harness-status-value idle">未開始</strong>
-                  </div>
-                  <div id="harnessJourneyList" class="harness-journey-list">
-                    <article class="harness-journey-step todo">
-                      <h4>1. Requirements</h4>
-                      <p class="harness-journey-state">待機中</p>
-                      <p class="harness-journey-summary">待機中</p>
-                    </article>
-                  </div>
-                  <ul id="harnessHighlights" class="harness-highlights">
-                    <li class="harness-empty">ハイライトはここに表示されます。</li>
-                  </ul>
+
+                    <section id="agentTopographyPanel" class="agent-topography-panel" aria-live="polite">
+                      <div class="agent-topography-head">
+                        <div>
+                          <h4>Topography</h4>
+                          <p class="agent-topography-copy"><code>/api/agent-topography</code> と trace を合わせて見せます。</p>
+                        </div>
+                        <button id="agentTopographyRefreshBtn" class="btn mini secondary" type="button">Refresh</button>
+                      </div>
+                      <p id="agentTopographyMeta" class="agent-topography-meta">読み込み中...</p>
+                      <div id="agentTopographyList" class="agent-topography-list">
+                        <div class="agent-topography-empty">エージェント構成を読み込み中...</div>
+                      </div>
+                    </section>
+                    <button id="clearAgentTraceBtn" class="btn mini secondary" type="button">Clear</button>
+                  </details>
                 </section>
-
-                <section class="harness-plan-details-panel">
-                  <h4>Plan detail</h4>
-                  <p id="harnessPlanExplanation" class="harness-plan-explanation">このチャットでは plan 説明をここに表示します。</p>
-                  <ol id="harnessPlanList" class="harness-plan-list">
-                    <li class="harness-empty">plan ステップはここに表示されます。</li>
-                  </ol>
-                </section>
-
-                <details class="harness-tools-details" data-advanced="true">
-                  <summary>Check mode</summary>
-                  <label class="harness-check-mode" for="harnessCheckMode">
-                    Check mode
-                    <select id="harnessCheckMode">
-                      <option value="adaptive">Adaptive</option>
-                      <option value="strict">Strict</option>
-                      <option value="relaxed">Relaxed</option>
-                    </select>
-                  </label>
-                  <p id="harnessCheckModeHint" class="harness-check-hint">軽い依頼では小さな plan 推定を許しますが、表示は明示 plan を優先します。</p>
-                </details>
-              </details>
-            </section>
-
-            <section class="agent-flow-panel" aria-live="polite">
-              <p class="operator-label">実行トレース</p>
-              <div class="agent-trace-subhead">
-                <h4>直近の動き</h4>
-                <p>このチャットの直近 32 件だけを軽く追います。</p>
               </div>
-              <ol id="agentTraceList" class="agent-trace-list">
-                <li class="agent-trace-empty">まだトレースイベントはありません。</li>
-              </ol>
-              <details class="agent-flow-details" data-advanced="true">
-                <summary>トレース詳細</summary>
-                <div id="agentFlowLane" class="agent-flow-lane">
-                  <article class="agent-flow-empty">まだエージェント状況はありません。</article>
-                </div>
-
-                <section id="agentTopographyPanel" class="agent-topography-panel" aria-live="polite">
-                  <div class="agent-topography-head">
-                    <div>
-                      <h4>Topography</h4>
-                      <p class="agent-topography-copy"><code>/api/agent-topography</code> と trace を合わせて見せます。</p>
-                    </div>
-                    <button id="agentTopographyRefreshBtn" class="btn mini secondary" type="button">Refresh</button>
-                  </div>
-                  <p id="agentTopographyMeta" class="agent-topography-meta">読み込み中...</p>
-                  <div id="agentTopographyList" class="agent-topography-list">
-                    <div class="agent-topography-empty">エージェント構成を読み込み中...</div>
-                  </div>
-                </section>
-                <button id="clearAgentTraceBtn" class="btn mini secondary" type="button">Clear</button>
-              </details>
-            </section>
+            </details>
           </section>
 
           <details id="opsDeck" class="ops-deck" data-advanced="true">

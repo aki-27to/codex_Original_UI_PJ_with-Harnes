@@ -89,6 +89,7 @@ Authority registry: `authority-registry.v1`
 - `integrations/copilot-studio/weekly-report-agent-design.md`
 - `integrations/godot/godot_mcp_outer_ocean_design.md`
 - `integrations/godot/godot_mcp_implementation_status.md`
+- `integrations/harness-artifacts/harness_artifact_mcp.md`
 - `samples/agi_v1/agi_v1_report.md`
 
 正本ではありませんが、運用や周辺機能を理解するのに役立つ資料です。

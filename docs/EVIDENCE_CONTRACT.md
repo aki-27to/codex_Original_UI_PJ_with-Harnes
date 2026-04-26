@@ -65,6 +65,10 @@ Updated: 2026-04-13
     - independent reviewer/tester verdict
 - skill assignment / skill package change
   - `node scripts/skill_portfolio_audit.js`
+  - `node scripts/repo_local_skill_catalog_test.js`
+- read-only Harness Artifact MCP change
+  - `node tools/harness-artifact-mcp-server/tests/smoke_test.js`
+  - MCP must remain observation-only: no score recomputation, no worker decision generation, no write/delete/shell/external network path
 - over-delivery で new logic を追加
   - 専用 automated test
   - PASS output を review evidence に含める

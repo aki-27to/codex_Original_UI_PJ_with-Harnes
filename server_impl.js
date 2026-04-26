@@ -443,7 +443,7 @@ const runtimeExecutionProfile=normalizeExecutionProfile(process.env[executionPro
 const codexConfigPath=path.join(workspaceRoot,".codex","config.toml");
 const userCodexConfigPath=userHomeDir?path.join(userHomeDir,".codex","config.toml"):"";
 const defaultParentAgentConfigPath=path.join(workspaceRoot,".codex","agents","default.toml");
-const defaultExecModelFallbackName="gpt-5.4";
+const defaultExecModelFallbackName="gpt-5.5";
 const defaultExecModelReasoningEffortFallback="xhigh";
 const legacyExecModelAliases=Object.freeze({
   "codex-5.3":"gpt-5.3-codex",
@@ -6516,6 +6516,8 @@ function resolveConfiguredDefaultExecModelName(){
   return defaultExecModelFallbackName;
 }
 function resolveConfiguredDefaultExecModelReasoningEffort(){
+  const envReasoningEffort=tryNormalizeExecModelReasoningEffort(process.env.CODEX_DEFAULT_EXEC_MODEL_REASONING_EFFORT);
+  if(envReasoningEffort)return envReasoningEffort;
   const projectReasoningEffort=readTopLevelCodexConfigModelReasoningEffort(codexConfigPath);
   if(projectReasoningEffort)return projectReasoningEffort;
   const userReasoningEffort=readTopLevelCodexConfigModelReasoningEffort(userCodexConfigPath);

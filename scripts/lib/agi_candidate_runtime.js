@@ -553,7 +553,7 @@ function routeModel({
   const modelId = safeString(familyOverride && familyOverride.modelId, 120)
     || safeString(roleRoute && roleRoute.modelId, 120)
     || safeString(policy.defaultModelId, 120)
-    || "gpt-5.4";
+    || "gpt-5.5";
   return {
     schema: "model-routing-decision.v1",
     generatedAt: nowIso(),
@@ -1233,6 +1233,20 @@ function writeGeneratedSkillRegistry(policy, payload) {
   });
 }
 
+function removeGeneratedSkillArtifacts(policy, skillId) {
+  const normalizedId = safeString(skillId, 120);
+  if (!normalizedId) return { ok: false, removed: 0, reason: "missing_skill_id" };
+  const root = path.resolve(policy.generatedSkillsRoot);
+  const target = path.resolve(root, normalizedId);
+  const rootWithSeparator = root.endsWith(path.sep) ? root : `${root}${path.sep}`;
+  if (!target.toLowerCase().startsWith(rootWithSeparator.toLowerCase())) {
+    return { ok: false, removed: 0, reason: "outside_generated_skills_root" };
+  }
+  if (!fs.existsSync(target)) return { ok: true, removed: 0, reason: "missing_artifacts" };
+  fs.rmSync(target, { recursive: true, force: true });
+  return { ok: true, removed: 1, reason: "removed" };
+}
+
 function registerGeneratedSkill({
   workspaceRoot = path.resolve(__dirname, "..", ".."),
   policy = null,
@@ -1308,6 +1322,7 @@ function pruneGeneratedSkills({
   const targets = new Set(uniqueStrings(staleIds, 64));
   const kept = [];
   const archived = [];
+  const removedArtifactIds = [];
   for (const entry of registry.skills) {
     const skillId = safeString(entry && entry.id, 120);
     if (!targets.has(skillId)) {
@@ -1321,12 +1336,15 @@ function pruneGeneratedSkills({
       reason: safeString(reason, 240),
       entry,
     });
+    const removed = removeGeneratedSkillArtifacts(resolvedPolicy, skillId);
+    if (removed.ok && removed.removed) removedArtifactIds.push(skillId);
   }
   writeGeneratedSkillRegistry(resolvedPolicy, { skills: kept });
   return {
     ok: true,
     archivedCount: archived.length,
     archivedSkillIds: archived.map((entry) => safeString(entry && entry.id, 120)),
+    removedArtifactIds,
   };
 }
 
@@ -1414,6 +1432,16 @@ function loadModelRoutingPolicy(filePath = defaultModelRoutingPolicyPath) {
   };
 }
 
+function preferredModelFromRoutingPolicyValue(value, role = "") {
+  if (typeof value === "string") return safeString(value, 120);
+  if (!value || typeof value !== "object") return "";
+  const roleId = safeString(role, 80);
+  return safeString(roleId ? value[roleId] : "", 120)
+    || safeString(value.preferred, 120)
+    || safeString(value.modelId, 120)
+    || safeString(value.defaultModelId, 120);
+}
+
 function routeModel({
   role = "coordinator",
   familyId = "",
@@ -1421,10 +1449,10 @@ function routeModel({
   policy = null,
 } = {}) {
   const resolvedPolicy = policy || loadModelRoutingPolicy();
-  const familyOverride = resolvedPolicy.familyOverrides && resolvedPolicy.familyOverrides[familyId];
-  const roleDefault = resolvedPolicy.roleDefaults && resolvedPolicy.roleDefaults[role];
-  const budgetPolicy = resolvedPolicy.budgetPolicies && resolvedPolicy.budgetPolicies[budgetTier];
-  const selectedModel = safeString(familyOverride || roleDefault || budgetPolicy || resolvedPolicy.fallbackModel, 120) || "gpt-5.4-mini";
+  const familyOverride = preferredModelFromRoutingPolicyValue(resolvedPolicy.familyOverrides && resolvedPolicy.familyOverrides[familyId], role);
+  const roleDefault = preferredModelFromRoutingPolicyValue(resolvedPolicy.roleDefaults && resolvedPolicy.roleDefaults[role], role);
+  const budgetPolicy = preferredModelFromRoutingPolicyValue(resolvedPolicy.budgetPolicies && resolvedPolicy.budgetPolicies[budgetTier], role);
+  const selectedModel = safeString(familyOverride || roleDefault || budgetPolicy || resolvedPolicy.fallbackModel, 120) || "gpt-5.5";
   return {
     schema: "model-route.v1",
     generatedAt: nowIso(),

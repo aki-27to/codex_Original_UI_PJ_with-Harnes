@@ -136,6 +136,7 @@ function loadRenderTimeline(context) {
       extractFunction("timelineViewportMetricsForUi"),
       extractFunction("syncTimelineViewportStateForUi"),
       extractFunction("restoreTimelineViewportForUi"),
+      "function syncFirstScreenLayoutForUi() {}",
       extractFunction("renderTimeline"),
       "this.__renderTimeline__ = renderTimeline;",
     ].join("\n\n"),

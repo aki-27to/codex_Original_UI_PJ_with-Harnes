@@ -28,11 +28,13 @@ const ALLOWED_SANDBOX_MODES=new Set(["read-only","workspace-write","danger-full-
 const ALLOWED_WEB_SEARCH_MODES=new Set(["disabled","cached","live"]);
 const COMMANDS=[];
 const DEFAULT_AGENT_NAME="default";
-const DEFAULT_EXEC_MODEL="gpt-5.4";
+const DEFAULT_EXEC_MODEL="gpt-5.5";
 const DEFAULT_EXEC_MODEL_REASONING_EFFORT="xhigh";
-const EXEC_MODEL_PRESET_OPTIONS=["gpt-5.4","gpt-5.4-mini","gpt-5.3-codex"];
+const EXEC_MODEL_PRESET_OPTIONS=["gpt-5.5","gpt-5.4","gpt-5.4-mini","gpt-5.3-codex","gpt-5.3-codex-spark","gpt-5.2"];
 const EXEC_MODEL_REASONING_EFFORTS=["minimal","low","medium","high","xhigh"];
 const LEGACY_EXEC_MODEL_ALIASES=Object.freeze({"codex-5.3":"gpt-5.3-codex"});
+const EXEC_MODEL_DEFAULT_VERSION="2026-04-25-gpt-5.5";
+const LEGACY_DEFAULT_EXEC_MODEL_IDS=new Set(["gpt-5.4"]);
 const SETTINGS_KEY="codex-console-settings-v3";
 const SETTINGS_KEY_LEGACY="codex-console-settings-v2";
 const CHAT_STATE_KEY="codex-console-chat-v1";
@@ -116,6 +118,18 @@ e.composerModeChip=by("composerModeChip");
 e.composerModelChip=by("composerModelChip");
 e.composerWorkspaceChip=by("composerWorkspaceChip");
 e.composerAttachmentChip=by("composerAttachmentChip");
+e.operatorDetailFold=by("operatorDetailFold");
+e.operatorDetailSummary=by("operatorDetailSummary");
+e.operatorSnapshotCard=by("operatorSnapshotCard");
+e.operatorSnapshotMeta=by("operatorSnapshotMeta");
+e.operatorConnectionValue=by("operatorConnectionValue");
+e.operatorConnectionDetail=by("operatorConnectionDetail");
+e.operatorRuntimeValue=by("operatorRuntimeValue");
+e.operatorRuntimeDetail=by("operatorRuntimeDetail");
+e.operatorWorkspaceValue=by("operatorWorkspaceValue");
+e.operatorWorkspaceDetail=by("operatorWorkspaceDetail");
+e.operatorChatValue=by("operatorChatValue");
+e.operatorChatDetail=by("operatorChatDetail");
 e.harnessPlanNextCard=by("harnessPlanNextCard");
 e.harnessPlanNextStep=by("harnessPlanNextStep");
 e.harnessPlanNextPurpose=by("harnessPlanNextPurpose");
@@ -598,6 +612,18 @@ function normalizeNonEmptyExecModelNameForUi(value){
   if(!raw)return"";
   return normalizeExecModelNameForUi(raw,DEFAULT_EXEC_MODEL);
 }
+function isLegacyDefaultExecModelForUi(value){
+  const normalized=normalizeNonEmptyExecModelNameForUi(value).toLowerCase();
+  return Boolean(normalized)&&LEGACY_DEFAULT_EXEC_MODEL_IDS.has(normalized);
+}
+function latestDefaultExecModelForUi(){
+  const runtimeModel=runtimeDefaultExecModel();
+  return isLegacyDefaultExecModelForUi(runtimeModel)?DEFAULT_EXEC_MODEL:runtimeModel;
+}
+function shouldPromoteStoredExecModelDefaultForUi(value,defaultVersion=""){
+  const storedVersion=typeof defaultVersion==="string"?defaultVersion.trim():"";
+  return storedVersion!==EXEC_MODEL_DEFAULT_VERSION&&isLegacyDefaultExecModelForUi(value);
+}
 function ensureExecModelOptionForUi(value){
   if(!e.modelName)return"";
   const normalized=normalizeNonEmptyExecModelNameForUi(value);
@@ -642,7 +668,7 @@ function isLegacyExecModelAlias(value){
 const chat=id=>s.chats.find(c=>c.id===id)||null,active=()=>chat(s.active);
 const selectedExecModel=()=>{
   const chosen=e.modelName&&typeof e.modelName.value==="string"?e.modelName.value.trim():"";
-  return normalizeExecModelNameForUi(chosen,runtimeDefaultExecModel());
+  return normalizeExecModelNameForUi(chosen,latestDefaultExecModelForUi());
 };
 const selectedExecModelReasoningEffort=()=>{
   const chosen=e.modelReasoningEffort&&typeof e.modelReasoningEffort.value==="string"?e.modelReasoningEffort.value.trim():"";
@@ -660,6 +686,7 @@ function chatSettingsDefaultsForUi(){
     fastModeEnabled:Boolean(e.fastModeEnabled&&e.fastModeEnabled.checked),
     automaticApprovalReviewEnabled:Boolean(e.automaticApprovalReviewEnabled&&e.automaticApprovalReviewEnabled.checked),
     modelName:selectedExecModel(),
+    modelDefaultVersion:EXEC_MODEL_DEFAULT_VERSION,
     modelReasoningEffort:selectedExecModelReasoningEffort(),
     workspacePath:selectedWorkspace||runtimeWorkspace||"",
     workspaceLockRoot:"",
@@ -678,7 +705,8 @@ function freshChatSettingsDefaultsForUi({workspacePath=""}={}){
     webSearchMode:defaultProfile.webSearchMode,
     fastModeEnabled:runtimeDefaultFastModeEnabled(),
     automaticApprovalReviewEnabled:runtimeDefaultAutomaticApprovalReviewEnabled(),
-    modelName:runtimeDefaultExecModel(),
+    modelName:latestDefaultExecModelForUi(),
+    modelDefaultVersion:EXEC_MODEL_DEFAULT_VERSION,
     modelReasoningEffort:runtimeDefaultExecModelReasoningEffort(),
     workspacePath:preferredWorkspace,
     workspaceLockRoot:"",
@@ -689,6 +717,12 @@ function normalizeChatSettingsForUi(raw,fallback=chatSettingsDefaultsForUi()){
   const baseSource=fallback&&typeof fallback==="object"?fallback:{};
   const base=chatSettingsDefaultsForUi();
   const merged={...base,...baseSource};
+  const mergedModelName=shouldPromoteStoredExecModelDefaultForUi(merged.modelName,merged.modelDefaultVersion)
+    ?latestDefaultExecModelForUi()
+    :merged.modelName;
+  const normalizedModelName=shouldPromoteStoredExecModelDefaultForUi(source.modelName,source.modelDefaultVersion)
+    ?latestDefaultExecModelForUi()
+    :normalizeExecModelNameForUi(source.modelName,mergedModelName||latestDefaultExecModelForUi());
   return{
     executionProfile:normalizeExecutionProfileForUi(source.executionProfile,merged.executionProfile||DEFAULT_PROFILE_ID),
     approvalPolicy:normalizeApprovalPolicyForUi(source.approvalPolicy,merged.approvalPolicy||base.approvalPolicy),
@@ -698,7 +732,8 @@ function normalizeChatSettingsForUi(raw,fallback=chatSettingsDefaultsForUi()){
     automaticApprovalReviewEnabled:typeof source.automaticApprovalReviewEnabled==="boolean"
       ?source.automaticApprovalReviewEnabled
       :Boolean(merged.automaticApprovalReviewEnabled),
-    modelName:normalizeExecModelNameForUi(source.modelName,merged.modelName||runtimeDefaultExecModel()),
+    modelName:normalizedModelName,
+    modelDefaultVersion:EXEC_MODEL_DEFAULT_VERSION,
     modelReasoningEffort:normalizeExecModelReasoningEffortForUi(
       source.modelReasoningEffort,
       merged.modelReasoningEffort||runtimeDefaultExecModelReasoningEffort()
@@ -721,6 +756,7 @@ function serializeChatSettingsForStorage(settings){
     fastModeEnabled:Boolean(normalized.fastModeEnabled),
     automaticApprovalReviewEnabled:Boolean(normalized.automaticApprovalReviewEnabled),
     modelName:normalized.modelName,
+    modelDefaultVersion:normalized.modelDefaultVersion,
     modelReasoningEffort:normalized.modelReasoningEffort,
     workspacePath:normalized.workspacePath,
     workspaceLockRoot:normalized.workspaceLockRoot,
@@ -755,6 +791,7 @@ function syncActiveChatScopedStateFromUi(){
     fastModeEnabled:Boolean(e.fastModeEnabled&&e.fastModeEnabled.checked),
     automaticApprovalReviewEnabled:Boolean(e.automaticApprovalReviewEnabled&&e.automaticApprovalReviewEnabled.checked),
     modelName:selectedExecModel(),
+    modelDefaultVersion:EXEC_MODEL_DEFAULT_VERSION,
     modelReasoningEffort:selectedExecModelReasoningEffort(),
     workspacePath:selectedCwd(),
     workspaceLockRoot:existingLockRoot,
@@ -784,7 +821,7 @@ function applyChatScopedStateToUi(chatRecord){
     syncPermissionModeControlsForUi();
   }
   if(e.modelName){
-    hydrateExecModelOptionsForUi([settings.modelName,runtimeDefaultExecModel()]);
+    hydrateExecModelOptionsForUi([settings.modelName,latestDefaultExecModelForUi()]);
     e.modelName.value=ensureExecModelOptionForUi(settings.modelName)||settings.modelName;
   }
   if(e.modelReasoningEffort){
@@ -2289,6 +2326,7 @@ function renderWorkspaceGuardUi(){
         ?"この部屋では lock はありません。"
         :"";
   }
+  renderOperatorSnapshotForUi();
   renderFocusPanel();
   renderMissionSupportUi();
 }
@@ -4099,6 +4137,136 @@ function setComposerRuntimeChip(el,text,tone=""){
   el.textContent=text;
   el.className=tone?`composer-runtime-chip ${tone}`:"composer-runtime-chip";
 }
+function operatorSnapshotToneForUi(source){
+  const text=String(source||"").toLowerCase();
+  if(text.includes("running")||text.includes("waiting"))return"running";
+  if(text.includes("completed")||text.includes("connected")||text.includes("locked"))return"completed";
+  if(text.includes("failed")||text.includes("aborted")||text.includes("blocked")||text.includes("disconnected")||text.includes("warning"))return"warning";
+  return"";
+}
+function setOperatorSnapshotValueForUi(valueEl,detailEl,value,detail="",tone=""){
+  if(valueEl){
+    valueEl.textContent=value||"未取得";
+    valueEl.className=tone?`operator-snapshot-value ${tone}`:"operator-snapshot-value";
+  }
+  if(detailEl)detailEl.textContent=detail||"";
+}
+function uiViewportWidthForUi(){
+  if(typeof window!=="undefined"&&Number.isFinite(window.innerWidth)&&window.innerWidth>0)return window.innerWidth;
+  if(typeof document!=="undefined"&&document.documentElement&&Number.isFinite(document.documentElement.clientWidth))return document.documentElement.clientWidth;
+  return 0;
+}
+function chatHasConversationForUi(chatRecord){
+  return conversationSnapshotForUi(chatRecord).hasConversation;
+}
+function setDetailsOpenWithoutUserLockForUi(el,open){
+  if(!el)return;
+  el.dataset.syncing="true";
+  el.open=Boolean(open);
+  delete el.dataset.syncing;
+}
+function syncOperatorDetailFoldForUi(chatRecord=active()){
+  if(!e.operatorDetailFold)return;
+  const currentChat=chatRecord&&typeof chatRecord==="object"?chatRecord:active();
+  const chatKey=currentChat&&typeof currentChat.id==="string"?currentChat.id:"";
+  if(e.operatorDetailFold.dataset.chatKey!==chatKey){
+    e.operatorDetailFold.dataset.chatKey=chatKey;
+    delete e.operatorDetailFold.dataset.userLocked;
+  }
+  const hasConversation=chatHasConversationForUi(currentChat);
+  const pendingProjection=currentChat&&typeof pendingProjectionForChatForUi==="function"
+    ?pendingProjectionForChatForUi(currentChat)
+    :{count:0,source:"idle"};
+  const activeRun=pendingProjection.count>0||pendingProjection.source==="needs_input";
+  if(e.operatorDetailSummary){
+    e.operatorDetailSummary.textContent=activeRun
+      ?(pendingProjection.source==="needs_input"?"再送条件と停止理由を表示します。":"実行中の計画と検証を表示します。")
+      :(hasConversation?"必要なときだけ展開します。":"待機中は折りたたみます。");
+  }
+  if(activeRun){
+    setDetailsOpenWithoutUserLockForUi(e.operatorDetailFold,true);
+    return;
+  }
+  if(!hasConversation&&uiViewportWidthForUi()<=1080)delete e.operatorDetailFold.dataset.userLocked;
+  if(e.operatorDetailFold.dataset.userLocked==="true")return;
+  setDetailsOpenWithoutUserLockForUi(e.operatorDetailFold,false);
+}
+function syncFirstScreenLayoutForUi(chatRecord=active(),conversation=null){
+  const currentChat=chatRecord&&typeof chatRecord==="object"?chatRecord:active();
+  const hasConversation=conversation&&typeof conversation==="object"
+    ?Boolean(conversation.hasConversation)
+    :chatHasConversationForUi(currentChat);
+  if(e.timeline)e.timeline.classList.toggle("timeline-empty",!hasConversation);
+  if(e.composer)e.composer.classList.toggle("composer-empty",!hasConversation);
+  syncOperatorDetailFoldForUi(currentChat);
+}
+function renderOperatorSnapshotForUi(){
+  if(!e.operatorSnapshotCard)return;
+  const currentChat=active();
+  const workspace=chatWorkspaceGuardPreferenceForUi(currentChat);
+  const selectedPath=selectedCwd();
+  const connectionText=e.connectionState&&typeof e.connectionState.textContent==="string"
+    ?e.connectionState.textContent.trim()
+    :"未接続";
+  const modeText=e.modeState&&typeof e.modeState.textContent==="string"&&e.modeState.textContent.trim()
+    ?e.modeState.textContent.trim()
+    :`${executionProfileLabelForUi(e.executionProfile&&e.executionProfile.value)} / ${webSearchModeLabelForUi(e.webSearchMode&&e.webSearchMode.value)}`;
+  const runtimeLabel=e.liveStatusLabel&&typeof e.liveStatusLabel.textContent==="string"
+    ?e.liveStatusLabel.textContent.trim()
+    :"待機中";
+  const runtimeElapsed=e.liveStatusElapsed&&typeof e.liveStatusElapsed.textContent==="string"
+    ?e.liveStatusElapsed.textContent.trim()
+    :"";
+  const runtimeDetail=e.liveStatusDetail&&typeof e.liveStatusDetail.textContent==="string"
+    ?e.liveStatusDetail.textContent.trim()
+    :"";
+  const workspaceValue=workspace.locked
+    ?`Lock: ${compactWorkspaceLabelForUi(workspace.lockedRoot)||workspaceHintTextForUi(workspace.lockedRoot,30)||"設定済み"}`
+    :(selectedPath
+      ?(compactWorkspaceLabelForUi(selectedPath)||workspaceHintTextForUi(selectedPath,30)||selectedPath)
+      :"未指定");
+  const workspaceDetail=e.workspaceStatus&&typeof e.workspaceStatus.textContent==="string"
+    ?e.workspaceStatus.textContent.trim()
+    :"";
+  const chatTitle=currentChat&&currentChat.title?currentChat.title:"チャット未選択";
+  const chatDetailParts=[];
+  if(currentChat)chatDetailParts.push(`担当: ${operatorFacingAgentLabelForUi(currentChat.agent)}`);
+  if(e.pendingState&&typeof e.pendingState.textContent==="string"&&e.pendingState.textContent.trim()){
+    chatDetailParts.push(e.pendingState.textContent.trim());
+  }
+  setOperatorSnapshotValueForUi(
+    e.operatorConnectionValue,
+    e.operatorConnectionDetail,
+    connectionText,
+    modeText,
+    operatorSnapshotToneForUi(e.connectionState&&e.connectionState.className)
+  );
+  setOperatorSnapshotValueForUi(
+    e.operatorRuntimeValue,
+    e.operatorRuntimeDetail,
+    runtimeElapsed?`${runtimeLabel} / ${runtimeElapsed}`:runtimeLabel,
+    runtimeDetail,
+    operatorSnapshotToneForUi(e.liveStatus&&e.liveStatus.className)
+  );
+  setOperatorSnapshotValueForUi(
+    e.operatorWorkspaceValue,
+    e.operatorWorkspaceDetail,
+    workspaceValue,
+    workspaceDetail,
+    workspace.locked?"completed":"warning"
+  );
+  setOperatorSnapshotValueForUi(
+    e.operatorChatValue,
+    e.operatorChatDetail,
+    chatTitle,
+    chatDetailParts.join(" / "),
+    operatorSnapshotToneForUi(e.pendingState&&e.pendingState.className)
+  );
+  if(e.operatorSnapshotMeta){
+    e.operatorSnapshotMeta.textContent=liveStatusCodexVersionForUi()||`${selectedExecModel()} / ${selectedExecModelReasoningEffort()}`;
+  }
+  e.operatorSnapshotCard.className=`operator-snapshot-card ${operatorSnapshotToneForUi(e.liveStatus&&e.liveStatus.className)}`.trim();
+}
 function intentFirstRuntimeForUi(){
   return s.runtime&&s.runtime.intentFirst&&typeof s.runtime.intentFirst==="object"
     ?s.runtime.intentFirst
@@ -4191,6 +4359,7 @@ function renderMissionSupportUi(){
   renderMissionDraftPanel();
   renderComposerRuntimeStrip();
   renderFocusPanel();
+  renderOperatorSnapshotForUi();
 }
 function missionDraftCardElementForUi(){
   return document.querySelector(".mission-draft-card");
@@ -4483,7 +4652,7 @@ function renderFocusPanel(){
       ?"前回は要件確認待ちで止まっています"
       :"前回の依頼の継続状態です";
     actionDetail=[
-      previousRequestText?`前回の依頼: ${t1(compactInlineTextForUi(previousRequestText),88)}`:"",
+      previousRequestText?`前回の依頼: ${compactInlineTextForUi(previousRequestText)}`:"",
       requirementBlocked?`止まった理由: ${stopReason.detail}`:"",
     ].filter(Boolean).join(" / ")||actionDetail;
     actionHint=`このチャットの前回状態を表示中です。新しい依頼を書くと切り替わります。${hintParts.length?` / ${actionHint}`:""}`;
@@ -5654,9 +5823,11 @@ function renderTimeline(){
     e.timeline.innerHTML="";
     timelineViewportState.renderedChatId="";
     if(e.conversationSummary)e.conversationSummary.textContent="チャットを選ぶと会話が表示されます。";
+    syncFirstScreenLayoutForUi(null,{hasConversation:false});
     return;
   }
   const conversation=conversationSnapshotForUi(c);
+  syncFirstScreenLayoutForUi(c,conversation);
   const pendingProjection=typeof pendingProjectionForChatForUi==="function"
     ?pendingProjectionForChatForUi(c)
     :{count:pendingCountForChat(c.id),source:"runtime"};
@@ -6586,6 +6757,7 @@ function live(){
     ].filter(Boolean).join(" / ");
     if(codexVersion)e.liveStatusDetail.textContent=`${e.liveStatusDetail.textContent} / ${codexVersion}`;
     renderPerformanceIndicator();
+    renderOperatorSnapshotForUi();
     if(s.ticker!==null){
       clearInterval(s.ticker);
       s.ticker=null;
@@ -6620,6 +6792,7 @@ function live(){
     ].filter(Boolean).join(" / ");
     if(codexVersion)e.liveStatusDetail.textContent=`${e.liveStatusDetail.textContent} / ${codexVersion}`;
     renderPerformanceIndicator();
+    renderOperatorSnapshotForUi();
     if(s.ticker===null)s.ticker=setInterval(live,400);
     return;
   }
@@ -6639,6 +6812,7 @@ function live(){
       :(phase.work?`現在: ${phase.work} / 判定: idle`:"まだ要求はありません。");
     if(codexVersion)e.liveStatusDetail.textContent=`${e.liveStatusDetail.textContent} / ${codexVersion}`;
     renderPerformanceIndicator();
+    renderOperatorSnapshotForUi();
     return;
   }
   const tone=lastForCurrentChat.type==="failed"?"failed":lastForCurrentChat.type==="aborted"?"aborted":"completed";
@@ -6655,6 +6829,7 @@ function live(){
   ].filter(Boolean).join(" / ");
   if(codexVersion)e.liveStatusDetail.textContent=`${e.liveStatusDetail.textContent} / ${codexVersion}`;
   renderPerformanceIndicator();
+  renderOperatorSnapshotForUi();
 }
 function pending(){
   const c=active();
@@ -6692,6 +6867,8 @@ function pending(){
       :(currentPending>0?`実行中 ${currentPending}`:(pendingProjection.source==="needs_input"?"再送可能":""));
     e.agentState.textContent=`チャット: ${c.title}${statusLabel?` / 状態: ${statusLabel}`:""} / エージェント: ${agentLabel}`;
   }
+  renderOperatorSnapshotForUi();
+  syncOperatorDetailFoldForUi(c);
 }
 function refresh(){renderTimeline();renderChatList();renderHarness();inspect();pending();live();renderPerformanceIndicator();renderAutomationStatus();renderWorkspaceGuardUi();renderMissionSupportUi();syncRuntimePendingMonitor()}
 function normalizeApprovalPolicyForUi(value,fallback="on-request"){
@@ -7091,6 +7268,7 @@ function saveSettings(){
       webSearch:webSearchEnabledForUi(e.webSearchMode&&e.webSearchMode.value),
       executionProfile:e.executionProfile.value,
       modelName:selectedExecModel(),
+      modelDefaultVersion:EXEC_MODEL_DEFAULT_VERSION,
       modelReasoningEffort:selectedExecModelReasoningEffort(),
       simpleView:document.body.classList.contains("simple-view"),
       uiVisibility:e.uiVisibility?Boolean(e.uiVisibility.checked):true,
@@ -7120,7 +7298,7 @@ function loadSettings(){
   settingsState.hasStoredPermissionDetail=false;
   applyExecutionProfileToUi(DEFAULT_PROFILE_ID);
   if(e.modelName){
-    const runtimeModel=runtimeDefaultExecModel();
+    const runtimeModel=latestDefaultExecModelForUi();
     hydrateExecModelOptionsForUi([runtimeModel,parsed&&typeof parsed.modelName==="string"?parsed.modelName:""]);
     e.modelName.value=ensureExecModelOptionForUi(runtimeModel)||runtimeModel;
   }
@@ -7137,9 +7315,12 @@ function loadSettings(){
   if(typeof parsed.executionProfile==="string"){e.executionProfile.value=normalizeExecutionProfileForUi(parsed.executionProfile,"custom");settingsState.hasStoredExecutionProfile=true;}
   if((typeof parsed.webSearchMode==="string"&&parsed.webSearchMode.trim())||typeof parsed.webSearch==="boolean")settingsState.hasStoredWebSearchMode=true;
   if(e.modelName&&typeof parsed.modelName==="string"&&parsed.modelName.trim()){
-    const normalizedStoredModel=normalizeExecModelNameForUi(parsed.modelName,runtimeDefaultExecModel());
+    const shouldPromoteStoredModel=shouldPromoteStoredExecModelDefaultForUi(parsed.modelName,parsed.modelDefaultVersion);
+    const normalizedStoredModel=shouldPromoteStoredModel
+      ?latestDefaultExecModelForUi()
+      :normalizeExecModelNameForUi(parsed.modelName,latestDefaultExecModelForUi());
     e.modelName.value=ensureExecModelOptionForUi(normalizedStoredModel)||normalizedStoredModel;
-    settingsState.hasStoredModel=true;
+    settingsState.hasStoredModel=!shouldPromoteStoredModel;
   }
   if(e.modelReasoningEffort&&typeof parsed.modelReasoningEffort==="string"&&parsed.modelReasoningEffort.trim()){
     e.modelReasoningEffort.value=normalizeExecModelReasoningEffortForUi(parsed.modelReasoningEffort,runtimeDefaultExecModelReasoningEffort());
@@ -7211,10 +7392,11 @@ async function loadRuntime({reconcilePending=true}={}){
   if(reconcilePending)reconcilePendingRequestsWithRuntime(s.runtime,{refreshUi:false});
   if(e.modelName){
     const currentModel=e.modelName.value&&typeof e.modelName.value==="string"?e.modelName.value.trim():"";
+    const runtimeModel=latestDefaultExecModelForUi();
     const selectedModel=(!settingsState.hasStoredModel||!currentModel||isLegacyExecModelAlias(currentModel))
-      ?runtimeDefaultExecModel()
-      :normalizeExecModelNameForUi(currentModel,runtimeDefaultExecModel());
-    hydrateExecModelOptionsForUi([selectedModel,runtimeDefaultExecModel()]);
+      ?runtimeModel
+      :normalizeExecModelNameForUi(currentModel,runtimeModel);
+    hydrateExecModelOptionsForUi([selectedModel,runtimeModel,runtimeDefaultExecModel()]);
     e.modelName.value=ensureExecModelOptionForUi(selectedModel)||selectedModel;
   }
   if(e.modelReasoningEffort){
@@ -7864,7 +8046,7 @@ async function runPrompt(raw,cid=s.active,options={}){
     const selectedApproval=normalizeApprovalPolicyForUi(scopedSettings.approvalPolicy,PROFILES[DEFAULT_PROFILE_ID].approvalPolicy);
     const selectedSandbox=normalizeSandboxModeForUi(scopedSettings.sandboxMode,PROFILES[DEFAULT_PROFILE_ID].sandboxMode);
     const selectedWebSearchMode=normalizeWebSearchModeForUi(scopedSettings.webSearchMode,"cached");
-    const selectedModel=normalizeExecModelNameForUi(scopedSettings.modelName,runtimeDefaultExecModel());
+    const selectedModel=normalizeExecModelNameForUi(scopedSettings.modelName,latestDefaultExecModelForUi());
     const selectedModelReasoningEffort=normalizeExecModelReasoningEffortForUi(
       scopedSettings.modelReasoningEffort,
       runtimeDefaultExecModelReasoningEffort()
@@ -8077,10 +8259,14 @@ function bind(){
     scrollElementIntoViewForUi(e.promptInput,{focus:true});
   });
   document.querySelectorAll("[data-preset]").forEach(btn=>btn.onclick=()=>{e.promptInput.value=btn.getAttribute("data-preset")||"";syncPromptInputHeight();renderMissionSupportUi();e.sendBtn.click()});
-  window.addEventListener("resize",()=>{syncPromptInputHeight({remeasureBase:true});scheduleComposerViewportSyncForUi();});
+  if(e.operatorDetailFold)e.operatorDetailFold.addEventListener("toggle",()=>{
+    if(e.operatorDetailFold.dataset.syncing==="true")return;
+    e.operatorDetailFold.dataset.userLocked="true";
+  });
+  window.addEventListener("resize",()=>{syncPromptInputHeight({remeasureBase:true});scheduleComposerViewportSyncForUi();syncOperatorDetailFoldForUi();});
   window.addEventListener("focus",()=>{reloadUiShellIfBundleDriftedForUi().catch(()=>{});});
   document.addEventListener("visibilitychange",()=>{if(document.visibilityState==="visible")reloadUiShellIfBundleDriftedForUi().catch(()=>{});});
-  window.addEventListener("beforeunload",()=>cleanupRealtimeVoiceSession());
+  window.addEventListener("beforeunload",()=>{if(typeof cleanupRealtimeVoiceSession==="function")cleanupRealtimeVoiceSession();});
   if(e.commandFilter)e.commandFilter.oninput=()=>renderCommands(e.commandFilter.value);
   e.executionProfile.onchange=()=>{
     if(e.executionProfile.value==="custom"){profileSync();saveSettings();updateSearchDiag();renderMissionSupportUi();return}
@@ -8091,7 +8277,7 @@ function bind(){
     msg(s.active,"system","System",`Permission mode applied: ${executionProfileLabelForUi(e.executionProfile.value)}`);
   };
   [e.approvalPolicy,e.fastModeEnabled,e.automaticApprovalReviewEnabled,e.sandboxMode,e.webSearchMode].filter(Boolean).forEach(x=>x.onchange=()=>{profileSync();saveSettings();updateSearchDiag();renderMissionSupportUi()});
-  if(e.modelName)e.modelName.onchange=()=>{const normalizedModel=normalizeExecModelNameForUi(e.modelName.value,runtimeDefaultExecModel());e.modelName.value=ensureExecModelOptionForUi(normalizedModel)||normalizedModel;settingsState.hasStoredModel=true;saveSettings();renderMissionSupportUi();};
+  if(e.modelName)e.modelName.onchange=()=>{const normalizedModel=normalizeExecModelNameForUi(e.modelName.value,latestDefaultExecModelForUi());e.modelName.value=ensureExecModelOptionForUi(normalizedModel)||normalizedModel;settingsState.hasStoredModel=true;saveSettings();renderMissionSupportUi();};
   if(e.modelReasoningEffort)e.modelReasoningEffort.onchange=()=>{e.modelReasoningEffort.value=normalizeExecModelReasoningEffortForUi(e.modelReasoningEffort.value,runtimeDefaultExecModelReasoningEffort());settingsState.hasStoredModelReasoningEffort=true;saveSettings();renderMissionSupportUi();};
   if(e.workspacePath)e.workspacePath.oninput=()=>{workspaceGuardUiState.message="";workspaceGuardUiState.tone="";syncActiveChatScopedStateFromUi();renderWorkspaceGuardUi();renderMissionSupportUi();};
   e.workspacePath.onchange=()=>{workspaceGuardUiState.message="";workspaceGuardUiState.tone="";saveSettings();renderWorkspaceGuardUi();renderMissionSupportUi();};

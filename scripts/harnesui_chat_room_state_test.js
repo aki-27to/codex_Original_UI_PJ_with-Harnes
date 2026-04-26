@@ -82,7 +82,7 @@ function buildContext() {
       automaticApprovalReviewEnabled: { checked: false },
       sandboxMode: { value: "workspace-write" },
       webSearchMode: { value: "cached" },
-      modelName: { value: "gpt-5.4", options: [] },
+      modelName: { value: "gpt-5.5", options: [] },
       modelReasoningEffort: { value: "xhigh" },
       workspacePath: { value: "C:\\repo\\initial" },
       promptInput: { value: "" },
@@ -120,7 +120,7 @@ function buildContext() {
     ALLOWED_APPROVAL_POLICIES: new Set(["untrusted", "on-request", "never"]),
     ALLOWED_SANDBOX_MODES: new Set(["read-only", "workspace-write", "danger-full-access"]),
     ALLOWED_WEB_SEARCH_MODES: new Set(["disabled", "cached", "live"]),
-    DEFAULT_EXEC_MODEL: "gpt-5.4",
+    DEFAULT_EXEC_MODEL: "gpt-5.5",
     DEFAULT_EXEC_MODEL_REASONING_EFFORT: "xhigh",
     CHAT_MESSAGE_LIMIT: 240,
     CHAT_STATE_VERSION: 1,
@@ -133,6 +133,8 @@ function buildContext() {
     clearedNotices: 0,
     workspaceSyncTargets: [],
     DEFAULT_AGENT_NAME: "default",
+    EXEC_MODEL_DEFAULT_VERSION: "2026-04-25-gpt-5.5",
+    LEGACY_DEFAULT_EXEC_MODEL_IDS: new Set(["gpt-5.4"]),
     document: {
       createElement(tagName) {
         return {
@@ -181,7 +183,7 @@ function buildContext() {
       const normalized = typeof value === "string" ? value.trim().toLowerCase() : "";
       return this.ALLOWED_WEB_SEARCH_MODES.has(normalized) ? normalized : fallback;
     },
-    normalizeExecModelNameForUi(value, fallback = "gpt-5.4") {
+    normalizeExecModelNameForUi(value, fallback = "gpt-5.5") {
       const raw = typeof value === "string" ? value.trim() : "";
       return raw || fallback;
     },
@@ -190,13 +192,13 @@ function buildContext() {
       return raw || fallback;
     },
     runtimeDefaultExecModel() {
-      return "gpt-5.4";
+      return "gpt-5.5";
     },
     runtimeDefaultExecModelReasoningEffort() {
       return "xhigh";
     },
     selectedExecModel() {
-      return this.normalizeExecModelNameForUi(this.e.modelName.value, "gpt-5.4");
+      return this.normalizeExecModelNameForUi(this.e.modelName.value, "gpt-5.5");
     },
     selectedExecModelReasoningEffort() {
       return this.normalizeExecModelReasoningEffortForUi(this.e.modelReasoningEffort.value, "xhigh");
@@ -275,7 +277,7 @@ function buildContext() {
     const normalized = typeof value === "string" ? value.trim().toLowerCase() : "";
     return context.ALLOWED_WEB_SEARCH_MODES.has(normalized) ? normalized : fallback;
   };
-  context.normalizeExecModelNameForUi = (value, fallback = "gpt-5.4") => {
+  context.normalizeExecModelNameForUi = (value, fallback = "gpt-5.5") => {
     const raw = typeof value === "string" ? value.trim() : "";
     return raw || fallback;
   };
@@ -283,11 +285,23 @@ function buildContext() {
     const raw = typeof value === "string" ? value.trim().toLowerCase() : "";
     return raw || fallback;
   };
-  context.runtimeDefaultExecModel = () => "gpt-5.4";
+  context.runtimeDefaultExecModel = () => "gpt-5.5";
+  context.isLegacyDefaultExecModelForUi = (value) => {
+    const normalized = context.normalizeExecModelNameForUi(value, "").toLowerCase();
+    return Boolean(normalized) && context.LEGACY_DEFAULT_EXEC_MODEL_IDS.has(normalized);
+  };
+  context.latestDefaultExecModelForUi = () => {
+    const runtimeModel = context.runtimeDefaultExecModel();
+    return context.isLegacyDefaultExecModelForUi(runtimeModel) ? context.DEFAULT_EXEC_MODEL : runtimeModel;
+  };
+  context.shouldPromoteStoredExecModelDefaultForUi = (value, defaultVersion = "") => {
+    const storedVersion = typeof defaultVersion === "string" ? defaultVersion.trim() : "";
+    return storedVersion !== context.EXEC_MODEL_DEFAULT_VERSION && context.isLegacyDefaultExecModelForUi(value);
+  };
   context.runtimeDefaultExecModelReasoningEffort = () => "xhigh";
   context.runtimeDefaultFastModeEnabled = () => false;
   context.runtimeDefaultAutomaticApprovalReviewEnabled = () => true;
-  context.selectedExecModel = () => context.normalizeExecModelNameForUi(context.e.modelName.value, "gpt-5.4");
+  context.selectedExecModel = () => context.normalizeExecModelNameForUi(context.e.modelName.value, "gpt-5.5");
   context.selectedExecModelReasoningEffort = () => context.normalizeExecModelReasoningEffortForUi(context.e.modelReasoningEffort.value, "xhigh");
   context.selectedCwd = () => (typeof context.e.workspacePath.value === "string" ? context.e.workspacePath.value.trim() : "");
   context.active = () => context.s.chats.find((chatRecord) => chatRecord && chatRecord.id === context.s.active) || null;
@@ -343,6 +357,10 @@ function buildContext() {
   context.serializeHarnessState = (value) => value || {};
 
   const bootstrap = [
+    extractFunction("normalizeNonEmptyExecModelNameForUi"),
+    extractFunction("isLegacyDefaultExecModelForUi"),
+    extractFunction("latestDefaultExecModelForUi"),
+    extractFunction("shouldPromoteStoredExecModelDefaultForUi"),
     extractFunction("chatSettingsDefaultsForUi"),
     extractFunction("freshChatSettingsDefaultsForUi"),
     extractFunction("normalizeChatSettingsForUi"),
@@ -362,7 +380,7 @@ function buildContext() {
     extractFunction("setActiveChatForUi"),
     extractFunction("loadChatState"),
     extractFunction("saveChatStateNow"),
-    "this.helpers={normalizeChatSettingsForUi,serializeChatSettingsForStorage,isGenericChatTitleForUi,isAutoChatTitleMetaLineForUi,deriveAutoChatTitleFromMessageForUi,deriveAutoChatTitleForUi,refreshAutoChatTitleForUi,ensureChatScopedStateForUi,syncActiveChatScopedStateFromUi,applyChatScopedStateToUi,mkChat,normalizeSavedChat,renderChatList,setActiveChatForUi,loadChatState,saveChatStateNow};",
+    "this.helpers={normalizeChatSettingsForUi,serializeChatSettingsForStorage,shouldPromoteStoredExecModelDefaultForUi,isGenericChatTitleForUi,isAutoChatTitleMetaLineForUi,deriveAutoChatTitleFromMessageForUi,deriveAutoChatTitleForUi,refreshAutoChatTitleForUi,ensureChatScopedStateForUi,syncActiveChatScopedStateFromUi,applyChatScopedStateToUi,mkChat,normalizeSavedChat,renderChatList,setActiveChatForUi,loadChatState,saveChatStateNow};",
   ].join("\n\n");
 
   vm.runInNewContext(bootstrap, context);
@@ -383,7 +401,7 @@ async function testSwitchPreservesAndRestoresRoomScopedState() {
         webSearchMode: "cached",
         fastModeEnabled: false,
         automaticApprovalReviewEnabled: false,
-        modelName: "gpt-5.4",
+        modelName: "gpt-5.5",
         modelReasoningEffort: "xhigh",
         workspacePath: "C:\\repo\\alpha",
         workspaceLockRoot: "C:\\repo\\alpha",
@@ -448,13 +466,42 @@ async function testSwitchPreservesAndRestoresRoomScopedState() {
   const freshChat = mkChat({ agent: "default", forceNewSession: true, activate: false });
   const switchedToFresh = await setActiveChatForUi(freshChat.id, { syncWorkspaceGuard: false });
   assert.strictEqual(switchedToFresh, true, "switching to the fresh chat should succeed");
-  assert.strictEqual(context.e.modelName.value, "gpt-5.4", "fresh chats should start from the runtime default model");
+  assert.strictEqual(context.e.modelName.value, "gpt-5.5", "fresh chats should start from the runtime default model");
   assert.strictEqual(context.e.promptInput.value, "", "fresh chats should start with an empty draft");
   assert.strictEqual(
     context.chat(freshChat.id).settings.workspaceLockRoot,
     "",
     "fresh chats should not inherit another room's lock root"
   );
+}
+
+function testLegacyStoredDefaultModelPromotesToLatest() {
+  const { normalizeChatSettingsForUi, serializeChatSettingsForStorage, shouldPromoteStoredExecModelDefaultForUi } = buildContext();
+  const migrated = normalizeChatSettingsForUi({
+    executionProfile: "custom",
+    approvalPolicy: "on-request",
+    sandboxMode: "workspace-write",
+    webSearchMode: "cached",
+    modelName: "gpt-5.4",
+    modelReasoningEffort: "xhigh",
+  });
+  assert.strictEqual(migrated.modelName, "gpt-5.5", "unstamped legacy gpt-5.4 defaults should promote to gpt-5.5");
+  assert.strictEqual(migrated.modelDefaultVersion, "2026-04-25-gpt-5.5", "migrated settings should carry the latest model-default version");
+  assert.strictEqual(
+    shouldPromoteStoredExecModelDefaultForUi("gpt-5.4", "2026-04-25-gpt-5.5"),
+    false,
+    "a current stamp means gpt-5.4 was explicitly selected and should be preserved"
+  );
+
+  const explicitLegacyChoice = normalizeChatSettingsForUi({
+    modelName: "gpt-5.4",
+    modelDefaultVersion: "2026-04-25-gpt-5.5",
+    modelReasoningEffort: "xhigh",
+  });
+  assert.strictEqual(explicitLegacyChoice.modelName, "gpt-5.4", "explicit current gpt-5.4 selections should not be overwritten");
+
+  const serialized = serializeChatSettingsForStorage(migrated);
+  assert.strictEqual(serialized.modelDefaultVersion, "2026-04-25-gpt-5.5", "stored chat settings should persist the model-default version stamp");
 }
 
 function testSavedChatPayloadIncludesScopedSettings() {
@@ -474,6 +521,7 @@ function testSavedChatPayloadIncludesScopedSettings() {
         fastModeEnabled: true,
         automaticApprovalReviewEnabled: true,
         modelName: "gpt-5.3-codex",
+        modelDefaultVersion: "2026-04-25-gpt-5.5",
         modelReasoningEffort: "high",
         workspacePath: "C:\\repo\\alpha\\nested",
         workspaceLockRoot: "C:\\repo\\alpha",
@@ -495,6 +543,7 @@ function testSavedChatPayloadIncludesScopedSettings() {
         fastModeEnabled: false,
         automaticApprovalReviewEnabled: true,
         modelName: "gpt-5.4-mini",
+        modelDefaultVersion: "2026-04-25-gpt-5.5",
         modelReasoningEffort: "medium",
         workspacePath: "D:\\beta",
         workspaceLockRoot: "D:\\beta",
@@ -512,6 +561,7 @@ function testSavedChatPayloadIncludesScopedSettings() {
   assert.strictEqual(parsed.active, "chat-2", "active chat should persist");
   assert.strictEqual(parsed.chats[0].settings.workspaceLockRoot, "C:\\repo\\alpha", "chat 1 lock root should persist");
   assert.strictEqual(parsed.chats[0].settings.modelName, "gpt-5.3-codex", "chat 1 model should persist");
+  assert.strictEqual(parsed.chats[0].settings.modelDefaultVersion, "2026-04-25-gpt-5.5", "chat 1 model-default version should persist");
   assert.strictEqual(parsed.chats[0].draftPrompt, "edited alpha draft", "chat 1 draft prompt should persist");
   assert.strictEqual(parsed.chats[1].settings.workspacePath, "D:\\beta", "chat 2 workspace path should persist");
   assert.strictEqual(parsed.chats[1].settings.executionProfile, "guardian", "chat 2 profile should persist");
@@ -656,6 +706,7 @@ function testRenderChatListMarksActiveChat() {
 
 async function run() {
   await testSwitchPreservesAndRestoresRoomScopedState();
+  testLegacyStoredDefaultModelPromotesToLatest();
   testSavedChatPayloadIncludesScopedSettings();
   testGenericChatTitlesAutoRenameFromFirstUserPrompt();
   testHydratedAutoTitlesPersistBackToStorage();

@@ -2,6 +2,8 @@
 # Wider deployments should narrow sandbox/approval posture through the agent config layer
 # instead of assuming these local experimentation defaults are universally appropriate.
 network_access = true
+model = "gpt-5.5"
+model_reasoning_effort = "xhigh"
 
 [features]
 multi_agent = true
@@ -53,3 +55,13 @@ url = "https://stitch.googleapis.com/mcp"
 
 [mcp_servers.stitch.env_http_headers]
 X-Goog-Api-Key = "STITCH_API_KEY"
+
+[mcp_servers.playwright]
+command = "node"
+cwd = "C:/Users/akima/dev/codex_Original_UI_PJ_with-Harnes"
+args = ["tools/playwright-mcp-server/src/server.js"]
+
+[mcp_servers.harness_artifacts]
+command = "node"
+cwd = "C:/Users/akima/dev/codex_Original_UI_PJ_with-Harnes"
+args = ["tools/harness-artifact-mcp-server/src/server.js"]
