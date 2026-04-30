@@ -1,8 +1,8 @@
 {
   "schema": "anthropic-engineering-learning-ledger.v1",
-  "generatedAt": "2026-04-29T19:58:33.575Z",
-  "lastRunAt": "2026-04-29T19:58:33.575Z",
-  "lastSuccessAt": "2026-04-29T19:58:33.575Z",
+  "generatedAt": "2026-04-30T19:55:20.561Z",
+  "lastRunAt": "2026-04-30T19:55:20.561Z",
+  "lastSuccessAt": "2026-04-30T19:55:20.561Z",
   "lastStatus": "PASS",
   "lastReason": "",
   "summary": {
@@ -24,8 +24,8 @@
       "topicLabel": "",
       "discoveredAt": "2026-04-09T11:31:10.069Z",
       "firstReadAt": "2026-04-09T11:31:10.069Z",
-      "lastReadAt": "2026-04-29T19:58:33.575Z",
-      "contentHash": "484bde1370edeeddd8412db9dc2169c48c9dce520c1c541acdca2ff4e504ea25",
+      "lastReadAt": "2026-04-30T19:55:20.561Z",
+      "contentHash": "049bba90bd06d98d1509f0e2a154c67bdcb540addfe304606ded6102aab96573",
       "summary": "Harnesses encode assumptions that go stale as models improve. Managed Agents—our hosted service for long-horizon agent work—is built around interfaces that stay stable as harnesses change.",
       "guidance": [
         "Building Managed Agents meant solving an old problem in computing: how to design a system for “ programs as yet unthought of .” Decades ago, operating systems solved this problem by virtualizing hardware into abstractions— process, file —general enough for programs that didn't exist yet.",
@@ -58,8 +58,8 @@
       "topicLabel": "",
       "discoveredAt": "2026-03-25T10:58:32.280Z",
       "firstReadAt": "2026-03-25T10:58:32.280Z",
-      "lastReadAt": "2026-04-29T19:58:33.575Z",
-      "contentHash": "1e49d6f7197c3e06251b251650063be53436540f8cef345d39bb33243b160566",
+      "lastReadAt": "2026-04-30T19:55:20.561Z",
+      "contentHash": "86282c75277473d3b8ca45f0f212310219094a0596e161dc12b82f1d32534289",
       "summary": "Harness design is key to performance at the frontier of agentic coding. Here's how we pushed Claude further in frontend design and long-running autonomous software engineering.",
       "guidance": [
         "We've previously shown that harness design has a substantial impact on the effectiveness of long running agentic coding.",
@@ -99,8 +99,8 @@
       "topicLabel": "",
       "discoveredAt": "2026-03-25T10:58:32.280Z",
       "firstReadAt": "2026-03-25T10:58:32.280Z",
-      "lastReadAt": "2026-04-29T19:58:33.575Z",
-      "contentHash": "a7419ed932e7ef220ac19a08a1067bc46d233e3b78e7cdfb2d07c03c9257d368",
+      "lastReadAt": "2026-04-30T19:55:20.561Z",
+      "contentHash": "4ee5b93002f0c937dfaeccbeee38172b4e1f486e87e1f754dc93ac0e5af04a11",
       "summary": "Infrastructure configuration can swing agentic coding benchmarks by several percentage points—sometimes more than the leaderboard gap between top models.",
       "guidance": [
         "Agentic coding evals are different: models are given a full environment where they write programs, run tests, install dependencies, and iterate over multiple turns.",
@@ -138,8 +138,8 @@
       "topicLabel": "",
       "discoveredAt": "2026-03-25T10:58:32.280Z",
       "firstReadAt": "2026-03-25T10:58:32.280Z",
-      "lastReadAt": "2026-04-29T19:58:33.575Z",
-      "contentHash": "9982a244da35f97b74b292fbca96ab3493fbb5b372dd5621a734c10663452338",
+      "lastReadAt": "2026-04-30T19:55:20.561Z",
+      "contentHash": "2644aabed00dfccf2da9aa648884111c9bc16c487a3d4370b2861b40975bc3c6",
       "summary": "What we learned from three iterations of a performance engineering take-home that Claude keeps beating.",
       "guidance": [
         "Evaluating technical candidates becomes harder as AI capabilities improve.",
@@ -179,8 +179,8 @@
       "topicLabel": "",
       "discoveredAt": "2026-04-23T14:29:13.040Z",
       "firstReadAt": "2026-04-23T14:29:13.040Z",
-      "lastReadAt": "2026-04-29T19:58:33.575Z",
-      "contentHash": "ae9efad9d57fed7a208c8db61c05733e3c39edad73e6217ac0fb8cd3b8d9dad9",
+      "lastReadAt": "2026-04-30T19:55:20.561Z",
+      "contentHash": "f311bd6c4bb376fc8e19f46056e7bacfe2e14fbddca16ba9b495f01aad542078",
       "summary": "We've worked with dozens of teams building LLM agents across industries. Consistently, the most successful implementations use simple, composable patterns rather than complex frameworks.",
       "guidance": [
         "In this post, we share what we’ve learned from working with our customers and building agents ourselves, and give practical advice for developers on building effective agents.",
@@ -224,8 +224,8 @@
       "topicLabel": "",
       "discoveredAt": "2026-04-23T14:29:13.040Z",
       "firstReadAt": "2026-04-23T14:29:13.040Z",
-      "lastReadAt": "2026-04-29T19:58:33.575Z",
-      "contentHash": "bf6548271b7503c61b362a620962195a9a735a28255526687dd2128830b336cc",
+      "lastReadAt": "2026-04-30T19:55:20.561Z",
+      "contentHash": "a62ef5d0d1c25021d86f71b3b40743c97b7cb966b764688422f24c4e1ed8e04e",
       "summary": "Direct tool calls consume context for each definition and result. Agents scale better by writing code to call tools instead. Here's how it works with MCP.",
       "guidance": [
         "In this blog we'll explore how code execution can enable agents to interact with MCP servers more efficiently, handling more tools while using fewer tokens.",
