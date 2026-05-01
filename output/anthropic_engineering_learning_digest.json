@@ -1,16 +1,16 @@
 {
   "schema": "anthropic-engineering-learning-digest.v1",
-  "generatedAt": "2026-04-30T19:55:20.561Z",
+  "generatedAt": "2026-05-01T03:49:07.252Z",
   "source": {
     "name": "Anthropic Engineering",
     "indexUrl": "https://www.anthropic.com/engineering"
   },
   "summary": {
-    "trackedArticles": 6,
+    "trackedArticles": 4,
     "newArticlesThisRun": 0,
-    "pendingProposals": 6,
+    "pendingProposals": 4,
     "blockedTargets": 0,
-    "promotedDocUpdates": 6
+    "promotedDocUpdates": 4
   },
   "topics": {
     "agents": [
@@ -57,36 +57,6 @@
           "Terminal-Bench 2.0, for instance, specifies recommended CPU and RAM on a per-task basis in their latest 2.0 release."
         ],
         "portability": "portable"
-      },
-      {
-        "articleId": "building-effective-agents",
-        "title": "Building Effective AI Agents",
-        "url": "https://www.anthropic.com/engineering/building-effective-agents",
-        "relevance": "high",
-        "indexDateLabel": "pinned",
-        "summary": "We've worked with dozens of teams building LLM agents across industries. Consistently, the most successful implementations use simple, composable patterns rather than complex frameworks.",
-        "guidance": [
-          "In this post, we share what we’ve learned from working with our customers and building agents ourselves, and give practical advice for developers on building effective agents.",
-          "Agents , on the other hand, are systems where LLMs dynamically direct their own processes and tool usage, maintaining control over how they accomplish tasks.",
-          "Strands Agents SDK by AWS ;",
-          "Over the past year, we've worked with dozens of teams building large language model (LLM) agents across industries."
-        ],
-        "portability": "portable"
-      },
-      {
-        "articleId": "code-execution-with-mcp",
-        "title": "Code execution with MCP: building more efficient AI agents",
-        "url": "https://www.anthropic.com/engineering/code-execution-with-mcp",
-        "relevance": "high",
-        "indexDateLabel": "pinned",
-        "summary": "Direct tool calls consume context for each definition and result. Agents scale better by writing code to call tools instead. Here's how it works with MCP.",
-        "guidance": [
-          "In this blog we'll explore how code execution can enable agents to interact with MCP servers more efficiently, handling more tools while using fewer tokens.",
-          "Connecting agents to tools and data traditionally requires a custom integration for each pairing, creating fragmentation and duplicated effort that makes it difficult to scale truly connected systems.",
-          "The Model Context Protocol (MCP) is an open standard for connecting AI agents to external systems.",
-          "Tool definitions overload the context window;"
-        ],
-        "portability": "portable"
       }
     ],
     "context": [
@@ -116,36 +86,6 @@
           "Two insights shaped the harness I built for frontend design.",
           "Design quality: Does the design feel like a coherent whole rather than a collection of parts? Strong work here means the colors, typography, layout, imagery, and other details combine to create a distinct mood and identity.",
           "For more complex tasks, the agent still tends to go off the rails over time."
-        ],
-        "portability": "portable"
-      },
-      {
-        "articleId": "building-effective-agents",
-        "title": "Building Effective AI Agents",
-        "url": "https://www.anthropic.com/engineering/building-effective-agents",
-        "relevance": "high",
-        "indexDateLabel": "pinned",
-        "summary": "We've worked with dozens of teams building LLM agents across industries. Consistently, the most successful implementations use simple, composable patterns rather than complex frameworks.",
-        "guidance": [
-          "In this post, we share what we’ve learned from working with our customers and building agents ourselves, and give practical advice for developers on building effective agents.",
-          "Agents , on the other hand, are systems where LLMs dynamically direct their own processes and tool usage, maintaining control over how they accomplish tasks.",
-          "Strands Agents SDK by AWS ;",
-          "Over the past year, we've worked with dozens of teams building large language model (LLM) agents across industries."
-        ],
-        "portability": "portable"
-      },
-      {
-        "articleId": "code-execution-with-mcp",
-        "title": "Code execution with MCP: building more efficient AI agents",
-        "url": "https://www.anthropic.com/engineering/code-execution-with-mcp",
-        "relevance": "high",
-        "indexDateLabel": "pinned",
-        "summary": "Direct tool calls consume context for each definition and result. Agents scale better by writing code to call tools instead. Here's how it works with MCP.",
-        "guidance": [
-          "In this blog we'll explore how code execution can enable agents to interact with MCP servers more efficiently, handling more tools while using fewer tokens.",
-          "Connecting agents to tools and data traditionally requires a custom integration for each pairing, creating fragmentation and duplicated effort that makes it difficult to scale truly connected systems.",
-          "The Model Context Protocol (MCP) is an open standard for connecting AI agents to external systems.",
-          "Tool definitions overload the context window;"
         ],
         "portability": "portable"
       }
@@ -194,36 +134,6 @@
           "A take-home that distinguishes well between human skill levels today may be trivially solved by models tomorrow—rendering it useless for evaluation."
         ],
         "portability": "mixed"
-      },
-      {
-        "articleId": "building-effective-agents",
-        "title": "Building Effective AI Agents",
-        "url": "https://www.anthropic.com/engineering/building-effective-agents",
-        "relevance": "high",
-        "indexDateLabel": "pinned",
-        "summary": "We've worked with dozens of teams building LLM agents across industries. Consistently, the most successful implementations use simple, composable patterns rather than complex frameworks.",
-        "guidance": [
-          "In this post, we share what we’ve learned from working with our customers and building agents ourselves, and give practical advice for developers on building effective agents.",
-          "Agents , on the other hand, are systems where LLMs dynamically direct their own processes and tool usage, maintaining control over how they accomplish tasks.",
-          "Strands Agents SDK by AWS ;",
-          "Over the past year, we've worked with dozens of teams building large language model (LLM) agents across industries."
-        ],
-        "portability": "portable"
-      },
-      {
-        "articleId": "code-execution-with-mcp",
-        "title": "Code execution with MCP: building more efficient AI agents",
-        "url": "https://www.anthropic.com/engineering/code-execution-with-mcp",
-        "relevance": "high",
-        "indexDateLabel": "pinned",
-        "summary": "Direct tool calls consume context for each definition and result. Agents scale better by writing code to call tools instead. Here's how it works with MCP.",
-        "guidance": [
-          "In this blog we'll explore how code execution can enable agents to interact with MCP servers more efficiently, handling more tools while using fewer tokens.",
-          "Connecting agents to tools and data traditionally requires a custom integration for each pairing, creating fragmentation and duplicated effort that makes it difficult to scale truly connected systems.",
-          "The Model Context Protocol (MCP) is an open standard for connecting AI agents to external systems.",
-          "Tool definitions overload the context window;"
-        ],
-        "portability": "portable"
       }
     ],
     "evals": [
@@ -271,21 +181,6 @@
           "A take-home that distinguishes well between human skill levels today may be trivially solved by models tomorrow—rendering it useless for evaluation."
         ],
         "portability": "mixed"
-      },
-      {
-        "articleId": "building-effective-agents",
-        "title": "Building Effective AI Agents",
-        "url": "https://www.anthropic.com/engineering/building-effective-agents",
-        "relevance": "high",
-        "indexDateLabel": "pinned",
-        "summary": "We've worked with dozens of teams building LLM agents across industries. Consistently, the most successful implementations use simple, composable patterns rather than complex frameworks.",
-        "guidance": [
-          "In this post, we share what we’ve learned from working with our customers and building agents ourselves, and give practical advice for developers on building effective agents.",
-          "Agents , on the other hand, are systems where LLMs dynamically direct their own processes and tool usage, maintaining control over how they accomplish tasks.",
-          "Strands Agents SDK by AWS ;",
-          "Over the past year, we've worked with dozens of teams building large language model (LLM) agents across industries."
-        ],
-        "portability": "portable"
       }
     ],
     "skills": [
@@ -318,23 +213,6 @@
           "A take-home that distinguishes well between human skill levels today may be trivially solved by models tomorrow—rendering it useless for evaluation."
         ],
         "portability": "mixed"
-      }
-    ],
-    "codex": [
-      {
-        "articleId": "building-effective-agents",
-        "title": "Building Effective AI Agents",
-        "url": "https://www.anthropic.com/engineering/building-effective-agents",
-        "relevance": "high",
-        "indexDateLabel": "pinned",
-        "summary": "We've worked with dozens of teams building LLM agents across industries. Consistently, the most successful implementations use simple, composable patterns rather than complex frameworks.",
-        "guidance": [
-          "In this post, we share what we’ve learned from working with our customers and building agents ourselves, and give practical advice for developers on building effective agents.",
-          "Agents , on the other hand, are systems where LLMs dynamically direct their own processes and tool usage, maintaining control over how they accomplish tasks.",
-          "Strands Agents SDK by AWS ;",
-          "Over the past year, we've worked with dozens of teams building large language model (LLM) agents across industries."
-        ],
-        "portability": "portable"
       }
     ]
   },
@@ -391,34 +269,6 @@
       ],
       "summary": "What we learned from three iterations of a performance engineering take-home that Claude keeps beating.",
       "indexDateLabel": "Jan 21, 2026"
-    },
-    {
-      "articleId": "building-effective-agents",
-      "title": "Building Effective AI Agents",
-      "url": "https://www.anthropic.com/engineering/building-effective-agents",
-      "relevance": "high",
-      "topicTags": [
-        "agents",
-        "codex",
-        "context",
-        "evals",
-        "frontend"
-      ],
-      "summary": "We've worked with dozens of teams building LLM agents across industries. Consistently, the most successful implementations use simple, composable patterns rather than complex frameworks.",
-      "indexDateLabel": "pinned"
-    },
-    {
-      "articleId": "code-execution-with-mcp",
-      "title": "Code execution with MCP: building more efficient AI agents",
-      "url": "https://www.anthropic.com/engineering/code-execution-with-mcp",
-      "relevance": "high",
-      "topicTags": [
-        "agents",
-        "context",
-        "frontend"
-      ],
-      "summary": "Direct tool calls consume context for each definition and result. Agents scale better by writing code to call tools instead. Here's how it works with MCP.",
-      "indexDateLabel": "pinned"
     }
   ],
   "pendingProposals": [
@@ -447,20 +297,6 @@
       "proposalId": "anthropic-engineering-AI-resistant-technical-evaluations",
       "articleId": "AI-resistant-technical-evaluations",
       "title": "Designing AI resistant technical evaluations",
-      "target": "docs/CONTEXT_MEMORY_POLICY.md",
-      "status": "proposal_only"
-    },
-    {
-      "proposalId": "anthropic-engineering-building-effective-agents",
-      "articleId": "building-effective-agents",
-      "title": "Building Effective AI Agents",
-      "target": "docs/CONTEXT_MEMORY_POLICY.md",
-      "status": "proposal_only"
-    },
-    {
-      "proposalId": "anthropic-engineering-code-execution-with-mcp",
-      "articleId": "code-execution-with-mcp",
-      "title": "Code execution with MCP: building more efficient AI agents",
       "target": "docs/CONTEXT_MEMORY_POLICY.md",
       "status": "proposal_only"
     }

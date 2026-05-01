@@ -1,6 +1,6 @@
 {
   "schema": "self-improvement-state.v1",
-  "generatedAt": "2026-04-22T00:42:49.901Z",
+  "generatedAt": "2026-05-01T13:13:13.910Z",
   "sourceName": "OpenAI Developers Blog",
   "sourceTier": "primary",
   "promotionMode": "machine_guarded_autonomy",
@@ -22,12 +22,12 @@
   "autoApplyCandidateCount": 0,
   "readyHintCandidateCount": 0,
   "autoApplyFrontendQualityNoteCount": 0,
-  "observationStatus": "awaiting_observations",
-  "observationCount": 88,
-  "lastObservedAt": "2026-04-22T00:42:49.600Z",
+  "observationStatus": "starved",
+  "observationCount": 0,
+  "lastObservedAt": "",
   "requiredObservationSuccesses": 2,
   "requiredObservationSuccessRate": 0.67,
-  "awaitingObservationCount": 7,
+  "awaitingObservationCount": 11,
   "awaitingReinforcementCount": 0,
   "policyDisabledCandidateCount": 0,
   "proposalOnlyCount": 1,
@@ -244,24 +244,17 @@
     "blastRadius": "low",
     "priorityScore": 53,
     "reinforcement": {
-      "successCount": 28,
+      "successCount": 0,
       "failureCount": 0,
-      "observedCount": 88,
-      "successRate": 1,
+      "observedCount": 0,
+      "successRate": 0,
       "requiredSuccesses": 2,
       "requiredSuccessRate": 0.67,
-      "remainingSuccesses": 0,
-      "lastObservedAt": "2026-04-22T00:42:49.600Z",
+      "remainingSuccesses": 2,
+      "lastObservedAt": "",
       "lastOutcome": "",
-      "status": "eligible",
-      "sampleTurnIds": [
-        "compat-pass-loop-2-1776817632178",
-        "compat-pass-loop-1-1776817628780",
-        "compat-pass-seed-1776817601279",
-        "readiness-durability-loop-10-1776817097703",
-        "readiness-durability-loop-09-1776817094440",
-        "readiness-durability-loop-08-1776817091354"
-      ]
+      "status": "unobserved",
+      "sampleTurnIds": []
     }
   },
   "priorityBacklog": [
@@ -277,24 +270,17 @@
       "blastRadius": "low",
       "priorityScore": 53,
       "reinforcement": {
-        "successCount": 28,
+        "successCount": 0,
         "failureCount": 0,
-        "observedCount": 28,
-        "successRate": 1,
+        "observedCount": 0,
+        "successRate": 0,
         "requiredSuccesses": 2,
         "requiredSuccessRate": 0.67,
-        "remainingSuccesses": 0,
-        "lastObservedAt": "2026-04-22T00:27:12.380Z",
+        "remainingSuccesses": 2,
+        "lastObservedAt": "",
         "lastOutcome": "",
-        "status": "eligible",
-        "sampleTurnIds": [
-          "compat-pass-loop-2-1776817632178",
-          "compat-pass-loop-1-1776817628780",
-          "compat-pass-seed-1776817601279",
-          "readiness-durability-loop-10-1776817097703",
-          "readiness-durability-loop-09-1776817094440",
-          "readiness-durability-loop-08-1776817091354"
-        ]
+        "status": "unobserved",
+        "sampleTurnIds": []
       }
     },
     {
@@ -334,24 +320,17 @@
       "blastRadius": "low",
       "priorityScore": 28,
       "reinforcement": {
-        "successCount": 28,
+        "successCount": 0,
         "failureCount": 0,
-        "observedCount": 28,
-        "successRate": 1,
+        "observedCount": 0,
+        "successRate": 0,
         "requiredSuccesses": 2,
         "requiredSuccessRate": 0.67,
-        "remainingSuccesses": 0,
-        "lastObservedAt": "2026-04-22T00:27:12.380Z",
+        "remainingSuccesses": 2,
+        "lastObservedAt": "",
         "lastOutcome": "",
-        "status": "eligible",
-        "sampleTurnIds": [
-          "compat-pass-loop-2-1776817632178",
-          "compat-pass-loop-1-1776817628780",
-          "compat-pass-seed-1776817601279",
-          "readiness-durability-loop-10-1776817097703",
-          "readiness-durability-loop-09-1776817094440",
-          "readiness-durability-loop-08-1776817091354"
-        ]
+        "status": "unobserved",
+        "sampleTurnIds": []
       }
     },
     {
@@ -366,24 +345,17 @@
       "blastRadius": "low",
       "priorityScore": 28,
       "reinforcement": {
-        "successCount": 28,
+        "successCount": 0,
         "failureCount": 0,
-        "observedCount": 28,
-        "successRate": 1,
+        "observedCount": 0,
+        "successRate": 0,
         "requiredSuccesses": 2,
         "requiredSuccessRate": 0.67,
-        "remainingSuccesses": 0,
-        "lastObservedAt": "2026-04-22T00:27:12.380Z",
+        "remainingSuccesses": 2,
+        "lastObservedAt": "",
         "lastOutcome": "",
-        "status": "eligible",
-        "sampleTurnIds": [
-          "compat-pass-loop-2-1776817632178",
-          "compat-pass-loop-1-1776817628780",
-          "compat-pass-seed-1776817601279",
-          "readiness-durability-loop-10-1776817097703",
-          "readiness-durability-loop-09-1776817094440",
-          "readiness-durability-loop-08-1776817091354"
-        ]
+        "status": "unobserved",
+        "sampleTurnIds": []
       }
     },
     {

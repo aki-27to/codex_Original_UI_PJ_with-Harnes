@@ -1,8 +1,8 @@
 {
   "schema": "openai-blog-learning-ledger.v1",
-  "generatedAt": "2026-04-21T15:09:10.192Z",
-  "lastRunAt": "2026-04-21T15:09:10.192Z",
-  "lastSuccessAt": "2026-04-21T15:09:10.192Z",
+  "generatedAt": "2026-05-01T03:46:19.385Z",
+  "lastRunAt": "2026-05-01T03:46:19.385Z",
+  "lastSuccessAt": "2026-05-01T03:46:19.385Z",
   "lastStatus": "PASS",
   "lastReason": "",
   "summary": {
@@ -24,8 +24,8 @@
       "topicLabel": "Audio",
       "discoveredAt": "2026-03-31T12:18:17.471Z",
       "firstReadAt": "2026-03-31T12:18:17.471Z",
-      "lastReadAt": "2026-04-21T15:09:10.192Z",
-      "contentHash": "57fd4b9017e6311b8a29adebe5feb170ab1d3a81aa0376f2a25b10e00f9f321b",
+      "lastReadAt": "2026-05-01T02:35:10.617Z",
+      "contentHash": "b478feda5140244fc00507f2f4c46db4ca8d0627ffaf64d652d04f652414becc",
       "summary": "Lessons from how Perplexity Computer's voice agent was built with the Realtime API.",
       "guidance": [
         "For Perplexity Comet , our agentic browser, and Perplexity Computer , our powerful, general-purpose digital worker, a big part of that was making these fully usable through voice.",
@@ -69,8 +69,8 @@
       "topicLabel": "General",
       "discoveredAt": "2026-03-23T12:18:19.240Z",
       "firstReadAt": "2026-03-23T12:18:19.240Z",
-      "lastReadAt": "2026-04-21T15:09:10.192Z",
-      "contentHash": "ee04ca06693ac97f195e726f05240ccccd50d8a2885babdedc6db39c2245bed0",
+      "lastReadAt": "2026-05-01T02:35:10.617Z",
+      "contentHash": "0e1b629e48dd3e4814cc632ffd4736f7fbbab462cbd8bc56d147b7555c323793",
       "summary": "Practical techniques for steering GPT-5.4 toward polished, production-ready frontend designs.",
       "guidance": [
         "better use of tools to inspect, test, and verify its own work",
@@ -118,8 +118,8 @@
       "topicLabel": "API",
       "discoveredAt": "2026-03-23T12:18:19.240Z",
       "firstReadAt": "2026-03-23T12:18:19.240Z",
-      "lastReadAt": "2026-04-21T15:09:10.192Z",
-      "contentHash": "c54875f04ecab2b26541b0b1de618d2a1d761bd7cf29a4dd3704a40181951812",
+      "lastReadAt": "2026-05-01T02:35:10.617Z",
+      "contentHash": "becd560602a14a5ad3ee8279f1a052bad49d3775c822eca6e6bc80b6fbdbcc35",
       "summary": "Five stories from developers building agentic products with the Responses API in its first year.",
       "guidance": [
         "Agent behavior monitoring",
@@ -168,8 +168,8 @@
       "topicLabel": "Codex",
       "discoveredAt": "2026-03-23T12:18:19.240Z",
       "firstReadAt": "2026-03-23T12:18:19.240Z",
-      "lastReadAt": "2026-04-21T15:09:10.192Z",
-      "contentHash": "b8873f4c3d7ae0f9b33d0fcdd5939ec1729812d699a7b8918f1cf70e8c130e32",
+      "lastReadAt": "2026-05-01T02:35:10.617Z",
+      "contentHash": "b5843f07bc62cb8f41dbed31596e7bf9623158010589db7e35656a7e165c8bdd",
       "summary": "Using skills and GitHub Actions to optimize Codex workflows in the OpenAI Agents SDK repos.",
       "guidance": [
         "repo-local skills in .agents/skills/",
@@ -218,8 +218,8 @@
       "topicLabel": "Codex",
       "discoveredAt": "2026-03-23T12:18:19.240Z",
       "firstReadAt": "2026-03-23T12:18:19.240Z",
-      "lastReadAt": "2026-04-21T15:09:10.192Z",
-      "contentHash": "c5e573bb9ffb9e5d245e74ee8118e8bc97fbde2194a9908f672efaca7bea1e2b",
+      "lastReadAt": "2026-05-01T02:35:10.617Z",
+      "contentHash": "4fe3880816911c0741f4c9deed5366259e9246ad1b8289f4c0aa3e7c6cfdda16",
       "summary": "Use Codex and Figma to bring real, running interfaces into Figma, refine them, and bring changes back to Codex.",
       "guidance": [
         "One of the core use cases of the Figma MCP server is retrieving context from Figma files and using that context in code generation. The Figma MCP server can capture information from Figma Design, Make, and FigJam files and pass it to Codex as part of the building process.",
@@ -260,8 +260,8 @@
       "topicLabel": "Codex",
       "discoveredAt": "2026-03-23T12:18:19.240Z",
       "firstReadAt": "2026-03-23T12:18:19.240Z",
-      "lastReadAt": "2026-04-21T15:09:10.192Z",
-      "contentHash": "66dbc0a2c36f822a7c9087518f9efc7d05198df27d1eed023c4eb098bc4eefce",
+      "lastReadAt": "2026-05-01T02:35:10.617Z",
+      "contentHash": "eb3fc581f78d2ffb4033fddd4c2b07739b092a19905337e364d7f7018176f900",
       "summary": "This was an experiment, not a production rollout. But it performed well on the parts that matter for long-horizon work: following the spec, staying on task, running verification, and repairing failures as it went.",
       "guidance": [
         "These screenshots are useful because they make the core shift visible: agentic coding is increasingly about time horizon, not just one-shot intelligence.",

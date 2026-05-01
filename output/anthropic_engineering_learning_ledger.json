@@ -1,16 +1,16 @@
 {
   "schema": "anthropic-engineering-learning-ledger.v1",
-  "generatedAt": "2026-04-30T19:55:20.561Z",
-  "lastRunAt": "2026-04-30T19:55:20.561Z",
-  "lastSuccessAt": "2026-04-30T19:55:20.561Z",
+  "generatedAt": "2026-05-01T03:49:07.252Z",
+  "lastRunAt": "2026-05-01T03:49:07.252Z",
+  "lastSuccessAt": "2026-05-01T03:49:07.252Z",
   "lastStatus": "PASS",
   "lastReason": "",
   "summary": {
-    "trackedArticles": 6,
+    "trackedArticles": 4,
     "newArticlesThisRun": 0,
-    "pendingProposals": 6,
+    "pendingProposals": 4,
     "blockedTargets": 0,
-    "promotedDocUpdates": 6
+    "promotedDocUpdates": 4
   },
   "articles": [
     {
@@ -24,8 +24,8 @@
       "topicLabel": "",
       "discoveredAt": "2026-04-09T11:31:10.069Z",
       "firstReadAt": "2026-04-09T11:31:10.069Z",
-      "lastReadAt": "2026-04-30T19:55:20.561Z",
-      "contentHash": "049bba90bd06d98d1509f0e2a154c67bdcb540addfe304606ded6102aab96573",
+      "lastReadAt": "2026-05-01T03:49:07.252Z",
+      "contentHash": "e42fe6bc439116092f758ec049b6aa9ea23c66a06139e102a9ea3d5a970593cd",
       "summary": "Harnesses encode assumptions that go stale as models improve. Managed Agents—our hosted service for long-horizon agent work—is built around interfaces that stay stable as harnesses change.",
       "guidance": [
         "Building Managed Agents meant solving an old problem in computing: how to design a system for “ programs as yet unthought of .” Decades ago, operating systems solved this problem by virtualizing hardware into abstractions— process, file —general enough for programs that didn't exist yet.",
@@ -58,8 +58,8 @@
       "topicLabel": "",
       "discoveredAt": "2026-03-25T10:58:32.280Z",
       "firstReadAt": "2026-03-25T10:58:32.280Z",
-      "lastReadAt": "2026-04-30T19:55:20.561Z",
-      "contentHash": "86282c75277473d3b8ca45f0f212310219094a0596e161dc12b82f1d32534289",
+      "lastReadAt": "2026-05-01T03:49:07.252Z",
+      "contentHash": "d2bc6d8cdcbf22faa7ee1d024f4478b70e56efc9900dba5f8cf83affa40a7d53",
       "summary": "Harness design is key to performance at the frontier of agentic coding. Here's how we pushed Claude further in frontend design and long-running autonomous software engineering.",
       "guidance": [
         "We've previously shown that harness design has a substantial impact on the effectiveness of long running agentic coding.",
@@ -99,8 +99,8 @@
       "topicLabel": "",
       "discoveredAt": "2026-03-25T10:58:32.280Z",
       "firstReadAt": "2026-03-25T10:58:32.280Z",
-      "lastReadAt": "2026-04-30T19:55:20.561Z",
-      "contentHash": "4ee5b93002f0c937dfaeccbeee38172b4e1f486e87e1f754dc93ac0e5af04a11",
+      "lastReadAt": "2026-05-01T03:49:07.252Z",
+      "contentHash": "4b2e46ad47e79ae08c59ed45f4aa29facc96e8233de51c8640e61c1ee5f73164",
       "summary": "Infrastructure configuration can swing agentic coding benchmarks by several percentage points—sometimes more than the leaderboard gap between top models.",
       "guidance": [
         "Agentic coding evals are different: models are given a full environment where they write programs, run tests, install dependencies, and iterate over multiple turns.",
@@ -138,8 +138,8 @@
       "topicLabel": "",
       "discoveredAt": "2026-03-25T10:58:32.280Z",
       "firstReadAt": "2026-03-25T10:58:32.280Z",
-      "lastReadAt": "2026-04-30T19:55:20.561Z",
-      "contentHash": "2644aabed00dfccf2da9aa648884111c9bc16c487a3d4370b2861b40975bc3c6",
+      "lastReadAt": "2026-05-01T03:49:07.252Z",
+      "contentHash": "7cf041457615f646f792f9d087df2b3aaff8f1960eccddeaf6beda291ff91715",
       "summary": "What we learned from three iterations of a performance engineering take-home that Claude keeps beating.",
       "guidance": [
         "Evaluating technical candidates becomes harder as AI capabilities improve.",
@@ -166,91 +166,6 @@
       ],
       "proposalIds": [
         "anthropic-engineering-AI-resistant-technical-evaluations"
-      ]
-    },
-    {
-      "schema": "anthropic-engineering-learning-article.v1",
-      "articleId": "building-effective-agents",
-      "url": "https://www.anthropic.com/engineering/building-effective-agents",
-      "canonicalUrl": "https://www.anthropic.com/engineering/building-effective-agents",
-      "title": "Building Effective AI Agents",
-      "description": "We've worked with dozens of teams building LLM agents across industries. Consistently, the most successful implementations use simple, composable patterns rather than complex frameworks.",
-      "indexDateLabel": "pinned",
-      "topicLabel": "",
-      "discoveredAt": "2026-04-23T14:29:13.040Z",
-      "firstReadAt": "2026-04-23T14:29:13.040Z",
-      "lastReadAt": "2026-04-30T19:55:20.561Z",
-      "contentHash": "f311bd6c4bb376fc8e19f46056e7bacfe2e14fbddca16ba9b495f01aad542078",
-      "summary": "We've worked with dozens of teams building LLM agents across industries. Consistently, the most successful implementations use simple, composable patterns rather than complex frameworks.",
-      "guidance": [
-        "In this post, we share what we’ve learned from working with our customers and building agents ourselves, and give practical advice for developers on building effective agents.",
-        "Agents , on the other hand, are systems where LLMs dynamically direct their own processes and tool usage, maintaining control over how they accomplish tasks.",
-        "Strands Agents SDK by AWS ;",
-        "Over the past year, we've worked with dozens of teams building large language model (LLM) agents across industries.",
-        "Section focus: Building blocks, workflows, and agents",
-        "Workflows are systems where LLMs and tools are orchestrated through predefined code paths."
-      ],
-      "headings": [
-        "What are agents?",
-        "When (and when not) to use agents",
-        "When and how to use frameworks",
-        "Building blocks, workflows, and agents",
-        "Building block: The augmented LLM"
-      ],
-      "topicTags": [
-        "agents",
-        "codex",
-        "context",
-        "evals",
-        "frontend"
-      ],
-      "relevance": "high",
-      "portability": "portable",
-      "promotedToDocs": [
-        "docs/ANTHROPIC_ENGINEERING_LEARNINGS.md"
-      ],
-      "proposalIds": [
-        "anthropic-engineering-building-effective-agents"
-      ]
-    },
-    {
-      "schema": "anthropic-engineering-learning-article.v1",
-      "articleId": "code-execution-with-mcp",
-      "url": "https://www.anthropic.com/engineering/code-execution-with-mcp",
-      "canonicalUrl": "https://www.anthropic.com/engineering/code-execution-with-mcp",
-      "title": "Code execution with MCP: building more efficient AI agents",
-      "description": "Direct tool calls consume context for each definition and result. Agents scale better by writing code to call tools instead. Here's how it works with MCP.",
-      "indexDateLabel": "pinned",
-      "topicLabel": "",
-      "discoveredAt": "2026-04-23T14:29:13.040Z",
-      "firstReadAt": "2026-04-23T14:29:13.040Z",
-      "lastReadAt": "2026-04-30T19:55:20.561Z",
-      "contentHash": "a62ef5d0d1c25021d86f71b3b40743c97b7cb966b764688422f24c4e1ed8e04e",
-      "summary": "Direct tool calls consume context for each definition and result. Agents scale better by writing code to call tools instead. Here's how it works with MCP.",
-      "guidance": [
-        "In this blog we'll explore how code execution can enable agents to interact with MCP servers more efficiently, handling more tools while using fewer tokens.",
-        "Connecting agents to tools and data traditionally requires a custom integration for each pairing, creating fragmentation and duplicated effort that makes it difficult to scale truly connected systems.",
-        "The Model Context Protocol (MCP) is an open standard for connecting AI agents to external systems.",
-        "Tool definitions overload the context window;",
-        "Since launching MCP in November 2024, adoption has been rapid: the community has built thousands of MCP servers , SDKs are available for all major programming languages, and the industry has adopted MCP as the de-facto standard for connecting agents to tools and data.",
-        "Today developers routinely build agents with access to hundreds or thousands of tools across dozens of MCP servers. However, as the number of connected tools grows, loading all tool definitions upfront and passing intermediate results through the context window slows down agents and increases costs."
-      ],
-      "headings": [
-        "Excessive token consumption from tools makes agents less efficient",
-        "1. Tool definitions overload the context window"
-      ],
-      "topicTags": [
-        "agents",
-        "context",
-        "frontend"
-      ],
-      "relevance": "high",
-      "portability": "portable",
-      "promotedToDocs": [
-        "docs/ANTHROPIC_ENGINEERING_LEARNINGS.md"
-      ],
-      "proposalIds": [
-        "anthropic-engineering-code-execution-with-mcp"
       ]
     }
   ]
