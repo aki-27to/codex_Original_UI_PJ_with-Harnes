@@ -3949,13 +3949,13 @@ function tuiElapsedForUi(startedAt,now=Date.now()){
 }
 function assistantTuiPhaseForUi(phase){
   const normalized=lowerText(phase);
-  if(normalized==="submitted")return{label:"submitted",detail:"/api/exec accepted the handoff; waiting for stream open"};
-  if(normalized==="streaming")return{label:"responding",detail:"NDJSON stream is open; first answer text is still pending"};
-  if(normalized==="activity")return{label:"working",detail:"runtime activity arrived before answer text"};
-  if(normalized==="retry")return{label:"retrying",detail:"submit retry is scheduled; the request stays attached to this chat"};
-  if(normalized==="recovery")return{label:"recovering",detail:"stream dropped; checking persisted turn state"};
-  if(normalized==="error")return{label:"checking",detail:"runtime error is being converted into a readable terminal state"};
-  return{label:"preparing",detail:"local request is registered; packaging context for dispatch"};
+  if(normalized==="submitted")return{label:"実行受付",detail:"実行に渡しました。応答の開始を待っています"};
+  if(normalized==="streaming")return{label:"回答待ち",detail:"接続できました。最初の回答本文を待っています"};
+  if(normalized==="activity")return{label:"作業中",detail:"回答前の作業通知を受け取りました"};
+  if(normalized==="retry")return{label:"再送準備",detail:"再送できる状態に戻しています"};
+  if(normalized==="recovery")return{label:"復旧確認",detail:"接続を戻し、保存済みの状態を確認しています"};
+  if(normalized==="error")return{label:"状態確認",detail:"途中状態を読みやすく整理しています"};
+  return{label:"準備中",detail:"依頼を登録し、作業に必要な設定をまとめています"};
 }
 function buildAssistantTuiProgressForUi({
   phase="preparing",
@@ -3974,26 +3974,22 @@ function buildAssistantTuiProgressForUi({
   const phaseInfo=assistantTuiPhaseForUi(phase);
   const modelLine=tuiCompactForUi([model,reasoning].filter(Boolean).join(" / ")||"runtime default",56);
   const promptLine=tuiCompactForUi(prompt,imageCount>0?62:78)||`${imageCount||0} attached image${imageCount===1?"":"s"}`;
+  const activeDetail=tuiCompactForUi(phaseInfo.detail,88);
   const rows=[
-    "codex@harnesui:~$ exec --chat active",
-    `status   ${phaseInfo.label}`,
-    `elapsed  ${tuiElapsedForUi(startedAt,now)}`,
-    `agent    ${tuiCompactForUi(agent||DEFAULT_AGENT_NAME,32)}`,
-    `model    ${modelLine}`,
-    `cwd      ${tuiShortPathForUi(cwd,64)||"(workspace unset)"}`,
-    `prompt   ${promptLine}`,
-  ];
-  if(imageCount>0)rows.push(`images   ${imageCount} attached`);
-  if(requestId)rows.push(`request  ${tuiCompactForUi(requestId,44)}`);
-  if(idempotencyKey)rows.push(`turnkey  ${tuiCompactForUi(idempotencyKey,44)}`);
-  rows.push(
+    "☑ 依頼を受け取りました",
+    "☑ 実行設定を確認しています",
+    `☐ ${phaseInfo.label}: ${activeDetail}`,
+    "☐ 最終回答を作成します",
     "",
-    "events",
-    "  [ok] request captured in chat",
-    "  [ok] runtime handoff prepared",
-    `  [..] ${tuiCompactForUi(event||phaseInfo.detail,88)}`,
-    "  [ ] final answer"
-  );
+    `・経過 ${tuiElapsedForUi(startedAt,now)}`,
+    `・担当 ${tuiCompactForUi(agent||DEFAULT_AGENT_NAME,32)}`,
+    `・モデル ${modelLine}`,
+    `・作業場所 ${tuiShortPathForUi(cwd,64)||"(workspace unset)"}`,
+    `・依頼 ${promptLine}`,
+  ];
+  if(imageCount>0)rows.push(`・画像 ${imageCount} 件`);
+  if(requestId)rows.push(`・request ${tuiCompactForUi(requestId,44)}`);
+  if(idempotencyKey)rows.push(`・turn ${tuiCompactForUi(idempotencyKey,44)}`);
   return `${ASSISTANT_TUI_PROGRESS_MARKER}\n${rows.join("\n")}`;
 }
 function renderMessageContentForUi(element,text){

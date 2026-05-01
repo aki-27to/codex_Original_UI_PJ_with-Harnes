@@ -10,7 +10,7 @@ const appSource = fs.readFileSync(path.join(root, "web", "01.HarnesUI", "app.js"
 const stylesSource = fs.readFileSync(path.join(root, "web", "01.HarnesUI", "styles.css"), "utf8");
 
 function cssBlock(selector) {
-  const start = stylesSource.indexOf(`${selector} {`);
+  const start = stylesSource.lastIndexOf(`${selector} {`);
   assert(start >= 0, `${selector} block must exist`);
   const open = stylesSource.indexOf("{", start);
   const close = stylesSource.indexOf("}", open);
@@ -28,8 +28,24 @@ function run() {
     "assistant TUI progress builder must exist"
   );
   assert(
+    /☑ 依頼を受け取りました/.test(appSource)
+      && /☐ 最終回答を作成します/.test(appSource)
+      && !/codex@harnesui:~\$ exec --chat active/.test(appSource),
+    "assistant progress content must be checklist-style output, not a fake terminal prompt"
+  );
+  assert(
+    /const activeDetail=tuiCompactForUi\(phaseInfo\.detail,88\);/.test(appSource)
+      && !/event\|\|phaseInfo\.detail/.test(appSource),
+    "assistant progress TODO rows must not surface raw internal runtime event text"
+  );
+  assert(
+    /回答待ち",detail:"接続できました。最初の回答本文を待っています"/.test(appSource)
+      && /準備中",detail:"依頼を登録し、作業に必要な設定をまとめています"/.test(appSource),
+    "assistant progress TODO details must use user-facing Japanese status text"
+  );
+  assert(
     /messageIsAssistantTuiProgressForUi\(m\)\)messageEl\.classList\.add\("tui-progress"\)/.test(appSource),
-    "timeline renderer must add terminal styling to assistant progress messages"
+    "timeline renderer must mark assistant progress messages for progress styling"
   );
   assert(
     /updateAssistantTuiProgress\("preparing","local request registered; preparing runtime handoff",\{force:true\}\);/.test(appSource),
@@ -51,15 +67,14 @@ function run() {
     !/\[waiting\] Standard Codex/.test(appSource),
     "legacy plain waiting transcript line must not be used for active assistant progress"
   );
-  assert(
-    /\.message\.assistant\.tui-progress/.test(stylesSource)
-      && /font-family:\s*ui-monospace/.test(stylesSource)
-      && /background:\s*#10211d/.test(stylesSource),
-    "assistant TUI progress rows must have terminal-like styling"
-  );
   const answerContentBlock = cssBlock(".message.assistant .content");
   const answerPromptBlock = cssBlock(".message.assistant:not(.tui-progress) .content::before");
   const tuiProgressContentBlock = cssBlock(".message.assistant.tui-progress .content");
+  const assistantBlock = cssBlock(".message.assistant");
+  const tuiProgressBlock = cssBlock(".message.assistant.tui-progress");
+  const chatItemLineBlock = cssBlock(".chat-item-line");
+  const chatItemStatusBlock = cssBlock(".chat-item-status");
+  const sidePanelBlock = cssBlock(".side-panel");
   assert(
     /font:\s*inherit/.test(answerContentBlock)
       && !/font-family:\s*ui-monospace/.test(answerContentBlock)
@@ -67,14 +82,35 @@ function run() {
     "normal assistant answer bodies must use readable UI text typography"
   );
   assert(
-    /codex@harnesui:~\$ cat response\.log/.test(answerPromptBlock)
-      && /font-family:\s*ui-monospace/.test(answerPromptBlock),
-    "normal assistant answer prompt line may stay terminal-like without changing body typography"
+    /content:\s*none/.test(answerPromptBlock)
+      && !/codex@harnesui:~\$ cat response\.log/.test(answerPromptBlock),
+    "normal assistant answers must not show a fake terminal prompt"
   );
   assert(
-    /font-family:\s*ui-monospace/.test(tuiProgressContentBlock)
-      && /line-height:\s*1\.55/.test(tuiProgressContentBlock),
-    "assistant TUI progress content must keep terminal typography"
+    /font:\s*inherit/.test(tuiProgressContentBlock)
+      && !/font-family:\s*ui-monospace/.test(tuiProgressContentBlock)
+      && /line-height:\s*1\.65/.test(tuiProgressContentBlock),
+    "assistant progress rows must keep normal UI typography"
+  );
+  assert(
+    !/background:\s*#10211d/.test(assistantBlock)
+      && !/background:\s*#10211d/.test(tuiProgressBlock),
+    "assistant rows must not use dark terminal panel colors"
+  );
+  assert(
+    /display:\s*grid/.test(chatItemLineBlock)
+      && /grid-template-columns:\s*minmax\(0,\s*1fr\)\s*auto/.test(chatItemLineBlock),
+    "chat list rows must reserve status text without vertical wrapping"
+  );
+  assert(
+    /white-space:\s*nowrap/.test(chatItemStatusBlock)
+      && /text-overflow:\s*ellipsis/.test(chatItemStatusBlock),
+    "chat status labels must stay one-line and clipped cleanly"
+  );
+  assert(
+    !/#263531/.test(sidePanelBlock)
+      && !/#1e2b29/.test(sidePanelBlock),
+    "side panel must not inherit the dark terminal palette"
   );
 }
 

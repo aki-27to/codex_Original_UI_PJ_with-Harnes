@@ -719,47 +719,38 @@ textarea:focus { border-color: rgba(45, 108, 223, 0.44); box-shadow: 0 0 0 4px r
 .message .content { margin: 0; padding: 0 14px 14px; white-space: pre-wrap; overflow-wrap: anywhere; word-break: break-word; line-height: 1.65; color: var(--text); font: inherit; }
 .message.user { margin-left: auto; border-color: rgba(45, 108, 223, 0.2); background: rgba(236, 244, 255, 0.94); }
 .message.assistant {
-  border-color: rgba(47, 114, 93, 0.32);
-  background: #10211d;
-  box-shadow: inset 0 0 0 1px rgba(142, 221, 174, 0.08);
+  border-color: rgba(49, 93, 102, 0.18);
+  background: rgba(248, 251, 248, 0.96);
+  box-shadow: none;
 }
 .message.assistant .meta {
-  color: rgba(219, 246, 232, 0.62);
+  color: var(--text-faint);
 }
 .message.assistant .content {
-  padding: 6px 14px 16px;
-  color: #e9f8ee;
+  padding: 0 14px 14px;
+  color: var(--text);
   font: inherit;
   line-height: 1.65;
   letter-spacing: 0;
   text-shadow: none;
 }
 .message.assistant:not(.tui-progress) .content::before {
-  content: "codex@harnesui:~$ cat response.log";
-  display: block;
-  margin-bottom: 10px;
-  color: #8eddad;
-  font-family: ui-monospace, SFMono-Regular, Consolas, "Liberation Mono", Menlo, monospace;
-  font-size: 12px;
-  line-height: 1.55;
-  letter-spacing: 0;
-  text-shadow: 0 0 14px rgba(129, 219, 166, 0.16);
+  content: none;
 }
 .message.assistant.tui-progress {
-  border-color: rgba(47, 114, 93, 0.32);
-  background: #10211d;
+  border-color: rgba(49, 93, 102, 0.2);
+  background: rgba(245, 250, 247, 0.98);
 }
 .message.assistant.tui-progress .meta {
-  color: rgba(219, 246, 232, 0.62);
+  color: var(--text-faint);
 }
 .message.assistant.tui-progress .content {
-  padding: 4px 14px 16px;
-  color: #dff7e8;
-  font-family: ui-monospace, SFMono-Regular, Consolas, "Liberation Mono", Menlo, monospace;
-  font-size: 12px;
-  line-height: 1.55;
+  padding: 0 14px 14px;
+  color: #213b34;
+  font: inherit;
+  line-height: 1.65;
   letter-spacing: 0;
-  text-shadow: 0 0 14px rgba(129, 219, 166, 0.16);
+  text-shadow: none;
 }
 .message.system { border-color: rgba(165, 121, 24, 0.18); background: rgba(252, 248, 239, 0.94); }
 
@@ -770,17 +761,17 @@ textarea:focus { border-color: rgba(45, 108, 223, 0.44); box-shadow: 0 0 0 4px r
 .message-ref-link:hover { color: #16375e; border-bottom-color: rgba(22, 55, 94, 0.7); }
 .message.assistant .message-ref-chip,
 .message.assistant .message-ref-chip.file {
-  border-color: rgba(142, 221, 173, 0.34);
-  background: rgba(19, 47, 39, 0.92);
-  color: #e7fff0;
+  border-color: rgba(49, 93, 102, 0.18);
+  background: rgba(255, 255, 255, 0.9);
+  color: var(--text);
 }
 .message.assistant .message-ref-link {
-  color: #9fd7ff;
-  border-bottom-color: rgba(159, 215, 255, 0.44);
+  color: #315d66;
+  border-bottom-color: rgba(49, 93, 102, 0.34);
 }
 .message.assistant .message-ref-link:hover {
-  color: #c8e9ff;
-  border-bottom-color: rgba(200, 233, 255, 0.72);
+  color: #253f46;
+  border-bottom-color: rgba(49, 93, 102, 0.64);
 }
 
 .message-stitch-card { margin-top: 10px; padding: 12px; border-radius: 14px; border: 1px solid rgba(45, 108, 223, 0.18); background: rgba(238, 244, 255, 0.86); display: grid; gap: 8px; }
@@ -2520,6 +2511,32 @@ body.composer-static .composer {
   box-shadow: 0 0 0 3px rgba(115, 147, 207, 0.16);
 }
 
+.chat-item-line {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 4px 8px;
+  align-items: center;
+}
+
+.chat-item-title {
+  min-width: 0;
+  white-space: nowrap;
+}
+
+.chat-item-meta {
+  justify-self: end;
+  white-space: nowrap;
+}
+
+.chat-item-status {
+  grid-column: 1 / -1;
+  justify-self: start;
+  max-width: 100%;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
 .workspace {
   min-width: 0;
 }
@@ -3412,16 +3429,16 @@ body {
 
 .side-panel {
   padding: 14px;
-  color: #f3f4ee;
-  border-color: rgba(255, 255, 255, 0.16);
-  background: linear-gradient(180deg, #263531 0%, #1e2b29 100%);
-  box-shadow: 0 22px 48px rgba(32, 47, 45, 0.18);
+  color: var(--text);
+  border-color: rgba(49, 93, 102, 0.18);
+  background: linear-gradient(180deg, rgba(255, 255, 251, 0.96) 0%, rgba(246, 249, 246, 0.96) 100%);
+  box-shadow: 0 18px 42px rgba(32, 47, 45, 0.1);
 }
 
 .side-panel h3,
 .side-panel .chat-item-title,
 .side-panel .workspace h3 {
-  color: #ffffff;
+  color: #142724;
 }
 
 .side-panel label,
@@ -3429,58 +3446,59 @@ body {
 .side-panel .chat-item-status,
 .side-panel .chat-item-preview,
 .side-panel .workspace-status {
-  color: rgba(243, 244, 238, 0.72);
+  color: #66746f;
 }
 
 .side-panel .workspace-status.locked {
-  color: #9ed8c4;
+  color: #27634f;
 }
 
 .side-panel input[type="text"] {
-  color: #f9faf6;
-  border-color: rgba(255, 255, 255, 0.18);
-  background: rgba(255, 255, 255, 0.08);
+  color: var(--text);
+  border-color: rgba(49, 93, 102, 0.18);
+  background: rgba(255, 255, 255, 0.78);
 }
 
 .side-panel .btn.secondary,
 .side-panel .btn.mini {
-  color: #f9faf6;
-  border-color: rgba(255, 255, 255, 0.18);
-  background: rgba(255, 255, 255, 0.1);
+  color: #203936;
+  border-color: rgba(49, 93, 102, 0.18);
+  background: rgba(255, 255, 255, 0.78);
 }
 
 .side-panel .btn.secondary:disabled {
-  color: rgba(243, 244, 238, 0.45);
-  background: rgba(255, 255, 255, 0.06);
+  color: #a0aaa6;
+  background: rgba(248, 250, 246, 0.72);
 }
 
 .side-panel .chat-item {
-  color: rgba(243, 244, 238, 0.8);
-  border-color: transparent;
+  color: var(--text);
+  border-color: rgba(49, 93, 102, 0.08);
+  background: rgba(255, 255, 255, 0.48);
 }
 
 .side-panel .chat-item:hover {
-  background: rgba(255, 255, 255, 0.08);
-  border-color: rgba(255, 255, 255, 0.12);
+  background: rgba(255, 255, 255, 0.84);
+  border-color: rgba(49, 93, 102, 0.18);
 }
 
 .side-panel .chat-item.active {
-  background: rgba(255, 255, 255, 0.14);
-  border-color: rgba(176, 211, 203, 0.28);
+  background: linear-gradient(180deg, rgba(237, 246, 241, 0.98), rgba(255, 255, 251, 0.96));
+  border-color: rgba(49, 93, 102, 0.28);
 }
 
 .side-panel .chat-item.active::before {
-  background: #9ed8c4;
+  background: #2f725d;
 }
 
 .side-panel .chat-item.active .chat-item-title {
-  color: #ffffff;
+  color: #142724;
 }
 
 .side-panel .chat-item.active .chat-item-meta,
 .side-panel .chat-item.active .chat-item-status,
 .side-panel .chat-item.active .chat-item-preview {
-  color: rgba(243, 244, 238, 0.78);
+  color: #50645f;
 }
 
 .conversation-shell {
@@ -3568,6 +3586,6 @@ body {
 
 @media (max-width: 1240px) {
   .side-panel {
-    background: linear-gradient(180deg, #263531 0%, #1e2b29 100%);
+    background: linear-gradient(180deg, rgba(255, 255, 251, 0.96) 0%, rgba(246, 249, 246, 0.96) 100%);
   }
 }
