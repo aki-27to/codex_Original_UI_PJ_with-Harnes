@@ -47,16 +47,18 @@ async function run() {
     const now = new Date("2026-05-01T12:00:00Z").toLocaleTimeString();
     const tuiContent = [
       "[harnesui-tui-progress]",
-      "☑ 依頼を受け取りました",
-      "☑ 実行設定を確認しています",
-      "☐ 回答待ち: 接続できました。最初の回答本文を待っています",
-      "☐ 最終回答を作成します",
+      "Updated Plan",
+      "  └ ✔ 残り dirty の内容を再確認して分類する",
+      "    ✔ 学習ログ/生成物を別 commit にまとめる",
+      "    □ ローカル設定ノイズと不要ファイルを解消する",
+      "    □ 検証と最終 git status 確認",
       "",
+      "・現在 回答待ち: 接続できました。最初の回答本文を待っています",
       "・経過 00:07",
       "・担当 default",
       "・モデル gpt-5.5 / xhigh",
       "・作業場所 C:\\...\\codex_Original_UI_PJ_with-Harnes",
-      "・依頼 TUI風は見た目ではなく内容の構造",
+      "・依頼 Updated Plan をチャット返却内容として表示してほしい",
     ].join("\n");
     const chatState = {
       v: 1,
@@ -75,7 +77,7 @@ async function run() {
           messages: [
             { id: "m-1-visual", role: "user", title: "You", time: now, content: "TUI風は見た目ではなく、TODO形式の出力内容にしてほしい。" },
             { id: "m-2-visual", role: "assistant", title: "Codex", time: now, content: tuiContent },
-            { id: "m-3-visual", role: "assistant", title: "Codex", time: now, content: "直近の修正内容を端的に整理します。進捗はTODO形式の内容で見せ、最終回答本文は通常の本文フォントで読ませます。" },
+            { id: "m-3-visual", role: "assistant", title: "Codex", time: now, content: "直近の修正内容を端的に整理します。Plan は返却内容として表示し、最終回答本文は通常の本文フォントで読ませます。" },
           ],
         },
         {
@@ -123,12 +125,19 @@ async function run() {
         model: "gpt-5.5",
         reasoning: "xhigh",
         cwd: "C:\\Users\\akima\\dev\\codex_Original_UI_PJ_with-Harnes",
+        planSteps: [
+          { step: "残り dirty の内容を再確認して分類する", status: "completed" },
+          { step: "学習ログ/生成物を別 commit にまとめる", status: "completed" },
+          { step: "ローカル設定ノイズと不要ファイルを解消する", status: "pending" },
+          { step: "検証と最終 git status 確認", status: "pending" },
+        ],
         startedAt: Date.now() - 7000,
         now: Date.now(),
       });
     });
-    if (!generatedProgress.includes("☑ 依頼を受け取りました")) throw new Error("Generated checklist progress line missing");
-    if (!generatedProgress.includes("☐ 最終回答を作成します")) throw new Error("Generated checklist final-answer line missing");
+    if (!generatedProgress.includes("Updated Plan")) throw new Error("Generated Updated Plan heading missing");
+    if (!generatedProgress.includes("└ ✔ 残り dirty の内容を再確認して分類する")) throw new Error("Generated completed plan line missing");
+    if (!generatedProgress.includes("□ 検証と最終 git status 確認")) throw new Error("Generated pending plan line missing");
     if (/NDJSON|local request|\/api\/exec|runtime handoff/i.test(generatedProgress)) {
       throw new Error(`Generated progress leaked internal runtime text: ${generatedProgress}`);
     }
@@ -137,6 +146,51 @@ async function run() {
       if (!content) throw new Error("TUI progress content node was not found");
       content.textContent = progressText.replace(/^\[harnesui-tui-progress\]\n?/, "");
     }, generatedProgress);
+    const streamedPlanText = await page.evaluate(async () => {
+      if (typeof runPrompt !== "function") throw new Error("runPrompt is not available in the page");
+      const originalFetch = window.fetch.bind(window);
+      const encoder = new TextEncoder();
+      window.fetch = (input, init) => {
+        const url = String(typeof input === "string" ? input : input && input.url || "");
+        if (url.includes("/api/exec")) {
+          const stream = new ReadableStream({
+            start(controller) {
+              controller.enqueue(encoder.encode(`${JSON.stringify({
+                type: "plan",
+                explanation: "streamed plan event for chat return verification",
+                steps: [
+                  { step: "残り dirty の内容を再確認して分類する", status: "completed" },
+                  { step: "学習ログ/生成物を別 commit にまとめる", status: "completed" },
+                  { step: "ローカル設定ノイズと不要ファイルを解消する", status: "pending" },
+                  { step: "検証と最終 git status 確認", status: "pending" },
+                ],
+              })}\n`));
+              controller.close();
+            },
+          });
+          return Promise.resolve(new Response(stream, {
+            status: 200,
+            headers: { "Content-Type": "application/x-ndjson" },
+          }));
+        }
+        return originalFetch(input, init);
+      };
+      try {
+        await runPrompt("Updated Plan をチャット返却内容として確認する", "chat-tui-progress");
+      } finally {
+        window.fetch = originalFetch;
+      }
+      const renderedPlans = Array.from(document.querySelectorAll(".message.assistant.tui-progress .content"))
+        .map((node) => node.textContent || "")
+        .filter((text) => text.includes("Updated Plan"));
+      return renderedPlans[renderedPlans.length - 1] || "";
+    });
+    if (!streamedPlanText.includes("Updated Plan")) throw new Error("Streamed plan event did not render Updated Plan in chat return");
+    if (!streamedPlanText.includes("└ ✔ 残り dirty の内容を再確認して分類する")) throw new Error("Streamed completed plan row missing from chat return");
+    if (!streamedPlanText.includes("□ 検証と最終 git status 確認")) throw new Error("Streamed pending plan row missing from chat return");
+    if (/codex@harnesui|NDJSON|runtime handoff/i.test(streamedPlanText)) {
+      throw new Error(`Streamed plan return leaked terminal/runtime text: ${streamedPlanText}`);
+    }
     const result = await page.evaluate(() => {
       const row = document.querySelector(".message.assistant.tui-progress");
       const content = row && row.querySelector(".content");
@@ -177,13 +231,14 @@ async function run() {
       };
     });
     if (!result.found) throw new Error("TUI progress message was not rendered");
-    if (!result.text.includes("☑ 依頼を受け取りました")) throw new Error("Checklist progress line missing");
-    if (!result.text.includes("☐ 最終回答を作成します")) throw new Error("Checklist final-answer line missing");
+    if (!result.text.includes("Updated Plan")) throw new Error("Updated Plan heading missing");
+    if (!result.text.includes("└ ✔ 残り dirty の内容を再確認して分類する")) throw new Error("Updated Plan completed row missing");
+    if (!result.text.includes("□ 検証と最終 git status 確認")) throw new Error("Updated Plan pending row missing");
     if (result.text.includes("codex@harnesui")) throw new Error("Fake terminal prompt should not be shown");
     if (/mono|consolas|menlo|liberation/i.test(result.fontFamily)) throw new Error(`TUI content should not use monospace: ${result.fontFamily}`);
     if (/rgb\(16,\s*33,\s*29\)/.test(result.background)) throw new Error(`TUI background should not use dark terminal color: ${result.background}`);
     if (!result.answerFound) throw new Error("Normal assistant answer was not rendered");
-    if (!result.answerText.includes("直近の修正内容を端的に整理します")) throw new Error("Normal assistant answer text missing");
+    if (!result.answerText.includes("Plan は返却内容として表示し")) throw new Error("Normal assistant answer text missing");
     if (/mono|consolas|menlo|liberation/i.test(result.answerFontFamily)) throw new Error(`Normal assistant answer body should not use monospace: ${result.answerFontFamily}`);
     if (!/normal|[0-9.]+px/i.test(result.answerLineHeight)) throw new Error(`Normal assistant answer line height missing: ${result.answerLineHeight}`);
     if (/rgb\(16,\s*33,\s*29\)/.test(result.answerBackground)) throw new Error(`Normal assistant answer should not use dark terminal color: ${result.answerBackground}`);

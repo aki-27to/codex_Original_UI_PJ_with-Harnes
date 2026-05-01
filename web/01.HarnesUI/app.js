@@ -3957,6 +3957,29 @@ function assistantTuiPhaseForUi(phase){
   if(normalized==="error")return{label:"状態確認",detail:"途中状態を読みやすく整理しています"};
   return{label:"準備中",detail:"依頼を登録し、作業に必要な設定をまとめています"};
 }
+function assistantPlanStatusMarkForUi(status){
+  const normalized=lowerText(status).replace(/[\s-]+/g,"_");
+  if(["completed","complete","done","succeeded","success"].includes(normalized))return"✔";
+  return"□";
+}
+function assistantFallbackPlanStepsForUi(phase){
+  const normalized=lowerText(phase);
+  const runtimeReady=["submitted","streaming","activity","retry","recovery","error"].includes(normalized);
+  const responseStarted=["activity","retry","recovery","error"].includes(normalized);
+  return[
+    {step:"依頼内容を確認する",status:"completed"},
+    {step:"実行設定を確認する",status:runtimeReady?"completed":"pending"},
+    {step:"回答本文を受け取る",status:responseStarted?"completed":"pending"},
+    {step:"最終回答を作成する",status:"pending"},
+  ];
+}
+function assistantPlanLineForUi(step,index){
+  const source=step&&typeof step==="object"?step:{step:String(step||""),status:"pending"};
+  const text=tuiCompactForUi(source.step||source.text||"",92);
+  if(!text)return"";
+  const prefix=index===0?"  └":"   ";
+  return `${prefix} ${assistantPlanStatusMarkForUi(source.status)} ${text}`;
+}
 function buildAssistantTuiProgressForUi({
   phase="preparing",
   prompt="",
@@ -3970,17 +3993,21 @@ function buildAssistantTuiProgressForUi({
   startedAt=Date.now(),
   now=Date.now(),
   event="",
+  planSteps=[],
 }={}){
   const phaseInfo=assistantTuiPhaseForUi(phase);
   const modelLine=tuiCompactForUi([model,reasoning].filter(Boolean).join(" / ")||"runtime default",56);
   const promptLine=tuiCompactForUi(prompt,imageCount>0?62:78)||`${imageCount||0} attached image${imageCount===1?"":"s"}`;
   const activeDetail=tuiCompactForUi(phaseInfo.detail,88);
+  const visiblePlanSteps=(Array.isArray(planSteps)&&planSteps.length?planSteps:assistantFallbackPlanStepsForUi(phase))
+    .map((step,index)=>assistantPlanLineForUi(step,index))
+    .filter(Boolean)
+    .slice(0,8);
   const rows=[
-    "☑ 依頼を受け取りました",
-    "☑ 実行設定を確認しています",
-    `☐ ${phaseInfo.label}: ${activeDetail}`,
-    "☐ 最終回答を作成します",
+    "Updated Plan",
+    ...visiblePlanSteps,
     "",
+    `・現在 ${phaseInfo.label}: ${activeDetail}`,
     `・経過 ${tuiElapsedForUi(startedAt,now)}`,
     `・担当 ${tuiCompactForUi(agent||DEFAULT_AGENT_NAME,32)}`,
     `・モデル ${modelLine}`,
@@ -8128,6 +8155,7 @@ async function runPrompt(raw,cid=s.active,options={}){
     startedAt:Date.now(),
     phase:"preparing",
     event:"local request registered; preparing runtime handoff",
+    planSteps:[],
   };
   let tuiProgressActive=true;
   let tuiProgressTimer=null;
@@ -8205,7 +8233,7 @@ async function runPrompt(raw,cid=s.active,options={}){
     streamOpened=true;
     const decoder=new TextDecoder();
     let buf="";
-    const apply=ev=>{if(!ev||typeof ev!=="object"||typeof ev.type!=="string")return false;if(ev.type==="delta"){if(typeof ev.text==="string"&&ev.text){if(mget(out).startsWith(ASSISTANT_TUI_PROGRESS_MARKER))mset(out,"");stopAssistantTuiProgress();madd(out,ev.text)}return true}if(ev.type==="final"){stopAssistantTuiProgress();mset(out,typeof ev.text==="string"?ev.text:"");finalApplied=true;return true}if(ev.type==="error"){const t=typeof ev.text==="string"?ev.text:"";if(t){stopAssistantTuiProgress();if(shouldRenderTerminalErrorInTranscript(t,{finalApplied}))mset(out,t);ttype="failed";tdetail=t1(t,120);hset(c,"failed");hpush(c,"stream/error",tdetail,"failed");renderHarness()}return true}if(ev.type==="status"){const st=String(ev.status||"");if(st==="failed"){ttype="failed";if(tdetail==="completed")tdetail="status=failed"}else if(st==="interrupted"){ttype="aborted";tdetail="status=interrupted"}else if(st==="needs_input"){ttype="needs_input";if(tdetail==="completed"||!tdetail)tdetail="status=needs_input"}hset(c,st||"completed");renderHarness();return true}if(["turn","item","activity","plan","tokenUsage","diff"].includes(ev.type)){updateAssistantTuiProgress("activity",`${ev.type}${ev.label?`: ${ev.label}`:""}${ev.detail?` / ${ev.detail}`:""}`);happly(c,ev);renderHarness();return true}return false};
+    const apply=ev=>{if(!ev||typeof ev!=="object"||typeof ev.type!=="string")return false;if(ev.type==="delta"){if(typeof ev.text==="string"&&ev.text){if(mget(out).startsWith(ASSISTANT_TUI_PROGRESS_MARKER))mset(out,"");stopAssistantTuiProgress();madd(out,ev.text)}return true}if(ev.type==="final"){stopAssistantTuiProgress();mset(out,typeof ev.text==="string"?ev.text:"");finalApplied=true;return true}if(ev.type==="error"){const t=typeof ev.text==="string"?ev.text:"";if(t){stopAssistantTuiProgress();if(shouldRenderTerminalErrorInTranscript(t,{finalApplied}))mset(out,t);ttype="failed";tdetail=t1(t,120);hset(c,"failed");hpush(c,"stream/error",tdetail,"failed");renderHarness()}return true}if(ev.type==="status"){const st=String(ev.status||"");if(st==="failed"){ttype="failed";if(tdetail==="completed")tdetail="status=failed"}else if(st==="interrupted"){ttype="aborted";tdetail="status=interrupted"}else if(st==="needs_input"){ttype="needs_input";if(tdetail==="completed"||!tdetail)tdetail="status=needs_input"}hset(c,st||"completed");renderHarness();return true}if(["turn","item","activity","plan","tokenUsage","diff"].includes(ev.type)){if(ev.type==="plan")tuiProgress.planSteps=Array.isArray(ev.steps)?ev.steps:[];happly(c,ev);updateAssistantTuiProgress("activity",`${ev.type}${ev.label?`: ${ev.label}`:""}${ev.detail?` / ${ev.detail}`:""}`);renderHarness();return true}return false};
     const onLine=line=>{const t=String(line||"").trim();if(!t)return;try{const p=JSON.parse(t);if(apply(p))return}catch(_e){}madd(out,line.endsWith("\n")?line:`${line}\n`)};
     const flush=(chunk,force=false)=>{if(chunk)buf+=chunk;while(true){const i=buf.indexOf("\n");if(i<0)break;const line=buf.slice(0,i);buf=buf.slice(i+1);onLine(line)}if(force&&buf.length){onLine(buf);buf=""}};
     while(true){const{value,done}=await reader.read();if(done)break;flush(decoder.decode(value,{stream:true}))}

@@ -28,10 +28,18 @@ function run() {
     "assistant TUI progress builder must exist"
   );
   assert(
-    /☑ 依頼を受け取りました/.test(appSource)
-      && /☐ 最終回答を作成します/.test(appSource)
+    /Updated Plan/.test(appSource)
+      && /└/.test(appSource)
+      && /✔/.test(appSource)
+      && /□/.test(appSource)
       && !/codex@harnesui:~\$ exec --chat active/.test(appSource),
-    "assistant progress content must be checklist-style output, not a fake terminal prompt"
+    "assistant progress content must be Updated Plan output, not a fake terminal prompt"
+  );
+  assert(
+    /function\s+assistantPlanStatusMarkForUi\s*\(/.test(appSource)
+      && /function\s+assistantFallbackPlanStepsForUi\s*\(/.test(appSource)
+      && /function\s+assistantPlanLineForUi\s*\(/.test(appSource),
+    "assistant progress must format CLI-like plan rows as chat return content"
   );
   assert(
     /const activeDetail=tuiCompactForUi\(phaseInfo\.detail,88\);/.test(appSource)
@@ -46,6 +54,10 @@ function run() {
   assert(
     /messageIsAssistantTuiProgressForUi\(m\)\)messageEl\.classList\.add\("tui-progress"\)/.test(appSource),
     "timeline renderer must mark assistant progress messages for progress styling"
+  );
+  assert(
+    /if\(ev\.type==="plan"\)tuiProgress\.planSteps=Array\.isArray\(ev\.steps\)\?ev\.steps:\[\];happly\(c,ev\);updateAssistantTuiProgress\("activity"/.test(appSource),
+    "plan/update events must feed Updated Plan rows before refreshing the chat return"
   );
   assert(
     /updateAssistantTuiProgress\("preparing","local request registered; preparing runtime handoff",\{force:true\}\);/.test(appSource),
@@ -90,7 +102,7 @@ function run() {
     /font:\s*inherit/.test(tuiProgressContentBlock)
       && !/font-family:\s*ui-monospace/.test(tuiProgressContentBlock)
       && /line-height:\s*1\.65/.test(tuiProgressContentBlock),
-    "assistant progress rows must keep normal UI typography"
+    "assistant Updated Plan rows must keep normal UI typography"
   );
   assert(
     !/background:\s*#10211d/.test(assistantBlock)
