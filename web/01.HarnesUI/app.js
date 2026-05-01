@@ -54,7 +54,7 @@ const EXEC_STREAM_RECOVERY_STATUS_WAIT_MS=2000;
 const EXEC_STREAM_RECOVERY_MAX_POLLS=6;
 const RUNTIME_PENDING_SYNC_MS=5000;
 const RUNTIME_PENDING_ORPHAN_GRACE_MS=EXEC_STREAM_RECOVERY_RUNTIME_WAIT_MS+EXEC_STREAM_RECOVERY_POLL_MS;
-const APP_BUNDLE_VERSION="2026-05-01-codex-0128-readiness-v1";
+const APP_BUNDLE_VERSION="2026-05-01-admin-launcher-no-release-panel-v1";
 const COMPOSER_STICKY_MIN_VIEWPORT_HEIGHT=640;
 const UI_RELOAD_CACHE_PARAM="ui_reload";
 const TIMELINE_AUTO_SCROLL_BOTTOM_THRESHOLD_PX=48;
@@ -6870,98 +6870,7 @@ function pending(){
   renderOperatorSnapshotForUi();
   syncOperatorDetailFoldForUi(c);
 }
-function refresh(){renderTimeline();renderChatList();renderHarness();inspect();pending();live();renderPerformanceIndicator();renderAutomationStatus();renderWorkspaceGuardUi();renderMissionSupportUi();renderReleaseReadinessForUi();syncRuntimePendingMonitor()}
-function releaseReadinessStatusForUi(status){
-  const normalized=String(status||"unknown").toLowerCase();
-  if(normalized==="supported"||normalized==="partial"||normalized==="watch"||normalized==="unknown")return normalized;
-  return"unknown";
-}
-function releaseReadinessStatusLabelForUi(status){
-  const labels={supported:"対応済み",partial:"一部対応",watch:"監視",unknown:"確認中"};
-  return labels[releaseReadinessStatusForUi(status)]||labels.unknown;
-}
-function renderReleaseReadinessForUi(){
-  const panel=by("releaseReadinessPanel");
-  if(!panel)return;
-  const versionEl=by("releaseReadinessVersion");
-  const summaryEl=by("releaseReadinessSummary");
-  const listEl=by("releaseReadinessList");
-  const updatedEl=by("releaseReadinessUpdatedAt");
-  const runtime=s.runtime&&typeof s.runtime==="object"?s.runtime:{};
-  const snapshot=runtime.codexReleaseReadiness&&typeof runtime.codexReleaseReadiness==="object"
-    ?runtime.codexReleaseReadiness
-    :(runtime.codex_release_readiness&&typeof runtime.codex_release_readiness==="object"?runtime.codex_release_readiness:null);
-  if(!snapshot){
-    if(versionEl)versionEl.textContent="v0.128.0";
-    if(summaryEl)summaryEl.textContent="runtime の対応状況を読み込んでいます。";
-    if(updatedEl)updatedEl.textContent="未更新";
-    if(listEl){
-      listEl.textContent="";
-      const row=document.createElement("article");
-      row.className="release-readiness-item loading";
-      const status=document.createElement("span");
-      status.className="release-readiness-status";
-      status.textContent="loading";
-      const title=document.createElement("strong");
-      title.textContent="runtime 同期待ち";
-      const detail=document.createElement("p");
-      detail.textContent="/api/runtime から Codex v0.128 系の対応状況を読みます。";
-      row.append(status,title,detail);
-      listEl.appendChild(row);
-    }
-    return;
-  }
-  const from=t1(snapshot.fromVersion||"v0.120.0",32);
-  const target=t1(snapshot.targetVersion||"v0.128.0",32);
-  if(versionEl)versionEl.textContent=`${from} -> ${target}`;
-  const summary=snapshot.summary&&typeof snapshot.summary==="object"?snapshot.summary:{};
-  if(summaryEl){
-    summaryEl.textContent=summary.headline
-      ?t1(summary.headline,140)
-      :`supported ${fmtInt(summary.supported)} / partial ${fmtInt(summary.partial)}`;
-  }
-  if(updatedEl){
-    const updatedAt=Number(snapshot.updatedAt);
-    updatedEl.textContent=Number.isFinite(updatedAt)?`更新: ${tt(updatedAt)}`:"更新: runtime";
-  }
-  if(!listEl)return;
-  listEl.textContent="";
-  const groups=Array.isArray(snapshot.groups)?snapshot.groups:[];
-  if(!groups.length){
-    const row=document.createElement("article");
-    row.className="release-readiness-item unknown";
-    const status=document.createElement("span");
-    status.className="release-readiness-status";
-    status.textContent="確認中";
-    const title=document.createElement("strong");
-    title.textContent="対応状況がまだありません";
-    const detail=document.createElement("p");
-    detail.textContent="server runtime の readiness snapshot が空です。";
-    row.append(status,title,detail);
-    listEl.appendChild(row);
-    return;
-  }
-  groups.slice(0,8).forEach((group)=>{
-    const status=releaseReadinessStatusForUi(group&&group.status);
-    const row=document.createElement("article");
-    row.className=`release-readiness-item ${status}`;
-    const badge=document.createElement("span");
-    badge.className="release-readiness-status";
-    badge.textContent=releaseReadinessStatusLabelForUi(status);
-    const title=document.createElement("strong");
-    title.textContent=t1(group&&group.label?group.label:group&&group.id?group.id:"readiness",64);
-    const detail=document.createElement("p");
-    detail.textContent=t1(group&&group.detail?group.detail:"状態を確認中です。",150);
-    row.append(badge,title,detail);
-    const surfaces=Array.isArray(group&&group.surfaces)?group.surfaces.map((item)=>String(item||"").trim()).filter(Boolean).slice(0,4):[];
-    if(surfaces.length){
-      const meta=document.createElement("small");
-      meta.textContent=surfaces.join(" / ");
-      row.appendChild(meta);
-    }
-    listEl.appendChild(row);
-  });
-}
+function refresh(){renderTimeline();renderChatList();renderHarness();inspect();pending();live();renderPerformanceIndicator();renderAutomationStatus();renderWorkspaceGuardUi();renderMissionSupportUi();syncRuntimePendingMonitor()}
 function normalizeApprovalPolicyForUi(value,fallback="on-request"){
   const normalized=typeof value==="string"?value.trim().toLowerCase():"";
   if(normalized==="on-failure")return"on-request";

@@ -195,97 +195,6 @@ function createRuntimeApiSnapshotService(deps = {}) {
     };
   }
 
-  function buildCodexReleaseReadinessSnapshot(context = {}) {
-    const transport = context.appServerTransport && typeof context.appServerTransport === "object" ? context.appServerTransport : {};
-    const capabilitySnapshot = transport.capabilitySnapshot && typeof transport.capabilitySnapshot === "object"
-      ? transport.capabilitySnapshot
-      : (transport.capability_snapshot && typeof transport.capability_snapshot === "object" ? transport.capability_snapshot : {});
-    const staticAppsSnapshot = context.staticApps && typeof context.staticApps === "object" ? context.staticApps : {};
-    const gitAutomationSnapshot = context.gitAutomation && typeof context.gitAutomation === "object" ? context.gitAutomation : {};
-    const workspaceGuardSnapshot = context.workspaceGuard && typeof context.workspaceGuard === "object" ? context.workspaceGuard : {};
-    const hasCapabilitySurface = Object.keys(capabilitySnapshot).length > 0;
-    const hasStaticAppsSurface = Array.isArray(staticAppsSnapshot.apps)
-      ? staticAppsSnapshot.apps.length > 0
-      : Boolean(staticAppsSnapshot.appCount || staticAppsSnapshot.registryPath || staticAppsSnapshot.registry_path);
-    const hasGitAutomation = Boolean(gitAutomationSnapshot.autocommitEnabled || gitAutomationSnapshot.autopushEnabled);
-    const hasWorkspaceGuard = Object.keys(workspaceGuardSnapshot).length > 0;
-    const hasContinuityState = Boolean(
-      context.active && (context.active.sessionRef || context.active.threadId || context.active.conversationId)
-    ) || Boolean(context.latestTurn && typeof context.latestTurn === "object");
-    const groups = [
-      {
-        id: "goal_continuity",
-        label: "目的と作業の継続",
-        status: "supported",
-        detail: "Mission、要件ロック、plan/update、latest turn を同じ画面で確認できます。",
-        surfaces: ["Mission", "AI understanding", "plan/update", "latestTurn"],
-      },
-      {
-        id: "permission_profiles",
-        label: "権限と実行プロファイル",
-        status: "supported",
-        detail: "profile、approval_policy、sandbox_mode、web search、guardian approval を起動前に調整できます。",
-        surfaces: ["Profile", "Permissions", "Guardian", "Web search"],
-      },
-      {
-        id: "mcp_plugin_tools",
-        label: "MCP / plugins / apps",
-        status: hasCapabilitySurface || hasStaticAppsSurface ? "supported" : "partial",
-        detail: hasCapabilitySurface || hasStaticAppsSurface
-          ? "runtime capability と static app surface を UI から確認できます。"
-          : "Codex 側の MCP / plugin 管理は外部設定に残り、UI は確認面を先に持ちます。",
-        surfaces: ["appServerTransport", "capabilitySnapshot", "staticApps"],
-      },
-      {
-        id: "external_sessions",
-        label: "長い作業と再開",
-        status: hasContinuityState ? "supported" : "partial",
-        detail: "session/thread、latest turn、agent trace を見せ、長い作業の再開判断を支えます。",
-        surfaces: ["sessionRef", "thread", "agent trace"],
-      },
-      {
-        id: "updates_keymaps",
-        label: "更新・起動・キー操作",
-        status: "partial",
-        detail: "launcher は Edge 自動起動を担い、Codex CLI の更新や keymap は CLI 側の管理対象として扱います。",
-        surfaces: ["start_codex_ui.bat", "diagnostics", "Codex CLI"],
-      },
-      {
-        id: "multi_agent_app_server",
-        label: "複数エージェントと App Server",
-        status: "supported",
-        detail: "standard route の POST /api/exec と app-server runtime を維持したまま、agent 状態を表示します。",
-        surfaces: ["POST /api/exec", "agent state", "app-server"],
-      },
-      {
-        id: "windows_remote_reliability",
-        label: "Windows / remote 信頼性",
-        status: hasWorkspaceGuard || hasGitAutomation ? "supported" : "partial",
-        detail: "workspace guard、restart protection、Windows launcher policy でローカル運用の事故を減らします。",
-        surfaces: ["workspaceGuard", "restartProtection", "launcher policy"],
-      },
-    ];
-    const counts = groups.reduce((acc, group) => {
-      const status = group.status || "unknown";
-      acc[status] = (acc[status] || 0) + 1;
-      return acc;
-    }, { supported: 0, partial: 0, watch: 0, unknown: 0 });
-    return {
-      schema: "codex-release-readiness.v1",
-      fromVersion: "v0.120.0",
-      targetVersion: "v0.128.0",
-      updatedAt: Date.now(),
-      summary: {
-        supported: counts.supported || 0,
-        partial: counts.partial || 0,
-        watch: counts.watch || 0,
-        unknown: counts.unknown || 0,
-        headline: `v0.128 系の主要変化: supported ${counts.supported || 0}, partial ${counts.partial || 0}`,
-      },
-      groups,
-    };
-  }
-
   function buildRuntimeApiSnapshot() {
     const active = getActiveAgentState();
     const latestTurn = getLatestTurnSnapshot();
@@ -411,16 +320,6 @@ function createRuntimeApiSnapshotService(deps = {}) {
       },
     };
     const appServerTransport = buildAppServerTransportRuntimeSnapshot();
-    const codexReleaseReadiness = buildCodexReleaseReadinessSnapshot({
-      active,
-      latestTurn,
-      turnRuntime,
-      requirementGuard,
-      appServerTransport,
-      staticApps,
-      gitAutomation,
-      workspaceGuard,
-    });
     return {
       apiVersion,
       mode: "app-server",
@@ -448,8 +347,6 @@ function createRuntimeApiSnapshotService(deps = {}) {
       active_exec_requests: getActiveExecRequestCount(),
       appServerTransport,
       app_server_transport: appServerTransport,
-      codexReleaseReadiness,
-      codex_release_readiness: codexReleaseReadiness,
       operationLog: operationLog.runtimeSnapshot(),
       loggingSurface: {
         mode: loggingMode,
