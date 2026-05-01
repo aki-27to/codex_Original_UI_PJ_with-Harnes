@@ -8535,11 +8535,17 @@ function normalizeGoalStatusForSlashCommand(value){
 }
 function isUnsupportedAppServerGoalMethodError(error){
   const text=safeString(error&&error.message?error.message:String(error),600).toLowerCase();
+  const mentionsGoalMethod=text.includes("thread/goal/")
+    ||text.includes("goal/set")
+    ||text.includes("goal/get")
+    ||text.includes("goal/clear");
+  if(!mentionsGoalMethod)return false;
   return text.includes("unsupported")
     ||text.includes("unknown method")
     ||text.includes("method not found")
     ||text.includes("not implemented")
-    ||text.includes("invalid request");
+    ||text.includes("no handler")
+    ||text.includes("unrecognized method");
 }
 function normalizeGoalForSlashCommand(goal,threadId){
   if(!goal||typeof goal!=="object")return null;

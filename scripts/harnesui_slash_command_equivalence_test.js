@@ -43,6 +43,8 @@ function main() {
   assertMatch(serverImpl, /appServer\.sendRequest\("thread\/goal\/set"/, "/goal set/pause/resume/complete must try native app-server goal set");
   assertMatch(serverImpl, /appServer\.sendRequest\("thread\/goal\/clear"/, "/goal clear must try native app-server goal clear");
   assertMatch(serverImpl, /Native Codex goal API is not available in this runtime\./, "/goal must fail over transparently when native goal requests are unavailable");
+  assertMatch(serverImpl, /const mentionsGoalMethod=[\s\S]*?thread\/goal\//, "/goal fallback must be limited to goal-method errors");
+  assert(!/function isUnsupportedAppServerGoalMethodError[\s\S]*?invalid request[\s\S]*?function normalizeGoalForSlashCommand/.test(serverImpl), "/goal must not hide native payload errors as unsupported fallback");
   assertMatch(serverImpl, /method==="thread\/goal\/set"/, "mock fixture must support native goal set for slash-command tests");
   assertMatch(serverImpl, /method==="thread\/goal\/get"/, "mock fixture must support native goal get for slash-command tests");
   assertMatch(serverImpl, /method==="thread\/goal\/clear"/, "mock fixture must support native goal clear for slash-command tests");
