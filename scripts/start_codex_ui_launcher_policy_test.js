@@ -16,7 +16,7 @@ function main() {
   assert(/set "CODEX_LAUNCH_DIR=%~dp0"/.test(launcher), "launcher must always expose its working directory for reuse/stale-runtime probes");
   assert(/if \/I "%CODEX_REQUIRE_ADMIN%"=="1" \(/.test(launcher), "launcher must gate self-elevation behind an explicit opt-in");
   assert(/set "LAUNCHER_AUTO_OPEN_BROWSER=%CODEX_AUTO_OPEN_BROWSER%"/.test(launcher), "launcher must snapshot browser auto-open ownership before starting server.js");
-  assert(/if "%CODEX_AUTO_OPEN_BROWSER%"=="" set "CODEX_AUTO_OPEN_BROWSER=0"/.test(launcher), "launcher must default browser auto-open off");
+  assert(/if "%CODEX_AUTO_OPEN_BROWSER%"=="" set "CODEX_AUTO_OPEN_BROWSER=1"/.test(launcher), "launcher must default browser auto-open on for the desktop launcher");
   assert(/if "%CODEX_RESTART_EXISTING_HARNESS%"=="" set "CODEX_RESTART_EXISTING_HARNESS=0"/.test(launcher), "launcher must default restart-existing-harness behavior off");
   assert(/if "%CODEX_AUTO_RESTART_STALE_HARNESS%"=="" set "CODEX_AUTO_RESTART_STALE_HARNESS=1"/.test(launcher), "launcher must default stale-harness auto-restart on");
   assert(/if "%CODEX_FORCE_ACTIVE_RESTART%"=="" set "CODEX_FORCE_ACTIVE_RESTART=0"/.test(launcher), "launcher must default forced active restart off");

@@ -526,6 +526,25 @@
             </details>
           </section>
 
+          <section id="releaseReadinessPanel" class="release-readiness-panel" aria-live="polite">
+            <div class="release-readiness-head">
+              <div>
+                <p class="operator-label">Codex release readiness</p>
+                <h3>v0.120.0 to v0.128.0</h3>
+                <p id="releaseReadinessSummary" class="release-readiness-summary">runtime の対応状況を読み込んでいます。</p>
+              </div>
+              <span id="releaseReadinessVersion" class="release-readiness-version">v0.128.0</span>
+            </div>
+            <div id="releaseReadinessList" class="release-readiness-list">
+              <article class="release-readiness-item loading">
+                <span class="release-readiness-status">loading</span>
+                <strong>runtime 同期待ち</strong>
+                <p>/api/runtime から Codex v0.128 系の対応状況を読みます。</p>
+              </article>
+            </div>
+            <p id="releaseReadinessUpdatedAt" class="release-readiness-updated">未更新</p>
+          </section>
+
           <details id="opsDeck" class="ops-deck" data-advanced="true">
             <summary>Diagnostics</summary>
             <div class="ops-deck-body">
