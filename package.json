@@ -95,6 +95,7 @@
     "test:replay-app-service-split": "node scripts/replay_app_service_split_test.js",
     "test:harnesui-duplicate-submit-guard": "node scripts/harnesui_duplicate_submit_guard_test.js",
     "test:harnesui-control-state-guard": "node scripts/harnesui_control_state_guard_test.js",
+    "test:harnesui-slash-commands": "node scripts/harnesui_slash_command_equivalence_test.js",
     "test:harnesui-pending-state": "node scripts/harnesui_pending_state_test.js",
     "test:runtime-active-turn-cleanup": "node scripts/runtime_active_turn_cleanup_test.js",
     "test:runtime-state-service": "node scripts/runtime_state_service_test.js",

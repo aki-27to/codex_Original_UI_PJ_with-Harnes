@@ -1,0 +1,53 @@
+"use strict";
+
+const assert = require("assert");
+const fs = require("fs");
+const path = require("path");
+const { resolveServerImplementationPath } = require("./lib/server_source_path");
+
+const workspaceRoot = path.resolve(__dirname, "..");
+const appJs = fs.readFileSync(path.join(workspaceRoot, "web", "01.HarnesUI", "app.js"), "utf8");
+const indexHtml = fs.readFileSync(path.join(workspaceRoot, "web", "01.HarnesUI", "index.html"), "utf8");
+const { implementationPath: serverImplPath } = resolveServerImplementationPath(workspaceRoot);
+const serverImpl = fs.readFileSync(serverImplPath, "utf8");
+
+function assertMatch(source, regex, message) {
+  assert(regex.test(source), message);
+}
+
+function main() {
+  assertMatch(
+    appJs,
+    /const\s+COMMANDS=\["\/help","\/goal","\/goal clear","\/goal pause","\/goal resume","\/goal complete","\/status","\/diff","\/resume --last","\/fork","\/fast status","\/agent list"\];/,
+    "HarnesUI command palette must expose supported slash commands, not only a /goal prompt preset"
+  );
+  assertMatch(
+    appJs,
+    /function\s+commandPaletteCopyForUi\s*\(/,
+    "HarnesUI command palette must explain which commands are Codex-backed versus local"
+  );
+  assertMatch(
+    indexHtml,
+    /data-compose-preset="\/goal "[^>]*title="\/goal コマンドを入力します。送信時にCodex goalへ接続し、未対応runtimeではHarnesUI goalに保存します。"/,
+    "visible /goal shortcut must state native goal connection and fallback behavior"
+  );
+
+  assertMatch(serverImpl, /async function handleSlashGoalCommand\s*\(/, "server slash router must implement /goal");
+  assertMatch(serverImpl, /function handleSlashHelpCommand\s*\(/, "server slash router must implement /help");
+  assertMatch(serverImpl, /function handleSlashStatusCommand\s*\(/, "server slash router must implement /status");
+  assertMatch(serverImpl, /function handleSlashDiffCommand\s*\(/, "server slash router must implement /diff");
+  assertMatch(serverImpl, /function handleUnsupportedSlashCommand\s*\(/, "server slash router must reject unsupported slash commands before ordinary turn execution");
+  assertMatch(serverImpl, /await handleSlashGoalCommand\(res,argsText,targetAgentName,sandboxMode,normalized\);/, "runCodexExecStreaming must route /goal before ordinary turn execution");
+  assertMatch(serverImpl, /handleUnsupportedSlashCommand\(res,command\);[\s\S]*?return;[\s\S]*?await executeTurnStreaming/, "unknown slash commands must not fall through as ordinary model prompts");
+  assertMatch(serverImpl, /appServer\.sendRequest\("thread\/goal\/get"/, "/goal status must try native app-server goal get");
+  assertMatch(serverImpl, /appServer\.sendRequest\("thread\/goal\/set"/, "/goal set/pause/resume/complete must try native app-server goal set");
+  assertMatch(serverImpl, /appServer\.sendRequest\("thread\/goal\/clear"/, "/goal clear must try native app-server goal clear");
+  assertMatch(serverImpl, /Native Codex goal API is not available in this runtime\./, "/goal must fail over transparently when native goal requests are unavailable");
+  assertMatch(serverImpl, /method==="thread\/goal\/set"/, "mock fixture must support native goal set for slash-command tests");
+  assertMatch(serverImpl, /method==="thread\/goal\/get"/, "mock fixture must support native goal get for slash-command tests");
+  assertMatch(serverImpl, /method==="thread\/goal\/clear"/, "mock fixture must support native goal clear for slash-command tests");
+
+  process.stdout.write("PASS harnesui_slash_command_equivalence_test\n");
+}
+
+main();

@@ -4743,6 +4743,7 @@ function createBaseAgentState(){
     sessionRef:null,
     threadId:null,
     activeTurnId:null,
+    goal:null,
     experimentalEnabled:defaultExperimentalFeatures.length>0,
     experimentalFeatures:new Set(defaultExperimentalFeatures),
     serviceTier:defaultCodexServiceTier,
@@ -7180,6 +7181,9 @@ class CodexAppServerClient{
     return method==="initialize"
       ||method==="thread/start"
       ||method==="thread/resume"
+      ||method==="thread/goal/set"
+      ||method==="thread/goal/get"
+      ||method==="thread/goal/clear"
       ||method==="turn/start"
       ||method==="turn/interrupt";
   }
@@ -7485,6 +7489,34 @@ class CodexAppServerClient{
       const turn=this.mockTurns.get(this.turnKey(threadId,turnId));
       if(turn)turn.interrupted=true;
       return{ok:true};
+    }
+    if(method==="thread/goal/get"){
+      const threadId=safeString(params&&params.threadId,160);
+      return{goal:this.mockGoals&&this.mockGoals.has(threadId)?this.mockGoals.get(threadId):null};
+    }
+    if(method==="thread/goal/set"){
+      const threadId=safeString(params&&params.threadId,160);
+      if(!threadId)throw new Error("thread/goal/set missing thread id");
+      if(!this.mockGoals)this.mockGoals=new Map();
+      const existing=this.mockGoals.get(threadId)||{};
+      const now=Date.now();
+      const goal={
+        threadId,
+        objective:safeString(Object.prototype.hasOwnProperty.call(params||{},"objective")?params.objective:existing.objective,4000)||safeString(existing.objective,4000)||"",
+        status:normalizeGoalStatusForSlashCommand(Object.prototype.hasOwnProperty.call(params||{},"status")?params.status:existing.status)||"active",
+        tokenBudget:Object.prototype.hasOwnProperty.call(params||{},"tokenBudget")&&Number.isFinite(Number(params.tokenBudget))?Math.max(0,Math.trunc(Number(params.tokenBudget))):(Number.isFinite(Number(existing.tokenBudget))?Math.max(0,Math.trunc(Number(existing.tokenBudget))):null),
+        tokensUsed:Number.isFinite(Number(existing.tokensUsed))?Math.max(0,Math.trunc(Number(existing.tokensUsed))):0,
+        timeUsedSeconds:Number.isFinite(Number(existing.timeUsedSeconds))?Math.max(0,Math.trunc(Number(existing.timeUsedSeconds))):0,
+        createdAt:Number.isFinite(Number(existing.createdAt))?Math.max(0,Math.trunc(Number(existing.createdAt))):now,
+        updatedAt:now,
+      };
+      this.mockGoals.set(threadId,goal);
+      return{goal};
+    }
+    if(method==="thread/goal/clear"){
+      const threadId=safeString(params&&params.threadId,160);
+      const cleared=Boolean(this.mockGoals&&this.mockGoals.delete(threadId));
+      return{cleared};
     }
     throw new Error(`unsupported mock-fixture request: ${method}`);
   }
@@ -8493,12 +8525,242 @@ function handleSlashFastCommand(res,argsText){
   replyLocalText(res,"Usage: /fast [on|off|toggle|status]");
   return true;
 }
+function normalizeGoalStatusForSlashCommand(value){
+  const raw=safeString(value,80).toLowerCase().replace(/[\s-]+/g,"_");
+  if(raw==="active"||raw==="resume"||raw==="resumed")return"active";
+  if(raw==="paused"||raw==="pause")return"paused";
+  if(raw==="complete"||raw==="completed"||raw==="done")return"complete";
+  if(raw==="budgetlimited"||raw==="budget_limited"||raw==="budget-limited")return"budgetLimited";
+  return"";
+}
+function isUnsupportedAppServerGoalMethodError(error){
+  const text=safeString(error&&error.message?error.message:String(error),600).toLowerCase();
+  return text.includes("unsupported")
+    ||text.includes("unknown method")
+    ||text.includes("method not found")
+    ||text.includes("not implemented")
+    ||text.includes("invalid request");
+}
+function normalizeGoalForSlashCommand(goal,threadId){
+  if(!goal||typeof goal!=="object")return null;
+  const objective=safeString(goal.objective,4000);
+  const status=normalizeGoalStatusForSlashCommand(goal.status)||"active";
+  const now=Date.now();
+  return{
+    threadId:safeString(goal.threadId,160)||safeString(threadId,160)||"",
+    objective,
+    status,
+    tokenBudget:Number.isFinite(Number(goal.tokenBudget))?Math.max(0,Math.trunc(Number(goal.tokenBudget))):null,
+    tokensUsed:Number.isFinite(Number(goal.tokensUsed))?Math.max(0,Math.trunc(Number(goal.tokensUsed))):0,
+    timeUsedSeconds:Number.isFinite(Number(goal.timeUsedSeconds))?Math.max(0,Math.trunc(Number(goal.timeUsedSeconds))):0,
+    createdAt:Number.isFinite(Number(goal.createdAt))?Math.max(0,Math.trunc(Number(goal.createdAt))):now,
+    updatedAt:Number.isFinite(Number(goal.updatedAt))?Math.max(0,Math.trunc(Number(goal.updatedAt))):now,
+  };
+}
+function setLocalGoalForSlashCommand(state,threadId,patch={}){
+  if(!state)return null;
+  const now=Date.now();
+  const existing=normalizeGoalForSlashCommand(state.goal,threadId)||{
+    threadId:safeString(threadId,160)||"",
+    objective:"",
+    status:"active",
+    tokenBudget:null,
+    tokensUsed:0,
+    timeUsedSeconds:0,
+    createdAt:now,
+    updatedAt:now,
+  };
+  const next={
+    ...existing,
+    threadId:safeString(threadId,160)||existing.threadId,
+    objective:Object.prototype.hasOwnProperty.call(patch,"objective")?safeString(patch.objective,4000):existing.objective,
+    status:normalizeGoalStatusForSlashCommand(Object.prototype.hasOwnProperty.call(patch,"status")?patch.status:existing.status)||existing.status||"active",
+    tokenBudget:Object.prototype.hasOwnProperty.call(patch,"tokenBudget")&&Number.isFinite(Number(patch.tokenBudget))?Math.max(0,Math.trunc(Number(patch.tokenBudget))):existing.tokenBudget,
+    updatedAt:now,
+  };
+  state.goal=next;
+  return next;
+}
+function formatGoalForSlashCommand(goal,{source="native"}={}){
+  const normalized=normalizeGoalForSlashCommand(goal,goal&&goal.threadId);
+  if(!normalized)return`${source==="native"?"Codex goal":"HarnesUI goal"}: none`;
+  const label=source==="native"?"Codex goal":"HarnesUI goal";
+  const budget=Number.isFinite(Number(normalized.tokenBudget))?`\nBudget: ${normalized.tokenBudget}`:"";
+  return`${label}: ${normalized.status}\nObjective: ${normalized.objective||"(empty)"}\nThread: ${normalized.threadId||"unknown"}${budget}`;
+}
+const slashCommandHelpRows=[
+  ["/goal <objective>","Set the Codex goal for the current thread."],
+  ["/goal","Show the current Codex goal."],
+  ["/goal pause|resume|complete|clear","Update or clear the current Codex goal."],
+  ["/status","Show the current HarnesUI session configuration."],
+  ["/diff","Show the current git diff summary."],
+  ["/resume --last|<session>","Set the session that the next turn should resume."],
+  ["/fork [name]","Create a HarnesUI agent fork from the active agent."],
+  ["/fast on|off|status","Read or change HarnesUI fast mode."],
+  ["/agent list|new|use","Manage HarnesUI agents."],
+  ["/mention <path> [message]","Rewrite the request with a workspace file target."],
+  ["/experimental ...","Manage local experimental feature flags."],
+  ["/help","Show this command list."],
+];
+function formatSlashHelpText(){
+  return["Supported slash commands:",...slashCommandHelpRows.map(([command,description])=>`  ${command} - ${description}`)].join("\n");
+}
+function handleSlashHelpCommand(res){
+  replyLocalText(res,formatSlashHelpText());
+  return true;
+}
+function handleUnsupportedSlashCommand(res,command){
+  replyLocalText(res,`Unrecognized command '${safeString(command,80)}'. Type /help for a list of supported commands.`);
+  return true;
+}
+function handleSlashStatusCommand(res,agentName,sandboxMode,normalized){
+  const state=getOrCreateAgentState(agentName);
+  const webSearchMode=normalizeWebSearchMode(
+    Object.prototype.hasOwnProperty.call(normalized||{},"webSearchMode")?normalized.webSearchMode:normalized&&normalized.webSearch,
+    "disabled"
+  );
+  const cwd=normalizeWorkingDirectory(normalized&&normalized.cwd,workspaceRoot);
+  const model=normalizeExecModel(normalized&&normalized.model,defaultExecModelName);
+  const modelReasoningEffort=normalizeExecModelReasoningEffort(normalized&&normalized.modelReasoningEffort,defaultExecModelReasoningEffort);
+  const goal=normalizeGoalForSlashCommand(state.goal,state.threadId||state.sessionRef);
+  const lines=[
+    "Codex status:",
+    `Agent: ${agentName}`,
+    `Session: ${state.sessionRef||"none"}`,
+    `Thread: ${state.threadId||"none"}`,
+    `Sandbox: ${normalizeSandboxMode(sandboxMode)}`,
+    `Approval: ${normalizeApprovalPolicy(normalized&&normalized.approvalPolicy)}`,
+    `Web search: ${webSearchMode}`,
+    `Model: ${model}`,
+    `Reasoning: ${modelReasoningEffort}`,
+    `Fast mode: ${resolveFastModeEnabled(normalized&&normalized.fastModeEnabled,state&&state.fastModeEnabled)?"on":"off"}`,
+    `Goal: ${goal?`${goal.status} - ${goal.objective||"(empty)"}`:"none"}`,
+    `CWD: ${cwd}`,
+  ];
+  replyLocalText(res,lines.join("\n"));
+  return true;
+}
+function handleSlashDiffCommand(res,normalized){
+  const cwd=normalizeWorkingDirectory(normalized&&normalized.cwd,workspaceRoot);
+  const repoCheck=spawnSync("git",["-C",cwd,"rev-parse","--is-inside-work-tree"],{encoding:"utf8",timeout:10000,maxBuffer:1024*1024});
+  if(repoCheck.status!==0){
+    replyLocalText(res,"/diff - not inside a git repository");
+    return true;
+  }
+  const diff=spawnSync("git",["-C",cwd,"diff","--stat"],{encoding:"utf8",timeout:10000,maxBuffer:1024*1024});
+  if(diff.status!==0){
+    const detail=safeString((diff.stderr||diff.stdout||"").trim(),2000)||"git diff failed";
+    replyLocalText(res,`Failed to compute diff: ${detail}`);
+    return true;
+  }
+  const body=safeString((diff.stdout||"").trim(),4000);
+  replyLocalText(res,body?`D I F F\n${body}`:"No changes detected.");
+  return true;
+}
+function slashThreadOptionsFromExecOptions(normalized,sandboxMode){
+  const webSearchMode=normalizeWebSearchMode(
+    Object.prototype.hasOwnProperty.call(normalized||{},"webSearchMode")?normalized.webSearchMode:normalized&&normalized.webSearch,
+    "disabled"
+  );
+  return{
+    sandboxMode:normalizeSandboxMode(sandboxMode),
+    approvalPolicy:normalizeApprovalPolicy(normalized&&normalized.approvalPolicy),
+    webSearch:isWebSearchEnabledForMode(webSearchMode),
+    webSearchMode,
+    model:normalizeExecModel(normalized&&normalized.model,defaultExecModelName),
+    modelReasoningEffort:normalizeExecModelReasoningEffort(normalized&&normalized.modelReasoningEffort,defaultExecModelReasoningEffort),
+    cwd:normalizeWorkingDirectory(normalized&&normalized.cwd,workspaceRoot),
+    forceNewSession:false,
+    requestUserInputPolicy:normalizeRequestUserInputPolicy(normalized&&normalized.requestUserInputPolicy,nonInteractiveRequestUserInputPolicy),
+    memoryMode:normalizeCodexMemoryMode(normalized&&normalized.memoryMode,"default"),
+    resetCodexMemory:normalizeBooleanFlag(normalized&&normalized.resetCodexMemory),
+    fastModeEnabled:resolveFastModeEnabled(normalized&&normalized.fastModeEnabled),
+    automaticApprovalReviewEnabled:resolveAutomaticApprovalReviewEnabled(normalized&&normalized.automaticApprovalReviewEnabled),
+  };
+}
+async function withSlashGoalThread(agentName,sandboxMode,normalized,operation){
+  const state=getOrCreateAgentState(agentName);
+  const threadOptions=slashThreadOptionsFromExecOptions(normalized,sandboxMode);
+  const threadId=await ensureAgentThread(agentName,threadOptions);
+  return operation({state,threadId,threadOptions});
+}
+async function handleSlashGoalCommand(res,argsText,agentName,sandboxMode,normalized){
+  const raw=safeString(argsText,4000);
+  const arg=raw.trim();
+  try{
+    await withSlashGoalThread(agentName,sandboxMode,normalized,async({state,threadId})=>{
+      const lower=arg.toLowerCase();
+      const op=!arg||lower==="status"||lower==="show"||lower==="get"
+        ?"get"
+        :(lower==="clear"||lower==="reset"||lower==="remove"
+          ?"clear"
+          :(lower==="pause"||lower==="paused"
+            ?"pause"
+            :(lower==="resume"||lower==="active"
+              ?"resume"
+              :(lower==="complete"||lower==="completed"||lower==="done"
+                ?"complete"
+                :"set"))));
+      const nativeCall=async()=>{
+        if(op==="get"){
+          const result=await appServer.sendRequest("thread/goal/get",{threadId},15000);
+          const goal=normalizeGoalForSlashCommand(result&&result.goal,threadId);
+          if(goal)state.goal=goal;
+          replyLocalText(res,formatGoalForSlashCommand(goal,{source:"native"}));
+          return true;
+        }
+        if(op==="clear"){
+          await appServer.sendRequest("thread/goal/clear",{threadId},15000);
+          state.goal=null;
+          replyLocalText(res,`Codex goal cleared.\nThread: ${threadId}`);
+          return true;
+        }
+        const patch=op==="set"
+          ?{objective:arg,status:"active"}
+          :{status:op==="pause"?"paused":(op==="resume"?"active":"complete")};
+        const result=await appServer.sendRequest("thread/goal/set",{threadId,...patch},15000);
+        const goal=normalizeGoalForSlashCommand(result&&result.goal,threadId)||setLocalGoalForSlashCommand(state,threadId,patch);
+        state.goal=goal;
+        replyLocalText(res,formatGoalForSlashCommand(goal,{source:"native"}));
+        return true;
+      };
+      try{
+        await nativeCall();
+        logOperation("slash.goal.native",{a:safeString(agentName,80),th:safeString(threadId,120),op});
+        return;
+      }catch(error){
+        if(!isUnsupportedAppServerGoalMethodError(error)){
+          throw error;
+        }
+        logOperation("slash.goal.fallback",{a:safeString(agentName,80),th:safeString(threadId,120),op,err:summarizeErrorForOperationLog(error,220)});
+      }
+      if(op==="get"){
+        replyLocalText(res,formatGoalForSlashCommand(state.goal,{source:"local"}));
+        return;
+      }
+      if(op==="clear"){
+        state.goal=null;
+        replyLocalText(res,`HarnesUI goal cleared.\nThread: ${threadId}\nNative Codex goal API is not available in this runtime.`);
+        return;
+      }
+      const patch=op==="set"
+        ?{objective:arg,status:"active"}
+        :{status:op==="pause"?"paused":(op==="resume"?"active":"complete")};
+      const goal=setLocalGoalForSlashCommand(state,threadId,patch);
+      replyLocalText(res,`${formatGoalForSlashCommand(goal,{source:"local"})}\nNative Codex goal API is not available in this runtime.`);
+    });
+  }catch(error){
+    replyLocalText(res,`[error] ${error&&error.message?error.message:String(error)}`);
+  }
+  return true;
+}
 function handleSlashResumeCommand(res,argsText){const active=getActiveAgentState();const arg=(argsText||"").trim();if(!arg||arg==="--last"){const latest=findLatestSessionId();if(!latest){replyLocalText(res,"No saved session found.");return true;}active.sessionRef=latest;active.threadId=latest;active.activeTurnId=null;active.manualSessionPinned=true;replyLocalText(res,`Resume target set: ${latest}`);return true;}if(arg==="clear"){active.sessionRef=null;active.threadId=null;active.activeTurnId=null;active.manualSessionPinned=false;replyLocalText(res,"Resume target cleared.");return true;}if(agentStates.has(arg)){activeAgentName=arg;const switched=getActiveAgentState();replyLocalText(res,`Switched agent: ${arg}\nSession=${switched.sessionRef||"none"}`);return true;}active.sessionRef=arg;active.threadId=arg;active.activeTurnId=null;active.manualSessionPinned=true;if(looksLikeSessionId(arg)){replyLocalText(res,`Resume target set: ${arg}`);return true;}replyLocalText(res,`Resume target set (non-standard id): ${arg}`);return true;}
 function buildForkedAgentState(source,sourceName){
   return{
     sessionRef:source.sessionRef||null,
     threadId:source.threadId||null,
     activeTurnId:null,
+    goal:source.goal&&typeof source.goal==="object"?{...source.goal,threadId:source.threadId||source.sessionRef||""}:null,
     experimentalEnabled:source.experimentalEnabled,
     experimentalFeatures:new Set(Array.from(source.experimentalFeatures||[])),
     serviceTier:normalizeCodexServiceTier(source.serviceTier,defaultCodexServiceTier),
@@ -11734,6 +11996,18 @@ async function runCodexExecStreaming(res,prompt,sandboxMode,options={}){
       a:safeString(targetAgentName,80),
       cmd:safeString(command,80),
     });
+    if(command==="/help"){
+      handleSlashHelpCommand(res);
+      return;
+    }
+    if(command==="/status"){
+      handleSlashStatusCommand(res,targetAgentName,sandboxMode,normalized);
+      return;
+    }
+    if(command==="/diff"){
+      handleSlashDiffCommand(res,normalized);
+      return;
+    }
     if(command==="/agent"){
       handleSlashAgentCommand(res,argsText);
       return;
@@ -11744,6 +12018,10 @@ async function runCodexExecStreaming(res,prompt,sandboxMode,options={}){
     }
     if(command==="/fast"){
       handleSlashFastCommand(res,argsText);
+      return;
+    }
+    if(command==="/goal"){
+      await handleSlashGoalCommand(res,argsText,targetAgentName,sandboxMode,normalized);
       return;
     }
     if(command==="/resume"){
@@ -11782,6 +12060,8 @@ async function runCodexExecStreaming(res,prompt,sandboxMode,options={}){
       });
       return;
     }
+    handleUnsupportedSlashCommand(res,command);
+    return;
   }
   await executeTurnStreaming(res,prompt,targetAgentName,{
     sandboxMode,

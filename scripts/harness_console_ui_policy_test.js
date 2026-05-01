@@ -171,7 +171,8 @@ function main() {
   assertRegex(appJs, /function\s+missionDraftSourceForUi\s*\(/, "mission draft source helper must exist");
   assertRegex(appJs, /function\s+deriveMissionDraftForUi\s*\(/, "mission draft derivation helper must exist");
   assertRegex(appJs, /function\s+renderMissionDraftPanel\s*\(/, "mission draft renderer must exist");
-  assertRegex(appJs, /const\s+COMMANDS=\["\/goal"\];/, "command palette must expose the /goal quick insert");
+  assertRegex(appJs, /const\s+COMMANDS=\["\/help","\/goal","\/goal clear","\/goal pause","\/goal resume","\/goal complete","\/status","\/diff","\/resume --last","\/fork","\/fast status","\/agent list"\];/, "command palette must expose the supported slash command shortcuts");
+  assertRegex(appJs, /function\s+commandPaletteCopyForUi\s*\(/, "command palette must describe slash commands by execution semantics");
   assertRegex(appJs, /const\s+slashGoal=extractMissionFieldByLabelForUi\(source,\["\/goal"\]\);/, "mission draft must parse /goal as an explicit goal label");
   assertRegex(appJs, /goal:slashGoal\|\|explicitGoal\|\|fallbackGoal/, "mission draft must prioritize /goal text in the visible goal row");
   assertRegex(appJs, /function\s+renderComposerRuntimeStrip\s*\(/, "composer runtime renderer must exist");
