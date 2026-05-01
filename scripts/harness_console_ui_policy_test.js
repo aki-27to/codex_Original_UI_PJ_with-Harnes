@@ -84,7 +84,7 @@ function main() {
   assertRegex(indexHtml, /id="jumpToComposerBtn"/, "conversation panel must expose the jump-to-composer action");
   assertRegex(indexHtml, /id="harnessPlanCurrentPurpose"/, "execution plan current card must expose the request-purpose line");
   assertRegex(indexHtml, /data-compose-preset=/, "composer must expose prompt preset shortcuts");
-  assertRegex(indexHtml, /data-compose-preset="\/goal "\s*>\/goal<\/button>/, "composer must expose a visible /goal shortcut");
+  assertRegex(indexHtml, /<button[^>]*data-compose-preset="\/goal "[^>]*>\/goal<\/button>/, "composer must expose a visible /goal shortcut");
   assertRegex(indexHtml, /id="composerRuntimeStrip"/, "composer must expose the runtime strip");
   assertRegex(indexHtml, /id="composerModeChip"/, "composer must expose the mode chip");
   assertRegex(indexHtml, /id="composerModelChip"/, "composer must expose the model chip");
