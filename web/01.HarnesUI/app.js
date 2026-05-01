@@ -26,7 +26,7 @@ const LEGACY_PROFILE_ALIASES=Object.freeze({
 const ALLOWED_APPROVAL_POLICIES=new Set(["untrusted","on-request","never"]);
 const ALLOWED_SANDBOX_MODES=new Set(["read-only","workspace-write","danger-full-access"]);
 const ALLOWED_WEB_SEARCH_MODES=new Set(["disabled","cached","live"]);
-const COMMANDS=[];
+const COMMANDS=["/goal"];
 const DEFAULT_AGENT_NAME="default";
 const DEFAULT_EXEC_MODEL="gpt-5.5";
 const DEFAULT_EXEC_MODEL_REASONING_EFFORT="xhigh";
@@ -4107,13 +4107,14 @@ function compactPathHintListForUi(values){
 function deriveMissionDraftForUi(text,chatRecord){
   const source=String(text||"");
   const compact=compactInlineTextForUi(source);
+  const slashGoal=extractMissionFieldByLabelForUi(source,["/goal"]);
   const explicitGoal=extractMissionFieldByLabelForUi(source,["目的","goal","task"]);
   const explicitScope=extractMissionFieldByLabelForUi(source,["対象","scope","files","file","path","paths"]);
   const explicitConstraint=extractMissionFieldByLabelForUi(source,["制約","constraints","constraint","非対象","avoid","must avoid"]);
   const explicitDone=extractMissionFieldByLabelForUi(source,["完了条件","確認","done when","verify","verification","テスト","tests"]);
   const pathHints=collectMissionPathHintsForUi(source);
   const pathHintLabels=compactPathHintListForUi(pathHints);
-  const explicitCount=[explicitGoal,explicitScope||pathHints[0],explicitConstraint,explicitDone].filter(Boolean).length;
+  const explicitCount=[slashGoal||explicitGoal,explicitScope||pathHints[0],explicitConstraint,explicitDone].filter(Boolean).length;
   const fallbackGoal=compact?t1(compact,52):"やりたいことを書くと表示されます。";
   const fallbackScope=pathHintLabels.length
     ?pathHintLabels.join(" / ")
@@ -4125,7 +4126,7 @@ function deriveMissionDraftForUi(text,chatRecord){
     ?t1(compact,52)
     :"完了条件未指定";
   return{
-    goal:explicitGoal||fallbackGoal,
+    goal:slashGoal||explicitGoal||fallbackGoal,
     scope:explicitScope||fallbackScope,
     constraint:explicitConstraint||fallbackConstraint,
     done:explicitDone||fallbackDone,

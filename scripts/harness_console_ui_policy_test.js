@@ -84,6 +84,7 @@ function main() {
   assertRegex(indexHtml, /id="jumpToComposerBtn"/, "conversation panel must expose the jump-to-composer action");
   assertRegex(indexHtml, /id="harnessPlanCurrentPurpose"/, "execution plan current card must expose the request-purpose line");
   assertRegex(indexHtml, /data-compose-preset=/, "composer must expose prompt preset shortcuts");
+  assertRegex(indexHtml, /data-compose-preset="\/goal "\s*>\/goal<\/button>/, "composer must expose a visible /goal shortcut");
   assertRegex(indexHtml, /id="composerRuntimeStrip"/, "composer must expose the runtime strip");
   assertRegex(indexHtml, /id="composerModeChip"/, "composer must expose the mode chip");
   assertRegex(indexHtml, /id="composerModelChip"/, "composer must expose the model chip");
@@ -170,6 +171,9 @@ function main() {
   assertRegex(appJs, /function\s+missionDraftSourceForUi\s*\(/, "mission draft source helper must exist");
   assertRegex(appJs, /function\s+deriveMissionDraftForUi\s*\(/, "mission draft derivation helper must exist");
   assertRegex(appJs, /function\s+renderMissionDraftPanel\s*\(/, "mission draft renderer must exist");
+  assertRegex(appJs, /const\s+COMMANDS=\["\/goal"\];/, "command palette must expose the /goal quick insert");
+  assertRegex(appJs, /const\s+slashGoal=extractMissionFieldByLabelForUi\(source,\["\/goal"\]\);/, "mission draft must parse /goal as an explicit goal label");
+  assertRegex(appJs, /goal:slashGoal\|\|explicitGoal\|\|fallbackGoal/, "mission draft must prioritize /goal text in the visible goal row");
   assertRegex(appJs, /function\s+renderComposerRuntimeStrip\s*\(/, "composer runtime renderer must exist");
   assertRegex(appJs, /function\s+intentFirstVerificationLockForUi\s*\(/, "composer runtime must expose the intent-first verification lock helper");
   assertRegex(appJs, /Verify:\s*locked/, "composer runtime must surface the locked verification copy");

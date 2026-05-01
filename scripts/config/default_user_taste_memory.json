@@ -2,7 +2,7 @@
   "schema": "user-taste-memory.v1",
   "version": 1,
   "activeProfileId": "default",
-  "updatedAt": 0,
+  "updatedAt": 20260501,
   "profiles": {
     "default": {
       "id": "default",
@@ -13,20 +13,32 @@
         "Intent is translated into explicit acceptance checks before implementation.",
         "Outputs have hierarchy, density, and material realness.",
         "Benchmark strengths are named and surpassed intentionally.",
-        "If visual quality is weak, the task is not complete."
+        "If visual quality is weak, the task is not complete.",
+        "Prefer restrained light palettes: warm off-white or cool blue-gray surfaces with clear hierarchy and operational calm.",
+        "Color systems must feel intentional through contrast, hierarchy, and material depth, not decorative dark mode or broad brand blocking.",
+        "The preferred HarnesUI direction is calm or crisp light UI, but it needs a stronger designed signature than lightly tinted panels.",
+        "Repeated operational items such as chats must have readable boundaries, clear selection state, and enough contrast to feel like distinct rooms or records."
       ],
       "avoid": [
         "AI-feeling glassmorphism",
         "uniform card dashboards",
         "badge-heavy template language",
-        "abstract copy with no concrete proof"
+        "abstract copy with no concrete proof",
+        "dark full-console palettes that make the product feel heavy or developer-only",
+        "warm brown/orange brand palettes that look rustic or amateur instead of precise"
       ],
       "benchmarkUrls": [
         "https://www.suruga-k.jp/"
       ],
       "notes": [
         "Build, tests, and HTTP 200 are necessary but never sufficient.",
-        "Workspace targeting mistakes must be treated as hard failures."
+        "Workspace targeting mistakes must be treated as hard failures.",
+        "2026-05-01 HarnesUI theme scoring: quiet-lux and ops-blue were 65/100; console and product-bold were 40/100.",
+        "2026-05-01 second HarnesUI pass: calm-ops, crisp-ledger, and blue-steel were around 60/100; calm-ops or crisp-ledger were only slightly better at 65/100.",
+        "2026-05-01 third HarnesUI pass: northline was the least bad direction; blue-gray shell is preferred, but the central chat and conversation surface must also feel blue-gray rather than disconnected white.",
+        "2026-05-01 HarnesUI failure mode: small requested color tweaks stay under 65/100; the assistant must make opinionated layout, hierarchy, and material-depth decisions instead of only following explicit color comments.",
+        "2026-05-01 HarnesUI scoring: the northline director pass reached about 68/100; next improvement should target beautiful whole-layout composition beyond color.",
+        "2026-05-01 HarnesUI detail feedback: the chat list felt unclear because item boundaries were too weak; future passes should treat boundary clarity as visual quality, not mere decoration."
       ],
       "autonomy": {
         "primaryObjective": "Realize the user's intended outcome with minimal intervention from the user.",
@@ -37,7 +49,7 @@
         "selfCorrectionPolicy": "self_correct_before_asking",
         "promptInjectionEnabled": true
       },
-      "updatedAt": 0
+      "updatedAt": 20260501
     }
   }
 }
