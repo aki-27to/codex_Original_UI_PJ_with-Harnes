@@ -12,6 +12,12 @@ function extractFunction(source, name) {
   return match[0];
 }
 
+function extractConst(source, name) {
+  const match = source.match(new RegExp(`const\\s+${name}\\s*=.+;`));
+  assert(match && match[0], `${name} constant not found in app.js`);
+  return match[0];
+}
+
 function makeElement(tagName) {
   const node = {
     tagName: String(tagName || "").toUpperCase(),
@@ -53,17 +59,20 @@ function loadHelpers() {
   };
   vm.runInNewContext(
     [
+      extractConst(source, "ASSISTANT_TUI_PROGRESS_MARKER"),
       extractFunction(source, "decodeMessageHrefForUi"),
       extractFunction(source, "messageReferenceLocationForUi"),
       extractFunction(source, "messageReferenceFileNameForUi"),
       extractFunction(source, "messageReferenceDisplayPathForUi"),
       extractFunction(source, "parseMessageReferenceForUi"),
       extractFunction(source, "normalizeMessageReferencesForUi"),
+      extractFunction(source, "stripAssistantTuiProgressMarkerForUi"),
+      extractFunction(source, "messageIsAssistantTuiProgressForUi"),
       extractFunction(source, "compactInlineTextForUi"),
       extractFunction(source, "extractStitchPromptContextForUi"),
       extractFunction(source, "renderStitchPromptContextForUi"),
       extractFunction(source, "renderMessageContentForUi"),
-      "this.__helpers__={parseMessageReferenceForUi,normalizeMessageReferencesForUi,compactInlineTextForUi,extractStitchPromptContextForUi,renderStitchPromptContextForUi,renderMessageContentForUi};",
+      "this.__helpers__={parseMessageReferenceForUi,normalizeMessageReferencesForUi,stripAssistantTuiProgressMarkerForUi,messageIsAssistantTuiProgressForUi,compactInlineTextForUi,extractStitchPromptContextForUi,renderStitchPromptContextForUi,renderMessageContentForUi};",
     ].join("\n"),
     context
   );
@@ -74,6 +83,8 @@ function run() {
   const {
     parseMessageReferenceForUi,
     normalizeMessageReferencesForUi,
+    stripAssistantTuiProgressMarkerForUi,
+    messageIsAssistantTuiProgressForUi,
     compactInlineTextForUi,
     extractStitchPromptContextForUi,
     renderMessageContentForUi,
@@ -102,6 +113,27 @@ function run() {
     "  check [CURRENT_ARCHITECTURE.md](/C:/Users/akima/dev/codex_Original_UI_PJ_with-Harnes/docs/CURRENT_ARCHITECTURE.md) \n first  "
   );
   assert.strictEqual(compact, "check CURRENT_ARCHITECTURE.md first", "chat previews should collapse file references to the short label");
+
+  const tuiProgress = [
+    "[harnesui-tui-progress]",
+    "codex@harnesui:~$ exec --chat active",
+    "status   preparing",
+  ].join("\n");
+  assert.strictEqual(
+    stripAssistantTuiProgressMarkerForUi(tuiProgress),
+    "codex@harnesui:~$ exec --chat active\nstatus   preparing",
+    "TUI progress marker should be stripped before transcript rendering"
+  );
+  assert.strictEqual(
+    compactInlineTextForUi(tuiProgress),
+    "codex@harnesui:~$ exec --chat active status preparing",
+    "chat previews should not expose the internal TUI marker"
+  );
+  assert.strictEqual(
+    messageIsAssistantTuiProgressForUi({ role: "assistant", content: tuiProgress }),
+    true,
+    "assistant progress messages should be identifiable for terminal styling"
+  );
 
   const content = makeElement("pre");
   renderMessageContentForUi(

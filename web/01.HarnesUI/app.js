@@ -30,6 +30,7 @@ const COMMANDS=["/goal"];
 const DEFAULT_AGENT_NAME="default";
 const DEFAULT_EXEC_MODEL="gpt-5.5";
 const DEFAULT_EXEC_MODEL_REASONING_EFFORT="xhigh";
+const ASSISTANT_TUI_PROGRESS_MARKER="[harnesui-tui-progress]";
 const EXEC_MODEL_PRESET_OPTIONS=["gpt-5.5","gpt-5.4","gpt-5.4-mini","gpt-5.3-codex","gpt-5.3-codex-spark","gpt-5.2"];
 const EXEC_MODEL_REASONING_EFFORTS=["minimal","low","medium","high","xhigh"];
 const LEGACY_EXEC_MODEL_ALIASES=Object.freeze({"codex-5.3":"gpt-5.3-codex"});
@@ -3735,7 +3736,7 @@ function normalizeMessageReferencesForUi(text){
   return String(text||"").replace(/\[([^\]]+)\]\(([^)\s]+)\)/g,(_,label,href)=>parseMessageReferenceForUi(label,href).visibleLabel);
 }
 function compactInlineTextForUi(text){
-  return normalizeMessageReferencesForUi(text).replace(/\s+/g," ").trim();
+  return normalizeMessageReferencesForUi(stripAssistantTuiProgressMarkerForUi(text)).replace(/\s+/g," ").trim();
 }
 function isGenericChatTitleForUi(value){
   const title=String(value||"").trim();
@@ -3911,10 +3912,94 @@ function renderStitchPromptContextForUi(element,stitchContext){
   });
   element.appendChild(card);
 }
+function stripAssistantTuiProgressMarkerForUi(text){
+  const source=String(text||"");
+  if(!source.startsWith(ASSISTANT_TUI_PROGRESS_MARKER))return source;
+  return source.slice(ASSISTANT_TUI_PROGRESS_MARKER.length).replace(/^\r?\n/,"");
+}
+function messageIsAssistantTuiProgressForUi(message){
+  return Boolean(
+    message
+    &&typeof message==="object"
+    &&message.role==="assistant"
+    &&String(message.content||"").startsWith(ASSISTANT_TUI_PROGRESS_MARKER)
+  );
+}
+function tuiCompactForUi(value,max=72){
+  return t1(String(value||"").replace(/\s+/g," ").trim(),max);
+}
+function tuiShortPathForUi(value,max=64){
+  const raw=String(value||"").replace(/\s+/g," ").trim();
+  if(!raw||raw.length<=max)return raw;
+  const parts=raw.split(/[\\/]+/).filter(Boolean);
+  if(parts.length>=2){
+    const tail=parts.slice(-2).join("\\");
+    const drive=/^[A-Za-z]:/.test(parts[0])?`${parts[0]}\\`:"";
+    const candidate=`${drive}...\\${tail}`;
+    if(candidate.length<=max)return candidate;
+  }
+  return `...${raw.slice(Math.max(0,raw.length-max+3))}`;
+}
+function tuiElapsedForUi(startedAt,now=Date.now()){
+  const start=Number.isFinite(Number(startedAt))?Number(startedAt):now;
+  const elapsed=Math.max(0,Math.trunc((Number(now)-start)/1000));
+  const minutes=String(Math.floor(elapsed/60)).padStart(2,"0");
+  const seconds=String(elapsed%60).padStart(2,"0");
+  return `${minutes}:${seconds}`;
+}
+function assistantTuiPhaseForUi(phase){
+  const normalized=lowerText(phase);
+  if(normalized==="submitted")return{label:"submitted",detail:"/api/exec accepted the handoff; waiting for stream open"};
+  if(normalized==="streaming")return{label:"responding",detail:"NDJSON stream is open; first answer text is still pending"};
+  if(normalized==="activity")return{label:"working",detail:"runtime activity arrived before answer text"};
+  if(normalized==="retry")return{label:"retrying",detail:"submit retry is scheduled; the request stays attached to this chat"};
+  if(normalized==="recovery")return{label:"recovering",detail:"stream dropped; checking persisted turn state"};
+  if(normalized==="error")return{label:"checking",detail:"runtime error is being converted into a readable terminal state"};
+  return{label:"preparing",detail:"local request is registered; packaging context for dispatch"};
+}
+function buildAssistantTuiProgressForUi({
+  phase="preparing",
+  prompt="",
+  imageCount=0,
+  agent="",
+  model="",
+  reasoning="",
+  cwd="",
+  requestId="",
+  idempotencyKey="",
+  startedAt=Date.now(),
+  now=Date.now(),
+  event="",
+}={}){
+  const phaseInfo=assistantTuiPhaseForUi(phase);
+  const modelLine=tuiCompactForUi([model,reasoning].filter(Boolean).join(" / ")||"runtime default",56);
+  const promptLine=tuiCompactForUi(prompt,imageCount>0?62:78)||`${imageCount||0} attached image${imageCount===1?"":"s"}`;
+  const rows=[
+    "codex@harnesui:~$ exec --chat active",
+    `status   ${phaseInfo.label}`,
+    `elapsed  ${tuiElapsedForUi(startedAt,now)}`,
+    `agent    ${tuiCompactForUi(agent||DEFAULT_AGENT_NAME,32)}`,
+    `model    ${modelLine}`,
+    `cwd      ${tuiShortPathForUi(cwd,64)||"(workspace unset)"}`,
+    `prompt   ${promptLine}`,
+  ];
+  if(imageCount>0)rows.push(`images   ${imageCount} attached`);
+  if(requestId)rows.push(`request  ${tuiCompactForUi(requestId,44)}`);
+  if(idempotencyKey)rows.push(`turnkey  ${tuiCompactForUi(idempotencyKey,44)}`);
+  rows.push(
+    "",
+    "events",
+    "  [ok] request captured in chat",
+    "  [ok] runtime handoff prepared",
+    `  [..] ${tuiCompactForUi(event||phaseInfo.detail,88)}`,
+    "  [ ] final answer"
+  );
+  return `${ASSISTANT_TUI_PROGRESS_MARKER}\n${rows.join("\n")}`;
+}
 function renderMessageContentForUi(element,text){
   if(!element)return;
   element.textContent="";
-  const source=String(text||"");
+  const source=stripAssistantTuiProgressMarkerForUi(String(text||""));
   if(!source)return;
   const pattern=/\[([^\]]+)\]\(([^)\s]+)\)/g;
   let lastIndex=0;
@@ -5875,7 +5960,9 @@ function renderTimeline(){
   stack.className="timeline-stack";
   conversation.messages.forEach((m)=>{
     const f=e.messageTemplate.content.cloneNode(true);
-    f.querySelector(".message").classList.add(m.role);
+    const messageEl=f.querySelector(".message");
+    messageEl.classList.add(m.role);
+    if(typeof messageIsAssistantTuiProgressForUi==="function"&&messageIsAssistantTuiProgressForUi(m))messageEl.classList.add("tui-progress");
     f.querySelector(".meta").textContent=`${m.title} ${m.time}`;
     renderMessageContentForUi(f.querySelector(".content"),m.content||"");
     stack.appendChild(f);
@@ -8033,7 +8120,40 @@ async function runPrompt(raw,cid=s.active,options={}){
     releaseLocalSubmit();
     return;
   }
-  madd(out,`[waiting] Standard Codex: ON${imagePayloads.length?` (${imagePayloads.length} images attached)`:""}\n`);
+  const tuiProgress={
+    prompt,
+    imageCount:imagePayloads.length,
+    agent:runAgent,
+    model:"",
+    reasoning:"",
+    cwd:"",
+    requestId:rid,
+    idempotencyKey:"",
+    startedAt:Date.now(),
+    phase:"preparing",
+    event:"local request registered; preparing runtime handoff",
+  };
+  let tuiProgressActive=true;
+  let tuiProgressTimer=null;
+  const updateAssistantTuiProgress=(phase=tuiProgress.phase,event=tuiProgress.event,{force=false}={})=>{
+    if(!tuiProgressActive)return;
+    tuiProgress.phase=phase||tuiProgress.phase;
+    tuiProgress.event=event||tuiProgress.event;
+    const current=mget(out);
+    if(!force&&current&&!current.startsWith(ASSISTANT_TUI_PROGRESS_MARKER))return;
+    mset(out,buildAssistantTuiProgressForUi({...tuiProgress,now:Date.now()}));
+  };
+  const stopAssistantTuiProgress=()=>{
+    tuiProgressActive=false;
+    if(tuiProgressTimer!==null){
+      clearInterval(tuiProgressTimer);
+      tuiProgressTimer=null;
+    }
+  };
+  updateAssistantTuiProgress("preparing","local request registered; preparing runtime handoff",{force:true});
+  if(typeof setInterval==="function"){
+    tuiProgressTimer=setInterval(()=>updateAssistantTuiProgress(),1000);
+  }
   if(localSubmitRegistered){
     const submitMeta=s.req.get(rid);
     if(submitMeta&&typeof submitMeta==="object")submitMeta.phase="submitted";
@@ -8052,6 +8172,9 @@ async function runPrompt(raw,cid=s.active,options={}){
       scopedSettings.modelReasoningEffort,
       runtimeDefaultExecModelReasoningEffort()
     );
+    tuiProgress.model=selectedModel;
+    tuiProgress.reasoning=selectedModelReasoningEffort;
+    tuiProgress.cwd=scopedSettings.workspacePath||selectedCwd();
     const requestPayload={
       prompt,
       sandboxMode:selectedSandbox,
@@ -8064,7 +8187,7 @@ async function runPrompt(raw,cid=s.active,options={}){
       modelReasoningEffort:selectedModelReasoningEffort,
       agentName:runAgent,
       forceNewSession:shouldForceNewSession,
-      cwd:scopedSettings.workspacePath||selectedCwd(),
+      cwd:tuiProgress.cwd,
       executionProfile:String(scopedSettings.executionProfile||"custom"),
       executionIntent:"web-ui-interactive",
       executionSource:"web_ui",
@@ -8072,6 +8195,8 @@ async function runPrompt(raw,cid=s.active,options={}){
     if(imagePayloads.length)requestPayload.images=imagePayloads;
     idempotencyKey=createExecIdempotencyKey();
     requestPayload.idempotencyKey=idempotencyKey;
+    tuiProgress.idempotencyKey=idempotencyKey;
+    updateAssistantTuiProgress("submitted","/api/exec request is being submitted");
     const r=await submitExecRequestWithRetry({payload:requestPayload,signal:ctl.signal,out,chatRecord:c});
     c.forceNewSession=false;
     scheduleSaveChatState();
@@ -8079,17 +8204,17 @@ async function runPrompt(raw,cid=s.active,options={}){
     hset(c,"running");
     hpush(c,"stream/open","NDJSON stream connected","running");
     renderHarness();
-    mset(out,"");
+    updateAssistantTuiProgress("streaming","NDJSON stream connected; waiting for first answer text");
     const reader=r.body.getReader();
     streamOpened=true;
     const decoder=new TextDecoder();
     let buf="";
-    const apply=ev=>{if(!ev||typeof ev!=="object"||typeof ev.type!=="string")return false;if(ev.type==="delta"){if(typeof ev.text==="string"&&ev.text)madd(out,ev.text);return true}if(ev.type==="final"){mset(out,typeof ev.text==="string"?ev.text:"");finalApplied=true;return true}if(ev.type==="error"){const t=typeof ev.text==="string"?ev.text:"";if(t){if(shouldRenderTerminalErrorInTranscript(t,{finalApplied}))mset(out,t);ttype="failed";tdetail=t1(t,120);hset(c,"failed");hpush(c,"stream/error",tdetail,"failed");renderHarness()}return true}if(ev.type==="status"){const st=String(ev.status||"");if(st==="failed"){ttype="failed";if(tdetail==="completed")tdetail="status=failed"}else if(st==="interrupted"){ttype="aborted";tdetail="status=interrupted"}else if(st==="needs_input"){ttype="needs_input";if(tdetail==="completed"||!tdetail)tdetail="status=needs_input"}hset(c,st||"completed");renderHarness();return true}if(["turn","item","activity","plan","tokenUsage","diff"].includes(ev.type)){happly(c,ev);renderHarness();return true}return false};
+    const apply=ev=>{if(!ev||typeof ev!=="object"||typeof ev.type!=="string")return false;if(ev.type==="delta"){if(typeof ev.text==="string"&&ev.text){if(mget(out).startsWith(ASSISTANT_TUI_PROGRESS_MARKER))mset(out,"");stopAssistantTuiProgress();madd(out,ev.text)}return true}if(ev.type==="final"){stopAssistantTuiProgress();mset(out,typeof ev.text==="string"?ev.text:"");finalApplied=true;return true}if(ev.type==="error"){const t=typeof ev.text==="string"?ev.text:"";if(t){stopAssistantTuiProgress();if(shouldRenderTerminalErrorInTranscript(t,{finalApplied}))mset(out,t);ttype="failed";tdetail=t1(t,120);hset(c,"failed");hpush(c,"stream/error",tdetail,"failed");renderHarness()}return true}if(ev.type==="status"){const st=String(ev.status||"");if(st==="failed"){ttype="failed";if(tdetail==="completed")tdetail="status=failed"}else if(st==="interrupted"){ttype="aborted";tdetail="status=interrupted"}else if(st==="needs_input"){ttype="needs_input";if(tdetail==="completed"||!tdetail)tdetail="status=needs_input"}hset(c,st||"completed");renderHarness();return true}if(["turn","item","activity","plan","tokenUsage","diff"].includes(ev.type)){updateAssistantTuiProgress("activity",`${ev.type}${ev.label?`: ${ev.label}`:""}${ev.detail?` / ${ev.detail}`:""}`);happly(c,ev);renderHarness();return true}return false};
     const onLine=line=>{const t=String(line||"").trim();if(!t)return;try{const p=JSON.parse(t);if(apply(p))return}catch(_e){}madd(out,line.endsWith("\n")?line:`${line}\n`)};
     const flush=(chunk,force=false)=>{if(chunk)buf+=chunk;while(true){const i=buf.indexOf("\n");if(i<0)break;const line=buf.slice(0,i);buf=buf.slice(i+1);onLine(line)}if(force&&buf.length){onLine(buf);buf=""}};
     while(true){const{value,done}=await reader.read();if(done)break;flush(decoder.decode(value,{stream:true}))}
     flush(decoder.decode(),true)
-  }catch(err){if(err&&err.name==="AbortError"){ttype="aborted";tdetail="user interrupted";madd(out,"\n[user interrupted]\n");hset(c,"interrupted");hpush(c,"turn/interrupt","user interrupt","failed");renderHarness();return}const surfacedError=err&&err.cause?err.cause:err;if(streamOpened&&idempotencyKey&&isTransientExecStreamError(surfacedError)){let recovery=null;try{recovery=await recoverExecStreamAfterDisconnect({idempotencyKey,signal:ctl.signal,out,chatRecord:c})}catch{}if(recovery&&recovery.handled){ttype=recovery.terminal==="completed"?"completed":"failed";tdetail=recovery.detail||`${ttype==="completed"?"completed":"failed"} after stream recovery`;if(typeof recovery.text==="string"&&(recovery.text||ttype!=="completed"))mset(out,recovery.text);hset(c,ttype==="completed"?"completed":"failed");hpush(c,"stream/recovered",t1(tdetail,180),ttype==="completed"?"info":"failed");renderHarness();return}}const workspaceGuardError=workspaceGuardErrorInfoForUi(surfacedError);if(workspaceGuardError.handled){ttype=workspaceGuardError.status||"needs_input";tdetail=workspaceGuardError.detail;mset(out,`[needs_input] ${workspaceGuardError.inlineMessage}`);hset(c,"needs_input");hpush(c,"turn/needs_input",t1(workspaceGuardError.detail,180),"info");setWorkspaceGuardNotice(workspaceGuardError.notice,{tone:workspaceGuardError.tone||"warning"});renderHarness();return}ttype="failed";tdetail=err&&err.message?err.message:"runtime error";mset(out,`[error] ${formatExecSubmitError(surfacedError)}`);hset(c,"failed");hpush(c,"turn/error",t1(tdetail,180),"failed");renderHarness();throw err}finally{const reqMeta=s.req.get(rid);s.req.delete(rid);syncRuntimePendingMonitor();if(ttype==="completed")hset(c,"completed");else if(ttype==="failed")hset(c,"failed");else if(ttype==="aborted")hset(c,"interrupted");else if(ttype==="needs_input")hset(c,"needs_input");hpush(c,"turn/end",t1(tdetail,180),ttype==="failed"?"failed":"info");s.last={type:ttype,detail:tdetail,at:Date.now(),agent:runAgent,chat:c.title,cid:c.id};trace(ttype,runAgent,tdetail,c.id);if(reqMeta&&reqMeta.notifyOnTerminal)void playNotificationTone(ttype);refresh();if(s.req.size===0){try{await loadRuntime()}catch(_e){e.connectionState.textContent="未接続";e.connectionState.classList.remove("connected");e.connectionState.classList.add("disconnected")}}scheduleSaveChatState();updateSearchDiag()}
+  }catch(err){if(err&&err.name==="AbortError"){stopAssistantTuiProgress();ttype="aborted";tdetail="user interrupted";madd(out,"\n[user interrupted]\n");hset(c,"interrupted");hpush(c,"turn/interrupt","user interrupt","failed");renderHarness();return}const surfacedError=err&&err.cause?err.cause:err;if(streamOpened&&idempotencyKey&&isTransientExecStreamError(surfacedError)){updateAssistantTuiProgress("recovery","stream disconnected; checking persisted turn state");let recovery=null;try{recovery=await recoverExecStreamAfterDisconnect({idempotencyKey,signal:ctl.signal,out,chatRecord:c})}catch{}if(recovery&&recovery.handled){stopAssistantTuiProgress();ttype=recovery.terminal==="completed"?"completed":"failed";tdetail=recovery.detail||`${ttype==="completed"?"completed":"failed"} after stream recovery`;if(typeof recovery.text==="string"&&(recovery.text||ttype!=="completed"))mset(out,recovery.text);hset(c,ttype==="completed"?"completed":"failed");hpush(c,"stream/recovered",t1(tdetail,180),ttype==="completed"?"info":"failed");renderHarness();return}}const workspaceGuardError=workspaceGuardErrorInfoForUi(surfacedError);if(workspaceGuardError.handled){stopAssistantTuiProgress();ttype=workspaceGuardError.status||"needs_input";tdetail=workspaceGuardError.detail;mset(out,`[needs_input] ${workspaceGuardError.inlineMessage}`);hset(c,"needs_input");hpush(c,"turn/needs_input",t1(workspaceGuardError.detail,180),"info");setWorkspaceGuardNotice(workspaceGuardError.notice,{tone:workspaceGuardError.tone||"warning"});renderHarness();return}stopAssistantTuiProgress();ttype="failed";tdetail=err&&err.message?err.message:"runtime error";mset(out,`[error] ${formatExecSubmitError(surfacedError)}`);hset(c,"failed");hpush(c,"turn/error",t1(tdetail,180),"failed");renderHarness();throw err}finally{stopAssistantTuiProgress();const reqMeta=s.req.get(rid);s.req.delete(rid);syncRuntimePendingMonitor();if(ttype==="completed")hset(c,"completed");else if(ttype==="failed")hset(c,"failed");else if(ttype==="aborted")hset(c,"interrupted");else if(ttype==="needs_input")hset(c,"needs_input");hpush(c,"turn/end",t1(tdetail,180),ttype==="failed"?"failed":"info");s.last={type:ttype,detail:tdetail,at:Date.now(),agent:runAgent,chat:c.title,cid:c.id};trace(ttype,runAgent,tdetail,c.id);if(reqMeta&&reqMeta.notifyOnTerminal)void playNotificationTone(ttype);refresh();if(s.req.size===0){try{await loadRuntime()}catch(_e){e.connectionState.textContent="未接続";e.connectionState.classList.remove("connected");e.connectionState.classList.add("disconnected")}}scheduleSaveChatState();updateSearchDiag()}
 }
 function renderCommands(q=""){e.commandGrid.innerHTML="";const qq=q.trim().toLowerCase();const list=COMMANDS.filter(c=>!qq||c.toLowerCase().includes(qq));if(!list.length){e.commandGrid.innerHTML='<article class="command-empty">No matching commands.</article>';return}list.forEach(cmd=>{const f=e.commandTemplate.content.cloneNode(true);f.querySelector(".command-text").textContent=cmd;const b=f.querySelector(".command-badge");b.textContent="local";b.classList.add("local");f.querySelector(".command-desc").textContent="Quick insert/run command.";f.querySelector(".insert-btn").onclick=()=>{const cur=e.promptInput.value,p=cur&&!cur.endsWith("\n")?"\n":"";e.promptInput.value=`${cur}${p}${cmd} `;syncPromptInputHeight();e.promptInput.focus()};f.querySelector(".run-btn").onclick=async()=>{e.promptInput.value=cmd;syncPromptInputHeight();await runPrompt(e.promptInput.value,s.active).catch(er=>msg(s.active,"system","System",formatRunPromptFailureMessage(er)))};e.commandGrid.appendChild(f)})}
 function clearChat(){const c=active();if(!c)return;c.messages=[];c.h=createHarnessState();c.perf=createPerformanceState();c.forceNewSession=true;c.draftPrompt="";dropChatDraftAttachmentsForUi(c);if(e.promptInput)e.promptInput.value="";syncPromptInputHeight({resetToBase:true});s.trace=s.trace.filter((item)=>item&&item.cid!==c.id);if(s.last&&s.last.cid===c.id)s.last=null;scheduleSaveChatState();refresh()}

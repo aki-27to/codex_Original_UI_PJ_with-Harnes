@@ -716,9 +716,47 @@ textarea:focus { border-color: rgba(45, 108, 223, 0.44); box-shadow: 0 0 0 4px r
 }
 
 .message .meta { padding: 12px 14px 6px; font-size: 11px; font-weight: 700; color: var(--text-faint); }
-.message .content { margin: 0; padding: 0 14px 14px; white-space: pre-wrap; word-break: break-word; line-height: 1.65; color: var(--text); font: inherit; }
+.message .content { margin: 0; padding: 0 14px 14px; white-space: pre-wrap; overflow-wrap: anywhere; word-break: break-word; line-height: 1.65; color: var(--text); font: inherit; }
 .message.user { margin-left: auto; border-color: rgba(45, 108, 223, 0.2); background: rgba(236, 244, 255, 0.94); }
-.message.assistant { border-color: rgba(20, 158, 103, 0.18); background: rgba(244, 250, 247, 0.96); }
+.message.assistant {
+  border-color: rgba(47, 114, 93, 0.32);
+  background: #10211d;
+  box-shadow: inset 0 0 0 1px rgba(142, 221, 174, 0.08);
+}
+.message.assistant .meta {
+  color: rgba(219, 246, 232, 0.62);
+}
+.message.assistant .content {
+  padding: 4px 14px 16px;
+  color: #dff7e8;
+  font-family: ui-monospace, SFMono-Regular, Consolas, "Liberation Mono", Menlo, monospace;
+  font-size: 12px;
+  line-height: 1.55;
+  letter-spacing: 0;
+  text-shadow: 0 0 14px rgba(129, 219, 166, 0.16);
+}
+.message.assistant:not(.tui-progress) .content::before {
+  content: "codex@harnesui:~$ cat response.log";
+  display: block;
+  margin-bottom: 10px;
+  color: #8eddad;
+}
+.message.assistant.tui-progress {
+  border-color: rgba(47, 114, 93, 0.32);
+  background: #10211d;
+}
+.message.assistant.tui-progress .meta {
+  color: rgba(219, 246, 232, 0.62);
+}
+.message.assistant.tui-progress .content {
+  padding: 4px 14px 16px;
+  color: #dff7e8;
+  font-family: ui-monospace, SFMono-Regular, Consolas, "Liberation Mono", Menlo, monospace;
+  font-size: 12px;
+  line-height: 1.55;
+  letter-spacing: 0;
+  text-shadow: 0 0 14px rgba(129, 219, 166, 0.16);
+}
 .message.system { border-color: rgba(165, 121, 24, 0.18); background: rgba(252, 248, 239, 0.94); }
 
 .message-ref-chip { display: inline-flex; align-items: center; gap: 6px; margin: 0 2px; padding: 1px 8px; border-radius: 999px; border: 1px solid rgba(101, 112, 100, 0.18); background: rgba(255, 255, 255, 0.9); color: var(--text); vertical-align: baseline; }
@@ -726,6 +764,20 @@ textarea:focus { border-color: rgba(45, 108, 223, 0.44); box-shadow: 0 0 0 4px r
 .message-ref-name { font-weight: 700; }
 .message-ref-link { color: #1f4a7d; text-decoration: none; border-bottom: 1px dotted rgba(31, 74, 125, 0.4); }
 .message-ref-link:hover { color: #16375e; border-bottom-color: rgba(22, 55, 94, 0.7); }
+.message.assistant .message-ref-chip,
+.message.assistant .message-ref-chip.file {
+  border-color: rgba(142, 221, 173, 0.34);
+  background: rgba(19, 47, 39, 0.92);
+  color: #e7fff0;
+}
+.message.assistant .message-ref-link {
+  color: #9fd7ff;
+  border-bottom-color: rgba(159, 215, 255, 0.44);
+}
+.message.assistant .message-ref-link:hover {
+  color: #c8e9ff;
+  border-bottom-color: rgba(200, 233, 255, 0.72);
+}
 
 .message-stitch-card { margin-top: 10px; padding: 12px; border-radius: 14px; border: 1px solid rgba(45, 108, 223, 0.18); background: rgba(238, 244, 255, 0.86); display: grid; gap: 8px; }
 .message-stitch-head { display: flex; align-items: center; gap: 8px; }
