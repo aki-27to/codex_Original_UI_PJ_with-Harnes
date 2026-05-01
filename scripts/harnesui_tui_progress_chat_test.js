@@ -9,6 +9,15 @@ const root = path.join(__dirname, "..");
 const appSource = fs.readFileSync(path.join(root, "web", "01.HarnesUI", "app.js"), "utf8");
 const stylesSource = fs.readFileSync(path.join(root, "web", "01.HarnesUI", "styles.css"), "utf8");
 
+function cssBlock(selector) {
+  const start = stylesSource.indexOf(`${selector} {`);
+  assert(start >= 0, `${selector} block must exist`);
+  const open = stylesSource.indexOf("{", start);
+  const close = stylesSource.indexOf("}", open);
+  assert(open >= 0 && close > open, `${selector} block must be closed`);
+  return stylesSource.slice(open + 1, close);
+}
+
 function run() {
   assert(
     /const\s+ASSISTANT_TUI_PROGRESS_MARKER="\[harnesui-tui-progress\]";/.test(appSource),
@@ -48,11 +57,24 @@ function run() {
       && /background:\s*#10211d/.test(stylesSource),
     "assistant TUI progress rows must have terminal-like styling"
   );
+  const answerContentBlock = cssBlock(".message.assistant .content");
+  const answerPromptBlock = cssBlock(".message.assistant:not(.tui-progress) .content::before");
+  const tuiProgressContentBlock = cssBlock(".message.assistant.tui-progress .content");
   assert(
-    /\.message\.assistant\s*\{[\s\S]*background:\s*#10211d/.test(stylesSource)
-      && /\.message\.assistant\s+\.content\s*\{[\s\S]*font-family:\s*ui-monospace/.test(stylesSource)
-      && /\.message\.assistant:not\(\.tui-progress\)\s+\.content::before\s*\{[\s\S]*codex@harnesui:~\$ cat response\.log/.test(stylesSource),
-    "normal assistant answer rows must also render as terminal-like output"
+    /font:\s*inherit/.test(answerContentBlock)
+      && !/font-family:\s*ui-monospace/.test(answerContentBlock)
+      && /line-height:\s*1\.65/.test(answerContentBlock),
+    "normal assistant answer bodies must use readable UI text typography"
+  );
+  assert(
+    /codex@harnesui:~\$ cat response\.log/.test(answerPromptBlock)
+      && /font-family:\s*ui-monospace/.test(answerPromptBlock),
+    "normal assistant answer prompt line may stay terminal-like without changing body typography"
+  );
+  assert(
+    /font-family:\s*ui-monospace/.test(tuiProgressContentBlock)
+      && /line-height:\s*1\.55/.test(tuiProgressContentBlock),
+    "assistant TUI progress content must keep terminal typography"
   );
 }
 

@@ -727,19 +727,23 @@ textarea:focus { border-color: rgba(45, 108, 223, 0.44); box-shadow: 0 0 0 4px r
   color: rgba(219, 246, 232, 0.62);
 }
 .message.assistant .content {
-  padding: 4px 14px 16px;
-  color: #dff7e8;
-  font-family: ui-monospace, SFMono-Regular, Consolas, "Liberation Mono", Menlo, monospace;
-  font-size: 12px;
-  line-height: 1.55;
+  padding: 6px 14px 16px;
+  color: #e9f8ee;
+  font: inherit;
+  line-height: 1.65;
   letter-spacing: 0;
-  text-shadow: 0 0 14px rgba(129, 219, 166, 0.16);
+  text-shadow: none;
 }
 .message.assistant:not(.tui-progress) .content::before {
   content: "codex@harnesui:~$ cat response.log";
   display: block;
   margin-bottom: 10px;
   color: #8eddad;
+  font-family: ui-monospace, SFMono-Regular, Consolas, "Liberation Mono", Menlo, monospace;
+  font-size: 12px;
+  line-height: 1.55;
+  letter-spacing: 0;
+  text-shadow: 0 0 14px rgba(129, 219, 166, 0.16);
 }
 .message.assistant.tui-progress {
   border-color: rgba(47, 114, 93, 0.32);

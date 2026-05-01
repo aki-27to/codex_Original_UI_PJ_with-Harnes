@@ -79,7 +79,7 @@ async function run() {
           messages: [
             { id: "m-1-visual", role: "user", title: "You", time: now, content: "Make the assistant response look like terminal output." },
             { id: "m-2-visual", role: "assistant", title: "Codex", time: now, content: tuiContent },
-            { id: "m-3-visual", role: "assistant", title: "Codex", time: now, content: "Updated HarnesUI so normal assistant answers use a TUI-style output panel, not only the temporary progress row." },
+            { id: "m-3-visual", role: "assistant", title: "Codex", time: now, content: "直近の修正内容を端的に整理します。進捗ログは端末風のままですが、この最終回答本文は通常の本文フォントで読ませます。" },
           ],
         },
       ],
@@ -109,8 +109,10 @@ async function run() {
         answerFound: Boolean(answerRow && answerContent),
         answerText: answerContent ? answerContent.textContent : "",
         answerFontFamily: answerStyle ? answerStyle.fontFamily : "",
+        answerLineHeight: answerStyle ? answerStyle.lineHeight : "",
         answerBackground: answerRowStyle ? answerRowStyle.backgroundColor : "",
         answerPrompt: answerBeforeStyle ? answerBeforeStyle.content : "",
+        answerPromptFontFamily: answerBeforeStyle ? answerBeforeStyle.fontFamily : "",
       };
     });
     if (!result.found) throw new Error("TUI progress message was not rendered");
@@ -119,10 +121,12 @@ async function run() {
     if (!/mono|consolas|menlo|liberation/i.test(result.fontFamily)) throw new Error(`TUI font is not monospace: ${result.fontFamily}`);
     if (!/rgb\(16,\s*33,\s*29\)/.test(result.background)) throw new Error(`TUI background is not the expected dark terminal color: ${result.background}`);
     if (!result.answerFound) throw new Error("Normal assistant answer was not rendered");
-    if (!result.answerText.includes("normal assistant answers use a TUI-style output panel")) throw new Error("Normal assistant answer text missing");
-    if (!/mono|consolas|menlo|liberation/i.test(result.answerFontFamily)) throw new Error(`Normal assistant answer font is not monospace: ${result.answerFontFamily}`);
+    if (!result.answerText.includes("直近の修正内容を端的に整理します")) throw new Error("Normal assistant answer text missing");
+    if (/mono|consolas|menlo|liberation/i.test(result.answerFontFamily)) throw new Error(`Normal assistant answer body should not use monospace: ${result.answerFontFamily}`);
+    if (!/normal|[0-9.]+px/i.test(result.answerLineHeight)) throw new Error(`Normal assistant answer line height missing: ${result.answerLineHeight}`);
     if (!/rgb\(16,\s*33,\s*29\)/.test(result.answerBackground)) throw new Error(`Normal assistant answer background is not the expected dark terminal color: ${result.answerBackground}`);
     if (!/codex@harnesui:~\$ cat response\.log/.test(result.answerPrompt)) throw new Error(`Normal assistant answer terminal prompt missing: ${result.answerPrompt}`);
+    if (!/mono|consolas|menlo|liberation/i.test(result.answerPromptFontFamily)) throw new Error(`Normal assistant answer prompt should stay monospace: ${result.answerPromptFontFamily}`);
     fs.mkdirSync(outputDir, { recursive: true });
     await page.screenshot({ path: outputPath, fullPage: true });
     console.log(`PASS harnesui_tui_progress_visual_check ${path.relative(root, outputPath)}`);
