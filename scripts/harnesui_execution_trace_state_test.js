@@ -134,8 +134,8 @@ function run() {
       pendingCount: 0,
       lastTrace: null,
     }),
-    "再送可能",
-    "needs_input rows should render resend-ready status text"
+    "返信で続行",
+    "needs_input rows should render reply-to-continue status text"
   );
 
   const synthesized = synthesizeTraceRowsForUi(

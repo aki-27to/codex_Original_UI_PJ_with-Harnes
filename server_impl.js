@@ -1540,7 +1540,7 @@ function classifyExecutionMistake(record){
     return{
       code:"contract.needs_input",
       severity:"medium",
-      hint:"Collect the missing approval or user decision before continuing.",
+      hint:"This is waiting on user input, not a failed turn; collect the missing information, approval, or decision and continue from the current turn.",
     };
   }
   if(taskOutcomeStatus==="BLOCKED"){
@@ -9430,7 +9430,7 @@ function rewriteClientFinalTextForOutcome(text,{taskOutcomeStatus="",prompt=""}=
     outcome==="FAILED_VALIDATION"
       ?"Validation evidence is still required."
       :outcome==="NEEDS_INPUT"
-        ?"One confirmation is needed before the next step."
+        ?"This is waiting on user input, not a failed turn. Reply with the missing information, approval, or decision to continue."
         :outcome==="PARTIAL"
           ?"The current scope is partially done."
           :"The current scope is still open.";
@@ -10449,7 +10449,7 @@ async function executeTurnStreaming(res,prompt,agentName,options){
     });
     if(planningNeedsInput&&finalStatus==="completed"){
       finalStatus="interrupted";
-      if(!finalErrorText)finalErrorText="[needs_input] user decision required before implementation";
+      if(!finalErrorText)finalErrorText="[needs_input] waiting on user input; reply with the missing information, approval, or decision to continue";
       safeWriteEvent({
         type:"activity",
         label:"planning_needs_input",

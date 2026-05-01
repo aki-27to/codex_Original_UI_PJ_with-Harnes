@@ -28,8 +28,16 @@ function run() {
     "server should surface NEEDS_INPUT turns to the client as needs_input status"
   );
   assert(
-    /One confirmation is needed before the next step\./.test(serverSource),
-    "server should soften needs_input leads into actionable confirmation wording"
+    /This is waiting on user input, not a failed turn\. Reply with the missing information, approval, or decision to continue\./.test(serverSource),
+    "server should soften needs_input leads into actionable input-wait wording"
+  );
+  assert(
+    /not a failed turn; collect the missing information, approval, or decision and continue from the current turn/.test(serverSource),
+    "server logs/recovery hints should classify NEEDS_INPUT as input-wait rather than failure"
+  );
+  assert(
+    /waiting on user input; reply with the missing information, approval, or decision to continue/.test(serverSource),
+    "server activity details should tell the user that replying continues the turn"
   );
   assert(
     !/User input is still required\./.test(serverSource),
@@ -46,11 +54,15 @@ function run() {
   );
   assert(
     !/未完了タスク:/.test(appSource),
-    "operator UI should avoid the blunt 未完了タスク label"
+    "operator UI should avoid blunt unfinished-task labels"
   );
   assert(
-    /進行状況:/.test(appSource),
-    "operator UI should replace incomplete labels with neutral progress wording"
+    /失敗ではありません。必要な情報や判断を返信すると、この作業を続きから再開できます。/.test(appSource),
+    "operator UI should explain that NEEDS_INPUT is a reply-to-continue input-wait state"
+  );
+  assert(
+    /返信で続行/.test(appSource),
+    "operator UI should expose a concise reply-to-continue label for NEEDS_INPUT"
   );
 }
 

@@ -267,13 +267,13 @@ function run() {
   );
   assert.strictEqual(
     pendingProjectionLabelForUi(needsInputProjection, { scope: "pill" }),
-    "再送可能",
-    "needs_input chats should present a resend-available label instead of an input-wait headline"
+    "返信で続行",
+    "needs_input chats should present a reply-to-continue label instead of a failure headline"
   );
   assert.match(
     pendingProjectionDetailForUi(needsInputProjection),
-    /Codex は返却済みです/,
-    "needs_input detail should explain that Codex has already returned"
+    /失敗ではありません.*続きから再開できます/,
+    "needs_input detail should explain that the turn is waiting for user input, not failed"
   );
 
   chatRecord.h.status = "running";

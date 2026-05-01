@@ -1962,7 +1962,7 @@ function buildPhaseSummariesForUi({flowItems,requirementSnapshot,displayedPlan,e
     :currentStatus==="failed"||currentStatus==="interrupted"
       ?`ship 前に停止 / ${verdict&&verdict.label?verdict.label:"FAIL"}`
       :currentStatus==="needs_input"
-        ?"ship 保留 / Codex返却済み・要補足"
+        ?"ship 保留 / ユーザー入力待ち・返信で続行"
         :"policy patch / replay 待ち";
   return toArr(flowItems).reduce((acc,phase)=>{
     if(!phase||!phase.id)return acc;
@@ -2135,7 +2135,7 @@ function pendingProjectionForChatForUi(chatRecord,runtime=s.runtime){
 function pendingProjectionLabelForUi(projection,{scope="chat"}={}){
   const current=projection&&typeof projection==="object"?projection:{count:0,source:"idle"};
   const count=Math.max(0,Math.trunc(Number(current.count)||0));
-  if(current.source==="needs_input")return scope==="pill"?"再送可能":"Codex返却済み";
+  if(current.source==="needs_input")return scope==="pill"?"返信で続行":"ユーザー入力待ち";
   if(count<=0)return scope==="pill"?"待機なし":"待機中";
   if(current.source==="syncing"||current.source==="local")return scope==="pill"?"送信済み":"runtime反映待ち";
   if(current.source==="server"||current.source==="server_syncing")return `server実行中 ${count}`;
@@ -2143,7 +2143,7 @@ function pendingProjectionLabelForUi(projection,{scope="chat"}={}){
 }
 function pendingProjectionDetailForUi(projection){
   const current=projection&&typeof projection==="object"?projection:{count:0,source:"idle",runtimeCount:0,localCount:0,awaitingServerCount:0};
-  if(current.source==="needs_input")return"Codex は返却済みです。必要なら内容を補足して再送できます。";
+  if(current.source==="needs_input")return"失敗ではありません。必要な情報や判断を返信すると、この作業を続きから再開できます。";
   if(current.count<=0)return"";
   if(current.source==="syncing"||current.source==="local")return`request cache ${current.awaitingServerCount||current.localCount} 件 / server runtime 反映待ち`;
   if(current.source==="server_syncing")return`server runtime ${current.runtimeCount} 件 / 追加送信 ${Math.max(0,current.awaitingServerCount-current.runtimeCount)} 件は反映待ち`;
@@ -4543,7 +4543,7 @@ function harnessEventHeadlineForUi(event){
   if(label==="stream/error")return"応答ストリームの乱れを整理しています";
   if(label==="stream/recovered")return"応答ストリームを復旧しました";
   if(label==="turn/error")return"実行エラーの原因を整理しています";
-  if(label==="turn/needs_input")return"Codex は返却済みです。必要なら補足して再送できます";
+  if(label==="turn/needs_input")return"失敗ではありません。必要な情報や判断を返信すると、この作業を続きから再開できます";
   if(label==="activity")return t1(String(event.d||""),88);
   return t1(requirementTextLabelForUi(String(event.l||"")),88);
 }
@@ -5375,7 +5375,7 @@ function evaluateHarnessVerdict(h,mode=activeHarnessCheckMode()){
     return{label:"FAIL",tone:"failed",detail:`Terminal status is ${status}.`};
   }
   if(status==="needs_input"){
-    return{label:"READY",tone:"completed",detail:"Codex は返却済みです。必要なら補足して再送できます。"};
+    return{label:"READY",tone:"completed",detail:"失敗ではありません。必要な情報や判断を返信すると、この作業を続きから再開できます。"};
   }
   if(checkMode===HARNESS_CHECK_MODES.STRICT||checkMode===HARNESS_CHECK_MODES.ADAPTIVE){
     const modeName=checkMode===HARNESS_CHECK_MODES.STRICT?"Strict":"Adaptive";
@@ -5562,8 +5562,8 @@ function userFacingWorkflowTerminalOverrideForUi(workflowState,{terminalStatus="
 function harnessStopReasonSummaryForUi({status="",currentPending=0,requirementGateBlocked=false,requirementSnapshot=null,lastResultType=""}={}){
   if(status==="needs_input"){
     return{
-      label:"再送可能",
-      detail:"Codex は返却済みです。必要なら補足して再送できます。",
+      label:"入力待ち",
+      detail:"失敗ではありません。必要な情報や判断を返信すると、この作業を続きから再開できます。",
       tone:"idle",
     };
   }
@@ -5605,7 +5605,7 @@ function harnessStopReasonSummaryForUi({status="",currentPending=0,requirementGa
   }
   return{
     label:"なし",
-    detail:"止まっていません。Codex 返却後はそのまま再送できます。",
+    detail:"失敗ではありません。返信すると続きから再開できます。",
     tone:"idle",
   };
 }
@@ -5834,7 +5834,7 @@ function renderTimeline(){
   const currentPending=pendingProjection.count;
   if(e.conversationSummary){
     if(pendingProjection.source==="needs_input"){
-      e.conversationSummary.textContent="Codex は返却済みです。必要なら内容を補足してそのまま再送できます。";
+      e.conversationSummary.textContent="失敗ではありません。必要な情報や判断を返信すると、この作業を続きから再開できます。";
     }else if(currentPending>0){
       e.conversationSummary.textContent=(pendingProjection.source==="syncing"||pendingProjection.source==="local")
         ?"送信済みです。server runtime に反映されるまで、この欄は進行表示を短く保ちます。"
@@ -6449,7 +6449,7 @@ function renderHarness(){
     highlights.push(`ブロッカー: ${failedEvent.l}${failedEvent.d?` / ${failedEvent.d}`:""}`);
   }
   if(status==="needs_input"){
-    highlights.push("再送可能: Codex は返却済みです。必要なら補足して再送できます。");
+    highlights.push("入力待ち: 失敗ではありません。返信すると続きから再開できます。");
   }
   if(Number(evidence.tasksTotal)>0&&Number(evidence.tasksDone)<Number(evidence.tasksTotal)){
     highlights.push(`進行状況: ${Number(evidence.tasksDone)||0}/${Number(evidence.tasksTotal)||0}`);
@@ -6489,7 +6489,7 @@ function traceEventLabelForUi(type){
   if(normalized==="turn/end")return"実行終了";
   if(normalized==="turn/interrupt")return"中断要求";
   if(normalized==="turn/error")return"実行失敗";
-  if(normalized==="turn/needs_input"||normalized==="needs_input")return"要補足";
+  if(normalized==="turn/needs_input"||normalized==="needs_input")return"入力待ち";
   if(normalized==="stream/open")return"stream開始";
   if(normalized==="stream/error")return"stream失敗";
   if(normalized==="stream/recovered")return"stream復旧";
@@ -6518,7 +6518,7 @@ function executionTraceBucketForUi({row=null,pendingCount=0,lastTrace=null}={}){
 }
 function executionTraceStatusTextForUi({bucket,row=null,pendingCount=0,lastTrace=null}={}){
   const status=lowerText(row&&row.status);
-  if(status.includes("needs_input")||status.includes("input"))return"再送可能";
+  if(status.includes("needs_input")||status.includes("input"))return"返信で続行";
   if(bucket==="running"){
     if(status.includes("spawn"))return"初期化中";
     return pendingCount>1?`実行中 (${pendingCount})`:"実行中";
@@ -6528,7 +6528,7 @@ function executionTraceStatusTextForUi({bucket,row=null,pendingCount=0,lastTrace
     return"完了";
   }
   if(bucket==="failed"){
-    if(status.includes("needs_input")||status.includes("input"))return"要補足";
+    if(status.includes("needs_input")||status.includes("input"))return"入力待ち";
     if((lastTrace&&lastTrace.type==="aborted")||status.includes("interrupt")||status.includes("abort")||status.includes("cancel"))return"中断";
     return"失敗";
   }
@@ -6746,13 +6746,13 @@ function live(){
     const phase=livePhasePartsForUi();
     const holdAt=runtimeTurnCompletedAtForUi(currentRuntimeTurn)||runtimeTurnStartedAtForUi(currentRuntimeTurn)||Date.now();
     e.liveStatus.className="live-status completed";
-    e.liveStatusLabel.textContent=phase.stage==="要補足"?"再送可能":(phase.stage||"再送可能");
+    e.liveStatusLabel.textContent="返信で続行";
     e.liveStatusElapsed.textContent=el(Date.now()-holdAt);
     e.liveStatusDetail.textContent=[
-      "Codex返却済み",
+      "失敗ではありません",
       typeof pendingProjectionDetailForUi==="function"?pendingProjectionDetailForUi(pendingProjection):"",
       phase.work?`現在: ${phase.work}`:"",
-      "状態: 要補足",
+      "状態: ユーザー入力待ち",
       currentChat&&currentChat.agent?`担当: ${operatorFacingAgentLabelForUi(currentChat.agent)}`:"",
     ].filter(Boolean).join(" / ");
     if(codexVersion)e.liveStatusDetail.textContent=`${e.liveStatusDetail.textContent} / ${codexVersion}`;
@@ -6850,7 +6850,7 @@ function pending(){
   if(e.stopBtn)e.stopBtn.title=stopAvailability.title||"";
   if(e.sendBtn)e.sendBtn.disabled=!c||sendBlocked;
   if(e.deleteChatBtn)e.deleteChatBtn.disabled=!c;
-  if(c&&pendingProjection.source==="needs_input")e.pendingState.textContent="再送可能: Codex 返却後に内容を補足して送信できます";
+  if(c&&pendingProjection.source==="needs_input")e.pendingState.textContent="返信で続行: 失敗ではありません。必要な情報や判断を入力して送信できます";
   else if(!hasPending)e.pendingState.textContent="待機なし";
   else if(currentPending>0)e.pendingState.textContent=(pendingProjection.source==="syncing"||pendingProjection.source==="local")
     ?`送信済み: runtime反映待ち ${currentPending} / 全体 ${totalPending}`
@@ -6864,7 +6864,7 @@ function pending(){
     const agentLabel=operatorFacingAgentLabelForUi(c.agent);
     const statusLabel=typeof pendingProjectionLabelForUi==="function"
       ?pendingProjectionLabelForUi(pendingProjection,{scope:"pill"})
-      :(currentPending>0?`実行中 ${currentPending}`:(pendingProjection.source==="needs_input"?"再送可能":""));
+      :(currentPending>0?`実行中 ${currentPending}`:(pendingProjection.source==="needs_input"?"返信で続行":""));
     e.agentState.textContent=`チャット: ${c.title}${statusLabel?` / 状態: ${statusLabel}`:""} / エージェント: ${agentLabel}`;
   }
   renderOperatorSnapshotForUi();

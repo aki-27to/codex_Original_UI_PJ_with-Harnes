@@ -19,7 +19,7 @@ function run(){
   const helper=loadShouldRenderTerminalErrorInTranscript();
   assert.strictEqual(helper("",{}),false,"empty terminal errors should not render");
   assert.strictEqual(helper("[error] runtime failure",{finalApplied:false}),true,"pre-final terminal errors should still render");
-  assert.strictEqual(helper("[needs_input] user decision required before implementation",{finalApplied:true}),false,"post-final internal terminal errors should stay out of the transcript");
+  assert.strictEqual(helper("[needs_input] waiting on user input; reply with the missing information, approval, or decision to continue",{finalApplied:true}),false,"post-final internal terminal errors should stay out of the transcript");
   console.log("[harnesui-terminal-error-surface-test] PASS");
   console.log("PASS");
 }
