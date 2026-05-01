@@ -1,7 +1,7 @@
 @echo off
 setlocal
 if "%CODEX_PAUSE_ON_EXIT%"=="" set "CODEX_PAUSE_ON_EXIT=1"
-if "%CODEX_REQUIRE_ADMIN%"=="" set "CODEX_REQUIRE_ADMIN=0"
+if "%CODEX_REQUIRE_ADMIN%"=="" set "CODEX_REQUIRE_ADMIN=1"
 
 set "CODEX_LAUNCH_FILE=%~f0"
 set "CODEX_LAUNCH_DIR=%~dp0"

@@ -11,10 +11,10 @@ function main() {
   const launcher = fs.readFileSync(launcherPath, "utf8");
 
   assert(/^@echo off\r?\nsetlocal\r?\nif "%CODEX_PAUSE_ON_EXIT%"=="" set "CODEX_PAUSE_ON_EXIT=1"/.test(launcher), "launcher must default CODEX_PAUSE_ON_EXIT before early-exit checks");
-  assert(/if "%CODEX_REQUIRE_ADMIN%"=="" set "CODEX_REQUIRE_ADMIN=0"/.test(launcher), "launcher must default admin elevation off");
+  assert(/if "%CODEX_REQUIRE_ADMIN%"=="" set "CODEX_REQUIRE_ADMIN=1"/.test(launcher), "launcher must default admin elevation on for the desktop launcher");
   assert(/set "CODEX_LAUNCH_FILE=%~f0"/.test(launcher), "launcher must always expose its own path for reuse/stale-runtime probes");
   assert(/set "CODEX_LAUNCH_DIR=%~dp0"/.test(launcher), "launcher must always expose its working directory for reuse/stale-runtime probes");
-  assert(/if \/I "%CODEX_REQUIRE_ADMIN%"=="1" \(/.test(launcher), "launcher must gate self-elevation behind an explicit opt-in");
+  assert(/if \/I "%CODEX_REQUIRE_ADMIN%"=="1" \(/.test(launcher), "launcher must route admin requirements through the self-elevation gate");
   assert(/set "LAUNCHER_AUTO_OPEN_BROWSER=%CODEX_AUTO_OPEN_BROWSER%"/.test(launcher), "launcher must snapshot browser auto-open ownership before starting server.js");
   assert(/if "%CODEX_AUTO_OPEN_BROWSER%"=="" set "CODEX_AUTO_OPEN_BROWSER=1"/.test(launcher), "launcher must default browser auto-open on for the desktop launcher");
   assert(/if "%CODEX_RESTART_EXISTING_HARNESS%"=="" set "CODEX_RESTART_EXISTING_HARNESS=0"/.test(launcher), "launcher must default restart-existing-harness behavior off");
@@ -50,7 +50,7 @@ function main() {
   assert(/Start-Sleep -Milliseconds \(\[Math\]::Max\(250,\[int\]\$env:CODEX_SERVER_RESTART_DELAY_MS\)\)/.test(launcher), "launcher must wait before restarting after an unexpected exit");
   assert(/goto launcher_server_run/.test(launcher), "launcher must loop back into the server run label after a crash");
   assert(/if not "%LAUNCHER_AUTO_OPEN_BROWSER%"=="0" \(/.test(launcher), "launcher must use the launcher-owned browser auto-open gate");
-  assert(/if "%CODEX_PAUSE_ON_EXIT%"=="1" pause/.test(launcher), "launcher must honor CODEX_PAUSE_ON_EXIT on early dependency failures and opt-in elevation failures");
+  assert(/if "%CODEX_PAUSE_ON_EXIT%"=="1" pause/.test(launcher), "launcher must honor CODEX_PAUSE_ON_EXIT on early dependency failures and elevation failures");
 
   process.stdout.write("PASS start_codex_ui_launcher_policy_test\n");
 }
