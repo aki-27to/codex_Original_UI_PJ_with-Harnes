@@ -1,6 +1,6 @@
 {
   "schema": "self-improvement-state.v1",
-  "generatedAt": "2026-05-01T13:13:13.915Z",
+  "generatedAt": "2026-05-01T19:46:48.503Z",
   "sourceName": "Anthropic Engineering",
   "sourceTier": "secondary",
   "promotionMode": "machine_guarded_autonomy",
@@ -24,7 +24,7 @@
   "awaitingReinforcementCount": 0,
   "policyDisabledCandidateCount": 0,
   "proposalOnlyCount": 2,
-  "blockedCount": 2,
+  "blockedCount": 4,
   "failedCaseIds": [],
   "promotionPolicyPath": "scripts/config/self_improvement_promotion_policy.json",
   "statePath": "output/anthropic_engineering_self_improvement_state.json",
@@ -95,6 +95,56 @@
       "blastRadius": "medium",
       "priorityScore": 33,
       "reinforcement": null
+    },
+    {
+      "changeId": "building-effective-agents-frontend-quality",
+      "proposalId": "anthropic-engineering-building-effective-agents-self-improvement",
+      "articleId": "building-effective-agents",
+      "title": "Building Effective AI Agents",
+      "changeType": "frontend_quality_note",
+      "readinessStatus": "blocked",
+      "gatingReason": "blocked_target",
+      "nextAction": "Leave this target outside self-improvement auto-promotion.",
+      "blastRadius": "low",
+      "priorityScore": 22,
+      "reinforcement": {
+        "successCount": 0,
+        "failureCount": 0,
+        "observedCount": 0,
+        "successRate": 0,
+        "requiredSuccesses": 2,
+        "requiredSuccessRate": 0.67,
+        "remainingSuccesses": 2,
+        "lastObservedAt": "",
+        "lastOutcome": "",
+        "status": "unobserved",
+        "sampleTurnIds": []
+      }
+    },
+    {
+      "changeId": "code-execution-with-mcp-frontend-quality",
+      "proposalId": "anthropic-engineering-code-execution-with-mcp-self-improvement",
+      "articleId": "code-execution-with-mcp",
+      "title": "Code execution with MCP: building more efficient AI agents",
+      "changeType": "frontend_quality_note",
+      "readinessStatus": "blocked",
+      "gatingReason": "blocked_target",
+      "nextAction": "Leave this target outside self-improvement auto-promotion.",
+      "blastRadius": "low",
+      "priorityScore": 22,
+      "reinforcement": {
+        "successCount": 0,
+        "failureCount": 0,
+        "observedCount": 0,
+        "successRate": 0,
+        "requiredSuccesses": 2,
+        "requiredSuccessRate": 0.67,
+        "remainingSuccesses": 2,
+        "lastObservedAt": "",
+        "lastOutcome": "",
+        "status": "unobserved",
+        "sampleTurnIds": []
+      }
     },
     {
       "changeId": "harness-design-long-running-apps-frontend-quality",
@@ -179,6 +229,22 @@
       "changeClass": "skill_surface_policy",
       "target": "docs/AGENT_SKILL_MATRIX.md",
       "decision": "shadow_candidate"
+    },
+    {
+      "proposalId": "anthropic-engineering-building-effective-agents-self-improvement",
+      "articleId": "building-effective-agents",
+      "title": "Building Effective AI Agents",
+      "changeClass": "planner_strategy",
+      "target": "scripts/lib/planning_mode_policy.js",
+      "decision": "blocked"
+    },
+    {
+      "proposalId": "anthropic-engineering-code-execution-with-mcp-self-improvement",
+      "articleId": "code-execution-with-mcp",
+      "title": "Code execution with MCP: building more efficient AI agents",
+      "changeClass": "planner_strategy",
+      "target": "scripts/lib/planning_mode_policy.js",
+      "decision": "blocked"
     }
   ]
 }

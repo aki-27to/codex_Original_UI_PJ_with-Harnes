@@ -1,0 +1,85 @@
+{
+  "schema": "self-improvement-proposal.v1",
+  "proposalId": "anthropic-engineering-building-effective-agents-self-improvement",
+  "createdAt": "2026-05-01T19:46:29.517Z",
+  "sourceLane": "Anthropic Engineering",
+  "sourceTier": "secondary",
+  "articleId": "building-effective-agents",
+  "title": "Building Effective AI Agents",
+  "sourceUrl": "https://www.anthropic.com/engineering/building-effective-agents",
+  "relevance": "high",
+  "portability": "portable",
+  "changeClass": "planner_strategy",
+  "target": "scripts/lib/planning_mode_policy.js",
+  "objective": "Propose governed planning strategy improvements based on Building Effective AI Agents.",
+  "evidence": {
+    "summary": "We've worked with dozens of teams building LLM agents across industries. Consistently, the most successful implementations use simple, composable patterns rather than complex frameworks.",
+    "guidance": [
+      "In this post, we share what we’ve learned from working with our customers and building agents ourselves, and give practical advice for developers on building effective agents.",
+      "Agents , on the other hand, are systems where LLMs dynamically direct their own processes and tool usage, maintaining control over how they accomplish tasks.",
+      "Strands Agents SDK by AWS ;",
+      "Over the past year, we've worked with dozens of teams building large language model (LLM) agents across industries.",
+      "Section focus: Building blocks, workflows, and agents",
+      "Workflows are systems where LLMs and tools are orchestrated through predefined code paths."
+    ],
+    "topicTags": [
+      "agents",
+      "codex",
+      "context",
+      "evals",
+      "frontend"
+    ],
+    "articleProposalId": "anthropic-engineering-building-effective-agents"
+  },
+  "candidateChange": {
+    "frontendQualityNote": {
+      "noteId": "building-effective-agents-frontend-quality",
+      "appliesToAgents": [
+        "default",
+        "frontend_worker"
+      ],
+      "appliesToTaskFamilies": [
+        "web_creative"
+      ],
+      "topics": [
+        "agents",
+        "codex",
+        "context",
+        "evals"
+      ],
+      "lexicalTriggers": [
+        "workflow",
+        "planner",
+        "generator",
+        "evaluator"
+      ],
+      "preferredArticleIds": [
+        "building-effective-agents"
+      ],
+      "qualityAxes": [
+        "frontend_quality"
+      ],
+      "guidance": [
+        "In this post, we share what we’ve learned from working with our customers and building agents ourselves, and give practical advice for developers on building effective agents.",
+        "Agents , on the other hand, are systems where LLMs dynamically direct their own processes and tool usage, maintaining control over how they accomplish tasks.",
+        "Strands Agents SDK by AWS ;"
+      ]
+    }
+  },
+  "promotion": {
+    "decision": "blocked",
+    "rationale": "boundary_blocked",
+    "riskFlags": [
+      "constitutional_or_frozen_boundary"
+    ]
+  },
+  "gate": {
+    "required": false,
+    "status": "not_applicable",
+    "caseIds": [
+      "web_creative_benchmark",
+      "frontend_context_iteration",
+      "backend_non_targeted"
+    ]
+  }
+}
