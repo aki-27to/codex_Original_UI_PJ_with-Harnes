@@ -1348,6 +1348,16 @@ textarea { min-height: 96px; resize: vertical; line-height: 1.6; }
 .btn.primary { background: linear-gradient(180deg, #3e84ff 0%, #2d6cdf 100%); }
 .btn.danger { background: linear-gradient(180deg, #c46277 0%, #b24d62 100%); }
 .btn.mini { padding: 7px 10px; font-size: 12px; }
+.btn.secondary.composer-preset[aria-pressed="true"] {
+  background: linear-gradient(180deg, #2f7f73 0%, #25685f 100%);
+  border-color: rgba(37, 104, 95, 0.72);
+  color: #fff;
+  box-shadow: 0 8px 18px rgba(37, 104, 95, 0.18);
+}
+.btn.secondary.composer-preset[aria-pressed="true"]:hover:not(:disabled) {
+  background: linear-gradient(180deg, #348c7e 0%, #2b7469 100%);
+  box-shadow: 0 10px 22px rgba(37, 104, 95, 0.22);
+}
 button:disabled { opacity: 0.56; cursor: not-allowed; box-shadow: none; }
 .compat-hidden { display: none !important; }
 

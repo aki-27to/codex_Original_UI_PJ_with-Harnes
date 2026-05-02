@@ -27,6 +27,7 @@ const ALLOWED_APPROVAL_POLICIES=new Set(["untrusted","on-request","never"]);
 const ALLOWED_SANDBOX_MODES=new Set(["read-only","workspace-write","danger-full-access"]);
 const ALLOWED_WEB_SEARCH_MODES=new Set(["disabled","cached","live"]);
 const COMMANDS=["/help","/goal","/goal clear","/goal pause","/goal resume","/goal complete","/status","/diff","/resume --last","/fork","/fast status","/agent list"];
+const GOAL_COMPOSER_PRESET="/goal ";
 const DEFAULT_AGENT_NAME="default";
 const DEFAULT_EXEC_MODEL="gpt-5.5";
 const DEFAULT_EXEC_MODEL_REASONING_EFFORT="xhigh";
@@ -55,7 +56,7 @@ const EXEC_STREAM_RECOVERY_STATUS_WAIT_MS=2000;
 const EXEC_STREAM_RECOVERY_MAX_POLLS=6;
 const RUNTIME_PENDING_SYNC_MS=5000;
 const RUNTIME_PENDING_ORPHAN_GRACE_MS=EXEC_STREAM_RECOVERY_RUNTIME_WAIT_MS+EXEC_STREAM_RECOVERY_POLL_MS;
-const APP_BUNDLE_VERSION="2026-05-01-admin-launcher-no-release-panel-v1";
+const APP_BUNDLE_VERSION="2026-05-02-goal-toggle-v1";
 const COMPOSER_STICKY_MIN_VIEWPORT_HEIGHT=640;
 const UI_RELOAD_CACHE_PARAM="ui_reload";
 const TIMELINE_AUTO_SCROLL_BOTTOM_THRESHOLD_PX=48;
@@ -4469,6 +4470,7 @@ function renderMissionSupportUi(){
   renderComposerRuntimeStrip();
   renderFocusPanel();
   renderOperatorSnapshotForUi();
+  syncGoalComposerPresetStateForUi();
 }
 function missionDraftCardElementForUi(){
   return document.querySelector(".mission-draft-card");
@@ -8347,8 +8349,80 @@ async function runPrompt(raw,cid=s.active,options={}){
     throw err
   }finally{stopAssistantTuiProgress();const reqMeta=s.req.get(rid);s.req.delete(rid);syncRuntimePendingMonitor();if(ttype==="completed")hset(c,"completed");else if(ttype==="failed")hset(c,"failed");else if(ttype==="aborted")hset(c,"interrupted");else if(ttype==="needs_input")hset(c,"needs_input");hpush(c,"turn/end",t1(tdetail,180),ttype==="failed"?"failed":"info");s.last={type:ttype,detail:tdetail,at:Date.now(),agent:runAgent,chat:c.title,cid:c.id};trace(ttype,runAgent,tdetail,c.id);if(reqMeta&&reqMeta.notifyOnTerminal)void playNotificationTone(ttype);refresh();if(s.req.size===0){try{await loadRuntime()}catch(_e){e.connectionState.textContent="未接続";e.connectionState.classList.remove("connected");e.connectionState.classList.add("disconnected")}}scheduleSaveChatState();updateSearchDiag()}
 }
+function isGoalComposerPresetButtonForUi(btn){
+  return Boolean(btn&&typeof btn.getAttribute==="function"&&btn.getAttribute("data-compose-preset")===GOAL_COMPOSER_PRESET);
+}
+function promptHasGoalComposerPrefixForUi(value){
+  return /^\s*\/goal(?:\s|$)/i.test(String(value||""));
+}
+function addGoalComposerPrefixForUi(value){
+  const text=String(value||"");
+  if(promptHasGoalComposerPrefixForUi(text))return text;
+  return text?`${GOAL_COMPOSER_PRESET}${text}`:GOAL_COMPOSER_PRESET;
+}
+function removeGoalComposerPrefixForUi(value){
+  return String(value||"").replace(/^\s*\/goal(?:\s+|$)/i,"");
+}
+function syncGoalComposerPresetStateForUi(){
+  const value=e.promptInput&&typeof e.promptInput.value==="string"?e.promptInput.value:"";
+  const active=promptHasGoalComposerPrefixForUi(value);
+  document.querySelectorAll("[data-compose-preset]").forEach((btn)=>{
+    if(!isGoalComposerPresetButtonForUi(btn))return;
+    btn.classList.toggle("active",active);
+    btn.setAttribute("aria-pressed",active?"true":"false");
+    btn.dataset.state=active?"on":"off";
+  });
+}
+function applyComposerPresetButtonForUi(btn){
+  if(!e.promptInput)return;
+  if(isGoalComposerPresetButtonForUi(btn)){
+    const value=e.promptInput.value;
+    e.promptInput.value=promptHasGoalComposerPrefixForUi(value)
+      ?removeGoalComposerPrefixForUi(value)
+      :addGoalComposerPrefixForUi(value);
+  }else{
+    e.promptInput.value=btn.getAttribute("data-compose-preset")||"";
+  }
+  syncPromptInputHeight();
+  syncActiveChatScopedStateFromUi();
+  renderMissionSupportUi();
+  scrollElementIntoViewForUi(e.promptInput,{focus:true});
+}
 function commandPaletteCopyForUi(cmd){const text=String(cmd||"");if(text.startsWith("/goal"))return{badge:"codex",desc:"Codex goal を設定・確認します。未対応runtimeではHarnesUI goalに保存します。"};if(text.startsWith("/status"))return{badge:"codex",desc:"現在の session 設定を表示します。"};if(text.startsWith("/diff"))return{badge:"codex",desc:"現在の git diff summary を表示します。"};if(text.startsWith("/resume"))return{badge:"codex",desc:"Codex session resume を設定します。"};if(text.startsWith("/fork"))return{badge:"codex",desc:"現在の session を引き継ぐ agent fork を作ります。"};if(text.startsWith("/fast"))return{badge:"codex",desc:"Fast mode の状態を確認・変更します。"};if(text.startsWith("/agent"))return{badge:"local",desc:"HarnesUI の agent 選択を操作します。"};return{badge:"slash",desc:"Slash command を実行します。"}}
-function renderCommands(q=""){e.commandGrid.innerHTML="";const qq=q.trim().toLowerCase();const list=COMMANDS.filter(c=>!qq||c.toLowerCase().includes(qq));if(!list.length){e.commandGrid.innerHTML='<article class="command-empty">No matching commands.</article>';return}list.forEach(cmd=>{const f=e.commandTemplate.content.cloneNode(true);f.querySelector(".command-text").textContent=cmd;const copy=commandPaletteCopyForUi(cmd);const b=f.querySelector(".command-badge");b.textContent=copy.badge;b.classList.add(copy.badge);f.querySelector(".command-desc").textContent=copy.desc;f.querySelector(".insert-btn").onclick=()=>{const cur=e.promptInput.value,p=cur&&!cur.endsWith("\n")?"\n":"";e.promptInput.value=`${cur}${p}${cmd} `;syncPromptInputHeight();e.promptInput.focus()};f.querySelector(".run-btn").onclick=async()=>{e.promptInput.value=cmd;syncPromptInputHeight();await runPrompt(e.promptInput.value,s.active).catch(er=>msg(s.active,"system","System",formatRunPromptFailureMessage(er)))};e.commandGrid.appendChild(f)})}
+function renderCommands(q=""){
+  e.commandGrid.innerHTML="";
+  const qq=q.trim().toLowerCase();
+  const list=COMMANDS.filter(c=>!qq||c.toLowerCase().includes(qq));
+  if(!list.length){
+    e.commandGrid.innerHTML='<article class="command-empty">No matching commands.</article>';
+    return;
+  }
+  list.forEach(cmd=>{
+    const f=e.commandTemplate.content.cloneNode(true);
+    f.querySelector(".command-text").textContent=cmd;
+    const copy=commandPaletteCopyForUi(cmd);
+    const b=f.querySelector(".command-badge");
+    b.textContent=copy.badge;
+    b.classList.add(copy.badge);
+    f.querySelector(".command-desc").textContent=copy.desc;
+    f.querySelector(".insert-btn").onclick=()=>{
+      const cur=e.promptInput.value,p=cur&&!cur.endsWith("\n")?"\n":"";
+      e.promptInput.value=`${cur}${p}${cmd} `;
+      syncPromptInputHeight();
+      syncActiveChatScopedStateFromUi();
+      renderMissionSupportUi();
+      e.promptInput.focus();
+    };
+    f.querySelector(".run-btn").onclick=async()=>{
+      e.promptInput.value=cmd;
+      syncPromptInputHeight();
+      syncActiveChatScopedStateFromUi();
+      renderMissionSupportUi();
+      await runPrompt(e.promptInput.value,s.active).catch(er=>msg(s.active,"system","System",formatRunPromptFailureMessage(er)));
+    };
+    e.commandGrid.appendChild(f);
+  });
+}
 function clearChat(){const c=active();if(!c)return;c.messages=[];c.h=createHarnessState();c.perf=createPerformanceState();c.forceNewSession=true;c.draftPrompt="";dropChatDraftAttachmentsForUi(c);if(e.promptInput)e.promptInput.value="";syncPromptInputHeight({resetToBase:true});s.trace=s.trace.filter((item)=>item&&item.cid!==c.id);if(s.last&&s.last.cid===c.id)s.last=null;scheduleSaveChatState();refresh()}
 function deleteChat(chatId=s.active){
   const target=chat(chatId);
@@ -8510,12 +8584,7 @@ function bind(){
     e.promptInput.addEventListener("input",()=>{syncPromptInputHeight();syncActiveChatScopedStateFromUi();renderMissionSupportUi();});
     e.promptInput.addEventListener("paste",handlePromptPaste);
   }
-  document.querySelectorAll("[data-compose-preset]").forEach((btn)=>btn.onclick=()=>{
-    e.promptInput.value=btn.getAttribute("data-compose-preset")||"";
-    syncPromptInputHeight();
-    renderMissionSupportUi();
-    scrollElementIntoViewForUi(e.promptInput,{focus:true});
-  });
+  document.querySelectorAll("[data-compose-preset]").forEach((btn)=>btn.onclick=()=>applyComposerPresetButtonForUi(btn));
   document.querySelectorAll("[data-preset]").forEach(btn=>btn.onclick=()=>{e.promptInput.value=btn.getAttribute("data-preset")||"";syncPromptInputHeight();renderMissionSupportUi();e.sendBtn.click()});
   if(e.operatorDetailFold)e.operatorDetailFold.addEventListener("toggle",()=>{
     if(e.operatorDetailFold.dataset.syncing==="true")return;
