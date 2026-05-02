@@ -8138,6 +8138,7 @@ async function runPrompt(raw,cid=s.active,options={}){
   if(c.id===s.active){
     e.promptInput.value="";
     syncPromptInputHeight({resetToBase:true});
+    syncGoalComposerPresetStateForUi();
     if(imagePayloads.length)clearAttachment();
   }
   const out=msg(c.id,"assistant","Codex","");

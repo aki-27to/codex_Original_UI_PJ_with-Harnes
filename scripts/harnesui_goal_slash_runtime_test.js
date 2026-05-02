@@ -93,6 +93,7 @@ async function main() {
     const objective = "UI slash goal runtime objective";
     await expectSlashOutput(harness, `/goal ${objective}`, ["Codex goal: active", `Objective: ${objective}`]);
     await expectSlashOutput(harness, "/goal", ["Codex goal: active", `Objective: ${objective}`]);
+    await expectSlashOutput(harness, "/goal status", ["Codex goal: active", `Objective: ${objective}`]);
     await expectSlashOutput(harness, "/goal pause", ["Codex goal: paused", `Objective: ${objective}`]);
     await expectSlashOutput(harness, "/goal resume", ["Codex goal: active", `Objective: ${objective}`]);
     await expectSlashOutput(harness, "/goal complete", ["Codex goal: complete", `Objective: ${objective}`]);
