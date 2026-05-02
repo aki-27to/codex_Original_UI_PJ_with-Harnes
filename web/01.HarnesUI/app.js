@@ -8184,6 +8184,14 @@ async function runPrompt(raw,cid=s.active,options={}){
   }
   trace("dispatch",runAgent,dispatchDetail||"(empty)",c.id);
   let ttype="completed",tdetail="completed",finalApplied=false;
+  let answerOut=null;
+  const progressOutStillActive=()=>mget(out).startsWith(ASSISTANT_TUI_PROGRESS_MARKER);
+  const answerTranscriptOut=()=>{
+    if(!progressOutStillActive())return out;
+    if(answerOut)return answerOut;
+    answerOut=msg(c.id,"assistant","Codex","");
+    return answerOut||out;
+  };
   let streamOpened=false;
   let idempotencyKey="";
   try{
@@ -8233,12 +8241,111 @@ async function runPrompt(raw,cid=s.active,options={}){
     streamOpened=true;
     const decoder=new TextDecoder();
     let buf="";
-    const apply=ev=>{if(!ev||typeof ev!=="object"||typeof ev.type!=="string")return false;if(ev.type==="delta"){if(typeof ev.text==="string"&&ev.text){if(mget(out).startsWith(ASSISTANT_TUI_PROGRESS_MARKER))mset(out,"");stopAssistantTuiProgress();madd(out,ev.text)}return true}if(ev.type==="final"){stopAssistantTuiProgress();mset(out,typeof ev.text==="string"?ev.text:"");finalApplied=true;return true}if(ev.type==="error"){const t=typeof ev.text==="string"?ev.text:"";if(t){stopAssistantTuiProgress();if(shouldRenderTerminalErrorInTranscript(t,{finalApplied}))mset(out,t);ttype="failed";tdetail=t1(t,120);hset(c,"failed");hpush(c,"stream/error",tdetail,"failed");renderHarness()}return true}if(ev.type==="status"){const st=String(ev.status||"");if(st==="failed"){ttype="failed";if(tdetail==="completed")tdetail="status=failed"}else if(st==="interrupted"){ttype="aborted";tdetail="status=interrupted"}else if(st==="needs_input"){ttype="needs_input";if(tdetail==="completed"||!tdetail)tdetail="status=needs_input"}hset(c,st||"completed");renderHarness();return true}if(["turn","item","activity","plan","tokenUsage","diff"].includes(ev.type)){if(ev.type==="plan")tuiProgress.planSteps=Array.isArray(ev.steps)?ev.steps:[];happly(c,ev);updateAssistantTuiProgress("activity",`${ev.type}${ev.label?`: ${ev.label}`:""}${ev.detail?` / ${ev.detail}`:""}`);renderHarness();return true}return false};
-    const onLine=line=>{const t=String(line||"").trim();if(!t)return;try{const p=JSON.parse(t);if(apply(p))return}catch(_e){}madd(out,line.endsWith("\n")?line:`${line}\n`)};
+    const apply=ev=>{
+      if(!ev||typeof ev!=="object"||typeof ev.type!=="string")return false;
+      if(ev.type==="delta"){
+        if(typeof ev.text==="string"&&ev.text){
+          stopAssistantTuiProgress();
+          madd(answerTranscriptOut(),ev.text);
+        }
+        return true;
+      }
+      if(ev.type==="final"){
+        stopAssistantTuiProgress();
+        mset(answerTranscriptOut(),typeof ev.text==="string"?ev.text:"");
+        finalApplied=true;
+        return true;
+      }
+      if(ev.type==="error"){
+        const t=typeof ev.text==="string"?ev.text:"";
+        if(t){
+          stopAssistantTuiProgress();
+          if(shouldRenderTerminalErrorInTranscript(t,{finalApplied}))mset(answerTranscriptOut(),t);
+          ttype="failed";
+          tdetail=t1(t,120);
+          hset(c,"failed");
+          hpush(c,"stream/error",tdetail,"failed");
+          renderHarness();
+        }
+        return true;
+      }
+      if(ev.type==="status"){
+        const st=String(ev.status||"");
+        if(st==="failed"){
+          ttype="failed";
+          if(tdetail==="completed")tdetail="status=failed";
+        }else if(st==="interrupted"){
+          ttype="aborted";
+          tdetail="status=interrupted";
+        }else if(st==="needs_input"){
+          ttype="needs_input";
+          if(tdetail==="completed"||!tdetail)tdetail="status=needs_input";
+        }
+        hset(c,st||"completed");
+        renderHarness();
+        return true;
+      }
+      if(["turn","item","activity","plan","tokenUsage","diff"].includes(ev.type)){
+        if(ev.type==="plan")tuiProgress.planSteps=Array.isArray(ev.steps)?ev.steps:[];
+        happly(c,ev);
+        updateAssistantTuiProgress("activity",`${ev.type}${ev.label?`: ${ev.label}`:""}${ev.detail?` / ${ev.detail}`:""}`);
+        renderHarness();
+        return true;
+      }
+      return false;
+    };
+    const onLine=line=>{const t=String(line||"").trim();if(!t)return;try{const p=JSON.parse(t);if(apply(p))return}catch(_e){}madd(answerTranscriptOut(),line.endsWith("\n")?line:`${line}\n`)};
     const flush=(chunk,force=false)=>{if(chunk)buf+=chunk;while(true){const i=buf.indexOf("\n");if(i<0)break;const line=buf.slice(0,i);buf=buf.slice(i+1);onLine(line)}if(force&&buf.length){onLine(buf);buf=""}};
     while(true){const{value,done}=await reader.read();if(done)break;flush(decoder.decode(value,{stream:true}))}
     flush(decoder.decode(),true)
-  }catch(err){if(err&&err.name==="AbortError"){stopAssistantTuiProgress();ttype="aborted";tdetail="user interrupted";madd(out,"\n[user interrupted]\n");hset(c,"interrupted");hpush(c,"turn/interrupt","user interrupt","failed");renderHarness();return}const surfacedError=err&&err.cause?err.cause:err;if(streamOpened&&idempotencyKey&&isTransientExecStreamError(surfacedError)){updateAssistantTuiProgress("recovery","stream disconnected; checking persisted turn state");let recovery=null;try{recovery=await recoverExecStreamAfterDisconnect({idempotencyKey,signal:ctl.signal,out,chatRecord:c})}catch{}if(recovery&&recovery.handled){stopAssistantTuiProgress();ttype=recovery.terminal==="completed"?"completed":"failed";tdetail=recovery.detail||`${ttype==="completed"?"completed":"failed"} after stream recovery`;if(typeof recovery.text==="string"&&(recovery.text||ttype!=="completed"))mset(out,recovery.text);hset(c,ttype==="completed"?"completed":"failed");hpush(c,"stream/recovered",t1(tdetail,180),ttype==="completed"?"info":"failed");renderHarness();return}}const workspaceGuardError=workspaceGuardErrorInfoForUi(surfacedError);if(workspaceGuardError.handled){stopAssistantTuiProgress();ttype=workspaceGuardError.status||"needs_input";tdetail=workspaceGuardError.detail;mset(out,`[needs_input] ${workspaceGuardError.inlineMessage}`);hset(c,"needs_input");hpush(c,"turn/needs_input",t1(workspaceGuardError.detail,180),"info");setWorkspaceGuardNotice(workspaceGuardError.notice,{tone:workspaceGuardError.tone||"warning"});renderHarness();return}stopAssistantTuiProgress();ttype="failed";tdetail=err&&err.message?err.message:"runtime error";mset(out,`[error] ${formatExecSubmitError(surfacedError)}`);hset(c,"failed");hpush(c,"turn/error",t1(tdetail,180),"failed");renderHarness();throw err}finally{stopAssistantTuiProgress();const reqMeta=s.req.get(rid);s.req.delete(rid);syncRuntimePendingMonitor();if(ttype==="completed")hset(c,"completed");else if(ttype==="failed")hset(c,"failed");else if(ttype==="aborted")hset(c,"interrupted");else if(ttype==="needs_input")hset(c,"needs_input");hpush(c,"turn/end",t1(tdetail,180),ttype==="failed"?"failed":"info");s.last={type:ttype,detail:tdetail,at:Date.now(),agent:runAgent,chat:c.title,cid:c.id};trace(ttype,runAgent,tdetail,c.id);if(reqMeta&&reqMeta.notifyOnTerminal)void playNotificationTone(ttype);refresh();if(s.req.size===0){try{await loadRuntime()}catch(_e){e.connectionState.textContent="未接続";e.connectionState.classList.remove("connected");e.connectionState.classList.add("disconnected")}}scheduleSaveChatState();updateSearchDiag()}
+  }catch(err){
+    if(err&&err.name==="AbortError"){
+      stopAssistantTuiProgress();
+      ttype="aborted";
+      tdetail="user interrupted";
+      madd(answerTranscriptOut(),"\n[user interrupted]\n");
+      hset(c,"interrupted");
+      hpush(c,"turn/interrupt","user interrupt","failed");
+      renderHarness();
+      return;
+    }
+    const surfacedError=err&&err.cause?err.cause:err;
+    if(streamOpened&&idempotencyKey&&isTransientExecStreamError(surfacedError)){
+      updateAssistantTuiProgress("recovery","stream disconnected; checking persisted turn state");
+      let recovery=null;
+      try{recovery=await recoverExecStreamAfterDisconnect({idempotencyKey,signal:ctl.signal,out,chatRecord:c})}catch{}
+      if(recovery&&recovery.handled){
+        stopAssistantTuiProgress();
+        ttype=recovery.terminal==="completed"?"completed":"failed";
+        tdetail=recovery.detail||`${ttype==="completed"?"completed":"failed"} after stream recovery`;
+        if(typeof recovery.text==="string"&&(recovery.text||ttype!=="completed"))mset(answerTranscriptOut(),recovery.text);
+        hset(c,ttype==="completed"?"completed":"failed");
+        hpush(c,"stream/recovered",t1(tdetail,180),ttype==="completed"?"info":"failed");
+        renderHarness();
+        return;
+      }
+    }
+    const workspaceGuardError=workspaceGuardErrorInfoForUi(surfacedError);
+    if(workspaceGuardError.handled){
+      stopAssistantTuiProgress();
+      ttype=workspaceGuardError.status||"needs_input";
+      tdetail=workspaceGuardError.detail;
+      mset(answerTranscriptOut(),`[needs_input] ${workspaceGuardError.inlineMessage}`);
+      hset(c,"needs_input");
+      hpush(c,"turn/needs_input",t1(workspaceGuardError.detail,180),"info");
+      setWorkspaceGuardNotice(workspaceGuardError.notice,{tone:workspaceGuardError.tone||"warning"});
+      renderHarness();
+      return;
+    }
+    stopAssistantTuiProgress();
+    ttype="failed";
+    tdetail=err&&err.message?err.message:"runtime error";
+    mset(answerTranscriptOut(),`[error] ${formatExecSubmitError(surfacedError)}`);
+    hset(c,"failed");
+    hpush(c,"turn/error",t1(tdetail,180),"failed");
+    renderHarness();
+    throw err
+  }finally{stopAssistantTuiProgress();const reqMeta=s.req.get(rid);s.req.delete(rid);syncRuntimePendingMonitor();if(ttype==="completed")hset(c,"completed");else if(ttype==="failed")hset(c,"failed");else if(ttype==="aborted")hset(c,"interrupted");else if(ttype==="needs_input")hset(c,"needs_input");hpush(c,"turn/end",t1(tdetail,180),ttype==="failed"?"failed":"info");s.last={type:ttype,detail:tdetail,at:Date.now(),agent:runAgent,chat:c.title,cid:c.id};trace(ttype,runAgent,tdetail,c.id);if(reqMeta&&reqMeta.notifyOnTerminal)void playNotificationTone(ttype);refresh();if(s.req.size===0){try{await loadRuntime()}catch(_e){e.connectionState.textContent="未接続";e.connectionState.classList.remove("connected");e.connectionState.classList.add("disconnected")}}scheduleSaveChatState();updateSearchDiag()}
 }
 function commandPaletteCopyForUi(cmd){const text=String(cmd||"");if(text.startsWith("/goal"))return{badge:"codex",desc:"Codex goal を設定・確認します。未対応runtimeではHarnesUI goalに保存します。"};if(text.startsWith("/status"))return{badge:"codex",desc:"現在の session 設定を表示します。"};if(text.startsWith("/diff"))return{badge:"codex",desc:"現在の git diff summary を表示します。"};if(text.startsWith("/resume"))return{badge:"codex",desc:"Codex session resume を設定します。"};if(text.startsWith("/fork"))return{badge:"codex",desc:"現在の session を引き継ぐ agent fork を作ります。"};if(text.startsWith("/fast"))return{badge:"codex",desc:"Fast mode の状態を確認・変更します。"};if(text.startsWith("/agent"))return{badge:"local",desc:"HarnesUI の agent 選択を操作します。"};return{badge:"slash",desc:"Slash command を実行します。"}}
 function renderCommands(q=""){e.commandGrid.innerHTML="";const qq=q.trim().toLowerCase();const list=COMMANDS.filter(c=>!qq||c.toLowerCase().includes(qq));if(!list.length){e.commandGrid.innerHTML='<article class="command-empty">No matching commands.</article>';return}list.forEach(cmd=>{const f=e.commandTemplate.content.cloneNode(true);f.querySelector(".command-text").textContent=cmd;const copy=commandPaletteCopyForUi(cmd);const b=f.querySelector(".command-badge");b.textContent=copy.badge;b.classList.add(copy.badge);f.querySelector(".command-desc").textContent=copy.desc;f.querySelector(".insert-btn").onclick=()=>{const cur=e.promptInput.value,p=cur&&!cur.endsWith("\n")?"\n":"";e.promptInput.value=`${cur}${p}${cmd} `;syncPromptInputHeight();e.promptInput.focus()};f.querySelector(".run-btn").onclick=async()=>{e.promptInput.value=cmd;syncPromptInputHeight();await runPrompt(e.promptInput.value,s.active).catch(er=>msg(s.active,"system","System",formatRunPromptFailureMessage(er)))};e.commandGrid.appendChild(f)})}

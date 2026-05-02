@@ -211,6 +211,8 @@ function main() {
   assert.ok(!/TOPOGRAPHY_COLLAPSED_KEY|loadTopographyUiState|saveTopographyUiState|setTopographyCollapsed|agentTopographyToggleBtn/.test(appJs), "execution trace topography should not keep floating-panel collapse state");
   assert.ok(!/focusWorkspaceValue|focusSendValue|focusToTimelineBtn|focusToComposerBtn/.test(appJs), "app JS must not keep the removed right-rail card bindings");
   assertRegex(appJs, /data-compose-preset/, "app JS must bind composer preset shortcuts");
+  assertRegex(appJs, /function\s+applyComposerPresetButtonForUi\s*\(btn\)/, "app JS must route composer preset shortcuts through a state-aware handler");
+  assertRegex(appJs, /function\s+syncGoalComposerPresetStateForUi\s*\(\)[\s\S]*?aria-pressed/, "app JS must keep the /goal shortcut ON/OFF state accessible");
   assertRegex(appJs, /if\(e\.uiReloadBtn\)e\.uiReloadBtn\.onclick=\(\)=>reloadUiShellForUi\(\);/, "UI reload button must be wired to a full shell reload");
   assertRegex(appJs, /timeline-empty-state/, "app JS must render the conversation empty state");
   assertRegex(appJs, /function\s+saveSettings\s*\(\)\s*\{[\s\S]*?settingsState\.hasStoredFastMode=true;[\s\S]*?settingsState\.hasStoredAutomaticApprovalReview=true;[\s\S]*?settingsState\.hasStoredExecutionProfile=true;[\s\S]*?settingsState\.hasStoredWebSearchMode=true;[\s\S]*?\}/, "saving settings must pin permission-mode toggles and search mode in memory");
@@ -224,7 +226,7 @@ function main() {
   assert.ok(!/buildTopographyTaskSignalsForUi/.test(appJs), "agent kanban must not foreground planned-task signals");
   assert.ok(!/agent-topography-signal|agent-topography-item\.engaged/.test(stylesCss), "agent kanban styles must not imply planned-task highlighting");
   assertRegex(appJs, /if\(workspaceGuardError\.handled\)return workspaceGuardError\.detail;/, "workspace lock failures must get a human-readable submit error");
-  assertRegex(appJs, /mset\(out,`\[needs_input\] \$\{workspaceGuardError\.inlineMessage\}`\);/, "workspace lock failures must surface as needs_input in the transcript");
+  assertRegex(appJs, /mset\(answerTranscriptOut\(\),`\[needs_input\] \$\{workspaceGuardError\.inlineMessage\}`\);/, "workspace lock failures must surface as needs_input in the transcript");
   assertRegex(appJs, /if\(requirementBlockedPlanState\)\{\s*e\.harnessPlanMeta\.textContent=requirementBlockedPlanState\.metaText;/, "execution plan meta must be gated by unresolved Requirement Lock state");
   assertRegex(appJs, /if\(requirementBlockedPlanState\)\{\s*e\.harnessPlanCurrentDetail\.textContent=requirementBlockedPlanState\.currentDetailText;/, "execution plan detail must stop at the requirement gate instead of showing downstream plan progress");
   assertRegex(appJs, /stageEl\.textContent=currentPhase\?currentPhase\.label:/, "current phase summary should avoid repeating the state label inline");

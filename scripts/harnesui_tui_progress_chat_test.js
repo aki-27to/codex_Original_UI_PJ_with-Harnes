@@ -56,7 +56,7 @@ function run() {
     "timeline renderer must mark assistant progress messages for progress styling"
   );
   assert(
-    /if\(ev\.type==="plan"\)tuiProgress\.planSteps=Array\.isArray\(ev\.steps\)\?ev\.steps:\[\];happly\(c,ev\);updateAssistantTuiProgress\("activity"/.test(appSource),
+    /if\(ev\.type==="plan"\)tuiProgress\.planSteps=Array\.isArray\(ev\.steps\)\?ev\.steps:\[\];[\s\S]*?happly\(c,ev\);[\s\S]*?updateAssistantTuiProgress\("activity"/.test(appSource),
     "plan/update events must feed Updated Plan rows before refreshing the chat return"
   );
   assert(
@@ -72,8 +72,16 @@ function run() {
     "runPrompt must keep a TUI progress row while waiting for first answer text"
   );
   assert(
-    /mget\(out\)\.startsWith\(ASSISTANT_TUI_PROGRESS_MARKER\)\)mset\(out,""\);stopAssistantTuiProgress\(\);madd\(out,ev\.text\)/.test(appSource),
-    "first streamed answer text must replace the TUI progress row"
+    /let\s+answerOut=null;/.test(appSource)
+      && /const\s+progressOutStillActive=\(\)=>mget\(out\)\.startsWith\(ASSISTANT_TUI_PROGRESS_MARKER\);/.test(appSource)
+      && /answerOut=msg\(c\.id,"assistant","Codex",""\);/.test(appSource)
+      && /madd\(answerTranscriptOut\(\),ev\.text\)/.test(appSource)
+      && /mset\(answerTranscriptOut\(\),typeof ev\.text==="string"\?ev\.text:""\)/.test(appSource),
+    "streamed answer text must preserve the TUI progress row and render final text in a separate assistant message"
+  );
+  assert(
+    !/mget\(out\)\.startsWith\(ASSISTANT_TUI_PROGRESS_MARKER\)\)mset\(out,""\);stopAssistantTuiProgress\(\);madd\(out,ev\.text\)/.test(appSource),
+    "streamed answer text must not clear the TUI progress row"
   );
   assert(
     !/\[waiting\] Standard Codex/.test(appSource),
