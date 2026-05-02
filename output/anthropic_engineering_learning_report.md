@@ -1,9 +1,9 @@
 # ANTHROPIC_ENGINEERING_LEARNING_REPORT
 
 - status: PASS
-- generatedAt: 2026-05-01T19:46:29.517Z
+- generatedAt: 2026-05-02T19:31:35.327Z
 - trackedArticles: 6
-- newArticlesThisRun: 2
+- newArticlesThisRun: 0
 - pendingProposals: 6
 - promotedDocUpdates: 6
 - ledgerPath: output/anthropic_engineering_learning_ledger.json

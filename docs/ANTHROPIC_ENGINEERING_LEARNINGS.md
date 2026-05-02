@@ -1,6 +1,6 @@
 # ANTHROPIC_ENGINEERING_LEARNINGS
 
-Updated: 2026-05-01T19:46:29.517Z
+Updated: 2026-05-02T19:31:35.327Z
 
 This file is auto-synced from the Anthropic Engineering secondary learning lane.
 Only portable agent-engineering principles are retained here; Claude-specific mechanics do not become runtime policy.
