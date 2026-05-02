@@ -95,7 +95,21 @@ async function main() {
   });
   try {
     await expectSlashOutput(harness, "/help", ["Supported slash commands:", "/status", "/diff", "/resume --last"]);
-    await expectSlashOutput(harness, "/status", ["Codex status:", "Agent: default", "Sandbox: workspace-write"]);
+    const statusOutput = await expectSlashOutput(harness, "/status", [
+      ">_ OpenAI Codex (",
+      "Visit https://chatgpt.com/codex/settings/usage",
+      /Model:\s+gpt-5\.5 \(reasoning xhigh\)/,
+      /Directory:\s+.+codex_Original_UI_PJ_with-Harnes/,
+      /Permissions:\s+workspace-write \(approval on-request\)/,
+      /AGENTS\.md:\s+AGENTS\.md/,
+      "Account:",
+      /Collaboration mode:\s+Default/,
+      /Session:\s+none/,
+      /Agent:\s+default/,
+      /gpt-5\.3-Codex-Spark limit:\s+unavailable in HarnesUI local status/,
+      "native quota bars are not exposed by the local app-server.",
+    ]);
+    assert(!statusOutput.startsWith("Codex status:"), "/status must not regress to the simplified HarnesUI status body");
     await expectSlashOutput(harness, "/diff", [/D I F F|No changes detected\./]);
     await expectSlashOutput(harness, "/fast status", ["Fast mode:", "Usage: /fast"]);
     await expectSlashOutput(harness, "/agent list", ["agents:", "default"]);

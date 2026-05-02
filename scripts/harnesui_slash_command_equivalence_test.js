@@ -49,6 +49,8 @@ function main() {
   assertMatch(serverImpl, /async function handleSlashGoalCommand\s*\(/, "server slash router must implement /goal");
   assertMatch(serverImpl, /function handleSlashHelpCommand\s*\(/, "server slash router must implement /help");
   assertMatch(serverImpl, /function handleSlashStatusCommand\s*\(/, "server slash router must implement /status");
+  assertMatch(serverImpl, /function formatCodexStatusLikeText\s*\([\s\S]*?>_ OpenAI Codex/, "/status must render a Codex-style status body instead of a generic chat answer");
+  assertMatch(serverImpl, /native quota bars are not exposed by the local app-server\./, "/status must be honest about quota data unavailable to HarnesUI");
   assertMatch(serverImpl, /function handleSlashDiffCommand\s*\(/, "server slash router must implement /diff");
   assertMatch(serverImpl, /function handleUnsupportedSlashCommand\s*\(/, "server slash router must reject unsupported slash commands before ordinary turn execution");
   assertMatch(serverImpl, /await handleSlashGoalCommand\(res,argsText,targetAgentName,sandboxMode,normalized\);/, "runCodexExecStreaming must route /goal before ordinary turn execution");

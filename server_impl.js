@@ -8619,8 +8619,46 @@ function handleUnsupportedSlashCommand(res,command){
   replyLocalText(res,`Unrecognized command '${safeString(command,80)}'. Type /help for a list of supported commands.`);
   return true;
 }
-function handleSlashStatusCommand(res,agentName,sandboxMode,normalized){
-  const state=getOrCreateAgentState(agentName);
+const slashStatusCommandCache=new Map();
+function runCachedSlashStatusCommand(cacheKey,command,ttlMs=60000){
+  const now=Date.now();
+  const cached=slashStatusCommandCache.get(cacheKey);
+  if(cached&&now-cached.at<ttlMs)return cached.value;
+  const result=spawnSync("cmd.exe",["/d","/s","/c",command],{cwd:workspaceRoot,windowsHide:true,encoding:"utf8",timeout:1500});
+  const stdout=typeof result.stdout==="string"?result.stdout:"";
+  const stderr=typeof result.stderr==="string"?result.stderr:"";
+  const value=!result.error&&result.status===0
+    ?safeString(getFirstMeaningfulLine(`${stdout}\n${stderr}`),220)
+    :safeString(result.error&&result.error.message?result.error.message:getFirstMeaningfulLine(`${stderr}\n${stdout}`),220);
+  const normalized=value||"unavailable";
+  slashStatusCommandCache.set(cacheKey,{at:now,value:normalized});
+  return normalized;
+}
+function formatCodexCliVersionForStatus(){
+  const raw=runCachedSlashStatusCommand("codex-version","codex --version");
+  const match=raw.match(/(?:codex(?:-cli)?\s+)?v?([0-9]+(?:\.[0-9]+){1,3})/i);
+  return match?`v${match[1]}`:raw;
+}
+function findNearestAgentsMdForStatus(cwd){
+  let current=path.resolve(cwd||workspaceRoot);
+  const stop=path.resolve(workspaceRoot);
+  while(current&&isPathWithin(stop,current)){
+    const candidate=path.join(current,"AGENTS.md");
+    try{
+      if(fs.existsSync(candidate)&&fs.statSync(candidate).isFile())return summarizePathForOperationLog(candidate,220);
+    }catch{
+    }
+    const next=path.dirname(current);
+    if(next===current)break;
+    current=next;
+  }
+  return"none";
+}
+function formatSlashStatusRow(label,value){
+  const padded=label.length>=20?`${label} `:label.padEnd(20," ");
+  return`${padded}${safeString(String(value||""),800)||"-"}`;
+}
+function formatCodexStatusLikeText({agentName,sandboxMode,normalized,state}){
   const webSearchMode=normalizeWebSearchMode(
     Object.prototype.hasOwnProperty.call(normalized||{},"webSearchMode")?normalized.webSearchMode:normalized&&normalized.webSearch,
     "disabled"
@@ -8629,21 +8667,40 @@ function handleSlashStatusCommand(res,agentName,sandboxMode,normalized){
   const model=normalizeExecModel(normalized&&normalized.model,defaultExecModelName);
   const modelReasoningEffort=normalizeExecModelReasoningEffort(normalized&&normalized.modelReasoningEffort,defaultExecModelReasoningEffort);
   const goal=normalizeGoalForSlashCommand(state.goal,state.threadId||state.sessionRef);
+  const approval=normalizeApprovalPolicy(normalized&&normalized.approvalPolicy);
+  const session=state.sessionRef||state.threadId||"none";
+  const loginStatus=runCachedSlashStatusCommand("codex-login-status","codex login status");
+  const quotaUnavailable="unavailable in HarnesUI local status";
   const lines=[
-    "Codex status:",
-    `Agent: ${agentName}`,
-    `Session: ${state.sessionRef||"none"}`,
-    `Thread: ${state.threadId||"none"}`,
-    `Sandbox: ${normalizeSandboxMode(sandboxMode)}`,
-    `Approval: ${normalizeApprovalPolicy(normalized&&normalized.approvalPolicy)}`,
-    `Web search: ${webSearchMode}`,
-    `Model: ${model}`,
-    `Reasoning: ${modelReasoningEffort}`,
-    `Fast mode: ${resolveFastModeEnabled(normalized&&normalized.fastModeEnabled,state&&state.fastModeEnabled)?"on":"off"}`,
-    `Goal: ${goal?`${goal.status} - ${goal.objective||"(empty)"}`:"none"}`,
-    `CWD: ${cwd}`,
+    `>_ OpenAI Codex (${formatCodexCliVersionForStatus()})`,
+    "",
+    "Visit https://chatgpt.com/codex/settings/usage for up-to-date",
+    "information on rate limits and credits",
+    "",
+    formatSlashStatusRow("Model:",`${model} (reasoning ${modelReasoningEffort})`),
+    formatSlashStatusRow("Directory:",cwd),
+    formatSlashStatusRow("Permissions:",`${normalizeSandboxMode(sandboxMode)} (approval ${approval})`),
+    formatSlashStatusRow("AGENTS.md:",findNearestAgentsMdForStatus(cwd)),
+    formatSlashStatusRow("Account:",loginStatus),
+    formatSlashStatusRow("Collaboration mode:","Default"),
+    formatSlashStatusRow("Session:",session),
+    formatSlashStatusRow("Agent:",agentName),
+    formatSlashStatusRow("Web search:",webSearchMode),
+    formatSlashStatusRow("Fast mode:",resolveFastModeEnabled(normalized&&normalized.fastModeEnabled,state&&state.fastModeEnabled)?"on":"off"),
+    formatSlashStatusRow("Goal:",goal?`${goal.status} - ${goal.objective||"(empty)"}`:"none"),
+    "",
+    formatSlashStatusRow("Context window:",quotaUnavailable),
+    formatSlashStatusRow(`${model} limit:`,quotaUnavailable),
+    formatSlashStatusRow("5h limit:",quotaUnavailable),
+    formatSlashStatusRow("Weekly limit:",quotaUnavailable),
+    formatSlashStatusRow("gpt-5.3-Codex-Spark limit:",quotaUnavailable),
+    formatSlashStatusRow("Warnings:","native quota bars are not exposed by the local app-server."),
   ];
-  replyLocalText(res,lines.join("\n"));
+  return lines.join("\n");
+}
+function handleSlashStatusCommand(res,agentName,sandboxMode,normalized){
+  const state=getOrCreateAgentState(agentName);
+  replyLocalText(res,formatCodexStatusLikeText({agentName,sandboxMode,normalized,state}));
   return true;
 }
 function handleSlashDiffCommand(res,normalized){
