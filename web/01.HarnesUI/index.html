@@ -265,6 +265,15 @@
               <div class="composer-tools">
                 <input id="imageInput" type="file" accept=".png,.jpg,.jpeg,.webp,.gif,image/png,image/jpeg,image/webp,image/gif" multiple hidden>
                 <button class="btn secondary mini composer-preset" type="button" data-compose-preset="/goal " title="/goal コマンドを入力します。送信時にCodex goalへ接続し、未対応runtimeではHarnesUI goalに保存します。">/goal</button>
+                <div class="slash-shortcuts" aria-label="Representative slash command shortcuts">
+                  <button class="btn secondary mini composer-preset slash-shortcut" type="button" data-compose-preset="/help" data-slash-command="/help" title="/help を入力します。送信すると利用できるslash command一覧を表示します。">/help</button>
+                  <button class="btn secondary mini composer-preset slash-shortcut" type="button" data-compose-preset="/status" data-slash-command="/status" title="/status を入力します。送信すると現在のCodex session設定を表示します。">/status</button>
+                  <button class="btn secondary mini composer-preset slash-shortcut" type="button" data-compose-preset="/diff" data-slash-command="/diff" title="/diff を入力します。送信すると現在のgit diff summaryを表示します。">/diff</button>
+                  <button class="btn secondary mini composer-preset slash-shortcut" type="button" data-compose-preset="/resume --last" data-slash-command="/resume --last" title="/resume --last を入力します。送信すると最新sessionをresume対象にします。">/resume</button>
+                  <button class="btn secondary mini composer-preset slash-shortcut" type="button" data-compose-preset="/fork" data-slash-command="/fork" title="/fork を入力します。必要なら名前を追記して送信するとagent forkを作ります。">/fork</button>
+                  <button class="btn secondary mini composer-preset slash-shortcut" type="button" data-compose-preset="/fast status" data-slash-command="/fast status" title="/fast status を入力します。送信するとFast modeの状態を表示します。">/fast</button>
+                  <button class="btn secondary mini composer-preset slash-shortcut" type="button" data-compose-preset="/agent list" data-slash-command="/agent list" title="/agent list を入力します。送信するとHarnesUI agent一覧を表示します。">/agent</button>
+                </div>
                 <button id="imageAttachBtn" class="btn secondary mini" type="button">画像を添付</button>
                 <p id="imageError" class="composer-error" role="status" aria-live="polite" hidden></p>
               </div>

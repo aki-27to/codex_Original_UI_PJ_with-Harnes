@@ -37,6 +37,14 @@ function main() {
   assertMatch(appJs, /function\s+applyComposerPresetButtonForUi\s*\(btn\)[\s\S]*?promptHasGoalComposerPrefixForUi\(value\)[\s\S]*?removeGoalComposerPrefixForUi\(value\)[\s\S]*?addGoalComposerPrefixForUi\(value\)[\s\S]*?syncActiveChatScopedStateFromUi\(\);[\s\S]*?renderMissionSupportUi\(\);/, "/goal composer shortcut must toggle the prefix and persist draft state");
   assertMatch(appJs, /function\s+syncGoalComposerPresetStateForUi\s*\(\)[\s\S]*?aria-pressed[\s\S]*?dataset\.state/, "/goal composer shortcut must expose accessible ON/OFF state");
   assertMatch(stylesCss, /\.composer-preset\[aria-pressed="true"\]/, "/goal composer shortcut must have a visible ON style");
+  for (const command of ["/help", "/status", "/diff", "/resume --last", "/fork", "/fast status", "/agent list"]) {
+    assertMatch(
+      indexHtml,
+      new RegExp(`data-slash-command="${command.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}"`),
+      `composer must expose a visible ${command} slash shortcut`
+    );
+  }
+  assertMatch(stylesCss, /\.slash-shortcuts\s*\{[\s\S]*?flex-wrap:\s*wrap;/, "representative slash shortcuts must wrap instead of overflowing the composer");
 
   assertMatch(serverImpl, /async function handleSlashGoalCommand\s*\(/, "server slash router must implement /goal");
   assertMatch(serverImpl, /function handleSlashHelpCommand\s*\(/, "server slash router must implement /help");

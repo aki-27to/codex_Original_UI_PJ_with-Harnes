@@ -85,6 +85,11 @@ function main() {
   assertRegex(indexHtml, /id="harnessPlanCurrentPurpose"/, "execution plan current card must expose the request-purpose line");
   assertRegex(indexHtml, /data-compose-preset=/, "composer must expose prompt preset shortcuts");
   assertRegex(indexHtml, /<button[^>]*data-compose-preset="\/goal "[^>]*>\/goal<\/button>/, "composer must expose a visible /goal shortcut");
+  assertRegex(indexHtml, /data-slash-command="\/status"/, "composer must expose a visible /status slash shortcut");
+  assertRegex(indexHtml, /data-slash-command="\/diff"/, "composer must expose a visible /diff slash shortcut");
+  assertRegex(indexHtml, /data-slash-command="\/resume --last"/, "composer must expose a visible /resume shortcut");
+  assertRegex(indexHtml, /data-slash-command="\/fast status"/, "composer must expose a visible /fast shortcut");
+  assertRegex(indexHtml, /data-slash-command="\/agent list"/, "composer must expose a visible /agent shortcut");
   assertRegex(indexHtml, /id="composerRuntimeStrip"/, "composer must expose the runtime strip");
   assertRegex(indexHtml, /id="composerModeChip"/, "composer must expose the mode chip");
   assertRegex(indexHtml, /id="composerModelChip"/, "composer must expose the model chip");
