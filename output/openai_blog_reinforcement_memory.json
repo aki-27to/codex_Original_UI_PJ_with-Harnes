@@ -1,41 +1,9 @@
 {
   "schema": "learning-reinforcement-memory.v1",
-  "generatedAt": "2026-05-04T12:17:30.084Z",
-  "lastObservedAt": "2026-05-04T12:14:30.473Z",
-  "observationCount": 88,
+  "generatedAt": "2026-05-04T13:25:48.629Z",
+  "lastObservedAt": "2026-05-04T13:09:58.509Z",
+  "observationCount": 49,
   "recentObservations": [
-    {
-      "memoryId": "lesson:openai:931ab67dd6ee",
-      "memoryType": "semantic_lesson",
-      "articleId": "realtime-perplexity-computer",
-      "outcome": "failure",
-      "observedAt": "2026-05-04T12:12:50.982Z",
-      "sourceTier": "external_primary"
-    },
-    {
-      "memoryId": "lesson:openai:1c0387e21b8a",
-      "memoryType": "semantic_lesson",
-      "articleId": "designing-delightful-frontends-with-gpt-5-4",
-      "outcome": "failure",
-      "observedAt": "2026-05-04T12:12:50.982Z",
-      "sourceTier": "external_primary"
-    },
-    {
-      "memoryId": "lesson:openai:ae4c6f7ecba7",
-      "memoryType": "semantic_lesson",
-      "articleId": "one-year-of-responses",
-      "outcome": "failure",
-      "observedAt": "2026-05-04T12:12:50.982Z",
-      "sourceTier": "external_primary"
-    },
-    {
-      "memoryId": "lesson:openai:002574cf417b",
-      "memoryType": "semantic_lesson",
-      "articleId": "skills-agents-sdk",
-      "outcome": "failure",
-      "observedAt": "2026-05-04T12:14:30.473Z",
-      "sourceTier": "external_primary"
-    },
     {
       "memoryId": "hint:openai:realtime-perplexity-computer-runtime-retrieval",
       "memoryType": "runtime_hint",
@@ -58,6 +26,14 @@
       "articleId": "one-year-of-responses",
       "outcome": "failure",
       "observedAt": "2026-05-04T12:12:50.982Z",
+      "sourceTier": "external_primary"
+    },
+    {
+      "memoryId": "hint:openai:skills-agents-sdk-runtime-retrieval",
+      "memoryType": "runtime_hint",
+      "articleId": "skills-agents-sdk",
+      "outcome": "failure",
+      "observedAt": "2026-05-04T13:09:58.509Z",
       "sourceTier": "external_primary"
     }
   ],
@@ -112,7 +88,7 @@
       "failureCount": 9,
       "observedCount": 13,
       "successRate": 0.3077,
-      "lastObservedAt": "2026-05-04T12:14:30.473Z",
+      "lastObservedAt": "2026-05-04T13:09:58.509Z",
       "sampleTurnIds": [
         "019de6a1-44ce-7202-b8e2-e8f7ff3f35f7",
         "019de6aa-179b-79f1-9052-84c32d8bbcdd",
@@ -168,85 +144,72 @@
         "019de6b3-5665-7340-83cd-7c8570e804fb",
         "019de6b7-a479-7362-969b-51eb36476aa3"
       ]
+    },
+    "skills-agents-sdk-runtime-retrieval": {
+      "successCount": 4,
+      "failureCount": 9,
+      "observedCount": 13,
+      "successRate": 0.3077,
+      "lastObservedAt": "2026-05-04T13:09:58.509Z",
+      "sampleTurnIds": [
+        "019de6a1-44ce-7202-b8e2-e8f7ff3f35f7",
+        "019de6aa-179b-79f1-9052-84c32d8bbcdd",
+        "019de6ac-15c9-7d02-99e9-b25c09d39608",
+        "019de6a4-ed64-7523-af19-3c2d89d64008",
+        "019de6b3-5665-7340-83cd-7c8570e804fb",
+        "019de6b7-a479-7362-969b-51eb36476aa3"
+      ]
     }
   },
   "topicStats": {
     "agents": {
-      "successCount": 18,
-      "failureCount": 45,
-      "observedCount": 63,
-      "successRate": 0.2857,
-      "lastObservedAt": "2026-05-04T12:14:30.473Z"
-    },
-    "audio": {
-      "successCount": 4,
-      "failureCount": 9,
-      "observedCount": 13,
-      "successRate": 0.3077,
-      "lastObservedAt": "2026-05-04T12:12:50.982Z"
+      "successCount": 10,
+      "failureCount": 27,
+      "observedCount": 37,
+      "successRate": 0.2703,
+      "lastObservedAt": "2026-05-04T13:09:58.509Z"
     },
     "context": {
-      "successCount": 25,
-      "failureCount": 63,
-      "observedCount": 88,
-      "successRate": 0.2841,
-      "lastObservedAt": "2026-05-04T12:14:30.473Z"
+      "successCount": 13,
+      "failureCount": 36,
+      "observedCount": 49,
+      "successRate": 0.2653,
+      "lastObservedAt": "2026-05-04T13:09:58.509Z"
     },
     "evals": {
-      "successCount": 22,
-      "failureCount": 54,
-      "observedCount": 76,
-      "successRate": 0.2895,
-      "lastObservedAt": "2026-05-04T12:14:30.473Z"
+      "successCount": 6,
+      "failureCount": 18,
+      "observedCount": 24,
+      "successRate": 0.25,
+      "lastObservedAt": "2026-05-04T12:12:50.982Z"
     },
     "frontend": {
-      "successCount": 22,
-      "failureCount": 54,
-      "observedCount": 76,
-      "successRate": 0.2895,
-      "lastObservedAt": "2026-05-04T12:14:30.473Z"
-    },
-    "general": {
-      "successCount": 4,
-      "failureCount": 9,
-      "observedCount": 13,
-      "successRate": 0.3077,
+      "successCount": 6,
+      "failureCount": 18,
+      "observedCount": 24,
+      "successRate": 0.25,
       "lastObservedAt": "2026-05-04T12:12:50.982Z"
     },
     "safety": {
+      "successCount": 3,
+      "failureCount": 9,
+      "observedCount": 12,
+      "successRate": 0.25,
+      "lastObservedAt": "2026-05-04T12:12:50.982Z"
+    },
+    "automation": {
       "successCount": 7,
       "failureCount": 18,
       "observedCount": 25,
       "successRate": 0.28,
-      "lastObservedAt": "2026-05-04T12:12:50.982Z"
-    },
-    "skills": {
-      "successCount": 8,
-      "failureCount": 18,
-      "observedCount": 26,
-      "successRate": 0.3077,
-      "lastObservedAt": "2026-05-04T12:14:30.473Z"
-    },
-    "api": {
-      "successCount": 4,
-      "failureCount": 9,
-      "observedCount": 13,
-      "successRate": 0.3077,
-      "lastObservedAt": "2026-05-04T12:12:50.982Z"
-    },
-    "automation": {
-      "successCount": 11,
-      "failureCount": 27,
-      "observedCount": 38,
-      "successRate": 0.2895,
-      "lastObservedAt": "2026-05-04T12:14:30.473Z"
+      "lastObservedAt": "2026-05-04T13:09:58.509Z"
     },
     "codex": {
-      "successCount": 11,
-      "failureCount": 27,
-      "observedCount": 38,
-      "successRate": 0.2895,
-      "lastObservedAt": "2026-05-04T12:14:30.473Z"
+      "successCount": 7,
+      "failureCount": 18,
+      "observedCount": 25,
+      "successRate": 0.28,
+      "lastObservedAt": "2026-05-04T13:09:58.509Z"
     }
   }
 }

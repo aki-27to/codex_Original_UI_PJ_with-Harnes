@@ -73,6 +73,7 @@
     "test:repo-closure:e2e": "node scripts/repo_closure_export_e2e_test.js",
     "learn:openai-blog": "node scripts/openai_blog_learning_cycle.js",
     "learn:anthropic-engineering": "node scripts/anthropic_engineering_learning_cycle.js",
+    "refresh:learning-output": "npm run learn:openai-blog && npm run learn:anthropic-engineering",
     "learn:self-improvement-gate": "node scripts/self_improvement_eval_gate.js",
     "learn:self-improvement:manual:validate": "node scripts/manual_self_improvement_validate.js",
     "artifact:governance-public": "node scripts/export_governance_public_bundle.js",

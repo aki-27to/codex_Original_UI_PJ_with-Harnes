@@ -195,6 +195,32 @@ function createRuntimeApiSnapshotService(deps = {}) {
     };
   }
 
+  function buildDesignCompletionEvidenceSnapshot() {
+    const requiredArtifacts = Array.isArray(designAcceptanceContract && designAcceptanceContract.requiredArtifacts)
+      ? designAcceptanceContract.requiredArtifacts
+      : [];
+    const responseExpectations = userFacingResponseContract
+      && userFacingResponseContract.reviewerPacketReporting
+      && userFacingResponseContract.reviewerPacketReporting.evidenceExpectations
+      && typeof userFacingResponseContract.reviewerPacketReporting.evidenceExpectations === "object"
+      ? userFacingResponseContract.reviewerPacketReporting.evidenceExpectations
+      : {};
+    return {
+      schema: "design-completion-evidence-current-truth.v1",
+      currentTruth: 1,
+      appliesTo: ["web_creative", "design_sensitive_ui"],
+      completionStateIfMissing: "FAILED_VALIDATION",
+      screenshotEvidenceRequired: responseExpectations.screenshotEvidenceRequiredForVisualClaims !== false
+        && Boolean(designAcceptanceContract && designAcceptanceContract.visualReviewRequired),
+      reviewerEvidenceRequired: responseExpectations.reviewerEvidenceRequiredForCompletionClaims !== false
+        && Boolean(designAcceptanceContract && designAcceptanceContract.independentReviewRequired),
+      requiredTogetherBeforeCompletion: true,
+      requiredArtifacts: requiredArtifacts.filter((entry) => /screenshot|reviewer/i.test(String(entry || ""))),
+      contractPath: summarizePathForOperationLog(designAcceptanceContractPath, 220),
+      responseContractPath: summarizePathForOperationLog(userFacingResponseContractPath, 220),
+    };
+  }
+
   function buildRuntimeApiSnapshot() {
     const active = getActiveAgentState();
     const latestTurn = getLatestTurnSnapshot();
@@ -226,6 +252,9 @@ function createRuntimeApiSnapshotService(deps = {}) {
     });
     const authorityModel = governanceRuntimeSurface.authorityModel;
     const deploymentPosture = governanceRuntimeSurface.deploymentPosture;
+    const activePostureProfile = deploymentPosture && deploymentPosture.activePostureProfile
+      ? deploymentPosture.activePostureProfile
+      : (deploymentPosture && deploymentPosture.activeProfile ? deploymentPosture.activeProfile : "");
     const evalHarness = {
       suite: buildEvalSuiteSummary(defaultEvalSuite),
       configPath: summarizePathForOperationLog(evalSuiteConfigPath, 220),
@@ -264,6 +293,8 @@ function createRuntimeApiSnapshotService(deps = {}) {
       currentWorkerDecisionSurface,
       currentLatestOverview,
     });
+    const designCompletionEvidence = buildDesignCompletionEvidenceSnapshot();
+    currentTruth.designCompletionEvidence = designCompletionEvidence;
     const workerDecisionSupport = buildWorkerDecisionSupport(currentTruth);
     const secondaryLearning = {
       anthropicEngineering: buildAnthropicEngineeringLearningRuntimeStateSnapshot(),
@@ -333,6 +364,8 @@ function createRuntimeApiSnapshotService(deps = {}) {
       mode: "app-server",
       workspaceRoot,
       activeAgent: activeAgentName,
+      activePostureProfile,
+      active_posture_profile: activePostureProfile,
       sessionRef: active ? active.sessionRef : null,
       agentCount: agentStates.size,
       experimental: active ? active.experimentalEnabled : false,
@@ -393,6 +426,8 @@ function createRuntimeApiSnapshotService(deps = {}) {
       authority_registry: authorityModel,
       deploymentPosture,
       deployment_posture: deploymentPosture,
+      designCompletionEvidence,
+      design_completion_evidence: designCompletionEvidence,
       harnessMemory,
       harness_memory: harnessMemory,
       governedMemory,

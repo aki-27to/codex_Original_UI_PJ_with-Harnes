@@ -34,6 +34,7 @@ function main() {
     autoCommitAndPush: false,
   });
   assert.strictEqual(runtimeSummary.activeProfile, "portable_local", "portable defaults must resolve to portable_local");
+  assert.strictEqual(runtimeSummary.activePostureProfile, "portable_local", "runtime must expose activePostureProfile for UI/API consumers");
   assert.strictEqual(Number(runtimeSummary.referenceArchitectureDefault || 0), 1, "portable_local must remain the reference architecture default");
 
   process.stdout.write("PASS deployment_posture_profile_test\n");

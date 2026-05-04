@@ -137,6 +137,7 @@ reviewer 向けの外部比較 refresh は `npm run reviewer:baseline-comparison
 - reference architecture default: `portable_local`
 - stronger local ownership posture: `owner_local`
 - reviewed team posture: `reviewed_team`
+- `GET /api/runtime` exposes `activePostureProfile` as live truth, so `owner_local` and `portable_local` are not inferred from prose or launcher assumptions.
 
 ### Runtime server composition
 
@@ -148,6 +149,7 @@ reviewer 向けの外部比較 refresh は `npm run reviewer:baseline-comparison
 - current stage: route-family, route-service composition, request-handler context, bootstrap, and primary `apps` / `conversation` / `voice` / `replay` / `exec` / `eval` service boundaries are extracted, while most remaining runtime/governance logic still lives in `server_impl.js`
 - `apps` / `conversation` / `voice` / `replay` / `exec` / `eval` are now reviewer-visible at the route-family boundary, the route-service composition boundary, and the direct grouped service boundary through `server/routes/{app,replay,conversation,voice,eval,exec}_routes.js`, `server/route_services.js`, `server/request_handler_context.js`, and `server/services/{harness_app_service,replay_service,conversation_service,eval_service,exec_service}.js`
 - reviewer-facing harness overview assembly is now extracted into `server/services/harness_overview_snapshot_service.js`, so `server_impl.js` no longer owns the eval-history / execution-memory / topography helper cluster inline
+- `GET /api/harness/overview` is a no-write read surface. It reuses the runtime governed-memory snapshot and does not refresh governed-memory or tracked `output/*` artifacts during page polling.
 - `scripts/run_repo_quality_gate.js` is the canonical repo-quality stage runner and now executes package scripts through direct process invocation on Windows instead of a `shell: true` path
 - detailed route-to-service mapping and residual decomposition points live in `docs/SERVER_ARCHITECTURE_MAP.md`
 
@@ -223,6 +225,8 @@ Launcher posture: the desktop launcher keeps `CODEX_REQUIRE_ADMIN=0` and `CODEX_
 
 ## 9) 現在の学習面
 
+Tracked learning artifacts are refreshed by the fixed command `npm run refresh:learning-output`. Server startup keeps background refresh disabled by default, runtime turn observations stay transient unless background refresh is explicitly enabled, and runtime retrieval can still read the last committed learning artifacts.
+
 この repo は OpenAI developer lane と Anthropic engineering lane を持ちます。
 ただし、実行時の取り込みまで開いている主レーンは OpenAI 側です。Anthropic 側は補助レーンとして、持ち運びやすい原則の抽出と提案生成に寄せています。
 
@@ -233,6 +237,8 @@ Launcher posture: the desktop launcher keeps `CODEX_REQUIRE_ADMIN=0` and `CODEX_
 - `output/agi_readiness/autonomous_learning_status.json`
 - `runtime_snapshot.json`
 - `signoff_summary.json`
+
+Design-sensitive UI completion is current-truth gated by `GET /api/runtime` under `designCompletionEvidence`: screenshot evidence and reviewer evidence must be present together, otherwise the completion state is `FAILED_VALIDATION`.
 
 ## 10) この repo をどう呼ぶか
 

@@ -2,6 +2,8 @@
 
 Updated: 2026-05-04
 
+- 2026-05-04: Hardened runtime truth and tracked-output boundaries. `/api/runtime` now exposes `activePostureProfile` plus a `designCompletionEvidence` current-truth gate requiring screenshot and reviewer evidence together for design-sensitive completion. `/api/harness/overview` no longer refreshes governed-memory or tracked `output/*` artifacts during GET polling, runtime turn observations stay transient by default, and learning-lane tracked artifacts now refresh through the fixed `npm run refresh:learning-output` command while background refresh remains opt-in.
+
 - 2026-05-04: Added `review-agent-essence-codex` as a Codex-native counterpart to `review-agent-essence`. The new repo-local skill preserves the bundled `agent-essence` principles while evaluating Codex-specific surfaces such as `AGENTS.md`, `.codex/agents/*.toml`, `.agents/skills`, `scripts/config`, App Server routes, HarnesUI behavior, and current-truth artifacts without treating missing Claude Code files as defects. Registered it in `scripts/config/repo_local_skill_catalog.json`.
 
 - 2026-05-04: Aligned the Codex harness S-rank diagnostic blockers. `start_codex_ui.bat` now defaults `CODEX_REQUIRE_ADMIN=0` and `CODEX_AUTO_OPEN_BROWSER=0` again, preserving non-intrusive local launches unless the operator opts in. Added `scripts/mcp_tool_registry_alignment_test.js` plus `test:mcp-tool-registry-alignment` so every configured `.codex/config.toml` MCP server is represented in `scripts/config/tool_registry_manifest.json`; the manifest now documents the optional external `stitch` MCP boundary and fallback mode. HarnesUI restart markers now write to `runtime/server_restart_result.json`, and current-log refresh removes non-fixed-five files from `logs/current/`.

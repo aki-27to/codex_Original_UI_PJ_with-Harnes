@@ -75,6 +75,16 @@ function main() {
     "function buildWorkerDecisionSupport(currentTruth)",
     "runtime snapshot service should own worker decision support assembly"
   );
+  assertIncludes(
+    runtimeSnapshotServiceSource,
+    "function buildDesignCompletionEvidenceSnapshot()",
+    "runtime snapshot service should expose design completion evidence current truth"
+  );
+  assertIncludes(
+    runtimeSnapshotServiceSource,
+    "activePostureProfile",
+    "runtime snapshot service should expose activePostureProfile for posture truth"
+  );
 
   console.log("PASS runtime_snapshot_service_split_test");
 }

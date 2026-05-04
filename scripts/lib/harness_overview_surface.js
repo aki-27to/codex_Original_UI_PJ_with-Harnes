@@ -10,6 +10,7 @@ function syncHarnessOverviewGovernedMemory(options={}){
     syncGovernedMemoryGraph,
     workspaceRoot,
     reason="runtime_sync",
+    refreshTrackedLearningArtifacts=true,
   }=options;
   const runtime=buildRuntimeApiSnapshot();
   const traceability=buildHarnessTraceabilitySnapshot(
@@ -38,6 +39,7 @@ function syncHarnessOverviewGovernedMemory(options={}){
     },
     traceability,
     reason:safeString(reason,80)||"runtime_sync",
+    refreshTrackedLearningArtifacts,
   });
 }
 
@@ -92,16 +94,6 @@ function buildHarnessOverviewPayload(options={}){
       ||safeString(runtime&&runtime.activeAgent,80)
       ||"default"
   );
-  const governedGraph=syncHarnessOverviewGovernedMemory({
-    buildEvalHistoryOverview,
-    buildExecutionMemoryOverview,
-    buildHarnessTraceabilitySnapshot,
-    buildRuntimeApiSnapshot,
-    safeString,
-    syncGovernedMemoryGraph,
-    workspaceRoot,
-    reason:"overview_sync",
-  });
   const capabilitySurface={
     browser:buildBrowserCapabilityOverview(),
     continuity:buildContinuityOverviewSnapshot(),
@@ -157,11 +149,14 @@ function buildHarnessOverviewPayload(options={}){
     },
     memory:{
       harness:runtime.harnessMemory,
-      governedGraph:governedGraph&&governedGraph.summary&&typeof governedGraph.summary==="object"
-        ?governedGraph.summary
-        :runtime.governedMemory&&typeof runtime.governedMemory==="object"
-          ?runtime.governedMemory
-          :{},
+      governedGraph:runtime.governedMemory&&typeof runtime.governedMemory==="object"
+        ?{
+          ...runtime.governedMemory,
+          source:"runtime_snapshot_no_write",
+        }
+        :{
+          source:"runtime_snapshot_no_write",
+        },
       taste:runtime.intentFirst&&runtime.intentFirst.tasteMemory?runtime.intentFirst.tasteMemory:{},
       execution:buildExecutionMemoryOverview({limit:10,window:60}),
       externalLearning:runtime.externalLearning&&typeof runtime.externalLearning==="object"?runtime.externalLearning:{},

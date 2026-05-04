@@ -341,14 +341,18 @@ const automaticApprovalReviewDefault=parseBooleanEnv(automaticApprovalReviewEnvK
 const fastModeDefault=parseBooleanEnv(fastModeDefaultEnvKey,false);
 const openAIBlogLearningEnabledEnvKey="CODEX_OPENAI_BLOG_LEARNING_ENABLED";
 const openAIBlogLearningIntervalEnvKey="CODEX_OPENAI_BLOG_LEARNING_INTERVAL_MINUTES";
+const openAIBlogLearningBackgroundRefreshEnabledEnvKey="CODEX_OPENAI_BLOG_BACKGROUND_REFRESH_ENABLED";
 const openAIBlogLearningRuntimeRetrievalEnabledEnvKey="CODEX_OPENAI_BLOG_RUNTIME_RETRIEVAL_ENABLED";
 const openAIBlogLearningRuntimeRetrievalShadowModeEnvKey="CODEX_OPENAI_BLOG_RUNTIME_RETRIEVAL_SHADOW_MODE";
 const anthropicEngineeringLearningEnabledEnvKey="CODEX_ANTHROPIC_ENGINEERING_LEARNING_ENABLED";
 const anthropicEngineeringLearningIntervalEnvKey="CODEX_ANTHROPIC_ENGINEERING_LEARNING_INTERVAL_MINUTES";
+const anthropicEngineeringLearningBackgroundRefreshEnabledEnvKey="CODEX_ANTHROPIC_ENGINEERING_BACKGROUND_REFRESH_ENABLED";
 const openAIBlogLearningPolicy=loadOpenAIBlogLearningPolicy(defaultOpenAIBlogLearningPolicyPath);
 const anthropicEngineeringLearningPolicy=loadAnthropicEngineeringLearningPolicy(defaultAnthropicEngineeringLearningPolicyPath);
 const openAIBlogLearningEnabled=parseBooleanEnv(openAIBlogLearningEnabledEnvKey,true);
 const anthropicEngineeringLearningEnabled=parseBooleanEnv(anthropicEngineeringLearningEnabledEnvKey,true);
+const openAIBlogLearningBackgroundRefreshEnabled=openAIBlogLearningEnabled&&parseBooleanEnv(openAIBlogLearningBackgroundRefreshEnabledEnvKey,false);
+const anthropicEngineeringLearningBackgroundRefreshEnabled=anthropicEngineeringLearningEnabled&&parseBooleanEnv(anthropicEngineeringLearningBackgroundRefreshEnabledEnvKey,false);
 const openAIBlogLearningRuntimeRetrievalEnabled=parseBooleanEnv(
   openAIBlogLearningRuntimeRetrievalEnabledEnvKey,
   openAIBlogLearningEnabled&&Boolean(openAIBlogLearningPolicy&&openAIBlogLearningPolicy.runtimeRetrieval&&openAIBlogLearningPolicy.runtimeRetrieval.enabled)
@@ -11485,6 +11489,7 @@ async function executeTurnStreaming(res,prompt,agentName,options){
         familyCompletionGate,
         externalLearning:externalLearningRetrieval,
         now:Date.now(),
+        persist:openAIBlogLearningBackgroundRefreshEnabled,
       });
     }catch(error){
       logOperation("openai_blog_learning.observation_failed",{
@@ -13400,7 +13405,7 @@ function clearOpenAIBlogLearningTimer(){
   }
 }
 function scheduleOpenAIBlogLearningCycle(delayMs){
-  if(!openAIBlogLearningEnabled||shuttingDown)return;
+  if(!openAIBlogLearningEnabled||!openAIBlogLearningBackgroundRefreshEnabled||shuttingDown)return;
   clearOpenAIBlogLearningTimer();
   const normalizedDelay=Math.max(1000,Math.trunc(Number(delayMs)||openAIBlogLearningIntervalMinutes*60*1000));
   openAIBlogLearningRuntimeState.nextRunAt=new Date(Date.now()+normalizedDelay).toISOString();
@@ -13457,11 +13462,18 @@ async function executeOpenAIBlogLearningCycle(reason="manual"){
     return null;
   }finally{
     openAIBlogLearningRuntimeState.running=false;
-    scheduleOpenAIBlogLearningCycle(openAIBlogLearningIntervalMinutes*60*1000);
+    if(openAIBlogLearningBackgroundRefreshEnabled){
+      scheduleOpenAIBlogLearningCycle(openAIBlogLearningIntervalMinutes*60*1000);
+    }
   }
 }
 function startOpenAIBlogLearningLoop(){
   if(!openAIBlogLearningEnabled)return;
+  if(!openAIBlogLearningBackgroundRefreshEnabled){
+    openAIBlogLearningRuntimeState.nextRunAt="";
+    openAIBlogLearningRuntimeState.lastReason="background_refresh_disabled_use_npm_run_refresh:learning-output";
+    return;
+  }
   scheduleOpenAIBlogLearningCycle(openAIBlogLearningPolicy.cadence.startupDelayMs);
 }
 function buildResolvedOpenAIBlogLearningPolicy(){
@@ -13508,6 +13520,9 @@ function buildOpenAIBlogLearningRuntimeStateSnapshot(){
   return buildOpenAIBlogLearningRuntimeSnapshot(policy,{
     enabled:openAIBlogLearningEnabled,
     running:openAIBlogLearningRuntimeState.running,
+    backgroundRefreshEnabled:openAIBlogLearningBackgroundRefreshEnabled,
+    backgroundRefreshEnvKey:openAIBlogLearningBackgroundRefreshEnabledEnvKey,
+    refreshCommand:"npm run refresh:learning-output",
     lastRunAt:openAIBlogLearningRuntimeState.lastRunAt,
     lastSuccessAt:openAIBlogLearningRuntimeState.lastSuccessAt,
     nextRunAt:openAIBlogLearningRuntimeState.nextRunAt,
@@ -13531,7 +13546,7 @@ function clearAnthropicEngineeringLearningTimer(){
   }
 }
 function scheduleAnthropicEngineeringLearningCycle(delayMs){
-  if(!anthropicEngineeringLearningEnabled||shuttingDown)return;
+  if(!anthropicEngineeringLearningEnabled||!anthropicEngineeringLearningBackgroundRefreshEnabled||shuttingDown)return;
   clearAnthropicEngineeringLearningTimer();
   const normalizedDelay=Math.max(1000,Math.trunc(Number(delayMs)||anthropicEngineeringLearningIntervalMinutes*60*1000));
   anthropicEngineeringLearningRuntimeState.nextRunAt=new Date(Date.now()+normalizedDelay).toISOString();
@@ -13588,11 +13603,18 @@ async function executeAnthropicEngineeringLearningCycle(reason="manual"){
     return null;
   }finally{
     anthropicEngineeringLearningRuntimeState.running=false;
-    scheduleAnthropicEngineeringLearningCycle(anthropicEngineeringLearningIntervalMinutes*60*1000);
+    if(anthropicEngineeringLearningBackgroundRefreshEnabled){
+      scheduleAnthropicEngineeringLearningCycle(anthropicEngineeringLearningIntervalMinutes*60*1000);
+    }
   }
 }
 function startAnthropicEngineeringLearningLoop(){
   if(!anthropicEngineeringLearningEnabled)return;
+  if(!anthropicEngineeringLearningBackgroundRefreshEnabled){
+    anthropicEngineeringLearningRuntimeState.nextRunAt="";
+    anthropicEngineeringLearningRuntimeState.lastReason="background_refresh_disabled_use_npm_run_refresh:learning-output";
+    return;
+  }
   scheduleAnthropicEngineeringLearningCycle(anthropicEngineeringLearningPolicy.cadence.startupDelayMs);
 }
 function buildResolvedAnthropicEngineeringLearningPolicy(){
@@ -13609,6 +13631,9 @@ function buildAnthropicEngineeringLearningRuntimeStateSnapshot(){
   return buildAnthropicEngineeringRuntimeSnapshot(policy,{
     enabled:anthropicEngineeringLearningEnabled,
     running:anthropicEngineeringLearningRuntimeState.running,
+    backgroundRefreshEnabled:anthropicEngineeringLearningBackgroundRefreshEnabled,
+    backgroundRefreshEnvKey:anthropicEngineeringLearningBackgroundRefreshEnabledEnvKey,
+    refreshCommand:"npm run refresh:learning-output",
     lastRunAt:anthropicEngineeringLearningRuntimeState.lastRunAt,
     lastSuccessAt:anthropicEngineeringLearningRuntimeState.lastSuccessAt,
     nextRunAt:anthropicEngineeringLearningRuntimeState.nextRunAt,
@@ -14210,12 +14235,14 @@ const bootstrapApi=createBootstrapApi({
   harnessTurnContractSpecPath,
   openAIBlogLearningEnabled,
   openAIBlogLearningIntervalMinutes,
+  openAIBlogLearningBackgroundRefreshEnabled,
   defaultOpenAIBlogLearningPolicyPath,
   openAIBlogLearningPolicy,
   openAIBlogLearningRuntimeRetrievalEnabled,
   openAIBlogLearningRuntimeRetrievalShadowMode,
   anthropicEngineeringLearningEnabled,
   anthropicEngineeringLearningIntervalMinutes,
+  anthropicEngineeringLearningBackgroundRefreshEnabled,
   defaultAnthropicEngineeringLearningPolicyPath,
   anthropicEngineeringLearningPolicy,
   startOpenAIBlogLearningLoop,

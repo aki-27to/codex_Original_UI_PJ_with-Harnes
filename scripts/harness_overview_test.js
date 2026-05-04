@@ -2102,7 +2102,7 @@ async function main() {
     })
   );
   checks.push(
-    runCheck("overview surface module builds governed graph payload with explicit deps", () => {
+    runCheck("overview surface module builds governed graph payload without write-syncing", () => {
       const snapshot = buildHarnessOverviewPayload({
         apiVersion: "test",
         buildBrowserCapabilityOverview: () => ({ browser: true }),
@@ -2135,7 +2135,7 @@ async function main() {
           evalHarness: {
             suite: {},
           },
-          governedMemory: {},
+          governedMemory: { status: "ready", itemCount: 3 },
         }),
         buildRuntimeProofBundleSnapshot: () => ({}),
         buildSignoffBundleSnapshot: () => ({}),
@@ -2161,11 +2161,14 @@ async function main() {
         safeString: (value, max = 12000) => (typeof value === "string" ? value.trim().slice(0, max) : ""),
         sanitizeRuntimeSnapshotForOverview: (value) => value,
         signoffBundlesRoot: "logs/bundles/signoff",
-        syncGovernedMemoryGraph: () => ({ summary: { nodes: 1 } }),
+        syncGovernedMemoryGraph: () => {
+          throw new Error("GET overview payload must not refresh governed memory artifacts");
+        },
         workspaceRoot: workspaceRoot,
       });
 
-      assert.deepStrictEqual(snapshot.memory.governedGraph, { nodes: 1 }, "module must preserve governed graph summary");
+      assert.strictEqual(snapshot.memory.governedGraph.status, "ready", "module must preserve runtime governed graph summary");
+      assert.strictEqual(snapshot.memory.governedGraph.source, "runtime_snapshot_no_write", "module must mark overview memory as a no-write runtime snapshot");
       assert(Array.isArray(snapshot.eval.recentRuns), "module must keep recent eval runs structured");
     })
   );

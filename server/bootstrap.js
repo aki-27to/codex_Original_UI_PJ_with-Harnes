@@ -222,6 +222,8 @@ function createBootstrapApi(ctx) {
       },
       externalLearning: {
         enabled: ctx.openAIBlogLearningEnabled ? 1 : 0,
+        backgroundRefreshEnabled: ctx.openAIBlogLearningBackgroundRefreshEnabled ? 1 : 0,
+        refreshCommand: "npm run refresh:learning-output",
         intervalMinutes: ctx.openAIBlogLearningIntervalMinutes,
         policyPath: ctx.summarizePathForOperationLog(ctx.defaultOpenAIBlogLearningPolicyPath, 220),
         sourceUrl: ctx.safeString(
@@ -236,6 +238,8 @@ function createBootstrapApi(ctx) {
       secondaryLearning: {
         anthropicEngineering: {
           enabled: ctx.anthropicEngineeringLearningEnabled ? 1 : 0,
+          backgroundRefreshEnabled: ctx.anthropicEngineeringLearningBackgroundRefreshEnabled ? 1 : 0,
+          refreshCommand: "npm run refresh:learning-output",
           intervalMinutes: ctx.anthropicEngineeringLearningIntervalMinutes,
           policyPath: ctx.summarizePathForOperationLog(
             ctx.defaultAnthropicEngineeringLearningPolicyPath,

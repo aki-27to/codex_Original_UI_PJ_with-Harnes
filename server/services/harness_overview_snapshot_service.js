@@ -295,6 +295,7 @@ function createHarnessOverviewSnapshotService(deps = {}) {
       buildExecutionMemoryOverview,
       buildHarnessTraceabilitySnapshot,
       buildRuntimeApiSnapshot,
+      refreshTrackedLearningArtifacts: false,
       reason,
       safeString,
       syncGovernedMemoryGraph,

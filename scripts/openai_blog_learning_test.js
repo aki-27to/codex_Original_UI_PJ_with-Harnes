@@ -322,6 +322,27 @@ async function run() {
   assert(Array.isArray(injection.matchedHintIds) && injection.matchedHintIds.length >= 1, "prompt injection should surface matched self improvement hints");
   assert(Array.isArray(injection.matchedFrontendQualityNoteIds) && injection.matchedFrontendQualityNoteIds.length === 0, "frontend quality notes should not appear before reinforcement");
 
+  const reinforcementMemoryPath = path.join(workspaceRoot, "output", "openai_blog_reinforcement_memory.json");
+  const selfImprovementStatePath = path.join(workspaceRoot, "output", "openai_blog_self_improvement_state.json");
+  const transientMemoryBefore = fs.existsSync(reinforcementMemoryPath) ? fs.readFileSync(reinforcementMemoryPath, "utf8") : "";
+  const transientStateBefore = fs.existsSync(selfImprovementStatePath) ? fs.readFileSync(selfImprovementStatePath, "utf8") : "";
+  const transientObservation = recordOpenAIBlogLearningObservation({
+    policy,
+    turnId: "turn-transient",
+    threadId: "thread-001",
+    agentName: "default",
+    finalStatus: "completed",
+    taskOutcomeStatus: "COMPLETED",
+    planningContext,
+    familyCompletionGate: { applies: true, status: "passed" },
+    externalLearning: injection,
+    now: new Date("2026-03-23T06:30:00.000Z"),
+    persist: false,
+  });
+  assert(transientObservation && transientObservation.persisted === false, "transient observation should report non-persistence");
+  assert.strictEqual(fs.existsSync(reinforcementMemoryPath) ? fs.readFileSync(reinforcementMemoryPath, "utf8") : "", transientMemoryBefore, "transient observation must not write reinforcement memory");
+  assert.strictEqual(fs.existsSync(selfImprovementStatePath) ? fs.readFileSync(selfImprovementStatePath, "utf8") : "", transientStateBefore, "transient observation must not refresh self-improvement state");
+
   const firstObservation = recordOpenAIBlogLearningObservation({
     policy,
     turnId: "turn-001",
@@ -353,8 +374,8 @@ async function run() {
     now: new Date("2026-03-23T08:00:00.000Z"),
   });
   assert(reinforcementResult && reinforcementResult.skipped === false, "second reinforcement observation should be recorded");
-  assert(fs.existsSync(path.join(workspaceRoot, "output", "openai_blog_reinforcement_memory.json")), "reinforcement memory should be written");
-  const reinforcedState = JSON.parse(fs.readFileSync(path.join(workspaceRoot, "output", "openai_blog_self_improvement_state.json"), "utf8"));
+  assert(fs.existsSync(reinforcementMemoryPath), "reinforcement memory should be written");
+  const reinforcedState = JSON.parse(fs.readFileSync(selfImprovementStatePath, "utf8"));
   assert(Number(reinforcedState.appliedFrontendQualityNoteCount) >= 1, "reinforced frontend quality note should auto-apply after repeated successful turns");
   assert.strictEqual(Number(reinforcedState.awaitingObservationCount) || 0, 0, "reinforced state should clear waiting observation count after promotion");
   const reinforcedPlaybook = fs.readFileSync(path.join(workspaceRoot, "docs", "FRONTEND_QUALITY_PLAYBOOK.md"), "utf8");

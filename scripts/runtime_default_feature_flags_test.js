@@ -68,7 +68,7 @@ function testRepoCodexConfigDisablesFastByDefault() {
 }
 
 async function testRuntimeSnapshotReflectsDefaultFastAndGuardianFeatures() {
-  const requestedPort = 58600 + Math.floor(Math.random() * 200);
+  const requestedPort = 59000 + Math.floor(Math.random() * 500);
   const handle = await startInProcessHarnessServer({
     CODEX_AUTO_OPEN_BROWSER: "0",
     CODEX_UI_PORT: String(requestedPort),
@@ -89,6 +89,38 @@ async function testRuntimeSnapshotReflectsDefaultFastAndGuardianFeatures() {
     assert.strictEqual(runtime.fastModeEnabled, false, "runtime should expose fast mode disabled by default");
     assert.strictEqual(runtime.automaticApprovalReviewEnabled, true, "runtime should expose automatic approval review enabled by default");
     assert.strictEqual(runtime.serviceTier, "auto", "runtime should expose the effective auto service tier when fast mode is off");
+    assert.strictEqual(
+      runtime.activePostureProfile,
+      runtime.deploymentPosture && runtime.deploymentPosture.activePostureProfile,
+      "runtime should expose activePostureProfile as a top-level live truth field"
+    );
+    assert.strictEqual(
+      runtime.active_posture_profile,
+      runtime.activePostureProfile,
+      "runtime should expose a snake_case active posture alias"
+    );
+    assert.strictEqual(
+      runtime.designCompletionEvidence && runtime.designCompletionEvidence.requiredTogetherBeforeCompletion,
+      true,
+      "runtime should expose screenshot+reviewer evidence as one design completion gate"
+    );
+    assert.strictEqual(
+      runtime.currentTruth
+        && runtime.currentTruth.designCompletionEvidence
+        && runtime.currentTruth.designCompletionEvidence.completionStateIfMissing,
+      "FAILED_VALIDATION",
+      "current truth should fail closed when design screenshot/reviewer evidence is missing"
+    );
+    assert.strictEqual(
+      runtime.externalLearning && runtime.externalLearning.backgroundRefreshEnabled,
+      false,
+      "learning tracked-output refresh should not run as a background writer by default"
+    );
+    assert.strictEqual(
+      runtime.externalLearning && runtime.externalLearning.refreshCommand,
+      "npm run refresh:learning-output",
+      "runtime should expose the fixed learning-output refresh command"
+    );
     const activeAgent = Array.isArray(runtime.agents)
       ? runtime.agents.find((entry) => entry && entry.name === runtime.activeAgent)
       : null;

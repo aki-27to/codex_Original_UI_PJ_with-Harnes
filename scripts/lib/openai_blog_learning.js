@@ -2010,6 +2010,7 @@ function recordOpenAIBlogLearningObservation({
   familyCompletionGate = null,
   externalLearning = null,
   now = new Date(),
+  persist = true,
 } = {}) {
   const normalizedPolicy = normalizeOpenAIBlogLearningPolicy(policy, {
     policyPath: policy && policy.policyPath ? policy.policyPath : defaultOpenAIBlogLearningPolicyPath,
@@ -2090,6 +2091,15 @@ function recordOpenAIBlogLearningObservation({
   articleIds.forEach((articleId) => updateReinforcementStatMap(memory.articleStats, articleId, outcome, observationTurnId, nowIso));
   matchedHintIds.forEach((hintId) => updateReinforcementStatMap(memory.hintStats, hintId, outcome, observationTurnId, nowIso));
   matchedTopics.forEach((topic) => updateReinforcementStatMap(memory.topicStats, topic, outcome, observationTurnId, nowIso));
+  if (!persist) {
+    return {
+      memory,
+      selfImprovement: null,
+      skipped: false,
+      persisted: false,
+      reason: outcome,
+    };
+  }
   writeJsonIfMeaningfullyChanged(normalizedPolicy.paths.stabilizationMemoryPath, memory);
   const ledger = readJsonIfExists(normalizedPolicy.paths.ledgerPath);
   const digest = readJsonIfExists(normalizedPolicy.paths.digestPath);
@@ -2105,6 +2115,7 @@ function recordOpenAIBlogLearningObservation({
     memory,
     selfImprovement,
     skipped: false,
+    persisted: true,
     reason: outcome,
   };
 }
@@ -3203,6 +3214,10 @@ function buildRuntimeSnapshotFromArtifacts(policy, runtimeState = {}) {
     schema: safeString(policy && policy.artifacts && policy.artifacts.runtimeSchema, 120) || "openai-blog-learning-runtime.v1",
     enabled: Boolean(runtimeState.enabled),
     running: Boolean(runtimeState.running),
+    backgroundRefreshEnabled: Boolean(runtimeState.backgroundRefreshEnabled),
+    backgroundRefreshEnvKey: safeString(runtimeState.backgroundRefreshEnvKey, 120),
+    refreshMode: runtimeState.backgroundRefreshEnabled ? "scheduled_background_refresh" : "manual_refresh_command",
+    refreshCommand: safeString(runtimeState.refreshCommand, 160),
     mode: safeString(policy && policy.governance && policy.governance.mode, 80) || "observe_propose_and_doc_sync",
     sourceName: safeString(policy && policy.source && policy.source.name, 120) || "OpenAI Developers Blog",
     sourceUrl: safeString(policy && policy.source && policy.source.indexUrl, 260),

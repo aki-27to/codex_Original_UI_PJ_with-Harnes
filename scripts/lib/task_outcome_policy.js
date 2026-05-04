@@ -410,7 +410,7 @@ function summarizeTaskOutcomeContract(spec) {
     authoritySeparation: contract.authoritySeparation,
     turnStateDefaults: contract.turnStateDefaults,
     turnStateHints: contract.turnStateHints,
-    reasonMapKeys: Object.keys(contract.reasonMap).slice(0, 32),
+    reasonMapKeys: Object.keys(contract.reasonMap),
   };
 }
 

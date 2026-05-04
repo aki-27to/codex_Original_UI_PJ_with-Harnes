@@ -7941,7 +7941,7 @@ function mergeObservationStatusIntoState(state, laneSummary) {
   return next;
 }
 
-function refreshLearningLaneArtifactsFromCanonical({ workspaceRoot, items, observationProjection }) {
+function refreshLearningLaneArtifactsFromCanonical({ workspaceRoot, items, observationProjection, writeArtifacts = true }) {
   const openaiPolicy = loadOpenAIBlogLearningPolicy(path.join(workspaceRoot, "scripts", "config", "openai_blog_learning_policy.json"));
   const anthropicPolicy = loadAnthropicEngineeringLearningPolicy(path.join(workspaceRoot, "scripts", "config", "anthropic_engineering_learning_policy.json"));
   const openaiLaneItems = items.filter((item) => safeString(item && item.sourceTier, 40) === "external_primary");
@@ -7958,18 +7958,6 @@ function refreshLearningLaneArtifactsFromCanonical({ workspaceRoot, items, obser
     observationProjection,
     sourceTier: "external_secondary",
   });
-  writeJsonIfChanged(openaiPolicy.paths.stabilizationMemoryPath, openaiReinforcement);
-  writeJsonIfChanged(path.join(workspaceRoot, "output", "anthropic_engineering_reinforcement_memory.json"), anthropicReinforcement);
-  try {
-    refreshSelfImprovementArtifacts({ policy: openaiPolicy, now: new Date() });
-  } catch {
-    // Keep the governed memory graph resilient when upstream learning artifacts are incomplete.
-  }
-  try {
-    refreshSelfImprovementArtifacts({ policy: anthropicPolicy, now: new Date() });
-  } catch {
-    // Anthropic lane can remain proposal-only if artifacts are incomplete.
-  }
   const openaiLaneSummary = observationProjection && observationProjection.byLane && observationProjection.byLane.external_primary
     ? observationProjection.byLane.external_primary
     : {};
@@ -7978,13 +7966,31 @@ function refreshLearningLaneArtifactsFromCanonical({ workspaceRoot, items, obser
     : {};
   const openaiStatePath = openaiPolicy.paths.selfImprovementStatePath;
   const anthropicStatePath = anthropicPolicy.paths.selfImprovementStatePath;
-  writeJsonIfChanged(openaiStatePath, mergeObservationStatusIntoState(readJsonObject(openaiStatePath), openaiLaneSummary));
-  writeJsonIfChanged(anthropicStatePath, mergeObservationStatusIntoState(readJsonObject(anthropicStatePath), anthropicLaneSummary));
+  let openaiState = mergeObservationStatusIntoState(readJsonObject(openaiStatePath), openaiLaneSummary);
+  let anthropicState = mergeObservationStatusIntoState(readJsonObject(anthropicStatePath), anthropicLaneSummary);
+  if (writeArtifacts) {
+    writeJsonIfChanged(openaiPolicy.paths.stabilizationMemoryPath, openaiReinforcement);
+    writeJsonIfChanged(path.join(workspaceRoot, "output", "anthropic_engineering_reinforcement_memory.json"), anthropicReinforcement);
+    try {
+      refreshSelfImprovementArtifacts({ policy: openaiPolicy, now: new Date() });
+    } catch {
+      // Keep the governed memory graph resilient when upstream learning artifacts are incomplete.
+    }
+    try {
+      refreshSelfImprovementArtifacts({ policy: anthropicPolicy, now: new Date() });
+    } catch {
+      // Anthropic lane can remain proposal-only if artifacts are incomplete.
+    }
+    openaiState = mergeObservationStatusIntoState(readJsonObject(openaiStatePath), openaiLaneSummary);
+    anthropicState = mergeObservationStatusIntoState(readJsonObject(anthropicStatePath), anthropicLaneSummary);
+    writeJsonIfChanged(openaiStatePath, openaiState);
+    writeJsonIfChanged(anthropicStatePath, anthropicState);
+  }
   return {
     openaiReinforcement,
     anthropicReinforcement,
-    openaiState: readJsonObject(openaiStatePath),
-    anthropicState: readJsonObject(anthropicStatePath),
+    openaiState,
+    anthropicState,
   };
 }
 
@@ -9779,7 +9785,7 @@ function renderPublicOverviewMarkdown({
   return `${lines.join("\n")}\n`;
 }
 
-function syncGovernedMemoryGraph({ workspaceRoot = workspaceRootDefault, runtime = {}, traceability = {}, reason = "manual" } = {}) {
+function syncGovernedMemoryGraph({ workspaceRoot = workspaceRootDefault, runtime = {}, traceability = {}, reason = "manual", refreshTrackedLearningArtifacts = true } = {}) {
   const paths = getMemoryPaths(workspaceRoot);
   ensureMemoryLayout(paths);
   const previousById = readJsonObject(paths.indexes.byId);
@@ -9911,7 +9917,12 @@ function syncGovernedMemoryGraph({ workspaceRoot = workspaceRootDefault, runtime
   const allEvents = loadJsonl(paths.eventsPath);
   let observationProjection = buildObservationProjection({ workspaceRoot, items, events: allEvents });
   writeJsonIfChanged(path.join(paths.projections.observationStateRoot, "latest.json"), observationProjection);
-  let learningArtifacts = refreshLearningLaneArtifactsFromCanonical({ workspaceRoot, items, observationProjection });
+  let learningArtifacts = refreshLearningLaneArtifactsFromCanonical({
+    workspaceRoot,
+    items,
+    observationProjection,
+    writeArtifacts: refreshTrackedLearningArtifacts,
+  });
   const continuityProjection = {
     schema: "governed-memory-continuity-projection.v1",
     generatedAt: toIso(),
@@ -10181,7 +10192,12 @@ function syncGovernedMemoryGraph({ workspaceRoot = workspaceRootDefault, runtime
   const finalEvents = loadJsonl(paths.eventsPath);
   observationProjection = buildObservationProjection({ workspaceRoot, items, events: finalEvents });
   writeJsonIfChanged(path.join(paths.projections.observationStateRoot, "latest.json"), observationProjection);
-  learningArtifacts = refreshLearningLaneArtifactsFromCanonical({ workspaceRoot, items, observationProjection });
+  learningArtifacts = refreshLearningLaneArtifactsFromCanonical({
+    workspaceRoot,
+    items,
+    observationProjection,
+    writeArtifacts: refreshTrackedLearningArtifacts,
+  });
   writeJsonIfChanged(path.join(paths.projections.bottlenecksRoot, "latest.json"), bottlenecks);
   writeJsonIfChanged(paths.output.latestOverviewJson, summary);
   ensureDir(paths.output.root);

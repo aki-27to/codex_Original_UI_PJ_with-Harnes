@@ -60,6 +60,7 @@
     "output/continuity_public/*.md",
     "output/governance_public/*.json",
     "output/governance_public/*.md",
+    "output/harness-diag-*.md",
     "output/memory_public/*.json",
     "output/memory_public/*.md",
     "output/openai_blog_learning_digest.json",
