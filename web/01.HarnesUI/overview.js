@@ -1885,7 +1885,7 @@ function renderMemory(payload) {
   }
   if (elements.documentToolingCard) {
     const toolingItems = toArr(documentTooling.tools).map((entry) => ({
-      title: safeText(entry.displayName || entry.id, "tool"),
+      title: safeText(entry.displayName || entry.name || entry.id, "tool"),
       tags: [
         { label: entry.installed ? "available" : "missing", tone: entry.installed ? "pass" : "warn" },
         { label: safeText(entry.category, "tool"), tone: "info" },
@@ -1893,7 +1893,7 @@ function renderMemory(payload) {
       detail: `${safeText(entry.command, "-")} / ${safeText(entry.version, "-")} / ${safeText(entry.installCommand, "-")}`,
     }));
     const routeItems = toArr(documentTooling.recommendedRoutes).map((entry) => ({
-      title: safeText(entry.useCase, "route"),
+      title: safeText(entry.useCase || entry.label, "route"),
       tags: [{ label: safeText(entry.toolId, "tool"), tone: "info" }],
       detail: safeText(entry.reason, "-"),
     }));

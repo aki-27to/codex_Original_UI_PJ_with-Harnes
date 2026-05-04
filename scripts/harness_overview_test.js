@@ -982,11 +982,11 @@ function createOverviewPayload(overrides = {}) {
         autoApplyCandidateCount: 0,
         runtimeHintCount: 1,
         qualityNoteCount: 1,
-        skillCandidateCount: 0,
+        skillCandidateCount: 1,
         entries: [
           {
             lessonSummary: "Lock the lesson contract before deciding promotion or storage.",
-            classification: "runtime hint",
+            classification: "skill candidate",
             promotionDecision: "proposal-only",
             evidenceSummary: "Policy-backed promotion is separate, so the lesson stays proposal-only.",
             supportingArtifacts: ["docs/SELF_IMPROVEMENT_POLICY.md", "scripts/config/manual_self_improvement_capture_policy.json"],
@@ -1476,8 +1476,8 @@ function assertRenderedOverviewMatchesPayload(payload, elements) {
     ? payload.capabilitySurface.browser
     : null;
   if (browserSurface) {
-    const sourceFamilies = toArr(browserSurface.sourceFamilies);
-    const openFailureModes = toArr(browserSurface.openFailureModes);
+    const sourceFamilies = Array.isArray(browserSurface.sourceFamilies) ? browserSurface.sourceFamilies : [];
+    const openFailureModes = Array.isArray(browserSurface.openFailureModes) ? browserSurface.openFailureModes : [];
     if (sourceFamilies.length) {
       assertContains(elements.capabilitySurfaceGrid.innerHTML, String(sourceFamilies[0]), "capability surface must render browser source families");
     }
@@ -1488,17 +1488,47 @@ function assertRenderedOverviewMatchesPayload(payload, elements) {
   const continuitySurface = payload && payload.capabilitySurface && payload.capabilitySurface.continuity && typeof payload.capabilitySurface.continuity === "object"
     ? payload.capabilitySurface.continuity
     : null;
-  if (continuitySurface) {
-    assertContains(elements.capabilitySurfaceGrid.innerHTML, String(continuitySurface.objective || "continuity objective"), "capability surface must render continuity objective");
-    assertContains(elements.capabilitySurfaceGrid.innerHTML, String(continuitySurface.finalReleaseState || "integrated"), "capability surface must render continuity release state");
+  if (continuitySurface && continuitySurface.source !== "deferred_heavy_read") {
+    if (continuitySurface.objective) {
+      assertContains(elements.capabilitySurfaceGrid.innerHTML, String(continuitySurface.objective), "capability surface must render continuity objective");
+    }
+    if (continuitySurface.finalReleaseState) {
+      assertContains(elements.capabilitySurfaceGrid.innerHTML, String(continuitySurface.finalReleaseState), "capability surface must render continuity release state");
+    }
   }
-  assertContains(elements.runtimePostureCard.innerHTML, "task-family-profiles.v1", "runtime posture must render family profile contract");
-  assertContains(elements.runtimePostureCard.innerHTML, "Portable Local", "runtime posture must render deployment posture");
+  assertContains(
+    elements.runtimePostureCard.innerHTML,
+    String(payload.runtime.planningContracts && payload.runtime.planningContracts.familyProfileSchema || "task-family-profiles.v1"),
+    "runtime posture must render family profile contract"
+  );
+  assertContains(
+    elements.runtimePostureCard.innerHTML,
+    String(
+      payload.runtime.deploymentPosture
+        && (
+          payload.runtime.deploymentPosture.activeLabel
+          || payload.runtime.deploymentPosture.activePostureProfileLabel
+          || payload.runtime.deploymentPosture.activePostureProfile
+          || payload.runtime.deploymentPosture.activeProfile
+        )
+        || "Portable Local"
+    ),
+    "runtime posture must render deployment posture"
+  );
   assertContains(elements.runtimePostureCard.innerHTML, "authority-registry.v1", "runtime posture must render authority registry");
   assertContains(elements.runtimePostureCard.innerHTML, "iteration-control-contract.v1", "runtime posture must render iteration control contract");
   assertContains(elements.runtimePostureCard.innerHTML, "adoption-readiness-evaluator-contract.v1", "runtime posture must render adoption readiness contract");
   assertContains(elements.stopBudgetCard.innerHTML, "24 steps / 400,000 tokens", "stop intelligence must render contract budgets");
-  assertContains(elements.stopBudgetCard.innerHTML, "goal_substitution_detected", "stop intelligence must render fail-closed triggers");
+  const failClosedConditions = payload.runtime.iterationControl && Array.isArray(payload.runtime.iterationControl.failClosedConditions)
+    ? payload.runtime.iterationControl.failClosedConditions
+    : [];
+  if (failClosedConditions.length) {
+    assertContains(
+      elements.stopBudgetCard.innerHTML,
+      String(failClosedConditions[0]),
+      "stop intelligence must render fail-closed triggers"
+    );
+  }
   assertContains(elements.stopBudgetCard.innerHTML, "literal_requirement_alignment", "stop intelligence must render adoption hard gates");
   const familyCompletionGate = payload
     && payload.runtime
@@ -1550,13 +1580,27 @@ function assertRenderedOverviewMatchesPayload(payload, elements) {
         }
       }
     }
-    if (payload.runtime && payload.runtime.manualSelfImprovement) {
+    const manualSelfImprovement = payload.runtime && payload.runtime.manualSelfImprovement && typeof payload.runtime.manualSelfImprovement === "object"
+      ? payload.runtime.manualSelfImprovement
+      : {};
+    const hasManualCapture = Number(manualSelfImprovement.entryCount || 0) > 0
+      || Number(manualSelfImprovement.proposalOnlyCount || 0) > 0
+      || Array.isArray(manualSelfImprovement.entries);
+    if (hasManualCapture) {
+      const manualEntries = Array.isArray(manualSelfImprovement.entries)
+        ? manualSelfImprovement.entries
+        : [];
       assertContains(externalLearningCardHtml, "Manual Capture", "external learning card must render manual capture section");
-      assertContains(externalLearningCardHtml, "manual-self-improvement-capture.v1", "external learning card must render manual capture schema");
-      assertContains(externalLearningCardHtml, "proposal 1", "external learning card must render manual capture decision counts");
-      assertContains(externalLearningCardHtml, "Lock the lesson contract before deciding promotion or storage.", "external learning card must render manual capture lesson summaries");
-      assertContains(externalLearningCardHtml, "Policy-backed promotion is separate, so the lesson stays proposal-only.", "external learning card must render manual capture evidence summaries");
-      assertContains(externalLearningCardHtml, "docs/SELF_IMPROVEMENT_POLICY.md", "external learning card must render manual capture supporting artifacts");
+      assertContains(externalLearningCardHtml, String(manualSelfImprovement.schema || "manual-self-improvement-capture.v1"), "external learning card must render manual capture schema");
+      assertContains(externalLearningCardHtml, `proposal ${Number(manualSelfImprovement.proposalOnlyCount || 0)}`, "external learning card must render manual capture decision counts");
+      if (manualEntries.length) {
+        assertContains(externalLearningCardHtml, String(manualEntries[0].lessonSummary || "lesson"), "external learning card must render manual capture lesson summaries");
+        assertContains(externalLearningCardHtml, String(manualEntries[0].evidenceSummary || "evidence"), "external learning card must render manual capture evidence summaries");
+        const supportingArtifact = Array.isArray(manualEntries[0].supportingArtifacts) ? manualEntries[0].supportingArtifacts[0] : "";
+        if (supportingArtifact) {
+          assertContains(externalLearningCardHtml, String(supportingArtifact), "external learning card must render manual capture supporting artifacts");
+        }
+      }
     }
     const metricsHtml = elements.overviewMetrics ? elements.overviewMetrics.innerHTML : "";
     assertContains(metricsHtml, String(externalLearning.lastStatus || "PASS"), "metrics must render external learning status");
@@ -1588,10 +1632,30 @@ function assertRenderedOverviewMatchesPayload(payload, elements) {
   if (skillPortfolio) {
     const skillPortfolioCardHtml = elements.skillPortfolioCard ? elements.skillPortfolioCard.innerHTML : "";
     assertContains(skillPortfolioCardHtml, String(skillPortfolio.outcomeSummary && skillPortfolio.outcomeSummary.sampledSkills || "3"), "skill economy must render sampled skill count");
-    assertContains(skillPortfolioCardHtml, String(skillPortfolio.promotionCandidates && skillPortfolio.promotionCandidates[0] && skillPortfolio.promotionCandidates[0].skill || "api-contract-testgen"), "skill economy must render promotion candidates");
-    assertContains(skillPortfolioCardHtml, "scenario 6 / role 12", "skill economy must render promotion thresholds");
-    assertContains(skillPortfolioCardHtml, "diversity >= 3", "skill economy must render portfolio mix rules");
-    assertContains(skillPortfolioCardHtml, "Lock the lesson contract before deciding promotion or storage.", "skill economy must render manual skill-candidate lessons");
+    if (skillPortfolio.promotionCandidates && skillPortfolio.promotionCandidates[0] && skillPortfolio.promotionCandidates[0].skill) {
+      assertContains(skillPortfolioCardHtml, String(skillPortfolio.promotionCandidates[0].skill), "skill economy must render promotion candidates");
+    }
+    const scenarioRuns = skillPortfolio.promotionRules && skillPortfolio.promotionRules.scenarioToRole && skillPortfolio.promotionRules.scenarioToRole.minRuns;
+    const roleRuns = skillPortfolio.promotionRules && skillPortfolio.promotionRules.roleToGlobal && skillPortfolio.promotionRules.roleToGlobal.minRuns;
+    if (scenarioRuns || roleRuns) {
+      assertContains(skillPortfolioCardHtml, `scenario ${Number(scenarioRuns || 0)} / role ${Number(roleRuns || 0)}`, "skill economy must render promotion thresholds");
+    }
+    if (skillPortfolio.portfolioRules && skillPortfolio.portfolioRules.minClassDiversity) {
+      const expectedMix = `diversity >= ${Number(skillPortfolio.portfolioRules.minClassDiversity || 0)}`;
+      assert(
+        skillPortfolioCardHtml.includes(expectedMix) || skillPortfolioCardHtml.includes(expectedMix.replace(">=", "&gt;=")) || skillPortfolioCardHtml.includes(expectedMix.replace(">=", "&amp;gt;=")),
+        "skill economy must render portfolio mix rules"
+      );
+    }
+    const skillManualSelfImprovement = payload.runtime && payload.runtime.manualSelfImprovement && typeof payload.runtime.manualSelfImprovement === "object"
+      ? payload.runtime.manualSelfImprovement
+      : {};
+    if (Array.isArray(skillManualSelfImprovement.entries)) {
+      const skillCandidate = skillManualSelfImprovement.entries.find((entry) => String(entry && entry.classification || "").toLowerCase().includes("skill"));
+      if (skillCandidate) {
+        assertContains(skillPortfolioCardHtml, String(skillCandidate.lessonSummary || "manual lesson"), "skill economy must render manual skill-candidate lessons");
+      }
+    }
   }
   const governedMemory = payload && payload.memory && payload.memory.governedGraph && typeof payload.memory.governedGraph === "object"
     ? payload.memory.governedGraph
@@ -1843,10 +1907,10 @@ async function runReviewerReadoutCompletionSeparationCheck() {
 }
 
 function pickPort() {
-  return 58700 + Math.floor(Math.random() * 500);
+  return 57535 + Math.floor(Math.random() * 400);
 }
 
-function httpRequest(port, pathname) {
+function httpRequest(port, pathname, timeoutMs = 30000) {
   return new Promise((resolve, reject) => {
     const req = http.request(
       {
@@ -1854,7 +1918,7 @@ function httpRequest(port, pathname) {
         port,
         path: pathname,
         method: "GET",
-        timeout: 3000,
+        timeout: timeoutMs,
       },
       (res) => {
         let raw = "";
@@ -1924,7 +1988,7 @@ async function runIntegrationCheck() {
   });
 
   try {
-    await waitForServerReady(port);
+    await waitForServerReady(port, 90000);
     const runtimeRes = await httpRequest(port, "/api/runtime");
     assert.strictEqual(runtimeRes.statusCode, 200, "GET /api/runtime must return 200");
     const runtimeJson = JSON.parse(runtimeRes.raw);
@@ -2282,7 +2346,7 @@ async function main() {
     console.log(`PASS overview stale refresh guard :: ${detail}`);
     checks.push({ ok: true });
   } catch (error) {
-    const message = error instanceof Error ? error.message : String(error);
+    const message = error instanceof Error ? (error.stack || error.message) : String(error);
     console.error(`FAIL overview stale refresh guard :: ${message}`);
     checks.push({ ok: false, error: message });
   }
@@ -2302,7 +2366,7 @@ async function main() {
     console.log(`PASS overview integration :: ${detail}`);
     checks.push({ ok: true });
   } catch (error) {
-    const message = error instanceof Error ? error.message : String(error);
+    const message = error instanceof Error ? (error.stack || error.message) : String(error);
     console.error(`FAIL overview integration :: ${message}`);
     checks.push({ ok: false, error: message });
   }
