@@ -47,10 +47,14 @@ function loadHelpers() {
       extractFunction(source, "runtimeTurnStatusForUi"),
       extractFunction(source, "lifecycleStepToneForUi"),
       extractFunctionBefore(source, "deriveUserVisibleLifecycleForUi", "createPerformanceState"),
+      extractFunction(source, "taskOutcomeStatusForUi"),
+      extractFunction(source, "taskOutcomeReasonForUi"),
+      extractFunction(source, "taskOutcomeBlocksWorkCompletionForUi"),
       extractFunction(source, "userFacingTerminalStatusForUi"),
       extractFunction(source, "userFacingWorkflowTerminalOverrideForUi"),
       extractFunction(source, "harnessStopReasonSummaryForUi"),
-      "this.__helper__ = { deriveUserVisibleLifecycleForUi, deriveUserFacingWorkflowForUi, userFacingTerminalStatusForUi, userFacingWorkflowTerminalOverrideForUi, harnessStopReasonSummaryForUi };",
+      extractFunction(source, "harnessStopReasonVisibleForUi"),
+      "this.__helper__ = { deriveUserVisibleLifecycleForUi, deriveUserFacingWorkflowForUi, userFacingTerminalStatusForUi, userFacingWorkflowTerminalOverrideForUi, harnessStopReasonSummaryForUi, harnessStopReasonVisibleForUi };",
     ].join("\n"),
     context
   );
@@ -64,6 +68,7 @@ function run() {
     userFacingTerminalStatusForUi,
     userFacingWorkflowTerminalOverrideForUi,
     harnessStopReasonSummaryForUi,
+    harnessStopReasonVisibleForUi,
   } = loadHelpers();
 
   const requirementSnapshot = {
@@ -105,6 +110,24 @@ function run() {
   });
   assert.strictEqual(stopReason.label, "完了", "completed replies should show a completed stop-reason badge");
   assert.match(stopReason.detail, /返却済み/, "completed stop-reason detail should explain that the answer was already returned");
+  assert.strictEqual(
+    harnessStopReasonVisibleForUi(stopReason),
+    true,
+    "completed stop-reason rows should stay visible"
+  );
+
+  const runningStopReason = harnessStopReasonSummaryForUi({
+    status: "running",
+    currentPending: 1,
+    requirementGateBlocked: false,
+    requirementSnapshot,
+    lastResultType: "",
+  });
+  assert.strictEqual(
+    harnessStopReasonVisibleForUi(runningStopReason),
+    false,
+    "active running state should not render a no-op stop-reason row"
+  );
 
   const lifecycle = deriveUserVisibleLifecycleForUi({
     requirementSnapshot,

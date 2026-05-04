@@ -44,6 +44,10 @@
         <p id="liveStatusDetail" class="live-status-detail">まだ要求はありません。</p>
       </section>
 
+      <div class="topbar-actions">
+        <button id="serverRestartBtn" class="btn mini secondary server-restart-btn" type="button" title="Webアプリを安全に再起動します。実行中の作業がある場合は止めません。">Web再起動</button>
+      </div>
+
       <details class="topbar-tools" data-advanced="true">
         <summary>設定</summary>
         <div class="state-pills">
@@ -267,7 +271,7 @@
                 <button class="btn secondary mini composer-preset" type="button" data-compose-preset="/goal " title="/goal コマンドを入力します。送信時にCodex goalへ接続し、未対応runtimeではHarnesUI goalに保存します。">/goal</button>
                 <div class="slash-shortcuts" aria-label="Representative slash command shortcuts">
                   <button class="btn secondary mini composer-preset slash-shortcut" type="button" data-compose-preset="/help" data-slash-command="/help" title="/help を入力します。送信すると利用できるslash command一覧を表示します。">/help</button>
-                  <button class="btn secondary mini composer-preset slash-shortcut" type="button" data-compose-preset="/status" data-slash-command="/status" title="/status を入力します。送信すると現在のCodex session設定を表示します。">/status</button>
+                  <button class="btn secondary mini composer-preset slash-shortcut" type="button" data-compose-preset="/status" data-slash-command="/status" title="/status を入力します。送信するとCodex status相当の項目を、現在の明るいHarnesUI表示で確認します。">/status</button>
                   <button class="btn secondary mini composer-preset slash-shortcut" type="button" data-compose-preset="/diff" data-slash-command="/diff" title="/diff を入力します。送信すると現在のgit diff summaryを表示します。">/diff</button>
                   <button class="btn secondary mini composer-preset slash-shortcut" type="button" data-compose-preset="/resume --last" data-slash-command="/resume --last" title="/resume --last を入力します。送信すると最新sessionをresume対象にします。">/resume</button>
                   <button class="btn secondary mini composer-preset slash-shortcut" type="button" data-compose-preset="/fork" data-slash-command="/fork" title="/fork を入力します。必要なら名前を追記して送信するとagent forkを作ります。">/fork</button>
@@ -398,7 +402,7 @@
                       </ol>
                       <p id="harnessWorkflowDetail" class="harness-workflow-detail">依頼を受けると、ここに今どこまで進んだかを短く表示します。</p>
                     </div>
-                    <div class="harness-status-row harness-status-row-blocked">
+                    <div class="harness-status-row harness-status-row-blocked" hidden>
                       <div class="harness-status-row-head">
                         <span class="harness-status-label">止まっている理由</span>
                         <strong id="harnessComplianceBadge" class="harness-status-value idle">なし</strong>

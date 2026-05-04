@@ -76,7 +76,8 @@ function testUnknownAgentAndWorkerLegacyBehavior() {
     operation: "fileChange",
     changedPaths: ["server.js"],
   });
-  assert(unknown.decision === "allow", "unknown agent should not be force-restricted");
+  assert(unknown.decision === "deny", "unknown agent file changes should be blocked");
+  assert(unknown.reason === "unknown_agent_file_change_forbidden", "unknown file changes should have a specific reason");
 
   const workerDenied = evaluateAgentGovernance({
     agentName: "worker",
@@ -155,7 +156,65 @@ function testPolicySnapshotHasSingleSource() {
       && snapshot.runtimeInvariants.returnToHumanOnlyWhen.includes("explicit_user_judgment_required"),
     "runtime invariants must expose narrow return-to-human conditions"
   );
+  assert(snapshot.runtimeInvariants.singleWriterApplyStepRequired === true, "runtime invariants must require a single writer apply step");
+  assert(snapshot.runtimeInvariants.allowIntegrationOwnerPlannedPaths === true, "integration owner should be allowed on planned write paths");
+  assert(snapshot.runtimeInvariants.unknownAgentFileChangePolicy === "deny", "unknown agent file changes should deny by default");
   assert(snapshot.contracts && snapshot.contracts.frontend_worker, "policy contracts should include frontend_worker");
+}
+
+function testSingleWriterMutex() {
+  const taskContext = {
+    dispatchPlan: {
+      coordinationMode: "single_writer",
+      singleWriter: 1,
+      integrationOwner: "backend_worker",
+      advisoryAgents: ["infra_worker"],
+      dispatches: [
+        {
+          ownerAgent: "backend_worker",
+          participationMode: "writer",
+          mayWrite: 1,
+          ownedPaths: ["server.js", "web/01.HarnesUI/app.js"],
+        },
+        {
+          ownerAgent: "infra_worker",
+          participationMode: "advisory",
+          mayWrite: 0,
+          ownedPaths: [],
+        },
+      ],
+    },
+  };
+
+  const writerAllowed = evaluateAgentGovernance({
+    agentName: "backend_worker@turn-1",
+    operation: "fileChange",
+    changedPaths: ["web/01.HarnesUI/app.js"],
+    taskContext,
+  });
+  assert(writerAllowed.decision === "allow", "integration writer should be allowed on planned write paths");
+  assert(
+    writerAllowed.writerPolicy && writerAllowed.writerPolicy.integrationOwner === "backend_worker",
+    "writer policy should expose the integration owner"
+  );
+
+  const advisorDenied = evaluateAgentGovernance({
+    agentName: "infra_worker",
+    operation: "fileChange",
+    changedPaths: ["docs/CURRENT_ARCHITECTURE.md"],
+    taskContext,
+  });
+  assert(advisorDenied.decision === "deny", "advisory agent should not become a parallel writer");
+  assert(advisorDenied.reason === "parallel_writer_conflict", "advisory writer attempt should be a writer conflict");
+
+  const writerOutOfPlanDenied = evaluateAgentGovernance({
+    agentName: "backend_worker",
+    operation: "fileChange",
+    changedPaths: ["package.json"],
+    taskContext,
+  });
+  assert(writerOutOfPlanDenied.decision === "deny", "integration writer should still be bounded by planned paths");
+  assert(writerOutOfPlanDenied.reason === "path_out_of_scope", "out-of-plan writer paths should keep scope enforcement");
 }
 
 function testParentOverrideProcedure() {
@@ -210,6 +269,7 @@ function run() {
     ["tester verification-only scope", testTesterVerificationScope],
     ["unknown and worker legacy behavior", testUnknownAgentAndWorkerLegacyBehavior],
     ["policy snapshot source of truth", testPolicySnapshotHasSingleSource],
+    ["single writer mutex", testSingleWriterMutex],
     ["parent override procedure", testParentOverrideProcedure],
   ];
   let passed = 0;

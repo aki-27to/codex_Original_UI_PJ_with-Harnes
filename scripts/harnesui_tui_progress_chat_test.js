@@ -42,9 +42,21 @@ function run() {
     "assistant progress must format CLI-like plan rows as chat return content"
   );
   assert(
+    /function\s+assistantFallbackPlanStepsForUi\s*\(phase,\{responseStarted=false,terminalStatus=""\}=\{\}\)/.test(appSource)
+      && /responseReady=Boolean\(responseStarted\)/.test(appSource)
+      && /finalReady=terminal==="completed"\|\|normalized==="completed"/.test(appSource),
+    "assistant fallback plan rows must advance from response-started and terminal progress state"
+  );
+  assert(
     /const activeDetail=tuiCompactForUi\(phaseInfo\.detail,88\);/.test(appSource)
       && !/event\|\|phaseInfo\.detail/.test(appSource),
     "assistant progress TODO rows must not surface raw internal runtime event text"
+  );
+  assert(
+    /function\s+assistantTuiPulseForUi\s*\(/.test(appSource)
+      && /function\s+assistantTuiActivitySummaryForUi\s*\(/.test(appSource)
+      && /・動き \$\{assistantTuiPulseForUi\(now\)\} \$\{activityLine\}/.test(appSource),
+    "assistant progress must include a visible heartbeat and user-facing activity summary"
   );
   assert(
     /回答待ち",detail:"接続できました。最初の回答本文を待っています"/.test(appSource)
@@ -80,8 +92,20 @@ function run() {
     "streamed answer text must preserve the TUI progress row and render final text in a separate assistant message"
   );
   assert(
+    /function\s+assistantTuiPhaseForUi\s*\(phase\)[\s\S]*?if\(normalized==="answering"\)return\{label:"回答中"/.test(appSource)
+      && /const\s+markAssistantTuiResponseStarted=\(event="answer text received"\)=>\{[\s\S]*?tuiProgress\.responseStarted=true;[\s\S]*?updateAssistantTuiProgress\("answering",event,\{force:true\}\);/.test(appSource)
+      && /if\(ev\.type==="delta"\)\{[\s\S]*?markAssistantTuiResponseStarted\("answer text is streaming"\);[\s\S]*?madd\(answerTranscriptOut\(\),ev\.text\);/.test(appSource)
+      && /if\(ev\.type==="final"\)\{[\s\S]*?finishAssistantTuiProgress\("completed","final answer received","completed"\);/.test(appSource)
+      && /markAssistantTuiResponseStarted\("plain text response received"\);madd\(answerTranscriptOut\(\),line\.endsWith\("\\n"\)\?line:`\$\{line\}\\n`\)/.test(appSource),
+    "assistant progress must keep updating after the first answer text and only finish at terminal state"
+  );
+  assert(
     !/mget\(out\)\.startsWith\(ASSISTANT_TUI_PROGRESS_MARKER\)\)mset\(out,""\);stopAssistantTuiProgress\(\);madd\(out,ev\.text\)/.test(appSource),
     "streamed answer text must not clear the TUI progress row"
+  );
+  assert(
+    !/if\(ev\.type==="delta"\)\{[\s\S]*?stopAssistantTuiProgress\(\);[\s\S]*?madd\(answerTranscriptOut\(\),ev\.text\)/.test(appSource),
+    "streamed delta text must not stop the progress timer"
   );
   assert(
     !/\[waiting\] Standard Codex/.test(appSource),

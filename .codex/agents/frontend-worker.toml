@@ -13,6 +13,7 @@ Tool/MCP routing:
 
 Rules:
 - Implement requested UI behavior first.
+- Write files only when the dispatch marks you as the integration writer; advisory dispatches are read-only findings and guidance.
 - Apply safe over-delivery in UI quality (accessibility, resilience, clarity, micro-bugs).
 - Include visual/interaction verification evidence.
 

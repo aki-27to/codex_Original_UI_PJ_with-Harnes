@@ -2,47 +2,48 @@
   "schema": "phase-exit-requirement-foundation-v1.v1",
   "phaseId": "requirement_foundation_v1",
   "phaseName": "Requirement-Driven Foundation V1",
-  "generatedAt": "2026-03-29T12:22:53.068Z",
+  "generatedAt": "2026-05-04T11:25:13.303Z",
   "auditCommand": "node scripts/phase_exit_requirement_foundation_v1.js",
   "purpose": "Declare the Requirement-Driven Foundation V1 complete and frozen only when the agreed Step 1/2 foundation checks remain intact.",
   "freezePolicy": "bug_fix_only",
-  "status": "PASS",
+  "status": "FAIL",
   "summary": {
-    "passedCount": 8,
-    "failedCount": 0,
+    "passedCount": 4,
+    "failedCount": 4,
     "totalCount": 8
   },
   "phaseStatus": {
-    "requirementFoundationV1": "done",
-    "completedAt": "2026-03-29T12:22:53.068Z",
+    "requirementFoundationV1": "not_done",
+    "completedAt": "",
     "auditReportPath": "output/phase_exit_requirement_foundation_v1.json",
     "markdownReportPath": "output/phase_exit_requirement_foundation_v1.md",
-    "failedCheckIds": []
+    "failedCheckIds": [
+      "A",
+      "C",
+      "G",
+      "H"
+    ]
   },
   "checks": [
     {
       "id": "A",
       "title": "Requirement Lock is contract-driven single-card",
-      "status": "PASS",
-      "detail": "All required evidence was found.",
-      "failures": [],
+      "status": "FAIL",
+      "detail": "single-card Requirement Lock architecture note was not found in docs/CURRENT_ARCHITECTURE.md.",
+      "failures": [
+        "single-card Requirement Lock architecture note was not found in docs/CURRENT_ARCHITECTURE.md."
+      ],
       "evidence": [
         {
           "sourceType": "file",
-          "path": "docs/CURRENT_ARCHITECTURE.md",
-          "line": 98,
-          "excerpt": "Requirement Lock` panel inside `Harness Status`, so the active chat can read the locked Step 1 contract directly from `latestTurn.planning.requirementContract` instead of inferring it from later plan or trace rows. - The `Requirement Lock` "
-        },
-        {
-          "sourceType": "file",
           "path": "web/01.HarnesUI/app.js",
-          "line": 1457,
+          "line": 1907,
           "excerpt": "title:\"AIの方針\""
         },
         {
           "sourceType": "file",
           "path": "web/01.HarnesUI/app.js",
-          "line": 1424,
+          "line": 1874,
           "excerpt": "label:\"進め方\",text:`${approachParts.join(\"。\")}。`}); } const holdReason=snapshot.contractStatus===\"BLOCKED\" ?( snapshot.displayHoldReason || snapshot.contractStatusReason || ((snapshot.validationHighlights&&snapshot.validationHighlights.length"
         },
         {
@@ -70,20 +71,16 @@
     {
       "id": "C",
       "title": "requestCoverage is prompt-derived and carries core / parked / dropped lanes",
-      "status": "PASS",
-      "detail": "All required evidence was found.",
-      "failures": [],
+      "status": "FAIL",
+      "detail": "prompt-derived requestCoverage architecture note was not found in docs/CURRENT_ARCHITECTURE.md.",
+      "failures": [
+        "prompt-derived requestCoverage architecture note was not found in docs/CURRENT_ARCHITECTURE.md."
+      ],
       "evidence": [
         {
           "sourceType": "file",
-          "path": "docs/CURRENT_ARCHITECTURE.md",
-          "line": 102,
-          "excerpt": "re-parses the sanitized user prompt directly for clause seeding instead of backfilling from the requirement contract"
-        },
-        {
-          "sourceType": "file",
           "path": "scripts/planning_mode_policy_test.js",
-          "line": 55,
+          "line": 77,
           "excerpt": "requestCoverage.rawRequestClauses) && fastArtifacts.requirementContract.requestCoverage.rawRequestClauses.length >= 1, \"requirement contracts should persist a request-coverage ledger\" ); assert.ok( Array.isArray(fastArtifacts.requirementCon"
         },
         {
@@ -103,13 +100,13 @@
         {
           "sourceType": "file",
           "path": "scripts/lib/planning_mode_policy.js",
-          "line": 3369,
+          "line": 3525,
           "excerpt": "\"request_coverage_core_mapped\", \"Core request obligations are mapped into the contract\", requestCoverage.coverageSummary.coreUnmapped > 0 ? \"BLOCK\" : \"PASS\""
         },
         {
           "sourceType": "file",
           "path": "scripts/planning_mode_policy_test.js",
-          "line": 131,
+          "line": 193,
           "excerpt": "entry.id === \"request_coverage_core_mapped\" && entry.status === \"BLOCK\""
         }
       ]
@@ -124,12 +121,12 @@
         {
           "sourceType": "schema",
           "path": "scripts/config/dispatch_plan.schema.json",
-          "excerpt": "dispatch.required=dispatchId, ownerAgent, ownedPaths, taskSummary, requestClauseRefs, requirementRefs, acceptanceCheckRefs, acceptanceChecks, toolsMcpRequirements, reviewerRequired, testerRequired, escalationPoint, expectedEvidence"
+          "excerpt": "dispatch.required=dispatchId, ownerAgent, participationMode, mayWrite, ownedPaths, taskSummary, requestClauseRefs, requirementRefs, acceptanceCheckRefs, acceptanceChecks, toolsMcpRequirements, reviewerRequired, testerRequired, escalationPoint, expectedEvidence"
         },
         {
           "sourceType": "file",
           "path": "scripts/planning_mode_policy_test.js",
-          "line": 75,
+          "line": 97,
           "excerpt": "dispatchPlan.dispatches[0].requestClauseRefs) && fastArtifacts.dispatchPlan.dispatches[0].requestClauseRefs.length >= 1, \"dispatch plans should carry requestClauseRefs from Step 1 coverage\" ); assert.ok( Array.isArray(fastArtifacts.dispatch"
         },
         {
@@ -155,7 +152,7 @@
         {
           "sourceType": "file",
           "path": "scripts/eval_harness_policy_test.js",
-          "line": 44,
+          "line": 46,
           "excerpt": "postLockDriftCase = suite.cases.find((entry) => entry && entry.id === \"post_lock_drift_clean_trace\"); assert(postLockDriftCase && postLockDriftCase.driver === \"post_lock_drift_probe\", \"suite should cover post-lock drift without downstream g"
         },
         {
@@ -169,16 +166,12 @@
     {
       "id": "G",
       "title": "runtime revisionGate blocks silent rewrite and can RETURN_TO_INTAKE",
-      "status": "PASS",
-      "detail": "All required evidence was found.",
-      "failures": [],
+      "status": "FAIL",
+      "detail": "runtime revision gate enforcement was not found in server.js.",
+      "failures": [
+        "runtime revision gate enforcement was not found in server.js."
+      ],
       "evidence": [
-        {
-          "sourceType": "file",
-          "path": "server.js",
-          "line": 9953,
-          "excerpt": "runtimeRevisionGate.status===\"BLOCK\"||runtimeRevisionGate.status===\"RETURN_TO_INTAKE\"){ const currentRequirement=planningContext&&planningContext.requirementContract&&typeof planningContext.requirementContract===\"object\" ?planningContext.re"
-        },
         {
           "sourceType": "file",
           "path": "scripts/requirement_revision_policy_test.js",
@@ -190,16 +183,12 @@
     {
       "id": "H",
       "title": "clauseCompletionScorecard rejects final completion when core clauses are still unmet",
-      "status": "PASS",
-      "detail": "All required evidence was found.",
-      "failures": [],
+      "status": "FAIL",
+      "detail": "runtime final-completion clause scorecard gate was not found in server.js.",
+      "failures": [
+        "runtime final-completion clause scorecard gate was not found in server.js."
+      ],
       "evidence": [
-        {
-          "sourceType": "file",
-          "path": "server.js",
-          "line": 10056,
-          "excerpt": "finalStatus===\"completed\"&&clauseCompletionScorecard.status===\"FAIL\"){ finalStatus=\"failed\"; explicitTaskOutcomeStatus=\"FAILED_VALIDATION\"; explicitTaskOutcomeReason=\"release_clause_unsatisfied\""
-        },
         {
           "sourceType": "file",
           "path": "scripts/requirement_revision_policy_test.js",

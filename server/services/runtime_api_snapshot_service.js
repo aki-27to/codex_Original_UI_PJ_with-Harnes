@@ -320,6 +320,14 @@ function createRuntimeApiSnapshotService(deps = {}) {
       },
     };
     const appServerTransport = buildAppServerTransportRuntimeSnapshot();
+    const serverRestartMarker = readCurrentTruthJson("logs", "current", "server_restart_result.json");
+    const serverRestart = serverRestartMarker && typeof serverRestartMarker === "object"
+      ? {
+        ...serverRestartMarker,
+        currentPid: processRef.pid,
+        currentStartedAt: serverProcessStartedAt,
+      }
+      : null;
     return {
       apiVersion,
       mode: "app-server",
@@ -343,6 +351,8 @@ function createRuntimeApiSnapshotService(deps = {}) {
       session_performance: sessionPerformance,
       serverProcess: serverProcessSnapshot,
       server_process: serverProcessSnapshot,
+      serverRestart,
+      server_restart: serverRestart,
       activeExecRequests: getActiveExecRequestCount(),
       active_exec_requests: getActiveExecRequestCount(),
       appServerTransport,

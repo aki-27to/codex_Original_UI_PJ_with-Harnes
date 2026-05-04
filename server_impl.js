@@ -491,9 +491,8 @@ const imageMimeByExtension={".png":"image/png",".jpg":"image/jpeg",".jpeg":"imag
 const allowedChatImageMimeTypes=new Set(Object.values(imageMimeByExtension));
 const allowedChatImageExtensions=new Set(Object.keys(imageMimeByExtension));
 const controlApiTokenHeaderName="x-codex-control-token";
-const controlApiActionAllowlist=openCmdWindowEnabled
-  ? new Set(["open_workspace_shell"])
-  : new Set();
+const controlApiActionAllowlist=new Set(["restart_harness_server"]);
+if(openCmdWindowEnabled)controlApiActionAllowlist.add("open_workspace_shell");
 const execApiRequiredContentType="application/json";
 const conversationApiRequiredContentType="application/json";
 const conversationRequestBodyLimitBytes=parsePositiveIntEnv("CODEX_CONVERSATION_REQUEST_BODY_LIMIT_BYTES",256*1024,8*1024,2*1024*1024);
@@ -2486,6 +2485,7 @@ function executeEvalProbeCase(evalCase,variant){
         ?input.changedPaths.map((entry)=>safeString(entry,260)).filter(Boolean).slice(0,24)
         :[],
       override:input.override&&typeof input.override==="object"?input.override:null,
+      taskContext:input.taskContext&&typeof input.taskContext==="object"?input.taskContext:null,
     });
   case "agent_registry_probe":
     return validateRequestedAgentName(safeString(input.agentName,120)||variant.agentName);
@@ -2620,6 +2620,11 @@ function executeEvalProbeCase(evalCase,variant){
       ?planningProbe.dispatchPlan.dispatches
       :[];
     const ownerAgents=dispatches.map((entry)=>safeString(entry&&entry.ownerAgent,80)).filter(Boolean);
+    const writerAgents=dispatches.filter((entry)=>entry&&entry.participationMode==="writer"&&entry.mayWrite).map((entry)=>safeString(entry&&entry.ownerAgent,80)).filter(Boolean);
+    const advisoryAgents=Array.isArray(planningProbe&&planningProbe.dispatchPlan&&planningProbe.dispatchPlan.advisoryAgents)
+      ?planningProbe.dispatchPlan.advisoryAgents.map((entry)=>safeString(entry,80)).filter(Boolean)
+      :dispatches.filter((entry)=>entry&&entry.participationMode==="advisory").map((entry)=>safeString(entry&&entry.ownerAgent,80)).filter(Boolean);
+    const participationModes=dispatches.map((entry)=>safeString(entry&&entry.participationMode,40)).filter(Boolean);
     const ownedPaths=dispatches.flatMap((entry)=>Array.isArray(entry&&entry.ownedPaths)?entry.ownedPaths:[]);
     const hasPathLeak=ownedPaths.some((entry)=>{
       const normalized=normalizeMergePath(entry);
@@ -2636,8 +2641,15 @@ function executeEvalProbeCase(evalCase,variant){
       testerRequired:planningProbe&&planningProbe.dispatchPlan&&planningProbe.dispatchPlan.testerRequired?1:0,
       signoffRequired:planningProbe&&planningProbe.dispatchPlan&&planningProbe.dispatchPlan.signoffRequired?1:0,
       dedicatedTestsRequired:planningProbe&&planningProbe.dispatchPlan&&planningProbe.dispatchPlan.dedicatedTestsRequired?1:0,
+      coordinationMode:safeString(planningProbe&&planningProbe.dispatchPlan&&planningProbe.dispatchPlan.coordinationMode,40)||"",
+      singleWriter:planningProbe&&planningProbe.dispatchPlan&&planningProbe.dispatchPlan.singleWriter?1:0,
+      integrationOwner:safeString(planningProbe&&planningProbe.dispatchPlan&&planningProbe.dispatchPlan.integrationOwner,80)||"",
+      freshReviewerRequired:planningProbe&&planningProbe.dispatchPlan&&planningProbe.dispatchPlan.freshReviewerRequired?1:0,
       dispatchCount:dispatches.length,
       ownerAgents,
+      writerAgents,
+      advisoryAgents,
+      participationModes,
       contextLeakageRisk:hasPathLeak?1:0,
       requirementOpenQuestionsCount:Array.isArray(planningProbe&&planningProbe.requirementContract&&planningProbe.requirementContract.openQuestions)
         ?planningProbe.requirementContract.openQuestions.length
@@ -5766,6 +5778,124 @@ function openCmdWindow(){
   const c=spawn("cmd.exe",["/d","/s","/c",cmd],{cwd:workspaceRoot,detached:true,stdio:"ignore",windowsHide:true});
   c.unref();
 }
+function requestHarnessServerRestart({force=false,reason=""}={}){
+  const activeExecRequests=getActiveExecRequestCount();
+  const latestTurn=getLatestTurnSnapshot();
+  const latestTurnStatus=safeString(latestTurn&&latestTurn.status,80).toLowerCase();
+  const hasActiveTurn=activeExecRequests>0||latestTurnStatus==="in_progress";
+  const restartForce=Boolean(force);
+  const port=Number.isInteger(forcedUiPort)&&forcedUiPort>0?forcedUiPort:57525;
+  const launcherPath=path.join(workspaceRoot,"start_codex_ui.bat");
+  const restartHelperPath=path.join(workspaceRoot,"scripts","restart_harness_from_ui.js");
+  const restartHelperLogPath=path.join(workspaceRoot,"logs","archive","raw","operation_logs",`codex_restart_helper_${port}_${process.pid}.jsonl`);
+  const restartResultPath=path.join(workspaceRoot,"logs","current","server_restart_result.json");
+  const payloadBase={
+    ok:false,
+    status:"blocked",
+    port,
+    url:buildAutoOpenUrl(port),
+    activeExecRequests,
+    latestTurnStatus,
+    pid:process.pid,
+    startedAt:serverProcessStartedAt,
+  };
+  if(hasActiveTurn&&!restartForce){
+    logOperation("server.restart_blocked",{
+      reason:"active_exec",
+      activeExecRequests,
+      latestTurnStatus,
+      requestedReason:safeString(reason,160),
+    },"standard");
+    return{
+      ...payloadBase,
+      code:"active_exec",
+      error:"active /api/exec work is in progress",
+    };
+  }
+  if(!fs.existsSync(launcherPath)){
+    logOperation("server.restart_blocked",{
+      reason:"missing_launcher",
+      launcher:summarizePathForOperationLog(launcherPath,220),
+      requestedReason:safeString(reason,160),
+    },"standard");
+    return{
+      ...payloadBase,
+      status:"failed",
+      code:"missing_launcher",
+      error:"start_codex_ui.bat was not found",
+    };
+  }
+  if(!fs.existsSync(restartHelperPath)){
+    logOperation("server.restart_blocked",{
+      reason:"missing_restart_helper",
+      helper:summarizePathForOperationLog(restartHelperPath,220),
+      requestedReason:safeString(reason,160),
+    },"standard");
+    return{
+      ...payloadBase,
+      status:"failed",
+      code:"missing_restart_helper",
+      error:"restart helper was not found",
+    };
+  }
+  logOperation("server.restart_requested",{
+    launcher:summarizePathForOperationLog(launcherPath,220),
+    helper:summarizePathForOperationLog(restartHelperPath,220),
+    helperLog:summarizePathForOperationLog(restartHelperLogPath,220),
+    resultPath:summarizePathForOperationLog(restartResultPath,220),
+    port,
+    activeExecRequests,
+    latestTurnStatus,
+    force:restartForce?1:0,
+    requestedReason:safeString(reason,160),
+  },"standard");
+  setTimeout(()=>{
+    try{
+      const env={
+        ...process.env,
+        CODEX_RESTART_TARGET_PID:String(process.pid),
+        CODEX_RESTART_UI_PORT:String(port),
+        CODEX_RESTART_LAUNCHER:launcherPath,
+        CODEX_RESTART_WORKSPACE_ROOT:workspaceRoot,
+        CODEX_RESTART_REASON:safeString(reason,160),
+        CODEX_RESTART_FORCE_ACTIVE:restartForce?"1":"0",
+        CODEX_RESTART_HELPER_LOG_PATH:restartHelperLogPath,
+        CODEX_RESTART_RESULT_PATH:restartResultPath,
+      };
+      const child=spawn(process.execPath,[restartHelperPath],{
+        cwd:workspaceRoot,
+        env,
+        detached:true,
+        stdio:"ignore",
+        windowsHide:true,
+      });
+      child.once("error",(error)=>{
+        logOperation("server.restart_helper_spawn_failed",{
+          helper:summarizePathForOperationLog(restartHelperPath,220),
+          err:summarizeErrorForOperationLog(error,220),
+        },"standard");
+      });
+      child.unref();
+      logOperation("server.restart_helper_spawned",{
+        helper:summarizePathForOperationLog(restartHelperPath,220),
+        childPid:child.pid||0,
+        port,
+      },"standard");
+    }catch(error){
+      logOperation("server.restart_helper_spawn_failed",{
+        helper:summarizePathForOperationLog(restartHelperPath,220),
+        err:summarizeErrorForOperationLog(error,220),
+      },"standard");
+    }
+  },250);
+  return{
+    ...payloadBase,
+    ok:true,
+    status:"scheduled",
+    code:"scheduled",
+    error:"",
+  };
+}
 function writeChunk(res,text){
   if(!res||res.writableEnded||res.destroyed||(res.socket&&res.socket.destroyed))return;
   try{
@@ -7779,6 +7909,7 @@ class CodexAppServerClient{
       requestUserInputPolicy:nonInteractiveRequestUserInputPolicy,
       automaticApprovalReviewEnabled:automaticApprovalReviewDefault,
       governanceOverride:null,
+      planningContext:null,
       interactiveApprovalAvailable:false,
     };
     if(!params||typeof params!=="object")return base;
@@ -7801,6 +7932,7 @@ class CodexAppServerClient{
       requestUserInputPolicy:normalizeRequestUserInputPolicy(ctx.requestUserInputPolicy,nonInteractiveRequestUserInputPolicy),
       automaticApprovalReviewEnabled:resolveAutomaticApprovalReviewEnabled(ctx.automaticApprovalReviewEnabled,automaticApprovalReviewDefault),
       governanceOverride:normalizeOverrideRequest(ctx.governanceOverride),
+      planningContext:ctx.planningContext&&typeof ctx.planningContext==="object"?ctx.planningContext:null,
       interactiveApprovalAvailable:false,
     };
   }
@@ -8072,7 +8204,7 @@ class CodexAppServerClient{
     result.ruleIds=Array.from(matchedRuleIds.values()).slice(0,16);
     return result;
   }
-  resolveApprovalDecision({requestedPolicy,sandboxMode,operation,risk,agentName,governanceOverride,automaticApprovalReviewEnabled}){
+  resolveApprovalDecision({requestedPolicy,sandboxMode,operation,risk,agentName,governanceOverride,automaticApprovalReviewEnabled,planningContext}){
     const requested=normalizeApprovalPolicy(requestedPolicy);
     const normalizedSandbox=normalizeSandboxMode(sandboxMode);
     const level=risk&&typeof risk.level==="string"?risk.level:"low";
@@ -8083,6 +8215,7 @@ class CodexAppServerClient{
       operation,
       changedPaths:Array.isArray(risk&&risk.changedPaths)?risk.changedPaths:[],
       override:governanceOverride&&typeof governanceOverride==="object"?governanceOverride:null,
+      taskContext:planningContext&&typeof planningContext==="object"?planningContext:null,
     });
     const automaticReviewEnabled=resolveAutomaticApprovalReviewEnabled(automaticApprovalReviewEnabled,automaticApprovalReviewDefault);
     const withGovernance=(decision)=>({
@@ -8183,6 +8316,7 @@ class CodexAppServerClient{
       agentName:ctx&&ctx.agentName?ctx.agentName:"",
       governanceOverride:ctx&&ctx.governanceOverride?ctx.governanceOverride:null,
       automaticApprovalReviewEnabled:ctx&&ctx.automaticApprovalReviewEnabled,
+      planningContext:ctx&&ctx.planningContext?ctx.planningContext:null,
     });
     const tool=safeString(payload.tool,80);
     const callId=safeString(payload.callId,120);
@@ -8258,6 +8392,7 @@ class CodexAppServerClient{
           agentName:ctx.agentName,
           governanceOverride:ctx.governanceOverride,
           automaticApprovalReviewEnabled:ctx.automaticApprovalReviewEnabled,
+          planningContext:ctx.planningContext,
         });
         const approvalAudit=this.buildApprovalAuditRecord({operation,ctx,risk,decision});
         logOperation("approval.decision",approvalAudit,"standard");
@@ -8275,6 +8410,7 @@ class CodexAppServerClient{
           agentName:ctx.agentName,
           governanceOverride:ctx.governanceOverride,
           automaticApprovalReviewEnabled:ctx.automaticApprovalReviewEnabled,
+          planningContext:ctx.planningContext,
         });
         const approvalAudit=this.buildApprovalAuditRecord({operation,ctx,risk,decision});
         logOperation("approval.decision",approvalAudit,"standard");
@@ -8292,6 +8428,7 @@ class CodexAppServerClient{
           agentName:ctx.agentName,
           governanceOverride:ctx.governanceOverride,
           automaticApprovalReviewEnabled:ctx.automaticApprovalReviewEnabled,
+          planningContext:ctx.planningContext,
         });
         const effectiveUserInputPolicy=normalizeRequestUserInputPolicy(ctx.requestUserInputPolicy,nonInteractiveRequestUserInputPolicy);
         if(decision.decision==="decline"){
@@ -8598,7 +8735,7 @@ const slashCommandHelpRows=[
   ["/goal <objective>","Set the Codex goal for the current thread."],
   ["/goal","Show the current Codex goal."],
   ["/goal pause|resume|complete|clear","Update or clear the current Codex goal."],
-  ["/status","Show the current HarnesUI session configuration."],
+  ["/status","Show Codex status-style runtime details in the HarnesUI view."],
   ["/diff","Show the current git diff summary."],
   ["/resume --last|<session>","Set the session that the next turn should resume."],
   ["/fork [name]","Create a HarnesUI agent fork from the active agent."],
@@ -8655,46 +8792,146 @@ function findNearestAgentsMdForStatus(cwd){
   return"none";
 }
 function formatSlashStatusRow(label,value){
-  const padded=label.length>=20?`${label} `:label.padEnd(20," ");
+  const padded=label.length>=30?`${label} `:label.padEnd(30," ");
   return`${padded}${safeString(String(value||""),800)||"-"}`;
 }
+let slashStatusModelMetadataCache=null;
+let slashStatusAuthAccountCache=null;
+function parseJsonFileForSlashStatus(filePath,maxBytes=8*1024*1024){
+  if(!filePath)return null;
+  try{
+    const stat=fs.statSync(filePath);
+    if(!stat.isFile()||stat.size>maxBytes)return null;
+    return JSON.parse(fs.readFileSync(filePath,"utf8"));
+  }catch{
+    return null;
+  }
+}
+function decodeJwtPayloadForSlashStatus(token){
+  const raw=safeString(token,12000);
+  const parts=raw.split(".");
+  if(parts.length<2)return null;
+  let payload=parts[1].replace(/-/g,"+").replace(/_/g,"/");
+  while(payload.length%4!==0)payload+="=";
+  try{
+    return JSON.parse(Buffer.from(payload,"base64").toString("utf8"));
+  }catch{
+    return null;
+  }
+}
+function readCodexAccountForSlashStatus(loginStatus){
+  if(slashStatusAuthAccountCache)return slashStatusAuthAccountCache;
+  const authPath=userHomeDir?path.join(userHomeDir,".codex","auth.json"):"";
+  const parsed=parseJsonFileForSlashStatus(authPath,512*1024);
+  const claims=decodeJwtPayloadForSlashStatus(parsed&&parsed.tokens&&parsed.tokens.id_token);
+  const email=safeString(claims&&claims.email,180);
+  slashStatusAuthAccountCache=email||safeString(loginStatus,220)||"unavailable";
+  return slashStatusAuthAccountCache;
+}
+function loadModelMetadataForSlashStatus(){
+  if(slashStatusModelMetadataCache)return slashStatusModelMetadataCache;
+  const modelsPath=userHomeDir?path.join(userHomeDir,".codex","models_cache.json"):"";
+  const parsed=parseJsonFileForSlashStatus(modelsPath);
+  const models=Array.isArray(parsed&&parsed.models)?parsed.models:[];
+  slashStatusModelMetadataCache={models,loadedAt:Date.now()};
+  return slashStatusModelMetadataCache;
+}
+function findModelMetadataForSlashStatus(model){
+  const normalized=safeString(model,120).toLowerCase();
+  const cache=loadModelMetadataForSlashStatus();
+  return(cache.models||[]).find((entry)=>{
+    const slug=safeString(entry&&entry.slug,120).toLowerCase();
+    const id=safeString(entry&&entry.id,120).toLowerCase();
+    return slug===normalized||id===normalized;
+  })||null;
+}
+function formatSlashStatusTokenCount(value){
+  const n=toNonNegativeInt(value);
+  if(n>=1000000)return`${Math.round(n/100000)/10}M`;
+  if(n>=1000)return`${Math.round(n/1000)}K`;
+  return String(n);
+}
+function modelContextWindowForSlashStatus(model,usage){
+  const usageWindow=usage&&Number.isFinite(Number(usage.modelContextWindow))
+    ?toNonNegativeInt(usage.modelContextWindow)
+    :0;
+  if(usageWindow>0)return usageWindow;
+  const metadata=findModelMetadataForSlashStatus(model);
+  const contextWindow=Number.isFinite(Number(metadata&&metadata.context_window))
+    ?toNonNegativeInt(metadata.context_window)
+    :0;
+  const pct=Number.isFinite(Number(metadata&&metadata.effective_context_window_percent))
+    ?Math.max(1,Math.min(100,Number(metadata.effective_context_window_percent)))
+    :100;
+  return contextWindow>0?Math.max(1,Math.floor(contextWindow*pct/100)):0;
+}
+function formatContextWindowForSlashStatus(model,sessionRef){
+  const performance=getSessionPerformanceSnapshot(sessionRef);
+  const usage=performance&&performance.aggregate?performance.aggregate:normalizeTokenUsageTotals(null);
+  const used=toNonNegativeInt(usage&&usage.totalTokens);
+  const limit=modelContextWindowForSlashStatus(model,usage);
+  if(limit<=0)return"not measured yet";
+  const left=Math.max(0,limit-used);
+  const pct=Math.max(0,Math.min(100,Math.round(left*100/limit)));
+  return`${pct}% left (${formatSlashStatusTokenCount(used)} used / ${formatSlashStatusTokenCount(limit)})`;
+}
+function formatSandboxForSlashStatus(sandboxMode){
+  const normalized=normalizeSandboxMode(sandboxMode);
+  if(normalized==="read-only")return"Read only";
+  if(normalized==="workspace-write")return"Workspace";
+  if(normalized==="danger-full-access")return"Full access";
+  return normalized;
+}
+function formatApprovalForSlashStatus(approvalPolicy,automaticApprovalReviewEnabled){
+  const approval=normalizeApprovalPolicy(approvalPolicy);
+  if(approval==="never")return"no approval";
+  if(approval==="on-request"&&resolveAutomaticApprovalReviewEnabled(automaticApprovalReviewEnabled))return"auto-review";
+  return approval;
+}
+function configuredSandboxModeForSlashStatus(){
+  const project=readTopLevelCodexConfigString(codexConfigPath,"sandbox_mode");
+  const user=readTopLevelCodexConfigString(userCodexConfigPath,"sandbox_mode");
+  return normalizeSandboxMode(project||user||"workspace-write");
+}
+function configuredApprovalPolicyForSlashStatus(){
+  const project=readTopLevelCodexConfigString(codexConfigPath,"approval_policy");
+  const user=readTopLevelCodexConfigString(userCodexConfigPath,"approval_policy");
+  return normalizeApprovalPolicy(project||user||"on-request");
+}
 function formatCodexStatusLikeText({agentName,sandboxMode,normalized,state}){
-  const webSearchMode=normalizeWebSearchMode(
-    Object.prototype.hasOwnProperty.call(normalized||{},"webSearchMode")?normalized.webSearchMode:normalized&&normalized.webSearch,
-    "disabled"
-  );
   const cwd=normalizeWorkingDirectory(normalized&&normalized.cwd,workspaceRoot);
   const model=normalizeExecModel(normalized&&normalized.model,defaultExecModelName);
   const modelReasoningEffort=normalizeExecModelReasoningEffort(normalized&&normalized.modelReasoningEffort,defaultExecModelReasoningEffort);
-  const goal=normalizeGoalForSlashCommand(state.goal,state.threadId||state.sessionRef);
-  const approval=normalizeApprovalPolicy(normalized&&normalized.approvalPolicy);
+  const statusSandboxMode=configuredSandboxModeForSlashStatus();
+  const statusApprovalPolicy=configuredApprovalPolicyForSlashStatus();
   const session=state.sessionRef||state.threadId||"none";
   const loginStatus=runCachedSlashStatusCommand("codex-login-status","codex login status");
-  const quotaUnavailable="unavailable in HarnesUI local status";
+  const automaticApprovalReviewEnabled=resolveAutomaticApprovalReviewEnabled(
+    normalized&&normalized.automaticApprovalReviewEnabled,
+    state&&state.automaticApprovalReviewEnabled
+  );
+  const usageLimitText="open usage link above for live value";
   const lines=[
     `>_ OpenAI Codex (${formatCodexCliVersionForStatus()})`,
     "",
     "Visit https://chatgpt.com/codex/settings/usage for up-to-date",
     "information on rate limits and credits",
     "",
-    formatSlashStatusRow("Model:",`${model} (reasoning ${modelReasoningEffort})`),
+    formatSlashStatusRow("Model:",`${model} (reasoning ${modelReasoningEffort}, summaries auto)`),
     formatSlashStatusRow("Directory:",cwd),
-    formatSlashStatusRow("Permissions:",`${normalizeSandboxMode(sandboxMode)} (approval ${approval})`),
-    formatSlashStatusRow("AGENTS.md:",findNearestAgentsMdForStatus(cwd)),
-    formatSlashStatusRow("Account:",loginStatus),
+    formatSlashStatusRow("Permissions:",`${formatSandboxForSlashStatus(statusSandboxMode)} (${formatApprovalForSlashStatus(statusApprovalPolicy,automaticApprovalReviewEnabled)})`),
+    formatSlashStatusRow("Agents.md:",findNearestAgentsMdForStatus(cwd)),
+    formatSlashStatusRow("Account:",readCodexAccountForSlashStatus(loginStatus)),
     formatSlashStatusRow("Collaboration mode:","Default"),
     formatSlashStatusRow("Session:",session),
-    formatSlashStatusRow("Agent:",agentName),
-    formatSlashStatusRow("Web search:",webSearchMode),
-    formatSlashStatusRow("Fast mode:",resolveFastModeEnabled(normalized&&normalized.fastModeEnabled,state&&state.fastModeEnabled)?"on":"off"),
-    formatSlashStatusRow("Goal:",goal?`${goal.status} - ${goal.objective||"(empty)"}`:"none"),
     "",
-    formatSlashStatusRow("Context window:",quotaUnavailable),
-    formatSlashStatusRow(`${model} limit:`,quotaUnavailable),
-    formatSlashStatusRow("5h limit:",quotaUnavailable),
-    formatSlashStatusRow("Weekly limit:",quotaUnavailable),
-    formatSlashStatusRow("gpt-5.3-Codex-Spark limit:",quotaUnavailable),
-    formatSlashStatusRow("Warnings:","native quota bars are not exposed by the local app-server."),
+    formatSlashStatusRow("Context window:",formatContextWindowForSlashStatus(model,session)),
+    formatSlashStatusRow("5h limit:",usageLimitText),
+    formatSlashStatusRow("Weekly limit:",usageLimitText),
+    "GPT-5.3-Codex-Spark limit:",
+    formatSlashStatusRow("  5h limit:",usageLimitText),
+    formatSlashStatusRow("  Weekly limit:",usageLimitText),
+    formatSlashStatusRow("Warning:","limits may be stale - run /status again shortly."),
   ];
   return lines.join("\n");
 }
@@ -12053,6 +12290,32 @@ async function executeTurnStreaming(res,prompt,agentName,options){
 async function runCodexExecStreaming(res,prompt,sandboxMode,options={}){
   const normalized=options||{};
   const targetAgentName=resolveAgentName(normalized);
+  let localSlashTerminalEmitted=false;
+  const emitLocalSlashTerminal=(command,status="completed",errorText="")=>{
+    if(localSlashTerminalEmitted)return;
+    localSlashTerminalEmitted=true;
+    if(!normalized||typeof normalized.onTerminal!=="function")return;
+    const terminalStatus=normalizeExecutionState(status,{terminalFallback:true});
+    try{
+      normalized.onTerminal({
+        status:terminalStatus,
+        error:terminalStatus==="completed"?"":safeString(errorText,500),
+        taskOutcomeStatus:terminalStatus==="completed"?"COMPLETED":"FAILED_VALIDATION",
+        taskOutcomeReason:terminalStatus==="completed"?"local_slash_command_completed":"local_slash_command_failed",
+        threadId:"",
+        turnId:"",
+        agentName:targetAgentName,
+        executionProfile:normalizeExecutionProfile(normalized.executionProfile,runtimeExecutionProfile),
+        executionIntent:normalizeExecutionIntent(normalized.executionIntent,"interactive"),
+        executionSource:safeString(normalized.executionSource,80)||"api_exec",
+        artifactDir:"",
+        artifactManifestPath:"",
+        artifactManifestSha256:"",
+        slashCommand:safeString(command,80),
+      });
+    }catch{
+    }
+  };
   if(!normalized.disableSlashRouter&&isSlashCommand(prompt)){
     const {command,argsText}=parseSlashPrompt(prompt);
     logOperation("slash.command",{
@@ -12061,49 +12324,60 @@ async function runCodexExecStreaming(res,prompt,sandboxMode,options={}){
     });
     if(command==="/help"){
       handleSlashHelpCommand(res);
+      emitLocalSlashTerminal(command);
       return;
     }
     if(command==="/status"){
       handleSlashStatusCommand(res,targetAgentName,sandboxMode,normalized);
+      emitLocalSlashTerminal(command);
       return;
     }
     if(command==="/diff"){
       handleSlashDiffCommand(res,normalized);
+      emitLocalSlashTerminal(command);
       return;
     }
     if(command==="/agent"){
       handleSlashAgentCommand(res,argsText);
+      emitLocalSlashTerminal(command);
       return;
     }
     if(command==="/experimental"){
       handleSlashExperimentalCommand(res,argsText);
+      emitLocalSlashTerminal(command);
       return;
     }
     if(command==="/fast"){
       handleSlashFastCommand(res,argsText);
+      emitLocalSlashTerminal(command);
       return;
     }
     if(command==="/goal"){
       await handleSlashGoalCommand(res,argsText,targetAgentName,sandboxMode,normalized);
+      emitLocalSlashTerminal(command);
       return;
     }
     if(command==="/resume"){
       handleSlashResumeCommand(res,argsText);
+      emitLocalSlashTerminal(command);
       return;
     }
     if(command==="/fork"){
       handleSlashForkCommand(res,argsText);
+      emitLocalSlashTerminal(command);
       return;
     }
     if(command==="/mention"){
       const mention=parseMentionArgs(argsText);
       if(!mention||!mention.targetPath){
         replyLocalText(res,"Usage: /mention <path> [message]");
+        emitLocalSlashTerminal(command);
         return;
       }
       const resolved=resolveMentionPath(mention.targetPath);
       if(!resolved){
         replyLocalText(res,`Path not found in workspace: ${mention.targetPath}`);
+        emitLocalSlashTerminal(command);
         return;
       }
       const rewritten=mention.message?`Target file: ${resolved.relative}\nRequest: ${mention.message}`:`Target file: ${resolved.relative}\nRequest: Review and improve this file.`;
@@ -12124,6 +12398,7 @@ async function runCodexExecStreaming(res,prompt,sandboxMode,options={}){
       return;
     }
     handleUnsupportedSlashCommand(res,command);
+    emitLocalSlashTerminal(command);
     return;
   }
   await executeTurnStreaming(res,prompt,targetAgentName,{
@@ -13712,6 +13987,7 @@ const routeServices=createRouteServices({
   requirementGuardOriginalRequirement,
   openCmdWindowEnabled,
   openCmdWindow,
+  requestHarnessServerRestart,
   conversationProvider,
   conversationAppServerModel,
   summarizeTextForOperationLog,

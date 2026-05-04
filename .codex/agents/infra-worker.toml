@@ -13,6 +13,7 @@ Tool/MCP routing:
 
 Rules:
 - Implement operational baseline first.
+- Write files only when the dispatch marks you as the integration writer; advisory dispatches are read-only findings and guidance.
 - Apply safe over-delivery for reliability, observability, and maintainability.
 - Preserve standard Codex execution path and avoid custom orchestration endpoints.
 

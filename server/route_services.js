@@ -47,6 +47,7 @@ function createRouteServices(deps) {
     requestHeaderValue: deps.requestHeaderValue,
     controlApiTokenHeaderName: deps.controlApiTokenHeaderName,
     openCmdWindow: deps.openCmdWindow,
+    requestHarnessServerRestart: deps.requestHarnessServerRestart,
   });
 
   const conversationService = createConversationService({

@@ -368,6 +368,110 @@
       "rollbackCriteria": [
         "guard failure, regression, harmful outcome, or stale behavior"
       ]
+    },
+    {
+      "id": "review-agent-essence",
+      "path": ".agents/skills/review-agent-essence/SKILL.md",
+      "description": "Use to review a skill, harness design, code, or design document against the bundled agent-essence principles without mutating the target.",
+      "useWhen": [
+        "skill or harness design needs principle review",
+        "agent-essence alignment must be checked",
+        "non-mutating design feedback is requested"
+      ],
+      "avoidWhen": [
+        "the task requires direct implementation edits",
+        "the target does not need principle-based review"
+      ],
+      "expectedArtifacts": [
+        "essence_review",
+        "principle_applicability_matrix",
+        "improvement_recommendations"
+      ],
+      "evidenceSurfaces": [
+        ".agents/skills/review-agent-essence/reference/agent-essence.md",
+        "review output",
+        "target artifact path"
+      ],
+      "workerDecisionConnection": [
+        "principle review can inform REVISE or KEEP before skill promotion"
+      ],
+      "promotionCriteria": [
+        "repeated reviews produce actionable design corrections without authority drift"
+      ],
+      "rollbackCriteria": [
+        "routes implementation tasks into analysis-only review or gives generic principle commentary"
+      ]
+    },
+    {
+      "id": "review-harness",
+      "path": ".agents/skills/review-harness/SKILL.md",
+      "description": "Use to diagnose a Claude Code style harness project against the bundled anti-pattern rubric and produce a scoped diagnosis report.",
+      "useWhen": [
+        "external Claude Code harness structure needs diagnosis",
+        "CLAUDE.md settings hooks skills or memory surfaces need rubric review",
+        "harness anti-pattern scoring is requested"
+      ],
+      "avoidWhen": [
+        "the target is this Codex harness runtime unless Claude Code compatibility is explicitly under review",
+        "the user requested implementation rather than diagnosis"
+      ],
+      "expectedArtifacts": [
+        "harness_diagnosis_report",
+        "anti_pattern_score_matrix",
+        "prioritized_remediation"
+      ],
+      "evidenceSurfaces": [
+        ".agents/skills/review-harness/diagnosis-rubric.md",
+        ".agents/skills/review-harness/diagnosis-report-template.md",
+        "diagnosis output or output/harness-diag-{YYYY-MM-DD}.md"
+      ],
+      "workerDecisionConnection": [
+        "diagnosis evidence can support REVISE or BLOCKED for harness quality review"
+      ],
+      "promotionCriteria": [
+        "repeated diagnostics catch actionable harness defects with low false positives"
+      ],
+      "rollbackCriteria": [
+        "misclassifies non-Claude Codex harness surfaces or writes reports when read-only review was required"
+      ]
+    },
+    {
+      "id": "review-harness-codex",
+      "path": ".agents/skills/review-harness-codex/SKILL.md",
+      "description": "Use to diagnose Codex App Server harnesses against Codex-native authority, runtime, evidence, skill, current-truth, and UI semantics surfaces.",
+      "useWhen": [
+        "Codex harness evaluation or scorecard is requested",
+        "AGENTS.md .codex .agents skills scripts/config docs logs or output truth need diagnosis",
+        "the user asks how to improve this harness"
+      ],
+      "avoidWhen": [
+        "the target is a Claude Code harness with CLAUDE.md and .claude settings as primary surfaces",
+        "the user requested implementation rather than read-only diagnosis"
+      ],
+      "expectedArtifacts": [
+        "codex_harness_diagnosis",
+        "codex_native_scorecard",
+        "rank_certificate_image",
+        "prioritized_improvement_plan"
+      ],
+      "evidenceSurfaces": [
+        ".agents/skills/review-harness-codex/scripts/render-certificate.js",
+        ".agents/skills/review-harness-codex/references/codex-harness-rubric.md",
+        ".agents/skills/review-harness-codex/references/report-template.md",
+        "AGENTS.md",
+        ".codex/config.toml",
+        "scripts/config/authority_registry.json",
+        "docs/EVIDENCE_CONTRACT.md"
+      ],
+      "workerDecisionConnection": [
+        "Codex harness diagnosis can inform REVISE or KEEP without replacing release evidence"
+      ],
+      "promotionCriteria": [
+        "repeated Codex harness diagnostics produce evidence-backed improvements without Claude-surface false negatives"
+      ],
+      "rollbackCriteria": [
+        "overfits to this repo, confuses diagnosis with release readiness, or mutates harness surfaces during analysis-only tasks"
+      ]
     }
   ]
 }

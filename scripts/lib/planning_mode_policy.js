@@ -5386,6 +5386,88 @@ function defaultEvidenceForRole(role, assuranceDepth, dedicatedTestsRequired, ta
   }
 }
 
+const dispatchParticipationModes = new Set(["writer", "advisory", "review", "test", "discovery"]);
+const implementationDispatchRoles = new Set(["backend_worker", "frontend_worker", "infra_worker"]);
+
+function normalizeParticipationMode(value, fallback = "advisory") {
+  const normalized = safeString(value, 40).toLowerCase();
+  return dispatchParticipationModes.has(normalized) ? normalized : fallback;
+}
+
+function normalizeImplementationDispatchRoles(roles) {
+  return uniqueStrings(roles, 8).filter((role) => implementationDispatchRoles.has(role));
+}
+
+function selectIntegrationOwnerRole(roles, selection, prompt) {
+  const candidates = normalizeImplementationDispatchRoles(roles);
+  if (!candidates.length) return "";
+  if (candidates.length === 1) return candidates[0];
+  const lower = safeString(prompt, 24000).toLowerCase();
+  const assuranceSignals = selection && selection.assuranceSignals && typeof selection.assuranceSignals === "object"
+    ? selection.assuranceSignals
+    : {};
+  if (assuranceSignals.docsOnly && candidates.includes("infra_worker")) return "infra_worker";
+  if (candidates.includes("frontend_worker") && /(?:web|ui|html|css|browser|harnesui|screen|visual|layout)/i.test(lower)) {
+    return "frontend_worker";
+  }
+  if (candidates.includes("backend_worker") && /(?:server|api|runtime|protocol|policy|governance|script|node|eval|route)/i.test(lower)) {
+    return "backend_worker";
+  }
+  if (candidates.includes("infra_worker") && /(?:docs|config|launch|logging|ops|runtime boundary|restart)/i.test(lower)) {
+    return "infra_worker";
+  }
+  return candidates.find((role) => role === "backend_worker")
+    || candidates.find((role) => role === "frontend_worker")
+    || candidates[0];
+}
+
+function buildSingleWriterOwnedPaths(roles, writerRole, prompt, options) {
+  const candidateRoles = uniqueStrings([writerRole, ...normalizeImplementationDispatchRoles(roles)], 8);
+  return uniqueStrings(
+    candidateRoles.flatMap((role) => defaultOwnedPathsForRole(role, prompt, options)),
+    12
+  );
+}
+
+function writerTaskSummaryForRole(role, advisoryAgents) {
+  const advisorySuffix = advisoryAgents.length
+    ? ` Advisory agents provide findings only: ${advisoryAgents.join(", ")}.`
+    : "";
+  if (role === "infra_worker") {
+    return `Single writer applies the final contract/docs/runtime-observability change.${advisorySuffix}`;
+  }
+  if (role === "backend_worker") {
+    return `Single writer applies the final server, policy, runtime, or integration change.${advisorySuffix}`;
+  }
+  if (role === "frontend_worker") {
+    return `Single writer applies the final UI and operator-facing web change.${advisorySuffix}`;
+  }
+  return `Single writer applies the final selected implementation change.${advisorySuffix}`;
+}
+
+function advisoryTaskSummaryForRole(role, writerRole) {
+  if (role === "infra_worker") {
+    return `Advisory only: review contract, docs sync, runtime-observability, and operational risks for ${writerRole}. Do not write files.`;
+  }
+  if (role === "backend_worker") {
+    return `Advisory only: review server, policy, protocol, and runtime risks for ${writerRole}. Do not write files.`;
+  }
+  if (role === "frontend_worker") {
+    return `Advisory only: review UI, browser, copy-fit, and operator-experience risks for ${writerRole}. Do not write files.`;
+  }
+  return `Advisory only: provide findings and integration guidance for ${writerRole}. Do not write files.`;
+}
+
+function advisoryEvidenceForRole(role) {
+  return uniqueStrings([
+    role === "frontend_worker" ? "ui_risk_notes" : "",
+    role === "backend_worker" ? "runtime_risk_notes" : "",
+    role === "infra_worker" ? "contract_sync_notes" : "",
+    "advisory_findings",
+    "integration_guidance",
+  ], 6);
+}
+
 function buildDispatchTraceReferenceLedger(requirementContract) {
   const requirement = requirementContract && typeof requirementContract === "object" ? requirementContract : {};
   const requestCoverage = sanitizeRequirementRequestCoverage(requirement.requestCoverage, requirement);
@@ -5425,12 +5507,26 @@ function buildDispatchPlan({ prompt = "", options = {}, selection, requirementCo
   const acceptanceIds = Array.isArray(requirement.acceptanceChecks) ? requirement.acceptanceChecks.map((entry) => safeString(entry && entry.id, 60)).filter(Boolean) : [];
   const dispatchTrace = buildDispatchTraceReferenceLedger(requirement);
   const acceptanceCheckRefs = uniqueStrings(acceptanceIds, 16);
-  const roles = normalizedSelection.signals.specialistOwners.filter((role) => !["reviewer", "tester", "explorer"].includes(role));
+  const roles = normalizeImplementationDispatchRoles(
+    normalizedSelection.signals.specialistOwners.filter((role) => !["reviewer", "tester", "explorer"].includes(role))
+  );
   const assuranceDepth = normalizeAssuranceMode(normalizedSelection.selectedAssuranceDepth, "STANDARD_ASSURANCE");
   const reviewerRequired = assuranceDepth === "SIGNOFF_ASSURANCE" || Boolean(normalizedSelection.assuranceSignals && normalizedSelection.assuranceSignals.reviewerSuggested);
   const testerRequired = assuranceDepth === "SIGNOFF_ASSURANCE" || Boolean(normalizedSelection.assuranceSignals && normalizedSelection.assuranceSignals.testerSuggested);
   const signoffRequired = assuranceDepth === "SIGNOFF_ASSURANCE";
   const dedicatedTestsRequired = assuranceDepth === "SIGNOFF_ASSURANCE" && Boolean(normalizedSelection.assuranceSignals && (normalizedSelection.assuranceSignals.newLogicRisk || normalizedSelection.assuranceSignals.runtimeTouch || normalizedSelection.assuranceSignals.protocolTouch));
+  const defaultWriterRole = normalizedSelection.assuranceSignals && normalizedSelection.assuranceSignals.docsOnly ? "infra_worker" : "backend_worker";
+  const effectiveRoles = roles.length ? roles : [defaultWriterRole];
+  const integrationOwner = normalizedSelection.selectedPlanningDepth === "DISCOVERY_PLANNING"
+    ? ""
+    : selectIntegrationOwnerRole(effectiveRoles, normalizedSelection, prompt);
+  const advisoryAgents = integrationOwner
+    ? uniqueStrings(effectiveRoles.filter((role) => role !== integrationOwner), 6)
+    : [];
+  const coordinationMode = normalizedSelection.selectedPlanningDepth === "DISCOVERY_PLANNING"
+    ? "discovery_only"
+    : "single_writer";
+  const singleWriter = coordinationMode === "single_writer" && integrationOwner ? 1 : 0;
   const dispatches = [];
   if (normalizedSelection.selectedPlanningDepth === "DISCOVERY_PLANNING") {
     const clarificationAction = safeString(normalizedSelection.signals && normalizedSelection.signals.clarificationAction, 40);
@@ -5439,6 +5535,8 @@ function buildDispatchPlan({ prompt = "", options = {}, selection, requirementCo
     dispatches.push({
       dispatchId: "dispatch-default-discovery",
       ownerAgent: safeString(options && options.agentName, 80) || "default",
+      participationMode: "discovery",
+      mayWrite: 0,
       ownedPaths: [],
       taskSummary: clarificationAction === "ask_user_once"
         ? `\u5b9f\u88c5\u524d\u306b\u3001\u6700\u3082\u52b9\u304f\u78ba\u8a8d\u3067\u304d\u308b\u8cea\u554f\u30921\u3064\u3060\u3051\u884c\u3046\u3002${clarificationQuestion ? ` \u8cea\u554f: ${clarificationQuestion}` : ""}`
@@ -5459,32 +5557,35 @@ function buildDispatchPlan({ prompt = "", options = {}, selection, requirementCo
       expectedEvidence: uniqueStrings(["requirement_contract", "flow_trace_summary", "open_question_register", "assumption_register", "non_goal_register", clarificationAction === "ask_user_once" ? "clarification_prompt" : "", clarificationSummary], 8),
     });
   } else {
-    const effectiveRoles = roles.length ? roles : [normalizedSelection.assuranceSignals && normalizedSelection.assuranceSignals.docsOnly ? "infra_worker" : "backend_worker"];
     let index = 1;
     for (const role of effectiveRoles) {
+      const participationMode = role === integrationOwner ? "writer" : "advisory";
+      const mayWrite = participationMode === "writer" ? 1 : 0;
       dispatches.push({
         dispatchId: `dispatch-${index++}-${role}`,
         ownerAgent: role,
-        ownedPaths: defaultOwnedPathsForRole(role, prompt, options),
-        taskSummary: role === "infra_worker"
-          ? "\u5951\u7d04\u3001docs sync\u3001runtime \u53ef\u89b3\u6e2c\u6027\u3001signoff \u5411\u3051\u8a3c\u8de1\u66f4\u65b0\u3092\u62c5\u5f53\u3059\u308b\u3002"
-          : role === "backend_worker"
-            ? "\u30b5\u30fc\u30d0\u30fc\u5074\u306e\u30aa\u30fc\u30b1\u30b9\u30c8\u30ec\u30fc\u30b7\u30e7\u30f3\u3001\u30dd\u30ea\u30b7\u30fc\u3001runtime \u632f\u308b\u821e\u3044\u5909\u66f4\u3092\u62c5\u5f53\u3059\u308b\u3002"
-            : role === "frontend_worker"
-              ? "UI \u3068\u30aa\u30da\u30ec\u30fc\u30bf\u30fc\u5411\u3051 Web \u5909\u66f4\u3092\u62c5\u5f53\u3059\u308b\u3002"
-              : "\u9078\u629e\u3055\u308c\u305f\u7bc4\u56f2\u306e specialist \u5b9f\u884c\u3092\u62c5\u5f53\u3059\u308b\u3002",
+        participationMode,
+        mayWrite,
+        ownedPaths: mayWrite ? buildSingleWriterOwnedPaths(effectiveRoles, role, prompt, options) : [],
+        taskSummary: mayWrite
+          ? writerTaskSummaryForRole(role, advisoryAgents)
+          : advisoryTaskSummaryForRole(role, integrationOwner),
         requestClauseRefs: dispatchTrace.requestClauseRefs,
         requirementRefs: dispatchTrace.requirementRefs,
         acceptanceCheckRefs,
         acceptanceChecks: acceptanceIds,
-        toolsMcpRequirements: defaultToolsForRole(role),
-        reviewerRequired: reviewerRequired ? 1 : 0,
-        testerRequired: testerRequired ? 1 : 0,
-        signoffRequired: signoffRequired ? 1 : 0,
+        toolsMcpRequirements: mayWrite ? defaultToolsForRole(role) : ["shell_command", "read_only_analysis"],
+        reviewerRequired: mayWrite && reviewerRequired ? 1 : 0,
+        testerRequired: mayWrite && testerRequired ? 1 : 0,
+        signoffRequired: mayWrite && signoffRequired ? 1 : 0,
         escalationPoint: normalizedSelection.selectedPlanningDepth === "FAST_PLANNING"
           ? "Escalate if owned paths expand beyond the selected specialist boundary."
-          : "Escalate if owned paths or acceptance checks drift from the requirement contract.",
-        expectedEvidence: defaultEvidenceForRole(role, assuranceDepth, dedicatedTestsRequired, normalizedSelection.taskFamily),
+          : mayWrite
+            ? "Escalate if owned paths or acceptance checks drift from the requirement contract."
+            : "Escalate if advisory findings show the selected writer cannot safely integrate the change alone.",
+        expectedEvidence: mayWrite
+          ? defaultEvidenceForRole(role, assuranceDepth, dedicatedTestsRequired, normalizedSelection.taskFamily)
+          : advisoryEvidenceForRole(role),
       });
     }
   }
@@ -5497,6 +5598,9 @@ function buildDispatchPlan({ prompt = "", options = {}, selection, requirementCo
   else if (normalizedSelection.signals.assumptionDependence !== "low") residualRisks.push("Some implementation details still depend on inferred assumptions from the prompt.");
   if (isDesignSensitivePlanningFamily(normalizedSelection.taskFamily)) {
     residualRisks.push("Dense, interrupted, critical, and longest-copy states must be visually checked for overflow, clipping, collisions, and copy-fit before signoff.");
+  }
+  if (singleWriter && advisoryAgents.length) {
+    residualRisks.push("Advisory agents provide intelligence only; the integration owner remains the sole writer for this task.");
   }
   if (dedicatedTestsRequired) residualRisks.push("New logic or protocol-sensitive behavior requires dedicated verification before signoff.");
   return {
@@ -5515,6 +5619,11 @@ function buildDispatchPlan({ prompt = "", options = {}, selection, requirementCo
     testerRequired: testerRequired ? 1 : 0,
     signoffRequired: signoffRequired ? 1 : 0,
     dedicatedTestsRequired: dedicatedTestsRequired ? 1 : 0,
+    coordinationMode,
+    singleWriter,
+    integrationOwner,
+    advisoryAgents,
+    freshReviewerRequired: reviewerRequired ? 1 : 0,
     dispatches,
     sharedEscalationPoints: uniqueStrings(dispatches.map((entry) => entry.escalationPoint).filter(Boolean), 6),
     expectedEvidence: uniqueStrings([
@@ -5580,6 +5689,8 @@ function sanitizeDispatches(value) {
     return {
       dispatchId: safeString(item.dispatchId, 80) || `dispatch-${index + 1}`,
       ownerAgent,
+      participationMode: normalizeParticipationMode(item.participationMode, item.mayWrite ? "writer" : "advisory"),
+      mayWrite: item.mayWrite ? 1 : 0,
       ownedPaths: uniqueStrings(item.ownedPaths, 12),
       taskSummary,
       requestClauseRefs: uniqueStrings(item.requestClauseRefs, 24),
@@ -5611,6 +5722,21 @@ function sanitizePlanningArtifactsForRuntime(input) {
   );
   const taskFamily = safeString(selection.taskFamily || planningDecisionContract.taskFamily || requirement.taskFamily || dispatchPlan.taskFamily, 80) || "deterministic_code";
   const familyProfileId = safeString(selection.familyProfileId || planningDecisionContract.familyProfileId || requirement.familyProfileId || dispatchPlan.familyProfileId, 80) || taskFamily;
+  const sanitizedDispatches = sanitizeDispatches(dispatchPlan.dispatches);
+  const inferredWriterDispatch = sanitizedDispatches.find((entry) => entry && entry.participationMode === "writer" && entry.mayWrite);
+  const coordinationMode = safeString(dispatchPlan.coordinationMode, 40) === "discovery_only"
+    ? "discovery_only"
+    : safeString(dispatchPlan.coordinationMode, 40) === "single_writer" || inferredWriterDispatch
+      ? "single_writer"
+      : "discovery_only";
+  const integrationOwner = safeString(dispatchPlan.integrationOwner, 80)
+    || (inferredWriterDispatch ? inferredWriterDispatch.ownerAgent : "");
+  const advisoryAgents = uniqueStrings(
+    dispatchPlan.advisoryAgents || sanitizedDispatches
+      .filter((entry) => entry && entry.participationMode === "advisory")
+      .map((entry) => entry.ownerAgent),
+    8
+  );
   return {
     schema: "planning-artifacts.v2",
     policyVersion: safeString(payload.policyVersion, 80) || planningModePolicyVersion,
@@ -5799,7 +5925,12 @@ function sanitizePlanningArtifactsForRuntime(input) {
       testerRequired: dispatchPlan.testerRequired ? 1 : 0,
       signoffRequired: dispatchPlan.signoffRequired ? 1 : 0,
       dedicatedTestsRequired: dispatchPlan.dedicatedTestsRequired ? 1 : 0,
-      dispatches: sanitizeDispatches(dispatchPlan.dispatches),
+      coordinationMode,
+      singleWriter: coordinationMode === "single_writer" && integrationOwner ? 1 : 0,
+      integrationOwner,
+      advisoryAgents,
+      freshReviewerRequired: dispatchPlan.freshReviewerRequired || dispatchPlan.reviewerRequired ? 1 : 0,
+      dispatches: sanitizedDispatches,
       sharedEscalationPoints: uniqueStrings(dispatchPlan.sharedEscalationPoints, 8),
       expectedEvidence: uniqueStrings(dispatchPlan.expectedEvidence, 16),
       residualRisks: uniqueStrings(dispatchPlan.residualRisks, 12),

@@ -56,7 +56,7 @@ body.simple-view .bg-layer { opacity: 0.45; }
 
 .topbar {
   display: grid;
-  grid-template-columns: auto minmax(0, 1fr) auto;
+  grid-template-columns: auto minmax(0, 1fr) auto auto;
   align-items: center;
   gap: 14px;
   padding: 10px 14px;
@@ -1503,9 +1503,26 @@ body.composer-static .composer {
 
 .topbar {
   display: grid;
-  grid-template-columns: auto minmax(0, 1fr) auto;
+  grid-template-columns: auto minmax(0, 1fr) auto auto;
   gap: 14px;
   align-items: center;
+}
+
+.topbar-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  min-width: 0;
+}
+
+.server-restart-btn {
+  white-space: nowrap;
+  border-color: rgba(185, 137, 23, 0.28);
+}
+
+.server-restart-btn.is-restarting {
+  color: #8d5b00;
+  background: rgba(255, 247, 228, 0.96);
 }
 
 .topbar-tools {
@@ -2147,6 +2164,10 @@ body.composer-static .composer {
   background: rgba(178, 77, 98, 0.05);
 }
 
+.harness-status-row-blocked[hidden] {
+  display: none !important;
+}
+
 .harness-status-label {
   font-size: 11px;
   font-weight: 700;
@@ -2602,6 +2623,11 @@ body.composer-static .composer {
     grid-template-columns: 1fr;
   }
 
+  .topbar-actions {
+    justify-content: flex-start;
+    width: 100%;
+  }
+
   .work-panel {
     grid-template-columns: 1fr;
     grid-template-areas:
@@ -2776,7 +2802,7 @@ body {
 }
 
 .topbar {
-  grid-template-columns: auto minmax(260px, 1fr) auto;
+  grid-template-columns: auto minmax(260px, 1fr) auto auto;
   gap: 16px;
   padding: 8px 0 12px;
   border: 0;

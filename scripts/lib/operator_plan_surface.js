@@ -86,9 +86,12 @@ function buildPlanningSummary(selection, dispatchPlan) {
 function normalizeDispatches(dispatchPlan) {
   return toArray(dispatchPlan && dispatchPlan.dispatches).map((dispatch, index) => {
     const item = dispatch && typeof dispatch === "object" ? dispatch : {};
+    const participationMode = safeString(item.participationMode, 40).toLowerCase();
     return {
       dispatchId: safeString(item.dispatchId, 120) || `dispatch-${index + 1}`,
       ownerAgent: formatOwnerLabel(item.ownerAgent),
+      participationMode: ["writer", "advisory", "review", "test", "discovery"].includes(participationMode) ? participationMode : "",
+      mayWrite: item.mayWrite ? 1 : 0,
       taskSummary: safeString(item.taskSummary, 240),
       ownedPaths: uniqueStrings(item.ownedPaths, 8),
       requestClauseRefs: uniqueStrings(item.requestClauseRefs, 24),
@@ -106,6 +109,42 @@ function normalizeAcceptanceIds(requirementContract) {
     }
     return "";
   }).filter(Boolean);
+}
+
+function buildCoordinationSummary(dispatchPlan, dispatches) {
+  const plan = dispatchPlan && typeof dispatchPlan === "object" ? dispatchPlan : {};
+  const normalizedDispatches = toArray(dispatches);
+  const writerDispatch = normalizedDispatches.find((entry) => entry && entry.participationMode === "writer" && entry.mayWrite);
+  const integrationOwner = safeString(plan.integrationOwner, 80) || safeString(writerDispatch && writerDispatch.ownerAgent, 80);
+  const advisoryAgents = uniqueStrings(
+    toArray(plan.advisoryAgents).length
+      ? plan.advisoryAgents
+      : normalizedDispatches
+        .filter((entry) => entry && entry.participationMode === "advisory")
+        .map((entry) => entry.ownerAgent),
+    6
+  );
+  const coordinationMode = safeString(plan.coordinationMode, 40) || (integrationOwner ? "single_writer" : "");
+  return {
+    coordinationMode,
+    singleWriter: plan.singleWriter || coordinationMode === "single_writer" ? 1 : 0,
+    integrationOwner,
+    advisoryAgents,
+    freshReviewerRequired: plan.freshReviewerRequired || plan.reviewerRequired ? 1 : 0,
+  };
+}
+
+function formatCoordinationSummary(summary) {
+  const source = summary && typeof summary === "object" ? summary : {};
+  if (!source.singleWriter || !source.integrationOwner) {
+    return "";
+  }
+  const parts = [`single writer=${source.integrationOwner}`];
+  if (Array.isArray(source.advisoryAgents) && source.advisoryAgents.length) {
+    parts.push(`advisors=${source.advisoryAgents.join(",")}`);
+  }
+  parts.push(`fresh reviewer=${source.freshReviewerRequired ? "required" : "not-required"}`);
+  return parts.join("; ");
 }
 
 function buildTraceRefs({ dispatches = [], requirementContract } = {}) {
@@ -190,6 +229,8 @@ function isGenericTaskSummary(text) {
     || normalized === "own runtime, server, protocol, and orchestration behavior changes"
     || normalized === "own ui and operator-facing web changes"
     || normalized === "own contracts, docs sync, and operator-visible harness wiring"
+    || normalized.startsWith("single writer applies the final ")
+    || normalized.startsWith("advisory only:")
     || normalized === "実装に入る前に、未解決の要件、非対象範囲、前提、承認境界を整理する"
     || normalized === "契約、docs sync、runtime 可観測性、signoff 向け証跡更新を担当する"
     || normalized === "サーバー側のオーケストレーション、ポリシー、runtime 振る舞い変更を担当する"
@@ -437,6 +478,7 @@ function buildOperatorPlanEvent({ planningContext, agentName = "default" } = {})
   const summary = buildPlanningSummary(selection, dispatchPlan);
   const dispatches = normalizeDispatches(dispatchPlan);
   const clarification = getClarificationSignals(context);
+  const coordination = buildCoordinationSummary(dispatchPlan, dispatches);
 
   let decision = "plan";
   let skipReason = "";
@@ -481,6 +523,11 @@ function buildOperatorPlanEvent({ planningContext, agentName = "default" } = {})
     planningDepth: summary.planningDepth,
     assuranceDepth: summary.assuranceDepth,
     flowPath: summary.flowPath,
+    coordinationMode: coordination.coordinationMode,
+    singleWriter: coordination.singleWriter,
+    integrationOwner: coordination.integrationOwner,
+    advisoryAgents: coordination.advisoryAgents,
+    freshReviewerRequired: coordination.freshReviewerRequired,
     explanation,
     steps,
   };

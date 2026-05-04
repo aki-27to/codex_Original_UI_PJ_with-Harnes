@@ -39,6 +39,9 @@
       "material_authority_or_safety_uncertainty"
     ],
     "retiredWorkerAllowedInNormalRuntime": false,
+    "singleWriterApplyStepRequired": true,
+    "allowIntegrationOwnerPlannedPaths": true,
+    "unknownAgentFileChangePolicy": "deny",
     "systemCoherenceReviewRequiredForCoreChanges": true,
     "systemCoherenceReviewContractRef": "scripts/config/system_coherence_review_contract.json"
   },

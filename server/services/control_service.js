@@ -23,6 +23,7 @@ function createControlService(deps) {
     requestHeaderValue,
     controlApiTokenHeaderName,
     openCmdWindow,
+    requestHarnessServerRestart,
   } = deps;
 
   async function readMutationBody(req, res, { action = "exec", requireAction = false } = {}) {
@@ -237,6 +238,60 @@ function createControlService(deps) {
     }
   }
 
+  async function handleServerRestartRequest({ req, res }) {
+    try {
+      const body = await readMutationBody(req, res, {
+        action: "",
+        requireAction: false,
+      });
+      if (body === null) return;
+      const action = safeString(body && body.action, 80).toLowerCase();
+      if (action !== "restart_harness_server") {
+        sendJson(res, 400, { ok: false, error: `unsupported action: ${action || "(empty)"}` });
+        return;
+      }
+      const validation = validateControlMutationRequest(req, { action, requireAction: true });
+      if (!validation.ok) {
+        logOperation(
+          "api.server_restart_blocked",
+          {
+            reason: safeString(validation.error, 140),
+            status: Number.isFinite(Number(validation.status))
+              ? Math.trunc(Number(validation.status))
+              : 403,
+            origin: safeString(requestHeaderValue(req, "origin"), 220),
+            referer: safeString(requestHeaderValue(req, "referer"), 220),
+            host: safeString(requestHeaderValue(req, "host"), 120),
+            hasToken: requestHeaderValue(req, controlApiTokenHeaderName) ? 1 : 0,
+            action,
+          },
+          "standard"
+        );
+        sendJson(res, validation.status, { ok: false, error: validation.error });
+        return;
+      }
+      if (typeof requestHarnessServerRestart !== "function") {
+        sendJson(res, 501, { ok: false, error: "server restart is not available" });
+        return;
+      }
+      const result = requestHarnessServerRestart({
+        force: Boolean(body && body.force),
+        reason: safeString(body && body.reason, 160) || "ui_restart_button",
+      });
+      if (!result || result.ok !== true) {
+        const statusCode = result && result.code === "active_exec" ? 409 : 400;
+        sendJson(res, statusCode, result || { ok: false, error: "server restart failed" });
+        return;
+      }
+      sendJson(res, 202, result);
+    } catch (error) {
+      sendJson(res, 400, {
+        ok: false,
+        error: error && error.message ? error.message : String(error),
+      });
+    }
+  }
+
   return Object.freeze({
     handleIntentProfileUpdateRequest,
     handleIntentProfileResetRequest,
@@ -244,6 +299,7 @@ function createControlService(deps) {
     handleWorkspaceUnlockRequest,
     handleRequirementGuardValidateRequest,
     handleOpenCmdRequest,
+    handleServerRestartRequest,
   });
 }
 

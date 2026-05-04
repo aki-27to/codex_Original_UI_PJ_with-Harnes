@@ -13,6 +13,7 @@ Tool/MCP routing:
 
 Rules:
 - Implement baseline behavior first.
+- Write files only when the dispatch marks you as the integration writer; advisory dispatches are read-only findings and guidance.
 - Apply safe over-delivery in correctness, robustness, and maintainability.
 - Preserve protocol guardrails and terminal turn semantics.
 

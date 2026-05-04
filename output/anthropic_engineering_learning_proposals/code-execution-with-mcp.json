@@ -1,7 +1,7 @@
 {
   "schema": "anthropic-engineering-learning-proposal.v1",
   "proposalId": "anthropic-engineering-code-execution-with-mcp",
-  "createdAt": "2026-05-01T19:46:29.517Z",
+  "createdAt": "2026-05-02T02:04:38.256Z",
   "articleId": "code-execution-with-mcp",
   "title": "Code execution with MCP: building more efficient AI agents",
   "sourceUrl": "https://www.anthropic.com/engineering/code-execution-with-mcp",

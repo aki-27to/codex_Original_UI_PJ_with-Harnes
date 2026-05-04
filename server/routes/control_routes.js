@@ -44,6 +44,13 @@ function createControlRoutes(ctx) {
         return ctx.services.control.handleOpenCmdRequest(args);
       },
     },
+    {
+      method: "POST",
+      match: (pathname) => pathname === "/api/server/restart",
+      async handle(args) {
+        return ctx.services.control.handleServerRestartRequest(args);
+      },
+    },
   ];
 }
 

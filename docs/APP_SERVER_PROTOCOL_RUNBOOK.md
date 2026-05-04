@@ -1,6 +1,6 @@
 # APP_SERVER_PROTOCOL_RUNBOOK
 
-Updated: 2026-04-12
+Updated: 2026-05-02
 
 ## Plane Separation and Protected Inputs
 
@@ -28,6 +28,7 @@ Protected eval assets remain evaluation-only.
 
 - interactive execution: `POST /api/exec`
 - eval / release judgment: `POST /api/eval/run`
+- local maintenance control: `POST /api/server/restart` launches a hidden local restart helper that stops the current server PID and relaunches the existing desktop launcher; it is not an execution orchestration branch
 
 既存 local workflow として `/api/batch/*` は許容しますが、独自 orchestration branch を増やす場所にはしません。
 

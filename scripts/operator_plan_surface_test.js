@@ -94,6 +94,10 @@ function run() {
   const reportStep = normalEvent.steps.find((step) => step && step.phase === "report");
   assert(qualityStep, "normal signoff plan should include a quality step");
   assert(reportStep, "normal signoff plan should include a report step");
+  assert.strictEqual(normalEvent.coordinationMode, "single_writer", "operator plan should expose single-writer coordination");
+  assert.strictEqual(normalEvent.integrationOwner, "backend_worker", "operator plan should expose the integration writer");
+  assert.deepStrictEqual(normalEvent.advisoryAgents, ["infra_worker"], "operator plan should expose advisory agents");
+  assert.strictEqual(normalEvent.freshReviewerRequired, 1, "operator plan should expose fresh reviewer requirement");
   assert(Array.isArray(qualityStep.acceptanceCheckRefs) && qualityStep.acceptanceCheckRefs.length >= 1, "quality step should carry acceptanceCheckRefs");
   assert(Array.isArray(reportStep.requestClauseRefs) && reportStep.requestClauseRefs.length >= 1, "report step should retain request trace refs");
 

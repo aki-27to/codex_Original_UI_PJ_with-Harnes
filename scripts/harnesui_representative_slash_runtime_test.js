@@ -3,13 +3,20 @@
 const assert = require("assert");
 const http = require("http");
 const path = require("path");
-const { startHarnessForPhase1 } = require("./lib/harness_api_client");
+const { requestJson, startHarnessForPhase1 } = require("./lib/harness_api_client");
 
 const workspaceRoot = path.resolve(__dirname, "..");
 
-function postExecText({ port, authHeaders, prompt, timeoutMs = 60000 }) {
+let slashRequestCounter = 0;
+
+function nextSlashIdempotencyKey() {
+  slashRequestCounter += 1;
+  return `slash-runtime-${Date.now()}-${slashRequestCounter}`;
+}
+
+function postExecText({ port, authHeaders, prompt, idempotencyKey = "", timeoutMs = 60000 }) {
   return new Promise((resolve, reject) => {
-    const body = JSON.stringify({
+    const requestBody = {
       prompt,
       agent: "default",
       cwd: workspaceRoot,
@@ -20,7 +27,11 @@ function postExecText({ port, authHeaders, prompt, timeoutMs = 60000 }) {
       sandboxMode: "workspace-write",
       approvalPolicy: "on-request",
       webSearchMode: "disabled",
-    });
+    };
+    if (idempotencyKey) {
+      requestBody.idempotencyKey = idempotencyKey;
+    }
+    const body = JSON.stringify(requestBody);
     const req = http.request(
       {
         hostname: "127.0.0.1",
@@ -31,6 +42,7 @@ function postExecText({ port, authHeaders, prompt, timeoutMs = 60000 }) {
         headers: {
           "Content-Type": "application/json; charset=utf-8",
           "Content-Length": Buffer.byteLength(body),
+          ...(idempotencyKey ? { "Idempotency-Key": idempotencyKey } : {}),
           ...(authHeaders || {}),
         },
       },
@@ -62,7 +74,8 @@ function postExecText({ port, authHeaders, prompt, timeoutMs = 60000 }) {
 }
 
 async function expectSlashOutput(harness, prompt, checks) {
-  const result = await postExecText({ port: harness.port, authHeaders: harness.authHeaders, prompt });
+  const idempotencyKey = nextSlashIdempotencyKey();
+  const result = await postExecText({ port: harness.port, authHeaders: harness.authHeaders, prompt, idempotencyKey });
   assert.strictEqual(result.statusCode, 200, `${prompt} must return HTTP 200`);
   assert.strictEqual(result.events.length, 0, `${prompt} must be handled as a local slash command, not an ordinary turn stream`);
   for (const check of checks) {
@@ -79,6 +92,33 @@ async function expectSlashOutput(harness, prompt, checks) {
     !/mock turn|turn\/start|assistant final/i.test(result.raw),
     `${prompt} must not fall through to ordinary model turn output`
   );
+
+  const idempotencyRes = await requestJson({
+    port: harness.port,
+    path: `/api/exec/idempotency/${encodeURIComponent(idempotencyKey)}?wait_ms=1000`,
+    headers: harness.authHeaders,
+  });
+  assert.strictEqual(idempotencyRes.statusCode, 200, `${prompt} idempotency lookup must return HTTP 200`);
+  assert(idempotencyRes.json && idempotencyRes.json.idempotency, `${prompt} idempotency lookup must return a snapshot`);
+  assert.strictEqual(
+    idempotencyRes.json.idempotency.lifecycleState,
+    "completed",
+    `${prompt} local slash command must resolve idempotency as completed`
+  );
+  assert.strictEqual(
+    idempotencyRes.json.idempotency.outcome && idempotencyRes.json.idempotency.outcome.taskOutcomeStatus,
+    "COMPLETED",
+    `${prompt} local slash command must expose a completed task outcome`
+  );
+
+  const runtimeRes = await requestJson({
+    port: harness.port,
+    path: "/api/runtime",
+    headers: harness.authHeaders,
+  });
+  assert.strictEqual(runtimeRes.statusCode, 200, `${prompt} runtime lookup must return HTTP 200`);
+  const activeExecRequests = Number(runtimeRes.json && runtimeRes.json.activeExecRequests);
+  assert.strictEqual(activeExecRequests, 0, `${prompt} must not leave activeExecRequests running`);
   return result.raw;
 }
 
@@ -94,22 +134,25 @@ async function main() {
     },
   });
   try {
-    await expectSlashOutput(harness, "/help", ["Supported slash commands:", "/status", "/diff", "/resume --last"]);
+    await expectSlashOutput(harness, "/help", ["Supported slash commands:", "/status", "Show Codex status-style runtime details in the HarnesUI view.", "/diff", "/resume --last"]);
     const statusOutput = await expectSlashOutput(harness, "/status", [
       ">_ OpenAI Codex (",
       "Visit https://chatgpt.com/codex/settings/usage",
-      /Model:\s+gpt-5\.5 \(reasoning xhigh\)/,
+      /Model:\s+gpt-5\.5 \(reasoning xhigh, summaries auto\)/,
       /Directory:\s+.+codex_Original_UI_PJ_with-Harnes/,
-      /Permissions:\s+workspace-write \(approval on-request\)/,
-      /AGENTS\.md:\s+AGENTS\.md/,
+      /Permissions:\s+Workspace \(auto-review\)/,
+      /Agents\.md:\s+AGENTS\.md/,
       "Account:",
       /Collaboration mode:\s+Default/,
       /Session:\s+none/,
-      /Agent:\s+default/,
-      /gpt-5\.3-Codex-Spark limit:\s+unavailable in HarnesUI local status/,
-      "native quota bars are not exposed by the local app-server.",
+      /Context window:\s+.+/,
+      /5h limit:\s+open usage link above for live value/,
+      /Weekly limit:\s+open usage link above for live value/,
+      "GPT-5.3-Codex-Spark limit:",
+      "limits may be stale - run /status again shortly.",
     ]);
     assert(!statusOutput.startsWith("Codex status:"), "/status must not regress to the simplified HarnesUI status body");
+    assert(!/HarnesUI local runtime snapshot|Status source:|Native \/status:|Web search:|Fast mode:|Goal:/.test(statusOutput), "/status must not keep the old local-snapshot-only surface");
     await expectSlashOutput(harness, "/diff", [/D I F F|No changes detected\./]);
     await expectSlashOutput(harness, "/fast status", ["Fast mode:", "Usage: /fast"]);
     await expectSlashOutput(harness, "/agent list", ["agents:", "default"]);

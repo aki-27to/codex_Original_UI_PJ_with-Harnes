@@ -135,7 +135,7 @@
     },
     {
       "id": "cross_specialist_dispatch_plan",
-      "title": "Cross-specialist scope produces multi-owner signoff plan",
+      "title": "Cross-specialist scope produces single-writer signoff plan",
       "driver": "planning_contract_probe",
       "input": {
         "prompt": "# Goal\nUpdate server.js and docs/CURRENT_ARCHITECTURE.md to expose the selected execution flow in runtime output.\n# Implementation Requirements\n- Update server.js runtime output.\n- Update docs/CURRENT_ARCHITECTURE.md.\n# Acceptance Criteria\n- Reviewer evidence is required.\n- Tester evidence is required.\n- Signoff evidence is required.",
@@ -149,7 +149,14 @@
           "selectedPlanningDepth": "STANDARD_PLANNING",
           "selectedAssuranceDepth": "SIGNOFF_ASSURANCE",
           "dispatchCount": 2,
-          "ownerAgents": ["backend_worker", "infra_worker"]
+          "ownerAgents": ["backend_worker", "infra_worker"],
+          "coordinationMode": "single_writer",
+          "singleWriter": 1,
+          "integrationOwner": "backend_worker",
+          "writerAgents": ["backend_worker"],
+          "advisoryAgents": ["infra_worker"],
+          "participationModes": ["writer", "advisory"],
+          "freshReviewerRequired": 1
         }
       }
     },

@@ -74,6 +74,42 @@ function createExecService(deps) {
     return typeof getWorkspaceGuardLockedRoot === "function" ? getWorkspaceGuardLockedRoot() : "";
   }
 
+  function promptHasExactReplyContractForUi(value) {
+    const text = safeString(value, 4000).toLowerCase();
+    return (
+      /\b(?:reply|respond)\s+with\s+exactly\b/.test(text) ||
+      /\bfinal\s+(?:reply|answer)\s+must\s+be\s+exactly\b/.test(text) ||
+      /\breturn\s+exactly\b/.test(text)
+    );
+  }
+
+  function shouldApplyHarnesUiAnswerFormatGuidance({ prompt, executionSource }) {
+    const source = safeString(executionSource, 80).toLowerCase();
+    if (source !== "web_ui" && source !== "harnesui") {
+      return false;
+    }
+    const text = safeString(prompt, defaultPromptCharLimit);
+    if (!text.trim() || text.trim().startsWith("/")) {
+      return false;
+    }
+    return !promptHasExactReplyContractForUi(text);
+  }
+
+  function appendHarnesUiAnswerFormatGuidance(prompt) {
+    const text = safeString(prompt, defaultPromptCharLimit).trimEnd();
+    const guidance = [
+      "",
+      "# HarnesUI response-format hint (not a task requirement)",
+      "When this turn creates, edits, or deletes files, make the final answer easy to review in the HarnesUI conversation.",
+      "Include a concise `変更ファイル` section before validation details.",
+      "For each file, list the repo-relative path and one short effect, for example:",
+      "- `web/01.HarnesUI/app.js` - 回答中も作業中表示が進むように変更",
+      "If no files changed, omit the file list unless the user explicitly asks for change evidence.",
+      "Keep the final answer concise in Japanese, and include the validation commands/results after the changed-file list when relevant.",
+    ].join("\n");
+    return `${text}\n${guidance}`;
+  }
+
   async function handleExecIdempotencyRequest({ req, res, url, pathname }) {
     try {
       const validation = validateControlMutationRequest(req, { action: "exec", enforceActionAllowlist: false });
@@ -233,8 +269,14 @@ function createExecService(deps) {
       const memoryMode = typeof normalizeCodexMemoryMode === "function"
         ? normalizeCodexMemoryMode(body.memoryMode, requestedAgentState && requestedAgentState.memoryMode)
         : "default";
-      const extensionApplied = applyRequirementGuardExecExtension({
+      const promptForExecution = shouldApplyHarnesUiAnswerFormatGuidance({
         prompt,
+        executionSource: requestExecutionSource,
+      })
+        ? appendHarnesUiAnswerFormatGuidance(prompt)
+        : prompt;
+      const extensionApplied = applyRequirementGuardExecExtension({
+        prompt: promptForExecution,
         sandboxMode,
         options: {
           approvalPolicy,

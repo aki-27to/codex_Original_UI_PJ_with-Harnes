@@ -372,7 +372,21 @@ function run() {
   assert.deepStrictEqual(
     normalArtifacts.dispatchPlan.dispatches.map((entry) => entry.ownerAgent),
     ["backend_worker", "infra_worker"],
-    "NORMAL plan should split backend and infra ownership"
+    "NORMAL plan should keep backend and infra intelligence in the plan"
+  );
+  assert.strictEqual(normalArtifacts.dispatchPlan.coordinationMode, "single_writer", "NORMAL multi-role plan should use single-writer coordination");
+  assert.strictEqual(normalArtifacts.dispatchPlan.singleWriter, 1, "NORMAL multi-role plan should select a single writer");
+  assert.strictEqual(normalArtifacts.dispatchPlan.integrationOwner, "backend_worker", "server/doc task should select backend_worker as integration writer");
+  assert.deepStrictEqual(normalArtifacts.dispatchPlan.advisoryAgents, ["infra_worker"], "infra_worker should advise instead of writing in parallel");
+  assert.deepStrictEqual(
+    normalArtifacts.dispatchPlan.dispatches.map((entry) => entry.participationMode),
+    ["writer", "advisory"],
+    "NORMAL plan should split writer and advisory participation"
+  );
+  assert.deepStrictEqual(
+    normalArtifacts.dispatchPlan.dispatches.map((entry) => entry.mayWrite),
+    [1, 0],
+    "only the integration writer dispatch may write"
   );
   assert.strictEqual(normalArtifacts.dispatchPlan.reviewerRequired, 1, "NORMAL plan should require reviewer");
   assert.strictEqual(normalArtifacts.dispatchPlan.testerRequired, 1, "NORMAL plan should require tester");
@@ -423,6 +437,9 @@ function run() {
     ["infra_worker"],
     "state-boundary documentation maintenance should keep implementation ownership on infra_worker only"
   );
+  assert.strictEqual(boundaryDocsArtifacts.dispatchPlan.singleWriter, 1, "single-role maintenance should still publish single-writer metadata");
+  assert.strictEqual(boundaryDocsArtifacts.dispatchPlan.integrationOwner, "infra_worker", "docs maintenance writer should be infra_worker");
+  assert.strictEqual(boundaryDocsArtifacts.dispatchPlan.dispatches[0].participationMode, "writer", "single-role maintenance dispatch should be the writer");
   assert.strictEqual(boundaryDocsArtifacts.dispatchPlan.reviewerRequired, 1, "state-boundary documentation maintenance should still request reviewer evidence");
   assert.strictEqual(boundaryDocsArtifacts.dispatchPlan.testerRequired, 1, "state-boundary documentation maintenance should still request tester evidence");
   assert.strictEqual(boundaryDocsArtifacts.dispatchPlan.signoffRequired, 0, "state-boundary documentation maintenance should avoid signoff-only evidence burden");

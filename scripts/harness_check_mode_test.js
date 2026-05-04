@@ -139,6 +139,34 @@ async function runIntegration() {
     const reloadedMode = await page.$eval("#harnessCheckMode", (el) => el.value);
     assert.strictEqual(reloadedMode, "relaxed", "mode should restore from localStorage");
 
+    const runningStopReasonSnapshot = await page.evaluate(() => {
+      const c = active();
+      c.h = createHarnessState();
+      hset(c, "running");
+      s.req.set("stop-reason-visibility-test", {
+        cid: c.id,
+        agent: c.agent || "default",
+        at: Date.now(),
+        controller: new AbortController(),
+      });
+      renderHarness();
+      const row = document.querySelector(".harness-status-row-blocked");
+      const snapshot = {
+        hidden: Boolean(row && row.hidden),
+        badge: document.querySelector("#harnessComplianceBadge")?.textContent || "",
+        detail: document.querySelector("#harnessComplianceDetail")?.textContent || "",
+      };
+      s.req.delete("stop-reason-visibility-test");
+      c.h = createHarnessState();
+      renderHarness();
+      return snapshot;
+    });
+    assert.strictEqual(
+      runningStopReasonSnapshot.hidden,
+      true,
+      "the no-stop-reason row should stay hidden while work is actively running"
+    );
+
     const modeComparison = await page.evaluate(() => {
       const c = active();
       c.h = createHarnessState();

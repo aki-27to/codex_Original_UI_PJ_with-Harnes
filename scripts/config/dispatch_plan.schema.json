@@ -15,6 +15,11 @@
     "testerRequired",
     "signoffRequired",
     "dedicatedTestsRequired",
+    "coordinationMode",
+    "singleWriter",
+    "integrationOwner",
+    "advisoryAgents",
+    "freshReviewerRequired",
     "dispatches",
     "sharedEscalationPoints",
     "expectedEvidence",
@@ -36,11 +41,17 @@
     "taskFamily": { "type": "string", "minLength": 1 },
     "familyProfileId": { "type": "string", "minLength": 1 },
     "flowPath": { "type": "string", "enum": ["FAST_PATH", "NORMAL_PATH", "DISCOVERY_PATH"] },
+    "executionFlow": { "type": "string" },
     "proposalOnly": { "type": "integer", "enum": [0, 1] },
     "reviewerRequired": { "type": "integer", "enum": [0, 1] },
     "testerRequired": { "type": "integer", "enum": [0, 1] },
     "signoffRequired": { "type": "integer", "enum": [0, 1] },
     "dedicatedTestsRequired": { "type": "integer", "enum": [0, 1] },
+    "coordinationMode": { "type": "string", "enum": ["single_writer", "discovery_only"] },
+    "singleWriter": { "type": "integer", "enum": [0, 1] },
+    "integrationOwner": { "type": "string" },
+    "advisoryAgents": { "type": "array", "items": { "type": "string" } },
+    "freshReviewerRequired": { "type": "integer", "enum": [0, 1] },
     "dispatches": {
       "type": "array",
       "items": {
@@ -48,6 +59,8 @@
         "required": [
           "dispatchId",
           "ownerAgent",
+          "participationMode",
+          "mayWrite",
           "ownedPaths",
           "taskSummary",
           "requestClauseRefs",
@@ -63,6 +76,11 @@
         "properties": {
           "dispatchId": { "type": "string", "minLength": 1 },
           "ownerAgent": { "type": "string", "minLength": 1 },
+          "participationMode": {
+            "type": "string",
+            "enum": ["writer", "advisory", "review", "test", "discovery"]
+          },
+          "mayWrite": { "type": "integer", "enum": [0, 1] },
           "ownedPaths": { "type": "array", "items": { "type": "string" } },
           "taskSummary": { "type": "string", "minLength": 1 },
           "requestClauseRefs": { "type": "array", "items": { "type": "string" } },
@@ -72,6 +90,7 @@
           "toolsMcpRequirements": { "type": "array", "items": { "type": "string" } },
           "reviewerRequired": { "type": "integer", "enum": [0, 1] },
           "testerRequired": { "type": "integer", "enum": [0, 1] },
+          "signoffRequired": { "type": "integer", "enum": [0, 1] },
           "escalationPoint": { "type": "string" },
           "expectedEvidence": { "type": "array", "items": { "type": "string" } }
         },

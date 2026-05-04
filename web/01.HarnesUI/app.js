@@ -42,6 +42,8 @@ const SETTINGS_KEY_LEGACY="codex-console-settings-v2";
 const CHAT_STATE_KEY="codex-console-chat-v1";
 const CHAT_STATE_VERSION=1;
 const CHAT_MESSAGE_LIMIT=240;
+const SERVER_RESTART_RESULT_KEY="codex-server-restart-result-v1";
+const SERVER_RESTART_RESULT_SEEN_KEY="codex-server-restart-result-seen-v2";
 const LEGACY_COMPOSER_SAMPLE_PROMPT="依頼を書く。例: web/01.HarnesUI を会話中心の UI に刷新する。制約は /api/exec とローカル運用を維持。完了条件は desktop/mobile で視覚確認。";
 const HARNESS_CHECK_MODE_KEY="codex-harness-check-mode-v2";
 const HARNESS_CHECK_MODE_KEY_LEGACY="codex-harness-check-mode-v1";
@@ -56,7 +58,7 @@ const EXEC_STREAM_RECOVERY_STATUS_WAIT_MS=2000;
 const EXEC_STREAM_RECOVERY_MAX_POLLS=6;
 const RUNTIME_PENDING_SYNC_MS=5000;
 const RUNTIME_PENDING_ORPHAN_GRACE_MS=EXEC_STREAM_RECOVERY_RUNTIME_WAIT_MS+EXEC_STREAM_RECOVERY_POLL_MS;
-const APP_BUNDLE_VERSION="2026-05-02-representative-slash-v1";
+const APP_BUNDLE_VERSION="2026-05-04-server-restart-v6";
 const COMPOSER_STICKY_MIN_VIEWPORT_HEIGHT=640;
 const UI_RELOAD_CACHE_PARAM="ui_reload";
 const TIMELINE_AUTO_SCROLL_BOTTOM_THRESHOLD_PX=48;
@@ -102,7 +104,7 @@ const OPERATOR_AGENT_LABELS=Object.freeze({
   explorer:"調査",
 });
 const topographyState={agents:[],source:"",error:"",usingFallback:false,lastUpdated:0,loading:false,timer:null,refreshSoonTimer:null,reqId:0};
-const e={connectionState:by("connectionState"),modeState:by("modeState"),agentState:by("agentState"),pendingState:by("pendingState"),simpleViewToggle:by("simpleViewToggle"),uiReloadBtn:by("uiReloadBtn"),runtimeAgent:by("runtimeAgent"),runtimeSession:by("runtimeSession"),runtimeExperimental:by("runtimeExperimental"),runtimeAgentCount:by("runtimeAgentCount"),workspacePath:by("workspacePath"),workspaceLockBtn:by("workspaceLockBtn"),workspaceUnlockBtn:by("workspaceUnlockBtn"),workspaceStatus:by("workspaceStatus"),modelName:by("modelName"),modelReasoningEffort:by("modelReasoningEffort"),executionProfileHeadline:by("executionProfileHeadline"),executionProfileDescription:by("executionProfileDescription"),executionProfileApprovalChip:by("executionProfileApprovalChip"),executionProfileSandboxChip:by("executionProfileSandboxChip"),executionProfileSearchChip:by("executionProfileSearchChip"),executionProfileGuardianChip:by("executionProfileGuardianChip"),approvalPolicy:by("approvalPolicy"),fastModeEnabled:by("fastModeEnabled"),automaticApprovalReviewEnabled:by("automaticApprovalReviewEnabled"),sandboxMode:by("sandboxMode"),executionProfile:by("executionProfile"),permissionsAdvanced:by("permissionsAdvanced"),permissionsAdvancedHint:by("permissionsAdvancedHint"),uiVisibility:by("uiVisibility"),webSearchMode:by("webSearchMode"),commandFilter:by("commandFilter"),commandGrid:by("commandGrid"),commandTemplate:by("commandTemplate"),messageTemplate:by("messageTemplate"),chatList:by("chatList"),newChatBtn:by("newChatBtn"),deleteChatBtn:by("deleteChatBtn"),timeline:by("timeline"),promptInput:by("promptInput"),imageInput:by("imageInput"),imageAttachBtn:by("imageAttachBtn"),imageError:by("imageError"),imagePreview:by("imagePreview"),imagePreviewThumb:by("imagePreviewThumb"),imagePreviewName:by("imagePreviewName"),imagePreviewMeta:by("imagePreviewMeta"),imageRemoveBtn:by("imageRemoveBtn"),sendBtn:by("sendBtn"),stopBtn:by("stopBtn"),reconnectBtn:by("reconnectBtn"),refreshDiagBtn:by("refreshDiagBtn"),newThreadBtn:by("newThreadBtn"),openCmdBtn:by("openCmdBtn"),liveStatus:by("liveStatus"),liveStatusLabel:by("liveStatusLabel"),liveStatusElapsed:by("liveStatusElapsed"),liveStatusDetail:by("liveStatusDetail"),performancePanel:by("performancePanel"),perfSessionRef:by("perfSessionRef"),perfUpdatedAt:by("perfUpdatedAt"),perfTokenValue:by("perfTokenValue"),perfTokenDetail:by("perfTokenDetail"),perfTokenSpark:by("perfTokenSpark"),perfTimeValue:by("perfTimeValue"),perfTimeDetail:by("perfTimeDetail"),perfTimeSpark:by("perfTimeSpark"),agentInspector:by("agentInspector"),agentFlowLane:by("agentFlowLane"),agentTraceList:by("agentTraceList"),clearAgentTraceBtn:by("clearAgentTraceBtn"),agentTopographyPanel:by("agentTopographyPanel"),agentTopographyMeta:by("agentTopographyMeta"),agentTopographyList:by("agentTopographyList"),agentTopographyRefreshBtn:by("agentTopographyRefreshBtn"),diagCodexState:by("diagCodexState"),diagCodexDetail:by("diagCodexDetail"),diagNodeState:by("diagNodeState"),diagNodeDetail:by("diagNodeDetail"),diagSearchState:by("diagSearchState"),diagSearchDetail:by("diagSearchDetail"),diagSummaryText:by("diagSummaryText"),diagDetails:by("diagDetails"),diagDetailsSummary:by("diagDetailsSummary"),harnessStatus:by("harnessStatus"),harnessThreadId:by("harnessThreadId"),harnessTurnId:by("harnessTurnId"),harnessUpdatedAt:by("harnessUpdatedAt"),harnessItemList:by("harnessItemList"),harnessPlanMeta:by("harnessPlanMeta"),harnessPlanCurrentCard:by("harnessPlanCurrentCard"),harnessPlanCurrentStep:by("harnessPlanCurrentStep"),harnessPlanCurrentPurpose:by("harnessPlanCurrentPurpose"),harnessPlanCurrentDetail:by("harnessPlanCurrentDetail"),harnessPlanExplanation:by("harnessPlanExplanation"),harnessPlanList:by("harnessPlanList"),harnessTokenUsage:by("harnessTokenUsage"),harnessDiffPreview:by("harnessDiffPreview"),harnessPhaseList:by("harnessPhaseList"),harnessEvidenceTasks:by("harnessEvidenceTasks"),harnessEvidenceTests:by("harnessEvidenceTests"),harnessEvidenceReviews:by("harnessEvidenceReviews"),harnessEvidenceLogs:by("harnessEvidenceLogs"),composerVerificationChip:by("composerVerificationChip")};
+const e={connectionState:by("connectionState"),modeState:by("modeState"),agentState:by("agentState"),pendingState:by("pendingState"),simpleViewToggle:by("simpleViewToggle"),uiReloadBtn:by("uiReloadBtn"),serverRestartBtn:by("serverRestartBtn"),runtimeAgent:by("runtimeAgent"),runtimeSession:by("runtimeSession"),runtimeExperimental:by("runtimeExperimental"),runtimeAgentCount:by("runtimeAgentCount"),workspacePath:by("workspacePath"),workspaceLockBtn:by("workspaceLockBtn"),workspaceUnlockBtn:by("workspaceUnlockBtn"),workspaceStatus:by("workspaceStatus"),modelName:by("modelName"),modelReasoningEffort:by("modelReasoningEffort"),executionProfileHeadline:by("executionProfileHeadline"),executionProfileDescription:by("executionProfileDescription"),executionProfileApprovalChip:by("executionProfileApprovalChip"),executionProfileSandboxChip:by("executionProfileSandboxChip"),executionProfileSearchChip:by("executionProfileSearchChip"),executionProfileGuardianChip:by("executionProfileGuardianChip"),approvalPolicy:by("approvalPolicy"),fastModeEnabled:by("fastModeEnabled"),automaticApprovalReviewEnabled:by("automaticApprovalReviewEnabled"),sandboxMode:by("sandboxMode"),executionProfile:by("executionProfile"),permissionsAdvanced:by("permissionsAdvanced"),permissionsAdvancedHint:by("permissionsAdvancedHint"),uiVisibility:by("uiVisibility"),webSearchMode:by("webSearchMode"),commandFilter:by("commandFilter"),commandGrid:by("commandGrid"),commandTemplate:by("commandTemplate"),messageTemplate:by("messageTemplate"),chatList:by("chatList"),newChatBtn:by("newChatBtn"),deleteChatBtn:by("deleteChatBtn"),timeline:by("timeline"),promptInput:by("promptInput"),imageInput:by("imageInput"),imageAttachBtn:by("imageAttachBtn"),imageError:by("imageError"),imagePreview:by("imagePreview"),imagePreviewThumb:by("imagePreviewThumb"),imagePreviewName:by("imagePreviewName"),imagePreviewMeta:by("imagePreviewMeta"),imageRemoveBtn:by("imageRemoveBtn"),sendBtn:by("sendBtn"),stopBtn:by("stopBtn"),reconnectBtn:by("reconnectBtn"),refreshDiagBtn:by("refreshDiagBtn"),newThreadBtn:by("newThreadBtn"),openCmdBtn:by("openCmdBtn"),liveStatus:by("liveStatus"),liveStatusLabel:by("liveStatusLabel"),liveStatusElapsed:by("liveStatusElapsed"),liveStatusDetail:by("liveStatusDetail"),performancePanel:by("performancePanel"),perfSessionRef:by("perfSessionRef"),perfUpdatedAt:by("perfUpdatedAt"),perfTokenValue:by("perfTokenValue"),perfTokenDetail:by("perfTokenDetail"),perfTokenSpark:by("perfTokenSpark"),perfTimeValue:by("perfTimeValue"),perfTimeDetail:by("perfTimeDetail"),perfTimeSpark:by("perfTimeSpark"),agentInspector:by("agentInspector"),agentFlowLane:by("agentFlowLane"),agentTraceList:by("agentTraceList"),clearAgentTraceBtn:by("clearAgentTraceBtn"),agentTopographyPanel:by("agentTopographyPanel"),agentTopographyMeta:by("agentTopographyMeta"),agentTopographyList:by("agentTopographyList"),agentTopographyRefreshBtn:by("agentTopographyRefreshBtn"),diagCodexState:by("diagCodexState"),diagCodexDetail:by("diagCodexDetail"),diagNodeState:by("diagNodeState"),diagNodeDetail:by("diagNodeDetail"),diagSearchState:by("diagSearchState"),diagSearchDetail:by("diagSearchDetail"),diagSummaryText:by("diagSummaryText"),diagDetails:by("diagDetails"),diagDetailsSummary:by("diagDetailsSummary"),harnessStatus:by("harnessStatus"),harnessThreadId:by("harnessThreadId"),harnessTurnId:by("harnessTurnId"),harnessUpdatedAt:by("harnessUpdatedAt"),harnessItemList:by("harnessItemList"),harnessPlanMeta:by("harnessPlanMeta"),harnessPlanCurrentCard:by("harnessPlanCurrentCard"),harnessPlanCurrentStep:by("harnessPlanCurrentStep"),harnessPlanCurrentPurpose:by("harnessPlanCurrentPurpose"),harnessPlanCurrentDetail:by("harnessPlanCurrentDetail"),harnessPlanExplanation:by("harnessPlanExplanation"),harnessPlanList:by("harnessPlanList"),harnessTokenUsage:by("harnessTokenUsage"),harnessDiffPreview:by("harnessDiffPreview"),harnessPhaseList:by("harnessPhaseList"),harnessEvidenceTasks:by("harnessEvidenceTasks"),harnessEvidenceTests:by("harnessEvidenceTests"),harnessEvidenceReviews:by("harnessEvidenceReviews"),harnessEvidenceLogs:by("harnessEvidenceLogs"),composerVerificationChip:by("composerVerificationChip")};
 e.harnessCheckMode=by("harnessCheckMode");
 e.harnessCheckModeHint=by("harnessCheckModeHint");
 e.focusActionDetail=by("focusActionDetail");
@@ -938,7 +940,12 @@ function runtimeTurnAgentForUi(turn){
 }
 function runtimeTurnCompletedAtForUi(turn){
   if(!turn||typeof turn!=="object")return 0;
-  return toPerfInt(turn.completed_at||turn.completedAt||turn.updated_at||turn.updatedAt);
+  const status=runtimeTurnStatusForUi(turn);
+  const terminal=runtimeTurnIsTerminalForUi(turn);
+  if(status&&!terminal)return 0;
+  const explicitCompletedAt=toPerfInt(turn.completed_at||turn.completedAt);
+  if(explicitCompletedAt>0)return explicitCompletedAt;
+  return terminal?toPerfInt(turn.updated_at||turn.updatedAt):0;
 }
 function runtimeTurnStartedAtForUi(turn){
   if(!turn||typeof turn!=="object")return 0;
@@ -982,6 +989,8 @@ function captureTurnSnapshotForUi(turn){
   const turnId=runtimeTurnIdForUi(turn);
   const agentName=runtimeTurnAgentForUi(turn);
   const completedAt=runtimeTurnCompletedAtForUi(turn);
+  const taskOutcomeStatus=taskOutcomeStatusForUi(turn);
+  const taskOutcomeReason=taskOutcomeReasonForUi(turn);
   const planningMode=typeof turn.planning_mode==="string"&&turn.planning_mode.trim()?turn.planning_mode.trim():"";
   const planning=planningContextForUi(turn);
   if(status)snapshot.terminal_status=status;
@@ -989,6 +998,8 @@ function captureTurnSnapshotForUi(turn){
   if(turnId)snapshot.turn_id=turnId;
   if(agentName)snapshot.agent_name=agentName;
   if(completedAt>0)snapshot.completed_at=completedAt;
+  if(taskOutcomeStatus)snapshot.task_outcome_status=taskOutcomeStatus;
+  if(taskOutcomeReason)snapshot.task_outcome_reason=taskOutcomeReason;
   if(planningMode)snapshot.planning_mode=planningMode;
   if(planning&&Object.keys(planning).length)snapshot.planning=cloneJsonForUi(planning,{});
   if(turn.family_completion_gate&&typeof turn.family_completion_gate==="object"){
@@ -2171,6 +2182,237 @@ const controlApiAllows=(action)=>{
   if(!wanted||!cfg||!Array.isArray(cfg.actionAllowlist))return false;
   return cfg.actionAllowlist.includes(wanted);
 };
+function serverProcessSnapshotForUi(runtime=s.runtime){
+  const source=runtime&&typeof runtime==="object"?runtime:{};
+  const processInfo=source.serverProcess&&typeof source.serverProcess==="object"
+    ?source.serverProcess
+    :(source.server_process&&typeof source.server_process==="object"?source.server_process:source);
+  return{
+    pid:toPerfInt(processInfo.pid),
+    startedAt:toPerfInt(processInfo.startedAt||processInfo.started_at),
+  };
+}
+function serverRestartReadinessForUi(){
+  const hasControl=Boolean(controlApiToken()&&controlApiAllows("restart_harness_server"));
+  const activeRuntime=runtimeActiveExecRequestCountForUi(s.runtime)>0||runtimeHasAnyActiveTurnForUi(s.runtime);
+  const activeLocal=(s.req&&typeof s.req.size==="number"&&s.req.size>0)||totalPendingCount()>0;
+  return{
+    available:hasControl,
+    active:activeRuntime||activeLocal,
+    activeRuntime,
+    activeLocal,
+  };
+}
+function syncServerRestartControlForUi(mode=""){
+  if(!e.serverRestartBtn)return;
+  const readiness=serverRestartReadinessForUi();
+  const restarting=mode==="restarting";
+  e.serverRestartBtn.classList.toggle("is-restarting",restarting);
+  e.serverRestartBtn.disabled=restarting||!readiness.available||readiness.active;
+  e.serverRestartBtn.textContent=restarting?"再起動中":(readiness.active?"実行中":"Web再起動");
+  e.serverRestartBtn.title=!readiness.available
+    ?"Runtime 接続後に Webアプリを再起動できます。"
+    :(readiness.active
+      ?"実行中の作業があるため、再起動は保留します。"
+      :"Webアプリを安全に再起動します。実行中の作業がある場合は止めません。");
+}
+function serverRestartResultStoresForUi(){
+  const stores=[];
+  try{if(window.sessionStorage)stores.push(window.sessionStorage)}catch{}
+  try{if(window.localStorage)stores.push(window.localStorage)}catch{}
+  return stores;
+}
+function persistServerRestartResultForUi(result){
+  try{
+    const stores=serverRestartResultStoresForUi();
+    if(!stores.length)return;
+    const status=typeof result?.status==="string"&&result.status.trim()
+      ?result.status.trim()
+      :(result&&result.ok?"completed":"pending");
+    const payload=JSON.stringify({
+      ok:Boolean(result&&result.ok),
+      status,
+      previous:serverProcessSnapshotForUi(result&&result.previous),
+      current:serverProcessSnapshotForUi(result&&result.current),
+      at:Date.now(),
+    });
+    stores.forEach((store)=>{try{store.setItem(SERVER_RESTART_RESULT_KEY,payload)}catch{}});
+  }catch{
+  }
+}
+function clearServerRestartResultForUi(){
+  serverRestartResultStoresForUi().forEach((store)=>{try{store.removeItem(SERVER_RESTART_RESULT_KEY)}catch{}});
+}
+function consumeServerRestartResultForUi(){
+  try{
+    const stores=serverRestartResultStoresForUi();
+    let raw="";
+    for(const store of stores){
+      try{
+        raw=store.getItem(SERVER_RESTART_RESULT_KEY)||raw;
+      }catch{
+      }
+    }
+    clearServerRestartResultForUi();
+    if(!raw)return null;
+    const parsed=JSON.parse(raw);
+    if(!parsed||typeof parsed!=="object")return null;
+    const ageMs=Date.now()-toPerfInt(parsed.at);
+    if(ageMs>10*60*1000)return null;
+    return parsed;
+  }catch{
+    return null;
+  }
+}
+function serverRestartSeenSignatureForUi(result){
+  const source=result&&typeof result==="object"?result:{};
+  const before=serverProcessSnapshotForUi(source.previous);
+  const after=serverProcessSnapshotForUi(source.current&&typeof source.current==="object"?source.current:s.runtime);
+  return[
+    toPerfInt(source.at),
+    before.pid,
+    after.pid,
+    after.startedAt,
+  ].join(":");
+}
+function readSeenServerRestartSignatureForUi(){
+  try{return window.localStorage?String(window.localStorage.getItem(SERVER_RESTART_RESULT_SEEN_KEY)||""):""}catch{return""}
+}
+function markSeenServerRestartResultForUi(result){
+  try{
+    const signature=serverRestartSeenSignatureForUi(result);
+    if(signature&&window.localStorage)window.localStorage.setItem(SERVER_RESTART_RESULT_SEEN_KEY,signature);
+  }catch{
+  }
+}
+function serverRestartResultFromRuntimeForUi(runtime=s.runtime){
+  const source=runtime&&typeof runtime==="object"?runtime:{};
+  const marker=source.serverRestart&&typeof source.serverRestart==="object"
+    ?source.serverRestart
+    :(source.server_restart&&typeof source.server_restart==="object"?source.server_restart:null);
+  if(!marker)return null;
+  const requestedAt=toPerfInt(marker.requestedAt||marker.requested_at||marker.updatedAt||marker.updated_at);
+  if(requestedAt<=0||Date.now()-requestedAt>10*60*1000)return null;
+  const status=String(marker.status||"").toLowerCase();
+  if(status&&status==="failed")return null;
+  const previousPid=toPerfInt(marker.previousPid||marker.previous_pid);
+  const current=serverProcessSnapshotForUi(source);
+  if(current.pid<=0)return null;
+  return{
+    ok:true,
+    status:"completed",
+    at:requestedAt,
+    previous:{pid:previousPid,startedAt:0},
+    current,
+    source:"runtime",
+  };
+}
+function serverRestartResultMessageForUi(result){
+  const source=result&&typeof result==="object"?result:{};
+  const before=serverProcessSnapshotForUi(source.previous);
+  const after=serverProcessSnapshotForUi(source.current&&typeof source.current==="object"?source.current:s.runtime);
+  const requestedAt=toPerfInt(result.at);
+  const changedPid=before.pid>0&&after.pid>0&&before.pid!==after.pid;
+  const changedStart=before.startedAt>0&&after.startedAt>0&&before.startedAt!==after.startedAt;
+  const startedAfterRequest=after.startedAt>0&&requestedAt>0&&after.startedAt>=requestedAt-3000;
+  const success=Boolean(source.ok)||changedPid||changedStart||startedAfterRequest;
+  const detail=before.pid>0&&after.pid>0&&before.pid!==after.pid
+    ?`Runtime PID ${before.pid} -> ${after.pid}`
+    :(after.pid>0?`Runtime PID ${after.pid}`:"Runtime 起動確認済み");
+  return success
+    ?`Web再起動が完了しました。${detail}`
+    :`Web再起動に失敗しました。${detail}`;
+}
+function chatHasServerRestartCompletionForUi(chatRecord=active()){
+  const messages=Array.isArray(chatRecord&&chatRecord.messages)?chatRecord.messages:[];
+  return messages.slice(-8).some((item)=>String(item&&item.content||"").includes("Web再起動が完了しました。"));
+}
+function addServerRestartResultMessageForUi(result,{force=false}={}){
+  if(!force&&chatHasServerRestartCompletionForUi())return null;
+  const rendered=msg(s.active,"system","System",serverRestartResultMessageForUi(result));
+  syncTimelineViewportStateForUi(s.active,e.timeline,{forceStick:true});
+  restoreTimelineViewportForUi(s.active,e.timeline);
+  return rendered;
+}
+function renderServerRestartResultForUi(){
+  const result=consumeServerRestartResultForUi()||serverRestartResultFromRuntimeForUi(s.runtime);
+  if(!result)return;
+  if(serverRestartSeenSignatureForUi(result)===readSeenServerRestartSignatureForUi())return;
+  addServerRestartResultMessageForUi(result);
+  markSeenServerRestartResultForUi(result);
+}
+async function waitForServerRestartForUi(previous,{timeoutMs=180000,pollMs=700,requestTimeoutMs=5000}={}){
+  const before=previous&&typeof previous==="object"?previous:serverProcessSnapshotForUi();
+  const deadline=Date.now()+Math.max(1000,Number(timeoutMs)||180000);
+  let sawUnavailable=false;
+  while(Date.now()<deadline){
+    await sleepWithSignal(Math.max(250,Number(pollMs)||700));
+    try{
+      const {res:response,text}=await fetchTextWithTimeout("/api/runtime",{
+        cache:"no-store",
+        timeoutMs:Math.max(1000,Number(requestTimeoutMs)||5000),
+      });
+      if(!response.ok){
+        sawUnavailable=true;
+        continue;
+      }
+      const payload=JSON.parse(text);
+      const after=serverProcessSnapshotForUi(payload);
+      const changedPid=before.pid>0&&after.pid>0&&after.pid!==before.pid;
+      const changedStart=before.startedAt>0&&after.startedAt>0&&after.startedAt!==before.startedAt;
+      if(sawUnavailable||changedPid||changedStart){
+        s.runtime=payload;
+        return payload;
+      }
+    }catch(_error){
+      sawUnavailable=true;
+    }
+  }
+  return null;
+}
+async function restartHarnessServerFromUi(){
+  const readiness=serverRestartReadinessForUi();
+  if(!readiness.available){
+    msg(s.active,"system","System","Web再起動はまだ使えません。Runtime を再接続してください。");
+    return;
+  }
+  if(readiness.active){
+    msg(s.active,"system","System","実行中の作業があるため、Webアプリの再起動は保留しました。完了後に押してください。");
+    return;
+  }
+  const token=controlApiToken();
+  const headerName=controlApiTokenHeader();
+  const previous=serverProcessSnapshotForUi();
+  const headers={"Content-Type":"application/json"};
+  headers[headerName]=token;
+  persistServerRestartResultForUi({status:"pending",ok:false,previous,current:null});
+  syncServerRestartControlForUi("restarting");
+  try{
+    const response=await fetch("/api/server/restart",{
+      method:"POST",
+      headers,
+      body:JSON.stringify({action:"restart_harness_server",reason:"ui_restart_button"}),
+    });
+    let payload=null;
+    try{payload=await response.json();}catch(_error){}
+    if(!response.ok){
+      const detail=payload&&payload.error?payload.error:`HTTP ${response.status}`;
+      throw new Error(detail);
+    }
+    msg(s.active,"system","System","Webアプリの再起動を開始しました。数秒後に画面を更新します。");
+    const restarted=await waitForServerRestartForUi(previous);
+    if(!restarted)throw new Error("再起動後の Runtime を確認できませんでした");
+    const result={status:"completed",ok:true,previous,current:restarted};
+    addServerRestartResultMessageForUi(result,{force:true});
+    flushSaveChatState();
+    persistServerRestartResultForUi(result);
+    reloadUiShellForUi();
+  }catch(error){
+    clearServerRestartResultForUi();
+    syncServerRestartControlForUi();
+    msg(s.active,"system","System",`Web再起動に失敗しました: ${error&&error.message?error.message:"unknown"}`);
+  }
+}
 function normalizePathForUi(value){
   const raw=typeof value==="string"?value.trim():"";
   if(!raw)return"";
@@ -2500,6 +2742,10 @@ function createHarnessPlanMeta(){
     assuranceDepth:"",
     flowPath:"",
     generatedBy:"",
+    coordinationMode:"",
+    integrationOwner:"",
+    advisoryAgents:[],
+    freshReviewerRequired:0,
   };
 }
 function createHarnessState(){
@@ -2533,6 +2779,12 @@ const USER_VISIBLE_WORKFLOW_STEPS_FOR_UI=Object.freeze([
   {id:"verify",label:"検証"},
   {id:"complete",label:"完了"},
 ]);
+const USER_WORK_COMPLETION_DEFINITION_FOR_UI=Object.freeze({
+  completedLabel:"作業完了",
+  notCompletedLabel:"作業未完了",
+  completedDefinition:"作業完了は、依頼された成果が採択可能で、最終回答・必要な検証/証拠・未処理の実行なしがそろっている状態です。",
+  notCompletedDefinition:"作業未完了は、作業完了の条件を1つでも満たしていない状態です。作業中・確認待ち・中断・検証未通過・未開始を含みます。",
+});
 const USER_VISIBLE_LIFECYCLE_STEPS_FOR_UI=Object.freeze([
   {id:"request",label:"依頼理解"},
   {id:"intent",label:"Intent Lock"},
@@ -3948,30 +4200,62 @@ function tuiElapsedForUi(startedAt,now=Date.now()){
   const seconds=String(elapsed%60).padStart(2,"0");
   return `${minutes}:${seconds}`;
 }
+function assistantTuiPulseForUi(now=Date.now()){
+  const frames=["・","・・","・・・","・・・・"];
+  const index=Math.floor(Math.max(0,Number(now)||0)/1000)%frames.length;
+  return frames[index];
+}
 function assistantTuiPhaseForUi(phase){
   const normalized=lowerText(phase);
   if(normalized==="submitted")return{label:"実行受付",detail:"実行に渡しました。応答の開始を待っています"};
   if(normalized==="streaming")return{label:"回答待ち",detail:"接続できました。最初の回答本文を待っています"};
   if(normalized==="activity")return{label:"作業中",detail:"回答前の作業通知を受け取りました"};
+  if(normalized==="answering")return{label:"回答中",detail:"本文を出しながら作業状態を同期しています"};
   if(normalized==="retry")return{label:"再送準備",detail:"再送できる状態に戻しています"};
   if(normalized==="recovery")return{label:"復旧確認",detail:"接続を戻し、保存済みの状態を確認しています"};
+  if(normalized==="completed")return{label:"完了",detail:"最終回答を受け取りました"};
+  if(normalized==="needs_input")return{label:"入力待ち",detail:"追加の入力で続行できる状態です"};
+  if(normalized==="aborted"||normalized==="interrupted")return{label:"中断",detail:"実行は中断されました"};
+  if(normalized==="failed")return{label:"失敗",detail:"実行中にエラーを受け取りました"};
   if(normalized==="error")return{label:"状態確認",detail:"途中状態を読みやすく整理しています"};
   return{label:"準備中",detail:"依頼を登録し、作業に必要な設定をまとめています"};
+}
+function assistantTuiActivitySummaryForUi(event,phase=""){
+  const text=lowerText(event);
+  const normalizedPhase=lowerText(phase);
+  if(text.includes("plan"))return"作業計画を更新しています";
+  if(text.includes("diff"))return"変更内容を確認しています";
+  if(text.includes("token"))return"使用量を確認しています";
+  if(normalizedPhase==="answering")return"回答本文を受け取りながら作業状態を同期しています";
+  if(normalizedPhase==="completed")return"最終回答を受け取りました";
+  if(normalizedPhase==="needs_input")return"追加の入力で続行できます";
+  if(normalizedPhase==="failed")return"エラー内容を表示しています";
+  if(normalizedPhase==="aborted"||normalizedPhase==="interrupted")return"中断状態を反映しています";
+  if(text.includes("activity")||text.includes("item"))return"作業通知を受け取っています";
+  if(text.includes("turn"))return"実行状態を同期しています";
+  const phaseInfo=assistantTuiPhaseForUi(phase);
+  return phaseInfo.detail;
 }
 function assistantPlanStatusMarkForUi(status){
   const normalized=lowerText(status).replace(/[\s-]+/g,"_");
   if(["completed","complete","done","succeeded","success"].includes(normalized))return"✔";
   return"□";
 }
-function assistantFallbackPlanStepsForUi(phase){
+function assistantFallbackPlanStepsForUi(phase,{responseStarted=false,terminalStatus=""}={}){
   const normalized=lowerText(phase);
-  const runtimeReady=["submitted","streaming","activity","retry","recovery","error"].includes(normalized);
-  const responseStarted=["activity","retry","recovery","error"].includes(normalized);
+  const terminal=lowerText(terminalStatus);
+  const terminalDone=["completed","failed","aborted","interrupted","needs_input"].includes(terminal)
+    ||["completed","failed","aborted","interrupted","needs_input"].includes(normalized);
+  const runtimeReady=["submitted","streaming","activity","answering","retry","recovery","error","completed","failed","aborted","interrupted","needs_input"].includes(normalized)||terminalDone;
+  const responseReady=Boolean(responseStarted)
+    ||["activity","answering","retry","recovery","error","completed","failed","aborted","interrupted","needs_input"].includes(normalized)
+    ||terminalDone;
+  const finalReady=terminal==="completed"||normalized==="completed";
   return[
     {step:"依頼内容を確認する",status:"completed"},
     {step:"実行設定を確認する",status:runtimeReady?"completed":"pending"},
-    {step:"回答本文を受け取る",status:responseStarted?"completed":"pending"},
-    {step:"最終回答を作成する",status:"pending"},
+    {step:"回答本文を受け取る",status:responseReady?"completed":"pending"},
+    {step:"最終回答を作成する",status:finalReady?"completed":"pending"},
   ];
 }
 function assistantPlanLineForUi(step,index){
@@ -3995,12 +4279,15 @@ function buildAssistantTuiProgressForUi({
   now=Date.now(),
   event="",
   planSteps=[],
+  responseStarted=false,
+  terminalStatus="",
 }={}){
   const phaseInfo=assistantTuiPhaseForUi(phase);
   const modelLine=tuiCompactForUi([model,reasoning].filter(Boolean).join(" / ")||"runtime default",56);
   const promptLine=tuiCompactForUi(prompt,imageCount>0?62:78)||`${imageCount||0} attached image${imageCount===1?"":"s"}`;
   const activeDetail=tuiCompactForUi(phaseInfo.detail,88);
-  const visiblePlanSteps=(Array.isArray(planSteps)&&planSteps.length?planSteps:assistantFallbackPlanStepsForUi(phase))
+  const activityLine=tuiCompactForUi(assistantTuiActivitySummaryForUi(event,phase),88);
+  const visiblePlanSteps=(Array.isArray(planSteps)&&planSteps.length?planSteps:assistantFallbackPlanStepsForUi(phase,{responseStarted,terminalStatus}))
     .map((step,index)=>assistantPlanLineForUi(step,index))
     .filter(Boolean)
     .slice(0,8);
@@ -4009,6 +4296,7 @@ function buildAssistantTuiProgressForUi({
     ...visiblePlanSteps,
     "",
     `・現在 ${phaseInfo.label}: ${activeDetail}`,
+    `・動き ${assistantTuiPulseForUi(now)} ${activityLine}`,
     `・経過 ${tuiElapsedForUi(startedAt,now)}`,
     `・担当 ${tuiCompactForUi(agent||DEFAULT_AGENT_NAME,32)}`,
     `・モデル ${modelLine}`,
@@ -4061,11 +4349,16 @@ function conversationSnapshotForUi(chatRecord){
   const messages=Array.isArray(chatRecord&&chatRecord.messages)
     ?chatRecord.messages.filter((item)=>item&&typeof item==="object"&&(item.role==="system"||compactInlineTextForUi(item.content)))
     :[];
-  const hasConversation=messages.some((item)=>item.role!=="system");
+  const hasConversation=messages.some((item)=>item.role!=="system"||isConversationVisibleSystemMessageForUi(item));
   return{
     hasConversation,
     messages:hasConversation?messages:[],
   };
+}
+function isConversationVisibleSystemMessageForUi(item){
+  if(!item||typeof item!=="object"||item.role!=="system")return false;
+  const content=String(item.content||"");
+  return content.includes("Web再起動");
 }
 function timelineRenderHasContentForUi(element=e.timeline){
   const target=element&&typeof element==="object"?element:null;
@@ -5153,8 +5446,22 @@ function ensureHarnessPlanMeta(h){
     assuranceDepth:typeof source.assuranceDepth==="string"?source.assuranceDepth:"",
     flowPath:typeof source.flowPath==="string"?source.flowPath:"",
     generatedBy:typeof source.generatedBy==="string"?source.generatedBy:"",
+    coordinationMode:typeof source.coordinationMode==="string"?source.coordinationMode:"",
+    integrationOwner:typeof source.integrationOwner==="string"?source.integrationOwner:"",
+    advisoryAgents:Array.isArray(source.advisoryAgents)?source.advisoryAgents.map((entry)=>String(entry||"").trim()).filter(Boolean).slice(0,8):[],
+    freshReviewerRequired:source.freshReviewerRequired?1:0,
   };
   return h.planMeta;
+}
+function planCoordinationSummaryForUi(planMeta){
+  const meta=planMeta&&typeof planMeta==="object"?planMeta:{};
+  const writer=String(meta.integrationOwner||"").trim();
+  if(!writer)return"";
+  const parts=[`writer ${writer}`];
+  const advisors=Array.isArray(meta.advisoryAgents)?meta.advisoryAgents.map((entry)=>String(entry||"").trim()).filter(Boolean).slice(0,3):[];
+  if(advisors.length)parts.push(`advisors ${advisors.join(", ")}`);
+  if(meta.freshReviewerRequired)parts.push("fresh reviewer");
+  return parts.join(" / ");
 }
 function foldHarnessSignalsFromLabel(signals,labelText,detailText,statusText=""){
   const label=lowerText(labelText);
@@ -5302,6 +5609,10 @@ function happly(c,ev){
     planMeta.assuranceDepth=typeof ev.assuranceDepth==="string"?ev.assuranceDepth:"";
     planMeta.flowPath=typeof ev.flowPath==="string"?ev.flowPath:"";
     planMeta.generatedBy=typeof ev.generatedBy==="string"?ev.generatedBy:"";
+    planMeta.coordinationMode=typeof ev.coordinationMode==="string"?ev.coordinationMode:"";
+    planMeta.integrationOwner=typeof ev.integrationOwner==="string"?ev.integrationOwner:"";
+    planMeta.advisoryAgents=Array.isArray(ev.advisoryAgents)?ev.advisoryAgents.map((entry)=>String(entry||"").trim()).filter(Boolean).slice(0,8):[];
+    planMeta.freshReviewerRequired=ev.freshReviewerRequired?1:0;
     c.h.plan=(Array.isArray(ev.steps)?ev.steps:[]).map((x)=>({
       step:String(x.step||""),
       status:String(x.status||"pending"),
@@ -5636,8 +5947,35 @@ function planNextStepForUi(planSteps,planFocus){
   if(nextPending)return nextPending;
   return null;
 }
+function taskOutcomeStatusForUi(turn){
+  if(!turn||typeof turn!=="object")return"";
+  const direct=turn.task_outcome_status||turn.taskOutcomeStatus;
+  if(typeof direct==="string"&&direct.trim())return direct.trim().toUpperCase();
+  const outcome=turn.outcome&&typeof turn.outcome==="object"?turn.outcome:null;
+  if(outcome&&typeof outcome.taskOutcomeStatus==="string"&&outcome.taskOutcomeStatus.trim())return outcome.taskOutcomeStatus.trim().toUpperCase();
+  const taskOutcome=turn.taskOutcome&&typeof turn.taskOutcome==="object"?turn.taskOutcome:null;
+  if(taskOutcome&&typeof taskOutcome.status==="string"&&taskOutcome.status.trim())return taskOutcome.status.trim().toUpperCase();
+  return"";
+}
+function taskOutcomeReasonForUi(turn){
+  if(!turn||typeof turn!=="object")return"";
+  const direct=turn.task_outcome_reason||turn.taskOutcomeReason;
+  if(typeof direct==="string"&&direct.trim())return direct.trim();
+  const outcome=turn.outcome&&typeof turn.outcome==="object"?turn.outcome:null;
+  if(outcome&&typeof outcome.taskOutcomeReason==="string"&&outcome.taskOutcomeReason.trim())return outcome.taskOutcomeReason.trim();
+  const taskOutcome=turn.taskOutcome&&typeof turn.taskOutcome==="object"?turn.taskOutcome:null;
+  if(taskOutcome&&typeof taskOutcome.reason==="string"&&taskOutcome.reason.trim())return taskOutcome.reason.trim();
+  return"";
+}
+function taskOutcomeBlocksWorkCompletionForUi(status){
+  const normalized=String(status||"").trim().toUpperCase();
+  return["FAILED_VALIDATION","BLOCKED","NEEDS_INPUT","PARTIAL"].includes(normalized);
+}
 function userFacingTerminalStatusForUi({status="",turn=null,lastResultType="",currentPending=0}={}){
   if(Math.max(0,Number(currentPending)||0)>0)return"";
+  const taskOutcomeStatus=taskOutcomeStatusForUi(turn);
+  if(taskOutcomeStatus==="NEEDS_INPUT")return"needs_input";
+  if(taskOutcomeBlocksWorkCompletionForUi(taskOutcomeStatus))return"failed";
   const candidates=[
     lowerText(status),
     lowerText(runtimeTurnStatusForUi(turn)),
@@ -5649,6 +5987,130 @@ function userFacingTerminalStatusForUi({status="",turn=null,lastResultType="",cu
   if(candidates.includes("interrupted")||candidates.includes("aborted"))return"interrupted";
   if(candidates.includes("completed"))return"completed";
   return"";
+}
+function workCompletionStateForUi({
+  status="",
+  terminalStatus="",
+  turn=null,
+  lastResultType="",
+  currentPending=0,
+  requirementGateBlocked=false,
+}={}){
+  const pending=Math.max(0,Number(currentPending)||0);
+  const taskOutcomeStatus=taskOutcomeStatusForUi(turn);
+  const taskOutcomeReason=taskOutcomeReasonForUi(turn);
+  const normalizedTerminal=lowerText(terminalStatus)||userFacingTerminalStatusForUi({
+    status,
+    turn,
+    lastResultType,
+    currentPending:pending,
+  });
+  const notCompleted=USER_WORK_COMPLETION_DEFINITION_FOR_UI.notCompletedDefinition;
+  const completed=USER_WORK_COMPLETION_DEFINITION_FOR_UI.completedDefinition;
+  const reasonSuffix=taskOutcomeReason?` / 理由: ${taskOutcomeReason}`:"";
+  const base={
+    completed:false,
+    state:"not_completed",
+    label:USER_WORK_COMPLETION_DEFINITION_FOR_UI.notCompletedLabel,
+    headline:USER_WORK_COMPLETION_DEFINITION_FOR_UI.notCompletedLabel,
+    tone:"idle",
+    reason:"未開始",
+    detail:`${notCompleted} まだこの依頼の完了判定は出ていません。`,
+    showInStatusRow:false,
+  };
+  if(pending>0){
+    return{
+      ...base,
+      tone:"running",
+      reason:"作業中",
+      headline:`${base.label}（作業中）`,
+      detail:`${notCompleted} いま実行中のため、まだ完了判定前です。`,
+      showInStatusRow:true,
+    };
+  }
+  if(requirementGateBlocked){
+    return{
+      ...base,
+      tone:"blocked",
+      reason:"要件未確定",
+      headline:`${base.label}（要件未確定）`,
+      detail:`${notCompleted} 何を満たせば成功かがまだ固定されていません。`,
+      showInStatusRow:true,
+    };
+  }
+  if(normalizedTerminal==="completed"&&!taskOutcomeBlocksWorkCompletionForUi(taskOutcomeStatus)){
+    return{
+      completed:true,
+      state:"completed",
+      label:USER_WORK_COMPLETION_DEFINITION_FOR_UI.completedLabel,
+      headline:USER_WORK_COMPLETION_DEFINITION_FOR_UI.completedLabel,
+      tone:"completed",
+      reason:"完了条件を満たしています",
+      detail:completed,
+      showInStatusRow:true,
+    };
+  }
+  if(taskOutcomeStatus==="NEEDS_INPUT"||normalizedTerminal==="needs_input"){
+    return{
+      ...base,
+      tone:"blocked",
+      reason:"確認待ち",
+      headline:`${base.label}（確認待ち）`,
+      detail:`${notCompleted} ユーザーから必要な情報や判断が返るまで、完了にはできません${reasonSuffix}。`,
+      showInStatusRow:true,
+    };
+  }
+  if(taskOutcomeStatus==="FAILED_VALIDATION"||taskOutcomeStatus==="PARTIAL"){
+    return{
+      ...base,
+      tone:"failed",
+      reason:"検証未通過",
+      headline:`${base.label}（検証未通過）`,
+      detail:`${notCompleted} 変更や回答があっても、必要な検証または完了ゲートを通っていません${reasonSuffix}。`,
+      showInStatusRow:true,
+    };
+  }
+  if(taskOutcomeStatus==="BLOCKED"){
+    return{
+      ...base,
+      tone:"blocked",
+      reason:"ブロック",
+      headline:`${base.label}（ブロック）`,
+      detail:`${notCompleted} 外部依存・権限・必要情報の不足により完了できていません${reasonSuffix}。`,
+      showInStatusRow:true,
+    };
+  }
+  if(normalizedTerminal==="failed"){
+    return{
+      ...base,
+      tone:"failed",
+      reason:"実行失敗",
+      headline:`${base.label}（実行失敗）`,
+      detail:`${notCompleted} 実行は終わりましたが、依頼を採択できる完了状態ではありません${reasonSuffix}。`,
+      showInStatusRow:true,
+    };
+  }
+  if(normalizedTerminal==="interrupted"||normalizedTerminal==="aborted"){
+    return{
+      ...base,
+      tone:"failed",
+      reason:"中断",
+      headline:`${base.label}（中断）`,
+      detail:`${notCompleted} 実行が途中で切れており、完了した作業としては扱えません${reasonSuffix}。`,
+      showInStatusRow:true,
+    };
+  }
+  if(["running","starting","in_progress"].includes(lowerText(status))){
+    return{
+      ...base,
+      tone:"running",
+      reason:"状態確認中",
+      headline:`${base.label}（状態確認中）`,
+      detail:`${notCompleted} 実行状態の確認中で、まだ完了判定には達していません。`,
+      showInStatusRow:true,
+    };
+  }
+  return base;
 }
 function userFacingWorkflowTerminalOverrideForUi(workflowState,{terminalStatus="",stopReason=null}={}){
   const base=workflowState&&typeof workflowState==="object"?workflowState:null;
@@ -5719,6 +6181,10 @@ function harnessStopReasonSummaryForUi({status="",currentPending=0,requirementGa
     detail:"失敗ではありません。返信すると続きから再開できます。",
     tone:"idle",
   };
+}
+function harnessStopReasonVisibleForUi(stopReason){
+  const label=String(stopReason&&stopReason.label||"").trim();
+  return Boolean(label)&&!["なし","待機なし"].includes(label);
 }
 function requirementGateBlockerTextForUi(snapshot,fallbackText="要件整理の保留を解消する"){
   if(!snapshot||typeof snapshot!=="object")return fallbackText;
@@ -6147,16 +6613,37 @@ function renderHarness(){
     requirementSnapshot,
     lastResultType,
   });
+  const workCompletionState=workCompletionStateForUi({
+    status,
+    terminalStatus,
+    turn:turnForUi,
+    lastResultType,
+    currentPending,
+    requirementGateBlocked:userFacingRequirementGateBlocked,
+  });
+  const complianceRowEl=complianceEl
+    ?complianceEl.closest(".harness-status-row-blocked")
+    :(complianceDetailEl?complianceDetailEl.closest(".harness-status-row-blocked"):null);
+  const complianceLabelEl=complianceRowEl?complianceRowEl.querySelector(".harness-status-label"):null;
+  const showComplianceRow=workCompletionState.showInStatusRow
+    ||(displayCarryoverMode&&userFacingRequirementGateBlocked)
+    ||harnessStopReasonVisibleForUi(stopReason);
+  if(complianceRowEl)complianceRowEl.hidden=!showComplianceRow;
+  if(complianceLabelEl)complianceLabelEl.textContent="作業完了判定";
   if(complianceEl){
-    complianceEl.textContent=displayCarryoverMode&&userFacingRequirementGateBlocked
+    complianceEl.textContent=workCompletionState.showInStatusRow
+      ?workCompletionState.label
+      :(displayCarryoverMode&&userFacingRequirementGateBlocked
       ?"前回状態"
-      :stopReason.label;
-    complianceEl.className=`harness-status-value ${stopReason.tone}`;
+      :stopReason.label);
+    complianceEl.className=`harness-status-value ${workCompletionState.showInStatusRow?workCompletionState.tone:stopReason.tone}`;
   }
   if(complianceDetailEl){
-    complianceDetailEl.textContent=displayCarryoverMode&&userFacingRequirementGateBlocked
+    complianceDetailEl.textContent=workCompletionState.showInStatusRow
+      ?`${workCompletionState.reason}。${workCompletionState.detail}`
+      :(displayCarryoverMode&&userFacingRequirementGateBlocked
       ?`このチャットの前回状態です。${stopReason.detail}`
-      :stopReason.detail;
+      :stopReason.detail);
   }
 
   const displayedPlan=deriveDisplayedPlanForUi(h,flowItems,status);
@@ -6294,9 +6781,13 @@ function renderHarness(){
     if(displayCarryoverMode&&!currentPending)workEl.textContent=`前回: ${workEl.textContent}`;
     workEl.className="harness-status-value blocked";
   }else if(terminalStatus==="completed"){
-    workEl.textContent=displayedWorkflowState.currentDetail
-      ||"完了済みです。必要なら続きや修正をそのまま送れます。";
-    workEl.className="harness-status-value completed";
+    workEl.textContent=workCompletionState.completed
+      ?workCompletionState.headline
+      :(workCompletionState.headline||displayedWorkflowState.currentDetail||"作業未完了");
+    workEl.className=`harness-status-value ${workCompletionState.tone||"completed"}`;
+  }else if(terminalStatus){
+    workEl.textContent=workCompletionState.headline||displayedWorkflowState.currentDetail||"作業未完了";
+    workEl.className=`harness-status-value ${workCompletionState.tone||"failed"}`;
   }else if(planFocus){
     workEl.textContent=displayedWorkflowState.currentDetail
       ||(planDecision==="skip"
@@ -6401,12 +6892,13 @@ function renderHarness(){
   }
   if(e.harnessPlanMeta){
     const completedCount=planSteps.filter((step)=>step.status==="completed").length;
+    const coordinationText=planCoordinationSummaryForUi(displayedPlan&&displayedPlan.meta);
     if(requirementBlockedPlanState){
       e.harnessPlanMeta.textContent=requirementBlockedPlanState.metaText;
     }else if(planDecision==="skip"){
-      e.harnessPlanMeta.textContent="";
+      e.harnessPlanMeta.textContent=coordinationText;
     }else if(planSteps.length){
-      e.harnessPlanMeta.textContent=`${completedCount} / ${planSteps.length}`;
+      e.harnessPlanMeta.textContent=[`${completedCount} / ${planSteps.length}`,coordinationText].filter(Boolean).join(" / ");
     }else{
       e.harnessPlanMeta.textContent="";
     }
@@ -6983,7 +7475,7 @@ function pending(){
   renderOperatorSnapshotForUi();
   syncOperatorDetailFoldForUi(c);
 }
-function refresh(){renderTimeline();renderChatList();renderHarness();inspect();pending();live();renderPerformanceIndicator();renderAutomationStatus();renderWorkspaceGuardUi();renderMissionSupportUi();syncRuntimePendingMonitor()}
+function refresh(){renderTimeline();renderChatList();renderHarness();inspect();pending();live();renderPerformanceIndicator();renderAutomationStatus();renderWorkspaceGuardUi();renderMissionSupportUi();syncServerRestartControlForUi();syncRuntimePendingMonitor()}
 function normalizeApprovalPolicyForUi(value,fallback="on-request"){
   const normalized=typeof value==="string"?value.trim().toLowerCase():"";
   if(normalized==="on-failure")return"on-request";
@@ -7176,6 +7668,10 @@ function normalizeSavedHarnessState(raw){
     assuranceDepth:typeof planMeta.assuranceDepth==="string"?planMeta.assuranceDepth:"",
     flowPath:typeof planMeta.flowPath==="string"?planMeta.flowPath:"",
     generatedBy:typeof planMeta.generatedBy==="string"?planMeta.generatedBy:"",
+    coordinationMode:typeof planMeta.coordinationMode==="string"?planMeta.coordinationMode:"",
+    integrationOwner:typeof planMeta.integrationOwner==="string"?planMeta.integrationOwner:"",
+    advisoryAgents:Array.isArray(planMeta.advisoryAgents)?planMeta.advisoryAgents.map((entry)=>String(entry||"").trim()).filter(Boolean).slice(0,8):[],
+    freshReviewerRequired:planMeta.freshReviewerRequired?1:0,
   };
   base.tokens=typeof raw.tokens==="string"?raw.tokens:"";
   base.diff=typeof raw.diff==="string"?raw.diff:"";
@@ -7222,6 +7718,10 @@ function serializeHarnessState(h){
       assuranceDepth:planMeta.assuranceDepth,
       flowPath:planMeta.flowPath,
       generatedBy:planMeta.generatedBy,
+      coordinationMode:planMeta.coordinationMode,
+      integrationOwner:planMeta.integrationOwner,
+      advisoryAgents:Array.isArray(planMeta.advisoryAgents)?planMeta.advisoryAgents.slice(0,8):[],
+      freshReviewerRequired:planMeta.freshReviewerRequired?1:0,
     },
     tokens:typeof source.tokens==="string"?source.tokens:"",
     diff:typeof source.diff==="string"?source.diff:"",
@@ -7531,6 +8031,7 @@ async function loadRuntime({reconcilePending=true}={}){
     e.openCmdBtn.disabled=!canOpenShell;
     e.openCmdBtn.title=canOpenShell?"":"Open CMD is disabled by runtime policy.";
   }
+  syncServerRestartControlForUi();
   renderWorkspaceGuardUi();
   e.connectionState.textContent="接続中";
   e.connectionState.classList.add("connected");
@@ -7545,6 +8046,7 @@ async function loadRuntime({reconcilePending=true}={}){
     renderAgentTopography();
   }
   refresh();
+  renderServerRestartResultForUi();
 }
 async function loadDiag(){try{const r=await fetch("/api/diagnostics",{cache:"no-store"});if(!r.ok){let body="";try{body=await r.text()}catch(_e){}const er=new Error(`HTTP ${r.status}`);er.kind="http";er.status=r.status;er.bodyText=body;throw er}s.diag=await r.json();s.diagErr=null}catch(er){s.diagErr=er&&er.kind==="http"?`HTTP ${er.status}: ${String(er.bodyText||"").replace(/\s+/g," ").trim().slice(0,180)}`:`通信エラー: ${er&&er.message?er.message:"unknown"}`;throw er}finally{if(s.diagErr){[e.diagCodexState,e.diagNodeState,e.diagSearchState].forEach((st,i)=>{const de=[e.diagCodexDetail,e.diagNodeDetail,e.diagSearchDetail][i];st.textContent="異常";st.className="diag-state missing";de.textContent=s.diagErr})}else{tdiag("codex",e.diagCodexState,e.diagCodexDetail);tdiag("node",e.diagNodeState,e.diagNodeDetail);updateSearchDiag()}renderDiagSummary()}}
 function hasAutomationUi(){return Boolean(automationUi.panel&&automationUi.status&&automationUi.history);}
@@ -8159,6 +8661,8 @@ async function runPrompt(raw,cid=s.active,options={}){
     phase:"preparing",
     event:"local request registered; preparing runtime handoff",
     planSteps:[],
+    responseStarted:false,
+    terminalStatus:"",
   };
   let tuiProgressActive=true;
   let tuiProgressTimer=null;
@@ -8176,6 +8680,17 @@ async function runPrompt(raw,cid=s.active,options={}){
       clearInterval(tuiProgressTimer);
       tuiProgressTimer=null;
     }
+  };
+  const markAssistantTuiResponseStarted=(event="answer text received")=>{
+    tuiProgress.responseStarted=true;
+    updateAssistantTuiProgress("answering",event,{force:true});
+  };
+  const finishAssistantTuiProgress=(phase="completed",event="terminal status received",terminalStatus=phase)=>{
+    if(!tuiProgressActive)return;
+    tuiProgress.terminalStatus=terminalStatus;
+    if(terminalStatus==="completed")tuiProgress.responseStarted=true;
+    updateAssistantTuiProgress(phase,event,{force:true});
+    stopAssistantTuiProgress();
   };
   updateAssistantTuiProgress("preparing","local request registered; preparing runtime handoff",{force:true});
   if(typeof setInterval==="function"){
@@ -8248,13 +8763,14 @@ async function runPrompt(raw,cid=s.active,options={}){
       if(!ev||typeof ev!=="object"||typeof ev.type!=="string")return false;
       if(ev.type==="delta"){
         if(typeof ev.text==="string"&&ev.text){
-          stopAssistantTuiProgress();
+          markAssistantTuiResponseStarted("answer text is streaming");
           madd(answerTranscriptOut(),ev.text);
         }
         return true;
       }
       if(ev.type==="final"){
-        stopAssistantTuiProgress();
+        tuiProgress.responseStarted=true;
+        finishAssistantTuiProgress("completed","final answer received","completed");
         mset(answerTranscriptOut(),typeof ev.text==="string"?ev.text:"");
         finalApplied=true;
         return true;
@@ -8262,7 +8778,7 @@ async function runPrompt(raw,cid=s.active,options={}){
       if(ev.type==="error"){
         const t=typeof ev.text==="string"?ev.text:"";
         if(t){
-          stopAssistantTuiProgress();
+          finishAssistantTuiProgress("failed","error event received","failed");
           if(shouldRenderTerminalErrorInTranscript(t,{finalApplied}))mset(answerTranscriptOut(),t);
           ttype="failed";
           tdetail=t1(t,120);
@@ -8284,6 +8800,9 @@ async function runPrompt(raw,cid=s.active,options={}){
           ttype="needs_input";
           if(tdetail==="completed"||!tdetail)tdetail="status=needs_input";
         }
+        if(["completed","failed","interrupted","needs_input"].includes(st)){
+          finishAssistantTuiProgress(st==="interrupted"?"aborted":st,`status=${st}`,st);
+        }
         hset(c,st||"completed");
         renderHarness();
         return true;
@@ -8297,13 +8816,13 @@ async function runPrompt(raw,cid=s.active,options={}){
       }
       return false;
     };
-    const onLine=line=>{const t=String(line||"").trim();if(!t)return;try{const p=JSON.parse(t);if(apply(p))return}catch(_e){}madd(answerTranscriptOut(),line.endsWith("\n")?line:`${line}\n`)};
+    const onLine=line=>{const t=String(line||"").trim();if(!t)return;try{const p=JSON.parse(t);if(apply(p))return}catch(_e){}markAssistantTuiResponseStarted("plain text response received");madd(answerTranscriptOut(),line.endsWith("\n")?line:`${line}\n`)};
     const flush=(chunk,force=false)=>{if(chunk)buf+=chunk;while(true){const i=buf.indexOf("\n");if(i<0)break;const line=buf.slice(0,i);buf=buf.slice(i+1);onLine(line)}if(force&&buf.length){onLine(buf);buf=""}};
     while(true){const{value,done}=await reader.read();if(done)break;flush(decoder.decode(value,{stream:true}))}
     flush(decoder.decode(),true)
   }catch(err){
     if(err&&err.name==="AbortError"){
-      stopAssistantTuiProgress();
+      finishAssistantTuiProgress("aborted","user interrupted","interrupted");
       ttype="aborted";
       tdetail="user interrupted";
       madd(answerTranscriptOut(),"\n[user interrupted]\n");
@@ -8318,9 +8837,9 @@ async function runPrompt(raw,cid=s.active,options={}){
       let recovery=null;
       try{recovery=await recoverExecStreamAfterDisconnect({idempotencyKey,signal:ctl.signal,out,chatRecord:c})}catch{}
       if(recovery&&recovery.handled){
-        stopAssistantTuiProgress();
         ttype=recovery.terminal==="completed"?"completed":"failed";
         tdetail=recovery.detail||`${ttype==="completed"?"completed":"failed"} after stream recovery`;
+        finishAssistantTuiProgress(ttype==="completed"?"completed":"failed",tdetail,ttype);
         if(typeof recovery.text==="string"&&(recovery.text||ttype!=="completed"))mset(answerTranscriptOut(),recovery.text);
         hset(c,ttype==="completed"?"completed":"failed");
         hpush(c,"stream/recovered",t1(tdetail,180),ttype==="completed"?"info":"failed");
@@ -8330,9 +8849,9 @@ async function runPrompt(raw,cid=s.active,options={}){
     }
     const workspaceGuardError=workspaceGuardErrorInfoForUi(surfacedError);
     if(workspaceGuardError.handled){
-      stopAssistantTuiProgress();
       ttype=workspaceGuardError.status||"needs_input";
       tdetail=workspaceGuardError.detail;
+      finishAssistantTuiProgress("needs_input",tdetail,"needs_input");
       mset(answerTranscriptOut(),`[needs_input] ${workspaceGuardError.inlineMessage}`);
       hset(c,"needs_input");
       hpush(c,"turn/needs_input",t1(workspaceGuardError.detail,180),"info");
@@ -8340,15 +8859,15 @@ async function runPrompt(raw,cid=s.active,options={}){
       renderHarness();
       return;
     }
-    stopAssistantTuiProgress();
     ttype="failed";
     tdetail=err&&err.message?err.message:"runtime error";
+    finishAssistantTuiProgress("failed",tdetail,"failed");
     mset(answerTranscriptOut(),`[error] ${formatExecSubmitError(surfacedError)}`);
     hset(c,"failed");
     hpush(c,"turn/error",t1(tdetail,180),"failed");
     renderHarness();
     throw err
-  }finally{stopAssistantTuiProgress();const reqMeta=s.req.get(rid);s.req.delete(rid);syncRuntimePendingMonitor();if(ttype==="completed")hset(c,"completed");else if(ttype==="failed")hset(c,"failed");else if(ttype==="aborted")hset(c,"interrupted");else if(ttype==="needs_input")hset(c,"needs_input");hpush(c,"turn/end",t1(tdetail,180),ttype==="failed"?"failed":"info");s.last={type:ttype,detail:tdetail,at:Date.now(),agent:runAgent,chat:c.title,cid:c.id};trace(ttype,runAgent,tdetail,c.id);if(reqMeta&&reqMeta.notifyOnTerminal)void playNotificationTone(ttype);refresh();if(s.req.size===0){try{await loadRuntime()}catch(_e){e.connectionState.textContent="未接続";e.connectionState.classList.remove("connected");e.connectionState.classList.add("disconnected")}}scheduleSaveChatState();updateSearchDiag()}
+  }finally{if(tuiProgressActive){const terminalPhase=ttype==="completed"?"completed":(ttype==="aborted"?"aborted":(ttype==="needs_input"?"needs_input":"failed"));finishAssistantTuiProgress(terminalPhase,tdetail,terminalPhase==="aborted"?"interrupted":terminalPhase)}const reqMeta=s.req.get(rid);s.req.delete(rid);syncRuntimePendingMonitor();if(ttype==="completed")hset(c,"completed");else if(ttype==="failed")hset(c,"failed");else if(ttype==="aborted")hset(c,"interrupted");else if(ttype==="needs_input")hset(c,"needs_input");hpush(c,"turn/end",t1(tdetail,180),ttype==="failed"?"failed":"info");s.last={type:ttype,detail:tdetail,at:Date.now(),agent:runAgent,chat:c.title,cid:c.id};trace(ttype,runAgent,tdetail,c.id);if(reqMeta&&reqMeta.notifyOnTerminal)void playNotificationTone(ttype);refresh();if(s.req.size===0){try{await loadRuntime()}catch(_e){e.connectionState.textContent="未接続";e.connectionState.classList.remove("connected");e.connectionState.classList.add("disconnected")}}scheduleSaveChatState();updateSearchDiag()}
 }
 function isGoalComposerPresetButtonForUi(btn){
   return Boolean(btn&&typeof btn.getAttribute==="function"&&btn.getAttribute("data-compose-preset")===GOAL_COMPOSER_PRESET);
@@ -8389,7 +8908,7 @@ function applyComposerPresetButtonForUi(btn){
   renderMissionSupportUi();
   scrollElementIntoViewForUi(e.promptInput,{focus:true});
 }
-function commandPaletteCopyForUi(cmd){const text=String(cmd||"");if(text.startsWith("/goal"))return{badge:"codex",desc:"Codex goal を設定・確認します。未対応runtimeではHarnesUI goalに保存します。"};if(text.startsWith("/status"))return{badge:"codex",desc:"現在の session 設定を表示します。"};if(text.startsWith("/diff"))return{badge:"codex",desc:"現在の git diff summary を表示します。"};if(text.startsWith("/resume"))return{badge:"codex",desc:"Codex session resume を設定します。"};if(text.startsWith("/fork"))return{badge:"codex",desc:"現在の session を引き継ぐ agent fork を作ります。"};if(text.startsWith("/fast"))return{badge:"codex",desc:"Fast mode の状態を確認・変更します。"};if(text.startsWith("/agent"))return{badge:"local",desc:"HarnesUI の agent 選択を操作します。"};return{badge:"slash",desc:"Slash command を実行します。"}}
+function commandPaletteCopyForUi(cmd){const text=String(cmd||"");if(text.startsWith("/goal"))return{badge:"codex",desc:"Codex goal を設定・確認します。未対応runtimeではHarnesUI goalに保存します。"};if(text.startsWith("/status"))return{badge:"codex",desc:"Codex status 相当の項目を、現在の明るいHarnesUI表示で確認します。"};if(text.startsWith("/diff"))return{badge:"codex",desc:"現在の git diff summary を表示します。"};if(text.startsWith("/resume"))return{badge:"codex",desc:"Codex session resume を設定します。"};if(text.startsWith("/fork"))return{badge:"codex",desc:"現在の session を引き継ぐ agent fork を作ります。"};if(text.startsWith("/fast"))return{badge:"codex",desc:"Fast mode の状態を確認・変更します。"};if(text.startsWith("/agent"))return{badge:"local",desc:"HarnesUI の agent 選択を操作します。"};return{badge:"slash",desc:"Slash command を実行します。"}}
 function renderCommands(q=""){
   e.commandGrid.innerHTML="";
   const qq=q.trim().toLowerCase();
@@ -8561,6 +9080,7 @@ function bind(){
   };
   e.reconnectBtn.onclick=async()=>{try{await loadRuntime();msg(s.active,"system","System","Runtime refreshed.")}catch(er){e.connectionState.textContent="未接続";e.connectionState.classList.remove("connected");e.connectionState.classList.add("disconnected");msg(s.active,"system","System",`Reconnect failed: ${er&&er.message?er.message:"unknown"}`)}};
   if(e.uiReloadBtn)e.uiReloadBtn.onclick=()=>reloadUiShellForUi();
+  if(e.serverRestartBtn)e.serverRestartBtn.onclick=()=>restartHarnessServerFromUi();
   e.refreshDiagBtn.onclick=async()=>{try{await loadDiag();msg(s.active,"system","System","Diagnostics refreshed.")}catch(er){msg(s.active,"system","System",`Diagnostics refresh failed: ${er&&er.message?er.message:"unknown"}`)}};
   e.newChatBtn.onclick=()=>{
     syncActiveChatScopedStateFromUi();
@@ -8632,6 +9152,7 @@ async function boot(){
   try{
     await loadRuntime();
     await syncWorkspaceGuardForChat(active(),{quiet:true});
+    renderServerRestartResultForUi();
   }catch(error){
     msg(s.active,"system","System",`Runtime check failed: ${error&&error.message?error.message:"unknown"}`);
   }

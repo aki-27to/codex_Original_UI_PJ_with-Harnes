@@ -44,13 +44,18 @@ function main() {
       `composer must expose a visible ${command} slash shortcut`
     );
   }
+  assertMatch(indexHtml, /data-slash-command="\/status"[\s\S]*?Codex status相当の項目/, "/status shortcut title must describe the native-like Codex status surface");
+  assertMatch(appJs, /text\.startsWith\("\/status"\)[\s\S]*?badge:"codex"[\s\S]*?Codex status 相当の項目/, "/status command palette copy must describe the Codex-status-like surface");
   assertMatch(stylesCss, /\.slash-shortcuts\s*\{[\s\S]*?flex-wrap:\s*wrap;/, "representative slash shortcuts must wrap instead of overflowing the composer");
 
   assertMatch(serverImpl, /async function handleSlashGoalCommand\s*\(/, "server slash router must implement /goal");
   assertMatch(serverImpl, /function handleSlashHelpCommand\s*\(/, "server slash router must implement /help");
   assertMatch(serverImpl, /function handleSlashStatusCommand\s*\(/, "server slash router must implement /status");
-  assertMatch(serverImpl, /function formatCodexStatusLikeText\s*\([\s\S]*?>_ OpenAI Codex/, "/status must render a Codex-style status body instead of a generic chat answer");
-  assertMatch(serverImpl, /native quota bars are not exposed by the local app-server\./, "/status must be honest about quota data unavailable to HarnesUI");
+  assertMatch(serverImpl, /\["\/status","Show Codex status-style runtime details in the HarnesUI view\."\]/, "/help must describe /status as a Codex-status-like surface");
+  assertMatch(serverImpl, /function formatCodexStatusLikeText\s*\([\s\S]*?>_ OpenAI Codex/, "/status must render a recognizable Codex status body instead of a generic chat answer");
+  assertMatch(serverImpl, /summaries auto/, "/status must include the native model summary mode detail");
+  assertMatch(serverImpl, /formatContextWindowForSlashStatus/, "/status must render a context-window row instead of the old unavailable placeholder");
+  assert(!/HarnesUI local runtime snapshot, not native Codex \/status\.|Status source:|Native \/status:|native TUI context\/quota bars are not exposed/.test(serverImpl), "/status must not keep the old local-snapshot explanatory body");
   assertMatch(serverImpl, /function handleSlashDiffCommand\s*\(/, "server slash router must implement /diff");
   assertMatch(serverImpl, /function handleUnsupportedSlashCommand\s*\(/, "server slash router must reject unsupported slash commands before ordinary turn execution");
   assertMatch(serverImpl, /await handleSlashGoalCommand\(res,argsText,targetAgentName,sandboxMode,normalized\);/, "runCodexExecStreaming must route /goal before ordinary turn execution");

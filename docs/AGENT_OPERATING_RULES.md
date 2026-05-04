@@ -40,6 +40,15 @@ Step 5 は top-level objective の終点ではありません。bounded local ta
 
 Parent role は governed decision owner であり、material implementer ではありません。deliverable behavior / posture / release / test に影響する repo change は child dispatch に落とす必要があります。
 
+### Single-Writer Coordination
+
+複数 child は intelligence supply として並列化できますが、実際の file write / integration apply は dispatch plan の `integrationOwner` 1 つに絞ります。
+
+- writer dispatch: `participationMode = "writer"` かつ `mayWrite = 1`
+- advisory dispatch: `participationMode = "advisory"` かつ `mayWrite = 0`
+- advisory child は調査、リスク指摘、設計助言、検証観点を返し、直接ファイルを書きません。
+- cross-specialist task でも `coordinationMode = "single_writer"` / `singleWriter = 1` を正本とし、fresh reviewer evidence を release 前の独立検証として扱います。
+
 ## 2.1 Planning Modes For Step 1/2
 
 - `FAST`

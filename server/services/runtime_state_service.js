@@ -19,15 +19,18 @@ function createRuntimeStateService(deps) {
     const status = typeof (turn.terminal_status || turn.terminalStatus || turn.status) === "string"
       ? String(turn.terminal_status || turn.terminalStatus || turn.status).trim().toLowerCase()
       : "";
+    const terminal = ["completed", "failed", "interrupted", "aborted", "needs_input"].includes(status);
+    const explicitCompletedAt = toInt(turn.completed_at || turn.completedAt);
+    const updatedAt = toInt(turn.updated_at || turn.updatedAt);
     const normalized = {
       turnId: typeof (turn.turn_id || turn.turnId) === "string" ? String(turn.turn_id || turn.turnId).trim() : "",
       threadId: typeof (turn.thread_id || turn.threadId) === "string" ? String(turn.thread_id || turn.threadId).trim() : "",
       agentName: typeof (turn.agent_name || turn.agentName) === "string" ? String(turn.agent_name || turn.agentName).trim() : "",
       status,
       startedAt: toInt(turn.started_at || turn.startedAt || turn.created_at || turn.createdAt || turn.updated_at || turn.updatedAt),
-      completedAt: toInt(turn.completed_at || turn.completedAt || turn.updated_at || turn.updatedAt),
+      completedAt: terminal ? (explicitCompletedAt || updatedAt) : 0,
     };
-    normalized.terminal = ["completed", "failed", "interrupted", "aborted", "needs_input"].includes(status);
+    normalized.terminal = terminal;
     return normalized;
   }
 

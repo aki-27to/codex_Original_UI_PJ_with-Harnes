@@ -37,6 +37,8 @@ function testLoadSuite() {
   const crossSpecialistCase = suite.cases.find((entry) => entry && entry.id === "cross_specialist_dispatch_plan");
   assert(crossSpecialistCase && crossSpecialistCase.driver === "planning_contract_probe", "suite should cover cross-specialist dispatch plan");
   assert(crossSpecialistCase.expect.fields.selectedAssuranceDepth === "SIGNOFF_ASSURANCE", "suite should cover SIGNOFF assurance");
+  assert(crossSpecialistCase.expect.fields.singleWriter === 1, "suite should lock single-writer coordination");
+  assert(crossSpecialistCase.expect.fields.integrationOwner === "backend_worker", "suite should lock the integration owner");
   const contextLeakCase = suite.cases.find((entry) => entry && entry.id === "context_leakage_planning_owned_paths");
   assert(contextLeakCase && contextLeakCase.driver === "planning_contract_probe", "suite should cover context leakage guard");
   const dedicatedTestCase = suite.cases.find((entry) => entry && entry.id === "dedicated_test_required_for_new_logic");

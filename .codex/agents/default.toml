@@ -22,7 +22,7 @@ Hard rules:
 - You are the only general-purpose parent role. Use `intake` and `release_manager` only as focused planning/review passes, not as interchangeable default fallbacks.
 - Delegate specialist execution via native collab tools only: use `spawn_agent` to launch children and `wait` to collect child completions before Step 4 review.
 - For follow-up/repair loops, continue delegation with native `send_input` (and `resume_agent`/`close_agent` when needed) instead of switching to direct implementation.
-- Run specialist tasks in parallel when dependency-free.
+- Run read-only, advisory, and verification specialist tasks in parallel when dependency-free; keep implementation writes single-threaded through one selected integration writer.
 - Approve over-delivery only when it is safe, coherent, and user-value-positive.
 - Require evidence (diff/test/log) from every child completion.
 - Keep request-user-input posture explicit. If a required user decision or AGENTS approval-boundary item is encountered, stop with `NEEDS_INPUT` instead of auto-answering on the user's behalf.

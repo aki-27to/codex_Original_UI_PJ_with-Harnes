@@ -1,6 +1,16 @@
 # ARCHITECTURE_CHANGELOG
 
-Updated: 2026-04-25
+Updated: 2026-05-04
+
+- 2026-05-04: Added Cognition-style single-writer multi-agent coordination. `dispatch_plan.v2` now carries `coordinationMode`, `singleWriter`, `integrationOwner`, advisory agents, and fresh-reviewer metadata; planning keeps cross-specialist intelligence in advisory dispatches while the selected integration writer owns file changes. Agent governance now blocks unknown file writers and advisory/parallel writer attempts with explicit reasons, and HarnesUI exposes the selected writer/advisors/fresh-reviewer state in the plan header.
+
+- 2026-05-04: Hardened HarnesUI `Web restart` so `/api/server/restart` no longer reports only a launcher spawn as success. The endpoint now starts a hidden detached helper that stops the current server PID after the 202 response flushes, relaunches the existing `start_codex_ui.bat` path without browser auto-open/elevation/pause, and leaves UI verification to confirm the new runtime PID or start timestamp.
+
+- 2026-05-02: Added a HarnesUI `Web再起動` control so operators no longer need to run `start_codex_ui.bat` manually after app changes. `POST /api/server/restart` is protected by the local control token, launches the existing batch file hidden with browser auto-open/elevation/pause disabled, and refuses active `/api/exec` work unless forced by server-side policy. Added `scripts/harnesui_server_restart_control_test.js`.
+
+- 2026-05-02: Detailed HarnesUI's user-facing work-completion definition. `web/01.HarnesUI/app.js` now separates the binary user verdict (`作業完了` vs `作業未完了`) from the internal reason (`作業中`, `確認待ち`, `中断`, `検証未通過`, `要件未確定`, or `未開始`) and treats non-`COMPLETED` task outcomes such as `FAILED_VALIDATION` as not complete even when a procedural terminal status exists. Added `scripts/harnesui_work_completion_state_test.js`.
+
+- 2026-05-02: Added a HarnesUI-specific answer-format hint in `server/services/exec_service.js` so ordinary web UI executions that create, edit, or delete files ask Codex to include a concise `変更ファイル` section before validation details. The hint is skipped for local slash commands and exact-output contracts, and `scripts/harnesui_response_format_guidance_test.js` locks that behavior.
 
 - 2026-04-25: Updated the HarnesUI first-screen shell to reduce wasted wide-desktop right-side space without changing the single-harness route structure. `web/01.HarnesUI/styles.css` now clamps the overall canvas, narrows the left rail, and keeps the status rail compact on large screens, while `.codex/config.toml`, `server_impl.js`, `start_codex_ui.bat`, `scripts/config/model_routing_policy.json`, `web/01.HarnesUI/app.js`, and `index.html` now align the repo-local default exec model to `gpt-5.5 / xhigh`. HarnesUI also stamps saved model defaults so older `gpt-5.4` defaults migrate to `gpt-5.5` without overwriting a deliberate current `gpt-5.4` selection. Regression proof was extended through `scripts/harnesui_ui_reload_layout_test.js`, `scripts/harnesui_first_screen_layout_contract_test.js`, and the new override-port replay path so widescreen screenshots can be captured without interrupting an active `57525` harness.
 

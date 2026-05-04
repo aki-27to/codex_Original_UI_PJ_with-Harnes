@@ -48,6 +48,9 @@ const defaultPolicyDefinition = Object.freeze({
       "material_authority_or_safety_uncertainty",
     ],
     retiredWorkerAllowedInNormalRuntime: false,
+    singleWriterApplyStepRequired: true,
+    allowIntegrationOwnerPlannedPaths: true,
+    unknownAgentFileChangePolicy: "deny",
     systemCoherenceReviewRequiredForCoreChanges: true,
     systemCoherenceReviewContractRef: "scripts/config/system_coherence_review_contract.json",
   },
@@ -412,6 +415,19 @@ function normalizeRuntimeInvariants(input, fallback) {
       source.retiredWorkerAllowedInNormalRuntime,
       fallback.retiredWorkerAllowedInNormalRuntime
     ),
+    singleWriterApplyStepRequired: normalizeBoolean(
+      source.singleWriterApplyStepRequired,
+      fallback.singleWriterApplyStepRequired
+    ),
+    allowIntegrationOwnerPlannedPaths: normalizeBoolean(
+      source.allowIntegrationOwnerPlannedPaths,
+      fallback.allowIntegrationOwnerPlannedPaths
+    ),
+    unknownAgentFileChangePolicy: normalizeRuntimeInvariantString(
+      source.unknownAgentFileChangePolicy,
+      fallback.unknownAgentFileChangePolicy,
+      ["deny", "allow"]
+    ),
     systemCoherenceReviewRequiredForCoreChanges: normalizeBoolean(
       source.systemCoherenceReviewRequiredForCoreChanges,
       fallback.systemCoherenceReviewRequiredForCoreChanges
@@ -614,7 +630,91 @@ function summarizeAgentGovernance(agentName) {
   };
 }
 
-function evaluateAgentGovernance({ agentName, operation, changedPaths, override }) {
+function normalizeDispatchParticipation(value) {
+  const normalized = safeString(value, 40).toLowerCase();
+  return ["writer", "advisory", "review", "test", "discovery"].includes(normalized) ? normalized : "";
+}
+
+function extractDispatchPlanFromTaskContext(taskContext) {
+  const context = taskContext && typeof taskContext === "object" ? taskContext : {};
+  if (context.dispatchPlan && typeof context.dispatchPlan === "object") {
+    return context.dispatchPlan;
+  }
+  if (context.writerPolicy && typeof context.writerPolicy === "object") {
+    return context.writerPolicy;
+  }
+  return context;
+}
+
+function normalizeWriterPolicyFromTaskContext(taskContext, policy) {
+  const dispatchPlan = extractDispatchPlanFromTaskContext(taskContext);
+  const coordinationMode = safeString(dispatchPlan.coordinationMode, 40).toLowerCase();
+  const dispatches = Array.isArray(dispatchPlan.dispatches) ? dispatchPlan.dispatches : [];
+  const writerDispatches = dispatches.filter((entry) => {
+    if (!entry || typeof entry !== "object") return false;
+    const participationMode = normalizeDispatchParticipation(entry.participationMode);
+    return participationMode === "writer" || Boolean(entry.mayWrite);
+  });
+  const integrationOwnerRaw = safeString(dispatchPlan.integrationOwner, 120)
+    || safeString(dispatchPlan.singleWriterAgent, 120)
+    || safeString(dispatchPlan.writerAgent, 120)
+    || safeString(writerDispatches[0] && writerDispatches[0].ownerAgent, 120);
+  const integrationOwner = resolveScopedAgentName(
+    normalizeAgentName(integrationOwnerRaw),
+    buildKnownAgentSet(policy)
+  );
+  const singleWriter = normalizeBoolean(
+    dispatchPlan.singleWriter,
+    coordinationMode === "single_writer" || writerDispatches.length > 0
+  );
+  const advisoryAgents = uniqueNormalizedPaths([
+    ...(Array.isArray(dispatchPlan.advisoryAgents) ? dispatchPlan.advisoryAgents : []),
+    ...dispatches
+      .filter((entry) => entry && normalizeDispatchParticipation(entry.participationMode) === "advisory")
+      .map((entry) => entry.ownerAgent),
+  ]);
+  const plannedWritePaths = uniqueNormalizedPaths([
+    ...(Array.isArray(dispatchPlan.plannedWritePaths) ? dispatchPlan.plannedWritePaths : []),
+    ...writerDispatches.flatMap((entry) => Array.isArray(entry && entry.ownedPaths) ? entry.ownedPaths : []),
+  ]);
+  return {
+    active: Boolean(singleWriter && policy.runtimeInvariants.singleWriterApplyStepRequired),
+    coordinationMode: coordinationMode || (singleWriter ? "single_writer" : ""),
+    singleWriter: singleWriter ? 1 : 0,
+    integrationOwner,
+    advisoryAgents,
+    plannedWritePaths,
+  };
+}
+
+function summarizeWriterPolicy(writerPolicy) {
+  const source = writerPolicy && typeof writerPolicy === "object" ? writerPolicy : {};
+  return {
+    active: source.active ? 1 : 0,
+    coordinationMode: safeString(source.coordinationMode, 40),
+    singleWriter: source.singleWriter ? 1 : 0,
+    integrationOwner: safeString(source.integrationOwner, 80),
+    advisoryAgents: Array.isArray(source.advisoryAgents) ? source.advisoryAgents.slice(0, 12) : [],
+    plannedWritePaths: Array.isArray(source.plannedWritePaths) ? source.plannedWritePaths.slice(0, 24) : [],
+  };
+}
+
+function buildEffectiveScopePaths({ contract, writerPolicy, normalizedComparableAgent, policy }) {
+  const base = Array.isArray(contract.scopePaths) ? contract.scopePaths : [];
+  const canUsePlannedPaths = Boolean(
+    writerPolicy &&
+    writerPolicy.active &&
+    writerPolicy.integrationOwner &&
+    writerPolicy.integrationOwner === normalizedComparableAgent &&
+    policy.runtimeInvariants.allowIntegrationOwnerPlannedPaths
+  );
+  return uniqueNormalizedPaths([
+    ...base,
+    ...(canUsePlannedPaths ? writerPolicy.plannedWritePaths : []),
+  ]);
+}
+
+function evaluateAgentGovernance({ agentName, operation, changedPaths, override, taskContext }) {
   const policy = loadPolicyDefinition();
   const contract = getAgentGovernanceContract(agentName);
   const normalizedOperation = typeof operation === "string" ? operation : "unknown";
@@ -624,6 +724,7 @@ function evaluateAgentGovernance({ agentName, operation, changedPaths, override 
   const normalizedComparableAgent = resolveScopedAgentName(normalizedAgent, buildKnownAgentSet(policy));
   const parentAgent = policy.parentAgents.has(normalizedComparableAgent);
   const materialImplementationObserved = normalizedOperation === "fileChange" && normalizedPaths.length > 0;
+  const writerPolicy = normalizeWriterPolicyFromTaskContext(taskContext, policy);
 
   if (parentAgent && policy.parentPolicy.materialImplementationForbidden && materialImplementationObserved) {
     return {
@@ -634,10 +735,27 @@ function evaluateAgentGovernance({ agentName, operation, changedPaths, override 
       violationCount: normalizedPaths.length || 1,
       violations: normalizedPaths.map((entry) => ({ path: entry, reason: "parent_material_implementation_forbidden" })).slice(0, 24),
       override: overrideResult,
+      writerPolicy: summarizeWriterPolicy(writerPolicy),
     };
   }
 
   if (!contract.enforced) {
+    if (
+      materialImplementationObserved &&
+      policy.runtimeInvariants.unknownAgentFileChangePolicy === "deny" &&
+      !overrideResult.applied
+    ) {
+      return {
+        decision: "deny",
+        reason: "unknown_agent_file_change_forbidden",
+        operation: normalizedOperation,
+        contract,
+        violationCount: normalizedPaths.length || 1,
+        violations: normalizedPaths.map((entry) => ({ path: entry, reason: "unknown_agent_file_change_forbidden" })).slice(0, 24),
+        override: overrideResult,
+        writerPolicy: summarizeWriterPolicy(writerPolicy),
+      };
+    }
     return {
       decision: "allow",
       reason: "",
@@ -646,6 +764,7 @@ function evaluateAgentGovernance({ agentName, operation, changedPaths, override 
       violationCount: 0,
       violations: [],
       override: overrideResult,
+      writerPolicy: summarizeWriterPolicy(writerPolicy),
     };
   }
 
@@ -658,6 +777,7 @@ function evaluateAgentGovernance({ agentName, operation, changedPaths, override 
       violationCount: 1,
       violations: [{ path: "", reason: contract.legacyOnly ? "legacy_only_requires_parent_override" : "parent_override_required" }],
       override: overrideResult,
+      writerPolicy: summarizeWriterPolicy(writerPolicy),
     };
   }
 
@@ -675,7 +795,35 @@ function evaluateAgentGovernance({ agentName, operation, changedPaths, override 
       violationCount: 1,
       violations: [{ path: "", reason: "agent_read_only_role" }],
       override: overrideResult,
+      writerPolicy: summarizeWriterPolicy(writerPolicy),
     };
+  }
+
+  if (materialImplementationObserved && writerPolicy.active && !parentAgent) {
+    if (!writerPolicy.integrationOwner) {
+      return {
+        decision: "deny",
+        reason: "single_writer_missing_integration_owner",
+        operation: normalizedOperation,
+        contract,
+        violationCount: normalizedPaths.length || 1,
+        violations: normalizedPaths.map((entry) => ({ path: entry, reason: "single_writer_missing_integration_owner" })).slice(0, 24),
+        override: overrideResult,
+        writerPolicy: summarizeWriterPolicy(writerPolicy),
+      };
+    }
+    if (normalizedComparableAgent !== writerPolicy.integrationOwner && !overrideResult.applied) {
+      return {
+        decision: "deny",
+        reason: "parallel_writer_conflict",
+        operation: normalizedOperation,
+        contract,
+        violationCount: normalizedPaths.length || 1,
+        violations: normalizedPaths.map((entry) => ({ path: entry, reason: "parallel_writer_conflict" })).slice(0, 24),
+        override: overrideResult,
+        writerPolicy: summarizeWriterPolicy(writerPolicy),
+      };
+    }
   }
 
   if (normalizedOperation !== "fileChange") {
@@ -687,6 +835,7 @@ function evaluateAgentGovernance({ agentName, operation, changedPaths, override 
       violationCount: 0,
       violations: [],
       override: overrideResult,
+      writerPolicy: summarizeWriterPolicy(writerPolicy),
     };
   }
 
@@ -699,14 +848,21 @@ function evaluateAgentGovernance({ agentName, operation, changedPaths, override 
       violationCount: 0,
       violations: [],
       override: overrideResult,
+      writerPolicy: summarizeWriterPolicy(writerPolicy),
     };
   }
 
   const violations = [];
+  const effectiveScopePaths = buildEffectiveScopePaths({
+    contract,
+    writerPolicy,
+    normalizedComparableAgent,
+    policy,
+  });
   for (const changedPath of normalizedPaths) {
     if (
-      contract.scopePaths.length > 0 &&
-      !contract.scopePaths.some((scopePath) => isScopeMatch(changedPath, scopePath))
+      effectiveScopePaths.length > 0 &&
+      !effectiveScopePaths.some((scopePath) => isScopeMatch(changedPath, scopePath))
     ) {
       violations.push({ path: changedPath, reason: "path_out_of_scope" });
       continue;
@@ -725,6 +881,7 @@ function evaluateAgentGovernance({ agentName, operation, changedPaths, override 
       violationCount: 0,
       violations: [],
       override: overrideResult,
+      writerPolicy: summarizeWriterPolicy(writerPolicy),
     };
   }
 
@@ -737,6 +894,7 @@ function evaluateAgentGovernance({ agentName, operation, changedPaths, override 
       violationCount: violations.length,
       violations: violations.slice(0, 24),
       override: overrideResult,
+      writerPolicy: summarizeWriterPolicy(writerPolicy),
     };
   }
 
@@ -748,6 +906,7 @@ function evaluateAgentGovernance({ agentName, operation, changedPaths, override 
     violationCount: violations.length,
     violations: violations.slice(0, 24),
     override: overrideResult,
+    writerPolicy: summarizeWriterPolicy(writerPolicy),
   };
 }
 
@@ -834,6 +993,16 @@ function getAgentGovernancePolicySnapshot() {
         : [],
       retiredWorkerAllowedInNormalRuntime: Boolean(
         policy.runtimeInvariants.retiredWorkerAllowedInNormalRuntime
+      ),
+      singleWriterApplyStepRequired: Boolean(
+        policy.runtimeInvariants.singleWriterApplyStepRequired
+      ),
+      allowIntegrationOwnerPlannedPaths: Boolean(
+        policy.runtimeInvariants.allowIntegrationOwnerPlannedPaths
+      ),
+      unknownAgentFileChangePolicy: safeString(
+        policy.runtimeInvariants.unknownAgentFileChangePolicy,
+        40
       ),
       systemCoherenceReviewRequiredForCoreChanges: Boolean(
         policy.runtimeInvariants.systemCoherenceReviewRequiredForCoreChanges
