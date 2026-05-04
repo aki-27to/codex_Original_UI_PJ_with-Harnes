@@ -121,6 +121,87 @@ async function testRuntimeSnapshotReflectsDefaultFastAndGuardianFeatures() {
       "npm run refresh:learning-output",
       "runtime should expose the fixed learning-output refresh command"
     );
+    assert(
+      runtime.liveVerificationTimestamp && runtime.repoTruth && runtime.repoTruth.liveVerificationTimestamp,
+      "runtime should expose a live verification timestamp for current truth"
+    );
+    assert.strictEqual(
+      runtime.repoTruth.readOnly,
+      1,
+      "repo truth snapshot should be read-only"
+    );
+    assert.strictEqual(
+      runtime.repoTruth.dirtyWorkingTree && runtime.repoTruth.dirtyWorkingTree.scope,
+      "dirty_working_tree",
+      "runtime should expose dirty working tree as a separate truth surface"
+    );
+    assert(
+      runtime.repoTruth.head && Object.prototype.hasOwnProperty.call(runtime.repoTruth.head, "commit"),
+      "runtime should expose HEAD commit truth"
+    );
+    assert(
+      runtime.repoTruth.origin && Object.prototype.hasOwnProperty.call(runtime.repoTruth.origin, "commit"),
+      "runtime should expose origin commit truth"
+    );
+    assert.strictEqual(
+      runtime.repoTruth.generatedOutput && runtime.repoTruth.generatedOutput.scope,
+      "generated_output",
+      "runtime should expose generated output as a separate truth surface"
+    );
+    assert.strictEqual(
+      runtime.statusScopeMap
+        && runtime.statusScopeMap.statuses
+        && runtime.statusScopeMap.statuses.COMPLETED
+        && runtime.statusScopeMap.statuses.COMPLETED[0]
+        && runtime.statusScopeMap.statuses.COMPLETED[0].scope,
+      "task_outcome",
+      "COMPLETED must be scoped to task_outcome"
+    );
+    assert.strictEqual(
+      runtime.statusScopeMap
+        && runtime.statusScopeMap.statuses
+        && runtime.statusScopeMap.statuses.RELEASE_APPROVED
+        && runtime.statusScopeMap.statuses.RELEASE_APPROVED[0]
+        && runtime.statusScopeMap.statuses.RELEASE_APPROVED[0].scope,
+      "release_decision",
+      "RELEASE_APPROVED must be scoped to release_decision"
+    );
+    assert.strictEqual(
+      runtime.statusScopeMap
+        && runtime.statusScopeMap.statuses
+        && runtime.statusScopeMap.statuses.NOT_YET
+        && runtime.statusScopeMap.statuses.NOT_YET[0]
+        && runtime.statusScopeMap.statuses.NOT_YET[0].scope,
+      "program_readiness",
+      "NOT_YET must expose program_readiness as a scoped background status"
+    );
+    assert.strictEqual(
+      runtime.currentTruth
+        && runtime.currentTruth.operationalPosture
+        && runtime.currentTruth.operationalPosture.scope,
+      "reviewer_facing_current_truth",
+      "current truth should expose reviewer-facing operational posture"
+    );
+    assert.strictEqual(
+      runtime.currentTruth.operationalPosture.activePostureProfile,
+      runtime.activePostureProfile,
+      "operational posture current truth should match the active posture profile"
+    );
+    assert.strictEqual(
+      runtime.currentTruth.operationalPosture.gitAutomation.autocommitEnabled,
+      runtime.gitAutomation && runtime.gitAutomation.autocommitEnabled,
+      "operational posture current truth should expose autocommit"
+    );
+    assert.strictEqual(
+      runtime.currentTruth.operationalPosture.gitAutomation.autopushEnabled,
+      runtime.gitAutomation && runtime.gitAutomation.autopushEnabled,
+      "operational posture current truth should expose autopush"
+    );
+    assert(
+      runtime.currentTruth.operationalPosture.authorityState
+        && Object.prototype.hasOwnProperty.call(runtime.currentTruth.operationalPosture.authorityState, "strongAuthorityActive"),
+      "operational posture current truth should expose strong-authority state"
+    );
     const activeAgent = Array.isArray(runtime.agents)
       ? runtime.agents.find((entry) => entry && entry.name === runtime.activeAgent)
       : null;

@@ -208,7 +208,11 @@ ok = runCheck("no changes skips automation", () => {
 
 ok = runCheck("ignored runtime metadata does not trigger automation", () => {
   const repo = createManagedRepo("ignored");
-  const ignoredPaths = ["logs/archive/raw/harness_execution_memory.json", "logs/archive/raw/eval_runs.jsonl"];
+  const ignoredPaths = [
+    "logs/archive/raw/harness_execution_memory.json",
+    "logs/archive/raw/eval_runs.jsonl",
+    "logs/archive/raw/runtime_state/harness_execution_memory.json",
+  ];
   const baseline = captureGitRepoState({
     cwd: repo.workRoot,
     remoteName: "origin",
@@ -225,7 +229,7 @@ ok = runCheck("ignored runtime metadata does not trigger automation", () => {
     ignoredPaths,
   });
   assert.equal(current.dirty, 0);
-  assert(current.ignoredChangedPaths.includes("logs/archive/raw/harness_execution_memory.json"));
+  assert(current.ignoredChangedPaths.includes("logs/archive/raw/runtime_state/harness_execution_memory.json"));
 
   const result = runGitAutomationForTurn({
     config: {

@@ -21,8 +21,13 @@ function createOverviewService(deps) {
     sendJson(res, 200, buildIntentFirstApiSnapshot());
   }
 
-  function handleHarnessOverviewRequest({ res }) {
-    sendJson(res, 200, buildHarnessOverviewSnapshot());
+  function handleHarnessOverviewRequest({ res, url }) {
+    const requestedDetail = safeString(url && url.searchParams && url.searchParams.get("detail"), 40).toLowerCase();
+    const includeHeavyReads = requestedDetail === "full";
+    sendJson(res, 200, buildHarnessOverviewSnapshot({
+      detail: includeHeavyReads ? "full" : "light",
+      includeHeavyReads,
+    }));
   }
 
   function handleConversationRuntimeRequest({ res }) {

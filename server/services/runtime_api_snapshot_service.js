@@ -19,6 +19,7 @@ function createRuntimeApiSnapshotService(deps = {}) {
     buildSloRuntimeSnapshot,
     appPlatformReadSurface,
     buildGitAutomationRuntimeSnapshot,
+    buildRepoTruthRuntimeSnapshot,
     buildGovernanceRuntimeSurface,
     authorityRegistry,
     authorityRegistryPath,
@@ -195,6 +196,111 @@ function createRuntimeApiSnapshotService(deps = {}) {
     };
   }
 
+  function buildStatusScopeMap() {
+    return {
+      schema: "status-scope-map.v1",
+      scope: "status_vocabulary",
+      statuses: {
+        COMPLETED: [
+          {
+            scope: "task_outcome",
+            source: "output/governance_public/worker_decision_surface.json.taskOutcomeStatus",
+            meaning: "The requested task or bounded worker stop question is complete; this is not whole-program readiness.",
+          },
+        ],
+        RELEASE_APPROVED: [
+          {
+            scope: "release_decision",
+            source: "worker_decision_surface.releaseState or latest signoff bundle",
+            meaning: "The evaluated release/signoff scope is approved; historical bundle approval must not imply current dirty tree or whole-program completion.",
+          },
+        ],
+        NOT_YET: [
+          {
+            scope: "program_readiness",
+            source: "output/agi_readiness/goal_completion_status.json.goalStatus",
+            meaning: "Whole-program readiness debt remains open and stays separate from the bounded task verdict.",
+          },
+          {
+            scope: "subjective_companion",
+            source: "output/agi_readiness/subjective_goal_completion_status.json.subjectiveGoalStatus",
+            meaning: "Subjective-quality readiness remains a companion signal, not the task headline.",
+          },
+          {
+            scope: "compatibility_layer",
+            source: "output/agi_readiness/compatibility_completion_status.json.status",
+            meaning: "Compatibility readiness remains a companion signal, not the task headline.",
+          },
+        ],
+      },
+    };
+  }
+
+  function buildOperationalPostureCurrentTruth({
+    deploymentPosture,
+    gitAutomation,
+    authorityModel,
+    approvalPolicy,
+    sandboxMode,
+  } = {}) {
+    const activePostureProfile = safeString(
+      deploymentPosture && (deploymentPosture.activePostureProfile || deploymentPosture.activeProfile),
+      80
+    ) || "portable_local";
+    const activeLabel = safeString(
+      deploymentPosture && (deploymentPosture.activePostureProfileLabel || deploymentPosture.activeLabel),
+      120
+    ) || activePostureProfile;
+    const configuredSandboxMode = safeString(
+      sandboxMode || (deploymentPosture && deploymentPosture.defaults && deploymentPosture.defaults.sandboxMode),
+      80
+    ) || "workspace-write";
+    const configuredApprovalPolicy = safeString(
+      approvalPolicy || (deploymentPosture && deploymentPosture.defaults && deploymentPosture.defaults.approvalPolicy),
+      80
+    ) || "on-request";
+    const autocommitEnabled = gitAutomation && gitAutomation.autocommitEnabled ? 1 : 0;
+    const autopushEnabled = gitAutomation && gitAutomation.autopushEnabled ? 1 : 0;
+    const autoCommitAndPush = autocommitEnabled && autopushEnabled ? 1 : 0;
+    const strongAuthoritySignals = [];
+    if (configuredSandboxMode === "danger-full-access") strongAuthoritySignals.push("danger-full-access");
+    if (configuredApprovalPolicy === "never") strongAuthoritySignals.push("approval_policy_never");
+    if (autoCommitAndPush) strongAuthoritySignals.push("auto_commit_and_push");
+    return {
+      schema: "operational-posture-current-truth.v1",
+      scope: "reviewer_facing_current_truth",
+      reviewerFacing: 1,
+      activePostureProfile,
+      activeLabel,
+      ownerLocal: activePostureProfile === "owner_local" ? 1 : 0,
+      referenceArchitectureDefault: deploymentPosture && deploymentPosture.referenceArchitectureDefault ? 1 : 0,
+      authorityState: {
+        sandboxMode: configuredSandboxMode,
+        approvalPolicy: configuredApprovalPolicy,
+        strongAuthorityActive: strongAuthoritySignals.length ? 1 : 0,
+        strongAuthoritySignals,
+      },
+      gitAutomation: {
+        mode: safeString(gitAutomation && gitAutomation.mode, 80) || "completed-turn",
+        enabled: gitAutomation && gitAutomation.enabled ? 1 : 0,
+        autocommitEnabled,
+        autopushEnabled,
+        autoCommitAndPush,
+        remoteName: safeString(gitAutomation && gitAutomation.remoteName, 80) || "origin",
+      },
+      postureDefaults: deploymentPosture && deploymentPosture.defaults && typeof deploymentPosture.defaults === "object"
+        ? deploymentPosture.defaults
+        : {},
+      sources: {
+        codexConfigPath: summarizePathForOperationLog(defaultParentAgentConfigPath, 220),
+        postureProfilePath: safeString(deploymentPosture && deploymentPosture.profilePath, 220) || "scripts/config/deployment_posture_profiles.json",
+        authorityRegistryPath: safeString(authorityModel && authorityModel.registryPath, 220)
+          || summarizePathForOperationLog(authorityRegistryPath, 220),
+      },
+      reviewerNote: "owner_local strong authority, autocommit, and autopush are current runtime facts, not universal reference defaults.",
+    };
+  }
+
   function buildDesignCompletionEvidenceSnapshot() {
     const requiredArtifacts = Array.isArray(designAcceptanceContract && designAcceptanceContract.requiredArtifacts)
       ? designAcceptanceContract.requiredArtifacts
@@ -224,6 +330,7 @@ function createRuntimeApiSnapshotService(deps = {}) {
   function buildRuntimeApiSnapshot() {
     const active = getActiveAgentState();
     const latestTurn = getLatestTurnSnapshot();
+    const liveVerificationTimestamp = new Date().toISOString();
     const turnRuntime = runtimeStateService.buildTurnRuntimeSnapshot();
     const requirementGuard = getRequirementGuardExtensionSnapshot();
     const sessionPerformance = getSessionPerformanceSnapshot(active && active.sessionRef ? active.sessionRef : null);
@@ -234,11 +341,26 @@ function createRuntimeApiSnapshotService(deps = {}) {
     const slo = buildSloRuntimeSnapshot();
     const staticApps = appPlatformReadSurface.buildStaticAppsRuntimeSnapshot();
     const gitAutomation = buildGitAutomationRuntimeSnapshot();
+    const configuredApprovalPolicy = readTopLevelCodexConfigString(defaultParentAgentConfigPath, "approval_policy") || "on-request";
+    const configuredSandboxMode = readTopLevelCodexConfigString(defaultParentAgentConfigPath, "sandbox_mode") || "workspace-write";
+    const repoTruth = typeof buildRepoTruthRuntimeSnapshot === "function"
+      ? buildRepoTruthRuntimeSnapshot({ observedAt: liveVerificationTimestamp })
+      : {
+        schema: "repo-truth-snapshot.v1",
+        scope: "current_repo_truth",
+        liveVerificationTimestamp,
+        dirtyState: "unknown",
+        dirtyWorkingTree: { scope: "dirty_working_tree", dirty: 0, entryCount: 0, entries: [] },
+        generatedOutput: { scope: "generated_output", dirtyEntryCount: 0, entries: [] },
+        head: { scope: "HEAD", commit: "" },
+        origin: { scope: "origin", commit: "" },
+        headEqualsOrigin: null,
+      };
     const governanceRuntimeSurface = buildGovernanceRuntimeSurface({
       registry: authorityRegistry,
       authorityRegistryPath,
-      approvalPolicy: readTopLevelCodexConfigString(defaultParentAgentConfigPath, "approval_policy") || "on-request",
-      sandboxMode: readTopLevelCodexConfigString(defaultParentAgentConfigPath, "sandbox_mode") || "workspace-write",
+      approvalPolicy: configuredApprovalPolicy,
+      sandboxMode: configuredSandboxMode,
       autoCommitAndPush: Boolean(gitAutomation && gitAutomation.autocommitEnabled && gitAutomation.autopushEnabled),
       iterationControlContract,
       iterationControlContractPath,
@@ -255,6 +377,13 @@ function createRuntimeApiSnapshotService(deps = {}) {
     const activePostureProfile = deploymentPosture && deploymentPosture.activePostureProfile
       ? deploymentPosture.activePostureProfile
       : (deploymentPosture && deploymentPosture.activeProfile ? deploymentPosture.activeProfile : "");
+    const operationalPostureCurrentTruth = buildOperationalPostureCurrentTruth({
+      deploymentPosture,
+      gitAutomation,
+      authorityModel,
+      approvalPolicy: configuredApprovalPolicy,
+      sandboxMode: configuredSandboxMode,
+    });
     const evalHarness = {
       suite: buildEvalSuiteSummary(defaultEvalSuite),
       configPath: summarizePathForOperationLog(evalSuiteConfigPath, 220),
@@ -294,7 +423,11 @@ function createRuntimeApiSnapshotService(deps = {}) {
       currentLatestOverview,
     });
     const designCompletionEvidence = buildDesignCompletionEvidenceSnapshot();
+    const statusScopeMap = buildStatusScopeMap();
     currentTruth.designCompletionEvidence = designCompletionEvidence;
+    currentTruth.statusScopeMap = statusScopeMap;
+    currentTruth.repoTruth = repoTruth;
+    currentTruth.operationalPosture = operationalPostureCurrentTruth;
     const workerDecisionSupport = buildWorkerDecisionSupport(currentTruth);
     const secondaryLearning = {
       anthropicEngineering: buildAnthropicEngineeringLearningRuntimeStateSnapshot(),
@@ -359,6 +492,15 @@ function createRuntimeApiSnapshotService(deps = {}) {
         currentStartedAt: serverProcessStartedAt,
       }
       : null;
+    if (repoTruth && typeof repoTruth === "object") {
+      repoTruth.liveRuntime = {
+        scope: "live_runtime",
+        liveVerificationTimestamp,
+        processPid: processRef.pid,
+        startedAt: serverProcessStartedAt,
+        activeExecRequests: getActiveExecRequestCount(),
+      };
+    }
     return {
       apiVersion,
       mode: "app-server",
@@ -366,6 +508,8 @@ function createRuntimeApiSnapshotService(deps = {}) {
       activeAgent: activeAgentName,
       activePostureProfile,
       active_posture_profile: activePostureProfile,
+      liveVerificationTimestamp,
+      live_verification_timestamp: liveVerificationTimestamp,
       sessionRef: active ? active.sessionRef : null,
       agentCount: agentStates.size,
       experimental: active ? active.experimentalEnabled : false,
@@ -422,12 +566,18 @@ function createRuntimeApiSnapshotService(deps = {}) {
       static_apps: staticApps,
       gitAutomation,
       git_automation: gitAutomation,
+      repoTruth,
+      repo_truth: repoTruth,
       authorityRegistry: authorityModel,
       authority_registry: authorityModel,
       deploymentPosture,
       deployment_posture: deploymentPosture,
       designCompletionEvidence,
       design_completion_evidence: designCompletionEvidence,
+      statusScopeMap,
+      status_scope_map: statusScopeMap,
+      operationalPostureCurrentTruth,
+      operational_posture_current_truth: operationalPostureCurrentTruth,
       harnessMemory,
       harness_memory: harnessMemory,
       governedMemory,

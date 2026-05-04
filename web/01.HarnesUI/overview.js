@@ -476,6 +476,62 @@ function renderReviewerReadout(payload) {
     : runtime.current_truth && typeof runtime.current_truth === "object"
       ? runtime.current_truth
       : {};
+  const repoTruth = runtime.repoTruth && typeof runtime.repoTruth === "object"
+    ? runtime.repoTruth
+    : runtime.repo_truth && typeof runtime.repo_truth === "object"
+      ? runtime.repo_truth
+      : currentTruth.repoTruth && typeof currentTruth.repoTruth === "object"
+        ? currentTruth.repoTruth
+        : {};
+  const dirtyWorkingTree = repoTruth.dirtyWorkingTree && typeof repoTruth.dirtyWorkingTree === "object"
+    ? repoTruth.dirtyWorkingTree
+    : {};
+  const generatedOutput = repoTruth.generatedOutput && typeof repoTruth.generatedOutput === "object"
+    ? repoTruth.generatedOutput
+    : {};
+  const repoHead = repoTruth.head && typeof repoTruth.head === "object" ? repoTruth.head : {};
+  const repoOrigin = repoTruth.origin && typeof repoTruth.origin === "object" ? repoTruth.origin : {};
+  const liveVerificationTimestamp = safeText(repoTruth.liveVerificationTimestamp || runtime.liveVerificationTimestamp, "");
+  const dirtyState = safeText(repoTruth.dirtyState, dirtyWorkingTree.dirty ? "dirty" : "clean");
+  const headOriginLabel = Object.prototype.hasOwnProperty.call(repoTruth, "headEqualsOrigin")
+    ? repoTruth.headEqualsOrigin === true
+      ? "HEAD=origin"
+      : repoTruth.headEqualsOrigin === false
+        ? "HEAD!=origin"
+        : "HEAD/origin unknown"
+    : "HEAD/origin unknown";
+  const deploymentPosture = runtime.deploymentPosture && typeof runtime.deploymentPosture === "object"
+    ? runtime.deploymentPosture
+    : runtime.deployment_posture && typeof runtime.deployment_posture === "object"
+      ? runtime.deployment_posture
+      : {};
+  const gitAutomation = runtime.gitAutomation && typeof runtime.gitAutomation === "object"
+    ? runtime.gitAutomation
+    : runtime.git_automation && typeof runtime.git_automation === "object"
+      ? runtime.git_automation
+      : {};
+  const operationalPosture = currentTruth.operationalPosture && typeof currentTruth.operationalPosture === "object"
+    ? currentTruth.operationalPosture
+    : runtime.operationalPostureCurrentTruth && typeof runtime.operationalPostureCurrentTruth === "object"
+      ? runtime.operationalPostureCurrentTruth
+      : runtime.operational_posture_current_truth && typeof runtime.operational_posture_current_truth === "object"
+        ? runtime.operational_posture_current_truth
+        : {};
+  const postureAuthority = operationalPosture.authorityState && typeof operationalPosture.authorityState === "object"
+    ? operationalPosture.authorityState
+    : {};
+  const postureGit = operationalPosture.gitAutomation && typeof operationalPosture.gitAutomation === "object"
+    ? operationalPosture.gitAutomation
+    : gitAutomation;
+  const activePostureProfile = safeText(
+    operationalPosture.activePostureProfile || runtime.activePostureProfile || runtime.active_posture_profile || deploymentPosture.activePostureProfile || deploymentPosture.activeProfile,
+    "portable_local"
+  );
+  const strongAuthorityActive = num(postureAuthority.strongAuthorityActive, 0) > 0;
+  const autoCommitAndPush = Object.prototype.hasOwnProperty.call(postureGit, "autoCommitAndPush")
+    ? num(postureGit.autoCommitAndPush, 0) > 0
+    : num(postureGit.autocommitEnabled, 0) > 0 && num(postureGit.autopushEnabled, 0) > 0;
+  const strongAuthoritySignals = toArr(postureAuthority.strongAuthoritySignals).map((entry) => safeText(entry)).filter(Boolean);
   const workerDecision = runtime.workerDecisionSurface && typeof runtime.workerDecisionSurface === "object"
     ? runtime.workerDecisionSurface
     : runtime.worker_decision_surface && typeof runtime.worker_decision_surface === "object"
@@ -554,6 +610,10 @@ function renderReviewerReadout(payload) {
       <div class="overview-inline-tags">
         ${tagHtml(`task ${taskOutcome}`, taskTone)}
         ${tagHtml(`background ${programDisplayStatus}`, programTone)}
+        ${tagHtml(`repo ${dirtyState}`, lower(dirtyState) === "clean" ? "pass" : "warn")}
+        ${tagHtml(headOriginLabel, repoTruth.headEqualsOrigin === true ? "pass" : repoTruth.headEqualsOrigin === false ? "warn" : "neutral")}
+        ${tagHtml(`posture ${activePostureProfile}`, activePostureProfile === "owner_local" ? "warn" : "info")}
+        ${tagHtml(`autocommit/autopush ${autoCommitAndPush ? "on" : "off"}`, autoCommitAndPush ? "warn" : "neutral")}
         ${tagHtml(`signoff ${signoff && signoff.assertions && signoff.assertions.allPassed ? "PASS" : "PENDING"}`, signoff && signoff.assertions && signoff.assertions.allPassed ? "pass" : "warn")}
         ${tagHtml(`runtime proof ${runtimeProof ? "present" : "missing"}`, runtimeProof ? "info" : "warn")}
       </div>
@@ -582,6 +642,39 @@ function renderReviewerReadout(payload) {
           { label: "Question", value: safeText(workerDecision.decisionQuestion, "Can the governed worker stop here without unnecessary human interruption?"), detail: WORKER_DECISION_ARTIFACT },
           { label: "Task Outcome", value: taskOutcome, detail: safeText(workerDecision.taskOutcomeReason, "-") },
           { label: "Adoption", value: formatPercent(num(workerDecision.adoptionReadiness, 0)), detail: `threshold ${formatPercent(num(workerDecision.adoptionReadinessThreshold, 0))} / residual ${formatInteger(num(workerDecision.evidenceSummary && workerDecision.evidenceSummary.residualRiskCount, 0))}` },
+        ],
+      })}
+      ${reviewerFaceHtml({
+        kicker: "Repo Truth",
+        title: `Working tree: ${dirtyState}`,
+        tone: lower(dirtyState) === "clean" ? "pass" : "warn",
+        summary: "HEAD, dirty working tree, live runtime, and generated output are shown as separate current-truth surfaces.",
+        tags: [
+          { label: headOriginLabel, tone: repoTruth.headEqualsOrigin === true ? "pass" : repoTruth.headEqualsOrigin === false ? "warn" : "neutral" },
+          { label: `generated ${formatInteger(num(generatedOutput.dirtyEntryCount, 0))}`, tone: num(generatedOutput.dirtyEntryCount, 0) > 0 ? "warn" : "info" },
+        ],
+        facts: [
+          { label: "HEAD", value: safeText(repoHead.shortCommit || repoHead.commit, "unknown"), detail: safeText(repoHead.branch, "") },
+          { label: "Origin", value: safeText(repoOrigin.shortCommit || repoOrigin.commit, "unknown"), detail: safeText(repoOrigin.ref, "origin/main") },
+          { label: "Dirty Files", value: formatInteger(num(dirtyWorkingTree.entryCount, 0)), detail: `generated ${formatInteger(num(generatedOutput.dirtyEntryCount, 0))} / unorganized ${formatInteger(num(repoTruth.unorganizedDiff && repoTruth.unorganizedDiff.dirtyEntryCount, 0))}` },
+          { label: "Live Verification", value: liveVerificationTimestamp ? formatDateTime(liveVerificationTimestamp) : "missing", detail: "GET /api/runtime current repo-truth snapshot" },
+        ],
+      })}
+      ${reviewerFaceHtml({
+        kicker: "Operational Posture",
+        title: `${activePostureProfile}${strongAuthorityActive ? " strong authority" : " standard authority"}`,
+        tone: strongAuthorityActive || autoCommitAndPush ? "warn" : "info",
+        summary: "owner_local, sandbox, approval, autocommit, and autopush are reviewer-facing current truth, separate from the portable reference default.",
+        tags: [
+          { label: activePostureProfile, tone: activePostureProfile === "owner_local" ? "warn" : "info" },
+          { label: `autocommit ${num(postureGit.autocommitEnabled, 0) > 0 ? "on" : "off"}`, tone: num(postureGit.autocommitEnabled, 0) > 0 ? "warn" : "neutral" },
+          { label: `autopush ${num(postureGit.autopushEnabled, 0) > 0 ? "on" : "off"}`, tone: num(postureGit.autopushEnabled, 0) > 0 ? "warn" : "neutral" },
+        ],
+        facts: [
+          { label: "Authority", value: strongAuthorityActive ? "strong" : "standard", detail: strongAuthoritySignals.join(", ") || "no strong-authority signals" },
+          { label: "Sandbox", value: safeText(postureAuthority.sandboxMode, "unknown"), detail: "runtime approval boundary" },
+          { label: "Approval", value: safeText(postureAuthority.approvalPolicy, "unknown"), detail: "runtime approval policy" },
+          { label: "Git Automation", value: autoCommitAndPush ? "autocommit+autopush" : "manual or partial", detail: `remote ${safeText(postureGit.remoteName, "origin")}` },
         ],
       })}
       ${reviewerFaceHtml({
@@ -975,13 +1068,14 @@ function renderCapabilities(payload) {
         { label: "Stable breadth", value: formatPercent(num(browser.stableCoverageBreadth, 0)), detail: `supported ${formatPercent(num(browser.supportedCoverageBreadth, 0))} / display ${formatPercent(num(browser.displayFinalScore, 0))}` },
         { label: "Families", value: toArr(browser.sourceFamilies).join(", ") || "unreported", detail: `${formatInteger(num(browser.successCount, 0))} success / ${formatInteger(num(browser.failureCount, 0))} failure` },
       ],
-      items: recentBrowserFamilies.slice(0, 3).length
-        ? recentBrowserFamilies.slice(0, 3)
-        : toArr(browser.openFailureModes).slice(0, 3).map((entry) => ({
-            title: "Open failure mode",
-            tags: [{ label: "recover", tone: "warn" }],
-            detail: safeText(entry, "-"),
-          })),
+      items: [
+        ...recentBrowserFamilies.slice(0, 2),
+        ...toArr(browser.openFailureModes).slice(0, 3).map((entry) => ({
+          title: "Open failure mode",
+          tags: [{ label: "recover", tone: "warn" }],
+          detail: safeText(entry, "-"),
+        })),
+      ].slice(0, 3),
       actions: [
         { label: "Jump to Evidence", href: "#evidenceSection", tone: "secondary" },
         { label: "Replay Turns API", href: safeText(payload && payload.apis && payload.apis.replayTurns, "/api/replay/turns"), tone: "secondary" },
@@ -1146,6 +1240,41 @@ function renderRuntime(payload) {
     : runtime && runtime.deployment_posture && typeof runtime.deployment_posture === "object"
       ? runtime.deployment_posture
       : {};
+  const currentTruth = runtime && runtime.currentTruth && typeof runtime.currentTruth === "object"
+    ? runtime.currentTruth
+    : runtime && runtime.current_truth && typeof runtime.current_truth === "object"
+      ? runtime.current_truth
+      : {};
+  const gitAutomation = runtime && runtime.gitAutomation && typeof runtime.gitAutomation === "object"
+    ? runtime.gitAutomation
+    : runtime && runtime.git_automation && typeof runtime.git_automation === "object"
+      ? runtime.git_automation
+      : {};
+  const operationalPosture = currentTruth.operationalPosture && typeof currentTruth.operationalPosture === "object"
+    ? currentTruth.operationalPosture
+    : runtime && runtime.operationalPostureCurrentTruth && typeof runtime.operationalPostureCurrentTruth === "object"
+      ? runtime.operationalPostureCurrentTruth
+      : runtime && runtime.operational_posture_current_truth && typeof runtime.operational_posture_current_truth === "object"
+        ? runtime.operational_posture_current_truth
+        : {};
+  const postureAuthority = operationalPosture.authorityState && typeof operationalPosture.authorityState === "object"
+    ? operationalPosture.authorityState
+    : {};
+  const postureGit = operationalPosture.gitAutomation && typeof operationalPosture.gitAutomation === "object"
+    ? operationalPosture.gitAutomation
+    : gitAutomation;
+  const repoTruth = runtime && runtime.repoTruth && typeof runtime.repoTruth === "object"
+    ? runtime.repoTruth
+    : runtime && runtime.repo_truth && typeof runtime.repo_truth === "object"
+      ? runtime.repo_truth
+      : {};
+  const repoDirtyWorkingTree = repoTruth.dirtyWorkingTree && typeof repoTruth.dirtyWorkingTree === "object"
+    ? repoTruth.dirtyWorkingTree
+    : {};
+  const repoGeneratedOutput = repoTruth.generatedOutput && typeof repoTruth.generatedOutput === "object"
+    ? repoTruth.generatedOutput
+    : {};
+  const activePostureProfile = safeText(runtime.activePostureProfile || runtime.active_posture_profile || deploymentPosture.activePostureProfile || deploymentPosture.activeProfile, "portable_local");
   const iterationControl = runtime && runtime.iterationControl && typeof runtime.iterationControl === "object"
     ? runtime.iterationControl
     : runtime && runtime.iteration_control && typeof runtime.iteration_control === "object"
@@ -1188,7 +1317,11 @@ function renderRuntime(payload) {
   ];
   elements.runtimePostureCard.innerHTML = factRowsHtml([
     { label: "Execution Profile", value: safeText(runtime.executionProfile, "unknown"), detail: `active agent ${runtimeActiveAgent(runtime)} / default exec ${runtimeDefaultExecAgent(runtime)}` },
-    { label: "Deployment Posture", value: safeText(deploymentPosture.activeLabel || deploymentPosture.activeProfile, "portable_local"), detail: `${safeText(deploymentPosture.profilePath, "scripts/config/deployment_posture_profiles.json")} / default ${safeText(deploymentPosture.referenceArchitectureDefault ? "reference" : "owner-or-explicit", "")}` },
+    { label: "Deployment Posture", value: activePostureProfile, detail: `${safeText(deploymentPosture.profilePath, "scripts/config/deployment_posture_profiles.json")} / ${safeText(deploymentPosture.referenceArchitectureDefault ? "reference default" : "owner-or-explicit")} / ${safeText(deploymentPosture.activeLabel, activePostureProfile)}` },
+    { label: "Current Truth Posture", value: safeText(operationalPosture.activePostureProfile, activePostureProfile), detail: `${safeText(postureAuthority.sandboxMode, "unknown")} / approval ${safeText(postureAuthority.approvalPolicy, "unknown")} / strong ${num(postureAuthority.strongAuthorityActive, 0) > 0 ? "yes" : "no"}` },
+    { label: "Git Automation", value: num(postureGit.autoCommitAndPush, 0) > 0 ? "autocommit+autopush" : "manual or partial", detail: `autocommit ${num(postureGit.autocommitEnabled, 0) > 0 ? "on" : "off"} / autopush ${num(postureGit.autopushEnabled, 0) > 0 ? "on" : "off"} / remote ${safeText(postureGit.remoteName, "origin")}` },
+    { label: "Repo Truth", value: safeText(repoTruth.dirtyState, repoDirtyWorkingTree.dirty ? "dirty" : "clean"), detail: `HEAD ${safeText(repoTruth.head && (repoTruth.head.shortCommit || repoTruth.head.commit), "unknown")} / origin ${safeText(repoTruth.origin && (repoTruth.origin.shortCommit || repoTruth.origin.commit), "unknown")}` },
+    { label: "Generated Output", value: formatInteger(num(repoGeneratedOutput.dirtyEntryCount, 0)), detail: `verified ${repoTruth.liveVerificationTimestamp ? formatDateTime(repoTruth.liveVerificationTimestamp) : "missing"} / read-only ${repoTruth.readOnly ? "yes" : "unknown"}` },
     { label: "Authority Registry", value: safeText(authorityRegistry.schema, "authority-registry.v1"), detail: `${safeText(authorityRegistry.registryPath, "scripts/config/authority_registry.json")} / ${safeText(authorityRegistry.driftStatus, "aligned")}` },
     { label: "Iteration Control", value: safeText(iterationControl.schema, "iteration-control-contract.v1"), detail: `${safeText(iterationControl.path || iterationControl.contractPath, "scripts/config/iteration_control_contract.json")} / release ${safeText(iterationControl.releaseState || iterationControl.releaseGate, "governed")}` },
     { label: "Adoption Readiness", value: safeText(adoptionReadinessContract.schema, "adoption-readiness-evaluator-contract.v1"), detail: `${safeText(adoptionReadinessContract.path || adoptionReadinessContract.contractPath, "scripts/config/adoption_readiness_evaluator_contract.json")} / ${formatInteger(num(adoptionReadinessContract.dimensionCount, 0))} dimensions` },

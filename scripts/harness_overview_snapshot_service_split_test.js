@@ -51,7 +51,7 @@ function main() {
   );
   assertIncludes(
     serverSource,
-    "return harnessOverviewSnapshotService.buildHarnessOverviewSnapshot();",
+    "return harnessOverviewSnapshotService.buildHarnessOverviewSnapshot(options);",
     "server_impl overview payload assembly must delegate to the extracted service"
   );
   assertExcludes(
@@ -77,7 +77,7 @@ function main() {
 
   assertIncludes(
     overviewSnapshotServiceSource,
-    "function buildHarnessOverviewSnapshot()",
+    "function buildHarnessOverviewSnapshot(options = {})",
     "overview snapshot service should own harness overview payload assembly"
   );
   assertIncludes(

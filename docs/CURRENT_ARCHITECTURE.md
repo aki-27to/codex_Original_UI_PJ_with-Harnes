@@ -138,6 +138,9 @@ reviewer 向けの外部比較 refresh は `npm run reviewer:baseline-comparison
 - stronger local ownership posture: `owner_local`
 - reviewed team posture: `reviewed_team`
 - `GET /api/runtime` exposes `activePostureProfile` as live truth, so `owner_local` and `portable_local` are not inferred from prose or launcher assumptions.
+- `GET /api/runtime` also exposes `repoTruth` / `repo_truth` as a read-only current-truth snapshot. It separates `HEAD`, `dirty_working_tree`, `live_runtime`, and `generated_output`, includes `HEAD` versus `origin/*` commit equality, classifies dirty files as `intended_change_candidate`, `generated_side_effect`, or `unorganized_diff`, and carries `liveVerificationTimestamp` for final reporting.
+- `GET /api/runtime` publishes `currentTruth.operationalPosture` / `operationalPostureCurrentTruth` as reviewer-facing current truth. It keeps `owner_local`, `danger-full-access`, `approval_policy = never`, autocommit, and autopush visible as current runtime facts rather than portable reference defaults.
+- `COMPLETED`, `RELEASE_APPROVED`, and `NOT_YET` are scoped through `statusScopeMap`: task completion, release/signoff approval, and program-readiness debt must not be collapsed into one success label.
 
 ### Runtime server composition
 
@@ -225,7 +228,7 @@ Launcher posture: the desktop launcher keeps `CODEX_REQUIRE_ADMIN=0` and `CODEX_
 
 ## 9) 現在の学習面
 
-Tracked learning artifacts are refreshed by the fixed command `npm run refresh:learning-output`. Server startup keeps background refresh disabled by default, runtime turn observations stay transient unless background refresh is explicitly enabled, and runtime retrieval can still read the last committed learning artifacts.
+Tracked learning artifacts are refreshed by the fixed command `npm run refresh:learning-output`. Server startup keeps background refresh disabled by default, runtime turn observations stay transient unless background refresh is explicitly enabled, and runtime retrieval can still read the last committed learning artifacts. Runtime GET is read-only, and default `GET /api/harness/overview` is a light polling profile: it can inspect runtime/current-truth state but defers bundle, eval-history, execution-memory, replay-memory, browser-capability, and continuity reads to `GET /api/harness/overview?detail=full`.
 
 この repo は OpenAI developer lane と Anthropic engineering lane を持ちます。
 ただし、実行時の取り込みまで開いている主レーンは OpenAI 側です。Anthropic 側は補助レーンとして、持ち運びやすい原則の抽出と提案生成に寄せています。

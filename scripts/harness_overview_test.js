@@ -1476,8 +1476,14 @@ function assertRenderedOverviewMatchesPayload(payload, elements) {
     ? payload.capabilitySurface.browser
     : null;
   if (browserSurface) {
-    assertContains(elements.capabilitySurfaceGrid.innerHTML, String(browserSurface.sourceFamilies[0] || "web_creative"), "capability surface must render browser source families");
-    assertContains(elements.capabilitySurfaceGrid.innerHTML, String(browserSurface.openFailureModes[0] || "retry budget exceeded without safe abort"), "capability surface must render browser failure modes");
+    const sourceFamilies = toArr(browserSurface.sourceFamilies);
+    const openFailureModes = toArr(browserSurface.openFailureModes);
+    if (sourceFamilies.length) {
+      assertContains(elements.capabilitySurfaceGrid.innerHTML, String(sourceFamilies[0]), "capability surface must render browser source families");
+    }
+    if (openFailureModes.length) {
+      assertContains(elements.capabilitySurfaceGrid.innerHTML, String(openFailureModes[0]), "capability surface must render browser failure modes");
+    }
   }
   const continuitySurface = payload && payload.capabilitySurface && payload.capabilitySurface.continuity && typeof payload.capabilitySurface.continuity === "object"
     ? payload.capabilitySurface.continuity
@@ -1635,6 +1641,7 @@ function assertRenderedOverviewMatchesPayload(payload, elements) {
 async function runClientRefreshRaceCheck() {
   const bootstrapPayload = createOverviewPayload({ generatedAt: 1 });
   const { elements, hooks, requests } = await createOverviewVmHarness(bootstrapPayload);
+  requests.length = 0;
 
   const successPayload = createOverviewPayload({
     generatedAt: 2,
@@ -1763,6 +1770,25 @@ async function runReviewerReadoutCompletionSeparationCheck() {
         },
       },
       currentTruth: {
+        repoTruth: {
+          dirtyState: "dirty",
+        },
+        operationalPosture: {
+          scope: "reviewer_facing_current_truth",
+          activePostureProfile: "owner_local",
+          authorityState: {
+            sandboxMode: "danger-full-access",
+            approvalPolicy: "never",
+            strongAuthorityActive: 1,
+            strongAuthoritySignals: ["danger-full-access", "approval_policy_never", "auto_commit_and_push"],
+          },
+          gitAutomation: {
+            autocommitEnabled: 1,
+            autopushEnabled: 1,
+            autoCommitAndPush: 1,
+            remoteName: "origin",
+          },
+        },
         goalCompletion: {
           scope: "program_readiness",
           status: "NOT_YET",
@@ -1770,6 +1796,29 @@ async function runReviewerReadoutCompletionSeparationCheck() {
           presentationRole: "secondary_non_blocking_context",
           doesNotOverrideWorkerVerdict: true,
           whyNotYetCount: 4,
+        },
+      },
+      repoTruth: {
+        liveVerificationTimestamp: "2026-05-04T13:00:00.000Z",
+        dirtyState: "dirty",
+        readOnly: 1,
+        headEqualsOrigin: true,
+        head: {
+          shortCommit: "abc123",
+          branch: "main",
+        },
+        origin: {
+          shortCommit: "abc123",
+          ref: "origin/main",
+        },
+        dirtyWorkingTree: {
+          entryCount: 2,
+        },
+        generatedOutput: {
+          dirtyEntryCount: 1,
+        },
+        unorganizedDiff: {
+          dirtyEntryCount: 0,
         },
       },
     },
@@ -1780,6 +1829,14 @@ async function runReviewerReadoutCompletionSeparationCheck() {
   assertContains(reviewerHtml, "Background program readiness debt", "reviewer readout must render a debt-oriented background title instead of a raw NOT_YET title");
   assertContains(reviewerHtml, "Recorded Status", "reviewer readout must preserve the raw program status as a fact row");
   assertContains(reviewerHtml, "The raw program_readiness artifact value is preserved here without promoting it to the task headline.", "reviewer readout must explain why raw status is not the task headline");
+  assertContains(reviewerHtml, "Repo Truth", "reviewer readout must expose repo truth as a separate face");
+  assertContains(reviewerHtml, "Working tree: dirty", "reviewer readout must show dirty working tree without merging it into release approval");
+  assertContains(reviewerHtml, "HEAD=origin", "reviewer readout must expose HEAD/origin equality separately");
+  assertContains(reviewerHtml, "generated 1", "reviewer readout must expose generated output count separately");
+  assertContains(reviewerHtml, "Operational Posture", "reviewer readout must expose the operational posture as current truth");
+  assertContains(reviewerHtml, "owner_local strong authority", "reviewer readout must show owner_local strong authority state");
+  assertContains(reviewerHtml, "autocommit on", "reviewer readout must show autocommit state");
+  assertContains(reviewerHtml, "autopush on", "reviewer readout must show autopush state");
   assert.strictEqual(reviewerHtml.includes("background NOT_YET"), false, "reviewer readout must not leak raw NOT_YET into the top tag");
   assert.strictEqual(reviewerHtml.includes("Background program readiness: NOT_YET"), false, "reviewer readout must not use raw NOT_YET as the background title");
   return "task verdict remains primary while background debt stays secondary";
@@ -1888,6 +1945,9 @@ async function runIntegrationCheck() {
     const overviewJson = JSON.parse(overviewRes.raw);
     assert(overviewJson && typeof overviewJson === "object", "overview payload must be an object");
     assert.strictEqual(overviewJson.mode, "harness-overview", "overview mode mismatch");
+    assert.strictEqual(overviewJson.detail, "light", "default overview GET should use the light read profile");
+    assert.strictEqual(Number(overviewJson.heavyReadsDeferred || 0), 1, "default overview GET should defer heavy reads");
+    assert.strictEqual(String(overviewJson.apis && overviewJson.apis.overviewFull || ""), "/api/harness/overview?detail=full", "overview must expose the full read endpoint");
     assert(overviewJson.runtime && typeof overviewJson.runtime === "object", "overview runtime missing");
     assert(overviewJson.runtime.activeAgent, "overview runtime must expose activeAgent");
     assert(overviewJson.runtime.phaseStatus && typeof overviewJson.runtime.phaseStatus === "object", "overview runtime must expose phaseStatus");
@@ -1935,6 +1995,8 @@ async function runIntegrationCheck() {
     assert(overviewJson.capabilitySurface && typeof overviewJson.capabilitySurface === "object", "overview capabilitySurface missing");
     assert(overviewJson.capabilitySurface.browser && typeof overviewJson.capabilitySurface.browser === "object", "overview browser capability missing");
     assert(overviewJson.capabilitySurface.continuity && typeof overviewJson.capabilitySurface.continuity === "object", "overview continuity capability missing");
+    assert.strictEqual(String(overviewJson.capabilitySurface.browser.source || ""), "deferred_heavy_read", "default overview GET should defer browser capability reads");
+    assert.strictEqual(String(overviewJson.evidence.runtimeProof.source || ""), "deferred_heavy_read", "default overview GET should defer runtime proof bundle reads");
     assert.strictEqual(overviewJson.pages && overviewJson.pages.overview, "/01.HarnesUI/overview.html", "overview page path mismatch");
     assert(Array.isArray(overviewJson.eval && overviewJson.eval.recentRuns), "overview recent eval runs must be an array");
     assert.strictEqual(String(overviewJson.apis && overviewJson.apis.continuityTasks || ""), "/api/continuity/tasks", "overview continuity tasks path mismatch");
@@ -1972,6 +2034,11 @@ async function runIntegrationCheck() {
       const nextTs = Number(runtimeProofRecent[1].generatedAt || 0);
       assert(latestTs >= nextTs, "runtime proof latest bundle is not ordered by generatedAt");
     }
+    const fullOverviewRes = await httpRequest(port, "/api/harness/overview?detail=full");
+    assert.strictEqual(fullOverviewRes.statusCode, 200, "GET /api/harness/overview?detail=full must return 200");
+    const fullOverviewJson = JSON.parse(fullOverviewRes.raw);
+    assert.strictEqual(fullOverviewJson.detail, "full", "full overview GET should use the full read profile");
+    assert.strictEqual(Number(fullOverviewJson.heavyReadsDeferred || 0), 0, "full overview GET should not mark heavy reads as deferred");
 
     const htmlRes = await httpRequest(port, "/01.HarnesUI/overview.html");
     assert.strictEqual(htmlRes.statusCode, 200, "GET /01.HarnesUI/overview.html must return 200");
@@ -2093,10 +2160,22 @@ async function main() {
     })
   );
   checks.push(
+    runCheck("overview js keeps repo truth separate from signoff and readiness", () => {
+      assertContains(overviewJs, "Repo Truth", "overview.js must render a dedicated repo-truth face");
+      assertContains(overviewJs, "Working tree:", "overview.js must show dirty working tree separately");
+      assertContains(overviewJs, "HEAD=origin", "overview.js must show HEAD/origin equality separately");
+      assertContains(overviewJs, "generatedOutput", "overview.js must render generated-output counts separately");
+      assertContains(overviewJs, "liveVerificationTimestamp", "overview.js must render live verification timestamp separately");
+      assertContains(overviewJs, "Operational Posture", "overview.js must render reviewer-facing operational posture");
+      assertContains(overviewJs, "autocommit", "overview.js must render autocommit state");
+      assertContains(overviewJs, "autopush", "overview.js must render autopush state");
+    })
+  );
+  checks.push(
     runCheck("server exposes overview route and builder", () => {
       const requestHandlerSource = readFile(requestHandlerPath);
       const overviewRoutesSource = readFile(overviewRoutesPath);
-      assertRegex(serverJs, /function buildHarnessOverviewSnapshot\(\)/, "buildHarnessOverviewSnapshot() missing");
+      assertRegex(serverJs, /function\s+buildHarnessOverviewSnapshot\s*\(/, "buildHarnessOverviewSnapshot() missing");
       assertRegex(requestHandlerSource, /createOverviewRoutes/, "request handler must register overview routes");
       assertRegex(overviewRoutesSource, /pathname === \"\/api\/harness\/overview\"/, "GET /api/harness/overview route missing");
     })
@@ -2105,11 +2184,21 @@ async function main() {
     runCheck("overview surface module builds governed graph payload without write-syncing", () => {
       const snapshot = buildHarnessOverviewPayload({
         apiVersion: "test",
-        buildBrowserCapabilityOverview: () => ({ browser: true }),
-        buildBundleOverview: () => ({ latest: null, recent: [] }),
-        buildContinuityOverviewSnapshot: () => ({ continuity: true }),
-        buildEvalHistoryOverview: () => ([{ runId: "eval-1" }]),
-        buildExecutionMemoryOverview: () => ({ items: [] }),
+        buildBrowserCapabilityOverview: () => {
+          throw new Error("light overview payload must defer browser capability reads");
+        },
+        buildBundleOverview: () => {
+          throw new Error("light overview payload must defer bundle reads");
+        },
+        buildContinuityOverviewSnapshot: () => {
+          throw new Error("light overview payload must defer continuity reads");
+        },
+        buildEvalHistoryOverview: () => {
+          throw new Error("light overview payload must defer eval-history reads");
+        },
+        buildExecutionMemoryOverview: () => {
+          throw new Error("light overview payload must defer execution-memory reads");
+        },
         buildHarnessTraceabilitySnapshot: () => ({ clauses: [] }),
         buildRuntimeApiSnapshot: () => ({
           activeAgent: "default",
@@ -2136,6 +2225,11 @@ async function main() {
             suite: {},
           },
           governedMemory: { status: "ready", itemCount: 3 },
+          repoTruth: {
+            dirtyState: "clean",
+            dirtyWorkingTree: { entryCount: 0 },
+            generatedOutput: { dirtyEntryCount: 0 },
+          },
         }),
         buildRuntimeProofBundleSnapshot: () => ({}),
         buildSignoffBundleSnapshot: () => ({}),
@@ -2143,7 +2237,9 @@ async function main() {
         buildTopographyOverview: () => ({ parent: [], specialists: [] }),
         getAgentTopographySnapshot: () => ({}),
         harnessMemoryLoaded: true,
-        listReplayMemorySnapshots: () => ([]),
+        listReplayMemorySnapshots: () => {
+          throw new Error("light overview payload must defer replay-memory reads");
+        },
         loadHarnessExecutionMemoryStore: () => {
           throw new Error("loadHarnessExecutionMemoryStore should not run for the module smoke check");
         },
@@ -2169,7 +2265,15 @@ async function main() {
 
       assert.strictEqual(snapshot.memory.governedGraph.status, "ready", "module must preserve runtime governed graph summary");
       assert.strictEqual(snapshot.memory.governedGraph.source, "runtime_snapshot_no_write", "module must mark overview memory as a no-write runtime snapshot");
+      assert.strictEqual(snapshot.detail, "light", "GET overview payload should default to the light read profile");
+      assert.strictEqual(snapshot.heavyReadsDeferred, 1, "light overview payload should defer heavy reads");
+      assert.strictEqual(snapshot.apis.overviewFull, "/api/harness/overview?detail=full", "overview must expose the opt-in full read API");
+      assert.strictEqual(snapshot.apis.exec, "POST /api/exec", "overview must keep the standard execution route explicit");
+      assert.strictEqual(snapshot.apis.eval, "POST /api/eval/run", "overview must keep the standard eval/release route explicit");
+      assert.strictEqual(snapshot.evidence.repoTruth.dirtyState, "clean", "overview must carry repo truth from runtime without recomputing or writing");
       assert(Array.isArray(snapshot.eval.recentRuns), "module must keep recent eval runs structured");
+      assert.strictEqual(snapshot.evidence.runtimeProof.source, "deferred_heavy_read", "runtime proof reads should be deferred from default overview GET");
+      assert.strictEqual(snapshot.memory.execution.source, "deferred_heavy_read", "execution memory reads should be deferred from default overview GET");
     })
   );
 

@@ -303,7 +303,7 @@ function createHarnessOverviewSnapshotService(deps = {}) {
     });
   }
 
-  function buildHarnessOverviewSnapshot() {
+  function buildHarnessOverviewSnapshot(options = {}) {
     return buildHarnessOverviewPayload({
       apiVersion,
       buildBrowserCapabilityOverview,
@@ -329,6 +329,10 @@ function createHarnessOverviewSnapshotService(deps = {}) {
       signoffBundlesRoot,
       syncGovernedMemoryGraph,
       workspaceRoot,
+      detail: safeString(options && options.detail, 40) || "light",
+      includeHeavyReads: options && Object.prototype.hasOwnProperty.call(options, "includeHeavyReads")
+        ? Boolean(options.includeHeavyReads)
+        : undefined,
     });
   }
 

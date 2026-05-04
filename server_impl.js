@@ -11,6 +11,7 @@ const {createRouteServices}=require("./server/route_services");
 const {createCurrentSurfaceService}=require("./server/services/current_surface_service");
 const {createCurrentLogSurfaceService}=require("./server/services/current_log_surface_service");
 const {createHarnessOverviewSnapshotService}=require("./server/services/harness_overview_snapshot_service");
+const {createRepoTruthRuntimeSnapshotService}=require("./server/services/repo_truth_runtime_snapshot_service");
 const {createRuntimeApiSnapshotService}=require("./server/services/runtime_api_snapshot_service");
 const {createRuntimeStateService}=require("./server/services/runtime_state_service");
 const {createTraceabilityService}=require("./server/services/traceability_service");
@@ -410,6 +411,7 @@ const gitAutomationConfig=buildGitAutomationConfig(process.env);
 const gitAutomationWorkspaceIgnoredPaths=Object.freeze([
   "logs/archive/raw/harness_execution_memory.json",
   "logs/archive/raw/eval_runs.jsonl",
+  "logs/archive/raw/runtime_state/harness_execution_memory.json",
   "logs/archive/raw/runtime_state/conversation_persona_memory.json",
   "logs/archive/raw/runtime_state/intent_profile_memory.json",
 ]);
@@ -13660,6 +13662,13 @@ const runtimeStateService=createRuntimeStateService({
   getLatestTurnSnapshot,
   getActiveExecRequestCount,
 });
+const repoTruthRuntimeSnapshotService=createRepoTruthRuntimeSnapshotService({
+  workspaceRoot,
+  gitAutomationConfig,
+  ignoredPaths:gitAutomationWorkspaceIgnoredPaths,
+  captureGitRepoState,
+  safeString,
+});
 let harnessOverviewSnapshotService;
 const runtimeApiSnapshotService=createRuntimeApiSnapshotService({
   fs,
@@ -13679,6 +13688,7 @@ const runtimeApiSnapshotService=createRuntimeApiSnapshotService({
   buildSloRuntimeSnapshot,
   appPlatformReadSurface,
   buildGitAutomationRuntimeSnapshot,
+  buildRepoTruthRuntimeSnapshot:repoTruthRuntimeSnapshotService.buildRepoTruthRuntimeSnapshot,
   buildGovernanceRuntimeSurface,
   authorityRegistry,
   authorityRegistryPath,
@@ -13888,8 +13898,8 @@ function sanitizeRuntimeSnapshotForOverview(runtimeSnapshot){
 function syncGovernedMemoryGraphFromLiveRuntime(reason="runtime_sync"){
   return harnessOverviewSnapshotService.syncGovernedMemoryGraphFromLiveRuntime(reason);
 }
-function buildHarnessOverviewSnapshot(){
-  return harnessOverviewSnapshotService.buildHarnessOverviewSnapshot();
+function buildHarnessOverviewSnapshot(options={}){
+  return harnessOverviewSnapshotService.buildHarnessOverviewSnapshot(options);
 }
 function isCompletedOperatorOutcome(finalOutcome){
   const taskOutcomeStatus=safeString(finalOutcome&&finalOutcome.taskOutcomeStatus,80).toUpperCase();
