@@ -5788,7 +5788,7 @@ function requestHarnessServerRestart({force=false,reason=""}={}){
   const launcherPath=path.join(workspaceRoot,"start_codex_ui.bat");
   const restartHelperPath=path.join(workspaceRoot,"scripts","restart_harness_from_ui.js");
   const restartHelperLogPath=path.join(workspaceRoot,"logs","archive","raw","operation_logs",`codex_restart_helper_${port}_${process.pid}.jsonl`);
-  const restartResultPath=path.join(workspaceRoot,"logs","current","server_restart_result.json");
+  const restartResultPath=path.join(workspaceRoot,"runtime","server_restart_result.json");
   const payloadBase={
     ok:false,
     status:"blocked",

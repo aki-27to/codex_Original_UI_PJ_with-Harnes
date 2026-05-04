@@ -1,70 +1,70 @@
 {
   "schema": "governed-memory-promotion-health-public.v1",
-  "generatedAt": "2026-04-22T00:42:00.820Z",
-  "workspaceId": "3650d504ad404c53",
-  "staleWarningCount": 0,
+  "generatedAt": "2026-05-04T12:17:30.714Z",
+  "workspaceId": "5c839dfeef8b555f",
+  "staleWarningCount": 1,
   "recentPromotions": [
     {
-      "publicRef": "mem_8eea5b9e77",
+      "publicRef": "mem_52f4ed9143",
+      "memoryType": "constitution_ref",
+      "status": "promoted",
+      "recordedAt": "2026-05-04T12:12:50.945Z"
+    },
+    {
+      "publicRef": "mem_9c7f4cba43",
+      "memoryType": "requirement_ref",
+      "status": "promoted",
+      "recordedAt": "2026-05-04T12:12:50.945Z"
+    },
+    {
+      "publicRef": "mem_dd9c0f3a28",
       "memoryType": "workspace_progress",
       "status": "promoted",
-      "recordedAt": "2026-04-22T00:17:34.395Z"
+      "recordedAt": "2026-05-04T12:12:50.945Z"
     },
     {
-      "publicRef": "mem_118b03141e",
-      "memoryType": "semantic_lesson",
+      "publicRef": "mem_38e064a6a2",
+      "memoryType": "failure_pattern",
       "status": "promoted",
-      "recordedAt": "2026-04-22T00:16:18.299Z"
+      "recordedAt": "2026-05-04T12:12:50.945Z"
     },
     {
-      "publicRef": "mem_1dfc7e7f3c",
-      "memoryType": "semantic_lesson",
+      "publicRef": "mem_c3232047e5",
+      "memoryType": "failure_pattern",
       "status": "promoted",
-      "recordedAt": "2026-04-22T00:16:18.299Z"
-    },
-    {
-      "publicRef": "mem_3c1e8bdea1",
-      "memoryType": "semantic_lesson",
-      "status": "promoted",
-      "recordedAt": "2026-04-22T00:16:18.299Z"
-    },
-    {
-      "publicRef": "mem_7e50a137ab",
-      "memoryType": "semantic_lesson",
-      "status": "promoted",
-      "recordedAt": "2026-04-22T00:16:18.299Z"
+      "recordedAt": "2026-05-04T12:12:50.945Z"
     }
   ],
   "recentRevocations": [
     {
-      "publicRef": "mem_bc8c18661f",
+      "publicRef": "mem_df0b7630ce",
       "memoryType": "improvement_candidate",
       "status": "blocked",
-      "recordedAt": "2026-04-21T15:13:15.961Z"
+      "recordedAt": "2026-05-04T12:17:29.240Z"
     },
     {
-      "publicRef": "mem_bc8c18661f",
+      "publicRef": "mem_f09b44f7e7",
       "memoryType": "improvement_candidate",
       "status": "blocked",
-      "recordedAt": "2026-04-21T15:13:15.961Z"
+      "recordedAt": "2026-05-04T12:15:30.864Z"
     },
     {
-      "publicRef": "mem_bc8c18661f",
-      "memoryType": "improvement_candidate",
+      "publicRef": "mem_f1b632976e",
+      "memoryType": "semantic_lesson",
       "status": "blocked",
-      "recordedAt": "2026-04-21T15:08:48.205Z"
+      "recordedAt": "2026-05-04T12:15:30.864Z"
     },
     {
-      "publicRef": "mem_bc8c18661f",
-      "memoryType": "improvement_candidate",
+      "publicRef": "mem_8896adaa48",
+      "memoryType": "runtime_hint",
       "status": "blocked",
-      "recordedAt": "2026-04-21T15:08:48.205Z"
+      "recordedAt": "2026-05-04T12:15:30.864Z"
     },
     {
-      "publicRef": "mem_67c94b6cc5",
+      "publicRef": "mem_3b8ef49534",
       "memoryType": "improvement_candidate",
       "status": "blocked",
-      "recordedAt": "2026-04-21T15:08:47.961Z"
+      "recordedAt": "2026-05-04T12:14:30.440Z"
     }
   ]
 }

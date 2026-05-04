@@ -1,6 +1,6 @@
 # Release Resolution
 
-Generated: 2026-04-22T00:27:12.1786258Z
+Generated: 2026-05-04T12:17:28.397Z
 Status: `closed_with_bounded_candidate_decision`
 
 ## Question
@@ -17,7 +17,7 @@ Do not approve the entire dirty worktree as one release target. Approve and ship
 - Candidate id: `rc-2026-04-18-core-harness-governed-apps`
 - Scope artifact: `output/governance_public/release_candidate_scope.json`
 - Latest signoff summary: `logs/current/latest_signoff_summary.json`
-- Bundle: `signoff-2026-04-21T15-08-45-517Z-bbfbe8`
+- Bundle: `signoff-2026-04-18T05-27-13-996Z-f97810`
 - Decision: `RELEASE_APPROVED`
 
 ## Not Approved

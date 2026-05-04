@@ -1,8 +1,8 @@
 {
   "schema": "agi-readiness-stable-coverage-matrix.v1",
-  "generatedAt": "2026-04-22T00:42:00.790Z",
-  "workspaceId": "3650d504ad404c53",
-  "stableCoverageBreadth": 1,
+  "generatedAt": "2026-05-04T12:17:30.682Z",
+  "workspaceId": "5c839dfeef8b555f",
+  "stableCoverageBreadth": 0.333333,
   "rows": [
     {
       "familyId": "deterministic_code",
@@ -23,54 +23,60 @@
       "observationCount": 3,
       "recentSuccessRate": 1,
       "recentFailureBurden": 0,
-      "verifierBurden": 3,
+      "verifierBurden": 10,
       "lastSuccessfulTask": {
         "publicRef": "<task-ref>",
         "source": "continuity",
         "title": "verifier handoff for Coding baseline through planner/executor/verifier",
         "status": "completed",
-        "updatedAt": "2026-04-21T23:50:30.775Z"
+        "updatedAt": "2026-04-18T06:43:07.047Z"
       },
-      "lastFailedTask": null,
+      "lastFailedTask": {
+        "publicRef": "<task-ref>",
+        "source": "continuity",
+        "title": "Open world coding triage",
+        "status": "verifier failed",
+        "updatedAt": "2026-04-16T12:15:48.888Z"
+      },
       "coverageRegressed": false,
       "nextCoverageAction": "maintain current evidence quality"
     },
     {
       "familyId": "web_creative",
       "label": "Web Creative",
-      "stableCovered": true,
-      "stabilityStatus": "stable",
+      "stableCovered": false,
+      "stabilityStatus": "unstable",
       "stabilityWindowSize": 3,
       "recentWindowScores": [
         1,
         1,
-        1
+        0.25
       ],
       "recentWindowOutcomes": [
         "pass",
         "pass",
-        "pass"
+        "fail"
       ],
       "observationCount": 3,
-      "recentSuccessRate": 1,
-      "recentFailureBurden": 0,
+      "recentSuccessRate": 0.6667,
+      "recentFailureBurden": 1,
       "verifierBurden": 0,
       "lastSuccessfulTask": {
-        "publicRef": "turn_1893e525ae",
+        "publicRef": "turn_1420dac9bc",
         "source": "turn",
-        "title": "runtime evidence",
+        "title": "web ui interactive",
         "status": "completed",
-        "updatedAt": "2026-04-21T15:28:52.522Z"
+        "updatedAt": "2026-05-02T04:35:45.159Z"
       },
       "lastFailedTask": {
-        "publicRef": "turn_7cf87f131d",
+        "publicRef": "turn_5bbcfa438b",
         "source": "turn",
         "title": "web ui interactive",
         "status": "failed validation",
-        "updatedAt": "2026-04-21T15:13:21.476Z"
+        "updatedAt": "2026-05-02T04:34:08.863Z"
       },
-      "coverageRegressed": false,
-      "nextCoverageAction": "maintain current evidence quality"
+      "coverageRegressed": true,
+      "nextCoverageAction": "reduce failure burden and verifier debt in recent windows"
     },
     {
       "familyId": "planning",
@@ -91,122 +97,134 @@
       "observationCount": 3,
       "recentSuccessRate": 1,
       "recentFailureBurden": 0,
-      "verifierBurden": 0,
+      "verifierBurden": 10,
       "lastSuccessfulTask": {
         "publicRef": "<task-ref>",
         "source": "continuity",
         "title": "Simple planning task falls back to single agent path",
         "status": "completed",
-        "updatedAt": "2026-04-21T23:50:30.972Z"
+        "updatedAt": "2026-04-18T06:43:07.618Z"
       },
-      "lastFailedTask": null,
+      "lastFailedTask": {
+        "publicRef": "<task-ref>",
+        "source": "continuity",
+        "title": "Long Duration Simulated Trial",
+        "status": "verifier failed",
+        "updatedAt": "2026-04-16T12:15:49.841Z"
+      },
       "coverageRegressed": false,
       "nextCoverageAction": "maintain current evidence quality"
     },
     {
       "familyId": "workflow_execution",
       "label": "Workflow Execution",
-      "stableCovered": true,
-      "stabilityStatus": "stable",
+      "stableCovered": false,
+      "stabilityStatus": "failing only",
       "stabilityWindowSize": 3,
       "recentWindowScores": [
-        1,
-        1,
-        1
+        0.25,
+        0.25,
+        0.25
       ],
       "recentWindowOutcomes": [
-        "pass",
-        "pass",
-        "pass"
+        "fail",
+        "fail",
+        "fail"
       ],
       "observationCount": 3,
-      "recentSuccessRate": 1,
-      "recentFailureBurden": 0,
-      "verifierBurden": 0,
+      "recentSuccessRate": 0,
+      "recentFailureBurden": 3,
+      "verifierBurden": 5,
       "lastSuccessfulTask": {
-        "publicRef": "turn_1893e525ae",
-        "source": "turn",
-        "title": "runtime evidence",
+        "publicRef": "<task-ref>",
+        "source": "continuity",
+        "title": "Blackbox unseen tool adoption",
         "status": "completed",
-        "updatedAt": "2026-04-21T15:28:52.522Z"
+        "updatedAt": "2026-04-16T12:15:49.311Z"
       },
-      "lastFailedTask": null,
-      "coverageRegressed": false,
-      "nextCoverageAction": "maintain current evidence quality"
+      "lastFailedTask": {
+        "publicRef": "<task-ref>",
+        "source": "continuity",
+        "title": "Long Duration Simulated Trial",
+        "status": "verifier failed",
+        "updatedAt": "2026-04-16T12:15:49.381Z"
+      },
+      "coverageRegressed": true,
+      "nextCoverageAction": "obtain governed passing evidence for this family"
     },
     {
       "familyId": "evaluation_review",
       "label": "Evaluation / Review",
-      "stableCovered": true,
-      "stabilityStatus": "stable",
+      "stableCovered": false,
+      "stabilityStatus": "failing only",
       "stabilityWindowSize": 3,
       "recentWindowScores": [
-        1,
-        1,
-        1
+        0.25,
+        0.25,
+        0.25
       ],
       "recentWindowOutcomes": [
-        "pass",
-        "pass",
-        "pass"
+        "fail",
+        "fail",
+        "fail"
       ],
       "observationCount": 3,
-      "recentSuccessRate": 1,
-      "recentFailureBurden": 0,
+      "recentSuccessRate": 0,
+      "recentFailureBurden": 3,
       "verifierBurden": 0,
       "lastSuccessfulTask": {
         "publicRef": "<eval-ref>",
         "source": "eval",
-        "title": "ambiguous instruction probe.v1",
+        "title": "live.adversarial conflicting.recovery.v1",
         "status": "observed",
-        "updatedAt": "2026-04-21T15:36:06.826Z"
+        "updatedAt": "2026-04-05T20:00:19.746Z"
       },
       "lastFailedTask": {
-        "publicRef": "turn_7cf87f131d",
+        "publicRef": "turn_c9f723bb06",
         "source": "turn",
         "title": "web ui interactive",
         "status": "failed validation",
-        "updatedAt": "2026-04-21T15:13:21.476Z"
+        "updatedAt": "2026-05-02T03:35:47.926Z"
       },
-      "coverageRegressed": false,
-      "nextCoverageAction": "maintain current evidence quality"
+      "coverageRegressed": true,
+      "nextCoverageAction": "obtain governed passing evidence for this family"
     },
     {
       "familyId": "tool_use_browser_like",
       "label": "Tool Use / Browser-like",
-      "stableCovered": true,
-      "stabilityStatus": "stable",
+      "stableCovered": false,
+      "stabilityStatus": "unstable",
       "stabilityWindowSize": 3,
       "recentWindowScores": [
         1,
         1,
-        1
+        0.25
       ],
       "recentWindowOutcomes": [
         "pass",
         "pass",
-        "pass"
+        "fail"
       ],
       "observationCount": 3,
-      "recentSuccessRate": 1,
-      "recentFailureBurden": 0,
+      "recentSuccessRate": 0.6667,
+      "recentFailureBurden": 1,
       "verifierBurden": 0,
       "lastSuccessfulTask": {
-        "publicRef": "turn_1893e525ae",
-        "source": "turn",
-        "title": "runtime evidence",
+        "publicRef": "<task-ref>",
+        "source": "continuity",
+        "title": "Blackbox web interaction",
         "status": "completed",
-        "updatedAt": "2026-04-21T15:28:52.522Z"
+        "updatedAt": "2026-04-16T12:15:48.282Z"
       },
       "lastFailedTask": {
-        "publicRef": "turn_7cf87f131d",
+        "publicRef": "turn_5bbcfa438b",
         "source": "turn",
         "title": "web ui interactive",
         "status": "failed validation",
-        "updatedAt": "2026-04-21T15:13:21.476Z"
+        "updatedAt": "2026-05-02T04:34:08.863Z"
       },
-      "coverageRegressed": false,
-      "nextCoverageAction": "maintain current evidence quality"
+      "coverageRegressed": true,
+      "nextCoverageAction": "reduce failure burden and verifier debt in recent windows"
     }
   ]
 }

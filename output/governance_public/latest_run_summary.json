@@ -1,7 +1,7 @@
 {
   "schema": "bundle-latest-run-summary.v1",
-  "generatedAt": "2026-04-21T15:08:57.638Z",
-  "bundleRoot": "logs/bundles/signoff/signoff-2026-04-21T15-08-45-517Z-bbfbe8",
+  "generatedAt": "2026-04-18T05:29:13.070Z",
+  "bundleRoot": "logs/bundles/signoff/signoff-2026-04-18T05-27-13-996Z-f97810",
   "turnId": "mock-turn-7",
   "executionProfile": "full-runtime",
   "selectedPlanningDepth": "STANDARD_PLANNING",
@@ -35,8 +35,8 @@
     "missing": []
   },
   "evidenceRefs": {
-    "signoffTaskTraceSummary": "logs/bundles/signoff/signoff-2026-04-21T15-08-45-517Z-bbfbe8/raw/summaries/signoff_task_trace_summary.json",
-    "reviewLoadBreakdown": "logs/bundles/signoff/signoff-2026-04-21T15-08-45-517Z-bbfbe8/review_load_breakdown.json",
-    "artifactManifestPath": "logs/bundles/signoff/signoff-2026-04-21T15-08-45-517Z-bbfbe8/raw/turns/2026-04-21/mock-thread-4__mock-turn-7/manifest.json"
+    "signoffTaskTraceSummary": "logs/bundles/signoff/signoff-2026-04-18T05-27-13-996Z-f97810/raw/summaries/signoff_task_trace_summary.json",
+    "reviewLoadBreakdown": "logs/bundles/signoff/signoff-2026-04-18T05-27-13-996Z-f97810/review_load_breakdown.json",
+    "artifactManifestPath": "logs/bundles/signoff/signoff-2026-04-18T05-27-13-996Z-f97810/raw/turns/2026-04-18/mock-thread-4__mock-turn-7/manifest.json"
   }
 }

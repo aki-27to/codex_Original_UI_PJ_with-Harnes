@@ -1,6 +1,6 @@
 {
   "schema": "review-load-breakdown.v1",
-  "generatedAt": "2026-04-21T15:08:56.665Z",
+  "generatedAt": "2026-04-18T05:29:01.580Z",
   "selectedPlanningDepth": "STANDARD_PLANNING",
   "selectedAssuranceDepth": "SIGNOFF_ASSURANCE",
   "flowPath": "NORMAL_PATH",
@@ -23,19 +23,19 @@
     "testerObserved": 1,
     "docSyncStatus": "PASS"
   },
-  "evidenceCollectionTimeMs": 19,
+  "evidenceCollectionTimeMs": 13,
   "testerTimeMs": 2,
   "reviewerTimeMs": 2,
-  "docSyncVerificationTimeMs": 19,
+  "docSyncVerificationTimeMs": 13,
   "retryLoopCount": 0,
   "outcomeConversionTimeMs": 2,
-  "totalStep4DurationMs": 19,
+  "totalStep4DurationMs": 13,
   "dominantBottleneck": "evidence_collection",
   "stageDurations": {
-    "Step 1 - Requirement Structuring": 381,
+    "Step 1 - Requirement Structuring": 2542,
     "Step 2 - Dispatch Planning": 2,
     "Step 3 - Specialist Execution": 0,
-    "Step 4 - Quality Gate": 19,
+    "Step 4 - Quality Gate": 13,
     "Step 5 - Final Outcome": 2
   },
   "acceptanceSummary": {

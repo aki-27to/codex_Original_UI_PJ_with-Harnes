@@ -1,35 +1,34 @@
 {
   "schema": "governed-memory-latest-pack-public.v1",
-  "generatedAt": "2026-04-22T00:42:00.820Z",
-  "workspaceId": "3650d504ad404c53",
-  "packId": "6947185e80ae77ad1f1d",
+  "generatedAt": "2026-05-04T12:17:30.714Z",
+  "workspaceId": "5c839dfeef8b555f",
+  "packId": "762a86cf33471d34503a",
   "latestPack": {
-    "generatedAt": "2026-04-22T00:42:00.345Z",
-    "compiledAt": "2026-04-22T00:42:00.345Z",
+    "generatedAt": "2026-05-04T12:17:29.164Z",
+    "compiledAt": "2026-05-04T12:17:29.164Z",
     "activeAgent": "default",
     "taskFamily": "web_creative",
-    "selectedCount": 13,
+    "selectedCount": 12,
     "highConfidenceCount": 3,
-    "reusedSelectedCount": 13,
+    "reusedSelectedCount": 12,
     "explicitTaskFamilyMismatchCount": 0,
     "sectionCounts": {
       "workspace_progress": 1,
       "intent": 1,
       "spec": 4,
       "experience": 3,
-      "semantic": 3,
-      "improvement": 1
+      "semantic": 3
     },
     "selectedItems": [
       {
-        "publicRef": "mem_8eea5b9e77",
+        "publicRef": "mem_dd9c0f3a28",
         "type": "workspace_progress",
         "status": "promoted",
-        "score": 0.8724,
+        "score": 0.8725,
         "scoreBand": "high",
         "sourceTier": "runtime",
         "authorityTier": 3,
-        "scopeWorkspace": "3650d504ad404c53",
+        "scopeWorkspace": "5c839dfeef8b555f",
         "taskFamilies": [
           "web_creative"
         ],
@@ -43,7 +42,7 @@
         "scoreBand": "high",
         "sourceTier": "runtime",
         "authorityTier": 1,
-        "scopeWorkspace": "3650d504ad404c53",
+        "scopeWorkspace": "5c839dfeef8b555f",
         "taskFamilies": [
           "web_creative"
         ],
@@ -53,25 +52,115 @@
         "publicRef": "mem_52f4ed9143",
         "type": "constitution_ref",
         "status": "promoted",
-        "score": 0.6974,
+        "score": 0.6975,
         "scoreBand": "high",
         "sourceTier": "repo",
         "authorityTier": 0,
-        "scopeWorkspace": "3650d504ad404c53",
+        "scopeWorkspace": "5c839dfeef8b555f",
         "taskFamilies": [
           "all"
         ],
         "summary": "Requirement Foundation V1 is frozen and treated as a top-level invariant, not a mutable lesson."
       },
       {
+        "publicRef": "mem_840bd53985",
+        "type": "episodic_event",
+        "status": "captured",
+        "score": 0.6008,
+        "scoreBand": "selected",
+        "sourceTier": "runtime",
+        "authorityTier": 4,
+        "scopeWorkspace": "5c839dfeef8b555f",
+        "taskFamilies": [
+          "web_creative",
+          "tool_use_browser_like",
+          "workflow_execution"
+        ],
+        "summary": "runtime episode finished as CAPTURED."
+      },
+      {
+        "publicRef": "mem_44751a2fdc",
+        "type": "episodic_event",
+        "status": "captured",
+        "score": 0.6008,
+        "scoreBand": "selected",
+        "sourceTier": "runtime",
+        "authorityTier": 4,
+        "scopeWorkspace": "5c839dfeef8b555f",
+        "taskFamilies": [
+          "web_creative",
+          "tool_use_browser_like",
+          "workflow_execution"
+        ],
+        "summary": "runtime episode finished as CAPTURED."
+      },
+      {
+        "publicRef": "mem_dc2e1c2253",
+        "type": "episodic_event",
+        "status": "captured",
+        "score": 0.6008,
+        "scoreBand": "selected",
+        "sourceTier": "runtime",
+        "authorityTier": 4,
+        "scopeWorkspace": "5c839dfeef8b555f",
+        "taskFamilies": [
+          "web_creative",
+          "tool_use_browser_like",
+          "workflow_execution"
+        ],
+        "summary": "runtime episode finished as CAPTURED."
+      },
+      {
+        "publicRef": "mem_38e064a6a2",
+        "type": "failure_pattern",
+        "status": "promoted",
+        "score": 0.5967,
+        "scoreBand": "selected",
+        "sourceTier": "runtime",
+        "authorityTier": 5,
+        "scopeWorkspace": "5c839dfeef8b555f",
+        "taskFamilies": [
+          "default"
+        ],
+        "summary": "parent dispatch guard block"
+      },
+      {
+        "publicRef": "mem_c3232047e5",
+        "type": "failure_pattern",
+        "status": "promoted",
+        "score": 0.5967,
+        "scoreBand": "selected",
+        "sourceTier": "runtime",
+        "authorityTier": 5,
+        "scopeWorkspace": "5c839dfeef8b555f",
+        "taskFamilies": [
+          "default"
+        ],
+        "summary": "intent visual review missing"
+      },
+      {
+        "publicRef": "mem_1748eef46d",
+        "type": "failure_pattern",
+        "status": "promoted",
+        "score": 0.5967,
+        "scoreBand": "selected",
+        "sourceTier": "runtime",
+        "authorityTier": 5,
+        "scopeWorkspace": "5c839dfeef8b555f",
+        "taskFamilies": [
+          "default"
+        ],
+        "summary": "return to intake required"
+      },
+      {
         "publicRef": "mem_e65f4ce9a0",
         "type": "constitution_ref",
         "status": "promoted",
-        "score": 0.6562,
+        "score": 0.5575,
         "scoreBand": "selected",
         "sourceTier": "repo",
         "authorityTier": 0,
-        "scopeWorkspace": "3650d504ad404c53",
+        "scopeWorkspace": "5c839dfeef8b555f",
         "taskFamilies": [],
         "summary": "tier0-agents"
       },
@@ -79,11 +168,11 @@
         "publicRef": "mem_ad36640985",
         "type": "constitution_ref",
         "status": "promoted",
-        "score": 0.6562,
+        "score": 0.5575,
         "scoreBand": "selected",
         "sourceTier": "repo",
         "authorityTier": 0,
-        "scopeWorkspace": "3650d504ad404c53",
+        "scopeWorkspace": "5c839dfeef8b555f",
         "taskFamilies": [],
         "summary": "current-architecture"
       },
@@ -91,103 +180,13 @@
         "publicRef": "mem_b5d199f8aa",
         "type": "constitution_ref",
         "status": "promoted",
-        "score": 0.6562,
+        "score": 0.5575,
         "scoreBand": "selected",
         "sourceTier": "repo",
         "authorityTier": 0,
-        "scopeWorkspace": "3650d504ad404c53",
+        "scopeWorkspace": "5c839dfeef8b555f",
         "taskFamilies": [],
         "summary": "context-memory-policy"
-      },
-      {
-        "publicRef": "mem_d71925c79c",
-        "type": "episodic_event",
-        "status": "captured",
-        "score": 0.6408,
-        "scoreBand": "selected",
-        "sourceTier": "runtime",
-        "authorityTier": 4,
-        "scopeWorkspace": "3650d504ad404c53",
-        "taskFamilies": [
-          "web_creative",
-          "tool_use_browser_like",
-          "workflow_execution"
-        ],
-        "summary": "runtime episode finished as CAPTURED."
-      },
-      {
-        "publicRef": "mem_3d067288b8",
-        "type": "episodic_event",
-        "status": "captured",
-        "score": 0.6408,
-        "scoreBand": "selected",
-        "sourceTier": "runtime",
-        "authorityTier": 4,
-        "scopeWorkspace": "3650d504ad404c53",
-        "taskFamilies": [
-          "web_creative",
-          "tool_use_browser_like",
-          "workflow_execution"
-        ],
-        "summary": "runtime episode finished as CAPTURED."
-      },
-      {
-        "publicRef": "mem_90be385b37",
-        "type": "episodic_event",
-        "status": "captured",
-        "score": 0.6408,
-        "scoreBand": "selected",
-        "sourceTier": "runtime",
-        "authorityTier": 4,
-        "scopeWorkspace": "3650d504ad404c53",
-        "taskFamilies": [
-          "web_creative",
-          "tool_use_browser_like",
-          "workflow_execution"
-        ],
-        "summary": "runtime episode finished as CAPTURED."
-      },
-      {
-        "publicRef": "mem_46f23704e6",
-        "type": "runtime_hint",
-        "status": "promoted",
-        "score": 0.6403,
-        "scoreBand": "selected",
-        "sourceTier": "external_primary",
-        "authorityTier": 5,
-        "scopeWorkspace": "3650d504ad404c53",
-        "taskFamilies": [
-          "web_creative"
-        ],
-        "summary": "How Perplexity Brought Voice Search to Millions Using the Realtime API | OpenAI Developers"
-      },
-      {
-        "publicRef": "mem_5e926a0571",
-        "type": "runtime_hint",
-        "status": "promoted",
-        "score": 0.6403,
-        "scoreBand": "selected",
-        "sourceTier": "external_primary",
-        "authorityTier": 5,
-        "scopeWorkspace": "3650d504ad404c53",
-        "taskFamilies": [
-          "web_creative"
-        ],
-        "summary": "Designing delightful frontends with GPT-5.4 | OpenAI Developers"
-      },
-      {
-        "publicRef": "mem_b439f61eb1",
-        "type": "runtime_hint",
-        "status": "promoted",
-        "score": 0.6403,
-        "scoreBand": "selected",
-        "sourceTier": "external_primary",
-        "authorityTier": 5,
-        "scopeWorkspace": "3650d504ad404c53",
-        "taskFamilies": [
-          "web_creative"
-        ],
-        "summary": "From prompts to products: One year of Responses | OpenAI Developers"
       }
     ]
   }

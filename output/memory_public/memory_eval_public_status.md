@@ -1,7 +1,7 @@
 # Memory Eval Public Status
 
 - Status: PASS
-- Generated At: 2026-04-22T00:42:01.794Z
+- Generated At: 2026-05-04T12:17:32.338Z
 
 ## Checks
 - canonical_store_present: PASS (canonical event log and index are present)
@@ -10,7 +10,7 @@
 - workspace_progress_updated_at_present: PASS (workspace progress projection exposes a durable updatedAt timestamp)
 - legacy_learning_compatibility_preserved: PASS (legacy learning compatibility artifacts remain addressable)
 - bounded_memory_pack_written: PASS (at least one bounded memory pack exists)
-- bounded_memory_pack_reuses_canonical_memory: PASS (13 selected pack item(s) were reused from the canonical store)
+- bounded_memory_pack_reuses_canonical_memory: PASS (12 selected pack item(s) were reused from the canonical store)
 - task_family_isolation_respected: PASS (latest bounded memory pack respects task-family isolation for hard-excluded governed memory types)
 - lane_projection_canonical_state_present: PASS (public lane projections expose canonical memory-derived lesson state for primary and secondary learning lanes)
 - promotion_health_memory_type_populated: PASS (promotion/revocation health entries expose non-empty memoryType values)
@@ -37,9 +37,9 @@
 - goal_completion_artifact_present: PASS (operational goal completion artifact is present)
 - worker_decision_surface_present: PASS (worker decision surface headline artifact is present)
 - worker_decision_surface_scope_is_primary: PASS (worker decision surface is the primary operator headline)
-- worker_decision_surface_export_session_consistent: PASS (shared export session export_4b89b907ce1f)
+- worker_decision_surface_export_session_consistent: PASS (shared export session export_69aaf0d22042)
 - worker_completion_status_present: PASS (worker completion companion artifact is present)
-- worker_completion_status_consistent: PASS (worker completion companion stays aligned with worker headline under export session export_4b89b907ce1f)
+- worker_completion_status_consistent: PASS (worker completion companion stays aligned with worker headline under export session export_69aaf0d22042)
 - worker_completion_alignment_not_stale_in_downstream_surfaces: PASS (downstream remediation surfaces do not retain a stale worker-companion divergence blocker)
 - stable_coverage_surface_present: PASS (stable coverage matrix and trend are present)
 - causal_regression_alerts_present: PASS (causal regression alerts are present)

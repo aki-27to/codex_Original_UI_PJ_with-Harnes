@@ -1,6 +1,6 @@
 {
   "schema": "self-improvement-state.v1",
-  "generatedAt": "2026-05-02T04:42:54.318Z",
+  "generatedAt": "2026-05-04T12:17:30.084Z",
   "sourceName": "OpenAI Developers Blog",
   "sourceTier": "primary",
   "promotionMode": "machine_guarded_autonomy",
@@ -22,12 +22,12 @@
   "autoApplyCandidateCount": 0,
   "readyHintCandidateCount": 0,
   "autoApplyFrontendQualityNoteCount": 0,
-  "observationStatus": "unobserved",
-  "observationCount": 0,
-  "lastObservedAt": "",
+  "observationStatus": "awaiting_observations",
+  "observationCount": 88,
+  "lastObservedAt": "2026-05-04T12:14:30.473Z",
   "requiredObservationSuccesses": 2,
   "requiredObservationSuccessRate": 0.67,
-  "awaitingObservationCount": 0,
+  "awaitingObservationCount": 4,
   "awaitingReinforcementCount": 0,
   "policyDisabledCandidateCount": 0,
   "proposalOnlyCount": 1,
@@ -244,17 +244,24 @@
     "blastRadius": "low",
     "priorityScore": 53,
     "reinforcement": {
-      "successCount": 0,
-      "failureCount": 0,
-      "observedCount": 0,
-      "successRate": 0,
+      "successCount": 3,
+      "failureCount": 9,
+      "observedCount": 88,
+      "successRate": 0.25,
       "requiredSuccesses": 2,
       "requiredSuccessRate": 0.67,
-      "remainingSuccesses": 2,
-      "lastObservedAt": "",
+      "remainingSuccesses": 0,
+      "lastObservedAt": "2026-05-04T12:14:30.473Z",
       "lastOutcome": "",
-      "status": "unobserved",
-      "sampleTurnIds": []
+      "status": "needs_cleaner_wins",
+      "sampleTurnIds": [
+        "019de6a1-44ce-7202-b8e2-e8f7ff3f35f7",
+        "019de6aa-179b-79f1-9052-84c32d8bbcdd",
+        "019de6ac-15c9-7d02-99e9-b25c09d39608",
+        "019de6a4-ed64-7523-af19-3c2d89d64008",
+        "019de6b3-5665-7340-83cd-7c8570e804fb",
+        "019de6b7-a479-7362-969b-51eb36476aa3"
+      ]
     }
   },
   "priorityBacklog": [
@@ -270,17 +277,24 @@
       "blastRadius": "low",
       "priorityScore": 53,
       "reinforcement": {
-        "successCount": 0,
-        "failureCount": 0,
-        "observedCount": 0,
-        "successRate": 0,
+        "successCount": 3,
+        "failureCount": 9,
+        "observedCount": 12,
+        "successRate": 0.25,
         "requiredSuccesses": 2,
         "requiredSuccessRate": 0.67,
-        "remainingSuccesses": 2,
-        "lastObservedAt": "",
+        "remainingSuccesses": 0,
+        "lastObservedAt": "2026-05-04T12:12:50.982Z",
         "lastOutcome": "",
-        "status": "unobserved",
-        "sampleTurnIds": []
+        "status": "needs_cleaner_wins",
+        "sampleTurnIds": [
+          "019de6a1-44ce-7202-b8e2-e8f7ff3f35f7",
+          "019de6aa-179b-79f1-9052-84c32d8bbcdd",
+          "019de6ac-15c9-7d02-99e9-b25c09d39608",
+          "019de6a4-ed64-7523-af19-3c2d89d64008",
+          "019de6b3-5665-7340-83cd-7c8570e804fb",
+          "019de6b7-a479-7362-969b-51eb36476aa3"
+        ]
       }
     },
     {
@@ -320,17 +334,24 @@
       "blastRadius": "low",
       "priorityScore": 28,
       "reinforcement": {
-        "successCount": 0,
-        "failureCount": 0,
-        "observedCount": 0,
-        "successRate": 0,
+        "successCount": 3,
+        "failureCount": 9,
+        "observedCount": 12,
+        "successRate": 0.25,
         "requiredSuccesses": 2,
         "requiredSuccessRate": 0.67,
-        "remainingSuccesses": 2,
-        "lastObservedAt": "",
+        "remainingSuccesses": 0,
+        "lastObservedAt": "2026-05-04T12:12:50.982Z",
         "lastOutcome": "",
-        "status": "unobserved",
-        "sampleTurnIds": []
+        "status": "needs_cleaner_wins",
+        "sampleTurnIds": [
+          "019de6a1-44ce-7202-b8e2-e8f7ff3f35f7",
+          "019de6aa-179b-79f1-9052-84c32d8bbcdd",
+          "019de6ac-15c9-7d02-99e9-b25c09d39608",
+          "019de6a4-ed64-7523-af19-3c2d89d64008",
+          "019de6b3-5665-7340-83cd-7c8570e804fb",
+          "019de6b7-a479-7362-969b-51eb36476aa3"
+        ]
       }
     },
     {
@@ -345,17 +366,24 @@
       "blastRadius": "low",
       "priorityScore": 28,
       "reinforcement": {
-        "successCount": 0,
-        "failureCount": 0,
-        "observedCount": 0,
-        "successRate": 0,
+        "successCount": 3,
+        "failureCount": 9,
+        "observedCount": 12,
+        "successRate": 0.25,
         "requiredSuccesses": 2,
         "requiredSuccessRate": 0.67,
-        "remainingSuccesses": 2,
-        "lastObservedAt": "",
+        "remainingSuccesses": 0,
+        "lastObservedAt": "2026-05-04T12:12:50.982Z",
         "lastOutcome": "",
-        "status": "unobserved",
-        "sampleTurnIds": []
+        "status": "needs_cleaner_wins",
+        "sampleTurnIds": [
+          "019de6a1-44ce-7202-b8e2-e8f7ff3f35f7",
+          "019de6aa-179b-79f1-9052-84c32d8bbcdd",
+          "019de6ac-15c9-7d02-99e9-b25c09d39608",
+          "019de6a4-ed64-7523-af19-3c2d89d64008",
+          "019de6b3-5665-7340-83cd-7c8570e804fb",
+          "019de6b7-a479-7362-969b-51eb36476aa3"
+        ]
       }
     },
     {
@@ -395,17 +423,24 @@
       "blastRadius": "low",
       "priorityScore": 28,
       "reinforcement": {
-        "successCount": 0,
-        "failureCount": 0,
-        "observedCount": 0,
-        "successRate": 0,
+        "successCount": 4,
+        "failureCount": 9,
+        "observedCount": 13,
+        "successRate": 0.3077,
         "requiredSuccesses": 2,
         "requiredSuccessRate": 0.67,
-        "remainingSuccesses": 2,
-        "lastObservedAt": "",
+        "remainingSuccesses": 0,
+        "lastObservedAt": "2026-05-04T12:14:30.473Z",
         "lastOutcome": "",
-        "status": "unobserved",
-        "sampleTurnIds": []
+        "status": "needs_cleaner_wins",
+        "sampleTurnIds": [
+          "019de6a1-44ce-7202-b8e2-e8f7ff3f35f7",
+          "019de6aa-179b-79f1-9052-84c32d8bbcdd",
+          "019de6ac-15c9-7d02-99e9-b25c09d39608",
+          "019de6a4-ed64-7523-af19-3c2d89d64008",
+          "019de6b3-5665-7340-83cd-7c8570e804fb",
+          "019de6b7-a479-7362-969b-51eb36476aa3"
+        ]
       }
     }
   ],

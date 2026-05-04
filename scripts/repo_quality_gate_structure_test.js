@@ -21,6 +21,7 @@ function main() {
   const currentSurfaceTruth = String(scripts["current-surface-truth"] || "");
   const repoLocalSkills = String(scripts["test:repo-local-skills"] || "");
   const harnessArtifactMcp = String(scripts["test:harness-artifact-mcp"] || "");
+  const mcpToolRegistryAlignment = String(scripts["test:mcp-tool-registry-alignment"] || "");
   assert(
     repoQuality.includes("node scripts/run_repo_quality_gate.js"),
     "repo-quality must route through the stage runner"
@@ -60,6 +61,10 @@ function main() {
   assert(
     harnessArtifactMcp.includes("node tools/harness-artifact-mcp-server/tests/smoke_test.js"),
     "test:harness-artifact-mcp must validate the read-only harness artifact MCP"
+  );
+  assert(
+    mcpToolRegistryAlignment.includes("node scripts/mcp_tool_registry_alignment_test.js"),
+    "test:mcp-tool-registry-alignment must validate configured MCPs against the tool registry manifest"
   );
   assert(runnerSource.includes('id: "governance"'), "repo-quality runner must define the governance stage");
   assert(runnerSource.includes('id: "runtime"'), "repo-quality runner must define the runtime stage");
@@ -102,6 +107,10 @@ function main() {
   assert(
     runnerSource.includes('"test:repo-local-skills"'),
     "governance stage must include repo-local skill catalog checks"
+  );
+  assert(
+    runnerSource.includes('"test:mcp-tool-registry-alignment"'),
+    "governance stage must include MCP tool registry alignment checks"
   );
   assert(
     runnerSource.includes('"test:docs:drift"'),

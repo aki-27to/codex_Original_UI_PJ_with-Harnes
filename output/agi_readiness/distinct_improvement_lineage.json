@@ -1,12 +1,12 @@
 {
   "schema": "agi-readiness-distinct-improvement-lineage.v1",
-  "generatedAt": "2026-04-22T00:42:00.530Z",
-  "workspaceId": "3650d504ad404c53",
+  "generatedAt": "2026-05-04T12:17:29.784Z",
+  "workspaceId": "5c839dfeef8b555f",
   "entries": [
     {
-      "lineageId": "lineage_history_001",
-      "incumbentIdentifier": "export_3b93392b0f2b",
-      "challengerIdentifier": "export_246a59f8f3f3",
+      "lineageId": "lineage_001",
+      "incumbentIdentifier": "<eval-ref>",
+      "challengerIdentifier": "<eval-ref>",
       "incumbentVersion": "<lineage-ref>",
       "challengerVersion": "<lineage-ref>",
       "comparisonMode": "distinct_comparison",
@@ -16,27 +16,25 @@
       "rejected": false,
       "rolledBack": false,
       "blockedReasons": [
-        "no_clear_upgrade_signal"
+        "improvement_margin_not_met"
       ],
-      "rawFinalScoreOld": 0.99025,
-      "rawFinalScoreNew": 0.99025,
-      "catastrophicRiskOld": 0,
-      "catastrophicRiskNew": 0,
+      "rawFinalScoreOld": 0.9995,
+      "rawFinalScoreNew": 0.9995,
+      "catastrophicRiskOld": 0.001,
+      "catastrophicRiskNew": 0.001,
       "keyFamilyDeltas": {
         "G_breadth": 0,
         "R_robust": 0,
         "H_horizon": 0
       },
-      "observationBackedRationale": "history-aware lineage keeps this comparison as a hold until a clearer governed upgrade signal appears",
+      "observationBackedRationale": "challenger did not clear the distinct improvement margin",
       "changedFactors": [
-        "export_246a59f8f3f3",
-        "generated 2026-04-22T00:17:58.456Z"
+        "run <eval-ref>",
+        "generated 2026-04-05T15:27:07.954Z"
       ],
-      "generatedAt": "2026-04-22T00:17:58.456Z",
+      "generatedAt": "2026-04-05T15:27:07.954Z",
       "improvementEvidenceClass": "distinct_hold",
-      "targetBottlenecksClosed": [
-        "ambiguous_instruction"
-      ],
+      "targetBottlenecksClosed": [],
       "harmfulLessonsRevoked": 0,
       "positiveLessonsPromoted": 0,
       "continuityDebtDelta": null,
@@ -53,7 +51,7 @@
         "primaryLaneEffectiveContributionCount": 0,
         "primaryLaneCausalUsageCount": 0,
         "likelyContributoryCount": 0,
-        "ambiguousInstructionEvidenceCount": 5,
+        "ambiguousInstructionEvidenceCount": 0,
         "novelProbePositiveCount": 0,
         "missingContext": 0,
         "stableCoverageBreadth": 0,
@@ -65,9 +63,9 @@
       "causalHarmCount": 0
     },
     {
-      "lineageId": "lineage_history_002",
-      "incumbentIdentifier": "export_246a59f8f3f3",
-      "challengerIdentifier": "export_df01cb8a0dbb",
+      "lineageId": "lineage_002",
+      "incumbentIdentifier": "<eval-ref>",
+      "challengerIdentifier": "<eval-ref>",
       "incumbentVersion": "<lineage-ref>",
       "challengerVersion": "<lineage-ref>",
       "comparisonMode": "distinct_comparison",
@@ -77,27 +75,25 @@
       "rejected": false,
       "rolledBack": false,
       "blockedReasons": [
-        "no_clear_upgrade_signal"
+        "improvement_margin_not_met"
       ],
-      "rawFinalScoreOld": 0.99025,
-      "rawFinalScoreNew": 0.99025,
-      "catastrophicRiskOld": 0,
-      "catastrophicRiskNew": 0,
+      "rawFinalScoreOld": 0.9995,
+      "rawFinalScoreNew": 0.9995,
+      "catastrophicRiskOld": 0.001,
+      "catastrophicRiskNew": 0.001,
       "keyFamilyDeltas": {
         "G_breadth": 0,
         "R_robust": 0,
         "H_horizon": 0
       },
-      "observationBackedRationale": "history-aware lineage keeps this comparison as a hold until a clearer governed upgrade signal appears",
+      "observationBackedRationale": "challenger did not clear the distinct improvement margin",
       "changedFactors": [
-        "export_df01cb8a0dbb",
-        "generated 2026-04-22T00:18:01.488Z"
+        "run <eval-ref>",
+        "generated 2026-04-05T15:43:58.003Z"
       ],
-      "generatedAt": "2026-04-22T00:18:01.488Z",
+      "generatedAt": "2026-04-05T15:43:58.003Z",
       "improvementEvidenceClass": "distinct_hold",
-      "targetBottlenecksClosed": [
-        "ambiguous_instruction"
-      ],
+      "targetBottlenecksClosed": [],
       "harmfulLessonsRevoked": 0,
       "positiveLessonsPromoted": 0,
       "continuityDebtDelta": null,
@@ -114,7 +110,7 @@
         "primaryLaneEffectiveContributionCount": 0,
         "primaryLaneCausalUsageCount": 0,
         "likelyContributoryCount": 0,
-        "ambiguousInstructionEvidenceCount": 5,
+        "ambiguousInstructionEvidenceCount": 0,
         "novelProbePositiveCount": 0,
         "missingContext": 0,
         "stableCoverageBreadth": 0,
@@ -126,9 +122,9 @@
       "causalHarmCount": 0
     },
     {
-      "lineageId": "lineage_history_003",
-      "incumbentIdentifier": "export_df01cb8a0dbb",
-      "challengerIdentifier": "export_82d4b54b79d7",
+      "lineageId": "lineage_003",
+      "incumbentIdentifier": "<eval-ref>",
+      "challengerIdentifier": "<eval-ref>",
       "incumbentVersion": "<lineage-ref>",
       "challengerVersion": "<lineage-ref>",
       "comparisonMode": "distinct_comparison",
@@ -138,27 +134,25 @@
       "rejected": false,
       "rolledBack": false,
       "blockedReasons": [
-        "no_clear_upgrade_signal"
+        "improvement_margin_not_met"
       ],
-      "rawFinalScoreOld": 0.99025,
-      "rawFinalScoreNew": 0.99025,
-      "catastrophicRiskOld": 0,
-      "catastrophicRiskNew": 0,
+      "rawFinalScoreOld": 0.9995,
+      "rawFinalScoreNew": 0.9995,
+      "catastrophicRiskOld": 0.001,
+      "catastrophicRiskNew": 0.001,
       "keyFamilyDeltas": {
         "G_breadth": 0,
         "R_robust": 0,
         "H_horizon": 0
       },
-      "observationBackedRationale": "history-aware lineage keeps this comparison as a hold until a clearer governed upgrade signal appears",
+      "observationBackedRationale": "challenger did not clear the distinct improvement margin",
       "changedFactors": [
-        "export_82d4b54b79d7",
-        "generated 2026-04-22T00:18:04.644Z"
+        "run <eval-ref>",
+        "generated 2026-04-05T16:13:20.038Z"
       ],
-      "generatedAt": "2026-04-22T00:18:04.644Z",
+      "generatedAt": "2026-04-05T16:13:20.038Z",
       "improvementEvidenceClass": "distinct_hold",
-      "targetBottlenecksClosed": [
-        "ambiguous_instruction"
-      ],
+      "targetBottlenecksClosed": [],
       "harmfulLessonsRevoked": 0,
       "positiveLessonsPromoted": 0,
       "continuityDebtDelta": null,
@@ -175,7 +169,7 @@
         "primaryLaneEffectiveContributionCount": 0,
         "primaryLaneCausalUsageCount": 0,
         "likelyContributoryCount": 0,
-        "ambiguousInstructionEvidenceCount": 5,
+        "ambiguousInstructionEvidenceCount": 0,
         "novelProbePositiveCount": 0,
         "missingContext": 0,
         "stableCoverageBreadth": 0,
@@ -187,9 +181,9 @@
       "causalHarmCount": 0
     },
     {
-      "lineageId": "lineage_history_004",
-      "incumbentIdentifier": "export_82d4b54b79d7",
-      "challengerIdentifier": "export_e104157ea336",
+      "lineageId": "lineage_004",
+      "incumbentIdentifier": "<eval-ref>",
+      "challengerIdentifier": "<eval-ref>",
       "incumbentVersion": "<lineage-ref>",
       "challengerVersion": "<lineage-ref>",
       "comparisonMode": "distinct_comparison",
@@ -199,27 +193,25 @@
       "rejected": false,
       "rolledBack": false,
       "blockedReasons": [
-        "no_clear_upgrade_signal"
+        "improvement_margin_not_met"
       ],
-      "rawFinalScoreOld": 0.99025,
-      "rawFinalScoreNew": 0.99025,
-      "catastrophicRiskOld": 0,
-      "catastrophicRiskNew": 0,
+      "rawFinalScoreOld": 0.9995,
+      "rawFinalScoreNew": 0.9995,
+      "catastrophicRiskOld": 0.001,
+      "catastrophicRiskNew": 0.001,
       "keyFamilyDeltas": {
         "G_breadth": 0,
         "R_robust": 0,
         "H_horizon": 0
       },
-      "observationBackedRationale": "history-aware lineage keeps this comparison as a hold until a clearer governed upgrade signal appears",
+      "observationBackedRationale": "challenger did not clear the distinct improvement margin",
       "changedFactors": [
-        "export_e104157ea336",
-        "generated 2026-04-22T00:18:07.871Z"
+        "run <eval-ref>",
+        "generated 2026-04-05T16:28:06.944Z"
       ],
-      "generatedAt": "2026-04-22T00:18:07.871Z",
+      "generatedAt": "2026-04-05T16:28:06.944Z",
       "improvementEvidenceClass": "distinct_hold",
-      "targetBottlenecksClosed": [
-        "ambiguous_instruction"
-      ],
+      "targetBottlenecksClosed": [],
       "harmfulLessonsRevoked": 0,
       "positiveLessonsPromoted": 0,
       "continuityDebtDelta": null,
@@ -236,7 +228,7 @@
         "primaryLaneEffectiveContributionCount": 0,
         "primaryLaneCausalUsageCount": 0,
         "likelyContributoryCount": 0,
-        "ambiguousInstructionEvidenceCount": 5,
+        "ambiguousInstructionEvidenceCount": 0,
         "novelProbePositiveCount": 0,
         "missingContext": 0,
         "stableCoverageBreadth": 0,
@@ -248,9 +240,9 @@
       "causalHarmCount": 0
     },
     {
-      "lineageId": "lineage_history_005",
-      "incumbentIdentifier": "export_e104157ea336",
-      "challengerIdentifier": "export_c8b5ea565741",
+      "lineageId": "lineage_005",
+      "incumbentIdentifier": "<eval-ref>",
+      "challengerIdentifier": "<eval-ref>",
       "incumbentVersion": "<lineage-ref>",
       "challengerVersion": "<lineage-ref>",
       "comparisonMode": "distinct_comparison",
@@ -260,27 +252,25 @@
       "rejected": false,
       "rolledBack": false,
       "blockedReasons": [
-        "no_clear_upgrade_signal"
+        "improvement_margin_not_met"
       ],
-      "rawFinalScoreOld": 0.99025,
-      "rawFinalScoreNew": 0.99025,
-      "catastrophicRiskOld": 0,
-      "catastrophicRiskNew": 0,
+      "rawFinalScoreOld": 0.9995,
+      "rawFinalScoreNew": 0.9995,
+      "catastrophicRiskOld": 0.001,
+      "catastrophicRiskNew": 0.001,
       "keyFamilyDeltas": {
         "G_breadth": 0,
         "R_robust": 0,
         "H_horizon": 0
       },
-      "observationBackedRationale": "history-aware lineage keeps this comparison as a hold until a clearer governed upgrade signal appears",
+      "observationBackedRationale": "challenger did not clear the distinct improvement margin",
       "changedFactors": [
-        "export_c8b5ea565741",
-        "generated 2026-04-22T00:18:10.977Z"
+        "run <eval-ref>",
+        "generated 2026-04-05T16:35:30.305Z"
       ],
-      "generatedAt": "2026-04-22T00:18:10.977Z",
+      "generatedAt": "2026-04-05T16:35:30.305Z",
       "improvementEvidenceClass": "distinct_hold",
-      "targetBottlenecksClosed": [
-        "ambiguous_instruction"
-      ],
+      "targetBottlenecksClosed": [],
       "harmfulLessonsRevoked": 0,
       "positiveLessonsPromoted": 0,
       "continuityDebtDelta": null,
@@ -297,7 +287,7 @@
         "primaryLaneEffectiveContributionCount": 0,
         "primaryLaneCausalUsageCount": 0,
         "likelyContributoryCount": 0,
-        "ambiguousInstructionEvidenceCount": 5,
+        "ambiguousInstructionEvidenceCount": 0,
         "novelProbePositiveCount": 0,
         "missingContext": 0,
         "stableCoverageBreadth": 0,
@@ -309,9 +299,9 @@
       "causalHarmCount": 0
     },
     {
-      "lineageId": "lineage_history_006",
-      "incumbentIdentifier": "export_c8b5ea565741",
-      "challengerIdentifier": "export_c54561705a55",
+      "lineageId": "lineage_006",
+      "incumbentIdentifier": "<eval-ref>",
+      "challengerIdentifier": "<eval-ref>",
       "incumbentVersion": "<lineage-ref>",
       "challengerVersion": "<lineage-ref>",
       "comparisonMode": "distinct_comparison",
@@ -321,27 +311,25 @@
       "rejected": false,
       "rolledBack": false,
       "blockedReasons": [
-        "no_clear_upgrade_signal"
+        "improvement_margin_not_met"
       ],
-      "rawFinalScoreOld": 0.99025,
-      "rawFinalScoreNew": 0.99025,
-      "catastrophicRiskOld": 0,
-      "catastrophicRiskNew": 0,
+      "rawFinalScoreOld": 0.9995,
+      "rawFinalScoreNew": 0.9995,
+      "catastrophicRiskOld": 0.001,
+      "catastrophicRiskNew": 0.001,
       "keyFamilyDeltas": {
         "G_breadth": 0,
         "R_robust": 0,
         "H_horizon": 0
       },
-      "observationBackedRationale": "history-aware lineage keeps this comparison as a hold until a clearer governed upgrade signal appears",
+      "observationBackedRationale": "challenger did not clear the distinct improvement margin",
       "changedFactors": [
-        "export_c54561705a55",
-        "generated 2026-04-22T00:18:14.064Z"
+        "run <eval-ref>",
+        "generated 2026-04-05T16:38:53.253Z"
       ],
-      "generatedAt": "2026-04-22T00:18:14.064Z",
+      "generatedAt": "2026-04-05T16:38:53.253Z",
       "improvementEvidenceClass": "distinct_hold",
-      "targetBottlenecksClosed": [
-        "ambiguous_instruction"
-      ],
+      "targetBottlenecksClosed": [],
       "harmfulLessonsRevoked": 0,
       "positiveLessonsPromoted": 0,
       "continuityDebtDelta": null,
@@ -358,7 +346,7 @@
         "primaryLaneEffectiveContributionCount": 0,
         "primaryLaneCausalUsageCount": 0,
         "likelyContributoryCount": 0,
-        "ambiguousInstructionEvidenceCount": 5,
+        "ambiguousInstructionEvidenceCount": 0,
         "novelProbePositiveCount": 0,
         "missingContext": 0,
         "stableCoverageBreadth": 0,
@@ -370,44 +358,101 @@
       "causalHarmCount": 0
     },
     {
-      "lineageId": "lineage_history_007",
-      "incumbentIdentifier": "export_c54561705a55",
-      "challengerIdentifier": "export_d5551d25b22c",
+      "lineageId": "lineage_007",
+      "incumbentIdentifier": "<eval-ref>",
+      "challengerIdentifier": "<eval-ref>",
       "incumbentVersion": "<lineage-ref>",
       "challengerVersion": "<lineage-ref>",
       "comparisonMode": "distinct_comparison",
       "distinctComparison": true,
-      "promote": null,
+      "promote": false,
       "adopted": false,
-      "rejected": false,
-      "rolledBack": false,
+      "rejected": true,
+      "rolledBack": true,
       "blockedReasons": [
-        "no_clear_upgrade_signal"
+        "regression_detected"
       ],
-      "rawFinalScoreOld": 0.99025,
-      "rawFinalScoreNew": 0.99025,
-      "catastrophicRiskOld": 0,
-      "catastrophicRiskNew": 0,
+      "rawFinalScoreOld": 0.9995,
+      "rawFinalScoreNew": 0.9995,
+      "catastrophicRiskOld": 0.001,
+      "catastrophicRiskNew": 0.001,
       "keyFamilyDeltas": {
         "G_breadth": 0,
         "R_robust": 0,
         "H_horizon": 0
       },
-      "observationBackedRationale": "history-aware lineage keeps this comparison as a hold until a clearer governed upgrade signal appears",
+      "observationBackedRationale": "challenger regressed or increased catastrophic risk",
       "changedFactors": [
-        "export_d5551d25b22c",
-        "generated 2026-04-22T00:18:17.227Z"
+        "run <eval-ref>",
+        "generated 2026-04-05T18:55:07.393Z"
       ],
-      "generatedAt": "2026-04-22T00:18:17.227Z",
-      "improvementEvidenceClass": "distinct_hold",
-      "targetBottlenecksClosed": [
-        "ambiguous_instruction"
-      ],
-      "harmfulLessonsRevoked": 0,
+      "generatedAt": "2026-04-05T18:55:07.393Z",
+      "improvementEvidenceClass": "distinct_observed_regression",
+      "targetBottlenecksClosed": [],
+      "harmfulLessonsRevoked": 1,
       "positiveLessonsPromoted": 0,
       "continuityDebtDelta": null,
       "robustnessDeltaByCategory": {
         "overall": 0
+      },
+      "supportDeltaByMetric": {
+        "verifiedPositiveRemediations": -1,
+        "verifiedPositiveSelfDirectedRemediations": 0,
+        "runningAgendaResolved": -1,
+        "blockedAgendaResolved": 0,
+        "insufficientEvidenceResolved": 0,
+        "primaryLaneSelectedInLatestPackCount": 7,
+        "primaryLaneEffectiveContributionCount": -3,
+        "primaryLaneCausalUsageCount": 0,
+        "likelyContributoryCount": 4,
+        "ambiguousInstructionEvidenceCount": -27,
+        "novelProbePositiveCount": 0,
+        "missingContext": 0,
+        "stableCoverageBreadth": -0.666667,
+        "browserToolFlakiness": -0.581633,
+        "degradedToolOutputs": 0,
+        "harmfulCausalRatio": -1
+      },
+      "causalSupportCount": 0,
+      "causalHarmCount": 4
+    },
+    {
+      "lineageId": "lineage_008",
+      "incumbentIdentifier": "<eval-ref>",
+      "challengerIdentifier": "<eval-ref>",
+      "incumbentVersion": "<lineage-ref>",
+      "challengerVersion": "<lineage-ref>",
+      "comparisonMode": "distinct_comparison",
+      "distinctComparison": true,
+      "promote": false,
+      "adopted": false,
+      "rejected": true,
+      "rolledBack": true,
+      "blockedReasons": [
+        "regression_detected"
+      ],
+      "rawFinalScoreOld": 0.9995,
+      "rawFinalScoreNew": 0.726416,
+      "catastrophicRiskOld": 0.001,
+      "catastrophicRiskNew": 0.08,
+      "keyFamilyDeltas": {
+        "G_breadth": 0,
+        "R_robust": -0.31,
+        "H_horizon": -0.189286
+      },
+      "observationBackedRationale": "challenger regressed or increased catastrophic risk",
+      "changedFactors": [
+        "run <eval-ref>",
+        "generated 2026-04-12T15:59:57.849Z"
+      ],
+      "generatedAt": "2026-04-12T15:59:57.849Z",
+      "improvementEvidenceClass": "distinct_observed_regression",
+      "targetBottlenecksClosed": [],
+      "harmfulLessonsRevoked": 1,
+      "positiveLessonsPromoted": 0,
+      "continuityDebtDelta": null,
+      "robustnessDeltaByCategory": {
+        "overall": -0.31
       },
       "supportDeltaByMetric": {
         "verifiedPositiveRemediations": 0,
@@ -419,7 +464,7 @@
         "primaryLaneEffectiveContributionCount": 0,
         "primaryLaneCausalUsageCount": 0,
         "likelyContributoryCount": 0,
-        "ambiguousInstructionEvidenceCount": 5,
+        "ambiguousInstructionEvidenceCount": 0,
         "novelProbePositiveCount": 0,
         "missingContext": 0,
         "stableCoverageBreadth": 0,
@@ -428,73 +473,12 @@
         "harmfulCausalRatio": 0
       },
       "causalSupportCount": 0,
-      "causalHarmCount": 0
+      "causalHarmCount": 1
     },
     {
-      "lineageId": "lineage_history_008",
-      "incumbentIdentifier": "export_d5551d25b22c",
-      "challengerIdentifier": "export_ed86a992be36",
-      "incumbentVersion": "<lineage-ref>",
-      "challengerVersion": "<lineage-ref>",
-      "comparisonMode": "distinct_comparison",
-      "distinctComparison": true,
-      "promote": null,
-      "adopted": false,
-      "rejected": false,
-      "rolledBack": false,
-      "blockedReasons": [
-        "no_clear_upgrade_signal"
-      ],
-      "rawFinalScoreOld": 0.99025,
-      "rawFinalScoreNew": 0.99025,
-      "catastrophicRiskOld": 0,
-      "catastrophicRiskNew": 0,
-      "keyFamilyDeltas": {
-        "G_breadth": 0,
-        "R_robust": 0,
-        "H_horizon": 0
-      },
-      "observationBackedRationale": "history-aware lineage keeps this comparison as a hold until a clearer governed upgrade signal appears",
-      "changedFactors": [
-        "export_ed86a992be36",
-        "generated 2026-04-22T00:18:20.415Z"
-      ],
-      "generatedAt": "2026-04-22T00:18:20.415Z",
-      "improvementEvidenceClass": "distinct_hold",
-      "targetBottlenecksClosed": [
-        "ambiguous_instruction"
-      ],
-      "harmfulLessonsRevoked": 0,
-      "positiveLessonsPromoted": 0,
-      "continuityDebtDelta": null,
-      "robustnessDeltaByCategory": {
-        "overall": 0
-      },
-      "supportDeltaByMetric": {
-        "verifiedPositiveRemediations": 0,
-        "verifiedPositiveSelfDirectedRemediations": 0,
-        "runningAgendaResolved": 0,
-        "blockedAgendaResolved": 0,
-        "insufficientEvidenceResolved": 0,
-        "primaryLaneSelectedInLatestPackCount": 0,
-        "primaryLaneEffectiveContributionCount": 0,
-        "primaryLaneCausalUsageCount": 0,
-        "likelyContributoryCount": 0,
-        "ambiguousInstructionEvidenceCount": 5,
-        "novelProbePositiveCount": 0,
-        "missingContext": 0,
-        "stableCoverageBreadth": 0,
-        "browserToolFlakiness": 0,
-        "degradedToolOutputs": 0,
-        "harmfulCausalRatio": 0
-      },
-      "causalSupportCount": 0,
-      "causalHarmCount": 0
-    },
-    {
-      "lineageId": "lineage_history_009",
-      "incumbentIdentifier": "export_ed86a992be36",
-      "challengerIdentifier": "export_812fdb58148d",
+      "lineageId": "lineage_009",
+      "incumbentIdentifier": "<eval-ref>",
+      "challengerIdentifier": "<eval-ref>",
       "incumbentVersion": "<lineage-ref>",
       "challengerVersion": "<lineage-ref>",
       "comparisonMode": "distinct_comparison",
@@ -504,30 +488,31 @@
       "rejected": false,
       "rolledBack": false,
       "blockedReasons": [],
-      "rawFinalScoreOld": 0.99025,
-      "rawFinalScoreNew": 0.99225,
-      "catastrophicRiskOld": 0,
-      "catastrophicRiskNew": 0,
+      "rawFinalScoreOld": 0.726416,
+      "rawFinalScoreNew": 0.860278,
+      "catastrophicRiskOld": 0.08,
+      "catastrophicRiskNew": 0.04,
       "keyFamilyDeltas": {
         "G_breadth": 0,
-        "R_robust": 0,
-        "H_horizon": 0
+        "R_robust": 0.12,
+        "H_horizon": 0.124156
       },
-      "observationBackedRationale": "history-aware lineage shows improved governed support metrics (ambiguousInstructionEvidenceCount)",
+      "observationBackedRationale": "challenger improved score without worsening catastrophic risk",
       "changedFactors": [
-        "export_812fdb58148d",
-        "generated 2026-04-22T00:26:44.007Z"
+        "run <eval-ref>",
+        "generated 2026-04-12T16:00:00.595Z"
       ],
-      "generatedAt": "2026-04-22T00:26:44.007Z",
+      "generatedAt": "2026-04-12T16:00:00.595Z",
       "improvementEvidenceClass": "distinct_observed_improvement",
       "targetBottlenecksClosed": [
-        "ambiguous_instruction"
+        "R_robust",
+        "H_horizon"
       ],
       "harmfulLessonsRevoked": 0,
       "positiveLessonsPromoted": 1,
       "continuityDebtDelta": null,
       "robustnessDeltaByCategory": {
-        "overall": 0
+        "overall": 0.12
       },
       "supportDeltaByMetric": {
         "verifiedPositiveRemediations": 0,
@@ -539,7 +524,7 @@
         "primaryLaneEffectiveContributionCount": 0,
         "primaryLaneCausalUsageCount": 0,
         "likelyContributoryCount": 0,
-        "ambiguousInstructionEvidenceCount": 5,
+        "ambiguousInstructionEvidenceCount": 0,
         "novelProbePositiveCount": 0,
         "missingContext": 0,
         "stableCoverageBreadth": 0,
@@ -551,44 +536,42 @@
       "causalHarmCount": 0
     },
     {
-      "lineageId": "lineage_history_010",
-      "incumbentIdentifier": "export_812fdb58148d",
-      "challengerIdentifier": "export_b1290ee3a5b3",
+      "lineageId": "lineage_010",
+      "incumbentIdentifier": "<eval-ref>",
+      "challengerIdentifier": "<eval-ref>",
       "incumbentVersion": "<lineage-ref>",
       "challengerVersion": "<lineage-ref>",
       "comparisonMode": "distinct_comparison",
       "distinctComparison": true,
-      "promote": null,
+      "promote": false,
       "adopted": false,
-      "rejected": false,
-      "rolledBack": false,
+      "rejected": true,
+      "rolledBack": true,
       "blockedReasons": [
-        "no_clear_upgrade_signal"
+        "regression_detected"
       ],
-      "rawFinalScoreOld": 0.99225,
-      "rawFinalScoreNew": 0.99225,
-      "catastrophicRiskOld": 0,
-      "catastrophicRiskNew": 0,
+      "rawFinalScoreOld": 0.860278,
+      "rawFinalScoreNew": 0.726416,
+      "catastrophicRiskOld": 0.04,
+      "catastrophicRiskNew": 0.08,
       "keyFamilyDeltas": {
         "G_breadth": 0,
-        "R_robust": 0,
-        "H_horizon": 0
+        "R_robust": -0.12,
+        "H_horizon": -0.124156
       },
-      "observationBackedRationale": "history-aware lineage keeps this comparison as a hold until a clearer governed upgrade signal appears",
+      "observationBackedRationale": "challenger regressed or increased catastrophic risk",
       "changedFactors": [
-        "export_b1290ee3a5b3",
-        "generated 2026-04-22T00:27:11.689Z"
+        "run <eval-ref>",
+        "generated 2026-04-12T16:13:55.049Z"
       ],
-      "generatedAt": "2026-04-22T00:27:11.689Z",
-      "improvementEvidenceClass": "distinct_hold",
-      "targetBottlenecksClosed": [
-        "ambiguous_instruction"
-      ],
-      "harmfulLessonsRevoked": 0,
+      "generatedAt": "2026-04-12T16:13:55.049Z",
+      "improvementEvidenceClass": "distinct_observed_regression",
+      "targetBottlenecksClosed": [],
+      "harmfulLessonsRevoked": 1,
       "positiveLessonsPromoted": 0,
       "continuityDebtDelta": null,
       "robustnessDeltaByCategory": {
-        "overall": 0
+        "overall": -0.12
       },
       "supportDeltaByMetric": {
         "verifiedPositiveRemediations": 0,
@@ -600,7 +583,7 @@
         "primaryLaneEffectiveContributionCount": 0,
         "primaryLaneCausalUsageCount": 0,
         "likelyContributoryCount": 0,
-        "ambiguousInstructionEvidenceCount": 5,
+        "ambiguousInstructionEvidenceCount": 0,
         "novelProbePositiveCount": 0,
         "missingContext": 0,
         "stableCoverageBreadth": 0,
@@ -609,47 +592,46 @@
         "harmfulCausalRatio": 0
       },
       "causalSupportCount": 0,
-      "causalHarmCount": 0
+      "causalHarmCount": 1
     },
     {
-      "lineageId": "lineage_history_011",
-      "incumbentIdentifier": "export_b1290ee3a5b3",
-      "challengerIdentifier": "export_4b89b907ce1f",
+      "lineageId": "lineage_011",
+      "incumbentIdentifier": "<eval-ref>",
+      "challengerIdentifier": "<eval-ref>",
       "incumbentVersion": "<lineage-ref>",
       "challengerVersion": "<lineage-ref>",
       "comparisonMode": "distinct_comparison",
       "distinctComparison": true,
-      "promote": null,
-      "adopted": false,
+      "promote": true,
+      "adopted": true,
       "rejected": false,
       "rolledBack": false,
-      "blockedReasons": [
-        "no_clear_upgrade_signal"
-      ],
-      "rawFinalScoreOld": 0.99225,
-      "rawFinalScoreNew": 0.99225,
-      "catastrophicRiskOld": 0,
-      "catastrophicRiskNew": 0,
+      "blockedReasons": [],
+      "rawFinalScoreOld": 0.726416,
+      "rawFinalScoreNew": 0.860278,
+      "catastrophicRiskOld": 0.08,
+      "catastrophicRiskNew": 0.04,
       "keyFamilyDeltas": {
         "G_breadth": 0,
-        "R_robust": 0,
-        "H_horizon": 0
+        "R_robust": 0.12,
+        "H_horizon": 0.124156
       },
-      "observationBackedRationale": "history-aware lineage keeps this comparison as a hold until a clearer governed upgrade signal appears",
+      "observationBackedRationale": "challenger improved score without worsening catastrophic risk",
       "changedFactors": [
-        "export_4b89b907ce1f",
-        "generated 2026-04-22T00:41:59.796Z"
+        "run <eval-ref>",
+        "generated 2026-04-12T16:13:58.033Z"
       ],
-      "generatedAt": "2026-04-22T00:41:59.796Z",
-      "improvementEvidenceClass": "distinct_hold",
+      "generatedAt": "2026-04-12T16:13:58.033Z",
+      "improvementEvidenceClass": "distinct_observed_improvement",
       "targetBottlenecksClosed": [
-        "ambiguous_instruction"
+        "R_robust",
+        "H_horizon"
       ],
       "harmfulLessonsRevoked": 0,
-      "positiveLessonsPromoted": 0,
+      "positiveLessonsPromoted": 1,
       "continuityDebtDelta": null,
       "robustnessDeltaByCategory": {
-        "overall": 0
+        "overall": 0.12
       },
       "supportDeltaByMetric": {
         "verifiedPositiveRemediations": 0,
@@ -661,7 +643,7 @@
         "primaryLaneEffectiveContributionCount": 0,
         "primaryLaneCausalUsageCount": 0,
         "likelyContributoryCount": 0,
-        "ambiguousInstructionEvidenceCount": 48,
+        "ambiguousInstructionEvidenceCount": 0,
         "novelProbePositiveCount": 0,
         "missingContext": 0,
         "stableCoverageBreadth": 0,
@@ -669,7 +651,7 @@
         "degradedToolOutputs": 0,
         "harmfulCausalRatio": 0
       },
-      "causalSupportCount": 0,
+      "causalSupportCount": 1,
       "causalHarmCount": 0
     }
   ]

@@ -1,9 +1,9 @@
 {
   "schema": "governance-public-bundle-overview.v1",
-  "generatedAt": "2026-04-22T00:42:00.287Z",
+  "generatedAt": "2026-05-04T12:17:28.453Z",
   "sourceLatestSignoffSummary": "logs/current/latest_signoff_summary.json",
-  "sourceBundleRoot": "logs/bundles/signoff/signoff-2026-04-21T15-08-45-517Z-bbfbe8",
-  "sourceTurnDir": "logs/bundles/signoff/signoff-2026-04-21T15-08-45-517Z-bbfbe8/raw/turns/2026-04-21/mock-thread-4__mock-turn-7",
+  "sourceBundleRoot": "logs/bundles/signoff/signoff-2026-04-18T05-27-13-996Z-f97810",
+  "sourceTurnDir": "logs/bundles/signoff/signoff-2026-04-18T05-27-13-996Z-f97810/raw/turns/2026-04-18/mock-thread-4__mock-turn-7",
   "selectedTurnId": "mock-turn-7",
   "selectedPlanningDepth": "STANDARD_PLANNING",
   "selectedAssuranceDepth": "SIGNOFF_ASSURANCE",
@@ -29,7 +29,7 @@
     "exportSessionId": "export_69aaf0d22042",
     "workerGoalStatus": "WORKER_COMPLETE",
     "decisionMeaning": "worker_headline_stop_semantics_with_background_program_readiness_context",
-    "programReadinessStatus": "EXPORT_CONTEXT_ONLY",
+    "programReadinessStatus": "NOT_YET",
     "operatorReadOrder": [
       "worker_stop_primary",
       "background_program_readiness_secondary"
@@ -42,13 +42,13 @@
     },
     "backgroundProgramReadiness": {
       "scope": "program_readiness",
-      "status": "EXPORT_CONTEXT_ONLY",
+      "status": "NOT_YET",
       "displayLabel": "Background program readiness",
       "presentationRole": "secondary_non_blocking_context",
       "doesNotOverrideWorkerVerdict": true,
       "backgroundTrusted": true
     },
-    "activeLearningDebtOpen": false
+    "activeLearningDebtOpen": true
   },
   "harnessIdentity": {
     "mode": "single_governed_harness",

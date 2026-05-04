@@ -1,6 +1,6 @@
 {
   "schema": "flow-trace-summary.v1",
-  "generatedAt": "2026-04-21T15:08:56.665Z",
+  "generatedAt": "2026-04-18T05:29:01.580Z",
   "selectedPlanningMode": "NORMAL",
   "selectedPlanningDepth": "STANDARD_PLANNING",
   "selectedAssuranceDepth": "SIGNOFF_ASSURANCE",
@@ -91,7 +91,7 @@
       "completedCount": 1,
       "failedCount": 0,
       "ownedPaths": [
-        "logs/bundles/signoff/signoff-2026-04-21T15-08-45-517Z-bbfbe8/raw/scripts/config/signoff_sample_target.txt",
+        "logs/bundles/signoff/signoff-2026-04-18T05-27-13-996Z-f97810/raw/scripts/config/signoff_sample_target.txt",
         "docs/EVIDENCE_CONTRACT.md",
         "docs/CURRENT_ARCHITECTURE.md",
         "docs/ARCHITECTURE_CHANGELOG.md",
@@ -99,12 +99,12 @@
       ],
       "skills": [],
       "evidenceNotes": [
-        "Owned paths:\n- logs/bundles/signoff/signoff-2026-04-21T15-08-45-517Z-bbfbe8/raw/scripts/config/signoff_sample_target.txt\n- docs/EVIDENCE_CONTRACT.md\n- docs/CURRENT_ARCHITECTURE.md\n- docs/ARCHITECTURE_CHANGELOG.md\nApplied requested signoff assurance updates."
+        "Owned paths:\n- logs/bundles/signoff/signoff-2026-04-18T05-27-13-996Z-f97810/raw/scripts/config/signoff_sample_target.txt\n- docs/EVIDENCE_CONTRACT.md\n- docs/CURRENT_ARCHITECTURE.md\n- docs/ARCHITECTURE_CHANGELOG.md\nApplied requested signoff assurance updates."
       ],
       "reviewerObserved": 0,
       "testerObserved": 0,
-      "firstSeenAt": 1776784136491,
-      "lastSeenAt": 1776784136492
+      "firstSeenAt": 1776490139260,
+      "lastSeenAt": 1776490139261
     },
     {
       "agent": "mock-thread-4-reviewer",
@@ -118,8 +118,8 @@
       ],
       "reviewerObserved": 1,
       "testerObserved": 0,
-      "firstSeenAt": 1776784136506,
-      "lastSeenAt": 1776784136507
+      "firstSeenAt": 1776490139269,
+      "lastSeenAt": 1776490139270
     },
     {
       "agent": "mock-thread-4-tester",
@@ -133,8 +133,8 @@
       ],
       "reviewerObserved": 1,
       "testerObserved": 1,
-      "firstSeenAt": 1776784136508,
-      "lastSeenAt": 1776784136509
+      "firstSeenAt": 1776490139271,
+      "lastSeenAt": 1776490139272
     }
   ],
   "docSyncEvidence": {
@@ -395,7 +395,7 @@
       },
       {
         "clauseId": "req-5",
-        "text": "Change logs/bundles/signoff/signoff-2026-04-21T15-08-45-517Z-bbfbe8/raw/scripts/config/signoff_sample_target.txt, docs/EVIDENCE_CONTRACT.md, docs/CURRENT_ARCHITECTURE.md, and docs/ARCHITECTURE_CHANGELOG.md.",
+        "text": "Change logs/bundles/signoff/signoff-2026-04-18T05-27-13-996Z-f97810/raw/scripts/config/signoff_sample_target.txt, docs/EVIDENCE_CONTRACT.md, docs/CURRENT_ARCHITECTURE.md, and docs/ARCHITECTURE_CHANGELOG.md.",
         "status": "satisfied",
         "requirementRefs": [
           "baselineScope",
@@ -629,7 +629,7 @@
       },
       {
         "clauseId": "req-11",
-        "text": "In logs/bundles/signoff/signoff-2026-04-21T15-08-45-517Z-bbfbe8/raw/scripts/config/signoff_sample_target.txt, replace the single line `gate: pending` with `gate: signed`.",
+        "text": "In logs/bundles/signoff/signoff-2026-04-18T05-27-13-996Z-f97810/raw/scripts/config/signoff_sample_target.txt, replace the single line `gate: pending` with `gate: signed`.",
         "status": "satisfied",
         "requirementRefs": [
           "baselineScope"
@@ -782,7 +782,7 @@
       },
       {
         "clauseId": "req-15",
-        "text": "Return with exactly: SIGNOFF_TASK_OK logs/bundles/signoff/signoff-2026-04-21T15-08-45-517Z-bbfbe8/raw/scripts/config/signoff_sample_target.txt.",
+        "text": "Return with exactly: SIGNOFF_TASK_OK logs/bundles/signoff/signoff-2026-04-18T05-27-13-996Z-f97810/raw/scripts/config/signoff_sample_target.txt.",
         "status": "satisfied",
         "requirementRefs": [
           "baselineScope",

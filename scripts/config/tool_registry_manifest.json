@@ -1,6 +1,6 @@
 {
   "schema": "tool-registry-manifest.v1",
-  "version": "2026-03-30.r1",
+  "version": "2026-05-04.r1",
   "tools": [
     {
       "id": "api_exec",
@@ -56,6 +56,16 @@
       "reliabilityScore": 0.93,
       "status": "active",
       "fallbackMode": "repo_file_inspection"
+    },
+    {
+      "id": "stitch",
+      "capability": "optional external Stitch design reference retrieval for user-provided Stitch project prompts and UI recreation baselines",
+      "riskTier": "medium",
+      "accessMode": "external-network",
+      "wrapperTests": ["harnesui_message_reference_test", "planning_mode_policy_test"],
+      "reliabilityScore": 0.82,
+      "status": "configured_optional",
+      "fallbackMode": "stitch_prompt_contract_only"
     }
   ]
 }

@@ -1,14 +1,14 @@
 {
   "schema": "latest-signoff-summary.v3",
-  "generatedAt": "2026-04-22T00:27:12.1786258Z",
+  "generatedAt": "2026-05-04T12:17:28.397Z",
   "allPassed": true,
   "runtimePostureSafe": true,
   "coreHarnessWorkflowPassed": true,
   "naturalTaskTracePassed": true,
   "signoffReady": true,
   "bundleRef": {
-    "bundleName": "signoff-2026-04-21T15-08-45-517Z-bbfbe8",
-    "bundlePath": "logs/bundles/signoff/signoff-2026-04-21T15-08-45-517Z-bbfbe8",
+    "bundleName": "signoff-2026-04-18T05-27-13-996Z-f97810",
+    "bundlePath": "logs/bundles/signoff/signoff-2026-04-18T05-27-13-996Z-f97810",
     "summaryPath": "signoff_summary.json"
   },
   "finalDecision": "RELEASE_APPROVED"

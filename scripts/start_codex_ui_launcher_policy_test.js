@@ -11,12 +11,12 @@ function main() {
   const launcher = fs.readFileSync(launcherPath, "utf8");
 
   assert(/^@echo off\r?\nsetlocal\r?\nif "%CODEX_PAUSE_ON_EXIT%"=="" set "CODEX_PAUSE_ON_EXIT=1"/.test(launcher), "launcher must default CODEX_PAUSE_ON_EXIT before early-exit checks");
-  assert(/if "%CODEX_REQUIRE_ADMIN%"=="" set "CODEX_REQUIRE_ADMIN=1"/.test(launcher), "launcher must default admin elevation on for the desktop launcher");
+  assert(/if "%CODEX_REQUIRE_ADMIN%"=="" set "CODEX_REQUIRE_ADMIN=0"/.test(launcher), "launcher must default admin elevation off unless the operator opts in");
   assert(/set "CODEX_LAUNCH_FILE=%~f0"/.test(launcher), "launcher must always expose its own path for reuse/stale-runtime probes");
   assert(/set "CODEX_LAUNCH_DIR=%~dp0"/.test(launcher), "launcher must always expose its working directory for reuse/stale-runtime probes");
   assert(/if \/I "%CODEX_REQUIRE_ADMIN%"=="1" \(/.test(launcher), "launcher must route admin requirements through the self-elevation gate");
   assert(/set "LAUNCHER_AUTO_OPEN_BROWSER=%CODEX_AUTO_OPEN_BROWSER%"/.test(launcher), "launcher must snapshot browser auto-open ownership before starting server.js");
-  assert(/if "%CODEX_AUTO_OPEN_BROWSER%"=="" set "CODEX_AUTO_OPEN_BROWSER=1"/.test(launcher), "launcher must default browser auto-open on for the desktop launcher");
+  assert(/if "%CODEX_AUTO_OPEN_BROWSER%"=="" set "CODEX_AUTO_OPEN_BROWSER=0"/.test(launcher), "launcher must default browser auto-open off unless the operator opts in");
   assert(/if "%CODEX_RESTART_EXISTING_HARNESS%"=="" set "CODEX_RESTART_EXISTING_HARNESS=0"/.test(launcher), "launcher must default restart-existing-harness behavior off");
   assert(/if "%CODEX_AUTO_RESTART_STALE_HARNESS%"=="" set "CODEX_AUTO_RESTART_STALE_HARNESS=1"/.test(launcher), "launcher must default stale-harness auto-restart on");
   assert(/if "%CODEX_FORCE_ACTIVE_RESTART%"=="" set "CODEX_FORCE_ACTIVE_RESTART=0"/.test(launcher), "launcher must default forced active restart off");

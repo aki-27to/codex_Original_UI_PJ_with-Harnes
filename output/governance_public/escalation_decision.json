@@ -1,6 +1,6 @@
 {
   "schema": "escalation-decision.v1",
-  "generatedAt": "2026-04-22T00:42:00.284Z",
+  "generatedAt": "2026-05-04T12:17:28.450Z",
   "escalationRequired": 0,
   "action": "RELEASE",
   "reason": "release_conditions_satisfied",

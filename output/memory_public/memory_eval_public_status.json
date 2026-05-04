@@ -1,6 +1,6 @@
 {
   "schema": "memory-eval-public-status.v1",
-  "generatedAt": "2026-04-22T00:42:01.794Z",
+  "generatedAt": "2026-05-04T12:17:32.338Z",
   "suiteSchema": "memory-eval-suite.v1",
   "suiteVersion": "2026-04-12.r2",
   "status": "PASS",
@@ -46,7 +46,7 @@
       "id": "bounded_memory_pack_reuses_canonical_memory",
       "title": "Latest bounded memory pack reuses previously persisted canonical memory",
       "status": "PASS",
-      "detail": "13 selected pack item(s) were reused from the canonical store"
+      "detail": "12 selected pack item(s) were reused from the canonical store"
     },
     {
       "id": "task_family_isolation_respected",
@@ -208,7 +208,7 @@
       "id": "worker_decision_surface_export_session_consistent",
       "title": "Worker headline and supporting artifacts share the same export session",
       "status": "PASS",
-      "detail": "shared export session export_4b89b907ce1f"
+      "detail": "shared export session export_69aaf0d22042"
     },
     {
       "id": "worker_completion_status_present",
@@ -220,7 +220,7 @@
       "id": "worker_completion_status_consistent",
       "title": "Worker completion companion stays aligned with the worker headline and background readiness semantics",
       "status": "PASS",
-      "detail": "worker completion companion stays aligned with worker headline under export session export_4b89b907ce1f"
+      "detail": "worker completion companion stays aligned with worker headline under export session export_69aaf0d22042"
     },
     {
       "id": "worker_completion_alignment_not_stale_in_downstream_surfaces",

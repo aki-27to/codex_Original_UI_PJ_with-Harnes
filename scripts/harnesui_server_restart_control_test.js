@@ -124,7 +124,7 @@ async function main() {
   assert(serverSource.includes("CODEX_RESTART_RESULT_PATH"), "restart helper must receive a runtime-visible result path");
   assert(helperSource.includes("harnesui-server-restart-result.v1"), "helper must write a restart result marker");
   assert(helperSource.includes('status: "relaunch_spawned"'), "helper must record successful relaunch spawn");
-  assert(serverSource.includes("server_restart_result.json"), "helper result marker must be runtime-readable");
+  assert(serverSource.includes('path.join(workspaceRoot,"runtime","server_restart_result.json")'), "helper result marker must stay out of logs/current and remain runtime-readable");
   assert(helperSource.includes('CODEX_RESTART_EXISTING_HARNESS: "0"'), "helper relaunch must not re-stop an already stopped server");
   assert(helperSource.includes('CODEX_AUTO_OPEN_BROWSER: "0"'), "UI restart must not open a browser");
   assert(helperSource.includes('CODEX_REQUIRE_ADMIN: "0"'), "UI restart must not trigger elevation");

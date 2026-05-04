@@ -26,6 +26,7 @@ const stages = Object.freeze([
       "test:single-harness-multi-plane",
       "test:self-improvement-governance",
       "test:repo-local-skills",
+      "test:mcp-tool-registry-alignment",
       "test:docs:drift",
       "test:github-governance-surface",
       "test:system-coherence",

@@ -207,7 +207,7 @@
       },
       {
         "clauseId": "req-5",
-        "text": "Change logs/bundles/signoff/signoff-2026-04-21T15-08-45-517Z-bbfbe8/raw/scripts/config/signoff_sample_target.txt, docs/EVIDENCE_CONTRACT.md, docs/CURRENT_ARCHITECTURE.md, and docs/ARCHITECTURE_CHANGELOG.md.",
+        "text": "Change logs/bundles/signoff/signoff-2026-04-18T05-27-13-996Z-f97810/raw/scripts/config/signoff_sample_target.txt, docs/EVIDENCE_CONTRACT.md, docs/CURRENT_ARCHITECTURE.md, and docs/ARCHITECTURE_CHANGELOG.md.",
         "status": "satisfied",
         "requirementRefs": [
           "baselineScope",
@@ -441,7 +441,7 @@
       },
       {
         "clauseId": "req-11",
-        "text": "In logs/bundles/signoff/signoff-2026-04-21T15-08-45-517Z-bbfbe8/raw/scripts/config/signoff_sample_target.txt, replace the single line `gate: pending` with `gate: signed`.",
+        "text": "In logs/bundles/signoff/signoff-2026-04-18T05-27-13-996Z-f97810/raw/scripts/config/signoff_sample_target.txt, replace the single line `gate: pending` with `gate: signed`.",
         "status": "satisfied",
         "requirementRefs": [
           "baselineScope"
@@ -594,7 +594,7 @@
       },
       {
         "clauseId": "req-15",
-        "text": "Return with exactly: SIGNOFF_TASK_OK logs/bundles/signoff/signoff-2026-04-21T15-08-45-517Z-bbfbe8/raw/scripts/config/signoff_sample_target.txt.",
+        "text": "Return with exactly: SIGNOFF_TASK_OK logs/bundles/signoff/signoff-2026-04-18T05-27-13-996Z-f97810/raw/scripts/config/signoff_sample_target.txt.",
         "status": "satisfied",
         "requirementRefs": [
           "baselineScope",
@@ -714,7 +714,7 @@
   "recommended_release_state": "RELEASE_BLOCKED",
   "adoption_readiness": {
     "schema": "adoption-readiness-eval.v1",
-    "generatedAt": "2026-04-21T15:08:56.665Z",
+    "generatedAt": "2026-04-18T05:29:01.580Z",
     "completedStateObserved": 1,
     "dimensions": [
       {
@@ -940,7 +940,7 @@
   },
   "iteration_decision": {
     "schema": "iteration-decision.v1",
-    "generatedAt": "2026-04-21T15:08:56.665Z",
+    "generatedAt": "2026-04-18T05:29:01.580Z",
     "action": "RETRY",
     "reason": "artifact_quality_below_threshold",
     "blockers": [],
@@ -962,7 +962,7 @@
       "iteration_value_remaining_max": 0.24
     },
     "budgets": {
-      "elapsedMs": 557,
+      "elapsedMs": 4864,
       "stepCount": 19,
       "tokenCount": 0,
       "wallClockExceeded": false,

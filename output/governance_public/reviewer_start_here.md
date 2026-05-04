@@ -1,6 +1,6 @@
 # REVIEWER_START_HERE
 
-Generated: 2026-04-22T00:42:00.288Z
+Generated: 2026-05-04T12:17:28.454Z
 
 ## Read Order
 - `output/governance_public/reviewer_start_here.json`
@@ -11,7 +11,7 @@ Generated: 2026-04-22T00:42:00.288Z
 
 ## Decision Faces
 - `task_verdict` / Task verdict / primary_task_verdict -> `ADOPTABLE_COMPLETE` via `output/governance_public/worker_decision_surface.json`
-- `program_readiness` / Background program readiness / secondary_non_blocking_context -> `EXPORT_CONTEXT_ONLY` via `output/agi_readiness/goal_completion_status.json`
+- `program_readiness` / Background program readiness / secondary_non_blocking_context -> `NOT_YET` via `output/agi_readiness/goal_completion_status.json`
 
 ## Route Truth
 - execution: `POST /api/exec`

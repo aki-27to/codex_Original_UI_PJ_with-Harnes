@@ -1,11 +1,9 @@
 {
   "schema": "agi-readiness-blocked-reasons.v1",
-  "generatedAt": "2026-04-22T00:42:00.723Z",
-  "workspaceId": "3650d504ad404c53",
-  "reasons": [
-    "criteria_met"
-  ],
-  "promotionComparisonMode": "distinct_comparison",
-  "distinctComparison": true,
+  "generatedAt": "2026-05-04T12:17:30.488Z",
+  "workspaceId": "5c839dfeef8b555f",
+  "reasons": [],
+  "promotionComparisonMode": "self_snapshot",
+  "distinctComparison": false,
   "failedFamilies": []
 }

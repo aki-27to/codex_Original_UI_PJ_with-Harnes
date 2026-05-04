@@ -36,7 +36,7 @@ This artifact narrows the current dirty worktree into a release candidate that c
 - Passed: `governance`, `runtime`, `surfaces`
 - Passed: `npm run regression:public`
 - Passed: `node scripts/current_surface_truth_test.js`
-- Fresh signoff bundle: `signoff-2026-04-21T15-08-45-517Z-bbfbe8`
+- Fresh signoff bundle: `signoff-2026-04-18T05-27-13-996Z-f97810`
 - Current latest signoff decision: `RELEASE_APPROVED`
 - Public governance export refreshed after the new signoff bundle
 

@@ -1,10 +1,10 @@
 {
   "schema": "governance-public-bundle-manifest.v1",
-  "generatedAt": "2026-04-22T00:42:00.287Z",
+  "generatedAt": "2026-05-04T12:17:28.453Z",
   "sourceLatestSignoffSummary": "logs/current/latest_signoff_summary.json",
-  "sourceLatestRunSummary": "logs/bundles/signoff/signoff-2026-04-21T15-08-45-517Z-bbfbe8/latest_run_summary.json",
-  "sourceBundleRoot": "logs/bundles/signoff/signoff-2026-04-21T15-08-45-517Z-bbfbe8",
-  "sourceTurnDir": "logs/bundles/signoff/signoff-2026-04-21T15-08-45-517Z-bbfbe8/raw/turns/2026-04-21/mock-thread-4__mock-turn-7",
+  "sourceLatestRunSummary": "logs/bundles/signoff/signoff-2026-04-18T05-27-13-996Z-f97810/latest_run_summary.json",
+  "sourceBundleRoot": "logs/bundles/signoff/signoff-2026-04-18T05-27-13-996Z-f97810",
+  "sourceTurnDir": "logs/bundles/signoff/signoff-2026-04-18T05-27-13-996Z-f97810/raw/turns/2026-04-18/mock-thread-4__mock-turn-7",
   "exportedArtifacts": [
     {
       "file": "latest_signoff_summary.json",
@@ -13,82 +13,82 @@
     },
     {
       "file": "signoff_summary.json",
-      "source": "logs/bundles/signoff/signoff-2026-04-21T15-08-45-517Z-bbfbe8/signoff_summary.json",
+      "source": "logs/bundles/signoff/signoff-2026-04-18T05-27-13-996Z-f97810/signoff_summary.json",
       "derived": 0
     },
     {
       "file": "latest_run_summary.json",
-      "source": "logs/bundles/signoff/signoff-2026-04-21T15-08-45-517Z-bbfbe8/latest_run_summary.json",
+      "source": "logs/bundles/signoff/signoff-2026-04-18T05-27-13-996Z-f97810/latest_run_summary.json",
       "derived": 0
     },
     {
       "file": "natural_task_trace_summary.json",
-      "source": "logs/bundles/signoff/signoff-2026-04-21T15-08-45-517Z-bbfbe8/natural_task_trace_summary.json",
+      "source": "logs/bundles/signoff/signoff-2026-04-18T05-27-13-996Z-f97810/natural_task_trace_summary.json",
       "derived": 0
     },
     {
       "file": "request_frame.json",
-      "source": "logs/bundles/signoff/signoff-2026-04-21T15-08-45-517Z-bbfbe8/raw/turns/2026-04-21/mock-thread-4__mock-turn-7/request_frame.json",
+      "source": "logs/bundles/signoff/signoff-2026-04-18T05-27-13-996Z-f97810/raw/turns/2026-04-18/mock-thread-4__mock-turn-7/request_frame.json",
       "derived": 0
     },
     {
       "file": "routing_decision.json",
-      "source": "logs/bundles/signoff/signoff-2026-04-21T15-08-45-517Z-bbfbe8/raw/turns/2026-04-21/mock-thread-4__mock-turn-7/routing_decision.json",
+      "source": "logs/bundles/signoff/signoff-2026-04-18T05-27-13-996Z-f97810/raw/turns/2026-04-18/mock-thread-4__mock-turn-7/routing_decision.json",
       "derived": 0
     },
     {
       "file": "task_outcomes.json",
-      "source": "logs/bundles/signoff/signoff-2026-04-21T15-08-45-517Z-bbfbe8/raw/turns/2026-04-21/mock-thread-4__mock-turn-7/task_outcomes.json",
+      "source": "logs/bundles/signoff/signoff-2026-04-18T05-27-13-996Z-f97810/raw/turns/2026-04-18/mock-thread-4__mock-turn-7/task_outcomes.json",
       "derived": 0
     },
     {
       "file": "review_bundle.json",
-      "source": "logs/bundles/signoff/signoff-2026-04-21T15-08-45-517Z-bbfbe8/raw/turns/2026-04-21/mock-thread-4__mock-turn-7/review_bundle.json",
+      "source": "logs/bundles/signoff/signoff-2026-04-18T05-27-13-996Z-f97810/raw/turns/2026-04-18/mock-thread-4__mock-turn-7/review_bundle.json",
       "derived": 0
     },
     {
       "file": "release_decision.json",
-      "source": "logs/bundles/signoff/signoff-2026-04-21T15-08-45-517Z-bbfbe8/raw/turns/2026-04-21/mock-thread-4__mock-turn-7/release_decision.json",
+      "source": "logs/bundles/signoff/signoff-2026-04-18T05-27-13-996Z-f97810/raw/turns/2026-04-18/mock-thread-4__mock-turn-7/release_decision.json",
       "derived": 0
     },
     {
       "file": "evidence_manifest.json",
-      "source": "logs/bundles/signoff/signoff-2026-04-21T15-08-45-517Z-bbfbe8/raw/turns/2026-04-21/mock-thread-4__mock-turn-7/evidence_manifest.json",
+      "source": "logs/bundles/signoff/signoff-2026-04-18T05-27-13-996Z-f97810/raw/turns/2026-04-18/mock-thread-4__mock-turn-7/evidence_manifest.json",
       "derived": 0
     },
     {
       "file": "flow_trace_summary.json",
-      "source": "logs/bundles/signoff/signoff-2026-04-21T15-08-45-517Z-bbfbe8/raw/turns/2026-04-21/mock-thread-4__mock-turn-7/flow_trace_summary.json",
+      "source": "logs/bundles/signoff/signoff-2026-04-18T05-27-13-996Z-f97810/raw/turns/2026-04-18/mock-thread-4__mock-turn-7/flow_trace_summary.json",
       "derived": 0
     },
     {
       "file": "stage_timeline.json",
-      "source": "logs/bundles/signoff/signoff-2026-04-21T15-08-45-517Z-bbfbe8/raw/turns/2026-04-21/mock-thread-4__mock-turn-7/stage_timeline.json",
+      "source": "logs/bundles/signoff/signoff-2026-04-18T05-27-13-996Z-f97810/raw/turns/2026-04-18/mock-thread-4__mock-turn-7/stage_timeline.json",
       "derived": 0
     },
     {
       "file": "review_load_breakdown.json",
-      "source": "logs/bundles/signoff/signoff-2026-04-21T15-08-45-517Z-bbfbe8/raw/turns/2026-04-21/mock-thread-4__mock-turn-7/review_load_breakdown.json",
+      "source": "logs/bundles/signoff/signoff-2026-04-18T05-27-13-996Z-f97810/raw/turns/2026-04-18/mock-thread-4__mock-turn-7/review_load_breakdown.json",
       "derived": 0
     },
     {
       "file": "conformance_report.json",
-      "source": "logs/bundles/signoff/signoff-2026-04-21T15-08-45-517Z-bbfbe8/conformance_report.json",
+      "source": "logs/bundles/signoff/signoff-2026-04-18T05-27-13-996Z-f97810/conformance_report.json",
       "derived": 0
     },
     {
       "file": "operator_view_summary.json",
-      "source": "logs/bundles/signoff/signoff-2026-04-21T15-08-45-517Z-bbfbe8/operator_view_summary.json",
+      "source": "logs/bundles/signoff/signoff-2026-04-18T05-27-13-996Z-f97810/operator_view_summary.json",
       "derived": 0
     },
     {
       "file": "requirement_contract.json",
-      "source": "logs/bundles/signoff/signoff-2026-04-21T15-08-45-517Z-bbfbe8/raw/turns/2026-04-21/mock-thread-4__mock-turn-7/requirement_contract.json",
+      "source": "logs/bundles/signoff/signoff-2026-04-18T05-27-13-996Z-f97810/raw/turns/2026-04-18/mock-thread-4__mock-turn-7/requirement_contract.json",
       "derived": 0
     },
     {
       "file": "dispatch_plan.json",
-      "source": "logs/bundles/signoff/signoff-2026-04-21T15-08-45-517Z-bbfbe8/raw/turns/2026-04-21/mock-thread-4__mock-turn-7/dispatch_plan.json",
+      "source": "logs/bundles/signoff/signoff-2026-04-18T05-27-13-996Z-f97810/raw/turns/2026-04-18/mock-thread-4__mock-turn-7/dispatch_plan.json",
       "derived": 0
     },
     {

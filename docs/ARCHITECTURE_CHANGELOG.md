@@ -2,6 +2,8 @@
 
 Updated: 2026-05-04
 
+- 2026-05-04: Aligned the Codex harness S-rank diagnostic blockers. `start_codex_ui.bat` now defaults `CODEX_REQUIRE_ADMIN=0` and `CODEX_AUTO_OPEN_BROWSER=0` again, preserving non-intrusive local launches unless the operator opts in. Added `scripts/mcp_tool_registry_alignment_test.js` plus `test:mcp-tool-registry-alignment` so every configured `.codex/config.toml` MCP server is represented in `scripts/config/tool_registry_manifest.json`; the manifest now documents the optional external `stitch` MCP boundary and fallback mode. HarnesUI restart markers now write to `runtime/server_restart_result.json`, and current-log refresh removes non-fixed-five files from `logs/current/`.
+
 - 2026-05-04: Added Cognition-style single-writer multi-agent coordination. `dispatch_plan.v2` now carries `coordinationMode`, `singleWriter`, `integrationOwner`, advisory agents, and fresh-reviewer metadata; planning keeps cross-specialist intelligence in advisory dispatches while the selected integration writer owns file changes. Agent governance now blocks unknown file writers and advisory/parallel writer attempts with explicit reasons, and HarnesUI exposes the selected writer/advisors/fresh-reviewer state in the plan header.
 
 - 2026-05-04: Hardened HarnesUI `Web restart` so `/api/server/restart` no longer reports only a launcher spawn as success. The endpoint now starts a hidden detached helper that stops the current server PID after the 202 response flushes, relaunches the existing `start_codex_ui.bat` path without browser auto-open/elevation/pause, and leaves UI verification to confirm the new runtime PID or start timestamp.

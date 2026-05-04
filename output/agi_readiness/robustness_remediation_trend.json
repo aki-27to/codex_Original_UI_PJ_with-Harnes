@@ -1,42 +1,42 @@
 {
   "schema": "agi-readiness-robustness-remediation-trend.v1",
-  "generatedAt": "2026-04-22T00:42:00.948Z",
-  "workspaceId": "3650d504ad404c53",
+  "generatedAt": "2026-05-04T12:17:30.960Z",
+  "workspaceId": "5c839dfeef8b555f",
   "entries": [
+    {
+      "categoryId": "browser_tool_flakiness",
+      "remediationStatus": "running",
+      "lastImprovementDelta": 0,
+      "score": 0,
+      "generatedAt": "2026-05-04T12:17:30.960Z"
+    },
     {
       "categoryId": "ambiguous_instruction",
       "remediationStatus": "passed",
       "lastImprovementDelta": 0,
-      "score": 1,
-      "generatedAt": "2026-04-22T00:42:00.948Z"
+      "score": 0.892857,
+      "generatedAt": "2026-05-04T12:17:30.960Z"
     },
     {
       "categoryId": "adversarial_conflicting_instruction",
       "remediationStatus": "passed",
       "lastImprovementDelta": 0,
       "score": 1,
-      "generatedAt": "2026-04-22T00:42:00.948Z"
+      "generatedAt": "2026-05-04T12:17:30.960Z"
     },
     {
       "categoryId": "missing_context",
       "remediationStatus": "passed",
       "lastImprovementDelta": 0,
       "score": 1,
-      "generatedAt": "2026-04-22T00:42:00.948Z"
+      "generatedAt": "2026-05-04T12:17:30.960Z"
     },
     {
       "categoryId": "degraded_tool_outputs",
       "remediationStatus": "passed",
       "lastImprovementDelta": 0,
       "score": 1,
-      "generatedAt": "2026-04-22T00:42:00.948Z"
-    },
-    {
-      "categoryId": "browser_tool_flakiness",
-      "remediationStatus": "passed",
-      "lastImprovementDelta": 0,
-      "score": 1,
-      "generatedAt": "2026-04-22T00:42:00.948Z"
+      "generatedAt": "2026-05-04T12:17:30.960Z"
     }
   ]
 }

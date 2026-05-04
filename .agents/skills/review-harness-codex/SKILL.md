@@ -34,7 +34,7 @@ Inspect the target path, defaulting to the current repo:
 
 1. Lock the diagnosis scope: target repo, read-only vs mutation, plain report vs image. If unspecified, use read-only report for the current repo.
 2. Collect evidence with targeted reads and `rg`. Split findings into `HEAD`, dirty working tree, live runtime, and generated output whenever current truth matters.
-3. Load `references/codex-harness-rubric.md` and score only evidence-backed criteria. Use `—` for not applicable or not observable.
+3. Load `references/codex-harness-rubric.md` and score only evidence-backed criteria. Use `N/A` for not applicable or not observable.
 4. Load `references/report-template.md` when a formal report is requested.
 5. If the user asks for a photo/image, preserve the original harness-diagnosis experience: generate a rank certificate image first, then optionally provide a compact evidence report.
 6. Prioritize improvements by risk and adoption value: authority/protocol/evidence first, then current-truth clarity, then presentation polish.

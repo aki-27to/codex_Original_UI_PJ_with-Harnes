@@ -1,47 +1,68 @@
 {
   "schema": "agi-readiness-robustness-breakdown.v1",
-  "generatedAt": "2026-04-22T00:42:00.723Z",
-  "workspaceId": "3650d504ad404c53",
+  "generatedAt": "2026-05-04T12:17:30.485Z",
+  "workspaceId": "5c839dfeef8b555f",
   "categories": [
+    {
+      "categoryId": "browser_tool_flakiness",
+      "label": "Browser/tool flakiness handling",
+      "score": null,
+      "evidenceCount": 0,
+      "successCount": 0,
+      "failureCount": 0,
+      "status": "no_evidence",
+      "recentEvidence": [],
+      "sourceFamilies": [],
+      "remediationStatus": "running",
+      "lastRemediationAt": "2026-05-04T12:17:30.897Z",
+      "lastImprovementDelta": 0,
+      "openFailureModes": [
+        "retry budget exceeded without safe abort",
+        "browser failure misreported as task success",
+        "fallback omitted after flaky tool output"
+      ]
+    },
     {
       "categoryId": "ambiguous_instruction",
       "label": "Ambiguous instruction handling",
-      "score": 1,
-      "evidenceCount": 10,
-      "successCount": 10,
-      "failureCount": 0,
+      "score": 0.892857,
+      "evidenceCount": 14,
+      "successCount": 12,
+      "failureCount": 2,
       "status": "observed",
       "recentEvidence": [
         {
-          "publicRef": "eval_4917f100f6",
-          "summary": "ambiguous_instruction_probe.v1"
+          "publicRef": "turn_5492216408",
+          "summary": "clarification required before implementation"
         },
         {
-          "publicRef": "eval_22791a64b2",
-          "summary": "ambiguous_instruction_probe.v1"
+          "publicRef": "turn_5a0cdf1e63",
+          "summary": "clarification required before implementation"
         },
         {
-          "publicRef": "eval_296f786472",
-          "summary": "ambiguous_instruction_probe.v1"
+          "publicRef": "eval_fea0d0742f",
+          "summary": "subjective-live-ambiguous-batch-1775414363628-12"
         },
         {
-          "publicRef": "eval_7ac44ded82",
-          "summary": "ambiguous_instruction_probe.v1"
+          "publicRef": "eval_e65d9ccd1a",
+          "summary": "subjective-live-ambiguous-batch-1775414361838-11"
         },
         {
-          "publicRef": "eval_b6751c844e",
-          "summary": "ambiguous_instruction_probe.v1"
+          "publicRef": "eval_62dd4ee409",
+          "summary": "subjective-live-ambiguous-batch-1775414360024-10"
         },
         {
-          "publicRef": "eval_b8691d8987",
-          "summary": "ambiguous_instruction_probe.v1"
+          "publicRef": "eval_02f41a5276",
+          "summary": "subjective-live-ambiguous-batch-1775414358212-9"
         }
       ],
       "sourceFamilies": [
+        "web_creative",
+        "tool_use_browser_like",
         "evaluation_review"
       ],
       "remediationStatus": "passed",
-      "lastRemediationAt": "2026-04-22T00:42:00.945Z",
+      "lastRemediationAt": "2026-05-04T12:17:30.898Z",
       "lastImprovementDelta": 0,
       "openFailureModes": [
         "ambiguity not detected",
@@ -53,18 +74,14 @@
       "categoryId": "adversarial_conflicting_instruction",
       "label": "Adversarial/conflicting instruction handling",
       "score": 1,
-      "evidenceCount": 2,
-      "successCount": 2,
+      "evidenceCount": 1,
+      "successCount": 1,
       "failureCount": 0,
       "status": "observed",
       "recentEvidence": [
         {
-          "publicRef": "eval_138e7dcbdb",
-          "summary": "adversarial_conflict_probe.v1"
-        },
-        {
-          "publicRef": "eval_ccdede403d",
-          "summary": "adversarial_conflict_probe.v1"
+          "publicRef": "eval_8eda1a4dba",
+          "summary": "live.adversarial_conflicting.recovery.v1"
         }
       ],
       "sourceFamilies": [
@@ -83,18 +100,14 @@
       "categoryId": "missing_context",
       "label": "Missing-context recovery",
       "score": 1,
-      "evidenceCount": 2,
-      "successCount": 2,
+      "evidenceCount": 1,
+      "successCount": 1,
       "failureCount": 0,
       "status": "observed",
       "recentEvidence": [
         {
-          "publicRef": "eval_8298898a88",
-          "summary": "missing_context_recovery.v1"
-        },
-        {
-          "publicRef": "eval_5a52cd2f20",
-          "summary": "missing_context_recovery.v1"
+          "publicRef": "eval_4fe707dcc0",
+          "summary": "live.missing_context.recovery.v2"
         }
       ],
       "sourceFamilies": [
@@ -113,57 +126,14 @@
       "categoryId": "degraded_tool_outputs",
       "label": "Degraded tool output handling",
       "score": 1,
-      "evidenceCount": 2,
-      "successCount": 2,
+      "evidenceCount": 1,
+      "successCount": 1,
       "failureCount": 0,
       "status": "observed",
       "recentEvidence": [
         {
-          "publicRef": "eval_b9f7c26955",
-          "summary": "workflow_degraded_tool_outputs_probe.v1"
-        },
-        {
-          "publicRef": "eval_635bead625",
-          "summary": "workflow_degraded_tool_outputs_probe.v1"
-        }
-      ],
-      "sourceFamilies": [
-        "evaluation_review",
-        "workflow_execution"
-      ],
-      "remediationStatus": "passed",
-      "lastRemediationAt": "",
-      "lastImprovementDelta": 0,
-      "openFailureModes": [
-        "degraded output treated as verified",
-        "tool degradation not surfaced",
-        "fallback path omitted"
-      ]
-    },
-    {
-      "categoryId": "browser_tool_flakiness",
-      "label": "Browser/tool flakiness handling",
-      "score": 1,
-      "evidenceCount": 4,
-      "successCount": 4,
-      "failureCount": 0,
-      "status": "observed",
-      "recentEvidence": [
-        {
-          "publicRef": "eval_ef8b6a3ff8",
-          "summary": "browser_tool_flakiness_recovery.v1"
-        },
-        {
-          "publicRef": "eval_532d21d57c",
-          "summary": "browser_tool_flakiness_recovery.v1"
-        },
-        {
-          "publicRef": "eval_268b894459",
-          "summary": "browser_tool_flakiness_recovery.v1"
-        },
-        {
-          "publicRef": "eval_1211c1ea29",
-          "summary": "browser_tool_flakiness_recovery.v1"
+          "publicRef": "eval_4ad9871773",
+          "summary": "live.degraded_tool_outputs.recovery.v2"
         }
       ],
       "sourceFamilies": [
@@ -173,9 +143,9 @@
       "lastRemediationAt": "",
       "lastImprovementDelta": 0,
       "openFailureModes": [
-        "retry budget exceeded without safe abort",
-        "browser failure misreported as task success",
-        "fallback omitted after flaky tool output"
+        "degraded output treated as verified",
+        "tool degradation not surfaced",
+        "fallback path omitted"
       ]
     }
   ]

@@ -1,57 +1,57 @@
 {
   "schema": "governed-memory-public-lane-projection.v1",
-  "generatedAt": "2026-04-22T00:42:00.788Z",
+  "generatedAt": "2026-05-04T12:17:30.680Z",
   "laneKey": "openai_primary",
   "sourceName": "OpenAI Developers Blog",
   "sourceTier": "external_primary",
   "canonicalCounts": {
     "derivedFromCanonicalStore": true,
     "lessonCount": 4,
-    "promotedLessonCount": 4,
+    "promotedLessonCount": 0,
     "shadowLessonCount": 0,
     "improvementCandidateCount": 1,
     "proposalOnlyCount": 0,
-    "blockedCount": 0,
+    "blockedCount": 1,
     "shadowCount": 0,
-    "selectedInLatestPackCount": 4,
+    "selectedInLatestPackCount": 3,
     "consideredForPackCount": 11,
-    "advisoryReferenceCount": 1,
+    "advisoryReferenceCount": 0,
     "observationCount": 88,
-    "awaitingObservationCount": 7,
+    "awaitingObservationCount": 4,
     "familyObservationCounts": {
       "web_creative": 88
     },
     "familySelectionCounts": {
-      "web_creative": 4
+      "web_creative": 3
     },
-    "causalUsageCount": 9,
-    "surfacedToAgentCount": 4,
-    "behaviorallyReferencedCount": 4,
-    "likelyContributoryCount": 9,
-    "effectiveContributionCount": 4,
+    "causalUsageCount": 7,
+    "surfacedToAgentCount": 0,
+    "behaviorallyReferencedCount": 0,
+    "likelyContributoryCount": 6,
+    "effectiveContributionCount": 0,
     "harmfulContributionCount": 0,
-    "netEffectiveContribution": 4
+    "netEffectiveContribution": 0
   },
   "canonicalHealth": {
     "canonicalStatePresent": true,
-    "selectedInLatestPackCount": 4,
-    "promotedOrReinforcedCount": 10,
-    "shadowOrProposalCount": 1
+    "selectedInLatestPackCount": 3,
+    "promotedOrReinforcedCount": 2,
+    "shadowOrProposalCount": 0
   },
   "governedOperationalState": {
-    "status": "active",
-    "promotedLessonCount": 4,
-    "selectedInLatestPackCount": 4,
+    "status": "captured_only",
+    "promotedLessonCount": 0,
+    "selectedInLatestPackCount": 3,
     "observationCount": 88,
-    "awaitingObservationCount": 7,
+    "awaitingObservationCount": 4,
     "observationStatus": "awaiting_observations",
-    "lastObservedAt": "2026-04-22T00:42:00.381Z",
+    "lastObservedAt": "2026-05-04T12:14:30.473Z",
     "consideredForPackCount": 11,
-    "advisoryReferenceCount": 1,
-    "causalUsageCount": 9,
-    "effectiveContributionCount": 4,
+    "advisoryReferenceCount": 0,
+    "causalUsageCount": 7,
+    "effectiveContributionCount": 0,
     "harmfulContributionCount": 0,
-    "netEffectiveContribution": 4
+    "netEffectiveContribution": 0
   },
   "advisory": {
     "shadowOnlyReason": "",
@@ -59,74 +59,104 @@
       "web_creative": 88
     },
     "familySelectionCounts": {
-      "web_creative": 4
+      "web_creative": 3
     },
     "policyEligibleCount": 11,
     "consideredForPackCount": 11,
-    "advisoryReferenceCount": 1
+    "advisoryReferenceCount": 0
   },
-  "causalUsageCount": 9,
+  "causalUsageCount": 7,
   "recentCausalEffects": [
     {
-      "publicRef": "mem_a8fd76e476",
-      "usageStage": "likely_contributory",
-      "causalConfidence": "direct",
+      "publicRef": "mem_f1b632976e",
+      "usageStage": "rolled_back_after_harm",
+      "causalConfidence": "weak",
       "taskRefs": [
-        "turn_a33fc5cb10",
-        "turn_5dfc0ab125",
-        "turn_1893e525ae",
-        "turn_69e67bda15"
+        "turn_b6e12727b4",
+        "turn_4b67ca7055",
+        "turn_95a05af633",
+        "turn_11013b9a09",
+        "turn_bd7072d753",
+        "turn_9685c8b70f"
+      ],
+      "summary": "Using skills to accelerate OSS maintenance | OpenAI Developers"
+    },
+    {
+      "publicRef": "mem_0d9b9065e3",
+      "usageStage": "rolled_back_after_harm",
+      "causalConfidence": "weak",
+      "taskRefs": [
+        "turn_b6e12727b4",
+        "turn_4b67ca7055",
+        "turn_95a05af633",
+        "turn_11013b9a09",
+        "turn_bd7072d753",
+        "turn_9685c8b70f"
+      ],
+      "summary": "How Perplexity Brought Voice Search to Millions Using the Realtime API | OpenAI Developers"
+    },
+    {
+      "publicRef": "mem_3b00c01266",
+      "usageStage": "rolled_back_after_harm",
+      "causalConfidence": "weak",
+      "taskRefs": [
+        "turn_b6e12727b4",
+        "turn_4b67ca7055",
+        "turn_95a05af633",
+        "turn_11013b9a09",
+        "turn_bd7072d753",
+        "turn_9685c8b70f"
       ],
       "summary": "Designing delightful frontends with GPT-5.4 | OpenAI Developers"
     },
     {
-      "publicRef": "mem_46f23704e6",
-      "usageStage": "likely_contributory",
-      "causalConfidence": "direct",
+      "publicRef": "mem_6ed4d9fa64",
+      "usageStage": "rolled_back_after_harm",
+      "causalConfidence": "weak",
       "taskRefs": [
-        "turn_69e67bda15",
-        "turn_427c72e703",
-        "turn_b37451e4ec",
-        "turn_9adaaea36f",
-        "turn_4beb41545f",
-        "turn_e9fb35c058"
+        "turn_b6e12727b4",
+        "turn_4b67ca7055",
+        "turn_95a05af633",
+        "turn_11013b9a09",
+        "turn_bd7072d753",
+        "turn_9685c8b70f"
+      ],
+      "summary": "From prompts to products: One year of Responses | OpenAI Developers"
+    },
+    {
+      "publicRef": "mem_46f23704e6",
+      "usageStage": "rolled_back_after_harm",
+      "causalConfidence": "weak",
+      "taskRefs": [
+        "turn_b6e12727b4",
+        "turn_4b67ca7055",
+        "turn_95a05af633",
+        "turn_11013b9a09",
+        "turn_bd7072d753",
+        "turn_9685c8b70f"
       ],
       "summary": "How Perplexity Brought Voice Search to Millions Using the Realtime API | OpenAI Developers"
     },
     {
       "publicRef": "mem_5e926a0571",
-      "usageStage": "likely_contributory",
-      "causalConfidence": "direct",
+      "usageStage": "rolled_back_after_harm",
+      "causalConfidence": "weak",
       "taskRefs": [
-        "turn_69e67bda15",
-        "turn_427c72e703",
-        "turn_b37451e4ec",
-        "turn_9adaaea36f",
-        "turn_4beb41545f",
-        "turn_e9fb35c058"
+        "turn_b6e12727b4",
+        "turn_4b67ca7055",
+        "turn_95a05af633",
+        "turn_11013b9a09",
+        "turn_bd7072d753",
+        "turn_9685c8b70f"
       ],
       "summary": "Designing delightful frontends with GPT-5.4 | OpenAI Developers"
-    },
-    {
-      "publicRef": "mem_b439f61eb1",
-      "usageStage": "likely_contributory",
-      "causalConfidence": "direct",
-      "taskRefs": [
-        "turn_69e67bda15",
-        "turn_427c72e703",
-        "turn_b37451e4ec",
-        "turn_9adaaea36f",
-        "turn_4beb41545f",
-        "turn_e9fb35c058"
-      ],
-      "summary": "From prompts to products: One year of Responses | OpenAI Developers"
     }
   ],
   "recentAdvisoryEffects": [],
   "recentLessons": [
     {
-      "publicRef": "mem_118b03141e",
-      "status": "promoted",
+      "publicRef": "mem_0d9b9065e3",
+      "status": "blocked",
       "summary": "How Perplexity Brought Voice Search to Millions Using the Realtime API | OpenAI Developers",
       "topics": [
         "agents",
@@ -137,8 +167,8 @@
       ]
     },
     {
-      "publicRef": "mem_1dfc7e7f3c",
-      "status": "promoted",
+      "publicRef": "mem_3b00c01266",
+      "status": "blocked",
       "summary": "Designing delightful frontends with GPT-5.4 | OpenAI Developers",
       "topics": [
         "context",
@@ -150,8 +180,8 @@
       ]
     },
     {
-      "publicRef": "mem_3c1e8bdea1",
-      "status": "promoted",
+      "publicRef": "mem_6ed4d9fa64",
+      "status": "blocked",
       "summary": "From prompts to products: One year of Responses | OpenAI Developers",
       "topics": [
         "agents",
@@ -163,8 +193,8 @@
       ]
     },
     {
-      "publicRef": "mem_7e50a137ab",
-      "status": "promoted",
+      "publicRef": "mem_f1b632976e",
+      "status": "blocked",
       "summary": "Using skills to accelerate OSS maintenance | OpenAI Developers",
       "topics": [
         "agents",
@@ -184,9 +214,9 @@
     "observationCount": 88,
     "proposalOnlyCount": 1,
     "blockedCount": 5,
-    "awaitingObservationCount": 7,
+    "awaitingObservationCount": 4,
     "policyDisabledCandidateCount": 0,
-    "lastObservedAt": "2026-04-22T00:42:00.381Z",
+    "lastObservedAt": "2026-05-04T12:14:30.473Z",
     "nextPriority": {
       "title": "Designing delightful frontends with GPT-5.4 | OpenAI Developers",
       "changeType": "frontend_quality_note",

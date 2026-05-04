@@ -92,6 +92,20 @@ function createCurrentLogSurfaceService(deps = {}) {
       } catch {
       }
     });
+    const allowedCurrentFiles = new Set([
+      "design_conformance_summary.json",
+      "latest_run_summary.json",
+      "latest_signoff_summary.json",
+      "operator_summary.json",
+      "review_load_breakdown.json",
+    ]);
+    for (const entry of fs.readdirSync(loggingSurfacePaths.currentRoot, { withFileTypes: true })) {
+      if (!entry.isFile() || allowedCurrentFiles.has(entry.name)) continue;
+      try {
+        fs.unlinkSync(`${loggingSurfacePaths.currentRoot}/${entry.name}`);
+      } catch {
+      }
+    }
     logOperation("current_logs.updated", {
       trigger: safeString(trigger, 80) || "runtime",
       currentRoot: repoRelativePath(workspaceRoot, loggingSurfacePaths.currentRoot),

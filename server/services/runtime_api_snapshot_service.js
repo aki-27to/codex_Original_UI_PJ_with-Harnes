@@ -320,7 +320,7 @@ function createRuntimeApiSnapshotService(deps = {}) {
       },
     };
     const appServerTransport = buildAppServerTransportRuntimeSnapshot();
-    const serverRestartMarker = readCurrentTruthJson("logs", "current", "server_restart_result.json");
+    const serverRestartMarker = readCurrentTruthJson("runtime", "server_restart_result.json");
     const serverRestart = serverRestartMarker && typeof serverRestartMarker === "object"
       ? {
         ...serverRestartMarker,

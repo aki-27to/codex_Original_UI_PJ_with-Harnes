@@ -1,48 +1,60 @@
 {
   "schema": "agi-readiness-domain-coverage-matrix.v1",
-  "generatedAt": "2026-04-22T00:42:00.719Z",
-  "workspaceId": "3650d504ad404c53",
+  "generatedAt": "2026-05-04T12:17:30.396Z",
+  "workspaceId": "5c839dfeef8b555f",
   "rows": [
     {
       "familyId": "deterministic_code",
       "label": "Deterministic Code",
       "evidenceStatus": "passing_evidence",
       "lastSuccessfulTask": {
-        "publicRef": "task_5a053c64b2",
+        "publicRef": "task_77e179044b",
         "source": "continuity",
         "title": "verifier handoff for Coding baseline through planner/executor/verifier",
         "status": "completed",
-        "updatedAt": "2026-04-21T23:50:30.775Z"
+        "updatedAt": "2026-04-18T06:43:07.047Z"
       },
-      "lastFailedTask": null,
+      "lastFailedTask": {
+        "publicRef": "task_2accc78055",
+        "source": "continuity",
+        "title": "Open world coding triage",
+        "status": "verifier failed",
+        "updatedAt": "2026-04-16T12:15:48.888Z"
+      },
       "activeLessons": [
         {
-          "memoryId": "lesson:anthropic:aa3139a60e49",
-          "status": "shadow",
-          "summary": "Quantifying infrastructure noise in agentic coding evals"
-        },
-        {
-          "memoryId": "lesson:anthropic:29d68d0c98b3",
+          "memoryId": "lesson:anthropic:7eca58ec705c",
           "status": "shadow",
           "summary": "Scaling Managed Agents: Decoupling the brain from the hands"
         },
         {
-          "memoryId": "lesson:anthropic:b1a0f6de1bf2",
+          "memoryId": "lesson:anthropic:f29dc3eec282",
           "status": "shadow",
           "summary": "Harness design for long-running application development"
         },
         {
-          "memoryId": "lesson:anthropic:f591369335fe",
+          "memoryId": "lesson:anthropic:bebd17325417",
+          "status": "shadow",
+          "summary": "Quantifying infrastructure noise in agentic coding evals"
+        },
+        {
+          "memoryId": "lesson:anthropic:0b989aa8eae0",
           "status": "shadow",
           "summary": "Designing AI resistant technical evaluations"
         }
       ],
-      "availableHints": [],
+      "availableHints": [
+        {
+          "memoryId": "manual:f5b8a6a7d757",
+          "status": "proposal_only",
+          "summary": "Use a proposal-only fallback when the governed promotion lane does not match the current turn. Do not force reinforcement or runtime application from a non-targeted task family."
+        }
+      ],
       "observationCount": 3,
       "recentSuccessRate": 1,
       "recentFailureBurden": 0,
-      "lastPassRecency": "2026-04-21T23:50:30.775Z",
-      "verifierBurden": 3,
+      "lastPassRecency": "2026-04-18T06:43:07.047Z",
+      "verifierBurden": 10,
       "stabilityStatus": "stable",
       "stableCovered": true,
       "stabilityWindowSize": 3,
@@ -59,7 +71,7 @@
       "coverageRegressed": false,
       "nextCoverageAction": "maintain current evidence quality",
       "breadthFloor": 0.7,
-      "domainScore": 0.99,
+      "domainScore": 0.92,
       "breadthFloorStatus": "pass"
     },
     {
@@ -67,82 +79,42 @@
       "label": "Web Creative",
       "evidenceStatus": "passing_evidence",
       "lastSuccessfulTask": {
-        "publicRef": "turn_1893e525ae",
+        "publicRef": "turn_1420dac9bc",
         "source": "turn",
-        "title": "runtime evidence",
+        "title": "web ui interactive",
         "status": "completed",
-        "updatedAt": "2026-04-21T15:28:52.522Z"
+        "updatedAt": "2026-05-02T04:35:45.159Z"
       },
       "lastFailedTask": {
-        "publicRef": "turn_7cf87f131d",
+        "publicRef": "turn_5bbcfa438b",
         "source": "turn",
         "title": "web ui interactive",
         "status": "failed validation",
-        "updatedAt": "2026-04-21T15:13:21.476Z"
+        "updatedAt": "2026-05-02T04:34:08.863Z"
       },
       "activeLessons": [
         {
-          "memoryId": "lesson:openai:1407e584a068",
-          "status": "promoted",
-          "summary": "How Perplexity Brought Voice Search to Millions Using the Realtime API | OpenAI Developers"
-        },
-        {
-          "memoryId": "lesson:openai:210e510affa1",
-          "status": "promoted",
-          "summary": "Designing delightful frontends with GPT-5.4 | OpenAI Developers"
-        },
-        {
-          "memoryId": "lesson:openai:1a2b8ec138ed",
-          "status": "promoted",
-          "summary": "From prompts to products: One year of Responses | OpenAI Developers"
-        },
-        {
-          "memoryId": "lesson:openai:ac3cfc04e5f6",
-          "status": "promoted",
-          "summary": "Using skills to accelerate OSS maintenance | OpenAI Developers"
-        },
-        {
-          "memoryId": "lesson:anthropic:aa3139a60e49",
-          "status": "shadow",
-          "summary": "Quantifying infrastructure noise in agentic coding evals"
-        },
-        {
-          "memoryId": "lesson:anthropic:29d68d0c98b3",
+          "memoryId": "lesson:anthropic:7eca58ec705c",
           "status": "shadow",
           "summary": "Scaling Managed Agents: Decoupling the brain from the hands"
         },
         {
-          "memoryId": "lesson:anthropic:b1a0f6de1bf2",
+          "memoryId": "lesson:anthropic:f29dc3eec282",
           "status": "shadow",
           "summary": "Harness design for long-running application development"
         },
         {
-          "memoryId": "lesson:anthropic:f591369335fe",
+          "memoryId": "lesson:anthropic:bebd17325417",
+          "status": "shadow",
+          "summary": "Quantifying infrastructure noise in agentic coding evals"
+        },
+        {
+          "memoryId": "lesson:anthropic:0b989aa8eae0",
           "status": "shadow",
           "summary": "Designing AI resistant technical evaluations"
         }
       ],
       "availableHints": [
-        {
-          "memoryId": "hint:openai:realtime-perplexity-computer-runtime-retrieval",
-          "status": "promoted",
-          "summary": "How Perplexity Brought Voice Search to Millions Using the Realtime API | OpenAI Developers"
-        },
-        {
-          "memoryId": "hint:openai:designing-delightful-frontends-with-gpt-5-4-runtime-retrieval",
-          "status": "promoted",
-          "summary": "Designing delightful frontends with GPT-5.4 | OpenAI Developers"
-        },
-        {
-          "memoryId": "hint:openai:one-year-of-responses-runtime-retrieval",
-          "status": "promoted",
-          "summary": "From prompts to products: One year of Responses | OpenAI Developers"
-        },
-        {
-          "memoryId": "hint:openai:skills-agents-sdk-runtime-retrieval",
-          "status": "promoted",
-          "summary": "Using skills to accelerate OSS maintenance | OpenAI Developers"
-        },
         {
           "memoryId": "hint:openai:building-frontend-uis-with-codex-and-figma-runtime-retrieval",
           "status": "promoted",
@@ -155,25 +127,25 @@
         }
       ],
       "observationCount": 3,
-      "recentSuccessRate": 1,
-      "recentFailureBurden": 0,
-      "lastPassRecency": "2026-04-21T15:28:52.522Z",
+      "recentSuccessRate": 0.6667,
+      "recentFailureBurden": 1,
+      "lastPassRecency": "2026-05-02T04:35:45.159Z",
       "verifierBurden": 0,
-      "stabilityStatus": "stable",
-      "stableCovered": true,
+      "stabilityStatus": "unstable",
+      "stableCovered": false,
       "stabilityWindowSize": 3,
       "recentWindowScores": [
         1,
         1,
-        1
+        0.25
       ],
       "recentWindowOutcomes": [
         "pass",
         "pass",
-        "pass"
+        "fail"
       ],
-      "coverageRegressed": false,
-      "nextCoverageAction": "maintain current evidence quality",
+      "coverageRegressed": true,
+      "nextCoverageAction": "reduce failure burden and verifier debt in recent windows",
       "breadthFloor": 0.7,
       "domainScore": 0.78,
       "breadthFloorStatus": "pass"
@@ -183,31 +155,37 @@
       "label": "Planning",
       "evidenceStatus": "passing_evidence",
       "lastSuccessfulTask": {
-        "publicRef": "task_7f74498af5",
+        "publicRef": "task_26f7a10251",
         "source": "continuity",
         "title": "Simple planning task falls back to single agent path",
         "status": "completed",
-        "updatedAt": "2026-04-21T23:50:30.972Z"
+        "updatedAt": "2026-04-18T06:43:07.618Z"
       },
-      "lastFailedTask": null,
+      "lastFailedTask": {
+        "publicRef": "task_ac9d60b262",
+        "source": "continuity",
+        "title": "Long Duration Simulated Trial",
+        "status": "verifier failed",
+        "updatedAt": "2026-04-16T12:15:49.841Z"
+      },
       "activeLessons": [
         {
-          "memoryId": "lesson:anthropic:aa3139a60e49",
-          "status": "shadow",
-          "summary": "Quantifying infrastructure noise in agentic coding evals"
-        },
-        {
-          "memoryId": "lesson:anthropic:29d68d0c98b3",
+          "memoryId": "lesson:anthropic:7eca58ec705c",
           "status": "shadow",
           "summary": "Scaling Managed Agents: Decoupling the brain from the hands"
         },
         {
-          "memoryId": "lesson:anthropic:b1a0f6de1bf2",
+          "memoryId": "lesson:anthropic:f29dc3eec282",
           "status": "shadow",
           "summary": "Harness design for long-running application development"
         },
         {
-          "memoryId": "lesson:anthropic:f591369335fe",
+          "memoryId": "lesson:anthropic:bebd17325417",
+          "status": "shadow",
+          "summary": "Quantifying infrastructure noise in agentic coding evals"
+        },
+        {
+          "memoryId": "lesson:anthropic:0b989aa8eae0",
           "status": "shadow",
           "summary": "Designing AI resistant technical evaluations"
         }
@@ -216,8 +194,8 @@
       "observationCount": 3,
       "recentSuccessRate": 1,
       "recentFailureBurden": 0,
-      "lastPassRecency": "2026-04-21T23:50:30.972Z",
-      "verifierBurden": 0,
+      "lastPassRecency": "2026-04-18T06:43:07.618Z",
+      "verifierBurden": 10,
       "stabilityStatus": "stable",
       "stableCovered": true,
       "stabilityWindowSize": 3,
@@ -234,7 +212,7 @@
       "coverageRegressed": false,
       "nextCoverageAction": "maintain current evidence quality",
       "breadthFloor": 0.7,
-      "domainScore": 0.99,
+      "domainScore": 0.88,
       "breadthFloorStatus": "pass"
     },
     {
@@ -242,58 +220,70 @@
       "label": "Workflow Execution",
       "evidenceStatus": "passing_evidence",
       "lastSuccessfulTask": {
-        "publicRef": "turn_1893e525ae",
-        "source": "turn",
-        "title": "runtime evidence",
+        "publicRef": "task_9c296edb81",
+        "source": "continuity",
+        "title": "Blackbox unseen tool adoption",
         "status": "completed",
-        "updatedAt": "2026-04-21T15:28:52.522Z"
+        "updatedAt": "2026-04-16T12:15:49.311Z"
       },
-      "lastFailedTask": null,
+      "lastFailedTask": {
+        "publicRef": "task_ba43972007",
+        "source": "continuity",
+        "title": "Long Duration Simulated Trial",
+        "status": "verifier failed",
+        "updatedAt": "2026-04-16T12:15:49.381Z"
+      },
       "activeLessons": [
         {
-          "memoryId": "lesson:anthropic:aa3139a60e49",
-          "status": "shadow",
-          "summary": "Quantifying infrastructure noise in agentic coding evals"
-        },
-        {
-          "memoryId": "lesson:anthropic:29d68d0c98b3",
+          "memoryId": "lesson:anthropic:7eca58ec705c",
           "status": "shadow",
           "summary": "Scaling Managed Agents: Decoupling the brain from the hands"
         },
         {
-          "memoryId": "lesson:anthropic:b1a0f6de1bf2",
+          "memoryId": "lesson:anthropic:f29dc3eec282",
           "status": "shadow",
           "summary": "Harness design for long-running application development"
         },
         {
-          "memoryId": "lesson:anthropic:f591369335fe",
+          "memoryId": "lesson:anthropic:bebd17325417",
+          "status": "shadow",
+          "summary": "Quantifying infrastructure noise in agentic coding evals"
+        },
+        {
+          "memoryId": "lesson:anthropic:0b989aa8eae0",
           "status": "shadow",
           "summary": "Designing AI resistant technical evaluations"
         }
       ],
-      "availableHints": [],
+      "availableHints": [
+        {
+          "memoryId": "manual:ccb3ff1fb0e4",
+          "status": "proposal_only",
+          "summary": "Lock the self-improvement contract first. When the user asks for simultaneous delivery and learning with explicit output fields, capture the required fields before deciding any storage or promotion path."
+        }
+      ],
       "observationCount": 3,
-      "recentSuccessRate": 1,
-      "recentFailureBurden": 0,
-      "lastPassRecency": "2026-04-21T15:28:52.522Z",
-      "verifierBurden": 0,
-      "stabilityStatus": "stable",
-      "stableCovered": true,
+      "recentSuccessRate": 0,
+      "recentFailureBurden": 3,
+      "lastPassRecency": "2026-04-16T12:15:49.311Z",
+      "verifierBurden": 5,
+      "stabilityStatus": "failing_only",
+      "stableCovered": false,
       "stabilityWindowSize": 3,
       "recentWindowScores": [
-        1,
-        1,
-        1
+        0.25,
+        0.25,
+        0.25
       ],
       "recentWindowOutcomes": [
-        "pass",
-        "pass",
-        "pass"
+        "fail",
+        "fail",
+        "fail"
       ],
-      "coverageRegressed": false,
-      "nextCoverageAction": "maintain current evidence quality",
+      "coverageRegressed": true,
+      "nextCoverageAction": "obtain governed passing evidence for this family",
       "breadthFloor": 0.7,
-      "domainScore": 0.99,
+      "domainScore": 0.78,
       "breadthFloorStatus": "pass"
     },
     {
@@ -301,62 +291,62 @@
       "label": "Evaluation / Review",
       "evidenceStatus": "passing_evidence",
       "lastSuccessfulTask": {
-        "publicRef": "eval_4917f100f6",
+        "publicRef": "eval_8eda1a4dba",
         "source": "eval",
-        "title": "ambiguous instruction probe.v1",
+        "title": "live.adversarial conflicting.recovery.v1",
         "status": "observed",
-        "updatedAt": "2026-04-21T15:36:06.826Z"
+        "updatedAt": "2026-04-05T20:00:19.746Z"
       },
       "lastFailedTask": {
-        "publicRef": "turn_7cf87f131d",
+        "publicRef": "turn_c9f723bb06",
         "source": "turn",
         "title": "web ui interactive",
         "status": "failed validation",
-        "updatedAt": "2026-04-21T15:13:21.476Z"
+        "updatedAt": "2026-05-02T03:35:47.926Z"
       },
       "activeLessons": [
         {
-          "memoryId": "lesson:anthropic:aa3139a60e49",
-          "status": "shadow",
-          "summary": "Quantifying infrastructure noise in agentic coding evals"
-        },
-        {
-          "memoryId": "lesson:anthropic:29d68d0c98b3",
+          "memoryId": "lesson:anthropic:7eca58ec705c",
           "status": "shadow",
           "summary": "Scaling Managed Agents: Decoupling the brain from the hands"
         },
         {
-          "memoryId": "lesson:anthropic:b1a0f6de1bf2",
+          "memoryId": "lesson:anthropic:f29dc3eec282",
           "status": "shadow",
           "summary": "Harness design for long-running application development"
         },
         {
-          "memoryId": "lesson:anthropic:f591369335fe",
+          "memoryId": "lesson:anthropic:bebd17325417",
+          "status": "shadow",
+          "summary": "Quantifying infrastructure noise in agentic coding evals"
+        },
+        {
+          "memoryId": "lesson:anthropic:0b989aa8eae0",
           "status": "shadow",
           "summary": "Designing AI resistant technical evaluations"
         }
       ],
       "availableHints": [],
       "observationCount": 3,
-      "recentSuccessRate": 1,
-      "recentFailureBurden": 0,
-      "lastPassRecency": "2026-04-21T15:36:06.826Z",
+      "recentSuccessRate": 0,
+      "recentFailureBurden": 3,
+      "lastPassRecency": "2026-04-05T20:00:19.746Z",
       "verifierBurden": 0,
-      "stabilityStatus": "stable",
-      "stableCovered": true,
+      "stabilityStatus": "failing_only",
+      "stableCovered": false,
       "stabilityWindowSize": 3,
       "recentWindowScores": [
-        1,
-        1,
-        1
+        0.25,
+        0.25,
+        0.25
       ],
       "recentWindowOutcomes": [
-        "pass",
-        "pass",
-        "pass"
+        "fail",
+        "fail",
+        "fail"
       ],
-      "coverageRegressed": false,
-      "nextCoverageAction": "maintain current evidence quality",
+      "coverageRegressed": true,
+      "nextCoverageAction": "obtain governed passing evidence for this family",
       "breadthFloor": 0.7,
       "domainScore": 0.78,
       "breadthFloorStatus": "pass"
@@ -366,86 +356,86 @@
       "label": "Tool Use / Browser-like",
       "evidenceStatus": "passing_evidence",
       "lastSuccessfulTask": {
-        "publicRef": "turn_1893e525ae",
-        "source": "turn",
-        "title": "runtime evidence",
+        "publicRef": "task_bea36b8e4b",
+        "source": "continuity",
+        "title": "Blackbox web interaction",
         "status": "completed",
-        "updatedAt": "2026-04-21T15:28:52.522Z"
+        "updatedAt": "2026-04-16T12:15:48.282Z"
       },
       "lastFailedTask": {
-        "publicRef": "turn_7cf87f131d",
+        "publicRef": "turn_5bbcfa438b",
         "source": "turn",
         "title": "web ui interactive",
         "status": "failed validation",
-        "updatedAt": "2026-04-21T15:13:21.476Z"
+        "updatedAt": "2026-05-02T04:34:08.863Z"
       },
       "activeLessons": [
         {
-          "memoryId": "lesson:anthropic:aa3139a60e49",
-          "status": "shadow",
-          "summary": "Quantifying infrastructure noise in agentic coding evals"
-        },
-        {
-          "memoryId": "lesson:anthropic:29d68d0c98b3",
+          "memoryId": "lesson:anthropic:7eca58ec705c",
           "status": "shadow",
           "summary": "Scaling Managed Agents: Decoupling the brain from the hands"
         },
         {
-          "memoryId": "lesson:anthropic:b1a0f6de1bf2",
+          "memoryId": "lesson:anthropic:f29dc3eec282",
           "status": "shadow",
           "summary": "Harness design for long-running application development"
         },
         {
-          "memoryId": "lesson:anthropic:f591369335fe",
+          "memoryId": "lesson:anthropic:bebd17325417",
+          "status": "shadow",
+          "summary": "Quantifying infrastructure noise in agentic coding evals"
+        },
+        {
+          "memoryId": "lesson:anthropic:0b989aa8eae0",
           "status": "shadow",
           "summary": "Designing AI resistant technical evaluations"
         }
       ],
       "availableHints": [],
       "observationCount": 3,
-      "recentSuccessRate": 1,
-      "recentFailureBurden": 0,
-      "lastPassRecency": "2026-04-21T15:28:52.522Z",
+      "recentSuccessRate": 0.6667,
+      "recentFailureBurden": 1,
+      "lastPassRecency": "2026-04-16T12:15:48.282Z",
       "verifierBurden": 0,
-      "stabilityStatus": "stable",
-      "stableCovered": true,
+      "stabilityStatus": "unstable",
+      "stableCovered": false,
       "stabilityWindowSize": 3,
       "recentWindowScores": [
         1,
         1,
-        1
+        0.25
       ],
       "recentWindowOutcomes": [
         "pass",
         "pass",
-        "pass"
+        "fail"
       ],
-      "coverageRegressed": false,
-      "nextCoverageAction": "maintain current evidence quality",
+      "coverageRegressed": true,
+      "nextCoverageAction": "reduce failure burden and verifier debt in recent windows",
       "breadthFloor": 0.7,
       "domainScore": 0.78,
       "breadthFloorStatus": "pass"
     }
   ],
   "horizon": {
-    "activeTaskId": "research_multi_agent-1776815430825",
-    "activeTaskFamily": "planning",
-    "objective": "Summarize bounded research findings with citations and verification.",
+    "activeTaskId": "phase4-failure-1774995929746",
+    "activeTaskFamily": "deterministic_code",
+    "objective": "verifier failure should force replan and recovery",
     "horizonUnit": "steps",
     "completedSteps": 4,
     "subgoalCount": 4,
-    "verifierCheckpointCount": 2,
+    "verifierCheckpointCount": 4,
     "replanCount": 0,
-    "resumeCount": 0,
+    "resumeCount": 2,
     "completionLengthBucket": "medium",
     "closureOutcome": "completed",
     "evidenceRefs": [
-      "logs/archive/raw/runtime_state/continuity/tasks/research_multi_agent-1776815430825/closeout_summary.json",
-      "logs/archive/raw/runtime_state/continuity/tasks/research_multi_agent-1776815430825/verifier_state.json",
-      "logs/archive/raw/runtime_state/continuity/tasks/research_multi_agent-1776815430825/integration_summary.json",
-      "logs/archive/raw/runtime_state/continuity/tasks/research_multi_agent-1776815430825/task_state.json",
-      "logs/archive/raw/runtime_state/continuity/tasks/research_multi_agent-1776815430825/plan_state.json",
-      "logs/archive/raw/runtime_state/continuity/tasks/research_multi_agent-1776815430825/agent_graph.json"
+      "logs/archive/raw/runtime_state/continuity/tasks/phase4-failure-1774995929746/closeout_summary.json",
+      "logs/archive/raw/runtime_state/continuity/tasks/phase4-failure-1774995929746/verifier_state.json",
+      "logs/archive/raw/runtime_state/continuity/tasks/phase4-failure-1774995929746/integration_summary.json",
+      "logs/archive/raw/runtime_state/continuity/tasks/phase4-failure-1774995929746/task_state.json",
+      "logs/archive/raw/runtime_state/continuity/tasks/phase4-failure-1774995929746/plan_state.json",
+      "logs/archive/raw/runtime_state/continuity/tasks/phase4-failure-1774995929746/agent_graph.json"
     ]
   }
 }

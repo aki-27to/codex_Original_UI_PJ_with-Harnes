@@ -1,46 +1,46 @@
 {
-  "generatedAt": "2026-04-21T15:08:45.520Z",
-  "updatedAt": "2026-04-21T15:09:11.721Z",
+  "generatedAt": "2026-04-18T05:27:13.999Z",
+  "updatedAt": "2026-04-18T05:31:45.212Z",
   "executionMode": "split-resumable",
-  "bundleRoot": "logs\\bundles\\signoff\\signoff-2026-04-21T15-08-45-517Z-bbfbe8",
+  "bundleRoot": "logs\\bundles\\signoff\\signoff-2026-04-18T05-27-13-996Z-f97810",
   "transportMode": "mock-fixture",
   "baselineTransportMode": "mock-fixture",
   "directBaselineTransportMode": "mock-fixture",
   "paths": {
-    "runtimeSnapshot": "logs\\bundles\\signoff\\signoff-2026-04-21T15-08-45-517Z-bbfbe8\\runtime_snapshot.json",
-    "coreHarnessWorkflowRun": "logs\\bundles\\signoff\\signoff-2026-04-21T15-08-45-517Z-bbfbe8\\core_harness_workflow_run.json",
-    "fastTaskTraceSummary": "logs\\bundles\\signoff\\signoff-2026-04-21T15-08-45-517Z-bbfbe8\\raw\\summaries\\fast_task_trace_summary.json",
-    "discoveryTaskTraceSummary": "logs\\bundles\\signoff\\signoff-2026-04-21T15-08-45-517Z-bbfbe8\\raw\\summaries\\discovery_task_trace_summary.json",
-    "signoffTaskTraceSummary": "logs\\bundles\\signoff\\signoff-2026-04-21T15-08-45-517Z-bbfbe8\\raw\\summaries\\signoff_task_trace_summary.json",
+    "runtimeSnapshot": "logs\\bundles\\signoff\\signoff-2026-04-18T05-27-13-996Z-f97810\\runtime_snapshot.json",
+    "coreHarnessWorkflowRun": "logs\\bundles\\signoff\\signoff-2026-04-18T05-27-13-996Z-f97810\\core_harness_workflow_run.json",
+    "fastTaskTraceSummary": "logs\\bundles\\signoff\\signoff-2026-04-18T05-27-13-996Z-f97810\\raw\\summaries\\fast_task_trace_summary.json",
+    "discoveryTaskTraceSummary": "logs\\bundles\\signoff\\signoff-2026-04-18T05-27-13-996Z-f97810\\raw\\summaries\\discovery_task_trace_summary.json",
+    "signoffTaskTraceSummary": "logs\\bundles\\signoff\\signoff-2026-04-18T05-27-13-996Z-f97810\\raw\\summaries\\signoff_task_trace_summary.json",
     "naturalTaskTraceSummary": "natural_task_trace_summary.json",
-    "boundaryTaskTraceSummary": "logs\\bundles\\signoff\\signoff-2026-04-21T15-08-45-517Z-bbfbe8\\boundary_task_trace_summary.json",
+    "boundaryTaskTraceSummary": "logs\\bundles\\signoff\\signoff-2026-04-18T05-27-13-996Z-f97810\\boundary_task_trace_summary.json",
     "latestRunSummary": "latest_run_summary.json",
-    "reviewLoadBreakdown": "logs\\bundles\\signoff\\signoff-2026-04-21T15-08-45-517Z-bbfbe8\\review_load_breakdown.json",
-    "laneLatencySummary": "logs\\bundles\\signoff\\signoff-2026-04-21T15-08-45-517Z-bbfbe8\\raw\\relocated_top_level\\lane_latency_summary.json",
-    "resumeState": "logs\\bundles\\signoff\\signoff-2026-04-21T15-08-45-517Z-bbfbe8\\raw\\relocated_top_level\\signoff_resume_state.json",
-    "measuredBaselineSummary": "logs\\bundles\\signoff\\signoff-2026-04-21T15-08-45-517Z-bbfbe8\\raw\\measured_baseline\\measured_baseline_summary.json",
-    "baselineFastTaskTraceSummary": "logs\\bundles\\signoff\\signoff-2026-04-21T15-08-45-517Z-bbfbe8\\raw\\measured_baseline\\baseline_fast_task_trace_summary.json",
-    "baselineDiscoveryTaskTraceSummary": "logs\\bundles\\signoff\\signoff-2026-04-21T15-08-45-517Z-bbfbe8\\raw\\measured_baseline\\baseline_discovery_task_trace_summary.json",
-    "baselineSignoffTaskTraceSummary": "logs\\bundles\\signoff\\signoff-2026-04-21T15-08-45-517Z-bbfbe8\\raw\\measured_baseline\\baseline_signoff_task_trace_summary.json",
-    "baselineNaturalTaskTraceSummary": "logs\\bundles\\signoff\\signoff-2026-04-21T15-08-45-517Z-bbfbe8\\raw\\measured_baseline\\baseline_natural_task_trace_summary.json",
-    "baselineBoundaryTaskTraceSummary": "logs\\bundles\\signoff\\signoff-2026-04-21T15-08-45-517Z-bbfbe8\\raw\\measured_baseline\\baseline_boundary_task_trace_summary.json",
-    "rawDirectBaselineSummary": "logs\\bundles\\signoff\\signoff-2026-04-21T15-08-45-517Z-bbfbe8\\raw\\raw_direct_baseline\\raw_direct_baseline_summary.json",
-    "rawDirectFastTaskTraceSummary": "logs\\bundles\\signoff\\signoff-2026-04-21T15-08-45-517Z-bbfbe8\\raw\\raw_direct_baseline\\raw_direct_fast_task_trace_summary.json",
-    "rawDirectDiscoveryTaskTraceSummary": "logs\\bundles\\signoff\\signoff-2026-04-21T15-08-45-517Z-bbfbe8\\raw\\raw_direct_baseline\\raw_direct_discovery_task_trace_summary.json",
-    "rawDirectSignoffTaskTraceSummary": "logs\\bundles\\signoff\\signoff-2026-04-21T15-08-45-517Z-bbfbe8\\raw\\raw_direct_baseline\\raw_direct_signoff_task_trace_summary.json",
-    "rawDirectNaturalTaskTraceSummary": "logs\\bundles\\signoff\\signoff-2026-04-21T15-08-45-517Z-bbfbe8\\raw\\raw_direct_baseline\\raw_direct_natural_task_trace_summary.json",
-    "rawDirectBoundaryTaskTraceSummary": "logs\\bundles\\signoff\\signoff-2026-04-21T15-08-45-517Z-bbfbe8\\raw\\raw_direct_baseline\\raw_direct_boundary_task_trace_summary.json",
-    "baselineComparisonReport": "logs\\bundles\\signoff\\signoff-2026-04-21T15-08-45-517Z-bbfbe8\\raw\\relocated_top_level\\baseline_comparison_report.json",
-    "speedVsAssuranceReport": "logs\\bundles\\signoff\\signoff-2026-04-21T15-08-45-517Z-bbfbe8\\raw\\relocated_top_level\\speed_vs_assurance_report.md",
-    "harnessExecutionMemory": "logs\\bundles\\signoff\\signoff-2026-04-21T15-08-45-517Z-bbfbe8\\raw\\harness_execution_memory.json",
-    "evalRuns": "logs\\bundles\\signoff\\signoff-2026-04-21T15-08-45-517Z-bbfbe8\\raw\\eval_runs.jsonl",
-    "turnsDir": "logs\\bundles\\signoff\\signoff-2026-04-21T15-08-45-517Z-bbfbe8\\raw\\turns",
-    "measuredBaselineTurnsDir": "logs\\bundles\\signoff\\signoff-2026-04-21T15-08-45-517Z-bbfbe8\\raw\\measured_baseline\\turns",
-    "rawRoot": "logs\\bundles\\signoff\\signoff-2026-04-21T15-08-45-517Z-bbfbe8\\raw",
-    "operationLog": "logs\\bundles\\signoff\\signoff-2026-04-21T15-08-45-517Z-bbfbe8\\raw\\operation_logs\\codex_ops.jsonl",
-    "measuredBaselineRoot": "logs\\bundles\\signoff\\signoff-2026-04-21T15-08-45-517Z-bbfbe8\\raw\\measured_baseline",
-    "rawDirectBaselineRoot": "logs\\bundles\\signoff\\signoff-2026-04-21T15-08-45-517Z-bbfbe8\\raw\\raw_direct_baseline",
-    "bundleSurfaceMap": "logs\\bundles\\signoff\\signoff-2026-04-21T15-08-45-517Z-bbfbe8\\bundle_surface_map.json",
+    "reviewLoadBreakdown": "logs\\bundles\\signoff\\signoff-2026-04-18T05-27-13-996Z-f97810\\review_load_breakdown.json",
+    "laneLatencySummary": "logs\\bundles\\signoff\\signoff-2026-04-18T05-27-13-996Z-f97810\\raw\\relocated_top_level\\lane_latency_summary.json",
+    "resumeState": "logs\\bundles\\signoff\\signoff-2026-04-18T05-27-13-996Z-f97810\\raw\\relocated_top_level\\signoff_resume_state.json",
+    "measuredBaselineSummary": "logs\\bundles\\signoff\\signoff-2026-04-18T05-27-13-996Z-f97810\\raw\\measured_baseline\\measured_baseline_summary.json",
+    "baselineFastTaskTraceSummary": "logs\\bundles\\signoff\\signoff-2026-04-18T05-27-13-996Z-f97810\\raw\\measured_baseline\\baseline_fast_task_trace_summary.json",
+    "baselineDiscoveryTaskTraceSummary": "logs\\bundles\\signoff\\signoff-2026-04-18T05-27-13-996Z-f97810\\raw\\measured_baseline\\baseline_discovery_task_trace_summary.json",
+    "baselineSignoffTaskTraceSummary": "logs\\bundles\\signoff\\signoff-2026-04-18T05-27-13-996Z-f97810\\raw\\measured_baseline\\baseline_signoff_task_trace_summary.json",
+    "baselineNaturalTaskTraceSummary": "logs\\bundles\\signoff\\signoff-2026-04-18T05-27-13-996Z-f97810\\raw\\measured_baseline\\baseline_natural_task_trace_summary.json",
+    "baselineBoundaryTaskTraceSummary": "logs\\bundles\\signoff\\signoff-2026-04-18T05-27-13-996Z-f97810\\raw\\measured_baseline\\baseline_boundary_task_trace_summary.json",
+    "rawDirectBaselineSummary": "logs\\bundles\\signoff\\signoff-2026-04-18T05-27-13-996Z-f97810\\raw\\raw_direct_baseline\\raw_direct_baseline_summary.json",
+    "rawDirectFastTaskTraceSummary": "logs\\bundles\\signoff\\signoff-2026-04-18T05-27-13-996Z-f97810\\raw\\raw_direct_baseline\\raw_direct_fast_task_trace_summary.json",
+    "rawDirectDiscoveryTaskTraceSummary": "logs\\bundles\\signoff\\signoff-2026-04-18T05-27-13-996Z-f97810\\raw\\raw_direct_baseline\\raw_direct_discovery_task_trace_summary.json",
+    "rawDirectSignoffTaskTraceSummary": "logs\\bundles\\signoff\\signoff-2026-04-18T05-27-13-996Z-f97810\\raw\\raw_direct_baseline\\raw_direct_signoff_task_trace_summary.json",
+    "rawDirectNaturalTaskTraceSummary": "logs\\bundles\\signoff\\signoff-2026-04-18T05-27-13-996Z-f97810\\raw\\raw_direct_baseline\\raw_direct_natural_task_trace_summary.json",
+    "rawDirectBoundaryTaskTraceSummary": "logs\\bundles\\signoff\\signoff-2026-04-18T05-27-13-996Z-f97810\\raw\\raw_direct_baseline\\raw_direct_boundary_task_trace_summary.json",
+    "baselineComparisonReport": "logs\\bundles\\signoff\\signoff-2026-04-18T05-27-13-996Z-f97810\\raw\\relocated_top_level\\baseline_comparison_report.json",
+    "speedVsAssuranceReport": "logs\\bundles\\signoff\\signoff-2026-04-18T05-27-13-996Z-f97810\\raw\\relocated_top_level\\speed_vs_assurance_report.md",
+    "harnessExecutionMemory": "logs\\bundles\\signoff\\signoff-2026-04-18T05-27-13-996Z-f97810\\raw\\harness_execution_memory.json",
+    "evalRuns": "logs\\bundles\\signoff\\signoff-2026-04-18T05-27-13-996Z-f97810\\raw\\eval_runs.jsonl",
+    "turnsDir": "logs\\bundles\\signoff\\signoff-2026-04-18T05-27-13-996Z-f97810\\raw\\turns",
+    "measuredBaselineTurnsDir": "logs\\bundles\\signoff\\signoff-2026-04-18T05-27-13-996Z-f97810\\raw\\measured_baseline\\turns",
+    "rawRoot": "logs\\bundles\\signoff\\signoff-2026-04-18T05-27-13-996Z-f97810\\raw",
+    "operationLog": "logs\\bundles\\signoff\\signoff-2026-04-18T05-27-13-996Z-f97810\\raw\\operation_logs\\codex_ops.jsonl",
+    "measuredBaselineRoot": "logs\\bundles\\signoff\\signoff-2026-04-18T05-27-13-996Z-f97810\\raw\\measured_baseline",
+    "rawDirectBaselineRoot": "logs\\bundles\\signoff\\signoff-2026-04-18T05-27-13-996Z-f97810\\raw\\raw_direct_baseline",
+    "bundleSurfaceMap": "logs\\bundles\\signoff\\signoff-2026-04-18T05-27-13-996Z-f97810\\bundle_surface_map.json",
     "signoffSummary": "signoff_summary.json",
     "conformanceReport": "conformance_report.json",
     "operatorViewSummary": "operator_view_summary.json"
@@ -252,7 +252,7 @@
     },
     "evidenceArtifacts": {
       "enabled": true,
-      "root": "logs/bundles/signoff/signoff-2026-04-21T15-08-45-517Z-bbfbe8/raw/turns",
+      "root": "logs/bundles/signoff/signoff-2026-04-18T05-27-13-996Z-f97810/raw/turns",
       "maxBytes": 268435456,
       "maxDays": 14,
       "redaction": {
@@ -262,7 +262,7 @@
     },
     "harnessMemory": {
       "schema": "harness-execution-memory.v1",
-      "storage": "logs/bundles/signoff/signoff-2026-04-21T15-08-45-517Z-bbfbe8/raw/harness_execution_memory.json",
+      "storage": "logs/bundles/signoff/signoff-2026-04-18T05-27-13-996Z-f97810/raw/harness_execution_memory.json",
       "envKey": "CODEX_HARNESS_MEMORY_PATH",
       "loaded": 1,
       "retentionDays": 30,
@@ -418,7 +418,7 @@
           "unlockEnvKey": "CODEX_BLACKBOX_EVAL_UNLOCK"
         }
       ],
-      "historyPath": "logs/bundles/signoff/signoff-2026-04-21T15-08-45-517Z-bbfbe8/raw/eval_runs.jsonl",
+      "historyPath": "logs/bundles/signoff/signoff-2026-04-18T05-27-13-996Z-f97810/raw/eval_runs.jsonl",
       "historyEnvKey": "CODEX_EVAL_HISTORY_PATH",
       "maxCases": 24,
       "maxVariants": 3,
@@ -427,14 +427,14 @@
     "operationLog": {
       "enabled": true,
       "level": "standard",
-      "path": "logs/bundles/signoff/signoff-2026-04-21T15-08-45-517Z-bbfbe8/raw/operation_logs/codex_ops_57695_34656.jsonl",
-      "basePath": "logs/bundles/signoff/signoff-2026-04-21T15-08-45-517Z-bbfbe8/raw/operation_logs/codex_ops_57695_34656.jsonl",
+      "path": "logs/bundles/signoff/signoff-2026-04-18T05-27-13-996Z-f97810/raw/operation_logs/codex_ops_57818_54288.jsonl",
+      "basePath": "logs/bundles/signoff/signoff-2026-04-18T05-27-13-996Z-f97810/raw/operation_logs/codex_ops_57818_54288.jsonl",
       "dailySplit": false,
       "maxBytes": 1048576,
       "keepBytes": 734003,
       "maxEventBytes": 4096,
       "archiveEnabled": true,
-      "archivePath": "logs/bundles/signoff/signoff-2026-04-21T15-08-45-517Z-bbfbe8/raw/operation_logs/archive",
+      "archivePath": "logs/bundles/signoff/signoff-2026-04-18T05-27-13-996Z-f97810/raw/operation_logs/archive",
       "archiveCompress": true,
       "archiveMaxBytes": 33554432,
       "archiveMaxFiles": 240
@@ -460,9 +460,9 @@
     }
   },
   "coreHarnessWorkflow": {
-    "runId": "eval-1776784126076-6abf2d5e",
+    "runId": "eval-1776490038849-1ae72769",
     "suiteId": "core-harness-workflow.v5",
-    "generatedAt": 1776784131002,
+    "generatedAt": 1776490087869,
     "sampleSize": 23,
     "passedCases": 23,
     "failedCases": 0,
@@ -509,8 +509,8 @@
   },
   "fastTask": {
     "turnId": "mock-turn-4",
-    "targetPath": "logs\\archive\\raw\\fixtures\\fast_samples\\sample_fast_target_065fe205.md",
-    "artifactManifestPath": "logs\\bundles\\signoff\\signoff-2026-04-21T15-08-45-517Z-bbfbe8\\raw\\turns\\2026-04-21\\mock-thread-2__mock-turn-4\\manifest.json",
+    "targetPath": "logs\\archive\\raw\\fixtures\\fast_samples\\sample_fast_target_ec473cd0.md",
+    "artifactManifestPath": "logs\\bundles\\signoff\\signoff-2026-04-18T05-27-13-996Z-f97810\\raw\\turns\\2026-04-18\\mock-thread-2__mock-turn-4\\manifest.json",
     "assertions": {
       "completed": true,
       "fastModeSelected": true,
@@ -523,7 +523,7 @@
   },
   "discoveryTask": {
     "turnId": "mock-turn-5",
-    "artifactManifestPath": "logs\\bundles\\signoff\\signoff-2026-04-21T15-08-45-517Z-bbfbe8\\raw\\turns\\2026-04-21\\mock-thread-3__mock-turn-5\\manifest.json",
+    "artifactManifestPath": "logs\\bundles\\signoff\\signoff-2026-04-18T05-27-13-996Z-f97810\\raw\\turns\\2026-04-18\\mock-thread-3__mock-turn-5\\manifest.json",
     "assertions": {
       "discoveryOutcomeAcceptable": true,
       "discoveryModeSelected": true,
@@ -536,8 +536,8 @@
   },
   "signoffTask": {
     "turnId": "mock-turn-7",
-    "targetPath": "logs\\bundles\\signoff\\signoff-2026-04-21T15-08-45-517Z-bbfbe8\\raw\\scripts\\config\\signoff_sample_target.txt",
-    "artifactManifestPath": "logs\\bundles\\signoff\\signoff-2026-04-21T15-08-45-517Z-bbfbe8\\raw\\turns\\2026-04-21\\mock-thread-4__mock-turn-7\\manifest.json",
+    "targetPath": "logs\\bundles\\signoff\\signoff-2026-04-18T05-27-13-996Z-f97810\\raw\\scripts\\config\\signoff_sample_target.txt",
+    "artifactManifestPath": "logs\\bundles\\signoff\\signoff-2026-04-18T05-27-13-996Z-f97810\\raw\\turns\\2026-04-18\\mock-thread-4__mock-turn-7\\manifest.json",
     "assertions": {
       "completed": true,
       "signoffAssuranceSelected": true,
@@ -555,7 +555,7 @@
     "threadId": "mock-thread-5",
     "turnId": "mock-turn-8",
     "targetPath": "docs\\CURRENT_ARCHITECTURE.md",
-    "artifactManifestPath": "logs\\bundles\\signoff\\signoff-2026-04-21T15-08-45-517Z-bbfbe8\\raw\\turns\\2026-04-21\\mock-thread-5__mock-turn-8\\manifest.json",
+    "artifactManifestPath": "logs\\bundles\\signoff\\signoff-2026-04-18T05-27-13-996Z-f97810\\raw\\turns\\2026-04-18\\mock-thread-5__mock-turn-8\\manifest.json",
     "dispatchChildren": [
       "1",
       "infra_worker",
@@ -578,8 +578,8 @@
   "boundaryTask": {
     "threadId": "mock-thread-6",
     "turnId": "mock-turn-10",
-    "targetPath": "logs\\bundles\\signoff\\signoff-2026-04-21T15-08-45-517Z-bbfbe8\\raw\\docs\\RUNTIME_BOUNDARY_MAP.md",
-    "artifactManifestPath": "logs\\bundles\\signoff\\signoff-2026-04-21T15-08-45-517Z-bbfbe8\\raw\\turns\\2026-04-21\\mock-thread-6__mock-turn-10\\manifest.json",
+    "targetPath": "logs\\bundles\\signoff\\signoff-2026-04-18T05-27-13-996Z-f97810\\raw\\docs\\RUNTIME_BOUNDARY_MAP.md",
+    "artifactManifestPath": "logs\\bundles\\signoff\\signoff-2026-04-18T05-27-13-996Z-f97810\\raw\\turns\\2026-04-18\\mock-thread-6__mock-turn-10\\manifest.json",
     "dispatchChildren": [
       "1",
       "infra_worker",
@@ -602,36 +602,36 @@
   },
   "measuredBaseline": {
     "status": "ok",
-    "summaryPath": "logs\\bundles\\signoff\\signoff-2026-04-21T15-08-45-517Z-bbfbe8\\raw\\measured_baseline\\measured_baseline_summary.json",
+    "summaryPath": "logs\\bundles\\signoff\\signoff-2026-04-18T05-27-13-996Z-f97810\\raw\\measured_baseline\\measured_baseline_summary.json",
     "profile": "measured-baseline-smoke",
     "samples": {
       "fast": {
         "turnId": "mock-turn-1",
-        "tracePath": "logs\\bundles\\signoff\\signoff-2026-04-21T15-08-45-517Z-bbfbe8\\raw\\measured_baseline\\baseline_fast_task_trace_summary.json",
+        "tracePath": "logs\\bundles\\signoff\\signoff-2026-04-18T05-27-13-996Z-f97810\\raw\\measured_baseline\\baseline_fast_task_trace_summary.json",
         "taskOutcomeStatus": "FAILED_VALIDATION",
         "taskOutcomeReason": "missing_required_evidence"
       },
       "discovery": {
         "turnId": "mock-turn-2",
-        "tracePath": "logs\\bundles\\signoff\\signoff-2026-04-21T15-08-45-517Z-bbfbe8\\raw\\measured_baseline\\baseline_discovery_task_trace_summary.json",
+        "tracePath": "logs\\bundles\\signoff\\signoff-2026-04-18T05-27-13-996Z-f97810\\raw\\measured_baseline\\baseline_discovery_task_trace_summary.json",
         "taskOutcomeStatus": "NEEDS_INPUT",
         "taskOutcomeReason": "interactive_approval_unavailable"
       },
       "signoff": {
         "turnId": "mock-turn-3",
-        "tracePath": "logs\\bundles\\signoff\\signoff-2026-04-21T15-08-45-517Z-bbfbe8\\raw\\measured_baseline\\baseline_signoff_task_trace_summary.json",
+        "tracePath": "logs\\bundles\\signoff\\signoff-2026-04-18T05-27-13-996Z-f97810\\raw\\measured_baseline\\baseline_signoff_task_trace_summary.json",
         "taskOutcomeStatus": "FAILED_VALIDATION",
         "taskOutcomeReason": "missing_required_evidence"
       },
       "natural": {
         "turnId": "mock-turn-4",
-        "tracePath": "logs\\bundles\\signoff\\signoff-2026-04-21T15-08-45-517Z-bbfbe8\\raw\\measured_baseline\\baseline_natural_task_trace_summary.json",
+        "tracePath": "logs\\bundles\\signoff\\signoff-2026-04-18T05-27-13-996Z-f97810\\raw\\measured_baseline\\baseline_natural_task_trace_summary.json",
         "taskOutcomeStatus": "FAILED_VALIDATION",
         "taskOutcomeReason": "missing_required_evidence"
       },
       "boundary": {
         "turnId": "mock-turn-5",
-        "tracePath": "logs\\bundles\\signoff\\signoff-2026-04-21T15-08-45-517Z-bbfbe8\\raw\\measured_baseline\\baseline_boundary_task_trace_summary.json",
+        "tracePath": "logs\\bundles\\signoff\\signoff-2026-04-18T05-27-13-996Z-f97810\\raw\\measured_baseline\\baseline_boundary_task_trace_summary.json",
         "taskOutcomeStatus": "FAILED_VALIDATION",
         "taskOutcomeReason": "missing_required_evidence"
       }
@@ -639,7 +639,7 @@
   },
   "rawDirectBaseline": {
     "status": "unavailable",
-    "summaryPath": "logs\\bundles\\signoff\\signoff-2026-04-21T15-08-45-517Z-bbfbe8\\raw\\raw_direct_baseline\\raw_direct_baseline_summary.json",
+    "summaryPath": "logs\\bundles\\signoff\\signoff-2026-04-18T05-27-13-996Z-f97810\\raw\\raw_direct_baseline\\raw_direct_baseline_summary.json",
     "directness": "app-server-direct",
     "transportMode": "mock-fixture",
     "samples": {},
@@ -648,10 +648,10 @@
   },
   "baselineComparison": {
     "status": "ok",
-    "reportPath": "logs\\bundles\\signoff\\signoff-2026-04-21T15-08-45-517Z-bbfbe8\\raw\\relocated_top_level\\baseline_comparison_report.json",
-    "markdownPath": "logs\\bundles\\signoff\\signoff-2026-04-21T15-08-45-517Z-bbfbe8\\raw\\relocated_top_level\\speed_vs_assurance_report.md",
-    "archiveReportPath": "logs\\archive\\legacy\\baseline_comparison\\signoff-2026-04-21T15-08-45-517Z-bbfbe8.json",
-    "archiveMarkdownPath": "logs\\archive\\legacy\\baseline_comparison\\signoff-2026-04-21T15-08-45-517Z-bbfbe8.md",
+    "reportPath": "logs\\bundles\\signoff\\signoff-2026-04-18T05-27-13-996Z-f97810\\raw\\relocated_top_level\\baseline_comparison_report.json",
+    "markdownPath": "logs\\bundles\\signoff\\signoff-2026-04-18T05-27-13-996Z-f97810\\raw\\relocated_top_level\\speed_vs_assurance_report.md",
+    "archiveReportPath": "logs\\archive\\legacy\\baseline_comparison\\signoff-2026-04-18T05-27-13-996Z-f97810.json",
+    "archiveMarkdownPath": "logs\\archive\\legacy\\baseline_comparison\\signoff-2026-04-18T05-27-13-996Z-f97810.md",
     "truthfulClaimStatus": {
       "liveTransportParity": "NOT PROVEN",
       "rawCodexDirectSuperiority": "NOT PROVEN"
@@ -674,7 +674,7 @@
   "allPassed": true,
   "resume": {
     "canResume": 1,
-    "statePath": "logs\\bundles\\signoff\\signoff-2026-04-21T15-08-45-517Z-bbfbe8\\raw\\relocated_top_level\\signoff_resume_state.json",
+    "statePath": "logs\\bundles\\signoff\\signoff-2026-04-18T05-27-13-996Z-f97810\\raw\\relocated_top_level\\signoff_resume_state.json",
     "currentStage": "",
     "nextPendingStage": "",
     "stopAfterStage": ""

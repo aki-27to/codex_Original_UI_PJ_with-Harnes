@@ -1,6 +1,6 @@
 {
   "schema": "adoption-readiness-eval.v1",
-  "generatedAt": "2026-04-22T00:42:00.284Z",
+  "generatedAt": "2026-05-04T12:17:28.449Z",
   "completedStateObserved": 1,
   "dimensions": [
     {
@@ -295,6 +295,6 @@
     "escalation_decision.json",
     "release_decision.json"
   ],
-  "exportSessionId": "export_4b89b907ce1f",
+  "exportSessionId": "export_69aaf0d22042",
   "scope": "adoption_readiness"
 }

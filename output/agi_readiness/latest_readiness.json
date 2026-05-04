@@ -1,156 +1,210 @@
 {
   "schema": "agi-readiness-live-summary.v1",
-  "generatedAt": "2026-04-22T00:42:00.723Z",
-  "workspaceId": "3650d504ad404c53",
-  "latestRunId": "governed-live-readiness-2026-04-22T00-41-58-666Z",
+  "generatedAt": "2026-05-04T12:17:30.488Z",
+  "workspaceId": "5c839dfeef8b555f",
+  "latestRunId": "eval-1776010435054-c9b5d194",
   "profile": "agi_v1",
-  "laneId": "governed_live",
-  "suiteId": "governed_live_readiness_suite.v2",
+  "laneId": "public_regression",
+  "suiteId": "challenger.agi_v1_suite",
   "metrics": {
     "G_breadth": {
       "familyName": "G_breadth",
       "value": 1,
-      "threshold": 0.7,
+      "threshold": null,
       "supportStatus": "supported",
       "passFail": true,
       "details": {
+        "value": 1,
         "matrix": [
           {
-            "domainFamily": "deterministic_code",
-            "domainScore": 0.99,
-            "covered": 1,
-            "weight": 1
-          },
-          {
-            "domainFamily": "web_creative",
-            "domainScore": 0.78,
+            "domainFamily": "coding",
+            "domainScore": 0.92,
             "covered": 1,
             "weight": 1
           },
           {
             "domainFamily": "planning",
-            "domainScore": 0.99,
+            "domainScore": 0.88,
             "covered": 1,
             "weight": 1
+          }
+        ],
+        "observations": [
+          {
+            "family_name": "G_breadth",
+            "submetric_name": "challenger_breadth_coding",
+            "mode": "standard",
+            "value": 0.92,
+            "ci_low": 0.92,
+            "ci_high": 0.92,
+            "threshold": null,
+            "pass_fail": null,
+            "relevant": true,
+            "supportStatus": "supported",
+            "supported": true,
+            "not_evaluated": false,
+            "not_applicable": false,
+            "sample_count": 1,
+            "severity_or_loss": null,
+            "evidence": [],
+            "notes": "",
+            "reason": "",
+            "case_id": "challenger-metric-1",
+            "title": "challenger-case-1",
+            "variant_label": "candidate-standard",
+            "candidate_id": "candidate-main",
+            "domain_family": "coding",
+            "normalization_basis": "",
+            "horizon_units": null,
+            "target_horizon_units": null,
+            "horizon_unit_name": "steps",
+            "local_training_signal": null
           },
           {
-            "domainFamily": "workflow_execution",
-            "domainScore": 0.99,
-            "covered": 1,
-            "weight": 1
-          },
-          {
-            "domainFamily": "evaluation_review",
-            "domainScore": 0.78,
-            "covered": 1,
-            "weight": 1
-          },
-          {
-            "domainFamily": "tool_use_browser_like",
-            "domainScore": 0.78,
-            "covered": 1,
-            "weight": 1
+            "family_name": "G_breadth",
+            "submetric_name": "challenger_breadth_planning",
+            "mode": "standard",
+            "value": 0.88,
+            "ci_low": 0.88,
+            "ci_high": 0.88,
+            "threshold": null,
+            "pass_fail": null,
+            "relevant": true,
+            "supportStatus": "supported",
+            "supported": true,
+            "not_evaluated": false,
+            "not_applicable": false,
+            "sample_count": 1,
+            "severity_or_loss": null,
+            "evidence": [],
+            "notes": "",
+            "reason": "",
+            "case_id": "challenger-metric-2",
+            "title": "challenger-case-2",
+            "variant_label": "candidate-standard",
+            "candidate_id": "candidate-main",
+            "domain_family": "planning",
+            "normalization_basis": "",
+            "horizon_units": null,
+            "target_horizon_units": null,
+            "horizon_unit_name": "steps",
+            "local_training_signal": null
           }
         ]
       }
     },
     "G_depth": {
       "familyName": "G_depth",
-      "value": 0.99,
-      "threshold": 0.8,
+      "value": 0.87,
+      "threshold": null,
       "supportStatus": "supported",
       "passFail": true,
       "details": {
-        "strategy": "coverage_depth_floor"
+        "value": 0.87,
+        "details": {
+          "strategy": "mean"
+        }
       }
     },
     "A_adapt": {
       "familyName": "A_adapt",
-      "value": 0.98,
-      "threshold": 0.8,
+      "value": 0.83,
+      "threshold": null,
       "supportStatus": "supported",
       "passFail": true,
       "details": {
-        "strategy": "positive_remediation_lift"
+        "value": 0.83,
+        "details": {
+          "strategy": "mean"
+        }
       }
     },
     "R_robust": {
       "familyName": "R_robust",
-      "value": 1,
-      "threshold": 0.93,
+      "value": 0.81,
+      "threshold": null,
       "supportStatus": "supported",
       "passFail": true,
       "details": {
-        "strategy": "robustness_minimum"
+        "value": 0.81,
+        "details": {
+          "strategy": "min"
+        }
       }
     },
     "H_horizon": {
       "familyName": "H_horizon",
-      "value": 1,
-      "threshold": 0.97,
+      "value": 0.93487,
+      "threshold": null,
       "supportStatus": "supported",
       "passFail": true,
       "details": {
-        "strategy": "continuity_completion"
+        "value": 0.93487,
+        "details": {
+          "strategy": "mean"
+        }
       }
     },
     "P_context": {
       "familyName": "P_context",
+      "value": 0.86,
+      "threshold": null,
+      "supportStatus": "supported",
+      "passFail": true,
+      "details": {
+        "value": 0.86,
+        "details": {
+          "strategy": "mean"
+        }
+      }
+    },
+    "I_eval": {
+      "familyName": "I_eval",
+      "value": 1,
+      "threshold": 0.95,
+      "supportStatus": "supported",
+      "passFail": true,
+      "details": {
+        "strategy": "min"
+      }
+    },
+    "S_trust": {
+      "familyName": "S_trust",
       "value": 1,
       "threshold": 0.9,
       "supportStatus": "supported",
       "passFail": true,
       "details": {
-        "strategy": "context_and_guard_consistency"
-      }
-    },
-    "I_eval": {
-      "familyName": "I_eval",
-      "value": 0.995,
-      "threshold": 0.95,
-      "supportStatus": "supported",
-      "passFail": true,
-      "details": {
-        "strategy": "causal_and_eval_trace"
-      }
-    },
-    "S_trust": {
-      "familyName": "S_trust",
-      "value": 0.99,
-      "threshold": 0.9,
-      "supportStatus": "supported",
-      "passFail": true,
-      "details": {
-        "strategy": "harm_free_operation"
+        "strategy": "min"
       }
     },
     "C_corr": {
       "familyName": "C_corr",
-      "value": 0.99,
+      "value": 1,
       "threshold": 0.9,
       "supportStatus": "supported",
       "passFail": true,
       "details": {
-        "strategy": "novel_positive_task_signal"
+        "strategy": "min"
       }
     },
     "E_epi": {
       "familyName": "E_epi",
-      "value": 0.99,
+      "value": 1,
       "threshold": 0.85,
       "supportStatus": "supported",
       "passFail": true,
       "details": {
-        "strategy": "ambiguity_resolution_memory"
+        "strategy": "min"
       }
     }
   },
   "catastrophicRisk": {
-    "cvar": 0.005,
+    "cvar": 0.04,
     "supportStatus": "supported"
   },
-  "rawFinalScore": 0.99225,
-  "displayFinalScore": 0.97225,
+  "rawFinalScore": 0.860278,
+  "displayFinalScore": 0.620278,
   "breadthSemantics": {
     "mode": "repo_coverage_breadth",
     "headlineField": "supportedCoverageBreadth",
@@ -159,34 +213,32 @@
   },
   "evaluatedBreadth": 1,
   "supportedCoverageBreadth": 1,
-  "stableCoverageBreadth": 1,
+  "stableCoverageBreadth": 0.333333,
   "coverageFamilyCount": 6,
   "coveredFamilyCount": 6,
   "failedFamilies": [],
   "headlineMetrics": {
     "G_breadth": 1,
-    "G_depth": 0.99,
-    "A_adapt": 0.98,
-    "R_robust": 1,
-    "H_horizon": 1,
-    "P_context": 1
+    "G_depth": 0.87,
+    "A_adapt": 0.83,
+    "R_robust": 0.81,
+    "H_horizon": 0.93487,
+    "P_context": 0.86
   },
   "headlineBreadth": 1,
-  "promotionComparisonMode": "distinct_comparison",
-  "distinctComparison": true,
-  "promotionInterpretation": "distinct_incumbent_comparison",
-  "promotionEvidenceStrength": "distinct_incumbent_challenger_decision",
+  "promotionComparisonMode": "self_snapshot",
+  "distinctComparison": false,
+  "promotionInterpretation": "not_a_distinct_incumbent_comparison",
+  "promotionEvidenceStrength": "self_snapshot_only",
   "incumbentVsChallenger": {
-    "incumbentIdentifier": "governed-incumbent",
-    "challengerIdentifier": "governed-live-readiness",
-    "promote": true,
-    "comparisonMode": "distinct_comparison",
-    "distinctComparison": true
+    "incumbentIdentifier": "candidate-main",
+    "challengerIdentifier": "candidate-main",
+    "promote": null,
+    "comparisonMode": "self_snapshot",
+    "distinctComparison": false
   },
-  "blockedReasons": [
-    "criteria_met"
-  ],
-  "weakestCapabilityFamily": "A_adapt",
+  "blockedReasons": [],
+  "weakestCapabilityFamily": "R_robust",
   "weakestGateFamily": "",
   "gatePressure": {
     "weakestGateFamily": "",
@@ -195,56 +247,64 @@
     ],
     "pressureStatus": "no_material_pressure",
     "explanation": "all governed hard gates clear thresholds with comfortable margin",
-    "weakestGateMargin": 0.045
+    "weakestGateMargin": 0.05
   },
   "horizonEvidenceRefs": [
-    "logs/archive/raw/runtime_state/continuity/tasks/research_multi_agent-1776815430825/closeout_summary.json",
-    "logs/archive/raw/runtime_state/continuity/tasks/research_multi_agent-1776815430825/verifier_state.json",
-    "logs/archive/raw/runtime_state/continuity/tasks/research_multi_agent-1776815430825/integration_summary.json",
-    "logs/archive/raw/runtime_state/continuity/tasks/research_multi_agent-1776815430825/task_state.json",
-    "logs/archive/raw/runtime_state/continuity/tasks/research_multi_agent-1776815430825/plan_state.json",
-    "logs/archive/raw/runtime_state/continuity/tasks/research_multi_agent-1776815430825/agent_graph.json"
+    "logs/archive/raw/runtime_state/continuity/tasks/phase4-failure-1774995929746/closeout_summary.json",
+    "logs/archive/raw/runtime_state/continuity/tasks/phase4-failure-1774995929746/verifier_state.json",
+    "logs/archive/raw/runtime_state/continuity/tasks/phase4-failure-1774995929746/integration_summary.json",
+    "logs/archive/raw/runtime_state/continuity/tasks/phase4-failure-1774995929746/task_state.json",
+    "logs/archive/raw/runtime_state/continuity/tasks/phase4-failure-1774995929746/plan_state.json",
+    "logs/archive/raw/runtime_state/continuity/tasks/phase4-failure-1774995929746/agent_graph.json"
   ],
   "domainCoveragePath": "output/agi_readiness/domain_coverage_matrix.json",
   "robustnessBreakdownPath": "output/agi_readiness/robustness_breakdown.json",
-  "recentImprovement": null,
-  "recentRegression": null,
-  "incumbentVersion": "lineage_35bcfffdc2",
-  "challengerVersion": "lineage_7f7972a87b",
+  "recentImprovement": 0.133862,
+  "recentRegression": -0.04,
+  "incumbentVersion": "lineage_120809f777",
+  "challengerVersion": "lineage_cedcd609d1",
   "distinctImprovementObserved": true,
-  "improvementEvidenceClass": "distinct_hold",
+  "improvementEvidenceClass": "distinct_observed_improvement",
   "scoreViews": {
     "schema": "agi-readiness-score-views.v1",
-    "generatedAt": "2026-04-22T00:42:01.795Z",
-    "workspaceId": "3650d504ad404c53",
-    "rawFinalScore": 0.99225,
-    "internalGovernedScore": 0.99225,
-    "externallyAuditableScore": 0.97225,
+    "generatedAt": "2026-05-04T12:17:32.339Z",
+    "workspaceId": "5c839dfeef8b555f",
+    "rawFinalScore": 0.860278,
+    "internalGovernedScore": 0.860278,
+    "externallyAuditableScore": 0.620278,
     "displayScoreSource": "externallyAuditableScore",
-    "operationallyComplete": true,
-    "evidenceDebtPresent": false,
+    "operationallyComplete": false,
+    "evidenceDebtPresent": true,
     "debtSignals": {
       "blockedAgendaCount": 0,
-      "insufficientEvidenceCount": 0,
+      "insufficientEvidenceCount": 2,
       "openDebtCount": 0,
-      "blockedReasonCount": 1,
-      "goalStatus": "OPERATIONALLY_COMPLETE"
+      "blockedReasonCount": 0,
+      "goalStatus": "NOT_YET"
     },
-    "totalPenalty": 0.02,
+    "totalPenalty": 0.24,
     "penalties": [
       {
-        "id": "blockedReasonCount",
+        "id": "insufficientEvidenceCount",
+        "count": 2,
+        "perCount": 0.1,
+        "cap": 0.2,
+        "applied": 0.2,
+        "reason": "autonomous learning agenda still has insufficient-evidence items"
+      },
+      {
+        "id": "goalNotOperationallyComplete",
         "count": 1,
-        "perCount": 0.02,
-        "cap": 0.08,
-        "applied": 0.02,
-        "reason": "readiness still exposes blocked reasons"
+        "perCount": 0.04,
+        "cap": 0.04,
+        "applied": 0.04,
+        "reason": "operational completion is not yet closed"
       }
     ],
     "capsApplied": []
   },
-  "internalGovernedScore": 0.99225,
-  "externallyAuditableScore": 0.97225,
+  "internalGovernedScore": 0.860278,
+  "externallyAuditableScore": 0.620278,
   "consistencyChecks": [
     {
       "id": "readiness_breadth_semantics_consistent",

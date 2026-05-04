@@ -6,17 +6,17 @@
       "actor": "mock-thread-4-infra",
       "status": "COMPLETED",
       "claimed_work": [
-        "Owned paths:\n- logs/bundles/signoff/signoff-2026-04-21T15-08-45-517Z-bbfbe8/raw/scripts/config/signoff_sample_target.txt\n- docs/EVIDENCE_CONTRACT.md\n- docs/CURRENT_ARCHITECTURE.md\n- docs/ARCHITECTURE_CHANGELOG.md\nApplied requested signoff assurance updates."
+        "Owned paths:\n- logs/bundles/signoff/signoff-2026-04-18T05-27-13-996Z-f97810/raw/scripts/config/signoff_sample_target.txt\n- docs/EVIDENCE_CONTRACT.md\n- docs/CURRENT_ARCHITECTURE.md\n- docs/ARCHITECTURE_CHANGELOG.md\nApplied requested signoff assurance updates."
       ],
       "changed_artifacts": [
-        "logs/bundles/signoff/signoff-2026-04-21T15-08-45-517Z-bbfbe8/raw/scripts/config/signoff_sample_target.txt",
+        "logs/bundles/signoff/signoff-2026-04-18T05-27-13-996Z-f97810/raw/scripts/config/signoff_sample_target.txt",
         "docs/EVIDENCE_CONTRACT.md",
         "docs/CURRENT_ARCHITECTURE.md",
         "docs/ARCHITECTURE_CHANGELOG.md",
         "Applied requested signoff assurance updates."
       ],
       "evidence_refs": [
-        "Owned paths:\n- logs/bundles/signoff/signoff-2026-04-21T15-08-45-517Z-bbfbe8/raw/scripts/config/signoff_sample_target.txt\n- docs/EVIDENCE_CONTRACT.md\n- docs/CURRENT_ARCHITECTURE.md\n- docs/ARCHITECTURE_CHANGELOG.md\nApplied requested signoff assurance updates.",
+        "Owned paths:\n- logs/bundles/signoff/signoff-2026-04-18T05-27-13-996Z-f97810/raw/scripts/config/signoff_sample_target.txt\n- docs/EVIDENCE_CONTRACT.md\n- docs/CURRENT_ARCHITECTURE.md\n- docs/ARCHITECTURE_CHANGELOG.md\nApplied requested signoff assurance updates.",
         "evidence_manifest.json",
         "flow_trace_summary.json",
         "review_load_breakdown.json"
@@ -75,7 +75,7 @@
         "Aggregate child outcomes into review and release decision artifacts."
       ],
       "changed_artifacts": [
-        "logs/bundles/signoff/signoff-2026-04-21T15-08-45-517Z-bbfbe8/raw/scripts/config/signoff_sample_target.txt",
+        "logs/bundles/signoff/signoff-2026-04-18T05-27-13-996Z-f97810/raw/scripts/config/signoff_sample_target.txt",
         "docs/EVIDENCE_CONTRACT.md",
         "docs/CURRENT_ARCHITECTURE.md"
       ],

@@ -5,7 +5,7 @@ Score each applicable indicator:
 - `2`: clearly supported by evidence
 - `1`: partially supported, stale, implicit, or owner-local only
 - `0`: missing, contradicted, or unsafe
-- `—`: not applicable or not observable from available evidence
+- `N/A`: not applicable or not observable from available evidence
 
 Overall grade:
 

@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-04-21T15:09:00.651Z",
+  "generatedAt": "2026-04-18T05:29:46.006Z",
   "transportMode": "mock-fixture",
   "selectionMethod": "persisted_execution_memory_best_completed_turn",
   "turnId": "mock-turn-8",
@@ -179,14 +179,14 @@
       "executionProfile": "full-runtime",
       "executionIntent": "docs_maintenance",
       "executionSource": "signoff_evidence_script",
-      "recipeHash": "d66efb4660600b41bfe276c108b98abfa47029b642b1d527fdc3a109c50b55df"
+      "recipeHash": "49914dabc5f58625c27700d6b0158efd55829c1b8658a6e86faba83ab871c9e1"
     },
     "baseline": {
       "outputSha256": "5ba09cd01e4afcb3213456138ed139e4bd482e3c3d6e74c234d327dffb3215f8",
       "outputLength": 44,
       "outputSnapshot": "NATURAL_TASK_OK docs/CURRENT_ARCHITECTURE.md",
-      "artifactManifestPath": "logs/bundles/signoff/signoff-2026-04-21T15-08-45-517Z-bbfbe8/raw/turns/2026-04-21/mock-thread-5__mock-turn-8/manifest.json",
-      "artifactManifestSha256": "607ea8988dc03588bf0763ef0ffcee76dec3a64f6157ab1cb64148245ede0f82"
+      "artifactManifestPath": "logs/bundles/signoff/signoff-2026-04-18T05-27-13-996Z-f97810/raw/turns/2026-04-18/mock-thread-5__mock-turn-8/manifest.json",
+      "artifactManifestSha256": "d6ccf56199559dd176f6048a2dc7cc569db104e57e44e60ba4756cbe5b4b1b2e"
     },
     "replayStats": {
       "replayCount": 0,
@@ -195,15 +195,15 @@
       "lastReplayOutputSha256": "",
       "lastReplayDiffRate": 0
     },
-    "startedAt": 1776784137650,
-    "completedAt": 1776784137965,
-    "updatedAt": 1776784138818
+    "startedAt": 1776490153089,
+    "completedAt": 1776490155678,
+    "updatedAt": 1776490165300
   },
-  "artifactManifestPath": "logs\\bundles\\signoff\\signoff-2026-04-21T15-08-45-517Z-bbfbe8\\raw\\turns\\2026-04-21\\mock-thread-5__mock-turn-8\\manifest.json",
-  "artifactDir": "logs\\bundles\\signoff\\signoff-2026-04-21T15-08-45-517Z-bbfbe8\\raw\\turns\\2026-04-21\\mock-thread-5__mock-turn-8",
+  "artifactManifestPath": "logs\\bundles\\signoff\\signoff-2026-04-18T05-27-13-996Z-f97810\\raw\\turns\\2026-04-18\\mock-thread-5__mock-turn-8\\manifest.json",
+  "artifactDir": "logs\\bundles\\signoff\\signoff-2026-04-18T05-27-13-996Z-f97810\\raw\\turns\\2026-04-18\\mock-thread-5__mock-turn-8",
   "flowTraceSummary": {
     "schema": "flow-trace-summary.v1",
-    "generatedAt": "2026-04-21T15:08:58.133Z",
+    "generatedAt": "2026-04-18T05:29:18.026Z",
     "selectedPlanningMode": "NORMAL",
     "selectedPlanningDepth": "STANDARD_PLANNING",
     "selectedAssuranceDepth": "LIGHT_ASSURANCE",
@@ -302,8 +302,8 @@
         ],
         "reviewerObserved": 0,
         "testerObserved": 0,
-        "firstSeenAt": 1776784137956,
-        "lastSeenAt": 1776784137957
+        "firstSeenAt": 1776490155670,
+        "lastSeenAt": 1776490155671
       },
       {
         "agent": "mock-thread-5-reviewer",
@@ -317,8 +317,8 @@
         ],
         "reviewerObserved": 1,
         "testerObserved": 0,
-        "firstSeenAt": 1776784137960,
-        "lastSeenAt": 1776784137961
+        "firstSeenAt": 1776490155674,
+        "lastSeenAt": 1776490155674
       }
     ],
     "docSyncEvidence": {
@@ -923,7 +923,7 @@
   },
   "stageTimeline": {
     "schema": "stage-timeline.v1",
-    "generatedAt": "2026-04-21T15:08:58.133Z",
+    "generatedAt": "2026-04-18T05:29:18.026Z",
     "selectedPlanningMode": "NORMAL",
     "selectedPlanningDepth": "STANDARD_PLANNING",
     "selectedAssuranceDepth": "LIGHT_ASSURANCE",
@@ -934,52 +934,52 @@
       {
         "name": "Step 1 - Requirement Structuring",
         "status": "OBSERVED",
-        "startedAt": 1776784137650,
-        "endedAt": 1776784137955,
-        "durationMs": 305
+        "startedAt": 1776490153089,
+        "endedAt": 1776490155667,
+        "durationMs": 2578
       },
       {
         "name": "Step 2 - Dispatch Planning",
         "status": "OBSERVED",
-        "startedAt": 1776784137955,
-        "endedAt": 1776784137956,
-        "durationMs": 1
+        "startedAt": 1776490155667,
+        "endedAt": 1776490155670,
+        "durationMs": 3
       },
       {
         "name": "Step 3 - Specialist Execution",
         "status": "OBSERVED",
-        "startedAt": 1776784137956,
-        "endedAt": 1776784137956,
+        "startedAt": 1776490155670,
+        "endedAt": 1776490155670,
         "durationMs": 0
       },
       {
         "name": "Step 4 - Quality Gate",
         "status": "OBSERVED",
-        "startedAt": 1776784137956,
-        "endedAt": 1776784137962,
+        "startedAt": 1776490155670,
+        "endedAt": 1776490155676,
         "durationMs": 6
       },
       {
         "name": "Step 5 - Final Outcome",
         "status": "OBSERVED",
-        "startedAt": 1776784137962,
-        "endedAt": 1776784137965,
-        "durationMs": 3
+        "startedAt": 1776490155676,
+        "endedAt": 1776490155678,
+        "durationMs": 2
       }
     ],
     "checkpoints": {
-      "firstPlanAt": 1776784137955,
-      "firstDispatchAt": 1776784137956,
-      "firstWorkAt": 1776784137959,
-      "step4StartedAt": 1776784137956,
-      "step5StartedAt": 1776784137962,
-      "firstReviewAt": 1776784137960,
+      "firstPlanAt": 1776490155667,
+      "firstDispatchAt": 1776490155670,
+      "firstWorkAt": 1776490155672,
+      "step4StartedAt": 1776490155670,
+      "step5StartedAt": 1776490155676,
+      "firstReviewAt": 1776490155674,
       "firstTesterAt": 0,
-      "firstDocSyncAt": 1776784137956,
+      "firstDocSyncAt": 1776490155670,
       "retryAt": 0,
       "retryLoopCount": 0,
-      "finalMessageAt": 1776784137962,
-      "completedAt": 1776784137965
+      "finalMessageAt": 1776490155676,
+      "completedAt": 1776490155678
     },
     "qualityGate": {
       "reviewerObserved": 1,
@@ -989,7 +989,7 @@
   },
   "evidenceManifest": {
     "schema": "turn-evidence-manifest.v1",
-    "generatedAt": "2026-04-21T15:08:58.133Z",
+    "generatedAt": "2026-04-18T05:29:18.026Z",
     "selectedPlanningMode": "NORMAL",
     "selectedPlanningDepth": "STANDARD_PLANNING",
     "selectedAssuranceDepth": "LIGHT_ASSURANCE",
@@ -2838,8 +2838,8 @@
         ],
         "reviewerObserved": 0,
         "testerObserved": 0,
-        "firstSeenAt": 1776784137956,
-        "lastSeenAt": 1776784137957
+        "firstSeenAt": 1776490155670,
+        "lastSeenAt": 1776490155671
       },
       {
         "agent": "mock-thread-5-reviewer",
@@ -2853,8 +2853,8 @@
         ],
         "reviewerObserved": 1,
         "testerObserved": 0,
-        "firstSeenAt": 1776784137960,
-        "lastSeenAt": 1776784137961
+        "firstSeenAt": 1776490155674,
+        "lastSeenAt": 1776490155674
       }
     ],
     "familyCompletionGate": {
@@ -2871,7 +2871,7 @@
     },
     "reviewLoadBreakdown": {
       "schema": "review-load-breakdown.v1",
-      "generatedAt": "2026-04-21T15:08:58.133Z",
+      "generatedAt": "2026-04-18T05:29:18.026Z",
       "selectedPlanningDepth": "STANDARD_PLANNING",
       "selectedAssuranceDepth": "LIGHT_ASSURANCE",
       "flowPath": "NORMAL_PATH",
@@ -2899,15 +2899,15 @@
       "reviewerTimeMs": 2,
       "docSyncVerificationTimeMs": 6,
       "retryLoopCount": 0,
-      "outcomeConversionTimeMs": 3,
+      "outcomeConversionTimeMs": 2,
       "totalStep4DurationMs": 6,
       "dominantBottleneck": "evidence_collection",
       "stageDurations": {
-        "Step 1 - Requirement Structuring": 305,
-        "Step 2 - Dispatch Planning": 1,
+        "Step 1 - Requirement Structuring": 2578,
+        "Step 2 - Dispatch Planning": 3,
         "Step 3 - Specialist Execution": 0,
         "Step 4 - Quality Gate": 6,
-        "Step 5 - Final Outcome": 3
+        "Step 5 - Final Outcome": 2
       },
       "acceptanceSummary": {
         "passCount": 1,

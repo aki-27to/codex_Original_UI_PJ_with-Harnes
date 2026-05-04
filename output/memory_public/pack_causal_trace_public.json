@@ -1,184 +1,323 @@
 {
   "schema": "governed-memory-pack-causal-trace-public.v1",
-  "generatedAt": "2026-04-22T00:42:00.821Z",
-  "workspaceId": "3650d504ad404c53",
-  "packId": "6947185e80ae77ad1f1d",
+  "generatedAt": "2026-05-04T12:17:30.714Z",
+  "workspaceId": "5c839dfeef8b555f",
+  "packId": "762a86cf33471d34503a",
   "traces": [
     {
-      "memoryId": "mem_a8fd76e476",
-      "publicRef": "mem_a8fd76e476",
-      "memoryType": "improvement_candidate",
+      "memoryId": "mem_f1b632976e",
+      "publicRef": "mem_f1b632976e",
+      "memoryType": "semantic_lesson",
       "sourceTier": "external_primary",
-      "promotionState": "candidate",
-      "usageMode": "remediation_hint",
-      "selectedInLatestPack": true,
-      "selectedInPackAt": "2026-04-22T00:42:00.345Z",
+      "promotionState": "blocked",
+      "usageMode": "explicit_prompt_pack",
+      "selectedInLatestPack": false,
+      "selectedInPackAt": "2026-05-04T12:14:30.364Z",
       "usedByTaskRefs": [
-        "turn_a33fc5cb10",
-        "turn_5dfc0ab125",
-        "turn_1893e525ae",
-        "turn_69e67bda15"
+        "turn_b6e12727b4",
+        "turn_4b67ca7055",
+        "turn_95a05af633",
+        "turn_11013b9a09",
+        "turn_bd7072d753",
+        "turn_9685c8b70f"
       ],
       "taskFamilies": [
         "web_creative"
       ],
-      "usageStage": "likely_contributory",
-      "causalConfidence": "direct",
-      "adoptedInLatestPack": true,
-      "effectiveContribution": true,
-      "effectiveContributionEvidenceRefs": [
-        "turn_a33fc5cb10",
-        "turn_5dfc0ab125",
-        "turn_1893e525ae",
-        "turn_69e67bda15"
+      "usageStage": "rolled_back_after_harm",
+      "causalConfidence": "weak",
+      "adoptedInLatestPack": false,
+      "effectiveContribution": false,
+      "effectiveContributionEvidenceRefs": [],
+      "rolledBackAfterHarm": true,
+      "harmRollbackEvidenceRefs": [
+        "turn_b6e12727b4",
+        "turn_4b67ca7055",
+        "turn_95a05af633",
+        "turn_11013b9a09",
+        "turn_bd7072d753",
+        "turn_9685c8b70f"
       ],
-      "rolledBackAfterHarm": false,
-      "harmRollbackEvidenceRefs": [],
       "outcomeDelta": {
         "success": 4,
-        "failure": 0,
+        "failure": 9,
         "neutral": 0,
         "notApplicable": 0,
-        "retryCount": 0,
-        "verifierOutcome": "PASS"
+        "retryCount": 9,
+        "verifierOutcome": "FAIL"
+      },
+      "summary": "Using skills to accelerate OSS maintenance | OpenAI Developers",
+      "lastObservedAt": "2026-05-04T12:14:30.473Z"
+    },
+    {
+      "memoryId": "mem_0d9b9065e3",
+      "publicRef": "mem_0d9b9065e3",
+      "memoryType": "semantic_lesson",
+      "sourceTier": "external_primary",
+      "promotionState": "blocked",
+      "usageMode": "explicit_prompt_pack",
+      "selectedInLatestPack": false,
+      "selectedInPackAt": "2026-05-04T12:12:50.858Z",
+      "usedByTaskRefs": [
+        "turn_b6e12727b4",
+        "turn_4b67ca7055",
+        "turn_95a05af633",
+        "turn_11013b9a09",
+        "turn_bd7072d753",
+        "turn_9685c8b70f"
+      ],
+      "taskFamilies": [
+        "web_creative"
+      ],
+      "usageStage": "rolled_back_after_harm",
+      "causalConfidence": "weak",
+      "adoptedInLatestPack": false,
+      "effectiveContribution": false,
+      "effectiveContributionEvidenceRefs": [],
+      "rolledBackAfterHarm": true,
+      "harmRollbackEvidenceRefs": [
+        "turn_b6e12727b4",
+        "turn_4b67ca7055",
+        "turn_95a05af633",
+        "turn_11013b9a09",
+        "turn_bd7072d753",
+        "turn_9685c8b70f"
+      ],
+      "outcomeDelta": {
+        "success": 4,
+        "failure": 9,
+        "neutral": 0,
+        "notApplicable": 0,
+        "retryCount": 9,
+        "verifierOutcome": "FAIL"
+      },
+      "summary": "How Perplexity Brought Voice Search to Millions Using the Realtime API | OpenAI Developers",
+      "lastObservedAt": "2026-05-04T12:12:50.982Z"
+    },
+    {
+      "memoryId": "mem_3b00c01266",
+      "publicRef": "mem_3b00c01266",
+      "memoryType": "semantic_lesson",
+      "sourceTier": "external_primary",
+      "promotionState": "blocked",
+      "usageMode": "explicit_prompt_pack",
+      "selectedInLatestPack": false,
+      "selectedInPackAt": "2026-05-04T12:12:50.858Z",
+      "usedByTaskRefs": [
+        "turn_b6e12727b4",
+        "turn_4b67ca7055",
+        "turn_95a05af633",
+        "turn_11013b9a09",
+        "turn_bd7072d753",
+        "turn_9685c8b70f"
+      ],
+      "taskFamilies": [
+        "web_creative"
+      ],
+      "usageStage": "rolled_back_after_harm",
+      "causalConfidence": "weak",
+      "adoptedInLatestPack": false,
+      "effectiveContribution": false,
+      "effectiveContributionEvidenceRefs": [],
+      "rolledBackAfterHarm": true,
+      "harmRollbackEvidenceRefs": [
+        "turn_b6e12727b4",
+        "turn_4b67ca7055",
+        "turn_95a05af633",
+        "turn_11013b9a09",
+        "turn_bd7072d753",
+        "turn_9685c8b70f"
+      ],
+      "outcomeDelta": {
+        "success": 4,
+        "failure": 9,
+        "neutral": 0,
+        "notApplicable": 0,
+        "retryCount": 9,
+        "verifierOutcome": "FAIL"
       },
       "summary": "Designing delightful frontends with GPT-5.4 | OpenAI Developers",
-      "lastObservedAt": "2026-04-22T00:42:00.381Z"
+      "lastObservedAt": "2026-05-04T12:12:50.982Z"
+    },
+    {
+      "memoryId": "mem_6ed4d9fa64",
+      "publicRef": "mem_6ed4d9fa64",
+      "memoryType": "semantic_lesson",
+      "sourceTier": "external_primary",
+      "promotionState": "blocked",
+      "usageMode": "explicit_prompt_pack",
+      "selectedInLatestPack": false,
+      "selectedInPackAt": "2026-05-04T12:12:50.858Z",
+      "usedByTaskRefs": [
+        "turn_b6e12727b4",
+        "turn_4b67ca7055",
+        "turn_95a05af633",
+        "turn_11013b9a09",
+        "turn_bd7072d753",
+        "turn_9685c8b70f"
+      ],
+      "taskFamilies": [
+        "web_creative"
+      ],
+      "usageStage": "rolled_back_after_harm",
+      "causalConfidence": "weak",
+      "adoptedInLatestPack": false,
+      "effectiveContribution": false,
+      "effectiveContributionEvidenceRefs": [],
+      "rolledBackAfterHarm": true,
+      "harmRollbackEvidenceRefs": [
+        "turn_b6e12727b4",
+        "turn_4b67ca7055",
+        "turn_95a05af633",
+        "turn_11013b9a09",
+        "turn_bd7072d753",
+        "turn_9685c8b70f"
+      ],
+      "outcomeDelta": {
+        "success": 4,
+        "failure": 9,
+        "neutral": 0,
+        "notApplicable": 0,
+        "retryCount": 9,
+        "verifierOutcome": "FAIL"
+      },
+      "summary": "From prompts to products: One year of Responses | OpenAI Developers",
+      "lastObservedAt": "2026-05-04T12:12:50.982Z"
     },
     {
       "memoryId": "mem_46f23704e6",
       "publicRef": "mem_46f23704e6",
       "memoryType": "runtime_hint",
       "sourceTier": "external_primary",
-      "promotionState": "promoted",
+      "promotionState": "blocked",
       "usageMode": "explicit_prompt_pack",
-      "selectedInLatestPack": true,
-      "selectedInPackAt": "2026-04-22T00:37:09.309Z",
+      "selectedInLatestPack": false,
+      "selectedInPackAt": "2026-05-04T12:17:29.164Z",
       "usedByTaskRefs": [
-        "turn_69e67bda15",
-        "turn_427c72e703",
-        "turn_b37451e4ec",
-        "turn_9adaaea36f",
-        "turn_4beb41545f",
-        "turn_e9fb35c058"
+        "turn_b6e12727b4",
+        "turn_4b67ca7055",
+        "turn_95a05af633",
+        "turn_11013b9a09",
+        "turn_bd7072d753",
+        "turn_9685c8b70f"
       ],
       "taskFamilies": [
         "web_creative"
       ],
-      "usageStage": "likely_contributory",
-      "causalConfidence": "direct",
-      "adoptedInLatestPack": true,
-      "effectiveContribution": true,
-      "effectiveContributionEvidenceRefs": [
-        "turn_69e67bda15",
-        "turn_427c72e703",
-        "turn_b37451e4ec",
-        "turn_9adaaea36f",
-        "turn_4beb41545f",
-        "turn_e9fb35c058"
+      "usageStage": "rolled_back_after_harm",
+      "causalConfidence": "weak",
+      "adoptedInLatestPack": false,
+      "effectiveContribution": false,
+      "effectiveContributionEvidenceRefs": [],
+      "rolledBackAfterHarm": true,
+      "harmRollbackEvidenceRefs": [
+        "turn_b6e12727b4",
+        "turn_4b67ca7055",
+        "turn_95a05af633",
+        "turn_11013b9a09",
+        "turn_bd7072d753",
+        "turn_9685c8b70f"
       ],
-      "rolledBackAfterHarm": false,
-      "harmRollbackEvidenceRefs": [],
       "outcomeDelta": {
-        "success": 28,
-        "failure": 0,
+        "success": 3,
+        "failure": 9,
         "neutral": 0,
         "notApplicable": 0,
-        "retryCount": 0,
-        "verifierOutcome": "PASS"
+        "retryCount": 9,
+        "verifierOutcome": "FAIL"
       },
       "summary": "How Perplexity Brought Voice Search to Millions Using the Realtime API | OpenAI Developers",
-      "lastObservedAt": "2026-04-22T00:27:12.380Z"
+      "lastObservedAt": "2026-05-04T12:12:50.982Z"
     },
     {
       "memoryId": "mem_5e926a0571",
       "publicRef": "mem_5e926a0571",
       "memoryType": "runtime_hint",
       "sourceTier": "external_primary",
-      "promotionState": "promoted",
+      "promotionState": "blocked",
       "usageMode": "explicit_prompt_pack",
-      "selectedInLatestPack": true,
-      "selectedInPackAt": "2026-04-22T00:37:09.309Z",
+      "selectedInLatestPack": false,
+      "selectedInPackAt": "2026-05-04T12:17:29.164Z",
       "usedByTaskRefs": [
-        "turn_69e67bda15",
-        "turn_427c72e703",
-        "turn_b37451e4ec",
-        "turn_9adaaea36f",
-        "turn_4beb41545f",
-        "turn_e9fb35c058"
+        "turn_b6e12727b4",
+        "turn_4b67ca7055",
+        "turn_95a05af633",
+        "turn_11013b9a09",
+        "turn_bd7072d753",
+        "turn_9685c8b70f"
       ],
       "taskFamilies": [
         "web_creative"
       ],
-      "usageStage": "likely_contributory",
-      "causalConfidence": "direct",
-      "adoptedInLatestPack": true,
-      "effectiveContribution": true,
-      "effectiveContributionEvidenceRefs": [
-        "turn_69e67bda15",
-        "turn_427c72e703",
-        "turn_b37451e4ec",
-        "turn_9adaaea36f",
-        "turn_4beb41545f",
-        "turn_e9fb35c058"
+      "usageStage": "rolled_back_after_harm",
+      "causalConfidence": "weak",
+      "adoptedInLatestPack": false,
+      "effectiveContribution": false,
+      "effectiveContributionEvidenceRefs": [],
+      "rolledBackAfterHarm": true,
+      "harmRollbackEvidenceRefs": [
+        "turn_b6e12727b4",
+        "turn_4b67ca7055",
+        "turn_95a05af633",
+        "turn_11013b9a09",
+        "turn_bd7072d753",
+        "turn_9685c8b70f"
       ],
-      "rolledBackAfterHarm": false,
-      "harmRollbackEvidenceRefs": [],
       "outcomeDelta": {
-        "success": 28,
-        "failure": 0,
+        "success": 3,
+        "failure": 9,
         "neutral": 0,
         "notApplicable": 0,
-        "retryCount": 0,
-        "verifierOutcome": "PASS"
+        "retryCount": 9,
+        "verifierOutcome": "FAIL"
       },
       "summary": "Designing delightful frontends with GPT-5.4 | OpenAI Developers",
-      "lastObservedAt": "2026-04-22T00:27:12.380Z"
+      "lastObservedAt": "2026-05-04T12:12:50.982Z"
     },
     {
       "memoryId": "mem_b439f61eb1",
       "publicRef": "mem_b439f61eb1",
       "memoryType": "runtime_hint",
       "sourceTier": "external_primary",
-      "promotionState": "promoted",
+      "promotionState": "blocked",
       "usageMode": "explicit_prompt_pack",
-      "selectedInLatestPack": true,
-      "selectedInPackAt": "2026-04-22T00:37:09.309Z",
+      "selectedInLatestPack": false,
+      "selectedInPackAt": "2026-05-04T12:17:29.164Z",
       "usedByTaskRefs": [
-        "turn_69e67bda15",
-        "turn_427c72e703",
-        "turn_b37451e4ec",
-        "turn_9adaaea36f",
-        "turn_4beb41545f",
-        "turn_e9fb35c058"
+        "turn_b6e12727b4",
+        "turn_4b67ca7055",
+        "turn_95a05af633",
+        "turn_11013b9a09",
+        "turn_bd7072d753",
+        "turn_9685c8b70f"
       ],
       "taskFamilies": [
         "web_creative"
       ],
-      "usageStage": "likely_contributory",
-      "causalConfidence": "direct",
-      "adoptedInLatestPack": true,
-      "effectiveContribution": true,
-      "effectiveContributionEvidenceRefs": [
-        "turn_69e67bda15",
-        "turn_427c72e703",
-        "turn_b37451e4ec",
-        "turn_9adaaea36f",
-        "turn_4beb41545f",
-        "turn_e9fb35c058"
+      "usageStage": "rolled_back_after_harm",
+      "causalConfidence": "weak",
+      "adoptedInLatestPack": false,
+      "effectiveContribution": false,
+      "effectiveContributionEvidenceRefs": [],
+      "rolledBackAfterHarm": true,
+      "harmRollbackEvidenceRefs": [
+        "turn_b6e12727b4",
+        "turn_4b67ca7055",
+        "turn_95a05af633",
+        "turn_11013b9a09",
+        "turn_bd7072d753",
+        "turn_9685c8b70f"
       ],
-      "rolledBackAfterHarm": false,
-      "harmRollbackEvidenceRefs": [],
       "outcomeDelta": {
-        "success": 28,
-        "failure": 0,
+        "success": 3,
+        "failure": 9,
         "neutral": 0,
         "notApplicable": 0,
-        "retryCount": 0,
-        "verifierOutcome": "PASS"
+        "retryCount": 9,
+        "verifierOutcome": "FAIL"
       },
       "summary": "From prompts to products: One year of Responses | OpenAI Developers",
-      "lastObservedAt": "2026-04-22T00:27:12.380Z"
+      "lastObservedAt": "2026-05-04T12:12:50.982Z"
     },
     {
       "memoryId": "mem_e65f4ce9a0",
@@ -188,7 +327,7 @@
       "promotionState": "promoted",
       "usageMode": "verifier_context",
       "selectedInLatestPack": true,
-      "selectedInPackAt": "2026-04-22T00:37:09.309Z",
+      "selectedInPackAt": "2026-05-02T03:25:28.911Z",
       "usedByTaskRefs": [],
       "taskFamilies": [],
       "usageStage": "selected_only",
@@ -217,7 +356,7 @@
       "promotionState": "promoted",
       "usageMode": "verifier_context",
       "selectedInLatestPack": true,
-      "selectedInPackAt": "2026-04-22T00:37:09.309Z",
+      "selectedInPackAt": "2026-05-02T03:25:28.911Z",
       "usedByTaskRefs": [],
       "taskFamilies": [],
       "usageStage": "selected_only",
@@ -246,7 +385,7 @@
       "promotionState": "promoted",
       "usageMode": "verifier_context",
       "selectedInLatestPack": true,
-      "selectedInPackAt": "2026-04-22T00:37:09.309Z",
+      "selectedInPackAt": "2026-05-02T03:25:28.911Z",
       "usedByTaskRefs": [],
       "taskFamilies": [],
       "usageStage": "selected_only",
@@ -275,7 +414,7 @@
       "promotionState": "promoted",
       "usageMode": "verifier_context",
       "selectedInLatestPack": true,
-      "selectedInPackAt": "2026-04-22T00:37:09.309Z",
+      "selectedInPackAt": "2026-05-02T03:25:28.911Z",
       "usedByTaskRefs": [],
       "taskFamilies": [
         "all"
@@ -306,7 +445,7 @@
       "promotionState": "promoted",
       "usageMode": "explicit_prompt_pack",
       "selectedInLatestPack": true,
-      "selectedInPackAt": "2026-04-22T00:37:09.309Z",
+      "selectedInPackAt": "2026-05-02T03:25:28.911Z",
       "usedByTaskRefs": [],
       "taskFamilies": [
         "web_creative"
@@ -327,103 +466,6 @@
         "verifierOutcome": "UNKNOWN"
       },
       "summary": "Active intent-first requirement state for the current workspace and turn.",
-      "lastObservedAt": ""
-    },
-    {
-      "memoryId": "mem_8eea5b9e77",
-      "publicRef": "mem_8eea5b9e77",
-      "memoryType": "workspace_progress",
-      "sourceTier": "runtime",
-      "promotionState": "promoted",
-      "usageMode": "explicit_prompt_pack",
-      "selectedInLatestPack": true,
-      "selectedInPackAt": "2026-04-22T00:37:09.309Z",
-      "usedByTaskRefs": [],
-      "taskFamilies": [
-        "web_creative"
-      ],
-      "usageStage": "selected_only",
-      "causalConfidence": "weak",
-      "adoptedInLatestPack": true,
-      "effectiveContribution": false,
-      "effectiveContributionEvidenceRefs": [],
-      "rolledBackAfterHarm": false,
-      "harmRollbackEvidenceRefs": [],
-      "outcomeDelta": {
-        "success": 0,
-        "failure": 0,
-        "neutral": 0,
-        "notApplicable": 0,
-        "retryCount": 0,
-        "verifierOutcome": "UNKNOWN"
-      },
-      "summary": "Durable workspace-scoped progress state compiled from the latest turn, evidence traceability, and execution history.",
-      "lastObservedAt": ""
-    },
-    {
-      "memoryId": "mem_d71925c79c",
-      "publicRef": "mem_d71925c79c",
-      "memoryType": "episodic_event",
-      "sourceTier": "runtime",
-      "promotionState": "captured",
-      "usageMode": "explicit_prompt_pack",
-      "selectedInLatestPack": true,
-      "selectedInPackAt": "2026-04-22T00:37:09.309Z",
-      "usedByTaskRefs": [],
-      "taskFamilies": [
-        "web_creative",
-        "tool_use_browser_like",
-        "workflow_execution"
-      ],
-      "usageStage": "selected_only",
-      "causalConfidence": "weak",
-      "adoptedInLatestPack": true,
-      "effectiveContribution": false,
-      "effectiveContributionEvidenceRefs": [],
-      "rolledBackAfterHarm": false,
-      "harmRollbackEvidenceRefs": [],
-      "outcomeDelta": {
-        "success": 0,
-        "failure": 0,
-        "neutral": 0,
-        "notApplicable": 0,
-        "retryCount": 0,
-        "verifierOutcome": "UNKNOWN"
-      },
-      "summary": "full-runtime episode finished as COMPLETED.",
-      "lastObservedAt": ""
-    },
-    {
-      "memoryId": "mem_3d067288b8",
-      "publicRef": "mem_3d067288b8",
-      "memoryType": "episodic_event",
-      "sourceTier": "runtime",
-      "promotionState": "captured",
-      "usageMode": "explicit_prompt_pack",
-      "selectedInLatestPack": true,
-      "selectedInPackAt": "2026-04-22T00:37:09.309Z",
-      "usedByTaskRefs": [],
-      "taskFamilies": [
-        "web_creative",
-        "tool_use_browser_like",
-        "workflow_execution"
-      ],
-      "usageStage": "selected_only",
-      "causalConfidence": "weak",
-      "adoptedInLatestPack": true,
-      "effectiveContribution": false,
-      "effectiveContributionEvidenceRefs": [],
-      "rolledBackAfterHarm": false,
-      "harmRollbackEvidenceRefs": [],
-      "outcomeDelta": {
-        "success": 0,
-        "failure": 0,
-        "neutral": 0,
-        "notApplicable": 0,
-        "retryCount": 0,
-        "verifierOutcome": "UNKNOWN"
-      },
-      "summary": "full-runtime episode finished as COMPLETED.",
       "lastObservedAt": ""
     }
   ]

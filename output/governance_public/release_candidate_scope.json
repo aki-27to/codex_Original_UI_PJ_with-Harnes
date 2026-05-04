@@ -1,7 +1,7 @@
 {
   "schema": "release-candidate-scope.v1",
   "generatedAt": "2026-04-18T00:00:00Z",
-  "updatedAt": "2026-04-22T00:27:12.1786258Z",
+  "updatedAt": "2026-05-04T12:17:28.397Z",
   "candidateId": "rc-2026-04-18-core-harness-governed-apps",
   "decisionQuestion": "May this bounded release candidate ship to production?",
   "status": "ready_for_ship_decision",
@@ -105,7 +105,7 @@
     "publicRegression": "passed",
     "currentSurfaceTruth": "passed",
     "latestSignoffSummaryPath": "logs/current/latest_signoff_summary.json",
-    "latestBundleName": "signoff-2026-04-21T15-08-45-517Z-bbfbe8",
+    "latestBundleName": "signoff-2026-04-18T05-27-13-996Z-f97810",
     "latestBundleDecision": "RELEASE_APPROVED",
     "publicGovernanceExportRefreshed": true
   },
