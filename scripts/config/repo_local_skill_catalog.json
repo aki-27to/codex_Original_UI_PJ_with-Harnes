@@ -403,6 +403,42 @@
       ]
     },
     {
+      "id": "review-agent-essence-codex",
+      "path": ".agents/skills/review-agent-essence-codex/SKILL.md",
+      "description": "Use to review Codex skills, harness design, App Server runtime, config, evidence, and UI surfaces against the bundled agent-essence principles without mutating the target.",
+      "useWhen": [
+        "Codex skill or harness design needs principle review",
+        "AGENTS.md .codex .agents scripts/config App Server or HarnesUI surfaces need agent-essence alignment",
+        "non-mutating Codex design feedback is requested"
+      ],
+      "avoidWhen": [
+        "the target is primarily a Claude Code harness surface",
+        "the task requires direct implementation edits instead of principle review"
+      ],
+      "expectedArtifacts": [
+        "codex_essence_review",
+        "codex_principle_applicability_matrix",
+        "codex_improvement_recommendations"
+      ],
+      "evidenceSurfaces": [
+        ".agents/skills/review-agent-essence-codex/reference/agent-essence.md",
+        "AGENTS.md",
+        ".codex/agents/*.toml",
+        ".agents/skills/**/SKILL.md",
+        "scripts/config/*.json",
+        "review output"
+      ],
+      "workerDecisionConnection": [
+        "Codex principle review can inform REVISE or KEEP before skill or harness promotion"
+      ],
+      "promotionCriteria": [
+        "repeated Codex reviews produce actionable design corrections without Claude-surface false negatives"
+      ],
+      "rollbackCriteria": [
+        "routes implementation tasks into analysis-only review, ignores Codex current-truth surfaces, or gives generic principle commentary"
+      ]
+    },
+    {
       "id": "review-harness",
       "path": ".agents/skills/review-harness/SKILL.md",
       "description": "Use to diagnose a Claude Code style harness project against the bundled anti-pattern rubric and produce a scoped diagnosis report.",
