@@ -18,6 +18,14 @@ Use existing artifacts as evidence. Do not replace `worker_decision_surface.json
 3. Classify the outcome as `ADOPT`, `REVISE`, or `BLOCK` for reporting.
 4. If required evidence is missing, report `FAILED_VALIDATION` or equivalent instead of claiming completion.
 
+## Output Contract
+
+Return a concise result with:
+
+- `outcome`: the decision, artifact, or behavior change this skill produced.
+- `evidence`: files, commands, logs, or artifacts checked.
+- `open_issues`: missing checks, residual risks, or follow-up work.
+
 ## Evidence
 
 - `output/governance_public/worker_decision_surface.json`

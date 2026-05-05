@@ -16,6 +16,14 @@ Find contradictions between public docs, runtime output, current logs, and decis
 3. Distinguish stale export from live contradiction.
 4. Report mismatches by artifact path and decision impact.
 
+## Output Contract
+
+Return a concise result with:
+
+- `outcome`: the decision, artifact, or behavior change this skill produced.
+- `evidence`: files, commands, logs, or artifacts checked.
+- `open_issues`: missing checks, residual risks, or follow-up work.
+
 ## Evidence
 
 - `README.md`

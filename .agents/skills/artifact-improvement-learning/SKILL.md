@@ -17,6 +17,14 @@ Turn an artifact improvement into reusable learning only when there is evidence 
 4. Extract one reusable pattern and one anti-pattern.
 5. Define retrieval triggers, promotion criteria, and rollback criteria.
 
+## Output Contract
+
+Return a concise result with:
+
+- `outcome`: the decision, artifact, or behavior change this skill produced.
+- `evidence`: files, commands, logs, or artifacts checked.
+- `open_issues`: missing checks, residual risks, or follow-up work.
+
 ## Evidence
 
 - changed artifact paths

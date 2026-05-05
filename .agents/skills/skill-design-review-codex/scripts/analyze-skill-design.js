@@ -70,8 +70,15 @@ function walkFiles(root, current = root, out = []) {
   return out;
 }
 
+function escapeRegex(value) {
+  return String(value || "").replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
 function hasHeading(body, names) {
-  return names.some((name) => new RegExp(`^#{1,3}\\s+${name}\\b`, "im").test(body));
+  return names.some((name) => {
+    const escaped = escapeRegex(name);
+    return new RegExp(`^#{1,6}\\s+${escaped}(?:\\s|$)`, "im").test(body);
+  });
 }
 
 function detectPrefix(name) {
@@ -199,14 +206,14 @@ function analyzeTarget(target) {
       headingCount: countMatches(body, /^#{1,6}\s+/gm),
     },
     sections: {
-      hasPurpose: hasHeading(body, ["Purpose", "Goal"]),
-      hasProcedure: hasHeading(body, ["Procedure", "Workflow", "Process"]),
-      hasOutputContract: hasHeading(body, ["Output Contract", "Output", "Deliverable"]),
-      hasEvidence: hasHeading(body, ["Evidence", "Evidence Surfaces"]),
-      hasVerification: hasHeading(body, ["Verification", "Validation"]),
-      hasFailureGuard: hasHeading(body, ["Failure Guard", "Guardrails"]),
-      hasGotchas: hasHeading(body, ["Gotchas", "Common Pitfalls"]),
-      hasResources: hasHeading(body, ["Resources", "References", "Additional Resources"]),
+      hasPurpose: hasHeading(body, ["Purpose", "Goal", "目的", "ç›®çš„"]),
+      hasProcedure: hasHeading(body, ["Procedure", "Workflow", "Process", "手順", "æ‰‹é †", "Deterministic Steps"]),
+      hasOutputContract: hasHeading(body, ["Output Contract", "Output", "Deliverable", "Input / Output", "出力契約", "å‡ºåŠ›å¥‘ç´„"]),
+      hasEvidence: hasHeading(body, ["Evidence", "Evidence Surfaces", "証拠", "è¨¼æ‹ ", "エビデンス"]),
+      hasVerification: hasHeading(body, ["Verification", "Validation", "検証", "æ¤œè¨¼", "Tests", "完了条件", "å®Œäº†æ¡ä»¶"]),
+      hasFailureGuard: hasHeading(body, ["Failure Guard", "Guardrails", "失敗防止", "失敗ガード", "ガード", "注意", "å®Œäº†æ¡ä»¶"]),
+      hasGotchas: hasHeading(body, ["Gotchas", "Common Pitfalls", "注意点", "落とし穴"]),
+      hasResources: hasHeading(body, ["Resources", "References", "Additional Resources", "参照", "参考", "リソース"]),
     },
     resources,
     language: {

@@ -16,6 +16,14 @@ Avoid turning browser-tool failure into either false completion or needless user
 3. Fall back to source inspection, HTTP/header checks, or existing screenshot evidence when appropriate.
 4. If evidence remains missing, report blocked or failed validation with exact command/error context.
 
+## Output Contract
+
+Return a concise result with:
+
+- `outcome`: the decision, artifact, or behavior change this skill produced.
+- `evidence`: files, commands, logs, or artifacts checked.
+- `open_issues`: missing checks, residual risks, or follow-up work.
+
 ## Evidence
 
 - Playwright MCP diagnostics

@@ -17,6 +17,14 @@ Keep refactors small, reversible, and evidence-backed.
 4. Run targeted tests first, then broader checks when shared behavior changes.
 5. Report rollback notes and residual risk.
 
+## Output Contract
+
+Return a concise result with:
+
+- `outcome`: the decision, artifact, or behavior change this skill produced.
+- `evidence`: files, commands, logs, or artifacts checked.
+- `open_issues`: missing checks, residual risks, or follow-up work.
+
 ## Evidence
 
 - `git status --short --branch`

@@ -16,6 +16,14 @@ Prevent "looks fine" from replacing an explicit creative brief, reference compar
 3. Capture desktop/mobile/worst-state evidence when browser tooling is available.
 4. Connect findings to worker decision and learning surfaces.
 
+## Output Contract
+
+Return a concise result with:
+
+- `outcome`: the decision, artifact, or behavior change this skill produced.
+- `evidence`: files, commands, logs, or artifacts checked.
+- `open_issues`: missing checks, residual risks, or follow-up work.
+
 ## Evidence
 
 - design brief or user taste memory

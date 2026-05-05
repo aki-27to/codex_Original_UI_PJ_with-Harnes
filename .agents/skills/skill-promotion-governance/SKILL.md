@@ -16,6 +16,14 @@ Prevent "worked once" from becoming permanent agent behavior.
 3. Define rollback criteria before relying on the skill for future tasks.
 4. Run skill catalog and portfolio checks after package changes.
 
+## Output Contract
+
+Return a concise result with:
+
+- `outcome`: the decision, artifact, or behavior change this skill produced.
+- `evidence`: files, commands, logs, or artifacts checked.
+- `open_issues`: missing checks, residual risks, or follow-up work.
+
 ## Evidence
 
 - `scripts/config/repo_local_skill_catalog.json`

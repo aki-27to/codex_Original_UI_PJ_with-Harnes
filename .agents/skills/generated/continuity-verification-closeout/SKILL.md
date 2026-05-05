@@ -19,6 +19,14 @@ when closeout must preserve verifier and continuity state
 - prefer verified artifacts
 - do not promote session-only notes
 
+## Output Contract
+
+Return a concise result with:
+
+- `outcome`: the decision, artifact, or behavior change this skill produced.
+- `evidence`: files, commands, logs, or artifacts checked.
+- `open_issues`: missing checks, residual risks, or follow-up work.
+
 ## Tests
 - closeout_summary exists
 - verification_status exists

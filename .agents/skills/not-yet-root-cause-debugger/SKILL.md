@@ -16,6 +16,14 @@ Explain why a status remains `NOT_YET` without guessing from code changes alone.
 3. Identify missing runtime evidence, harmful causal trace, stable coverage failure, robustness failure, agenda still running, or missing live source.
 4. Define the smallest next verification or remediation step.
 
+## Output Contract
+
+Return a concise result with:
+
+- `outcome`: the decision, artifact, or behavior change this skill produced.
+- `evidence`: files, commands, logs, or artifacts checked.
+- `open_issues`: missing checks, residual risks, or follow-up work.
+
 ## Evidence
 
 - `output/agi_readiness/goal_completion_status.json`
