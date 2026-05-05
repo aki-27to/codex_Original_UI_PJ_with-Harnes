@@ -370,6 +370,43 @@
       ]
     },
     {
+      "id": "skill-design-review-codex",
+      "path": ".agents/skills/skill-design-review-codex/SKILL.md",
+      "description": "Use to evaluate Codex or Agent skill-package design against activation, layering, naming, progressive disclosure, evaluation, and governance criteria.",
+      "useWhen": [
+        "SKILL.md or repo-local skill design needs review",
+        "skill portfolio quality or naming contract must be assessed",
+        "a skill needs adoption, revision, draft, or rollback classification"
+      ],
+      "avoidWhen": [
+        "the user requested direct skill implementation without a review step",
+        "the target is not a skill package or skill portfolio"
+      ],
+      "expectedArtifacts": [
+        "skill_design_verdict",
+        "rubric_score",
+        "mechanical_analysis_summary",
+        "evidence_backed_findings",
+        "required_fixes"
+      ],
+      "evidenceSurfaces": [
+        ".agents/skills/skill-design-review-codex/references/design-rubric.md",
+        ".agents/skills/skill-design-review-codex/scripts/analyze-skill-design.js",
+        "target SKILL.md",
+        "scripts/config/repo_local_skill_catalog.json",
+        "node scripts/repo_local_skill_catalog_test.js"
+      ],
+      "workerDecisionConnection": [
+        "skill design review can inform ADOPT, REVISE, DRAFT_ONLY, or ROLLBACK before relying on a skill"
+      ],
+      "promotionCriteria": [
+        "repeatedly finds actionable skill-design defects with analyzer evidence and low false positives"
+      ],
+      "rollbackCriteria": [
+        "rewrites review criteria to fit targets, mutates analysis-only targets, or gives generic advice without file evidence"
+      ]
+    },
+    {
       "id": "review-agent-essence",
       "path": ".agents/skills/review-agent-essence/SKILL.md",
       "description": "Use to review a skill, harness design, code, or design document against the bundled agent-essence principles without mutating the target.",
