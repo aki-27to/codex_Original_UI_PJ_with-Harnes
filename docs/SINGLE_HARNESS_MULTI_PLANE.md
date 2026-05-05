@@ -1,6 +1,6 @@
 # SINGLE_HARNESS_MULTI_PLANE
 
-Updated: 2026-04-12
+Updated: 2026-05-05
 
 ## 1) 何を説明する文書か
 
@@ -48,6 +48,14 @@ Updated: 2026-04-12
 - 評価面は execution trace と output artifact を読んでよい
 - protected eval asset は `protected/holdout` と `protected/blackbox` に残す
 
+### Claim provenance boundary
+
+- readiness evidence classes are kept separate: `live_exec`, `policy_probe`, `artifact_simulator`, `repo_tracked_protected_eval`, and `true_hidden_eval`
+- repo-tracked protected eval is not true hidden eval
+- `protected/holdout` and `protected/blackbox` are policy-protected lanes in this checkout, not physically hidden grader assets
+- a true-hidden readiness claim requires an externally hidden grader outside the execution workspace
+- `bounded_multi_agent_orchestrator` is `artifact_simulator_until_native_child_dispatch_evidence`; it must not be described as independent child-agent execution until native child-dispatch proof exists
+
 ## 4) 見出しになる current truth
 
 この多面構造の中でも、現在の見出し面は `worker_decision_surface` です。
@@ -60,6 +68,7 @@ Updated: 2026-04-12
 
 <!-- compatibility markers:
 split point is trust boundary
+repo-tracked protected eval is not true hidden
 single governed harness
 sovereign
 POST /api/exec

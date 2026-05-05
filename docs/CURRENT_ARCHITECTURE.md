@@ -1,6 +1,6 @@
 # 現在の技術構成
 
-Updated: 2026-04-18
+Updated: 2026-05-05
 
 Authority role: `active design spec`
 Authority registry: `authority-registry.v1`
@@ -171,6 +171,13 @@ reviewer 向けの外部比較 refresh は `npm run reviewer:baseline-comparison
 `reviewed_team` はチーム運用を前提に、証拠とレビューを強めた姿勢です。
 
 Launcher posture: the desktop launcher keeps `CODEX_REQUIRE_ADMIN=0` and `CODEX_AUTO_OPEN_BROWSER=0` by default. Operators can still opt in to elevation or browser auto-open through the environment, while UI-triggered restart helpers keep elevation, browser auto-open, and pause disabled.
+
+### Claim provenance boundary
+
+- readiness claim provenance is explicit: `live_exec`, `policy_probe`, `artifact_simulator`, `repo_tracked_protected_eval`, and `true_hidden_eval` are separate evidence classes
+- `protected/holdout` and `protected/blackbox` are repo-tracked protected eval lanes, not true hidden grader assets; true-hidden claims require an externally hidden grader outside this workspace
+- bounded multi-agent current mode is `artifact_simulator_until_native_child_dispatch_evidence`, so its artifacts must not be promoted as independent child-agent execution proof
+- `scripts/run_repo_quality_gate.js` is validation-only: mutating surface refreshes are separate artifact commands, and the runner fails if a validation script introduces new tracked diffs
 
 ## 6) 現在の構成
 - `natural_task_trace_summary.json` records the selected implementation-bearing turn id and thread id, so trace bundles stay anchored to the delegated turn even when later completions share the thread.

@@ -29,6 +29,13 @@ const defaultHarnessPlaneContract = Object.freeze({
     workerCurrentTruthOwner: "worker_centric",
     sovereignCanBeLegacyAliasOnly: true,
   }),
+  claimProvenance: Object.freeze({
+    evalEvidenceClasses: Object.freeze([]),
+    readinessClaimRule: "",
+    trueHiddenEvalAvailable: false,
+    repoTrackedProtectedEvalIsTrueHidden: false,
+    multiAgentExecutionMode: "artifact_simulator",
+  }),
   currentTruthSurfaces: Object.freeze({
     headlineGovernanceSurface: "output/governance_public/worker_decision_surface.json",
     programReadinessSurface: "output/agi_readiness/goal_completion_status.json",
@@ -113,6 +120,17 @@ function normalizeStrictChecks(values) {
   return Object.freeze(out);
 }
 
+function normalizeClaimProvenance(value) {
+  const source = value && typeof value === "object" ? value : {};
+  return Object.freeze({
+    evalEvidenceClasses: uniqueStrings(source.evalEvidenceClasses, 12),
+    readinessClaimRule: safeString(source.readinessClaimRule, 400),
+    trueHiddenEvalAvailable: source.trueHiddenEvalAvailable === true,
+    repoTrackedProtectedEvalIsTrueHidden: source.repoTrackedProtectedEvalIsTrueHidden === true,
+    multiAgentExecutionMode: safeString(source.multiAgentExecutionMode, 120) || defaultHarnessPlaneContract.claimProvenance.multiAgentExecutionMode,
+  });
+}
+
 function normalizeHarnessPlaneContract(input) {
   const payload = input && typeof input === "object" ? input : {};
   return Object.freeze({
@@ -143,6 +161,7 @@ function normalizeHarnessPlaneContract(input) {
         ? payload.trustBoundaries.sovereignCanBeLegacyAliasOnly !== false
         : defaultHarnessPlaneContract.trustBoundaries.sovereignCanBeLegacyAliasOnly,
     }),
+    claimProvenance: normalizeClaimProvenance(payload.claimProvenance),
     currentTruthSurfaces: Object.freeze({
       headlineGovernanceSurface: safeString(payload.currentTruthSurfaces && payload.currentTruthSurfaces.headlineGovernanceSurface, 260) || defaultHarnessPlaneContract.currentTruthSurfaces.headlineGovernanceSurface,
       programReadinessSurface: safeString(payload.currentTruthSurfaces && payload.currentTruthSurfaces.programReadinessSurface, 260) || defaultHarnessPlaneContract.currentTruthSurfaces.programReadinessSurface,
@@ -190,6 +209,7 @@ function summarizeHarnessPlaneContract(contract) {
     planeIds,
     planes: summarizedPlanes,
     trustBoundaries: normalized.trustBoundaries,
+    claimProvenance: normalized.claimProvenance,
     currentTruthSurfaces: normalized.currentTruthSurfaces,
     strictChecks: normalized.strictChecks.map((entry) => entry.id),
     requiredDocs: normalized.requiredDocs,

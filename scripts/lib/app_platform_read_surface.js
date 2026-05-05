@@ -50,6 +50,14 @@ function normalizeStaticRequestRelativePath(rawPath){
   return decoded;
 }
 
+function safeDecodeURIComponent(value){
+  try{
+    return{ok:true,value:decodeURIComponent(String(value||""))};
+  }catch{
+    return{ok:false,value:""};
+  }
+}
+
 function resolveEnglishConversationOverrideSource(rawOverride,resolvedRoot,workspaceRoot){
   if(!rawOverride||!resolvedRoot)return"";
   const candidates=[
@@ -198,7 +206,18 @@ function createAppPlatformReadSurface(options={}){
   }
 
   function buildStaticRequestTarget(pathname){
-    const decoded=decodeURIComponent(pathname||"/");
+    const decodedPath=safeDecodeURIComponent(pathname||"/");
+    if(!decodedPath.ok){
+      return{
+        root:webRoot,
+        absolutePath:webRoot,
+        allowed:false,
+        statusCode:400,
+        error:"Bad percent encoding",
+        code:"BAD_PERCENT_ENCODING",
+      };
+    }
+    const decoded=decodedPath.value;
     if(decoded==="/"||decoded===""){
       const relativePath="index.html";
       const absolutePath=path.resolve(webRoot,relativePath);
@@ -249,6 +268,10 @@ function createAppPlatformReadSurface(options={}){
 
   function serveStaticFile(req,res,pathname){
     const target=buildStaticRequestTarget(pathname);
+    if(target&&target.statusCode){
+      sendJson(res,target.statusCode,{error:target.error||"Invalid path",code:target.code||"INVALID_PATH"});
+      return;
+    }
     if(!target||!target.allowed){
       sendJson(res,403,{error:"Forbidden"});
       return;
@@ -316,7 +339,12 @@ function createAppPlatformReadSurface(options={}){
     if(pathname.startsWith("/api/apps/")){
       const appRuntimeMatch=pathname.match(/^\/api\/apps\/([^/]+)\/runtime$/);
       if(appRuntimeMatch){
-        await handleHarnessAppRuntimeRequest(res,decodeURIComponent(appRuntimeMatch[1]));
+        const decodedAppId=safeDecodeURIComponent(appRuntimeMatch[1]);
+        if(!decodedAppId.ok){
+          sendJson(res,400,{ok:false,error:"Invalid app id.",code:"BAD_PERCENT_ENCODING"});
+          return true;
+        }
+        await handleHarnessAppRuntimeRequest(res,decodedAppId.value);
         return true;
       }
     }
@@ -334,4 +362,5 @@ function createAppPlatformReadSurface(options={}){
 
 module.exports={
   createAppPlatformReadSurface,
+  safeDecodeURIComponent,
 };

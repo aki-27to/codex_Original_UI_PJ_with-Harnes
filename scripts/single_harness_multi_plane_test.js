@@ -143,6 +143,13 @@ async function main() {
     assert.strictEqual(contract.repoIdentity.mode, "single_governed_harness", "repo identity mismatch");
     assert.strictEqual(contract.primaryRoutes.execution, "POST /api/exec", "execution route mismatch");
     assert.strictEqual(contract.primaryRoutes.evaluation, "POST /api/eval/run", "evaluation route mismatch");
+    assert.strictEqual(contract.claimProvenance.trueHiddenEvalAvailable, false, "repo-tracked eval assets must not be presented as true hidden eval");
+    assert.strictEqual(contract.claimProvenance.repoTrackedProtectedEvalIsTrueHidden, false, "repo-tracked protected eval must not be true hidden");
+    assert.strictEqual(contract.claimProvenance.multiAgentExecutionMode, "artifact_simulator_until_native_child_dispatch_evidence", "bounded multi-agent mode must be explicit");
+    for (const evidenceClass of ["live_exec", "policy_probe", "artifact_simulator", "repo_tracked_protected_eval", "true_hidden_eval"]) {
+      assert(contract.claimProvenance.evalEvidenceClasses.includes(evidenceClass), `missing evidence class ${evidenceClass}`);
+    }
+    assert(contract.claimProvenance.readinessClaimRule.includes("externally hidden grader"), "claim rule must require external hidden grading for true-hidden claims");
     for (const planeId of ["execution", "evaluation", "monitoring", "governance"]) {
       assert(contract.planes[planeId], `missing plane ${planeId}`);
     }
@@ -183,6 +190,8 @@ async function main() {
     assert(completion.includes("program-readiness"), "AGI_OPERATIONAL_COMPLETION must scope goal completion to program readiness");
     assert(runbook.includes("protected/holdout"), "APP_SERVER_PROTOCOL_RUNBOOK must mention protected holdout assets");
     assert(planeDoc.includes("split point is trust boundary"), "plane doc must describe the trust boundary split");
+    assert(planeDoc.includes("repo-tracked protected eval is not true hidden"), "plane doc must distinguish repo-tracked protected eval from true hidden eval");
+    assert(architecture.includes("artifact_simulator_until_native_child_dispatch_evidence"), "CURRENT_ARCHITECTURE must expose bounded multi-agent simulator provenance");
     assert(planeDoc.includes("sovereign"), "plane doc must describe the sovereign alias rule");
   });
 
@@ -209,6 +218,7 @@ async function main() {
     assert.strictEqual(runtimeSurface.harnessPlaneSummary.primaryRoutes.execution, "POST /api/exec", "runtime execution route mismatch");
     assert.strictEqual(runtimeSurface.harnessPlaneSummary.primaryRoutes.evaluation, "POST /api/eval/run", "runtime evaluation route mismatch");
     assert.strictEqual(runtimeSurface.harnessPlaneSummary.planes.governance.headlineSurface, "output/governance_public/worker_decision_surface.json", "runtime governance headline mismatch");
+    assert.strictEqual(runtimeSurface.harnessPlaneSummary.claimProvenance.trueHiddenEvalAvailable, false, "runtime summary must not claim hidden eval is available");
   });
 
   await runCheck("server routes preserve execution and evaluation primary paths", async () => {

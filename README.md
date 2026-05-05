@@ -6,8 +6,10 @@ Authority registry: `authority-registry.v1`
 <!-- machine-readable compatibility markers:
 single governed harness
 CODEX_REQUEST_USER_INPUT_POLICY=auto-default
-127.0.0.1:57526
+127.0.0.1:57525
 -->
+
+Optional standalone English conversation app: `127.0.0.1:57526`
 
 ## このリポジトリは何か
 

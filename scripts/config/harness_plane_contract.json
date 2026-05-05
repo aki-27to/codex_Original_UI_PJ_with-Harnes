@@ -1,6 +1,6 @@
 {
   "schema": "single-harness-multi-plane-contract.v1",
-  "version": "2026-04-12.r2",
+  "version": "2026-05-05.r1",
   "sourceDoc": "docs/SINGLE_HARNESS_MULTI_PLANE.md",
   "repoIdentity": {
     "mode": "single_governed_harness",
@@ -128,6 +128,19 @@
     ],
     "workerCurrentTruthOwner": "worker_centric",
     "sovereignCanBeLegacyAliasOnly": true
+  },
+  "claimProvenance": {
+    "evalEvidenceClasses": [
+      "live_exec",
+      "policy_probe",
+      "artifact_simulator",
+      "repo_tracked_protected_eval",
+      "true_hidden_eval"
+    ],
+    "readinessClaimRule": "Readiness claims must separate live_exec, policy_probe, artifact_simulator, repo_tracked_protected_eval, and true_hidden_eval evidence. true_hidden_eval claims require an externally hidden grader outside the execution workspace.",
+    "trueHiddenEvalAvailable": false,
+    "repoTrackedProtectedEvalIsTrueHidden": false,
+    "multiAgentExecutionMode": "artifact_simulator_until_native_child_dispatch_evidence"
   },
   "currentTruthSurfaces": {
     "headlineGovernanceSurface": "output/governance_public/worker_decision_surface.json",

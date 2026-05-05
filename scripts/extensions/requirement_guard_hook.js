@@ -17,11 +17,15 @@ const {
 const {
   REVISION_PROPOSAL_MARKER,
 } = require("../lib/requirement_revision_policy");
+const {
+  requirementGuardMatcherDefaults,
+  requirementGuardOriginalRequirement,
+} = require("../lib/requirement_guard_extension_config");
 
-const ORIGINAL_REQUIREMENT = "?????3?????";
-const MATCH_VALUE_ENV_KEY = "REQUIREMENT_GUARD_MATCH_VALUE";
-const MATCH_VALUE_CONFIG_KEY = "requirement_guard.match_value";
-const DEFAULT_MATCH_VALUE = 3;
+const ORIGINAL_REQUIREMENT = requirementGuardOriginalRequirement;
+const MATCH_VALUE_ENV_KEY = requirementGuardMatcherDefaults.envKey;
+const MATCH_VALUE_CONFIG_KEY = requirementGuardMatcherDefaults.configKey;
+const DEFAULT_MATCH_VALUE = requirementGuardMatcherDefaults.defaultValue;
 
 const REQUIREMENT_LOCK_ENABLED_ENV_KEY = "CODEX_REQUIREMENT_LOCK_ENABLED";
 const REQUIREMENT_LOCK_REQUIRE_CONFIRM_ENV_KEY = "CODEX_REQUIREMENT_LOCK_REQUIRE_CONFIRM";

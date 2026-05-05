@@ -411,7 +411,10 @@ function run() {
     "prompt must remain unchanged when requirement lock is disabled"
   );
 
-  assert.strictEqual(matcher.requirement.originalRequirement, "?????3?????");
+  assert.strictEqual(
+    matcher.requirement.originalRequirement,
+    "requirement guard extension 3 must preserve locked requirements before execution"
+  );
 }
 
 try {

@@ -24,6 +24,8 @@ const stages = Object.freeze([
       "test:user-facing-response-policy",
       "test:governance-bundle",
       "test:single-harness-multi-plane",
+      "test:eval-lane-policy-path-length",
+      "test:bounded-multi-agent-simulator-mode",
       "test:self-improvement-governance",
       "test:repo-local-skills",
       "test:mcp-tool-registry-alignment",
@@ -48,6 +50,8 @@ const stages = Object.freeze([
       "test:app-server-transport-resilience",
       "test:conversation-voice-service-split",
       "test:replay-app-service-split",
+      "test:app-platform-read-surface-security",
+      "test:english-standalone-static-security",
       "test:harnesui-duplicate-submit-guard",
       "test:harnesui-control-state-guard",
       "test:harnesui-pending-state",
@@ -61,7 +65,6 @@ const stages = Object.freeze([
     id: "surfaces",
     label: "repo-quality:surfaces",
     scripts: [
-      "housekeeping:surfaces",
       "test:repo-hygiene:static",
       "test:housekeeping:runtime-surface",
       "test:housekeeping:output-surface",
@@ -98,6 +101,36 @@ function runScript(entry) {
   });
 }
 
+function runGit(args) {
+  return spawnSync("git", args, {
+    cwd: workspaceRoot,
+    encoding: "utf8",
+    windowsHide: true,
+  });
+}
+
+function captureTrackedDiffNames() {
+  const names = new Set();
+  for (const args of [["diff", "--name-only"], ["diff", "--cached", "--name-only"]]) {
+    const result = runGit(args);
+    if (result.status !== 0) {
+      continue;
+    }
+    for (const line of String(result.stdout || "").split(/\r?\n/)) {
+      const normalized = line.trim().replace(/\\/g, "/");
+      if (normalized) {
+        names.add(normalized);
+      }
+    }
+  }
+  return names;
+}
+
+function findNewTrackedDiffNames(before) {
+  const after = captureTrackedDiffNames();
+  return [...after].filter((name) => !before.has(name)).sort();
+}
+
 function main() {
   const requestedStage = String(process.argv[2] || "").trim().toLowerCase();
   const selectedStages = requestedStage
@@ -111,10 +144,22 @@ function main() {
     console.log(`[repo-quality] start ${stage.label}`);
     for (const scriptEntry of stage.scripts) {
       const scriptLabel = typeof scriptEntry === "string" ? scriptEntry : scriptEntry.id || scriptEntry.file;
+      const trackedDiffBefore = captureTrackedDiffNames();
       const result = runScript(scriptEntry);
       if (result.status !== 0) {
         console.error(`[repo-quality] fail ${stage.label} at ${scriptLabel}`);
         process.exit(result.status || 1);
+      }
+      const newTrackedDiffs = findNewTrackedDiffNames(trackedDiffBefore);
+      if (newTrackedDiffs.length) {
+        console.error(`[repo-quality] fail ${stage.label} at ${scriptLabel}: tracked files changed during validation`);
+        for (const name of newTrackedDiffs.slice(0, 40)) {
+          console.error(` - ${name}`);
+        }
+        if (newTrackedDiffs.length > 40) {
+          console.error(` - ... ${newTrackedDiffs.length - 40} more`);
+        }
+        process.exit(1);
       }
     }
     console.log(`[repo-quality] pass ${stage.label}`);

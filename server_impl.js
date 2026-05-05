@@ -60,6 +60,11 @@ const {
   normalizeParentDispatchGuardMode,
 }=require("./scripts/lib/parent_dispatch_guard_policy");
 const {
+  requirementGuardExtensionConfig,
+  requirementGuardMatcherDefaults,
+  requirementGuardOriginalRequirement,
+}=require("./scripts/lib/requirement_guard_extension_config");
+const {
 }=require("./scripts/lib/logging_surface");
 const {createConversationRuntime}=require("./scripts/lib/conversation_runtime");
 const {
@@ -459,20 +464,6 @@ const parentDispatchGuardModeEnvKey="CODEX_PARENT_DISPATCH_GUARD_MODE";
 const parentDispatchGuardMaxRetriesEnvKey="CODEX_PARENT_DISPATCH_GUARD_MAX_RETRIES";
 const parentDispatchGuardMode=normalizeParentDispatchGuardMode(process.env[parentDispatchGuardModeEnvKey],"enforce");
 const parentDispatchGuardMaxRetries=parsePositiveIntEnv(parentDispatchGuardMaxRetriesEnvKey,1,0,6);
-const requirementGuardOriginalRequirement="?????3?????";
-const requirementGuardExtensionConfig=Object.freeze({
-  id:"3",
-  status:"temporary",
-  defaultEnabled:false,
-  envFlag:"CODEX_REQUIREMENT_GUARD_ENABLED",
-  moduleRelativePath:"scripts/extensions/requirement_guard_hook.js",
-});
-const requirementGuardMatcherDefaults=Object.freeze({
-  configKey:"requirement_guard.match_value",
-  envKey:"REQUIREMENT_GUARD_MATCH_VALUE",
-  defaultValue:3,
-  inputKey:"input_value",
-});
 const defaultExecModelName=resolveConfiguredDefaultExecModelName();
 const defaultExecModelReasoningEffort=resolveConfiguredDefaultExecModelReasoningEffort();
 const defaultExecModelReasoningEffortConfig=`model_reasoning_effort="${defaultExecModelReasoningEffort}"`;

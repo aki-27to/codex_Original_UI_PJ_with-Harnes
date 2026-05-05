@@ -19,6 +19,7 @@ function main() {
   const baselineArtifact = String(scripts["artifact:baseline-comparison"] || "");
   const reviewerBaselineComparison = String(scripts["reviewer:baseline-comparison"] || "");
   const currentSurfaceTruth = String(scripts["current-surface-truth"] || "");
+  const artifactCurrentSurfaces = String(scripts["artifact:current-surfaces"] || "");
   const repoLocalSkills = String(scripts["test:repo-local-skills"] || "");
   const harnessArtifactMcp = String(scripts["test:harness-artifact-mcp"] || "");
   const mcpToolRegistryAlignment = String(scripts["test:mcp-tool-registry-alignment"] || "");
@@ -55,6 +56,10 @@ function main() {
     "current-surface-truth must stay available as an explicit script entrypoint"
   );
   assert(
+    artifactCurrentSurfaces.includes("node scripts/current_surface_truth_test.js --refresh"),
+    "artifact:current-surfaces must be the explicit mutating current-surface refresh entrypoint"
+  );
+  assert(
     repoLocalSkills.includes("node scripts/repo_local_skill_catalog_test.js"),
     "test:repo-local-skills must validate repo-local skill catalog metadata and paths"
   );
@@ -71,6 +76,8 @@ function main() {
   assert(runnerSource.includes('id: "surfaces"'), "repo-quality runner must define the surfaces stage");
   assert(!runnerSource.includes("shell:"), "repo-quality runner must not depend on shell:true execution paths");
   assert(runnerSource.includes("runPackageScriptSync"), "repo-quality runner must use the shared package-script invocation helper");
+  assert(runnerSource.includes("captureTrackedDiffNames"), "repo-quality runner must guard against validation-induced tracked diffs");
+  assert(runnerSource.includes("findNewTrackedDiffNames"), "repo-quality runner must fail when a script creates new tracked diffs");
 
   assert(
     runnerSource.includes('"test:request-handler-context-split"'),
@@ -101,6 +108,14 @@ function main() {
     "governance stage must include the current-surface service split test"
   );
   assert(
+    runnerSource.includes('"test:eval-lane-policy-path-length"'),
+    "governance stage must include eval lane path-length regression coverage"
+  );
+  assert(
+    runnerSource.includes('"test:bounded-multi-agent-simulator-mode"'),
+    "governance stage must include bounded multi-agent simulator provenance coverage"
+  );
+  assert(
     runnerSource.includes('"test:github-governance-surface"'),
     "governance stage must include the github governance surface test"
   );
@@ -125,12 +140,20 @@ function main() {
     "runtime stage must include the replay/app split test"
   );
   assert(
+    runnerSource.includes('"test:app-platform-read-surface-security"'),
+    "runtime stage must include app-platform percent-decode security checks"
+  );
+  assert(
+    runnerSource.includes('"test:english-standalone-static-security"'),
+    "runtime stage must include standalone static path containment checks"
+  );
+  assert(
     runnerSource.includes('"test:playwright-mcp"'),
     "runtime stage must include Playwright MCP smoke checks"
   );
   assert(
-    runnerSource.includes('"housekeeping:surfaces"'),
-    "surfaces stage must refresh surfaces before checking them"
+    !runnerSource.includes('"housekeeping:surfaces"'),
+    "surfaces stage must not refresh tracked surfaces while validating them"
   );
   assert(
     runnerSource.includes('"current-surface-truth"'),

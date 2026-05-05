@@ -162,12 +162,30 @@ function contentTypeFor(filePath) {
   return mimeTypes[ext] || "application/octet-stream";
 }
 
+function safeDecodeURIComponent(value) {
+  try {
+    return { ok: true, value: decodeURIComponent(String(value || "")) };
+  } catch {
+    return { ok: false, value: "" };
+  }
+}
+
+function isPathWithin(rootPath, candidatePath) {
+  const root = path.resolve(rootPath);
+  const candidate = path.resolve(candidatePath);
+  return root === candidate || candidate.startsWith(`${root}${path.sep}`);
+}
+
 function resolveStaticPath(requestPath) {
-  const decoded = decodeURIComponent(requestPath || "/");
+  const decodedPath = safeDecodeURIComponent(requestPath || "/");
+  if (!decodedPath.ok) {
+    return null;
+  }
+  const decoded = decodedPath.value;
   const normalized = decoded === "/" ? "/index.html" : decoded;
   const relativePath = normalized.replace(/^\/+/, "");
   const candidatePath = path.resolve(staticRoot, relativePath);
-  if (!candidatePath.startsWith(staticRoot)) {
+  if (!isPathWithin(staticRoot, candidatePath)) {
     return null;
   }
   return candidatePath;
@@ -205,59 +223,79 @@ function serveStatic(req, res, requestUrl) {
   });
 }
 
-const server = http.createServer(async (req, res) => {
-  const requestUrl = new URL(req.url || "/", `http://${req.headers.host || `${host}:${port}`}`);
+function createStandaloneServer() {
+  const server = http.createServer(async (req, res) => {
+    const requestUrl = new URL(req.url || "/", `http://${req.headers.host || `${host}:${port}`}`);
 
-  if (req.method === "OPTIONS") {
-    res.writeHead(204, {
-      "Access-Control-Allow-Origin": "*",
-      "Access-Control-Allow-Methods": "GET,HEAD,POST,OPTIONS",
-      "Access-Control-Allow-Headers": "Content-Type, Authorization",
-      "Access-Control-Max-Age": "86400",
-    });
-    res.end();
-    return;
-  }
+    if (req.method === "OPTIONS") {
+      res.writeHead(204, {
+        "Access-Control-Allow-Origin": "*",
+        "Access-Control-Allow-Methods": "GET,HEAD,POST,OPTIONS",
+        "Access-Control-Allow-Headers": "Content-Type, Authorization",
+        "Access-Control-Max-Age": "86400",
+      });
+      res.end();
+      return;
+    }
 
-  if (requestUrl.pathname === "/healthz") {
-    sendJson(res, 200, {
-      ok: true,
-      mode: "english-conversation-standalone",
-      port,
-      staticRoot,
-      harnessApiBaseUrl,
-    });
-    return;
-  }
+    if (requestUrl.pathname === "/healthz") {
+      sendJson(res, 200, {
+        ok: true,
+        mode: "english-conversation-standalone",
+        port,
+        staticRoot,
+        harnessApiBaseUrl,
+      });
+      return;
+    }
 
-  if (proxyableRoutes.has(requestUrl.pathname)) {
-    await proxyRequest(req, res, requestUrl);
-    return;
-  }
+    if (proxyableRoutes.has(requestUrl.pathname)) {
+      await proxyRequest(req, res, requestUrl);
+      return;
+    }
 
-  serveStatic(req, res, requestUrl);
-});
+    serveStatic(req, res, requestUrl);
+  });
 
-server.on("clientError", (error, socket) => {
-  if (socket.writable) {
-    socket.end("HTTP/1.1 400 Bad Request\r\n\r\n");
-  }
-  if (error && error.code !== "ECONNRESET") {
-    console.error("[english-app] client error:", error.message);
-  }
-});
+  server.on("clientError", (error, socket) => {
+    if (socket.writable) {
+      socket.end("HTTP/1.1 400 Bad Request\r\n\r\n");
+    }
+    if (error && error.code !== "ECONNRESET") {
+      console.error("[english-app] client error:", error.message);
+    }
+  });
 
-server.listen(port, host, () => {
-  console.log(`[english-app] listening on http://${host}:${port}`);
-  console.log(`[english-app] proxying conversation/voice API to ${harnessApiBaseUrl}`);
-});
+  return server;
+}
 
-function shutdown(signal) {
+function startServer() {
+  const server = createStandaloneServer();
+  server.listen(port, host, () => {
+    console.log(`[english-app] listening on http://${host}:${port}`);
+    console.log(`[english-app] proxying conversation/voice API to ${harnessApiBaseUrl}`);
+  });
+  return server;
+}
+
+function shutdown(server, signal) {
   server.close(() => {
     console.log(`[english-app] shutdown via ${signal}`);
     process.exit(0);
   });
 }
 
-process.on("SIGINT", () => shutdown("SIGINT"));
-process.on("SIGTERM", () => shutdown("SIGTERM"));
+if (require.main === module) {
+  const server = startServer();
+  process.on("SIGINT", () => shutdown(server, "SIGINT"));
+  process.on("SIGTERM", () => shutdown(server, "SIGTERM"));
+}
+
+module.exports = {
+  createStandaloneServer,
+  isPathWithin,
+  resolveStaticPath,
+  safeDecodeURIComponent,
+  startServer,
+  staticRoot,
+};

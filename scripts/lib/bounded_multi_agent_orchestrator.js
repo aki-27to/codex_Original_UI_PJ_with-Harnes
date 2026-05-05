@@ -27,6 +27,7 @@ const { assertOperationalModeAllowed } = require("./deployment_guards");
 
 const defaultAgentRoleContractManifestPath = path.join(__dirname, "..", "config", "agent_role_contract_manifest.json");
 const defaultMultiAgentPublicBaselinePath = path.join(__dirname, "..", "config", "multi_agent_public_baseline.json");
+const artifactSimulatorExecutionMode = "artifact_simulator";
 
 function safeString(value, max = 4000) {
   if (typeof value !== "string") return "";
@@ -650,6 +651,8 @@ function executeChildTask({
     generatedAt: nowIso(),
     childTaskId,
     role,
+    executionMode: artifactSimulatorExecutionMode,
+    independentAgentExecution: 0,
     ...execution.rawOutput,
   };
   const normalizedResult = {
@@ -658,6 +661,8 @@ function executeChildTask({
     childTaskId,
     role,
     parentTaskId: safeString(handoffBundle.parentTaskId, 120),
+    executionMode: artifactSimulatorExecutionMode,
+    independentAgentExecution: 0,
     ...execution.normalizedResult,
   };
   writeArtifacts(childArtifacts, {

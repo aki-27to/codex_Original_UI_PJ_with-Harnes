@@ -42,15 +42,15 @@ function safeString(value, max = 2000) {
 }
 
 function resolveWorkspacePath(workspaceRoot, candidate, fallbackRelative = "") {
-  const raw = safeString(candidate, 600) || safeString(fallbackRelative, 600);
+  const raw = safeString(candidate, 2000) || safeString(fallbackRelative, 2000);
   if (!raw) return "";
   return path.isAbsolute(raw) ? path.normalize(raw) : path.join(workspaceRoot, raw);
 }
 
-function uniqueStrings(values, max = 24) {
+function uniqueStrings(values, max = 24, maxChars = 160) {
   const out = [];
   for (const entry of Array.isArray(values) ? values : []) {
-    const text = safeString(entry, 160);
+    const text = safeString(entry, maxChars);
     if (!text || out.includes(text)) continue;
     out.push(text);
     if (out.length >= max) break;
@@ -78,7 +78,7 @@ function normalizeEvalLane(input, workspaceRoot) {
   return Object.freeze({
     id,
     visibility: safeString(source.visibility, 40).toLowerCase() || "public",
-    suitePaths: uniqueStrings(source.suitePaths, 8).map((entry) => resolveWorkspacePath(workspaceRoot, entry)),
+    suitePaths: uniqueStrings(source.suitePaths, 8, 2000).map((entry) => resolveWorkspacePath(workspaceRoot, entry)),
     outputPath: resolveWorkspacePath(workspaceRoot, source.outputPath, `output/${id}_latest.json`),
     historyPath: resolveWorkspacePath(workspaceRoot, source.historyPath, `logs/archive/raw/${id}_runs.jsonl`),
     summaryPath: resolveWorkspacePath(workspaceRoot, source.summaryPath, `output/${id}_summary.json`),
@@ -106,7 +106,7 @@ function normalizeEvalLanePolicy(input, { workspaceRoot = path.resolve(__dirname
     workspaceRoot,
     publicLaneId: lanes.some((entry) => entry.id === publicLaneId) ? publicLaneId : (lanes[0] ? lanes[0].id : fallback.publicLaneId),
     aggregateOutputPath: resolveWorkspacePath(workspaceRoot, payload.aggregateOutputPath, fallback.aggregateOutputPath),
-    protectedPaths: uniqueStrings(payload.protectedPaths, 16).map((entry) => resolveWorkspacePath(workspaceRoot, entry)),
+    protectedPaths: uniqueStrings(payload.protectedPaths, 16, 2000).map((entry) => resolveWorkspacePath(workspaceRoot, entry)),
     lanes: Object.freeze(lanes),
   });
 }
