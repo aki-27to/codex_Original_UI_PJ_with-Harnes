@@ -381,7 +381,11 @@ async function loadRuntime() {
     state.runtime.controlToken = text(payload && payload.controlApi && payload.controlApi.token ? payload.controlApi.token : "", 400);
     state.runtime.controlTokenHeader = text(payload && payload.controlApi && payload.controlApi.tokenHeader ? payload.controlApi.tokenHeader : "", 120) || "x-codex-control-token";
     const isStandalone = Boolean(payload && payload.isolation && payload.isolation.mode === "standalone");
-    const hasTranscriptionWorker = Boolean(payload && payload.isolation && payload.isolation.transcriptionModel);
+    const hasTranscriptionWorker = Boolean(
+      payload
+        && payload.isolation
+        && (payload.isolation.transcriptionProvider || payload.isolation.transcriptionModel)
+    );
     state.runtime.transcriptionReady = hasTranscriptionWorker;
     if (!hasTranscriptionWorker) {
       setRuntimeStatus("restart required", "offline");

@@ -11,6 +11,8 @@ const DEFAULT_HOST = "127.0.0.1";
 const EXEC_STREAM_CONTENT_TYPE = "application/x-ndjson";
 const MAX_BODY_BYTES = 1024 * 1024;
 const MAX_UPLOAD_BYTES = normalizeMegabytes(process.env.CODEX_KOE_SCRIBE_MAX_UPLOAD_MB, 20 * 1024);
+const TRANSCRIPTION_PROVIDER = String(process.env.CODEX_KOE_SCRIBE_PROVIDER || "codex-app").trim().toLowerCase();
+const CODEX_APP_BASE_URL = String(process.env.CODEX_KOE_SCRIBE_CODEX_APP_URL || "http://127.0.0.1:57525").replace(/\/+$/, "");
 const OPENAI_API_BASE_URL = String(process.env.OPENAI_BASE_URL || "https://api.openai.com/v1").replace(/\/+$/, "");
 const OPENAI_TRANSCRIPTION_MODEL = process.env.CODEX_KOE_SCRIBE_OPENAI_MODEL || "whisper-1";
 const staticRoot = __dirname;
@@ -440,6 +442,176 @@ function parseOpenAiError(statusCode, body) {
   }
 }
 
+function parseJsonBody(raw) {
+  try {
+    return JSON.parse(raw);
+  } catch {
+    return null;
+  }
+}
+
+function requestJson({ method = "GET", baseUrl, pathname, body, timeoutMs = 300000 }) {
+  const endpoint = new URL(pathname, `${baseUrl.replace(/\/+$/, "")}/`);
+  const client = endpoint.protocol === "https:" ? https : http;
+  const requestBody = body == null ? null : Buffer.from(JSON.stringify(body));
+
+  return new Promise((resolve, reject) => {
+    const req = client.request(
+      endpoint,
+      {
+        method,
+        headers: {
+          ...(requestBody ? {
+            "Content-Type": "application/json; charset=utf-8",
+            "Content-Length": requestBody.length,
+          } : {}),
+        },
+      },
+      (res) => {
+        const chunks = [];
+        res.on("data", (chunk) => chunks.push(chunk));
+        res.on("end", () => {
+          const raw = Buffer.concat(chunks).toString("utf8");
+          const parsed = parseJsonBody(raw);
+          if ((res.statusCode || 500) >= 400) {
+            const message = parsed && parsed.error ? parsed.error : raw;
+            reject(new Error(message || `HTTP ${res.statusCode}`));
+            return;
+          }
+          resolve(parsed || { text: raw });
+        });
+      }
+    );
+    req.setTimeout(Math.max(5000, Math.trunc(Number(timeoutMs) || 300000)), () => {
+      req.destroy(new Error("Codex App Server connection timed out."));
+    });
+    req.on("error", reject);
+    if (requestBody) req.write(requestBody);
+    req.end();
+  });
+}
+
+function normalizeCodexAppBaseUrl(value) {
+  return String(value || CODEX_APP_BASE_URL).replace(/\/+$/, "");
+}
+
+async function getCodexAppRuntimeStatus(baseUrl = CODEX_APP_BASE_URL) {
+  return requestJson({
+    baseUrl: normalizeCodexAppBaseUrl(baseUrl),
+    pathname: "/api/runtime",
+    timeoutMs: 8000,
+  });
+}
+
+function buildCodexAppTranscriptionPrompt({ mediaPath, mediaFileName, options }) {
+  return [
+    "KoeScribe transcription request.",
+    "",
+    "You are running inside Codex App Server. Do not ask the user for OPENAI_API_KEY.",
+    "Use the available Codex runtime and local read access to produce the best possible transcript for the media file.",
+    "If this Codex runtime cannot actually transcribe audio/video bytes, return status=blocked with a concise Japanese reason instead of pretending completion.",
+    "",
+    `Media path: ${mediaPath}`,
+    `Media file name: ${mediaFileName}`,
+    `Language: ${options.language || "ja"}`,
+    `Quality: ${options.quality || "technical"}`,
+    `Outputs: ${(options.outputs || []).join(", ")}`,
+    "",
+    "Glossary:",
+    options.glossary || "(none)",
+    "",
+    "Return structured JSON only.",
+  ].join("\n");
+}
+
+const codexTranscriptionSchema = Object.freeze({
+  type: "object",
+  additionalProperties: false,
+  required: ["status", "transcript", "segments", "notes"],
+  properties: {
+    status: { type: "string", enum: ["completed", "blocked"] },
+    transcript: { type: "string" },
+    segments: {
+      type: "array",
+      items: {
+        type: "object",
+        additionalProperties: false,
+        required: ["start", "end", "text"],
+        properties: {
+          start: { type: "number" },
+          end: { type: "number" },
+          text: { type: "string" },
+        },
+      },
+    },
+    notes: { type: "string" },
+  },
+});
+
+async function transcribeMediaWithCodexApp({ mediaPath, mediaFileName, options = {} }) {
+  const codexAppBaseUrl = normalizeCodexAppBaseUrl(options && options.codexAppBaseUrl);
+  let runtime;
+  try {
+    runtime = await getCodexAppRuntimeStatus(codexAppBaseUrl);
+  } catch (error) {
+    throw new Error([
+      "Codex App Server に接続できません。",
+      "",
+      `接続先: ${codexAppBaseUrl}`,
+      "先に Harnes / Codex App Server を起動してから、KoeScribe を実行してください。",
+      `詳細: ${error && error.message ? error.message : String(error)}`,
+    ].join("\n"));
+  }
+
+  if (!runtime || runtime.mode !== "app-server") {
+    throw new Error([
+      "Codex App Server は見つかりましたが、Codex実行環境が準備できていません。",
+      "",
+      `接続先: ${codexAppBaseUrl}`,
+      `詳細: runtime mode is ${runtime && runtime.mode ? runtime.mode : "unknown"}`,
+    ].join("\n"));
+  }
+
+  const registeredApps = runtime && runtime.staticApps && Array.isArray(runtime.staticApps.apps)
+    ? runtime.staticApps.apps
+    : null;
+  if (registeredApps && !registeredApps.some((app) => app && app.id === "koe-scribe")) {
+    throw new Error([
+      "Codex App Server は見つかりましたが、KoeScribe app が登録されていません。",
+      "",
+      `接続先: ${codexAppBaseUrl}`,
+      "APP/05.koe-scribe/app.manifest.json が読み込まれる状態で Harnes / Codex App Server を起動し直してください。",
+    ].join("\n"));
+  }
+
+  const response = await requestJson({
+    method: "POST",
+    baseUrl: codexAppBaseUrl,
+    pathname: "/api/apps/koe-scribe/structured",
+    timeoutMs: 300000,
+    body: {
+      prompt: buildCodexAppTranscriptionPrompt({ mediaPath, mediaFileName, options }),
+      outputSchema: codexTranscriptionSchema,
+      timeoutMs: 300000,
+    },
+  });
+
+  const data = response && response.data && typeof response.data === "object" ? response.data : response;
+  const status = String(data && data.status ? data.status : "").toLowerCase();
+  if (status === "blocked") {
+    throw new Error([
+      "Codex App Server に接続しましたが、この環境では音声・動画の直接文字起こしを完了できませんでした。",
+      "",
+      data && data.notes ? data.notes : "Codex runtime returned blocked.",
+    ].join("\n"));
+  }
+  return {
+    text: data && typeof data.transcript === "string" ? data.transcript : "",
+    segments: Array.isArray(data && data.segments) ? data.segments : [],
+    notes: data && typeof data.notes === "string" ? data.notes : "",
+  };
+}
+
 function postOpenAiMultipart({ apiKey, fields, filePath, fileName, contentType }) {
   const boundary = `----koe-scribe-${crypto.randomBytes(16).toString("hex")}`;
   const endpoint = new URL(`${OPENAI_API_BASE_URL}/audio/transcriptions`);
@@ -531,6 +703,15 @@ async function transcribeMediaWithOpenAI({ mediaPath, mediaFileName, mediaType, 
   });
 }
 
+function resolveTranscriptionClient(options = {}) {
+  if (options.transcriptionClient) return options.transcriptionClient;
+  if (options.openAiClient) return options.openAiClient;
+  if (TRANSCRIPTION_PROVIDER === "direct-openai" || TRANSCRIPTION_PROVIDER === "openai") {
+    return transcribeMediaWithOpenAI;
+  }
+  return transcribeMediaWithCodexApp;
+}
+
 async function runTranscriptionJob({ body, context, jobDir }) {
   const mediaPath = getMediaPathFromBody(body);
   if (!mediaPath) {
@@ -547,7 +728,7 @@ async function runTranscriptionJob({ body, context, jobDir }) {
   const outputDir = resolveOutputDir(options, jobDir);
   const baseName = outputBaseName(mediaFileName);
 
-  const transcription = await context.openAiClient({
+  const transcription = await context.transcriptionClient({
     mediaPath,
     mediaFileName,
     mediaType,
@@ -604,7 +785,9 @@ function buildRuntimePayload(context) {
       runtimeRoot: context.runtimeRoot,
       instanceId: context.instanceId,
       uploadMaxBytes: MAX_UPLOAD_BYTES,
-      transcriptionModel: OPENAI_TRANSCRIPTION_MODEL,
+      transcriptionProvider: TRANSCRIPTION_PROVIDER === "direct-openai" || TRANSCRIPTION_PROVIDER === "openai" ? "direct-openai" : "codex-app",
+      codexAppBaseUrl: CODEX_APP_BASE_URL,
+      transcriptionModel: TRANSCRIPTION_PROVIDER === "direct-openai" || TRANSCRIPTION_PROVIDER === "openai" ? OPENAI_TRANSCRIPTION_MODEL : "",
     },
   };
 }
@@ -622,7 +805,7 @@ function createContext(options = {}) {
     controlTokenHeader: "x-koe-scribe-control-token",
     host,
     instanceId,
-    openAiClient: options.openAiClient || transcribeMediaWithOpenAI,
+    transcriptionClient: resolveTranscriptionClient(options),
     port,
     portSelection: port === 0 ? "auto" : "fixed",
     quiet: Boolean(options.quiet),
@@ -786,5 +969,6 @@ module.exports = {
   safeDecodeURIComponent,
   startServer,
   staticRoot,
+  transcribeMediaWithCodexApp,
   transcribeMediaWithOpenAI,
 };

@@ -5,7 +5,10 @@ const fs = require("fs");
 const http = require("http");
 const { once } = require("events");
 
-const { startServer } = require("../APP/05.koe-scribe/standalone_server");
+const {
+  startServer,
+  transcribeMediaWithCodexApp,
+} = require("../APP/05.koe-scribe/standalone_server");
 
 function request({ method = "GET", port, path: requestPath, body, headers = {} }) {
   return new Promise((resolve, reject) => {
@@ -71,12 +74,77 @@ function rawRequest({ method = "POST", port, path: requestPath, body, headers = 
   });
 }
 
+async function runCodexAppBridgeClientTest() {
+  const seenPaths = [];
+  const fakeCodexAppServer = http.createServer((req, res) => {
+    seenPaths.push(`${req.method} ${req.url}`);
+    if (req.method === "GET" && req.url === "/api/runtime") {
+      res.writeHead(200, { "Content-Type": "application/json; charset=utf-8" });
+      res.end(JSON.stringify({
+        mode: "app-server",
+        staticApps: {
+          apps: [{ id: "koe-scribe" }],
+        },
+      }));
+      return;
+    }
+    if (req.method === "POST" && req.url === "/api/apps/koe-scribe/structured") {
+      const chunks = [];
+      req.on("data", (chunk) => chunks.push(chunk));
+      req.on("end", () => {
+        const body = JSON.parse(Buffer.concat(chunks).toString("utf8"));
+        assert(body.prompt.includes("KoeScribe transcription request."));
+        assert(body.prompt.includes("Do not ask the user for OPENAI_API_KEY."));
+        assert(body.outputSchema && body.outputSchema.type === "object");
+        res.writeHead(200, { "Content-Type": "application/json; charset=utf-8" });
+        res.end(JSON.stringify({
+          ok: true,
+          data: {
+            status: "completed",
+            transcript: "こんにちは。Codex App bridge 経由の文字起こしです。",
+            segments: [{ start: 0, end: 2, text: "こんにちは。" }],
+            notes: "bridge ok",
+          },
+        }));
+      });
+      return;
+    }
+    res.writeHead(404, { "Content-Type": "application/json; charset=utf-8" });
+    res.end(JSON.stringify({ ok: false, error: "not found" }));
+  });
+
+  fakeCodexAppServer.listen(0, "127.0.0.1");
+  await once(fakeCodexAppServer, "listening");
+  const port = fakeCodexAppServer.address().port;
+  try {
+    const result = await transcribeMediaWithCodexApp({
+      mediaPath: "C:\\media\\sample.mp4",
+      mediaFileName: "sample.mp4",
+      options: {
+        language: "ja",
+        quality: "technical",
+        outputs: ["Markdown"],
+        codexAppBaseUrl: `http://127.0.0.1:${port}`,
+      },
+    });
+    assert.strictEqual(result.text, "こんにちは。Codex App bridge 経由の文字起こしです。");
+    assert.deepStrictEqual(seenPaths, [
+      "GET /api/runtime",
+      "POST /api/apps/koe-scribe/structured",
+    ]);
+  } finally {
+    await new Promise((resolve) => fakeCodexAppServer.close(resolve));
+  }
+}
+
 async function main() {
+  await runCodexAppBridgeClientTest();
+
   const server = startServer({
     hostOverride: "127.0.0.1",
     portOverride: 0,
     quiet: true,
-    openAiClient: async () => ({
+    transcriptionClient: async () => ({
       text: "こんにちは。これはKoeScribeの文字起こしテストです。",
       segments: [
         { start: 0, end: 2.4, text: "こんにちは。" },
@@ -106,7 +174,8 @@ async function main() {
     const runtimePayload = JSON.parse(runtime.body);
     assert.strictEqual(runtimePayload.mode, "app-server");
     assert.strictEqual(runtimePayload.isolation.sharedApiExec, false);
-    assert.strictEqual(runtimePayload.isolation.transcriptionModel, "whisper-1");
+    assert.strictEqual(runtimePayload.isolation.transcriptionProvider, "codex-app");
+    assert.strictEqual(runtimePayload.isolation.codexAppBaseUrl, "http://127.0.0.1:57525");
     assert.strictEqual(runtimePayload.controlApi.tokenHeader, "x-koe-scribe-control-token");
 
     const upload = await rawRequest({

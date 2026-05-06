@@ -6,6 +6,7 @@ cd /d "%APP_DIR%"
 
 if "%CODEX_KOE_SCRIBE_PORT%"=="" set "CODEX_KOE_SCRIBE_PORT=0"
 if "%CODEX_KOE_SCRIBE_HOST%"=="" set "CODEX_KOE_SCRIBE_HOST=127.0.0.1"
+if "%CODEX_KOE_SCRIBE_CODEX_APP_URL%"=="" set "CODEX_KOE_SCRIBE_CODEX_APP_URL=http://127.0.0.1:57525"
 if "%CODEX_KOE_SCRIBE_PAUSE_ON_EXIT%"=="" set "CODEX_KOE_SCRIBE_PAUSE_ON_EXIT=1"
 
 set "NODE_EXE="
@@ -18,6 +19,7 @@ if not defined NODE_EXE (
 
 echo [INFO] Starting isolated KoeScribe server.
 echo [INFO] Host: %CODEX_KOE_SCRIBE_HOST%
+echo [INFO] Codex App Server: %CODEX_KOE_SCRIBE_CODEX_APP_URL%
 if "%CODEX_KOE_SCRIBE_PORT%"=="0" (
   echo [INFO] Port: auto ^(free port selected by Windows^)
 ) else (
