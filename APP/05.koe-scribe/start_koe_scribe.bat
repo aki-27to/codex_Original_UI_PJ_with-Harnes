@@ -2,15 +2,11 @@
 setlocal EnableExtensions
 
 set "APP_DIR=%~dp0"
-for %%I in ("%APP_DIR%..\..") do set "REPO_ROOT=%%~fI"
-cd /d "%REPO_ROOT%"
+cd /d "%APP_DIR%"
 
-if "%CODEX_KOE_SCRIBE_PREVIEW_PORT%"=="" set "CODEX_KOE_SCRIBE_PREVIEW_PORT=57526"
+if "%CODEX_KOE_SCRIBE_PORT%"=="" set "CODEX_KOE_SCRIBE_PORT=0"
 if "%CODEX_KOE_SCRIBE_HOST%"=="" set "CODEX_KOE_SCRIBE_HOST=127.0.0.1"
-if "%CODEX_KOE_SCRIBE_AUTO_OPEN_BROWSER%"=="" set "CODEX_KOE_SCRIBE_AUTO_OPEN_BROWSER=0"
 if "%CODEX_KOE_SCRIBE_PAUSE_ON_EXIT%"=="" set "CODEX_KOE_SCRIBE_PAUSE_ON_EXIT=1"
-
-set "APP_URL=http://%CODEX_KOE_SCRIBE_HOST%:%CODEX_KOE_SCRIBE_PREVIEW_PORT%/apps/koe-scribe/"
 
 set "NODE_EXE="
 for /f "delims=" %%I in ('where node 2^>nul') do if not defined NODE_EXE set "NODE_EXE=%%~fI"
@@ -20,13 +16,17 @@ if not defined NODE_EXE (
   goto :error_exit
 )
 
-echo [INFO] Starting KoeScribe preview server.
-echo [INFO] URL: %APP_URL%
+echo [INFO] Starting isolated KoeScribe server.
+echo [INFO] Host: %CODEX_KOE_SCRIBE_HOST%
+if "%CODEX_KOE_SCRIBE_PORT%"=="0" (
+  echo [INFO] Port: auto ^(free port selected by Windows^)
+) else (
+  echo [INFO] Port: %CODEX_KOE_SCRIBE_PORT%
+)
+echo [INFO] The actual URL is printed after startup.
 echo [INFO] Press Ctrl+C in this window to stop the server.
 
-if "%CODEX_KOE_SCRIBE_AUTO_OPEN_BROWSER%"=="1" start "" "%APP_URL%"
-
-"%NODE_EXE%" scripts\start_koe_scribe_preview_server.js
+"%NODE_EXE%" standalone_server.js
 set "EXIT_CODE=%ERRORLEVEL%"
 echo.
 echo [INFO] KoeScribe server stopped. exit=%EXIT_CODE%

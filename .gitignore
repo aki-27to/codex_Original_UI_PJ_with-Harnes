@@ -14,6 +14,7 @@ APP/03.ai-debate-chat/.playwright-cli/
 APP/03.ai-debate-chat/*-run.png
 APP/03.ai-debate-chat/ui-*.png
 APP/03.ai-debate-chat/write_probe.txt
+APP/05.koe-scribe/.runtime/
 APP/04.godot/**/.godot/
 APP/04.godot/**/Godot_v*.exe
 tools/godot-runtime/

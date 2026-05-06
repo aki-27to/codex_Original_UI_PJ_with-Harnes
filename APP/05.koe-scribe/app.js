@@ -189,7 +189,7 @@ function buildPrompt(job, mode) {
     job.glossary || "(none)",
     "",
     "実行方針:",
-    "- 独自ローカル API は追加しない。この repo の標準実行経路内で処理する。",
+    "- Run inside the KoeScribe standalone server. Do not dispatch this job to shared Codex /api/exec.",
     "- まず入力ファイルの存在、サイズ、音声トラックを確認する。",
     "- ffmpeg/ffprobe/whisper/OpenAI API の利用可否を確認し、足りない依存は勝手にインストールしない。",
     "- externalApiConsent が no の場合、外部 API へ音声・動画・字幕内容を送らない。",
@@ -348,8 +348,10 @@ async function loadRuntime() {
     }
     state.runtime.controlToken = text(payload && payload.controlApi && payload.controlApi.token ? payload.controlApi.token : "", 400);
     state.runtime.controlTokenHeader = text(payload && payload.controlApi && payload.controlApi.tokenHeader ? payload.controlApi.tokenHeader : "", 120) || "x-codex-control-token";
-    setRuntimeStatus("runtime connected", "ready");
-    logEvent("runtime connected");
+    const isStandalone = Boolean(payload && payload.isolation && payload.isolation.mode === "standalone");
+    const runtimeLabel = isStandalone ? "standalone isolated" : "runtime connected";
+    setRuntimeStatus(runtimeLabel, "ready");
+    logEvent(runtimeLabel);
   } catch {
     state.runtime.controlToken = "";
     setRuntimeStatus("preview offline", "offline");
