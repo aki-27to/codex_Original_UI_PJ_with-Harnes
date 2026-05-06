@@ -126,7 +126,7 @@ h2 {
 .output-pane {
   min-height: 780px;
   display: grid;
-  grid-template-rows: auto auto minmax(0, 1fr);
+  grid-template-rows: auto minmax(0, 1fr);
   overflow: hidden;
 }
 
