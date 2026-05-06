@@ -15,7 +15,8 @@ const MAX_UPLOAD_BYTES = normalizeMegabytes(process.env.CODEX_KOE_SCRIBE_MAX_UPL
 const TRANSCRIPTION_PROVIDER = String(process.env.CODEX_KOE_SCRIBE_PROVIDER || "codex-app").trim().toLowerCase();
 const CODEX_APP_BASE_URL = String(process.env.CODEX_KOE_SCRIBE_CODEX_APP_URL || "http://127.0.0.1:57525").replace(/\/+$/, "");
 const OPENAI_API_BASE_URL = String(process.env.OPENAI_BASE_URL || "https://api.openai.com/v1").replace(/\/+$/, "");
-const OPENAI_TRANSCRIPTION_MODEL = process.env.CODEX_KOE_SCRIBE_OPENAI_MODEL || "whisper-1";
+const OPENAI_TRANSCRIPTION_MODEL = process.env.CODEX_KOE_SCRIBE_OPENAI_MODEL || "gpt-4o-transcribe";
+const ALLOW_WINDOWS_SPEECH_FALLBACK = normalizeBooleanFlag(process.env.CODEX_KOE_SCRIBE_ALLOW_WINDOWS_SPEECH, false);
 const WINDOWS_SPEECH_TIMEOUT_MS = normalizeMilliseconds(process.env.CODEX_KOE_SCRIBE_WINDOWS_SPEECH_TIMEOUT_MS, 10 * 60 * 1000);
 const staticRoot = __dirname;
 const windowsSpeechScriptPath = path.join(staticRoot, "scripts", "windows_speech_transcribe.ps1");
@@ -726,6 +727,39 @@ function extractFinalTextFromExecEvents(events) {
   return shortText(finalText || deltaText, 500000);
 }
 
+function hasOpenAiApiKey() {
+  return Boolean(String(process.env.OPENAI_API_KEY || "").trim());
+}
+
+function canUseWindowsSpeechFallback(mediaPath, mediaType, options = {}) {
+  return (ALLOW_WINDOWS_SPEECH_FALLBACK || Boolean(options.allowWindowsSpeechFallback))
+    && isWindowsWavInput(mediaPath, mediaType);
+}
+
+function buildHighAccuracyEngineUnavailableError({ codexAppBaseUrl, cause }) {
+  return [
+    "高精度の文字起こしエンジンが接続されていません。",
+    "",
+    "今回のような長尺の日本語・専門用語を含む動画では、Windows Speech の低精度フォールバックを成功扱いしません。",
+    "",
+    "使える経路:",
+    "- Harnes / Codex App Server 側で KoeScribe app bridge を登録する",
+    "- または OPENAI_API_KEY を設定して OpenAI Audio Transcriptions API を使う",
+    "",
+    `接続先: ${codexAppBaseUrl || CODEX_APP_BASE_URL}`,
+    `OpenAI model: ${OPENAI_TRANSCRIPTION_MODEL}`,
+    cause ? `原因: ${cause}` : "",
+  ].filter(Boolean).join("\n");
+}
+
+async function transcribeWithOpenAiIfConfigured({ mediaPath, mediaFileName, mediaType, options = {} }) {
+  if (typeof options.openAiClient === "function") {
+    return options.openAiClient({ mediaPath, mediaFileName, mediaType, options });
+  }
+  if (!hasOpenAiApiKey()) return null;
+  return transcribeMediaWithOpenAI({ mediaPath, mediaFileName, mediaType, options });
+}
+
 async function transcribeMediaViaCodexExec({ runtime, codexAppBaseUrl, mediaPath, mediaFileName, options = {} }) {
   const controlApi = runtime && runtime.controlApi && typeof runtime.controlApi === "object" ? runtime.controlApi : null;
   const token = controlApi && typeof controlApi.token === "string" ? controlApi.token.trim() : "";
@@ -787,38 +821,43 @@ async function transcribeMediaWithCodexApp({ mediaPath, mediaFileName, mediaType
   const localSpeechClient = typeof options.localSpeechClient === "function"
     ? options.localSpeechClient
     : transcribeMediaWithWindowsSpeech;
-  const canUseLocalSpeech = isWindowsWavInput(mediaPath, mediaType);
+  const canUseLocalSpeech = canUseWindowsSpeechFallback(mediaPath, mediaType, options);
   const runLocalSpeech = () => localSpeechClient({ mediaPath, mediaFileName, mediaType, options });
+  const runOpenAiIfConfigured = () => transcribeWithOpenAiIfConfigured({ mediaPath, mediaFileName, mediaType, options });
   let runtime;
   try {
     runtime = await getCodexAppRuntimeStatus(codexAppBaseUrl);
   } catch (error) {
+    const openAiResult = await runOpenAiIfConfigured();
+    if (openAiResult) return openAiResult;
     if (canUseLocalSpeech) return runLocalSpeech();
-    throw new Error([
-      "Codex App Server に接続できません。",
-      "",
-      `接続先: ${codexAppBaseUrl}`,
-      "先に Harnes / Codex App Server を起動してから、KoeScribe を実行してください。",
-      `詳細: ${error && error.message ? error.message : String(error)}`,
-    ].join("\n"));
+    throw new Error(buildHighAccuracyEngineUnavailableError({
+      codexAppBaseUrl,
+      cause: `Codex App Server connection failed: ${error && error.message ? error.message : String(error)}`,
+    }));
   }
 
   if (!runtime || runtime.mode !== "app-server") {
+    const openAiResult = await runOpenAiIfConfigured();
+    if (openAiResult) return openAiResult;
     if (canUseLocalSpeech) return runLocalSpeech();
-    throw new Error([
-      "Codex App Server は見つかりましたが、Codex実行環境が準備できていません。",
-      "",
-      `接続先: ${codexAppBaseUrl}`,
-      `詳細: runtime mode is ${runtime && runtime.mode ? runtime.mode : "unknown"}`,
-    ].join("\n"));
+    throw new Error(buildHighAccuracyEngineUnavailableError({
+      codexAppBaseUrl,
+      cause: `runtime mode is ${runtime && runtime.mode ? runtime.mode : "unknown"}`,
+    }));
   }
 
   const registeredApps = runtime && runtime.staticApps && Array.isArray(runtime.staticApps.apps)
     ? runtime.staticApps.apps
     : null;
   if (registeredApps && !registeredApps.some((app) => app && app.id === "koe-scribe")) {
+    const openAiResult = await runOpenAiIfConfigured();
+    if (openAiResult) return openAiResult;
     if (canUseLocalSpeech) return runLocalSpeech();
-    return transcribeMediaViaCodexExec({ runtime, codexAppBaseUrl, mediaPath, mediaFileName, options });
+    throw new Error(buildHighAccuracyEngineUnavailableError({
+      codexAppBaseUrl,
+      cause: "KoeScribe app bridge is not registered.",
+    }));
   }
 
   let response;
@@ -835,19 +874,25 @@ async function transcribeMediaWithCodexApp({ mediaPath, mediaFileName, mediaType
       },
     });
   } catch (error) {
+    const openAiResult = await runOpenAiIfConfigured();
+    if (openAiResult) return openAiResult;
     if (canUseLocalSpeech) return runLocalSpeech();
-    return transcribeMediaViaCodexExec({ runtime, codexAppBaseUrl, mediaPath, mediaFileName, options });
+    throw new Error(buildHighAccuracyEngineUnavailableError({
+      codexAppBaseUrl,
+      cause: `KoeScribe app bridge failed: ${error && error.message ? error.message : String(error)}`,
+    }));
   }
 
   const data = response && response.data && typeof response.data === "object" ? response.data : response;
   const status = String(data && data.status ? data.status : "").toLowerCase();
   if (status === "blocked") {
+    const openAiResult = await runOpenAiIfConfigured();
+    if (openAiResult) return openAiResult;
     if (canUseLocalSpeech) return runLocalSpeech();
-    throw new Error([
-      "Codex App Server に接続しましたが、この環境では音声・動画の直接文字起こしを完了できませんでした。",
-      "",
-      data && data.notes ? data.notes : "Codex runtime returned blocked.",
-    ].join("\n"));
+    throw new Error(buildHighAccuracyEngineUnavailableError({
+      codexAppBaseUrl,
+      cause: data && data.notes ? data.notes : "Codex runtime returned blocked.",
+    }));
   }
   return {
     text: data && typeof data.transcript === "string" ? data.transcript : "",
@@ -1048,7 +1093,9 @@ function buildRuntimePayload(context) {
       uploadMaxBytes: MAX_UPLOAD_BYTES,
       transcriptionProvider: TRANSCRIPTION_PROVIDER === "direct-openai" || TRANSCRIPTION_PROVIDER === "openai" ? "direct-openai" : "codex-app",
       codexAppBaseUrl: CODEX_APP_BASE_URL,
-      transcriptionModel: TRANSCRIPTION_PROVIDER === "direct-openai" || TRANSCRIPTION_PROVIDER === "openai" ? OPENAI_TRANSCRIPTION_MODEL : "",
+      transcriptionModel: OPENAI_TRANSCRIPTION_MODEL,
+      openAiConfigured: hasOpenAiApiKey(),
+      windowsSpeechFallbackEnabled: ALLOW_WINDOWS_SPEECH_FALLBACK,
     },
   };
 }

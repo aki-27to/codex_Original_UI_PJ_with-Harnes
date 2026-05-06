@@ -137,7 +137,7 @@ async function runCodexAppBridgeClientTest() {
   }
 }
 
-async function runCodexAppMissingRegistryFallbackTest() {
+async function withFakeMissingRegistryServer(callback) {
   const seenPaths = [];
   const fakeCodexAppServer = http.createServer((req, res) => {
     seenPaths.push(`${req.method} ${req.url}`);
@@ -159,31 +159,61 @@ async function runCodexAppMissingRegistryFallbackTest() {
   await once(fakeCodexAppServer, "listening");
   const port = fakeCodexAppServer.address().port;
   try {
+    await callback({ baseUrl: `http://127.0.0.1:${port}`, seenPaths });
+  } finally {
+    await new Promise((resolve) => fakeCodexAppServer.close(resolve));
+  }
+}
+
+async function runCodexAppMissingRegistryOpenAiFallbackTest() {
+  await withFakeMissingRegistryServer(async ({ baseUrl, seenPaths }) => {
     const result = await transcribeMediaWithCodexApp({
       mediaPath: "C:\\media\\sample.wav",
       mediaFileName: "sample.wav",
       mediaType: "audio/wav",
       options: {
         language: "ja",
-        codexAppBaseUrl: `http://127.0.0.1:${port}`,
-        localSpeechClient: async () => ({
-          text: "KoeScribe app registry が無くてもローカル文字起こしへ進みます。",
-          segments: [{ start: 0, end: 2, text: "KoeScribe app registry が無くてもローカル文字起こしへ進みます。" }],
-          model: "windows-speech:test",
+        codexAppBaseUrl: baseUrl,
+        openAiClient: async () => ({
+          text: "high accuracy fallback transcript",
+          segments: [{ start: 0, end: 2, text: "high accuracy fallback transcript" }],
+          model: "openai:test",
         }),
       },
     });
-    assert.strictEqual(result.model, "windows-speech:test");
-    assert(result.text.includes("ローカル文字起こし"));
+    assert.strictEqual(result.model, "openai:test");
+    assert(result.text.includes("high accuracy fallback"));
     assert.deepStrictEqual(seenPaths, ["GET /api/runtime"]);
-  } finally {
-    await new Promise((resolve) => fakeCodexAppServer.close(resolve));
-  }
+  });
+}
+
+async function runCodexAppMissingRegistryBlocksLowQualityFallbackTest() {
+  await withFakeMissingRegistryServer(async ({ baseUrl, seenPaths }) => {
+    await assert.rejects(
+      () => transcribeMediaWithCodexApp({
+        mediaPath: "C:\\media\\sample.wav",
+        mediaFileName: "sample.wav",
+        mediaType: "audio/wav",
+        options: {
+          language: "ja",
+          codexAppBaseUrl: baseUrl,
+          localSpeechClient: async () => ({
+            text: "low quality local transcript",
+            segments: [],
+            model: "windows-speech:test",
+          }),
+        },
+      }),
+      /OPENAI_API_KEY/
+    );
+    assert.deepStrictEqual(seenPaths, ["GET /api/runtime"]);
+  });
 }
 
 async function main() {
   await runCodexAppBridgeClientTest();
-  await runCodexAppMissingRegistryFallbackTest();
+  await runCodexAppMissingRegistryOpenAiFallbackTest();
+  await runCodexAppMissingRegistryBlocksLowQualityFallbackTest();
 
   const server = startServer({
     hostOverride: "127.0.0.1",
