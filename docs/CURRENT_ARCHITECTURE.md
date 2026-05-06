@@ -170,7 +170,7 @@ reviewer 向けの外部比較 refresh は `npm run reviewer:baseline-comparison
 `owner_local` はローカル所有者の強い権限を含められますが、共通既定ではありません。
 `reviewed_team` はチーム運用を前提に、証拠とレビューを強めた姿勢です。
 
-Launcher posture: the desktop launcher keeps `CODEX_REQUIRE_ADMIN=0` and `CODEX_AUTO_OPEN_BROWSER=0` by default. Operators can still opt in to elevation or browser auto-open through the environment, while UI-triggered restart helpers keep elevation, browser auto-open, and pause disabled. For explicit owner-local startup with UAC elevation and browser auto-open, `start_codex_ui_admin_browser.bat` self-elevates first, sets `CODEX_REQUIRE_ADMIN=1`, `CODEX_AUTO_OPEN_BROWSER=1`, and `CODEX_RESTART_EXISTING_HARNESS=1`, then delegates to the canonical `start_codex_ui.bat` so an existing non-elevated harness is not silently reused.
+Launcher posture: the desktop launcher is now an owner-local startup path: `start_codex_ui.bat` defaults `CODEX_REQUIRE_ADMIN=1`, `CODEX_AUTO_OPEN_BROWSER=1`, and `CODEX_RESTART_EXISTING_HARNESS=1`, verifies the elevated token before reconciling an existing harness, restarts stale or reused processes when no `/api/exec` work is active, and opens HarnesUI in the browser after startup. UI-triggered restart helpers still keep elevation, browser auto-open, and pause disabled.
 
 ### Claim provenance boundary
 

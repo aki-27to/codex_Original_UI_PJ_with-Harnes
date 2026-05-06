@@ -38,10 +38,10 @@ assert.match(bootstrapSource, /function isBrokenPipeLikeError\(error\)\s*\{/, "s
 assert.match(bootstrapSource, /logOperation\("server\.broken_pipe_ignored"/, "server bootstrap should ignore broken-pipe fatal events");
 
 assert.match(launcherSource, /if "%CODEX_FAST_MODE_DEFAULT%"=="" set "CODEX_FAST_MODE_DEFAULT=0"/, "launcher fast-mode default should be off");
-assert.match(launcherSource, /if "%CODEX_RESTART_EXISTING_HARNESS%"=="" set "CODEX_RESTART_EXISTING_HARNESS=0"/, "launcher should default to reusing an existing harness");
+assert.match(launcherSource, /if "%CODEX_RESTART_EXISTING_HARNESS%"=="" set "CODEX_RESTART_EXISTING_HARNESS=1"/, "launcher should restart an existing harness by default so elevation takes effect");
 assert.match(launcherSource, /if "%CODEX_AUTO_RESTART_STALE_HARNESS%"=="" set "CODEX_AUTO_RESTART_STALE_HARNESS=1"/, "launcher should auto-restart stale harness instances by default");
 assert.match(launcherSource, /if "%CODEX_FORCE_ACTIVE_RESTART%"=="" set "CODEX_FORCE_ACTIVE_RESTART=0"/, "launcher should default forced active restart off");
-assert.match(launcherSource, /existing harness detected on port .*reusing without restart/, "launcher should reuse an existing harness by default");
+assert.match(launcherSource, /existing harness detected on port .*reusing without restart/, "launcher should retain the explicit no-restart reuse path");
 assert.match(launcherSource, /runtime files are newer than the process; restarting stale harness/, "launcher should auto-restart stale harness processes");
 assert.match(launcherSource, /existing harness has active \/api\/exec work; refusing restart while work is in progress/, "launcher should refuse active-turn restarts unless forced");
 assert.match(launcherSource, /existing harness is stale but has active \/api\/exec work; reusing until work is idle/, "launcher should not interrupt active work even when the harness is stale");
