@@ -20,6 +20,7 @@ function main() {
   assert(/set "LAUNCHER_AUTO_OPEN_BROWSER=%CODEX_AUTO_OPEN_BROWSER%"/.test(launcher), "launcher must snapshot browser auto-open ownership before starting server.js");
   assert(/if "%CODEX_AUTO_OPEN_BROWSER%"=="" set "CODEX_AUTO_OPEN_BROWSER=0"/.test(launcher), "launcher must default browser auto-open off unless the operator opts in");
   assert(/if "%CODEX_RESTART_EXISTING_HARNESS%"=="" set "CODEX_RESTART_EXISTING_HARNESS=0"/.test(launcher), "launcher must default restart-existing-harness behavior off");
+  assert(/-Uri \$runtimeUrl -TimeoutSec 6/.test(launcher), "launcher must give the existing runtime probe enough time to avoid false fallback reuse");
   assert(/if "%CODEX_AUTO_RESTART_STALE_HARNESS%"=="" set "CODEX_AUTO_RESTART_STALE_HARNESS=1"/.test(launcher), "launcher must default stale-harness auto-restart on");
   assert(/if "%CODEX_FORCE_ACTIVE_RESTART%"=="" set "CODEX_FORCE_ACTIVE_RESTART=0"/.test(launcher), "launcher must default forced active restart off");
   assert(/if "%CODEX_FAST_MODE_DEFAULT%"=="" set "CODEX_FAST_MODE_DEFAULT=0"/.test(launcher), "launcher must default fast mode off");
@@ -55,6 +56,8 @@ function main() {
   assert(/if "%CODEX_PAUSE_ON_EXIT%"=="1" pause/.test(launcher), "launcher must honor CODEX_PAUSE_ON_EXIT on early dependency failures and elevation failures");
   assert(/set "CODEX_REQUIRE_ADMIN=1"/.test(adminBrowserLauncher), "admin/browser launcher must request UAC self-elevation through start_codex_ui.bat");
   assert(/set "CODEX_AUTO_OPEN_BROWSER=1"/.test(adminBrowserLauncher), "admin/browser launcher must opt into launcher-owned browser auto-open");
+  assert(/set "CODEX_RESTART_EXISTING_HARNESS=1"/.test(adminBrowserLauncher), "admin/browser launcher must restart an existing harness so the server runs under the elevated launcher");
+  assert(/Verb = 'RunAs'/.test(adminBrowserLauncher), "admin/browser launcher must self-elevate before delegating to the canonical launcher");
   assert(/call "%~dp0start_codex_ui\.bat" %\*/.test(adminBrowserLauncher), "admin/browser launcher must delegate to the canonical launcher");
 
   process.stdout.write("PASS start_codex_ui_launcher_policy_test\n");
