@@ -1,6 +1,6 @@
 ---
 name: review-agent-essence
-description: スキルやハーネス設計をagent-essenceの原則に照らしてレビューする。「設計レビュー」「エッセンスレビュー」「原則チェック」で発動。
+description: "Use when reviewing a skill, code surface, or design document against agent-essence principles. 「設計レビュー」「エッセンスレビュー」「原則チェック」で発動。"
 context: fork
 agent: general-purpose
 model: opus
@@ -8,9 +8,18 @@ model: opus
 
 # review-agent-essence
 
+## Purpose
+
 対象のスキル・コード・設計文書を `reference/agent-essence.md` の原則に照らしてレビューし、設計上の強み・弱み・改善案を返す。
 
 **このスキルは対象を直接修正しない。**
+
+## Default Boundary
+
+- 原則レビュー専用の read-only evaluator として扱う。
+- 対象の書き換え、設定変更、ファイル生成、外部サービス操作は行わない。
+- 全原則を網羅採点するより、対象の設計判断に実害を持つ原則だけを選ぶ。
+- 参照していないファイルや実行していない検証は、推測せず `not_checked` として扱う。
 
 ## Input / Output
 
@@ -18,7 +27,7 @@ model: opus
 - **Output**: 標準出力にフィードバックを返す
 - **評価基準**: `reference/agent-essence.md`
 
-## 手順
+## Procedure
 
 ### 1. 読み込み
 
@@ -78,8 +87,33 @@ model: opus
 {2-3文で要約。対象の設計成熟度と最優先の改善点}
 ```
 
+## Output Contract
+
+返す内容には次を含める:
+
+- `verdict`: 原則上の評価（強い / 条件付き / 要修正 / 判断不能）
+- `truth_scope`: 読んだ対象、読んでいない対象、未確認の実行面
+- `strengths`: 原則に沿った本質的な良さ
+- `findings`: 重要度順の弱点と根拠
+- `required_fixes`: 本質を落とさず採択しやすくする最小修正
+- `non_claims`: 検証していないため主張しないこと
+
+## Evidence And Verification
+
+- 必ず `reference/agent-essence.md` と対象ファイルを根拠にする。
+- 補助ファイルを読んだ場合は、出力内でファイル名またはパスを明示する。
+- 実行結果、UI挙動、外部状態は実際に確認した場合だけ根拠にする。
+- 対象がローカル skill の場合、構造評価は `skill-design-review-codex` の責務であり、このスキルは原則レビューに集中する。
+
 ## Gotchas
 
 - 全原則を均等に扱わない。対象に無関係な原則は「-」にして飛ばす。無理に当てはめるとノイズになる
 - 「原則に書いてないから問題ない」は誤り。原則は網羅的チェックリストではなく思考の補助線
 - 判定「○」にも根拠を書く。なぜ良いのかの言語化が壁打ちの価値
+
+## Failure Guard
+
+- レビュー依頼を実装タスクへ無断ですり替えない。
+- 読んでいない面を根拠にして高評価や低評価を出さない。
+- 原則レビューを release verdict、採択可否、品質保証の代替にしない。
+- 対象の本質的な良さを消す修正を「原則準拠」として提案しない。

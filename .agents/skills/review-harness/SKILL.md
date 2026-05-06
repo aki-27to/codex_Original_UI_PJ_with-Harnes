@@ -1,6 +1,6 @@
 ---
 name: review-harness
-description: Claude Codeハーネス構成を25のアンチパターン指標で診断する。「ハーネス診断」「診断して」「harness診断」「設定チェック」「ハーネスの健康診断」で発動。
+description: "Use when diagnosing a Claude Code harness with the bundled 25 anti-pattern rubric. 「ハーネス診断」「診断して」「harness診断」「設定チェック」「ハーネスの健康診断」で発動。"
 context: fork
 agent: general-purpose
 model: opus
@@ -8,16 +8,26 @@ model: opus
 
 # review-harness
 
+## Purpose
+
 Claude Codeのハーネス構成（CLAUDE.md、settings.json、Skills、Hooks、Memory等）を25のアンチパターン指標で診断し、文脈を考慮したスコアリングと具体的な改善案を出力する。
 
 **評価基準**: `diagnosis-rubric.md`（本スキル同梱。agent-essenceの原則IDで参照）
 
+## Default Boundary
+
+- Claude Code harness 専用の diagnosis evaluator として扱う。
+- Codex App Server repo を診断する場合は、原則として `review-harness-codex` を優先し、このスキルは Claude向け祖先として扱う。
+- 既定は read-only。設定変更、skill追加、hook追加、MCP設定変更、外部投稿、clipboard操作は行わない。
+- OGP画像表示、レポートファイル生成、シェア文生成は、ユーザーが明示的に求めた場合だけ実行する。
+- 読んでいないファイルや存在しない surface は、欠点ではなく `not_found` / `not_checked` として扱う。
+
 ## Input / Output
 
 - **Input**: `$ARGUMENTS` = 診断対象プロジェクトのパス（省略時はカレントディレクトリ）
-- **Output**: 標準出力に診断レポートを返す。ファイル生成なし
+- **Output**: 標準出力に診断レポートを返す。ファイル生成、OGP表示、clipboard操作は明示要求時のみ
 
-## 手順
+## Procedure
 
 ### Phase 1. ハーネス構成の収集
 
@@ -70,7 +80,7 @@ Claude Codeのハーネス構成（CLAUDE.md、settings.json、Skills、Hooks、
 
 ### Phase 4. レポート出力
 
-`diagnosis-report-template.md` のフォーマットに従い、レポートを `output/harness-diag-{YYYY-MM-DD}.md` に書き出す。
+`diagnosis-report-template.md` のフォーマットに従い、標準出力でレポートを返す。ユーザーがファイル成果物を明示的に求めた場合だけ、レポートを `output/harness-diag-{YYYY-MM-DD}.md` に書き出す。
 
 **改善の優先順位**: ❌が複数検出された場合、以下の順で優先度を判定する（爆発半径が大きいものから）:
 
@@ -84,7 +94,7 @@ Quick Wins はこの優先順位に従い、かつコスト（所要時間）の
 
 ### Phase 5. OGP画像表示 & シェア提案
 
-レポート出力後、以下を順番に実行する。
+ユーザーがOGP表示やシェア文作成を明示的に求めた場合だけ、以下を順番に実行する。
 
 1. **グレード判定**: Phase 3で算出した総合%からグレードを決定（S:90%+ / A:75-89% / B:60-74% / C:40-59% / D:20-39% / E:<20%）
 
@@ -123,3 +133,30 @@ Quick Wins はこの優先順位に従い、かつコスト（所要時間）の
 - 個人実験プロジェクトにエンタープライズ級の権限設計を求めない。プロジェクトの規模・影響範囲に応じて「対象外(—)」を適切に使う
 - 診断はあくまで方向の確認。「スコアが低い＝悪い設定」ではなく「ここに改善余地がある」という読み方を促す
 - スタートアップモードでは診断スコアを出さない。「まだ何もない」は当たり前なので、代わりに「最初にやるべきこと」を具体的に提案する
+
+## Output Contract
+
+返す内容には次を含める:
+
+- `mode`: `startup` または `diagnosis`
+- `truth_scope`: 読んだ Claude Code surface、存在しなかった surface、未確認 surface
+- `score`: 通常診断時の総合%とランク。スタートアップモードでは出さない
+- `evidence`: 指標ごとの根拠ファイル、設定、または `not_found`
+- `findings`: 25指標の主要な問題と文脈評価
+- `quick_wins`: 爆発半径と実装コストで並べた改善案
+- `non_claims`: Codex App Server readiness、release可否、外部運用安全性など、このスキルでは主張しないこと
+
+## Evidence And Verification
+
+- `diagnosis-rubric.md`、必要に応じて `diagnosis-report-template.md` と `quickstart-guide.md` を読む。
+- 診断対象の Claude Code surface は、読んだものだけ evidence に含める。
+- プラグイン、hook、MCPは「存在」ではなく「ハーネスの実行経路で機能している根拠」がある場合だけ肯定評価する。
+- このスキル自体を変更した場合は `node .agents/skills/skill-design-review-codex/scripts/analyze-skill-design.js .agents/skills/review-harness` と repo-local skill package checks を実行する。
+
+## Failure Guard
+
+- Claude Code向けの欠落を Codex App Server repo の欠陥として扱わない。
+- 低スコアを失敗、高スコアを release-ready として扱わない。
+- ファイル生成、ブラウザ起動、clipboard操作、外部投稿を既定動作にしない。
+- インストール済みプラグインや存在する設定を、実際に使われている能力として過大評価しない。
+- 文脈上正当な単純さを、アンチパターンとして機械的に減点しない。
