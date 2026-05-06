@@ -234,6 +234,18 @@ h2 {
   padding: 9px 11px;
 }
 
+.locked-field {
+  min-height: 44px;
+  display: flex;
+  align-items: center;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: #f8fafc;
+  color: var(--ink);
+  font-weight: 700;
+  padding: 9px 11px;
+}
+
 .field textarea {
   padding: 11px;
   line-height: 1.55;

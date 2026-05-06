@@ -49,22 +49,24 @@ Leaving `CODEX_KOE_SCRIBE_PORT` unset is safer when other Codex apps or servers 
 
 ## Current Engine Boundary
 
+The UI exposes one engine: `Codex / OpenAI transcription`. KoeScribe does not ask the user to choose between Whisper, local Whisper, and GPT transcription modes.
+
 The isolated `/api/exec` route deliberately does not call the shared Codex runtime. It currently accepts the request, records isolated job metadata, and returns a structured result explaining the missing transcription engine.
 
 When a media file is selected in the browser and the local path field is empty, the UI first uploads that file to the standalone server. The server saves it under `.runtime/<instance-id>/uploads/<upload-id>/` and passes that saved local path into the job.
 
-Actual speech-to-text execution should be added as a dedicated worker behind this standalone server, for example:
+Actual speech-to-text execution should be added as the dedicated Codex/OpenAI transcription worker behind this standalone server:
 
-- local Whisper or whisper.cpp worker
-- OpenAI transcription worker with explicit external upload consent
 - ffmpeg extraction and chunking worker
+- OpenAI transcription worker
+- subtitle/Markdown post-processing worker
 
 Those workers should write only into per-run directories under `.runtime/<instance-id>/jobs/<run-id>/` unless the user explicitly chooses an output folder.
 
 ## Safety Boundary
 
 - The app never uploads media from the browser by itself.
-- External API processing must remain opt-in.
+- The visible run action is the opt-in path for the fixed Codex/OpenAI transcription route.
 - Original videos must not be overwritten.
 - Missing dependencies should be reported as blocked work, not installed silently.
 - Shared Codex `/api/exec` must stay disabled in standalone mode.

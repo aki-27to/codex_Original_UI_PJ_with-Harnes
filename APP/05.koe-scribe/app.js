@@ -178,6 +178,7 @@ function collectJob() {
   const file = state.selectedFile;
   const uploadedMedia = state.uploadedMedia || null;
   const explicitVideoPath = text(el.videoPath ? el.videoPath.value : "", 1200);
+  const engine = el.engine ? el.engine.value : "codex-openai-transcription";
   return {
     fileName: file ? file.name : "",
     fileSize: file ? file.size : 0,
@@ -187,11 +188,11 @@ function collectJob() {
     uploadedMedia,
     outputDir: text(el.outputDir ? el.outputDir.value : "", 1200),
     language: el.language ? el.language.value : "ja",
-    engine: el.engine ? el.engine.value : "openai-whisper-srt",
+    engine,
     quality: el.quality ? el.quality.value : "technical",
     glossary: text(el.glossary ? el.glossary.value : "", 4000),
     outputs: selectedOutputs(),
-    externalConsent: Boolean(el.externalConsent && el.externalConsent.checked),
+    externalConsent: engine === "codex-openai-transcription" || Boolean(el.externalConsent && el.externalConsent.checked),
   };
 }
 
@@ -209,6 +210,7 @@ function validateJob(job, forRun) {
 
 function buildPrompt(job, mode) {
   const engineNotes = {
+    "codex-openai-transcription": "Codex / OpenAI transcription route is fixed for this app. Do not ask the user to choose a separate engine.",
     "openai-whisper-srt": "OpenAI whisper-1 を優先し、SRT/VTT が必要なら response_format を使う。25MB 制限を超える場合は音声を低ビットレート化または分割してタイムコードを保つ。",
     "openai-gpt4o-text": "OpenAI gpt-4o-transcribe 系を優先し、必要に応じて JSON/text から字幕タイムコードへ後処理する。話者分離が必要なら diarization の可否を確認する。",
     "local-whisper": "ローカルの whisper.cpp または whisper CLI を優先する。未導入ならインストールせず BLOCKED として必要コマンドだけ示す。",

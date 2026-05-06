@@ -31,7 +31,7 @@
           </label>
 
           <label class="field">
-            <span>ローカルパス</span>
+            <span>ローカルパス（任意）</span>
             <input id="videoPath" type="text" autocomplete="off" placeholder="C:\Users\akima\Videos\sample.mp4">
             <small class="field-note">動画を添付した場合、この欄は空でOKです。実行時にローカル専用サーバーへ保存します。</small>
           </label>
@@ -54,12 +54,8 @@
           <div class="grid-two">
             <label class="field">
               <span>エンジン</span>
-              <select id="engine">
-                <option value="openai-whisper-srt" selected>OpenAI whisper-1 / SRT</option>
-                <option value="openai-gpt4o-text">OpenAI gpt-4o-transcribe / text</option>
-                <option value="local-whisper">Local Whisper / whisper.cpp</option>
-                <option value="plan-only">実行計画のみ</option>
-              </select>
+              <input id="engine" type="hidden" value="codex-openai-transcription">
+              <div class="locked-field">Codex / OpenAI transcription</div>
             </label>
             <label class="field">
               <span>品質</span>
@@ -80,7 +76,6 @@
             <label><input id="makeSrt" type="checkbox" checked> SRT</label>
             <label><input id="makeVtt" type="checkbox" checked> VTT</label>
             <label><input id="makeMarkdown" type="checkbox" checked> Markdown</label>
-            <label><input id="externalConsent" type="checkbox"> 外部API送信を許可</label>
           </div>
 
           <div class="actions">

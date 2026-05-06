@@ -120,7 +120,7 @@ async function main() {
       method: "POST",
       port,
       path: "/api/exec",
-      body: { prompt: "KoeScribe transcription job.\nengine: plan-only" },
+      body: { prompt: "KoeScribe transcription job.\nengine: codex-openai-transcription" },
     });
     assert.strictEqual(unauthorized.statusCode, 401);
 
@@ -130,7 +130,7 @@ async function main() {
       path: "/api/exec",
       headers: { [runtimePayload.controlApi.tokenHeader]: runtimePayload.controlApi.token },
       body: {
-        prompt: "KoeScribe transcription job.\nengine: openai-whisper-srt",
+        prompt: "KoeScribe transcription job.\nengine: codex-openai-transcription",
         uploadedMedia: uploadPayload.upload,
       },
     });

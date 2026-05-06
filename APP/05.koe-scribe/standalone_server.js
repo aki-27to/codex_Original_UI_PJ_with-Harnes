@@ -262,6 +262,7 @@ function shortText(value, max = 6000) {
 
 function inferRequestedEngine(prompt) {
   const lower = prompt.toLowerCase();
+  if (lower.includes("engine: codex-openai-transcription")) return "codex-openai-transcription";
   if (lower.includes("engine: local-whisper")) return "local-whisper";
   if (lower.includes("engine: openai-gpt4o-text")) return "openai-gpt4o-text";
   if (lower.includes("engine: openai-whisper-srt")) return "openai-whisper-srt";
