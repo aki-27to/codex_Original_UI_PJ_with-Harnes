@@ -3,6 +3,8 @@ const EXEC_TIMEOUT_MS = 1000 * 60 * 60 * 2;
 
 const state = {
   selectedFile: null,
+  uploadedFileSignature: "",
+  uploadedMedia: null,
   controller: null,
   runtime: {
     controlToken: "",
@@ -102,13 +104,19 @@ function buildAppApiPath(pathname) {
   return `${resolveAppBasePath()}/api${suffix}`;
 }
 
-function buildExecHeaders() {
+function buildControlHeaders(extraHeaders = {}) {
   const token = text(state.runtime.controlToken, 400);
   if (!token) throw new Error("control API token unavailable");
   return {
-    "Content-Type": "application/json; charset=utf-8",
     [text(state.runtime.controlTokenHeader, 120) || "x-codex-control-token"]: token,
+    ...extraHeaders,
   };
+}
+
+function buildExecHeaders() {
+  return buildControlHeaders({
+    "Content-Type": "application/json; charset=utf-8",
+  });
 }
 
 function formatFileSize(bytes) {
@@ -117,6 +125,45 @@ function formatFileSize(bytes) {
   if (size >= 1024 * 1024) return `${(size / (1024 * 1024)).toFixed(1)} MB`;
   if (size >= 1024) return `${(size / 1024).toFixed(1)} KB`;
   return `${size} B`;
+}
+
+function fileSignature(file) {
+  if (!file) return "";
+  return [file.name || "", file.size || 0, file.lastModified || 0].join(":");
+}
+
+async function uploadSelectedFileIfNeeded(job) {
+  if (job.videoPath || !state.selectedFile) return null;
+
+  const signature = fileSignature(state.selectedFile);
+  if (state.uploadedMedia && state.uploadedFileSignature === signature) {
+    return state.uploadedMedia;
+  }
+
+  logEvent(`uploading local copy: ${state.selectedFile.name}`);
+  setProgress(12);
+
+  const response = await fetch(buildAppApiPath("/media/upload"), {
+    method: "POST",
+    headers: buildControlHeaders({
+      "Content-Type": state.selectedFile.type || "application/octet-stream",
+      "x-koe-scribe-file-name": encodeURIComponent(state.selectedFile.name || "media"),
+      "x-koe-scribe-file-type": state.selectedFile.type || "application/octet-stream",
+      "x-koe-scribe-file-size": String(state.selectedFile.size || 0),
+    }),
+    body: state.selectedFile,
+  });
+
+  const payload = await response.json().catch(() => ({}));
+  if (!response.ok || !payload || !payload.upload) {
+    throw new Error(text(payload && payload.error ? payload.error : `upload failed: HTTP ${response.status}`, 800));
+  }
+
+  state.uploadedMedia = payload.upload;
+  state.uploadedFileSignature = signature;
+  logEvent(`uploaded: ${payload.upload.runtimeRelativePath || payload.upload.fileName}`);
+  setProgress(24);
+  return state.uploadedMedia;
 }
 
 function selectedOutputs() {
@@ -129,11 +176,15 @@ function selectedOutputs() {
 
 function collectJob() {
   const file = state.selectedFile;
+  const uploadedMedia = state.uploadedMedia || null;
+  const explicitVideoPath = text(el.videoPath ? el.videoPath.value : "", 1200);
   return {
     fileName: file ? file.name : "",
     fileSize: file ? file.size : 0,
     fileType: file ? file.type : "",
-    videoPath: text(el.videoPath ? el.videoPath.value : "", 1200),
+    sourceMode: explicitVideoPath ? "local-path" : uploadedMedia ? "uploaded-file" : file ? "browser-file" : "none",
+    videoPath: explicitVideoPath || (uploadedMedia && uploadedMedia.localPath ? uploadedMedia.localPath : ""),
+    uploadedMedia,
     outputDir: text(el.outputDir ? el.outputDir.value : "", 1200),
     language: el.language ? el.language.value : "ja",
     engine: el.engine ? el.engine.value : "openai-whisper-srt",
@@ -145,7 +196,7 @@ function collectJob() {
 }
 
 function validateJob(job, forRun) {
-  if (forRun && job.engine !== "plan-only" && !job.videoPath) {
+  if (forRun && job.engine !== "plan-only" && !job.videoPath && !state.selectedFile) {
     throw new Error("ローカルパスを入力してください。ブラウザのファイル選択だけでは実行側が元動画を読めません。");
   }
   if (!job.outputs.length) {
@@ -174,7 +225,9 @@ function buildPrompt(job, mode) {
     "",
     "入力:",
     `- mode: ${mode}`,
+    `- sourceMode: ${job.sourceMode || "none"}`,
     `- videoPath: ${job.videoPath || "(not provided)"}`,
+    `- uploadedMediaPath: ${job.uploadedMedia && job.uploadedMedia.localPath ? job.uploadedMedia.localPath : "(none)"}`,
     `- selectedFileName: ${job.fileName || "(none)"}`,
     `- selectedFileSize: ${job.fileSize ? formatFileSize(job.fileSize) : "(unknown)"}`,
     `- selectedFileType: ${job.fileType || "(unknown)"}`,
@@ -226,9 +279,10 @@ function isExecStreamResponse(response) {
   return Boolean(response && response.ok && contentType.includes(EXEC_STREAM_CONTENT_TYPE));
 }
 
-async function streamExecPrompt(prompt) {
+async function streamExecPrompt(prompt, job) {
   const payload = {
     prompt,
+    uploadedMedia: job && job.uploadedMedia ? job.uploadedMedia : null,
     agentName: "default",
     sandboxMode: "workspace-write",
     approvalPolicy: "never",
@@ -320,13 +374,15 @@ async function streamExecPrompt(prompt) {
 
 function handleFile(file) {
   state.selectedFile = file || null;
+  state.uploadedFileSignature = "";
+  state.uploadedMedia = null;
   if (!file) {
     if (el.fileName) el.fileName.textContent = "ファイルを選択";
     if (el.fileMeta) el.fileMeta.textContent = "MP4 / MOV / M4A / WAV";
     return;
   }
   if (el.fileName) el.fileName.textContent = file.name;
-  if (el.fileMeta) el.fileMeta.textContent = `${formatFileSize(file.size)} / ${file.type || "unknown type"}`;
+  if (el.fileMeta) el.fileMeta.textContent = `${formatFileSize(file.size)} / ${file.type || "unknown type"} / local copy on run`;
   logEvent(`selected: ${file.name}`);
 }
 
@@ -412,16 +468,18 @@ function bindEvents() {
   if (el.runBtn) {
     el.runBtn.addEventListener("click", async () => {
       try {
-        const job = collectJob();
+        let job = collectJob();
         validateJob(job, true);
+        setPending(true);
+        setProgress(8);
+        await uploadSelectedFileIfNeeded(job);
+        job = collectJob();
         const prompt = buildPrompt(job, "run");
         setPrompt(prompt);
         setTranscript("実行中");
         switchTab("transcript");
-        setPending(true);
-        setProgress(8);
         logEvent("job submitted");
-        await streamExecPrompt(prompt);
+        await streamExecPrompt(prompt, job);
         logEvent("job finished");
       } catch (error) {
         const message = error && error.message ? error.message : "job failed";

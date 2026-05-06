@@ -9,6 +9,7 @@ const { URL } = require("url");
 const DEFAULT_HOST = "127.0.0.1";
 const EXEC_STREAM_CONTENT_TYPE = "application/x-ndjson";
 const MAX_BODY_BYTES = 1024 * 1024;
+const MAX_UPLOAD_BYTES = normalizeMegabytes(process.env.CODEX_KOE_SCRIBE_MAX_UPLOAD_MB, 20 * 1024);
 const staticRoot = __dirname;
 
 const mimeTypes = Object.freeze({
@@ -36,6 +37,12 @@ function normalizePort(value, fallback = 0) {
     return fallback;
   }
   return parsed;
+}
+
+function normalizeMegabytes(value, fallbackMb) {
+  const parsed = Number.parseInt(String(value || "").trim(), 10);
+  const megabytes = Number.isFinite(parsed) && parsed > 0 ? parsed : fallbackMb;
+  return megabytes * 1024 * 1024;
 }
 
 function contentTypeFor(filePath) {
@@ -147,6 +154,107 @@ function collectRequestJson(req) {
   });
 }
 
+function safeHeaderValue(req, name, max = 500) {
+  const value = req.headers[String(name).toLowerCase()];
+  if (Array.isArray(value)) return String(value[0] || "").slice(0, max);
+  return String(value || "").slice(0, max);
+}
+
+function decodeHeaderValue(value) {
+  try {
+    return decodeURIComponent(String(value || ""));
+  } catch {
+    return String(value || "");
+  }
+}
+
+function sanitizeFileName(value) {
+  const decoded = decodeHeaderValue(value);
+  const baseName = path.basename(decoded || "media");
+  const safe = baseName.replace(/[<>:"/\\|?*\u0000-\u001F]/g, "_").replace(/\s+/g, " ").trim();
+  return safe || "media";
+}
+
+function saveUpload(req, targetPath) {
+  return new Promise((resolve, reject) => {
+    const declaredLength = Number.parseInt(String(req.headers["content-length"] || ""), 10);
+    if (Number.isFinite(declaredLength) && declaredLength > MAX_UPLOAD_BYTES) {
+      reject(new Error(`Upload is too large. Max ${Math.round(MAX_UPLOAD_BYTES / 1024 / 1024)} MB.`));
+      req.resume();
+      return;
+    }
+
+    const output = fs.createWriteStream(targetPath, { flags: "wx" });
+    let totalBytes = 0;
+    let tooLarge = false;
+    let settled = false;
+
+    const cleanupAndReject = (error) => {
+      if (settled) return;
+      settled = true;
+      output.destroy();
+      fs.rm(targetPath, { force: true }, () => reject(error));
+    };
+
+    output.on("error", cleanupAndReject);
+    output.on("finish", () => {
+      if (settled) return;
+      settled = true;
+      resolve(totalBytes);
+    });
+
+    req.on("data", (chunk) => {
+      totalBytes += chunk.length;
+      if (totalBytes > MAX_UPLOAD_BYTES) {
+        tooLarge = true;
+      }
+      if (!tooLarge) {
+        output.write(chunk);
+      }
+    });
+
+    req.on("end", () => {
+      if (tooLarge) {
+        cleanupAndReject(new Error(`Upload is too large. Max ${Math.round(MAX_UPLOAD_BYTES / 1024 / 1024)} MB.`));
+        return;
+      }
+      output.end();
+    });
+
+    req.on("error", cleanupAndReject);
+  });
+}
+
+async function handleMediaUpload(req, res, context) {
+  const originalName = sanitizeFileName(safeHeaderValue(req, "x-koe-scribe-file-name"));
+  const mediaType = safeHeaderValue(req, "x-koe-scribe-file-type", 200) || "application/octet-stream";
+  const uploadId = `upload-${Date.now().toString(36)}-${crypto.randomBytes(4).toString("hex")}`;
+  const uploadDir = path.join(context.runtimeRoot, "uploads", uploadId);
+  const mediaPath = path.join(uploadDir, originalName);
+  fs.mkdirSync(uploadDir, { recursive: true });
+
+  try {
+    const size = await saveUpload(req, mediaPath);
+    sendJson(res, 200, {
+      ok: true,
+      upload: {
+        id: uploadId,
+        fileName: originalName,
+        mediaPath,
+        localPath: mediaPath,
+        mediaType,
+        size,
+        runtimeRelativePath: path.relative(context.runtimeRoot, mediaPath),
+      },
+    });
+  } catch (error) {
+    sendJson(res, 400, {
+      ok: false,
+      error: error && error.message ? error.message : "Upload failed.",
+    });
+  }
+}
+
 function shortText(value, max = 6000) {
   if (typeof value !== "string") return "";
   return value.replace(/\r\n/g, "\n").trim().slice(0, max);
@@ -164,6 +272,7 @@ function inferRequestedEngine(prompt) {
 function buildStandaloneResult({ body, context, runId, jobDir }) {
   const prompt = shortText(body.prompt, 10000);
   const engine = inferRequestedEngine(prompt);
+  const uploadedMedia = body && body.uploadedMedia && typeof body.uploadedMedia === "object" ? body.uploadedMedia : null;
   const generatedFiles = [];
   const blocked = engine === "plan-only"
     ? []
@@ -180,6 +289,7 @@ function buildStandaloneResult({ body, context, runId, jobDir }) {
     `server_url: ${context.url || "(listening)"}`,
     `runtime_root: ${context.runtimeRoot}`,
     `job_dir: ${jobDir}`,
+    `uploaded_media_path: ${uploadedMedia && uploadedMedia.localPath ? uploadedMedia.localPath : "(none)"}`,
     `shared_harness_dispatch: disabled`,
     `shared_harness_api_exec: disabled`,
     `port_selection: ${context.portSelection}`,
@@ -241,6 +351,7 @@ function buildRuntimePayload(context) {
       port: context.actualPort || 0,
       runtimeRoot: context.runtimeRoot,
       instanceId: context.instanceId,
+      uploadMaxBytes: MAX_UPLOAD_BYTES,
     },
   };
 }
@@ -296,7 +407,7 @@ function createStandaloneServer(options = {}) {
       res.writeHead(204, {
         "Access-Control-Allow-Origin": "*",
         "Access-Control-Allow-Methods": "GET,HEAD,POST,OPTIONS",
-        "Access-Control-Allow-Headers": `Content-Type, ${context.controlTokenHeader}`,
+        "Access-Control-Allow-Headers": `Content-Type, ${context.controlTokenHeader}, x-koe-scribe-file-name, x-koe-scribe-file-type, x-koe-scribe-file-size`,
         "Access-Control-Max-Age": "86400",
       });
       res.end();
@@ -314,6 +425,16 @@ function createStandaloneServer(options = {}) {
 
     if (requestUrl.pathname === "/api/runtime" && req.method === "GET") {
       sendJson(res, 200, buildRuntimePayload(context));
+      return;
+    }
+
+    if (requestUrl.pathname === "/api/media/upload" && req.method === "POST") {
+      const token = String(req.headers[context.controlTokenHeader] || "");
+      if (token !== context.controlToken) {
+        sendJson(res, 401, { ok: false, error: "Invalid KoeScribe control token." });
+        return;
+      }
+      await handleMediaUpload(req, res, context);
       return;
     }
 

@@ -1,6 +1,7 @@
 "use strict";
 
 const assert = require("assert");
+const fs = require("fs");
 const http = require("http");
 const path = require("path");
 const { once } = require("events");
@@ -39,6 +40,38 @@ function request({ method = "GET", port, path: requestPath, body, headers = {} }
   });
 }
 
+function rawRequest({ method = "POST", port, path: requestPath, body, headers = {} }) {
+  return new Promise((resolve, reject) => {
+    const requestBody = Buffer.isBuffer(body) ? body : Buffer.from(String(body || ""));
+    const req = http.request(
+      {
+        host: "127.0.0.1",
+        port,
+        method,
+        path: requestPath,
+        headers: {
+          "Content-Length": requestBody.length,
+          ...headers,
+        },
+      },
+      (res) => {
+        const chunks = [];
+        res.on("data", (chunk) => chunks.push(chunk));
+        res.on("end", () => {
+          resolve({
+            statusCode: res.statusCode,
+            headers: res.headers,
+            body: Buffer.concat(chunks).toString("utf8"),
+          });
+        });
+      }
+    );
+    req.on("error", reject);
+    req.write(requestBody);
+    req.end();
+  });
+}
+
 async function main() {
   const server = startServer({ hostOverride: "127.0.0.1", portOverride: 0, quiet: true });
   await once(server, "listening");
@@ -65,6 +98,24 @@ async function main() {
     assert.strictEqual(runtimePayload.isolation.sharedApiExec, false);
     assert.strictEqual(runtimePayload.controlApi.tokenHeader, "x-koe-scribe-control-token");
 
+    const upload = await rawRequest({
+      port,
+      path: "/api/media/upload",
+      headers: {
+        [runtimePayload.controlApi.tokenHeader]: runtimePayload.controlApi.token,
+        "Content-Type": "video/mp4",
+        "x-koe-scribe-file-name": encodeURIComponent("sample video.mp4"),
+        "x-koe-scribe-file-type": "video/mp4",
+      },
+      body: Buffer.from("fake media bytes"),
+    });
+    assert.strictEqual(upload.statusCode, 200);
+    const uploadPayload = JSON.parse(upload.body);
+    assert.strictEqual(uploadPayload.ok, true);
+    assert.strictEqual(uploadPayload.upload.fileName, "sample video.mp4");
+    assert(fs.existsSync(uploadPayload.upload.localPath), "uploaded media should be saved under the app runtime root");
+    assert(uploadPayload.upload.localPath.startsWith(context.runtimeRoot));
+
     const unauthorized = await request({
       method: "POST",
       port,
@@ -78,7 +129,10 @@ async function main() {
       port,
       path: "/api/exec",
       headers: { [runtimePayload.controlApi.tokenHeader]: runtimePayload.controlApi.token },
-      body: { prompt: "KoeScribe transcription job.\nengine: openai-whisper-srt" },
+      body: {
+        prompt: "KoeScribe transcription job.\nengine: openai-whisper-srt",
+        uploadedMedia: uploadPayload.upload,
+      },
     });
     assert.strictEqual(exec.statusCode, 200);
     assert(String(exec.headers["content-type"]).includes("application/x-ndjson"));
@@ -87,6 +141,7 @@ async function main() {
     assert(events.some((event) => event.status === "standalone_isolated"));
     assert(finalEvent && finalEvent.text.includes("shared_harness_dispatch: disabled"));
     assert(finalEvent.text.includes("shared_harness_api_exec: disabled"));
+    assert(finalEvent.text.includes(uploadPayload.upload.localPath));
     assert(finalEvent.text.includes(path.join(context.runtimeRoot, "jobs")));
 
     console.log(`koe-scribe standalone server test passed: http://127.0.0.1:${port}/`);

@@ -20,6 +20,7 @@ This prevents the normal app-level conflicts:
 - no `/apps/koe-scribe` mount or app-registry dependency for `.bat` launch
 - no proxy to the shared harness `POST /api/exec`
 - no shared output path for internal job state; each request gets its own job directory
+- no need to paste a local path when a browser-selected media file is available
 
 The only remaining contention is physical machine capacity such as CPU, disk, memory, and network bandwidth. A local app can avoid route, port, and runtime-dispatch conflicts, but it cannot make the operating system resources infinite.
 
@@ -50,6 +51,8 @@ Leaving `CODEX_KOE_SCRIBE_PORT` unset is safer when other Codex apps or servers 
 
 The isolated `/api/exec` route deliberately does not call the shared Codex runtime. It currently accepts the request, records isolated job metadata, and returns a structured result explaining the missing transcription engine.
 
+When a media file is selected in the browser and the local path field is empty, the UI first uploads that file to the standalone server. The server saves it under `.runtime/<instance-id>/uploads/<upload-id>/` and passes that saved local path into the job.
+
 Actual speech-to-text execution should be added as a dedicated worker behind this standalone server, for example:
 
 - local Whisper or whisper.cpp worker
@@ -68,4 +71,4 @@ Those workers should write only into per-run directories under `.runtime/<instan
 
 ## Browser Path Limitation
 
-Browsers do not expose the absolute path of a selected local file. For runtime execution, paste the local path into the local path field.
+Browsers do not expose the absolute path of a selected local file. KoeScribe avoids the double entry problem by copying the selected media file into its app-local `.runtime` directory before execution. The local path field is only for advanced cases where you want the worker to read an existing file path directly.
