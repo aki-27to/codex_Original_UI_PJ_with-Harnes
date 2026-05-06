@@ -3,7 +3,6 @@
 const assert = require("assert");
 const fs = require("fs");
 const http = require("http");
-const path = require("path");
 const { once } = require("events");
 
 const { startServer } = require("../APP/05.koe-scribe/standalone_server");
@@ -73,7 +72,18 @@ function rawRequest({ method = "POST", port, path: requestPath, body, headers = 
 }
 
 async function main() {
-  const server = startServer({ hostOverride: "127.0.0.1", portOverride: 0, quiet: true });
+  const server = startServer({
+    hostOverride: "127.0.0.1",
+    portOverride: 0,
+    quiet: true,
+    openAiClient: async () => ({
+      text: "こんにちは。これはKoeScribeの文字起こしテストです。",
+      segments: [
+        { start: 0, end: 2.4, text: "こんにちは。" },
+        { start: 2.4, end: 5.2, text: "これはKoeScribeの文字起こしテストです。" },
+      ],
+    }),
+  });
   await once(server, "listening");
   const port = server.address().port;
   const context = server.koeScribeContext;
@@ -96,6 +106,7 @@ async function main() {
     const runtimePayload = JSON.parse(runtime.body);
     assert.strictEqual(runtimePayload.mode, "app-server");
     assert.strictEqual(runtimePayload.isolation.sharedApiExec, false);
+    assert.strictEqual(runtimePayload.isolation.transcriptionModel, "whisper-1");
     assert.strictEqual(runtimePayload.controlApi.tokenHeader, "x-koe-scribe-control-token");
 
     const upload = await rawRequest({
@@ -131,6 +142,12 @@ async function main() {
       headers: { [runtimePayload.controlApi.tokenHeader]: runtimePayload.controlApi.token },
       body: {
         prompt: "KoeScribe transcription job.\nengine: codex-openai-transcription",
+        job: {
+          outputs: ["SRT", "VTT", "Markdown"],
+          language: "ja",
+          quality: "technical",
+          glossary: "KoeScribe",
+        },
         uploadedMedia: uploadPayload.upload,
       },
     });
@@ -139,10 +156,11 @@ async function main() {
     const events = exec.body.trim().split("\n").filter(Boolean).map((line) => JSON.parse(line));
     const finalEvent = events.find((event) => event.type === "final");
     assert(events.some((event) => event.status === "standalone_isolated"));
-    assert(finalEvent && finalEvent.text.includes("shared_harness_dispatch: disabled"));
-    assert(finalEvent.text.includes("shared_harness_api_exec: disabled"));
-    assert(finalEvent.text.includes(uploadPayload.upload.localPath));
-    assert(finalEvent.text.includes(path.join(context.runtimeRoot, "jobs")));
+    assert(events.some((event) => event.status === "transcription_completed"));
+    assert(finalEvent && finalEvent.text.includes("文字起こしが完了しました。"));
+    assert(finalEvent.text.includes("こんにちは。これはKoeScribeの文字起こしテストです。"));
+    assert(finalEvent.text.includes(".srt"));
+    assert(finalEvent.text.includes(".vtt"));
 
     console.log(`koe-scribe standalone server test passed: http://127.0.0.1:${port}/`);
   } finally {

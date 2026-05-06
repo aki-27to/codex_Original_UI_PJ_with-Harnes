@@ -55,11 +55,12 @@ The isolated `/api/exec` route deliberately does not call the shared Codex runti
 
 When a media file is selected in the browser and the local path field is empty, the UI first uploads that file to the standalone server. The server saves it under `.runtime/<instance-id>/uploads/<upload-id>/` and passes that saved local path into the job.
 
-Actual speech-to-text execution should be added as the dedicated Codex/OpenAI transcription worker behind this standalone server:
+Actual speech-to-text execution runs through the dedicated OpenAI transcription worker in `standalone_server.js`.
 
-- ffmpeg extraction and chunking worker
-- OpenAI transcription worker
-- subtitle/Markdown post-processing worker
+- Default internal model: `whisper-1`, because it can return timestamp data for SRT/VTT.
+- Override model: set `CODEX_KOE_SCRIBE_OPENAI_MODEL` before starting the app.
+- Required API key: `OPENAI_API_KEY`.
+- Output files are written to the selected output directory, or to the per-run `.runtime/.../jobs/<run-id>/` directory when no output directory is selected.
 
 Those workers should write only into per-run directories under `.runtime/<instance-id>/jobs/<run-id>/` unless the user explicitly chooses an output folder.
 

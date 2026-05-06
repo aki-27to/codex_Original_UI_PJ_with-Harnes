@@ -284,6 +284,7 @@ function isExecStreamResponse(response) {
 async function streamExecPrompt(prompt, job) {
   const payload = {
     prompt,
+    job: job || null,
     uploadedMedia: job && job.uploadedMedia ? job.uploadedMedia : null,
     agentName: "default",
     sandboxMode: "workspace-write",
