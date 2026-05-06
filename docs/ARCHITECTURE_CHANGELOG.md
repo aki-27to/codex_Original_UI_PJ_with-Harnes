@@ -1,6 +1,8 @@
 # ARCHITECTURE_CHANGELOG
 
-Updated: 2026-05-05
+Updated: 2026-05-06
+
+- 2026-05-06: Added `start_codex_ui_admin_browser.bat` as an explicit owner-local launcher for operators who want UAC self-elevation and browser auto-open from a single batch file. The canonical `start_codex_ui.bat` still keeps `CODEX_REQUIRE_ADMIN=0` and `CODEX_AUTO_OPEN_BROWSER=0` by default, preserving the non-intrusive launcher posture for normal starts.
 
 - 2026-05-05: Closed review hardening gaps around validation trust boundaries. Eval lane execution paths now preserve long absolute paths instead of applying display truncation, repo-quality no longer refreshes tracked surfaces and fails when validation introduces new tracked diffs, malformed percent encoding fails closed on app/static read surfaces, and standalone static serving uses path-boundary containment instead of prefix matching. The single-harness contract now separates `live_exec`, `policy_probe`, `artifact_simulator`, `repo_tracked_protected_eval`, and `true_hidden_eval` provenance, explicitly marking repo-tracked protected eval as not true-hidden and bounded multi-agent output as artifact-simulator evidence until native child-dispatch proof exists.
 

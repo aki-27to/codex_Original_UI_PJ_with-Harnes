@@ -6,9 +6,11 @@ const path = require("path");
 
 const workspaceRoot = path.resolve(__dirname, "..");
 const launcherPath = path.join(workspaceRoot, "start_codex_ui.bat");
+const adminBrowserLauncherPath = path.join(workspaceRoot, "start_codex_ui_admin_browser.bat");
 
 function main() {
   const launcher = fs.readFileSync(launcherPath, "utf8");
+  const adminBrowserLauncher = fs.readFileSync(adminBrowserLauncherPath, "utf8");
 
   assert(/^@echo off\r?\nsetlocal\r?\nif "%CODEX_PAUSE_ON_EXIT%"=="" set "CODEX_PAUSE_ON_EXIT=1"/.test(launcher), "launcher must default CODEX_PAUSE_ON_EXIT before early-exit checks");
   assert(/if "%CODEX_REQUIRE_ADMIN%"=="" set "CODEX_REQUIRE_ADMIN=0"/.test(launcher), "launcher must default admin elevation off unless the operator opts in");
@@ -51,6 +53,9 @@ function main() {
   assert(/goto launcher_server_run/.test(launcher), "launcher must loop back into the server run label after a crash");
   assert(/if not "%LAUNCHER_AUTO_OPEN_BROWSER%"=="0" \(/.test(launcher), "launcher must use the launcher-owned browser auto-open gate");
   assert(/if "%CODEX_PAUSE_ON_EXIT%"=="1" pause/.test(launcher), "launcher must honor CODEX_PAUSE_ON_EXIT on early dependency failures and elevation failures");
+  assert(/set "CODEX_REQUIRE_ADMIN=1"/.test(adminBrowserLauncher), "admin/browser launcher must request UAC self-elevation through start_codex_ui.bat");
+  assert(/set "CODEX_AUTO_OPEN_BROWSER=1"/.test(adminBrowserLauncher), "admin/browser launcher must opt into launcher-owned browser auto-open");
+  assert(/call "%~dp0start_codex_ui\.bat" %\*/.test(adminBrowserLauncher), "admin/browser launcher must delegate to the canonical launcher");
 
   process.stdout.write("PASS start_codex_ui_launcher_policy_test\n");
 }
