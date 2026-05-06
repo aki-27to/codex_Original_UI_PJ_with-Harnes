@@ -1,0 +1,19 @@
+{
+  "schema": "harness-app-manifest.v1",
+  "id": "koe-scribe",
+  "order": 5,
+  "title": "KoeScribe",
+  "description": "Video-to-transcript workspace for local-first subtitle and transcript generation through the standard Codex exec route.",
+  "mountPath": "/apps/koe-scribe",
+  "integrationMode": "native-static",
+  "workingDirectory": "APP/05.koe-scribe",
+  "nativeApiPrefix": "/api",
+  "static": {
+    "envKey": "CODEX_KOE_SCRIBE_ROOT",
+    "indexFile": "index.html",
+    "candidateRelativeRoots": [
+      "APP/05.koe-scribe",
+      "APP/05.koe-scribe/dist"
+    ]
+  }
+}

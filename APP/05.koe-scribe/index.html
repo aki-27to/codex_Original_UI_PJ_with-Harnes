@@ -1,0 +1,130 @@
+<!doctype html>
+<html lang="ja">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>KoeScribe</title>
+    <link rel="stylesheet" href="./styles.css">
+  </head>
+  <body>
+    <div class="app-shell">
+      <header class="topbar">
+        <div>
+          <p class="eyebrow">APP 05 / Video Transcript</p>
+          <h1>KoeScribe</h1>
+        </div>
+        <div class="runtime-pill" id="runtimeStatus">runtime checking</div>
+      </header>
+
+      <main class="workspace">
+        <section class="input-pane" aria-labelledby="inputTitle">
+          <div class="section-head">
+            <p class="eyebrow">Source</p>
+            <h2 id="inputTitle">動画</h2>
+          </div>
+
+          <label class="dropzone" id="dropzone" for="videoFile">
+            <input id="videoFile" type="file" accept="video/*,audio/*">
+            <span class="drop-icon" aria-hidden="true"></span>
+            <strong id="fileName">ファイルを選択</strong>
+            <span id="fileMeta">MP4 / MOV / M4A / WAV</span>
+          </label>
+
+          <label class="field">
+            <span>ローカルパス</span>
+            <input id="videoPath" type="text" autocomplete="off" placeholder="C:\Users\akima\Videos\sample.mp4">
+          </label>
+
+          <div class="grid-two">
+            <label class="field">
+              <span>出力先</span>
+              <input id="outputDir" type="text" autocomplete="off" placeholder="動画と同じフォルダ">
+            </label>
+            <label class="field">
+              <span>言語</span>
+              <select id="language">
+                <option value="ja" selected>日本語</option>
+                <option value="en">英語</option>
+                <option value="auto">自動判定</option>
+              </select>
+            </label>
+          </div>
+
+          <div class="grid-two">
+            <label class="field">
+              <span>エンジン</span>
+              <select id="engine">
+                <option value="openai-whisper-srt" selected>OpenAI whisper-1 / SRT</option>
+                <option value="openai-gpt4o-text">OpenAI gpt-4o-transcribe / text</option>
+                <option value="local-whisper">Local Whisper / whisper.cpp</option>
+                <option value="plan-only">実行計画のみ</option>
+              </select>
+            </label>
+            <label class="field">
+              <span>品質</span>
+              <select id="quality">
+                <option value="technical" selected>専門用語優先</option>
+                <option value="subtitle">字幕読みやすさ優先</option>
+                <option value="verbatim">逐語寄り</option>
+              </select>
+            </label>
+          </div>
+
+          <label class="field">
+            <span>用語補正</span>
+            <textarea id="glossary" rows="5" placeholder="Claude Code&#10;Codex&#10;Skill&#10;MCP&#10;Whisper"></textarea>
+          </label>
+
+          <div class="option-row">
+            <label><input id="makeSrt" type="checkbox" checked> SRT</label>
+            <label><input id="makeVtt" type="checkbox" checked> VTT</label>
+            <label><input id="makeMarkdown" type="checkbox" checked> Markdown</label>
+            <label><input id="externalConsent" type="checkbox"> 外部API送信を許可</label>
+          </div>
+
+          <div class="actions">
+            <button id="planBtn" type="button" class="secondary">計画を作る</button>
+            <button id="runBtn" type="button" class="primary">文字起こし開始</button>
+            <button id="stopBtn" type="button" class="secondary" disabled>停止</button>
+          </div>
+        </section>
+
+        <section class="output-pane" aria-labelledby="outputTitle">
+          <div class="section-head output-head">
+            <div>
+              <p class="eyebrow">Job</p>
+              <h2 id="outputTitle">実行状態</h2>
+            </div>
+            <div class="state-grid" aria-label="job state">
+              <div><span>Mode</span><strong id="modeLabel">ready</strong></div>
+              <div><span>Route</span><strong>/api/exec</strong></div>
+              <div><span>Output</span><strong id="outputLabel">SRT / VTT / MD</strong></div>
+            </div>
+          </div>
+
+          <div class="progress-track" aria-hidden="true">
+            <span id="progressBar"></span>
+          </div>
+
+          <div class="tabs" role="tablist" aria-label="output tabs">
+            <button class="tab is-active" data-tab="transcript" type="button">Transcript</button>
+            <button class="tab" data-tab="prompt" type="button">Prompt</button>
+            <button class="tab" data-tab="log" type="button">Log</button>
+          </div>
+
+          <article id="transcriptPanel" class="panel tab-panel is-active">
+            <pre id="transcriptOutput">待機中</pre>
+          </article>
+          <article id="promptPanel" class="panel tab-panel">
+            <pre id="promptOutput">ジョブ未作成</pre>
+          </article>
+          <article id="logPanel" class="panel tab-panel">
+            <ol id="eventLog" class="event-log"></ol>
+          </article>
+        </section>
+      </main>
+    </div>
+
+    <script src="./app.js"></script>
+  </body>
+</html>

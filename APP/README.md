@@ -16,6 +16,7 @@ Current apps:
 - `01.english-conversation-app`
 - `02.talkApp`
 - `03.ai-debate-chat`
+- `05.koe-scribe`
 
 Each app contains one `app.manifest.json`.
 
