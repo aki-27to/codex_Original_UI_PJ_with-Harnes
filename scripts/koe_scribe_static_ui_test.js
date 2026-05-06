@@ -335,6 +335,8 @@ async function main() {
     const copyText = await evaluate(page, "document.querySelector('#copyBtn').textContent");
     const hasPlanButton = await evaluate(page, "Boolean(document.querySelector('#planBtn'))");
     const hasPromptPanel = await evaluate(page, "Boolean(document.querySelector('#promptPanel'))");
+    const hasProgressBar = await evaluate(page, "Boolean(document.querySelector('#progressBar'))");
+    const waitingText = await evaluate(page, "document.querySelector('#transcriptOutput').textContent");
     const copyDisabled = await evaluate(page, "document.querySelector('#copyBtn').disabled");
     const overflow = await evaluate(page, "document.documentElement.scrollWidth > document.documentElement.clientWidth + 1");
 
@@ -344,6 +346,11 @@ async function main() {
     assert.strictEqual(copyText, "全文コピー");
     assert.strictEqual(hasPlanButton, false, "plan button should not be visible");
     assert.strictEqual(hasPromptPanel, false, "prompt panel should not be visible");
+    assert.strictEqual(hasProgressBar, false, "result pane should not show progress chrome");
+    assert(
+      waitingText === "待機中" || waitingText.includes("古いKoeScribeサーバー") || waitingText === "",
+      "result pane should show only user-facing result state"
+    );
     assert.strictEqual(copyDisabled, true, "copy should stay disabled until a result exists");
     assert.strictEqual(overflow, false, "layout should not horizontally overflow desktop viewport");
 

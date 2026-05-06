@@ -7,9 +7,11 @@ const state = {
   uploadedMedia: null,
   controller: null,
   latestTranscript: "",
+  workingTimer: null,
   runtime: {
     controlToken: "",
     controlTokenHeader: "x-codex-control-token",
+    transcriptionReady: false,
   },
 };
 
@@ -53,6 +55,21 @@ function setProgress(percent) {
   el.progressBar.style.width = `${value}%`;
 }
 
+function restartRequiredMessage() {
+  return [
+    "古いKoeScribeサーバーが動いています。",
+    "",
+    "この画面が診断レポートだけを返す場合、文字起こし処理が入る前のサーバープロセスに接続しています。",
+    "起動用.bat のウィンドウを閉じて、もう一度起動してください。",
+  ].join("\n");
+}
+
+function isLegacyDiagnosticOutput(value) {
+  const body = text(value, 12000);
+  return body.includes("KoeScribe standalone isolated run")
+    && body.includes("Actual speech-to-text execution is not wired");
+}
+
 function canCopy(value) {
   const body = text(value, 1000000);
   return Boolean(body && body !== "待機中" && body !== "実行中");
@@ -69,9 +86,28 @@ function setTranscript(textValue, options = {}) {
   }
 }
 
+function stopWorkingMessage() {
+  if (state.workingTimer) {
+    window.clearInterval(state.workingTimer);
+    state.workingTimer = null;
+  }
+}
+
+function startWorkingMessage(label) {
+  stopWorkingMessage();
+  let tick = 0;
+  const render = () => {
+    const dots = ".".repeat((tick % 3) + 1);
+    setTranscript(`${label}${dots}`, { copyable: false });
+    tick += 1;
+  };
+  render();
+  state.workingTimer = window.setInterval(render, 550);
+}
+
 function setPending(pending) {
   const active = Boolean(pending);
-  if (el.runBtn) el.runBtn.disabled = active;
+  if (el.runBtn) el.runBtn.disabled = active || !state.runtime.transcriptionReady;
   if (el.stopBtn) el.stopBtn.disabled = !active;
   if (active && el.copyBtn) el.copyBtn.disabled = true;
 }
@@ -126,7 +162,7 @@ async function uploadSelectedFileIfNeeded(job) {
     return state.uploadedMedia;
   }
 
-  setTranscript(`アップロード中: ${state.selectedFile.name}`, { copyable: false });
+  startWorkingMessage("アップロード中");
   setProgress(12);
 
   const response = await fetch(buildAppApiPath("/media/upload"), {
@@ -182,6 +218,9 @@ function collectJob() {
 }
 
 function validateJob(job, forRun) {
+  if (forRun && !state.runtime.transcriptionReady) {
+    throw new Error(restartRequiredMessage());
+  }
   if (forRun && job.engine !== "plan-only" && !job.videoPath && !state.selectedFile) {
     throw new Error("動画または音声ファイルを選択してください。");
   }
@@ -279,6 +318,10 @@ async function streamExecPrompt(prompt, job) {
         setProgress(Math.min(92, 24 + eventCount * 3));
       } else if (event.type === "final" && typeof event.text === "string") {
         finalText = event.text;
+        if (isLegacyDiagnosticOutput(finalText)) {
+          throw new Error(restartRequiredMessage());
+        }
+        stopWorkingMessage();
         setTranscript(finalText);
         setProgress(100);
       } else if (event.type === "error") {
@@ -338,10 +381,21 @@ async function loadRuntime() {
     state.runtime.controlToken = text(payload && payload.controlApi && payload.controlApi.token ? payload.controlApi.token : "", 400);
     state.runtime.controlTokenHeader = text(payload && payload.controlApi && payload.controlApi.tokenHeader ? payload.controlApi.tokenHeader : "", 120) || "x-codex-control-token";
     const isStandalone = Boolean(payload && payload.isolation && payload.isolation.mode === "standalone");
+    const hasTranscriptionWorker = Boolean(payload && payload.isolation && payload.isolation.transcriptionModel);
+    state.runtime.transcriptionReady = hasTranscriptionWorker;
+    if (!hasTranscriptionWorker) {
+      setRuntimeStatus("restart required", "offline");
+      setTranscript(restartRequiredMessage(), { copyable: false });
+      setPending(false);
+      return;
+    }
     setRuntimeStatus(isStandalone ? "standalone isolated" : "runtime connected", "ready");
+    setPending(false);
   } catch {
     state.runtime.controlToken = "";
+    state.runtime.transcriptionReady = false;
     setRuntimeStatus("preview offline", "offline");
+    setPending(false);
   }
 }
 
@@ -412,13 +466,15 @@ function bindEvents() {
         await uploadSelectedFileIfNeeded(job);
         job = collectJob();
         const prompt = buildPrompt(job, "run");
-        setTranscript("実行中", { copyable: false });
+        startWorkingMessage("文字起こし中");
         await streamExecPrompt(prompt, job);
       } catch (error) {
+        stopWorkingMessage();
         const message = error && error.message ? error.message : "実行に失敗しました。";
-        setTranscript(message);
+        setTranscript(message, { copyable: false });
         setProgress(0);
       } finally {
+        stopWorkingMessage();
         setPending(false);
       }
     });
