@@ -58,6 +58,9 @@ function main() {
   assert(/set "CODEX_AUTO_OPEN_BROWSER=1"/.test(adminBrowserLauncher), "admin/browser launcher must opt into launcher-owned browser auto-open");
   assert(/set "CODEX_RESTART_EXISTING_HARNESS=1"/.test(adminBrowserLauncher), "admin/browser launcher must restart an existing harness so the server runs under the elevated launcher");
   assert(/Verb = 'RunAs'/.test(adminBrowserLauncher), "admin/browser launcher must self-elevate before delegating to the canonical launcher");
+  assert(/\$dq = \[char\]34/.test(adminBrowserLauncher), "admin/browser launcher must build cmd.exe quoting without nested shell-quote ambiguity");
+  assert(/FilePath = \$cmd/.test(adminBrowserLauncher), "admin/browser launcher must elevate cmd.exe rather than relying on direct .bat ShellExecute behavior");
+  assert(/ArgumentList = @\('\/d','\/c',\$invoke\)/.test(adminBrowserLauncher), "admin/browser launcher must run the batch inside the elevated cmd.exe session");
   assert(/call "%~dp0start_codex_ui\.bat" %\*/.test(adminBrowserLauncher), "admin/browser launcher must delegate to the canonical launcher");
 
   process.stdout.write("PASS start_codex_ui_launcher_policy_test\n");
