@@ -154,6 +154,97 @@ function fileSignature(file) {
   return [file.name || "", file.size || 0, file.lastModified || 0].join(":");
 }
 
+function wavFileName(fileName) {
+  const raw = text(fileName || "media", 260) || "media";
+  const withoutExt = raw.replace(/\.[^.]+$/, "");
+  return `${withoutExt || "media"}.wav`;
+}
+
+function audioBufferToMono(audioBuffer) {
+  const length = audioBuffer.length;
+  const channels = Math.max(1, audioBuffer.numberOfChannels || 1);
+  const mono = new Float32Array(length);
+  for (let channel = 0; channel < channels; channel += 1) {
+    const data = audioBuffer.getChannelData(channel);
+    for (let index = 0; index < length; index += 1) {
+      mono[index] += data[index] / channels;
+    }
+  }
+  return mono;
+}
+
+function encodeWavPcm16(samples, sampleRate) {
+  const bytesPerSample = 2;
+  const buffer = new ArrayBuffer(44 + samples.length * bytesPerSample);
+  const view = new DataView(buffer);
+  const writeString = (offset, value) => {
+    for (let index = 0; index < value.length; index += 1) {
+      view.setUint8(offset + index, value.charCodeAt(index));
+    }
+  };
+  writeString(0, "RIFF");
+  view.setUint32(4, 36 + samples.length * bytesPerSample, true);
+  writeString(8, "WAVE");
+  writeString(12, "fmt ");
+  view.setUint32(16, 16, true);
+  view.setUint16(20, 1, true);
+  view.setUint16(22, 1, true);
+  view.setUint32(24, sampleRate, true);
+  view.setUint32(28, sampleRate * bytesPerSample, true);
+  view.setUint16(32, bytesPerSample, true);
+  view.setUint16(34, 8 * bytesPerSample, true);
+  writeString(36, "data");
+  view.setUint32(40, samples.length * bytesPerSample, true);
+  let offset = 44;
+  for (let index = 0; index < samples.length; index += 1) {
+    const sample = Math.max(-1, Math.min(1, samples[index] || 0));
+    view.setInt16(offset, sample < 0 ? sample * 0x8000 : sample * 0x7fff, true);
+    offset += bytesPerSample;
+  }
+  return new Blob([buffer], { type: "audio/wav" });
+}
+
+async function decodeMediaToWav(file) {
+  const AudioContextCtor = window.AudioContext || window.webkitAudioContext;
+  if (!AudioContextCtor || !window.OfflineAudioContext) {
+    throw new Error("This browser cannot prepare local WAV audio for transcription.");
+  }
+  const inputBuffer = await file.arrayBuffer();
+  const decodeContext = new AudioContextCtor();
+  let decoded = null;
+  try {
+    decoded = await decodeContext.decodeAudioData(inputBuffer.slice(0));
+  } finally {
+    if (decodeContext && typeof decodeContext.close === "function") {
+      decodeContext.close().catch(() => {});
+    }
+  }
+  const sampleRate = 16000;
+  const frameCount = Math.max(1, Math.ceil(decoded.duration * sampleRate));
+  const offline = new OfflineAudioContext(1, frameCount, sampleRate);
+  const source = offline.createBufferSource();
+  source.buffer = decoded;
+  source.connect(offline.destination);
+  source.start(0);
+  const rendered = await offline.startRendering();
+  return encodeWavPcm16(audioBufferToMono(rendered), sampleRate);
+}
+
+async function prepareUploadAsset(file) {
+  const type = text(file && file.type ? file.type : "", 120).toLowerCase();
+  const name = text(file && file.name ? file.name : "media", 260) || "media";
+  if (type.includes("wav") || /\.wav$/i.test(name)) {
+    return { blob: file, name, type: type || "audio/wav" };
+  }
+  startWorkingMessage("音声を準備中");
+  const wavBlob = await decodeMediaToWav(file);
+  return {
+    blob: wavBlob,
+    name: wavFileName(name),
+    type: "audio/wav",
+  };
+}
+
 async function uploadSelectedFileIfNeeded(job) {
   if (job.videoPath || !state.selectedFile) return null;
 
@@ -164,16 +255,17 @@ async function uploadSelectedFileIfNeeded(job) {
 
   startWorkingMessage("アップロード中");
   setProgress(12);
+  const uploadAsset = await prepareUploadAsset(state.selectedFile);
 
   const response = await fetch(buildAppApiPath("/media/upload"), {
     method: "POST",
     headers: buildControlHeaders({
-      "Content-Type": state.selectedFile.type || "application/octet-stream",
-      "x-koe-scribe-file-name": encodeURIComponent(state.selectedFile.name || "media"),
-      "x-koe-scribe-file-type": state.selectedFile.type || "application/octet-stream",
-      "x-koe-scribe-file-size": String(state.selectedFile.size || 0),
+      "Content-Type": uploadAsset.type || "application/octet-stream",
+      "x-koe-scribe-file-name": encodeURIComponent(uploadAsset.name || "media"),
+      "x-koe-scribe-file-type": uploadAsset.type || "application/octet-stream",
+      "x-koe-scribe-file-size": String(uploadAsset.blob && uploadAsset.blob.size ? uploadAsset.blob.size : 0),
     }),
-    body: state.selectedFile,
+    body: uploadAsset.blob,
   });
 
   const payload = await response.json().catch(() => ({}));

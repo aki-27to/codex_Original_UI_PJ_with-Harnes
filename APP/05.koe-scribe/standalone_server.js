@@ -5,6 +5,7 @@ const fs = require("fs");
 const https = require("https");
 const http = require("http");
 const path = require("path");
+const { spawn } = require("child_process");
 const { URL } = require("url");
 
 const DEFAULT_HOST = "127.0.0.1";
@@ -15,7 +16,9 @@ const TRANSCRIPTION_PROVIDER = String(process.env.CODEX_KOE_SCRIBE_PROVIDER || "
 const CODEX_APP_BASE_URL = String(process.env.CODEX_KOE_SCRIBE_CODEX_APP_URL || "http://127.0.0.1:57525").replace(/\/+$/, "");
 const OPENAI_API_BASE_URL = String(process.env.OPENAI_BASE_URL || "https://api.openai.com/v1").replace(/\/+$/, "");
 const OPENAI_TRANSCRIPTION_MODEL = process.env.CODEX_KOE_SCRIBE_OPENAI_MODEL || "whisper-1";
+const WINDOWS_SPEECH_TIMEOUT_MS = normalizeMilliseconds(process.env.CODEX_KOE_SCRIBE_WINDOWS_SPEECH_TIMEOUT_MS, 10 * 60 * 1000);
 const staticRoot = __dirname;
+const windowsSpeechScriptPath = path.join(staticRoot, "scripts", "windows_speech_transcribe.ps1");
 
 const mimeTypes = Object.freeze({
   ".css": "text/css; charset=utf-8",
@@ -48,6 +51,20 @@ function normalizeMegabytes(value, fallbackMb) {
   const parsed = Number.parseInt(String(value || "").trim(), 10);
   const megabytes = Number.isFinite(parsed) && parsed > 0 ? parsed : fallbackMb;
   return megabytes * 1024 * 1024;
+}
+
+function normalizeMilliseconds(value, fallbackMs) {
+  const parsed = Number.parseInt(String(value || "").trim(), 10);
+  if (!Number.isFinite(parsed) || parsed <= 0) return fallbackMs;
+  return Math.max(5000, Math.min(parsed, 60 * 60 * 1000));
+}
+
+function normalizeBooleanFlag(value, fallback) {
+  const normalized = String(value == null ? "" : value).trim().toLowerCase();
+  if (!normalized) return Boolean(fallback);
+  if (["1", "true", "yes", "on"].includes(normalized)) return true;
+  if (["0", "false", "no", "off"].includes(normalized)) return false;
+  return Boolean(fallback);
 }
 
 function contentTypeFor(filePath) {
@@ -491,6 +508,144 @@ function requestJson({ method = "GET", baseUrl, pathname, body, timeoutMs = 3000
   });
 }
 
+function requestNdjson({ method = "POST", baseUrl, pathname, body, headers = {}, timeoutMs = 300000 }) {
+  const endpoint = new URL(pathname, `${baseUrl.replace(/\/+$/, "")}/`);
+  const client = endpoint.protocol === "https:" ? https : http;
+  const requestBody = body == null ? null : Buffer.from(JSON.stringify(body));
+
+  return new Promise((resolve, reject) => {
+    const req = client.request(
+      endpoint,
+      {
+        method,
+        headers: {
+          ...(requestBody ? {
+            "Content-Type": "application/json; charset=utf-8",
+            "Content-Length": requestBody.length,
+          } : {}),
+          ...headers,
+        },
+      },
+      (res) => {
+        const chunks = [];
+        res.on("data", (chunk) => chunks.push(chunk));
+        res.on("end", () => {
+          const raw = Buffer.concat(chunks).toString("utf8");
+          if ((res.statusCode || 500) >= 400) {
+            const parsed = parseJsonBody(raw);
+            const message = parsed && parsed.error ? parsed.error : raw;
+            reject(new Error(message || `HTTP ${res.statusCode}`));
+            return;
+          }
+          const events = raw
+            .split(/\r?\n/)
+            .map((line) => line.trim())
+            .filter(Boolean)
+            .map((line) => parseJsonBody(line))
+            .filter(Boolean);
+          resolve({ events, raw });
+        });
+      }
+    );
+    req.setTimeout(Math.max(5000, Math.trunc(Number(timeoutMs) || 300000)), () => {
+      req.destroy(new Error("Codex App Server exec timed out."));
+    });
+    req.on("error", reject);
+    if (requestBody) req.write(requestBody);
+    req.end();
+  });
+}
+
+function isWindowsWavInput(mediaPath, mediaType) {
+  if (process.platform !== "win32") return false;
+  const ext = path.extname(mediaPath || "").toLowerCase();
+  const type = String(mediaType || "").toLowerCase();
+  return ext === ".wav" || type.includes("audio/wav") || type.includes("audio/x-wav") || type.includes("wave");
+}
+
+function windowsSpeechCulture(language) {
+  const normalized = String(language || "").trim().toLowerCase();
+  if (normalized.startsWith("en")) return "en-US";
+  return "ja-JP";
+}
+
+function runWindowsSpeechScript({ mediaPath, language }) {
+  const powerShell = path.join(process.env.SystemRoot || "C:\\Windows", "System32", "WindowsPowerShell", "v1.0", "powershell.exe");
+  return new Promise((resolve, reject) => {
+    const child = spawn(
+      powerShell,
+      [
+        "-NoProfile",
+        "-ExecutionPolicy",
+        "Bypass",
+        "-File",
+        windowsSpeechScriptPath,
+        "-AudioPath",
+        mediaPath,
+        "-Culture",
+        windowsSpeechCulture(language),
+      ],
+      {
+        cwd: staticRoot,
+        stdio: ["ignore", "pipe", "pipe"],
+        windowsHide: true,
+      }
+    );
+    let stdout = "";
+    let stderr = "";
+    const timeout = setTimeout(() => {
+      child.kill();
+      reject(new Error("Windows Speech transcription timed out."));
+    }, WINDOWS_SPEECH_TIMEOUT_MS);
+    child.stdout.on("data", (chunk) => {
+      stdout = `${stdout}${chunk.toString("utf8")}`.slice(-1024 * 1024);
+    });
+    child.stderr.on("data", (chunk) => {
+      stderr = `${stderr}${chunk.toString("utf8")}`.slice(-12000);
+    });
+    child.on("error", (error) => {
+      clearTimeout(timeout);
+      reject(error);
+    });
+    child.on("close", (exitCode) => {
+      clearTimeout(timeout);
+      if (exitCode !== 0) {
+        reject(new Error(shortText(stderr || stdout || `Windows Speech exited with code ${exitCode}`, 2000)));
+        return;
+      }
+      const parsed = parseJsonBody(stdout);
+      if (!parsed) {
+        reject(new Error(shortText(stdout || stderr || "Windows Speech returned invalid JSON.", 2000)));
+        return;
+      }
+      resolve(parsed);
+    });
+  });
+}
+
+async function transcribeMediaWithWindowsSpeech({ mediaPath, mediaFileName, mediaType, options = {} }) {
+  if (!isWindowsWavInput(mediaPath, mediaType)) {
+    throw new Error("Windows Speech fallback requires a WAV audio file. Attach the media file in the browser so KoeScribe can prepare WAV audio first.");
+  }
+  if (!fs.existsSync(windowsSpeechScriptPath)) {
+    throw new Error(`Windows Speech helper script is missing: ${windowsSpeechScriptPath}`);
+  }
+  const result = await runWindowsSpeechScript({ mediaPath, language: options.language });
+  const text = shortText(result && result.text ? result.text : "", 500000);
+  const rawSegments = Array.isArray(result && result.segments) ? result.segments : [];
+  return {
+    text: text || "音声認識は完了しましたが、認識できる発話テキストはありませんでした。",
+    segments: rawSegments.map((segment) => ({
+      start: Number(segment && segment.start) || 0,
+      end: Number(segment && segment.end) || 0,
+      text: shortText(segment && segment.text ? segment.text : "", 4000),
+    })).filter((segment) => segment.text),
+    model: result && result.recognizer ? `windows-speech:${result.recognizer}` : "windows-speech",
+    notes: result && result.warning ? String(result.warning) : "",
+    mediaFileName,
+  };
+}
+
 function normalizeCodexAppBaseUrl(value) {
   return String(value || CODEX_APP_BASE_URL).replace(/\/+$/, "");
 }
@@ -548,12 +703,97 @@ const codexTranscriptionSchema = Object.freeze({
   },
 });
 
-async function transcribeMediaWithCodexApp({ mediaPath, mediaFileName, options = {} }) {
+function extractFinalTextFromExecEvents(events) {
+  const source = Array.isArray(events) ? events : [];
+  let deltaText = "";
+  let finalText = "";
+  for (const event of source) {
+    if (!event || typeof event !== "object") continue;
+    if (event.type === "delta" && typeof event.text === "string") {
+      deltaText += event.text;
+      continue;
+    }
+    if (event.type === "delta" && typeof event.delta === "string") {
+      deltaText += event.delta;
+      continue;
+    }
+    if (event.type === "final") {
+      if (typeof event.text === "string" && event.text.trim()) finalText = event.text;
+      else if (event.final && typeof event.final.text === "string" && event.final.text.trim()) finalText = event.final.text;
+      else if (typeof event.output === "string" && event.output.trim()) finalText = event.output;
+    }
+  }
+  return shortText(finalText || deltaText, 500000);
+}
+
+async function transcribeMediaViaCodexExec({ runtime, codexAppBaseUrl, mediaPath, mediaFileName, options = {} }) {
+  const controlApi = runtime && runtime.controlApi && typeof runtime.controlApi === "object" ? runtime.controlApi : null;
+  const token = controlApi && typeof controlApi.token === "string" ? controlApi.token.trim() : "";
+  const tokenHeader = controlApi && typeof controlApi.tokenHeader === "string" && controlApi.tokenHeader.trim()
+    ? controlApi.tokenHeader.trim()
+    : "x-codex-control-token";
+  if (!token) {
+    throw new Error("Codex App Server runtime does not expose a control token for /api/exec fallback.");
+  }
+  const response = await requestNdjson({
+    method: "POST",
+    baseUrl: codexAppBaseUrl,
+    pathname: "/api/exec",
+    timeoutMs: 300000,
+    headers: {
+      [tokenHeader]: token,
+      Origin: codexAppBaseUrl,
+      Referer: `${codexAppBaseUrl}/`,
+    },
+    body: {
+      prompt: [
+        "KoeScribe transcription fallback request.",
+        "",
+        "Return only the transcript text. Do not ask for OPENAI_API_KEY.",
+        "If you cannot inspect or transcribe the media file bytes in this Codex runtime, say exactly: BLOCKED_AUDIO_TRANSCRIPTION_UNAVAILABLE",
+        "",
+        `Media path: ${mediaPath}`,
+        `Media file name: ${mediaFileName}`,
+        `Language: ${options.language || "ja"}`,
+        `Glossary: ${options.glossary || "(none)"}`,
+      ].join("\n"),
+      agentName: "default",
+      sandboxMode: "workspace-write",
+      approvalPolicy: "never",
+      cwd: staticRoot,
+      forceNewSession: true,
+      requestUserInputPolicy: "blocked",
+      disableSlashRouter: true,
+      webSearch: false,
+      modelReasoningEffort: "medium",
+      executionProfile: "conversation-app-server",
+      executionIntent: "koe-scribe-transcription",
+      executionSource: "app_koe_scribe_standalone",
+    },
+  });
+  const text = extractFinalTextFromExecEvents(response.events);
+  if (!text || text.includes("BLOCKED_AUDIO_TRANSCRIPTION_UNAVAILABLE")) {
+    throw new Error("Codex /api/exec fallback could not transcribe this media file.");
+  }
+  return {
+    text,
+    segments: [],
+    model: "codex-app-exec",
+  };
+}
+
+async function transcribeMediaWithCodexApp({ mediaPath, mediaFileName, mediaType, options = {} }) {
   const codexAppBaseUrl = normalizeCodexAppBaseUrl(options && options.codexAppBaseUrl);
+  const localSpeechClient = typeof options.localSpeechClient === "function"
+    ? options.localSpeechClient
+    : transcribeMediaWithWindowsSpeech;
+  const canUseLocalSpeech = isWindowsWavInput(mediaPath, mediaType);
+  const runLocalSpeech = () => localSpeechClient({ mediaPath, mediaFileName, mediaType, options });
   let runtime;
   try {
     runtime = await getCodexAppRuntimeStatus(codexAppBaseUrl);
   } catch (error) {
+    if (canUseLocalSpeech) return runLocalSpeech();
     throw new Error([
       "Codex App Server に接続できません。",
       "",
@@ -564,6 +804,7 @@ async function transcribeMediaWithCodexApp({ mediaPath, mediaFileName, options =
   }
 
   if (!runtime || runtime.mode !== "app-server") {
+    if (canUseLocalSpeech) return runLocalSpeech();
     throw new Error([
       "Codex App Server は見つかりましたが、Codex実行環境が準備できていません。",
       "",
@@ -576,29 +817,32 @@ async function transcribeMediaWithCodexApp({ mediaPath, mediaFileName, options =
     ? runtime.staticApps.apps
     : null;
   if (registeredApps && !registeredApps.some((app) => app && app.id === "koe-scribe")) {
-    throw new Error([
-      "Codex App Server は見つかりましたが、KoeScribe app が登録されていません。",
-      "",
-      `接続先: ${codexAppBaseUrl}`,
-      "APP/05.koe-scribe/app.manifest.json が読み込まれる状態で Harnes / Codex App Server を起動し直してください。",
-    ].join("\n"));
+    if (canUseLocalSpeech) return runLocalSpeech();
+    return transcribeMediaViaCodexExec({ runtime, codexAppBaseUrl, mediaPath, mediaFileName, options });
   }
 
-  const response = await requestJson({
-    method: "POST",
-    baseUrl: codexAppBaseUrl,
-    pathname: "/api/apps/koe-scribe/structured",
-    timeoutMs: 300000,
-    body: {
-      prompt: buildCodexAppTranscriptionPrompt({ mediaPath, mediaFileName, options }),
-      outputSchema: codexTranscriptionSchema,
+  let response;
+  try {
+    response = await requestJson({
+      method: "POST",
+      baseUrl: codexAppBaseUrl,
+      pathname: "/api/apps/koe-scribe/structured",
       timeoutMs: 300000,
-    },
-  });
+      body: {
+        prompt: buildCodexAppTranscriptionPrompt({ mediaPath, mediaFileName, options }),
+        outputSchema: codexTranscriptionSchema,
+        timeoutMs: 300000,
+      },
+    });
+  } catch (error) {
+    if (canUseLocalSpeech) return runLocalSpeech();
+    return transcribeMediaViaCodexExec({ runtime, codexAppBaseUrl, mediaPath, mediaFileName, options });
+  }
 
   const data = response && response.data && typeof response.data === "object" ? response.data : response;
   const status = String(data && data.status ? data.status : "").toLowerCase();
   if (status === "blocked") {
+    if (canUseLocalSpeech) return runLocalSpeech();
     throw new Error([
       "Codex App Server に接続しましたが、この環境では音声・動画の直接文字起こしを完了できませんでした。",
       "",
@@ -608,6 +852,7 @@ async function transcribeMediaWithCodexApp({ mediaPath, mediaFileName, options =
   return {
     text: data && typeof data.transcript === "string" ? data.transcript : "",
     segments: Array.isArray(data && data.segments) ? data.segments : [],
+    model: "codex-app-structured",
     notes: data && typeof data.notes === "string" ? data.notes : "",
   };
 }
@@ -706,6 +951,9 @@ async function transcribeMediaWithOpenAI({ mediaPath, mediaFileName, mediaType, 
 function resolveTranscriptionClient(options = {}) {
   if (options.transcriptionClient) return options.transcriptionClient;
   if (options.openAiClient) return options.openAiClient;
+  if (TRANSCRIPTION_PROVIDER === "windows-speech" || TRANSCRIPTION_PROVIDER === "local-windows-speech") {
+    return transcribeMediaWithWindowsSpeech;
+  }
   if (TRANSCRIPTION_PROVIDER === "direct-openai" || TRANSCRIPTION_PROVIDER === "openai") {
     return transcribeMediaWithOpenAI;
   }
@@ -737,24 +985,28 @@ async function runTranscriptionJob({ body, context, jobDir }) {
 
   const transcriptText = shortText(transcription && transcription.text ? transcription.text : "", 500000);
   const segments = normalizeSegments(transcription && transcription.segments, transcriptText);
+  const transcriptionModel = shortText(
+    transcription && transcription.model ? transcription.model : OPENAI_TRANSCRIPTION_MODEL,
+    300
+  ) || OPENAI_TRANSCRIPTION_MODEL;
   const generatedFiles = writeTranscriptFiles({
     outputDir,
     baseName,
     transcriptText,
     segments,
     outputs: options.outputs,
-    model: OPENAI_TRANSCRIPTION_MODEL,
+    model: transcriptionModel,
     mediaPath,
   });
 
-  return [
+  const jobSummary = [
     "文字起こしが完了しました。",
     "",
     "生成ファイル:",
     ...generatedFiles.map((file) => `- ${file}`),
     "",
     "品質メモ:",
-    `- 使用モデル: ${OPENAI_TRANSCRIPTION_MODEL}`,
+    `- 使用モデル: ${transcriptionModel}`,
     `- 入力ファイル: ${mediaPath}`,
     `- 出力先: ${outputDir}`,
     segments.length ? `- 字幕用セグメント数: ${segments.length}` : "- 字幕用セグメントは取得できませんでした。",
@@ -762,6 +1014,15 @@ async function runTranscriptionJob({ body, context, jobDir }) {
     "文字起こし本文:",
     transcriptText || "(空の文字起こし結果です)",
   ].join("\n");
+
+  return {
+    transcriptText: transcriptText || "(空の文字起こし結果です)",
+    generatedFiles,
+    outputDir,
+    transcriptionModel,
+    segments,
+    jobSummary,
+  };
 }
 
 function buildRuntimePayload(context) {
@@ -805,6 +1066,9 @@ function createContext(options = {}) {
     controlTokenHeader: "x-koe-scribe-control-token",
     host,
     instanceId,
+    openBrowser: options.openBrowserOverride != null
+      ? Boolean(options.openBrowserOverride)
+      : (!Boolean(options.quiet) && normalizeBooleanFlag(process.env.CODEX_KOE_SCRIBE_OPEN_BROWSER, true)),
     transcriptionClient: resolveTranscriptionClient(options),
     port,
     portSelection: port === 0 ? "auto" : "fixed",
@@ -833,6 +1097,30 @@ function writeInstanceFile(context) {
       2
     )
   );
+}
+
+function findEdgeExecutable() {
+  if (process.platform !== "win32") return "";
+  const candidates = [
+    process.env.EDGE_PATH,
+    "C:\\Program Files\\Microsoft\\Edge\\Application\\msedge.exe",
+    "C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\msedge.exe",
+  ].filter(Boolean);
+  return candidates.find((candidate) => fs.existsSync(candidate)) || "";
+}
+
+function openUrlInEdge(url) {
+  if (process.platform !== "win32") return false;
+  const edgePath = findEdgeExecutable();
+  try {
+    const child = edgePath
+      ? spawn(edgePath, [url], { detached: true, stdio: "ignore", windowsHide: true })
+      : spawn("cmd.exe", ["/c", "start", "", "msedge", url], { detached: true, stdio: "ignore", windowsHide: true });
+    child.unref();
+    return true;
+  } catch {
+    return false;
+  }
 }
 
 function createStandaloneServer(options = {}) {
@@ -886,10 +1174,17 @@ function createStandaloneServer(options = {}) {
         const body = await collectRequestJson(req);
         const runId = `run-${Date.now().toString(36)}-${crypto.randomBytes(4).toString("hex")}`;
         const jobDir = ensureJobDir(context, runId);
-        const finalText = await runTranscriptionJob({ body, context, jobDir });
+        const result = await runTranscriptionJob({ body, context, jobDir });
+        const finalText = typeof result === "string"
+          ? result
+          : shortText(result && result.transcriptText ? result.transcriptText : "", 500000);
         sendNdjson(res, 200, [
           { type: "status", status: "standalone_isolated" },
-          { type: "status", status: "transcription_completed" },
+          {
+            type: "status",
+            status: "transcription_completed",
+            generatedFiles: result && Array.isArray(result.generatedFiles) ? result.generatedFiles : [],
+          },
           { type: "final", text: finalText },
         ]);
       } catch (error) {
@@ -923,6 +1218,12 @@ function createStandaloneServer(options = {}) {
       console.log(`[koe-scribe] URL: ${context.url}`);
       console.log("[koe-scribe] shared harness dispatch: disabled");
       console.log("[koe-scribe] Press Ctrl+C in this window to stop the server.");
+    }
+    if (context.openBrowser) {
+      const opened = openUrlInEdge(context.url);
+      if (!context.quiet) {
+        console.log(`[koe-scribe] Edge launch: ${opened ? "requested" : "skipped"}`);
+      }
     }
   });
 

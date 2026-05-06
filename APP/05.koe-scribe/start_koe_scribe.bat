@@ -7,6 +7,7 @@ cd /d "%APP_DIR%"
 if "%CODEX_KOE_SCRIBE_PORT%"=="" set "CODEX_KOE_SCRIBE_PORT=0"
 if "%CODEX_KOE_SCRIBE_HOST%"=="" set "CODEX_KOE_SCRIBE_HOST=127.0.0.1"
 if "%CODEX_KOE_SCRIBE_CODEX_APP_URL%"=="" set "CODEX_KOE_SCRIBE_CODEX_APP_URL=http://127.0.0.1:57525"
+if "%CODEX_KOE_SCRIBE_OPEN_BROWSER%"=="" set "CODEX_KOE_SCRIBE_OPEN_BROWSER=1"
 if "%CODEX_KOE_SCRIBE_PAUSE_ON_EXIT%"=="" set "CODEX_KOE_SCRIBE_PAUSE_ON_EXIT=1"
 
 set "NODE_EXE="
@@ -26,6 +27,7 @@ if "%CODEX_KOE_SCRIBE_PORT%"=="0" (
   echo [INFO] Port: %CODEX_KOE_SCRIBE_PORT%
 )
 echo [INFO] The actual URL is printed after startup.
+if "%CODEX_KOE_SCRIBE_OPEN_BROWSER%"=="1" echo [INFO] Microsoft Edge opens automatically after startup.
 echo [INFO] Press Ctrl+C in this window to stop the server.
 
 "%NODE_EXE%" standalone_server.js

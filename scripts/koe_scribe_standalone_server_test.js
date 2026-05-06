@@ -137,8 +137,53 @@ async function runCodexAppBridgeClientTest() {
   }
 }
 
+async function runCodexAppMissingRegistryFallbackTest() {
+  const seenPaths = [];
+  const fakeCodexAppServer = http.createServer((req, res) => {
+    seenPaths.push(`${req.method} ${req.url}`);
+    if (req.method === "GET" && req.url === "/api/runtime") {
+      res.writeHead(200, { "Content-Type": "application/json; charset=utf-8" });
+      res.end(JSON.stringify({
+        mode: "app-server",
+        staticApps: {
+          apps: [{ id: "ai-debate-chat" }],
+        },
+      }));
+      return;
+    }
+    res.writeHead(500, { "Content-Type": "application/json; charset=utf-8" });
+    res.end(JSON.stringify({ ok: false, error: "structured route should not be called" }));
+  });
+
+  fakeCodexAppServer.listen(0, "127.0.0.1");
+  await once(fakeCodexAppServer, "listening");
+  const port = fakeCodexAppServer.address().port;
+  try {
+    const result = await transcribeMediaWithCodexApp({
+      mediaPath: "C:\\media\\sample.wav",
+      mediaFileName: "sample.wav",
+      mediaType: "audio/wav",
+      options: {
+        language: "ja",
+        codexAppBaseUrl: `http://127.0.0.1:${port}`,
+        localSpeechClient: async () => ({
+          text: "KoeScribe app registry が無くてもローカル文字起こしへ進みます。",
+          segments: [{ start: 0, end: 2, text: "KoeScribe app registry が無くてもローカル文字起こしへ進みます。" }],
+          model: "windows-speech:test",
+        }),
+      },
+    });
+    assert.strictEqual(result.model, "windows-speech:test");
+    assert(result.text.includes("ローカル文字起こし"));
+    assert.deepStrictEqual(seenPaths, ["GET /api/runtime"]);
+  } finally {
+    await new Promise((resolve) => fakeCodexAppServer.close(resolve));
+  }
+}
+
 async function main() {
   await runCodexAppBridgeClientTest();
+  await runCodexAppMissingRegistryFallbackTest();
 
   const server = startServer({
     hostOverride: "127.0.0.1",
@@ -224,12 +269,15 @@ async function main() {
     assert(String(exec.headers["content-type"]).includes("application/x-ndjson"));
     const events = exec.body.trim().split("\n").filter(Boolean).map((line) => JSON.parse(line));
     const finalEvent = events.find((event) => event.type === "final");
+    const completedEvent = events.find((event) => event.status === "transcription_completed");
     assert(events.some((event) => event.status === "standalone_isolated"));
-    assert(events.some((event) => event.status === "transcription_completed"));
-    assert(finalEvent && finalEvent.text.includes("文字起こしが完了しました。"));
-    assert(finalEvent.text.includes("こんにちは。これはKoeScribeの文字起こしテストです。"));
-    assert(finalEvent.text.includes(".srt"));
-    assert(finalEvent.text.includes(".vtt"));
+    assert(completedEvent);
+    assert(Array.isArray(completedEvent.generatedFiles));
+    assert(completedEvent.generatedFiles.some((file) => file.endsWith(".srt")));
+    assert(completedEvent.generatedFiles.some((file) => file.endsWith(".vtt")));
+    assert(finalEvent && finalEvent.text.includes("KoeScribe"));
+    assert(!finalEvent.text.includes(".srt"));
+    assert(!finalEvent.text.includes(".vtt"));
 
     console.log(`koe-scribe standalone server test passed: http://127.0.0.1:${port}/`);
   } finally {

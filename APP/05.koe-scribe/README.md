@@ -38,6 +38,13 @@ The command window prints the actual URL after startup, for example:
 [koe-scribe] URL: http://127.0.0.1:51234/
 ```
 
+Normal `.bat` startup also opens that URL in Microsoft Edge. To disable browser launch:
+
+```bat
+set CODEX_KOE_SCRIBE_OPEN_BROWSER=0
+start_koe_scribe.bat
+```
+
 To pin a port manually:
 
 ```bat
@@ -51,18 +58,22 @@ Leaving `CODEX_KOE_SCRIBE_PORT` unset is safer when other Codex apps or servers 
 
 The UI exposes one engine: `Codex App transcription`. KoeScribe does not ask the user to choose between Whisper, local Whisper, and GPT transcription modes.
 
-The isolated `/api/exec` route stays local to the KoeScribe process, but the actual transcription request is delegated to the Codex App Server bridge by default:
+The isolated `/api/exec` route stays local to the KoeScribe process. With the default provider, KoeScribe first tries the Codex App Server app bridge and then falls back to local Windows Speech when the browser-selected media has been prepared as WAV audio:
 
 - Default Codex App Server URL: `http://127.0.0.1:57525`
 - Readiness probe: `GET /api/runtime`
-- Transcription bridge: `POST /api/apps/koe-scribe/structured`
+- Preferred transcription bridge: `POST /api/apps/koe-scribe/structured`
+- Local fallback: Windows Speech recognizer through `scripts/windows_speech_transcribe.ps1`
 - Override URL: set `CODEX_KOE_SCRIBE_CODEX_APP_URL`
 - Default provider: `codex-app`
+- Force local Windows Speech: set `CODEX_KOE_SCRIBE_PROVIDER=windows-speech`
 - Optional direct OpenAI provider: set `CODEX_KOE_SCRIBE_PROVIDER=direct-openai`
 
-When a media file is selected in the browser and the local path field is empty, the UI first uploads that file to the standalone server. The server saves it under `.runtime/<instance-id>/uploads/<upload-id>/` and passes that saved local path into the job.
+When a media file is selected in the browser and the local path field is empty, the UI prepares local WAV audio in the browser before upload. The server saves that WAV under `.runtime/<instance-id>/uploads/<upload-id>/` and passes the saved local path into the job. This avoids the browser path limitation and gives the local Windows Speech fallback a file format it can read.
 
-With the default `codex-app` provider, KoeScribe does not require `OPENAI_API_KEY` in the `.bat` environment. It requires the Codex App Server to be running and signed in. If the Codex runtime cannot directly transcribe the media bytes, the app reports that as blocked instead of pretending a transcript was generated.
+With the default `codex-app` provider, KoeScribe does not require `OPENAI_API_KEY` in the `.bat` environment. If the Codex App Server is running and the `koe-scribe` app bridge is registered, that bridge is used. If the app bridge is missing or unavailable, KoeScribe does not stop at the registry check; it uses the local Windows Speech fallback for WAV uploads.
+
+The local Windows Speech fallback depends on the Windows recognizers installed on the machine. It is useful as the no-API-key default path, but recognition quality can vary by language pack, audio quality, and speaker conditions.
 
 Direct OpenAI mode is still available for explicit local API-key use:
 
@@ -80,7 +91,7 @@ Those workers should write only into per-run directories under `.runtime/<instan
 - The visible run action is the opt-in path for the fixed Codex App transcription route.
 - Original videos must not be overwritten.
 - Missing dependencies should be reported as blocked work, not installed silently.
-- Shared Codex `/api/exec` stays disabled in standalone mode. KoeScribe uses the app bridge route instead of the shared execution route.
+- Shared Codex `/api/exec` stays disabled for the standalone route. KoeScribe uses the app bridge route when available and the local Windows Speech fallback when it is not.
 
 ## Browser Path Limitation
 
