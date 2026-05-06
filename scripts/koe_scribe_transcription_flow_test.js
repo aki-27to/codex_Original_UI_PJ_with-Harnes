@@ -11,7 +11,7 @@ const { startServer } = require("../APP/05.koe-scribe/standalone_server");
 
 const repoRoot = path.resolve(__dirname, "..");
 const artifactDir = path.join(repoRoot, "output", "playwright");
-const fixturePath = path.join(artifactDir, "koe-scribe-flow-fixture.wav");
+const fixturePath = path.join(artifactDir, "koe-scribe-flow-fixture.mp4");
 const screenshotPath = path.join(artifactDir, "koe-scribe-transcription-flow.png");
 const userDataDir = path.join(artifactDir, `.koe-scribe-flow-edge-profile-${process.pid}`);
 
