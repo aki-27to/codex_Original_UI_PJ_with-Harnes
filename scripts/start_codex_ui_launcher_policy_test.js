@@ -17,6 +17,8 @@ function main() {
   assert(/set "CODEX_LAUNCH_FILE=%~f0"/.test(launcher), "launcher must always expose its own path for reuse/stale-runtime probes");
   assert(/set "CODEX_LAUNCH_DIR=%~dp0"/.test(launcher), "launcher must always expose its working directory for reuse/stale-runtime probes");
   assert(/if \/I "%CODEX_REQUIRE_ADMIN%"=="1" \(/.test(launcher), "launcher must route admin requirements through the self-elevation gate");
+  assert(/:launcher_require_admin[\s\S]*fltmc >nul 2>nul[\s\S]*administrator token confirmed[\s\S]*goto launcher_admin_checked/.test(launcher), "launcher must verify a real elevated token before entering admin-required startup");
+  assert(/administrator elevation did not complete; refusing to continue/.test(launcher), "launcher must fail closed when admin-required startup is not elevated");
   assert(/set "LAUNCHER_AUTO_OPEN_BROWSER=%CODEX_AUTO_OPEN_BROWSER%"/.test(launcher), "launcher must snapshot browser auto-open ownership before starting server.js");
   assert(/if "%CODEX_AUTO_OPEN_BROWSER%"=="" set "CODEX_AUTO_OPEN_BROWSER=0"/.test(launcher), "launcher must default browser auto-open off unless the operator opts in");
   assert(/if "%CODEX_RESTART_EXISTING_HARNESS%"=="" set "CODEX_RESTART_EXISTING_HARNESS=0"/.test(launcher), "launcher must default restart-existing-harness behavior off");
@@ -58,6 +60,8 @@ function main() {
   assert(/set "CODEX_AUTO_OPEN_BROWSER=1"/.test(adminBrowserLauncher), "admin/browser launcher must opt into launcher-owned browser auto-open");
   assert(/set "CODEX_RESTART_EXISTING_HARNESS=1"/.test(adminBrowserLauncher), "admin/browser launcher must restart an existing harness so the server runs under the elevated launcher");
   assert(/Verb = 'RunAs'/.test(adminBrowserLauncher), "admin/browser launcher must self-elevate before delegating to the canonical launcher");
+  assert(/requesting administrator elevation for admin\/browser startup/.test(adminBrowserLauncher), "admin/browser launcher must visibly request elevation before relaunching");
+  assert(/administrator elevation did not complete; refusing to stop or restart the harness/.test(adminBrowserLauncher), "admin/browser launcher must fail closed before stopping any harness without elevation");
   assert(/\$dq = \[char\]34/.test(adminBrowserLauncher), "admin/browser launcher must build cmd.exe quoting without nested shell-quote ambiguity");
   assert(/FilePath = \$cmd/.test(adminBrowserLauncher), "admin/browser launcher must elevate cmd.exe rather than relying on direct .bat ShellExecute behavior");
   assert(/ArgumentList = @\('\/d','\/c',\$invoke\)/.test(adminBrowserLauncher), "admin/browser launcher must run the batch inside the elevated cmd.exe session");

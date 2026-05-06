@@ -3,14 +3,25 @@ setlocal
 set "CODEX_ADMIN_BROWSER_LAUNCH_FILE=%~f0"
 set "CODEX_ADMIN_BROWSER_LAUNCH_DIR=%~dp0"
 set "CODEX_ADMIN_BROWSER_LAUNCH_ARGS=%*"
+fltmc >nul 2>nul
+if "%errorlevel%"=="0" goto admin_browser_elevated
+echo [launcher] requesting administrator elevation for admin/browser startup...
 powershell -NoProfile -ExecutionPolicy Bypass -Command ^
-  "$principal = New-Object Security.Principal.WindowsPrincipal([Security.Principal.WindowsIdentity]::GetCurrent()); if($principal.IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)){ exit 0 }; try { $cmd = if($env:ComSpec){ $env:ComSpec } else { 'cmd.exe' }; $dq = [char]34; $invoke = $dq + $dq + $env:CODEX_ADMIN_BROWSER_LAUNCH_FILE + $dq + $(if($env:CODEX_ADMIN_BROWSER_LAUNCH_ARGS){ ' ' + $env:CODEX_ADMIN_BROWSER_LAUNCH_ARGS } else { '' }) + $dq; $startArgs = @{ FilePath = $cmd; WorkingDirectory = $env:CODEX_ADMIN_BROWSER_LAUNCH_DIR; Verb = 'RunAs'; ArgumentList = @('/d','/c',$invoke) }; Start-Process @startArgs | Out-Null; exit 100 } catch { Write-Error $_; exit 1 }"
+  "try { $cmd = if($env:ComSpec){ $env:ComSpec } else { 'cmd.exe' }; $dq = [char]34; $invoke = $dq + $dq + $env:CODEX_ADMIN_BROWSER_LAUNCH_FILE + $dq + $(if($env:CODEX_ADMIN_BROWSER_LAUNCH_ARGS){ ' ' + $env:CODEX_ADMIN_BROWSER_LAUNCH_ARGS } else { '' }) + $dq; $startArgs = @{ FilePath = $cmd; WorkingDirectory = $env:CODEX_ADMIN_BROWSER_LAUNCH_DIR; Verb = 'RunAs'; ArgumentList = @('/d','/c',$invoke) }; Start-Process @startArgs | Out-Null; exit 100 } catch { Write-Error $_; exit 1 }"
 set "ELEVATE_EXIT=%errorlevel%"
 if "%ELEVATE_EXIT%"=="100" exit /b 0
 if not "%ELEVATE_EXIT%"=="0" (
   echo [ERROR] administrator elevation was cancelled or failed.
   pause
   exit /b %ELEVATE_EXIT%
+)
+
+:admin_browser_elevated
+fltmc >nul 2>nul
+if not "%errorlevel%"=="0" (
+  echo [ERROR] administrator elevation did not complete; refusing to stop or restart the harness.
+  pause
+  exit /b 1
 )
 set "CODEX_REQUIRE_ADMIN=1"
 set "CODEX_AUTO_OPEN_BROWSER=1"

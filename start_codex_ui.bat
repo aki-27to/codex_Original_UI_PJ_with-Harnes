@@ -12,8 +12,14 @@ if /I "%CODEX_REQUIRE_ADMIN%"=="1" (
 goto launcher_admin_checked
 
 :launcher_require_admin
+fltmc >nul 2>nul
+if "%errorlevel%"=="0" (
+  echo [launcher] administrator token confirmed.
+  goto launcher_admin_checked
+)
+echo [launcher] requesting administrator elevation...
 powershell -NoProfile -ExecutionPolicy Bypass -Command ^
-  "$principal = New-Object Security.Principal.WindowsPrincipal([Security.Principal.WindowsIdentity]::GetCurrent()); if($principal.IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)){ exit 0 }; try { $startArgs = @{ FilePath = $env:CODEX_LAUNCH_FILE; WorkingDirectory = $env:CODEX_LAUNCH_DIR; Verb = 'RunAs' }; if($env:CODEX_LAUNCH_ARGS){ $startArgs.ArgumentList = $env:CODEX_LAUNCH_ARGS }; Start-Process @startArgs | Out-Null; exit 100 } catch { exit 1 }"
+  "try { $cmd = if($env:ComSpec){ $env:ComSpec } else { 'cmd.exe' }; $dq = [char]34; $invoke = $dq + $dq + $env:CODEX_LAUNCH_FILE + $dq + $(if($env:CODEX_LAUNCH_ARGS){ ' ' + $env:CODEX_LAUNCH_ARGS } else { '' }) + $dq; $startArgs = @{ FilePath = $cmd; WorkingDirectory = $env:CODEX_LAUNCH_DIR; Verb = 'RunAs'; ArgumentList = @('/d','/c',$invoke) }; Start-Process @startArgs | Out-Null; exit 100 } catch { exit 1 }"
 set "ELEVATE_EXIT=%errorlevel%"
 if "%ELEVATE_EXIT%"=="100" exit /b 0
 if not "%ELEVATE_EXIT%"=="0" (
@@ -21,6 +27,9 @@ if not "%ELEVATE_EXIT%"=="0" (
   if "%CODEX_PAUSE_ON_EXIT%"=="1" pause
   exit /b %ELEVATE_EXIT%
 )
+echo [ERROR] administrator elevation did not complete; refusing to continue.
+if "%CODEX_PAUSE_ON_EXIT%"=="1" pause
+exit /b 1
 
 :launcher_admin_checked
 cd /d "%~dp0"
