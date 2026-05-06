@@ -325,21 +325,26 @@ async function main() {
     const opened = await openPage(devtoolsPort, url);
     browser = opened.browser;
     page = opened.page;
-    await waitForFunction(page, "Boolean(document.querySelector('#runBtn'))");
+    await waitForFunction(page, "Boolean(document.querySelector('#runBtn')) && Boolean(document.querySelector('#copyBtn'))");
 
     await evaluate(page, "document.querySelector('#videoPath').value='C:\\\\Users\\\\akima\\\\Videos\\\\sample.mp4'; document.querySelector('#videoPath').dispatchEvent(new Event('input', { bubbles: true })); true;");
-    await evaluate(page, "document.querySelector('#planBtn').click(); true;");
-    await evaluate(page, "document.querySelector('[data-tab=\"prompt\"]').click(); true;");
-    await waitForFunction(page, "document.querySelector('#promptOutput').textContent.includes('KoeScribe transcription job')");
 
     const title = await evaluate(page, "document.querySelector('h1').textContent");
     const runText = await evaluate(page, "document.querySelector('#runBtn').textContent");
-    const prompt = await evaluate(page, "document.querySelector('#promptOutput').textContent");
+    const outputTitle = await evaluate(page, "document.querySelector('#outputTitle').textContent");
+    const copyText = await evaluate(page, "document.querySelector('#copyBtn').textContent");
+    const hasPlanButton = await evaluate(page, "Boolean(document.querySelector('#planBtn'))");
+    const hasPromptPanel = await evaluate(page, "Boolean(document.querySelector('#promptPanel'))");
+    const copyDisabled = await evaluate(page, "document.querySelector('#copyBtn').disabled");
     const overflow = await evaluate(page, "document.documentElement.scrollWidth > document.documentElement.clientWidth + 1");
 
     assert.strictEqual(title, "KoeScribe");
     assert.strictEqual(runText, "文字起こし開始");
-    assert(prompt.includes("Output contract:"), "prompt should include the execution output contract");
+    assert.strictEqual(outputTitle, "文字起こし結果");
+    assert.strictEqual(copyText, "全文コピー");
+    assert.strictEqual(hasPlanButton, false, "plan button should not be visible");
+    assert.strictEqual(hasPromptPanel, false, "prompt panel should not be visible");
+    assert.strictEqual(copyDisabled, true, "copy should stay disabled until a result exists");
     assert.strictEqual(overflow, false, "layout should not horizontally overflow desktop viewport");
 
     await captureFullPage(page, screenshotPath);

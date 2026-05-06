@@ -126,7 +126,7 @@ h2 {
 .output-pane {
   min-height: 780px;
   display: grid;
-  grid-template-rows: auto auto auto minmax(0, 1fr);
+  grid-template-rows: auto auto minmax(0, 1fr);
   overflow: hidden;
 }
 
@@ -320,6 +320,11 @@ button.secondary {
   border-bottom: 1px solid var(--line);
 }
 
+.copy-button {
+  min-width: 124px;
+  align-self: end;
+}
+
 .state-grid {
   display: grid;
   grid-template-columns: repeat(3, minmax(110px, 1fr));
@@ -390,6 +395,10 @@ button.secondary {
 }
 
 .tab-panel.is-active {
+  display: block;
+}
+
+.result-panel {
   display: block;
 }
 

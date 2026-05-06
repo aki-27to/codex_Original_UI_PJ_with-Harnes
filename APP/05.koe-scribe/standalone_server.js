@@ -388,20 +388,20 @@ function buildVtt(segments) {
 
 function buildMarkdownTranscript({ transcriptText, generatedFiles, model, mediaPath }) {
   return [
-    "# KoeScribe Transcript",
+    "# KoeScribe 文字起こし",
     "",
-    "## Source",
+    "## 入力",
     "",
-    `- Media: ${mediaPath}`,
-    `- Model: ${model}`,
+    `- メディア: ${mediaPath}`,
+    `- モデル: ${model}`,
     "",
-    "## Generated Files",
+    "## 生成ファイル",
     "",
     ...generatedFiles.map((file) => `- ${file}`),
     "",
-    "## Transcript",
+    "## 文字起こし本文",
     "",
-    transcriptText || "(empty transcript)",
+    transcriptText || "(文字起こし本文が空です)",
     "",
   ].join("\n");
 }
@@ -464,7 +464,7 @@ function postOpenAiMultipart({ apiKey, fields, filePath, fileName, contentType }
         res.on("end", () => {
           const responseBody = Buffer.concat(chunks).toString("utf8");
           if ((res.statusCode || 500) >= 400) {
-            reject(new Error(`OpenAI transcription failed: ${parseOpenAiError(res.statusCode, responseBody)}`));
+            reject(new Error(`OpenAI文字起こしに失敗しました: ${parseOpenAiError(res.statusCode, responseBody)}`));
             return;
           }
           try {

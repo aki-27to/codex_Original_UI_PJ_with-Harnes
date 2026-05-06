@@ -61,7 +61,7 @@
               <span>品質</span>
               <select id="quality">
                 <option value="technical" selected>専門用語優先</option>
-                <option value="subtitle">字幕読みやすさ優先</option>
+                <option value="subtitle">字幕の読みやすさ優先</option>
                 <option value="verbatim">逐語寄り</option>
               </select>
             </label>
@@ -79,7 +79,6 @@
           </div>
 
           <div class="actions">
-            <button id="planBtn" type="button" class="secondary">計画を作る</button>
             <button id="runBtn" type="button" class="primary">文字起こし開始</button>
             <button id="stopBtn" type="button" class="secondary" disabled>停止</button>
           </div>
@@ -88,34 +87,18 @@
         <section class="output-pane" aria-labelledby="outputTitle">
           <div class="section-head output-head">
             <div>
-              <p class="eyebrow">Job</p>
-              <h2 id="outputTitle">実行状態</h2>
+              <p class="eyebrow">Result</p>
+              <h2 id="outputTitle">文字起こし結果</h2>
             </div>
-            <div class="state-grid" aria-label="job state">
-              <div><span>Mode</span><strong id="modeLabel">ready</strong></div>
-              <div><span>Route</span><strong>local /api/exec</strong></div>
-              <div><span>Output</span><strong id="outputLabel">SRT / VTT / MD</strong></div>
-            </div>
+            <button id="copyBtn" type="button" class="secondary copy-button" disabled>全文コピー</button>
           </div>
 
           <div class="progress-track" aria-hidden="true">
             <span id="progressBar"></span>
           </div>
 
-          <div class="tabs" role="tablist" aria-label="output tabs">
-            <button class="tab is-active" data-tab="transcript" type="button">Transcript</button>
-            <button class="tab" data-tab="prompt" type="button">Prompt</button>
-            <button class="tab" data-tab="log" type="button">Log</button>
-          </div>
-
-          <article id="transcriptPanel" class="panel tab-panel is-active">
+          <article id="transcriptPanel" class="panel result-panel">
             <pre id="transcriptOutput">待機中</pre>
-          </article>
-          <article id="promptPanel" class="panel tab-panel">
-            <pre id="promptOutput">ジョブ未作成</pre>
-          </article>
-          <article id="logPanel" class="panel tab-panel">
-            <ol id="eventLog" class="event-log"></ol>
           </article>
         </section>
       </main>
