@@ -170,6 +170,50 @@
       ]
     },
     {
+      "id": "feedback-to-recurrence-patch",
+      "path": ".agents/skills/feedback-to-recurrence-patch/SKILL.md",
+      "description": "Use when user corrections, failed validations, PASS/FAIL contradictions, repeated misses, or subjective adoption failures must become scoped recurrence-prevention patches.",
+      "useWhen": [
+        "user correction or acceptance feedback identifies a miss",
+        "task artifact truth and harness validation status disagree",
+        "a repeated miss must become a next-turn preflight question, checklist, replay plan, and lifecycle decision"
+      ],
+      "avoidWhen": [
+        "there is no correction, mismatch, or recurrence risk to triage",
+        "the needed fix is already a deterministic code or test change with no reusable judgment pattern",
+        "the user requested pure execution without learning capture"
+      ],
+      "expectedArtifacts": [
+        "correction_event",
+        "task_truth_vs_harness_truth",
+        "generalization_boundary",
+        "next_turn_recurrence_patch",
+        "patch_target_decision",
+        "replay_verification",
+        "lifecycle_recommendation"
+      ],
+      "evidenceSurfaces": [
+        "user correction or acceptance feedback",
+        "actual artifact, diff, screenshot, response, or file contents",
+        "harness status, validation reason, worker decision surface, or eval output",
+        "scripts/config/correction_learning_contract.json",
+        "replay or regression command output"
+      ],
+      "workerDecisionConnection": [
+        "unresolved correction triage can prevent COMPLETED",
+        "missing replay or inverse coverage maps to FAILED_VALIDATION"
+      ],
+      "promotionCriteria": [
+        "same recurrence patch pattern prevents misses across replayed and adjacent cases",
+        "promotion follows replay verification and reusable workflow evidence"
+      ],
+      "rollbackCriteria": [
+        "overgeneralizes one-off feedback",
+        "weakens validation gates without inverse coverage",
+        "routes deterministic fixes into prose-only reflection"
+      ]
+    },
+    {
       "id": "repo-truth-audit",
       "path": ".agents/skills/repo-truth-audit/SKILL.md",
       "description": "Use when README, architecture docs, current logs, output artifacts, and decision surfaces may disagree.",
@@ -236,19 +280,19 @@
       ]
     },
     {
-      "id": "web-creative-brief-and-eval",
-      "path": ".agents/skills/web-creative-brief-and-eval/SKILL.md",
-      "description": "Use for design-sensitive web/UI work requiring brief, visual evidence, reference comparison, and adoption decision.",
+      "id": "web-ui-acceptance-review",
+      "path": ".agents/skills/web-ui-acceptance-review/SKILL.md",
+      "description": "Use for design-sensitive web/UI work requiring acceptance brief, visual evidence, reference comparison, and adoption decision.",
       "useWhen": [
         "web or UI design quality matters",
-        "creative brief or benchmark must be locked",
+        "UI acceptance brief or benchmark must be locked",
         "visual evidence is required"
       ],
       "avoidWhen": [
         "pure backend or non-visual change"
       ],
       "expectedArtifacts": [
-        "design_brief",
+        "ui_acceptance_brief",
         "reference_comparison",
         "visual_evidence",
         "adoption_decision"
@@ -407,36 +451,41 @@
       ]
     },
     {
-      "id": "review-agent-essence",
-      "path": ".agents/skills/review-agent-essence/SKILL.md",
-      "description": "Use to review a skill, harness design, code, or design document against the bundled agent-essence principles without mutating the target.",
+      "id": "skill-creator-master",
+      "path": ".agents/skills/skill-creator-master/SKILL.md",
+      "description": "Use when authoring, comparing, or hardening repo-local Codex skills with explicit output, evidence, verification, rollback, and catalog contracts.",
       "useWhen": [
-        "skill or harness design needs principle review",
-        "agent-essence alignment must be checked",
-        "non-mutating design feedback is requested"
+        "a repo-local skill package is being authored",
+        "an existing skill-creator output needs Harnes-specific evidence contracts",
+        "skill generator candidates must be compared by downstream skill quality"
       ],
       "avoidWhen": [
-        "the task requires direct implementation edits",
-        "the target does not need principle-based review"
+        "the task only needs read-only skill design review",
+        "a simple script, doc edit, or existing instruction is enough",
+        "the skill would be created only to satisfy a rubric score"
       ],
       "expectedArtifacts": [
-        "essence_review",
-        "principle_applicability_matrix",
-        "improvement_recommendations"
+        "skill_contract",
+        "target_SKILL_md",
+        "catalog_sync",
+        "verification_evidence",
+        "rollback_notes"
       ],
       "evidenceSurfaces": [
-        ".agents/skills/review-agent-essence/reference/agent-essence.md",
-        "review output",
-        "target artifact path"
+        ".agents/skills/<skill-name>/SKILL.md",
+        "scripts/config/repo_local_skill_catalog.json",
+        ".agents/skills/skill-design-review-codex/scripts/analyze-skill-design.js",
+        "node scripts/repo_local_skill_catalog_test.js",
+        "node scripts/skill_portfolio_audit.js"
       ],
       "workerDecisionConnection": [
-        "principle review can inform REVISE or KEEP before skill promotion"
+        "a generated skill is not adoptable without downstream evidence, catalog sync, and rollback criteria"
       ],
       "promotionCriteria": [
-        "repeated reviews produce actionable design corrections without authority drift"
+        "creates repo-local skills that pass design review and reduce repeated operator steering on real tasks"
       ],
       "rollbackCriteria": [
-        "routes implementation tasks into analysis-only review or gives generic principle commentary"
+        "overfits to analyzer structure, duplicates official skill-creator without repo-specific value, or increases operator confusion"
       ]
     },
     {
@@ -473,39 +522,6 @@
       ],
       "rollbackCriteria": [
         "routes implementation tasks into analysis-only review, ignores Codex current-truth surfaces, or gives generic principle commentary"
-      ]
-    },
-    {
-      "id": "review-harness",
-      "path": ".agents/skills/review-harness/SKILL.md",
-      "description": "Use to diagnose a Claude Code style harness project against the bundled anti-pattern rubric and produce a scoped diagnosis report.",
-      "useWhen": [
-        "external Claude Code harness structure needs diagnosis",
-        "CLAUDE.md settings hooks skills or memory surfaces need rubric review",
-        "harness anti-pattern scoring is requested"
-      ],
-      "avoidWhen": [
-        "the target is this Codex harness runtime unless Claude Code compatibility is explicitly under review",
-        "the user requested implementation rather than diagnosis"
-      ],
-      "expectedArtifacts": [
-        "harness_diagnosis_report",
-        "anti_pattern_score_matrix",
-        "prioritized_remediation"
-      ],
-      "evidenceSurfaces": [
-        ".agents/skills/review-harness/diagnosis-rubric.md",
-        ".agents/skills/review-harness/diagnosis-report-template.md",
-        "diagnosis output or output/harness-diag-{YYYY-MM-DD}.md"
-      ],
-      "workerDecisionConnection": [
-        "diagnosis evidence can support REVISE or BLOCKED for harness quality review"
-      ],
-      "promotionCriteria": [
-        "repeated diagnostics catch actionable harness defects with low false positives"
-      ],
-      "rollbackCriteria": [
-        "misclassifies non-Claude Codex harness surfaces or writes reports when read-only review was required"
       ]
     },
     {

@@ -14,10 +14,11 @@ const requiredSkillIds = [
   "artifact-improvement-learning",
   "repo-truth-audit",
   "not-yet-root-cause-debugger",
-  "web-creative-brief-and-eval",
+  "web-ui-acceptance-review",
   "browser-flakiness-recovery",
   "safe-refactor-with-proof",
-  "skill-promotion-governance"
+  "skill-promotion-governance",
+  "skill-creator-master"
 ];
 
 const allowedRoot = ".agents/skills/";

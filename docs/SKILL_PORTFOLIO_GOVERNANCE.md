@@ -1,6 +1,6 @@
 # SKILL_PORTFOLIO_GOVERNANCE
 
-Updated: 2026-04-25
+Updated: 2026-05-07
 
 ## 1) Goal
 
@@ -10,6 +10,9 @@ This document governs repo-local skills as a curated operating portfolio. The go
 
 - Repo-local skill catalog: `scripts/config/repo_local_skill_catalog.json`
 - Skill catalog audit: `scripts/repo_local_skill_catalog_test.js`
+- Generated skill archive guard: `scripts/generated_skill_registry_guard_test.js`
+- Skill flow contract: `scripts/config/skill_flow_contract.json`
+- Skill flow audit: `scripts/skill_flow_contract_test.js`
 - Portfolio policy: `scripts/config/skill_portfolio_policy.json`
 - Governance contracts: `scripts/config/agent_governance_contracts.json`
 
@@ -18,6 +21,10 @@ This document governs repo-local skills as a curated operating portfolio. The go
 `.agents/skills/` is the canonical repo-local skill root.
 
 `skills/` may contain legacy or non-canonical local material, but new repo-local skills registered in `scripts/config/repo_local_skill_catalog.json` must point to `.agents/skills/`.
+
+`.agents/old-skills/` is the archive root for demoted or historical skill packages. Archived skills must not be listed in `scripts/config/repo_local_skill_catalog.json`; restoring one requires moving it back under `.agents/skills/` and re-adding catalog metadata with fresh evidence.
+
+Generated skill registry readers must not expose entries under `.agents/old-skills/`, entries marked `stale: 1`, missing `SKILL.md` files, or paths outside `.agents/skills/generated/` as callable skills.
 
 ## 4) Skill Classes
 
@@ -64,7 +71,27 @@ draft -> cataloged -> used -> evidence_observed -> effective | neutral | harmful
 
 A skill is not promoted just because one task succeeded. Promotion requires repeatability, evidence, guard compatibility, and no measurable degradation in user-adoptable outcomes.
 
-## 8) Rollback Rule
+## 8) Skill Flow Rule
+
+`scripts/config/skill_flow_contract.json` defines parent-facing routing, not automatic skill invocation. Skills may recommend the next surface, but the parent agent remains responsible for selecting the next skill, skipping skills for small tasks, and making the final adoption decision.
+
+The flow contract separates:
+
+- `flows`: ordered or conditional routing where sequence matters.
+- `standaloneOrSupport`: skills that can be used alone or only when a specific evidence/debug condition appears.
+- `globalForbiddenDirectNext`: direct transitions that must not happen because they skip replay, evidence, design review, or governance gates.
+
+Do not force every skill into a fixed chain. Every active repo-local skill must have a role in the flow contract, but standalone, support, and diagnostic skills may remain outside a strict sequence.
+
+## 9) Skill Authoring Routing
+
+For Harnes repo-local skill creation or update requests, prefer `.agents/skills/skill-creator-master/SKILL.md` before the official system `skill-creator`.
+
+This is a routing preference, not a final promotion claim. `skill-creator-master` is preferred when the target skill must improve Harnes behavior through output, evidence, verification, rollback, and catalog contracts. The official `skill-creator` remains the fallback/reference for generic Codex skill creation, `scripts/`, `references/`, `assets/`, `agents/openai.yaml`, and system-skill compatibility.
+
+The preference is mechanically guarded by `scripts/skill_portfolio_policy_test.js`, which requires `skill-creator-master` to appear before `skill-creator` in the default role assignments, and by `scripts/config/skill_flow_contract.json`, which forbids direct `skill-creator-master -> skill-promotion-governance` promotion without design review evidence.
+
+## 10) Rollback Rule
 
 A skill must be rolled back or demoted when it:
 
@@ -73,13 +100,16 @@ A skill must be rolled back or demoted when it:
 - Hides missing evidence.
 - Expands authority or tool use beyond the task boundary.
 - Produces recurring neutral overhead without outcome improvement.
+- Bypasses the flow contract by jumping directly across required review, replay, evidence, or governance gates.
 
-## 9) Required Evidence
+## 11) Required Evidence
 
 Skill package changes must include:
 
 ```text
 node scripts/repo_local_skill_catalog_test.js
+node scripts/generated_skill_registry_guard_test.js
+node scripts/skill_flow_contract_test.js
 node scripts/skill_portfolio_audit.js
 ```
 

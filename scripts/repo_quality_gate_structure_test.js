@@ -64,6 +64,14 @@ function main() {
     "test:repo-local-skills must validate repo-local skill catalog metadata and paths"
   );
   assert(
+    repoLocalSkills.includes("node scripts/generated_skill_registry_guard_test.js"),
+    "test:repo-local-skills must reject stale or archived generated skill registry entries from callable skill surfaces"
+  );
+  assert(
+    repoLocalSkills.includes("node scripts/skill_flow_contract_test.js"),
+    "test:repo-local-skills must validate skill flow routing, forbidden direct edges, and standalone/support coverage"
+  );
+  assert(
     harnessArtifactMcp.includes("node tools/harness-artifact-mcp-server/tests/smoke_test.js"),
     "test:harness-artifact-mcp must validate the read-only harness artifact MCP"
   );

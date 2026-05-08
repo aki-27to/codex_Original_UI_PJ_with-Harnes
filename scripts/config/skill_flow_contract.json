@@ -1,0 +1,380 @@
+{
+  "schema": "skill-flow-contract.v1",
+  "version": "2026-05-07.r1",
+  "catalogRef": "scripts/config/repo_local_skill_catalog.json",
+  "principles": {
+    "skillsDoNotAutoInvokeSkills": true,
+    "parentSelectsNextSkill": true,
+    "smallTasksMayUseNoSkill": true,
+    "standaloneSkillsDoNotNeedForcedFlow": true,
+    "flowIsRoutingGuidanceNotCompletionEvidence": true
+  },
+  "skillRoles": {
+    "feedback-to-recurrence-patch": {
+      "kind": "entry_contributor",
+      "primaryResponsibility": "Convert corrections, mismatches, and subjective misses into recurrence patches, replay plans, and lifecycle recommendations.",
+      "canStartFlow": true,
+      "canEndFlow": false
+    },
+    "web-ui-acceptance-review": {
+      "kind": "specialist_reviewer",
+      "primaryResponsibility": "Judge design-sensitive web/UI work for visual, UX, copy, accessibility, and responsive adoption readiness.",
+      "canStartFlow": true,
+      "canEndFlow": false
+    },
+    "safe-refactor-with-proof": {
+      "kind": "implementation_guard",
+      "primaryResponsibility": "Guide small, reversible, evidence-backed multi-file code, docs, config, or generated-artifact changes.",
+      "canStartFlow": true,
+      "canEndFlow": false
+    },
+    "code-change-verification": {
+      "kind": "verification_contributor",
+      "primaryResponsibility": "Synchronize changed-surface, verifier, regression, and open-issue evidence after code or config edits.",
+      "canStartFlow": false,
+      "canEndFlow": false
+    },
+    "browser-flakiness-recovery": {
+      "kind": "support",
+      "primaryResponsibility": "Recover or truthfully downgrade browser, Playwright, DevTools, or MCP UI evidence collection failures.",
+      "canStartFlow": false,
+      "canEndFlow": false
+    },
+    "worker-decision-review": {
+      "kind": "adoption_reviewer",
+      "primaryResponsibility": "Review worker decision surfaces and decide whether the task should be adopted, revised, blocked, or retried.",
+      "canStartFlow": false,
+      "canEndFlow": true
+    },
+    "artifact-improvement-learning": {
+      "kind": "learning_contributor",
+      "primaryResponsibility": "Convert verified artifact improvements into governed learning events with reusable patterns and rollback conditions.",
+      "canStartFlow": false,
+      "canEndFlow": false
+    },
+    "skill-promotion-governance": {
+      "kind": "governance_reviewer",
+      "primaryResponsibility": "Classify skill lifecycle, promotion evidence, rollback criteria, and portfolio risk before relying on a skill.",
+      "canStartFlow": false,
+      "canEndFlow": true
+    },
+    "skill-creator-master": {
+      "kind": "authoring_entry",
+      "primaryResponsibility": "Create or harden repo-local skills with Harnes-specific output, evidence, verification, rollback, and catalog contracts.",
+      "canStartFlow": true,
+      "canEndFlow": false
+    },
+    "skill-design-review-codex": {
+      "kind": "design_reviewer",
+      "primaryResponsibility": "Evaluate skill package design against activation, layering, evidence, governance, and rollback criteria.",
+      "canStartFlow": true,
+      "canEndFlow": false
+    },
+    "repo-truth-audit": {
+      "kind": "diagnostic_reviewer",
+      "primaryResponsibility": "Audit README, architecture docs, current logs, output artifacts, and decision surfaces for truth mismatches.",
+      "canStartFlow": true,
+      "canEndFlow": false
+    },
+    "review-harness-codex": {
+      "kind": "diagnostic_entry",
+      "primaryResponsibility": "Diagnose Codex App Server harness surfaces against Codex-native authority, runtime, evidence, skills, and output truth.",
+      "canStartFlow": true,
+      "canEndFlow": false
+    },
+    "review-agent-essence-codex": {
+      "kind": "principle_reviewer",
+      "primaryResponsibility": "Review Codex skills, harnesses, App Server, UI, evidence, and config surfaces against agent-essence principles.",
+      "canStartFlow": true,
+      "canEndFlow": false
+    },
+    "not-yet-root-cause-debugger": {
+      "kind": "blocker_debugger",
+      "primaryResponsibility": "Debug NOT_YET readiness or completion status after implementation appears complete.",
+      "canStartFlow": false,
+      "canEndFlow": false
+    },
+    "long-run-session-closeout": {
+      "kind": "closeout_reviewer",
+      "primaryResponsibility": "Check verifier state, acceptance criteria, unresolved issues, and false-completion risk before long-session closeout.",
+      "canStartFlow": true,
+      "canEndFlow": false
+    },
+    "handoff-artifact-generation": {
+      "kind": "handoff_contributor",
+      "primaryResponsibility": "Produce durable handoff artifacts with task summary, next-session brief, verifier state, changed surface, and open issues.",
+      "canStartFlow": false,
+      "canEndFlow": true
+    }
+  },
+  "flows": [
+    {
+      "id": "feedback-recurrence-learning",
+      "purpose": "Route user corrections, failed validations, PASS/FAIL contradictions, repeated misses, and subjective adoption failures toward recurrence prevention without premature promotion.",
+      "entrySkills": ["feedback-to-recurrence-patch"],
+      "parentSelectionRequired": true,
+      "autoInvokeNext": false,
+      "terminalSkills": ["worker-decision-review", "skill-promotion-governance"],
+      "transitions": [
+        {
+          "from": "feedback-to-recurrence-patch",
+          "to": "web-ui-acceptance-review",
+          "condition": "patch target indicates visual, UX, copy, responsive, accessibility, or subjective UI adoption risk"
+        },
+        {
+          "from": "feedback-to-recurrence-patch",
+          "to": "code-change-verification",
+          "condition": "patch target indicates changed code, config, docs, tests, or generated artifacts need verification"
+        },
+        {
+          "from": "feedback-to-recurrence-patch",
+          "to": "worker-decision-review",
+          "condition": "the immediate question is whether the current task can stop or needs autonomous retry"
+        },
+        {
+          "from": "feedback-to-recurrence-patch",
+          "to": "repo-truth-audit",
+          "condition": "the miss may come from stale or contradictory docs, output, current logs, or public decision surfaces"
+        },
+        {
+          "from": "code-change-verification",
+          "to": "artifact-improvement-learning",
+          "condition": "verification passed and the artifact change contains a reusable behavior pattern"
+        },
+        {
+          "from": "web-ui-acceptance-review",
+          "to": "artifact-improvement-learning",
+          "condition": "visual adoption evidence shows a reusable UI improvement or anti-pattern"
+        },
+        {
+          "from": "artifact-improvement-learning",
+          "to": "skill-promotion-governance",
+          "condition": "replay evidence and reusable workflow evidence exist"
+        }
+      ],
+      "forbiddenDirectNext": [
+        {
+          "from": "feedback-to-recurrence-patch",
+          "to": "skill-promotion-governance",
+          "reason": "single correction must not become skill promotion without replay or artifact evidence"
+        }
+      ],
+      "requiredEvidenceBeforeNext": [
+        {
+          "from": "artifact-improvement-learning",
+          "to": "skill-promotion-governance",
+          "evidence": ["replay_verification", "reusable_workflow_evidence", "rollback_condition"]
+        }
+      ]
+    },
+    {
+      "id": "ui-acceptance",
+      "purpose": "Route design-sensitive web/UI work from visual acceptance judgment through implementation verification and final adoption decision.",
+      "entrySkills": ["web-ui-acceptance-review"],
+      "parentSelectionRequired": true,
+      "autoInvokeNext": false,
+      "terminalSkills": ["worker-decision-review"],
+      "transitions": [
+        {
+          "from": "web-ui-acceptance-review",
+          "to": "browser-flakiness-recovery",
+          "condition": "browser, screenshot, Playwright, DevTools, or MCP evidence cannot be collected reliably"
+        },
+        {
+          "from": "web-ui-acceptance-review",
+          "to": "safe-refactor-with-proof",
+          "condition": "visual review requires a multi-file UI, CSS, docs, or config change"
+        },
+        {
+          "from": "safe-refactor-with-proof",
+          "to": "code-change-verification",
+          "condition": "UI implementation changed code, config, docs, tests, or generated artifacts"
+        },
+        {
+          "from": "code-change-verification",
+          "to": "web-ui-acceptance-review",
+          "condition": "changed UI needs a fresh adoption screenshot or comparison review"
+        },
+        {
+          "from": "web-ui-acceptance-review",
+          "to": "worker-decision-review",
+          "condition": "visual acceptance evidence is ready for final task adoption decision"
+        }
+      ]
+    },
+    {
+      "id": "code-change",
+      "purpose": "Route code, docs, config, test, and generated-artifact edits from safe implementation through verification and adoption decision.",
+      "entrySkills": ["safe-refactor-with-proof"],
+      "parentSelectionRequired": true,
+      "autoInvokeNext": false,
+      "terminalSkills": ["worker-decision-review"],
+      "transitions": [
+        {
+          "from": "safe-refactor-with-proof",
+          "to": "code-change-verification",
+          "condition": "local code, config, docs, tests, or generated artifacts changed"
+        },
+        {
+          "from": "code-change-verification",
+          "to": "repo-truth-audit",
+          "condition": "the change may leave docs, current logs, output, or public decision surfaces inconsistent"
+        },
+        {
+          "from": "code-change-verification",
+          "to": "worker-decision-review",
+          "condition": "verification evidence is ready for final adoption decision"
+        },
+        {
+          "from": "code-change-verification",
+          "to": "artifact-improvement-learning",
+          "condition": "the verified change creates a reusable behavior pattern or anti-pattern"
+        }
+      ]
+    },
+    {
+      "id": "skill-lifecycle",
+      "purpose": "Route repo-local skill authoring through independent design review and promotion governance instead of treating generation as adoption.",
+      "entrySkills": ["skill-creator-master", "skill-design-review-codex"],
+      "parentSelectionRequired": true,
+      "autoInvokeNext": false,
+      "terminalSkills": ["skill-promotion-governance"],
+      "transitions": [
+        {
+          "from": "skill-creator-master",
+          "to": "skill-design-review-codex",
+          "condition": "a skill package was created, hardened, compared, or prepared for adoption"
+        },
+        {
+          "from": "skill-design-review-codex",
+          "to": "skill-promotion-governance",
+          "condition": "design review has evidence-backed verdict and catalog/package checks"
+        },
+        {
+          "from": "skill-creator-master",
+          "to": "code-change-verification",
+          "condition": "skill authoring changed repo code, config, docs, tests, or generated artifacts"
+        }
+      ],
+      "forbiddenDirectNext": [
+        {
+          "from": "skill-creator-master",
+          "to": "skill-promotion-governance",
+          "reason": "skill generation must pass design review and package evidence before promotion governance"
+        }
+      ]
+    },
+    {
+      "id": "diagnostic-review",
+      "purpose": "Route broad harness, repo truth, and principle reviews without letting diagnosis imply implementation or release readiness.",
+      "entrySkills": ["review-harness-codex", "review-agent-essence-codex", "repo-truth-audit"],
+      "parentSelectionRequired": true,
+      "autoInvokeNext": false,
+      "terminalSkills": ["worker-decision-review"],
+      "transitions": [
+        {
+          "from": "review-harness-codex",
+          "to": "repo-truth-audit",
+          "condition": "harness diagnosis finds docs, logs, output, or current-truth mismatch"
+        },
+        {
+          "from": "review-agent-essence-codex",
+          "to": "skill-design-review-codex",
+          "condition": "principle review identifies a concrete skill package design issue"
+        },
+        {
+          "from": "repo-truth-audit",
+          "to": "worker-decision-review",
+          "condition": "truth mismatch impact must be mapped to ADOPT, REVISE, BLOCK, or FAILED_VALIDATION"
+        }
+      ],
+      "forbiddenDirectNext": [
+        {
+          "from": "review-harness-codex",
+          "to": "skill-promotion-governance",
+          "reason": "harness diagnosis is not skill promotion evidence by itself"
+        },
+        {
+          "from": "review-agent-essence-codex",
+          "to": "skill-promotion-governance",
+          "reason": "principle review must not bypass skill design review and package evidence"
+        }
+      ]
+    },
+    {
+      "id": "long-run-closeout",
+      "purpose": "Route long-running work through false-completion checks and durable handoff generation.",
+      "entrySkills": ["long-run-session-closeout"],
+      "parentSelectionRequired": true,
+      "autoInvokeNext": false,
+      "terminalSkills": ["handoff-artifact-generation", "worker-decision-review"],
+      "transitions": [
+        {
+          "from": "long-run-session-closeout",
+          "to": "not-yet-root-cause-debugger",
+          "condition": "readiness, completion, robustness, or learning status remains NOT_YET after implementation appears complete"
+        },
+        {
+          "from": "long-run-session-closeout",
+          "to": "code-change-verification",
+          "condition": "changed code, config, docs, tests, or generated artifacts require verifier evidence before closeout"
+        },
+        {
+          "from": "long-run-session-closeout",
+          "to": "handoff-artifact-generation",
+          "condition": "the session is pausing or closing and durable carry-forward context is required"
+        },
+        {
+          "from": "handoff-artifact-generation",
+          "to": "worker-decision-review",
+          "condition": "handoff and verification evidence must be mapped to final stop/continue decision"
+        }
+      ]
+    }
+  ],
+  "standaloneOrSupport": [
+    {
+      "id": "browser-flakiness-recovery",
+      "mode": "support_only",
+      "reason": "It activates only when browser evidence collection fails and returns fallback or blocked evidence; it does not require a fixed next skill."
+    },
+    {
+      "id": "not-yet-root-cause-debugger",
+      "mode": "blocker_debugger",
+      "reason": "It activates only when NOT_YET status blocks completion and returns the next verification step rather than a fixed flow."
+    },
+    {
+      "id": "review-harness-codex",
+      "mode": "diagnostic_entry",
+      "reason": "It can start a diagnosis, but diagnosis findings still need parent-selected implementation, truth audit, or decision review."
+    },
+    {
+      "id": "review-agent-essence-codex",
+      "mode": "diagnostic_entry",
+      "reason": "It reviews principles and does not by itself create implementation or promotion authority."
+    }
+  ],
+  "globalForbiddenDirectNext": [
+    {
+      "from": "feedback-to-recurrence-patch",
+      "to": "skill-promotion-governance",
+      "reason": "correction triage needs replay and reusable evidence before promotion"
+    },
+    {
+      "from": "skill-creator-master",
+      "to": "skill-promotion-governance",
+      "reason": "skill authoring needs design review and package checks before promotion"
+    },
+    {
+      "from": "web-ui-acceptance-review",
+      "to": "skill-promotion-governance",
+      "reason": "visual acceptance findings are not skill promotion evidence without artifact learning and replay"
+    }
+  ],
+  "coveragePolicy": {
+    "catalogSkillsMustHaveRole": true,
+    "flowReferencesMustExistInCatalog": true,
+    "directForbiddenEdgesMustNotAppearAsTransitions": true,
+    "everyFlowRequiresParentSelection": true
+  }
+}

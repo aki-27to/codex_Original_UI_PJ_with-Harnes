@@ -7,7 +7,7 @@
       "title": "Continuity Verification Closeout",
       "description": "Use after a successful long-horizon execution to combine changed surface, verification state, and next-session brief.",
       "trigger": "when closeout must preserve verifier and continuity state",
-      "path": ".agents/skills/generated/continuity-verification-closeout/SKILL.md",
+      "path": ".agents/old-skills/generated/continuity-verification-closeout/SKILL.md",
       "deterministicSteps": [
         "load latest verifier state",
         "refresh closeout summary",
@@ -23,7 +23,7 @@
       ],
       "sourceTrace": "output/agi_readiness/phase5/agi_readiness_public_latest.json",
       "updatedAt": "2026-04-16T12:15:48.833Z",
-      "stale": 0
+      "stale": 1
     }
   ]
 }

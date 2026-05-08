@@ -31,6 +31,19 @@ function testStitchSkillAssignedToParentRoles() {
   );
 }
 
+function testSkillCreationRoutingPrefersMaster() {
+  const catalog = loadSkillCatalog();
+  const defaultAssignments = Array.isArray(catalog.assignments.default) ? catalog.assignments.default : [];
+  const masterIndex = defaultAssignments.indexOf("skill-creator-master");
+  const officialIndex = defaultAssignments.indexOf("skill-creator");
+  assert.ok(masterIndex >= 0, "default role must include skill-creator-master for skill package create/update requests");
+  assert.ok(officialIndex >= 0, "default role must keep official skill-creator available as fallback/reference");
+  assert.ok(
+    masterIndex < officialIndex,
+    "skill-creator-master must be routed before official skill-creator for Harnes repo-local skill creation"
+  );
+}
+
 function testRoleRequirementFailure() {
   const policy = deepClone(loadSkillPortfolioPolicy());
   const catalog = deepClone(loadSkillCatalog());
@@ -95,6 +108,7 @@ function run() {
   const tests = [
     ["default portfolio pass", testDefaultPortfolioPasses],
     ["stitch skill assigned to parent roles", testStitchSkillAssignedToParentRoles],
+    ["skill creation routing prefers master", testSkillCreationRoutingPrefersMaster],
     ["role requirement failure", testRoleRequirementFailure],
     ["promotion scenario to role", testPromotionCandidateScenarioToRole],
     ["guard failure blocks promotion", testGuardFailureBlocksPromotion],

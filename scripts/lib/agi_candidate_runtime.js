@@ -359,14 +359,15 @@ function archiveKnowledgeEntries({
 
 function loadGeneratedSkillRegistry({
   workspaceRoot = path.resolve(__dirname, "..", ".."),
-} = {}) {
+} = {}, { includeInactive = false } = {}) {
   const policy = loadKnowledgePolicy(undefined, { workspaceRoot });
   ensureKnowledgeStore(policy);
   const payload = parseJson(policy.generatedSkillRegistryPath, {});
+  const skills = ensureArray(payload.skills);
   return {
     schema: safeString(payload.schema, 120) || "generated-skill-registry.v1",
     generatedAt: safeString(payload.generatedAt, 80) || nowIso(),
-    skills: ensureArray(payload.skills),
+    skills: includeInactive ? skills : skills.filter((entry) => isCallableGeneratedSkillEntry(policy, entry)),
   };
 }
 
@@ -444,7 +445,7 @@ function pruneGeneratedSkills({
   reason = "prune",
 } = {}) {
   const policy = loadKnowledgePolicy(undefined, { workspaceRoot });
-  const registry = loadGeneratedSkillRegistry({ workspaceRoot });
+  const registry = loadGeneratedSkillRegistry({ workspaceRoot }, { includeInactive: true });
   const targets = new Set(uniqueStrings(ids, 64));
   const kept = [];
   let archivedCount = 0;
@@ -1214,13 +1215,32 @@ function resolveKnowledgePolicyInput(input) {
   return ensureKnowledgeStore(loadKnowledgePolicy(undefined, { workspaceRoot }));
 }
 
-function loadGeneratedSkillRegistry(policy) {
+function pathIsInside(parentPath, candidatePath) {
+  const parent = path.resolve(parentPath);
+  const candidate = path.resolve(candidatePath);
+  const parentWithSeparator = parent.endsWith(path.sep) ? parent : `${parent}${path.sep}`;
+  return candidate === parent || candidate.toLowerCase().startsWith(parentWithSeparator.toLowerCase());
+}
+
+function isCallableGeneratedSkillEntry(policy, entry) {
+  const entryPath = safeString(entry && entry.path, 800).replace(/\\/g, "/");
+  if (!entryPath) return false;
+  if (Number(entry && entry.stale) === 1) return false;
+  if (entryPath.toLowerCase().includes(".agents/old-skills/")) return false;
+  if (!entryPath.toLowerCase().endsWith("/skill.md")) return false;
+  const absolutePath = resolveWorkspacePath(policy.workspaceRoot, entryPath);
+  if (!pathIsInside(policy.generatedSkillsRoot, absolutePath)) return false;
+  return fs.existsSync(absolutePath);
+}
+
+function loadGeneratedSkillRegistry(policy, { includeInactive = false } = {}) {
   const resolvedPolicy = resolveKnowledgePolicyInput(policy);
   const payload = parseJson(resolvedPolicy.generatedSkillRegistryPath, {}) || {};
+  const skills = ensureArray(payload.skills);
   return {
     schema: safeString(payload.schema, 120) || "generated-skill-registry.v1",
     generatedAt: safeString(payload.generatedAt, 80) || nowIso(),
-    skills: ensureArray(payload.skills),
+    skills: includeInactive ? skills : skills.filter((entry) => isCallableGeneratedSkillEntry(resolvedPolicy, entry)),
   };
 }
 
@@ -1318,7 +1338,7 @@ function pruneGeneratedSkills({
   reason = "stale_skill",
 } = {}) {
   const resolvedPolicy = ensureKnowledgeStore(policy || loadKnowledgePolicy(undefined, { workspaceRoot }));
-  const registry = loadGeneratedSkillRegistry(resolvedPolicy);
+  const registry = loadGeneratedSkillRegistry(resolvedPolicy, { includeInactive: true });
   const targets = new Set(uniqueStrings(staleIds, 64));
   const kept = [];
   const archived = [];

@@ -1,0 +1,7 @@
+interface:
+  display_name: "Feedback to Recurrence Patch"
+  short_description: "Turns corrections into replayable prevention patches."
+  default_prompt: "Use $feedback-to-recurrence-patch to convert this correction into a replayable recurrence-prevention patch."
+
+policy:
+  allow_implicit_invocation: true
