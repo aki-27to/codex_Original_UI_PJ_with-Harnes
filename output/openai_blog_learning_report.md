@@ -1,7 +1,7 @@
 # OPENAI_BLOG_LEARNING_REPORT
 
 - status: PASS
-- generatedAt: 2026-05-04T12:17:15.908Z
+- generatedAt: 2026-05-08T03:30:45.480Z
 - trackedArticles: 6
 - newArticlesThisRun: 0
 - pendingProposals: 6
@@ -38,8 +38,8 @@
 - appliedHintCount: 6
 - appliedFrontendQualityNoteCount: 0
 - observationStatus: idle
-- observationCount: 88
-- lastObservedAt: 2026-05-04T12:14:30.473Z
+- observationCount: 49
+- lastObservedAt: 2026-05-04T13:09:58.509Z
 - rawAutoApplyChangeCount: 0
 - readyAutoApplyChangeCount: 0
 - awaitingObservationCount: 0
