@@ -7,6 +7,7 @@ const workspaceRoot = path.resolve(__dirname, "..", "..");
 const defaultPolicyPath = path.join(workspaceRoot, "scripts", "config", "skill_portfolio_policy.json");
 const defaultCatalogPath = path.join(workspaceRoot, "scripts", "config", "skill_catalog.json");
 const defaultOutcomesPath = path.join(workspaceRoot, "logs", "skill_outcomes.jsonl");
+const defaultOutcomeEventSchemaPath = path.join(workspaceRoot, "scripts", "config", "skill_outcome_event.schema.json");
 
 const knownClasses = Object.freeze(["global", "role", "scenario", "experiment"]);
 const knownCoverageLabels = Object.freeze(["generic", "semi_generic", "partial"]);
@@ -157,6 +158,23 @@ function normalizePromotionRule(rawRule, fallbackRule) {
   });
 }
 
+function normalizeOperationalMaturityPolicy(rawPolicy, fallbackPolicy) {
+  const source = rawPolicy && typeof rawPolicy === "object" ? rawPolicy : fallbackPolicy;
+  const usage = source.usage && typeof source.usage === "object" ? source.usage : fallbackPolicy.usage;
+  const evidence = source.evidence && typeof source.evidence === "object" ? source.evidence : fallbackPolicy.evidence;
+  return Object.freeze({
+    usage: Object.freeze({
+      practicedMinRuns: normalizeInt(usage.practicedMinRuns, fallbackPolicy.usage.practicedMinRuns, 1, 10000),
+      minSuccessRate: normalizeNumber(usage.minSuccessRate, fallbackPolicy.usage.minSuccessRate, 0, 1),
+      maxGuardFailures: normalizeInt(usage.maxGuardFailures, fallbackPolicy.usage.maxGuardFailures, 0, 10000),
+    }),
+    evidence: Object.freeze({
+      minEvidenceRate: normalizeNumber(evidence.minEvidenceRate, fallbackPolicy.evidence.minEvidenceRate, 0, 1),
+      minVerificationRate: normalizeNumber(evidence.minVerificationRate, fallbackPolicy.evidence.minVerificationRate, 0, 1),
+    }),
+  });
+}
+
 function normalizePolicy(rawPolicy, { source, policyPath }) {
   const fallback = {
     schema: "skill-portfolio-policy.v2",
@@ -178,6 +196,10 @@ function normalizePolicy(rawPolicy, { source, policyPath }) {
       requireReproducibilityEvidence: true,
       requireAdoptionFeedbackLink: true,
       requireEvaluationLessonLink: true,
+    },
+    operationalMaturity: {
+      usage: { practicedMinRuns: 3, minSuccessRate: 0.8, maxGuardFailures: 0 },
+      evidence: { minEvidenceRate: 0.8, minVerificationRate: 0.8 },
     },
     revocationPolicy: {
       revokeOnRegression: true,
@@ -245,6 +267,7 @@ function normalizePolicy(rawPolicy, { source, policyPath }) {
         fallback.promotionEvidence.requireEvaluationLessonLink
       ),
     }),
+    operationalMaturity: normalizeOperationalMaturityPolicy(input.operationalMaturity, fallback.operationalMaturity),
     revocationPolicy: Object.freeze({
       revokeOnRegression: normalizeBoolean(
         input.revocationPolicy && input.revocationPolicy.revokeOnRegression,
@@ -313,6 +336,7 @@ function normalizeSkillEntry(skillId, rawEntry, policy) {
   }
   const promotionEvidence = entry.promotionEvidence && typeof entry.promotionEvidence === "object" ? entry.promotionEvidence : {};
   const revocationPolicy = entry.revocationPolicy && typeof entry.revocationPolicy === "object" ? entry.revocationPolicy : {};
+  const operationalMaturity = entry.operationalMaturity && typeof entry.operationalMaturity === "object" ? entry.operationalMaturity : {};
   const maturity = safeString(entry.maturity, 80).toLowerCase();
   const enforceEvidenceLinks = maturity === "promoted" || maturity === "governed";
   if (enforceEvidenceLinks && policy.promotionEvidence.requireReproducibilityEvidence && !safeString(promotionEvidence.reproducibilityRef, 260)) {
@@ -338,6 +362,12 @@ function normalizeSkillEntry(skillId, rawEntry, policy) {
       reproducibilityRef: safeString(promotionEvidence.reproducibilityRef, 260),
       adoptionFeedbackRef: safeString(promotionEvidence.adoptionFeedbackRef, 260),
       evaluationLessonRef: safeString(promotionEvidence.evaluationLessonRef, 260),
+    }),
+    operationalMaturity: Object.freeze({
+      automationRequired: normalizeBoolean(operationalMaturity.automationRequired, false),
+      automationReason: safeString(operationalMaturity.automationReason, 260),
+      distributionRequired: normalizeBoolean(operationalMaturity.distributionRequired, false),
+      distributionReason: safeString(operationalMaturity.distributionReason, 260),
     }),
     revocationPolicy: Object.freeze({
       revokeOnRegression: normalizeBoolean(revocationPolicy.revokeOnRegression, policy.revocationPolicy.revokeOnRegression),
@@ -426,6 +456,93 @@ function loadSkillCatalog() {
   return catalogCache;
 }
 
+function normalizeOutcomeEvidence(rawEvidence) {
+  const evidence = rawEvidence && typeof rawEvidence === "object" ? rawEvidence : {};
+  return Object.freeze({
+    artifacts: Object.freeze(uniqueStrings(evidence.artifacts)),
+    commands: Object.freeze(uniqueStrings(evidence.commands)),
+    verification: Object.freeze(uniqueStrings(evidence.verification)),
+    decisions: Object.freeze(uniqueStrings(evidence.decisions)),
+    userFeedback: Object.freeze(uniqueStrings(evidence.userFeedback)),
+    rollbackRefs: Object.freeze(uniqueStrings(evidence.rollbackRefs)),
+    promotionRefs: Object.freeze(uniqueStrings(evidence.promotionRefs)),
+    automationRefs: Object.freeze(uniqueStrings(evidence.automationRefs)),
+    distributionRefs: Object.freeze(uniqueStrings(evidence.distributionRefs)),
+  });
+}
+
+function evidenceHasAny(evidence) {
+  return Boolean(evidence && (
+    evidence.artifacts.length
+    || evidence.commands.length
+    || evidence.verification.length
+    || evidence.decisions.length
+    || evidence.userFeedback.length
+  ));
+}
+
+function validateAndNormalizeOutcomeEvent(parsed, lineNumber) {
+  if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) {
+    return { event: null, error: `line_${lineNumber}:not_an_object` };
+  }
+  const schemaName = safeString(parsed.schema, 120);
+  if (schemaName !== "skill-outcome-event.v1") {
+    return { event: null, error: `line_${lineNumber}:invalid_schema` };
+  }
+  const eventType = safeString(parsed.eventType, 80);
+  if (eventType !== "actual_skill_use") {
+    return { event: null, error: `line_${lineNumber}:invalid_event_type` };
+  }
+  const skill = safeString(parsed.skill || parsed.skillId, 120);
+  if (!skill) {
+    return { event: null, error: `line_${lineNumber}:missing_skill` };
+  }
+  const taskRef = safeString(parsed.taskRef || parsed.taskId || parsed.sessionRef, 260);
+  if (!taskRef) {
+    return { event: null, error: `line_${lineNumber}:missing_task_ref` };
+  }
+  const timestamp = safeString(parsed.timestamp, 80);
+  if (!timestamp || Number.isNaN(Date.parse(timestamp))) {
+    return { event: null, error: `line_${lineNumber}:invalid_timestamp` };
+  }
+  const selectedBy = safeString(parsed.selectedBy, 80).toLowerCase();
+  if (!["parent", "user", "automation", "ci", "script"].includes(selectedBy)) {
+    return { event: null, error: `line_${lineNumber}:invalid_selected_by` };
+  }
+  const result = safeString(parsed.result || parsed.status, 40).toLowerCase();
+  if (!["pass", "success", "completed", "partial", "fail", "failed", "blocked"].includes(result)) {
+    return { event: null, error: `line_${lineNumber}:invalid_result` };
+  }
+  if (!Object.prototype.hasOwnProperty.call(parsed, "primaryScore")) {
+    return { event: null, error: `line_${lineNumber}:missing_primary_score` };
+  }
+  if (!Object.prototype.hasOwnProperty.call(parsed, "guardPass")) {
+    return { event: null, error: `line_${lineNumber}:missing_guard_pass` };
+  }
+  if (!parsed.evidence || typeof parsed.evidence !== "object" || Array.isArray(parsed.evidence)) {
+    return { event: null, error: `line_${lineNumber}:missing_evidence` };
+  }
+  const success = result === "pass" || result === "success" || result === "completed";
+  const evidence = normalizeOutcomeEvidence(parsed.evidence);
+  return {
+    event: Object.freeze({
+      schema: schemaName,
+      eventType,
+      timestamp,
+      skill,
+      taskRef,
+      selectedBy,
+      trigger: safeString(parsed.trigger, 260),
+      result,
+      success,
+      primaryScore: normalizeNumber(parsed.primaryScore, success ? 1 : 0, 0, 1),
+      guardPass: normalizeBoolean(parsed.guardPass, true),
+      evidence,
+    }),
+    error: "",
+  };
+}
+
 function parseOutcomeEventsFromJsonl(inputPath = defaultOutcomesPath) {
   const outcomePath = resolvePath(inputPath, defaultOutcomesPath);
   if (!fs.existsSync(outcomePath)) {
@@ -444,27 +561,12 @@ function parseOutcomeEventsFromJsonl(inputPath = defaultOutcomesPath) {
     const line = lines[index];
     try {
       const parsed = JSON.parse(line);
-      const skill = safeString(parsed.skill || parsed.skillId, 120);
-      if (!skill) {
-        parseErrors.push(`line_${index + 1}:missing_skill`);
+      const { event, error } = validateAndNormalizeOutcomeEvent(parsed, index + 1);
+      if (error) {
+        parseErrors.push(error);
         continue;
       }
-      const result = safeString(parsed.result || parsed.status, 40).toLowerCase();
-      const success = result === "pass" || result === "success" || result === "completed";
-      const guardPass = normalizeBoolean(parsed.guardPass, true);
-      const primaryScore = normalizeNumber(
-        parsed.primaryScore,
-        success ? 1 : 0,
-        0,
-        1
-      );
-      events.push({
-        skill,
-        result: result || (success ? "pass" : "fail"),
-        success,
-        primaryScore,
-        guardPass,
-      });
+      events.push(event);
     } catch (error) {
       parseErrors.push(`line_${index + 1}:${error instanceof Error ? error.message : String(error)}`);
     }
@@ -495,6 +597,13 @@ function buildOutcomeStats(outcomeEvents) {
         successes: 0,
         primaryScoreSum: 0,
         guardFailures: 0,
+        evidenceEvents: 0,
+        verificationEvidenceEvents: 0,
+        rollbackEvidenceEvents: 0,
+        promotionEvidenceEvents: 0,
+        automationEvidenceEvents: 0,
+        distributionEvidenceEvents: 0,
+        lastUsedAt: "",
       };
     }
     const bucket = statsBySkill[skill];
@@ -505,6 +614,29 @@ function buildOutcomeStats(outcomeEvents) {
     bucket.primaryScoreSum += normalizeNumber(event.primaryScore, 0, 0, 1);
     if (!normalizeBoolean(event.guardPass, true)) {
       bucket.guardFailures += 1;
+    }
+    const evidence = normalizeOutcomeEvidence(event.evidence);
+    if (evidenceHasAny(evidence)) {
+      bucket.evidenceEvents += 1;
+    }
+    if (evidence.verification.length) {
+      bucket.verificationEvidenceEvents += 1;
+    }
+    if (evidence.rollbackRefs.length) {
+      bucket.rollbackEvidenceEvents += 1;
+    }
+    if (evidence.promotionRefs.length) {
+      bucket.promotionEvidenceEvents += 1;
+    }
+    if (evidence.automationRefs.length) {
+      bucket.automationEvidenceEvents += 1;
+    }
+    if (evidence.distributionRefs.length) {
+      bucket.distributionEvidenceEvents += 1;
+    }
+    const timestamp = safeString(event.timestamp, 80);
+    if (timestamp && (!bucket.lastUsedAt || timestamp > bucket.lastUsedAt)) {
+      bucket.lastUsedAt = timestamp;
     }
   }
   const summary = {};
@@ -517,6 +649,15 @@ function buildOutcomeStats(outcomeEvents) {
       successRate: runs > 0 ? bucket.successes / runs : 0,
       avgPrimaryScore: runs > 0 ? bucket.primaryScoreSum / runs : 0,
       guardFailures: bucket.guardFailures,
+      evidenceEvents: bucket.evidenceEvents,
+      evidenceRate: runs > 0 ? bucket.evidenceEvents / runs : 0,
+      verificationEvidenceEvents: bucket.verificationEvidenceEvents,
+      verificationRate: runs > 0 ? bucket.verificationEvidenceEvents / runs : 0,
+      rollbackEvidenceEvents: bucket.rollbackEvidenceEvents,
+      promotionEvidenceEvents: bucket.promotionEvidenceEvents,
+      automationEvidenceEvents: bucket.automationEvidenceEvents,
+      distributionEvidenceEvents: bucket.distributionEvidenceEvents,
+      lastUsedAt: bucket.lastUsedAt,
     };
   }
   return summary;
@@ -565,6 +706,254 @@ function collectPromotionCandidates({ policy, catalog, outcomeStats }) {
     }
   }
   return candidates;
+}
+
+function maturityDimension(id, status, score, criterion, evidence) {
+  return Object.freeze({
+    id,
+    status,
+    score,
+    criterion,
+    evidence: Object.freeze(evidence || {}),
+  });
+}
+
+function scoreUsageMaturity(stat, policy) {
+  const threshold = policy.operationalMaturity.usage;
+  if (!stat || stat.runs <= 0) {
+    return maturityDimension(
+      "usage_maturity",
+      "no_data",
+      0,
+      "actual skill-use events must exist before claiming operational usage maturity",
+      { runs: 0, practicedMinRuns: threshold.practicedMinRuns }
+    );
+  }
+  const runScore = Math.min(1, stat.runs / threshold.practicedMinRuns);
+  const guardScore = stat.guardFailures <= threshold.maxGuardFailures ? 1 : 0;
+  const score = normalizeNumber((runScore * 0.45) + (stat.successRate * 0.45) + (guardScore * 0.10), 0, 0, 1);
+  const status = stat.guardFailures > threshold.maxGuardFailures
+    ? "guard_risk"
+    : (stat.runs >= threshold.practicedMinRuns && stat.successRate >= threshold.minSuccessRate ? "practiced" : "observed");
+  return maturityDimension(
+    "usage_maturity",
+    status,
+    score,
+    "usage maturity requires repeated actual use, success rate, and no guard failures",
+    {
+      runs: stat.runs,
+      successes: stat.successes,
+      successRate: stat.successRate,
+      guardFailures: stat.guardFailures,
+      practicedMinRuns: threshold.practicedMinRuns,
+      minSuccessRate: threshold.minSuccessRate,
+      maxGuardFailures: threshold.maxGuardFailures,
+      lastUsedAt: stat.lastUsedAt,
+    }
+  );
+}
+
+function scoreEvidenceMaturity(stat, policy) {
+  const threshold = policy.operationalMaturity.evidence;
+  if (!stat || stat.runs <= 0) {
+    return maturityDimension(
+      "evidence_maturity",
+      "no_data",
+      0,
+      "actual use must leave artifacts, verification, or decision evidence before evidence maturity is claimed",
+      { runs: 0, minEvidenceRate: threshold.minEvidenceRate, minVerificationRate: threshold.minVerificationRate }
+    );
+  }
+  const score = normalizeNumber(
+    (stat.evidenceRate * 0.45)
+      + (stat.verificationRate * 0.45)
+      + (Math.min(1, stat.rollbackEvidenceEvents / stat.runs) * 0.05)
+      + (Math.min(1, stat.promotionEvidenceEvents / stat.runs) * 0.05),
+    0,
+    0,
+    1
+  );
+  const status = stat.evidenceRate >= threshold.minEvidenceRate && stat.verificationRate >= threshold.minVerificationRate
+    ? "evidence_observed"
+    : "weak_evidence";
+  return maturityDimension(
+    "evidence_maturity",
+    status,
+    score,
+    "evidence maturity requires inspectable artifacts and verification evidence from actual use",
+    {
+      runs: stat.runs,
+      evidenceEvents: stat.evidenceEvents,
+      evidenceRate: stat.evidenceRate,
+      verificationEvidenceEvents: stat.verificationEvidenceEvents,
+      verificationRate: stat.verificationRate,
+      rollbackEvidenceEvents: stat.rollbackEvidenceEvents,
+      promotionEvidenceEvents: stat.promotionEvidenceEvents,
+      minEvidenceRate: threshold.minEvidenceRate,
+      minVerificationRate: threshold.minVerificationRate,
+    }
+  );
+}
+
+function scoreAutomationMaturity(skillDef, stat) {
+  if (!skillDef.operationalMaturity.automationRequired) {
+    return maturityDimension(
+      "automation_maturity",
+      "not_applicable",
+      null,
+      "automation is scored only for skills that require scheduled or unattended execution",
+      {
+        automationRequired: false,
+        automationReason: skillDef.operationalMaturity.automationReason,
+      }
+    );
+  }
+  if (!stat || stat.runs <= 0) {
+    return maturityDimension(
+      "automation_maturity",
+      "no_data",
+      0,
+      "required automation must be backed by actual outcome events or automation evidence",
+      {
+        automationRequired: true,
+        automationReason: skillDef.operationalMaturity.automationReason,
+        runs: 0,
+      }
+    );
+  }
+  const hasEvidence = stat.automationEvidenceEvents > 0;
+  return maturityDimension(
+    "automation_maturity",
+    hasEvidence ? "evidence_observed" : "candidate",
+    hasEvidence ? 1 : 0,
+    "required automation needs automation evidence references, not just a prose claim",
+    {
+      automationRequired: true,
+      automationReason: skillDef.operationalMaturity.automationReason,
+      runs: stat.runs,
+      automationEvidenceEvents: stat.automationEvidenceEvents,
+    }
+  );
+}
+
+function scoreDistributionMaturity(skillDef, stat) {
+  if (!skillDef.operationalMaturity.distributionRequired) {
+    return maturityDimension(
+      "distribution_maturity",
+      "not_applicable",
+      null,
+      "Plugin/distribution maturity is scored only when cross-repository or packaged distribution is required",
+      {
+        distributionRequired: false,
+        distributionReason: skillDef.operationalMaturity.distributionReason,
+      }
+    );
+  }
+  if (!stat || stat.runs <= 0) {
+    return maturityDimension(
+      "distribution_maturity",
+      "no_data",
+      0,
+      "required distribution must be backed by package, install, or cross-repo evidence",
+      {
+        distributionRequired: true,
+        distributionReason: skillDef.operationalMaturity.distributionReason,
+        runs: 0,
+      }
+    );
+  }
+  const hasEvidence = stat.distributionEvidenceEvents > 0;
+  return maturityDimension(
+    "distribution_maturity",
+    hasEvidence ? "evidence_observed" : "candidate",
+    hasEvidence ? 1 : 0,
+    "required distribution needs Plugin/package or cross-repo evidence, not ordinary repo-local use",
+    {
+      distributionRequired: true,
+      distributionReason: skillDef.operationalMaturity.distributionReason,
+      runs: stat.runs,
+      distributionEvidenceEvents: stat.distributionEvidenceEvents,
+    }
+  );
+}
+
+function averageScoredDimensions(dimensions) {
+  const scored = dimensions.filter((entry) => Number.isFinite(entry.score));
+  if (!scored.length) {
+    return null;
+  }
+  return scored.reduce((sum, entry) => sum + entry.score, 0) / scored.length;
+}
+
+function summarizeDimension(bySkill, dimensionId) {
+  const statuses = {};
+  let applicable = 0;
+  let scoreSum = 0;
+  let scored = 0;
+  for (const entry of Object.values(bySkill)) {
+    const dimension = entry.dimensions[dimensionId];
+    if (!dimension) {
+      continue;
+    }
+    statuses[dimension.status] = (statuses[dimension.status] || 0) + 1;
+    if (dimension.status !== "not_applicable") {
+      applicable += 1;
+    }
+    if (Number.isFinite(dimension.score)) {
+      scoreSum += dimension.score;
+      scored += 1;
+    }
+  }
+  return {
+    applicable,
+    averageScore: scored > 0 ? scoreSum / scored : null,
+    statuses,
+  };
+}
+
+function buildOperationalMaturity({ policy, catalog, outcomeStats }) {
+  const bySkill = {};
+  for (const [skillId, skillDef] of Object.entries(catalog.skills)) {
+    const stat = outcomeStats[skillId];
+    const dimensions = {
+      usage_maturity: scoreUsageMaturity(stat, policy),
+      evidence_maturity: scoreEvidenceMaturity(stat, policy),
+      automation_maturity: scoreAutomationMaturity(skillDef, stat),
+      distribution_maturity: scoreDistributionMaturity(skillDef, stat),
+    };
+    const overallScore = averageScoredDimensions(Object.values(dimensions));
+    bySkill[skillId] = {
+      skill: skillId,
+      status: overallScore === null
+        ? "not_applicable"
+        : (overallScore >= 0.8 ? "mature" : (overallScore > 0 ? "developing" : "no_data")),
+      score: overallScore,
+      dimensions,
+    };
+  }
+  const dimensions = {
+    usage_maturity: summarizeDimension(bySkill, "usage_maturity"),
+    evidence_maturity: summarizeDimension(bySkill, "evidence_maturity"),
+    automation_maturity: summarizeDimension(bySkill, "automation_maturity"),
+    distribution_maturity: summarizeDimension(bySkill, "distribution_maturity"),
+  };
+  const loggedSkillCount = Object.values(outcomeStats).filter((entry) => entry.runs > 0).length;
+  const scoredSkillEntries = Object.values(bySkill).filter((entry) => Number.isFinite(entry.score));
+  const averageScore = scoredSkillEntries.length
+    ? scoredSkillEntries.reduce((sum, entry) => sum + entry.score, 0) / scoredSkillEntries.length
+    : 0;
+  return {
+    schema: "skill-operational-maturity.v1",
+    scoreProfile: "operational_maturity",
+    scoreMeaning: "actual-use maturity is separate from article_alignment and must not be used as proof that article gates pass",
+    summary: {
+      skillCount: Object.keys(catalog.skills).length,
+      loggedSkillCount,
+      averageScore,
+      dimensions,
+    },
+    bySkill,
+  };
 }
 
 function evaluateSkillPortfolio({ policy, catalog, outcomeEvents } = {}) {
@@ -680,6 +1069,11 @@ function evaluateSkillPortfolio({ policy, catalog, outcomeEvents } = {}) {
     catalog: activeCatalog,
     outcomeStats,
   });
+  const operationalMaturity = buildOperationalMaturity({
+    policy: activePolicy,
+    catalog: activeCatalog,
+    outcomeStats,
+  });
 
   return {
     status: issues.length > 0 ? "FAIL" : "PASS",
@@ -709,6 +1103,7 @@ function evaluateSkillPortfolio({ policy, catalog, outcomeEvents } = {}) {
     issues,
     warnings,
     outcomeStats,
+    operationalMaturity,
     promotionCandidates,
     missingProposals: activeCatalog.missingProposals,
   };
@@ -716,7 +1111,9 @@ function evaluateSkillPortfolio({ policy, catalog, outcomeEvents } = {}) {
 
 module.exports = {
   buildOutcomeStats,
+  buildOperationalMaturity,
   defaultCatalogPath,
+  defaultOutcomeEventSchemaPath,
   defaultOutcomesPath,
   defaultPolicyPath,
   evaluateSkillPortfolio,

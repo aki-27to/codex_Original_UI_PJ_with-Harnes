@@ -11,7 +11,7 @@ Review skill packages as reusable agent behavior components, not as saved prompt
 
 Default to a read-only evaluator. The output must help decide whether a skill is adoptable, needs revision, should stay draft, or should be rolled back.
 
-The default score is article-alignment gated: a 100 score means the target satisfies the article's design-language requirements, or has an explicit machine-checked repo-local alternative for article proposals such as naming prefixes or metadata placement. Operational adoptability can be reported separately, but it must not be collapsed into the article-alignment score.
+The default score is article-alignment gated: a 100 score means the target satisfies the article's design-language requirements, or has an explicit machine-checked repo-local alternative for article proposals such as naming prefixes or metadata placement. Operational maturity can be reported separately, but it must not be collapsed into the article-alignment score.
 
 ## Default Boundary
 
@@ -34,7 +34,7 @@ node .agents/skills/skill-design-review-codex/scripts/analyze-skill-design.js .a
 4. Load `references/design-rubric.md` for scoring. Use the rubric as fixed criteria; do not rewrite it to make the target pass.
 5. Select the scoring profile:
    - `article_alignment`: default. Score 100 only when article design-language gates pass, including activation contract, layer fit, responsibility axes, naming/metadata contract or checked repo-local equivalent, progressive disclosure, output/evidence, evaluator integrity, governance lifecycle, and plugin/automation boundaries.
-   - `operational_adoptability`: optional secondary score for whether the skill is usable in this repo now. This score can be high even when article alignment is incomplete, but it cannot be used as the headline score when the user asks for article compliance.
+   - `operational_maturity`: optional secondary score for actual-use maturity. Keep it separate from `article_alignment` and split it into `usage_maturity`, `evidence_maturity`, `automation_maturity`, and `distribution_maturity`.
 6. Classify the skill before judging details:
    - Dictionary vs workflow: whether it changes files, commands, APIs, tickets, or state.
    - Purpose / Trigger / Shape / Role: what it returns, who calls it, whether it orchestrates, and whether it is generator/evaluator/contributor.
@@ -52,7 +52,7 @@ Include:
 - Verdict: `ADOPTABLE`, `REVISE_MINOR`, `REVISE_MAJOR`, `DRAFT_ONLY`, or `ROLLBACK_CANDIDATE`.
 - Score: 0-100 with `score_profile`, rubric version, score meaning, and any `not_checked` surfaces.
 - Article alignment: `ARTICLE_ALIGNED`, `ARTICLE_ALIGNED_WITH_GAPS`, or `ARTICLE_GAPS`; list failed or alternative gates with separate `criterion` and observed `evidence`.
-- Secondary scores: optional operational adoptability or portfolio coherence scores, explicitly labeled as secondary.
+- Secondary scores: optional `operational_maturity` or portfolio coherence scores, explicitly labeled as secondary.
 - Mechanical evidence: analyzer path or command result summary.
 - Findings: severity-ordered, each with file/path evidence and the violated design principle.
 - Required fixes: the smallest changes needed to improve adoption readiness.
@@ -92,7 +92,9 @@ If the target is not local or cannot be inspected, downgrade the verdict and lis
 
 - A readable long skill can still be a poor skill if it hides trigger, side effects, or completion criteria.
 - Proposed naming metadata is not runtime behavior unless another tool checks it.
-- A repo-local skill can be operationally adoptable but still fail article alignment; keep those scores separate.
+- A repo-local skill can be operationally mature but still fail article alignment; keep those scores separate.
+- `logs/skill_outcomes.jsonl` is actual-use evidence only. Do not count synthetic examples, success samples, or forecast rows as maturity evidence.
+- Plugin and Automation maturity are `not_applicable` when a skill does not need cross-repo distribution or scheduled execution.
 - Article prefix proposals can be satisfied by a checked repo-local naming/catalog/flow convention only when the alternative is explicit and machine-validated.
 - External LLM or delegate opinions can inform review, but they are not evidence until mapped to inspected files or command results.
 
@@ -102,4 +104,4 @@ If the target is not local or cannot be inspected, downgrade the verdict and lis
 - Do not penalize a target for missing optional Claude-specific fields unless the target claims Claude Code compatibility.
 - Do not turn review mode into silent implementation.
 - Do not let an evaluator change its evaluation criteria, promotion threshold, or output schema while judging a target.
-- Do not let operational usefulness, catalog PASS, or a previous high mechanical score imply article-alignment 100.
+- Do not let operational usefulness, maturity logs, catalog PASS, or a previous high mechanical score imply article-alignment 100.

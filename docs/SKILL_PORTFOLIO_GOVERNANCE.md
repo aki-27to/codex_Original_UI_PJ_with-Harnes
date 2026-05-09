@@ -14,6 +14,8 @@ This document governs repo-local skills as a curated operating portfolio. The go
 - Skill flow contract: `scripts/config/skill_flow_contract.json`
 - Skill flow audit: `scripts/skill_flow_contract_test.js`
 - Portfolio policy: `scripts/config/skill_portfolio_policy.json`
+- Skill outcome event schema: `scripts/config/skill_outcome_event.schema.json`
+- Actual-use outcome log: `logs/skill_outcomes.jsonl`
 - Governance contracts: `scripts/config/agent_governance_contracts.json`
 
 ## 3) Canonical Root
@@ -70,6 +72,22 @@ draft -> cataloged -> used -> evidence_observed -> effective | neutral | harmful
 ## 7) Promotion Rule
 
 A skill is not promoted just because one task succeeded. Promotion requires repeatability, evidence, guard compatibility, and no measurable degradation in user-adoptable outcomes.
+
+## 7.1) Operational Maturity
+
+`article_alignment` and `operational_maturity` are separate scores.
+
+- `article_alignment`: whether the skill package satisfies the design-language gates for Codex Skills.
+- `operational_maturity`: whether actual skill use has produced enough outcome evidence to judge repeatability.
+
+Operational maturity is split into:
+
+- `usage_maturity`: actual use count, success rate, and guard failures.
+- `evidence_maturity`: artifacts, verification, decisions, rollback references, and promotion references left by actual use.
+- `automation_maturity`: only applicable when the skill needs scheduled or unattended execution.
+- `distribution_maturity`: only applicable when the skill needs cross-repository or Plugin/package distribution.
+
+`logs/skill_outcomes.jsonl` must contain only real skill-use events that match `scripts/config/skill_outcome_event.schema.json`. Do not add synthetic success rows, sample rows, or forecast rows to raise maturity scores. Test fixtures may create temporary JSONL files, but production maturity evidence comes only from actual task outcomes.
 
 ## 8) Skill Flow Rule
 

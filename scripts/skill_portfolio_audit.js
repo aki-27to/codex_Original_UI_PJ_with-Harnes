@@ -35,6 +35,10 @@ function formatPercent(value) {
   return `${(Number(value || 0) * 100).toFixed(1)}%`;
 }
 
+function formatScore(value) {
+  return Number.isFinite(value) ? value.toFixed(3) : "n/a";
+}
+
 function printUsage() {
   console.log("Usage:");
   console.log("  node scripts/skill_portfolio_audit.js [--outcomes logs/skill_outcomes.jsonl] [--json]");
@@ -94,6 +98,22 @@ function printHumanReport(report, outcomeInfo) {
   if (outcomeInfo.parseErrors.length) {
     for (const error of outcomeInfo.parseErrors) {
       console.log(`[skill-portfolio-audit] outcome_parse_error ${error}`);
+    }
+  }
+
+  if (report.operationalMaturity) {
+    const maturity = report.operationalMaturity;
+    console.log(
+      `[skill-portfolio-audit] operational_maturity profile=${maturity.scoreProfile} average=${formatScore(maturity.summary && maturity.summary.averageScore)} loggedSkills=${maturity.summary && maturity.summary.loggedSkillCount}/${maturity.summary && maturity.summary.skillCount}`
+    );
+    const dimensions = maturity.summary && maturity.summary.dimensions ? maturity.summary.dimensions : {};
+    for (const [dimensionName, dimension] of Object.entries(dimensions)) {
+      const statuses = dimension.statuses && typeof dimension.statuses === "object"
+        ? Object.entries(dimension.statuses).map(([status, count]) => `${status}:${count}`).join("|")
+        : "-";
+      console.log(
+        `[skill-portfolio-audit] maturity ${dimensionName}: applicable=${dimension.applicable} average=${formatScore(dimension.averageScore)} statuses=${statuses || "-"}`
+      );
     }
   }
 

@@ -16,7 +16,9 @@ The default score profile is `article_alignment`.
 
 `article_alignment` means the target is judged against the article's design language: Codex Skills as reusable workflow components, layer choice before skill authoring, activation contracts, progressive disclosure, purpose/trigger/shape/role classification, naming or equivalent role contract, generator/evaluator separation, evidence-backed completion, and lifecycle governance.
 
-`operational_adoptability` can be reported as a secondary score when the target is useful in this repo despite article-language gaps. Do not use operational adoptability as the headline score when the user asks whether a skill satisfies the article.
+`operational_maturity` can be reported as a secondary score when actual-use evidence exists. Split it into `usage_maturity`, `evidence_maturity`, `automation_maturity`, and `distribution_maturity`. Do not use operational maturity as the headline score when the user asks whether a skill satisfies the article.
+
+Automation and distribution are applicability-gated dimensions. If a repo-local skill does not need scheduled execution or cross-repository packaging, mark the corresponding dimension `not_applicable` instead of subtracting points.
 
 ### 100-point invariant
 

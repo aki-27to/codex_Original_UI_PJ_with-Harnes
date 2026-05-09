@@ -108,6 +108,15 @@ function buildSkillPortfolioOverview({summarizePathForOperationLog}={}){
       parseErrors:Array.isArray(outcomeInfo&&outcomeInfo.parseErrors)?outcomeInfo.parseErrors.slice(0,8):[],
     },
     outcomeSummary,
+    operationalMaturity:report&&report.operationalMaturity&&typeof report.operationalMaturity==="object"
+      ?{
+        scoreProfile:safeString(report.operationalMaturity.scoreProfile,80)||"",
+        scoreMeaning:safeString(report.operationalMaturity.scoreMeaning,240)||"",
+        summary:report.operationalMaturity.summary&&typeof report.operationalMaturity.summary==="object"
+          ?report.operationalMaturity.summary
+          :{},
+      }
+      :{},
     promotionCandidateCount:promotionCandidates.length,
     promotionCandidates,
     promotionRules:{

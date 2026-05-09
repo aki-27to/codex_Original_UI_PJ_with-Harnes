@@ -112,6 +112,17 @@
     "requireAdoptionFeedbackLink": true,
     "requireEvaluationLessonLink": true
   },
+  "operationalMaturity": {
+    "usage": {
+      "practicedMinRuns": 3,
+      "minSuccessRate": 0.8,
+      "maxGuardFailures": 0
+    },
+    "evidence": {
+      "minEvidenceRate": 0.8,
+      "minVerificationRate": 0.8
+    }
+  },
   "revocationPolicy": {
     "revokeOnRegression": true,
     "revokeOnGuardFailure": true,

@@ -1,0 +1,102 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "skill-outcome-event.schema.json",
+  "title": "Skill outcome event",
+  "description": "One JSONL record for a real skill-use outcome. Do not write synthetic success samples to logs/skill_outcomes.jsonl.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema",
+    "eventType",
+    "timestamp",
+    "skill",
+    "taskRef",
+    "selectedBy",
+    "result",
+    "primaryScore",
+    "guardPass",
+    "evidence"
+  ],
+  "properties": {
+    "schema": {
+      "const": "skill-outcome-event.v1"
+    },
+    "eventType": {
+      "const": "actual_skill_use",
+      "description": "Prevents sample, synthetic, or forecast rows from being treated as operational evidence."
+    },
+    "timestamp": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "skill": {
+      "type": "string",
+      "minLength": 1
+    },
+    "taskRef": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Thread, commit, issue, report, or local task reference proving this row came from an actual task."
+    },
+    "selectedBy": {
+      "enum": ["parent", "user", "automation", "ci", "script"]
+    },
+    "trigger": {
+      "type": "string"
+    },
+    "result": {
+      "enum": ["pass", "success", "completed", "partial", "fail", "failed", "blocked"]
+    },
+    "primaryScore": {
+      "type": "number",
+      "minimum": 0,
+      "maximum": 1
+    },
+    "guardPass": {
+      "type": "boolean"
+    },
+    "evidence": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["artifacts", "verification"],
+      "properties": {
+        "artifacts": {
+          "type": "array",
+          "items": { "type": "string", "minLength": 1 }
+        },
+        "commands": {
+          "type": "array",
+          "items": { "type": "string", "minLength": 1 }
+        },
+        "verification": {
+          "type": "array",
+          "items": { "type": "string", "minLength": 1 }
+        },
+        "decisions": {
+          "type": "array",
+          "items": { "type": "string", "minLength": 1 }
+        },
+        "userFeedback": {
+          "type": "array",
+          "items": { "type": "string", "minLength": 1 }
+        },
+        "rollbackRefs": {
+          "type": "array",
+          "items": { "type": "string", "minLength": 1 }
+        },
+        "promotionRefs": {
+          "type": "array",
+          "items": { "type": "string", "minLength": 1 }
+        },
+        "automationRefs": {
+          "type": "array",
+          "items": { "type": "string", "minLength": 1 }
+        },
+        "distributionRefs": {
+          "type": "array",
+          "items": { "type": "string", "minLength": 1 }
+        }
+      }
+    }
+  }
+}
