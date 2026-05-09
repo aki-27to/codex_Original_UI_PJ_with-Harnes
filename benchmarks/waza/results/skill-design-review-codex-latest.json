@@ -1,0 +1,210 @@
+{
+  "schema": "waza-external-benchmark-result.v1",
+  "generatedAt": "2026-05-09T02:55:40.598Z",
+  "benchmarkFramework": "waza-compatible-external",
+  "benchmark": {
+    "name": "skill-design-review-codex-external-benchmark",
+    "skill": "skill-design-review-codex",
+    "description": "External Waza-style benchmark for the repo-local skill-design-review-codex analyzer behavior.",
+    "manifestPath": "benchmarks/waza/benchmark-manifest.json",
+    "wazaEval": "benchmarks/waza/evals/skill-design-review-codex/eval.yaml"
+  },
+  "boundary": {
+    "harnessRuntimeIntegrated": false,
+    "writesActualSkillOutcomes": false,
+    "actualUseLogPolicy": "Do not write these benchmark results to logs/skill_outcomes.jsonl."
+  },
+  "wazaCli": {
+    "available": false,
+    "path": "",
+    "error": "not_found_on_path",
+    "note": "Real Waza CLI was not found on PATH; this run used the repo-local Waza-compatible smoke runner."
+  },
+  "summary": {
+    "totalTasks": 4,
+    "passed": 4,
+    "failed": 0,
+    "passRate": 1
+  },
+  "outcomes": [
+    {
+      "id": "current-skill-design-review",
+      "description": "The live repo-local skill-design-review-codex package should remain article aligned through repo-local alternative contracts.",
+      "target": ".agents/skills/skill-design-review-codex",
+      "status": "passed",
+      "score": 1,
+      "failures": [],
+      "analysis": {
+        "target": "C:/Users/akima/dev/codex_Original_UI_PJ_with-Harnes/.agents/skills/skill-design-review-codex",
+        "error": "",
+        "articleAlignment": {
+          "status": "ARTICLE_ALIGNED",
+          "score": 100,
+          "failedGateCount": 0,
+          "gateStatuses": {
+            "activation_contract": "pass",
+            "purpose_trigger_shape_role": "acceptable_alt",
+            "naming_side_effect_contract": "acceptable_alt",
+            "layer_fit_contract": "pass",
+            "progressive_disclosure": "pass",
+            "output_evidence_contract": "pass",
+            "self_report_rejection": "pass",
+            "generator_evaluator_integrity": "pass",
+            "governance_lifecycle": "pass",
+            "plugin_automation_boundary": "pass"
+          }
+        },
+        "mechanicalScore": 100,
+        "issues": [],
+        "sections": {
+          "hasPurpose": true,
+          "hasProcedure": true,
+          "hasOutputContract": true,
+          "hasEvidence": true,
+          "hasVerification": false,
+          "hasFailureGuard": true,
+          "hasGotchas": true,
+          "hasResources": true
+        }
+      }
+    },
+    {
+      "id": "article-perfect-fixture",
+      "description": "A standalone prefix-and-metadata fixture should pass the article-alignment gates without repo-local alternatives.",
+      "target": "benchmarks/waza/fixtures/skill-design-review-codex/run-article-perfect",
+      "status": "passed",
+      "score": 1,
+      "failures": [],
+      "analysis": {
+        "target": "C:/Users/akima/dev/codex_Original_UI_PJ_with-Harnes/benchmarks/waza/fixtures/skill-design-review-codex/run-article-perfect",
+        "error": "",
+        "articleAlignment": {
+          "status": "ARTICLE_ALIGNED",
+          "score": 100,
+          "failedGateCount": 0,
+          "gateStatuses": {
+            "activation_contract": "pass",
+            "purpose_trigger_shape_role": "pass",
+            "naming_side_effect_contract": "pass",
+            "layer_fit_contract": "pass",
+            "progressive_disclosure": "pass",
+            "output_evidence_contract": "pass",
+            "self_report_rejection": "pass",
+            "generator_evaluator_integrity": "pass",
+            "governance_lifecycle": "not_applicable",
+            "plugin_automation_boundary": "pass"
+          }
+        },
+        "mechanicalScore": 100,
+        "issues": [],
+        "sections": {
+          "hasPurpose": true,
+          "hasProcedure": true,
+          "hasOutputContract": true,
+          "hasEvidence": true,
+          "hasVerification": false,
+          "hasFailureGuard": true,
+          "hasGotchas": true,
+          "hasResources": true
+        }
+      }
+    },
+    {
+      "id": "bad-skill-fixture",
+      "description": "A vague saved-prompt fixture must not receive a perfect score.",
+      "target": "benchmarks/waza/fixtures/skill-design-review-codex/bad-skill",
+      "status": "passed",
+      "score": 1,
+      "failures": [],
+      "analysis": {
+        "target": "C:/Users/akima/dev/codex_Original_UI_PJ_with-Harnes/benchmarks/waza/fixtures/skill-design-review-codex/bad-skill",
+        "error": "",
+        "articleAlignment": {
+          "status": "ARTICLE_GAPS",
+          "score": 40,
+          "failedGateCount": 6,
+          "gateStatuses": {
+            "activation_contract": "pass",
+            "purpose_trigger_shape_role": "fail",
+            "naming_side_effect_contract": "fail",
+            "layer_fit_contract": "fail",
+            "progressive_disclosure": "pass",
+            "output_evidence_contract": "fail",
+            "self_report_rejection": "fail",
+            "generator_evaluator_integrity": "fail",
+            "governance_lifecycle": "not_applicable",
+            "plugin_automation_boundary": "pass"
+          }
+        },
+        "mechanicalScore": 40,
+        "issues": [
+          "name_does_not_match_folder",
+          "missing_purpose_section",
+          "missing_procedure_section",
+          "missing_output_contract",
+          "missing_failure_guard",
+          "missing_evidence_or_verification_section",
+          "self_report_language_present",
+          "article_alignment_incomplete",
+          "article_gate_purpose_trigger_shape_role",
+          "article_gate_naming_side_effect_contract",
+          "article_gate_layer_fit_contract",
+          "article_gate_output_evidence_contract",
+          "article_gate_self_report_rejection",
+          "article_gate_generator_evaluator_integrity"
+        ],
+        "sections": {
+          "hasPurpose": false,
+          "hasProcedure": false,
+          "hasOutputContract": false,
+          "hasEvidence": false,
+          "hasVerification": false,
+          "hasFailureGuard": false,
+          "hasGotchas": false,
+          "hasResources": false
+        }
+      }
+    },
+    {
+      "id": "japanese-heading-fixture",
+      "description": "Japanese section headings should be detected as valid contract surfaces.",
+      "target": "benchmarks/waza/fixtures/skill-design-review-codex/run-japanese-heading-perfect",
+      "status": "passed",
+      "score": 1,
+      "failures": [],
+      "analysis": {
+        "target": "C:/Users/akima/dev/codex_Original_UI_PJ_with-Harnes/benchmarks/waza/fixtures/skill-design-review-codex/run-japanese-heading-perfect",
+        "error": "",
+        "articleAlignment": {
+          "status": "ARTICLE_ALIGNED",
+          "score": 100,
+          "failedGateCount": 0,
+          "gateStatuses": {
+            "activation_contract": "pass",
+            "purpose_trigger_shape_role": "pass",
+            "naming_side_effect_contract": "pass",
+            "layer_fit_contract": "pass",
+            "progressive_disclosure": "pass",
+            "output_evidence_contract": "pass",
+            "self_report_rejection": "pass",
+            "generator_evaluator_integrity": "pass",
+            "governance_lifecycle": "not_applicable",
+            "plugin_automation_boundary": "pass"
+          }
+        },
+        "mechanicalScore": 100,
+        "issues": [],
+        "sections": {
+          "hasPurpose": true,
+          "hasProcedure": true,
+          "hasOutputContract": true,
+          "hasEvidence": true,
+          "hasVerification": true,
+          "hasFailureGuard": true,
+          "hasGotchas": true,
+          "hasResources": true
+        }
+      }
+    }
+  ]
+}
