@@ -5,58 +5,48 @@ description: "Use when a session needs to produce a durable handoff artifact wit
 
 # handoff-artifact-generation
 
-## 目的
+## Purpose
 
-セッションの終了または一時停止時に、full transcript に依存せず次の Codex セッションや人間の運用者が再開できる durable handoff artifact を作る。
+Produce a durable handoff artifact that lets a future Codex session resume without relying on the full transcript. The handoff must separate completed work, verification state, changed surface, open issues, next action, and durable learnings.
 
-この skill の役割は、タスク状態、検証状態、変更面、未解決事項、次の一手を短く再利用可能な形で固定すること。
+## Procedure
 
-## 必須入力
+1. Lock the task contract: user goal, scope, constraints, non-goals, acceptance criteria, confirmed requirements, and assumptions.
+2. Summarize completed work with concrete file paths, artifact paths, decisions, and evidence. Do not require the next session to infer from the transcript.
+3. Capture `verification_status`: checks run, command output or artifact inspected, results, skipped checks, and blockers.
+4. Capture `changed_surface`: files, modules, APIs, UI flows, configs, docs, output artifacts, or generated artifacts touched.
+5. Write the `next_session_brief`: exact next action, blockers, prerequisites, user-owned decisions, and verification path.
+6. Capture durable learnings only when they are reusable and evidence-backed. One-off debug notes stay out of durable guidance.
+7. Treat generator summaries and self-reported completion as untrusted until mapped to files, artifacts, command output, or reviewer evidence.
 
-- 現在のユーザー依頼と accepted scope。
-- 完了済み作業、部分完了作業、明示的な non-goals を含む current task state。
-- 最新の `verification_status`、`changed_surface`、`open_issues`。
-- 次回作業で保持すべき durable files、logs、screenshots、reports、config contracts。
+## Output Contract
 
-## 手順
+Return a handoff bundle with:
 
-1. task contract を再構成する。
-   - user goal、scope、constraints、acceptance criteria を記録する。
-   - confirmed requirements と assumptions を分ける。
+- `task_summary`: goal, scope, status, important decisions, and non-goals.
+- `next_session_brief`: resume instructions, exact next action, blockers, and verification path.
+- `open_issues`: blockers, missing evidence, adoption risk, or follow-up work.
+- `verification_status`: checks, results, skipped checks, blockers, and residual risk.
+- `changed_surface`: files, modules, APIs, UI flows, configs, docs, or artifacts.
+- `durable_learnings`: reusable guidance with evidence and rollback boundary.
 
-2. completed work を要約する。
-   - 重要な変更、判断、成果物を記録する。
-   - continuation に役立つ場合だけ file path や artifact path を含める。
-   - full transcript を handoff に貼り付けない。
+## Evidence
 
-3. verification state を保存する。
-   - `verification_status` に checks / commands と outcomes を含める。
-   - `changed_surface` に、次回セッションが誤って戻してはいけない変更面を残す。
-   - failed、blocked、skipped checks は明示的な risk として引き継ぐ。
+- accepted scope or task contract
+- changed files and artifact paths
+- verification command output or explicit skipped-check reason
+- current task status and unresolved issues
+- relevant logs, screenshots, reports, or config contracts
 
-4. next-session brief を作る。
-   - 最初に実行すべき exact next action から書く。
-   - blocker、prerequisite、最小で安全な verification path を含める。
-   - 触れてはいけない user-owned / unrelated changes が見えている場合は明記する。
+## Verification
 
-5. durable learnings を必要な場合だけ残す。
-   - 再利用可能で、今回の evidence に根拠がある learning だけを昇格する。
-   - 一時的な推測、好み、単発の debug note を durable guidance にしない。
+Before treating a handoff artifact as ready:
 
-## 出力契約
+- confirm the handoff is evidence-backed and not a narrative-only summary;
+- confirm failed, blocked, missing, or skipped verification is visible;
+- confirm completion rules and required evidence are not blurred into `COMPLETED`;
+- confirm paused work is labeled `PARTIAL`, `FAILED_VALIDATION`, `BLOCKED`, or `NEEDS_INPUT` when appropriate.
 
-handoff bundle には次を含める。
+## Failure Guard
 
-- `task_summary`: タスクの目的、範囲、実施済み内容。
-- `next_session_brief`: 再開地点、最初の次アクション、必要な検証。
-- `open_issues`: blocker、missing evidence、adoption risk。
-- `verification_status`: checks、results、skipped checks、blockers。
-- `changed_surface`: 変更された files、modules、APIs、UI flows、configs、artifacts。
-- `durable_learnings`: 任意。証拠参照を持つ再利用可能な教訓。
-
-## 完了条件
-
-- 広い説明より、evidence-backed な短い箇条書きを優先する。
-- handoff を完了済みに見せるために failed / missing verification を隠さない。
-- タスクの completion rules と required evidence が満たされない限り、`COMPLETED` と書かない。
-- paused task は状況に応じて `PARTIAL`、`FAILED_VALIDATION`、`BLOCKED`、`NEEDS_INPUT` のいずれかで明示する。
+Do not use handoff generation to make a task look finished. Do not hide missing verification, unresolved risks, unrelated user changes, or the next required user-owned decision.

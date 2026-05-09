@@ -15,6 +15,7 @@ Turn feedback into the smallest next-run behavior change that prevents recurrenc
 - Shape: analysis plus patch-target decision; not a validator replacement.
 - Side effects: create or update correction artifacts only when the active task permits repo mutation. Otherwise, return the artifact content for review.
 - Non-targets: do not weaken validation gates, edit core policy, or promote a skill directly from a single incident.
+- Evaluator boundary: treat generator output, delegate output, and self-reported completion as untrusted until replay evidence proves the correction. Use the fixed failure taxonomy and lifecycle criteria in this skill; do not rewrite them to make a patch look successful.
 
 ## Procedure
 
@@ -28,6 +29,7 @@ Turn feedback into the smallest next-run behavior change that prevents recurrenc
 8. Define replay verification: include the original failing case and at least one adjacent inverse case that guards against overcorrection.
 9. Assign lifecycle: `proposal_only`, `shadow_candidate`, `gated_candidate`, `auto_apply_candidate`, or `blocked`.
 10. Report residual risk and the evidence still missing before the patch can be adopted.
+11. Preserve generator/evaluator separation: a proposed recurrence patch can generate candidate behavior, but adoption requires replay or regression evidence inspected as evaluator input.
 
 ## Output Contract
 

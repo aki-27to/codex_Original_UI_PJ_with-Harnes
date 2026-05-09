@@ -429,6 +429,8 @@
       "expectedArtifacts": [
         "skill_design_verdict",
         "rubric_score",
+        "score_profile",
+        "article_alignment_score",
         "mechanical_analysis_summary",
         "evidence_backed_findings",
         "required_fixes"
@@ -438,13 +440,15 @@
         ".agents/skills/skill-design-review-codex/scripts/analyze-skill-design.js",
         "target SKILL.md",
         "scripts/config/repo_local_skill_catalog.json",
+        "scripts/skill_design_review_analyzer_test.js",
         "node scripts/repo_local_skill_catalog_test.js"
       ],
       "workerDecisionConnection": [
         "skill design review can inform ADOPT, REVISE, DRAFT_ONLY, or ROLLBACK before relying on a skill"
       ],
       "promotionCriteria": [
-        "repeatedly finds actionable skill-design defects with analyzer evidence and low false positives"
+        "repeatedly finds actionable skill-design defects with analyzer evidence and low false positives",
+        "100-point results mean article-alignment gates passed or have checked repo-local alternatives"
       ],
       "rollbackCriteria": [
         "rewrites review criteria to fit targets, mutates analysis-only targets, or gives generic advice without file evidence"

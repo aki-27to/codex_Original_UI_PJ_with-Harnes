@@ -10,6 +10,40 @@ Use this rubric as fixed criteria. Score each dimension from 0 to 4:
 
 Convert the 40-point raw score to 0-100. If a dimension cannot be checked, mark it `unknown` and explain why instead of guessing.
 
+## Score Profiles
+
+The default score profile is `article_alignment`.
+
+`article_alignment` means the target is judged against the article's design language: Codex Skills as reusable workflow components, layer choice before skill authoring, activation contracts, progressive disclosure, purpose/trigger/shape/role classification, naming or equivalent role contract, generator/evaluator separation, evidence-backed completion, and lifecycle governance.
+
+`operational_adoptability` can be reported as a secondary score when the target is useful in this repo despite article-language gaps. Do not use operational adoptability as the headline score when the user asks whether a skill satisfies the article.
+
+### 100-point invariant
+
+A score of 100 means all article-alignment gates are checked and pass, or a proposed article mechanism is replaced by an explicit machine-checked repo-local alternative. For example, a skill can satisfy the article's prefix-contract intent without `ref-`/`run-`/`wrap-`/`assign-`/`delegate-` only when a catalog/flow/lint surface gives callers the same side-effect and role information.
+
+Do not give 100 when:
+
+- the score only means "repo-local checks passed";
+- article prefix or metadata gaps are hand-waved without a checked alternative;
+- `not_checked` includes activation, evidence, naming/role contract, lifecycle, or evaluator integrity;
+- completion depends on self-report rather than artifacts, checks, or evidence.
+
+## Article Alignment Gates
+
+These gates cap the headline score. Any failed gate prevents 100 even if the 10-dimension rubric looks strong.
+
+1. Activation contract: `name` and `description` tell Codex when to use the skill.
+2. Purpose / Trigger / Shape / Role: the four axes are explicit in frontmatter, body, or machine-checked repo catalog/flow.
+3. Naming and side-effect contract: article prefixes are used, or an equivalent repo-local naming/catalog/flow convention is checked.
+4. Layer fit: deterministic work is routed to scripts, hooks, CI, CLI, MCP, API, or package commands instead of prose-only instructions.
+5. Progressive disclosure: `SKILL.md` stays lean and directly points to required resources.
+6. Output and evidence: artifact, status vocabulary, verification, residual risk, and failure guard are visible before completion.
+7. Self-report rejection: "done" style statements are not treated as evidence.
+8. Generator/evaluator integrity: evaluators use fixed criteria and treat generator/delegate output as untrusted.
+9. Governance lifecycle: repo-local promoted skills have catalog, flow, promotion, and rollback surfaces when the repo enforces them.
+10. Plugin and automation boundary: Plugin is distribution and Automation is schedule; neither is hidden inside an ordinary Skill claim.
+
 ## Dimensions
 
 1. Activation contract

@@ -5,48 +5,46 @@ description: "Use when a session needs to verify changed code, summarize verific
 
 # code-change-verification
 
-## 目的
+## Purpose
 
-ローカルのコード、設定、テスト、ドキュメントを変更したあと、closeout や handoff の前に検証状態を監査可能な形で整理する。
+Turn local code, config, docs, or artifact changes into an evidence-backed verification summary for closeout and handoff. This skill does not replace tests, CI, scripts, or reviewer judgment; it records which checks were run, which were skipped, and what risk remains.
 
-この skill の役割は、何を変えたか、何を検証したか、何が失敗または未実行か、どのリスクが残っているかを明確にすること。
+## Procedure
 
-## 必須入力
+1. Capture the changed surface with `git status`, `git diff --stat`, and task-owned file paths. Keep unrelated user changes separate.
+2. Match each changed surface to the narrowest relevant deterministic check: unit test, lint, typecheck, route/service contract test, UI/browser evidence, or package script.
+3. Run targeted verification first. Run broader regression checks when shared behavior, protocol contracts, runtime config, UI flows, or public artifacts changed.
+4. Classify every check as `pass`, `fail`, `blocked`, or `not_run`, with the exact command or evidence surface.
+5. Treat generator output, implementation summaries, and self-reported completion as untrusted until command output, artifact inspection, or reviewer evidence supports them.
+6. Report unresolved defects, flaky checks, missing evidence, assumptions, and follow-up work as `open_issues`.
 
-- `git status`、`git diff --stat`、直近の編集内容、またはユーザー指定スコープから changed surface を特定する。
-- 変更面に対応するテスト、手動確認、スクリーンショット、レビュー証跡を特定する。
-- ユーザー由来または unrelated な既存変更は保持する。現在タスクの検証対象として必要な場合だけ明示的に扱う。
+## Output Contract
 
-## 手順
+Return:
 
-1. changed surface を収集する。
-   - 変更されたファイル、モジュール、API、UIパス、設定キー、ドキュメント、生成物を要約する。
-   - task-owned changes と既存の unrelated changes を区別できる場合は分けて記録する。
+- `verification_status`: each check, command or artifact inspected, result, blocker, and residual risk.
+- `changed_surface`: task-owned files, modules, APIs, UI flows, configs, docs, or generated artifacts affected.
+- `open_issues`: missing checks, failed checks, flaky checks, assumptions, adoption risk, or follow-up work.
+- `completion_readiness`: `ready`, `partial`, `failed_validation`, or `blocked`, based only on inspected evidence.
 
-2. リスクに応じて検証を対応づける。
-   - 狭い変更では targeted test を優先する。
-   - shared behavior、protocol contract、runtime config、user-facing flow に触れた場合は broader regression check を追加する。
-   - UI変更では、レイアウトや操作が成果に関わる場合に visual / browser evidence を含める。
+## Evidence
 
-3. verification result を記録する。
-   - 各チェックを `pass`、`fail`、`blocked`、`not_run` のいずれかで記録する。
-   - command 名と意味のある結果を残す。意図だけで完了を主張しない。
-   - 実行できなかったチェックは、blocker と残留リスクを明記する。
+- `git status --short --branch`
+- `git diff --stat`
+- targeted verification command output
+- broader regression command output when shared behavior changed
+- UI/browser evidence when the changed surface is visual
+- reviewer/tester findings when available
 
-4. unresolved issues を捕捉する。
-   - defect、flaky check、missing evidence、assumption、follow-up work を `open_issues` に記録する。
-   - open issue は adoption / release risk に関係する事実に絞る。
+## Verification
 
-## 出力契約
+Before reporting code-change verification as complete:
 
-closeout、handoff、または session summary に次を出力または更新する。
+- confirm every task-owned changed surface has a matching check or an explicit `not_run` reason;
+- confirm failed, blocked, or skipped checks are listed as adoption risk;
+- confirm unrelated dirty work is not claimed as verified task output;
+- confirm `COMPLETED` is not claimed from implementation intent alone.
 
-- `verification_status`: 実行したチェック、結果、未実行チェック、blocker、残留リスク。
-- `changed_surface`: タスクが影響したファイルまたは挙動面。
-- `open_issues`: 完了判断に影響する未解決 defect、未取得証拠、前提。
+## Failure Guard
 
-## 完了条件
-
-- 必須検証が失敗、未実行、または正当化なしに省略された場合は `COMPLETED` にしない。
-- 実装はあるが検証が不十分な場合は、`PARTIAL` または `FAILED_VALIDATION` として残りの検証を具体化する。
-- ユーザー向け最終報告では、内部証跡を圧縮しつつ、commands、outcomes、risks は落とさない。
+Do not convert a green narrow check into broad release readiness. Do not hide failed or skipped checks. Do not mark a task `COMPLETED` when the evidence only supports `PARTIAL`, `FAILED_VALIDATION`, or `BLOCKED`.
