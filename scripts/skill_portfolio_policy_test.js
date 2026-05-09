@@ -168,6 +168,43 @@ function testActualOutcomeLogBuildsOperationalMaturity() {
   assert.strictEqual(maturity.dimensions.distribution_maturity.status, "not_applicable", "Plugin/package distribution must not be required by default");
 }
 
+function testOutcomeOnlyRepoLocalSkillGetsMaturity() {
+  const report = evaluateSkillPortfolio({
+    outcomeEvents: [
+      {
+        schema: "skill-outcome-event.v1",
+        eventType: "actual_skill_use",
+        timestamp: "2026-05-09T01:00:00.000Z",
+        skill: "safe-refactor-with-proof",
+        taskRef: "test-repo-local-skill-outcome",
+        selectedBy: "parent",
+        result: "pass",
+        primaryScore: 0.9,
+        guardPass: true,
+        evidence: {
+          artifacts: ["logs/skill_outcomes.jsonl"],
+          commands: ["git diff --check"],
+          verification: ["diff check passed"],
+          decisions: ["minimal reversible change"],
+          userFeedback: [],
+          rollbackRefs: [],
+          promotionRefs: [],
+          automationRefs: [],
+          distributionRefs: []
+        }
+      }
+    ]
+  });
+  const maturity = report.operationalMaturity.bySkill["safe-refactor-with-proof"];
+  assert.ok(maturity, "outcome-only repo-local skill should appear in operational maturity output");
+  assert.strictEqual(maturity.source, "outcome_only", "repo-local outcome not in skill_catalog should be labelled outcome_only");
+  assert.strictEqual(maturity.status, "developing", "one real run should move the repo-local skill out of no_data");
+  assert.strictEqual(maturity.dimensions.usage_maturity.status, "observed", "one real run should be observed usage");
+  assert.strictEqual(maturity.dimensions.evidence_maturity.status, "evidence_observed", "artifact and verification refs should count for repo-local skills");
+  assert.strictEqual(maturity.dimensions.automation_maturity.status, "not_applicable", "automation should remain not_applicable by default");
+  assert.strictEqual(maturity.dimensions.distribution_maturity.status, "not_applicable", "distribution should remain not_applicable by default");
+}
+
 function testOutcomeLogRejectsSyntheticRows() {
   const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), "skill-outcomes-invalid-"));
   const outcomesPath = path.join(tmpDir, "skill_outcomes.jsonl");
@@ -205,6 +242,7 @@ function run() {
     ["outcome aggregation", testOutcomeAggregation],
     ["missing outcome log maturity separation", testMissingOutcomeLogKeepsMaturitySeparate],
     ["actual outcome log operational maturity", testActualOutcomeLogBuildsOperationalMaturity],
+    ["outcome-only repo-local skill maturity", testOutcomeOnlyRepoLocalSkillGetsMaturity],
     ["outcome log rejects synthetic rows", testOutcomeLogRejectsSyntheticRows],
   ];
 

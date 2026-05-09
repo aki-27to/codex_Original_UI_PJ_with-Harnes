@@ -913,7 +913,20 @@ function summarizeDimension(bySkill, dimensionId) {
 
 function buildOperationalMaturity({ policy, catalog, outcomeStats }) {
   const bySkill = {};
-  for (const [skillId, skillDef] of Object.entries(catalog.skills)) {
+  const skillIds = new Set([
+    ...Object.keys(catalog.skills),
+    ...Object.keys(outcomeStats),
+  ]);
+  const defaultSkillDef = Object.freeze({
+    operationalMaturity: Object.freeze({
+      automationRequired: false,
+      automationReason: "",
+      distributionRequired: false,
+      distributionReason: "",
+    }),
+  });
+  for (const skillId of Array.from(skillIds).sort()) {
+    const skillDef = catalog.skills[skillId] || defaultSkillDef;
     const stat = outcomeStats[skillId];
     const dimensions = {
       usage_maturity: scoreUsageMaturity(stat, policy),
@@ -922,11 +935,17 @@ function buildOperationalMaturity({ policy, catalog, outcomeStats }) {
       distribution_maturity: scoreDistributionMaturity(skillDef, stat),
     };
     const overallScore = averageScoredDimensions(Object.values(dimensions));
+    const usageStatus = dimensions.usage_maturity.status;
+    const evidenceStatus = dimensions.evidence_maturity.status;
+    const maturityStatus = overallScore === null
+      ? "not_applicable"
+      : (usageStatus === "practiced" && evidenceStatus === "evidence_observed" && overallScore >= 0.8
+        ? "mature"
+        : (overallScore > 0 ? "developing" : "no_data"));
     bySkill[skillId] = {
       skill: skillId,
-      status: overallScore === null
-        ? "not_applicable"
-        : (overallScore >= 0.8 ? "mature" : (overallScore > 0 ? "developing" : "no_data")),
+      source: catalog.skills[skillId] ? "catalog" : "outcome_only",
+      status: maturityStatus,
       score: overallScore,
       dimensions,
     };
@@ -947,7 +966,9 @@ function buildOperationalMaturity({ policy, catalog, outcomeStats }) {
     scoreProfile: "operational_maturity",
     scoreMeaning: "actual-use maturity is separate from article_alignment and must not be used as proof that article gates pass",
     summary: {
-      skillCount: Object.keys(catalog.skills).length,
+      skillCount: Object.keys(bySkill).length,
+      catalogSkillCount: Object.keys(catalog.skills).length,
+      outcomeOnlySkillCount: Object.values(bySkill).filter((entry) => entry.source === "outcome_only").length,
       loggedSkillCount,
       averageScore,
       dimensions,
