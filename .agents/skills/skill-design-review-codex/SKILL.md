@@ -51,7 +51,7 @@ Include:
 
 - Verdict: `ADOPTABLE`, `REVISE_MINOR`, `REVISE_MAJOR`, `DRAFT_ONLY`, or `ROLLBACK_CANDIDATE`.
 - Score: 0-100 with `score_profile`, rubric version, score meaning, and any `not_checked` surfaces.
-- Article alignment: `ARTICLE_ALIGNED`, `ARTICLE_ALIGNED_WITH_GAPS`, or `ARTICLE_GAPS`; list failed or alternative gates.
+- Article alignment: `ARTICLE_ALIGNED`, `ARTICLE_ALIGNED_WITH_GAPS`, or `ARTICLE_GAPS`; list failed or alternative gates with separate `criterion` and observed `evidence`.
 - Secondary scores: optional operational adoptability or portfolio coherence scores, explicitly labeled as secondary.
 - Mechanical evidence: analyzer path or command result summary.
 - Findings: severity-ordered, each with file/path evidence and the violated design principle.
@@ -81,7 +81,7 @@ Include:
 
 For local skill reviews, include at least one of:
 
-- Analyzer output from `scripts/analyze-skill-design.js`, including `scoreProfile`, `articleAlignment.score`, and gate statuses.
+- Analyzer output from `scripts/analyze-skill-design.js`, including `scoreProfile`, `articleAlignment.score`, gate statuses, gate `criterion`, and gate observed `evidence`.
 - Catalog evidence from `scripts/config/repo_local_skill_catalog.json`
 - Package checks: `node scripts/repo_local_skill_catalog_test.js` and `node scripts/skill_portfolio_audit.js`
 - Target file references from the reviewed `SKILL.md` and any loaded resource files

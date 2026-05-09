@@ -33,6 +33,8 @@ Do not give 100 when:
 
 These gates cap the headline score. Any failed gate prevents 100 even if the 10-dimension rubric looks strong.
 
+Each gate must expose both `criterion` and observed `evidence`. `criterion` is the requirement the gate checks. `evidence` is the concrete measured data used for the status, such as frontmatter fields, description length, section booleans, resource counts, catalog/flow contract booleans, or article signal booleans. Do not place criterion text in an `evidence` field.
+
 1. Activation contract: `name` and `description` tell Codex when to use the skill.
 2. Purpose / Trigger / Shape / Role: the four axes are explicit in frontmatter, body, or machine-checked repo catalog/flow.
 3. Naming and side-effect contract: article prefixes are used, or an equivalent repo-local naming/catalog/flow convention is checked.

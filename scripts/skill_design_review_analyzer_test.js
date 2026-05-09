@@ -35,11 +35,43 @@ function assertArticlePerfect(result, label) {
   assert.strictEqual(result.articleAlignment.status, "ARTICLE_ALIGNED", `${label} must be ARTICLE_ALIGNED`);
   assert.strictEqual(result.articleAlignment.failedGateCount, 0, `${label} must not have failed article gates`);
   assert.strictEqual(result.mechanicalScore, 100, `${label} headline mechanicalScore must be article-gated to 100`);
+  assertGateSchema(result, label);
+}
+
+function assertGateSchema(result, label) {
+  for (const gate of result.articleAlignment.gates) {
+    assert.strictEqual(typeof gate.criterion, "string", `${label}.${gate.id} must expose criterion text`);
+    assert(gate.criterion.trim().length >= 20, `${label}.${gate.id} criterion must be specific`);
+    assert(gate.evidence && typeof gate.evidence === "object" && !Array.isArray(gate.evidence), `${label}.${gate.id} must expose observed evidence object`);
+    assert.notStrictEqual(typeof gate.evidence, "string", `${label}.${gate.id} evidence must not be criterion text`);
+  }
 }
 
 function main() {
   const self = runAnalyzer(".agents/skills/skill-design-review-codex");
   assertArticlePerfect(self, "skill-design-review-codex");
+  const namingGate = self.articleAlignment.gates.find((gate) => gate.id === "naming_side_effect_contract");
+  assert(namingGate, "self analyzer must expose naming side-effect gate");
+  assert.strictEqual(namingGate.status, "acceptable_alt", "repo-local skill-design-review-codex should use checked repo-local alternative naming contract");
+  assert.deepStrictEqual(
+    {
+      catalogEntryFound: namingGate.evidence.repoLocalAlternative.catalogEntryFound,
+      flowRoleFound: namingGate.evidence.repoLocalAlternative.flowRoleFound,
+      catalogComplete: namingGate.evidence.repoLocalAlternative.catalogComplete,
+      flowRoleComplete: namingGate.evidence.repoLocalAlternative.flowRoleComplete,
+      repoLocalContractComplete: namingGate.evidence.repoLocalAlternative.repoLocalContractComplete,
+      flowKind: namingGate.evidence.repoLocalAlternative.flowKind,
+    },
+    {
+      catalogEntryFound: true,
+      flowRoleFound: true,
+      catalogComplete: true,
+      flowRoleComplete: true,
+      repoLocalContractComplete: true,
+      flowKind: "design_reviewer",
+    },
+    "acceptable_alt gates must expose the repo-local contract evidence they relied on"
+  );
 
   const root = path.join(workspaceRoot, "runtime", "output-transient", "skill-design-review-analyzer-test", String(Date.now()));
   try {
@@ -103,6 +135,7 @@ This is helpful. Done.
     assert(bad.articleAlignment.score < 100, "bad fixture must not receive article alignment 100");
     assert(bad.articleAlignment.failedGateCount > 0, "bad fixture must expose failed article gates");
     assert(bad.issues.includes("article_alignment_incomplete"), "bad fixture must report incomplete article alignment");
+    assertGateSchema(bad, "bad fixture");
   } finally {
     fs.rmSync(root, { recursive: true, force: true });
   }

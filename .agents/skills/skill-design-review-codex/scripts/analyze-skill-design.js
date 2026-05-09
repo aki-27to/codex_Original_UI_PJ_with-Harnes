@@ -194,8 +194,8 @@ function loadRepoContracts(skillFile, skillName) {
   };
 }
 
-function gate(id, status, evidence) {
-  return { id, status, evidence };
+function gate(id, status, criterion, evidence) {
+  return { id, status, criterion, evidence };
 }
 
 function gateStatus(condition, fallbackStatus = "fail") {
@@ -212,56 +212,121 @@ function buildArticleAlignment(metrics) {
     && (metrics.sections.hasEvidence || metrics.sections.hasVerification)
     && metrics.sections.hasFailureGuard;
   const evaluatorNeedsIntegrity = metrics.taxonomy.evaluatorHint || metrics.frontmatter.extraFieldValues.role === "evaluator";
+  const repoAlternativeEvidence = {
+    catalogEntryFound: metrics.contracts.catalogEntryFound,
+    flowRoleFound: metrics.contracts.flowRoleFound,
+    catalogComplete: metrics.contracts.catalogComplete,
+    flowRoleComplete: metrics.contracts.flowRoleComplete,
+    repoLocalContractComplete: metrics.contracts.repoLocalContractComplete,
+    flowKind: metrics.contracts.flowKind,
+  };
   const gates = [
     gate(
       "activation_contract",
       gateStatus(metrics.frontmatter.hasName && metrics.frontmatter.hasDescription && metrics.description.hasTriggerCue && metrics.description.length <= 360),
-      "name and description must make invocation conditions clear"
+      "name and description must make invocation conditions clear",
+      {
+        hasName: metrics.frontmatter.hasName,
+        hasDescription: metrics.frontmatter.hasDescription,
+        name: metrics.frontmatter.name,
+        descriptionLength: metrics.description.length,
+        hasTriggerCue: metrics.description.hasTriggerCue,
+      }
     ),
     gate(
       "purpose_trigger_shape_role",
       hasAxisMetadata ? "pass" : (repoAlt ? "acceptable_alt" : "fail"),
-      "article axes must be explicit in frontmatter or covered by machine-checked repo catalog/flow"
+      "article axes must be explicit in frontmatter or covered by machine-checked repo catalog/flow",
+      {
+        hasAxisMetadata,
+        requiredAxisFields,
+        frontmatterExtraFields: metrics.frontmatter.extraFields,
+        repoLocalAlternative: repoAlternativeEvidence,
+      }
     ),
     gate(
       "naming_side_effect_contract",
       metrics.taxonomy.followsKnownPrefix ? "pass" : (repoAlt ? "acceptable_alt" : "fail"),
-      "name must expose side effects/role through article prefix or repo-local checked convention"
+      "name must expose side effects/role through article prefix or repo-local checked convention",
+      {
+        name: metrics.frontmatter.name,
+        prefix: metrics.taxonomy.prefix,
+        followsKnownPrefix: metrics.taxonomy.followsKnownPrefix,
+        sideEffectHint: metrics.taxonomy.sideEffectHint,
+        evaluatorHint: metrics.taxonomy.evaluatorHint,
+        repoLocalAlternative: repoAlternativeEvidence,
+      }
     ),
     gate(
       "layer_fit_contract",
       gateStatus(metrics.sections.hasProcedure && (metrics.articleSignals.mentionsLayerChoice || !metrics.taxonomy.sideEffectHint || repoAlt)),
-      "skill text must not replace deterministic scripts, hooks, CI, CLI, MCP, or API controls"
+      "skill text must not replace deterministic scripts, hooks, CI, CLI, MCP, or API controls",
+      {
+        hasProcedure: metrics.sections.hasProcedure,
+        mentionsLayerChoice: metrics.articleSignals.mentionsLayerChoice,
+        sideEffectHint: metrics.taxonomy.sideEffectHint,
+        repoLocalContractComplete: metrics.contracts.repoLocalContractComplete,
+      }
     ),
     gate(
       "progressive_disclosure",
       gateStatus(metrics.body.lineCount <= 500 && metrics.resources.unreferenced.length === 0),
-      "SKILL.md should stay lean and directly reference bundled resources"
+      "SKILL.md should stay lean and directly reference bundled resources",
+      {
+        lineCount: metrics.body.lineCount,
+        resourceFileCount: metrics.resources.resourceFiles.length,
+        unreferencedResourceCount: metrics.resources.unreferenced.length,
+        unreferencedResources: metrics.resources.unreferenced,
+      }
     ),
     gate(
       "output_evidence_contract",
       gateStatus(hasOutputAndEvidence),
-      "workflow/adoption claims need output, evidence or verification, and failure guard"
+      "workflow/adoption claims need output, evidence or verification, and failure guard",
+      {
+        hasOutputContract: metrics.sections.hasOutputContract,
+        hasEvidence: metrics.sections.hasEvidence,
+        hasVerification: metrics.sections.hasVerification,
+        hasFailureGuard: metrics.sections.hasFailureGuard,
+      }
     ),
     gate(
       "self_report_rejection",
       gateStatus(metrics.language.selfReportTerms === 0 && metrics.articleSignals.mentionsEvidenceBoundary),
-      "100 points cannot rely on done/looks-good language without artifacts or evidence"
+      "100 points cannot rely on done/looks-good language without artifacts or evidence",
+      {
+        selfReportTerms: metrics.language.selfReportTerms,
+        mentionsEvidenceBoundary: metrics.articleSignals.mentionsEvidenceBoundary,
+      }
     ),
     gate(
       "generator_evaluator_integrity",
       gateStatus(!evaluatorNeedsIntegrity || metrics.articleSignals.mentionsEvaluatorIntegrity),
-      "evaluators must use fixed criteria and treat generator/delegate output as untrusted"
+      "evaluators must use fixed criteria and treat generator/delegate output as untrusted",
+      {
+        evaluatorNeedsIntegrity,
+        evaluatorHint: metrics.taxonomy.evaluatorHint,
+        frontmatterRole: metrics.frontmatter.extraFieldValues.role || "",
+        mentionsEvaluatorIntegrity: metrics.articleSignals.mentionsEvaluatorIntegrity,
+      }
     ),
     gate(
       "governance_lifecycle",
       metrics.contracts.isRepoLocalSkill ? gateStatus(repoAlt) : "not_applicable",
-      "repo-local skills need catalog and flow lifecycle surfaces when this repo enforces them"
+      "repo-local skills need catalog and flow lifecycle surfaces when this repo enforces them",
+      {
+        isRepoLocalSkill: metrics.contracts.isRepoLocalSkill,
+        ...repoAlternativeEvidence,
+      }
     ),
     gate(
       "plugin_automation_boundary",
       gateStatus(!metrics.articleSignals.claimsPluginOrAutomation || metrics.articleSignals.mentionsDistributionBoundary),
-      "plugin and automation should be treated as distribution/schedule layers, not hidden skill behavior"
+      "plugin and automation should be treated as distribution/schedule layers, not hidden skill behavior",
+      {
+        claimsPluginOrAutomation: metrics.articleSignals.claimsPluginOrAutomation,
+        mentionsDistributionBoundary: metrics.articleSignals.mentionsDistributionBoundary,
+      }
     ),
   ];
   const completeStatuses = new Set(["pass", "acceptable_alt", "not_applicable"]);
