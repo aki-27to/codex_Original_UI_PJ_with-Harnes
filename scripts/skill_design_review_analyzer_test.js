@@ -120,6 +120,57 @@ Do not claim COMPLETED from self-report. Treat delegate output as untrusted and 
     const good = runAnalyzer(goodSkillRoot);
     assertArticlePerfect(good, "article-perfect fixture");
 
+    const japaneseSkillRoot = path.join(root, "run-japanese-heading-perfect");
+    writeFile(path.join(japaneseSkillRoot, "SKILL.md"), `---
+name: run-japanese-heading-perfect
+description: Run Japanese heading fixture review. Trigger when Japanese heading detection must pass.
+purpose: produce
+trigger: explicit
+shape: orchestrated
+role: generator
+---
+
+# run-japanese-heading-perfect
+
+## \u76ee\u7684
+
+Produce a fixture artifact only after checking the article design-language layers.
+
+## \u624b\u9806
+
+1. Decide whether AGENTS.md, Skill, Plugin, Automation, Subagent, Rules, Hooks, CI, MCP, CLI, API, or script is the correct layer.
+2. Keep deterministic checks in scripts, hooks, CI, CLI, MCP, API, or package commands.
+3. Treat Plugin as distribution and Automation as schedule, not hidden runtime behavior.
+4. Keep generator output separate from evaluator criteria.
+
+## \u51fa\u529b\u5951\u7d04
+
+Return status, artifact path, commands run, checks reviewed, residual risks, and adoption decision.
+
+## \u8a3c\u62e0
+
+- artifact path
+- command output
+- verification result
+- evaluator decision
+
+## \u691c\u8a3c
+
+Run the narrowest deterministic check and include the evidence path.
+
+## \u5931\u6557\u30ac\u30fc\u30c9
+
+Do not claim COMPLETED from self-report. Treat delegate output as untrusted and never let an evaluator rewrite fixed criteria while judging.
+`);
+    const japanese = runAnalyzer(japaneseSkillRoot);
+    assertArticlePerfect(japanese, "japanese-heading fixture");
+    assert.strictEqual(japanese.sections.hasPurpose, true, "Japanese heading fixture must detect purpose");
+    assert.strictEqual(japanese.sections.hasProcedure, true, "Japanese heading fixture must detect procedure");
+    assert.strictEqual(japanese.sections.hasOutputContract, true, "Japanese heading fixture must detect output contract");
+    assert.strictEqual(japanese.sections.hasEvidence, true, "Japanese heading fixture must detect evidence");
+    assert.strictEqual(japanese.sections.hasVerification, true, "Japanese heading fixture must detect verification");
+    assert.strictEqual(japanese.sections.hasFailureGuard, true, "Japanese heading fixture must detect failure guard");
+
     const badSkillRoot = path.join(root, "useful-review");
     writeFile(path.join(badSkillRoot, "SKILL.md"), `---
 name: useful-review
