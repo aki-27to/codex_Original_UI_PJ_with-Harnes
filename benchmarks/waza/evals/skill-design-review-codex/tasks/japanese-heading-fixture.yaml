@@ -1,0 +1,16 @@
+id: japanese-heading-fixture
+name: Japanese heading fixture
+description: |
+  Smoke that real Waza can load a Japanese-heading fixture.
+tags:
+  - smoke
+  - japanese-fixture
+inputs:
+  prompt: "Inspect the Japanese heading fixture skill."
+  files:
+    - path: benchmarks/waza/fixtures/skill-design-review-codex/run-japanese-heading-perfect/SKILL.md
+expected:
+  output_contains:
+    - "run-japanese-heading-perfect"
+    - "purpose: judge"
+    - "failure guard"

@@ -1,0 +1,28 @@
+{
+  "task_id": "article-perfect-fixture",
+  "task_name": "Article-perfect fixture",
+  "status": "passed",
+  "started_at": "2026-05-09T12:15:22.0121441+09:00",
+  "completed_at": "2026-05-09T12:15:22.0131441+09:00",
+  "duration_ms": 1,
+  "prompt": "Inspect the article-perfect fixture skill.",
+  "final_output": "Mock response for: Inspect the article-perfect fixture skill.\nTask: Article-perfect fixture\nDescription: Smoke that real Waza can load a positive fixture for article-style skill design.\n\nAnalyzed 1 file(s):\n  - benchmarks/waza/fixtures/skill-design-review-codex/run-article-perfect/SKILL.md\n---\nname: run-article-perfect\ndescription: Run article-perfect fixture review. Trigger when article-alignment benchmark fixtures must pass.\npurpose: judge\ntrigger: explicit\nshape: orchestrated\nrole: evaluator\n---\n\n# run-article-perfect\n\n## Purpose\n\nEvaluate a skill package against fixed article-alignment criteria and return a structured pass/fail result.\n\n## Default Boundary\n\nUse this fixture only for external benchmark validation. Do not edit the target skill and do not write operational logs.\n\n## Procedure\n\n1. Read the target `SKILL.md`.\n2. Classify purpose, trigger, shape, role, side effects, and layer fit.\n3. Check output, evidence, verification, failure guard, progressive disclosure, and evaluator integrity.\n4. Return a structured score with gate evidence.\n\n## Output Contract\n\nReturn `ARTICLE_ALIGNED`, `ARTICLE_ALIGNED_WITH_GAPS`, or `ARTICLE_GAPS`, a score, failed gate count, and inspected evidence.\n\n## Evidence And Verification\n\nUse inspected files, command outputs, gate evidence, and analyzer results....(truncated)",
+  "transcript": null,
+  "validations": {
+    "_output_contains": {
+      "identifier": "_output_contains",
+      "type": "",
+      "score": 1,
+      "weight": 1,
+      "passed": true,
+      "feedback": "matched 3/3 required strings",
+      "duration_ms": 0
+    }
+  },
+  "session": {
+    "tool_call_count": 0,
+    "tools_used": [],
+    "errors": [],
+    "session_id": "mock-session-1778296522013693700"
+  }
+}

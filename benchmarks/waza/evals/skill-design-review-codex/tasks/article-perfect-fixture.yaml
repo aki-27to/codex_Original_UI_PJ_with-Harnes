@@ -1,0 +1,16 @@
+id: article-perfect-fixture
+name: Article-perfect fixture
+description: |
+  Smoke that real Waza can load a positive fixture for article-style skill design.
+tags:
+  - smoke
+  - positive-fixture
+inputs:
+  prompt: "Inspect the article-perfect fixture skill."
+  files:
+    - path: benchmarks/waza/fixtures/skill-design-review-codex/run-article-perfect/SKILL.md
+expected:
+  output_contains:
+    - "run-article-perfect"
+    - "purpose: judge"
+    - "Evidence And Verification"

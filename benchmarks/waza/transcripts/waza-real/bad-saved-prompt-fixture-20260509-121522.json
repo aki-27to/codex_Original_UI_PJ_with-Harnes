@@ -1,0 +1,37 @@
+{
+  "task_id": "bad-skill-fixture",
+  "task_name": "Bad saved-prompt fixture",
+  "status": "passed",
+  "started_at": "2026-05-09T12:15:22.0309224+09:00",
+  "completed_at": "2026-05-09T12:15:22.0319224+09:00",
+  "duration_ms": 1,
+  "prompt": "Inspect the bad saved-prompt fixture skill.",
+  "final_output": "Mock response for: Inspect the bad saved-prompt fixture skill.\nTask: Bad saved-prompt fixture\nDescription: Smoke that real Waza can load a negative saved-prompt style fixture.\n\nAnalyzed 1 file(s):\n  - benchmarks/waza/fixtures/skill-design-review-codex/bad-skill/SKILL.md\n---\nname: helper\ndescription: Helpful skill.\n---\n\n# helper\n\nThis is a saved prompt. Use it to review things and say if they look good.\n\nDone means the answer sounds useful.\n\n",
+  "transcript": null,
+  "validations": {
+    "_output_contains": {
+      "identifier": "_output_contains",
+      "type": "",
+      "score": 1,
+      "weight": 1,
+      "passed": true,
+      "feedback": "matched 2/2 required strings",
+      "duration_ms": 0
+    },
+    "_output_not_contains": {
+      "identifier": "_output_not_contains",
+      "type": "",
+      "score": 1,
+      "weight": 1,
+      "passed": true,
+      "feedback": "1/1 excluded strings absent",
+      "duration_ms": 0
+    }
+  },
+  "session": {
+    "tool_call_count": 0,
+    "tools_used": [],
+    "errors": [],
+    "session_id": "mock-session-1778296522032487700"
+  }
+}

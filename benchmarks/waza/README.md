@@ -1,6 +1,6 @@
 # Waza External Benchmark
 
-This directory keeps Waza-style skill benchmarks outside the governed harness runtime.
+This directory keeps real Waza benchmarks outside the governed harness runtime.
 
 ## Boundary
 
@@ -11,31 +11,37 @@ This directory keeps Waza-style skill benchmarks outside the governed harness ru
 
 ## Quick Run
 
-Use the repo-local runner for a dependency-free smoke benchmark:
+Use the real Waza CLI:
 
 ```powershell
-npm run benchmark:waza:skill-design-review
+npm run benchmark:waza
 ```
 
-The runner writes:
+The command writes:
 
-- `benchmarks/waza/results/skill-design-review-codex-latest.json`
-- `benchmarks/waza/transcripts/skill-design-review-codex-latest.ndjson`
+- `benchmarks/waza/results/skill-design-review-codex-waza.json`
+- `benchmarks/waza/transcripts/waza-real/*.json`
 
-## Real Waza CLI
+## Local CLI Location
 
-When the `waza` CLI is installed, this directory can be used as the external benchmark workspace.
+This checkout uses the real Waza Windows binary at:
 
-The Waza-oriented eval scaffold is:
+```text
+runtime/waza/waza.exe
+```
+
+`runtime/` is gitignored, so the binary is not committed.
+
+## Eval Scaffold
 
 ```text
 benchmarks/waza/evals/skill-design-review-codex/eval.yaml
 ```
 
-Example real Waza command:
+The eval uses Waza's official `mock` executor because this machine does not have `copilot` or GitHub Copilot credentials available. This proves the Waza eval/task/fixture/grader surface runs under the real `waza run` command. It is not an LLM quality benchmark.
+
+Direct command:
 
 ```powershell
-waza run benchmarks/waza/evals/skill-design-review-codex/eval.yaml --context-dir benchmarks/waza/fixtures/skill-design-review-codex --output benchmarks/waza/results/skill-design-review-codex-waza.json --transcript-dir benchmarks/waza/transcripts/waza-real
+runtime\waza\waza.exe run benchmarks\waza\evals\skill-design-review-codex\eval.yaml --context-dir . --output benchmarks\waza\results\skill-design-review-codex-waza.json --transcript-dir benchmarks\waza\transcripts\waza-real --no-update-check
 ```
-
-The local runner intentionally stays separate from the real Waza CLI so this repo can verify the benchmark shape even on machines where `waza` is not installed.

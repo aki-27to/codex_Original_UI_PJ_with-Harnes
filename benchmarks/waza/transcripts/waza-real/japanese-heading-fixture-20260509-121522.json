@@ -1,0 +1,28 @@
+{
+  "task_id": "japanese-heading-fixture",
+  "task_name": "Japanese heading fixture",
+  "status": "passed",
+  "started_at": "2026-05-09T12:15:22.035164+09:00",
+  "completed_at": "2026-05-09T12:15:22.036164+09:00",
+  "duration_ms": 1,
+  "prompt": "Inspect the Japanese heading fixture skill.",
+  "final_output": "Mock response for: Inspect the Japanese heading fixture skill.\nTask: Japanese heading fixture\nDescription: Smoke that real Waza can load a Japanese-heading fixture.\n\nAnalyzed 1 file(s):\n  - benchmarks/waza/fixtures/skill-design-review-codex/run-japanese-heading-perfect/SKILL.md\n---\nname: run-japanese-heading-perfect\ndescription: Run Japanese heading fixture review. Trigger when Japanese section detection benchmark fixtures must pass.\npurpose: judge\ntrigger: explicit\nshape: orchestrated\nrole: evaluator\n---\n\n# run-japanese-heading-perfect\n\n## 目的\n\n固定された記事準拠基準で Skill package を評価し、構造化された合否と証拠を返す。\n\n## 既定境界\n\nこの fixture は外部ベンチマーク専用。対象 Skill を編集せず、実運用ログにも書かない。\n\n## 手順\n\n1. 対象 `SKILL.md` を読む。\n2. purpose, trigger, shape, role, side effect, layer fit を分類する。\n3. output, evidence, verification, failure guard, progressive disclosure, evaluator integrity を確認する。\n4. gate evidence 付きの構造化 score を返す。\n\n## 出力契約\n\n`ARTICLE_ALIGNED`, `ARTICLE_ALIGNED_WITH_GAPS`, `ARTICLE_GAPS`、score、failed gate count、確認証拠を返す。\n\n## 証拠\n\n確認したファイル、コマンド出力、gate evidence...(truncated)",
+  "transcript": null,
+  "validations": {
+    "_output_contains": {
+      "identifier": "_output_contains",
+      "type": "",
+      "score": 1,
+      "weight": 1,
+      "passed": true,
+      "feedback": "matched 3/3 required strings",
+      "duration_ms": 0
+    }
+  },
+  "session": {
+    "tool_call_count": 0,
+    "tools_used": [],
+    "errors": [],
+    "session_id": "mock-session-1778296522036707200"
+  }
+}

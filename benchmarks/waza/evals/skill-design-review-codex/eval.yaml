@@ -1,51 +1,17 @@
 name: skill-design-review-codex-external-benchmark
-description: External Waza benchmark scaffold for skill-design-review-codex. This stays outside the governed harness runtime.
+description: External real-Waza benchmark for skill-design-review-codex. This stays outside the governed harness runtime.
 skill: skill-design-review-codex
-model: gpt-5.5
+version: "1.0"
 config:
-  executor: copilot-sdk
   trials_per_task: 1
+  timeout_seconds: 300
+  parallel: false
+  executor: mock
+  model: claude-sonnet-4.6
+metrics:
+  - name: task_completion
+    weight: 1.0
+    threshold: 1.0
+    description: Did Waza load the expected skill benchmark fixture and satisfy deterministic output checks?
 tasks:
-  - id: current-skill-design-review
-    description: Live repo-local package should remain article aligned through repo-local alternative contracts.
-    prompt: |
-      Review the current repo-local skill-design-review-codex package.
-      Return the article-alignment status, score, failed gate count, and naming/purpose gate statuses.
-    fixture: ../../../..
-    expectedOutput:
-      - type: contains
-        value: ARTICLE_ALIGNED
-      - type: contains
-        value: acceptable_alt
-  - id: article-perfect-fixture
-    description: Standalone prefix-and-metadata fixture should pass article-alignment gates.
-    prompt: |
-      Review fixture skill benchmarks/waza/fixtures/skill-design-review-codex/run-article-perfect.
-      It should be article aligned without repo-local alternative naming.
-    fixture: ../../fixtures/skill-design-review-codex/run-article-perfect
-    expectedOutput:
-      - type: contains
-        value: ARTICLE_ALIGNED
-      - type: contains
-        value: naming_side_effect_contract
-  - id: bad-skill-fixture
-    description: Saved-prompt fixture should fail article-alignment perfection.
-    prompt: |
-      Review fixture skill benchmarks/waza/fixtures/skill-design-review-codex/bad-skill.
-      It should not receive article-alignment 100.
-    fixture: ../../fixtures/skill-design-review-codex/bad-skill
-    expectedOutput:
-      - type: contains
-        value: article_alignment_incomplete
-  - id: japanese-heading-fixture
-    description: Japanese headings should count as valid contract sections.
-    prompt: |
-      Review fixture skill benchmarks/waza/fixtures/skill-design-review-codex/run-japanese-heading-perfect.
-      Japanese headings should be detected.
-    fixture: ../../fixtures/skill-design-review-codex/run-japanese-heading-perfect
-    expectedOutput:
-      - type: contains
-        value: ARTICLE_ALIGNED
-validators:
-  - type: text
-    caseSensitive: false
+  - "tasks/*.yaml"

@@ -1,0 +1,238 @@
+{
+  "eval_id": "run-1778296522",
+  "skill": "skill-design-review-codex",
+  "eval_name": "skill-design-review-codex-external-benchmark",
+  "timestamp": "2026-05-09T12:15:22.0116329+09:00",
+  "config": {
+    "runs_per_test": 1,
+    "model_id": "claude-sonnet-4.6",
+    "engine_type": "mock",
+    "timeout_sec": 300
+  },
+  "summary": {
+    "total_tests": 4,
+    "succeeded": 4,
+    "failed": 0,
+    "errors": 0,
+    "skipped": 0,
+    "success_rate": 1,
+    "aggregate_score": 1,
+    "weighted_score": 1,
+    "min_score": 1,
+    "max_score": 1,
+    "std_dev": 0,
+    "duration_ms": 26
+  },
+  "metrics": {},
+  "tasks": [
+    {
+      "test_id": "article-perfect-fixture",
+      "display_name": "Article-perfect fixture",
+      "status": "passed",
+      "runs": [
+        {
+          "run_number": 1,
+          "attempts": 1,
+          "status": "passed",
+          "duration_ms": 1,
+          "validations": {
+            "_output_contains": {
+              "identifier": "_output_contains",
+              "type": "",
+              "score": 1,
+              "weight": 1,
+              "passed": true,
+              "feedback": "matched 3/3 required strings",
+              "duration_ms": 0
+            }
+          },
+          "session_digest": {
+            "tool_call_count": 0,
+            "tools_used": [],
+            "errors": [],
+            "session_id": "mock-session-1778296522013693700"
+          },
+          "final_output": "Mock response for: Inspect the article-perfect fixture skill.\nTask: Article-perfect fixture\nDescription: Smoke that real Waza can load a positive fixture for article-style skill design.\n\nAnalyzed 1 file(s):\n  - benchmarks/waza/fixtures/skill-design-review-codex/run-article-perfect/SKILL.md\n---\nname: run-article-perfect\ndescription: Run article-perfect fixture review. Trigger when article-alignment benchmark fixtures must pass.\npurpose: judge\ntrigger: explicit\nshape: orchestrated\nrole: evaluator\n---\n\n# run-article-perfect\n\n## Purpose\n\nEvaluate a skill package against fixed article-alignment criteria and return a structured pass/fail result.\n\n## Default Boundary\n\nUse this fixture only for external benchmark validation. Do not edit the target skill and do not write operational logs.\n\n## Procedure\n\n1. Read the target `SKILL.md`.\n2. Classify purpose, trigger, shape, role, side effects, and layer fit.\n3. Check output, evidence, verification, failure guard, progressive disclosure, and evaluator integrity.\n4. Return a structured score with gate evidence.\n\n## Output Contract\n\nReturn `ARTICLE_ALIGNED`, `ARTICLE_ALIGNED_WITH_GAPS`, or `ARTICLE_GAPS`, a score, failed gate count, and inspected evidence.\n\n## Evidence And Verification\n\nUse inspected files, command outputs, gate evidence, and analyzer results....(truncated)",
+          "workspace_dir": "C:\\Users\\akima\\AppData\\Local\\Temp\\waza-mock-422178941"
+        }
+      ],
+      "stats": {
+        "pass_rate": 1,
+        "flakiness_percent": 0,
+        "passed_runs": 1,
+        "failed_runs": 0,
+        "error_runs": 0,
+        "total_runs": 1,
+        "avg_score": 1,
+        "avg_weighted_score": 1,
+        "min_score": 1,
+        "max_score": 1,
+        "std_dev_score": 0,
+        "score_variance": 0,
+        "ci95_lo": 0,
+        "ci95_hi": 0,
+        "flaky": false,
+        "avg_duration_ms": 1
+      }
+    },
+    {
+      "test_id": "bad-skill-fixture",
+      "display_name": "Bad saved-prompt fixture",
+      "status": "passed",
+      "runs": [
+        {
+          "run_number": 1,
+          "attempts": 1,
+          "status": "passed",
+          "duration_ms": 1,
+          "validations": {
+            "_output_contains": {
+              "identifier": "_output_contains",
+              "type": "",
+              "score": 1,
+              "weight": 1,
+              "passed": true,
+              "feedback": "matched 2/2 required strings",
+              "duration_ms": 0
+            },
+            "_output_not_contains": {
+              "identifier": "_output_not_contains",
+              "type": "",
+              "score": 1,
+              "weight": 1,
+              "passed": true,
+              "feedback": "1/1 excluded strings absent",
+              "duration_ms": 0
+            }
+          },
+          "session_digest": {
+            "tool_call_count": 0,
+            "tools_used": [],
+            "errors": [],
+            "session_id": "mock-session-1778296522032487700"
+          },
+          "final_output": "Mock response for: Inspect the bad saved-prompt fixture skill.\nTask: Bad saved-prompt fixture\nDescription: Smoke that real Waza can load a negative saved-prompt style fixture.\n\nAnalyzed 1 file(s):\n  - benchmarks/waza/fixtures/skill-design-review-codex/bad-skill/SKILL.md\n---\nname: helper\ndescription: Helpful skill.\n---\n\n# helper\n\nThis is a saved prompt. Use it to review things and say if they look good.\n\nDone means the answer sounds useful.\n\n",
+          "workspace_dir": "C:\\Users\\akima\\AppData\\Local\\Temp\\waza-mock-1931435583"
+        }
+      ],
+      "stats": {
+        "pass_rate": 1,
+        "flakiness_percent": 0,
+        "passed_runs": 1,
+        "failed_runs": 0,
+        "error_runs": 0,
+        "total_runs": 1,
+        "avg_score": 1,
+        "avg_weighted_score": 1,
+        "min_score": 1,
+        "max_score": 1,
+        "std_dev_score": 0,
+        "score_variance": 0,
+        "ci95_lo": 0,
+        "ci95_hi": 0,
+        "flaky": false,
+        "avg_duration_ms": 1
+      }
+    },
+    {
+      "test_id": "current-skill-design-review",
+      "display_name": "Current skill-design-review-codex package",
+      "status": "passed",
+      "runs": [
+        {
+          "run_number": 1,
+          "attempts": 1,
+          "status": "passed",
+          "duration_ms": 1,
+          "validations": {
+            "_output_contains": {
+              "identifier": "_output_contains",
+              "type": "",
+              "score": 1,
+              "weight": 1,
+              "passed": true,
+              "feedback": "matched 3/3 required strings",
+              "duration_ms": 0
+            }
+          },
+          "session_digest": {
+            "tool_call_count": 0,
+            "tools_used": [],
+            "errors": [],
+            "session_id": "mock-session-1778296522034645500"
+          },
+          "final_output": "Mock response for: Inspect the current repo-local skill-design-review-codex package.\nTask: Current skill-design-review-codex package\nDescription: Smoke that real Waza can load the authoritative repo-local skill-design-review-codex file.\n\nAnalyzed 1 file(s):\n  - .agents/skills/skill-design-review-codex/SKILL.md\n---\nname: \"skill-design-review-codex\"\ndescription: \"Evaluate Codex/Agent skill-package design and article-alignment. Use when reviewing SKILL.md, repo-local skills, skill portfolios, or skill-design-review-codex requests.\"\n---\n\n# skill-design-review-codex\n\n## Purpose\n\nReview skill packages as reusable agent behavior components, not as saved prompts.\n\nDefault to a read-only evaluator. The output must help decide whether a skill is adoptable, needs revision, should stay draft, or should be rolled back.\n\nThe default score is article-alignment gated: a 100 score means the target satisfies the article's design-language requirements, or has an explicit machine-checked repo-local alternative for article proposals such as naming prefixes or metadata placement. Operational maturity can be reported separately, but it must not be collapsed into the article-alignment score.\n\n## Default Boundary\n\n- Do not edit the target skill unless the user explicitly asks for implementation.\n- Separate platform facts from design propos...(truncated)",
+          "workspace_dir": "C:\\Users\\akima\\AppData\\Local\\Temp\\waza-mock-1829361660"
+        }
+      ],
+      "stats": {
+        "pass_rate": 1,
+        "flakiness_percent": 0,
+        "passed_runs": 1,
+        "failed_runs": 0,
+        "error_runs": 0,
+        "total_runs": 1,
+        "avg_score": 1,
+        "avg_weighted_score": 1,
+        "min_score": 1,
+        "max_score": 1,
+        "std_dev_score": 0,
+        "score_variance": 0,
+        "ci95_lo": 0,
+        "ci95_hi": 0,
+        "flaky": false,
+        "avg_duration_ms": 1
+      }
+    },
+    {
+      "test_id": "japanese-heading-fixture",
+      "display_name": "Japanese heading fixture",
+      "status": "passed",
+      "runs": [
+        {
+          "run_number": 1,
+          "attempts": 1,
+          "status": "passed",
+          "duration_ms": 1,
+          "validations": {
+            "_output_contains": {
+              "identifier": "_output_contains",
+              "type": "",
+              "score": 1,
+              "weight": 1,
+              "passed": true,
+              "feedback": "matched 3/3 required strings",
+              "duration_ms": 0
+            }
+          },
+          "session_digest": {
+            "tool_call_count": 0,
+            "tools_used": [],
+            "errors": [],
+            "session_id": "mock-session-1778296522036707200"
+          },
+          "final_output": "Mock response for: Inspect the Japanese heading fixture skill.\nTask: Japanese heading fixture\nDescription: Smoke that real Waza can load a Japanese-heading fixture.\n\nAnalyzed 1 file(s):\n  - benchmarks/waza/fixtures/skill-design-review-codex/run-japanese-heading-perfect/SKILL.md\n---\nname: run-japanese-heading-perfect\ndescription: Run Japanese heading fixture review. Trigger when Japanese section detection benchmark fixtures must pass.\npurpose: judge\ntrigger: explicit\nshape: orchestrated\nrole: evaluator\n---\n\n# run-japanese-heading-perfect\n\n## 目的\n\n固定された記事準拠基準で Skill package を評価し、構造化された合否と証拠を返す。\n\n## 既定境界\n\nこの fixture は外部ベンチマーク専用。対象 Skill を編集せず、実運用ログにも書かない。\n\n## 手順\n\n1. 対象 `SKILL.md` を読む。\n2. purpose, trigger, shape, role, side effect, layer fit を分類する。\n3. output, evidence, verification, failure guard, progressive disclosure, evaluator integrity を確認する。\n4. gate evidence 付きの構造化 score を返す。\n\n## 出力契約\n\n`ARTICLE_ALIGNED`, `ARTICLE_ALIGNED_WITH_GAPS`, `ARTICLE_GAPS`、score、failed gate count、確認証拠を返す。\n\n## 証拠\n\n確認したファイル、コマンド出力、gate evidence...(truncated)",
+          "workspace_dir": "C:\\Users\\akima\\AppData\\Local\\Temp\\waza-mock-2558632802"
+        }
+      ],
+      "stats": {
+        "pass_rate": 1,
+        "flakiness_percent": 0,
+        "passed_runs": 1,
+        "failed_runs": 0,
+        "error_runs": 0,
+        "total_runs": 1,
+        "avg_score": 1,
+        "avg_weighted_score": 1,
+        "min_score": 1,
+        "max_score": 1,
+        "std_dev_score": 0,
+        "score_variance": 0,
+        "ci95_lo": 0,
+        "ci95_hi": 0,
+        "flaky": false,
+        "avg_duration_ms": 1
+      }
+    }
+  ]
+}
