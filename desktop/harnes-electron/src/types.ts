@@ -189,6 +189,9 @@ declare global {
       attachmentsVisible?: boolean;
       missionMetaVisible?: boolean;
       oldWebStatusVisible?: boolean;
+      oldWebStatusLabel?: string;
+      runtimePanelLabel?: string;
+      readyStatusSpinnerStopped?: boolean;
       runtimeRefreshExplained?: boolean;
       attachmentRowsReady?: boolean;
       layoutOk?: boolean;

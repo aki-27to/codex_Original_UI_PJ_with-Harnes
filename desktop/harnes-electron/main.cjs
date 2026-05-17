@@ -598,6 +598,9 @@ async function runSmokeAndExit() {
       && result.attachmentsVisible
       && result.missionMetaVisible
       && result.oldWebStatusVisible
+      && result.oldWebStatusLabel === "接続済み"
+      && result.runtimePanelLabel === "接続済み"
+      && result.readyStatusSpinnerStopped
       && result.runtimeRefreshExplained
       && result.attachmentRowsReady
       && result.layoutOk
@@ -618,6 +621,9 @@ async function runSmokeAndExit() {
     && result.attachmentsVisible
     && result.missionMetaVisible
     && result.oldWebStatusVisible
+    && result.oldWebStatusLabel === "接続済み"
+    && result.runtimePanelLabel === "接続済み"
+    && result.readyStatusSpinnerStopped
     && result.runtimeRefreshExplained
     && result.attachmentRowsReady
     && result.layoutOk,

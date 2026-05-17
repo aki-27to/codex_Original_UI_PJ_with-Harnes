@@ -58,7 +58,7 @@ const EXEC_STREAM_RECOVERY_STATUS_WAIT_MS=2000;
 const EXEC_STREAM_RECOVERY_MAX_POLLS=6;
 const RUNTIME_PENDING_SYNC_MS=5000;
 const RUNTIME_PENDING_ORPHAN_GRACE_MS=EXEC_STREAM_RECOVERY_RUNTIME_WAIT_MS+EXEC_STREAM_RECOVERY_POLL_MS;
-const APP_BUNDLE_VERSION="2026-05-04-server-restart-v6";
+const APP_BUNDLE_VERSION="2026-05-17-connection-ready-v1";
 const COMPOSER_STICKY_MIN_VIEWPORT_HEIGHT=640;
 const UI_RELOAD_CACHE_PARAM="ui_reload";
 const TIMELINE_AUTO_SCROLL_BOTTOM_THRESHOLD_PX=48;
@@ -8281,7 +8281,7 @@ async function loadRuntime({reconcilePending=true}={}){
   }
   syncServerRestartControlForUi();
   renderWorkspaceGuardUi();
-  e.connectionState.textContent="接続中";
+  e.connectionState.textContent="接続済み";
   e.connectionState.classList.add("connected");
   e.connectionState.classList.remove("disconnected");
   e.modeState.textContent=`モード (${s.runtime.mode||"unknown"})`;

@@ -801,6 +801,13 @@ textarea {
   animation: harnes-spin 1s linear infinite;
 }
 
+.old-web-status.running .old-web-status-spinner {
+  border-color: rgba(15, 122, 82, 0.22);
+  border-top-color: rgba(15, 122, 82, 0.22);
+  background: #0f7a52;
+  animation: none;
+}
+
 .old-web-status strong {
   color: #17251f;
   white-space: nowrap;

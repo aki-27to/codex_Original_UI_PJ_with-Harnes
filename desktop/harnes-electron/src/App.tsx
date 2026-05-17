@@ -122,7 +122,7 @@ function statusClass(status: string) {
 }
 
 function statusText(status: string) {
-  if (status === "running") return "接続中";
+  if (status === "running") return "接続済み";
   if (status === "restarting") return "再起動中";
   if (status === "failed") return "失敗";
   return "起動中";
@@ -724,6 +724,11 @@ export default function App() {
     const settingsVisible = isVisible(".settings-panel");
     const missionMetaVisible = isVisible(".work-state-meta");
     const oldWebStatusVisible = isVisible(".old-web-status");
+    const oldWebStatusLabel = compactText(document.querySelector(".old-web-status strong")?.textContent, "");
+    const runtimePanelLabel = compactText(document.querySelector(".runtime-panel h2")?.textContent, "");
+    const runningStatusSpinner = document.querySelector(".old-web-status.running .old-web-status-spinner");
+    const readyStatusSpinnerStopped = backend.status !== "running"
+      || Boolean(runningStatusSpinner && window.getComputedStyle(runningStatusSpinner).animationName === "none");
     const runtimeRefreshExplained = Boolean(document.querySelector(".runtime-refresh-note"));
     const attachmentRowsReady = Boolean(document.querySelector(".attachment-panel"));
     window.__harnesElectronSmoke = {
@@ -747,6 +752,9 @@ export default function App() {
       attachmentsVisible: true,
       missionMetaVisible,
       oldWebStatusVisible,
+      oldWebStatusLabel,
+      runtimePanelLabel,
+      readyStatusSpinnerStopped,
       runtimeRefreshExplained,
       attachmentRowsReady,
       layoutOk,
@@ -976,7 +984,7 @@ export default function App() {
   const diagnosticsHealth = summarizeDiagnosticsHealth(diagnostics);
   const evidenceSummary = summarizeEvidence(logs);
   const hasProposal = Boolean(proposal?.proposalTitle || proposal?.publicPath || proposalSummary.length);
-  const runtimeModeLabel = runtime?.mode === "app-server" ? "接続中" : "未接続";
+  const runtimeModeLabel = runtime?.mode === "app-server" ? "接続済み" : "未接続";
   const runtimeModelLabel = `${asText(runtime?.execApi?.defaultModel, settings.model)} / ${asText(runtime?.execApi?.modelReasoningEffort, settings.modelReasoningEffort)}`;
   const runSettingsSummary = `${settings.sandboxMode} / ${settings.approvalPolicy} / FAST ${settings.fastModeEnabled ? "ON" : "OFF"}`;
   const codexVersionLabel = codexCliVersionLabel(diagnostics);

@@ -110,6 +110,9 @@ mustInclude(main, "sidebarVisible", "Electron main smoke requires visible sideba
 mustInclude(main, "proposalDockVisible", "Electron main smoke requires left proposal dock");
 mustInclude(main, "missionMetaVisible", "Electron main smoke requires compact mission state");
 mustInclude(main, "oldWebStatusVisible", "Electron main smoke requires old-web status strip");
+mustInclude(main, 'oldWebStatusLabel === "接続済み"', "Electron main smoke requires connected topbar label");
+mustInclude(main, 'runtimePanelLabel === "接続済み"', "Electron main smoke requires connected runtime panel label");
+mustInclude(main, "readyStatusSpinnerStopped", "Electron main smoke requires stopped ready-state spinner");
 mustInclude(main, "runtimeRefreshExplained", "Electron main smoke requires runtime refresh explanation");
 mustInclude(main, "attachmentRowsReady", "Electron main smoke requires attachment row surface");
 mustInclude(main, "capturePage", "Electron main smoke must capture screenshot evidence");
@@ -168,6 +171,10 @@ mustInclude(app, "runtimeRefreshState", "Electron renderer explains runtime refr
 mustInclude(app, "old-web-status", "Electron renderer old-web status strip");
 mustInclude(app, "old-web-version", "Electron renderer visible version label");
 mustInclude(app, "codex-cli", "Electron renderer version label must name codex-cli");
+mustInclude(app, 'if (status === "running") return "接続済み";', "Electron renderer running backend must read connected, not connecting");
+mustNotInclude(app, 'if (status === "running") return "接続中";', "Electron renderer must not present running backend as still connecting");
+mustInclude(app, 'runtime?.mode === "app-server" ? "接続済み" : "未接続"', "Electron renderer runtime panel must read connected after runtime loads");
+mustNotInclude(app, 'runtime?.mode === "app-server" ? "接続中" : "未接続"', "Electron renderer runtime panel must not leave app-server mode looking in-progress");
 mustInclude(app, "Runtime更新", "Electron renderer runtime refresh button names what it updates");
 mustInclude(app, "更新対象: /api/runtime、診断、logs、デザイン案", "Electron renderer runtime refresh note");
 mustInclude(app, "attachment-panel", "Electron renderer attachment panel");
@@ -190,6 +197,9 @@ mustNotInclude(conversationActionsBlock, "missionMetaItems", "Electron renderer 
 mustNotInclude(conversationActionsBlock, "activeChatWorkState", "Electron renderer must not render active chat status in the conversation header");
 mustInclude(app, "missionMetaVisible", "Electron smoke proves compact mission state visibility");
 mustInclude(app, "oldWebStatusVisible", "Electron smoke proves old-web status visibility");
+mustInclude(app, "oldWebStatusLabel", "Electron smoke proves the topbar status label text");
+mustInclude(app, "runtimePanelLabel", "Electron smoke proves the runtime panel label text");
+mustInclude(app, "readyStatusSpinnerStopped", "Electron smoke proves ready backend status is not animated");
 mustInclude(app, "runtimeRefreshExplained", "Electron smoke proves runtime refresh explanation");
 mustInclude(app, "attachmentRowsReady", "Electron smoke proves attachment row surface");
 mustInclude(app, 'status: chat.status === "running" ? "completed" : chat.status', "Electron renderer stream-end fallback must not leave running");
@@ -276,6 +286,8 @@ mustNotInclude(styles, ".work-state-spinner", "Electron CSS must not keep remove
 mustInclude(styles, "@keyframes harnes-spin", "Electron CSS shared spinner animation");
 mustInclude(styles, ".topbar-operational", "Electron CSS old-web topbar lane");
 mustInclude(styles, ".old-web-status", "Electron CSS old-web status strip");
+mustInclude(styles, ".old-web-status.running .old-web-status-spinner", "Electron CSS ready backend indicator must stop spinning");
+mustInclude(styles, "animation: none", "Electron CSS ready backend indicator must not animate");
 mustInclude(styles, ".old-web-version", "Electron CSS visible version label");
 mustInclude(styles, ".work-state-meta", "Electron CSS composer work state metadata");
 mustInclude(styles, ".command-strip", "Electron CSS command palette layout");

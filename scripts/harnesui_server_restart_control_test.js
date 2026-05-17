@@ -96,7 +96,9 @@ async function main() {
 
   assert(indexSource.includes('id="serverRestartBtn"'), "HarnesUI must expose a restart button");
   assert(styleSource.includes(".topbar-actions"), "restart button must have topbar placement styles");
-  assert(appSource.includes('APP_BUNDLE_VERSION="2026-05-04-server-restart-v6"'), "restart completion change must bump the app bundle version");
+  assert(appSource.includes('APP_BUNDLE_VERSION="2026-05-17-connection-ready-v1"'), "connection-ready change must bump the app bundle version");
+  assert(appSource.includes('e.connectionState.textContent="接続済み"'), "runtime load success must present a stable connected state");
+  assert(!appSource.includes('e.connectionState.textContent="接続中"'), "runtime load success must not leave the connection chip looking in-progress");
   assert(appSource.includes('fetch("/api/server/restart"'), "UI must call the restart API");
   assert(appSource.includes('action:"restart_harness_server"'), "UI must send the restart action");
   assert(appSource.includes("timeoutMs=180000"), "UI restart verification must allow slow server startup");
