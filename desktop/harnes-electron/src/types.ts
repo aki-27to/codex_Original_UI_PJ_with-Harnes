@@ -187,7 +187,7 @@ declare global {
       operatorPanelsHidden?: boolean;
       commandPaletteVisible?: boolean;
       attachmentsVisible?: boolean;
-      workStateVisible?: boolean;
+      missionMetaVisible?: boolean;
       oldWebStatusVisible?: boolean;
       runtimeRefreshExplained?: boolean;
       attachmentRowsReady?: boolean;

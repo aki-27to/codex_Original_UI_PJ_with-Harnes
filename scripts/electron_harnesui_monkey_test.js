@@ -32,7 +32,7 @@ async function setWindowSize(app, width, height) {
 async function inspectLayout(page) {
   return page.evaluate(() => {
     const doc = document.documentElement;
-    const clipped = Array.from(document.querySelectorAll("button, select, textarea, .panel, .chat-row, .message, .status-pill, .old-web-status, .runtime-refresh-note, .work-state-pill, .work-state-meta span, .metric-grid article, .attachment-panel, .attachment-item, .attachment-copy strong, .attachment-copy span"))
+    const clipped = Array.from(document.querySelectorAll("button, select, textarea, .panel, .chat-row, .message, .status-pill, .old-web-status, .runtime-refresh-note, .work-state-meta span, .metric-grid article, .attachment-panel, .attachment-item, .attachment-copy strong, .attachment-copy span"))
       .map((element) => {
         const rect = element.getBoundingClientRect();
         const style = window.getComputedStyle(element);
@@ -161,7 +161,7 @@ async function main() {
         && smoke.settingsVisible
         && smoke.commandPaletteVisible
         && smoke.attachmentsVisible
-        && smoke.workStateVisible
+        && smoke.missionMetaVisible
         && smoke.oldWebStatusVisible
         && smoke.runtimeRefreshExplained
         && smoke.attachmentRowsReady
@@ -199,20 +199,62 @@ async function main() {
     if (labelCheck.missing.length) {
       fail("electron_harnesui_monkey_test: required labels are missing", labelCheck);
     }
-    const workStateText = await page.locator(".work-state-pill").innerText();
-    if (!workStateText.includes("状態") || !/(作業中|完了|待機中|入力待ち|中断|要確認|状態確認中)/.test(workStateText)) {
-      fail("electron_harnesui_monkey_test: work state pill must expose a user-facing status", { workStateText });
+    const removedConversationPillCount = await page.locator(".work-state-pill").count();
+    if (removedConversationPillCount !== 0) {
+      fail("electron_harnesui_monkey_test: removed duplicate conversation work-state pill must not render", { removedConversationPillCount });
+    }
+    const workStateText = await page.locator(".work-state-meta").innerText();
+    if (!workStateText.includes("状態") || !/(作業中|完了|待機中|返信で続行|中断|要確認|状態確認中)/.test(workStateText)) {
+      fail("electron_harnesui_monkey_test: composer metadata must expose a user-facing status", { workStateText });
+    }
+    if (/入力待ち|追加指示を送ると続行できます/.test(workStateText)) {
+      fail("electron_harnesui_monkey_test: composer metadata must not show the old needs_input wording", { workStateText });
     }
     if (/\b(running|stream ended|completed|idle|failed|interrupted|needs_input)\b/i.test(workStateText)) {
-      fail("electron_harnesui_monkey_test: work state pill must not expose raw runtime status", { workStateText });
+      fail("electron_harnesui_monkey_test: composer metadata must not expose raw runtime status", { workStateText });
     }
+
+    await page.evaluate(() => {
+      const now = new Date().toISOString();
+      window.localStorage.setItem("harnes-desktop-chats-v1", JSON.stringify([
+        {
+          id: "monkey-needs-input",
+          title: "Needs input worst state",
+          messages: [],
+          status: "needs_input",
+          activity: "status=needs_input",
+          forceNewSession: true,
+          updatedAt: now,
+        },
+      ]));
+    });
+    await page.reload({ waitUntil: "domcontentloaded" });
+    await page.waitForFunction(() => {
+      const smoke = window.__harnesElectronSmoke;
+      return Boolean(smoke?.runtimeOk && smoke?.runtimePanelVisible && smoke?.missionMetaVisible);
+    }, null, { timeout: 180000 });
+    const needsInputWorkStateText = await page.locator(".work-state-meta").innerText();
+    if (!needsInputWorkStateText.includes("状態") || !needsInputWorkStateText.includes("返信で続行")) {
+      fail("electron_harnesui_monkey_test: needs_input worst-state metadata must show reply-to-continue wording", { needsInputWorkStateText });
+    }
+    if (/入力待ち|追加指示を送ると続行できます/.test(needsInputWorkStateText)) {
+      fail("electron_harnesui_monkey_test: needs_input worst-state metadata must not show the old wording", { needsInputWorkStateText });
+    }
+    const needsInputScreenshot = path.join(outDir, "needs-input-resend-ready.png");
+    await page.screenshot({ path: needsInputScreenshot, fullPage: true });
+    report.screenshots.push(rel(needsInputScreenshot));
+    report.inspections.push({
+      name: "needs-input-resend-ready",
+      ...(await inspectLayout(page)),
+      workStateText: needsInputWorkStateText,
+    });
 
     await page.locator("textarea").first().fill("Electron renderer smoke input. ".repeat(24));
     const idleComposerState = await page.evaluate(() => {
       const buttons = Array.from(document.querySelectorAll("button"));
       const stop = buttons.find((button) => button.textContent && button.textContent.trim() === "停止");
       const send = buttons.find((button) => button.textContent && button.textContent.trim() === "送信");
-      const stateText = document.querySelector(".work-state-pill")?.textContent || "";
+      const stateText = document.querySelector(".work-state-meta")?.textContent || "";
       return {
         stopDisabled: stop ? stop.disabled : null,
         sendDisabled: send ? send.disabled : null,

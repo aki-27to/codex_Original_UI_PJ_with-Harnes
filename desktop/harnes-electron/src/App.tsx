@@ -237,14 +237,6 @@ function workStateForChat(chat: ChatRecord | undefined, { activeForChat = false,
       listLabel: "状態確認中",
     };
   }
-  if (runtimeBusy) {
-    return {
-      tone: "working",
-      label: "作業中",
-      detail: "backendで実行中です。",
-      listLabel: chatStatusLabel(status),
-    };
-  }
   if (status === "completed") {
     return {
       tone: "completed",
@@ -275,6 +267,14 @@ function workStateForChat(chat: ChatRecord | undefined, { activeForChat = false,
       label: "返信で続行",
       detail: "失敗ではありません。必要な情報や判断を返信すると続きから再開できます。",
       listLabel: "返信で続行",
+    };
+  }
+  if (runtimeBusy) {
+    return {
+      tone: "working",
+      label: "作業中",
+      detail: "backendで実行中です。",
+      listLabel: chatStatusLabel(status),
     };
   }
   return {
@@ -722,7 +722,7 @@ export default function App() {
     const proposalDockVisible = isVisible(".proposal-dock");
     const runtimePanelVisible = isVisible(".runtime-panel");
     const settingsVisible = isVisible(".settings-panel");
-    const workStateVisible = isVisible(".work-state-pill");
+    const missionMetaVisible = isVisible(".work-state-meta");
     const oldWebStatusVisible = isVisible(".old-web-status");
     const runtimeRefreshExplained = Boolean(document.querySelector(".runtime-refresh-note"));
     const attachmentRowsReady = Boolean(document.querySelector(".attachment-panel"));
@@ -745,7 +745,7 @@ export default function App() {
       operatorPanelsHidden: !restartVisible && !workspaceVisible && !diagnosticsVisible && !logsVisible,
       commandPaletteVisible: true,
       attachmentsVisible: true,
-      workStateVisible,
+      missionMetaVisible,
       oldWebStatusVisible,
       runtimeRefreshExplained,
       attachmentRowsReady,
@@ -1081,12 +1081,6 @@ export default function App() {
                 <h2>{activeChat?.messages.length ? `${activeChat.messages.length} messages` : "まだ会話はありません"}</h2>
               </div>
               <div className="conversation-actions">
-                <div className={`work-state-pill ${activeChatWorkState.tone}`} aria-live="polite">
-                  <span className="work-state-spinner" aria-hidden="true" />
-                  <span>状態</span>
-                  <strong>{activeChatWorkState.label}</strong>
-                  <small>{activeChatWorkState.detail}</small>
-                </div>
                 <button className="secondary" type="button" onClick={clearActiveChat}>会話をクリア</button>
               </div>
             </div>

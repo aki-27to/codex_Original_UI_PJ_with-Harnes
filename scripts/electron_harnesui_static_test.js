@@ -12,6 +12,22 @@ function read(rel) {
   return fs.readFileSync(path.join(root, rel), "utf8");
 }
 
+function readIfExists(rel) {
+  const full = path.join(root, rel);
+  return fs.existsSync(full) ? fs.readFileSync(full, "utf8") : "";
+}
+
+function readTreeIfExists(rel, extensions = new Set([".html", ".js", ".css"])) {
+  const full = path.join(root, rel);
+  if (!fs.existsSync(full)) return "";
+  const stat = fs.statSync(full);
+  if (stat.isFile()) return extensions.has(path.extname(full)) ? fs.readFileSync(full, "utf8") : "";
+  return fs.readdirSync(full, { withFileTypes: true })
+    .map((entry) => readTreeIfExists(path.join(rel, entry.name), extensions))
+    .filter(Boolean)
+    .join("\n");
+}
+
 function mustExist(rel) {
   const full = path.join(root, rel);
   if (!fs.existsSync(full)) fail(`missing required file: ${rel}`);
@@ -24,6 +40,11 @@ function mustInclude(text, needle, label) {
 function mustNotInclude(text, needle, label) {
   if (text.includes(needle)) fail(`${label} should not include ${needle}`);
 }
+
+const RESEND_READY_LABEL = "\u8fd4\u4fe1\u3067\u7d9a\u884c";
+const RESEND_READY_DETAIL = "\u5931\u6557\u3067\u306f\u3042\u308a\u307e\u305b\u3093\u3002\u5fc5\u8981\u306a\u60c5\u5831\u3084\u5224\u65ad\u3092\u8fd4\u4fe1\u3059\u308b\u3068\u7d9a\u304d\u304b\u3089\u518d\u958b\u3067\u304d\u307e\u3059\u3002";
+const OLD_INPUT_WAIT_LABEL = "\u5165\u529b\u5f85\u3061";
+const OLD_INPUT_WAIT_DETAIL = "\u8ffd\u52a0\u6307\u793a\u3092\u9001\u308b\u3068\u7d9a\u884c\u3067\u304d\u307e\u3059\u3002";
 
 [
   "desktop/harnes-electron/main.cjs",
@@ -87,7 +108,7 @@ mustInclude(main, "harnes:get-diagnostics", "Electron main");
 mustInclude(main, "operatorPanelsHidden", "Electron main smoke requires normal-state operator panels hidden");
 mustInclude(main, "sidebarVisible", "Electron main smoke requires visible sidebar by default");
 mustInclude(main, "proposalDockVisible", "Electron main smoke requires left proposal dock");
-mustInclude(main, "workStateVisible", "Electron main smoke requires user-facing work state");
+mustInclude(main, "missionMetaVisible", "Electron main smoke requires compact mission state");
 mustInclude(main, "oldWebStatusVisible", "Electron main smoke requires old-web status strip");
 mustInclude(main, "runtimeRefreshExplained", "Electron main smoke requires runtime refresh explanation");
 mustInclude(main, "attachmentRowsReady", "Electron main smoke requires attachment row surface");
@@ -149,7 +170,6 @@ mustInclude(app, "old-web-version", "Electron renderer visible version label");
 mustInclude(app, "codex-cli", "Electron renderer version label must name codex-cli");
 mustInclude(app, "Runtime更新", "Electron renderer runtime refresh button names what it updates");
 mustInclude(app, "更新対象: /api/runtime、診断、logs、デザイン案", "Electron renderer runtime refresh note");
-mustInclude(app, "work-state-spinner", "Electron renderer work state has dynamic spinner");
 mustInclude(app, "attachment-panel", "Electron renderer attachment panel");
 mustInclude(app, "attachment-item", "Electron renderer attachment rows");
 mustInclude(app, "attachment-thumb", "Electron renderer attachment thumbnails");
@@ -160,8 +180,8 @@ mustInclude(app, "activeRequests.some((request) => request.chatId === chat.id)",
 mustNotInclude(app, "const [activeRequest, setActiveRequest]", "Electron renderer must not keep a single global active request");
 mustNotInclude(app, "disabled={!activeRequest}", "Electron renderer stop button must not follow a global active request");
 mustInclude(app, "状態: ${activeChatWorkState.label}", "Electron renderer composer work state label");
-mustInclude(app, "work-state-pill", "Electron renderer conversation work state pill");
-mustInclude(app, "workStateVisible", "Electron smoke proves work state visibility");
+mustNotInclude(app, "work-state-pill", "Electron renderer must not render removed duplicate conversation work state pill");
+mustInclude(app, "missionMetaVisible", "Electron smoke proves compact mission state visibility");
 mustInclude(app, "oldWebStatusVisible", "Electron smoke proves old-web status visibility");
 mustInclude(app, "runtimeRefreshExplained", "Electron smoke proves runtime refresh explanation");
 mustInclude(app, "attachmentRowsReady", "Electron smoke proves attachment row surface");
@@ -223,6 +243,17 @@ if (app.indexOf('className="panel conversation-panel full-span"') > app.indexOf(
   fail("Electron renderer should render conversation above mission composer");
 }
 
+const builtRenderer = [
+  readIfExists("desktop/harnes-electron/dist/index.html"),
+  readTreeIfExists("desktop/harnes-electron/dist/assets"),
+].filter(Boolean).join("\n");
+if (builtRenderer) {
+  mustInclude(builtRenderer, RESEND_READY_LABEL, "Electron built renderer resend-ready needs_input label");
+  mustInclude(builtRenderer, RESEND_READY_DETAIL, "Electron built renderer resend-ready needs_input detail");
+  mustNotInclude(builtRenderer, OLD_INPUT_WAIT_LABEL, "Electron built renderer must not show the old input-wait headline");
+  mustNotInclude(builtRenderer, OLD_INPUT_WAIT_DETAIL, "Electron built renderer must not show the old needs_input detail");
+}
+
 const styles = read("desktop/harnes-electron/src/styles.css");
 mustInclude(styles, "overflow-x: hidden", "Electron CSS overflow guard");
 mustInclude(styles, "@media (max-width: 1120px)", "Electron CSS medium viewport guard");
@@ -233,8 +264,8 @@ mustInclude(styles, ".settings-detail-body", "Electron CSS settings details layo
 mustInclude(styles, ".composer-toolbar", "Electron CSS compact composer toolbar");
 mustInclude(styles, ".composer-tools", "Electron CSS composer tool group");
 mustInclude(styles, ".composer-submit-actions", "Electron CSS composer submit actions");
-mustInclude(styles, ".work-state-pill", "Electron CSS user-facing work state");
-mustInclude(styles, ".work-state-spinner", "Electron CSS dynamic work state spinner");
+mustNotInclude(styles, ".work-state-pill", "Electron CSS must not keep removed duplicate conversation work state");
+mustNotInclude(styles, ".work-state-spinner", "Electron CSS must not keep removed duplicate conversation spinner");
 mustInclude(styles, "@keyframes harnes-spin", "Electron CSS shared spinner animation");
 mustInclude(styles, ".topbar-operational", "Electron CSS old-web topbar lane");
 mustInclude(styles, ".old-web-status", "Electron CSS old-web status strip");

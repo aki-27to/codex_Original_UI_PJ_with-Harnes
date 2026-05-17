@@ -596,7 +596,7 @@ async function runSmokeAndExit() {
       && result.operatorPanelsHidden
       && result.commandPaletteVisible
       && result.attachmentsVisible
-      && result.workStateVisible
+      && result.missionMetaVisible
       && result.oldWebStatusVisible
       && result.runtimeRefreshExplained
       && result.attachmentRowsReady
@@ -616,7 +616,7 @@ async function runSmokeAndExit() {
     && result.operatorPanelsHidden
     && result.commandPaletteVisible
     && result.attachmentsVisible
-    && result.workStateVisible
+    && result.missionMetaVisible
     && result.oldWebStatusVisible
     && result.runtimeRefreshExplained
     && result.attachmentRowsReady
