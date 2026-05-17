@@ -125,7 +125,7 @@
     "test:harnesui-pending-state": "node scripts/harnesui_pending_state_test.js",
     "test:harnesui-turn-snapshot": "node scripts/harnesui_turn_snapshot_test.js",
     "test:harnesui-single-writer-plan-meta": "node scripts/harnesui_single_writer_plan_meta_test.js",
-    "test:harnesui-server-restart-control": "node scripts/harnesui_server_restart_control_test.js",
+    "test:harnesui-server-restart-control": "node scripts/harnesui_server_restart_control_test.js && node scripts/restart_harness_from_ui_helper_test.js",
     "test:runtime-default-feature-flags": "node scripts/runtime_default_feature_flags_test.js",
     "test:runtime-active-turn-cleanup": "node scripts/runtime_active_turn_cleanup_test.js",
     "test:runtime-state-service": "node scripts/runtime_state_service_test.js",

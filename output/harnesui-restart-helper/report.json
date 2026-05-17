@@ -1,0 +1,22 @@
+{
+  "ok": true,
+  "targetPid": 80788,
+  "result": {
+    "schema": "harnesui-server-restart-result.v1",
+    "updatedAt": 1778990082781,
+    "status": "relaunch_spawned",
+    "requestedAt": 1778990082781,
+    "previousPid": 80788,
+    "launcherPid": 43296,
+    "port": 58997,
+    "launcher": "C:\\Users\\akima\\dev\\codex_Original_UI_PJ_with-Harnes\\runtime\\restart-helper-test-1778990082372-908\\start_codex_ui_test.bat"
+  },
+  "events": [
+    "server.restart_helper_started",
+    "server.restart_helper_stop_requested",
+    "server.restart_helper_launcher_spawned"
+  ],
+  "launcherMarkerObserved": false,
+  "markerPath": "C:\\Users\\akima\\dev\\codex_Original_UI_PJ_with-Harnes\\runtime\\restart-helper-test-1778990082372-908\\launcher-marker.txt",
+  "resultPath": "C:\\Users\\akima\\dev\\codex_Original_UI_PJ_with-Harnes\\runtime\\restart-helper-test-1778990082372-908\\server_restart_result.json"
+}
