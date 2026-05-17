@@ -1,0 +1,6 @@
+interface:
+  display_name: "Code Change Verification"
+  short_description: "Map changed surfaces to verification evidence before closeout."
+  default_prompt: "Map my changed files to verification evidence and closeout risk."
+policy:
+  allow_implicit_invocation: true

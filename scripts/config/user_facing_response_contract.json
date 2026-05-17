@@ -140,5 +140,89 @@
   "exactReplyContracts": {
     "bypassCloseInPlace": true,
     "bypassEvidenceChecks": true
+  },
+  "intentFidelityFrame": {
+    "enabled": true,
+    "shadowRuntimeObservation": true,
+    "emitFrameObservation": true,
+    "emitWarningObservation": true,
+    "triggerPromptSignals": [
+      "intent",
+      "wrong",
+      "misunderstood",
+      "shallow",
+      "appease",
+      "best",
+      "why",
+      "rationale",
+      "design",
+      "principle",
+      "coherent",
+      "context",
+      "overall",
+      "should",
+      "compare",
+      "違う",
+      "理解していない",
+      "意図",
+      "浅い",
+      "迎合",
+      "ベスト",
+      "なぜ",
+      "理由",
+      "設計",
+      "思想",
+      "統一感",
+      "核心",
+      "ちゃんと",
+      "全体",
+      "文脈",
+      "どう実装",
+      "どうするのがよい",
+      "どうするのがベスト"
+    ],
+    "highFrictionSignals": [
+      "wrong",
+      "misunderstood",
+      "shallow",
+      "off-intent",
+      "appease",
+      "違う",
+      "理解していない",
+      "解釈が異なる",
+      "浅い",
+      "迎合",
+      "意図不一致"
+    ],
+    "requiredFrameFields": [
+      "must_answer",
+      "must_not_do",
+      "independent_standard"
+    ],
+    "responseModes": [
+      "short",
+      "rationale",
+      "correction",
+      "design",
+      "review",
+      "implementation_report"
+    ],
+    "answerAdherence": {
+      "minMustAnswerTermOverlap": 1
+    },
+    "selectiveRepair": {
+      "enabled": false,
+      "allowedResponseModes": [
+        "rationale",
+        "correction",
+        "design",
+        "review"
+      ],
+      "repairableWarningKinds": [
+        "answer_misses_must_answer",
+        "possible_user_appeasement"
+      ],
+      "emitNotAppliedObservation": true
+    }
   }
 }

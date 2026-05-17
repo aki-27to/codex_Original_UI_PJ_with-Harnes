@@ -5,7 +5,7 @@
   "skills": [
     {
       "id": "code-change-verification",
-      "path": ".agents/skills/code-change-verification/SKILL.md",
+      "path": "plugins/proof-closeout/skills/code-change-verification/SKILL.md",
       "description": "Use after code edits when verifier, regression, and changed-surface evidence must be synchronized.",
       "useWhen": [
         "code changed locally",
@@ -37,7 +37,7 @@
     },
     {
       "id": "handoff-artifact-generation",
-      "path": ".agents/skills/handoff-artifact-generation/SKILL.md",
+      "path": "plugins/proof-closeout/skills/handoff-artifact-generation/SKILL.md",
       "description": "Use when closing or pausing a long-running task and a carry-forward bundle is required.",
       "useWhen": [
         "session is ending",
@@ -71,7 +71,7 @@
     },
     {
       "id": "long-run-session-closeout",
-      "path": ".agents/skills/long-run-session-closeout/SKILL.md",
+      "path": "plugins/proof-closeout/skills/long-run-session-closeout/SKILL.md",
       "description": "Use before declaring a long-running task session complete or paused to prevent false completion.",
       "useWhen": [
         "session is being closed",
@@ -103,7 +103,7 @@
     },
     {
       "id": "worker-decision-review",
-      "path": ".agents/skills/worker-decision-review/SKILL.md",
+      "path": "plugins/proof-closeout/skills/worker-decision-review/SKILL.md",
       "description": "Use when worker decision surfaces and adoption readiness must be reviewed before stopping.",
       "useWhen": [
         "worker decision needs review",
@@ -137,7 +137,7 @@
     },
     {
       "id": "artifact-improvement-learning",
-      "path": ".agents/skills/artifact-improvement-learning/SKILL.md",
+      "path": "plugins/skill-governance/skills/artifact-improvement-learning/SKILL.md",
       "description": "Use when artifact improvements must become governed reusable learning rather than one-off notes.",
       "useWhen": [
         "docs, UI, code, tests, or instructions improved",
@@ -171,10 +171,11 @@
     },
     {
       "id": "feedback-to-recurrence-patch",
-      "path": ".agents/skills/feedback-to-recurrence-patch/SKILL.md",
+      "path": "plugins/skill-governance/skills/feedback-to-recurrence-patch/SKILL.md",
       "description": "Use when user corrections, failed validations, PASS/FAIL contradictions, repeated misses, or subjective adoption failures must become scoped recurrence-prevention patches.",
       "useWhen": [
         "user correction or acceptance feedback identifies a miss",
+        "the user says a previous answer, artifact, validation result, or completion claim is wrong, insufficient, missing, repeated, or not what they meant",
         "task artifact truth and harness validation status disagree",
         "a repeated miss must become a next-turn preflight question, checklist, replay plan, and lifecycle decision"
       ],
@@ -215,7 +216,7 @@
     },
     {
       "id": "repo-truth-audit",
-      "path": ".agents/skills/repo-truth-audit/SKILL.md",
+      "path": "plugins/proof-closeout/skills/repo-truth-audit/SKILL.md",
       "description": "Use when README, architecture docs, current logs, output artifacts, and decision surfaces may disagree.",
       "useWhen": [
         "repo truth needs audit",
@@ -314,6 +315,44 @@
       ]
     },
     {
+      "id": "design-quality-operator",
+      "path": ".agents/skills/design-quality-operator/SKILL.md",
+      "description": "Use when design-sensitive web/UI work should generate, score, reject, route, and present only necessary design decisions.",
+      "useWhen": [
+        "web or UI design quality needs exception-based operator handling",
+        "the user should not inspect every generated design variant",
+        "candidate scoring, visual evidence, and narrow decision routing are required"
+      ],
+      "avoidWhen": [
+        "the task is pure copy or backend work",
+        "the user explicitly wants to manually compare every design image",
+        "no visual evidence can be generated or inspected"
+      ],
+      "expectedArtifacts": [
+        "design_quality_decision",
+        "scorecard",
+        "recommended_screenshots",
+        "rejected_candidate_reasons",
+        "review_inbox_status"
+      ],
+      "evidenceSurfaces": [
+        "scripts/design/design_quality_operator.js",
+        "scripts/config/design_quality_operator_policy.json",
+        "web/design-quality/latest/decision.json",
+        "web/design-quality/latest/index.html",
+        "web/design-quality/latest/screenshots"
+      ],
+      "workerDecisionConnection": [
+        "design-sensitive work should not ask for human image review unless the operator routes to review_inbox"
+      ],
+      "promotionCriteria": [
+        "reduces repeated subjective design steering with screenshot evidence and low false recommendations"
+      ],
+      "rollbackCriteria": [
+        "forces manual gallery review, hides weak evidence, or recommends designs that violate taste memory"
+      ]
+    },
+    {
       "id": "browser-flakiness-recovery",
       "path": ".agents/skills/browser-flakiness-recovery/SKILL.md",
       "description": "Use when browser, Playwright, DevTools, or MCP UI evidence fails and Codex must retry, fall back, or truthfully defer.",
@@ -347,7 +386,7 @@
     },
     {
       "id": "safe-refactor-with-proof",
-      "path": ".agents/skills/safe-refactor-with-proof/SKILL.md",
+      "path": "plugins/proof-closeout/skills/safe-refactor-with-proof/SKILL.md",
       "description": "Use for multi-file refactors requiring minimal diff, docs/code/output sync, tests, and rollback notes.",
       "useWhen": [
         "multiple files or surfaces change",
@@ -381,7 +420,7 @@
     },
     {
       "id": "skill-promotion-governance",
-      "path": ".agents/skills/skill-promotion-governance/SKILL.md",
+      "path": "plugins/skill-governance/skills/skill-promotion-governance/SKILL.md",
       "description": "Use when adding, cataloging, auditing, promoting, or rolling back repo-local skills.",
       "useWhen": [
         "skill package changes",
@@ -415,7 +454,7 @@
     },
     {
       "id": "skill-design-review-codex",
-      "path": ".agents/skills/skill-design-review-codex/SKILL.md",
+      "path": "plugins/skill-governance/skills/skill-design-review-codex/SKILL.md",
       "description": "Use to evaluate Codex or Agent skill-package design against activation, layering, naming, progressive disclosure, evaluation, and governance criteria.",
       "useWhen": [
         "SKILL.md or repo-local skill design needs review",
@@ -436,8 +475,8 @@
         "required_fixes"
       ],
       "evidenceSurfaces": [
-        ".agents/skills/skill-design-review-codex/references/design-rubric.md",
-        ".agents/skills/skill-design-review-codex/scripts/analyze-skill-design.js",
+        "plugins/skill-governance/skills/skill-design-review-codex/references/design-rubric.md",
+        "plugins/skill-governance/skills/skill-design-review-codex/scripts/analyze-skill-design.js",
         "target SKILL.md",
         "scripts/config/repo_local_skill_catalog.json",
         "scripts/skill_design_review_analyzer_test.js",
@@ -456,7 +495,7 @@
     },
     {
       "id": "skill-creator-master",
-      "path": ".agents/skills/skill-creator-master/SKILL.md",
+      "path": "plugins/skill-governance/skills/skill-creator-master/SKILL.md",
       "description": "Use when authoring, comparing, or hardening repo-local Codex skills with explicit output, evidence, verification, rollback, and catalog contracts.",
       "useWhen": [
         "a repo-local skill package is being authored",
@@ -478,7 +517,7 @@
       "evidenceSurfaces": [
         ".agents/skills/<skill-name>/SKILL.md",
         "scripts/config/repo_local_skill_catalog.json",
-        ".agents/skills/skill-design-review-codex/scripts/analyze-skill-design.js",
+        "plugins/skill-governance/skills/skill-design-review-codex/scripts/analyze-skill-design.js",
         "node scripts/repo_local_skill_catalog_test.js",
         "node scripts/skill_portfolio_audit.js"
       ],
@@ -490,6 +529,45 @@
       ],
       "rollbackCriteria": [
         "overfits to analyzer structure, duplicates official skill-creator without repo-specific value, or increases operator confusion"
+      ]
+    },
+    {
+      "id": "gpt55-prompt-builder",
+      "path": ".agents/skills/gpt55-prompt-builder/SKILL.md",
+      "description": "Use when creating, rewriting, reviewing, or hardening GPT-5.5 prompts from OpenAI's GPT-5.5 prompt guidance.",
+      "useWhen": [
+        "the user asks to create a prompt for GPT-5.5",
+        "an existing prompt should be migrated or shortened for GPT-5.5",
+        "prompt output needs success criteria, evidence, validation, and stop conditions"
+      ],
+      "avoidWhen": [
+        "the user is asking how to call an OpenAI API rather than author a prompt",
+        "the target model is not GPT-5.5 and the user did not ask for GPT-5.5 adaptation",
+        "a one-off natural-language answer is enough and no reusable prompt is requested"
+      ],
+      "expectedArtifacts": [
+        "prompt_package",
+        "target_contract",
+        "design_notes",
+        "source_status",
+        "validation_checklist",
+        "test_cases",
+        "open_issues"
+      ],
+      "evidenceSurfaces": [
+        "https://developers.openai.com/api/docs/guides/prompt-guidance?model=gpt-5.5",
+        "user prompt requirements",
+        "existing prompt text",
+        "eval or replay examples"
+      ],
+      "workerDecisionConnection": [
+        "prompt authoring is not adoptable without a visible output contract and validation path"
+      ],
+      "promotionCriteria": [
+        "repeatedly creates GPT-5.5 prompts that pass replay cases and reduce over-specified legacy prompt stacks"
+      ],
+      "rollbackCriteria": [
+        "mixes older model guidance into GPT-5.5 prompts, hides missing source checks, or produces vague prompts without validation"
       ]
     },
     {

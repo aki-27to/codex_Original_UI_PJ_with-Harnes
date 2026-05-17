@@ -1,0 +1,48 @@
+{
+  "schema": "anti-taste-memory.v1",
+  "version": "2026-05-10.r2",
+  "globalAvoid": [
+    {
+      "id": "generic_saas_cards",
+      "label": "white card grid plus blue CTA template",
+      "reason": "It reads as average AI-generated web design instead of a deliberate product or company surface."
+    },
+    {
+      "id": "thin_shadow_roundness",
+      "label": "rounded card stacks with thin soft shadows",
+      "reason": "It creates template feel and weakens material seriousness."
+    },
+    {
+      "id": "dark_console_as_default",
+      "label": "heavy full dark console palette",
+      "reason": "The user repeatedly rejects heavy developer-only feeling for ordinary web surfaces."
+    },
+    {
+      "id": "decorative_gradient_solution",
+      "label": "solving design quality with gradients alone",
+      "reason": "Color polish without hierarchy, density, and realness does not satisfy adoption quality."
+    }
+  ],
+  "mieNdiAvoid": [
+    {
+      "id": "restaurant_or_suruga_residue",
+      "label": "restaurant-like luxury or unrelated benchmark residue",
+      "reason": "MieNDI is an industrial inspection company; the tone must be safety, precision, and field trust."
+    },
+    {
+      "id": "abstract_infrastructure_copy",
+      "label": "abstract safety copy without concrete inspection proof",
+      "reason": "The site needs visible inspection method, field coverage, and reporting credibility."
+    },
+    {
+      "id": "photo_present_but_design_weak",
+      "label": "real photo present but composition, hierarchy, and customer-image fit are weak",
+      "reason": "The failed DQO v1 recommendation proved that asset presence is not design quality."
+    },
+    {
+      "id": "unbenchmarked_auto_recommend",
+      "label": "auto recommendation before beating the customer-image benchmark",
+      "reason": "Suruga Inspection is now the customer-image reference; a MieNDI design must beat that reference on clarity and maturity before PASS."
+    }
+  ]
+}

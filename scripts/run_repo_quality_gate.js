@@ -65,10 +65,12 @@ const stages = Object.freeze([
     id: "surfaces",
     label: "repo-quality:surfaces",
     scripts: [
+      "test:repo-session-guard",
       "test:repo-hygiene:static",
       "test:housekeeping:runtime-surface",
       "test:housekeeping:output-surface",
       "test:housekeeping:output-git-policy",
+      "test:design-quality-operator",
       "test:harness-artifact-mcp",
       "current-surface-truth",
       {

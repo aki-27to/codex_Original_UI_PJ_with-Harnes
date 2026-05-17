@@ -134,7 +134,7 @@ async function main() {
     },
   });
   try {
-    await expectSlashOutput(harness, "/help", ["Supported slash commands:", "/status", "Show Codex status-style runtime details in the HarnesUI view.", "/diff", "/resume --last"]);
+    await expectSlashOutput(harness, "/help", ["Unrecognized command '/help'.", "Open /commands in the composer for available shortcuts."]);
     const statusOutput = await expectSlashOutput(harness, "/status", [
       ">_ OpenAI Codex (",
       "Visit https://chatgpt.com/codex/settings/usage",

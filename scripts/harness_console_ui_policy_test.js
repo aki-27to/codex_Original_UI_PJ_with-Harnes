@@ -80,11 +80,19 @@ function main() {
   assertRegex(indexHtml, /id="harnessComplianceBadge"/, "console must expose the blocked-reason badge");
   assertRegex(indexHtml, /id="harnessComplianceDetail"/, "console must expose the blocked-reason detail");
   assertRegex(indexHtml, /id="uiReloadBtn"/, "console must expose the quick UI reload action");
+  assertRegex(indexHtml, /id="uiReloadBtn"[\s\S]*?UI再読込/, "quick UI reload action must not use an ambiguous refresh label");
+  assertRegex(indexHtml, /id="topVersionChip"[\s\S]*?Ver --/, "top status strip must expose a visible version chip");
+  assertRegex(indexHtml, /id="topCodexChip"[\s\S]*?codex-cli/, "top status strip must expose codex-cli identity");
+  assertRegex(indexHtml, /id="topRuntimeChip"[\s\S]*?runtime/, "top status strip must expose runtime state");
+  assertRegex(indexHtml, /id="reconnectBtn"[\s\S]*?Runtime/, "maintenance controls must label the runtime refresh action directly");
+  assertRegex(indexHtml, /id="refreshDiagBtn"[\s\S]*?diagnostics|id="refreshDiagBtn"[\s\S]*?診断/, "maintenance controls must label the diagnostics refresh action directly");
+  assertRegex(indexHtml, /id="runtimeRefreshHelp"[\s\S]*?\/api\/runtime[\s\S]*?\/api\/diagnostics/, "maintenance controls must explain what each refresh button updates");
   assertRegex(indexHtml, /id="conversationSummary"/, "conversation panel must expose the summary line");
   assertRegex(indexHtml, /id="jumpToComposerBtn"/, "conversation panel must expose the jump-to-composer action");
   assertRegex(indexHtml, /id="harnessPlanCurrentPurpose"/, "execution plan current card must expose the request-purpose line");
   assertRegex(indexHtml, /data-compose-preset=/, "composer must expose prompt preset shortcuts");
   assertRegex(indexHtml, /<button[^>]*data-compose-preset="\/goal "[^>]*>\/goal<\/button>/, "composer must expose a visible /goal shortcut");
+  assert.ok(!/data-slash-command="\/help"/.test(indexHtml), "composer must not expose the removed /help shortcut");
   assertRegex(indexHtml, /data-slash-command="\/status"/, "composer must expose a visible /status slash shortcut");
   assertRegex(indexHtml, /data-slash-command="\/diff"/, "composer must expose a visible /diff slash shortcut");
   assertRegex(indexHtml, /data-slash-command="\/resume --last"/, "composer must expose a visible /resume shortcut");
@@ -96,6 +104,7 @@ function main() {
   assertRegex(indexHtml, /id="composerWorkspaceChip"/, "composer must expose the workspace chip");
   assertRegex(indexHtml, /id="composerVerificationChip"/, "composer must expose the verification chip");
   assertRegex(indexHtml, /id="composerAttachmentChip"/, "composer must expose the attachment chip");
+  assertRegex(indexHtml, /id="imagePreview"[\s\S]*?id="imagePreviewSummary"[\s\S]*?id="imageRemoveBtn"[\s\S]*?id="imagePreviewList"/, "composer must render attached images as a bounded attachment list with clear-all control");
   assert.ok(!/id="openaiVoiceStrip"/.test(indexHtml), "composer must not expose the removed voice strip");
   assert.ok(!/id="openaiVoicePhase"/.test(indexHtml), "composer must not expose the removed voice phase field");
   assert.ok(!/id="openaiVoiceTranscript"/.test(indexHtml), "composer must not expose the removed heard-speech panel");
@@ -107,6 +116,7 @@ function main() {
   assert.ok(!/focusWorkspaceValue/.test(indexHtml), "console must remove the old workspace focus card from the primary rail");
   assert.ok(!/focusSendValue/.test(indexHtml), "console must remove the old send readiness card from the primary rail");
   assert.ok(!/focusToTimelineBtn|focusToComposerBtn/.test(indexHtml), "console must remove the old operator shortcut buttons from the primary rail");
+  assert.ok(!/id="liveStatus"/.test(indexHtml), "console must remove the old inline live status banner from the topbar");
 
   assertRegex(stylesCss, /body\.simple-view \.performance-panel[\s\S]*?display:\s*none;/, "simple view must hide the performance panel");
   assert.ok(!/body\.telemetry-off \.harness-panel/.test(stylesCss), "telemetry-off must not hide the main harness panel");
@@ -117,6 +127,9 @@ function main() {
   assertRegex(stylesCss, /\.mission-draft-card[\s\S]*?display:\s*grid;/, "console must style the mission brief card");
   assertRegex(stylesCss, /\.harness-status-card[\s\S]*?display:\s*grid;/, "console must style the compact harness status card");
   assertRegex(stylesCss, /\.composer-runtime-strip[\s\S]*?display:\s*flex;/, "console must style the composer runtime strip");
+  assertRegex(stylesCss, /\.top-runtime-strip[\s\S]*?display:\s*flex;/, "top status strip must use an old-web inline runtime row");
+  assertRegex(stylesCss, /\.image-preview-item[\s\S]*?grid-template-columns:[\s\S]*?48px minmax\(0,\s*1fr\) auto/, "image attachments must render as thumb, metadata, and delete rows");
+  assertRegex(stylesCss, /\.image-preview-name[\s\S]*?text-overflow:\s*ellipsis;/, "image attachment names must not overflow their row");
   assertRegex(stylesCss, /\.composer-runtime-chip\.locked[\s\S]*?color:/, "composer runtime strip must style the locked verification state");
   assert.ok(!/\.composer-voice-phase-row/.test(stylesCss), "voice phase-row styles must be removed from the main console");
   assert.ok(!/\.composer-voice-panels/.test(stylesCss), "voice panel styles must be removed from the main console");
@@ -176,7 +189,7 @@ function main() {
   assertRegex(appJs, /function\s+missionDraftSourceForUi\s*\(/, "mission draft source helper must exist");
   assertRegex(appJs, /function\s+deriveMissionDraftForUi\s*\(/, "mission draft derivation helper must exist");
   assertRegex(appJs, /function\s+renderMissionDraftPanel\s*\(/, "mission draft renderer must exist");
-  assertRegex(appJs, /const\s+COMMANDS=\["\/help","\/goal","\/goal clear","\/goal pause","\/goal resume","\/goal complete","\/status","\/diff","\/resume --last","\/fork","\/fast status","\/agent list"\];/, "command palette must expose the supported slash command shortcuts");
+  assertRegex(appJs, /const\s+COMMANDS=\["\/goal","\/goal clear","\/goal pause","\/goal resume","\/goal complete","\/status","\/diff","\/resume --last","\/fork","\/fast status","\/agent list"\];/, "command palette must expose supported slash command shortcuts without the removed /help route");
   assertRegex(appJs, /function\s+commandPaletteCopyForUi\s*\(/, "command palette must describe slash commands by execution semantics");
   assertRegex(appJs, /const\s+slashGoal=extractMissionFieldByLabelForUi\(source,\["\/goal"\]\);/, "mission draft must parse /goal as an explicit goal label");
   assertRegex(appJs, /goal:slashGoal\|\|explicitGoal\|\|fallbackGoal/, "mission draft must prioritize /goal text in the visible goal row");
@@ -197,6 +210,11 @@ function main() {
   assertRegex(appJs, /function\s+shouldUseStickyComposerForUi\s*\(/, "composer sticky viewport helper must exist");
   assertRegex(appJs, /function\s+buildUiReloadUrlForUi\s*\(/, "UI reload URL helper must exist");
   assertRegex(appJs, /function\s+reloadUiShellForUi\s*\(/, "UI reload trigger must exist");
+  assertRegex(appJs, /function\s+topRuntimeCodexVersionForUi\s*\(/, "top status strip must normalize codex-cli version text");
+  assertRegex(appJs, /codexVersion\?`Ver \$\{codexVersion\}`:`Ver \$\{APP_BUNDLE_VERSION\}`/, "top status strip must prefer Ver codex-cli when diagnostics are available");
+  assertRegex(appJs, /function\s+renderAttachmentUi\s*\(/, "composer must expose the image attachment renderer");
+  assertRegex(appJs, /previewSummary\.textContent=items\.length\?`画像 \$\{items\.length\} 件を添付中`:"";/, "attachment summary must state how many images are attached");
+  assertRegex(appJs, /removeBtn\.setAttribute\("aria-label",`\$\{String\(item\.file\.name\|\|"image"\)\} を添付から外す`\);/, "attachment delete buttons must have file-specific accessible labels");
   assertRegex(appJs, /function\s+syncComposerViewportSpacingForUi\s*\(/, "composer viewport spacing helper must exist");
   assertRegex(appJs, /function\s+scheduleComposerViewportSyncForUi\s*\(/, "composer viewport sync scheduler must exist");
   assertRegex(appJs, /function\s+lockSelectedWorkspaceForUi\s*\(/, "workspace guard lock helper must exist");

@@ -1,0 +1,6 @@
+interface:
+  display_name: "Safe Refactor With Proof"
+  short_description: "Keep multi-file refactors small, reversible, and verified."
+  default_prompt: "Review this refactor for scope, proof, and rollback notes."
+policy:
+  allow_implicit_invocation: true

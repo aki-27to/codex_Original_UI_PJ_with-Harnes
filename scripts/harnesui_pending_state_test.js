@@ -238,6 +238,46 @@ function run() {
     "chat binding must prefer the authoritative server turnRuntime snapshot"
   );
 
+  context.s.runtime = {
+    agents: [],
+    latestTurn: {
+      agent_name: "Codex",
+      thread_id: "thread-chat-1",
+      turn_id: "turn-chat-1",
+      terminal_status: "running",
+      started_at: 1700000002500,
+    },
+    turnRuntime: {
+      sourceOfTruth: "server_runtime",
+      activeExecRequests: 0,
+      activeTurns: [],
+      latestTurn: {
+        agentName: "Codex",
+        threadId: "thread-chat-1",
+        turnId: "turn-chat-1",
+        status: "running",
+        startedAt: 1700000002500,
+      },
+      terminalLatestTurn: {
+        agentName: "Codex",
+        threadId: "thread-chat-1",
+        turnId: "turn-chat-1",
+        status: "failed",
+        completedAt: 1700000004000,
+      },
+    },
+  };
+  assert.strictEqual(
+    runtimePendingCountForChat(chatRecord, context.s.runtime),
+    0,
+    "authoritative idle server runtime must not let a stale latestTurn=running keep send blocked"
+  );
+  assert.strictEqual(
+    pendingProjectionBlocksSendForUi(pendingProjectionForChatForUi(chatRecord, context.s.runtime)),
+    false,
+    "stale latestTurn=running must not disable send when activeExecRequests and activeTurns are empty"
+  );
+
   chatRecord.h.status = "needs_input";
   chatRecord.h.events = [];
   chatRecord.h.flow = [];

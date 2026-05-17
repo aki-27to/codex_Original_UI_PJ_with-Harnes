@@ -1,0 +1,34 @@
+{
+  "name": "proof-closeout",
+  "version": "0.1.0",
+  "description": "Reusable proof, verification, adoption-readiness, and handoff skills for Codex closeout.",
+  "author": {
+    "name": "Harnes Local"
+  },
+  "license": "ISC",
+  "keywords": [
+    "codex",
+    "verification",
+    "closeout",
+    "handoff",
+    "proof"
+  ],
+  "skills": "./skills/",
+  "interface": {
+    "displayName": "Proof / Closeout",
+    "shortDescription": "Evidence-backed completion, verification, and handoff checks.",
+    "longDescription": "Packages closeout skills that map changed surfaces to verification evidence, review adoption readiness, prevent false completion, and generate durable handoffs.",
+    "developerName": "Harnes Local",
+    "category": "Productivity",
+    "capabilities": [
+      "Read",
+      "Write"
+    ],
+    "defaultPrompt": [
+      "Check whether this change is really done.",
+      "Create a handoff for this unfinished task.",
+      "Map changed files to verification evidence."
+    ],
+    "brandColor": "#2563EB"
+  }
+}

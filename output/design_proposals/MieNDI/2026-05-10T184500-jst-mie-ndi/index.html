@@ -1,0 +1,133 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>有限会社三重非破壊検査 Webサイトデザイン設計書</title>
+  <link rel="stylesheet" href="assets/proposal.css">
+  <link rel="icon" href="data:,">
+</head>
+<body>
+  <header class="proposal-header">
+    <div>
+      <p class="eyebrow">Design Proposal / Mie Non-Destructive Testing</p>
+      <h1>有限会社三重非破壊検査<br>Webサイトデザイン設計書</h1>
+    </div>
+    <p class="header-note">顧客確認用のHTML/CSS設計書です。採択前のため、本体サイトには未適用です。</p>
+  </header>
+
+  <main>
+    <section class="hero-proposal">
+      <div class="hero-copy">
+        <p class="eyebrow">Core Direction</p>
+        <h2>社会インフラを支える検査会社として、信頼感と現場感を最初の画面で伝える。</h2>
+        <p>
+          TOPは「非破壊検査の専門性」「現場での確かさ」「未経験者にも開かれた採用導線」を同時に伝える構成にします。
+          写真は小さく並べず、現場写真を大きく使い、検査工程が見える余白と文字階層で会社の実在感を高めます。
+        </p>
+      </div>
+      <div class="hero-visual" aria-label="TOPヒーロー設計">
+        <div class="photo-frame photo-main">
+          <span>写真1: TOPメインビジュアル</span>
+        </div>
+        <div class="hero-panel">
+          <strong>壊さず、確かめる。</strong>
+          <span>橋梁・プラント・建築物の安全を、検査技術で支える。</span>
+        </div>
+      </div>
+    </section>
+
+    <section class="design-grid">
+      <article>
+        <span class="section-number">01</span>
+        <h3>共通ヘッダー</h3>
+        <p>全ページを白背景ヘッダーで統一し、会社サイトとしての一貫性を作ります。TOPだけ特別扱いにせず、検査内容、教育体制、採用情報、会社概要まで同じ骨格に揃えます。</p>
+      </article>
+      <article>
+        <span class="section-number">02</span>
+        <h3>写真の扱い</h3>
+        <p>写真は説明の添え物ではなく、信頼を作る主役として扱います。小さなサムネイル羅列を避け、各セクションで一枚を大きく見せる設計にします。</p>
+      </article>
+      <article>
+        <span class="section-number">03</span>
+        <h3>採用導線</h3>
+        <p>未経験者には安心感、経験者には技術を活かせる場を伝えます。資格や専門性を前面に出しすぎず、教育と現場同行の流れを分かりやすくします。</p>
+      </article>
+    </section>
+
+    <section class="layout-map">
+      <div class="section-copy">
+        <p class="eyebrow">Top Page Structure</p>
+        <h2>TOPページの構成案</h2>
+        <p>情報量を削るのではなく、見せる順序を整理します。専門性、検査内容、教育、採用を一つの流れとして読める構成です。</p>
+      </div>
+      <ol class="flow-list">
+        <li><strong>Hero</strong><span>現場写真と強いコピーで第一印象を作る</span></li>
+        <li><strong>非破壊検査とは</strong><span>社会インフラを壊さず調べる技術として説明</span></li>
+        <li><strong>検査内容</strong><span>UT、PT、鉄筋探査の3項目に絞って大きく見せる</span></li>
+        <li><strong>教育体制</strong><span>座学、OJT、資格取得支援の3段階で安心感を作る</span></li>
+        <li><strong>採用情報</strong><span>未経験者と経験者の両方に向けた入口を整理</span></li>
+      </ol>
+    </section>
+
+    <section class="visual-system">
+      <div class="section-copy">
+        <p class="eyebrow">Visual System</p>
+        <h2>見た目の設計方針</h2>
+      </div>
+      <div class="system-columns">
+        <article>
+          <h3>色</h3>
+          <p>白を基調に、深い紺と検査機器を連想させる青緑をアクセントにします。重すぎる暗色全面や、装飾的なグラデーションは避けます。</p>
+          <div class="swatches">
+            <span style="--swatch:#f7f9f7"></span>
+            <span style="--swatch:#102436"></span>
+            <span style="--swatch:#1d6f74"></span>
+            <span style="--swatch:#d7e3df"></span>
+          </div>
+        </article>
+        <article>
+          <h3>文字</h3>
+          <p>見出しは力強く、本文は読みやすく短めにします。専門用語は残しつつ、初見でも意味が追える補足文を添えます。</p>
+        </article>
+        <article>
+          <h3>余白</h3>
+          <p>業務サイトとしての信頼感を出すため、余白は広く取りすぎず、写真と説明の関係が近いレイアウトにします。</p>
+        </article>
+      </div>
+    </section>
+
+    <section class="screen-preview">
+      <div class="section-copy">
+        <p class="eyebrow">First View Sketch</p>
+        <h2>ファーストビュー設計</h2>
+      </div>
+      <div class="browser-frame">
+        <div class="browser-nav">
+          <strong>MIE NDT</strong>
+          <span>検査内容</span><span>教育体制</span><span>採用情報</span><span>会社概要</span>
+        </div>
+        <div class="browser-hero">
+          <div>
+            <p class="eyebrow">Non-Destructive Testing</p>
+            <h3>非破壊検査で、社会インフラの安全を支える。</h3>
+            <p>三重県鈴鹿市を拠点に、橋梁・プラント・建築物の検査を行う専門会社です。</p>
+            <div class="button-row"><span>検査内容を見る</span><span>採用情報を見る</span></div>
+          </div>
+          <div class="photo-frame"><span>現場写真</span></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="decision">
+      <p class="eyebrow">Review Point</p>
+      <h2>確認していただきたいポイント</h2>
+      <ul>
+        <li>写真を大きく使う方向で、会社の信頼感が伝わるか。</li>
+        <li>検査内容を3項目に絞る構成で、分かりやすさが上がるか。</li>
+        <li>採用向けのやわらかさと、検査会社としての専門性のバランスが合っているか。</li>
+      </ul>
+    </section>
+  </main>
+</body>
+</html>

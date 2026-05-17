@@ -1,0 +1,6 @@
+interface:
+  display_name: "Handoff Artifact Generation"
+  short_description: "Create a durable continuation bundle for unfinished or resumed work."
+  default_prompt: "Create a handoff with next action, verification state, and open issues."
+policy:
+  allow_implicit_invocation: true

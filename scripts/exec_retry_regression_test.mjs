@@ -18,7 +18,7 @@ const { implementationPath: serverPath } = resolveServerImplementationPath(works
 const server = fs.readFileSync(serverPath, "utf8");
 const launcher = read("start_codex_ui.bat");
 
-assert.ok(server.includes('const fastModeDefault=parseBooleanEnv(fastModeDefaultEnvKey,false);'), "server FastMode default should be OFF");
+assert.ok(server.includes('const fastModeDefault=parseBooleanEnv(fastModeDefaultEnvKey,true);'), "server FastMode default should be ON");
 assert.ok(!html.includes('<input id="fastModeEnabled" type="checkbox" checked>'), "FastMode checkbox should default to unchecked");
 
 assert.ok(app.includes('const EXEC_IDEMPOTENCY_HEADER="Idempotency-Key";'), "UI should define the exec idempotency header");
@@ -29,7 +29,7 @@ assert.ok(app.includes("requestPayload.idempotencyKey=idempotencyKey;"), "UI sho
 assert.ok(app.includes('submitExecRequestWithRetry({payload:requestPayload,signal:ctl.signal,out,chatRecord:c})'), "UI should retry exec submits without reusing stale headers");
 assert.ok(app.includes("送信に失敗したため"), "UI should surface retry notices to the operator");
 
-assert.ok(launcher.includes('if "%CODEX_FAST_MODE_DEFAULT%"=="" set "CODEX_FAST_MODE_DEFAULT=0"'), "launcher FastMode default should be OFF");
+assert.ok(launcher.includes('if "%CODEX_FAST_MODE_DEFAULT%"=="" set "CODEX_FAST_MODE_DEFAULT=1"'), "launcher FastMode default should be ON");
 assert.ok(launcher.includes('if "%CODEX_SERVER_RESTART_MAX_RETRIES%"=="" set "CODEX_SERVER_RESTART_MAX_RETRIES=4"'), "launcher should define restart retry budget");
 assert.ok(launcher.includes('if "%CODEX_SERVER_RESTART_DELAY_MS%"=="" set "CODEX_SERVER_RESTART_DELAY_MS=1500"'), "launcher should define restart delay");
 assert.ok(launcher.includes(':launcher_server_run'), "launcher should run the server through a restart loop");

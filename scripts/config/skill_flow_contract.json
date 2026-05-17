@@ -22,6 +22,12 @@
       "canStartFlow": true,
       "canEndFlow": false
     },
+    "design-quality-operator": {
+      "kind": "specialist_reviewer",
+      "primaryResponsibility": "Generate, score, reject, route, and present only necessary design decisions with visual evidence.",
+      "canStartFlow": true,
+      "canEndFlow": false
+    },
     "safe-refactor-with-proof": {
       "kind": "implementation_guard",
       "primaryResponsibility": "Guide small, reversible, evidence-backed multi-file code, docs, config, or generated-artifact changes.",
@@ -63,6 +69,12 @@
       "primaryResponsibility": "Create or harden repo-local skills with Harnes-specific output, evidence, verification, rollback, and catalog contracts.",
       "canStartFlow": true,
       "canEndFlow": false
+    },
+    "gpt55-prompt-builder": {
+      "kind": "authoring_entry",
+      "primaryResponsibility": "Create GPT-5.5 prompt packages from official prompt guidance with outcome, evidence, validation, and stop-condition contracts.",
+      "canStartFlow": true,
+      "canEndFlow": true
     },
     "skill-design-review-codex": {
       "kind": "design_reviewer",
@@ -114,6 +126,25 @@
       "entrySkills": ["feedback-to-recurrence-patch"],
       "parentSelectionRequired": true,
       "autoInvokeNext": false,
+      "activationPolicy": {
+        "mode": "default_on_for_user_corrections",
+        "requiredEntrySkill": "feedback-to-recurrence-patch",
+        "mustConsiderWhen": [
+          "the user says a previous answer, implementation, design, or validation result is wrong, insufficient, missing, repeated, or not what they meant",
+          "the user asks why the same issue is recurring or why a correction was not retained",
+          "a failed validation, PASS/FAIL contradiction, or subjective adoption failure is visible before closure"
+        ],
+        "skipOnlyWhen": [
+          "the user explicitly requests pure execution, no learning capture, or no recurrence analysis",
+          "the feedback is a trivial deterministic edit with no recurrence risk and direct correction is safer",
+          "the task has no prior artifact, answer, validation, or adoption claim to correct"
+        ],
+        "minimumResponseObligation": [
+          "state whether feedback-to-recurrence-patch was applied or why it was skipped",
+          "do not route directly from a single correction to skill-promotion-governance",
+          "record replay or inverse-case evidence before treating the recurrence patch as adopted"
+        ]
+      },
       "terminalSkills": ["worker-decision-review", "skill-promotion-governance"],
       "transitions": [
         {
@@ -170,11 +201,26 @@
     {
       "id": "ui-acceptance",
       "purpose": "Route design-sensitive web/UI work from visual acceptance judgment through implementation verification and final adoption decision.",
-      "entrySkills": ["web-ui-acceptance-review"],
+      "entrySkills": ["web-ui-acceptance-review", "design-quality-operator"],
       "parentSelectionRequired": true,
       "autoInvokeNext": false,
       "terminalSkills": ["worker-decision-review"],
       "transitions": [
+        {
+          "from": "design-quality-operator",
+          "to": "browser-flakiness-recovery",
+          "condition": "candidate generation succeeded but browser screenshot evidence could not be collected reliably"
+        },
+        {
+          "from": "design-quality-operator",
+          "to": "web-ui-acceptance-review",
+          "condition": "recommended design evidence is ready for final visual adoption review"
+        },
+        {
+          "from": "design-quality-operator",
+          "to": "safe-refactor-with-proof",
+          "condition": "the recommended design image should be applied to source UI files"
+        },
         {
           "from": "web-ui-acceptance-review",
           "to": "browser-flakiness-recovery",
@@ -342,6 +388,11 @@
       "id": "not-yet-root-cause-debugger",
       "mode": "blocker_debugger",
       "reason": "It activates only when NOT_YET status blocks completion and returns the next verification step rather than a fixed flow."
+    },
+    {
+      "id": "gpt55-prompt-builder",
+      "mode": "authoring_entry",
+      "reason": "It activates when a prompt package is requested for GPT-5.5 and can end after returning prompt text, source status, validation checks, and open issues."
     },
     {
       "id": "review-harness-codex",

@@ -1,0 +1,118 @@
+{
+  "schema": "design-quality-operator-policy.v1",
+  "version": "2026-05-10.r2",
+  "operatorName": "Design Quality Operator",
+  "defaultTarget": {
+    "id": "mie-ndi-top",
+    "label": "MieNDI TOP page",
+    "path": "C:\\Users\\akima\\dev\\MieNDI",
+    "pageScope": "TOP first-screen plus first proof band"
+  },
+  "decisionThresholds": {
+    "autoRecommendScore": 86,
+    "needsHumanDecisionScoreGap": 7,
+    "rejectBelowScore": 70,
+    "failedValidationBelowScore": 60,
+    "autoRecommendMinCustomerImageFit": 88,
+    "autoRecommendMinBenchmarkCompetitiveness": 86,
+    "autoRecommendMinCompositionMaturity": 86
+  },
+  "customerImageReference": {
+    "id": "suruga-k",
+    "label": "Suruga Inspection customer image",
+    "url": "https://www.suruga-k.jp/",
+    "role": "benchmark_reference_not_copy_source",
+    "observedSignals": [
+      "non-destructive inspection company with visible industrial credibility",
+      "safety and reassurance proposition appears before service browsing",
+      "inspection method breadth is concrete: UT, RT, PT, MT, VT and related field services",
+      "certifications and institutional trust matter: CIW, ISO, registration, quality assurance",
+      "service information density is expected, but it must be structured and readable",
+      "real field/company imagery should function as evidence, not decoration"
+    ],
+    "mustNotCopy": [
+      "do not clone the Suruga layout",
+      "do not reuse Suruga copy as MieNDI copy",
+      "do not treat old-looking visual style as the target just because the reference has legacy elements"
+    ]
+  },
+  "calibrationGate": {
+    "requiredForAutoRecommend": true,
+    "minimumReferenceCount": 1,
+    "requiresCurrentSiteDiagnosis": true,
+    "requiresWinConditions": true,
+    "requiresAntiReference": true,
+    "failOpenAllowed": false
+  },
+  "currentSiteDiagnosis": {
+    "status": "draft_from_operator_and_user_feedback",
+    "weaknessesToBeat": [
+      "first view must explain what company this is before visual polish",
+      "field credibility must be concrete instead of stock-like atmosphere",
+      "copy hierarchy must make inspection methods and trust proof scannable",
+      "the screen must not feel like an AI-generated landing-page template"
+    ]
+  },
+  "winConditions": [
+    "beats the current MieNDI TOP page on first-view clarity",
+    "feels like a serious inspection company a customer can trust",
+    "uses photos as proof of field work rather than decorative hero texture",
+    "shows service breadth and credentials without becoming a cluttered menu dump",
+    "passes a human adoption review before auto_recommend is allowed"
+  ],
+  "antiReference": [
+    "generic SaaS card landing page",
+    "dark control-room dashboard",
+    "photo pasted behind weak copy",
+    "legacy corporate page copied without improving hierarchy"
+  ],
+  "requiredEvidence": [
+    "brief",
+    "candidate_html",
+    "scorecard",
+    "decision",
+    "desktop_screenshot",
+    "mobile_screenshot",
+    "rejected_candidate_reasons"
+  ],
+  "routingRules": [
+    {
+      "id": "auto_recommend_single_strong_candidate",
+      "when": "top score is at least autoRecommendScore and the next score is lower by needsHumanDecisionScoreGap or more",
+      "route": "auto_recommend",
+      "humanDecision": false
+    },
+    {
+      "id": "raise_to_inbox_when_scores_are_close",
+      "when": "top two candidates are both above rejectBelowScore and score gap is smaller than needsHumanDecisionScoreGap",
+      "route": "review_inbox",
+      "humanDecision": true
+    },
+    {
+      "id": "fail_closed_without_visual_evidence",
+      "when": "desktop or mobile screenshot evidence is missing",
+      "route": "failed_validation",
+      "humanDecision": true
+    }
+  ],
+  "scoreAxes": [
+    "reference_fit",
+    "customer_image_fit",
+    "benchmark_competitiveness",
+    "composition_maturity",
+    "taste_fit",
+    "anti_taste_avoidance",
+    "visual_hierarchy",
+    "information_density",
+    "layout_integrity",
+    "mobile_resilience",
+    "brand_specificity",
+    "implementation_risk"
+  ],
+  "harnesUiSurface": {
+    "statusPanelId": "designQualityPanel",
+    "staticDecisionPath": "/design-quality/latest/decision.json",
+    "detailPath": "/design-quality/latest/index.html",
+    "defaultHumanMessage": "通常は画像一覧を見せず、判断が必要な場合だけReview Inboxに上げます。"
+  }
+}

@@ -1,0 +1,6 @@
+interface:
+  display_name: "Artifact Improvement Learning"
+  short_description: "Capture verified artifact improvements as scoped reusable learning."
+  default_prompt: "Turn this artifact improvement into reusable learning with rollback criteria."
+policy:
+  allow_implicit_invocation: true

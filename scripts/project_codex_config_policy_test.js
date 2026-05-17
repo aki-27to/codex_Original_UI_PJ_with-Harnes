@@ -13,7 +13,7 @@ function main() {
   const defaultAgentConfig = fs.readFileSync(defaultAgentConfigPath, "utf8");
 
   assert(!/^\s*service_tier\s*=/.test(config), "project Codex config must not force a service_tier");
-  assert(/\[features\][\s\S]*fast_mode = false/.test(config), "project Codex config must default fast_mode off");
+  assert(/\[features\][\s\S]*fast_mode = true/.test(config), "project Codex config must default fast_mode on");
   assert(/\[features\][\s\S]*guardian_approval = true/.test(config), "project Codex config must keep guardian_approval enabled");
   assert(
     /^\s*sandbox_mode\s*=\s*"danger-full-access"\s*$/m.test(defaultAgentConfig),

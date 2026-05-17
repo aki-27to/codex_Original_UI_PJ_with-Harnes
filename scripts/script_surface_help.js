@@ -29,7 +29,7 @@ const sections = [
   },
   {
     title: "Housekeeping",
-    scripts: ["housekeeping:surfaces", "housekeeping:runtime-surface", "housekeeping:output-surface"],
+    scripts: ["repo:start-clean", "repo:start-clean:dry-run", "repo:preflight", "repo:preflight:diagnose", "repo:closeout", "repo:closeout:diagnose", "housekeeping:surfaces", "housekeeping:runtime-surface", "housekeeping:output-surface"],
   },
   {
     title: "Artifacts and memory",

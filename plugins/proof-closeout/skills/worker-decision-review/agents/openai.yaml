@@ -1,0 +1,6 @@
+interface:
+  display_name: "Worker Decision Review"
+  short_description: "Decide whether an outcome is adoptable, needs revision, or is blocked."
+  default_prompt: "Decide whether this task outcome is adoptable or needs revision."
+policy:
+  allow_implicit_invocation: true

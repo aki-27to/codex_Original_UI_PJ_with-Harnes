@@ -1,0 +1,36 @@
+{
+  "schema": "design-quality-rejected-candidates.v1",
+  "generatedAt": "2026-05-10T08:16:36.138Z",
+  "rejected": [
+    {
+      "candidateId": "candidate-b",
+      "label": "Industrial Dark Control",
+      "score": 69,
+      "reasons": [
+        "too close to dark_console_as_default",
+        "less inviting for a public company TOP page",
+        "requires stronger copy work to avoid operator-console tone"
+      ]
+    },
+    {
+      "candidateId": "candidate-a",
+      "label": "Field Precision Blue",
+      "score": 66,
+      "reasons": [
+        "failed customer-image benchmark after Suruga reference was locked",
+        "real photo presence is not enough without stronger composition and hierarchy",
+        "requires human design review before any auto recommendation"
+      ]
+    },
+    {
+      "candidateId": "candidate-c",
+      "label": "Corporate Card Stack",
+      "score": 59,
+      "reasons": [
+        "too close to generic_saas_cards",
+        "rounded card stack creates template feel",
+        "field photography becomes secondary instead of first-viewport proof"
+      ]
+    }
+  ]
+}

@@ -25,7 +25,7 @@ function main() {
   assert(/-Uri \$runtimeUrl -TimeoutSec 6/.test(launcher), "launcher must give the existing runtime probe enough time to avoid false fallback reuse");
   assert(/if "%CODEX_AUTO_RESTART_STALE_HARNESS%"=="" set "CODEX_AUTO_RESTART_STALE_HARNESS=1"/.test(launcher), "launcher must default stale-harness auto-restart on");
   assert(/if "%CODEX_FORCE_ACTIVE_RESTART%"=="" set "CODEX_FORCE_ACTIVE_RESTART=0"/.test(launcher), "launcher must default forced active restart off");
-  assert(/if "%CODEX_FAST_MODE_DEFAULT%"=="" set "CODEX_FAST_MODE_DEFAULT=0"/.test(launcher), "launcher must default fast mode off");
+  assert(/if "%CODEX_FAST_MODE_DEFAULT%"=="" set "CODEX_FAST_MODE_DEFAULT=1"/.test(launcher), "launcher must default fast mode on");
   assert(/if "%CODEX_SERVER_RESTART_MAX_RETRIES%"=="" set "CODEX_SERVER_RESTART_MAX_RETRIES=4"/.test(launcher), "launcher must define a bounded auto-restart budget");
   assert(/if "%CODEX_SERVER_RESTART_DELAY_MS%"=="" set "CODEX_SERVER_RESTART_DELAY_MS=1500"/.test(launcher), "launcher must define a restart backoff");
   assert(/if "%CODEX_SERVER_STABLE_WINDOW_SECONDS%"=="" set "CODEX_SERVER_STABLE_WINDOW_SECONDS=30"/.test(launcher), "launcher must define a stability reset window");

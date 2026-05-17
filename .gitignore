@@ -8,6 +8,7 @@ logs/archive/
 .uv-cache/
 .tooling/
 node_modules/
+desktop/**/dist/
 .pw-browsers/
 .playwright-cli/
 APP/03.ai-debate-chat/.playwright-cli/

@@ -21,7 +21,31 @@ const requiredSkillIds = [
   "skill-creator-master"
 ];
 
-const allowedRoot = ".agents/skills/";
+const proofCloseoutSkillIds = new Set([
+  "code-change-verification",
+  "safe-refactor-with-proof",
+  "repo-truth-audit",
+  "worker-decision-review",
+  "long-run-session-closeout",
+  "handoff-artifact-generation"
+]);
+
+const skillGovernanceSkillIds = new Set([
+  "skill-creator-master",
+  "skill-design-review-codex",
+  "skill-promotion-governance",
+  "artifact-improvement-learning",
+  "feedback-to-recurrence-patch"
+]);
+
+const canonicalRepoRoot = ".agents/skills/";
+const archivedRoot = ".agents/old-skills/";
+
+function expectedPluginRoot(skillId) {
+  if (proofCloseoutSkillIds.has(skillId)) return "plugins/proof-closeout/skills/";
+  if (skillGovernanceSkillIds.has(skillId)) return "plugins/skill-governance/skills/";
+  return "";
+}
 
 function repoPath(value) {
   return String(value || "").replace(/\\/g, "/");
@@ -61,7 +85,19 @@ function main() {
   for (const entry of catalog.skills) {
     assert(entry.id, "skill id is required");
     const normalizedPath = repoPath(entry.path);
-    assert(normalizedPath.startsWith(allowedRoot), `${entry.id} path must stay under the canonical repo-local skill root`);
+    const pluginRoot = expectedPluginRoot(entry.id);
+    if (pluginRoot) {
+      assert(
+        normalizedPath.startsWith(`${pluginRoot}${entry.id}/`),
+        `${entry.id} path must point to the expected plugin skill root`
+      );
+      const activeDuplicatePath = path.join(workspaceRoot, canonicalRepoRoot, entry.id);
+      assert(!fs.existsSync(activeDuplicatePath), `${entry.id} must not remain callable under ${canonicalRepoRoot}`);
+      const archivedPath = path.join(workspaceRoot, archivedRoot, entry.id, "SKILL.md");
+      assert(fs.existsSync(archivedPath), `${entry.id} archived copy is missing at ${archivedRoot}${entry.id}/SKILL.md`);
+    } else {
+      assert(normalizedPath.startsWith(canonicalRepoRoot), `${entry.id} path must stay under the canonical repo-local skill root`);
+    }
     assert(normalizedPath.endsWith("/SKILL.md"), `${entry.id} path must point to SKILL.md`);
     const absolutePath = path.join(workspaceRoot, entry.path);
     assert(fs.existsSync(absolutePath), `${entry.id} SKILL.md is missing at ${entry.path}`);

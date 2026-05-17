@@ -1,0 +1,160 @@
+{
+  "schema": "design-quality-brief.v1",
+  "target": {
+    "id": "mie-ndi-top",
+    "label": "MieNDI TOP page",
+    "root": "C:\\Users\\akima\\dev\\MieNDI",
+    "pageScope": "TOP first-screen plus first proof band"
+  },
+  "objective": "Generate and route a better TOP-page design image without requiring the user to inspect every candidate.",
+  "lockedConstraints": [
+    "Do not mutate the target MieNDI repository.",
+    "Use real MieNDI page content and public assets.",
+    "Do not auto-recommend until the customer-image benchmark and win conditions are satisfied.",
+    "Keep rejected candidates available only as evidence."
+  ],
+  "customerImageReference": {
+    "id": "suruga-k",
+    "label": "Suruga Inspection customer image",
+    "url": "https://www.suruga-k.jp/",
+    "role": "benchmark_reference_not_copy_source",
+    "observedSignals": [
+      "non-destructive inspection company with visible industrial credibility",
+      "safety and reassurance proposition appears before service browsing",
+      "inspection method breadth is concrete: UT, RT, PT, MT, VT and related field services",
+      "certifications and institutional trust matter: CIW, ISO, registration, quality assurance",
+      "service information density is expected, but it must be structured and readable",
+      "real field/company imagery should function as evidence, not decoration"
+    ],
+    "mustNotCopy": [
+      "do not clone the Suruga layout",
+      "do not reuse Suruga copy as MieNDI copy",
+      "do not treat old-looking visual style as the target just because the reference has legacy elements"
+    ]
+  },
+  "calibrationGate": {
+    "requiredForAutoRecommend": true,
+    "minimumReferenceCount": 1,
+    "requiresCurrentSiteDiagnosis": true,
+    "requiresWinConditions": true,
+    "requiresAntiReference": true,
+    "failOpenAllowed": false,
+    "currentSiteDiagnosis": {
+      "status": "draft_from_operator_and_user_feedback",
+      "weaknessesToBeat": [
+        "first view must explain what company this is before visual polish",
+        "field credibility must be concrete instead of stock-like atmosphere",
+        "copy hierarchy must make inspection methods and trust proof scannable",
+        "the screen must not feel like an AI-generated landing-page template"
+      ]
+    },
+    "winConditions": [
+      "beats the current MieNDI TOP page on first-view clarity",
+      "feels like a serious inspection company a customer can trust",
+      "uses photos as proof of field work rather than decorative hero texture",
+      "shows service breadth and credentials without becoming a cluttered menu dump",
+      "passes a human adoption review before auto_recommend is allowed"
+    ],
+    "antiReference": [
+      "generic SaaS card landing page",
+      "dark control-room dashboard",
+      "photo pasted behind weak copy",
+      "legacy corporate page copied without improving hierarchy"
+    ]
+  },
+  "visualGrammar": {
+    "summary": "Industrial trust for non-destructive testing calibrated against the Suruga Inspection customer image: concrete safety promise, field credibility, certification proof, and service breadth without generic landing-page styling.",
+    "benchmarkReference": {
+      "id": "suruga-k",
+      "url": "https://www.suruga-k.jp/",
+      "interpretation": "Use as a customer-image benchmark for NDT credibility and information shape, not as a visual clone target."
+    },
+    "referenceFit": [
+      "lead with the real company name and field safety proposition",
+      "use actual inspection/field photography as the first-viewport signal",
+      "show proof points before generic service cards",
+      "surface inspection methods and credentials as concrete trust signals",
+      "keep the palette light and precise, not heavy dark-console or rustic",
+      "beat the reference on hierarchy and visual maturity while preserving its industrial seriousness"
+    ],
+    "tokens": {
+      "surface": [
+        "#f4f8fb",
+        "#ffffff",
+        "#e8eff6"
+      ],
+      "ink": [
+        "#102844",
+        "#1d3657",
+        "#586b7f"
+      ],
+      "accent": [
+        "#2f6fb2",
+        "#77a8c8",
+        "#f2b84b"
+      ],
+      "line": [
+        "#cddae7",
+        "#dfe7ef"
+      ],
+      "radius": "6px",
+      "shadow": "short blue-gray elevation only for proof surfaces"
+    },
+    "layoutRules": [
+      "first viewport is full-bleed image-led and leaves the proof strip visible",
+      "proof points use dense but readable rows rather than floating marketing cards",
+      "navigation remains calm and legible on the image",
+      "copy hierarchy must make the company and safety proposition readable in under 5 seconds",
+      "service breadth should read like inspected expertise, not a generic card catalog",
+      "auto-recommend is invalid if the screen only has a real photo but weak composition"
+    ]
+  },
+  "antiTaste": [
+    "white card grid plus blue CTA template",
+    "rounded card stacks with thin soft shadows",
+    "heavy full dark console palette",
+    "solving design quality with gradients alone",
+    "restaurant-like luxury or unrelated benchmark residue",
+    "abstract safety copy without concrete inspection proof",
+    "real photo present but composition, hierarchy, and customer-image fit are weak",
+    "auto recommendation before beating the customer-image benchmark"
+  ],
+  "assets": [
+    {
+      "source": "C:\\Users\\akima\\dev\\MieNDI\\public\\assets\\suruga\\home-hero.jpg",
+      "target": "assets/suruga/home-hero.jpg"
+    },
+    {
+      "source": "C:\\Users\\akima\\dev\\MieNDI\\public\\assets\\suruga\\home-inspection-ut.jpg",
+      "target": "assets/suruga/home-inspection-ut.jpg"
+    },
+    {
+      "source": "C:\\Users\\akima\\dev\\MieNDI\\public\\assets\\suruga\\home-inspection-pt.jpg",
+      "target": "assets/suruga/home-inspection-pt.jpg"
+    },
+    {
+      "source": "C:\\Users\\akima\\dev\\MieNDI\\public\\assets\\suruga\\home-inspection-mt.jpg",
+      "target": "assets/suruga/home-inspection-mt.jpg"
+    },
+    {
+      "source": "C:\\Users\\akima\\dev\\MieNDI\\public\\assets\\suruga\\home-company-office.jpg",
+      "target": "assets/suruga/home-company-office.jpg"
+    },
+    {
+      "source": "C:\\Users\\akima\\dev\\MieNDI\\public\\assets\\suruga\\home-recruit-new.jpg",
+      "target": "assets/suruga/home-recruit-new.jpg"
+    },
+    {
+      "source": "C:\\Users\\akima\\dev\\MieNDI\\public\\assets\\original\\ndt-about-ultrasonic.png",
+      "target": "assets/original/ndt-about-ultrasonic.png"
+    },
+    {
+      "source": "C:\\Users\\akima\\dev\\MieNDI\\public\\assets\\original\\ndt-about-infrastructure.png",
+      "target": "assets/original/ndt-about-infrastructure.png"
+    },
+    {
+      "source": "C:\\Users\\akima\\dev\\MieNDI\\public\\assets\\original\\ndt-about-report.png",
+      "target": "assets/original/ndt-about-report.png"
+    }
+  ]
+}

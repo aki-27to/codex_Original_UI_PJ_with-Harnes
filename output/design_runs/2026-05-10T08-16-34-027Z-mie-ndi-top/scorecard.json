@@ -1,0 +1,133 @@
+{
+  "schema": "design-quality-scorecard.v1",
+  "generatedAt": "2026-05-10T08:16:36.137Z",
+  "screenshotEvidence": {
+    "status": "pass",
+    "error": "",
+    "count": 6,
+    "items": [
+      {
+        "candidateId": "candidate-a",
+        "viewport": "desktop",
+        "width": 1440,
+        "height": 960,
+        "path": "screenshots/candidate-a-desktop.png"
+      },
+      {
+        "candidateId": "candidate-a",
+        "viewport": "mobile",
+        "width": 390,
+        "height": 920,
+        "path": "screenshots/candidate-a-mobile.png"
+      },
+      {
+        "candidateId": "candidate-b",
+        "viewport": "desktop",
+        "width": 1440,
+        "height": 960,
+        "path": "screenshots/candidate-b-desktop.png"
+      },
+      {
+        "candidateId": "candidate-b",
+        "viewport": "mobile",
+        "width": 390,
+        "height": 920,
+        "path": "screenshots/candidate-b-mobile.png"
+      },
+      {
+        "candidateId": "candidate-c",
+        "viewport": "desktop",
+        "width": 1440,
+        "height": 960,
+        "path": "screenshots/candidate-c-desktop.png"
+      },
+      {
+        "candidateId": "candidate-c",
+        "viewport": "mobile",
+        "width": 390,
+        "height": 920,
+        "path": "screenshots/candidate-c-mobile.png"
+      }
+    ]
+  },
+  "candidates": [
+    {
+      "id": "candidate-b",
+      "label": "Industrial Dark Control",
+      "decision": "rejected",
+      "summary": "High contrast and strong industrial tone, but too close to the heavy dark-console pattern the taste memory rejects.",
+      "score": 69,
+      "axes": {
+        "reference_fit": 76,
+        "customer_image_fit": 57,
+        "benchmark_competitiveness": 52,
+        "composition_maturity": 60,
+        "taste_fit": 62,
+        "anti_taste_avoidance": 58,
+        "visual_hierarchy": 78,
+        "information_density": 80,
+        "layout_integrity": 82,
+        "mobile_resilience": 78,
+        "brand_specificity": 82,
+        "implementation_risk": 76
+      },
+      "rejectedReasons": [
+        "too close to dark_console_as_default",
+        "less inviting for a public company TOP page",
+        "requires stronger copy work to avoid operator-console tone"
+      ]
+    },
+    {
+      "id": "candidate-a",
+      "label": "Field Precision Blue",
+      "decision": "review_required",
+      "summary": "Real field photography is present, but the Suruga-calibrated benchmark exposes weak composition maturity and customer-image fit.",
+      "score": 66,
+      "axes": {
+        "reference_fit": 74,
+        "customer_image_fit": 61,
+        "benchmark_competitiveness": 55,
+        "composition_maturity": 58,
+        "taste_fit": 54,
+        "anti_taste_avoidance": 70,
+        "visual_hierarchy": 63,
+        "information_density": 66,
+        "layout_integrity": 70,
+        "mobile_resilience": 88,
+        "brand_specificity": 70,
+        "implementation_risk": 84
+      },
+      "rejectedReasons": [
+        "failed customer-image benchmark after Suruga reference was locked",
+        "real photo presence is not enough without stronger composition and hierarchy",
+        "requires human design review before any auto recommendation"
+      ]
+    },
+    {
+      "id": "candidate-c",
+      "label": "Corporate Card Stack",
+      "decision": "rejected",
+      "summary": "Readable and safe, but it regresses toward generic white-card SaaS structure and weak field realness.",
+      "score": 59,
+      "axes": {
+        "reference_fit": 61,
+        "customer_image_fit": 45,
+        "benchmark_competitiveness": 42,
+        "composition_maturity": 48,
+        "taste_fit": 54,
+        "anti_taste_avoidance": 49,
+        "visual_hierarchy": 68,
+        "information_density": 64,
+        "layout_integrity": 80,
+        "mobile_resilience": 82,
+        "brand_specificity": 58,
+        "implementation_risk": 88
+      },
+      "rejectedReasons": [
+        "too close to generic_saas_cards",
+        "rounded card stack creates template feel",
+        "field photography becomes secondary instead of first-viewport proof"
+      ]
+    }
+  ]
+}

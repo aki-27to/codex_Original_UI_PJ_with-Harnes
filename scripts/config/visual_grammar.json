@@ -1,0 +1,48 @@
+{
+  "schema": "visual-grammar.v1",
+  "version": "2026-05-10.r2",
+  "profiles": {
+    "harnes-default": {
+      "summary": "Calm operational UI with crisp hierarchy, clear density, and no generic card-dashboard drift.",
+      "tokens": {
+        "surface": ["cool blue-gray", "restrained warm white", "low-noise panels"],
+        "ink": ["deep navy", "charcoal", "quiet secondary text"],
+        "accent": ["measured blue", "status green only when meaningful"],
+        "radius": "4px to 8px for ordinary panels",
+        "shadow": "subtle or none; hierarchy should come from type, line, and surface contrast"
+      }
+    },
+    "mie-ndi-ndt": {
+      "summary": "Industrial trust for non-destructive testing calibrated against the Suruga Inspection customer image: concrete safety promise, field credibility, certification proof, and service breadth without generic landing-page styling.",
+      "benchmarkReference": {
+        "id": "suruga-k",
+        "url": "https://www.suruga-k.jp/",
+        "interpretation": "Use as a customer-image benchmark for NDT credibility and information shape, not as a visual clone target."
+      },
+      "referenceFit": [
+        "lead with the real company name and field safety proposition",
+        "use actual inspection/field photography as the first-viewport signal",
+        "show proof points before generic service cards",
+        "surface inspection methods and credentials as concrete trust signals",
+        "keep the palette light and precise, not heavy dark-console or rustic",
+        "beat the reference on hierarchy and visual maturity while preserving its industrial seriousness"
+      ],
+      "tokens": {
+        "surface": ["#f4f8fb", "#ffffff", "#e8eff6"],
+        "ink": ["#102844", "#1d3657", "#586b7f"],
+        "accent": ["#2f6fb2", "#77a8c8", "#f2b84b"],
+        "line": ["#cddae7", "#dfe7ef"],
+        "radius": "6px",
+        "shadow": "short blue-gray elevation only for proof surfaces"
+      },
+      "layoutRules": [
+        "first viewport is full-bleed image-led and leaves the proof strip visible",
+        "proof points use dense but readable rows rather than floating marketing cards",
+        "navigation remains calm and legible on the image",
+        "copy hierarchy must make the company and safety proposition readable in under 5 seconds",
+        "service breadth should read like inspected expertise, not a generic card catalog",
+        "auto-recommend is invalid if the screen only has a real photo but weak composition"
+      ]
+    }
+  }
+}

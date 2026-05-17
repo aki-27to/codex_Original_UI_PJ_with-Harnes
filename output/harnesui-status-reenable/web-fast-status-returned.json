@@ -1,0 +1,22 @@
+{
+  "sendDisabled": false,
+  "sendButtonClipped": false,
+  "horizontalOverflow": false,
+  "viewportWidth": 1366,
+  "scrollWidth": 1366,
+  "pendingText": "待機なし",
+  "agentText": "チャット: /status / 状態: 待機なし / エージェント: Codex",
+  "liveStatusText": "",
+  "localPendingSize": 0,
+  "runtimeActiveExecRequests": 0,
+  "promptValue": "",
+  "messages": [
+    "Web再起動が完了しました。Runtime PID 73140 -> 51780",
+    "/status",
+    "Updated Plan\n  └ ✔ 依頼内容を確認する\n    ✔ 実行設定を確認する\n    ✔ 回答本文を受け取る\n    ✔ 最終回答を作成する\n\n・現在 完了: 最終回答を受け取りました\n・動き ・ 最終回答を受け取りました\n・経過 00:00\n・担当 default@chat-chat-1-17789894537…\n・モデル gpt-5.5 / xhigh\n・作業場所 C:\\Users\\akima\\dev\\codex_Original_UI_PJ_with-Harnes\n・依頼 /status\n・request req-1778989460496-ky6cio\n・turn web-exec-1778989460513-fe6vamzn",
+    ">_ OpenAI Codex (v0.130.0)\nVisit https://chatgpt.com/codex/settings/usage for up-to-date\ninformation on rate limits and credits\nModel:                        gpt-5.5 (reasoning xhigh, summaries auto)\nDirectory:                    C:\\Users\\akima\\dev\\codex_Original_UI_PJ_with-Harnes\nPermissions:                  Workspace (auto-review)\nAgents.md:                    AGENTS.md\nAccount:                      akimasa_1995_wada@yahoo.co.jp\nCollaboration mode:           Default\nSession:                      none\nContext window:               100% left (0 used / 258K)\n5h limit:                     open usage link above for live value\nWeekly limit:                 open usage link above for live value\nGPT-5.3-Codex-Spark limit:\n  5h limit:                   open usage link above for live value\n  Weekly limit:               open usage link above for live value\nWarning:                      limits may be stale - run /status again shortly.\n",
+    "/fast status",
+    "Updated Plan\n  └ ✔ 依頼内容を確認する\n    ✔ 実行設定を確認する\n    ✔ 回答本文を受け取る\n    ✔ 最終回答を作成する\n\n・現在 完了: 最終回答を受け取りました\n・動き ・・・・ 最終回答を受け取りました\n・経過 00:00\n・担当 default@chat-chat-1-17789894537…\n・モデル gpt-5.5 / xhigh\n・作業場所 C:\\Users\\akima\\dev\\codex_Original_UI_PJ_with-Harnes\n・依頼 /fast status\n・request req-1778989463078-73rvss\n・turn web-exec-1778989463085-480bilvn",
+    "Fast mode: on\nUsage: /fast [on|off|toggle|status]\n"
+  ]
+}

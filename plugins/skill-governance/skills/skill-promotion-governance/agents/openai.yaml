@@ -1,0 +1,6 @@
+interface:
+  display_name: "Skill Promotion Governance"
+  short_description: "Decide keep, promote, revise, demote, archive, or rollback for skills."
+  default_prompt: "Decide whether this skill should be kept, promoted, revised, or archived."
+policy:
+  allow_implicit_invocation: true

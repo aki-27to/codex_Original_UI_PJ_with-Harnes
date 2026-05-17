@@ -26,7 +26,7 @@ const LEGACY_PROFILE_ALIASES=Object.freeze({
 const ALLOWED_APPROVAL_POLICIES=new Set(["untrusted","on-request","never"]);
 const ALLOWED_SANDBOX_MODES=new Set(["read-only","workspace-write","danger-full-access"]);
 const ALLOWED_WEB_SEARCH_MODES=new Set(["disabled","cached","live"]);
-const COMMANDS=["/help","/goal","/goal clear","/goal pause","/goal resume","/goal complete","/status","/diff","/resume --last","/fork","/fast status","/agent list"];
+const COMMANDS=["/goal","/goal clear","/goal pause","/goal resume","/goal complete","/status","/diff","/resume --last","/fork","/fast status","/agent list"];
 const GOAL_COMPOSER_PRESET="/goal ";
 const DEFAULT_AGENT_NAME="default";
 const DEFAULT_EXEC_MODEL="gpt-5.5";
@@ -107,6 +107,7 @@ const topographyState={agents:[],source:"",error:"",usingFallback:false,lastUpda
 const e={connectionState:by("connectionState"),modeState:by("modeState"),agentState:by("agentState"),pendingState:by("pendingState"),simpleViewToggle:by("simpleViewToggle"),uiReloadBtn:by("uiReloadBtn"),serverRestartBtn:by("serverRestartBtn"),runtimeAgent:by("runtimeAgent"),runtimeSession:by("runtimeSession"),runtimeExperimental:by("runtimeExperimental"),runtimeAgentCount:by("runtimeAgentCount"),workspacePath:by("workspacePath"),workspaceLockBtn:by("workspaceLockBtn"),workspaceUnlockBtn:by("workspaceUnlockBtn"),workspaceStatus:by("workspaceStatus"),modelName:by("modelName"),modelReasoningEffort:by("modelReasoningEffort"),executionProfileHeadline:by("executionProfileHeadline"),executionProfileDescription:by("executionProfileDescription"),executionProfileApprovalChip:by("executionProfileApprovalChip"),executionProfileSandboxChip:by("executionProfileSandboxChip"),executionProfileSearchChip:by("executionProfileSearchChip"),executionProfileGuardianChip:by("executionProfileGuardianChip"),approvalPolicy:by("approvalPolicy"),fastModeEnabled:by("fastModeEnabled"),automaticApprovalReviewEnabled:by("automaticApprovalReviewEnabled"),sandboxMode:by("sandboxMode"),executionProfile:by("executionProfile"),permissionsAdvanced:by("permissionsAdvanced"),permissionsAdvancedHint:by("permissionsAdvancedHint"),uiVisibility:by("uiVisibility"),webSearchMode:by("webSearchMode"),commandFilter:by("commandFilter"),commandGrid:by("commandGrid"),commandTemplate:by("commandTemplate"),messageTemplate:by("messageTemplate"),chatList:by("chatList"),newChatBtn:by("newChatBtn"),deleteChatBtn:by("deleteChatBtn"),timeline:by("timeline"),promptInput:by("promptInput"),imageInput:by("imageInput"),imageAttachBtn:by("imageAttachBtn"),imageError:by("imageError"),imagePreview:by("imagePreview"),imagePreviewThumb:by("imagePreviewThumb"),imagePreviewName:by("imagePreviewName"),imagePreviewMeta:by("imagePreviewMeta"),imageRemoveBtn:by("imageRemoveBtn"),sendBtn:by("sendBtn"),stopBtn:by("stopBtn"),reconnectBtn:by("reconnectBtn"),refreshDiagBtn:by("refreshDiagBtn"),newThreadBtn:by("newThreadBtn"),openCmdBtn:by("openCmdBtn"),liveStatus:by("liveStatus"),liveStatusLabel:by("liveStatusLabel"),liveStatusElapsed:by("liveStatusElapsed"),liveStatusDetail:by("liveStatusDetail"),performancePanel:by("performancePanel"),perfSessionRef:by("perfSessionRef"),perfUpdatedAt:by("perfUpdatedAt"),perfTokenValue:by("perfTokenValue"),perfTokenDetail:by("perfTokenDetail"),perfTokenSpark:by("perfTokenSpark"),perfTimeValue:by("perfTimeValue"),perfTimeDetail:by("perfTimeDetail"),perfTimeSpark:by("perfTimeSpark"),agentInspector:by("agentInspector"),agentFlowLane:by("agentFlowLane"),agentTraceList:by("agentTraceList"),clearAgentTraceBtn:by("clearAgentTraceBtn"),agentTopographyPanel:by("agentTopographyPanel"),agentTopographyMeta:by("agentTopographyMeta"),agentTopographyList:by("agentTopographyList"),agentTopographyRefreshBtn:by("agentTopographyRefreshBtn"),diagCodexState:by("diagCodexState"),diagCodexDetail:by("diagCodexDetail"),diagNodeState:by("diagNodeState"),diagNodeDetail:by("diagNodeDetail"),diagSearchState:by("diagSearchState"),diagSearchDetail:by("diagSearchDetail"),diagSummaryText:by("diagSummaryText"),diagDetails:by("diagDetails"),diagDetailsSummary:by("diagDetailsSummary"),harnessStatus:by("harnessStatus"),harnessThreadId:by("harnessThreadId"),harnessTurnId:by("harnessTurnId"),harnessUpdatedAt:by("harnessUpdatedAt"),harnessItemList:by("harnessItemList"),harnessPlanMeta:by("harnessPlanMeta"),harnessPlanCurrentCard:by("harnessPlanCurrentCard"),harnessPlanCurrentStep:by("harnessPlanCurrentStep"),harnessPlanCurrentPurpose:by("harnessPlanCurrentPurpose"),harnessPlanCurrentDetail:by("harnessPlanCurrentDetail"),harnessPlanExplanation:by("harnessPlanExplanation"),harnessPlanList:by("harnessPlanList"),harnessTokenUsage:by("harnessTokenUsage"),harnessDiffPreview:by("harnessDiffPreview"),harnessPhaseList:by("harnessPhaseList"),harnessEvidenceTasks:by("harnessEvidenceTasks"),harnessEvidenceTests:by("harnessEvidenceTests"),harnessEvidenceReviews:by("harnessEvidenceReviews"),harnessEvidenceLogs:by("harnessEvidenceLogs"),composerVerificationChip:by("composerVerificationChip")};
 e.harnessCheckMode=by("harnessCheckMode");
 e.harnessCheckModeHint=by("harnessCheckModeHint");
+e.workspaceFastModeBtn=by("workspaceFastModeBtn");
 e.focusActionDetail=by("focusActionDetail");
 e.focusActionTitle=by("focusActionTitle");
 e.focusActionHint=by("focusActionHint");
@@ -134,11 +135,42 @@ e.operatorWorkspaceValue=by("operatorWorkspaceValue");
 e.operatorWorkspaceDetail=by("operatorWorkspaceDetail");
 e.operatorChatValue=by("operatorChatValue");
 e.operatorChatDetail=by("operatorChatDetail");
+e.designQualityPanel=by("designQualityPanel");
+e.designQualityStatus=by("designQualityStatus");
+e.designQualityMeta=by("designQualityMeta");
+e.designQualityRecommendation=by("designQualityRecommendation");
+e.designQualityDecision=by("designQualityDecision");
+e.designQualityReasonList=by("designQualityReasonList");
+e.designQualityRiskList=by("designQualityRiskList");
+e.designQualityDetailLink=by("designQualityDetailLink");
+e.designQualityEvidenceLink=by("designQualityEvidenceLink");
+e.designProposalPanel=by("designProposalPanel");
+e.designProposalStatus=by("designProposalStatus");
+e.designProposalMeta=by("designProposalMeta");
+e.designProposalTitle=by("designProposalTitle");
+e.designProposalTarget=by("designProposalTarget");
+e.designProposalDecision=by("designProposalDecision");
+e.designProposalSummaryList=by("designProposalSummaryList");
+e.designProposalPreviewLink=by("designProposalPreviewLink");
+e.designProposalManifestLink=by("designProposalManifestLink");
 e.harnessPlanNextCard=by("harnessPlanNextCard");
 e.harnessPlanNextStep=by("harnessPlanNextStep");
 e.harnessPlanNextPurpose=by("harnessPlanNextPurpose");
 e.harnessPlanNextDetail=by("harnessPlanNextDetail");
 e.opsDeck=by("opsDeck");
+e.topVersionChip=by("topVersionChip");
+e.topCodexChip=by("topCodexChip");
+e.topRuntimeChip=by("topRuntimeChip");
+const removedLiveStatusModelForUi={
+  root:{className:"live-status idle"},
+  label:{textContent:"待機中"},
+  elapsed:{textContent:"--:--"},
+  detail:{textContent:"まだ要求はありません。"},
+};
+if(!e.liveStatus)e.liveStatus=removedLiveStatusModelForUi.root;
+if(!e.liveStatusLabel)e.liveStatusLabel=removedLiveStatusModelForUi.label;
+if(!e.liveStatusElapsed)e.liveStatusElapsed=removedLiveStatusModelForUi.elapsed;
+if(!e.liveStatusDetail)e.liveStatusDetail=removedLiveStatusModelForUi.detail;
 const automationUi={
   panel:by("automationPanel"),
   status:by("automationStatusLine"),
@@ -174,6 +206,158 @@ const notificationAudioState={
   lastPlayAt:0,
 };
 function by(id){return document.getElementById(id)}
+function designProposalText(value,max=220){
+  const text=typeof value==="string"?value.trim():String(value==null?"":value).trim();
+  if(!text)return"";
+  return text.length>max?`${text.slice(0,max-1)}…`:text;
+}
+function setDesignProposalStatusClassForUi(status){
+  if(!e.designProposalStatus)return;
+  e.designProposalStatus.classList.remove("idle","ready","warn","fail");
+  const normalized=String(status||"").trim().toLowerCase();
+  if(normalized==="ready_for_review"||normalized==="ready")e.designProposalStatus.classList.add("ready");
+  else if(normalized==="draft"||normalized==="needs_review")e.designProposalStatus.classList.add("warn");
+  else if(normalized==="failed_validation"||normalized==="blocked")e.designProposalStatus.classList.add("fail");
+  else e.designProposalStatus.classList.add("idle");
+}
+function renderDesignProposalSummaryForUi(items){
+  if(!e.designProposalSummaryList)return;
+  e.designProposalSummaryList.textContent="";
+  const values=Array.isArray(items)?items.map((item)=>designProposalText(item,180)).filter(Boolean):[];
+  if(!values.length)values.push("最新提案の3行要約はまだありません。");
+  values.slice(0,3).forEach((value)=>{
+    const li=document.createElement("li");
+    li.textContent=value;
+    e.designProposalSummaryList.appendChild(li);
+  });
+}
+function renderDesignProposalStudioForUi(manifest){
+  if(!e.designProposalPanel)return;
+  const source=manifest&&typeof manifest==="object"?manifest:null;
+  if(!source){
+    if(e.designProposalStatus)e.designProposalStatus.textContent="未読込";
+    setDesignProposalStatusClassForUi("");
+    if(e.designProposalTitle)e.designProposalTitle.textContent="最新デザイン提案";
+    if(e.designProposalMeta)e.designProposalMeta.textContent="Harnes repo側の最新提案を確認します。";
+    if(e.designProposalTarget)e.designProposalTarget.textContent="未設定";
+    if(e.designProposalDecision)e.designProposalDecision.textContent="採択前のため、対象repoには書き込みません。";
+    renderDesignProposalSummaryForUi([]);
+    if(e.designProposalPreviewLink)e.designProposalPreviewLink.href="/design-proposals/latest/index.html";
+    if(e.designProposalManifestLink)e.designProposalManifestLink.href="/design-proposals/latest/manifest.json";
+    return;
+  }
+  const title=designProposalText(source.proposalTitle||"最新デザイン提案",120);
+  const status=String(source.status||"unknown").trim();
+  const target=designProposalText(source.target||"未設定",80);
+  const targetPath=designProposalText(source.targetPath||"",160);
+  const generated=designProposalText(source.generatedAt||"",80);
+  const publicPath=source.publicPath||"/design-proposals/latest/index.html";
+  const manifestPath=source.manifestPath||"/design-proposals/latest/manifest.json";
+  const targetRepoMutated=source.targetRepoMutated===true;
+  if(e.designProposalTitle)e.designProposalTitle.textContent=title;
+  if(e.designProposalStatus)e.designProposalStatus.textContent=status;
+  setDesignProposalStatusClassForUi(status);
+  if(e.designProposalMeta)e.designProposalMeta.textContent=`${target}${generated?` / ${generated}`:""}`;
+  if(e.designProposalTarget)e.designProposalTarget.textContent=targetPath?`${target} - ${targetPath}`:target;
+  if(e.designProposalDecision){
+    e.designProposalDecision.textContent=targetRepoMutated
+      ? "警告: 対象repoへの変更が検出されています。"
+      : "Harnes repo側だけに生成済みです。採択前のMieNDI変更はありません。";
+  }
+  renderDesignProposalSummaryForUi(source.summary);
+  if(e.designProposalPreviewLink)e.designProposalPreviewLink.href=publicPath;
+  if(e.designProposalManifestLink)e.designProposalManifestLink.href=manifestPath;
+}
+async function loadDesignProposalStudioForUi(){
+  try{
+    const response=await fetch("/design-proposals/latest/manifest.json",{cache:"no-store"});
+    if(!response.ok){
+      renderDesignProposalStudioForUi(null);
+      return;
+    }
+    const payload=await response.json();
+    renderDesignProposalStudioForUi(payload);
+  }catch(_error){
+    renderDesignProposalStudioForUi(null);
+  }
+}
+function designQualityText(value,max=220){
+  const text=typeof value==="string"?value.trim():String(value==null?"":value).trim();
+  if(!text)return"";
+  return text.length>max?`${text.slice(0,max-1)}…`:text;
+}
+function renderDesignQualityListForUi(listEl,items,emptyText){
+  if(!listEl)return;
+  listEl.textContent="";
+  const values=Array.isArray(items)?items.map((item)=>designQualityText(item,180)).filter(Boolean):[];
+  if(!values.length)values.push(emptyText||"なし");
+  values.slice(0,4).forEach((value)=>{
+    const li=document.createElement("li");
+    li.textContent=value;
+    listEl.appendChild(li);
+  });
+}
+function setDesignQualityStatusClassForUi(status){
+  if(!e.designQualityStatus)return;
+  e.designQualityStatus.classList.remove("idle","pass","needs","fail");
+  const normalized=String(status||"").trim().toUpperCase();
+  if(normalized==="PASS")e.designQualityStatus.classList.add("pass");
+  else if(normalized==="NEEDS_DECISION")e.designQualityStatus.classList.add("needs");
+  else if(normalized==="FAILED_VALIDATION"||normalized==="BLOCKED")e.designQualityStatus.classList.add("fail");
+  else e.designQualityStatus.classList.add("idle");
+}
+function renderDesignQualityOperatorForUi(decision){
+  if(!e.designQualityPanel)return;
+  const source=decision&&typeof decision==="object"?decision:null;
+  if(!source){
+    if(e.designQualityStatus)e.designQualityStatus.textContent="未実行";
+    setDesignQualityStatusClassForUi("");
+    if(e.designQualityMeta)e.designQualityMeta.textContent="まだDesign Operatorの出力はありません。";
+    if(e.designQualityRecommendation)e.designQualityRecommendation.textContent="候補なし";
+    if(e.designQualityDecision)e.designQualityDecision.textContent="画像一覧は出さず、必要判断だけここに上げます。";
+    renderDesignQualityListForUi(e.designQualityReasonList,[],"Operator出力待ちです。");
+    renderDesignQualityListForUi(e.designQualityRiskList,[],"未評価です。");
+    return;
+  }
+  const status=String(source.status||"UNKNOWN").trim().toUpperCase();
+  if(e.designQualityStatus)e.designQualityStatus.textContent=status;
+  setDesignQualityStatusClassForUi(status);
+  const targetLabel=source.target&&source.target.label?source.target.label:"design target";
+  const generated=source.generatedAt?` @ ${source.generatedAt}`:"";
+  if(e.designQualityMeta)e.designQualityMeta.textContent=`${targetLabel}${generated}`;
+  const recommendation=source.recommendation&&typeof source.recommendation==="object"?source.recommendation:{};
+  const highConfidence=source.status==="PASS"&&recommendation.recommended!==false;
+  const recommendationLabel=highConfidence?(recommendation.label||recommendation.candidateId||"候補なし"):"採択可候補なし";
+  const score=Number.isFinite(Number(recommendation.score))?` (${Math.trunc(Number(recommendation.score))}/100)`:"";
+  if(e.designQualityRecommendation)e.designQualityRecommendation.textContent=`${recommendationLabel}${score}`;
+  const route=source.route?` / route: ${source.route}`:"";
+  if(e.designQualityDecision){
+    e.designQualityDecision.textContent=highConfidence
+      ? `高信頼${route}. ${designQualityText(recommendation.summary||"",180)}`
+      : `低信頼${route}. 画像は主表示しません。${designQualityText(recommendation.summary||"",140)}`;
+  }
+  renderDesignQualityListForUi(e.designQualityReasonList,source.why,"理由なし");
+  renderDesignQualityListForUi(e.designQualityRiskList,source.risks,"リスクなし");
+  const detailPath=source.evidence&&source.evidence.detailPath?source.evidence.detailPath:"/design-quality/latest/index.html";
+  if(e.designQualityDetailLink){
+    e.designQualityDetailLink.href=detailPath;
+    e.designQualityDetailLink.textContent=highConfidence?"詳細を見る":"失敗理由を見る";
+  }
+  if(e.designQualityEvidenceLink)e.designQualityEvidenceLink.href="/design-quality/latest/decision.json";
+}
+async function loadDesignQualityOperatorForUi(){
+  try{
+    const response=await fetch("/design-quality/latest/decision.json",{cache:"no-store"});
+    if(!response.ok){
+      renderDesignQualityOperatorForUi(null);
+      return;
+    }
+    const payload=await response.json();
+    renderDesignQualityOperatorForUi(payload);
+  }catch(_error){
+    renderDesignQualityOperatorForUi(null);
+  }
+}
 function shouldUseStickyComposerForUi(viewportHeight=window.innerHeight){
   void viewportHeight;
   return false;
@@ -660,7 +844,25 @@ function runtimeDefaultExecModelReasoningEffort(){
   return normalizeExecModelReasoningEffortForUi(runtimeValue,DEFAULT_EXEC_MODEL_REASONING_EFFORT);
 }
 function runtimeDefaultFastModeEnabled(){
-  return Boolean(s.runtime&&s.runtime.operatorDefaults&&typeof s.runtime.operatorDefaults.fastModeEnabled==="boolean"?s.runtime.operatorDefaults.fastModeEnabled:false);
+  return Boolean(s.runtime&&s.runtime.operatorDefaults&&typeof s.runtime.operatorDefaults.fastModeEnabled==="boolean"?s.runtime.operatorDefaults.fastModeEnabled:true);
+}
+function syncWorkspaceFastModeButtonForUi(){
+  if(!e.workspaceFastModeBtn)return;
+  const enabled=Boolean(e.fastModeEnabled&&e.fastModeEnabled.checked);
+  e.workspaceFastModeBtn.textContent=enabled?"Fast mode ON":"Fast mode OFF";
+  e.workspaceFastModeBtn.setAttribute("aria-pressed",enabled?"true":"false");
+  e.workspaceFastModeBtn.title=enabled
+    ?"Fast mode is on for this chat. Click to turn it off."
+    :"Fast mode is off for this chat. Click to restore the default ON state.";
+}
+function setFastModeEnabledForUi(enabled){
+  if(e.fastModeEnabled)e.fastModeEnabled.checked=Boolean(enabled);
+  settingsState.hasStoredFastMode=true;
+  syncWorkspaceFastModeButtonForUi();
+  profileSync();
+  saveSettings();
+  updateSearchDiag();
+  renderMissionSupportUi();
 }
 function runtimeDefaultAutomaticApprovalReviewEnabled(){
   return Boolean(s.runtime&&s.runtime.operatorDefaults&&typeof s.runtime.operatorDefaults.automaticApprovalReviewEnabled==="boolean"?s.runtime.operatorDefaults.automaticApprovalReviewEnabled:true);
@@ -846,6 +1048,7 @@ function applyChatScopedStateToUi(chatRecord){
   composerAttachment.items=Array.isArray(current.draftAttachments)?current.draftAttachments:[];
   renderAttachmentUi();
   renderExecutionProfileSummaryForUi(e.executionProfile&&e.executionProfile.value?e.executionProfile.value:"custom");
+  syncWorkspaceFastModeButtonForUi();
   renderWorkspaceGuardUi();
   renderMissionSupportUi();
   return current;
@@ -1186,13 +1389,16 @@ function runtimePendingCountForChat(chatRecord,runtime=s.runtime){
   if(localCount===0&&latestTurn&&runtimeTurnIsTerminalForUi(latestTurn)){
     return 0;
   }
+  const authoritativeRuntimeActive=hasServerAuthority
+    ?(runtimeActiveExecRequestCountForUi(runtime)>0||runtimeActiveTurnsFromPayload(runtime).length>0)
+    :false;
   let runtimeCount=0;
   runtimeAgentsFromPayload(runtime).forEach((item)=>{
     if(runtimeAgentMatchesChatForUi(item,chatRecord,{localPendingCount:localCount,allowLocalFallback:!hasServerAuthority}))runtimeCount+=1;
   });
   if(runtimeCount===0&&localCount===0&&latestTurn&&!runtimeTurnIsTerminalForUi(latestTurn)){
     const chatAgent=normalizeAgentNameForUi(chatRecord.agent);
-    if(chatAgent&&runtimeTurnAgentForUi(latestTurn)===chatAgent)runtimeCount=1;
+    if(chatAgent&&runtimeTurnAgentForUi(latestTurn)===chatAgent&&(!hasServerAuthority||authoritativeRuntimeActive))runtimeCount=1;
   }
   if(!hasServerAuthority)return runtimeCount;
   const lastRuntimeLoadedAt=typeof runtimePendingSyncState==="object"&&Number.isFinite(Number(runtimePendingSyncState.lastLoadedAt))
@@ -5373,7 +5579,7 @@ function renderAttachmentUi(){
     e.imagePreview.hidden=!items.length;
   }
   if(previewSummary){
-    previewSummary.textContent=items.length?`${items.length}件の画像を添付中`:"";
+    previewSummary.textContent=items.length?`画像 ${items.length} 件を添付中`:"";
   }
   if(previewList){
     previewList.innerHTML="";
@@ -5399,6 +5605,8 @@ function renderAttachmentUi(){
       removeBtn.type="button";
       removeBtn.className="btn mini secondary";
       removeBtn.textContent="削除";
+      removeBtn.title=`${String(item.file.name||"image")} を添付から外します`;
+      removeBtn.setAttribute("aria-label",`${String(item.file.name||"image")} を添付から外す`);
       removeBtn.onclick=()=>removeAttachmentFromComposer(item.id);
       row.appendChild(thumb);
       row.appendChild(info);
@@ -5408,6 +5616,8 @@ function renderAttachmentUi(){
   }
   if(e.imageRemoveBtn){
     e.imageRemoveBtn.hidden=!items.length;
+    e.imageRemoveBtn.textContent=items.length>1?`すべて外す (${items.length})`:"すべて外す";
+    e.imageRemoveBtn.title="添付中の画像をすべて外します";
   }
   if(e.imageError){
     const err=String(composerAttachment.error||"").trim();
@@ -7330,10 +7540,45 @@ function liveStatusCodexVersionForUi(){
     ?s.diag.tools.codex.version.replace(/\s+/g," ").trim()
     :"";
   if(!version)return"";
-  return /^codex\b/i.test(version)?version:`Codex ${version}`;
+  return /^codex-cli\b/i.test(version)?version:(/^codex\b/i.test(version)?version.replace(/^codex\b/i,"codex-cli"):`codex-cli ${version}`);
+}
+function topRuntimeCodexVersionForUi(){
+  const version=s.diag&&s.diag.tools&&s.diag.tools.codex&&typeof s.diag.tools.codex.version==="string"
+    ?s.diag.tools.codex.version.replace(/\s+/g," ").trim()
+    :"";
+  if(!version)return"";
+  return /^codex-cli\b/i.test(version)?version:(/^codex\b/i.test(version)?version.replace(/^codex\b/i,"codex-cli"):`codex-cli ${version}`);
+}
+function setTopRuntimeChipForUi(el,text,tone="",title=""){
+  if(!el)return;
+  el.textContent=text;
+  el.className=tone?`top-runtime-chip ${tone}`:"top-runtime-chip";
+  el.title=title||text;
+}
+function renderTopRuntimeStripForUi(){
+  if(!e.topVersionChip&&!e.topCodexChip&&!e.topRuntimeChip)return;
+  const codexTool=s.diag&&s.diag.tools&&s.diag.tools.codex?s.diag.tools.codex:null;
+  const codexVersion=topRuntimeCodexVersionForUi();
+  setTopRuntimeChipForUi(
+    e.topVersionChip,
+    codexVersion?`Ver ${codexVersion}`:`Ver ${APP_BUNDLE_VERSION}`,
+    codexVersion?"ready":"warning",
+    codexVersion?"/api/diagnostics codex-cli version":"HarnesUI web bundle version fallback"
+  );
+  if(codexVersion){
+    setTopRuntimeChipForUi(e.topCodexChip,`UI ${APP_BUNDLE_VERSION}`,codexTool&&codexTool.available===false?"missing":"ready","HarnesUI web bundle version");
+  }else{
+    setTopRuntimeChipForUi(e.topCodexChip,"codex-cli 未確認",codexTool&&codexTool.available===false?"missing":"warning","診断更新で /api/diagnostics から codex-cli を確認します");
+  }
+  const runtimeMode=s.runtime&&typeof s.runtime.mode==="string"&&s.runtime.mode.trim()?s.runtime.mode.trim():"未接続";
+  const runtimeText=s.runtime
+    ?`runtime ${runtimeMode} / ${selectedExecModel()} / ${selectedExecModelReasoningEffort()}`
+    :"runtime 未接続";
+  setTopRuntimeChipForUi(e.topRuntimeChip,runtimeText,s.runtime?"ready":"warning","/api/runtime connection, model, reasoning");
 }
 function live(){
   flow();
+  renderTopRuntimeStripForUi();
   const codexVersion=liveStatusCodexVersionForUi();
   const currentChat=active();
   const currentChatId=currentChat&&currentChat.id?currentChat.id:"";
@@ -7567,6 +7812,7 @@ function applyExecutionProfileToUi(profileId){
   e.executionProfile.value=normalized;
   e.approvalPolicy.value=profile.approvalPolicy;
   if(e.fastModeEnabled)e.fastModeEnabled.checked=runtimeDefaultFastModeEnabled();
+  syncWorkspaceFastModeButtonForUi();
   if(e.automaticApprovalReviewEnabled)e.automaticApprovalReviewEnabled.checked=Boolean(profile.automaticApprovalReviewEnabled);
   e.sandboxMode.value=profile.sandboxMode;
   if(e.webSearchMode)e.webSearchMode.value=profile.webSearchMode;
@@ -7949,6 +8195,7 @@ function loadSettings(){
   else document.body.classList.add("simple-view");
   e.simpleViewToggle.textContent=document.body.classList.contains("simple-view")?"詳細表示":"要点表示";
   profileSync();
+  syncWorkspaceFastModeButtonForUi();
 }
 function updateSearchDiag(){
   if(s.diagErr){
@@ -8018,6 +8265,7 @@ async function loadRuntime({reconcilePending=true}={}){
     else e.modelReasoningEffort.value=normalizeExecModelReasoningEffortForUi(currentReasoning,runtimeDefaultExecModelReasoningEffort());
   }
   if(e.fastModeEnabled&&!settingsState.hasStoredFastMode)e.fastModeEnabled.checked=runtimeDefaultFastModeEnabled();
+  syncWorkspaceFastModeButtonForUi();
   if(e.automaticApprovalReviewEnabled&&!settingsState.hasStoredAutomaticApprovalReview)e.automaticApprovalReviewEnabled.checked=runtimeDefaultAutomaticApprovalReviewEnabled();
   applyChatScopedStateToUi(active());
   syncPerformanceFromRuntime(s.runtime);
@@ -8045,10 +8293,11 @@ async function loadRuntime({reconcilePending=true}={}){
     topographyState.loading=false;
     renderAgentTopography();
   }
+  renderTopRuntimeStripForUi();
   refresh();
   renderServerRestartResultForUi();
 }
-async function loadDiag(){try{const r=await fetch("/api/diagnostics",{cache:"no-store"});if(!r.ok){let body="";try{body=await r.text()}catch(_e){}const er=new Error(`HTTP ${r.status}`);er.kind="http";er.status=r.status;er.bodyText=body;throw er}s.diag=await r.json();s.diagErr=null}catch(er){s.diagErr=er&&er.kind==="http"?`HTTP ${er.status}: ${String(er.bodyText||"").replace(/\s+/g," ").trim().slice(0,180)}`:`通信エラー: ${er&&er.message?er.message:"unknown"}`;throw er}finally{if(s.diagErr){[e.diagCodexState,e.diagNodeState,e.diagSearchState].forEach((st,i)=>{const de=[e.diagCodexDetail,e.diagNodeDetail,e.diagSearchDetail][i];st.textContent="異常";st.className="diag-state missing";de.textContent=s.diagErr})}else{tdiag("codex",e.diagCodexState,e.diagCodexDetail);tdiag("node",e.diagNodeState,e.diagNodeDetail);updateSearchDiag()}renderDiagSummary()}}
+async function loadDiag(){try{const r=await fetch("/api/diagnostics",{cache:"no-store"});if(!r.ok){let body="";try{body=await r.text()}catch(_e){}const er=new Error(`HTTP ${r.status}`);er.kind="http";er.status=r.status;er.bodyText=body;throw er}s.diag=await r.json();s.diagErr=null}catch(er){s.diagErr=er&&er.kind==="http"?`HTTP ${er.status}: ${String(er.bodyText||"").replace(/\s+/g," ").trim().slice(0,180)}`:`通信エラー: ${er&&er.message?er.message:"unknown"}`;throw er}finally{if(s.diagErr){[e.diagCodexState,e.diagNodeState,e.diagSearchState].forEach((st,i)=>{const de=[e.diagCodexDetail,e.diagNodeDetail,e.diagSearchDetail][i];st.textContent="異常";st.className="diag-state missing";de.textContent=s.diagErr})}else{tdiag("codex",e.diagCodexState,e.diagCodexDetail);tdiag("node",e.diagNodeState,e.diagNodeDetail);updateSearchDiag()}renderDiagSummary();renderTopRuntimeStripForUi()}}
 function hasAutomationUi(){return Boolean(automationUi.panel&&automationUi.status&&automationUi.history);}
 function normalizeAutomationBatchRun(raw,index){
   const item=raw&&typeof raw==="object"?raw:{};
@@ -8901,12 +9150,15 @@ function applyComposerPresetButtonForUi(btn){
       ?removeGoalComposerPrefixForUi(value)
       :addGoalComposerPrefixForUi(value);
   }else{
-    e.promptInput.value=btn.getAttribute("data-compose-preset")||"";
+    e.promptInput.value=decodeComposerPresetValueForUi(btn.getAttribute("data-compose-preset")||"");
   }
   syncPromptInputHeight();
   syncActiveChatScopedStateFromUi();
   renderMissionSupportUi();
   scrollElementIntoViewForUi(e.promptInput,{focus:true});
+}
+function decodeComposerPresetValueForUi(value){
+  return String(value||"").replace(/\\n/g,"\n");
 }
 function commandPaletteCopyForUi(cmd){const text=String(cmd||"");if(text.startsWith("/goal"))return{badge:"codex",desc:"Codex goal を設定・確認します。未対応runtimeではHarnesUI goalに保存します。"};if(text.startsWith("/status"))return{badge:"codex",desc:"Codex status 相当の項目を、現在の明るいHarnesUI表示で確認します。"};if(text.startsWith("/diff"))return{badge:"codex",desc:"現在の git diff summary を表示します。"};if(text.startsWith("/resume"))return{badge:"codex",desc:"Codex session resume を設定します。"};if(text.startsWith("/fork"))return{badge:"codex",desc:"現在の session を引き継ぐ agent fork を作ります。"};if(text.startsWith("/fast"))return{badge:"codex",desc:"Fast mode の状態を確認・変更します。"};if(text.startsWith("/agent"))return{badge:"local",desc:"HarnesUI の agent 選択を操作します。"};return{badge:"slash",desc:"Slash command を実行します。"}}
 function renderCommands(q=""){
@@ -9078,10 +9330,10 @@ function bind(){
       msg(s.active,"system","System",`Workspace unlock failed: ${detail}`);
     }
   };
-  e.reconnectBtn.onclick=async()=>{try{await loadRuntime();msg(s.active,"system","System","Runtime refreshed.")}catch(er){e.connectionState.textContent="未接続";e.connectionState.classList.remove("connected");e.connectionState.classList.add("disconnected");msg(s.active,"system","System",`Reconnect failed: ${er&&er.message?er.message:"unknown"}`)}};
+  e.reconnectBtn.onclick=async()=>{try{await loadRuntime();await loadDesignProposalStudioForUi();await loadDesignQualityOperatorForUi();msg(s.active,"system","System","Runtime refreshed: /api/runtime, workspace, model, and active agent updated.")}catch(er){e.connectionState.textContent="未接続";e.connectionState.classList.remove("connected");e.connectionState.classList.add("disconnected");renderTopRuntimeStripForUi();msg(s.active,"system","System",`Runtime refresh failed: ${er&&er.message?er.message:"unknown"}`)}};
   if(e.uiReloadBtn)e.uiReloadBtn.onclick=()=>reloadUiShellForUi();
   if(e.serverRestartBtn)e.serverRestartBtn.onclick=()=>restartHarnessServerFromUi();
-  e.refreshDiagBtn.onclick=async()=>{try{await loadDiag();msg(s.active,"system","System","Diagnostics refreshed.")}catch(er){msg(s.active,"system","System",`Diagnostics refresh failed: ${er&&er.message?er.message:"unknown"}`)}};
+  e.refreshDiagBtn.onclick=async()=>{try{await loadDiag();await loadDesignProposalStudioForUi();await loadDesignQualityOperatorForUi();msg(s.active,"system","System","Diagnostics refreshed: /api/diagnostics codex-cli, Node, and Web search updated.")}catch(er){renderTopRuntimeStripForUi();msg(s.active,"system","System",`Diagnostics refresh failed: ${er&&er.message?er.message:"unknown"}`)}};
   e.newChatBtn.onclick=()=>{
     syncActiveChatScopedStateFromUi();
     const c=mkChat({agent:DEFAULT_AGENT_NAME,forceNewSession:true,activate:false});
@@ -9124,7 +9376,9 @@ function bind(){
     renderMissionSupportUi();
     msg(s.active,"system","System",`Permission mode applied: ${executionProfileLabelForUi(e.executionProfile.value)}`);
   };
-  [e.approvalPolicy,e.fastModeEnabled,e.automaticApprovalReviewEnabled,e.sandboxMode,e.webSearchMode].filter(Boolean).forEach(x=>x.onchange=()=>{profileSync();saveSettings();updateSearchDiag();renderMissionSupportUi()});
+  [e.approvalPolicy,e.automaticApprovalReviewEnabled,e.sandboxMode,e.webSearchMode].filter(Boolean).forEach(x=>x.onchange=()=>{profileSync();saveSettings();updateSearchDiag();renderMissionSupportUi()});
+  if(e.fastModeEnabled)e.fastModeEnabled.onchange=()=>{settingsState.hasStoredFastMode=true;syncWorkspaceFastModeButtonForUi();profileSync();saveSettings();updateSearchDiag();renderMissionSupportUi()};
+  if(e.workspaceFastModeBtn)e.workspaceFastModeBtn.onclick=()=>setFastModeEnabledForUi(!(e.fastModeEnabled&&e.fastModeEnabled.checked));
   if(e.modelName)e.modelName.onchange=()=>{const normalizedModel=normalizeExecModelNameForUi(e.modelName.value,latestDefaultExecModelForUi());e.modelName.value=ensureExecModelOptionForUi(normalizedModel)||normalizedModel;settingsState.hasStoredModel=true;saveSettings();renderMissionSupportUi();};
   if(e.modelReasoningEffort)e.modelReasoningEffort.onchange=()=>{e.modelReasoningEffort.value=normalizeExecModelReasoningEffortForUi(e.modelReasoningEffort.value,runtimeDefaultExecModelReasoningEffort());settingsState.hasStoredModelReasoningEffort=true;saveSettings();renderMissionSupportUi();};
   if(e.workspacePath)e.workspacePath.oninput=()=>{workspaceGuardUiState.message="";workspaceGuardUiState.tone="";syncActiveChatScopedStateFromUi();renderWorkspaceGuardUi();renderMissionSupportUi();};
@@ -9161,6 +9415,8 @@ async function boot(){
   }catch(error){
     msg(s.active,"system","System",`Diagnostics check failed: ${error&&error.message?error.message:"unknown"}`);
   }
+  await loadDesignProposalStudioForUi().catch(()=>{});
+  await loadDesignQualityOperatorForUi().catch(()=>{});
   try{
     await loadAutomationStatus({silent:false});
   }catch(_error){

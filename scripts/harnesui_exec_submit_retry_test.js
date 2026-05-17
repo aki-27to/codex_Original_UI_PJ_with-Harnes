@@ -285,7 +285,7 @@ async function testRecoverExecStreamAfterDisconnectUsesPersistedReplay() {
 
 function testFastModeDefaultsOffInUi() {
   assert(/function runtimeDefaultFastModeEnabled\(\)\{[\s\S]*operatorDefaults\.fastModeEnabled[\s\S]*false\);[\s\S]*\}/.test(source), "UI fast-mode fallback should default to false");
-  assert(/<input id="fastModeEnabled" type="checkbox">/.test(indexHtml), "Fast mode checkbox should render unchecked by default");
+  assert(/<input id="fastModeEnabled" type="checkbox">/.test(indexHtml), "Fast mode checkbox should render without hard-coded checked state");
   assert(!/<input id="fastModeEnabled" type="checkbox" checked>/.test(indexHtml), "Fast mode checkbox must not be hard-coded checked");
 }
 

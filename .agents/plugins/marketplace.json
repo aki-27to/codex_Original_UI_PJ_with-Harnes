@@ -1,0 +1,32 @@
+{
+  "name": "harnes-local",
+  "interface": {
+    "displayName": "Harnes Local"
+  },
+  "plugins": [
+    {
+      "name": "proof-closeout",
+      "source": {
+        "source": "local",
+        "path": "./plugins/proof-closeout"
+      },
+      "policy": {
+        "installation": "AVAILABLE",
+        "authentication": "ON_INSTALL"
+      },
+      "category": "Productivity"
+    },
+    {
+      "name": "skill-governance",
+      "source": {
+        "source": "local",
+        "path": "./plugins/skill-governance"
+      },
+      "policy": {
+        "installation": "AVAILABLE",
+        "authentication": "ON_INSTALL"
+      },
+      "category": "Productivity"
+    }
+  ]
+}

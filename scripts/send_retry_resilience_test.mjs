@@ -29,15 +29,21 @@ assert.match(appSource, /if\(idempotencyKey\)headers\[EXEC_IDEMPOTENCY_HEADER\]=
 assert.match(appSource, /function recoverExecStreamAfterDisconnect\(\{idempotencyKey,signal,out,chatRecord\}=\{\}\)/, "UI should define a stream recovery helper");
 assert.match(appSource, /let streamOpened=false;/, "UI should track whether the stream opened before a disconnect");
 assert.match(appSource, /if\(streamOpened&&idempotencyKey&&isTransientExecStreamError\(surfacedError\)\)/, "UI should attempt idempotency-backed recovery after a live stream disconnect");
-assert.match(appSource, /function runtimeDefaultFastModeEnabled\(\)\{[\s\S]*fastModeEnabled:false/, "UI fallback fast-mode default should be off");
-assert.match(indexSource, /<input id="fastModeEnabled" type="checkbox">/, "Fast mode checkbox should default to unchecked");
+assert.match(appSource, /function runtimeDefaultFastModeEnabled\(\)\{[\s\S]*operatorDefaults\.fastModeEnabled[\s\S]*true\);[\s\S]*\}/, "UI fallback should default fast mode on until runtime confirms it");
+assert.match(indexSource, /<input id="fastModeEnabled" type="checkbox">/, "Fast mode checkbox should avoid hard-coding checked state");
+assert.match(indexSource, /id="workspaceFastModeBtn"[\s\S]*Fast mode ON/, "Workspace card should expose the default ON fast-mode control");
+assert.match(appSource, /function syncWorkspaceFastModeButtonForUi\(\)/, "UI should sync the Workspace fast-mode button with the execution setting");
 
-assert.match(serverSource, /const fastModeDefault=parseBooleanEnv\(fastModeDefaultEnvKey,false\);/, "server fast-mode default should be off");
-assert.match(serverSource, /activeExecRequests:getActiveExecRequestCount\(\)/, "runtime should expose active exec request counts");
+assert.match(serverSource, /const fastModeDefault=parseBooleanEnv\(fastModeDefaultEnvKey,true\);/, "server fast-mode default should be on");
+assert.ok(
+  /activeExecRequests:getActiveExecRequestCount\(\)/.test(serverSource)
+    || /activeExecRequests:\s*getActiveExecRequestCount\(\)/.test(await fs.readFile(path.join(workspaceRoot, "server", "services", "runtime_api_snapshot_service.js"), "utf8")),
+  "runtime should expose active exec request counts"
+);
 assert.match(bootstrapSource, /function isBrokenPipeLikeError\(error\)\s*\{/, "server bootstrap should define a broken-pipe classifier");
 assert.match(bootstrapSource, /logOperation\("server\.broken_pipe_ignored"/, "server bootstrap should ignore broken-pipe fatal events");
 
-assert.match(launcherSource, /if "%CODEX_FAST_MODE_DEFAULT%"=="" set "CODEX_FAST_MODE_DEFAULT=0"/, "launcher fast-mode default should be off");
+assert.match(launcherSource, /if "%CODEX_FAST_MODE_DEFAULT%"=="" set "CODEX_FAST_MODE_DEFAULT=1"/, "launcher fast-mode default should be on");
 assert.match(launcherSource, /if "%CODEX_RESTART_EXISTING_HARNESS%"=="" set "CODEX_RESTART_EXISTING_HARNESS=1"/, "launcher should restart an existing harness by default so elevation takes effect");
 assert.match(launcherSource, /if "%CODEX_AUTO_RESTART_STALE_HARNESS%"=="" set "CODEX_AUTO_RESTART_STALE_HARNESS=1"/, "launcher should auto-restart stale harness instances by default");
 assert.match(launcherSource, /if "%CODEX_FORCE_ACTIVE_RESTART%"=="" set "CODEX_FORCE_ACTIVE_RESTART=0"/, "launcher should default forced active restart off");

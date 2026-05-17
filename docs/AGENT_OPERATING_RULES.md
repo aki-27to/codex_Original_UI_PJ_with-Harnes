@@ -170,6 +170,16 @@ core system change が `server.js`, `scripts/`, `web/`, `.codex/`, `package.json
 
 source-of-truth contract: `scripts/config/system_coherence_review_contract.json`
 
+### 11.3 Repository Session Hygiene Gate
+
+code / docs / config の material task を開始する前に `npm run repo:start-clean` を実行できる場合は、既存 dirty baseline を自律的に commit + push してから開始します。`repo:start-clean` は private/local 未追跡ファイルを `.git/info/exclude` へ隔離し、tracked private/local file や unknown dirty path では fail-closed します。
+
+その後 `npm run repo:preflight` を実行し、clean baseline を確認します。
+
+Final Report 前に `npm run repo:closeout` を実行し、`CLEAN_READY` でない場合は clean start 可能と主張してはいけません。
+
+詳細は `docs/REPO_SESSION_GUARD.md` を参照します。これらの gate は削除、reset、stash を自動実行せず、commit/push は `repo:start-clean` の明示コマンドに限定します。
+
 ### 11.4 Design-Sensitive Completion Gate
 
 site / page / visual redesign など judgement-heavy output では、次が欠けたら `FAILED_VALIDATION` です。

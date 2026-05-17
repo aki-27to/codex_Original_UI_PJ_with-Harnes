@@ -8,7 +8,7 @@ model_reasoning_effort = "xhigh"
 [features]
 multi_agent = true
 collaboration_modes = true
-fast_mode = false
+fast_mode = true
 guardian_approval = true
 
 [agents]
@@ -60,6 +60,12 @@ X-Goog-Api-Key = "STITCH_API_KEY"
 command = "node"
 cwd = "C:/Users/akima/dev/codex_Original_UI_PJ_with-Harnes"
 args = ["tools/playwright-mcp-server/src/server.js"]
+
+[mcp_servers.playwright.tools.playwright_navigate]
+approval_mode = "approve"
+
+[mcp_servers.playwright.tools.playwright_local_smoke]
+approval_mode = "approve"
 
 [mcp_servers.harness_artifacts]
 command = "node"

@@ -24,7 +24,7 @@ This document governs repo-local skills as a curated operating portfolio. The go
 
 `skills/` may contain legacy or non-canonical local material, but new repo-local skills registered in `scripts/config/repo_local_skill_catalog.json` must point to `.agents/skills/`.
 
-`.agents/old-skills/` is the archive root for demoted or historical skill packages. Archived skills must not be listed in `scripts/config/repo_local_skill_catalog.json`; restoring one requires moving it back under `.agents/skills/` and re-adding catalog metadata with fresh evidence.
+`.agents/old-skills/` is the archive root for demoted or historical skill packages. Archived skills must not be listed in `scripts/config/repo_local_skill_catalog.json`; restoring one requires moving it back under `.agents/skills/` and re-adding catalog metadata with fresh evidence. When a repo-local skill is intentionally replaced by a repo-local plugin distribution copy, the active catalog entry may point at the plugin skill path while the former `.agents/skills/<skill>` package is moved into `.agents/old-skills/<skill>`.
 
 Generated skill registry readers must not expose entries under `.agents/old-skills/`, entries marked `stale: 1`, missing `SKILL.md` files, or paths outside `.agents/skills/generated/` as callable skills.
 
@@ -93,6 +93,8 @@ Operational maturity is split into:
 
 `scripts/config/skill_flow_contract.json` defines parent-facing routing, not automatic skill invocation. Skills may recommend the next surface, but the parent agent remains responsible for selecting the next skill, skipping skills for small tasks, and making the final adoption decision.
 
+User corrections are stronger than ordinary optional routing. When the user says a previous answer, implementation, design, validation result, or completion claim is wrong, insufficient, missing, repeated, or not what they meant, the feedback recurrence flow is default-on and should enter through `feedback-to-recurrence-patch` unless there is an explicit skip reason. This does not permit direct skill promotion from one correction; replay or inverse-case evidence is still required before adoption or promotion claims.
+
 The flow contract separates:
 
 - `flows`: ordered or conditional routing where sequence matters.
@@ -103,7 +105,7 @@ Do not force every skill into a fixed chain. Every active repo-local skill must 
 
 ## 9) Skill Authoring Routing
 
-For Harnes repo-local skill creation or update requests, prefer `.agents/skills/skill-creator-master/SKILL.md` before the official system `skill-creator`.
+For Harnes repo-local skill creation or update requests, prefer `plugins/skill-governance/skills/skill-creator-master/SKILL.md` before the official system `skill-creator`.
 
 This is a routing preference, not a final promotion claim. `skill-creator-master` is preferred when the target skill must improve Harnes behavior through output, evidence, verification, rollback, and catalog contracts. The official `skill-creator` remains the fallback/reference for generic Codex skill creation, `scripts/`, `references/`, `assets/`, `agents/openai.yaml`, and system-skill compatibility.
 

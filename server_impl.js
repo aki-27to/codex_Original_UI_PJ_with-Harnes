@@ -43,6 +43,11 @@ const {defaultPromptCharLimit,buildPromptAudit,evaluateImagePayloadBudget,format
 const {buildAdversarialShadowReview,shadowReviewVersion}=require("./scripts/lib/adversarial_shadow_policy");
 const {buildAdversarialRetryPrompt,shouldRetryAdversarialLoop}=require("./scripts/lib/adversarial_loop_policy");
 const {
+  buildIntentFidelityFrame,
+  detectIntentFrameAdherence,
+  detectThinDecisionRationale,
+  promptNeedsIntentFidelityFrame,
+  selectIntentFrameRepairAction,
   stripLeadingResidualIncompletionLead,
   stripLeadingProgramReadinessLead,
   stripInternalProcessDisclosure,
@@ -344,7 +349,7 @@ const automaticApprovalReviewEnvKey="CODEX_AUTOMATIC_APPROVAL_REVIEW";
 const fastModeDefaultEnvKey="CODEX_FAST_MODE_DEFAULT";
 const nonInteractiveRequestUserInputPolicy=normalizeRequestUserInputPolicy(process.env[requestUserInputPolicyEnvKey],defaultNonInteractivePolicy);
 const automaticApprovalReviewDefault=parseBooleanEnv(automaticApprovalReviewEnvKey,true);
-const fastModeDefault=parseBooleanEnv(fastModeDefaultEnvKey,false);
+const fastModeDefault=parseBooleanEnv(fastModeDefaultEnvKey,true);
 const openAIBlogLearningEnabledEnvKey="CODEX_OPENAI_BLOG_LEARNING_ENABLED";
 const openAIBlogLearningIntervalEnvKey="CODEX_OPENAI_BLOG_LEARNING_INTERVAL_MINUTES";
 const openAIBlogLearningBackgroundRefreshEnabledEnvKey="CODEX_OPENAI_BLOG_BACKGROUND_REFRESH_ENABLED";
@@ -8728,29 +8733,8 @@ function formatGoalForSlashCommand(goal,{source="native"}={}){
   const budget=Number.isFinite(Number(normalized.tokenBudget))?`\nBudget: ${normalized.tokenBudget}`:"";
   return`${label}: ${normalized.status}\nObjective: ${normalized.objective||"(empty)"}\nThread: ${normalized.threadId||"unknown"}${budget}`;
 }
-const slashCommandHelpRows=[
-  ["/goal <objective>","Set the Codex goal for the current thread."],
-  ["/goal","Show the current Codex goal."],
-  ["/goal pause|resume|complete|clear","Update or clear the current Codex goal."],
-  ["/status","Show Codex status-style runtime details in the HarnesUI view."],
-  ["/diff","Show the current git diff summary."],
-  ["/resume --last|<session>","Set the session that the next turn should resume."],
-  ["/fork [name]","Create a HarnesUI agent fork from the active agent."],
-  ["/fast on|off|status","Read or change HarnesUI fast mode."],
-  ["/agent list|new|use","Manage HarnesUI agents."],
-  ["/mention <path> [message]","Rewrite the request with a workspace file target."],
-  ["/experimental ...","Manage local experimental feature flags."],
-  ["/help","Show this command list."],
-];
-function formatSlashHelpText(){
-  return["Supported slash commands:",...slashCommandHelpRows.map(([command,description])=>`  ${command} - ${description}`)].join("\n");
-}
-function handleSlashHelpCommand(res){
-  replyLocalText(res,formatSlashHelpText());
-  return true;
-}
 function handleUnsupportedSlashCommand(res,command){
-  replyLocalText(res,`Unrecognized command '${safeString(command,80)}'. Type /help for a list of supported commands.`);
+  replyLocalText(res,`Unrecognized command '${safeString(command,80)}'. Open /commands in the composer for available shortcuts.`);
   return true;
 }
 const slashStatusCommandCache=new Map();
@@ -9994,6 +9978,133 @@ function rewriteClientFinalTextForOutcome(text,{taskOutcomeStatus="",prompt=""}=
           ?"The current scope is partially done."
           :"The current scope is still open.";
   return softened?`${lead}`+"\n\n"+softened:lead;
+}
+function observeResponsePrecisionLint({prompt="",answer="",agentName="",threadId="",turnId=""}={}){
+  const finalAnswer=safeString(answer,24000);
+  if(!finalAnswer)return null;
+  try{
+    const warning=detectThinDecisionRationale({
+      prompt,
+      answer:finalAnswer,
+      responseContract:userFacingResponseContract,
+    });
+    if(!warning)return null;
+    const missing=Array.isArray(warning.missing)
+      ?warning.missing.map(entry=>safeString(entry,80)).filter(Boolean).slice(0,8)
+      :[];
+    logOperation("response.precision_lint",{
+      a:safeString(agentName,80),
+      th:safeString(threadId,120),
+      turn:safeString(turnId,120),
+      kind:safeString(warning.kind,80)||"thin_decision_rationale",
+      mode:safeString(warning.mode,40)||"warning",
+      missing,
+      answerChars:finalAnswer.length,
+      prompt:summarizeTextForOperationLog(prompt,800),
+      answer:summarizeTextForOperationLog(finalAnswer,1200),
+    },"standard");
+    return warning;
+  }catch(error){
+    logOperation("response.precision_lint_failed",{
+      a:safeString(agentName,80),
+      th:safeString(threadId,120),
+      turn:safeString(turnId,120),
+      err:summarizeErrorForOperationLog(error,220),
+    },"standard");
+    return null;
+  }
+}
+function summarizeIntentFrameForOperationLog(frame){
+  const value=frame&&typeof frame==="object"?frame:{};
+  return{
+    literalRequest:summarizeTextForOperationLog(value.literal_request,500),
+    inferredIntent:summarizeTextForOperationLog(value.inferred_intent,500),
+    activeRisk:summarizeTextForOperationLog(value.active_frustration_or_risk,500),
+    decision:summarizeTextForOperationLog(value.decision_at_stake,500),
+    mustAnswer:summarizeTextForOperationLog(value.must_answer,500),
+    mustNotDo:summarizeTextForOperationLog(value.must_not_do,500),
+    independentStandard:summarizeTextForOperationLog(value.independent_standard,500),
+    confidence:safeString(value.confidence,40),
+    responseMode:safeString(value.response_mode,80),
+  };
+}
+function observeIntentFidelityFrame({prompt="",answer="",agentName="",threadId="",turnId="",planningContext=null}={}){
+  const finalAnswer=safeString(answer,24000);
+  if(!finalAnswer)return null;
+  try{
+    const frameContract=userFacingResponseContract&&userFacingResponseContract.intentFidelityFrame
+      ?userFacingResponseContract.intentFidelityFrame
+      :{};
+    if(frameContract.shadowRuntimeObservation===false)return null;
+    const requirementSnapshot=planningContext&&planningContext.requirementContract&&typeof planningContext.requirementContract==="object"
+      ?planningContext.requirementContract
+      :null;
+    if(!promptNeedsIntentFidelityFrame(prompt,{requirementSnapshot},userFacingResponseContract))return null;
+    const frame=buildIntentFidelityFrame({
+      prompt,
+      requirementSnapshot,
+      responseContract:userFacingResponseContract,
+    });
+    if(frameContract.emitFrameObservation!==false){
+      logOperation("response.intent_frame",{
+        a:safeString(agentName,80),
+        th:safeString(threadId,120),
+        turn:safeString(turnId,120),
+        ...summarizeIntentFrameForOperationLog(frame),
+      },"standard");
+    }
+    const warning=detectIntentFrameAdherence({
+      frame,
+      answer:finalAnswer,
+      responseContract:userFacingResponseContract,
+    });
+    if(warning&&frameContract.emitWarningObservation!==false){
+      logOperation("response.intent_frame_warning",{
+        a:safeString(agentName,80),
+        th:safeString(threadId,120),
+        turn:safeString(turnId,120),
+        kind:safeString(warning.kind,120)||"intent_frame_warning",
+        mode:safeString(warning.mode,40)||"warning",
+        missing:Array.isArray(warning.missing)?warning.missing.map((entry)=>safeString(entry,80)).filter(Boolean).slice(0,8):[],
+        terms:Array.isArray(warning.terms)?warning.terms.map((entry)=>safeString(entry,80)).filter(Boolean).slice(0,8):[],
+        answerChars:finalAnswer.length,
+        ...summarizeIntentFrameForOperationLog(frame),
+        answer:summarizeTextForOperationLog(finalAnswer,1200),
+      },"standard");
+    }
+    const repairAction=selectIntentFrameRepairAction({
+      frame,
+      warning,
+      answer:finalAnswer,
+      responseContract:userFacingResponseContract,
+    });
+    if(warning&&repairAction&&repairAction.reason){
+      const eventName=repairAction.retryPrompt
+        ?"response.intent_frame_repair_ready"
+        :"response.intent_frame_repair_not_applied";
+      const emitNotApplied=frameContract.selectiveRepair&&frameContract.selectiveRepair.emitNotAppliedObservation!==false;
+      if(repairAction.retryPrompt||emitNotApplied){
+        logOperation(eventName,{
+          a:safeString(agentName,80),
+          th:safeString(threadId,120),
+          turn:safeString(turnId,120),
+          reason:safeString(repairAction.reason,120),
+          warning:safeString(warning.kind,120),
+          responseMode:safeString(frame&&frame.response_mode,80),
+          retryPromptChars:repairAction.retryPrompt?safeString(repairAction.retryPrompt,24000).length:0,
+        },"standard");
+      }
+    }
+    return{frame,warning,repairAction};
+  }catch(error){
+    logOperation("response.intent_frame_failed",{
+      a:safeString(agentName,80),
+      th:safeString(threadId,120),
+      turn:safeString(turnId,120),
+      err:summarizeErrorForOperationLog(error,220),
+    },"standard");
+    return null;
+  }
 }
 function buildFlowTraceSummary({planningContext,observedSignals,parentDispatchGuard,taskOutcomeStatus,taskOutcomeReason,finalStatus,childEvidenceLedger,docSyncEvidence,acceptanceResults,familyCompletionGate=null,agentName="",postLockDriftSnapshot=null,runtimeRevisionGate=null,clauseCompletionScorecard=null}={}){
   const usedAgents=Array.from(new Set([
@@ -12089,6 +12200,8 @@ async function executeTurnStreaming(res,prompt,agentName,options){
     if(clientClosed)return;
 
     const clientFinalText=rewriteClientFinalTextForOutcome(authoritativeFinalText,{taskOutcomeStatus:taskOutcome.status,prompt});
+    observeIntentFidelityFrame({prompt,answer:clientFinalText,agentName,threadId,turnId,planningContext});
+    observeResponsePrecisionLint({prompt,answer:clientFinalText,agentName,threadId,turnId});
     if(clientFinalText){
       safeWriteEvent({type:"final",text:clientFinalText});
     }
@@ -12320,11 +12433,6 @@ async function runCodexExecStreaming(res,prompt,sandboxMode,options={}){
       a:safeString(targetAgentName,80),
       cmd:safeString(command,80),
     });
-    if(command==="/help"){
-      handleSlashHelpCommand(res);
-      emitLocalSlashTerminal(command);
-      return;
-    }
     if(command==="/status"){
       handleSlashStatusCommand(res,targetAgentName,sandboxMode,normalized);
       emitLocalSlashTerminal(command);

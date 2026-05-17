@@ -1,0 +1,6 @@
+interface:
+  display_name: "Long Run Session Closeout"
+  short_description: "Check acceptance, verification, and unresolved issues before closeout."
+  default_prompt: "Close out this long-running task with evidence and risks."
+policy:
+  allow_implicit_invocation: true

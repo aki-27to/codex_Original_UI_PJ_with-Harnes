@@ -1,0 +1,6 @@
+interface:
+  display_name: "Feedback To Recurrence Patch"
+  short_description: "Convert corrections and validation misses into scoped recurrence patches."
+  default_prompt: "Turn this correction into a recurrence patch with replay coverage."
+policy:
+  allow_implicit_invocation: true

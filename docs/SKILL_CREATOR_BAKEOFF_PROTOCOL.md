@@ -7,7 +7,7 @@ Compare the official system `skill-creator` with the repo-local `skill-creator-m
 ## Competitors
 
 - `official`: `C:\Users\akima\.codex\skills\.system\skill-creator\SKILL.md`
-- `repo-local`: `.agents/skills/skill-creator-master/SKILL.md`
+- `repo-local`: `plugins/skill-governance/skills/skill-creator-master/SKILL.md`
 
 ## Controls
 

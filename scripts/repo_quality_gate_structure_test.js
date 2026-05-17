@@ -21,6 +21,13 @@ function main() {
   const currentSurfaceTruth = String(scripts["current-surface-truth"] || "");
   const artifactCurrentSurfaces = String(scripts["artifact:current-surfaces"] || "");
   const repoLocalSkills = String(scripts["test:repo-local-skills"] || "");
+  const repoPreflight = String(scripts["repo:preflight"] || "");
+  const repoPreflightDiagnose = String(scripts["repo:preflight:diagnose"] || "");
+  const repoCloseout = String(scripts["repo:closeout"] || "");
+  const repoCloseoutDiagnose = String(scripts["repo:closeout:diagnose"] || "");
+  const repoStartClean = String(scripts["repo:start-clean"] || "");
+  const repoStartCleanDryRun = String(scripts["repo:start-clean:dry-run"] || "");
+  const repoSessionGuard = String(scripts["test:repo-session-guard"] || "");
   const harnessArtifactMcp = String(scripts["test:harness-artifact-mcp"] || "");
   const mcpToolRegistryAlignment = String(scripts["test:mcp-tool-registry-alignment"] || "");
   assert(
@@ -70,6 +77,34 @@ function main() {
   assert(
     repoLocalSkills.includes("node scripts/skill_flow_contract_test.js"),
     "test:repo-local-skills must validate skill flow routing, forbidden direct edges, and standalone/support coverage"
+  );
+  assert(
+    repoPreflight.includes("node scripts/repo_session_preflight.js"),
+    "repo:preflight must expose the clean-start session gate"
+  );
+  assert(
+    repoPreflightDiagnose.includes("--allow-dirty"),
+    "repo:preflight:diagnose must expose non-failing dirty-state inspection"
+  );
+  assert(
+    repoCloseout.includes("node scripts/repo_session_closeout.js"),
+    "repo:closeout must expose the clean-finish session gate"
+  );
+  assert(
+    repoCloseoutDiagnose.includes("--allow-dirty"),
+    "repo:closeout:diagnose must expose non-failing closeout inspection"
+  );
+  assert(
+    repoStartClean.includes("node scripts/repo_session_autoclose.js"),
+    "repo:start-clean must expose the autonomous close-before-start path"
+  );
+  assert(
+    repoStartCleanDryRun.includes("--dry-run"),
+    "repo:start-clean:dry-run must expose a non-mutating autonomous close plan"
+  );
+  assert(
+    repoSessionGuard.includes("node scripts/repo_session_guard_test.js"),
+    "test:repo-session-guard must validate the repo session preflight/closeout guard"
   );
   assert(
     harnessArtifactMcp.includes("node tools/harness-artifact-mcp-server/tests/smoke_test.js"),
@@ -162,6 +197,10 @@ function main() {
   assert(
     !runnerSource.includes('"housekeeping:surfaces"'),
     "surfaces stage must not refresh tracked surfaces while validating them"
+  );
+  assert(
+    runnerSource.includes('"test:repo-session-guard"'),
+    "surfaces stage must include repo session guard coverage"
   );
   assert(
     runnerSource.includes('"current-surface-truth"'),

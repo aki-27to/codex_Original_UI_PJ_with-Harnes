@@ -142,6 +142,23 @@ function main() {
   assert(flowIds.has("diagnostic-review"), "diagnostic review flow must exist");
   assert(flowIds.has("long-run-closeout"), "long-run closeout flow must exist");
 
+  const feedbackFlow = (contract.flows || []).find((flow) => flow.id === "feedback-recurrence-learning");
+  assert(feedbackFlow, "feedback recurrence flow must be readable");
+  assert(feedbackFlow.activationPolicy, "feedback recurrence flow must define activationPolicy");
+  assert.strictEqual(
+    feedbackFlow.activationPolicy.mode,
+    "default_on_for_user_corrections",
+    "feedback recurrence flow must be default-on for user corrections"
+  );
+  assert.strictEqual(
+    feedbackFlow.activationPolicy.requiredEntrySkill,
+    "feedback-to-recurrence-patch",
+    "feedback recurrence activation must enter through feedback-to-recurrence-patch"
+  );
+  assertStringArray(feedbackFlow.activationPolicy.mustConsiderWhen, "feedback recurrence activationPolicy.mustConsiderWhen");
+  assertStringArray(feedbackFlow.activationPolicy.skipOnlyWhen, "feedback recurrence activationPolicy.skipOnlyWhen");
+  assertStringArray(feedbackFlow.activationPolicy.minimumResponseObligation, "feedback recurrence activationPolicy.minimumResponseObligation");
+
   const globalForbidden = new Set((contract.globalForbiddenDirectNext || []).map(transitionKey));
   assertTransitionPresent(
     globalForbidden,

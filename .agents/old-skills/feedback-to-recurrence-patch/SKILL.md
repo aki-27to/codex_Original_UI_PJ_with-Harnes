@@ -17,6 +17,12 @@ Turn feedback into the smallest next-run behavior change that prevents recurrenc
 - Non-targets: do not weaken validation gates, edit core policy, or promote a skill directly from a single incident.
 - Evaluator boundary: treat generator output, delegate output, and self-reported completion as untrusted until replay evidence proves the correction. Use the fixed failure taxonomy and lifecycle criteria in this skill; do not rewrite them to make a patch look successful.
 
+## Activation Priority
+
+Use this skill as the default entry point when the user says a prior answer, implementation, design, validation result, or completion claim is wrong, insufficient, missing, repeated, or not what they meant. Do not wait for the same miss to happen multiple times.
+
+Skip it only when the user explicitly requests pure execution with no learning capture, the fix is a trivial deterministic edit with no recurrence risk, or there is no prior artifact or adoption claim to correct. When skipped, state the skip reason briefly.
+
 ## Procedure
 
 1. Lock the miss: capture the original request, actual artifact or surface, expected outcome, user dissatisfaction reason, and candidate failed phase. In this repo, align fields with `scripts/config/correction_learning_contract.json`.

@@ -1,0 +1,183 @@
+{
+  "schema": "design-quality-operator-decision.v1",
+  "generatedAt": "2026-05-10T08:16:36.137Z",
+  "operatorName": "Design Quality Operator",
+  "status": "FAILED_VALIDATION",
+  "route": "failed_validation",
+  "humanDecisionRequired": true,
+  "target": {
+    "id": "mie-ndi-top",
+    "label": "MieNDI TOP page",
+    "root": "C:\\Users\\akima\\dev\\MieNDI",
+    "pageScope": "TOP first-screen plus first proof band"
+  },
+  "calibration": {
+    "status": "CALIBRATION_NOT_PASSED",
+    "requiredForAutoRecommend": true,
+    "reference": {
+      "id": "suruga-k",
+      "label": "Suruga Inspection customer image",
+      "url": "https://www.suruga-k.jp/",
+      "role": "benchmark_reference_not_copy_source"
+    },
+    "checks": [
+      {
+        "id": "customer_image_reference_locked",
+        "pass": true,
+        "detail": "https://www.suruga-k.jp/"
+      },
+      {
+        "id": "current_site_diagnosis_present",
+        "pass": true,
+        "detail": "draft_from_operator_and_user_feedback"
+      },
+      {
+        "id": "win_conditions_present",
+        "pass": true,
+        "detail": "5 win conditions"
+      },
+      {
+        "id": "anti_reference_present",
+        "pass": true,
+        "detail": "4 anti references"
+      },
+      {
+        "id": "winner_customer_image_fit",
+        "pass": false,
+        "detail": "57/100"
+      },
+      {
+        "id": "winner_benchmark_competitiveness",
+        "pass": false,
+        "detail": "52/100"
+      },
+      {
+        "id": "winner_composition_maturity",
+        "pass": false,
+        "detail": "60/100"
+      }
+    ],
+    "failedChecks": [
+      "winner_customer_image_fit",
+      "winner_benchmark_competitiveness",
+      "winner_composition_maturity"
+    ],
+    "winConditions": [
+      "beats the current MieNDI TOP page on first-view clarity",
+      "feels like a serious inspection company a customer can trust",
+      "uses photos as proof of field work rather than decorative hero texture",
+      "shows service breadth and credentials without becoming a cluttered menu dump",
+      "passes a human adoption review before auto_recommend is allowed"
+    ],
+    "antiReference": [
+      "generic SaaS card landing page",
+      "dark control-room dashboard",
+      "photo pasted behind weak copy",
+      "legacy corporate page copied without improving hierarchy"
+    ],
+    "currentSiteDiagnosis": {
+      "status": "draft_from_operator_and_user_feedback",
+      "weaknessesToBeat": [
+        "first view must explain what company this is before visual polish",
+        "field credibility must be concrete instead of stock-like atmosphere",
+        "copy hierarchy must make inspection methods and trust proof scannable",
+        "the screen must not feel like an AI-generated landing-page template"
+      ]
+    },
+    "note": "Auto-recommend is blocked until the candidate beats the locked customer-image benchmark."
+  },
+  "recommendation": {
+    "candidateId": "candidate-b",
+    "label": "No candidate passed calibration",
+    "score": 69,
+    "summary": "Top-scoring candidate (Industrial Dark Control) is blocked by calibration and score gates.",
+    "candidateLabel": "Industrial Dark Control",
+    "recommended": false,
+    "detailPath": "/design-quality/latest/index.html",
+    "candidatePath": "candidates/candidate-b/index.html",
+    "screenshots": [
+      {
+        "viewport": "desktop",
+        "path": "screenshots/candidate-b-desktop.png",
+        "width": 1440,
+        "height": 960
+      },
+      {
+        "viewport": "mobile",
+        "path": "screenshots/candidate-b-mobile.png",
+        "width": 390,
+        "height": 920
+      }
+    ]
+  },
+  "why": [
+    "The Suruga customer-image benchmark is now locked, and the current top candidate does not pass that benchmark.",
+    "A real field photo is necessary but not sufficient; composition maturity, service credibility, and hierarchy must also pass.",
+    "Auto-recommend remains blocked until the candidate beats the reference on first-view clarity and industrial trust."
+  ],
+  "risks": [
+    "The current generated image should be treated as failure evidence, not a recommended design.",
+    "This is a design image/prototype, not a direct MieNDI production patch.",
+    "Live Laravel data, exact Blade integration, and final accessibility checks remain separate apply-stage work."
+  ],
+  "rejected": [
+    {
+      "candidateId": "candidate-a",
+      "label": "Field Precision Blue",
+      "score": 66,
+      "reasons": [
+        "failed customer-image benchmark after Suruga reference was locked",
+        "real photo presence is not enough without stronger composition and hierarchy",
+        "requires human design review before any auto recommendation"
+      ]
+    },
+    {
+      "candidateId": "candidate-c",
+      "label": "Corporate Card Stack",
+      "score": 59,
+      "reasons": [
+        "too close to generic_saas_cards",
+        "rounded card stack creates template feel",
+        "field photography becomes secondary instead of first-viewport proof"
+      ]
+    }
+  ],
+  "evidence": {
+    "scorecard": "scorecard.json",
+    "brief": "brief.json",
+    "screenshotsStatus": "pass",
+    "screenshots": [
+      {
+        "viewport": "desktop",
+        "path": "screenshots/candidate-b-desktop.png",
+        "width": 1440,
+        "height": 960
+      },
+      {
+        "viewport": "mobile",
+        "path": "screenshots/candidate-b-mobile.png",
+        "width": 390,
+        "height": 920
+      }
+    ],
+    "detailPath": "/design-quality/latest/index.html"
+  },
+  "inbox": {
+    "title": "Design decision needed",
+    "recommendation": "candidate-b",
+    "options": [
+      {
+        "id": "candidate-b",
+        "label": "Industrial Dark Control",
+        "score": 69,
+        "summary": "High contrast and strong industrial tone, but too close to the heavy dark-console pattern the taste memory rejects."
+      },
+      {
+        "id": "candidate-a",
+        "label": "Field Precision Blue",
+        "score": 66,
+        "summary": "Real field photography is present, but the Suruga-calibrated benchmark exposes weak composition maturity and customer-image fit."
+      }
+    ]
+  }
+}

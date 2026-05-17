@@ -1,0 +1,134 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Field Precision Blue | Design Quality Operator</title>
+  <style>
+    :root { color-scheme: light; --ink:#102844; --ink-2:#31516f; --line:#cfdae5; --blue:#2f6fb2; --sky:#77a8c8; --cream:#f5f8f2; --steel:#e8eff6; --gold:#f2b84b; font-family:"Noto Sans JP", "Yu Gothic", sans-serif; }
+    * { box-sizing: border-box; }
+    body { margin:0; background:#f5f8f2; color:var(--ink); letter-spacing:0; }
+    a { color:inherit; text-decoration:none; }
+    .site-header { position:fixed; z-index:10; inset:18px 28px auto; display:flex; align-items:center; justify-content:space-between; gap:18px; padding:12px 16px; border:1px solid rgba(255,255,255,.42); background:rgba(8,24,42,.36); color:white; backdrop-filter:blur(14px); }
+    .brand { display:flex; align-items:center; gap:12px; min-width:0; }
+    .brand-mark { display:grid; place-items:center; width:42px; height:42px; border:2px solid rgba(255,255,255,.82); font-weight:900; font-size:12px; }
+    .brand strong { display:block; font-size:15px; line-height:1.35; }
+    .brand small { display:block; margin-top:2px; color:rgba(255,255,255,.68); font-size:10px; font-weight:800; }
+    nav { display:flex; align-items:center; gap:20px; font-size:12px; font-weight:800; }
+    .contact-link { padding:10px 14px; border:1px solid rgba(255,255,255,.42); background:rgba(255,255,255,.12); }
+    .hero { position:relative; min-height:82vh; display:grid; align-items:end; overflow:hidden; background:url("../../assets/suruga/home-hero.jpg") center / cover no-repeat; color:white; }
+    .hero::before { content:""; position:absolute; inset:0; background:linear-gradient(90deg, rgba(7,22,39,.86) 0%, rgba(16,40,68,.64) 48%, rgba(16,40,68,.10) 100%), linear-gradient(180deg, rgba(7,22,39,.04), rgba(7,22,39,.58)); }
+    .hero-inner { position:relative; width:min(1180px, calc(100vw - 48px)); margin:0 auto; padding:148px 0 96px; display:grid; gap:28px; }
+    .eyebrow { width:max-content; padding:8px 11px; border-left:4px solid var(--gold); background:rgba(255,255,255,.11); color:#dceafb; font-size:12px; font-weight:900; }
+    h1 { margin:0; max-width:770px; font-size:clamp(38px, 6vw, 82px); line-height:1.04; font-weight:900; text-wrap:balance; }
+    .lead { max-width:650px; margin:0; color:rgba(255,255,255,.86); font-size:clamp(15px, 1.6vw, 19px); font-weight:700; line-height:2; }
+    .hero-actions { display:flex; flex-wrap:wrap; gap:12px; }
+    .button { display:inline-flex; align-items:center; justify-content:center; min-height:48px; padding:0 18px; border:1px solid rgba(255,255,255,.5); font-size:13px; font-weight:900; }
+    .button.primary { border-color:var(--gold); background:var(--gold); color:#152638; }
+    .button.secondary { background:rgba(255,255,255,.08); color:white; }
+    .proof-rail { position:relative; width:min(1180px, calc(100vw - 48px)); margin:-54px auto 0; z-index:2; display:grid; grid-template-columns:repeat(4, minmax(0,1fr)); border:1px solid var(--line); background:rgba(255,255,255,.96); box-shadow:0 18px 42px rgba(16,40,68,.16); }
+    .proof-rail article { padding:18px 20px; border-left:1px solid var(--line); min-height:108px; }
+    .proof-rail article:first-child { border-left:0; }
+    .proof-rail p { margin:0 0 8px; color:var(--blue); font-size:11px; font-weight:900; }
+    .proof-rail strong { display:block; font-size:20px; line-height:1.25; }
+    .proof-rail span { display:block; margin-top:8px; color:#65798e; font-size:12px; font-weight:700; line-height:1.55; }
+    main > section:not(.hero) { padding:86px 0; }
+    .section-inner { width:min(1180px, calc(100vw - 48px)); margin:0 auto; }
+    .statement { display:grid; grid-template-columns:minmax(0,.92fr) minmax(380px,1fr); gap:64px; align-items:center; }
+    .section-label { margin:0 0 14px; color:var(--blue); font-size:12px; font-weight:900; }
+    .statement h2, .services h2 { margin:0; font-size:clamp(28px,3.6vw,48px); line-height:1.18; }
+    .statement p { color:var(--ink-2); font-size:15px; font-weight:700; line-height:2; }
+    .inspection-map { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+    .inspection-tile { min-height:156px; padding:18px; border:1px solid var(--line); background:white; display:flex; flex-direction:column; justify-content:space-between; }
+    .inspection-tile b { font-size:15px; }
+    .inspection-tile span { color:#6a7f93; font-size:12px; line-height:1.6; font-weight:700; }
+    .services { background:var(--steel); }
+    .service-grid { display:grid; grid-template-columns:repeat(3, minmax(0,1fr)); gap:18px; margin-top:28px; }
+    .service-card { min-height:320px; display:flex; align-items:end; padding:22px; color:white; background-size:cover; background-position:center; position:relative; overflow:hidden; }
+    .service-card::before { content:""; position:absolute; inset:0; background:linear-gradient(180deg, rgba(16,40,68,.06), rgba(16,40,68,.88)); }
+    .service-card div { position:relative; }
+    .service-card h3 { margin:0 0 10px; font-size:22px; }
+    .service-card p { margin:0; color:rgba(255,255,255,.78); font-size:13px; line-height:1.7; font-weight:700; }
+    .closing { background:#102844; color:white; }
+    .closing .section-inner { display:grid; grid-template-columns:1fr auto; gap:28px; align-items:center; }
+    .closing h2 { margin:0; font-size:clamp(26px,3.2vw,46px); line-height:1.24; }
+    .closing p { color:rgba(255,255,255,.72); line-height:1.8; font-weight:700; }
+    @media (max-width: 860px) {
+      .site-header { position:absolute; inset:12px 14px auto; align-items:flex-start; }
+      nav { display:none; }
+      .hero-inner { width:min(100% - 32px, 680px); padding:122px 0 86px; }
+      .proof-rail, .statement, .service-grid, .closing .section-inner { grid-template-columns:1fr; }
+      .proof-rail article, .proof-rail article:first-child { border-left:0; border-top:1px solid var(--line); }
+      .proof-rail article:first-child { border-top:0; }
+      .section-inner { width:min(100% - 32px, 680px); }
+      .inspection-map { grid-template-columns:1fr; }
+    }
+  </style>
+</head>
+<body>
+  
+    <header class="site-header">
+      <a class="brand" href="#top" aria-label="有限会社三重非破壊検査 TOP">
+        <span class="brand-mark">NDT</span>
+        <span><strong>有限会社三重非破壊検査</strong><small>MIE NON-DESTRUCTIVE TESTING</small></span>
+      </a>
+      <nav aria-label="主要ページ">
+        <a href="#service">検査内容</a>
+        <a href="#education">教育体制</a>
+        <a href="#company">会社概要</a>
+        <a class="contact-link" href="#contact">お問い合わせ</a>
+      </nav>
+    </header>
+  <section class="hero" id="top">
+    <div class="hero-inner">
+      <p class="eyebrow">MIE NON-DESTRUCTIVE TESTING</p>
+      <h1>社会の安全を、現場で確かめる。</h1>
+      <p class="lead">有限会社三重非破壊検査は、設備・鋼構造物・プラントを壊さずに調べ、検査から報告まで一貫して支える鈴鹿の専門技術者集団です。</p>
+      <div class="hero-actions">
+        <a class="button primary" href="#contact">検査を相談する</a>
+        <a class="button secondary" href="#education">採用と教育を見る</a>
+      </div>
+    </div>
+  </section>
+  <section class="proof-rail" aria-label="対応体制">
+    <article><p>BASE</p><strong>鈴鹿本社</strong><span>三重県を拠点に東海・近畿圏へ対応</span></article>
+    <article><p>SINCE</p><strong>1992年</strong><span>地域の設備と構造物を支える検査会社</span></article>
+    <article><p>FLOW</p><strong>検査から報告まで</strong><span>現場確認、検査、記録作成まで一貫対応</span></article>
+    <article><p>FIELD</p><strong>プラント・橋梁・建築</strong><span>状態を見える情報として整理</span></article>
+  </section>
+  <main>
+    <section class="statement">
+      <div class="section-inner statement">
+        <div>
+          <p class="section-label">ABOUT NDT</p>
+          <h2>見えない部分の状態を、現場で判断できる情報にする。</h2>
+          <p>超音波探傷、浸透探傷、鉄筋探査など、対象物に合わせた検査方法を選び、設備や構造物の安全判断を支えます。</p>
+        </div>
+        <div class="inspection-map">
+          <article class="inspection-tile"><b>超音波探傷試験</b><span>内部きずや厚さを非破壊で確認</span></article>
+          <article class="inspection-tile"><b>浸透探傷試験</b><span>表面の微細なきずを可視化</span></article>
+          <article class="inspection-tile"><b>鉄筋探査</b><span>コンクリート内の鉄筋位置を確認</span></article>
+          <article class="inspection-tile"><b>報告書作成</b><span>次の判断につながる記録へ整理</span></article>
+        </div>
+      </div>
+    </section>
+    <section class="services" id="service">
+      <div class="section-inner">
+        <p class="section-label">INSPECTIONS</p>
+        <h2>主要な検査を、現場の条件に合わせて選定。</h2>
+        <div class="service-grid">
+          <article class="service-card" style="background-image:url('../../assets/suruga/home-inspection-ut.jpg')"><div><h3>UT</h3><p>鋼材内部のきずや厚さを確認します。</p></div></article>
+          <article class="service-card" style="background-image:url('../../assets/suruga/home-inspection-pt.jpg')"><div><h3>PT</h3><p>表面欠陥を分かりやすく可視化します。</p></div></article>
+          <article class="service-card" style="background-image:url('../../assets/suruga/home-inspection-mt.jpg')"><div><h3>鉄筋探査</h3><p>コンクリート内部の位置情報を整理します。</p></div></article>
+        </div>
+      </div>
+    </section>
+    <section class="closing" id="contact">
+      <div class="section-inner">
+        <div><p class="section-label">CONTACT</p><h2>検査相談、会社説明、採用相談まで。</h2><p>検査内容が固まっていない段階でも、対象物と現場条件から相談できます。</p></div>
+        <a class="button primary" href="#">お問い合わせフォーム</a>
+      </div>
+    </section>
+  </main>
+</body>
+</html>

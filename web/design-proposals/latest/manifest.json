@@ -1,0 +1,22 @@
+{
+  "schema": "design-proposal-manifest.v1",
+  "target": "MieNDI",
+  "targetPath": "C:\\Users\\akima\\dev\\MieNDI",
+  "proposalTitle": "有限会社三重非破壊検査 Webサイトデザイン設計書",
+  "status": "ready_for_review",
+  "generatedAt": "2026-05-10T18:45:00+09:00",
+  "proposalPath": "C:\\Users\\akima\\dev\\codex_Original_UI_PJ_with-Harnes\\output\\design_proposals\\MieNDI\\2026-05-10T184500-jst-mie-ndi\\index.html",
+  "publicPath": "/design-proposals/latest/index.html",
+  "manifestPath": "/design-proposals/latest/manifest.json",
+  "targetRepoMutated": false,
+  "summary": [
+    "TOPは現場写真を大きく使い、非破壊検査会社としての信頼感を最初に伝える設計です。",
+    "検査内容はUT、PT、鉄筋探査の3項目に整理し、説明より先に見た目で理解できる構成にします。",
+    "採用導線は未経験者の安心感と経験者の専門性を分け、教育体制を分かりやすく見せます。"
+  ],
+  "evidence": {
+    "harnesOwnedOutput": true,
+    "targetRepoWritePolicy": "no target repo writes before explicit adoption",
+    "dqOperatorRole": "supporting_quality_check_only"
+  }
+}

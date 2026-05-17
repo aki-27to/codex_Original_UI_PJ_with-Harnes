@@ -139,6 +139,7 @@ reviewer 向けの外部比較 refresh は `npm run reviewer:baseline-comparison
 - reviewed team posture: `reviewed_team`
 - `GET /api/runtime` exposes `activePostureProfile` as live truth, so `owner_local` and `portable_local` are not inferred from prose or launcher assumptions.
 - `GET /api/runtime` also exposes `repoTruth` / `repo_truth` as a read-only current-truth snapshot. It separates `HEAD`, `dirty_working_tree`, `live_runtime`, and `generated_output`, includes `HEAD` versus `origin/*` commit equality, classifies dirty files as `intended_change_candidate`, `generated_side_effect`, or `unorganized_diff`, and carries `liveVerificationTimestamp` for final reporting.
+- repo session hygiene is exposed through `npm run repo:start-clean`, `npm run repo:preflight`, and `npm run repo:closeout`. `repo:start-clean` is the autonomous close-before-start path: it stages known non-private dirty paths, commits them, pushes upstream, and quarantines private/local untracked files into `.git/info/exclude`; tracked private/local files and unknown dirty paths fail closed. Preflight and closeout remain read-only gates for clean baseline and clean upstream-synced finish proof.
 - `GET /api/runtime` publishes `currentTruth.operationalPosture` / `operationalPostureCurrentTruth` as reviewer-facing current truth. It keeps `owner_local`, `danger-full-access`, `approval_policy = never`, autocommit, and autopush visible as current runtime facts rather than portable reference defaults.
 - `COMPLETED`, `RELEASE_APPROVED`, and `NOT_YET` are scoped through `statusScopeMap`: task completion, release/signoff approval, and program-readiness debt must not be collapsed into one success label.
 
@@ -170,7 +171,7 @@ reviewer 向けの外部比較 refresh は `npm run reviewer:baseline-comparison
 `owner_local` はローカル所有者の強い権限を含められますが、共通既定ではありません。
 `reviewed_team` はチーム運用を前提に、証拠とレビューを強めた姿勢です。
 
-Launcher posture: the desktop launcher is now an owner-local startup path: `start_codex_ui.bat` defaults `CODEX_REQUIRE_ADMIN=1`, `CODEX_AUTO_OPEN_BROWSER=1`, and `CODEX_RESTART_EXISTING_HARNESS=1`, verifies the elevated token before reconciling an existing harness, restarts stale or reused processes when no `/api/exec` work is active, and opens HarnesUI in the browser after startup. UI-triggered restart helpers still keep elevation, browser auto-open, and pause disabled.
+Launcher posture: the Web/browser launcher is now an owner-local startup path: `start_codex_ui.bat` defaults `CODEX_REQUIRE_ADMIN=1`, `CODEX_AUTO_OPEN_BROWSER=1`, and `CODEX_RESTART_EXISTING_HARNESS=1`, verifies the elevated token before reconciling an existing harness, restarts stale or reused processes when no `/api/exec` work is active, and opens HarnesUI in the browser after startup. This is separate from the Electron desktop app lane (`npm run harnes:app` / `start_harnes_desktop_app.bat`). UI-triggered restart helpers still keep elevation, browser auto-open, and pause disabled.
 
 ### Claim provenance boundary
 

@@ -1,0 +1,34 @@
+{
+  "name": "skill-governance",
+  "version": "0.1.0",
+  "description": "Reusable skill authoring, design review, lifecycle, recurrence, and learning governance skills for Codex.",
+  "author": {
+    "name": "Harnes Local"
+  },
+  "license": "ISC",
+  "keywords": [
+    "codex",
+    "skills",
+    "governance",
+    "review",
+    "learning"
+  ],
+  "skills": "./skills/",
+  "interface": {
+    "displayName": "Skill Governance",
+    "shortDescription": "Create, review, promote, demote, and learn from skills with evidence.",
+    "longDescription": "Packages skill-governance workflows for authoring reusable skills, reviewing skill design, classifying promotion or rollback, capturing artifact improvements, and turning user corrections into recurrence patches.",
+    "developerName": "Harnes Local",
+    "category": "Productivity",
+    "capabilities": [
+      "Read",
+      "Write"
+    ],
+    "defaultPrompt": [
+      "Review whether this skill should be kept.",
+      "Create a skill from this repeated workflow.",
+      "Turn this correction into a recurrence patch."
+    ],
+    "brandColor": "#0F766E"
+  }
+}

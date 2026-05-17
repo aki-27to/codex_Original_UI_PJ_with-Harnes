@@ -1,0 +1,6 @@
+interface:
+  display_name: "Repo Truth Audit"
+  short_description: "Find stale or contradictory docs, outputs, logs, and status claims."
+  default_prompt: "Check whether repo docs and outputs match current truth."
+policy:
+  allow_implicit_invocation: true

@@ -1,0 +1,99 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Design Quality Operator | MieNDI TOP page</title>
+  <style>
+    :root { color-scheme: light; font-family: "Noto Sans JP", "Yu Gothic", sans-serif; --ink:#15283d; --muted:#637488; --line:#d8e2ec; --panel:#fff; --bg:#f2f6f9; --blue:#2f6fb2; --green:#15865f; --warn:#9b6a00; }
+    * { box-sizing: border-box; }
+    body { margin:0; background:var(--bg); color:var(--ink); }
+    a { color:inherit; }
+    .shell { width:min(1240px, calc(100vw - 36px)); margin:0 auto; padding:34px 0 54px; }
+    header { display:grid; gap:10px; margin-bottom:22px; }
+    .kicker { margin:0; color:var(--blue); font-size:12px; font-weight:900; }
+    h1 { margin:0; font-size:clamp(28px,4vw,48px); line-height:1.14; }
+    .status-grid { display:grid; grid-template-columns:1fr 1.2fr; gap:16px; margin:22px 0; }
+    .panel { border:1px solid var(--line); background:var(--panel); padding:18px; }
+    .decision strong { display:inline-flex; padding:7px 10px; background:#e7f5ef; color:var(--green); font-size:13px; }
+    .decision p, .panel li { color:var(--muted); line-height:1.65; font-size:13px; font-weight:700; }
+    .shot-grid { display:grid; grid-template-columns:minmax(0,1fr) minmax(220px,.33fr); gap:16px; align-items:start; }
+    figure { margin:0; border:1px solid var(--line); background:white; }
+    figcaption { padding:10px 12px; color:var(--muted); font-size:12px; font-weight:900; border-bottom:1px solid var(--line); }
+    img { width:100%; display:block; }
+    .reject-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:14px; margin-top:16px; }
+    .reject-card { border:1px solid var(--line); background:white; padding:16px; }
+    .reject-card span { color:var(--warn); font-weight:900; font-size:13px; }
+    .reject-card h3 { margin:6px 0 8px; font-size:16px; }
+    .blocked-visual { margin:16px 0; border-color:#e4c9c9; background:#fff7f7; }
+    .blocked-visual p { color:#854f4f; font-weight:800; line-height:1.7; }
+    .blocked-visual details { margin-top:12px; }
+    .blocked-visual summary { cursor:pointer; font-weight:900; color:#6f3f3f; }
+    .blocked-visual details .shot-grid { margin-top:14px; }
+    .links { display:flex; flex-wrap:wrap; gap:10px; margin-top:14px; }
+    .links a { display:inline-flex; align-items:center; min-height:38px; padding:0 13px; border:1px solid var(--line); background:white; text-decoration:none; font-weight:900; font-size:12px; }
+    @media (max-width: 820px) { .status-grid, .shot-grid, .reject-grid { grid-template-columns:1fr; } }
+  </style>
+</head>
+<body>
+  <main class="shell">
+    <header>
+      <p class="kicker">Design Quality Operator</p>
+      <h1>MieNDI TOP page DQO calibration result</h1>
+    </header>
+    <section class="status-grid">
+      <article class="panel decision">
+        <strong>FAILED_VALIDATION / failed_validation</strong>
+        <p>No accepted candidate: No candidate passed calibration (69/100)</p>
+        <p>Top candidate: Industrial Dark Control</p>
+        <p>Human decision: required</p>
+        <div class="links">
+          <a href="candidates/candidate-b/index.html" target="_blank" rel="noopener">Open candidate HTML</a>
+          <a href="scorecard.json" target="_blank" rel="noopener">scorecard.json</a>
+          <a href="decision.json" target="_blank" rel="noopener">decision.json</a>
+        </div>
+      </article>
+      <article class="panel">
+        <h2>Why this did not pass</h2>
+        <ul><li>The Suruga customer-image benchmark is now locked, and the current top candidate does not pass that benchmark.</li><li>A real field photo is necessary but not sufficient; composition maturity, service credibility, and hierarchy must also pass.</li><li>Auto-recommend remains blocked until the candidate beats the reference on first-view clarity and industrial trust.</li></ul>
+      </article>
+    </section>
+    <section class="panel blocked-visual">
+      <h2>Candidate images hidden</h2>
+      <p>This run did not pass calibration. Low-confidence candidate images are not shown as user-facing design output.</p>
+      <details>
+        <summary>Open audit evidence only</summary>
+        <div class="shot-grid">
+      <figure>
+        <figcaption>Top candidate desktop evidence</figcaption>
+        <img src="screenshots/candidate-b-desktop.png" alt="top candidate desktop evidence image">
+      </figure>
+      <figure>
+        <figcaption>Mobile image</figcaption>
+        <img src="screenshots/candidate-b-mobile.png" alt="top candidate mobile evidence image">
+      </figure></div>
+      </details>
+    </section>
+    <section class="panel" style="margin-top:16px">
+      <h2>自動棄却</h2>
+      <p>通常はここを見なくてよいですが、Operatorが何を落としたかを監査できます。</p>
+      <div class="reject-grid">
+    <article class="reject-card">
+      <span>66</span>
+      <h3>Field Precision Blue</h3>
+      <ul><li>failed customer-image benchmark after Suruga reference was locked</li><li>real photo presence is not enough without stronger composition and hierarchy</li><li>requires human design review before any auto recommendation</li></ul>
+    </article>
+    <article class="reject-card">
+      <span>59</span>
+      <h3>Corporate Card Stack</h3>
+      <ul><li>too close to generic_saas_cards</li><li>rounded card stack creates template feel</li><li>field photography becomes secondary instead of first-viewport proof</li></ul>
+    </article></div>
+    </section>
+    <section class="panel" style="margin-top:16px">
+      <h2>残留リスク</h2>
+      <ul><li>The current generated image should be treated as failure evidence, not a recommended design.</li><li>This is a design image/prototype, not a direct MieNDI production patch.</li><li>Live Laravel data, exact Blade integration, and final accessibility checks remain separate apply-stage work.</li></ul>
+      <p>候補数: 3 / screenshot evidence: pass</p>
+    </section>
+  </main>
+</body>
+</html>

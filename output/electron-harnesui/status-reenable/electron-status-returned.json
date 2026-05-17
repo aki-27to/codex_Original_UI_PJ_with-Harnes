@@ -1,0 +1,13 @@
+{
+  "sendFound": true,
+  "sendDisabled": false,
+  "sendButtonClipped": false,
+  "horizontalOverflow": false,
+  "viewportWidth": 1304,
+  "scrollWidth": 1289,
+  "stopDisabled": true,
+  "textareaValue": "",
+  "workStateText": "状態作業中backendで実行中です。",
+  "hasCodexStatus": true,
+  "hasFastStatus": false
+}

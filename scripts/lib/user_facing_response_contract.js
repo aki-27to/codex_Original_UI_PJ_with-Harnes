@@ -127,6 +127,90 @@ const defaultUserFacingResponseContractDefinition = Object.freeze({
     bypassCloseInPlace: true,
     bypassEvidenceChecks: true,
   },
+  intentFidelityFrame: {
+    enabled: true,
+    shadowRuntimeObservation: true,
+    emitFrameObservation: true,
+    emitWarningObservation: true,
+    triggerPromptSignals: Object.freeze([
+      "intent",
+      "wrong",
+      "misunderstood",
+      "shallow",
+      "appease",
+      "best",
+      "why",
+      "rationale",
+      "design",
+      "principle",
+      "coherent",
+      "context",
+      "overall",
+      "should",
+      "compare",
+      "\u9055\u3046",
+      "\u7406\u89e3\u3057\u3066\u3044\u306a\u3044",
+      "\u610f\u56f3",
+      "\u6d45\u3044",
+      "\u8fce\u5408",
+      "\u30d9\u30b9\u30c8",
+      "\u306a\u305c",
+      "\u7406\u7531",
+      "\u8a2d\u8a08",
+      "\u601d\u60f3",
+      "\u7d71\u4e00\u611f",
+      "\u6838\u5fc3",
+      "\u3061\u3083\u3093\u3068",
+      "\u5168\u4f53",
+      "\u6587\u8108",
+      "\u3069\u3046\u5b9f\u88c5",
+      "\u3069\u3046\u3059\u308b\u306e\u304c\u3088\u3044",
+      "\u3069\u3046\u3059\u308b\u306e\u304c\u30d9\u30b9\u30c8",
+    ]),
+    highFrictionSignals: Object.freeze([
+      "wrong",
+      "misunderstood",
+      "shallow",
+      "off-intent",
+      "appease",
+      "\u9055\u3046",
+      "\u7406\u89e3\u3057\u3066\u3044\u306a\u3044",
+      "\u89e3\u91c8\u304c\u7570\u306a\u308b",
+      "\u6d45\u3044",
+      "\u8fce\u5408",
+      "\u610f\u56f3\u4e0d\u4e00\u81f4",
+    ]),
+    requiredFrameFields: Object.freeze([
+      "must_answer",
+      "must_not_do",
+      "independent_standard",
+    ]),
+    responseModes: Object.freeze([
+      "short",
+      "rationale",
+      "correction",
+      "design",
+      "review",
+      "implementation_report",
+    ]),
+    answerAdherence: {
+      minMustAnswerTermOverlap: 1,
+    },
+    selectiveRepair: {
+      enabled: false,
+      allowedResponseModes: Object.freeze([
+        "rationale",
+        "correction",
+        "design",
+        "review",
+      ]),
+      repairableWarningKinds: Object.freeze([
+        "answer_misses_must_answer",
+        "possible_user_appeasement",
+      ]),
+      emitNotAppliedObservation: true,
+    },
+  },
 });
 
 function safeString(value, max = 4000) {
@@ -195,6 +279,14 @@ function normalizeStatusList(values, fallback) {
   return Object.freeze(out.length ? out : fallback.slice());
 }
 
+function normalizeNonNegativeInteger(value, fallback = 0) {
+  const parsed = Number(value);
+  if (!Number.isFinite(parsed)) {
+    return fallback;
+  }
+  return Math.max(0, Math.trunc(parsed));
+}
+
 function containsAnyLiteral(text, literals, { startsWith = false } = {}) {
   const normalizedText = safeString(text, 16000).toLowerCase();
   if (!normalizedText || !Array.isArray(literals) || literals.length === 0) {
@@ -219,6 +311,15 @@ function normalizeUserFacingResponseContract(input) {
   const programReadinessBlockingActivation = reportingSeparation.programReadinessBlockingActivation && typeof reportingSeparation.programReadinessBlockingActivation === "object"
     ? reportingSeparation.programReadinessBlockingActivation
     : defaultUserFacingResponseContractDefinition.reportingSeparation.programReadinessBlockingActivation;
+  const intentFidelityFrame = payload.intentFidelityFrame && typeof payload.intentFidelityFrame === "object"
+    ? payload.intentFidelityFrame
+    : defaultUserFacingResponseContractDefinition.intentFidelityFrame;
+  const intentFrameAnswerAdherence = intentFidelityFrame.answerAdherence && typeof intentFidelityFrame.answerAdherence === "object"
+    ? intentFidelityFrame.answerAdherence
+    : defaultUserFacingResponseContractDefinition.intentFidelityFrame.answerAdherence;
+  const intentFrameSelectiveRepair = intentFidelityFrame.selectiveRepair && typeof intentFidelityFrame.selectiveRepair === "object"
+    ? intentFidelityFrame.selectiveRepair
+    : defaultUserFacingResponseContractDefinition.intentFidelityFrame.selectiveRepair;
   return Object.freeze({
     schema: safeString(payload.schema, 120) || defaultUserFacingResponseContractDefinition.schema,
     version: safeString(payload.version, 120) || defaultUserFacingResponseContractDefinition.version,
@@ -316,6 +417,64 @@ function normalizeUserFacingResponseContract(input) {
         defaultUserFacingResponseContractDefinition.exactReplyContracts.bypassEvidenceChecks
       ),
     }),
+    intentFidelityFrame: Object.freeze({
+      enabled: normalizeBoolean(
+        intentFidelityFrame.enabled,
+        defaultUserFacingResponseContractDefinition.intentFidelityFrame.enabled
+      ),
+      shadowRuntimeObservation: normalizeBoolean(
+        intentFidelityFrame.shadowRuntimeObservation,
+        defaultUserFacingResponseContractDefinition.intentFidelityFrame.shadowRuntimeObservation
+      ),
+      emitFrameObservation: normalizeBoolean(
+        intentFidelityFrame.emitFrameObservation,
+        defaultUserFacingResponseContractDefinition.intentFidelityFrame.emitFrameObservation
+      ),
+      emitWarningObservation: normalizeBoolean(
+        intentFidelityFrame.emitWarningObservation,
+        defaultUserFacingResponseContractDefinition.intentFidelityFrame.emitWarningObservation
+      ),
+      triggerPromptSignals: normalizeLiteralList(
+        intentFidelityFrame.triggerPromptSignals,
+        defaultUserFacingResponseContractDefinition.intentFidelityFrame.triggerPromptSignals
+      ),
+      highFrictionSignals: normalizeLiteralList(
+        intentFidelityFrame.highFrictionSignals,
+        defaultUserFacingResponseContractDefinition.intentFidelityFrame.highFrictionSignals
+      ),
+      requiredFrameFields: normalizeLiteralList(
+        intentFidelityFrame.requiredFrameFields,
+        defaultUserFacingResponseContractDefinition.intentFidelityFrame.requiredFrameFields
+      ),
+      responseModes: normalizeLiteralList(
+        intentFidelityFrame.responseModes,
+        defaultUserFacingResponseContractDefinition.intentFidelityFrame.responseModes
+      ),
+      answerAdherence: Object.freeze({
+        minMustAnswerTermOverlap: normalizeNonNegativeInteger(
+          intentFrameAnswerAdherence.minMustAnswerTermOverlap,
+          defaultUserFacingResponseContractDefinition.intentFidelityFrame.answerAdherence.minMustAnswerTermOverlap
+        ),
+      }),
+      selectiveRepair: Object.freeze({
+        enabled: normalizeBoolean(
+          intentFrameSelectiveRepair.enabled,
+          defaultUserFacingResponseContractDefinition.intentFidelityFrame.selectiveRepair.enabled
+        ),
+        allowedResponseModes: normalizeLiteralList(
+          intentFrameSelectiveRepair.allowedResponseModes,
+          defaultUserFacingResponseContractDefinition.intentFidelityFrame.selectiveRepair.allowedResponseModes
+        ),
+        repairableWarningKinds: normalizeLiteralList(
+          intentFrameSelectiveRepair.repairableWarningKinds,
+          defaultUserFacingResponseContractDefinition.intentFidelityFrame.selectiveRepair.repairableWarningKinds
+        ),
+        emitNotAppliedObservation: normalizeBoolean(
+          intentFrameSelectiveRepair.emitNotAppliedObservation,
+          defaultUserFacingResponseContractDefinition.intentFidelityFrame.selectiveRepair.emitNotAppliedObservation
+        ),
+      }),
+    }),
   });
 }
 
@@ -339,6 +498,9 @@ function summarizeUserFacingResponseContract(spec) {
     reportingSeparation: contract.reportingSeparation,
     internalProcessDisclosureEnabled: contract.internalProcessDisclosure.enabled,
     internalProcessPhraseCount: contract.internalProcessDisclosure.prohibitedPhrases.length,
+    intentFidelityFrameEnabled: contract.intentFidelityFrame.enabled,
+    intentFidelityFramePromptSignalCount: contract.intentFidelityFrame.triggerPromptSignals.length,
+    intentFidelityFrameSelectiveRepairEnabled: contract.intentFidelityFrame.selectiveRepair.enabled,
   };
 }
 

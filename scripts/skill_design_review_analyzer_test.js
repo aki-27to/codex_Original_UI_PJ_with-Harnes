@@ -6,7 +6,7 @@ const fs = require("fs");
 const path = require("path");
 
 const workspaceRoot = path.resolve(__dirname, "..");
-const analyzerPath = path.join(workspaceRoot, ".agents", "skills", "skill-design-review-codex", "scripts", "analyze-skill-design.js");
+const analyzerPath = path.join(workspaceRoot, "plugins", "skill-governance", "skills", "skill-design-review-codex", "scripts", "analyze-skill-design.js");
 const analyzer = require(analyzerPath);
 
 function writeFile(filePath, source) {
@@ -48,7 +48,7 @@ function assertGateSchema(result, label) {
 }
 
 function main() {
-  const self = runAnalyzer(".agents/skills/skill-design-review-codex");
+  const self = runAnalyzer("plugins/skill-governance/skills/skill-design-review-codex");
   assertArticlePerfect(self, "skill-design-review-codex");
   const namingGate = self.articleAlignment.gates.find((gate) => gate.id === "naming_side_effect_contract");
   assert(namingGate, "self analyzer must expose naming side-effect gate");
