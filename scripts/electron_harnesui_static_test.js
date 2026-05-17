@@ -181,6 +181,13 @@ mustNotInclude(app, "const [activeRequest, setActiveRequest]", "Electron rendere
 mustNotInclude(app, "disabled={!activeRequest}", "Electron renderer stop button must not follow a global active request");
 mustInclude(app, "状態: ${activeChatWorkState.label}", "Electron renderer composer work state label");
 mustNotInclude(app, "work-state-pill", "Electron renderer must not render removed duplicate conversation work state pill");
+const conversationActionsMatch = app.match(/<div className="conversation-actions">([\s\S]*?)<\/div>\s*<\/div>\s*<div className="timeline">/);
+if (!conversationActionsMatch) fail("Electron renderer conversation header actions block not found");
+const conversationActionsBlock = conversationActionsMatch[1];
+mustInclude(conversationActionsBlock, "会話をクリア", "Electron renderer conversation header keeps only the clear action");
+mustNotInclude(conversationActionsBlock, "work-state-meta", "Electron renderer must not restore duplicate work state in the conversation header");
+mustNotInclude(conversationActionsBlock, "missionMetaItems", "Electron renderer must not render mission metadata in the conversation header");
+mustNotInclude(conversationActionsBlock, "activeChatWorkState", "Electron renderer must not render active chat status in the conversation header");
 mustInclude(app, "missionMetaVisible", "Electron smoke proves compact mission state visibility");
 mustInclude(app, "oldWebStatusVisible", "Electron smoke proves old-web status visibility");
 mustInclude(app, "runtimeRefreshExplained", "Electron smoke proves runtime refresh explanation");

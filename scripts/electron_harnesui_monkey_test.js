@@ -203,6 +203,17 @@ async function main() {
     if (removedConversationPillCount !== 0) {
       fail("electron_harnesui_monkey_test: removed duplicate conversation work-state pill must not render", { removedConversationPillCount });
     }
+    const conversationHeaderState = await page.evaluate(() => {
+      const head = document.querySelector(".conversation-panel .section-head");
+      const actions = document.querySelector(".conversation-panel .conversation-actions");
+      return {
+        actionText: actions?.textContent?.replace(/\s+/g, " ").trim() || "",
+        hasWorkStateInHeader: Boolean(head?.querySelector(".work-state-meta, .work-state-pill, [class*='work-state']")),
+      };
+    });
+    if (conversationHeaderState.hasWorkStateInHeader || /状態|作業中|完了|待機中|返信で続行|中断|要確認|状態確認中/.test(conversationHeaderState.actionText)) {
+      fail("electron_harnesui_monkey_test: conversation header must not duplicate the work-state summary", conversationHeaderState);
+    }
     const workStateText = await page.locator(".work-state-meta").innerText();
     if (!workStateText.includes("状態") || !/(作業中|完了|待機中|返信で続行|中断|要確認|状態確認中)/.test(workStateText)) {
       fail("electron_harnesui_monkey_test: composer metadata must expose a user-facing status", { workStateText });
