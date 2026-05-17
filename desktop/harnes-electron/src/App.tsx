@@ -114,17 +114,21 @@ async function readJson<T>(base: string, pathname: string): Promise<T> {
   return response.json() as Promise<T>;
 }
 
-function statusClass(status: string) {
+function statusClass(status: string, { busy = false, runtimeReady = true } = {}) {
+  if (status === "running" && busy) return "processing";
+  if (status === "running" && !runtimeReady) return "starting";
   if (status === "running") return "running";
   if (status === "restarting") return "restarting";
   if (status === "failed") return "failed";
   return "starting";
 }
 
-function statusText(status: string) {
-  if (status === "running") return "接続済み";
+function statusText(status: string, { busy = false, runtimeReady = true } = {}) {
+  if (status === "running" && busy) return "処理中";
+  if (status === "running" && !runtimeReady) return "確認中";
+  if (status === "running") return "待機中";
   if (status === "restarting") return "再起動中";
-  if (status === "failed") return "失敗";
+  if (status === "failed") return "接続エラー";
   return "起動中";
 }
 
@@ -989,6 +993,9 @@ export default function App() {
   const runSettingsSummary = `${settings.sandboxMode} / ${settings.approvalPolicy} / FAST ${settings.fastModeEnabled ? "ON" : "OFF"}`;
   const codexVersionLabel = codexCliVersionLabel(diagnostics);
   const runtimeRefreshLabel = timeLabelFromIso(runtimeRefreshState.lastAt, "未取得");
+  const runtimeReady = runtime?.mode === "app-server";
+  const topbarBusy = hasActiveRequests || activeExec > 0;
+  const topbarStatusView = { busy: topbarBusy, runtimeReady };
   const topbarStatusDetail = compactText(backend.message, runtime?.mode === "app-server" ? "backend ready" : "runtime未読込");
   const showServerRecovery = backend.status !== "running";
   const showRuntimeIssue = Boolean(diagnostics) && diagnosticsHealth.className !== "pass";
@@ -1003,9 +1010,9 @@ export default function App() {
           <h1>Harnes Desktop</h1>
         </div>
         <div className="topbar-operational">
-          <div className={`status-pill old-web-status ${statusClass(backend.status)}`} aria-live="polite">
+          <div className={`status-pill old-web-status ${statusClass(backend.status, topbarStatusView)}`} aria-live="polite">
             <span className="old-web-status-spinner" aria-hidden="true" />
-            <strong>{statusText(backend.status)}</strong>
+            <strong>{statusText(backend.status, topbarStatusView)}</strong>
             <span className="old-web-status-separator">---</span>
             <span className="old-web-status-detail">{topbarStatusDetail}</span>
             <span className="old-web-status-time">{timeLabelFromIso(backend.updatedAt)}</span>

@@ -808,6 +808,12 @@ textarea {
   animation: none;
 }
 
+.old-web-status.processing .old-web-status-spinner {
+  border-color: rgba(15, 122, 82, 0.22);
+  border-top-color: rgba(15, 122, 82, 0.82);
+  background: transparent;
+}
+
 .old-web-status strong {
   color: #17251f;
   white-space: nowrap;
@@ -855,6 +861,7 @@ textarea {
 }
 
 .status-pill.running span,
+.status-pill.processing span,
 .status-chip {
   color: #0f7a52;
 }

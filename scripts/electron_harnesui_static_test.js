@@ -110,7 +110,7 @@ mustInclude(main, "sidebarVisible", "Electron main smoke requires visible sideba
 mustInclude(main, "proposalDockVisible", "Electron main smoke requires left proposal dock");
 mustInclude(main, "missionMetaVisible", "Electron main smoke requires compact mission state");
 mustInclude(main, "oldWebStatusVisible", "Electron main smoke requires old-web status strip");
-mustInclude(main, 'oldWebStatusLabel === "接続済み"', "Electron main smoke requires connected topbar label");
+mustInclude(main, 'oldWebStatusLabel === "待機中"', "Electron main smoke requires idle topbar work-state label");
 mustInclude(main, 'runtimePanelLabel === "接続済み"', "Electron main smoke requires connected runtime panel label");
 mustInclude(main, "readyStatusSpinnerStopped", "Electron main smoke requires stopped ready-state spinner");
 mustInclude(main, "runtimeRefreshExplained", "Electron main smoke requires runtime refresh explanation");
@@ -171,7 +171,10 @@ mustInclude(app, "runtimeRefreshState", "Electron renderer explains runtime refr
 mustInclude(app, "old-web-status", "Electron renderer old-web status strip");
 mustInclude(app, "old-web-version", "Electron renderer visible version label");
 mustInclude(app, "codex-cli", "Electron renderer version label must name codex-cli");
-mustInclude(app, 'if (status === "running") return "接続済み";', "Electron renderer running backend must read connected, not connecting");
+mustInclude(app, 'if (status === "running" && busy) return "処理中";', "Electron renderer active backend must read as processing");
+mustInclude(app, 'if (status === "running") return "待機中";', "Electron renderer ready backend must read as idle work state");
+mustInclude(app, 'if (status === "failed") return "接続エラー";', "Electron renderer failed backend must name the connection problem");
+mustNotInclude(app, 'if (status === "running") return "接続済み";', "Electron renderer topbar must not present ready backend as connected work state");
 mustNotInclude(app, 'if (status === "running") return "接続中";', "Electron renderer must not present running backend as still connecting");
 mustInclude(app, 'runtime?.mode === "app-server" ? "接続済み" : "未接続"', "Electron renderer runtime panel must read connected after runtime loads");
 mustNotInclude(app, 'runtime?.mode === "app-server" ? "接続中" : "未接続"', "Electron renderer runtime panel must not leave app-server mode looking in-progress");
@@ -287,6 +290,7 @@ mustInclude(styles, "@keyframes harnes-spin", "Electron CSS shared spinner anima
 mustInclude(styles, ".topbar-operational", "Electron CSS old-web topbar lane");
 mustInclude(styles, ".old-web-status", "Electron CSS old-web status strip");
 mustInclude(styles, ".old-web-status.running .old-web-status-spinner", "Electron CSS ready backend indicator must stop spinning");
+mustInclude(styles, ".old-web-status.processing .old-web-status-spinner", "Electron CSS processing backend indicator must spin");
 mustInclude(styles, "animation: none", "Electron CSS ready backend indicator must not animate");
 mustInclude(styles, ".old-web-version", "Electron CSS visible version label");
 mustInclude(styles, ".work-state-meta", "Electron CSS composer work state metadata");
