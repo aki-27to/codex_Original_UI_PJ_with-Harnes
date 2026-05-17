@@ -137,6 +137,11 @@ mustInclude(app, "hidden-file-input", "Electron renderer hides native file picke
 mustInclude(app, "attachment-trigger", "Electron renderer attachment trigger button");
 mustInclude(app, "missionMetaItems", "Electron renderer compact mission metadata");
 mustInclude(app, "workStateForChat", "Electron renderer user-facing work state");
+mustInclude(app, "返信で続行", "Electron renderer resend-ready needs_input label");
+mustInclude(app, "失敗ではありません。必要な情報や判断を返信すると続きから再開できます。", "Electron renderer resend-ready needs_input detail");
+mustNotInclude(app, 'label: "入力待ち"', "Electron renderer must not show the old input-wait headline");
+mustNotInclude(app, 'listLabel: "入力待ち"', "Electron renderer must not show the old input-wait list label");
+mustNotInclude(app, "追加指示を送ると続行できます。", "Electron renderer must not show the old needs_input detail");
 mustInclude(app, "const [activeRequests, setActiveRequests] = useState<ActiveRequest[]>([])", "Electron renderer keeps active exec state per chat");
 mustInclude(app, "runtimeRefreshState", "Electron renderer explains runtime refresh state");
 mustInclude(app, "old-web-status", "Electron renderer old-web status strip");

@@ -13,11 +13,11 @@ function read(relativePath) {
 function run() {
   const appSource = read(path.join("web", "01.HarnesUI", "app.js"));
   assert(
-    /else if\(st==="needs_input"\)\{ttype="needs_input";/.test(appSource),
+    appSource.includes('}else if(st==="needs_input"){') && appSource.includes('ttype="needs_input";'),
     "runPrompt status handler should preserve streamed needs_input terminal state"
   );
   assert(
-    /else if\(ttype==="needs_input"\)hset\(c,"needs_input"\);/.test(appSource),
+    appSource.includes('else if(ttype==="needs_input")hset(c,"needs_input");'),
     "runPrompt finalizer should not overwrite needs_input back to completed"
   );
 
@@ -63,6 +63,14 @@ function run() {
   assert(
     /返信で続行/.test(appSource),
     "operator UI should expose a concise reply-to-continue label for NEEDS_INPUT"
+  );
+  assert(
+    !/入力待ち/.test(appSource),
+    "operator UI should not regress to the old input-wait headline"
+  );
+  assert(
+    !/ユーザー入力待ち/.test(appSource),
+    "operator UI should not keep the old user-input-wait status detail"
   );
 }
 

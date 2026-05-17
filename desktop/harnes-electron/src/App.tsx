@@ -186,7 +186,7 @@ function chatStatusLabel(status: ChatStatus) {
   if (status === "completed") return "完了";
   if (status === "failed") return "要確認";
   if (status === "interrupted") return "中断";
-  if (status === "needs_input") return "入力待ち";
+  if (status === "needs_input") return "返信で続行";
   return "待機中";
 }
 
@@ -221,7 +221,7 @@ function runtimeActiveExecCount(runtime: RuntimePayload | null) {
 function workStateForChat(chat: ChatRecord | undefined, { activeForChat = false, runtimeBusy = false } = {}): WorkStateView {
   const status = chat ? chat.status : "idle";
   const activity = friendlyActivityText(chat?.activity, status);
-  if (activeForChat || (status === "running" && runtimeBusy)) {
+  if (activeForChat) {
     return {
       tone: "working",
       label: "作業中",
@@ -271,10 +271,10 @@ function workStateForChat(chat: ChatRecord | undefined, { activeForChat = false,
   }
   if (status === "needs_input") {
     return {
-      tone: "attention",
-      label: "入力待ち",
-      detail: "追加指示を送ると続行できます。",
-      listLabel: "入力待ち",
+      tone: "completed",
+      label: "返信で続行",
+      detail: "失敗ではありません。必要な情報や判断を返信すると続きから再開できます。",
+      listLabel: "返信で続行",
     };
   }
   return {

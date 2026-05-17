@@ -2181,7 +2181,7 @@ function buildPhaseSummariesForUi({flowItems,requirementSnapshot,displayedPlan,e
     :currentStatus==="failed"||currentStatus==="interrupted"
       ?`ship 前に停止 / ${verdict&&verdict.label?verdict.label:"FAIL"}`
       :currentStatus==="needs_input"
-        ?"ship 保留 / ユーザー入力待ち・返信で続行"
+        ?"ship 保留 / 返信で続行"
         :"policy patch / replay 待ち";
   return toArr(flowItems).reduce((acc,phase)=>{
     if(!phase||!phase.id)return acc;
@@ -2354,7 +2354,7 @@ function pendingProjectionForChatForUi(chatRecord,runtime=s.runtime){
 function pendingProjectionLabelForUi(projection,{scope="chat"}={}){
   const current=projection&&typeof projection==="object"?projection:{count:0,source:"idle"};
   const count=Math.max(0,Math.trunc(Number(current.count)||0));
-  if(current.source==="needs_input")return scope==="pill"?"返信で続行":"ユーザー入力待ち";
+  if(current.source==="needs_input")return"返信で続行";
   if(count<=0)return scope==="pill"?"待機なし":"待機中";
   if(current.source==="syncing"||current.source==="local")return scope==="pill"?"送信済み":"runtime反映待ち";
   if(current.source==="server"||current.source==="server_syncing")return `server実行中 ${count}`;
@@ -3595,7 +3595,7 @@ function deriveUserFacingWorkflowForUi({
     workflow[4].detail="回答と根拠がそろい、出荷判断まで完了しました。";
   }else if(workflow[4].state==="blocked"){
     workflow[4].detail=stopReason&&typeof stopReason.detail==="string"&&stopReason.detail
-      ?`ここから先は入力待ちです。${stopReason.detail}`
+      ?`ここから先は返信で続行できます。${stopReason.detail}`
       :"ここから先は追加の判断待ちです。";
   }else if(workflow[4].state==="failed"){
     workflow[4].detail="このままでは完了扱いにできません。";
@@ -4420,7 +4420,7 @@ function assistantTuiPhaseForUi(phase){
   if(normalized==="retry")return{label:"再送準備",detail:"再送できる状態に戻しています"};
   if(normalized==="recovery")return{label:"復旧確認",detail:"接続を戻し、保存済みの状態を確認しています"};
   if(normalized==="completed")return{label:"完了",detail:"最終回答を受け取りました"};
-  if(normalized==="needs_input")return{label:"入力待ち",detail:"追加の入力で続行できる状態です"};
+  if(normalized==="needs_input")return{label:"返信で続行",detail:"失敗ではありません。必要な情報や判断を返信すると続きから再開できます"};
   if(normalized==="aborted"||normalized==="interrupted")return{label:"中断",detail:"実行は中断されました"};
   if(normalized==="failed")return{label:"失敗",detail:"実行中にエラーを受け取りました"};
   if(normalized==="error")return{label:"状態確認",detail:"途中状態を読みやすく整理しています"};
@@ -4434,7 +4434,7 @@ function assistantTuiActivitySummaryForUi(event,phase=""){
   if(text.includes("token"))return"使用量を確認しています";
   if(normalizedPhase==="answering")return"回答本文を受け取りながら作業状態を同期しています";
   if(normalizedPhase==="completed")return"最終回答を受け取りました";
-  if(normalizedPhase==="needs_input")return"追加の入力で続行できます";
+  if(normalizedPhase==="needs_input")return"返信すると続きから再開できます";
   if(normalizedPhase==="failed")return"エラー内容を表示しています";
   if(normalizedPhase==="aborted"||normalizedPhase==="interrupted")return"中断状態を反映しています";
   if(text.includes("activity")||text.includes("item"))return"作業通知を受け取っています";
@@ -6345,7 +6345,7 @@ function userFacingWorkflowTerminalOverrideForUi(workflowState,{terminalStatus="
 function harnessStopReasonSummaryForUi({status="",currentPending=0,requirementGateBlocked=false,requirementSnapshot=null,lastResultType=""}={}){
   if(status==="needs_input"){
     return{
-      label:"入力待ち",
+      label:"返信で続行",
       detail:"失敗ではありません。必要な情報や判断を返信すると、この作業を続きから再開できます。",
       tone:"idle",
     };
@@ -7264,7 +7264,7 @@ function renderHarness(){
     highlights.push(`ブロッカー: ${failedEvent.l}${failedEvent.d?` / ${failedEvent.d}`:""}`);
   }
   if(status==="needs_input"){
-    highlights.push("入力待ち: 失敗ではありません。返信すると続きから再開できます。");
+    highlights.push("返信で続行: 失敗ではありません。返信すると続きから再開できます。");
   }
   if(Number(evidence.tasksTotal)>0&&Number(evidence.tasksDone)<Number(evidence.tasksTotal)){
     highlights.push(`進行状況: ${Number(evidence.tasksDone)||0}/${Number(evidence.tasksTotal)||0}`);
@@ -7304,7 +7304,7 @@ function traceEventLabelForUi(type){
   if(normalized==="turn/end")return"実行終了";
   if(normalized==="turn/interrupt")return"中断要求";
   if(normalized==="turn/error")return"実行失敗";
-  if(normalized==="turn/needs_input"||normalized==="needs_input")return"入力待ち";
+  if(normalized==="turn/needs_input"||normalized==="needs_input")return"返信で続行";
   if(normalized==="stream/open")return"stream開始";
   if(normalized==="stream/error")return"stream失敗";
   if(normalized==="stream/recovered")return"stream復旧";
@@ -7343,7 +7343,7 @@ function executionTraceStatusTextForUi({bucket,row=null,pendingCount=0,lastTrace
     return"完了";
   }
   if(bucket==="failed"){
-    if(status.includes("needs_input")||status.includes("input"))return"入力待ち";
+    if(status.includes("needs_input")||status.includes("input"))return"返信で続行";
     if((lastTrace&&lastTrace.type==="aborted")||status.includes("interrupt")||status.includes("abort")||status.includes("cancel"))return"中断";
     return"失敗";
   }
@@ -7602,7 +7602,7 @@ function live(){
       "失敗ではありません",
       typeof pendingProjectionDetailForUi==="function"?pendingProjectionDetailForUi(pendingProjection):"",
       phase.work?`現在: ${phase.work}`:"",
-      "状態: ユーザー入力待ち",
+      "状態: 返信で続行",
       currentChat&&currentChat.agent?`担当: ${operatorFacingAgentLabelForUi(currentChat.agent)}`:"",
     ].filter(Boolean).join(" / ");
     if(codexVersion)e.liveStatusDetail.textContent=`${e.liveStatusDetail.textContent} / ${codexVersion}`;
