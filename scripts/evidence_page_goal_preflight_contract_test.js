@@ -35,6 +35,7 @@ function testContractWiring() {
 
   assert.strictEqual(evidencePageContract.defaultArtifact, "output/governance_public/closeout_evidence_page.html");
   assert.strictEqual(evidencePageContract.packageCommand, "npm run artifact:evidence-page");
+  assert.strictEqual(evidencePageContract.alsoGeneratedBy, "npm run artifact:governance-public");
   assert.strictEqual(evidencePageContract.packageVisibleVerifier, "npm run test:evidence-page-goal-preflight-contract");
   assert.strictEqual(goalPreflightContract.packageVisibleVerifier, "npm run test:evidence-page-goal-preflight-contract");
   assert.strictEqual(packageJson.scripts["artifact:evidence-page"], "node scripts/generate_evidence_page.js");
@@ -43,7 +44,10 @@ function testContractWiring() {
     "node scripts/evidence_page_goal_preflight_contract_test.js"
   );
   assert.strictEqual(evidenceContract.reviewerVisibleCloseout.contract, "scripts/config/evidence_page_contract.json");
+  assert.strictEqual(evidenceContract.reviewerVisibleCloseout.alsoGeneratedBy, "npm run artifact:governance-public");
   assert.strictEqual(evidenceContract.goalPreflight.contract, "scripts/config/goal_preflight_contract.json");
+  assert.strictEqual(evidenceContract.goalPreflight.runtimeCurrentTruthArtifact, "runtime/goal_preflight.json");
+  assert.strictEqual(evidenceContract.goalPreflight.runtimeCurrentTruthPath, "GET /api/runtime currentTruth.goalPreflight");
   assert(taskOutcomeContract.proofCarryingRequiredFields.includes("reviewer_visible_evidence_page"));
   assert(taskOutcomeContract.proofCarryingRequiredFields.includes("goal_preflight"));
   assert.strictEqual(taskOutcomeContract.reasonMap.reviewer_visible_evidence_page_missing, "FAILED_VALIDATION");

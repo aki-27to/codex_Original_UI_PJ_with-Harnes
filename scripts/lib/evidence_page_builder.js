@@ -89,6 +89,15 @@ function loadEvidencePageContract(filePath = defaultEvidencePageContractPath) {
   return JSON.parse(fs.readFileSync(path.resolve(filePath), "utf8"));
 }
 
+function displayPathForPage(targetPath) {
+  const resolved = path.resolve(targetPath);
+  const relative = path.relative(process.cwd(), resolved);
+  if (relative && !relative.startsWith("..") && !path.isAbsolute(relative)) {
+    return relative.replace(/\\/g, "/");
+  }
+  return resolved;
+}
+
 function readInputs(sourceDir) {
   const names = [
     "request_frame.json",
@@ -213,7 +222,7 @@ function buildEvidencePageModel({ sourceDir, generatedAt = new Date().toISOStrin
 
   return {
     generatedAt,
-    sourceDir: resolvedSourceDir,
+    sourceDir: displayPathForPage(resolvedSourceDir),
     contractVersion: contract.version,
     defaultArtifact: contract.defaultArtifact,
     inputStatus,

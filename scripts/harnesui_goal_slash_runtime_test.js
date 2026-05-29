@@ -1,6 +1,7 @@
 "use strict";
 
 const assert = require("assert");
+const fs = require("fs");
 const http = require("http");
 const path = require("path");
 const { startHarnessForPhase1 } = require("./lib/harness_api_client");
@@ -61,6 +62,43 @@ function postExecText({ port, authHeaders, prompt, timeoutMs = 60000 }) {
   });
 }
 
+function getRuntimeJson({ port, authHeaders, timeoutMs = 30000 }) {
+  return new Promise((resolve, reject) => {
+    const req = http.request(
+      {
+        hostname: "127.0.0.1",
+        port,
+        path: "/api/runtime",
+        method: "GET",
+        timeout: timeoutMs,
+        headers: {
+          ...(authHeaders || {}),
+        },
+      },
+      (res) => {
+        let raw = "";
+        res.on("data", (chunk) => {
+          raw += chunk.toString("utf8");
+        });
+        res.on("end", () => {
+          try {
+            resolve({ statusCode: Number(res.statusCode || 0), body: raw ? JSON.parse(raw) : {} });
+          } catch (error) {
+            reject(error);
+          }
+        });
+      }
+    );
+    req.on("timeout", () => req.destroy(new Error("GET /api/runtime timed out")));
+    req.on("error", reject);
+    req.end();
+  });
+}
+
+function readGoalPreflightRuntimeArtifact() {
+  return JSON.parse(fs.readFileSync(path.join(workspaceRoot, "runtime", "goal_preflight.json"), "utf8"));
+}
+
 async function expectSlashOutput(harness, prompt, checks) {
   const result = await postExecText({ port: harness.port, authHeaders: harness.authHeaders, prompt });
   assert.strictEqual(result.statusCode, 200, `${prompt} must return HTTP 200`);
@@ -91,13 +129,43 @@ async function main() {
   });
   try {
     const objective = "UI slash goal runtime objective";
-    await expectSlashOutput(harness, `/goal ${objective}`, ["Codex goal: active", `Objective: ${objective}`]);
-    await expectSlashOutput(harness, "/goal", ["Codex goal: active", `Objective: ${objective}`]);
-    await expectSlashOutput(harness, "/goal status", ["Codex goal: active", `Objective: ${objective}`]);
-    await expectSlashOutput(harness, "/goal pause", ["Codex goal: paused", `Objective: ${objective}`]);
-    await expectSlashOutput(harness, "/goal resume", ["Codex goal: active", `Objective: ${objective}`]);
-    await expectSlashOutput(harness, "/goal complete", ["Codex goal: complete", `Objective: ${objective}`]);
-    await expectSlashOutput(harness, "/goal clear", ["Codex goal cleared.", "Thread:"]);
+    await expectSlashOutput(harness, `/goal ${objective}`, ["Codex goal: active", `Objective: ${objective}`, "Goal preflight: FAILED_VALIDATION", "Ready for long run: no"]);
+    let preflight = readGoalPreflightRuntimeArtifact();
+    assert.strictEqual(preflight.status, "FAILED_VALIDATION", "one-line /goal must fail goal preflight");
+    assert.strictEqual(preflight.readyForLongRun, false, "one-line /goal must not be ready for long-run execution");
+
+    const structuredObjective = "Structured slash goal runtime objective";
+    const structuredGoal = JSON.stringify({
+      objective: structuredObjective,
+      endState: "The runtime exposes a ready goal preflight artifact and /api/runtime current truth.",
+      statedChecks: [
+        "command: npm run test:harnesui-goal-runtime",
+        "api: GET /api/runtime currentTruth.goalPreflight.status",
+      ],
+      constraints: ["No new route outside /api/exec slash handling."],
+      nonGoals: ["Do not mark whole-program readiness complete."],
+      evaluator: "package-visible slash runtime test",
+      evidencePlan: ["runtime/goal_preflight.json", "GET /api/runtime"],
+      stopControls: ["fail when the preflight status is not READY_FOR_LONG_RUN"],
+    });
+    await expectSlashOutput(harness, `/goal ${structuredGoal}`, ["Codex goal: active", `Objective: ${structuredObjective}`, "Goal preflight: READY_FOR_LONG_RUN", "Ready for long run: yes"]);
+    preflight = readGoalPreflightRuntimeArtifact();
+    assert.strictEqual(preflight.status, "READY_FOR_LONG_RUN", "structured /goal must pass goal preflight");
+    assert.strictEqual(preflight.readyForLongRun, true, "structured /goal must be ready for long-run execution");
+    const runtime = await getRuntimeJson({ port: harness.port, authHeaders: harness.authHeaders });
+    assert.strictEqual(runtime.statusCode, 200, "GET /api/runtime must return HTTP 200");
+    assert.strictEqual(
+      runtime.body.currentTruth && runtime.body.currentTruth.goalPreflight && runtime.body.currentTruth.goalPreflight.status,
+      "READY_FOR_LONG_RUN",
+      "GET /api/runtime must expose goal preflight current truth"
+    );
+
+    await expectSlashOutput(harness, "/goal", ["Codex goal: active", `Objective: ${structuredObjective}`, "Goal preflight: READY_FOR_LONG_RUN"]);
+    await expectSlashOutput(harness, "/goal status", ["Codex goal: active", `Objective: ${structuredObjective}`, "Goal preflight: READY_FOR_LONG_RUN"]);
+    await expectSlashOutput(harness, "/goal pause", ["Codex goal: paused", `Objective: ${structuredObjective}`, "Goal preflight: READY_FOR_LONG_RUN"]);
+    await expectSlashOutput(harness, "/goal resume", ["Codex goal: active", `Objective: ${structuredObjective}`, "Goal preflight: READY_FOR_LONG_RUN"]);
+    await expectSlashOutput(harness, "/goal complete", ["Codex goal: complete", `Objective: ${structuredObjective}`, "Goal preflight: READY_FOR_LONG_RUN"]);
+    await expectSlashOutput(harness, "/goal clear", ["Codex goal cleared.", "Thread:", "Goal preflight: CLEARED"]);
     await expectSlashOutput(harness, "/goal", ["Codex goal: none"]);
   } finally {
     await harness.handle.stop();

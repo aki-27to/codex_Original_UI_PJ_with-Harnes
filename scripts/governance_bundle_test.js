@@ -176,6 +176,7 @@ function main() {
     "worker_completion_status.json",
     "reviewer_start_here.json",
     "reviewer_start_here.md",
+    "closeout_evidence_page.html",
     "release_candidate_scope.json",
     "release_candidate_scope.md",
     "release_resolution.json",
@@ -201,6 +202,10 @@ function main() {
     "public governance export must record derived reviewer_start_here.json"
   );
   assert(
+    exportedManifest.exportedArtifacts.some((entry) => entry.file === "closeout_evidence_page.html" && entry.derived === 1),
+    "public governance export must record derived closeout_evidence_page.html"
+  );
+  assert(
     exportedManifest.exportedArtifacts.some((entry) => entry.file === "release_candidate_scope.json" && entry.derived === 1),
     "public governance export must record derived release_candidate_scope.json"
   );
@@ -213,6 +218,7 @@ function main() {
   const workerDecisionSurface = JSON.parse(fs.readFileSync(path.join(exportOutputDir, "worker_decision_surface.json"), "utf8"));
   const workerCompletionStatus = JSON.parse(fs.readFileSync(path.join(exportOutputDir, "worker_completion_status.json"), "utf8"));
   const reviewerStartHere = JSON.parse(fs.readFileSync(path.join(exportOutputDir, "reviewer_start_here.json"), "utf8"));
+  const closeoutEvidencePage = fs.readFileSync(path.join(exportOutputDir, "closeout_evidence_page.html"), "utf8");
   const releaseCandidateScope = JSON.parse(fs.readFileSync(path.join(exportOutputDir, "release_candidate_scope.json"), "utf8"));
   const releaseResolution = JSON.parse(fs.readFileSync(path.join(exportOutputDir, "release_resolution.json"), "utf8"));
   assert.strictEqual(adoptionReadiness.schema, "adoption-readiness-eval.v1", "public export must emit adoption readiness eval");
@@ -238,6 +244,10 @@ function main() {
   assert.strictEqual(workerCompletionStatus.backgroundArtifactSessionConsistency, "aligned", "worker completion companion must only trust aligned readiness sidecars");
   assert.strictEqual(workerCompletionStatus.backgroundArtifactInputsTrusted, true, "worker completion companion must mark aligned readiness sidecars as trusted");
   assert.strictEqual(reviewerStartHere.schema, "governance-reviewer-start-here.v1", "public export must emit reviewer-start-here surface");
+  assert.strictEqual(reviewerStartHere.readOrder[0], "output/governance_public/closeout_evidence_page.html", "reviewer read order must start with the closeout evidence page");
+  assert(closeoutEvidencePage.includes('id="original_request"'), "closeout evidence page must include original_request section");
+  assert(closeoutEvidencePage.includes('id="verification_commands"'), "closeout evidence page must include verification_commands section");
+  assert(closeoutEvidencePage.includes("npm run artifact:evidence-page"), "closeout evidence page must include the generator command");
   assert.strictEqual(Array.isArray(reviewerStartHere.decisionFaces), true, "reviewer-start-here must expose decision faces");
   assert.strictEqual(reviewerStartHere.decisionFaces.length, 2, "reviewer-start-here must compress top-level verdicts into two faces");
   assert.strictEqual(reviewerStartHere.decisionFaces[0].id, "task_verdict", "reviewer-start-here must lead with task verdict");

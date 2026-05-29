@@ -65,6 +65,9 @@ function main() {
   assertMatch(serverImpl, /appServer\.sendRequest\("thread\/goal\/get"/, "/goal status must try native app-server goal get");
   assertMatch(serverImpl, /appServer\.sendRequest\("thread\/goal\/set"/, "/goal set/pause/resume/complete must try native app-server goal set");
   assertMatch(serverImpl, /appServer\.sendRequest\("thread\/goal\/clear"/, "/goal clear must try native app-server goal clear");
+  assertMatch(serverImpl, /buildGoalPreflightRecord/, "/goal must build a runtime goal preflight record");
+  assertMatch(serverImpl, /writeGoalPreflightCurrentTruth/, "/goal must write goal preflight current truth");
+  assertMatch(serverImpl, /Goal preflight:/, "/goal output must expose goal preflight status");
   assertMatch(serverImpl, /Native Codex goal API is not available in this runtime\./, "/goal must fail over transparently when native goal requests are unavailable");
   assertMatch(serverImpl, /const mentionsGoalMethod=[\s\S]*?thread\/goal\//, "/goal fallback must be limited to goal-method errors");
   assert(!/function isUnsupportedAppServerGoalMethodError[\s\S]*?invalid request[\s\S]*?function normalizeGoalForSlashCommand/.test(serverImpl), "/goal must not hide native payload errors as unsupported fallback");

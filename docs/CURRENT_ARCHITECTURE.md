@@ -324,15 +324,20 @@ As of 2026-05-29, material task closeout has a single reviewer-first HTML surfac
 - evidence page contract: `scripts/config/evidence_page_contract.json`
 - default evidence page artifact: `output/governance_public/closeout_evidence_page.html`
 - generator command: `npm run artifact:evidence-page`
+- governance export command: `npm run artifact:governance-public`
 - goal preflight contract: `scripts/config/goal_preflight_contract.json`
+- goal preflight runtime artifact: `runtime/goal_preflight.json`
+- goal preflight runtime surface: `GET /api/runtime` -> `currentTruth.goalPreflight`
 - verifier command: `npm run test:evidence-page-goal-preflight-contract`
 
-The closeout page is generated from the existing `output/governance_public` evidence bundle and remains self-contained. It does not add a new runtime route, role split, or local orchestration lane.
+The closeout page is generated from the existing `output/governance_public` evidence bundle and remains self-contained. `npm run artifact:governance-public` now writes the page as part of the public proof export, and `npm run artifact:evidence-page` can refresh only the page from the existing public bundle. It does not add a new runtime route, role split, or local orchestration lane.
 
-`/goal`, long autonomous sessions, and subjective completion claims now have a fail-closed preflight contract. The target end state must name observable stated checks, non-goals, constraints, evaluator, evidence plan, and stop controls before the run can be treated as ready for autonomous execution.
+`/goal`, long autonomous sessions, and subjective completion claims now have a fail-closed preflight contract. HarnesUI `/goal` writes `runtime/goal_preflight.json`, and `/api/runtime` exposes the same state under `currentTruth.goalPreflight`. The target end state must name observable stated checks, non-goals, constraints, evaluator, evidence plan, and stop controls before the run can be treated as ready for autonomous execution.
 
 ### Acceptance checks
 
 - `ac-evidence-page-1`: `npm run artifact:evidence-page` writes a self-contained HTML closeout artifact with original request, acceptance checks, commands, runtime truth, reviewer/tester verdict, residual risks, and adoption decision.
+- `ac-evidence-page-2`: `npm run artifact:governance-public` includes `closeout_evidence_page.html` in the public proof export and reviewer read order.
 - `ac-goal-preflight-1`: subjective `doneWhen` wording is rejected unless the goal preflight has observable stated checks.
+- `ac-goal-preflight-2`: HarnesUI `/goal` writes `runtime/goal_preflight.json`, and `GET /api/runtime` exposes `currentTruth.goalPreflight`.
 - `ac-contract-sync-1`: the evidence page and goal preflight contracts are wired into the evidence, task outcome, system coherence, package script, and repo-quality surfaces.

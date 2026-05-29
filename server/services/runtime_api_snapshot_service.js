@@ -156,6 +156,7 @@ function createRuntimeApiSnapshotService(deps = {}) {
     const currentGoalCompletion = readCurrentTruthJson("output", "agi_readiness", "goal_completion_status.json");
     const currentSubjectiveCompletion = readCurrentTruthJson("output", "agi_readiness", "subjective_goal_completion_status.json");
     const currentCompatibilityCompletion = readCurrentTruthJson("output", "agi_readiness", "compatibility_completion_status.json");
+    const currentGoalPreflight = readCurrentTruthJson("runtime", "goal_preflight.json");
     return {
       headlineScope: currentLatestOverview && currentLatestOverview.headlineScope
         ? currentLatestOverview.headlineScope
@@ -181,6 +182,14 @@ function createRuntimeApiSnapshotService(deps = {}) {
           scope: currentCompatibilityCompletion && currentCompatibilityCompletion.scope ? currentCompatibilityCompletion.scope : "",
           status: currentCompatibilityCompletion && currentCompatibilityCompletion.status ? currentCompatibilityCompletion.status : "",
           whyNotYetCount: Array.isArray(currentCompatibilityCompletion && currentCompatibilityCompletion.whyNotYet) ? currentCompatibilityCompletion.whyNotYet.length : 0,
+        },
+      goalPreflight: currentGoalPreflight && typeof currentGoalPreflight === "object"
+        ? currentGoalPreflight
+        : {
+          scope: "goal_preflight",
+          status: "MISSING",
+          readyForLongRun: false,
+          artifactPath: "runtime/goal_preflight.json",
         },
     };
   }

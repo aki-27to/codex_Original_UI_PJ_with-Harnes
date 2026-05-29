@@ -25,6 +25,9 @@ const {
 const {
   resolveExportSessionIdFromCandidates,
 } = require("./export_session_window");
+const {
+  writeEvidencePage,
+} = require("./evidence_page_builder");
 
 const workspaceRoot = path.resolve(__dirname, "..", "..");
 const defaultLatestSignoffSummaryPath = path.join(workspaceRoot, "logs", "current", "latest_signoff_summary.json");
@@ -127,7 +130,7 @@ function loadExistingPublicExport(outputDir) {
         continue;
       }
       const extension = path.extname(entry.name).toLowerCase();
-      if (extension !== ".json" && extension !== ".md") {
+      if (extension !== ".json" && extension !== ".md" && extension !== ".html") {
         continue;
       }
       fs.copyFileSync(path.join(sourceDir, entry.name), path.join(targetDir, entry.name));
@@ -793,10 +796,11 @@ function buildReviewerStartHere({
   return {
     schema: "governance-reviewer-start-here.v1",
     generatedAt: new Date().toISOString(),
-    purpose: "Single reviewer-first surface for the governed harness. Start with the task verdict, then inspect background program debt as secondary context.",
-    readOrder: [
-      "output/governance_public/reviewer_start_here.json",
-      "output/governance_public/worker_decision_surface.json",
+      purpose: "Single reviewer-first surface for the governed harness. Start with the task verdict, then inspect background program debt as secondary context.",
+      readOrder: [
+        "output/governance_public/closeout_evidence_page.html",
+        "output/governance_public/reviewer_start_here.json",
+        "output/governance_public/worker_decision_surface.json",
       "output/governance_public/worker_completion_status.json",
       "output/governance_public/bundle_overview.json",
       "docs/SERVER_ARCHITECTURE_MAP.md",
@@ -925,6 +929,7 @@ function buildOverviewMarkdown(overview, exportManifest) {
     `Worker completion: \`${safeString(overview.workerCompletion && overview.workerCompletion.workerGoalStatus, 80) || "UNKNOWN"}\``,
     `Operator action: \`${safeString(overview.workerDecision && overview.workerDecision.operatorAction, 80) || "UNKNOWN"}\``,
     "Reviewer start surface: `output/governance_public/reviewer_start_here.json`",
+    "Closeout evidence page: `output/governance_public/closeout_evidence_page.html`",
     `Harness identity: \`${safeString(overview.harnessIdentity && overview.harnessIdentity.mode, 80) || "unknown"}\``,
     `Execution route: \`${safeString(overview.primaryRoutes && overview.primaryRoutes.execution, 120) || "unknown"}\``,
     `Evaluation route: \`${safeString(overview.primaryRoutes && overview.primaryRoutes.evaluation, 120) || "unknown"}\``,
@@ -1338,6 +1343,11 @@ function exportGovernancePublicBundle({
     source: "derived_from_public_trace",
     derived: 1,
   });
+  exportedArtifacts.push({
+    file: "closeout_evidence_page.html",
+    source: "derived_from_public_trace",
+    derived: 1,
+  });
   overview.exportedFiles = exportedArtifacts.map((entry) => entry.file);
   const exportManifest = {
     schema: "governance-public-bundle-manifest.v1",
@@ -1351,6 +1361,11 @@ function exportGovernancePublicBundle({
   writeJson(path.join(outputDir, "bundle_overview.json"), overview);
   writeJson(path.join(outputDir, "export_manifest.json"), exportManifest);
   writeText(path.join(outputDir, "bundle_overview.md"), buildOverviewMarkdown(overview, exportManifest));
+  writeEvidencePage({
+    sourceDir: outputDir,
+    outPath: path.join(outputDir, "closeout_evidence_page.html"),
+    generatedAt: overview.generatedAt,
+  });
 
   return {
     outputDir: path.resolve(outputDir),

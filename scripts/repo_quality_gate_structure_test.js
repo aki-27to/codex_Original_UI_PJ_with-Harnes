@@ -205,6 +205,10 @@ function main() {
     "runtime stage must include standalone static path containment checks"
   );
   assert(
+    runnerSource.includes('"test:harnesui-goal-runtime"'),
+    "runtime stage must include HarnesUI /goal preflight runtime checks"
+  );
+  assert(
     runnerSource.includes('"test:playwright-mcp"'),
     "runtime stage must include Playwright MCP smoke checks"
   );

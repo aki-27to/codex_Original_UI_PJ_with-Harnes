@@ -1,6 +1,6 @@
 # OUTPUT_SURFACE_POLICY
 
-Updated: 2026-04-12
+Updated: 2026-05-29
 
 ## Purpose
 
@@ -14,6 +14,12 @@ Updated: 2026-04-12
 - governance_public
 - memory_public
 - continuity_public
+- design_proposals
+- design_runs
+- electron-harnesui
+- harnesui-restart-helper
+- harnesui-status-reenable
+- harnesui-status-reenable-live
 - manual_self_improvement
 - curated learning report
 

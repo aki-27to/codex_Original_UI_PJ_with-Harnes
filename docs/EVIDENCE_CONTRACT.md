@@ -171,6 +171,7 @@ Material closeout must expose one self-contained reviewer-visible HTML page befo
 
 - contract: `scripts/config/evidence_page_contract.json`
 - command: `npm run artifact:evidence-page`
+- automatic export path: `npm run artifact:governance-public`
 - default artifact: `output/governance_public/closeout_evidence_page.html`
 - package-visible verifier: `npm run test:evidence-page-goal-preflight-contract`
 
@@ -181,6 +182,8 @@ The page must include the original request, acceptance checks, changed artifacts
 `/goal`, long autonomous sessions, dynamic workflows, and subjective completion claims must start from an explicit preflight contract.
 
 - contract: `scripts/config/goal_preflight_contract.json`
+- runtime artifact: `runtime/goal_preflight.json`
+- runtime surface: `GET /api/runtime` -> `currentTruth.goalPreflight`
 - required fields: `objective`, `endState`, `statedChecks`, `constraints`, `nonGoals`, `evaluator`, `evidencePlan`, `stopControls`
 - subjective `doneWhen` wording fails closed when it is not backed by observable checks
 - observable checks must name a command, artifact, file, API, screenshot, reviewer, threshold, status, or equivalent proof marker

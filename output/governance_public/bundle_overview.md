@@ -1,6 +1,6 @@
 # GOVERNANCE_PUBLIC_BUNDLE
 
-Generated: 2026-05-04T12:17:28.453Z
+Generated: 2026-05-29T14:36:36.056Z
 Source signoff summary: `logs/current/latest_signoff_summary.json`
 Source bundle: `logs/bundles/signoff/signoff-2026-04-18T05-27-13-996Z-f97810`
 Source turn: `logs/bundles/signoff/signoff-2026-04-18T05-27-13-996Z-f97810/raw/turns/2026-04-18/mock-thread-4__mock-turn-7`
@@ -12,6 +12,7 @@ Worker outcome: `ADOPTABLE_COMPLETE`
 Worker completion: `WORKER_COMPLETE`
 Operator action: `ADOPT`
 Reviewer start surface: `output/governance_public/reviewer_start_here.json`
+Closeout evidence page: `output/governance_public/closeout_evidence_page.html`
 Harness identity: `single_governed_harness`
 Execution route: `POST /api/exec`
 Evaluation route: `POST /api/eval/run`
@@ -48,3 +49,4 @@ Raw `logs/` evidence remains local-only; this export copies the public-auditable
 - `release_candidate_scope.md` <- `derived_from_public_trace`
 - `release_resolution.json` <- `derived_from_public_trace`
 - `release_resolution.md` <- `derived_from_public_trace`
+- `closeout_evidence_page.html` <- `derived_from_public_trace`

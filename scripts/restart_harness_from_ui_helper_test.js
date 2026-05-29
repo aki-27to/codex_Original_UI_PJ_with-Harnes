@@ -8,7 +8,7 @@ const { spawn, spawnSync } = require("child_process");
 
 const workspaceRoot = path.resolve(__dirname, "..");
 const helperPath = path.join(workspaceRoot, "scripts", "restart_harness_from_ui.js");
-const artifactRoot = path.join(workspaceRoot, "output", "harnesui-restart-helper");
+const artifactRoot = path.join(workspaceRoot, "runtime", "output-transient", "harnesui-restart-helper");
 
 function sleep(ms) {
   return new Promise((resolve) => setTimeout(resolve, Math.max(0, Number(ms) || 0)));

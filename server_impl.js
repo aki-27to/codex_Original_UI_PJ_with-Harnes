@@ -109,6 +109,11 @@ const {
   validateTaskOutcomeTurnCompatibility,
 }=require("./scripts/lib/task_outcome_policy");
 const {
+  buildGoalPreflightRecord,
+  defaultGoalPreflightContractPath,
+  loadGoalPreflightContract,
+}=require("./scripts/lib/goal_preflight_policy");
+const {
   defaultAuthorityRegistryPath,
   loadAuthorityRegistry,
 }=require("./scripts/lib/authority_registry");
@@ -545,6 +550,7 @@ const sloFailureRateMax=Number(parseRateEnv("CODEX_SLO_FAILURE_RATE_MAX","0.25",
 const sloIdempotencyConflictRateMax=Number(parseRateEnv("CODEX_SLO_IDEMPOTENCY_CONFLICT_RATE_MAX","0.05",0,1).toFixed(4));
 const harnessTurnContractSpecPath=path.join(workspaceRoot,"scripts","config","harness_contract_spec.json");
 const taskOutcomeContractPath=path.join(workspaceRoot,"scripts","config","task_outcome_contract.json");
+const goalPreflightContractPath=path.join(workspaceRoot,"scripts","config","goal_preflight_contract.json");
 const systemCoherenceReviewContractPath=path.join(workspaceRoot,"scripts","config","system_coherence_review_contract.json");
 const authorityRegistryPath=path.join(workspaceRoot,"scripts","config","authority_registry.json");
 const harnessPlaneContractPath=path.join(workspaceRoot,"scripts","config","harness_plane_contract.json");
@@ -585,6 +591,7 @@ const conversationPersonaMemoryContextTopics=3;
 const defaultEvalSuite=loadEvalSuiteSafely();
 const harnessTurnContractSpec=loadHarnessTurnContractSpecSafely();
 const taskOutcomeContract=loadTaskOutcomeContractSafely();
+const goalPreflightContract=loadGoalPreflightContractSafely();
 const systemCoherenceReviewContract=loadSystemCoherenceReviewContractSafely();
 const authorityRegistry=loadAuthorityRegistrySafely();
 const harnessPlaneContract=loadHarnessPlaneContractSafely();
@@ -800,6 +807,25 @@ function loadTaskOutcomeContractSafely(){
       return loadTaskOutcomeContract(defaultTaskOutcomeContractPath);
     }catch{
       return summarizeTaskOutcomeContract(null);
+    }
+  }
+}
+function loadGoalPreflightContractSafely(){
+  try{
+    return loadGoalPreflightContract(goalPreflightContractPath);
+  }catch(error){
+    console.warn(`[contract] failed to load goal preflight contract from ${goalPreflightContractPath}: ${error&&error.message?error.message:String(error)}`);
+    try{
+      return loadGoalPreflightContract(defaultGoalPreflightContractPath);
+    }catch{
+      return{
+        schema:"goal-preflight-contract.v1",
+        version:"",
+        requiredFields:["objective","endState","statedChecks","constraints","nonGoals","evaluator","evidencePlan","stopControls"],
+        minimumStatedChecks:1,
+        observableCheckMarkers:["command","file","api","test","reviewer","status"],
+        subjectiveDoneWhenRejectPatterns:["looks good","perfect"],
+      };
     }
   }
 }
@@ -4758,6 +4784,7 @@ function createBaseAgentState(){
     threadId:null,
     activeTurnId:null,
     goal:null,
+    goalPreflight:null,
     experimentalEnabled:defaultExperimentalFeatures.length>0,
     experimentalFeatures:new Set(defaultExperimentalFeatures),
     serviceTier:defaultCodexServiceTier,
@@ -8726,12 +8753,84 @@ function setLocalGoalForSlashCommand(state,threadId,patch={}){
   state.goal=next;
   return next;
 }
-function formatGoalForSlashCommand(goal,{source="native"}={}){
+function formatGoalForSlashCommand(goal,{source="native",preflight=null}={}){
   const normalized=normalizeGoalForSlashCommand(goal,goal&&goal.threadId);
-  if(!normalized)return`${source==="native"?"Codex goal":"HarnesUI goal"}: none`;
+  const preflightText=formatGoalPreflightForSlashCommand(preflight);
+  if(!normalized)return`${source==="native"?"Codex goal":"HarnesUI goal"}: none${preflightText}`;
   const label=source==="native"?"Codex goal":"HarnesUI goal";
   const budget=Number.isFinite(Number(normalized.tokenBudget))?`\nBudget: ${normalized.tokenBudget}`:"";
-  return`${label}: ${normalized.status}\nObjective: ${normalized.objective||"(empty)"}\nThread: ${normalized.threadId||"unknown"}${budget}`;
+  return`${label}: ${normalized.status}\nObjective: ${normalized.objective||"(empty)"}\nThread: ${normalized.threadId||"unknown"}${budget}${preflightText}`;
+}
+const goalPreflightCurrentTruthPath=path.join(workspaceRoot,"runtime","goal_preflight.json");
+function parseGoalPreflightSlashInput(raw){
+  const text=safeString(raw,4000).trim();
+  if(!text)return{objective:""};
+  if(text.startsWith("{")&&text.endsWith("}")){
+    try{
+      const parsed=JSON.parse(text);
+      if(parsed&&typeof parsed==="object"&&!Array.isArray(parsed))return parsed;
+    }catch{
+    }
+  }
+  return{objective:text};
+}
+function writeGoalPreflightCurrentTruth(record){
+  const payload=record&&typeof record==="object"?record:null;
+  if(!payload)return null;
+  try{
+    fs.mkdirSync(path.dirname(goalPreflightCurrentTruthPath),{recursive:true});
+    fs.writeFileSync(goalPreflightCurrentTruthPath,`${JSON.stringify(payload,null,2)}\n`,"utf8");
+  }catch(error){
+    logOperation("slash.goal_preflight_write_failed",{err:summarizeErrorForOperationLog(error,220)},"standard");
+  }
+  return payload;
+}
+function buildSlashGoalPreflightRecord({raw,op,threadId,agentName,source="slash_goal"}={}){
+  if(op==="clear"){
+    return{
+      schema:"goal-preflight-runtime.v1",
+      version:safeString(goalPreflightContract&&goalPreflightContract.version,80)||"",
+      generatedAt:new Date().toISOString(),
+      scope:"goal_preflight",
+      source,
+      operation:"clear",
+      threadId:safeString(threadId,160),
+      agentName:safeString(agentName,120),
+      artifactPath:"runtime/goal_preflight.json",
+      status:"CLEARED",
+      readyForLongRun:false,
+      objective:"",
+      input:{},
+      rawInput:"",
+      reasons:["goal_cleared"],
+      missingFields:[],
+      weakChecks:[],
+      subjectiveHits:[],
+      requiredFields:[],
+    };
+  }
+  const input=parseGoalPreflightSlashInput(raw);
+  return buildGoalPreflightRecord({
+    input,
+    contract:goalPreflightContract,
+    operation:op||"set",
+    threadId,
+    agentName,
+    source,
+    rawInput:raw,
+    artifactPath:"runtime/goal_preflight.json",
+  });
+}
+function formatGoalPreflightForSlashCommand(preflight){
+  const record=preflight&&typeof preflight==="object"?preflight:null;
+  if(!record)return"";
+  const status=safeString(record.status,80)||"UNKNOWN";
+  const artifact=safeString(record.artifactPath,160)||"runtime/goal_preflight.json";
+  const reasons=Array.isArray(record.reasons)&&record.reasons.length
+    ?`\nPreflight reasons: ${record.reasons.map((entry)=>safeString(entry,80)).filter(Boolean).join(", ")}`
+    :"";
+  const ready=record.readyForLongRun?"yes":"no";
+  return`\nGoal preflight: ${status}\nReady for long run: ${ready}\nPreflight artifact: ${artifact}${reasons}`;
 }
 function handleUnsupportedSlashCommand(res,command){
   replyLocalText(res,`Unrecognized command '${safeString(command,80)}'. Open /commands in the composer for available shortcuts.`);
@@ -8971,8 +9070,8 @@ async function handleSlashGoalCommand(res,argsText,agentName,sandboxMode,normali
   try{
     await withSlashGoalThread(agentName,sandboxMode,normalized,async({state,threadId})=>{
       const lower=arg.toLowerCase();
-      const op=!arg||lower==="status"||lower==="show"||lower==="get"
-        ?"get"
+        const op=!arg||lower==="status"||lower==="show"||lower==="get"
+          ?"get"
         :(lower==="clear"||lower==="reset"||lower==="remove"
           ?"clear"
           :(lower==="pause"||lower==="paused"
@@ -8981,30 +9080,37 @@ async function handleSlashGoalCommand(res,argsText,agentName,sandboxMode,normali
               ?"resume"
               :(lower==="complete"||lower==="completed"||lower==="done"
                 ?"complete"
-                :"set"))));
-      const nativeCall=async()=>{
-        if(op==="get"){
-          const result=await appServer.sendRequest("thread/goal/get",{threadId},15000);
-          const goal=normalizeGoalForSlashCommand(result&&result.goal,threadId);
-          if(goal)state.goal=goal;
-          replyLocalText(res,formatGoalForSlashCommand(goal,{source:"native"}));
+                  :"set"))));
+        const preflightRecord=op==="set"||op==="clear"
+          ?writeGoalPreflightCurrentTruth(buildSlashGoalPreflightRecord({raw:arg,op,threadId,agentName}))
+          :state.goalPreflight;
+        if(preflightRecord)state.goalPreflight=preflightRecord;
+        const setObjective=preflightRecord&&preflightRecord.input&&preflightRecord.input.objective
+          ?preflightRecord.input.objective
+          :arg;
+        const nativeCall=async()=>{
+          if(op==="get"){
+            const result=await appServer.sendRequest("thread/goal/get",{threadId},15000);
+            const goal=normalizeGoalForSlashCommand(result&&result.goal,threadId);
+            if(goal)state.goal=goal;
+            replyLocalText(res,formatGoalForSlashCommand(goal,{source:"native",preflight:state.goalPreflight}));
+            return true;
+          }
+          if(op==="clear"){
+            await appServer.sendRequest("thread/goal/clear",{threadId},15000);
+            state.goal=null;
+            replyLocalText(res,`Codex goal cleared.\nThread: ${threadId}${formatGoalPreflightForSlashCommand(state.goalPreflight)}`);
+            return true;
+          }
+          const patch=op==="set"
+            ?{objective:setObjective,status:"active"}
+            :{status:op==="pause"?"paused":(op==="resume"?"active":"complete")};
+          const result=await appServer.sendRequest("thread/goal/set",{threadId,...patch},15000);
+          const goal=normalizeGoalForSlashCommand(result&&result.goal,threadId)||setLocalGoalForSlashCommand(state,threadId,patch);
+          state.goal=goal;
+          replyLocalText(res,formatGoalForSlashCommand(goal,{source:"native",preflight:state.goalPreflight}));
           return true;
-        }
-        if(op==="clear"){
-          await appServer.sendRequest("thread/goal/clear",{threadId},15000);
-          state.goal=null;
-          replyLocalText(res,`Codex goal cleared.\nThread: ${threadId}`);
-          return true;
-        }
-        const patch=op==="set"
-          ?{objective:arg,status:"active"}
-          :{status:op==="pause"?"paused":(op==="resume"?"active":"complete")};
-        const result=await appServer.sendRequest("thread/goal/set",{threadId,...patch},15000);
-        const goal=normalizeGoalForSlashCommand(result&&result.goal,threadId)||setLocalGoalForSlashCommand(state,threadId,patch);
-        state.goal=goal;
-        replyLocalText(res,formatGoalForSlashCommand(goal,{source:"native"}));
-        return true;
-      };
+        };
       try{
         await nativeCall();
         logOperation("slash.goal.native",{a:safeString(agentName,80),th:safeString(threadId,120),op});
@@ -9014,22 +9120,22 @@ async function handleSlashGoalCommand(res,argsText,agentName,sandboxMode,normali
           throw error;
         }
         logOperation("slash.goal.fallback",{a:safeString(agentName,80),th:safeString(threadId,120),op,err:summarizeErrorForOperationLog(error,220)});
-      }
-      if(op==="get"){
-        replyLocalText(res,formatGoalForSlashCommand(state.goal,{source:"local"}));
-        return;
-      }
-      if(op==="clear"){
-        state.goal=null;
-        replyLocalText(res,`HarnesUI goal cleared.\nThread: ${threadId}\nNative Codex goal API is not available in this runtime.`);
-        return;
-      }
-      const patch=op==="set"
-        ?{objective:arg,status:"active"}
-        :{status:op==="pause"?"paused":(op==="resume"?"active":"complete")};
-      const goal=setLocalGoalForSlashCommand(state,threadId,patch);
-      replyLocalText(res,`${formatGoalForSlashCommand(goal,{source:"local"})}\nNative Codex goal API is not available in this runtime.`);
-    });
+        }
+        if(op==="get"){
+          replyLocalText(res,formatGoalForSlashCommand(state.goal,{source:"local",preflight:state.goalPreflight}));
+          return;
+        }
+        if(op==="clear"){
+          state.goal=null;
+          replyLocalText(res,`HarnesUI goal cleared.\nThread: ${threadId}${formatGoalPreflightForSlashCommand(state.goalPreflight)}\nNative Codex goal API is not available in this runtime.`);
+          return;
+        }
+        const patch=op==="set"
+          ?{objective:setObjective,status:"active"}
+          :{status:op==="pause"?"paused":(op==="resume"?"active":"complete")};
+        const goal=setLocalGoalForSlashCommand(state,threadId,patch);
+        replyLocalText(res,`${formatGoalForSlashCommand(goal,{source:"local",preflight:state.goalPreflight})}\nNative Codex goal API is not available in this runtime.`);
+      });
   }catch(error){
     replyLocalText(res,`[error] ${error&&error.message?error.message:String(error)}`);
   }
@@ -9040,8 +9146,9 @@ function buildForkedAgentState(source,sourceName){
   return{
     sessionRef:source.sessionRef||null,
     threadId:source.threadId||null,
-    activeTurnId:null,
-    goal:source.goal&&typeof source.goal==="object"?{...source.goal,threadId:source.threadId||source.sessionRef||""}:null,
+      activeTurnId:null,
+      goal:source.goal&&typeof source.goal==="object"?{...source.goal,threadId:source.threadId||source.sessionRef||""}:null,
+      goalPreflight:source.goalPreflight&&typeof source.goalPreflight==="object"?{...source.goalPreflight}:null,
     experimentalEnabled:source.experimentalEnabled,
     experimentalFeatures:new Set(Array.from(source.experimentalFeatures||[])),
     serviceTier:normalizeCodexServiceTier(source.serviceTier,defaultCodexServiceTier),

@@ -6,6 +6,7 @@
   "defaultSourceDir": "output/governance_public",
   "defaultArtifact": "output/governance_public/closeout_evidence_page.html",
   "packageCommand": "npm run artifact:evidence-page",
+  "alsoGeneratedBy": "npm run artifact:governance-public",
   "packageVisibleVerifier": "npm run test:evidence-page-goal-preflight-contract",
   "failClosedForMaterialCloseout": true,
   "selfContainedHtmlRequired": true,

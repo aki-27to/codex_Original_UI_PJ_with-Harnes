@@ -55,6 +55,7 @@ const stages = Object.freeze([
       "test:english-standalone-static-security",
       "test:harnesui-duplicate-submit-guard",
       "test:harnesui-control-state-guard",
+      "test:harnesui-goal-runtime",
       "test:harnesui-server-restart-control",
       "test:harnesui-pending-state",
       "test:harnesui-turn-snapshot",

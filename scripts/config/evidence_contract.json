@@ -71,7 +71,9 @@
     ],
     "long_autonomous_or_goal_run": [
       "goal_preflight",
-      "observable_stated_checks"
+      "observable_stated_checks",
+      "runtime/goal_preflight.json",
+      "GET /api/runtime currentTruth.goalPreflight"
     ]
   },
   "requiredTurnArtifacts": [
@@ -110,6 +112,7 @@
     "contract": "scripts/config/evidence_page_contract.json",
     "defaultArtifact": "output/governance_public/closeout_evidence_page.html",
     "packageCommand": "npm run artifact:evidence-page",
+    "alsoGeneratedBy": "npm run artifact:governance-public",
     "requiredSections": [
       "original_request",
       "acceptance_checks",
@@ -132,6 +135,8 @@
     ],
     "requiresObservableStatedChecks": true,
     "rejectsSubjectiveDoneWhen": true,
+    "runtimeCurrentTruthArtifact": "runtime/goal_preflight.json",
+    "runtimeCurrentTruthPath": "GET /api/runtime currentTruth.goalPreflight",
     "packageVisibleVerifier": "npm run test:evidence-page-goal-preflight-contract"
   }
 }
