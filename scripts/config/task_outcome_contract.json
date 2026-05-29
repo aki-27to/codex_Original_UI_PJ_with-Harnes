@@ -1,6 +1,6 @@
 {
   "schema": "task-outcome-contract.v3",
-  "version": "2026-04-12.r1",
+  "version": "2026-05-29.r1",
   "proofCarryingRequiredFields": [
     "task_id",
     "actor",
@@ -12,7 +12,9 @@
     "acceptance_coverage",
     "handoff_readiness",
     "goal_alignment_trace",
-    "adoption_decision_basis"
+    "adoption_decision_basis",
+    "reviewer_visible_evidence_page",
+    "goal_preflight"
   ],
   "decisionArtifacts": {
     "required": [
@@ -55,11 +57,16 @@
     ],
     "supplementalArtifact": "worker_completion_status.json",
     "fixedReadOrder": [
+      "closeout_evidence_page.html",
       "reviewer_start_here.json",
       "worker_decision_surface.json",
       "worker_completion_status.json",
       "bundle_overview.json"
     ],
+    "closeoutEvidencePageArtifact": "closeout_evidence_page.html",
+    "goalPreflightArtifact": "goal_preflight.json",
+    "htmlCloseoutRequiredForMaterialTasks": true,
+    "subjectiveDoneWhenFailsClosed": true,
     "backgroundTelemetryMustNotOverrideTaskVerdict": true,
     "preferredVocabulary": {
       "primary": "task_verdict",
@@ -132,6 +139,9 @@
     "parent_material_implementation_forbidden": "FAILED_VALIDATION",
     "parent_dispatch_guard_block": "FAILED_VALIDATION",
     "missing_required_evidence": "FAILED_VALIDATION",
+    "reviewer_visible_evidence_page_missing": "FAILED_VALIDATION",
+    "goal_preflight_missing": "FAILED_VALIDATION",
+    "subjective_done_when": "FAILED_VALIDATION",
     "system_coherence_review_missing": "FAILED_VALIDATION",
     "family_completion_gate_failed": "FAILED_VALIDATION",
     "silent_requirement_rewrite": "FAILED_VALIDATION",

@@ -22,6 +22,7 @@ const stages = Object.freeze([
       "test:adoption-readiness",
       "test:completion-readiness-authority",
       "test:user-facing-response-policy",
+      "test:evidence-page-goal-preflight-contract",
       "test:governance-bundle",
       "test:single-harness-multi-plane",
       "test:eval-lane-policy-path-length",

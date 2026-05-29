@@ -1,0 +1,96 @@
+{
+  "schema": "evidence-page-contract.v1",
+  "version": "2026-05-29.r1",
+  "sourceDoc": "docs/EVIDENCE_CONTRACT.md",
+  "purpose": "Provide a single reviewer-visible HTML closeout page that links the user request, acceptance checks, proof commands, runtime truth, independent review signal, adoption decision, and residual risks.",
+  "defaultSourceDir": "output/governance_public",
+  "defaultArtifact": "output/governance_public/closeout_evidence_page.html",
+  "packageCommand": "npm run artifact:evidence-page",
+  "packageVisibleVerifier": "npm run test:evidence-page-goal-preflight-contract",
+  "failClosedForMaterialCloseout": true,
+  "selfContainedHtmlRequired": true,
+  "externalNetworkDependenciesAllowed": false,
+  "requiredSections": [
+    {
+      "id": "original_request",
+      "title": "Original Request",
+      "requiredArtifacts": [
+        "request_frame.json",
+        "requirement_contract.json"
+      ]
+    },
+    {
+      "id": "acceptance_checks",
+      "title": "Acceptance Checks",
+      "requiredArtifacts": [
+        "requirement_contract.json"
+      ]
+    },
+    {
+      "id": "changed_artifacts",
+      "title": "Changed Artifacts",
+      "requiredArtifacts": [
+        "evidence_manifest.json",
+        "worker_decision_surface.json"
+      ]
+    },
+    {
+      "id": "verification_commands",
+      "title": "Verification Commands",
+      "requiredArtifacts": [
+        "evidence_manifest.json",
+        "review_load_breakdown.json"
+      ]
+    },
+    {
+      "id": "runtime_truth",
+      "title": "Runtime Truth",
+      "requiredArtifacts": [
+        "worker_decision_surface.json",
+        "stage_timeline.json",
+        "flow_trace_summary.json"
+      ]
+    },
+    {
+      "id": "reviewer_or_tester_verdict",
+      "title": "Reviewer Or Tester Verdict",
+      "requiredArtifacts": [
+        "review_load_breakdown.json"
+      ]
+    },
+    {
+      "id": "residual_risks",
+      "title": "Residual Risks",
+      "requiredArtifacts": [
+        "worker_decision_surface.json",
+        "release_decision.json"
+      ]
+    },
+    {
+      "id": "adoption_decision",
+      "title": "Adoption Decision",
+      "requiredArtifacts": [
+        "worker_decision_surface.json",
+        "adoption_readiness_eval.json",
+        "release_decision.json"
+      ]
+    }
+  ],
+  "minimumInputs": [
+    "request_frame.json",
+    "requirement_contract.json",
+    "evidence_manifest.json",
+    "worker_decision_surface.json"
+  ],
+  "reviewerReadOrder": [
+    "closeout_evidence_page.html",
+    "reviewer_start_here.json",
+    "worker_decision_surface.json",
+    "evidence_manifest.json",
+    "release_decision.json"
+  ],
+  "artifactPolicy": {
+    "trackedByDefault": false,
+    "reason": "The page is regenerated closeout evidence from tracked or runtime evidence inputs."
+  }
+}

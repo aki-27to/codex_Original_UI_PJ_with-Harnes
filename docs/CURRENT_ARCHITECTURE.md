@@ -316,3 +316,23 @@ As of 2026-04-18, the harness contract surface explicitly separates `reporting` 
 - dedicated verifier: `npm run verify:self-steering-contracts`
 - scope: checks the new runtime contract keys plus required-field metadata, the additive latent-intent grounding fields and evaluator input list in `scripts/config/adoption_readiness_evaluator_contract.json`, the additive recurrence-patch-before-promotion fields and lifecycle-step consistency in `scripts/config/correction_learning_contract.json`, and the presence of `ac-1`, `ac-2`, and `ac-3` in this architecture spec
 - proof boundary: static contract and docs consistency only; runtime artifact emission and evaluator consumption require separate runtime evidence
+
+## 13) Reviewer-Visible Closeout And Goal Preflight
+
+As of 2026-05-29, material task closeout has a single reviewer-first HTML surface instead of requiring a reviewer to infer the decision path from scattered JSON files.
+
+- evidence page contract: `scripts/config/evidence_page_contract.json`
+- default evidence page artifact: `output/governance_public/closeout_evidence_page.html`
+- generator command: `npm run artifact:evidence-page`
+- goal preflight contract: `scripts/config/goal_preflight_contract.json`
+- verifier command: `npm run test:evidence-page-goal-preflight-contract`
+
+The closeout page is generated from the existing `output/governance_public` evidence bundle and remains self-contained. It does not add a new runtime route, role split, or local orchestration lane.
+
+`/goal`, long autonomous sessions, and subjective completion claims now have a fail-closed preflight contract. The target end state must name observable stated checks, non-goals, constraints, evaluator, evidence plan, and stop controls before the run can be treated as ready for autonomous execution.
+
+### Acceptance checks
+
+- `ac-evidence-page-1`: `npm run artifact:evidence-page` writes a self-contained HTML closeout artifact with original request, acceptance checks, commands, runtime truth, reviewer/tester verdict, residual risks, and adoption decision.
+- `ac-goal-preflight-1`: subjective `doneWhen` wording is rejected unless the goal preflight has observable stated checks.
+- `ac-contract-sync-1`: the evidence page and goal preflight contracts are wired into the evidence, task outcome, system coherence, package script, and repo-quality surfaces.

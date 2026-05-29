@@ -28,6 +28,11 @@
       "skipped_checks",
       "failed_checks",
       "residual_risk_statements"
+    ],
+    "reviewer_surface": [
+      "closeout_evidence_page_html",
+      "reviewer_fixed_read_order",
+      "goal_preflight_contract"
     ]
   },
   "minimumEvidenceByChangeType": {
@@ -59,6 +64,14 @@
     ],
     "new_logic_over_delivery": [
       "dedicated_automated_tests"
+    ],
+    "material_closeout": [
+      "npm run artifact:evidence-page",
+      "closeout_evidence_page_html"
+    ],
+    "long_autonomous_or_goal_run": [
+      "goal_preflight",
+      "observable_stated_checks"
     ]
   },
   "requiredTurnArtifacts": [
@@ -92,5 +105,33 @@
         "output/submission_artifacts.json"
       ]
     }
+  },
+  "reviewerVisibleCloseout": {
+    "contract": "scripts/config/evidence_page_contract.json",
+    "defaultArtifact": "output/governance_public/closeout_evidence_page.html",
+    "packageCommand": "npm run artifact:evidence-page",
+    "requiredSections": [
+      "original_request",
+      "acceptance_checks",
+      "changed_artifacts",
+      "verification_commands",
+      "runtime_truth",
+      "reviewer_or_tester_verdict",
+      "residual_risks",
+      "adoption_decision"
+    ],
+    "failClosedWhenMissingForMaterialCloseout": true
+  },
+  "goalPreflight": {
+    "contract": "scripts/config/goal_preflight_contract.json",
+    "requiredBefore": [
+      "/goal",
+      "long_run_session",
+      "autonomous_loop",
+      "dynamic_workflow"
+    ],
+    "requiresObservableStatedChecks": true,
+    "rejectsSubjectiveDoneWhen": true,
+    "packageVisibleVerifier": "npm run test:evidence-page-goal-preflight-contract"
   }
 }

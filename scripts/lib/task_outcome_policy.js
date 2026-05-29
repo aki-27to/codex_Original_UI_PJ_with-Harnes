@@ -7,7 +7,7 @@ const defaultTaskOutcomeContractPath = path.join(__dirname, "..", "config", "tas
 
 const defaultTaskOutcomeContractDefinition = Object.freeze({
   schema: "task-outcome-contract.v3",
-  version: "2026-04-12.r1",
+  version: "2026-05-29.r1",
   proofCarryingRequiredFields: [
     "task_id",
     "actor",
@@ -20,6 +20,8 @@ const defaultTaskOutcomeContractDefinition = Object.freeze({
     "handoff_readiness",
     "goal_alignment_trace",
     "adoption_decision_basis",
+    "reviewer_visible_evidence_page",
+    "goal_preflight",
   ],
   decisionArtifacts: {
     required: ["iteration_decision.json", "release_decision.json"],
@@ -74,6 +76,9 @@ const defaultTaskOutcomeContractDefinition = Object.freeze({
     parent_material_implementation_forbidden: "FAILED_VALIDATION",
     parent_dispatch_guard_block: "FAILED_VALIDATION",
     missing_required_evidence: "FAILED_VALIDATION",
+    reviewer_visible_evidence_page_missing: "FAILED_VALIDATION",
+    goal_preflight_missing: "FAILED_VALIDATION",
+    subjective_done_when: "FAILED_VALIDATION",
     system_coherence_review_missing: "FAILED_VALIDATION",
     family_completion_gate_failed: "FAILED_VALIDATION",
     silent_requirement_rewrite: "FAILED_VALIDATION",

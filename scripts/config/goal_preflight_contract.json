@@ -1,0 +1,64 @@
+{
+  "schema": "goal-preflight-contract.v1",
+  "version": "2026-05-29.r1",
+  "sourceDoc": "docs/EVIDENCE_CONTRACT.md",
+  "purpose": "Fail closed before /goal, long autonomous sessions, or subjective completion claims unless the target state and observable checks are explicit.",
+  "appliesBefore": [
+    "/goal",
+    "long_run_session",
+    "autonomous_loop",
+    "dynamic_workflow"
+  ],
+  "requiredFields": [
+    "objective",
+    "endState",
+    "statedChecks",
+    "constraints",
+    "nonGoals",
+    "evaluator",
+    "evidencePlan",
+    "stopControls"
+  ],
+  "minimumStatedChecks": 1,
+  "observableCheckMarkers": [
+    "api",
+    "artifact",
+    "command",
+    "count",
+    "file",
+    "html",
+    "json",
+    "log",
+    "path",
+    "reviewer",
+    "screenshot",
+    "status",
+    "test",
+    "threshold"
+  ],
+  "subjectiveDoneWhenRejectPatterns": [
+    "\u3044\u3044\u611f\u3058",
+    "\u3061\u3083\u3093\u3068",
+    "\u9069\u5207",
+    "\u5b8c\u74a7",
+    "100\u70b9",
+    "\u9ad8\u54c1\u8cea",
+    "best effort",
+    "good enough",
+    "high quality",
+    "looks good",
+    "nice enough",
+    "perfect",
+    "polished"
+  ],
+  "failClosedReasons": {
+    "missing_required_field": "FAILED_VALIDATION",
+    "missing_observable_check": "FAILED_VALIDATION",
+    "subjective_done_when": "FAILED_VALIDATION",
+    "missing_evidence_plan": "FAILED_VALIDATION",
+    "missing_stop_controls": "FAILED_VALIDATION"
+  },
+  "singleWriterRequired": true,
+  "evaluatorSeparationRequired": true,
+  "packageVisibleVerifier": "npm run test:evidence-page-goal-preflight-contract"
+}

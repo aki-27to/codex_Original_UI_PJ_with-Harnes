@@ -164,3 +164,25 @@ worker-centric completion semantics are not proven by prose alone.
 
 subjective quality work では「良く見える」は evidence になりません。最低でも screenshot comparison、reviewer verdict、benchmark reasoning が必要です。
 - `SIGNOFF_ASSURANCE` runs should surface reviewer/tester/doc-sync status in `review_load_breakdown.json` for operator signoff.
+
+## 6.3 Reviewer-Visible Evidence Page
+
+Material closeout must expose one self-contained reviewer-visible HTML page before the result is treated as ready to adopt.
+
+- contract: `scripts/config/evidence_page_contract.json`
+- command: `npm run artifact:evidence-page`
+- default artifact: `output/governance_public/closeout_evidence_page.html`
+- package-visible verifier: `npm run test:evidence-page-goal-preflight-contract`
+
+The page must include the original request, acceptance checks, changed artifacts, verification commands, runtime truth, reviewer or tester verdict, residual risks, and adoption decision. A neat manifest without this closeout page is incomplete for material closeout because the reviewer still has to reconstruct the decision path manually.
+
+## 6.4 Goal Preflight
+
+`/goal`, long autonomous sessions, dynamic workflows, and subjective completion claims must start from an explicit preflight contract.
+
+- contract: `scripts/config/goal_preflight_contract.json`
+- required fields: `objective`, `endState`, `statedChecks`, `constraints`, `nonGoals`, `evaluator`, `evidencePlan`, `stopControls`
+- subjective `doneWhen` wording fails closed when it is not backed by observable checks
+- observable checks must name a command, artifact, file, API, screenshot, reviewer, threshold, status, or equivalent proof marker
+
+This prevents a long run from optimizing toward proxy neatness while the user-adoptable end state remains undefined.

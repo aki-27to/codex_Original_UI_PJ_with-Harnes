@@ -66,7 +66,9 @@
     "scripts/config/agent_governance_contracts.json",
     "scripts/config/adoption_readiness_evaluator_contract.json",
     "scripts/config/deployment_posture_profiles.json",
+    "scripts/config/evidence_page_contract.json",
     "scripts/config/evidence_contract.json",
+    "scripts/config/goal_preflight_contract.json",
     "scripts/config/harness_plane_contract.json",
     "scripts/config/iteration_control_contract.json",
     "scripts/config/task_outcome_contract.json"

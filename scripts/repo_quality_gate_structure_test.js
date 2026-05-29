@@ -30,6 +30,8 @@ function main() {
   const repoSessionGuard = String(scripts["test:repo-session-guard"] || "");
   const harnessArtifactMcp = String(scripts["test:harness-artifact-mcp"] || "");
   const mcpToolRegistryAlignment = String(scripts["test:mcp-tool-registry-alignment"] || "");
+  const evidencePageArtifact = String(scripts["artifact:evidence-page"] || "");
+  const evidencePageGoalPreflightContract = String(scripts["test:evidence-page-goal-preflight-contract"] || "");
   assert(
     repoQuality.includes("node scripts/run_repo_quality_gate.js"),
     "repo-quality must route through the stage runner"
@@ -114,6 +116,14 @@ function main() {
     mcpToolRegistryAlignment.includes("node scripts/mcp_tool_registry_alignment_test.js"),
     "test:mcp-tool-registry-alignment must validate configured MCPs against the tool registry manifest"
   );
+  assert(
+    evidencePageArtifact.includes("node scripts/generate_evidence_page.js"),
+    "artifact:evidence-page must regenerate the reviewer-visible closeout evidence HTML page"
+  );
+  assert(
+    evidencePageGoalPreflightContract.includes("node scripts/evidence_page_goal_preflight_contract_test.js"),
+    "test:evidence-page-goal-preflight-contract must validate evidence page and goal preflight contracts"
+  );
   assert(runnerSource.includes('id: "governance"'), "repo-quality runner must define the governance stage");
   assert(runnerSource.includes('id: "runtime"'), "repo-quality runner must define the runtime stage");
   assert(runnerSource.includes('id: "surfaces"'), "repo-quality runner must define the surfaces stage");
@@ -161,6 +171,10 @@ function main() {
   assert(
     runnerSource.includes('"test:github-governance-surface"'),
     "governance stage must include the github governance surface test"
+  );
+  assert(
+    runnerSource.includes('"test:evidence-page-goal-preflight-contract"'),
+    "governance stage must include evidence page and goal preflight contract checks"
   );
   assert(
     runnerSource.includes('"test:repo-local-skills"'),
