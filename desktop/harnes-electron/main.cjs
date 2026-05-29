@@ -658,7 +658,7 @@ async function runSmokeAndExit() {
     && payload.operatorPanelsHidden
     && payload.commandPaletteVisible
     && payload.attachmentsVisible
-    && payload.missionMetaVisible
+    && payload.composerWorkStateRemoved
     && payload.oldWebStatusVisible
     && payload.topbarStatusValid
     && payload.runtimePanelLabel === "接続済み"

@@ -729,7 +729,7 @@ export default function App() {
     const proposalDockVisible = isVisible(".proposal-dock");
     const runtimePanelVisible = isVisible(".runtime-panel");
     const settingsVisible = isVisible(".settings-panel");
-    const missionMetaVisible = isVisible(".work-state-meta");
+    const composerWorkStateRemoved = !document.querySelector(".work-state-meta");
     const oldWebStatusVisible = isVisible(".old-web-status");
     const oldWebStatusLabel = compactText(document.querySelector(".old-web-status strong")?.textContent, "");
     const runtimePanelLabel = compactText(document.querySelector(".runtime-panel h2")?.textContent, "");
@@ -764,7 +764,7 @@ export default function App() {
       operatorPanelsHidden: !restartVisible && !workspaceVisible && !diagnosticsVisible && !logsVisible,
       commandPaletteVisible: true,
       attachmentsVisible: true,
-      missionMetaVisible,
+      composerWorkStateRemoved,
       oldWebStatusVisible,
       oldWebStatusLabel,
       activeExec,
@@ -964,15 +964,7 @@ export default function App() {
     }
   }, [activeChat, activeChatRequest, attachments, mission, patchChat, runtime?.activeAgent, runtime?.workspaceRoot, settings]);
 
-  const activeChatWorkState = workStateForChat(activeChat, {
-    activeForChat: Boolean(activeChatRequest),
-    runtimeBusy: activeExec > 0 && !hasActiveRequests,
-  });
   const canSubmitMission = Boolean(activeChat && !activeChatRequest);
-  const missionMetaItems = useMemo(() => {
-    if (!activeChat) return [];
-    return [`状態: ${activeChatWorkState.label}`, activeChatWorkState.detail].filter(Boolean);
-  }, [activeChat, activeChatWorkState.detail, activeChatWorkState.label]);
 
   const handleMissionKeyDown = useCallback((event: ReactKeyboardEvent<HTMLTextAreaElement>) => {
     if (event.key !== "Enter" || (!event.ctrlKey && !event.metaKey) || event.repeat || event.nativeEvent.isComposing) return;
@@ -1204,11 +1196,6 @@ export default function App() {
                   onChange={(event) => void handleAttachmentPick(event.currentTarget.files)}
                 />
                 <button className="secondary small-button attachment-trigger" type="button" onClick={() => fileInputRef.current?.click()}>画像添付</button>
-                {missionMetaItems.length ? (
-                  <div className={`mission-meta work-state-meta ${activeChatWorkState.tone}`} aria-live="polite">
-                    {missionMetaItems.map((item) => <span key={item}>{item}</span>)}
-                  </div>
-                ) : null}
               </div>
               <div className="composer-submit-actions">
                 <button className="danger-button" type="button" onClick={stopActiveRequest} disabled={!activeChatRequest}>停止</button>

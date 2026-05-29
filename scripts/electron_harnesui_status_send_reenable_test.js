@@ -26,7 +26,7 @@ async function getSendButtonState(page) {
     const workState = document.querySelector(".work-state-meta");
     const root = document.documentElement;
     const activeText = document.body.innerText;
-    const clipped = Array.from(document.querySelectorAll("button, select, textarea, .panel, .chat-row, .message, .status-pill, .old-web-status, .runtime-refresh-note, .work-state-meta span, .attachment-panel, .attachment-item, .attachment-copy strong, .attachment-copy span"))
+    const clipped = Array.from(document.querySelectorAll("button, select, textarea, .panel, .chat-row, .message, .status-pill, .old-web-status, .runtime-refresh-note, .attachment-panel, .attachment-item, .attachment-copy strong, .attachment-copy span"))
       .map((element) => {
         const rect = element.getBoundingClientRect();
         const style = window.getComputedStyle(element);
@@ -80,7 +80,7 @@ async function getSendButtonState(page) {
       scrollWidth: root ? root.scrollWidth : null,
       stopDisabled: stop ? stop.disabled : null,
       textareaValue: textarea ? textarea.value : "",
-      workStateText: workState ? workState.textContent || "" : "",
+      composerWorkStateRemoved: !workState,
       hasCodexStatus: activeText.includes(">_ OpenAI Codex"),
       hasFastStatus: activeText.includes("Fast mode:"),
     };
@@ -142,6 +142,7 @@ async function main() {
     }, null, { timeout: 10000 });
     let state = await getSendButtonState(page);
     if (state.sendDisabled !== false) fail("Electron send button must remain pressable after /status returns", state);
+    if (state.composerWorkStateRemoved !== true) fail("Electron bottom composer work state must remain removed after /status returns", state);
     if (state.sendButtonClipped !== false) fail("Electron send button copy is clipped after /status returns", state);
     if (state.horizontalOverflow !== false) fail("Electron /status returned state has horizontal overflow", state);
     if (state.clipped.length) fail("Electron /status returned state has clipped UI copy", state);
@@ -162,6 +163,7 @@ async function main() {
     state = await getSendButtonState(page);
     if (!state.hasCodexStatus || !state.hasFastStatus) fail("Electron slash command transcript did not include both command outputs", state);
     if (state.sendDisabled !== false) fail("Electron send button must remain pressable after /fast status returns", state);
+    if (state.composerWorkStateRemoved !== true) fail("Electron bottom composer work state must remain removed after /fast status returns", state);
     if (state.sendButtonClipped !== false) fail("Electron send button copy is clipped after /fast status returns", state);
     if (state.horizontalOverflow !== false) fail("Electron /fast status returned state has horizontal overflow", state);
     if (state.clipped.length) fail("Electron /fast status returned state has clipped UI copy", state);

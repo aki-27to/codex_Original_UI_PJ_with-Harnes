@@ -544,16 +544,14 @@ textarea {
 
 .toggle-row,
 .composer-toolbar,
-.sidebar-actions,
-.mission-meta {
+.sidebar-actions {
   display: flex;
   flex-wrap: wrap;
   gap: 8px;
 }
 
 .toggle-row,
-.composer-toolbar,
-.mission-meta {
+.composer-toolbar {
   margin-top: 10px;
 }
 
@@ -576,26 +574,6 @@ textarea {
 
 .composer-submit-actions {
   margin-left: auto;
-}
-
-.work-state-meta.working span:first-child {
-  border-color: rgba(31, 104, 114, 0.34);
-  background: rgba(226, 243, 238, 0.94);
-}
-
-.work-state-meta.completed span:first-child {
-  border-color: rgba(15, 122, 82, 0.28);
-  background: rgba(229, 244, 235, 0.92);
-}
-
-.work-state-meta.attention span:first-child {
-  border-color: rgba(155, 47, 68, 0.28);
-  background: rgba(252, 235, 239, 0.9);
-}
-
-.work-state-meta span:first-child {
-  color: #17251f;
-  font-weight: 900;
 }
 
 .command-strip {
@@ -676,10 +654,6 @@ textarea {
   width: 100%;
 }
 
-.mission-meta {
-  margin-left: 0;
-}
-
 .attachment-panel {
   display: grid;
   gap: 8px;
@@ -754,7 +728,6 @@ textarea {
 }
 
 .attachment-list > span,
-.mission-meta span,
 .chip-row span,
 .status-chip {
   border: 1px solid rgba(39, 73, 68, 0.16);
@@ -1001,7 +974,6 @@ textarea {
 }
 
 .chat-row span,
-.mission-meta span,
 .detail-list dt,
 .detail-list dd,
 .log-row span,

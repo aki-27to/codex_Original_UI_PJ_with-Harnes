@@ -32,7 +32,7 @@ async function setWindowSize(app, width, height) {
 async function inspectLayout(page) {
   return page.evaluate(() => {
     const doc = document.documentElement;
-    const clipped = Array.from(document.querySelectorAll("button, select, textarea, .panel, .chat-row, .message, .status-pill, .old-web-status, .runtime-refresh-note, .work-state-meta span, .metric-grid article, .attachment-panel, .attachment-item, .attachment-copy strong, .attachment-copy span"))
+    const clipped = Array.from(document.querySelectorAll("button, select, textarea, .panel, .chat-row, .message, .status-pill, .old-web-status, .runtime-refresh-note, .metric-grid article, .attachment-panel, .attachment-item, .attachment-copy strong, .attachment-copy span"))
       .map((element) => {
         const rect = element.getBoundingClientRect();
         const style = window.getComputedStyle(element);
@@ -161,7 +161,7 @@ async function main() {
         && smoke.settingsVisible
         && smoke.commandPaletteVisible
         && smoke.attachmentsVisible
-        && smoke.missionMetaVisible
+        && smoke.composerWorkStateRemoved
         && smoke.oldWebStatusVisible
         && smoke.runtimeRefreshExplained
         && smoke.attachmentRowsReady
@@ -180,7 +180,6 @@ async function main() {
       "Runtime",
       "Execution settings",
       "Conversation",
-      "状態",
       "待機中",
       "/commands",
       "Web再起動",
@@ -214,15 +213,9 @@ async function main() {
     if (conversationHeaderState.hasWorkStateInHeader || /状態|作業中|完了|待機中|返信で続行|中断|要確認|状態確認中/.test(conversationHeaderState.actionText)) {
       fail("electron_harnesui_monkey_test: conversation header must not duplicate the work-state summary", conversationHeaderState);
     }
-    const workStateText = await page.locator(".work-state-meta").innerText();
-    if (!workStateText.includes("状態") || !/(作業中|完了|待機中|返信で続行|中断|要確認|状態確認中)/.test(workStateText)) {
-      fail("electron_harnesui_monkey_test: composer metadata must expose a user-facing status", { workStateText });
-    }
-    if (/入力待ち|追加指示を送ると続行できます/.test(workStateText)) {
-      fail("electron_harnesui_monkey_test: composer metadata must not show the old needs_input wording", { workStateText });
-    }
-    if (/\b(running|stream ended|completed|idle|failed|interrupted|needs_input)\b/i.test(workStateText)) {
-      fail("electron_harnesui_monkey_test: composer metadata must not expose raw runtime status", { workStateText });
+    const composerWorkStateCount = await page.locator(".work-state-meta").count();
+    if (composerWorkStateCount !== 0) {
+      fail("electron_harnesui_monkey_test: composer must not duplicate the topbar work-state summary", { composerWorkStateCount });
     }
 
     await page.evaluate(() => {
@@ -242,14 +235,11 @@ async function main() {
     await page.reload({ waitUntil: "domcontentloaded" });
     await page.waitForFunction(() => {
       const smoke = window.__harnesElectronSmoke;
-      return Boolean(smoke?.runtimeOk && smoke?.runtimePanelVisible && smoke?.missionMetaVisible);
+      return Boolean(smoke?.runtimeOk && smoke?.runtimePanelVisible && smoke?.composerWorkStateRemoved);
     }, null, { timeout: 180000 });
-    const needsInputWorkStateText = await page.locator(".work-state-meta").innerText();
-    if (!needsInputWorkStateText.includes("状態") || !needsInputWorkStateText.includes("返信で続行")) {
-      fail("electron_harnesui_monkey_test: needs_input worst-state metadata must show reply-to-continue wording", { needsInputWorkStateText });
-    }
-    if (/入力待ち|追加指示を送ると続行できます/.test(needsInputWorkStateText)) {
-      fail("electron_harnesui_monkey_test: needs_input worst-state metadata must not show the old wording", { needsInputWorkStateText });
+    const needsInputComposerWorkStateCount = await page.locator(".work-state-meta").count();
+    if (needsInputComposerWorkStateCount !== 0) {
+      fail("electron_harnesui_monkey_test: needs_input state must not restore bottom composer work-state metadata", { needsInputComposerWorkStateCount });
     }
     const needsInputScreenshot = path.join(outDir, "needs-input-resend-ready.png");
     await page.screenshot({ path: needsInputScreenshot, fullPage: true });
@@ -257,7 +247,7 @@ async function main() {
     report.inspections.push({
       name: "needs-input-resend-ready",
       ...(await inspectLayout(page)),
-      workStateText: needsInputWorkStateText,
+      composerWorkStateCount: needsInputComposerWorkStateCount,
     });
 
     await page.locator("textarea").first().fill("Electron renderer smoke input. ".repeat(24));
@@ -265,15 +255,18 @@ async function main() {
       const buttons = Array.from(document.querySelectorAll("button"));
       const stop = buttons.find((button) => button.textContent && button.textContent.trim() === "停止");
       const send = buttons.find((button) => button.textContent && button.textContent.trim() === "送信");
-      const stateText = document.querySelector(".work-state-meta")?.textContent || "";
+      const composerWorkStatePresent = Boolean(document.querySelector(".work-state-meta"));
       return {
         stopDisabled: stop ? stop.disabled : null,
         sendDisabled: send ? send.disabled : null,
-        stateText,
+        composerWorkStatePresent,
       };
     });
     if (idleComposerState.stopDisabled !== true || idleComposerState.sendDisabled !== false) {
       fail("electron_harnesui_monkey_test: idle active chat with draft must allow send and keep stop disabled", idleComposerState);
+    }
+    if (idleComposerState.composerWorkStatePresent) {
+      fail("electron_harnesui_monkey_test: idle composer must not restore bottom work-state metadata", idleComposerState);
     }
     const fixturePath = path.join(outDir, "attachment-fixture.png");
     fs.writeFileSync(fixturePath, Buffer.from("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+/p9sAAAAASUVORK5CYII=", "base64"));
