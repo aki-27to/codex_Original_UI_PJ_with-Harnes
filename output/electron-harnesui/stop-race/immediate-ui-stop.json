@@ -1,0 +1,38 @@
+{
+  "generatedAt": "2026-05-29T15:59:04.622Z",
+  "consoleErrors": [],
+  "pageErrors": [],
+  "requestFailures": [],
+  "checks": {
+    "before": {
+      "stopDisabled": true,
+      "sendDisabled": false,
+      "workState": "状態: 作業中backendで実行中です。",
+      "timeline": "System0:59:08依頼を送ると、この枠に進行と最終結果が流れます。",
+      "hasNoMatch": false,
+      "hasInterrupted": false
+    },
+    "inflight": {
+      "stopDisabled": false,
+      "sendDisabled": true,
+      "workState": "状態: 作業中送信中です。",
+      "timeline": "You0:59:08Immediate Stop race UI replay. Stop this request as soon as the button is available.Codex0:59:08ストリーム待機中...",
+      "hasNoMatch": false,
+      "hasInterrupted": false
+    },
+    "afterStop": {
+      "stopDisabled": true,
+      "sendDisabled": false,
+      "workState": "状態: 中断直近の依頼は停止しました。次の依頼を送信できます。",
+      "timeline": "You0:59:08Immediate Stop race UI replay. Stop this request as soon as the button is available.Codex0:59:08ストリーム待機中...",
+      "hasNoMatch": false,
+      "hasInterrupted": true
+    },
+    "layout": {
+      "horizontalOverflow": false,
+      "scrollWidth": 1304,
+      "clientWidth": 1304
+    },
+    "screenshot": "output/electron-harnesui/stop-race/immediate-ui-stop.png"
+  }
+}

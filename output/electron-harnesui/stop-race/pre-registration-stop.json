@@ -1,0 +1,14 @@
+{
+  "requestId": "electron-stop-race-1780070530694",
+  "cancel": {
+    "ok": true,
+    "requestId": "electron-stop-race-1780070530694",
+    "pending": true
+  },
+  "submit": {
+    "ok": true,
+    "requestId": "electron-stop-race-1780070530694",
+    "idempotencyKey": "electron-exec-1780070532221-d63v4sit",
+    "cancelledBeforeStart": true
+  }
+}

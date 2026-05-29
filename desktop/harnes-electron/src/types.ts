@@ -85,6 +85,7 @@ export type ExecSubmitResult = {
   ok: boolean;
   requestId: string;
   idempotencyKey: string;
+  cancelledBeforeStart?: boolean;
 };
 
 export type ExecEventPayload = {
@@ -156,7 +157,7 @@ export type HarnesDesktopApi = {
   getCurrentLogs: () => Promise<CurrentLogsPayload>;
   getDiagnostics: () => Promise<DiagnosticsPayload>;
   submitExec: (payload: ExecSubmitPayload) => Promise<ExecSubmitResult>;
-  cancelExec: (requestId: string) => Promise<{ ok: boolean; requestId?: string; error?: string }>;
+  cancelExec: (requestId: string) => Promise<{ ok: boolean; requestId?: string; pending?: boolean; error?: string }>;
   restartBackend: () => Promise<RestartResult>;
   lockWorkspace: (targetPath: string) => Promise<WorkspaceMutationResult>;
   unlockWorkspace: () => Promise<WorkspaceMutationResult>;

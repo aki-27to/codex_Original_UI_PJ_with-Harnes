@@ -55,6 +55,7 @@ const OLD_INPUT_WAIT_DETAIL = "\u8ffd\u52a0\u6307\u793a\u3092\u9001\u308b\u3068\
   "desktop/harnes-electron/src/App.tsx",
   "desktop/harnes-electron/src/main.tsx",
   "desktop/harnes-electron/src/styles.css",
+  "scripts/electron_harnesui_stop_race_test.js",
   "web/01.HarnesUI/index.html",
   "server/routes/exec_routes.js",
   "server/routes/eval_routes.js",
@@ -62,7 +63,7 @@ const OLD_INPUT_WAIT_DETAIL = "\u8ffd\u52a0\u6307\u793a\u3092\u9001\u308b\u3068\
 ].forEach(mustExist);
 
 const pkg = JSON.parse(read("package.json"));
-["harnes:app", "harnes:desktop", "harnes:web", "electron:harnes", "electron:harnes:build", "electron:harnes:typecheck", "electron:harnes:smoke", "electron:harnes:monkey", "test:electron-harnesui"].forEach((scriptName) => {
+["harnes:app", "harnes:desktop", "harnes:web", "electron:harnes", "electron:harnes:build", "electron:harnes:typecheck", "electron:harnes:smoke", "electron:harnes:monkey", "electron:harnes:stop-race", "test:electron-harnesui"].forEach((scriptName) => {
   if (!pkg.scripts || !pkg.scripts[scriptName]) fail(`missing package script: ${scriptName}`);
 });
 if (pkg.scripts["harnes:app"] !== "npm run electron:harnes") fail("harnes:app must launch the Electron desktop app");
@@ -127,6 +128,10 @@ mustInclude(main, "Referer:", "Electron main");
 mustInclude(main, "images", "Electron main attachment payload");
 mustInclude(main, 'path: "/api/exec"', "Electron main");
 mustInclude(main, "isTerminalExecStatus", "Electron main terminal status guard");
+mustInclude(main, "pendingCancelRequests", "Electron main must remember Stop clicks that arrive before submit registration");
+mustInclude(main, "consumePendingCancel(requestId)", "Electron main must consume pre-registration Stop before sending /api/exec");
+mustInclude(main, "cancelledBeforeStart", "Electron main submit result must report pre-start cancellation to the renderer");
+mustInclude(main, "pending: true", "Electron main cancel result must hide the pre-registration Stop race from users");
 mustInclude(main, "terminalStatusEmitted", "Electron main stream-end fallback status guard");
 mustInclude(main, 'forwardExecEvent({ type: "status", status: streamErrorSeen ? "failed" : "completed" })', "Electron main stream-end must settle renderer state");
 mustInclude(main, "/api/server/restart", "Electron main");
@@ -268,6 +273,8 @@ mustNotInclude(app, '<p className="eyebrow">Mission</p>', "Electron renderer sho
 mustNotInclude(app, '<h2>{activeChat?.title || "Mission"}</h2>', "Electron renderer should not show redundant active chat title above composer");
 mustInclude(app, "submitExec", "Electron renderer");
 mustInclude(app, "cancelExec", "Electron renderer");
+mustInclude(app, "result.cancelledBeforeStart", "Electron renderer must settle pre-start Stop as an interrupted request");
+mustInclude(app, "[停止] 送信前に停止しました。", "Electron renderer must show clear copy for pre-start Stop");
 mustInclude(app, "POST /api/exec", "Electron renderer route copy");
 mustInclude(app, "POST /api/eval/run", "Electron renderer route copy");
 if (app.indexOf('className="panel conversation-panel full-span"') > app.indexOf('className="panel mission-panel full-span"')) {

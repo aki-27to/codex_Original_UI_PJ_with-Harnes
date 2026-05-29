@@ -923,6 +923,23 @@ export default function App() {
         executionProfile: "custom",
         executionIntent: "electron-ui-interactive",
       });
+      if (result.cancelledBeforeStart) {
+        requestMap.current.delete(requestId);
+        setActiveRequests((current) => current.filter((request) => request.requestId !== requestId));
+        patchChat(activeChat.id, (chat) => ({
+          ...chat,
+          status: "interrupted",
+          idempotencyKey: result.idempotencyKey,
+          activity: "user interrupted",
+          messages: chat.messages.map((message) => (
+            message.id === assistant.id && !message.content
+              ? { ...message, content: "[停止] 送信前に停止しました。" }
+              : message
+          )),
+          updatedAt: new Date().toISOString(),
+        }));
+        return;
+      }
       patchChat(activeChat.id, (chat) => ({
         ...chat,
         idempotencyKey: result.idempotencyKey,

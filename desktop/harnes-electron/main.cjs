@@ -30,6 +30,7 @@ app.on("second-instance", () => {
   mainWindow.focus();
 });
 const execControllers = new Map();
+const pendingCancelRequests = new Map();
 let state = {
   status: "starting",
   backendUrl,
@@ -130,6 +131,24 @@ function isTerminalExecStatus(status) {
   return ["completed", "failed", "interrupted", "needs_input"].includes(String(status || "").toLowerCase());
 }
 
+function rememberPendingCancel(requestId) {
+  const key = String(requestId || "").trim();
+  if (!key) return false;
+  const now = Date.now();
+  pendingCancelRequests.set(key, now);
+  for (const [storedKey, startedAt] of pendingCancelRequests.entries()) {
+    if (now - Number(startedAt || 0) > 30000) pendingCancelRequests.delete(storedKey);
+  }
+  return true;
+}
+
+function consumePendingCancel(requestId) {
+  const key = String(requestId || "").trim();
+  if (!key || !pendingCancelRequests.has(key)) return false;
+  pendingCancelRequests.delete(key);
+  return true;
+}
+
 function normalizeExecPayload(payload) {
   const source = payload && typeof payload === "object" ? payload : {};
   const prompt = typeof source.prompt === "string" ? source.prompt : "";
@@ -192,6 +211,9 @@ async function submitExecFromElectron(event, sourcePayload) {
     ? sourcePayload.requestId.trim()
     : payload.idempotencyKey;
   if (execControllers.has(requestId)) throw new Error(`Exec request is already active: ${requestId}`);
+  if (consumePendingCancel(requestId)) {
+    return { ok: true, requestId, idempotencyKey: payload.idempotencyKey, cancelledBeforeStart: true };
+  }
   const body = Buffer.from(JSON.stringify(payload));
   const headers = {
     accept: "application/x-ndjson, application/json",
@@ -282,7 +304,11 @@ async function submitExecFromElectron(event, sourcePayload) {
 function cancelExecFromElectron(requestId) {
   const key = String(requestId || "").trim();
   const active = key ? execControllers.get(key) : null;
-  if (!active || !active.req) return { ok: false, error: "No active exec request matched." };
+  if (!active || !active.req) {
+    return rememberPendingCancel(key)
+      ? { ok: true, requestId: key, pending: true }
+      : { ok: false, error: "No active exec request matched." };
+  }
   active.req.destroy(new Error("electron-ui-cancelled"));
   execControllers.delete(key);
   return { ok: true, requestId: key };

@@ -17,6 +17,7 @@
     "electron:harnes:typecheck": "tsc -p desktop/harnes-electron/tsconfig.json --noEmit",
     "electron:harnes:smoke": "npm run electron:harnes:build && node scripts/electron_harnesui_smoke_test.js",
     "electron:harnes:monkey": "npm run electron:harnes:build && node scripts/electron_harnesui_monkey_test.js",
+    "electron:harnes:stop-race": "npm run electron:harnes:build && node scripts/electron_harnesui_stop_race_test.js",
     "test:electron-harnesui": "node scripts/electron_harnesui_static_test.js && npm run electron:harnes:typecheck",
     "help:scripts": "node scripts/script_surface_help.js",
     "repo:preflight": "node scripts/repo_session_preflight.js",
