@@ -131,6 +131,27 @@ function isTerminalExecStatus(status) {
   return ["completed", "failed", "interrupted", "needs_input"].includes(String(status || "").toLowerCase());
 }
 
+function markExecControllerSettled(requestId) {
+  const active = execControllers.get(requestId);
+  if (!active || active.settled) return false;
+  active.settled = true;
+  execControllers.delete(requestId);
+  return true;
+}
+
+function destroyExecController(active) {
+  if (!active) return;
+  const error = new Error("electron-ui-cancelled");
+  try {
+    if (active.res && !active.res.destroyed) active.res.destroy(error);
+  } catch (_error) {
+  }
+  try {
+    if (active.req && !active.req.destroyed) active.req.destroy(error);
+  } catch (_error) {
+  }
+}
+
 function rememberPendingCancel(requestId) {
   const key = String(requestId || "").trim();
   if (!key) return false;
@@ -231,12 +252,27 @@ async function submitExecFromElectron(event, sourcePayload) {
       headers,
     },
     (res) => {
+      res.on("error", (error) => {
+        if (!markExecControllerSettled(requestId)) return;
+        const cancelled = error && error.message === "electron-ui-cancelled";
+        sendExecEvent(requestId, { type: "error", text: cancelled ? "user interrupted" : error.message || String(error) });
+        sendExecEvent(requestId, { type: "status", status: cancelled ? "interrupted" : "failed" });
+      });
+      const activeController = execControllers.get(requestId);
+      if (!activeController || activeController.settled) {
+        res.destroy(new Error("electron-ui-cancelled"));
+        return;
+      }
+      activeController.res = res;
       const statusCode = Number(res.statusCode || 0);
       const contentType = String(res.headers["content-type"] || "").toLowerCase();
       if (statusCode < 200 || statusCode >= 300 || !contentType.includes("application/x-ndjson")) {
         const chunks = [];
         res.on("data", (chunk) => chunks.push(chunk));
         res.on("end", () => {
+          const active = execControllers.get(requestId);
+          if (!active || active.settled) return;
+          active.settled = true;
           const text = Buffer.concat(chunks).toString("utf8");
           sendExecEvent(requestId, { type: "error", text: text || `HTTP ${statusCode}` });
           sendExecEvent(requestId, { type: "status", status: "failed" });
@@ -248,6 +284,8 @@ async function submitExecFromElectron(event, sourcePayload) {
       let terminalStatusEmitted = false;
       let streamErrorSeen = false;
       const forwardExecEvent = (event) => {
+        const active = execControllers.get(requestId);
+        if (!active || active.settled) return;
         if (event && typeof event === "object") {
           if (event.type === "status" && isTerminalExecStatus(event.status)) terminalStatusEmitted = true;
           if (event.type === "error") streamErrorSeen = true;
@@ -280,21 +318,24 @@ async function submitExecFromElectron(event, sourcePayload) {
       };
       res.on("data", (chunk) => flush(chunk.toString("utf8")));
       res.on("end", () => {
+        const active = execControllers.get(requestId);
+        if (!active || active.settled) return;
         flush("", true);
         if (!terminalStatusEmitted) {
           forwardExecEvent({ type: "status", status: streamErrorSeen ? "failed" : "completed" });
         }
         sendExecEvent(requestId, { type: "stream-end" });
+        active.settled = true;
         execControllers.delete(requestId);
       });
     },
   );
   execControllers.set(requestId, { req, startedAt: Date.now() });
   req.on("error", (error) => {
+    if (!markExecControllerSettled(requestId)) return;
     const cancelled = error && error.message === "electron-ui-cancelled";
     sendExecEvent(requestId, { type: "error", text: cancelled ? "user interrupted" : error.message || String(error) });
     sendExecEvent(requestId, { type: "status", status: cancelled ? "interrupted" : "failed" });
-    execControllers.delete(requestId);
   });
   req.write(body);
   req.end();
@@ -309,7 +350,7 @@ function cancelExecFromElectron(requestId) {
       ? { ok: true, requestId: key, pending: true }
       : { ok: false, error: "No active exec request matched." };
   }
-  active.req.destroy(new Error("electron-ui-cancelled"));
+  destroyExecController(active);
   execControllers.delete(key);
   return { ok: true, requestId: key };
 }
@@ -701,10 +742,7 @@ app.on("window-all-closed", () => {
 app.on("before-quit", () => {
   quitting = true;
   for (const [requestId, active] of execControllers.entries()) {
-    try {
-      if (active && active.req) active.req.destroy(new Error("electron-ui-cancelled"));
-    } catch (_error) {
-    }
+    destroyExecController(active);
     execControllers.delete(requestId);
   }
   if (backendProcess && state.owned) {

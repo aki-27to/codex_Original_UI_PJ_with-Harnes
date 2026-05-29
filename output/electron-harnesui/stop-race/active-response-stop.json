@@ -1,0 +1,17 @@
+{
+  "requestId": "electron-active-stop-1780096185226",
+  "submit": {
+    "ok": true,
+    "requestId": "electron-active-stop-1780096185226",
+    "idempotencyKey": "electron-exec-1780096185225-lpyajoe5"
+  },
+  "cancel": {
+    "ok": true,
+    "requestId": "electron-active-stop-1780096185226"
+  },
+  "mock": {
+    "execStarted": 1,
+    "execClosed": 1,
+    "activeExecRequests": 0
+  }
+}

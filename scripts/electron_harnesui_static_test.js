@@ -132,6 +132,10 @@ mustInclude(main, "pendingCancelRequests", "Electron main must remember Stop cli
 mustInclude(main, "consumePendingCancel(requestId)", "Electron main must consume pre-registration Stop before sending /api/exec");
 mustInclude(main, "cancelledBeforeStart", "Electron main submit result must report pre-start cancellation to the renderer");
 mustInclude(main, "pending: true", "Electron main cancel result must hide the pre-registration Stop race from users");
+mustInclude(main, "activeController.res = res", "Electron main Stop must own the streaming response, not only the request handle");
+mustInclude(main, "destroyExecController(active)", "Electron main Stop must tear down the active request and response handles");
+mustInclude(main, "active.res.destroy(error)", "Electron main Stop must abort the streaming response so the backend observes client close");
+mustInclude(main, 'res.on("error"', "Electron main must settle cancelled response streams");
 mustInclude(main, "terminalStatusEmitted", "Electron main stream-end fallback status guard");
 mustInclude(main, 'forwardExecEvent({ type: "status", status: streamErrorSeen ? "failed" : "completed" })', "Electron main stream-end must settle renderer state");
 mustInclude(main, "/api/server/restart", "Electron main");
