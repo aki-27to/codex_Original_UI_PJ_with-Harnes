@@ -1,0 +1,108 @@
+{
+  "schema": "structured-work-graph-experiment.v1",
+  "version": "2026-05-29.r1",
+  "purpose": "Trial a small dependency graph for selecting ready Harnes work without creating a general issue tracker.",
+  "selectionRule": "ready_when_all_dependencies_are_done_and_task_is_not_done",
+  "successMetric": "ready_work_selection",
+  "maxTaskCount": 5,
+  "tasks": [
+    {
+      "id": "lock_goal_contract",
+      "label": "Lock goal contract",
+      "dependsOn": [],
+      "acceptance": [
+        "goal_preflight_ready",
+        "non_goals_explicit"
+      ]
+    },
+    {
+      "id": "single_writer_implementation",
+      "label": "Single-writer implementation",
+      "dependsOn": [
+        "lock_goal_contract"
+      ],
+      "acceptance": [
+        "changed_artifacts_owned",
+        "no_parallel_writer_conflict"
+      ]
+    },
+    {
+      "id": "independent_evaluator",
+      "label": "Independent evaluator",
+      "dependsOn": [
+        "single_writer_implementation"
+      ],
+      "acceptance": [
+        "read_only_findings",
+        "severity_ordered_verdict"
+      ]
+    },
+    {
+      "id": "reviewer_visible_closeout",
+      "label": "Reviewer-visible closeout",
+      "dependsOn": [
+        "independent_evaluator"
+      ],
+      "acceptance": [
+        "closeout_evidence_page_html",
+        "turn_trace_readout_html",
+        "residual_risks_explicit"
+      ]
+    },
+    {
+      "id": "memory_index_refresh",
+      "label": "Memory index refresh",
+      "dependsOn": [
+        "reviewer_visible_closeout"
+      ],
+      "acceptance": [
+        "human_readable_source_pointer",
+        "machine_readable_index_pointer"
+      ]
+    }
+  ],
+  "sampleStates": [
+    {
+      "id": "empty_start",
+      "done": [],
+      "expectedReady": [
+        "lock_goal_contract"
+      ]
+    },
+    {
+      "id": "after_goal_lock",
+      "done": [
+        "lock_goal_contract"
+      ],
+      "expectedReady": [
+        "single_writer_implementation"
+      ]
+    },
+    {
+      "id": "after_implementation",
+      "done": [
+        "lock_goal_contract",
+        "single_writer_implementation"
+      ],
+      "expectedReady": [
+        "independent_evaluator"
+      ]
+    },
+    {
+      "id": "after_evaluator",
+      "done": [
+        "lock_goal_contract",
+        "single_writer_implementation",
+        "independent_evaluator"
+      ],
+      "expectedReady": [
+        "reviewer_visible_closeout"
+      ]
+    }
+  ],
+  "nonGoals": [
+    "replace GitHub issues",
+    "allow multiple file-writing agents",
+    "store long prose memory in the task graph"
+  ]
+}

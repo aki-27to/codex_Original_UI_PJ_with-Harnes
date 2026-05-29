@@ -1,0 +1,49 @@
+{
+  "schema": "turn-trace-readout-contract.v1",
+  "version": "2026-05-29.r1",
+  "purpose": "Provide one reviewer-visible HTML page for a meaningful run trace: what happened, which evidence exists, where judgment changed, and what remains uncertain.",
+  "defaultArtifact": "output/governance_public/turn_trace_readout.html",
+  "packageCommand": "npm run artifact:turn-trace-readout",
+  "sourceArtifacts": [
+    "output/governance_public/request_frame.json",
+    "output/governance_public/flow_trace_summary.json",
+    "output/governance_public/stage_timeline.json",
+    "output/governance_public/evidence_manifest.json",
+    "output/governance_public/review_bundle.json",
+    "output/governance_public/worker_decision_surface.json",
+    "output/governance_public/release_decision.json",
+    "output/governance_public/export_manifest.json"
+  ],
+  "requiredSections": [
+    "overview",
+    "timeline",
+    "tool_and_evidence",
+    "decisions",
+    "divergence_and_risks",
+    "changed_artifacts"
+  ],
+  "requiredModelFields": [
+    "userRequest",
+    "selectedPlanningDepth",
+    "selectedAssuranceDepth",
+    "executionFlow",
+    "finalOutcome",
+    "stageCount",
+    "dispatchCount",
+    "reviewerObserved",
+    "testerObserved",
+    "evidenceSourceCount",
+    "changedArtifactCount"
+  ],
+  "redactionRules": {
+    "mustNotExposeWorkspaceAbsolutePath": true,
+    "sourcePathsMustBeRepoRelativeWherePossible": true,
+    "rawLogsRemainLocalOnly": true
+  },
+  "closeoutIntegration": {
+    "includedInGovernancePublicBundle": true,
+    "reviewerReadOrderPosition": "after_closeout_evidence_page",
+    "doesNotCreateRuntimeRoute": true,
+    "doesNotChangeWriterAuthority": true
+  }
+}

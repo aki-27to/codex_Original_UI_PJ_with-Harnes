@@ -13,6 +13,7 @@ Worker completion: `WORKER_COMPLETE`
 Operator action: `ADOPT`
 Reviewer start surface: `output/governance_public/reviewer_start_here.json`
 Closeout evidence page: `output/governance_public/closeout_evidence_page.html`
+Turn trace readout: `output/governance_public/turn_trace_readout.html`
 Harness identity: `single_governed_harness`
 Execution route: `POST /api/exec`
 Evaluation route: `POST /api/eval/run`
@@ -50,3 +51,4 @@ Raw `logs/` evidence remains local-only; this export copies the public-auditable
 - `release_resolution.json` <- `derived_from_public_trace`
 - `release_resolution.md` <- `derived_from_public_trace`
 - `closeout_evidence_page.html` <- `derived_from_public_trace`
+- `turn_trace_readout.html` <- `derived_from_public_trace`

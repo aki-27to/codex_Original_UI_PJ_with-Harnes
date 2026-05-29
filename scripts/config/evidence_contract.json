@@ -31,8 +31,13 @@
     ],
     "reviewer_surface": [
       "closeout_evidence_page_html",
+      "turn_trace_readout_html",
       "reviewer_fixed_read_order",
-      "goal_preflight_contract"
+      "goal_preflight_contract",
+      "generator_evaluator_pairing_contract",
+      "structured_work_graph_ready_selection",
+      "app_server_schema_drift_report",
+      "local_memory_search_index"
     ]
   },
   "minimumEvidenceByChangeType": {
@@ -74,6 +79,14 @@
       "observable_stated_checks",
       "runtime/goal_preflight.json",
       "GET /api/runtime currentTruth.goalPreflight"
+    ],
+    "masao_applied_harness_change": [
+      "npm run test:masao-application-contract",
+      "turn_trace_readout_html",
+      "generator_evaluator_pairing_contract",
+      "structured_work_graph_ready_selection",
+      "app_server_schema_drift_report",
+      "local_memory_search_index"
     ]
   },
   "requiredTurnArtifacts": [
@@ -113,6 +126,12 @@
     "defaultArtifact": "output/governance_public/closeout_evidence_page.html",
     "packageCommand": "npm run artifact:evidence-page",
     "alsoGeneratedBy": "npm run artifact:governance-public",
+    "turnTraceReadout": {
+      "contract": "scripts/config/turn_trace_readout_contract.json",
+      "defaultArtifact": "output/governance_public/turn_trace_readout.html",
+      "packageCommand": "npm run artifact:turn-trace-readout",
+      "alsoGeneratedBy": "npm run artifact:governance-public"
+    },
     "requiredSections": [
       "original_request",
       "acceptance_checks",
@@ -138,5 +157,20 @@
     "runtimeCurrentTruthArtifact": "runtime/goal_preflight.json",
     "runtimeCurrentTruthPath": "GET /api/runtime currentTruth.goalPreflight",
     "packageVisibleVerifier": "npm run test:evidence-page-goal-preflight-contract"
+  },
+  "masaoAppliedHarness": {
+    "contract": "scripts/config/masao_application_contract.json",
+    "sourceBoundary": "derived patterns only; paid source text must not be copied into Harnes docs",
+    "aggregateVerifier": "npm run test:masao-application-contract",
+    "coveredWorkItems": [
+      "p0_evidence_page_contract",
+      "p0_goal_preflight_contract",
+      "p1_turn_trace_readout",
+      "p1_skill_portfolio_audit",
+      "p1_generator_evaluator_pairing",
+      "p2_structured_work_graph_experiment",
+      "p2_external_memory_search_layer",
+      "p2_app_server_schema_drift_check"
+    ]
   }
 }

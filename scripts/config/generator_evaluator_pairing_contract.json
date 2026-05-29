@@ -1,0 +1,43 @@
+{
+  "schema": "generator-evaluator-pairing-contract.v1",
+  "version": "2026-05-29.r1",
+  "purpose": "Make generator/evaluator separation first-class for subjective, design-sensitive, or high-blast-radius Harnes work.",
+  "generatorRoles": [
+    "frontend_worker",
+    "backend_worker",
+    "infra_worker"
+  ],
+  "evaluatorRoles": [
+    "reviewer",
+    "tester",
+    "explorer"
+  ],
+  "readOnlyEvaluatorRoles": [
+    "reviewer",
+    "explorer"
+  ],
+  "verificationOnlyEvaluatorRoles": [
+    "reviewer",
+    "tester",
+    "explorer"
+  ],
+  "requiredGateInputs": [
+    "user_request_original",
+    "task_contract_locked",
+    "artifact_comparison_evidence",
+    "evaluator_findings",
+    "final_artifact_summary"
+  ],
+  "completionGateArtifacts": [
+    "review_bundle.json",
+    "adoption_readiness_eval.json",
+    "worker_decision_surface.json",
+    "closeout_evidence_page.html",
+    "turn_trace_readout.html"
+  ],
+  "prohibitions": [
+    "self_review_as_completion_gate",
+    "evaluator_silent_goal_rewrite",
+    "parallel_file_writers_without_integration_owner"
+  ]
+}

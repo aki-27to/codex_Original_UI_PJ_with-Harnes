@@ -1,0 +1,87 @@
+{
+  "schema": "app-server-schema-contract.v1",
+  "version": "2026-05-29.r1",
+  "purpose": "Detect drift between documented Harnes app-server route assumptions and the route modules that actually handle requests.",
+  "reportArtifact": "runtime/output-transient/app-server-schema-drift/report.json",
+  "packageCommand": "npm run test:app-server-schema-drift",
+  "primaryRoutes": [
+    {
+      "id": "exec",
+      "method": "POST",
+      "path": "/api/exec",
+      "source": "server/routes/exec_routes.js",
+      "primary": true
+    },
+    {
+      "id": "eval_run",
+      "method": "POST",
+      "path": "/api/eval/run",
+      "source": "server/routes/eval_routes.js",
+      "primary": true
+    },
+    {
+      "id": "runtime",
+      "method": "GET",
+      "path": "/api/runtime",
+      "source": "server/bootstrap.js",
+      "primary": true
+    }
+  ],
+  "expectedRoutes": [
+    {
+      "id": "exec_idempotency",
+      "method": "GET",
+      "pathPrefix": "/api/exec/idempotency/",
+      "source": "server/routes/exec_routes.js"
+    },
+    {
+      "id": "eval_suites",
+      "method": "GET",
+      "path": "/api/eval/suites",
+      "source": "server/routes/eval_routes.js"
+    },
+    {
+      "id": "eval_history",
+      "method": "GET",
+      "path": "/api/eval/history",
+      "source": "server/routes/eval_routes.js"
+    },
+    {
+      "id": "batch_run",
+      "method": "POST",
+      "path": "/api/batch/run",
+      "source": "server/routes/batch_routes.js",
+      "allowedAuxiliary": true
+    },
+    {
+      "id": "batch_status",
+      "method": "GET",
+      "path": "/api/batch/status",
+      "source": "server/routes/batch_routes.js",
+      "allowedAuxiliary": true
+    }
+  ],
+  "requestHandler": {
+    "source": "server/request_handler.js",
+    "requiredRouteFactories": [
+      "createOverviewRoutes",
+      "createBatchRoutes",
+      "createControlRoutes",
+      "createAppRoutes",
+      "createConversationRoutes",
+      "createVoiceRoutes",
+      "createReplayRoutes",
+      "createEvalRoutes",
+      "createExecRoutes"
+    ],
+    "unknownApiRouteBehavior": "404"
+  },
+  "allowedAuxiliaryRoutePrefixes": [
+    "/api/batch/"
+  ],
+  "forbiddenRoutePatterns": [
+    "role-specific primary endpoint",
+    "parallel local orchestration",
+    "parallel harness"
+  ]
+}

@@ -177,6 +177,10 @@ function main() {
     "governance stage must include evidence page and goal preflight contract checks"
   );
   assert(
+    runnerSource.includes('"test:masao-application-contract"'),
+    "governance stage must include Masao application contract checks"
+  );
+  assert(
     runnerSource.includes('"test:repo-local-skills"'),
     "governance stage must include repo-local skill catalog checks"
   );

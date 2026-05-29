@@ -341,3 +341,26 @@ The closeout page is generated from the existing `output/governance_public` evid
 - `ac-goal-preflight-1`: subjective `doneWhen` wording is rejected unless the goal preflight has observable stated checks.
 - `ac-goal-preflight-2`: HarnesUI `/goal` writes `runtime/goal_preflight.json`, and `GET /api/runtime` exposes `currentTruth.goalPreflight`.
 - `ac-contract-sync-1`: the evidence page and goal preflight contracts are wired into the evidence, task outcome, system coherence, package script, and repo-quality surfaces.
+
+## 14) Masao Applied Harness Work Items
+
+As of 2026-05-29, the remaining Masao-derived Harnes application map is represented by explicit contracts and verification commands instead of a prose-only backlog.
+
+- aggregate application contract: `scripts/config/masao_application_contract.json`
+- aggregate verifier: `npm run test:masao-application-contract`
+- Turn Trace Readout: `scripts/config/turn_trace_readout_contract.json`, `scripts/lib/turn_trace_readout_builder.js`, `npm run artifact:turn-trace-readout`, artifact `output/governance_public/turn_trace_readout.html`
+- Skill Portfolio Audit: existing `scripts/skill_portfolio_audit.js`, `scripts/config/skill_portfolio_policy.json`, and `npm run test:repo-local-skills`
+- Generator/Evaluator Pairing: `scripts/config/generator_evaluator_pairing_contract.json` and `npm run test:generator-evaluator-pairing`
+- Structured Work Graph Experiment: `scripts/config/structured_work_graph_experiment.json`, `scripts/lib/structured_work_graph.js`, and `npm run test:structured-work-graph`
+- External Memory/Search Layer: `scripts/config/local_memory_search_contract.json`, existing governed memory public exports, and `npm run test:local-memory-search-layer`
+- App-server Schema Drift Check: `scripts/config/app_server_schema_contract.json`, `scripts/app_server_schema_drift_check.js`, and `npm run test:app-server-schema-drift`
+
+The Turn Trace Readout is intentionally a reviewer-facing HTML artifact, not a new runtime route. `npm run artifact:governance-public` now emits it next to the closeout evidence page and puts it second in `reviewer_start_here.readOrder`. The schema drift check is static by default under `npm run test:app-server-schema-drift`; running `node scripts/app_server_schema_drift_check.js` without `--check` writes a transient report under `runtime/output-transient/`.
+
+### Acceptance checks
+
+- `ac-masao-application-1`: every P0/P1/P2 item in the Harnes application map has a concrete proof file and package-visible command in `scripts/config/masao_application_contract.json`.
+- `ac-turn-trace-readout-1`: `turn_trace_readout.html` includes overview, timeline, tool/evidence, decisions, risks, and changed artifacts without exposing workspace absolute paths.
+- `ac-schema-drift-1`: primary app-server route assumptions (`POST /api/exec`, `POST /api/eval/run`, `GET /api/runtime`) are checked against the route/bootstrap sources.
+- `ac-generator-evaluator-1`: generator roles, evaluator roles, read-only reviewer behavior, single-writer enforcement, and evaluator inputs are checked together.
+- `ac-memory-search-1`: local memory/search keeps human-readable sources, machine-readable public indexes, and source pointers separate.

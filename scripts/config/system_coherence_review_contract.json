@@ -65,12 +65,18 @@
     "scripts/config/authority_registry.json",
     "scripts/config/agent_governance_contracts.json",
     "scripts/config/adoption_readiness_evaluator_contract.json",
+    "scripts/config/app_server_schema_contract.json",
     "scripts/config/deployment_posture_profiles.json",
     "scripts/config/evidence_page_contract.json",
     "scripts/config/evidence_contract.json",
+    "scripts/config/generator_evaluator_pairing_contract.json",
     "scripts/config/goal_preflight_contract.json",
     "scripts/config/harness_plane_contract.json",
     "scripts/config/iteration_control_contract.json",
-    "scripts/config/task_outcome_contract.json"
+    "scripts/config/local_memory_search_contract.json",
+    "scripts/config/masao_application_contract.json",
+    "scripts/config/structured_work_graph_experiment.json",
+    "scripts/config/task_outcome_contract.json",
+    "scripts/config/turn_trace_readout_contract.json"
   ]
 }

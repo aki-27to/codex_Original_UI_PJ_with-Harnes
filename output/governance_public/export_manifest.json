@@ -150,6 +150,11 @@
       "file": "closeout_evidence_page.html",
       "source": "derived_from_public_trace",
       "derived": 1
+    },
+    {
+      "file": "turn_trace_readout.html",
+      "source": "derived_from_public_trace",
+      "derived": 1
     }
   ]
 }

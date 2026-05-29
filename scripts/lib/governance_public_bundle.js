@@ -28,6 +28,9 @@ const {
 const {
   writeEvidencePage,
 } = require("./evidence_page_builder");
+const {
+  writeTurnTraceReadout,
+} = require("./turn_trace_readout_builder");
 
 const workspaceRoot = path.resolve(__dirname, "..", "..");
 const defaultLatestSignoffSummaryPath = path.join(workspaceRoot, "logs", "current", "latest_signoff_summary.json");
@@ -799,6 +802,7 @@ function buildReviewerStartHere({
       purpose: "Single reviewer-first surface for the governed harness. Start with the task verdict, then inspect background program debt as secondary context.",
       readOrder: [
         "output/governance_public/closeout_evidence_page.html",
+        "output/governance_public/turn_trace_readout.html",
         "output/governance_public/reviewer_start_here.json",
         "output/governance_public/worker_decision_surface.json",
       "output/governance_public/worker_completion_status.json",
@@ -930,6 +934,7 @@ function buildOverviewMarkdown(overview, exportManifest) {
     `Operator action: \`${safeString(overview.workerDecision && overview.workerDecision.operatorAction, 80) || "UNKNOWN"}\``,
     "Reviewer start surface: `output/governance_public/reviewer_start_here.json`",
     "Closeout evidence page: `output/governance_public/closeout_evidence_page.html`",
+    "Turn trace readout: `output/governance_public/turn_trace_readout.html`",
     `Harness identity: \`${safeString(overview.harnessIdentity && overview.harnessIdentity.mode, 80) || "unknown"}\``,
     `Execution route: \`${safeString(overview.primaryRoutes && overview.primaryRoutes.execution, 120) || "unknown"}\``,
     `Evaluation route: \`${safeString(overview.primaryRoutes && overview.primaryRoutes.evaluation, 120) || "unknown"}\``,
@@ -1348,6 +1353,11 @@ function exportGovernancePublicBundle({
     source: "derived_from_public_trace",
     derived: 1,
   });
+  exportedArtifacts.push({
+    file: "turn_trace_readout.html",
+    source: "derived_from_public_trace",
+    derived: 1,
+  });
   overview.exportedFiles = exportedArtifacts.map((entry) => entry.file);
   const exportManifest = {
     schema: "governance-public-bundle-manifest.v1",
@@ -1364,6 +1374,11 @@ function exportGovernancePublicBundle({
   writeEvidencePage({
     sourceDir: outputDir,
     outPath: path.join(outputDir, "closeout_evidence_page.html"),
+    generatedAt: overview.generatedAt,
+  });
+  writeTurnTraceReadout({
+    sourceDir: outputDir,
+    outPath: path.join(outputDir, "turn_trace_readout.html"),
     generatedAt: overview.generatedAt,
   });
 

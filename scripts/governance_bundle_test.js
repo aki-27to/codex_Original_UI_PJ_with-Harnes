@@ -219,6 +219,7 @@ function main() {
   const workerCompletionStatus = JSON.parse(fs.readFileSync(path.join(exportOutputDir, "worker_completion_status.json"), "utf8"));
   const reviewerStartHere = JSON.parse(fs.readFileSync(path.join(exportOutputDir, "reviewer_start_here.json"), "utf8"));
   const closeoutEvidencePage = fs.readFileSync(path.join(exportOutputDir, "closeout_evidence_page.html"), "utf8");
+  const turnTraceReadout = fs.readFileSync(path.join(exportOutputDir, "turn_trace_readout.html"), "utf8");
   const releaseCandidateScope = JSON.parse(fs.readFileSync(path.join(exportOutputDir, "release_candidate_scope.json"), "utf8"));
   const releaseResolution = JSON.parse(fs.readFileSync(path.join(exportOutputDir, "release_resolution.json"), "utf8"));
   assert.strictEqual(adoptionReadiness.schema, "adoption-readiness-eval.v1", "public export must emit adoption readiness eval");
@@ -245,9 +246,13 @@ function main() {
   assert.strictEqual(workerCompletionStatus.backgroundArtifactInputsTrusted, true, "worker completion companion must mark aligned readiness sidecars as trusted");
   assert.strictEqual(reviewerStartHere.schema, "governance-reviewer-start-here.v1", "public export must emit reviewer-start-here surface");
   assert.strictEqual(reviewerStartHere.readOrder[0], "output/governance_public/closeout_evidence_page.html", "reviewer read order must start with the closeout evidence page");
+  assert.strictEqual(reviewerStartHere.readOrder[1], "output/governance_public/turn_trace_readout.html", "reviewer read order must put the turn trace readout after the closeout evidence page");
   assert(closeoutEvidencePage.includes('id="original_request"'), "closeout evidence page must include original_request section");
   assert(closeoutEvidencePage.includes('id="verification_commands"'), "closeout evidence page must include verification_commands section");
   assert(closeoutEvidencePage.includes("npm run artifact:evidence-page"), "closeout evidence page must include the generator command");
+  assert(turnTraceReadout.includes('id="timeline"'), "turn trace readout must include a timeline section");
+  assert(turnTraceReadout.includes('id="tool_and_evidence"'), "turn trace readout must include tool and evidence section");
+  assert(turnTraceReadout.includes("Turn Trace Readout"), "turn trace readout must identify itself");
   assert.strictEqual(Array.isArray(reviewerStartHere.decisionFaces), true, "reviewer-start-here must expose decision faces");
   assert.strictEqual(reviewerStartHere.decisionFaces.length, 2, "reviewer-start-here must compress top-level verdicts into two faces");
   assert.strictEqual(reviewerStartHere.decisionFaces[0].id, "task_verdict", "reviewer-start-here must lead with task verdict");
@@ -292,6 +297,7 @@ function main() {
   );
   assert.strictEqual(publicExport.reviewerStartHere.schema, "governance-reviewer-start-here.v1", "public export return value must expose reviewer-start-here");
   assert.strictEqual(publicExport.exportManifest.exportedArtifacts.some((entry) => entry.file === "release_resolution.md"), true, "public export return value must include release resolution markdown");
+  assert.strictEqual(publicExport.exportManifest.exportedArtifacts.some((entry) => entry.file === "turn_trace_readout.html" && entry.derived === 1), true, "public export return value must include derived turn trace readout");
   const mismatchedSupplemental = deriveSupplementalGovernanceArtifacts({
     requestFrame: { assumption_policy: [] },
     reviewBundle: {

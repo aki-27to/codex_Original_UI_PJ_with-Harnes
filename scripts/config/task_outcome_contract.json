@@ -14,6 +14,7 @@
     "goal_alignment_trace",
     "adoption_decision_basis",
     "reviewer_visible_evidence_page",
+    "turn_trace_readout",
     "goal_preflight"
   ],
   "decisionArtifacts": {
@@ -58,12 +59,14 @@
     "supplementalArtifact": "worker_completion_status.json",
     "fixedReadOrder": [
       "closeout_evidence_page.html",
+      "turn_trace_readout.html",
       "reviewer_start_here.json",
       "worker_decision_surface.json",
       "worker_completion_status.json",
       "bundle_overview.json"
     ],
     "closeoutEvidencePageArtifact": "closeout_evidence_page.html",
+    "turnTraceReadoutArtifact": "turn_trace_readout.html",
     "goalPreflightArtifact": "goal_preflight.json",
     "htmlCloseoutRequiredForMaterialTasks": true,
     "subjectiveDoneWhenFailsClosed": true,

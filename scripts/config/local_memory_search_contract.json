@@ -1,0 +1,31 @@
+{
+  "schema": "local-memory-search-contract.v1",
+  "version": "2026-05-29.r1",
+  "purpose": "Keep human-readable originals, machine-readable indexes, and public memory evidence separate so recall chooses work instead of bloating the root context.",
+  "humanReadableSources": [
+    "docs/CONTEXT_MEMORY_POLICY.md",
+    "docs/SECONDARY_LEARNING_SOURCES.md",
+    "local:Masao/_archive_2026-05-29/MASAO_DERIVED_KNOWLEDGE.md"
+  ],
+  "machineReadableIndexes": [
+    "output/memory_public/memory_public_overview.json",
+    "output/memory_public/memory_public_export_manifest.json",
+    "output/memory_public/latest_pack_public.json",
+    "output/memory_public/pack_causal_trace_public.json"
+  ],
+  "packageCommands": [
+    "npm run artifact:memory-public",
+    "npm run test:memory-public"
+  ],
+  "principles": {
+    "humanReadableOriginalsSeparateFromIndexes": true,
+    "giantMarkdownMemoryForbidden": true,
+    "searchIndexPointsBackToSources": true,
+    "adoptionEvidenceMustRemainMachineReadable": true
+  },
+  "nonGoals": [
+    "copy paid source text into Harnes docs",
+    "replace Codex memory",
+    "turn AGENTS.md into a memory dump"
+  ]
+}

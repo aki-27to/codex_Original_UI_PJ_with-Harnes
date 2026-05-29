@@ -4,6 +4,7 @@ Generated: 2026-05-29T14:36:36.057Z
 
 ## Read Order
 - `output/governance_public/closeout_evidence_page.html`
+- `output/governance_public/turn_trace_readout.html`
 - `output/governance_public/reviewer_start_here.json`
 - `output/governance_public/worker_decision_surface.json`
 - `output/governance_public/worker_completion_status.json`

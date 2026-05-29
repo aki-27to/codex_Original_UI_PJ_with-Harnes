@@ -1,0 +1,122 @@
+{
+  "schema": "masao-application-contract.v1",
+  "version": "2026-05-29.r1",
+  "source": "derived_from_local_masao_archive_2026-05-29",
+  "sourceBoundary": "Do not copy paid source text into Harnes docs; apply only derived harness patterns and local source pointers.",
+  "successDefinition": "Each candidate work item from the Harnes application map has a concrete contract, script, artifact, or repo-quality proof surface.",
+  "items": [
+    {
+      "id": "p0_evidence_page_contract",
+      "priority": "P0",
+      "status": "implemented",
+      "proofFiles": [
+        "scripts/config/evidence_page_contract.json",
+        "scripts/lib/evidence_page_builder.js",
+        "scripts/generate_evidence_page.js"
+      ],
+      "packageCommands": [
+        "artifact:evidence-page",
+        "test:evidence-page-goal-preflight-contract"
+      ]
+    },
+    {
+      "id": "p0_goal_preflight_contract",
+      "priority": "P0",
+      "status": "implemented",
+      "proofFiles": [
+        "scripts/config/goal_preflight_contract.json",
+        "scripts/lib/goal_preflight_policy.js",
+        "scripts/harnesui_goal_slash_runtime_test.js"
+      ],
+      "packageCommands": [
+        "test:evidence-page-goal-preflight-contract",
+        "test:harnesui-goal-runtime"
+      ]
+    },
+    {
+      "id": "p1_turn_trace_readout",
+      "priority": "P1",
+      "status": "implemented",
+      "proofFiles": [
+        "scripts/config/turn_trace_readout_contract.json",
+        "scripts/lib/turn_trace_readout_builder.js",
+        "scripts/generate_turn_trace_readout.js",
+        "scripts/turn_trace_readout_test.js"
+      ],
+      "packageCommands": [
+        "artifact:turn-trace-readout",
+        "test:turn-trace-readout"
+      ]
+    },
+    {
+      "id": "p1_skill_portfolio_audit",
+      "priority": "P1",
+      "status": "implemented",
+      "proofFiles": [
+        "scripts/skill_portfolio_audit.js",
+        "scripts/config/skill_portfolio_policy.json",
+        "scripts/config/repo_local_skill_catalog.json"
+      ],
+      "packageCommands": [
+        "test:repo-local-skills"
+      ]
+    },
+    {
+      "id": "p1_generator_evaluator_pairing",
+      "priority": "P1",
+      "status": "implemented",
+      "proofFiles": [
+        "scripts/config/generator_evaluator_pairing_contract.json",
+        "scripts/generator_evaluator_pairing_contract_test.js",
+        "scripts/config/adoption_readiness_evaluator_contract.json",
+        "scripts/config/agent_governance_contracts.json"
+      ],
+      "packageCommands": [
+        "test:generator-evaluator-pairing"
+      ]
+    },
+    {
+      "id": "p2_structured_work_graph_experiment",
+      "priority": "P2",
+      "status": "implemented",
+      "proofFiles": [
+        "scripts/config/structured_work_graph_experiment.json",
+        "scripts/lib/structured_work_graph.js",
+        "scripts/structured_work_graph_experiment_test.js"
+      ],
+      "packageCommands": [
+        "test:structured-work-graph"
+      ]
+    },
+    {
+      "id": "p2_external_memory_search_layer",
+      "priority": "P2",
+      "status": "implemented",
+      "proofFiles": [
+        "scripts/config/local_memory_search_contract.json",
+        "scripts/local_memory_search_layer_test.js",
+        "scripts/lib/governed_memory_graph.js",
+        "scripts/export_governed_memory_public.js"
+      ],
+      "packageCommands": [
+        "artifact:memory-public",
+        "test:memory-public",
+        "test:local-memory-search-layer"
+      ]
+    },
+    {
+      "id": "p2_app_server_schema_drift_check",
+      "priority": "P2",
+      "status": "implemented",
+      "proofFiles": [
+        "scripts/config/app_server_schema_contract.json",
+        "scripts/app_server_schema_drift_check.js"
+      ],
+      "packageCommands": [
+        "test:app-server-schema-drift"
+      ]
+    }
+  ],
+  "aggregatePackageCommand": "npm run test:masao-application-contract",
+  "repoQualityStage": "governance"
+}
