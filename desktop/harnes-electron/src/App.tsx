@@ -573,6 +573,9 @@ export default function App() {
     activeChat ? activeRequests.find((request) => request.chatId === activeChat.id) || null : null
   ), [activeChat, activeRequests]);
   const hasActiveRequests = activeRequests.length > 0;
+  const activeExec = runtimeActiveExecCount(runtime);
+  const topbarBusy = hasActiveRequests || activeExec > 0;
+  const codexVersionLabel = codexCliVersionLabel(diagnostics);
   const existingWebUiUrl = useMemo(() => joinUrl(backendUrl, "/01.HarnesUI/index.html"), [backendUrl]);
   const proposalUrl = useMemo(() => joinUrl(backendUrl, proposal?.publicPath || "/design-proposals/latest/index.html"), [backendUrl, proposal]);
 
@@ -731,8 +734,15 @@ export default function App() {
     const oldWebStatusLabel = compactText(document.querySelector(".old-web-status strong")?.textContent, "");
     const runtimePanelLabel = compactText(document.querySelector(".runtime-panel h2")?.textContent, "");
     const runningStatusSpinner = document.querySelector(".old-web-status.running .old-web-status-spinner");
+    const processingStatusSpinner = document.querySelector(".old-web-status.processing .old-web-status-spinner");
     const readyStatusSpinnerStopped = backend.status !== "running"
       || Boolean(runningStatusSpinner && window.getComputedStyle(runningStatusSpinner).animationName === "none");
+    const processingStatusSpinnerActive = Boolean(
+      processingStatusSpinner && window.getComputedStyle(processingStatusSpinner).animationName !== "none",
+    );
+    const topbarStatusValid = topbarBusy
+      ? oldWebStatusLabel === "処理中" && processingStatusSpinnerActive
+      : oldWebStatusLabel === "待機中" && readyStatusSpinnerStopped;
     const runtimeRefreshExplained = Boolean(document.querySelector(".runtime-refresh-note"));
     const attachmentRowsReady = Boolean(document.querySelector(".attachment-panel"));
     window.__harnesElectronSmoke = {
@@ -757,13 +767,31 @@ export default function App() {
       missionMetaVisible,
       oldWebStatusVisible,
       oldWebStatusLabel,
+      activeExec,
+      topbarBusy,
+      topbarStatusValid,
       runtimePanelLabel,
       readyStatusSpinnerStopped,
+      processingStatusSpinnerActive,
+      runtimeRefreshIdle: !runtimeRefreshState.loading,
+      codexCliVersionReady: !codexVersionLabel.includes("未読込"),
       runtimeRefreshExplained,
       attachmentRowsReady,
       layoutOk,
     };
-  }, [backend.status, logs?.entries?.length, proposal?.proposalTitle, proposalUrl, runtime, sidebarOpen, runtimeRefreshState.lastAt]);
+  }, [
+    activeExec,
+    backend.status,
+    logs?.entries?.length,
+    proposal?.proposalTitle,
+    proposalUrl,
+    codexVersionLabel,
+    runtime,
+    runtimeRefreshState.loading,
+    runtimeRefreshState.lastAt,
+    sidebarOpen,
+    topbarBusy,
+  ]);
 
   const openLocal = useCallback((target: string) => {
     if (window.harnesDesktop) {
@@ -783,16 +811,24 @@ export default function App() {
 
   const deleteActiveChat = useCallback(() => {
     if (!activeChat) return;
+    if (activeChatRequest) {
+      setLoadError("実行中の依頼は、停止してから削除してください。");
+      return;
+    }
     setChats((current) => {
       const next = current.filter((chat) => chat.id !== activeChat.id);
       const fallback = next[0] || createChat();
       setActiveChatId(fallback.id);
       return next.length ? next : [fallback];
     });
-  }, [activeChat]);
+  }, [activeChat, activeChatRequest]);
 
   const clearActiveChat = useCallback(() => {
     if (!activeChat) return;
+    if (activeChatRequest) {
+      setLoadError("実行中の依頼は、停止してからクリアしてください。");
+      return;
+    }
     patchChat(activeChat.id, (chat) => ({
       ...chat,
       messages: [],
@@ -803,7 +839,7 @@ export default function App() {
       forceNewSession: true,
       updatedAt: new Date().toISOString(),
     }));
-  }, [activeChat, patchChat]);
+  }, [activeChat, activeChatRequest, patchChat]);
 
   const updateSetting = useCallback(<K extends keyof RunSettings>(key: K, value: RunSettings[K]) => {
     setSettings((current) => ({ ...current, [key]: value }));
@@ -911,7 +947,6 @@ export default function App() {
     }
   }, [activeChat, activeChatRequest, attachments, mission, patchChat, runtime?.activeAgent, runtime?.workspaceRoot, settings]);
 
-  const activeExec = runtimeActiveExecCount(runtime);
   const activeChatWorkState = workStateForChat(activeChat, {
     activeForChat: Boolean(activeChatRequest),
     runtimeBusy: activeExec > 0 && !hasActiveRequests,
@@ -991,10 +1026,8 @@ export default function App() {
   const runtimeModeLabel = runtime?.mode === "app-server" ? "接続済み" : "未接続";
   const runtimeModelLabel = `${asText(runtime?.execApi?.defaultModel, settings.model)} / ${asText(runtime?.execApi?.modelReasoningEffort, settings.modelReasoningEffort)}`;
   const runSettingsSummary = `${settings.sandboxMode} / ${settings.approvalPolicy} / FAST ${settings.fastModeEnabled ? "ON" : "OFF"}`;
-  const codexVersionLabel = codexCliVersionLabel(diagnostics);
   const runtimeRefreshLabel = timeLabelFromIso(runtimeRefreshState.lastAt, "未取得");
   const runtimeReady = runtime?.mode === "app-server";
-  const topbarBusy = hasActiveRequests || activeExec > 0;
   const topbarStatusView = { busy: topbarBusy, runtimeReady };
   const topbarStatusDetail = compactText(backend.message, runtime?.mode === "app-server" ? "backend ready" : "runtime未読込");
   const showServerRecovery = backend.status !== "running";
@@ -1073,8 +1106,8 @@ export default function App() {
                   ))}
                 </div>
                 <div className="sidebar-actions">
-                  <button className="secondary" type="button" onClick={deleteActiveChat}>Delete</button>
-                  <button className="secondary" type="button" onClick={clearActiveChat}>Clear</button>
+                  <button className="secondary" type="button" onClick={deleteActiveChat} disabled={Boolean(activeChatRequest)}>Delete</button>
+                  <button className="secondary" type="button" onClick={clearActiveChat} disabled={Boolean(activeChatRequest)}>Clear</button>
                 </div>
               </section>
             </div>
@@ -1096,7 +1129,7 @@ export default function App() {
                 <h2>{activeChat?.messages.length ? `${activeChat.messages.length} messages` : "まだ会話はありません"}</h2>
               </div>
               <div className="conversation-actions">
-                <button className="secondary" type="button" onClick={clearActiveChat}>会話をクリア</button>
+                <button className="secondary" type="button" onClick={clearActiveChat} disabled={Boolean(activeChatRequest)}>会話をクリア</button>
               </div>
             </div>
             <div className="timeline">

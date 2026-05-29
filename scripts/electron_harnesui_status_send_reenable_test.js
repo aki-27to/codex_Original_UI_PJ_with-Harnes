@@ -23,14 +23,59 @@ async function getSendButtonState(page) {
     const send = buttons.find((button) => (button.textContent || "").trim() === "送信");
     const stop = buttons.find((button) => (button.textContent || "").trim() === "停止");
     const textarea = document.querySelector("textarea");
-    const workState = document.querySelector(".work-state-pill");
+    const workState = document.querySelector(".work-state-meta");
     const root = document.documentElement;
     const activeText = document.body.innerText;
+    const clipped = Array.from(document.querySelectorAll("button, select, textarea, .panel, .chat-row, .message, .status-pill, .old-web-status, .runtime-refresh-note, .work-state-meta span, .attachment-panel, .attachment-item, .attachment-copy strong, .attachment-copy span"))
+      .map((element) => {
+        const rect = element.getBoundingClientRect();
+        const style = window.getComputedStyle(element);
+        const allowsScroll = ["auto", "scroll"].includes(style.overflowX) || ["auto", "scroll"].includes(style.overflow);
+        return {
+          tag: element.tagName.toLowerCase(),
+          className: typeof element.className === "string" ? element.className : "",
+          text: (element.textContent || "").replace(/\s+/g, " ").trim().slice(0, 90),
+          width: Math.round(rect.width),
+          height: Math.round(rect.height),
+          scrollWidth: element.scrollWidth,
+          clientWidth: element.clientWidth,
+          clippedX: element.scrollWidth > element.clientWidth + 2 && !allowsScroll,
+        };
+      })
+      .filter((item) => item.width > 0 && item.height > 0 && item.clippedX);
+    const panels = Array.from(document.querySelectorAll(".panel"))
+      .map((element) => {
+        const rect = element.getBoundingClientRect();
+        return {
+          className: typeof element.className === "string" ? element.className : "",
+          x: rect.x,
+          y: rect.y,
+          right: rect.right,
+          bottom: rect.bottom,
+          width: rect.width,
+          height: rect.height,
+        };
+      })
+      .filter((box) => box.width > 0 && box.height > 0);
+    const overlaps = [];
+    for (let i = 0; i < panels.length; i += 1) {
+      for (let j = i + 1; j < panels.length; j += 1) {
+        const a = panels[i];
+        const b = panels[j];
+        const width = Math.min(a.right, b.right) - Math.max(a.x, b.x);
+        const height = Math.min(a.bottom, b.bottom) - Math.max(a.y, b.y);
+        if (width > 2 && height > 2) {
+          overlaps.push({ a: a.className, b: b.className, width: Math.round(width), height: Math.round(height) });
+        }
+      }
+    }
     return {
       sendFound: Boolean(send),
       sendDisabled: send ? send.disabled : null,
       sendButtonClipped: send ? send.scrollWidth > send.clientWidth + 1 || send.scrollHeight > send.clientHeight + 1 : null,
       horizontalOverflow: root ? root.scrollWidth > window.innerWidth + 1 : null,
+      clipped,
+      overlaps,
       viewportWidth: window.innerWidth,
       scrollWidth: root ? root.scrollWidth : null,
       stopDisabled: stop ? stop.disabled : null,
@@ -99,6 +144,8 @@ async function main() {
     if (state.sendDisabled !== false) fail("Electron send button must remain pressable after /status returns", state);
     if (state.sendButtonClipped !== false) fail("Electron send button copy is clipped after /status returns", state);
     if (state.horizontalOverflow !== false) fail("Electron /status returned state has horizontal overflow", state);
+    if (state.clipped.length) fail("Electron /status returned state has clipped UI copy", state);
+    if (state.overlaps.length) fail("Electron /status returned state has overlapping panels", state);
     await captureEvidence(page, "electron-status-returned", state);
 
     await page.locator("textarea").first().fill("/fast status");
@@ -117,6 +164,8 @@ async function main() {
     if (state.sendDisabled !== false) fail("Electron send button must remain pressable after /fast status returns", state);
     if (state.sendButtonClipped !== false) fail("Electron send button copy is clipped after /fast status returns", state);
     if (state.horizontalOverflow !== false) fail("Electron /fast status returned state has horizontal overflow", state);
+    if (state.clipped.length) fail("Electron /fast status returned state has clipped UI copy", state);
+    if (state.overlaps.length) fail("Electron /fast status returned state has overlapping panels", state);
     await captureEvidence(page, "electron-fast-status-returned", state);
   } finally {
     await app.close().catch(() => {});

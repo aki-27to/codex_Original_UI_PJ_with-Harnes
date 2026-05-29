@@ -46,7 +46,17 @@ button {
 
 button:disabled {
   cursor: not-allowed;
-  opacity: 0.55;
+  border-color: rgba(98, 117, 110, 0.18);
+  background: rgba(225, 233, 229, 0.82);
+  color: #7b8984;
+  opacity: 1;
+}
+
+.primary:disabled,
+.danger-button:disabled {
+  border-color: rgba(98, 117, 110, 0.18);
+  background: #c7d2cd;
+  color: rgba(255, 255, 255, 0.88);
 }
 
 input,

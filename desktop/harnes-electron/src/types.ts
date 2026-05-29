@@ -190,8 +190,14 @@ declare global {
       missionMetaVisible?: boolean;
       oldWebStatusVisible?: boolean;
       oldWebStatusLabel?: string;
+      activeExec?: number;
+      topbarBusy?: boolean;
+      topbarStatusValid?: boolean;
       runtimePanelLabel?: string;
       readyStatusSpinnerStopped?: boolean;
+      processingStatusSpinnerActive?: boolean;
+      runtimeRefreshIdle?: boolean;
+      codexCliVersionReady?: boolean;
       runtimeRefreshExplained?: boolean;
       attachmentRowsReady?: boolean;
       layoutOk?: boolean;

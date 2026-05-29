@@ -579,57 +579,47 @@ function installApplicationMenu() {
 async function runSmokeAndExit() {
   const deadline = Date.now() + smokeTimeoutMs;
   let result = null;
+  const smokeReady = (payload) => Boolean(
+    payload
+    && payload.runtimeOk
+    && payload.proposalLinkVisible
+    && payload.logsOk
+    && payload.execControlsVisible
+    && payload.settingsVisible
+    && payload.sidebarVisible
+    && payload.proposalDockVisible
+    && payload.operatorPanelsHidden
+    && payload.commandPaletteVisible
+    && payload.attachmentsVisible
+    && payload.missionMetaVisible
+    && payload.oldWebStatusVisible
+    && payload.topbarStatusValid
+    && payload.runtimePanelLabel === "接続済み"
+    && payload.runtimeRefreshIdle
+    && payload.codexCliVersionReady
+    && payload.runtimeRefreshExplained
+    && payload.attachmentRowsReady
+    && payload.layoutOk
+  );
   while (Date.now() < deadline) {
     result = await Promise.race([
       mainWindow.webContents.executeJavaScript("window.__harnesElectronSmoke || null", true),
       new Promise((resolve) => setTimeout(() => resolve(null), 1500)),
     ]);
-    if (
-      result
-      && result.runtimeOk
-      && result.proposalLinkVisible
-      && result.logsOk
-      && result.execControlsVisible
-      && result.settingsVisible
-      && result.sidebarVisible
-      && result.proposalDockVisible
-      && result.operatorPanelsHidden
-      && result.commandPaletteVisible
-      && result.attachmentsVisible
-      && result.missionMetaVisible
-      && result.oldWebStatusVisible
-      && result.oldWebStatusLabel === "待機中"
-      && result.runtimePanelLabel === "接続済み"
-      && result.readyStatusSpinnerStopped
-      && result.runtimeRefreshExplained
-      && result.attachmentRowsReady
-      && result.layoutOk
-    ) break;
+    if (smokeReady(result)) break;
     await new Promise((resolve) => setTimeout(resolve, 500));
   }
-  const ok = Boolean(
-    result
-    && result.runtimeOk
-    && result.proposalLinkVisible
-    && result.logsOk
-    && result.execControlsVisible
-    && result.settingsVisible
-    && result.sidebarVisible
-    && result.proposalDockVisible
-    && result.operatorPanelsHidden
-    && result.commandPaletteVisible
-    && result.attachmentsVisible
-    && result.missionMetaVisible
-    && result.oldWebStatusVisible
-    && result.oldWebStatusLabel === "待機中"
-    && result.runtimePanelLabel === "接続済み"
-    && result.readyStatusSpinnerStopped
-    && result.runtimeRefreshExplained
-    && result.attachmentRowsReady
-    && result.layoutOk,
-  );
+  const ok = smokeReady(result);
   let screenshotPath = "";
   try {
+    if (!mainWindow.isVisible()) {
+      mainWindow.showInactive();
+      await new Promise((resolve) => setTimeout(resolve, 300));
+    }
+    await mainWindow.webContents.executeJavaScript(
+      "new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)))",
+      true,
+    ).catch(() => {});
     const screenshotDir = path.join(appRoot, "output", "electron-harnesui");
     fs.mkdirSync(screenshotDir, { recursive: true });
     const screenshot = await mainWindow.capturePage();
