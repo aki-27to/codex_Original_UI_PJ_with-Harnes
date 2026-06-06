@@ -1,5 +1,7 @@
 "use strict";
 
+const { execFileSync } = require("child_process");
+const crypto = require("crypto");
 const fs = require("fs");
 const path = require("path");
 
@@ -39,6 +41,7 @@ const defaultWorkerDecisionSurfaceContractDefinition = Object.freeze({
   requiredFields: Object.freeze([
     "scope",
     "exportSessionId",
+    "sourceProvenance",
     "topLevelOutcome",
     "topLevelSummary",
     "taskOutcomeStatus",
@@ -80,6 +83,178 @@ function uniqueStrings(values, max = 16) {
     }
   }
   return out;
+}
+
+function normalizeRepoRelativePath(value) {
+  return String(value || "").trim().replace(/\\/g, "/").replace(/^\.\/+/, "").replace(/^\/+/, "");
+}
+
+function normalizeFingerprintContent(value) {
+  const text = typeof value === "string" ? value : `${JSON.stringify(value, null, 2)}\n`;
+  return String(text || "").replace(/\r\n/g, "\n").replace(/\r/g, "\n");
+}
+
+function sha256Text(value) {
+  return crypto.createHash("sha256").update(String(value), "utf8").digest("hex");
+}
+
+function readGitWorkingTreeDirty(root = workspaceRoot) {
+  try {
+    return execFileSync("git", ["status", "--porcelain"], {
+      cwd: root,
+      encoding: "utf8",
+      stdio: ["ignore", "pipe", "ignore"],
+    }).trim().length > 0 ? 1 : 0;
+  } catch {
+    return 0;
+  }
+}
+
+function readGitHeadCommit(root = workspaceRoot) {
+  try {
+    return safeString(execFileSync("git", ["rev-parse", "HEAD"], {
+      cwd: root,
+      encoding: "utf8",
+      stdio: ["ignore", "pipe", "ignore"],
+    }), 80);
+  } catch {
+    return "";
+  }
+}
+
+function resolveFingerprintInputContent(relPath, inputContentByPath, root = workspaceRoot) {
+  const normalized = normalizeRepoRelativePath(relPath);
+  if (inputContentByPath && Object.prototype.hasOwnProperty.call(inputContentByPath, normalized)) {
+    return normalizeFingerprintContent(inputContentByPath[normalized]);
+  }
+  const fullPath = path.resolve(root, normalized);
+  if (!fs.existsSync(fullPath)) {
+    throw new Error(`worker_decision_surface fingerprint input missing: ${normalized}`);
+  }
+  return normalizeFingerprintContent(fs.readFileSync(fullPath, "utf8"));
+}
+
+function buildInputFingerprint({
+  inputFiles,
+  inputContentByPath,
+  root = workspaceRoot,
+} = {}) {
+  const files = uniqueStrings(inputFiles, 64)
+    .map(normalizeRepoRelativePath)
+    .filter(Boolean)
+    .sort();
+  const inputs = files.map((relPath) => {
+    const content = resolveFingerprintInputContent(relPath, inputContentByPath, root);
+    return {
+      path: relPath,
+      sha256: sha256Text(content),
+      normalizedBytes: Buffer.byteLength(content, "utf8"),
+    };
+  });
+  const digestSource = inputs
+    .map((entry) => `${entry.path}\u0000${entry.sha256}\u0000${entry.normalizedBytes}`)
+    .join("\n");
+  return {
+    schema: "governance-input-fingerprint.v1",
+    algorithm: "sha256",
+    normalization: [
+      "repo_relative_slash_paths",
+      "lexicographic_path_sort",
+      "crlf_to_lf",
+      "utf8_text",
+    ],
+    scope: "direct_declared_inputs",
+    transitiveFreshness: "not_claimed",
+    selfReferenceExclusions: [
+      "output/governance_public/worker_decision_surface.json",
+      "output/governance_public/worker_completion_status.json",
+      "output/governance_public/bundle_overview.json",
+    ],
+    inputs,
+    digest: sha256Text(digestSource),
+  };
+}
+
+function buildSourceProvenance(input = {}) {
+  const gitHeadCommit = readGitHeadCommit();
+  const generatedFromCommit = safeString(input.generatedFromCommit, 80) || gitHeadCommit;
+  const scoreInputs = uniqueStrings(
+    Array.isArray(input.scoreInputs) ? input.scoreInputs : [
+      "adoption_readiness_eval.json",
+      "iteration_decision.json",
+      "release_decision.json",
+      "review_bundle.json",
+    ],
+    12
+  );
+  const inputFingerprint = buildInputFingerprint({
+    inputFiles: input.inputFiles,
+    inputContentByPath: input.inputContentByPath,
+  });
+  return {
+    schema: "governance-artifact-provenance.v1",
+    repository: {
+      headCommit: gitHeadCommit,
+      generatedFromCommit,
+      commitMatchesHead: gitHeadCommit && generatedFromCommit === gitHeadCommit ? 1 : 0,
+      workingTreeDirty: readGitWorkingTreeDirty(),
+      commitFieldsAreTraceOnly: 1,
+      freshnessPolicy: "fail_closed_when_inputFingerprint_digest_differs",
+    },
+    inputFingerprint,
+    assertionBasis: {
+      type: "self_attested_local_harness",
+      scoreSource: "scripts/lib/adoption_readiness_policy.js",
+      scoreContract: "scripts/config/adoption_readiness_evaluator_contract.json",
+      scoreInputs,
+      independentVerification: "not_claimed",
+      limitation: "direct_declared_inputs_only_transitive_freshness_not_claimed",
+    },
+  };
+}
+
+function assertWorkerDecisionSurfaceFresh(workerDecisionSurface = {}, root = workspaceRoot) {
+  const provenance = workerDecisionSurface && workerDecisionSurface.sourceProvenance;
+  if (!provenance || typeof provenance !== "object" || Array.isArray(provenance)) {
+    throw new Error("worker_decision_surface missing sourceProvenance");
+  }
+  if (safeString(provenance.schema, 120) !== "governance-artifact-provenance.v1") {
+    throw new Error("worker_decision_surface sourceProvenance schema mismatch");
+  }
+  const repository = provenance.repository && typeof provenance.repository === "object" ? provenance.repository : {};
+  if (safeString(repository.freshnessPolicy, 160) !== "fail_closed_when_inputFingerprint_digest_differs") {
+    throw new Error("worker_decision_surface sourceProvenance.repository.freshnessPolicy must use input fingerprint");
+  }
+  const inputFingerprint = provenance.inputFingerprint && typeof provenance.inputFingerprint === "object"
+    ? provenance.inputFingerprint
+    : {};
+  if (safeString(inputFingerprint.schema, 120) !== "governance-input-fingerprint.v1") {
+    throw new Error("worker_decision_surface missing inputFingerprint");
+  }
+  if (!Array.isArray(inputFingerprint.inputs) || inputFingerprint.inputs.length < 1) {
+    throw new Error("worker_decision_surface inputFingerprint.inputs must identify declared inputs");
+  }
+  const recomputed = buildInputFingerprint({
+    root,
+    inputFiles: inputFingerprint.inputs.map((entry) => entry && entry.path),
+  });
+  if (safeString(inputFingerprint.digest, 80) !== recomputed.digest) {
+    throw new Error(
+      `worker_decision_surface stale: inputFingerprint=${safeString(inputFingerprint.digest, 80)} recomputed=${recomputed.digest}`
+    );
+  }
+  const assertionBasis = provenance.assertionBasis && typeof provenance.assertionBasis === "object"
+    ? provenance.assertionBasis
+    : {};
+  if (safeString(assertionBasis.type, 120) !== "self_attested_local_harness") {
+    throw new Error("worker_decision_surface assertionBasis.type must be self_attested_local_harness");
+  }
+  if (safeString(assertionBasis.independentVerification, 120) !== "not_claimed") {
+    throw new Error("worker_decision_surface must not imply independent verification");
+  }
+  if (!Array.isArray(assertionBasis.scoreInputs) || assertionBasis.scoreInputs.length < 1) {
+    throw new Error("worker_decision_surface assertionBasis.scoreInputs must identify score inputs");
+  }
 }
 
 function normalizeUpperList(values, fallback) {
@@ -269,6 +444,7 @@ function buildWorkerDecisionSurface(input = {}, contract = loadWorkerDecisionSur
     generatedAt: new Date().toISOString(),
     scope: normalizedContract.defaultScope,
     exportSessionId,
+    sourceProvenance: buildSourceProvenance(input.sourceProvenance || {}),
     decisionQuestion: normalizedContract.decisionQuestion,
     topLevelOutcome,
     topLevelSummary: buildSummary({
@@ -317,6 +493,8 @@ function buildWorkerDecisionSurface(input = {}, contract = loadWorkerDecisionSur
 }
 
 module.exports = {
+  assertWorkerDecisionSurfaceFresh,
+  buildInputFingerprint,
   defaultWorkerDecisionSurfaceContractPath,
   buildWorkerDecisionSurface,
   loadWorkerDecisionSurfaceContract,

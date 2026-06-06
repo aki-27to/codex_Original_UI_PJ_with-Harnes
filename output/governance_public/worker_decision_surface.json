@@ -1,8 +1,132 @@
 {
   "schema": "worker-decision-surface.v1",
-  "generatedAt": "2026-05-04T12:17:28.450Z",
+  "generatedAt": "2026-06-04T14:12:11.691Z",
   "scope": "worker_decision",
   "exportSessionId": "export_69aaf0d22042",
+  "sourceProvenance": {
+    "schema": "governance-artifact-provenance.v1",
+    "repository": {
+      "headCommit": "3031d5155b62e999bb99eeca313eb95fe9324d02",
+      "generatedFromCommit": "3031d5155b62e999bb99eeca313eb95fe9324d02",
+      "commitMatchesHead": 1,
+      "workingTreeDirty": 1,
+      "commitFieldsAreTraceOnly": 1,
+      "freshnessPolicy": "fail_closed_when_inputFingerprint_digest_differs"
+    },
+    "inputFingerprint": {
+      "schema": "governance-input-fingerprint.v1",
+      "algorithm": "sha256",
+      "normalization": [
+        "repo_relative_slash_paths",
+        "lexicographic_path_sort",
+        "crlf_to_lf",
+        "utf8_text"
+      ],
+      "scope": "direct_declared_inputs",
+      "transitiveFreshness": "not_claimed",
+      "selfReferenceExclusions": [
+        "output/governance_public/worker_decision_surface.json",
+        "output/governance_public/worker_completion_status.json",
+        "output/governance_public/bundle_overview.json"
+      ],
+      "inputs": [
+        {
+          "path": "output/governance_public/adoption_readiness_eval.json",
+          "sha256": "b881c66a7a824cdc6fd1c537cb6dc695fde0bb8945ca6ece52248344320f2319",
+          "normalizedBytes": 10692
+        },
+        {
+          "path": "output/governance_public/iteration_decision.json",
+          "sha256": "facb2e43140679eace4d5e75d113ee90265f3ec1760865f8dab6dfb70b11721a",
+          "normalizedBytes": 1469
+        },
+        {
+          "path": "output/governance_public/latest_run_summary.json",
+          "sha256": "0f967b7e290e8987b642604969d0e1ef15025abf9a6d2c4973fbc47ca271ca67",
+          "normalizedBytes": 1468
+        },
+        {
+          "path": "output/governance_public/latest_signoff_summary.json",
+          "sha256": "36ab2e3c2473588bcd71f2bf13c6f73a6f90f5172a008686cfdb5d37e127a76e",
+          "normalizedBytes": 481
+        },
+        {
+          "path": "output/governance_public/release_decision.json",
+          "sha256": "25120e6b407bc9442a7e02d3ab7cff8d4572e254f2090d4b9bc218a94fd23607",
+          "normalizedBytes": 1207
+        },
+        {
+          "path": "output/governance_public/request_frame.json",
+          "sha256": "0018be23a7bb998179d2dde4e7e39fd2dbc657017190bbdb4e6b1a6b273c83a4",
+          "normalizedBytes": 2540
+        },
+        {
+          "path": "output/governance_public/review_bundle.json",
+          "sha256": "92d4fd8039ff51e98dbe7cadb7b1ad42b712f5a470177d2eb6045a22910484d9",
+          "normalizedBytes": 31584
+        },
+        {
+          "path": "output/governance_public/task_outcomes.json",
+          "sha256": "3bbd8ccc16584f73b8e5fcc694f6db43a982d6a07e34f1dd67ee366afa72c1a8",
+          "normalizedBytes": 3176
+        },
+        {
+          "path": "scripts/config/adoption_readiness_evaluator_contract.json",
+          "sha256": "3b0a45e02ba81b15ee3d5681428a00af622737eb3587d159a40bb0d392a17e6c",
+          "normalizedBytes": 2386
+        },
+        {
+          "path": "scripts/config/evidence_contract.json",
+          "sha256": "86c59322305bf789e40bb06982ee9d80a0c3d5d27f7e6821a2c5438b3c234ef6",
+          "normalizedBytes": 5973
+        },
+        {
+          "path": "scripts/config/iteration_control_contract.json",
+          "sha256": "31c6588516c163d3d7843105cadcde24f54435d59fd0e20d5eae186d0303d699",
+          "normalizedBytes": 2419
+        },
+        {
+          "path": "scripts/config/worker_decision_surface_contract.json",
+          "sha256": "f715a4c7310fdf271724991b4093462e3fcf40ac178bca74a62bd5c78b02df5d",
+          "normalizedBytes": 1008
+        },
+        {
+          "path": "scripts/lib/adoption_readiness_policy.js",
+          "sha256": "a97000523af77372c8461e2eac6b94da71343136a694067866e789a2c7c24f90",
+          "normalizedBytes": 21489
+        },
+        {
+          "path": "scripts/lib/governance_public_bundle.js",
+          "sha256": "99c06f88f5ae81bedca1d21b83dbfdebc8823ab041dce48873906dae6b4daecf",
+          "normalizedBytes": 69002
+        },
+        {
+          "path": "scripts/lib/iteration_control_policy.js",
+          "sha256": "77a69c08b0aede7bf8746f4a3ab25d562eb34069be91e2daac650b85150ffb6e",
+          "normalizedBytes": 12434
+        },
+        {
+          "path": "scripts/lib/worker_decision_surface.js",
+          "sha256": "4f92897752712debb0aee79bbae2b6e558955bf28a1e2a50fe138b8e07f3a637",
+          "normalizedBytes": 20449
+        }
+      ],
+      "digest": "6c40adce06528507d6851010006594e006df340c86c6acf489d4e870061ec6fe"
+    },
+    "assertionBasis": {
+      "type": "self_attested_local_harness",
+      "scoreSource": "scripts/lib/adoption_readiness_policy.js",
+      "scoreContract": "scripts/config/adoption_readiness_evaluator_contract.json",
+      "scoreInputs": [
+        "output/governance_public/adoption_readiness_eval.json",
+        "output/governance_public/iteration_decision.json",
+        "output/governance_public/release_decision.json",
+        "output/governance_public/review_bundle.json"
+      ],
+      "independentVerification": "not_claimed",
+      "limitation": "direct_declared_inputs_only_transitive_freshness_not_claimed"
+    }
+  },
   "decisionQuestion": "Can the governed worker stop here without unnecessary human interruption?",
   "topLevelOutcome": "ADOPTABLE_COMPLETE",
   "topLevelSummary": "The worker can close in place: adoption readiness passed, latent intent stayed aligned, and no extra human interruption is required.",

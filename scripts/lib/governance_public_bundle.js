@@ -92,6 +92,10 @@ function repoRelative(targetPath) {
   return normalizeRelativePath(path.relative(workspaceRoot, path.resolve(targetPath)));
 }
 
+function joinRepoPath(...parts) {
+  return normalizeRelativePath(path.posix.join(...parts.map((entry) => normalizeRelativePath(entry))));
+}
+
 function ensureDir(targetDir) {
   fs.mkdirSync(targetDir, { recursive: true });
 }
@@ -411,6 +415,7 @@ function deriveSupplementalGovernanceArtifacts({
   adoptionReadinessContract,
   iterationControlContract,
   backgroundReadinessArtifacts = null,
+  outputDir = defaultOutputDir,
 }) {
   const acceptanceResults = buildAcceptanceResults(reviewBundle);
   const finalOutcome = {
@@ -522,6 +527,15 @@ function deriveSupplementalGovernanceArtifacts({
   });
   escalationDecision.exportSessionId = exportSessionId;
   escalationDecision.scope = "operator_escalation";
+  const outputRoot = repoRelative(outputDir);
+  const adoptionReadinessEvalPath = joinRepoPath(outputRoot, "adoption_readiness_eval.json");
+  const iterationDecisionPath = joinRepoPath(outputRoot, "iteration_decision.json");
+  const releaseDecisionPath = joinRepoPath(outputRoot, "release_decision.json");
+  const reviewBundlePath = joinRepoPath(outputRoot, "review_bundle.json");
+  const latestSignoffSummaryPath = joinRepoPath(outputRoot, "latest_signoff_summary.json");
+  const latestRunSummaryPath = joinRepoPath(outputRoot, "latest_run_summary.json");
+  const requestFramePath = joinRepoPath(outputRoot, "request_frame.json");
+  const taskOutcomesPath = joinRepoPath(outputRoot, "task_outcomes.json");
   const workerDecisionSurface = buildWorkerDecisionSurface({
     finalOutcome,
     adoptionReadinessEval,
@@ -539,6 +553,42 @@ function deriveSupplementalGovernanceArtifacts({
       "review_bundle.json",
     ]),
     evidenceRefs: exportedEvidenceRefs,
+    sourceProvenance: {
+      scoreInputs: [
+        adoptionReadinessEvalPath,
+        iterationDecisionPath,
+        releaseDecisionPath,
+        reviewBundlePath,
+      ],
+      inputFiles: [
+        "scripts/lib/worker_decision_surface.js",
+        "scripts/lib/adoption_readiness_policy.js",
+        "scripts/lib/iteration_control_policy.js",
+        "scripts/lib/governance_public_bundle.js",
+        "scripts/config/worker_decision_surface_contract.json",
+        "scripts/config/adoption_readiness_evaluator_contract.json",
+        "scripts/config/iteration_control_contract.json",
+        "scripts/config/evidence_contract.json",
+        latestSignoffSummaryPath,
+        latestRunSummaryPath,
+        requestFramePath,
+        taskOutcomesPath,
+        reviewBundlePath,
+        releaseDecisionPath,
+        adoptionReadinessEvalPath,
+        iterationDecisionPath,
+      ],
+      inputContentByPath: {
+        [latestSignoffSummaryPath]: latestSignoffSummary,
+        [latestRunSummaryPath]: latestRunSummary,
+        [requestFramePath]: requestFrame,
+        [taskOutcomesPath]: taskOutcomes,
+        [reviewBundlePath]: reviewBundle,
+        [releaseDecisionPath]: releaseDecision,
+        [adoptionReadinessEvalPath]: adoptionReadinessEval,
+        [iterationDecisionPath]: iterationDecision,
+      },
+    },
   });
   let goalBackground = backgroundReadinessArtifacts && typeof backgroundReadinessArtifacts === "object"
     && backgroundReadinessArtifacts.goalCompletionStatus && typeof backgroundReadinessArtifacts.goalCompletionStatus === "object"
@@ -712,6 +762,22 @@ function buildOverview({
           80
         ),
         adoptionReady: Number(workerDecisionSurface.adoptionReadiness) >= 0.8 ? 1 : 0,
+        sourceProvenance: workerDecisionSurface.sourceProvenance && typeof workerDecisionSurface.sourceProvenance === "object"
+          ? {
+            repository: workerDecisionSurface.sourceProvenance.repository || {},
+            inputFingerprint: workerDecisionSurface.sourceProvenance.inputFingerprint
+              ? {
+                digest: safeString(workerDecisionSurface.sourceProvenance.inputFingerprint.digest, 120),
+                inputCount: Array.isArray(workerDecisionSurface.sourceProvenance.inputFingerprint.inputs)
+                  ? workerDecisionSurface.sourceProvenance.inputFingerprint.inputs.length
+                  : 0,
+                scope: safeString(workerDecisionSurface.sourceProvenance.inputFingerprint.scope, 120),
+                transitiveFreshness: safeString(workerDecisionSurface.sourceProvenance.inputFingerprint.transitiveFreshness, 120),
+              }
+              : {},
+            assertionBasis: workerDecisionSurface.sourceProvenance.assertionBasis || {},
+          }
+          : {},
       }
       : {},
     workerCompletion: workerCompletionStatus && typeof workerCompletionStatus === "object"
@@ -1273,6 +1339,7 @@ function exportGovernancePublicBundle({
     exportedEvidenceRefs,
     adoptionReadinessContract,
     iterationControlContract,
+    outputDir,
   });
   for (const [baseName, value] of Object.entries(supplementalArtifacts)) {
     const fileName = `${baseName}.json`;

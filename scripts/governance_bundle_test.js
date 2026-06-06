@@ -24,6 +24,7 @@ const {
   loadAdoptionReadinessContract,
 } = require("./lib/adoption_readiness_policy");
 const {
+  assertWorkerDecisionSurfaceFresh,
   loadWorkerDecisionSurfaceContract,
 } = require("./lib/worker_decision_surface");
 const {
@@ -228,6 +229,45 @@ function main() {
   assert.strictEqual(iterationDecision.scope, "iteration_control", "public export must scope iteration decision");
   assert.strictEqual(workerDecisionSurface.schema, "worker-decision-surface.v1", "public export must emit worker decision surface");
   assert.strictEqual(workerDecisionSurface.scope, "worker_decision", "public export worker decision surface must expose worker_decision scope");
+  assert.strictEqual(workerDecisionSurface.sourceProvenance.schema, "governance-artifact-provenance.v1", "public export worker decision surface must expose provenance");
+  assert.strictEqual(workerDecisionSurface.sourceProvenance.repository.freshnessPolicy, "fail_closed_when_inputFingerprint_digest_differs", "public export worker decision surface must use input fingerprint freshness");
+  assert.strictEqual(workerDecisionSurface.sourceProvenance.repository.commitFieldsAreTraceOnly, 1, "public export worker decision surface commit fields must be trace-only");
+  assert.strictEqual(workerDecisionSurface.sourceProvenance.inputFingerprint.schema, "governance-input-fingerprint.v1", "public export worker decision surface must expose input fingerprint");
+  assert.ok(String(workerDecisionSurface.sourceProvenance.inputFingerprint.digest || "").length > 0, "public export worker decision surface must expose fingerprint digest");
+  assert.strictEqual(workerDecisionSurface.sourceProvenance.assertionBasis.type, "self_attested_local_harness", "public export worker decision surface must label self-attested scoring");
+  assert.strictEqual(workerDecisionSurface.sourceProvenance.assertionBasis.independentVerification, "not_claimed", "public export worker decision surface must not imply independent verification");
+  assert.doesNotThrow(
+    () => assertWorkerDecisionSurfaceFresh(workerDecisionSurface, workspaceRoot),
+    "public export worker decision surface fingerprint must verify against declared inputs"
+  );
+  assert.doesNotThrow(
+    () => assertWorkerDecisionSurfaceFresh({
+      ...workerDecisionSurface,
+      sourceProvenance: {
+        ...workerDecisionSurface.sourceProvenance,
+        repository: {
+          ...workerDecisionSurface.sourceProvenance.repository,
+          generatedFromCommit: "0000000000000000000000000000000000000000",
+          commitMatchesHead: 0,
+        },
+      },
+    }, workspaceRoot),
+    "worker decision freshness must not fail on trace-only generatedFromCommit mismatch"
+  );
+  assert.throws(
+    () => assertWorkerDecisionSurfaceFresh({
+      ...workerDecisionSurface,
+      sourceProvenance: {
+        ...workerDecisionSurface.sourceProvenance,
+        inputFingerprint: {
+          ...workerDecisionSurface.sourceProvenance.inputFingerprint,
+          digest: "stale",
+        },
+      },
+    }, workspaceRoot),
+    /inputFingerprint=stale/,
+    "worker decision freshness must fail closed on fingerprint mismatch"
+  );
   assert.strictEqual(workerCompletionStatus.schema, "worker-completion-status.v1", "public export must emit worker completion companion");
   assert.strictEqual(workerCompletionStatus.scope, "worker_completion", "public export worker completion companion must expose worker_completion scope");
   assert.ok(String(workerDecisionSurface.exportSessionId || "").length > 0, "public export worker decision surface must expose exportSessionId");

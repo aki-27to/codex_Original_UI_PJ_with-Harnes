@@ -124,6 +124,7 @@ mustInclude(main, "harnes:lock-workspace", "Electron main");
 mustInclude(main, "harnes:unlock-workspace", "Electron main");
 mustInclude(main, "localOriginHeaders", "Electron main");
 mustInclude(main, "Origin: backendUrl", "Electron main");
+mustInclude(main, "sandbox: true", "Electron main renderer sandbox");
 mustInclude(main, "Referer:", "Electron main");
 mustInclude(main, "images", "Electron main attachment payload");
 mustInclude(main, 'path: "/api/exec"', "Electron main");

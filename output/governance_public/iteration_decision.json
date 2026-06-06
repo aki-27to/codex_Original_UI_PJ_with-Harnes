@@ -1,6 +1,6 @@
 {
   "schema": "iteration-decision.v1",
-  "generatedAt": "2026-05-04T12:17:28.450Z",
+  "generatedAt": "2026-06-04T14:12:11.690Z",
   "action": "RELEASE",
   "reason": "release_conditions_satisfied",
   "blockers": [],

@@ -4,6 +4,9 @@
 const assert = require("assert");
 const fs = require("fs");
 const path = require("path");
+const {
+  assertWorkerDecisionSurfaceFresh,
+} = require("./lib/worker_decision_surface");
 
 const workspaceRoot = path.resolve(__dirname, "..");
 const shouldRefresh = process.argv.includes("--refresh") || process.env.CODEX_CURRENT_SURFACE_REFRESH === "1";
@@ -67,6 +70,8 @@ function verifyPublicGovernanceFallback(reason) {
     return false;
   }
   const publicOverview = readJson(path.join(publicGovernanceRoot, "bundle_overview.json"));
+  const workerDecisionSurface = readJson(path.join(publicGovernanceRoot, "worker_decision_surface.json"));
+  assertWorkerDecisionSurfaceFresh(workerDecisionSurface, workspaceRoot);
   assert.strictEqual(publicOverview.harnessIdentity.mode, "single_governed_harness", "public fallback must expose single harness identity");
   assert.strictEqual(publicOverview.primaryRoutes.execution, "POST /api/exec", "public fallback must expose execution route");
   assert.strictEqual(publicOverview.primaryRoutes.evaluation, "POST /api/eval/run", "public fallback must expose evaluation route");
@@ -193,6 +198,7 @@ function main() {
   assert.strictEqual(latestSignoffSummary.naturalTaskTracePassed, Boolean(bundleSignoffSummary.assertions && bundleSignoffSummary.assertions.naturalTaskTracePassed), "latest_signoff_summary naturalTaskTracePassed must match bundle truth");
   assert.strictEqual(latestSignoffSummary.signoffReady, Boolean(bundleSignoffSummary.allPassed), "latest_signoff_summary signoffReady must match bundle truth");
   assert.strictEqual(workerDecisionSurface.scope, "worker_decision", "worker decision surface must expose worker_decision scope");
+  assertWorkerDecisionSurfaceFresh(workerDecisionSurface, workspaceRoot);
   assertNonEmptyString(workerDecisionSurface.exportSessionId, "worker_decision_surface.exportSessionId");
   assertNonEmptyString(workerDecisionSurface.topLevelOutcome, "worker_decision_surface.topLevelOutcome");
   assert.strictEqual(workerCompletionStatus.scope, "worker_completion", "worker completion companion must expose worker_completion scope");

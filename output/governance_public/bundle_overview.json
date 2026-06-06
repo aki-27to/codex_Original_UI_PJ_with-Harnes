@@ -1,6 +1,6 @@
 {
   "schema": "governance-public-bundle-overview.v1",
-  "generatedAt": "2026-05-29T14:36:36.056Z",
+  "generatedAt": "2026-06-04T14:12:11.762Z",
   "sourceLatestSignoffSummary": "logs/current/latest_signoff_summary.json",
   "sourceBundleRoot": "logs/bundles/signoff/signoff-2026-04-18T05-27-13-996Z-f97810",
   "sourceTurnDir": "logs/bundles/signoff/signoff-2026-04-18T05-27-13-996Z-f97810/raw/turns/2026-04-18/mock-thread-4__mock-turn-7",
@@ -22,7 +22,36 @@
     "topLevelSummary": "The worker can close in place: adoption readiness passed, latent intent stayed aligned, and no extra human interruption is required.",
     "operatorAction": "ADOPT",
     "minimalHitlMode": "close_in_place",
-    "adoptionReady": 1
+    "adoptionReady": 1,
+    "sourceProvenance": {
+      "repository": {
+        "headCommit": "3031d5155b62e999bb99eeca313eb95fe9324d02",
+        "generatedFromCommit": "3031d5155b62e999bb99eeca313eb95fe9324d02",
+        "commitMatchesHead": 1,
+        "workingTreeDirty": 1,
+        "commitFieldsAreTraceOnly": 1,
+        "freshnessPolicy": "fail_closed_when_inputFingerprint_digest_differs"
+      },
+      "inputFingerprint": {
+        "digest": "6c40adce06528507d6851010006594e006df340c86c6acf489d4e870061ec6fe",
+        "inputCount": 16,
+        "scope": "direct_declared_inputs",
+        "transitiveFreshness": "not_claimed"
+      },
+      "assertionBasis": {
+        "type": "self_attested_local_harness",
+        "scoreSource": "scripts/lib/adoption_readiness_policy.js",
+        "scoreContract": "scripts/config/adoption_readiness_evaluator_contract.json",
+        "scoreInputs": [
+          "output/governance_public/adoption_readiness_eval.json",
+          "output/governance_public/iteration_decision.json",
+          "output/governance_public/release_decision.json",
+          "output/governance_public/review_bundle.json"
+        ],
+        "independentVerification": "not_claimed",
+        "limitation": "direct_declared_inputs_only_transitive_freshness_not_claimed"
+      }
+    }
   },
   "workerCompletion": {
     "scope": "worker_completion",

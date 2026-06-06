@@ -1,6 +1,6 @@
 {
   "schema": "worker-completion-status.v1",
-  "generatedAt": "2026-05-04T12:17:31.554Z",
+  "generatedAt": "2026-06-04T14:12:11.760Z",
   "exportSessionId": "export_69aaf0d22042",
   "scope": "worker_completion",
   "workerGoalStatus": "WORKER_COMPLETE",
@@ -87,7 +87,11 @@
     "output/agi_readiness/compatibility_completion_status.json",
     "output/agi_readiness/autonomous_learning_status.json",
     "output/agi_readiness/self_directed_probe_status.json",
-    "output/agi_readiness/novel_task_acquisition.json"
+    "output/agi_readiness/novel_task_acquisition.json",
+    "adoption_readiness_eval.json",
+    "iteration_decision.json",
+    "release_decision.json",
+    "review_bundle.json"
   ],
   "failedCriteria": [],
   "whyNotYet": [],

@@ -26,6 +26,7 @@
   "requiredFields": [
     "scope",
     "exportSessionId",
+    "sourceProvenance",
     "topLevelOutcome",
     "topLevelSummary",
     "taskOutcomeStatus",

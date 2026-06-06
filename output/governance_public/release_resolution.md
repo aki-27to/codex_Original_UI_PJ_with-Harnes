@@ -1,6 +1,6 @@
 # Release Resolution
 
-Generated: 2026-05-04T12:17:28.397Z
+Generated: 2026-06-04T13:35:31.906Z
 Status: `closed_with_bounded_candidate_decision`
 
 ## Question
