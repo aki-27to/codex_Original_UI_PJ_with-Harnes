@@ -1,0 +1,339 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://local.agent-to-agent/thinking-protocol.schema.json",
+  "title": "Mechanical Thinking Protocol",
+  "description": "論点思考、イシューから始めよ、仮説思考を fail-closed gate に変換する機械可読プロトコル。",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "artifactKind",
+    "task",
+    "canonicalOrder",
+    "issueThinking",
+    "issueSelection",
+    "hypothesisThinking",
+    "verification",
+    "gateDecision",
+    "sourceCoverage"
+  ],
+  "properties": {
+    "schemaVersion": {
+      "const": "thinking-protocol.v1"
+    },
+    "artifactKind": {
+      "const": "mechanical-thinking-protocol"
+    },
+    "task": {
+      "$ref": "#/$defs/task"
+    },
+    "canonicalOrder": {
+      "type": "array",
+      "prefixItems": [
+        { "const": "論点" },
+        { "const": "イシュー" },
+        { "const": "仮説" },
+        { "const": "検証/確定" }
+      ],
+      "minItems": 4,
+      "maxItems": 4
+    },
+    "issueThinking": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "originalRequest",
+        "phenomenonOrIssue",
+        "trueIssueCandidates",
+        "selectedBigIssue",
+        "perspectiveMoves",
+        "outOfScope"
+      ],
+      "properties": {
+        "originalRequest": { "$ref": "#/$defs/nonEmptyString" },
+        "phenomenonOrIssue": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["observedProblem", "classification", "reason"],
+          "properties": {
+            "observedProblem": { "$ref": "#/$defs/nonEmptyString" },
+            "classification": {
+              "enum": ["phenomenon", "issue", "mixed"]
+            },
+            "reason": { "$ref": "#/$defs/nonEmptyString" }
+          }
+        },
+        "trueIssueCandidates": {
+          "type": "array",
+          "minItems": 2,
+          "items": { "$ref": "#/$defs/issueCandidate" }
+        },
+        "selectedBigIssue": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["question", "selectionReason", "sourcePerspective"],
+          "properties": {
+            "question": { "$ref": "#/$defs/nonEmptyString" },
+            "selectionReason": { "$ref": "#/$defs/nonEmptyString" },
+            "sourcePerspective": { "$ref": "#/$defs/nonEmptyString" }
+          }
+        },
+        "perspectiveMoves": {
+          "type": "array",
+          "minItems": 2,
+          "items": { "$ref": "#/$defs/nonEmptyString" }
+        },
+        "outOfScope": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "$ref": "#/$defs/nonEmptyString" }
+        }
+      }
+    },
+    "issueSelection": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "singleIssueQuestion",
+        "valueEquationAcknowledgement",
+        "issueDegree",
+        "dogPathCheck",
+        "storyline",
+        "messageDrivenOutput"
+      ],
+      "properties": {
+        "singleIssueQuestion": { "$ref": "#/$defs/nonEmptyString" },
+        "valueEquationAcknowledgement": {
+          "const": "valuable_work = issue_degree * solution_quality"
+        },
+        "issueDegree": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["impactHigh", "solvableNow", "answerDiverges"],
+          "properties": {
+            "impactHigh": { "$ref": "#/$defs/yesNoRationale" },
+            "solvableNow": { "$ref": "#/$defs/yesNoRationale" },
+            "answerDiverges": { "$ref": "#/$defs/yesNoRationale" }
+          }
+        },
+        "dogPathCheck": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["willAvoidEffortSubstitution", "evidence"],
+          "properties": {
+            "willAvoidEffortSubstitution": { "const": true },
+            "evidence": { "$ref": "#/$defs/nonEmptyString" }
+          }
+        },
+        "storyline": {
+          "type": "array",
+          "minItems": 2,
+          "items": { "$ref": "#/$defs/nonEmptyString" }
+        },
+        "messageDrivenOutput": { "$ref": "#/$defs/nonEmptyString" }
+      }
+    },
+    "hypothesisThinking": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "primaryHypothesis",
+        "alternativeHypotheses",
+        "decomposition",
+        "falsificationExitConditions",
+        "minimumValidationPlan",
+        "biasControls"
+      ],
+      "properties": {
+        "primaryHypothesis": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["statement", "specificObservable", "decisionImplication"],
+          "properties": {
+            "statement": { "$ref": "#/$defs/nonEmptyString" },
+            "specificObservable": { "$ref": "#/$defs/nonEmptyString" },
+            "decisionImplication": { "$ref": "#/$defs/nonEmptyString" }
+          }
+        },
+        "alternativeHypotheses": {
+          "type": "array",
+          "minItems": 2,
+          "items": { "$ref": "#/$defs/nonEmptyString" }
+        },
+        "decomposition": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["formula", "factors"],
+          "properties": {
+            "formula": { "$ref": "#/$defs/nonEmptyString" },
+            "factors": {
+              "type": "array",
+              "minItems": 2,
+              "items": { "$ref": "#/$defs/nonEmptyString" }
+            }
+          }
+        },
+        "falsificationExitConditions": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["condition", "nextAction"],
+            "properties": {
+              "condition": { "$ref": "#/$defs/nonEmptyString" },
+              "nextAction": { "$ref": "#/$defs/nonEmptyString" }
+            }
+          }
+        },
+        "minimumValidationPlan": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["step", "evidenceNeeded", "changesDecisionIf"],
+            "properties": {
+              "step": { "$ref": "#/$defs/nonEmptyString" },
+              "evidenceNeeded": { "$ref": "#/$defs/nonEmptyString" },
+              "changesDecisionIf": { "$ref": "#/$defs/nonEmptyString" }
+            }
+          }
+        },
+        "biasControls": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["antiConfirmation", "antiPrematureConvergence"],
+          "properties": {
+            "antiConfirmation": { "$ref": "#/$defs/nonEmptyString" },
+            "antiPrematureConvergence": { "$ref": "#/$defs/nonEmptyString" }
+          }
+        }
+      }
+    },
+    "verification": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "evidenceObserved",
+        "hypothesisUpdate",
+        "answeredBigIssue",
+        "residualRisks"
+      ],
+      "properties": {
+        "evidenceObserved": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "$ref": "#/$defs/nonEmptyString" }
+        },
+        "hypothesisUpdate": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["status", "update"],
+          "properties": {
+            "status": {
+              "enum": ["support", "weaken", "revise", "pending"]
+            },
+            "update": { "$ref": "#/$defs/nonEmptyString" }
+          }
+        },
+        "answeredBigIssue": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["status", "rationale"],
+          "properties": {
+            "status": {
+              "enum": ["answered", "partial", "unanswered"]
+            },
+            "rationale": { "$ref": "#/$defs/nonEmptyString" }
+          }
+        },
+        "residualRisks": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "$ref": "#/$defs/nonEmptyString" }
+        }
+      }
+    },
+    "gateDecision": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["readyToProceed", "blockIfIncomplete", "decision"],
+      "properties": {
+        "readyToProceed": { "type": "boolean" },
+        "blockIfIncomplete": { "const": true },
+        "decision": { "$ref": "#/$defs/nonEmptyString" }
+      }
+    },
+    "sourceCoverage": {
+      "type": "array",
+      "minItems": 3,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["sourceName", "mechanizedElements"],
+        "properties": {
+          "sourceName": {
+            "enum": [
+              "論点思考解説.txt",
+              "イシューから始めよ解説.txt",
+              "仮説思考解説.txt"
+            ]
+          },
+          "mechanizedElements": {
+            "type": "array",
+            "minItems": 1,
+            "items": { "$ref": "#/$defs/nonEmptyString" }
+          }
+        }
+      }
+    }
+  },
+  "$defs": {
+    "nonEmptyString": {
+      "type": "string",
+      "minLength": 2
+    },
+    "task": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "description", "owner"],
+      "properties": {
+        "id": { "$ref": "#/$defs/nonEmptyString" },
+        "description": { "$ref": "#/$defs/nonEmptyString" },
+        "owner": { "$ref": "#/$defs/nonEmptyString" }
+      }
+    },
+    "issueCandidate": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "question",
+        "impact",
+        "solvable",
+        "shortValidation",
+        "decisionDirectness"
+      ],
+      "properties": {
+        "id": { "$ref": "#/$defs/nonEmptyString" },
+        "question": { "$ref": "#/$defs/nonEmptyString" },
+        "impact": { "$ref": "#/$defs/nonEmptyString" },
+        "solvable": { "$ref": "#/$defs/nonEmptyString" },
+        "shortValidation": { "$ref": "#/$defs/nonEmptyString" },
+        "decisionDirectness": { "$ref": "#/$defs/nonEmptyString" }
+      }
+    },
+    "yesNoRationale": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["answer", "rationale"],
+      "properties": {
+        "answer": {
+          "enum": ["yes", "no", "unknown"]
+        },
+        "rationale": { "$ref": "#/$defs/nonEmptyString" }
+      }
+    }
+  }
+}

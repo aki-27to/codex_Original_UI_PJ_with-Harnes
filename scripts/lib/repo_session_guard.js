@@ -3,6 +3,7 @@
 const fs = require("fs");
 const path = require("path");
 const { spawnSync } = require("child_process");
+const { validateThinkingProtocolFile } = require("./thinking_protocol_validator");
 
 function safeString(value, max = 4000) {
   if (typeof value !== "string") return "";
@@ -45,6 +46,52 @@ function runGit(cwd, args, timeoutMs = 15000) {
     timedOut: Boolean(result.error && result.error.code === "ETIMEDOUT"),
     durationMs: Math.max(0, Date.now() - startedAt),
   };
+}
+
+function resolveThinkingProtocolPath(options = {}, state = {}) {
+  const base = safeString(state.repoRoot, 2000) || path.resolve(options.cwd || process.cwd());
+  const explicit = safeString(options.thinkingProtocolPath, 2000) || safeString(options.protocolPath, 2000);
+  if (explicit) {
+    return path.isAbsolute(explicit) ? path.resolve(explicit) : path.resolve(base, explicit);
+  }
+  return path.join(base, "thinking-protocol.json");
+}
+
+function buildThinkingProtocolGate(options = {}, state = {}) {
+  const targetPath = resolveThinkingProtocolPath(options, state);
+  const gate = {
+    schema: "thinking-protocol-gate.v1",
+    required: true,
+    checked: false,
+    ok: true,
+    status: "NOT_CHECKED",
+    path: targetPath,
+    findings: [],
+    canonicalValidator: "scripts/lib/thinking_protocol_validator.js",
+    schemaPath: "scripts/config/thinking-protocol.schema.json",
+  };
+  if (!state.ok) {
+    gate.reason = "repo_state_unavailable";
+    return gate;
+  }
+  const result = validateThinkingProtocolFile(targetPath);
+  gate.checked = true;
+  gate.ok = result.ok;
+  gate.status = result.ok ? "PASS" : "BLOCKED";
+  gate.path = result.path;
+  gate.findings = result.findings;
+  return gate;
+}
+
+function buildThinkingProtocolRecommendations(gate) {
+  if (!gate || gate.ok) return [];
+  const recommendations = [
+    `Create or fix ${gate.path || "thinking-protocol.json"} before starting governed execution.`,
+  ];
+  for (const finding of (gate.findings || []).slice(0, 6)) {
+    recommendations.push(`thinking-protocol finding: ${finding}`);
+  }
+  return recommendations;
 }
 
 function splitStatusLine(line) {
@@ -510,24 +557,34 @@ function buildPreflightReport(options = {}) {
   const observedAt = new Date().toISOString();
   const state = captureSessionGitState(options);
   const dirty = state.classifiedEntries.length > 0;
-  const status = !state.ok ? "BLOCKED" : dirty ? "DIRTY_BASELINE" : "CLEAN";
+  const thinkingProtocol = buildThinkingProtocolGate(options, state);
+  const status = !state.ok ? "BLOCKED" : !thinkingProtocol.ok ? "THINKING_PROTOCOL_BLOCKED" : dirty ? "DIRTY_BASELINE" : "CLEAN";
+  const repoRecommendations = (!thinkingProtocol.ok && !dirty)
+    ? []
+    : buildRecommendations(state.classifiedEntries, "preflight", state.branch);
   return {
     schema: "repo-session-preflight.v1",
     mode: "preflight",
     observedAt,
     status,
-    cleanStartAllowed: state.ok && !dirty,
+    cleanStartAllowed: state.ok && !dirty && thinkingProtocol.ok,
+    thinkingProtocol,
     cwd: state.cwd,
     repoRoot: state.repoRoot,
     branch: state.branch,
     counts: state.counts,
     entries: state.classifiedEntries,
-    requiredAction: state.ok && !dirty ? "start_task" : "close_or_isolate_dirty_state_before_new_task",
-    recommendations: buildRecommendations(state.classifiedEntries, "preflight", state.branch),
+    requiredAction: state.ok && !dirty && thinkingProtocol.ok
+      ? "start_task"
+      : !thinkingProtocol.ok
+        ? "create_or_fix_thinking_protocol_before_new_task"
+        : "close_or_isolate_dirty_state_before_new_task",
+    recommendations: repoRecommendations.concat(buildThinkingProtocolRecommendations(thinkingProtocol)),
     commands: {
       inspect: "git status --porcelain=v2 --branch --untracked-files=all",
       startGate: "npm run repo:preflight",
       closeoutGate: "npm run repo:closeout",
+      thinkingProtocolGate: "node scripts/validate-thinking-protocol.js thinking-protocol.json",
     },
   };
 }
@@ -590,6 +647,13 @@ function formatReport(report) {
   for (const recommendation of report.recommendations || []) {
     lines.push(`[repo-session] next=${recommendation}`);
   }
+  if (report.mode === "preflight" && report.thinkingProtocol) {
+    const gate = report.thinkingProtocol;
+    lines.push(`[repo-session] thinking_protocol=${gate.status} path=${gate.path}`);
+    for (const finding of (gate.findings || []).slice(0, 12)) {
+      lines.push(` - thinking-protocol: ${finding}`);
+    }
+  }
   return `${lines.join("\n")}\n`;
 }
 
@@ -600,8 +664,10 @@ module.exports = {
   captureSessionGitState,
   classifySessionEntry,
   formatReport,
+  buildThinkingProtocolGate,
   normalizeRepoPath,
   parsePorcelainV2Status,
+  resolveThinkingProtocolPath,
   runAutoClose,
   runGit,
 };

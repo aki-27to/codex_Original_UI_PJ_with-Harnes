@@ -9,6 +9,7 @@ function parseArgs(argv) {
     cwd: process.cwd(),
     json: false,
     allowDirty: false,
+    thinkingProtocolPath: process.env.THINKING_PROTOCOL_PATH || "",
   };
   for (let index = 0; index < argv.length; index += 1) {
     const arg = argv[index];
@@ -16,6 +17,11 @@ function parseArgs(argv) {
       options.json = true;
     } else if (arg === "--allow-dirty") {
       options.allowDirty = true;
+    } else if (arg === "--thinking-protocol") {
+      options.thinkingProtocolPath = argv[index + 1] || "";
+      index += 1;
+    } else if (arg.startsWith("--thinking-protocol=")) {
+      options.thinkingProtocolPath = arg.slice("--thinking-protocol=".length);
     } else if (arg === "--cwd") {
       options.cwd = path.resolve(argv[index + 1] || process.cwd());
       index += 1;
@@ -28,8 +34,14 @@ function parseArgs(argv) {
 
 function main() {
   const options = parseArgs(process.argv.slice(2));
-  const report = buildPreflightReport({ cwd: options.cwd });
+  const report = buildPreflightReport({
+    cwd: options.cwd,
+    thinkingProtocolPath: options.thinkingProtocolPath,
+  });
   process.stdout.write(options.json ? `${JSON.stringify(report, null, 2)}\n` : formatReport(report));
+  if (report.thinkingProtocol && report.thinkingProtocol.checked && !report.thinkingProtocol.ok) {
+    process.exit(3);
+  }
   if (!options.allowDirty && !report.cleanStartAllowed) {
     process.exit(2);
   }

@@ -14,6 +14,10 @@ const {
   classifySessionEntry,
   runAutoClose,
 } = require("./lib/repo_session_guard");
+const {
+  CANONICAL_ORDER,
+  REQUIRED_SOURCES,
+} = require("./lib/thinking_protocol_validator");
 
 function runGit(args, cwd) {
   const result = spawnSync("git", args, {
@@ -33,6 +37,91 @@ function writeText(filePath, text) {
   fs.writeFileSync(filePath, text, "utf8");
 }
 
+function writeJson(filePath, value) {
+  writeText(filePath, `${JSON.stringify(value, null, 2)}\n`);
+}
+
+function validThinkingProtocol() {
+  const sources = Array.from(REQUIRED_SOURCES);
+  return {
+    schemaVersion: "thinking-protocol.v1",
+    artifactKind: "mechanical-thinking-protocol",
+    task: { id: "repo-session-test", description: "Validate repo session preflight protocol.", owner: "Codex test" },
+    canonicalOrder: CANONICAL_ORDER,
+    issueThinking: {
+      originalRequest: "Keep repo session starts governed by a valid thinking protocol.",
+      phenomenonOrIssue: {
+        observedProblem: "A clean git tree alone does not prove a governed run has a protocol artifact.",
+        classification: "issue",
+        reason: "The preflight should require both clean state and protocol evidence.",
+      },
+      trueIssueCandidates: [
+        {
+          id: "I1",
+          question: "Does a clean repo include the required protocol artifact?",
+          impact: "Missing protocol evidence would allow ungoverned execution.",
+          solvable: "The fixture can commit a valid protocol artifact.",
+          shortValidation: "buildPreflightReport should return CLEAN for the fixture.",
+          decisionDirectness: "The report controls start permission.",
+        },
+        {
+          id: "I2",
+          question: "Does dirty-state handling remain independent?",
+          impact: "Protocol enforcement must not weaken existing dirty detection.",
+          solvable: "The existing dirty fixtures still exercise git state classification.",
+          shortValidation: "Dirty fixtures should remain DIRTY_BASELINE.",
+          decisionDirectness: "The report keeps dirty entries visible.",
+        },
+      ],
+      selectedBigIssue: {
+        question: "Can preflight combine clean repo state with valid protocol evidence?",
+        selectionReason: "Both conditions are required for governed execution.",
+        sourcePerspective: "The operator needs a deterministic start gate.",
+      },
+      perspectiveMoves: ["Check protocol evidence separately from git cleanliness.", "Keep dirty entries visible in the report."],
+      outOfScope: ["Changing closeout remote-sync policy."],
+    },
+    issueSelection: {
+      singleIssueQuestion: "Can repo-session preflight require a valid thinking protocol while preserving dirty checks?",
+      valueEquationAcknowledgement: "valuable_work = issue_degree * solution_quality",
+      issueDegree: {
+        impactHigh: { answer: "yes", rationale: "Start gates are safety-critical for governed work." },
+        solvableNow: { answer: "yes", rationale: "The local validator is deterministic." },
+        answerDiverges: { answer: "yes", rationale: "A clean tree and a governed protocol are different checks." },
+      },
+      dogPathCheck: { willAvoidEffortSubstitution: true, evidence: "The fixture is validated by buildPreflightReport." },
+      storyline: ["Commit a valid protocol artifact in every clean fixture.", "Assert dirty fixtures still fail on dirty state."],
+      messageDrivenOutput: "Preflight should pass only when both repo state and protocol state are acceptable.",
+    },
+    hypothesisThinking: {
+      primaryHypothesis: {
+        statement: "Adding a valid protocol fixture preserves existing repo-session tests.",
+        specificObservable: "The existing clean and dirty assertions continue to pass.",
+        decisionImplication: "The protocol gate is additive, not a replacement for dirty-state checks.",
+      },
+      alternativeHypotheses: ["The protocol gate might mask dirty-state failures.", "The protocol fixture might be incomplete."],
+      decomposition: { formula: "clean_start = clean_git_state && valid_protocol", factors: ["git state", "protocol state"] },
+      falsificationExitConditions: [{ condition: "Existing dirty assertions stop failing as expected.", nextAction: "Restore dirty-state precedence in the report." }],
+      minimumValidationPlan: [{ step: "Run repo_session_guard_test.", evidenceNeeded: "Process exit 0.", changesDecisionIf: "Any assertion fails." }],
+      biasControls: {
+        antiConfirmation: "The test keeps existing dirty and auto-close assertions.",
+        antiPrematureConvergence: "Protocol-specific CLI cases live in thinking_protocol_gate_test.",
+      },
+    },
+    verification: {
+      evidenceObserved: ["repo_session_guard_test executes buildPreflightReport."],
+      hypothesisUpdate: { status: "support", update: "The fixture should support existing clean start assertions." },
+      answeredBigIssue: { status: "answered", rationale: "The test covers the combined clean-start decision." },
+      residualRisks: ["The fixture is minimal and not a full user task packet."],
+    },
+    gateDecision: { readyToProceed: true, blockIfIncomplete: true, decision: "Allow the test fixture to proceed." },
+    sourceCoverage: sources.map((sourceName) => ({
+      sourceName,
+      mechanizedElements: [`${sourceName} is represented in the repo-session fixture.`],
+    })),
+  };
+}
+
 function createRepo(label) {
   const root = fs.mkdtempSync(path.join(os.tmpdir(), `repo-session-${label}-`));
   const remote = path.join(root, "remote.git");
@@ -43,7 +132,9 @@ function createRepo(label) {
   runGit(["config", "user.name", "Repo Session Test"], work);
   runGit(["config", "user.email", "repo-session@example.invalid"], work);
   writeText(path.join(work, "README.md"), "# repo session test\n");
+  writeJson(path.join(work, "thinking-protocol.json"), validThinkingProtocol());
   runGit(["add", "README.md"], work);
+  runGit(["add", "thinking-protocol.json"], work);
   runGit(["commit", "-m", "initial"], work);
   runGit(["branch", "-M", "main"], work);
   runGit(["remote", "add", "origin", remote], work);
